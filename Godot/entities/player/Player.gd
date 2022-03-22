@@ -22,8 +22,17 @@ func _process(delta):
 		direction.y -= 1
 	if Input.is_action_pressed("move_down"):
 		direction.y += 1
-	#prevents moving faster diagonally
-	if direction.length() > 1:
+	
+	if direction.length() > 0:
+		#prevents moving faster diagonally
 		direction = direction.normalized()
+		$AnimatedSprite.play()
+	else:
+		$AnimatedSprite.stop()
+		$AnimatedSprite.frame = 0
+		
 	#delta is time since last frame, prevents moving faster with higher framerate and slower with lower framerate
 	position += direction * speed * delta
+	#player cannot move beyond edge of screen
+	position.x = clamp(position.x, 0, screen_size.x)
+	position.y = clamp(position.y, 0, screen_size.y)
