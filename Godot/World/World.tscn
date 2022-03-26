@@ -1,8 +1,19 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=4 format=2]
 
-[ext_resource path="res://entities/player/Player.tscn" type="PackedScene" id=1]
+[ext_resource path="res://World/box.tscn" type="PackedScene" id=1]
+[ext_resource path="res://World/ground.tscn" type="PackedScene" id=2]
+[ext_resource path="res://entities/player/Player.tscn" type="PackedScene" id=3]
 
-[node name="World" type="Node2D"]
+[node name="World" type="Spatial"]
 
-[node name="Player" parent="." instance=ExtResource( 1 )]
-position = Vector2( 165, 89 )
+[node name="box" parent="." instance=ExtResource( 1 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0397086, 2.62459, 0.00905895 )
+
+[node name="box2" parent="." instance=ExtResource( 1 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 4.86302, 1.44616, 0.00905895 )
+
+[node name="ground" parent="." instance=ExtResource( 2 )]
+transform = Transform( 10, 0, 0, 0, 1, 0, 0, 0, 10, 0, -1, 0 )
+
+[node name="Player" parent="." instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0894, 0 )

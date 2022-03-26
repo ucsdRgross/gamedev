@@ -10,7 +10,7 @@ config_version=4
 
 [application]
 
-config/name="Godot"
+config/name="FlowaPonk"
 run/main_scene="res://World/World.tscn"
 config/icon="res://icon.png"
 
