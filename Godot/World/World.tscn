@@ -10,10 +10,17 @@
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0397086, 2.62459, 0.00905895 )
 
 [node name="box2" parent="." instance=ExtResource( 1 )]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 4.86302, 1.44616, 0.00905895 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 4.86302, 0.346488, 0.00905895 )
 
 [node name="ground" parent="." instance=ExtResource( 2 )]
 transform = Transform( 10, 0, 0, 0, 1, 0, 0, 0, 10, 0, -1, 0 )
 
 [node name="Player" parent="." instance=ExtResource( 3 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0894, 0 )
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 15.9633, 0 )
+light_indirect_energy = 0.0
+light_specular = 0.0
+shadow_enabled = true
+directional_shadow_mode = 0

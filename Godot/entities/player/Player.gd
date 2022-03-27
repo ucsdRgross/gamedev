@@ -1,41 +1,39 @@
-extends KinematicBody2D
+extends KinematicBody
 
-# Declare member variables here.
-export (int) var MAX_SPEED = 200
-export (int) var ACCELERATION = MAX_SPEED * 5
-export (int) var FRICTION = MAX_SPEED * 5
+# How fast the player moves in meters per second.
+export var speed = 14
+# The downward acceleration when in the air, in meters per second squared.
+export var fall_acceleration = 75
+export var jump_impulse = 20
 
-var velocity = Vector2.ZERO
-
-var screen_size = Vector2.ZERO
-
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	screen_size = get_viewport_rect().size
-	print(screen_size)
+var velocity = Vector3.ZERO
 
 #gets key presses
 #https://docs.godotengine.org/en/stable/tutorials/2d/2d_movement.html#:~:text=Click-and-move,-This%20last%20example&text=Clicking%20on%20the%20screen%20will,move%20to%20the%20target%20location.
 func movement(delta):
-	var input_vector = Vector2()
+	var direction = Vector3.ZERO
+
 	if Input.is_action_pressed("right"):
-		input_vector.x += 1
+		direction.x += 1
 	if Input.is_action_pressed("left"):
-		input_vector.x -= 1
-	if Input.is_action_pressed("down"):
-		input_vector.y += 1
-	if Input.is_action_pressed("up"):
-		input_vector.y -= 1	
-	input_vector = input_vector.normalized()
-	if input_vector != Vector2.ZERO:
-		velocity = velocity.move_toward(input_vector * MAX_SPEED, ACCELERATION * delta)
-	else:
-		velocity = velocity.move_toward(Vector2.ZERO, FRICTION * delta)
-	move_and_slide(velocity * delta)
+		direction.x -= 1
+	if Input.is_action_pressed("back"):
+		direction.z += 1
+	if Input.is_action_pressed("forward"):
+		direction.z -= 1
+
+	if direction != Vector3.ZERO:
+		direction = direction.normalized()
+		#$Pivot.look_at(translation + direction, Vector3.UP)
+
+	velocity.x = direction.x * speed
+	velocity.z = direction.z * speed
+	velocity.y -= fall_acceleration * delta
 	
-	#player cannot move beyond edge of screen
-	position.x = clamp(position.x, 0, screen_size.x)
-	position.y = clamp(position.y, 0, screen_size.y)
+	if is_on_floor() and Input.is_action_just_pressed("jump"):
+		velocity.y += jump_impulse
+	
+	velocity = move_and_slide(velocity, Vector3.UP)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):
