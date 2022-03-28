@@ -16,9 +16,9 @@ export var fall_clamp : float = -30
 export var coyote_time : int = 100
 export var buffer_time : int = 100
 export var end_jump_gravity_modifier : float = 1.3
-#export var max_fall_speed = 28
-#export var fall_acceleration = 75
-#export var jump_impulse = 20
+export var spin_gravity_modifier : float = 1
+export var spin_time_modifier : int = 100
+export var spin_boost : float = 1
 
 var velocity = Vector3.ZERO
 var apex_point : float = 0
@@ -26,10 +26,12 @@ var fall_speed : float = 0
 var air_time : int = 0
 var jump_pressed_time : int = 0
 var ended_jump_early : bool = true
+var spin = false
 
 func calculate_air_time():
 	if is_on_floor():
 		air_time = OS.get_ticks_msec()
+		spin = true
 
 func time_since_jump_pressed():
 	if Input.is_action_just_pressed("jump"):
@@ -52,13 +54,19 @@ func calculate_gravity():
 	if velocity.y < fall_clamp:
 		velocity.y = fall_clamp
 
+var spin_time : int = 0
+
 func calculate_jump():
-	if (Input.is_action_just_pressed("jump") and OS.get_ticks_msec() - air_time < coyote_time) or (OS.get_ticks_msec() - jump_pressed_time < buffer_time and is_on_floor()):
+	if (Input.is_action_just_pressed("jump") and OS.get_ticks_msec() - air_time < coyote_time and not velocity.y > 0) or (OS.get_ticks_msec() - jump_pressed_time < buffer_time and is_on_floor()):
 		velocity.y = jump_velocity
 		ended_jump_early = false
 	if not is_on_floor() and Input.is_action_just_released("jump") and velocity.y > 0:
 		ended_jump_early = true;
-		
+	if velocity.y < 0 and spin and Input.is_action_just_pressed("jump"):
+		spin = false
+		spin_time = OS.get_ticks_msec()
+	if !spin and OS.get_ticks_msec() - spin_time < spin_time_modifier:
+		velocity.y += -1 * (lerp(0, velocity.y, spin_gravity_modifier)) + spin_boost
 	
 func calculate_walk(delta):
 	var direction = Vector2(
