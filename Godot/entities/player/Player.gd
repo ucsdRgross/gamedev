@@ -13,8 +13,8 @@ export var jump_apex : float = 20
 export var min_fall_speed : float = 1
 export var max_fall_speed : float = 2
 export var fall_clamp : float = -30
-export var coyote_time : float = 0.1
-export var buffer_time : float = 0.1
+export var coyote_time : int = 100
+export var buffer_time : int = 100
 export var end_jump_gravity_modifier : float = 1.3
 #export var max_fall_speed = 28
 #export var fall_acceleration = 75
@@ -23,21 +23,17 @@ export var end_jump_gravity_modifier : float = 1.3
 var velocity = Vector3.ZERO
 var apex_point : float = 0
 var fall_speed : float = 0
-var air_time : float = 0
-var jump_pressed_time : float = 10
+var air_time : int = 0
+var jump_pressed_time : int = 0
 var ended_jump_early : bool = true
 
-func calculate_air_time(delta):
+func calculate_air_time():
 	if is_on_floor():
-		air_time = 0
-	else:
-		air_time += delta
+		air_time = OS.get_ticks_msec()
 
-func time_since_jump_pressed(delta):
+func time_since_jump_pressed():
 	if Input.is_action_just_pressed("jump"):
-		jump_pressed_time = 0
-	else:
-		jump_pressed_time += delta
+		jump_pressed_time = OS.get_ticks_msec()
 
 func calculate_jump_apex():
 	if not is_on_floor():
@@ -57,7 +53,7 @@ func calculate_gravity():
 		velocity.y = fall_clamp
 
 func calculate_jump():
-	if (Input.is_action_just_pressed("jump") and air_time < coyote_time) or (jump_pressed_time < buffer_time and is_on_floor()):
+	if (Input.is_action_just_pressed("jump") and OS.get_ticks_msec() - air_time < coyote_time) or (OS.get_ticks_msec() - jump_pressed_time < buffer_time and is_on_floor()):
 		velocity.y = jump_velocity
 		ended_jump_early = false
 	if not is_on_floor() and Input.is_action_just_released("jump") and velocity.y > 0:
@@ -84,8 +80,8 @@ func calculate_walk(delta):
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 # delta should be equal to about 0.01667
 func _physics_process(delta):
-	calculate_air_time(delta)
-	time_since_jump_pressed(delta)
+	calculate_air_time()
+	time_since_jump_pressed()
 	#vertical movement
 	calculate_jump_apex()
 	calculate_gravity()
