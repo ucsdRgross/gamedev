@@ -14,6 +14,10 @@ config/name="FlowaPonk"
 run/main_scene="res://World/World.tscn"
 config/icon="res://icon.png"
 
+[debug]
+
+shapes/collision/shape_color=Color( 0.701961, 0, 0.541176, 0.419608 )
+
 [display]
 
 window/size/width=320

@@ -24,7 +24,7 @@ var velocity = Vector3.ZERO
 var apex_point : float = 0
 var fall_speed : float = 0
 var air_time : int = 0
-var jump_pressed_time : int = 0
+var jump_pressed_time : int = 10
 var ended_jump_early : bool = true
 var spin = false
 
@@ -46,7 +46,9 @@ func calculate_jump_apex():
 		apex_point = 0
 
 func calculate_gravity():
-	if ended_jump_early:
+	if is_on_floor():
+		pass
+	elif ended_jump_early:
 		velocity.y -= fall_speed * end_jump_gravity_modifier
 	else:
 		velocity.y -= fall_speed
@@ -96,6 +98,6 @@ func _physics_process(delta):
 	calculate_jump()
 	#horizontal movement
 	calculate_walk(delta)
-	velocity = move_and_slide(velocity, Vector3.UP)
+	velocity = move_and_slide(velocity, Vector3.UP, true)
 
 	
