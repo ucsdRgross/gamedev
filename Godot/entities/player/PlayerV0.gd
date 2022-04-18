@@ -72,8 +72,8 @@ func calculate_jump():
 	
 func calculate_walk(delta):
 	var direction = Vector2(
-		Input.get_action_strength("right") - Input.get_action_strength("left"),
-		Input.get_action_strength("back") - Input.get_action_strength("forward"))
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+		Input.get_action_strength("move_down") - Input.get_action_strength("move_up"))
 	
 	var new_horizontal = Vector2(velocity.x,velocity.z)	
 	if direction != Vector2.ZERO:
@@ -88,7 +88,7 @@ func calculate_walk(delta):
 	velocity = Vector3(new_horizontal.x, velocity.y, new_horizontal.y)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-# delta should be equal to about 0.01667
+# delta should be equal to about 0.01667 = 1/60
 func _physics_process(delta):
 	calculate_air_time()
 	time_since_jump_pressed()
@@ -98,6 +98,13 @@ func _physics_process(delta):
 	calculate_jump()
 	#horizontal movement
 	calculate_walk(delta)
-	velocity = move_and_slide(velocity, Vector3.UP, true)
+#	#corrects for sliding on slopes when moving sideways 
+#(has bug where small jump onto slope causes moving downward to be crippled)
+#	var correction = Vector3(0,0,0)
+#	if is_on_floor():
+#		correction = -get_floor_normal()
+#		correction *= fall_speed * end_jump_gravity_modifier
+	#finally move player
+	velocity = move_and_slide(velocity, Vector3.UP, true, 4, deg2rad(80))
 
 	
