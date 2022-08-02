@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://resources/Cellectable.gd" type="Script" id=1]
+[ext_resource path="res://resources/CollisionHex.tscn" type="PackedScene" id=2]
+
+[node name="Cellectable" type="Area2D"]
+script = ExtResource( 1 )
+
+[node name="CollisionHex" parent="." instance=ExtResource( 2 )]
+
+[connection signal="mouse_entered" from="." to="." method="_on_CollisionHex_mouse_entered"]

@@ -8,6 +8,52 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Node2D",
+"class": "Cursor",
+"language": "GDScript",
+"path": "res://world/Cursor.gd"
+}, {
+"base": "Node2D",
+"class": "GameBoard",
+"language": "GDScript",
+"path": "res://world/board/GameBoard.gd"
+}, {
+"base": "Resource",
+"class": "Grid",
+"language": "GDScript",
+"path": "res://resources/Grid.gd"
+}, {
+"base": "Camera2D",
+"class": "PanningCamera2D",
+"language": "GDScript",
+"path": "res://world/PanningCamera2D.gd"
+}, {
+"base": "Reference",
+"class": "PathFinder",
+"language": "GDScript",
+"path": "res://resources/PathFinder.gd"
+}, {
+"base": "Path2D",
+"class": "Unit",
+"language": "GDScript",
+"path": "res://units/Unit.gd"
+}, {
+"base": "Line2D",
+"class": "UnitPath",
+"language": "GDScript",
+"path": "res://world/UnitPath.gd"
+} ]
+_global_script_class_icons={
+"Cursor": "",
+"GameBoard": "",
+"Grid": "",
+"PanningCamera2D": "",
+"PathFinder": "",
+"Unit": "",
+"UnitPath": ""
+}
+
 [application]
 
 config/name="Necroma"
@@ -20,6 +66,7 @@ window/size/width=320
 window/size/height=180
 window/size/test_width=1280
 window/size/test_height=720
+window/vsync/use_vsync=false
 window/stretch/mode="2d"
 
 [input]
@@ -36,4 +83,5 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
+2d/snapping/use_gpu_pixel_snap=true
 environment/default_environment="res://default_env.tres"

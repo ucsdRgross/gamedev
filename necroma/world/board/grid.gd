@@ -4,8 +4,8 @@ onready var astar = AStar2D.new()
 var tile = preload("res://world/board/tile.tscn")
 export var width : int = 9
 export var height : int = 4
-var row_offset = Vector2(23,-8)
-var col_offset = Vector2(2,18)
+var row_offset = Vector2(23,-7)
+var col_offset = Vector2(1,17)
 var tile_dict = {}
 var last_tile_clicked : Vector2
 

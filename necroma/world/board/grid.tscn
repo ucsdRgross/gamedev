@@ -3,6 +3,6 @@
 [ext_resource path="res://world/board/grid.gd" type="Script" id=1]
 
 [node name="grid" type="YSort"]
-position = Vector2( 48, 84 )
 script = ExtResource( 1 )
-height = 5
+width = 12
+height = 9
