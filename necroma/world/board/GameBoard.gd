@@ -2,8 +2,7 @@ class_name GameBoard
 extends Node2D
 
 export var grid: Resource = preload("res://resources/Grid.tres")
-
-onready var grid_border = $GridBorder
+#onready var grid_border = $GridBorder
 
 #dictionary matching cell rowcol keys to unit values
 var units := {}
@@ -31,15 +30,15 @@ func select_unit(cell: Vector2) -> void:
 		return
 	selected_unit = units[cell]
 	selected_unit.is_selected = true
-	selected_unit.draw_path(true)
-	grid_border.show()
+	#selected_unit.draw_path(true)
+	#grid_border.show()
 
 
 func deselect_unit() -> void:
 	selected_unit.is_selected = false
-	selected_unit.draw_path(false)
+	#selected_unit.draw_path(false)
 	selected_unit = null
-	grid_border.hide()
+	#grid_border.hide()
 
 
 func _on_Cursor_moved(new_cell: Vector2) -> void:
@@ -51,7 +50,7 @@ func _on_Cursor_accept_clicked(cell: Vector2) -> void:
 	if not selected_unit:
 		select_unit(cell)
 	elif selected_unit.is_selected:
-		selected_unit.move()
+		selected_unit.set_path()
 		deselect_unit()
 
 

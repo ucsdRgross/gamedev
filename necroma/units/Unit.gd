@@ -1,84 +1,104 @@
 tool
 class_name Unit
-extends Path2D
+extends Node2D
 
-signal walk_finished
 
-export var grid: Resource = preload("res://resources/Grid.tres")
-export var skin: Texture setget set_skin
-export var move_range := 6
-export var skin_offset := Vector2.ZERO setget set_skin_offset
-export var move_speed := 600.0
+onready var _grid: Resource = preload("res://resources/Grid.tres")
+onready var _astar: Resource = preload("res://resources/PathFinder.tres")
+#time in seconds between tiles
+export var travel_time : float = 1 setget set_travel_time
 
 var cell := Vector2.ZERO setget set_cell
 var is_selected := false setget set_is_selected
+var is_walking := false setget set_is_walking
+var to_next_tile : float = 0
+var current_path : PoolVector2Array = []
+var potential_path : PoolVector2Array = []
 
-var _is_walking := false setget _set_is_walking
-
-onready var _sprite: Sprite = $PathFollow2D/Sprite
+onready var _sprite: Sprite = $Sprite
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
-onready var _path_follow: PathFollow2D = $PathFollow2D
 
+signal moved(old_cell, new_cell)
+#signal removed(cell)
 
 func _ready() -> void:
-	set_process(false)
-
-	self.cell = grid.world_to_rowcol(position)
-	position = grid.rowcol_to_grid_position(cell)
-
-	if not Engine.editor_hint:
-		curve = Curve2D.new()
-
+	cell = _grid.world_to_rowcol(position)
+	position = _grid.rowcol_to_world(cell)
+	self.connect('moved', get_parent(), '_on_Unit_moved')
+	#self.connect('removed', get_parent(), '_on_Unit_removed')
 
 func _physics_process(delta: float) -> void:
-	_path_follow.offset += move_speed * delta
+	if is_walking:
+		walk_along(delta)
 
-	if _path_follow.unit_offset >= 1.0:
-		self._is_walking = false
-		_path_follow.offset = 0.0
-		position = grid.calculate_map_position(cell)
-		curve.clear_points()
-		emit_signal("walk_finished")
-
-
-func walk_along(path: PoolVector2Array) -> void:
-	if path.empty():
-		return
-
-	curve.add_point(Vector2.ZERO)
-	for point in path:
-		curve.add_point(grid.calculate_map_position(point) - position)
-	cell = path[-1]
-	self._is_walking = true
+func add_point(new_cell: Vector2) -> void:
+	if potential_path.empty():
+		potential_path.append(cell)
+	var new_path : PoolVector2Array = _astar.path_between(potential_path[-1],new_cell)
+	new_path.remove(0)
+	potential_path.append_array(new_path)
 
 
-func set_cell(value: Vector2) -> void:
-	#cell = grid.clamp(value)
+func walk_along(delta : float) -> void:
+	to_next_tile += delta
+	var update_cell := false
+	while to_next_tile >= travel_time and current_path.size() > 2:
+		to_next_tile -= travel_time
+		current_path.remove(0)
+		update_cell = true
+	if update_cell:
+		self.cell = current_path[1]
+	var from : Vector2 = _grid.rowcol_to_world(current_path[0])
+	var to : Vector2 = _grid.rowcol_to_world(current_path[1])
+	position = from.linear_interpolate(to, min(to_next_tile/travel_time, 1))
+	if to_next_tile >= travel_time:
+		is_walking = false
+		current_path.resize(0)
+		to_next_tile = 0
+
+
+#recalculates to_next_tile for maintaining correct position when interpolating
+func set_travel_time(value: float) -> void:
+	to_next_tile *= value/travel_time 
+	travel_time = value
+	
+
+#tells the gameboard unit has moved
+func set_cell(value : Vector2) -> void:
+	emit_signal("moved", cell, value)
 	cell = value
+
+
+func set_path():
+	if potential_path.size() >= 2:
+		#if still finishing walking to tile
+		print(current_path)
+		if not current_path.empty():
+			potential_path.remove(0)
+			current_path.append_array(potential_path)
+			print(current_path)
+		else:
+			current_path = potential_path
+			self.cell = current_path[1]
+			potential_path.resize(0)
+			is_walking = true
+
+
+func set_is_walking(value: bool) -> void:
+	is_walking = value
+#	if is_walking:
+#		_anim_player.play("walking")
+#	else:
+#		_anim_player.play("idle")
 
 
 func set_is_selected(value: bool) -> void:
 	is_selected = value
-	if is_selected:
-		_anim_player.play("selected")
-	else:
-		_anim_player.play("idle")
-
-
-func set_skin(value: Texture) -> void:
-	skin = value
-	if not _sprite:
-		yield(self, "ready")
-	_sprite.texture = value
-
-
-func set_skin_offset(value: Vector2) -> void:
-	skin_offset = value
-	if not _sprite:
-		yield(self, "ready")
-	_sprite.position = value
-
-
-func _set_is_walking(value: bool) -> void:
-	_is_walking = value
-	set_process(_is_walking)
+	if is_selected and not current_path.empty():
+		current_path.resize(2)
+	elif not is_selected:
+		potential_path.resize(0)
+#	if is_selected:
+#		_anim_player.play("selected")
+#	else:
+#		_anim_player.play("idle")

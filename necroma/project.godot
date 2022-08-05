@@ -12,7 +12,7 @@ _global_script_classes=[ {
 "base": "Node2D",
 "class": "Cursor",
 "language": "GDScript",
-"path": "res://world/Cursor.gd"
+"path": "res://world/board/Cursor.gd"
 }, {
 "base": "Node2D",
 "class": "GameBoard",
@@ -29,20 +29,15 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://world/PanningCamera2D.gd"
 }, {
-"base": "Reference",
+"base": "Resource",
 "class": "PathFinder",
 "language": "GDScript",
 "path": "res://resources/PathFinder.gd"
 }, {
-"base": "Path2D",
+"base": "Node2D",
 "class": "Unit",
 "language": "GDScript",
 "path": "res://units/Unit.gd"
-}, {
-"base": "Line2D",
-"class": "UnitPath",
-"language": "GDScript",
-"path": "res://world/UnitPath.gd"
 } ]
 _global_script_class_icons={
 "Cursor": "",
@@ -50,8 +45,7 @@ _global_script_class_icons={
 "Grid": "",
 "PanningCamera2D": "",
 "PathFinder": "",
-"Unit": "",
-"UnitPath": ""
+"Unit": ""
 }
 
 [application]

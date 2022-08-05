@@ -13,6 +13,7 @@ signal moved(new_cell)
 
 
 func _ready() -> void:
+	grid.set_world_pos(position)
 	create_grid()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -24,11 +25,11 @@ func create_grid() -> void:
 		for row in grid.size.y:
 			var cell_pos = Vector2(row,col)
 			var new_cell = cell.instance()
-			new_cell.position = grid.rowcol_to_grid_position(cell_pos)
+			new_cell.position = grid.rowcol_to_world(cell_pos)
 			add_child(new_cell)
 			new_cell.setup(cell_pos)		
 
 func on_hex_hovered(rowcol : Vector2) -> void:
 	cur_cell = rowcol
-	highlight.position = grid.rowcol_to_grid_position(rowcol)
+	highlight.position = grid.rowcol_to_world(rowcol)
 	emit_signal('moved', rowcol)

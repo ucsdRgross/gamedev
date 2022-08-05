@@ -6,25 +6,30 @@ export var size := Vector2(20, 20)
 # roughly size of hex if it was a square
 export var cell_size := Vector2(32, 18)
 #moving over one to the right from one hex
-var row_offset = Vector2(23,-7)
+var row_offset := Vector2(23,-7)
 #moving down from hex
-var col_offset = Vector2(1,17)
+var col_offset := Vector2(1,17)
+#offset from 0,0
+var grid_position := Vector2.ZERO
+
+func set_world_pos(offset:Vector2) -> void:
+	grid_position = offset
 
 # Returns the position of a hex's center in pixels.
-func rowcol_to_grid_position(rowcol : Vector2) -> Vector2:
+func rowcol_to_world(rowcol : Vector2) -> Vector2:
 	var x = rowcol.x * row_offset
 	var y = rowcol.y * col_offset
 	var pos = x + y
-	return Vector2(pos.x, pos.y)
+	return Vector2(pos.x, pos.y) + grid_position
 
 # reverse of above, not perfect though since it assumes cells are squares
 # but its only for placing units in editor
 func world_to_rowcol(map_position: Vector2) -> Vector2:
-	return (map_position / cell_size).floor()
+	return ((map_position - grid_position) / cell_size).floor()
 
 # single unique number assigned to a row and col
 # Szudzik pairing function, does not work with negative values
-func rowcol_id(cell: Vector2) -> int:
+func id(cell: Vector2) -> int:
 	var a = cell.x
 	var b = cell.y
 	return (a * a) + a + b if a >= b else (b * b) + a
