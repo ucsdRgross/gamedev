@@ -29,14 +29,11 @@ func _add_and_connect_points(tiles : PoolVector2Array) -> void:
 	
 	for tile in tiles:
 		cell_mappings[tile] = tile_id(tile)
-	
-	for point in cell_mappings:
-		_astar.add_point(cell_mappings[point], point)
+		_astar.add_point(cell_mappings[tile], tile)
 
 	for point in cell_mappings:
 		var directions
 		if int(point.y) % 2 == 0:
-			print("even")
 			directions = even_row_neighbors
 		else:
 			directions = odd_row_neighbors
@@ -44,6 +41,12 @@ func _add_and_connect_points(tiles : PoolVector2Array) -> void:
 			var n_point = point + neighbor
 			if cell_mappings.has(n_point):
 				_astar.connect_points(tile_id(point),tile_id(n_point),true)
+
+func is_point_disabled(point:Vector2) -> bool:
+	return _astar.is_point_disabled(tile_id(point))
+
+func set_point_disabled(point:Vector2, disabled:bool) -> void:	
+	_astar.set_point_disabled(tile_id(point), disabled)
 
 # Szudzik pairing function for negative values
 func tile_id(coord : Vector2) -> int:

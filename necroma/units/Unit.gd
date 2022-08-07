@@ -25,6 +25,7 @@ signal moved(old_cell, new_cell)
 func _ready() -> void:
 	cell = _hexmap.world_to_map(position)
 	position = _hexmap.map_to_world(cell)
+	_astar.set_point_disabled(cell, true)
 	self.connect('moved', get_parent(), '_on_Unit_moved')
 	#self.connect('removed', get_parent(), '_on_Unit_removed')
 
@@ -38,22 +39,27 @@ func add_point(new_cell: Vector2) -> void:
 	var new_path : PoolVector2Array = _astar.path_between(potential_path[-1],new_cell)
 	new_path.remove(0)
 	potential_path.append_array(new_path)
-	print(potential_path)
 
 
 func walk_along(delta : float) -> void:
 	to_next_tile += delta
 	var update_cell := false
-	while to_next_tile >= travel_time and current_path.size() > 2:
-		to_next_tile -= travel_time
-		current_path.remove(0)
-		update_cell = true
+	while to_next_tile > travel_time and current_path.size() > 2:
+		if _astar.is_point_disabled(current_path[2]):
+			to_next_tile = travel_time
+		else:
+			to_next_tile -= travel_time
+			current_path.remove(0)
+			line.remove_point(0)
+			update_cell = true
 	if update_cell:
 		self.cell = current_path[1]
 	var from : Vector2 = _hexmap.map_to_world(current_path[0])
 	var to : Vector2 = _hexmap.map_to_world(current_path[1])
 	position = from.linear_interpolate(to, min(to_next_tile/travel_time, 1))
-	if to_next_tile >= travel_time:
+	if line.points:		
+		line.set_point_position(0, position)
+	if to_next_tile > travel_time:
 		is_walking = false
 		current_path.resize(0)
 		to_next_tile = 0
@@ -68,6 +74,10 @@ func set_travel_time(value: float) -> void:
 #tells the gameboard unit has moved
 func set_cell(value : Vector2) -> void:
 	emit_signal("moved", cell, value)
+	#old cell
+	_astar.set_point_disabled(cell, false)
+	#new cell
+	_astar.set_point_disabled(value, true)
 	cell = value
 
 
@@ -102,3 +112,28 @@ func set_is_selected(value: bool) -> void:
 #		_anim_player.play("selected")
 #	else:
 #		_anim_player.play("idle")
+
+onready var line = $Node/Line2D
+
+func hide_path() -> void:
+	line.hide()
+	
+func show_path() -> void:
+	line.clear_points()
+	if current_path:
+		for point in current_path:
+			line.add_point(_hexmap.map_to_world(point))
+	line.show()
+	
+func show_path_to(new_cell : Vector2) -> void:
+	line.clear_points()
+	var line_path = potential_path
+	if line_path.empty():
+		line_path.append(cell)
+	var new_path : PoolVector2Array = _astar.path_between(line_path[-1],new_cell)
+	if not new_path.empty():
+		new_path.remove(0)
+	line_path.append_array(new_path)
+	for point in line_path:
+			line.add_point(_hexmap.map_to_world(point))
+	line.show()

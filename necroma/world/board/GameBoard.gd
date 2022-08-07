@@ -9,6 +9,7 @@ onready var hexmap = $HexMap
 #dictionary matching cell rowcol keys to unit values
 var units := {}
 var selected_unit: Unit
+var hovered_unit: Unit
 var hovered_cell : Vector2
 
 
@@ -47,14 +48,24 @@ func select_unit(cell: Vector2) -> void:
 func deselect_unit() -> void:
 	selected_unit.is_selected = false
 	#selected_unit.draw_path(false)
+	selected_unit.hide_path()
 	selected_unit = null
 	#grid_border.hide()
 
 
-func _on_Hexmap_moved(new_cell):
+func _on_Hexmap_moved(new_cell) -> void:
 	hovered_cell = new_cell
-#	if selected_unit:
-#		selected_unit.add_point(new_cell)
+	if selected_unit:
+		selected_unit.show_path_to(new_cell)
+		return
+	if hovered_unit:
+		hovered_unit.hide_path()
+		hovered_unit = null	
+	if not units.has(new_cell):
+		return
+	else:
+		hovered_unit = units[hovered_cell]
+		hovered_unit.show_path()
 
 
 func on_left_click() -> void:

@@ -10,4 +10,4 @@ func setup(rc):
 	
 func _on_CollisionHex_mouse_entered():
 	emit_signal('hex_hovered', rowcol)
-	print(rowcol)
+	

@@ -18,6 +18,16 @@ position = Vector2( 144, 56 )
 scale = Vector2( 0.2, 0.2 )
 texture = ExtResource( 1 )
 
+[node name="Unit2" parent="GameBoard" instance=ExtResource( 4 )]
+position = Vector2( 176, 56 )
+scale = Vector2( 0.2, 0.2 )
+texture = ExtResource( 1 )
+
+[node name="Unit3" parent="GameBoard" instance=ExtResource( 4 )]
+position = Vector2( 208, 56 )
+scale = Vector2( 0.2, 0.2 )
+texture = ExtResource( 1 )
+
 [node name="PanningCamera2D" parent="." instance=ExtResource( 3 )]
 
 [connection signal="moved" from="GameBoard/HexMap" to="GameBoard" method="_on_Hexmap_moved"]
