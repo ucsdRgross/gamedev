@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/highlighted_hex.png-06c08c0c2336fec9494729693cfe7c4d.stex"
+path="res://.import/Hex_v01_grid.png-3456341edfa290b8d664d56b02ede724.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://world/board/highlighted_hex.png"
-dest_files=[ "res://.import/highlighted_hex.png-06c08c0c2336fec9494729693cfe7c4d.stex" ]
+source_file="res://world/board/Hex_v01_grid.png"
+dest_files=[ "res://.import/Hex_v01_grid.png-3456341edfa290b8d664d56b02ede724.stex" ]
 
 [params]
 

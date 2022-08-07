@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://world/board/Cursor.gd" type="Script" id=1]
-[ext_resource path="res://world/board/highlighted_hex.png" type="Texture" id=2]
+[ext_resource path="res://recyclebin/Cursor.gd" type="Script" id=1]
+[ext_resource path="res://recyclebin/highlighted_hex.png" type="Texture" id=2]
 
 [node name="Cursor" type="Node2D"]
 script = ExtResource( 1 )

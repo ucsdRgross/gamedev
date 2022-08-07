@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://world/board/pixelhex.png" type="Texture" id=1]
+[ext_resource path="res://recyclebin/pixelhex.png" type="Texture" id=1]
 
 [sub_resource type="GDScript" id=1]
 script/source = "extends Area2D

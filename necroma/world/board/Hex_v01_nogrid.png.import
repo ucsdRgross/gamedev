@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/pixelhex.png-dfddf2ceff5b23f6e287f25fd45064a5.stex"
+path="res://.import/Hex_v01_nogrid.png-f2a6fec34d88c5be5438010012904f1e.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://world/board/pixelhex.png"
-dest_files=[ "res://.import/pixelhex.png-dfddf2ceff5b23f6e287f25fd45064a5.stex" ]
+source_file="res://world/board/Hex_v01_nogrid.png"
+dest_files=[ "res://.import/Hex_v01_nogrid.png-f2a6fec34d88c5be5438010012904f1e.stex" ]
 
 [params]
 
@@ -31,5 +31,5 @@ process/invert_color=false
 process/normal_map_invert_y=false
 stream=false
 size_limit=0
-detect_3d=false
+detect_3d=true
 svg/scale=1.0

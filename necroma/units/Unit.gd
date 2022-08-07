@@ -3,7 +3,7 @@ class_name Unit
 extends Node2D
 
 
-onready var _grid: Resource = preload("res://resources/Grid.tres")
+#onready var _grid: Resource = preload("res://world/board/HexMap.tres")
 onready var _astar: Resource = preload("res://resources/PathFinder.tres")
 #time in seconds between tiles
 export var travel_time : float = 1 setget set_travel_time
@@ -15,6 +15,7 @@ var to_next_tile : float = 0
 var current_path : PoolVector2Array = []
 var potential_path : PoolVector2Array = []
 
+onready var _hexmap: HexMap = $"../HexMap"
 onready var _sprite: Sprite = $Sprite
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
 
@@ -22,8 +23,8 @@ signal moved(old_cell, new_cell)
 #signal removed(cell)
 
 func _ready() -> void:
-	cell = _grid.world_to_rowcol(position)
-	position = _grid.rowcol_to_world(cell)
+	cell = _hexmap.world_to_map(position)
+	position = _hexmap.map_to_world(cell)
 	self.connect('moved', get_parent(), '_on_Unit_moved')
 	#self.connect('removed', get_parent(), '_on_Unit_removed')
 
@@ -37,6 +38,7 @@ func add_point(new_cell: Vector2) -> void:
 	var new_path : PoolVector2Array = _astar.path_between(potential_path[-1],new_cell)
 	new_path.remove(0)
 	potential_path.append_array(new_path)
+	print(potential_path)
 
 
 func walk_along(delta : float) -> void:
@@ -48,8 +50,8 @@ func walk_along(delta : float) -> void:
 		update_cell = true
 	if update_cell:
 		self.cell = current_path[1]
-	var from : Vector2 = _grid.rowcol_to_world(current_path[0])
-	var to : Vector2 = _grid.rowcol_to_world(current_path[1])
+	var from : Vector2 = _hexmap.map_to_world(current_path[0])
+	var to : Vector2 = _hexmap.map_to_world(current_path[1])
 	position = from.linear_interpolate(to, min(to_next_tile/travel_time, 1))
 	if to_next_tile >= travel_time:
 		is_walking = false
@@ -72,11 +74,9 @@ func set_cell(value : Vector2) -> void:
 func set_path():
 	if potential_path.size() >= 2:
 		#if still finishing walking to tile
-		print(current_path)
 		if not current_path.empty():
 			potential_path.remove(0)
 			current_path.append_array(potential_path)
-			print(current_path)
 		else:
 			current_path = potential_path
 			self.cell = current_path[1]
