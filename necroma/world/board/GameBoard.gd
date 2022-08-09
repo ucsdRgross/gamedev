@@ -31,7 +31,7 @@ func initialize() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse_button"):
 		on_left_click()
-	elif event.is_action_pressed("right_mouse_button"):
+	if event.is_action_pressed("right_mouse_button"):
 		on_right_click()
 	if selected_unit and event.is_action_pressed("ui_cancel"):
 		deselect_unit()
@@ -56,12 +56,16 @@ func deselect_unit() -> void:
 func _on_Hexmap_moved(new_cell) -> void:
 	hovered_cell = new_cell
 	if selected_unit:
-		selected_unit.show_path_to(new_cell)
+		selected_unit.show_path_to(hovered_cell)
+		#draw path
+		if Input.is_action_pressed("left_mouse_button"):
+			selected_unit.add_point(hovered_cell)
 		return
+	
 	if hovered_unit:
 		hovered_unit.hide_path()
 		hovered_unit = null	
-	if not units.has(new_cell):
+	if not units.has(hovered_cell):
 		return
 	else:
 		hovered_unit = units[hovered_cell]
@@ -72,12 +76,15 @@ func on_left_click() -> void:
 	if not selected_unit:
 		select_unit(hovered_cell)
 	elif selected_unit.is_selected:
-		selected_unit.set_path()
-		deselect_unit()
+		selected_unit.add_point(hovered_cell)
+#		selected_unit.set_path()
+#		deselect_unit()
 
 func on_right_click() -> void:
 	if selected_unit:
-		selected_unit.add_point(hovered_cell)
+		deselect_unit()
+#	if selected_unit:
+#		selected_unit.add_point(hovered_cell)
 
 func _on_Unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
 	var unit = units[old_cell]
@@ -87,7 +94,3 @@ func _on_Unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
 
 func _on_Unit_removed(cell: Vector2) -> void:
 	units.erase(cell)
-
-
-
-

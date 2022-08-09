@@ -13,7 +13,8 @@ var is_selected := false setget set_is_selected
 var is_walking := false setget set_is_walking
 var to_next_tile : float = 0
 var current_path : PoolVector2Array = []
-var potential_path : PoolVector2Array = []
+#points_added_path added in case needed for the future, high chance of removal
+var points_added_path : PoolVector2Array = []
 
 onready var _hexmap: HexMap = $"../HexMap"
 onready var _sprite: Sprite = $Sprite
@@ -23,6 +24,7 @@ signal moved(old_cell, new_cell)
 #signal removed(cell)
 
 func _ready() -> void:
+	#allows placing directly on board
 	cell = _hexmap.world_to_map(position)
 	position = _hexmap.map_to_world(cell)
 	_astar.set_point_disabled(cell, true)
@@ -34,11 +36,21 @@ func _physics_process(delta: float) -> void:
 		walk_along(delta)
 
 func add_point(new_cell: Vector2) -> void:
-	if potential_path.empty():
-		potential_path.append(cell)
-	var new_path : PoolVector2Array = _astar.path_between(potential_path[-1],new_cell)
-	new_path.remove(0)
-	potential_path.append_array(new_path)
+	#add starting cell to start
+	if current_path.empty():
+		current_path.append(cell)
+		
+	#dont add duplicate points
+	if current_path[-1] == new_cell:
+		return
+	points_added_path.append(new_cell)
+		
+	var new_path : PoolVector2Array = _astar.path_between(current_path[-1],new_cell)
+	#trims duplicate point at start
+	if new_path:
+		new_path.remove(0)
+	current_path.append_array(new_path)
+	self.is_walking = true
 
 
 func walk_along(delta : float) -> void:
@@ -49,6 +61,8 @@ func walk_along(delta : float) -> void:
 			to_next_tile = travel_time
 		else:
 			to_next_tile -= travel_time
+			if points_added_path[0] == current_path[0]:
+				points_added_path.remove(0)
 			current_path.remove(0)
 			line.remove_point(0)
 			update_cell = true
@@ -59,9 +73,11 @@ func walk_along(delta : float) -> void:
 	position = from.linear_interpolate(to, min(to_next_tile/travel_time, 1))
 	if line.points:		
 		line.set_point_position(0, position)
+	#reached destination, reset everything
 	if to_next_tile > travel_time:
 		is_walking = false
 		current_path.resize(0)
+		points_added_path.resize(0)
 		to_next_tile = 0
 
 
@@ -81,17 +97,17 @@ func set_cell(value : Vector2) -> void:
 	cell = value
 
 
-func set_path():
-	if potential_path.size() >= 2:
-		#if still finishing walking to tile
-		if not current_path.empty():
-			potential_path.remove(0)
-			current_path.append_array(potential_path)
-		else:
-			current_path = potential_path
-			self.cell = current_path[1]
-			potential_path.resize(0)
-			is_walking = true
+#func set_path():
+#	if potential_path.size() >= 2:
+#		#if still finishing walking to tile
+#		if not current_path.empty():
+#			potential_path.remove(0)
+#			current_path.append_array(potential_path)
+#		else:
+#			current_path = potential_path
+#			self.cell = current_path[1]
+#			potential_path.resize(0)
+#			is_walking = true
 
 
 func set_is_walking(value: bool) -> void:
@@ -106,8 +122,11 @@ func set_is_selected(value: bool) -> void:
 	is_selected = value
 	if is_selected and not current_path.empty():
 		current_path.resize(2)
-	elif not is_selected:
-		potential_path.resize(0)
+		points_added_path.resize(0)
+#	if is_selected and not current_path.empty():
+#		current_path.resize(2)
+#	elif not is_selected:
+#		current_path.resize(0)
 #	if is_selected:
 #		_anim_player.play("selected")
 #	else:
@@ -127,7 +146,7 @@ func show_path() -> void:
 	
 func show_path_to(new_cell : Vector2) -> void:
 	line.clear_points()
-	var line_path = potential_path
+	var line_path = current_path
 	if line_path.empty():
 		line_path.append(cell)
 	var new_path : PoolVector2Array = _astar.path_between(line_path[-1],new_cell)
