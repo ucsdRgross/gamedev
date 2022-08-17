@@ -13,8 +13,17 @@ var is_selected := false setget set_is_selected
 var is_walking := false setget set_is_walking
 var to_next_tile : float = 0
 var current_path : PoolVector2Array = []
+var facing_direction := Vector2.ZERO setget set_facing_direction
 #points_added_path added in case needed for the future, high chance of removal
 #var points_added_path : PoolVector2Array = []
+
+func set_facing_direction(value:Vector2) -> void:
+	facing_direction = value
+	print(facing_direction)
+	if facing_direction.x <= 0:
+		flip_h = true
+	else:
+		flip_h = false
 
 onready var _hexmap: HexMap = $"../../HexMap"
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
@@ -62,10 +71,11 @@ func action(beat: int) -> void:
 				#attack_state()
 				pass
 				
-const default_scale = Vector2(.2,.2)
-const default_offset = Vector2(0,-16)
+const default_scale = Vector2(1,1)
+const default_offset = Vector2(0,-8)
 				
 func prep_move_state() -> void:
+	self.facing_direction = position.direction_to(_hexmap.map_to_world(current_path[1]))
 	var squat = create_tween()
 	var default_scale = scale
 	var duration : float = 0.5217
@@ -73,6 +83,7 @@ func prep_move_state() -> void:
 
 func move_state() -> void:
 	#TWEENS OH YEAH
+	
 	var jump = create_tween()
 	var move = create_tween()
 	#var from : Vector2 = _hexmap.map_to_world(current_path[0])
@@ -82,8 +93,8 @@ func move_state() -> void:
 	move.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	move.tween_property(self, "position", to, duration)
 	jump.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	jump.tween_property(self, "offset", default_offset+Vector2(0,-50), duration/2)
-	jump.parallel().tween_property(self, "scale", default_scale*Vector2(0.95,1.1), duration/2)
+	jump.tween_property(self, "offset", default_offset+Vector2(0,-10), duration/2)
+	jump.parallel().tween_property(self, "scale", default_scale*Vector2(0.95,1.05), duration/2)
 	jump.set_ease(Tween.EASE_IN)
 	jump.tween_property(self, "offset", default_offset, duration/2)
 	jump.parallel().tween_property(self, "scale", default_scale, duration/2)
@@ -224,3 +235,4 @@ func show_path_to(new_cell : Vector2) -> void:
 	for point in line_path:
 			line.add_point(_hexmap.map_to_world(point))
 	line.show()
+
