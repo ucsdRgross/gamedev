@@ -33,6 +33,7 @@ func _add_astar_pathfinding() -> void:
 func map_to_world(rowcol : Vector2) -> Vector2:
 	var left_corner : Vector2 = selectable_tiles.map_to_world(rowcol)
 	var x : int = left_corner.x + selectable_tiles.cell_size.x/2
+	#the 2 is to account for how hexagon is slightly flattened
 	var y : int = left_corner.y + selectable_tiles.cell_size.x/2 - 2
 	return Vector2(x,y)
 

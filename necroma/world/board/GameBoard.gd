@@ -5,9 +5,10 @@ extends Node2D
 #onready var grid_border = $GridBorder
 
 onready var hexmap = $HexMap
+onready var units = $Units
 
 #dictionary matching cell rowcol keys to unit values
-var units := {}
+var unit_cells := {}
 var selected_unit: Unit
 var hovered_unit: Unit
 var hovered_cell : Vector2
@@ -15,18 +16,19 @@ var hovered_cell : Vector2
 
 func _ready() -> void:
 	initialize()
+	$Conductor.play_with_beat_offset(4)
 
 
 func initialize() -> void:
-	units.clear()
-	for child in get_children():
+	unit_cells.clear()
+	for child in units.get_children():
 		var unit := child as Unit
 		if not unit:
 			continue
 		#remove stacked units on same cell
-		if units.has(unit.cell):
-			units[unit.cell].queue_free()
-		units[unit.cell] = unit
+		if unit_cells.has(unit.cell):
+			unit_cells[unit.cell].queue_free()
+		unit_cells[unit.cell] = unit
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse_button"):
@@ -37,9 +39,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		deselect_unit()
 
 func select_unit(cell: Vector2) -> void:
-	if not units.has(cell):
+	if not unit_cells.has(cell):
 		return
-	selected_unit = units[cell]
+	selected_unit = unit_cells[cell]
 	selected_unit.is_selected = true
 	#selected_unit.draw_path(true)
 	#grid_border.show()
@@ -65,10 +67,10 @@ func _on_Hexmap_moved(new_cell) -> void:
 	if hovered_unit:
 		hovered_unit.hide_path()
 		hovered_unit = null	
-	if not units.has(hovered_cell):
+	if not unit_cells.has(hovered_cell):
 		return
 	else:
-		hovered_unit = units[hovered_cell]
+		hovered_unit = unit_cells[hovered_cell]
 		hovered_unit.show_path()
 
 
@@ -87,10 +89,15 @@ func on_right_click() -> void:
 #		selected_unit.add_point(hovered_cell)
 
 func _on_Unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
-	var unit = units[old_cell]
-	units.erase(old_cell)
-	units[new_cell] = unit
+	var unit = unit_cells[old_cell]
+	unit_cells.erase(old_cell)
+	unit_cells[new_cell] = unit
 
 
 func _on_Unit_removed(cell: Vector2) -> void:
-	units.erase(cell)
+	unit_cells.erase(cell)
+
+
+func _on_Conductor_beat(position):
+	for child in units.get_children():
+		child.action(position % 4)
