@@ -18,6 +18,9 @@ var current_path : PoolVector2Array = []
 var facing_direction := Vector2.ZERO setget set_facing_direction
 #tween time limit for moving, should be set to time per beat
 var move_duration : float = 0.5217
+#tween original value reference
+const default_scale = Vector2(1,1)
+const default_offset = Vector2(0,-8)
 #points_added_path added in case needed for the future, high chance of removal
 #var points_added_path : PoolVector2Array = []
 
@@ -46,10 +49,7 @@ func action(beat: int) -> void:
 			MOVE:
 				if not is_walking:
 					return
-				var dest = current_path[1]
-				if _astar.can_move_to(dest):
-					_astar.claim(dest)
-					will_move = true
+				face_direction()	
 				prep_move_state()
 				pass
 			ATTACK:
@@ -63,21 +63,27 @@ func action(beat: int) -> void:
 			MOVE:
 				if not is_walking:
 					return
+				if current_path.size() < 2:
+					return
+				var dest = current_path[1]
+				if _astar.can_move_to(self, self, dest):
+					_astar.claim(dest)
+					will_move = true
+				face_direction()
 				if will_move:
 					move_succeed()
 				else:
-					move_fail()
-				will_move = false
+					move_fail()				
 				pass
 			ATTACK:
 				#attack_state()
 				pass
-				
-const default_scale = Vector2(1,1)
-const default_offset = Vector2(0,-8)
+
+func face_direction() -> void:
+	if current_path.size() > 1:
+		self.facing_direction = position.direction_to(_hexmap.map_to_world(current_path[1]))
 				
 func prep_move_state() -> void:
-	self.facing_direction = position.direction_to(_hexmap.map_to_world(current_path[1]))
 	var squat = create_tween()
 	var default_scale = scale
 	var duration : float = 0.5217
@@ -85,15 +91,18 @@ func prep_move_state() -> void:
 
 func move_succeed() -> void:
 	var move = create_tween()
+	move.connect("finished", self, "_on_move_finished")
 	var to : Vector2 = _hexmap.map_to_world(current_path[1])
 	move.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	move.tween_property(self, "position", to, move_duration)
 	jump()	
+	
+func _on_move_finished() -> void:
 	self.cell = current_path[1]
 	_astar.unclaim(cell)
+	will_move = false
 	current_path.remove(0)
 	line.remove_point(0)
-	print(current_path)
 	if current_path.size() < 2:
 		self.is_walking = false
 		current_path.resize(0)
@@ -173,7 +182,7 @@ func set_travel_time(value: float) -> void:
 
 #tells the gameboard unit has moved
 func set_cell(value : Vector2) -> void:
-	_astar.unit_moved(cell, value)
+	_astar.unit_moved(self, cell, value)
 	#old cell
 	#_astar.set_point_disabled(cell, false)
 	#new cell
@@ -209,6 +218,7 @@ func set_is_walking(value: bool) -> void:
 func set_is_selected(value: bool) -> void:
 	is_selected = value
 	if is_selected and not will_move:
+		self.is_walking = false
 		current_path.resize(0)
 	elif is_selected and not current_path.empty():
 		current_path.resize(2)

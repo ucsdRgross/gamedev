@@ -18,11 +18,12 @@ func unit_enter(unit) -> void:
 		print("ERROR unit entered and stacked on another unit at: " + str(unit.cell))
 	units[unit.cell] = unit	
 
-func unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
-	if units.has(new_cell):
-		print("ERROR unit moved onto occupied cell at: " + str(new_cell) )
-	var unit = units[old_cell]
-	units.erase(old_cell)
+func unit_moved(unit, old_cell: Vector2, new_cell: Vector2) -> void:
+#	if units.has(new_cell):
+#		print("ERROR unit moved onto occupied cell at: " + str(new_cell) )
+	#var unit = units[old_cell]
+	if units[old_cell] == unit:
+		units.erase(old_cell)
 	units[new_cell] = unit
 
 func unit_removed(cell: Vector2) -> void:
@@ -32,18 +33,26 @@ func unit_removed(cell: Vector2) -> void:
 #returns false if cell is already claimed by another unit
 #recursively checks if units in the way can move, allow syncing of movement
 #if units move at different speeds may need to add second paramater to only allow recursion forward with same speed units
-func can_move_to(cell: Vector2) -> bool:
+func can_move_to(original_unit, unit, cell: Vector2) -> bool:
 	if is_claimed(cell):
 		return false
 	if not units.has(cell):
 		return true
 	var unit_ahead = units[cell]
+	#if units are in a merry go round formation, so it doesnt recurse forever
+	if unit_ahead == original_unit:
+		return true
 	if not unit_ahead.is_walking:
+		return false
+	#if units are facing towards each other, dont phase through each other
+	if unit.facing_direction == unit_ahead.facing_direction * -1:
 		return false
 	if unit_ahead.will_move:
 		return true
+	if unit_ahead.current_path.size() < 2:
+		return false
 	#recursive check
-	if can_move_to(unit_ahead.current_path[1]):
+	if can_move_to(original_unit, unit_ahead, unit_ahead.current_path[1]):
 		unit_ahead.will_move = true
 		return true
 	return false
