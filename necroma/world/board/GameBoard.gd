@@ -3,32 +3,19 @@ extends Node2D
 
 #export var grid: Resource = preload("res://resources/Grid.tres")
 #onready var grid_border = $GridBorder
+onready var _astar: Resource = preload("res://resources/PathFinder.tres")
 
 onready var hexmap = $HexMap
 onready var units = $Units
 
-#dictionary matching cell rowcol keys to unit values
-var unit_cells := {}
 var selected_unit: Unit
 var hovered_unit: Unit
 var hovered_cell : Vector2
 
 
 func _ready() -> void:
-	initialize()
 	$Conductor.play_with_beat_offset(4)
 
-
-func initialize() -> void:
-	unit_cells.clear()
-	for child in units.get_children():
-		var unit := child as Unit
-		if not unit:
-			continue
-		#remove stacked units on same cell
-		if unit_cells.has(unit.cell):
-			unit_cells[unit.cell].queue_free()
-		unit_cells[unit.cell] = unit
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse_button"):
@@ -39,9 +26,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		deselect_unit()
 
 func select_unit(cell: Vector2) -> void:
-	if not unit_cells.has(cell):
+	if not _astar.units.has(cell):
 		return
-	selected_unit = unit_cells[cell]
+	selected_unit = _astar.units[cell]
 	selected_unit.is_selected = true
 	#selected_unit.draw_path(true)
 	#grid_border.show()
@@ -67,10 +54,10 @@ func _on_Hexmap_moved(new_cell) -> void:
 	if hovered_unit:
 		hovered_unit.hide_path()
 		hovered_unit = null	
-	if not unit_cells.has(hovered_cell):
+	if not _astar.units.has(hovered_cell):
 		return
 	else:
-		hovered_unit = unit_cells[hovered_cell]
+		hovered_unit = _astar.units[hovered_cell]
 		hovered_unit.show_path()
 
 
@@ -87,15 +74,6 @@ func on_right_click() -> void:
 		deselect_unit()
 #	if selected_unit:
 #		selected_unit.add_point(hovered_cell)
-
-func _on_Unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
-	var unit = unit_cells[old_cell]
-	unit_cells.erase(old_cell)
-	unit_cells[new_cell] = unit
-
-
-func _on_Unit_removed(cell: Vector2) -> void:
-	unit_cells.erase(cell)
 
 
 func _on_Conductor_beat(position):

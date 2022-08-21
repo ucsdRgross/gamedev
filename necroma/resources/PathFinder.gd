@@ -8,9 +8,59 @@ const odd_row_neighbors = [Vector2(0,-1),Vector2(1,-1),Vector2(-1,0),Vector2(1,0
 #var _grid : Resource = preload("res://resources/Grid.tres")
 var _astar := AStar2D.new()
 
+#dictionary matching cell rowcol keys to unit values
+var units := {}
+var claims := {}
+
+#cant do unit:Unit due to gdscript wonkiness
+func unit_enter(unit) -> void:
+	if units.has(unit.cell):
+		print("ERROR unit entered and stacked on another unit at: " + str(unit.cell))
+	units[unit.cell] = unit	
+
+func unit_moved(old_cell: Vector2, new_cell: Vector2) -> void:
+	if units.has(new_cell):
+		print("ERROR unit moved onto occupied cell at: " + str(new_cell) )
+	var unit = units[old_cell]
+	units.erase(old_cell)
+	units[new_cell] = unit
+
+func unit_removed(cell: Vector2) -> void:
+	units.erase(cell)
+
+#returns true if cell empty or occupant is moving
+#returns false if cell is already claimed by another unit
+#recursively checks if units in the way can move, allow syncing of movement
+#if units move at different speeds may need to add second paramater to only allow recursion forward with same speed units
+func can_move_to(cell: Vector2) -> bool:
+	if is_claimed(cell):
+		return false
+	if not units.has(cell):
+		return true
+	var unit_ahead = units[cell]
+	if not unit_ahead.is_walking:
+		return false
+	if unit_ahead.will_move:
+		return true
+	#recursive check
+	if can_move_to(unit_ahead.current_path[1]):
+		unit_ahead.will_move = true
+		return true
+	return false
+
+func claim(cell: Vector2) -> void:
+	claims[cell] = true
+
+func unclaim(cell: Vector2) -> void:
+	claims[cell] = false
+
+func is_claimed(cell: Vector2) -> bool:
+	return claims[cell]
 
 func setup(tiles : PoolVector2Array) -> void:
 	_add_and_connect_points(tiles)
+	for tile in tiles:
+		claims[tile] = false
 
 
 func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
