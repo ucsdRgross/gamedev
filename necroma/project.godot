@@ -58,7 +58,6 @@ _global_script_class_icons={
 
 config/name="Necroma"
 run/main_scene="res://Main.tscn"
-config/icon="res://icon.png"
 
 [display]
 

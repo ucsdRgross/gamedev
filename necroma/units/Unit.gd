@@ -20,7 +20,7 @@ var facing_direction := Vector2.ZERO setget set_facing_direction
 var move_duration : float = 0.5217
 #tween original value reference
 const default_scale = Vector2(1,1)
-const default_offset = Vector2(0,-8)
+onready var default_offset = offset
 #points_added_path added in case needed for the future, high chance of removal
 #var points_added_path : PoolVector2Array = []
 
@@ -47,8 +47,6 @@ func action(beat: int) -> void:
 	if beat == 3:
 		match state:
 			MOVE:
-				if not is_walking:
-					return
 				face_direction()	
 				prep_move_state()
 				pass
@@ -59,11 +57,12 @@ func action(beat: int) -> void:
 		match state:
 			IDLE:
 				#idle_state()
+				if scale != Vector2(1,1):
+					move_fail()
 				pass
 			MOVE:
-				if not is_walking:
-					return
 				if current_path.size() < 2:
+					print("somethign went wrong")
 					return
 				var dest = current_path[1]
 				if _astar.can_move_to(self, self, dest):
@@ -86,8 +85,7 @@ func face_direction() -> void:
 func prep_move_state() -> void:
 	var squat = create_tween()
 	var default_scale = scale
-	var duration : float = 0.5217
-	squat.tween_property(self, "scale", default_scale*Vector2(1.1,0.8), duration)
+	squat.tween_property(self, "scale", default_scale*Vector2(1.1,0.8), move_duration)
 
 func move_succeed() -> void:
 	var move = create_tween()
@@ -142,8 +140,8 @@ func add_point(new_cell: Vector2) -> void:
 	#trims duplicate point at start
 	if new_path:
 		new_path.remove(0)
+		self.is_walking = true
 	current_path.append_array(new_path)
-	self.is_walking = true
 
 
 #func walk_along(delta : float) -> void:

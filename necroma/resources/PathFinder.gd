@@ -12,6 +12,11 @@ var _astar := AStar2D.new()
 var units := {}
 var claims := {}
 
+func setup(tiles : PoolVector2Array) -> void:
+	_add_and_connect_points(tiles)
+	for tile in tiles:
+		claims[tile] = false
+
 #cant do unit:Unit due to gdscript wonkiness
 func unit_enter(unit) -> void:
 	if units.has(unit.cell):
@@ -66,11 +71,6 @@ func unclaim(cell: Vector2) -> void:
 func is_claimed(cell: Vector2) -> bool:
 	return claims[cell]
 
-func setup(tiles : PoolVector2Array) -> void:
-	_add_and_connect_points(tiles)
-	for tile in tiles:
-		claims[tile] = false
-
 
 func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
 	var start_index: int = tile_id(start)
@@ -78,8 +78,18 @@ func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
 	# We just ensure that the AStar graph has both points defined. If not, we return an empty
 	# PoolVector2Array() to avoid errors.
 	if _astar.has_point(start_index) and _astar.has_point(end_index):
+		#if end cell is occupied, path to closest cell to end cell
+		var path : PoolVector2Array
+		if _astar.is_point_disabled(end_index):
+			_astar.set_point_disabled(end_index, false)
+			path = _astar.get_point_path(start_index, end_index)
+			_astar.set_point_disabled(end_index, true)
+			#remove last point from path
+			path.remove(path.size() - 1)
+		else:
+			path = _astar.get_point_path(start_index, end_index)
 		# The AStar2D object then finds the best path between the two indices.
-		return _astar.get_point_path(start_index, end_index)
+		return path
 	return PoolVector2Array()
 
 
@@ -107,14 +117,15 @@ func is_point_disabled(point:Vector2) -> bool:
 func set_point_disabled(point:Vector2, disabled:bool) -> void:	
 	_astar.set_point_disabled(tile_id(point), disabled)
 
-# Szudzik pairing function for negative values
+# Cantor pairing function for negative values
 func tile_id(coord : Vector2) -> int:
 	var x = coord.x
 	var y = coord.y
 	var a = 2 * x if x >= 0 else -2 * x - 1
 	var b = 2 * y if y >= 0 else -2 * y - 1
-	var c = (a * a) + a + b if a >= b else (b * b) + a
-	c *= 0.5
-	if (((a >= 0.0) && (b < 0.0)) || ((a < 0.0) && (b >= 0.0))):
-		return -c - 1
+	var c = (0.5 * (a + b) * (a + b + 1)) + b
+	#var c = (a * a) + a + b if a >= b else (b * b) + a
+	#c *= 0.5
+	#if (((a >= 0.0) && (b < 0.0)) || ((a < 0.0) && (b >= 0.0))):
+	#	return -c - 1
 	return c
