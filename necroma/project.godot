@@ -22,7 +22,7 @@ _global_script_classes=[ {
 "base": "Resource",
 "class": "Grid",
 "language": "GDScript",
-"path": "res://resources/Grid.gd"
+"path": "res://recyclebin/Grid.gd"
 }, {
 "base": "Node2D",
 "class": "HexMap",

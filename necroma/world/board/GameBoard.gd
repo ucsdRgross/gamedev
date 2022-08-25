@@ -1,12 +1,11 @@
 class_name GameBoard
 extends Node2D
 
-#export var grid: Resource = preload("res://resources/Grid.tres")
-#onready var grid_border = $GridBorder
 onready var _astar: Resource = preload("res://resources/PathFinder.tres")
 
 onready var hexmap = $HexMap
 onready var units = $Units
+onready var spawner = $Spawner
 
 var selected_unit: Unit
 var hovered_unit: Unit
@@ -15,7 +14,9 @@ var hovered_cell : Vector2
 
 func _ready() -> void:
 	$Conductor.play_with_beat_offset(4)
-
+	for child in units.get_children():
+		child.ready_in_scene()
+	spawner.setup(hexmap.edge_tiles, units)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse_button"):
@@ -79,3 +80,5 @@ func on_right_click() -> void:
 func _on_Conductor_beat(position):
 	for child in units.get_children():
 		child.action(position % 4)
+	if position % 4 == 0:
+		spawner.spawn()

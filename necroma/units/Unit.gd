@@ -2,11 +2,7 @@ tool
 class_name Unit
 extends Sprite
 
-
-#onready var _grid: Resource = preload("res://world/board/HexMap.tres")
 onready var _astar: Resource = preload("res://resources/PathFinder.tres")
-#time in seconds between tiles
-export var travel_time : float = 1 setget set_travel_time
 
 var cell := Vector2.ZERO setget set_cell
 var is_selected := false setget set_is_selected
@@ -15,16 +11,15 @@ var is_walking := false setget set_is_walking
 var will_move := false
 var to_next_tile : float = 0
 var current_path : PoolVector2Array = []
-var facing_direction := Vector2.ZERO setget set_facing_direction
+var facing_direction := Vector2(1,0) setget set_facing_direction
 #tween time limit for moving, should be set to time per beat
 var move_duration : float = 0.5217
 #tween original value reference
 const default_scale = Vector2(1,1)
 onready var default_offset = offset
-#points_added_path added in case needed for the future, high chance of removal
-#var points_added_path : PoolVector2Array = []
 
-onready var _hexmap: HexMap = $"../../HexMap"
+
+onready var _hexmap: HexMap 
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
 
 enum {
@@ -34,46 +29,41 @@ enum {
 }
 var state : int = IDLE
 
-
-func _ready() -> void:
-	#allows placing directly on board
-	cell = _hexmap.world_to_map(position)
+func setup(entry_cell : Vector2):
+	cell = entry_cell
+	_hexmap = $"../../HexMap"
 	position = _hexmap.map_to_world(cell)
 	_astar.set_point_disabled(cell, true)
 	_astar.unit_enter(self)
-	#self.connect('removed', get_parent(), '_on_Unit_removed')
+
+func ready_in_scene() -> void:
+	#allows placing directly on board
+	_hexmap = $"../../HexMap"
+	self.setup(_hexmap.world_to_map(position))
+	
 
 func action(beat: int) -> void:
-	if beat == 3:
+	if beat == 1:
+		pass
+	elif beat == 2:
 		match state:
 			MOVE:
 				face_direction()	
+	elif beat == 3:
+		match state:
+			MOVE:
 				prep_move_state()
 				pass
 			ATTACK:
 				#prep_attack_state()
 				pass
-	if beat == 0:
+	elif beat == 0:
 		match state:
 			IDLE:
-				#idle_state()
 				if scale != Vector2(1,1):
 					move_fail()
-				pass
 			MOVE:
-				if current_path.size() < 2:
-					print("somethign went wrong")
-					return
-				var dest = current_path[1]
-				if _astar.can_move_to(self, self, dest):
-					_astar.claim(dest)
-					will_move = true
-				face_direction()
-				if will_move:
-					move_succeed()
-				else:
-					move_fail()				
-				pass
+				move_state()
 			ATTACK:
 				#attack_state()
 				pass
@@ -86,6 +76,17 @@ func prep_move_state() -> void:
 	var squat = create_tween()
 	var default_scale = scale
 	squat.tween_property(self, "scale", default_scale*Vector2(1.1,0.8), move_duration)
+
+func move_state() -> void:
+	var dest = current_path[1]
+	if _astar.can_move_to(self, self, dest):
+		_astar.claim(dest)
+		will_move = true
+	#face_direction()
+	if will_move:
+		move_succeed()
+	else:
+		move_fail()
 
 func move_succeed() -> void:
 	var move = create_tween()
@@ -122,9 +123,6 @@ func jump() -> void:
 	jump.set_ease(Tween.EASE_IN)
 	jump.tween_property(self, "scale", default_scale, move_duration/4)
 
-#func _physics_process(delta: float) -> void:
-#	if is_walking:
-#		walk_along(delta)
 
 func add_point(new_cell: Vector2) -> void:
 	#add starting cell to start
@@ -144,61 +142,10 @@ func add_point(new_cell: Vector2) -> void:
 	current_path.append_array(new_path)
 
 
-#func walk_along(delta : float) -> void:
-#	to_next_tile += delta
-#	var update_cell := false
-#	while to_next_tile > travel_time and current_path.size() > 2:
-#		if _astar.is_point_disabled(current_path[2]):
-#			to_next_tile = travel_time
-#		else:
-#			to_next_tile -= travel_time
-#			if points_added_path[0] == current_path[0]:
-#				points_added_path.remove(0)
-#			current_path.remove(0)
-#			line.remove_point(0)
-#			update_cell = true
-#	if update_cell:
-#		self.cell = current_path[1]
-#	var from : Vector2 = _hexmap.map_to_world(current_path[0])
-#	var to : Vector2 = _hexmap.map_to_world(current_path[1])
-#	position = from.linear_interpolate(to, min(to_next_tile/travel_time, 1))
-#	if line.points:		
-#		line.set_point_position(0, position)
-#	#reached destination, reset everything
-#	if to_next_tile > travel_time:
-#		is_walking = false
-#		current_path.resize(0)
-#		points_added_path.resize(0)
-#		to_next_tile = 0
-#
-#
-#recalculates to_next_tile for maintaining correct position when interpolating
-func set_travel_time(value: float) -> void:
-	to_next_tile *= value/travel_time 
-	travel_time = value
-	
-
 #tells the gameboard unit has moved
 func set_cell(value : Vector2) -> void:
 	_astar.unit_moved(self, cell, value)
-	#old cell
-	#_astar.set_point_disabled(cell, false)
-	#new cell
-	#_astar.set_point_disabled(value, true)
 	cell = value
-
-
-#func set_path():
-#	if potential_path.size() >= 2:
-#		#if still finishing walking to tile
-#		if not current_path.empty():
-#			potential_path.remove(0)
-#			current_path.append_array(potential_path)
-#		else:
-#			current_path = potential_path
-#			self.cell = current_path[1]
-#			potential_path.resize(0)
-#			is_walking = true
 
 
 func set_is_walking(value: bool) -> void:
@@ -220,15 +167,33 @@ func set_is_selected(value: bool) -> void:
 		current_path.resize(0)
 	elif is_selected and not current_path.empty():
 		current_path.resize(2)
-		#points_added_path.resize(0)
-#	if is_selected and not current_path.empty():
-#		current_path.resize(2)
-#	elif not is_selected:
-#		current_path.resize(0)
 #	if is_selected:
 #		_anim_player.play("selected")
 #	else:
 #		_anim_player.play("idle")
+
+
+func set_facing_direction(value:Vector2) -> void:
+	print(facing_direction)
+	print(value)
+	if sign(facing_direction.x) != sign(value.x):
+		var flip = create_tween()
+		flip.connect("finished",self,"_on_flip_finished")
+		flip.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		flip.tween_property(self, "scale", default_scale*Vector2(0.5,1), move_duration/2)
+	facing_direction = value
+
+func _on_flip_finished() -> void:
+	var flip = create_tween()
+	flip.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	flip.tween_property(self, "scale", default_scale, move_duration/2)
+	if facing_direction.x <= 0:
+		flip_h = true
+	else:
+		flip_h = false
+
+func death() -> void:
+	_astar.unclaim(current_path[1])
 
 onready var line = $Node/Line2D
 
@@ -256,12 +221,3 @@ func show_path_to(new_cell : Vector2) -> void:
 	line.show()
 
 
-func set_facing_direction(value:Vector2) -> void:
-	facing_direction = value
-	if facing_direction.x <= 0:
-		flip_h = true
-	else:
-		flip_h = false
-
-func death() -> void:
-	_astar.unclaim(current_path[1])
