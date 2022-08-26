@@ -36,9 +36,9 @@ func setup(entry_cell : Vector2, enemy=false):
 	_astar.set_point_disabled(cell, true)
 	_astar.unit_enter(self)
 	if enemy == true:
-		add_to_group("enemy")
+		add_to_group("enemies")
 	else:
-		add_to_group("friend")
+		add_to_group("friends")
 
 func ready_in_scene() -> void:
 	#allows placing directly on board
@@ -52,7 +52,7 @@ func action(beat: int) -> void:
 	elif beat == 2:
 		match state:
 			IDLE:
-				if is_in_group("enemy"):
+				if is_in_group("enemies"):
 					var target = get_parent().get_node("Necromancer")
 					add_point(target.cell)
 					face_direction()
@@ -147,7 +147,7 @@ func add_point(new_cell: Vector2) -> void:
 		return
 	#points_added_path.append(new_cell)
 		
-	var new_path : PoolVector2Array = _astar.path_between(current_path[-1],new_cell)
+	var new_path : PoolVector2Array = _astar.path_between(current_path[-1],new_cell,is_in_group("friends"))
 	#trims duplicate point at start
 	if new_path:
 		new_path.remove(0)
@@ -169,7 +169,6 @@ func set_is_walking(value: bool) -> void:
 #		_anim_player.play("walking")
 	else:
 		state = IDLE
-		print("stop!")
 		_astar.set_point_disabled(cell, true)
 #		_anim_player.play("idle")
 
@@ -224,7 +223,7 @@ func show_path_to(new_cell : Vector2) -> void:
 	var line_path = current_path
 	if line_path.empty():
 		line_path.append(cell)
-	var new_path : PoolVector2Array = _astar.path_between(line_path[-1],new_cell)
+	var new_path : PoolVector2Array = _astar.path_between(line_path[-1],new_cell,is_in_group("friends"))
 	if not new_path.empty():
 		new_path.remove(0)
 	line_path.append_array(new_path)

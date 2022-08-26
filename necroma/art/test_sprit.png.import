@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/hexset_grid_boreal_flat_01.png-2e62b5e22ce29d4900fb97c8404d38ed.stex"
+path="res://.import/test_sprit.png-8009487e3d8f27a56da0d20364dc96ea.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/hexset_grid_boreal_flat_01.png"
-dest_files=[ "res://.import/hexset_grid_boreal_flat_01.png-2e62b5e22ce29d4900fb97c8404d38ed.stex" ]
+source_file="res://art/test_sprit.png"
+dest_files=[ "res://.import/test_sprit.png-8009487e3d8f27a56da0d20364dc96ea.stex" ]
 
 [params]
 

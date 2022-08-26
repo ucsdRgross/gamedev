@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=2]
+[gd_scene load_steps=11 format=2]
 
 [ext_resource path="res://music/song.ogg" type="AudioStream" id=2]
 [ext_resource path="res://world/PanningCamera2D.tscn" type="PackedScene" id=3]
@@ -8,6 +8,8 @@
 [ext_resource path="res://resources/Conductor.tscn" type="PackedScene" id=7]
 [ext_resource path="res://units/Necromancer.tscn" type="PackedScene" id=8]
 [ext_resource path="res://resources/Spawner.tscn" type="PackedScene" id=9]
+[ext_resource path="res://art/test_sprit2.png" type="Texture" id=10]
+[ext_resource path="res://art/test_sprit3.png" type="Texture" id=11]
 
 [node name="Main" type="Node2D"]
 
@@ -25,17 +27,20 @@ bpm = 115
 
 [node name="Units" type="YSort" parent="GameBoard"]
 
-[node name="Necromancer" parent="GameBoard/Units" instance=ExtResource( 8 )]
+[node name="Necromancer" parent="GameBoard/Units" groups=["friends"] instance=ExtResource( 8 )]
 position = Vector2( 175, 98 )
+offset = Vector2( 0, -10 )
 
 [node name="Unit" parent="GameBoard/Units" instance=ExtResource( 4 )]
 position = Vector2( 144, 56 )
 
 [node name="Unit2" parent="GameBoard/Units" instance=ExtResource( 4 )]
 position = Vector2( 176, 56 )
+texture = ExtResource( 10 )
 
 [node name="Unit3" parent="GameBoard/Units" instance=ExtResource( 4 )]
 position = Vector2( 208, 56 )
+texture = ExtResource( 11 )
 
 [node name="PanningCamera2D" parent="." instance=ExtResource( 3 )]
 

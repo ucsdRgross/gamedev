@@ -14,11 +14,13 @@ signal moved(new_cell)
 
 
 func _ready() -> void:
-	highlight.position = selectable_tiles.map_to_world(selectable_tiles.get_used_cells()[0])	
+	var play_area : PoolVector2Array = selectable_tiles.get_used_cells()
+	var background : PoolVector2Array = background_tiles.get_used_cells()
+	highlight.position = selectable_tiles.map_to_world(play_area[0])	
 	#you can only ever select inside of selectable bounds, but enemies can pathfind outside of bounds
-	_add_mouse_detection(selectable_tiles.get_used_cells())
-	_add_astar_pathfinding(background_tiles.get_used_cells())
-	_find_edge_tiles(background_tiles.get_used_cells())
+	_add_mouse_detection(play_area)
+	_add_astar_pathfinding(background,play_area)
+	_find_edge_tiles(background)
 
 
 func _add_mouse_detection(tiles:PoolVector2Array) -> void:
@@ -29,8 +31,8 @@ func _add_mouse_detection(tiles:PoolVector2Array) -> void:
 		new_cell.setup(tile)
 
 
-func _add_astar_pathfinding(tiles:PoolVector2Array) -> void:
-	astar.setup(tiles)
+func _add_astar_pathfinding(background : PoolVector2Array, play_area : PoolVector2Array) -> void:
+	astar.setup(background,play_area)
 
 func _find_edge_tiles(tiles:PoolVector2Array) -> void:
 	var even_neighbors = astar.even_row_neighbors

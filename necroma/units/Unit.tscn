@@ -1,17 +1,17 @@
 [gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://units/Unit.gd" type="Script" id=1]
-[ext_resource path="res://art/MediumShadow.png" type="Texture" id=2]
-[ext_resource path="res://art/skelly.png" type="Texture" id=3]
+[ext_resource path="res://art/SmallShadow.png" type="Texture" id=2]
+[ext_resource path="res://art/test_sprit.png" type="Texture" id=3]
 
 [node name="Unit" type="Sprite"]
 texture = ExtResource( 3 )
-offset = Vector2( 0, -10 )
+offset = Vector2( 0, -12 )
 script = ExtResource( 1 )
 
 [node name="Shadow" type="Sprite" parent="."]
 show_behind_parent = true
-position = Vector2( 0, 2 )
+position = Vector2( 0, 4 )
 texture = ExtResource( 2 )
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

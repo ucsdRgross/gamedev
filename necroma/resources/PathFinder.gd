@@ -11,10 +11,12 @@ var _astar := AStar2D.new()
 #dictionary matching cell rowcol keys to unit values
 var units := {}
 var claims := {}
+var playground : PoolVector2Array
 
-func setup(tiles : PoolVector2Array) -> void:
-	_add_and_connect_points(tiles)
-	for tile in tiles:
+func setup(background : PoolVector2Array, play_area : PoolVector2Array) -> void:
+	playground = play_area
+	_add_and_connect_points(background, play_area)
+	for tile in background:
 		claims[tile] = false
 
 #cant do unit:Unit due to gdscript wonkiness
@@ -72,7 +74,7 @@ func is_claimed(cell: Vector2) -> bool:
 	return claims[cell]
 
 
-func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
+func path_between(start: Vector2, end: Vector2, is_friend:bool) -> PoolVector2Array:
 	var start_index: int = tile_id(start)
 	var end_index: int = tile_id(end)
 	# We just ensure that the AStar graph has both points defined. If not, we return an empty
@@ -89,6 +91,11 @@ func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
 			#if already next to target, would return a size 1 path, return nothing instead
 			if path.size() < 2:
 				return PoolVector2Array()
+			#prevent friend from following enemy outside of arena
+			if is_friend:
+				for i in path:
+					if not playground.has(i):
+						return PoolVector2Array()
 		else:
 			path = _astar.get_point_path(start_index, end_index)
 		# The AStar2D object then finds the best path between the two indices.
@@ -96,12 +103,16 @@ func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
 	return PoolVector2Array()
 
 
-func _add_and_connect_points(tiles : PoolVector2Array) -> void:
+func _add_and_connect_points(background : PoolVector2Array, play_area : PoolVector2Array) -> void:
 	var cell_mappings := {}
 	
-	for tile in tiles:
+	for tile in background:
 		cell_mappings[tile] = tile_id(tile)
-		_astar.add_point(cell_mappings[tile], tile)
+		#play area cell costs make units prefer to stay inside play area
+		if tile in play_area:
+			_astar.add_point(cell_mappings[tile], tile, .001)
+		else:
+			_astar.add_point(cell_mappings[tile], tile, 100)
 
 	for point in cell_mappings:
 		var directions
