@@ -29,12 +29,16 @@ enum {
 }
 var state : int = IDLE
 
-func setup(entry_cell : Vector2):
+func setup(entry_cell : Vector2, enemy=false):
 	cell = entry_cell
 	_hexmap = $"../../HexMap"
 	position = _hexmap.map_to_world(cell)
 	_astar.set_point_disabled(cell, true)
 	_astar.unit_enter(self)
+	if enemy == true:
+		add_to_group("enemy")
+	else:
+		add_to_group("friend")
 
 func ready_in_scene() -> void:
 	#allows placing directly on board
@@ -43,10 +47,15 @@ func ready_in_scene() -> void:
 	
 
 func action(beat: int) -> void:
-	if beat == 1:
+	if beat == 1:				
 		pass
 	elif beat == 2:
 		match state:
+			IDLE:
+				if is_in_group("enemy"):
+					var target = get_parent().get_node("Necromancer")
+					add_point(target.cell)
+					face_direction()
 			MOVE:
 				face_direction()	
 	elif beat == 3:
@@ -101,7 +110,8 @@ func _on_move_finished() -> void:
 	_astar.unclaim(cell)
 	will_move = false
 	current_path.remove(0)
-	line.remove_point(0)
+	if line.get_point_count() > 0:
+		line.remove_point(0)
 	if current_path.size() < 2:
 		self.is_walking = false
 		current_path.resize(0)
@@ -125,6 +135,9 @@ func jump() -> void:
 
 
 func add_point(new_cell: Vector2) -> void:
+	#cap on maximum path
+	if current_path.size() > 100:
+		return
 	#add starting cell to start
 	if current_path.empty():
 		current_path.append(cell)
@@ -156,6 +169,7 @@ func set_is_walking(value: bool) -> void:
 #		_anim_player.play("walking")
 	else:
 		state = IDLE
+		print("stop!")
 		_astar.set_point_disabled(cell, true)
 #		_anim_player.play("idle")
 
@@ -174,8 +188,6 @@ func set_is_selected(value: bool) -> void:
 
 
 func set_facing_direction(value:Vector2) -> void:
-	print(facing_direction)
-	print(value)
 	if sign(facing_direction.x) != sign(value.x):
 		var flip = create_tween()
 		flip.connect("finished",self,"_on_flip_finished")

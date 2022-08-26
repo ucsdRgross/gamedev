@@ -17,6 +17,8 @@ func _ready() -> void:
 	for child in units.get_children():
 		child.ready_in_scene()
 	spawner.setup(hexmap.edge_tiles, units)
+	
+	spawner.spawn()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("left_mouse_button"):
@@ -80,5 +82,5 @@ func on_right_click() -> void:
 func _on_Conductor_beat(position):
 	for child in units.get_children():
 		child.action(position % 4)
-	if position % 4 == 0:
-		spawner.spawn()
+#	if position % 4 == 0:
+#		spawner.spawn()

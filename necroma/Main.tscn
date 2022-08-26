@@ -25,6 +25,9 @@ bpm = 115
 
 [node name="Units" type="YSort" parent="GameBoard"]
 
+[node name="Necromancer" parent="GameBoard/Units" instance=ExtResource( 8 )]
+position = Vector2( 175, 98 )
+
 [node name="Unit" parent="GameBoard/Units" instance=ExtResource( 4 )]
 position = Vector2( 144, 56 )
 
@@ -33,9 +36,6 @@ position = Vector2( 176, 56 )
 
 [node name="Unit3" parent="GameBoard/Units" instance=ExtResource( 4 )]
 position = Vector2( 208, 56 )
-
-[node name="Unit4" parent="GameBoard/Units" instance=ExtResource( 8 )]
-position = Vector2( 175, 98 )
 
 [node name="PanningCamera2D" parent="." instance=ExtResource( 3 )]
 

@@ -32,8 +32,7 @@ func spawn() -> void:
 			break
 		var enemy: Unit = random_unit()
 		spawnee_parent.add_child(enemy)
-		enemy.setup(tiles[i])
-		print(tiles[i])
+		enemy.setup(tiles[i],true)
 
 #choose random unit based off current loot table
 func random_unit() -> Node:

@@ -86,6 +86,9 @@ func path_between(start: Vector2, end: Vector2) -> PoolVector2Array:
 			_astar.set_point_disabled(end_index, true)
 			#remove last point from path
 			path.remove(path.size() - 1)
+			#if already next to target, would return a size 1 path, return nothing instead
+			if path.size() < 2:
+				return PoolVector2Array()
 		else:
 			path = _astar.get_point_path(start_index, end_index)
 		# The AStar2D object then finds the best path between the two indices.
