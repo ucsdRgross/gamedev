@@ -2,7 +2,7 @@
 
 [ext_resource path="res://units/Unit.gd" type="Script" id=1]
 [ext_resource path="res://art/SmallShadow.png" type="Texture" id=2]
-[ext_resource path="res://art/test_sprit.png" type="Texture" id=3]
+[ext_resource path="res://art/skelly.png" type="Texture" id=3]
 
 [node name="Unit" type="Sprite"]
 texture = ExtResource( 3 )

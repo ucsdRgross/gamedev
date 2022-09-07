@@ -13,7 +13,7 @@ var to_next_tile : float = 0
 var current_path : PoolVector2Array = []
 var facing_direction := Vector2(1,0) setget set_facing_direction
 #tween time limit for moving, should be set to time per beat
-var move_duration : float = 0.5217
+var move_duration : float = 0.5
 #tween original value reference
 const default_scale = Vector2(1,1)
 onready var default_offset = offset
