@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="CircleShape2D" id=1]
+
+[node name="ReferenceCircle" type="CollisionShape2D"]
+scale = Vector2( 1.3, 0.95 )
+shape = SubResource( 1 )

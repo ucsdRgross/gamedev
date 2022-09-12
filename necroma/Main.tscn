@@ -48,3 +48,7 @@ texture = ExtResource( 11 )
 
 [connection signal="moved" from="GameBoard/HexMap" to="GameBoard" method="_on_Hexmap_moved"]
 [connection signal="beat" from="GameBoard/Conductor" to="GameBoard" method="_on_Conductor_beat"]
+
+[editable path="GameBoard/Units/Necromancer"]
+[editable path="GameBoard/Units/Necromancer/Detection"]
+[editable path="GameBoard/Units/Necromancer/HurtBox"]
