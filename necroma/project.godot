@@ -85,6 +85,11 @@ right_mouse_button={
  ]
 }
 
+[layer_names]
+
+2d_physics/layer_1="friend"
+2d_physics/layer_2="enemy"
+
 [physics]
 
 common/enable_pause_aware_picking=true

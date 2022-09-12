@@ -21,6 +21,8 @@ onready var default_offset = offset
 
 onready var _hexmap: HexMap 
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
+onready var detection: Area2D = $Detection
+onready var hurtbox: Area2D = $Hurtbox
 
 enum {
 	IDLE, #stays still and looks for enemies in range
@@ -37,8 +39,14 @@ func setup(entry_cell : Vector2, enemy=false):
 	_astar.unit_enter(self)
 	if enemy == true:
 		add_to_group("enemies")
+		detection.set_collision_layer_bit(1, true)
+		detection.set_collision_mask_bit(0, true)
+		hurtbox.set_collision_layer_bit(1, true)
 	else:
 		add_to_group("friends")
+		detection.set_collision_layer_bit(0, true)
+		detection.set_collision_mask_bit(1, true)
+		hurtbox.set_collision_layer_bit(0, true)
 
 func ready_in_scene() -> void:
 	#allows placing directly on board
