@@ -1,6 +1,6 @@
 tool
 class_name Unit
-extends Sprite
+extends Node2D
 
 onready var _astar: Resource = preload("res://resources/PathFinder.tres")
 
@@ -16,13 +16,15 @@ var facing_direction := Vector2(1,0) setget set_facing_direction
 var move_duration : float = 0.5
 #tween original value reference
 const default_scale = Vector2(1,1)
-onready var default_offset = offset
 
+var target
 
 onready var _hexmap: HexMap 
+onready var sprite: Sprite = $Sprite
 onready var _anim_player: AnimationPlayer = $AnimationPlayer
 onready var detection: Area2D = $Detection
-onready var hurtbox: Area2D = $Hurtbox
+onready var hurtbox: Area2D = $HurtBox
+onready var default_offset = sprite.offset
 
 enum {
 	IDLE, #stays still and looks for enemies in range
@@ -39,12 +41,12 @@ func setup(entry_cell : Vector2, enemy=false):
 	_astar.unit_enter(self)
 	if enemy == true:
 		add_to_group("enemies")
-		detection.set_collision_layer_bit(1, true)
+		#detection.set_collision_layer_bit(1, true)
 		detection.set_collision_mask_bit(0, true)
 		hurtbox.set_collision_layer_bit(1, true)
 	else:
 		add_to_group("friends")
-		detection.set_collision_layer_bit(0, true)
+		#detection.set_collision_layer_bit(0, true)
 		detection.set_collision_mask_bit(1, true)
 		hurtbox.set_collision_layer_bit(0, true)
 
@@ -61,7 +63,7 @@ func action(beat: int) -> void:
 		match state:
 			IDLE:
 				if is_in_group("enemies"):
-					var target = get_parent().get_node("Necromancer")
+					target = get_parent().get_node("Necromancer")
 					add_point(target.cell)
 					face_direction()
 			MOVE:
@@ -77,7 +79,7 @@ func action(beat: int) -> void:
 	elif beat == 0:
 		match state:
 			IDLE:
-				if scale != Vector2(1,1):
+				if sprite.scale != Vector2(1,1):
 					move_fail()
 			MOVE:
 				move_state()
@@ -92,7 +94,7 @@ func face_direction() -> void:
 func prep_move_state() -> void:
 	var squat = create_tween()
 	var default_scale = scale
-	squat.tween_property(self, "scale", default_scale*Vector2(1.1,0.8), move_duration)
+	squat.tween_property(sprite, "scale", default_scale*Vector2(1.1,0.8), move_duration)
 
 func move_state() -> void:
 	var dest = current_path[1]
@@ -130,16 +132,16 @@ func move_fail() -> void:
 func jump() -> void:
 	var jump = create_tween()
 	jump.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	jump.tween_property(self, "offset", default_offset+Vector2(0,-10), move_duration/2)
-	jump.parallel().tween_property(self, "scale", default_scale*Vector2(0.95,1.05), move_duration/2)
+	jump.tween_property(sprite, "offset", default_offset+Vector2(0,-10), move_duration/2)
+	jump.parallel().tween_property(sprite, "scale", default_scale*Vector2(0.95,1.05), move_duration/2)
 	jump.set_ease(Tween.EASE_IN)
-	jump.tween_property(self, "offset", default_offset, move_duration/2)
-	jump.parallel().tween_property(self, "scale", default_scale, move_duration/2)
+	jump.tween_property(sprite, "offset", default_offset, move_duration/2)
+	jump.parallel().tween_property(sprite, "scale", default_scale, move_duration/2)
 	jump.set_trans(Tween.TRANS_QUAD)
 	jump.set_ease(Tween.EASE_OUT)
-	jump.tween_property(self, "scale", default_scale*Vector2(1.05,0.95), move_duration/4)
+	jump.tween_property(sprite, "scale", default_scale*Vector2(1.05,0.95), move_duration/4)
 	jump.set_ease(Tween.EASE_IN)
-	jump.tween_property(self, "scale", default_scale, move_duration/4)
+	jump.tween_property(sprite, "scale", default_scale, move_duration/4)
 
 
 func add_point(new_cell: Vector2) -> void:
@@ -161,6 +163,7 @@ func add_point(new_cell: Vector2) -> void:
 		new_path.remove(0)
 		self.is_walking = true
 	current_path.append_array(new_path)
+	print(current_path)
 
 
 #tells the gameboard unit has moved
@@ -199,17 +202,17 @@ func set_facing_direction(value:Vector2) -> void:
 		var flip = create_tween()
 		flip.connect("finished",self,"_on_flip_finished")
 		flip.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		flip.tween_property(self, "scale", default_scale*Vector2(0.5,1), move_duration/2)
+		flip.tween_property(sprite, "scale", default_scale*Vector2(0.5,1), move_duration/2)
 	facing_direction = value
 
 func _on_flip_finished() -> void:
 	var flip = create_tween()
 	flip.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	flip.tween_property(self, "scale", default_scale, move_duration/2)
+	flip.tween_property(sprite, "scale", default_scale, move_duration/2)
 	if facing_direction.x <= 0:
-		flip_h = true
+		sprite.flip_h = true
 	else:
-		flip_h = false
+		sprite.flip_h = false
 
 func death() -> void:
 	_astar.unclaim(current_path[1])
@@ -240,3 +243,10 @@ func show_path_to(new_cell : Vector2) -> void:
 	line.show()
 
 
+func _on_Detection_area_entered(area):
+	target = area.get_parent()	
+	if is_in_group("enemies"):
+		if not current_path.empty():
+			current_path.resize(2)
+		add_point(target.cell)	
+	

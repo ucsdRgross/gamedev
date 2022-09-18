@@ -31,8 +31,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func select_unit(cell: Vector2) -> void:
 	if not _astar.units.has(cell):
 		return
-	selected_unit = _astar.units[cell]
-	selected_unit.is_selected = true
+	var clicked_unit = _astar.units[cell]
+	if clicked_unit.is_in_group("friends"):
+		selected_unit = clicked_unit
+		selected_unit.is_selected = true
+		
+	
 	#selected_unit.draw_path(true)
 	#grid_border.show()
 

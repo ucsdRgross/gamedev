@@ -4,6 +4,8 @@
 [ext_resource path="res://resources/CollisionHex.tscn" type="PackedScene" id=2]
 
 [node name="Cellectable" type="Area2D"]
+collision_layer = 4
+collision_mask = 4
 script = ExtResource( 1 )
 
 [node name="CollisionHex" parent="." instance=ExtResource( 2 )]
