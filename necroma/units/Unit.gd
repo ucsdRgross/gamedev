@@ -17,7 +17,7 @@ var move_duration : float = 0.5
 #tween original value reference
 const default_scale = Vector2(1,1)
 
-var target
+var target : Unit
 
 onready var _hexmap: HexMap 
 onready var sprite: Sprite = $Sprite
@@ -25,6 +25,7 @@ onready var _anim_player: AnimationPlayer = $AnimationPlayer
 onready var detection: Area2D = $Detection
 onready var hurtbox: Area2D = $HurtBox
 onready var default_offset = sprite.offset
+
 
 enum {
 	IDLE, #stays still and looks for enemies in range
@@ -63,8 +64,8 @@ func action(beat: int) -> void:
 		match state:
 			IDLE:
 				if is_in_group("enemies"):
-					target = get_parent().get_node("Necromancer")
-					add_point(target.cell)
+					var closest_cell_with_enemy = get_closest_occupied_cell(get_tree().get_nodes_in_group("friends"))
+					add_point(closest_cell_with_enemy)
 					face_direction()
 			MOVE:
 				face_direction()	
@@ -86,6 +87,18 @@ func action(beat: int) -> void:
 			ATTACK:
 				#attack_state()
 				pass
+
+func get_closest_occupied_cell(enemies: Array) -> Vector2:
+	if enemies.empty():
+		return cell
+	var smallest_distance : float = position.distance_squared_to(enemies[0].position)
+	var closest_cell : Vector2 = enemies[0].cell
+	for enemy in enemies:
+		var distance = position.distance_squared_to(enemy.position)
+		if distance < smallest_distance:
+			smallest_distance = distance
+			closest_cell = enemy.cell
+	return closest_cell
 
 func face_direction() -> void:
 	if current_path.size() > 1:

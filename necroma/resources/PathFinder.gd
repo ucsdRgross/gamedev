@@ -86,7 +86,9 @@ func path_between(start: Vector2, end: Vector2, is_friend:bool) -> PoolVector2Ar
 			_astar.set_point_disabled(end_index, false)
 			path = _astar.get_point_path(start_index, end_index)
 			_astar.set_point_disabled(end_index, true)
-			#remove last point from path
+			if path.empty():
+				return PoolVector2Array()
+			#remove last point from path as its a disabled point
 			path.remove(path.size() - 1)
 			#if already next to target, would return a size 1 path, return nothing instead
 			if path.size() < 2:
