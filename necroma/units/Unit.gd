@@ -17,7 +17,8 @@ var move_duration : float = 0.5
 #tween original value reference
 const default_scale = Vector2(1,1)
 
-var target : Unit
+var target : Unit = null
+var will_attack : bool = false
 
 onready var _hexmap: HexMap 
 onready var sprite: Sprite = $Sprite
@@ -58,12 +59,18 @@ func ready_in_scene() -> void:
 	
 
 func action(beat: int) -> void:
-	if beat == 1:				
-		pass
-	elif beat == 2:
+#beat 1 occurs before jump ends so it cant be used for anything
+#	if beat == 1:				
+#		match state:
+#			IDLE:
+#				print("beat 1")
+#				can_attack()
+	if beat == 2:
 		match state:
 			IDLE:
-				if is_in_group("enemies"):
+				if will_attack:
+					can_attack()
+				elif is_in_group("enemies"):
 					var closest_cell_with_enemy = get_closest_occupied_cell(get_tree().get_nodes_in_group("friends"))
 					add_point(closest_cell_with_enemy)
 					face_direction()
@@ -73,10 +80,6 @@ func action(beat: int) -> void:
 		match state:
 			MOVE:
 				prep_move_state()
-				pass
-			ATTACK:
-				#prep_attack_state()
-				pass
 	elif beat == 0:
 		match state:
 			IDLE:
@@ -84,9 +87,6 @@ func action(beat: int) -> void:
 					move_fail()
 			MOVE:
 				move_state()
-			ATTACK:
-				#attack_state()
-				pass
 
 func get_closest_occupied_cell(enemies: Array) -> Vector2:
 	if enemies.empty():
@@ -144,6 +144,7 @@ func move_fail() -> void:
 
 func jump() -> void:
 	var jump = create_tween()
+	jump.connect("finished", self, "_on_jump_finished")
 	jump.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	jump.tween_property(sprite, "offset", default_offset+Vector2(0,-10), move_duration/2)
 	jump.parallel().tween_property(sprite, "scale", default_scale*Vector2(0.95,1.05), move_duration/2)
@@ -156,6 +157,9 @@ func jump() -> void:
 	jump.set_ease(Tween.EASE_IN)
 	jump.tween_property(sprite, "scale", default_scale, move_duration/4)
 
+func _on_jump_finished() -> void:
+	if is_in_group("enemies"):
+		can_attack()
 
 func add_point(new_cell: Vector2) -> void:
 	#cap on maximum path
@@ -176,7 +180,6 @@ func add_point(new_cell: Vector2) -> void:
 		new_path.remove(0)
 		self.is_walking = true
 	current_path.append_array(new_path)
-	print(current_path)
 
 
 #tells the gameboard unit has moved
@@ -257,9 +260,50 @@ func show_path_to(new_cell : Vector2) -> void:
 
 
 func _on_Detection_area_entered(area):
-	target = area.get_parent()	
-	if is_in_group("enemies"):
-		if not current_path.empty():
-			current_path.resize(2)
-		add_point(target.cell)	
+	return
+	if target == null:
+		target = area.get_parent()
+	if detection.get_overlapping_areas.empty():
+		target = area.get_parent()	
+	#logic to reset current path if unit in middle of moving
+	#switch to attack state when not moving
+	if state == IDLE:
+		can_attack()
+	else:
+		will_attack = true
+
+#code should be after attack ends
+#func _on_Detection_area_exited(area):
+#	if area.get_parent() == target:
+#		var in_range = detection.get_overlapping_areas()
+#		if in_range.empty():
+#			target = null
+#			state = IDLE
+#		else:
+#			target = in_range[0].get_parent()
+
+func can_attack():
+	will_attack = false
+	self.is_walking = false
+	current_path.resize(0)
+	state = ATTACK
+	start_attack()
 	
+func start_attack():
+	#start attack tween
+	#attack animation
+	pass
+	
+func on_tween_end():
+	attack()
+	#if target still exists, attack again
+	#else, look for more targets within detection range
+	#otherwise switch states to idle
+	start_attack()
+	
+func attack():
+	#spawn damaging projectile
+	pass
+
+
+
