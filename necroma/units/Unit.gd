@@ -159,7 +159,8 @@ func jump() -> void:
 
 func _on_jump_finished() -> void:
 	if is_in_group("enemies"):
-		can_attack()
+		if will_attack:
+			can_attack()
 
 func add_point(new_cell: Vector2) -> void:
 	#cap on maximum path
