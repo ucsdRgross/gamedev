@@ -24,7 +24,7 @@ show_behind_parent = true
 position = Vector2( 0, 4 )
 texture = ExtResource( 2 )
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+[node name="attackDefault" parent="." instance_placeholder="res://Main/GameBoard/Units/BaseUnit/attackDefault.tscn"]
 
 [node name="Node" type="Node" parent="."]
 

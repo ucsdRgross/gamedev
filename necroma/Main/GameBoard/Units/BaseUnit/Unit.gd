@@ -22,7 +22,6 @@ var will_attack : bool = false
 
 onready var _hexmap: HexMap 
 onready var sprite: Sprite = $Sprite
-onready var _anim_player: AnimationPlayer = $AnimationPlayer
 onready var detection: Area2D = $Detection
 onready var hurtbox: Area2D = $HurtBox
 onready var default_offset = sprite.offset
@@ -264,8 +263,8 @@ func _on_Detection_area_entered(area):
 	print(area)
 	if target == null:
 		target = area.get_parent()
-	if detection.get_overlapping_areas().empty():
-		target = area.get_parent()	
+#	if detection.get_overlapping_areas().empty():
+#		target = area.get_parent()	
 	#logic to reset current path if unit in middle of moving
 	#switch to attack state when not moving
 	if state == IDLE:
@@ -291,19 +290,23 @@ func can_attack():
 	start_attack()
 	
 func start_attack():
+	var attack = create_tween()
+	
 	#start attack tween
 	#attack animation
 	print("ATTTTAAACK")
 	pass
 	
 func on_tween_end():
-	attack()
+	spawn_attack()
+	#if target in detection.get_overlapping_areas().empty():
+	
 	#if target still exists, attack again
 	#else, look for more targets within detection range
 	#otherwise switch states to idle
 	start_attack()
 	
-func attack():
+func spawn_attack():
 	#spawn damaging projectile
 	pass
 
