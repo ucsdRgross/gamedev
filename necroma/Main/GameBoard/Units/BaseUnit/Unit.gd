@@ -261,10 +261,10 @@ func show_path_to(new_cell : Vector2) -> void:
 
 
 func _on_Detection_area_entered(area):
-	return
+	print(area)
 	if target == null:
 		target = area.get_parent()
-	if detection.get_overlapping_areas.empty():
+	if detection.get_overlapping_areas().empty():
 		target = area.get_parent()	
 	#logic to reset current path if unit in middle of moving
 	#switch to attack state when not moving
@@ -293,6 +293,7 @@ func can_attack():
 func start_attack():
 	#start attack tween
 	#attack animation
+	print("ATTTTAAACK")
 	pass
 	
 func on_tween_end():

@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/Hex_v01_nogrid.png-f2a6fec34d88c5be5438010012904f1e.stex"
+path="res://.import/Hex_v01_nogrid.png-84ef16c8c74a539fd7e8c73612dda75f.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://world/board/Hex_v01_nogrid.png"
-dest_files=[ "res://.import/Hex_v01_nogrid.png-f2a6fec34d88c5be5438010012904f1e.stex" ]
+source_file="res://Main/GameBoard/Board/Hex_v01_nogrid.png"
+dest_files=[ "res://.import/Hex_v01_nogrid.png-84ef16c8c74a539fd7e8c73612dda75f.stex" ]
 
 [params]
 

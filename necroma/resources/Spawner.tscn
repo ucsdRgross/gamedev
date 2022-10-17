@@ -7,7 +7,7 @@ script = ExtResource( 1 )
 
 [node name="Tier 0" type="Node" parent="."]
 
-[node name="Unit" parent="Tier 0" instance_placeholder="res://units/Unit.tscn"]
+[node name="Unit" parent="Tier 0" instance_placeholder="res://Main/GameBoard/Units/BaseUnit/Unit.tscn"]
 
 [node name="Tier 1" type="Node" parent="."]
 

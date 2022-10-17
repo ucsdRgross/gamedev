@@ -1,9 +1,10 @@
 [gd_scene load_steps=6 format=2]
 
-[ext_resource path="res://world/board/Hex_v01_grid.png" type="Texture" id=1]
-[ext_resource path="res://world/board/HexMap.gd" type="Script" id=2]
-[ext_resource path="res://world/board/Hex_v01_nogrid.png" type="Texture" id=3]
+[ext_resource path="res://Main/GameBoard/Board/Hex_v01_grid.png" type="Texture" id=1]
+[ext_resource path="res://Main/GameBoard/Board/HexMap.gd" type="Script" id=2]
+[ext_resource path="res://Main/GameBoard/Board/Hex_v01_nogrid.png" type="Texture" id=3]
 [ext_resource path="res://resources/highlighted_hex.png" type="Texture" id=4]
+
 
 [sub_resource type="TileSet" id=1]
 0/name = "Hex_v01_grid.png 0"
