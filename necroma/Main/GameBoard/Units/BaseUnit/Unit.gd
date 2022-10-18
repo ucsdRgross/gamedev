@@ -19,6 +19,8 @@ const default_scale = Vector2(1,1)
 
 var target : Unit = null
 var will_attack : bool = false
+var attack_cd_base : float = 1.0
+var attack_cd_modifier : float = 0.0
 
 onready var _hexmap: HexMap 
 onready var sprite: Sprite = $Sprite
@@ -291,11 +293,12 @@ func can_attack():
 	start_attack()
 	
 func start_attack():
+	var attack_rate = attack_cd_base * (100.0/(100.0+ attack_cd_modifier))
 	var attack = create_tween()
 	attack.connect("finished", self, "_on_attack_finished")
 	attack.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	attack.tween_property(sprite, "rotation_degrees", 10.0, move_duration/2)
-	attack.tween_property(sprite, "rotation_degrees", 0.0, move_duration/2)
+	attack.tween_property(sprite, "rotation_degrees", 10.0, attack_rate/2)
+	attack.tween_property(sprite, "rotation_degrees", 0.0, attack_rate/2)
 	#start attack tween
 	#attack animation
 	

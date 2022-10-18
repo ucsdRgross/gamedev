@@ -3,8 +3,7 @@ extends Node2D
 
 onready var _astar: Resource = preload("res://resources/PathFinder.tres")
 
-export var speed = 2.0
-export var lifetime = 10.0
+export var speed = 1.0
 var parent
 var target
 var direction
@@ -19,7 +18,6 @@ func setup(parent: Unit, target: Unit) -> void:
 	self.parent = parent
 	self.target = target
 	position = parent.position
-	timer.wait_time = lifetime
 	if parent.is_in_group("friends"):
 		hitbox.set_collision_mask_bit(1, true)
 	else:
