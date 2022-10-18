@@ -5,7 +5,6 @@
 [ext_resource path="res://Main/GameBoard/Board/Hex_v01_nogrid.png" type="Texture" id=3]
 [ext_resource path="res://resources/highlighted_hex.png" type="Texture" id=4]
 
-
 [sub_resource type="TileSet" id=1]
 0/name = "Hex_v01_grid.png 0"
 0/texture = ExtResource( 1 )

@@ -24,6 +24,8 @@ onready var _hexmap: HexMap
 onready var sprite: Sprite = $Sprite
 onready var detection: Area2D = $Detection
 onready var hurtbox: Area2D = $HurtBox
+onready var attack := $Independents/Attack
+onready var line = $Independents/Line2D
 onready var default_offset = sprite.offset
 
 
@@ -233,7 +235,7 @@ func _on_flip_finished() -> void:
 func death() -> void:
 	_astar.unclaim(current_path[1])
 
-onready var line = $Node/Line2D
+
 
 func hide_path() -> void:
 	line.hide()
@@ -260,7 +262,6 @@ func show_path_to(new_cell : Vector2) -> void:
 
 
 func _on_Detection_area_entered(area):
-	print(area)
 	if target == null:
 		target = area.get_parent()
 #	if detection.get_overlapping_areas().empty():
@@ -291,13 +292,14 @@ func can_attack():
 	
 func start_attack():
 	var attack = create_tween()
-	
+	attack.connect("finished", self, "_on_attack_finished")
+	attack.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	attack.tween_property(sprite, "rotation_degrees", 10.0, move_duration/2)
+	attack.tween_property(sprite, "rotation_degrees", 0.0, move_duration/2)
 	#start attack tween
 	#attack animation
-	print("ATTTTAAACK")
-	pass
 	
-func on_tween_end():
+func _on_attack_finished():
 	spawn_attack()
 	#if target in detection.get_overlapping_areas().empty():
 	
@@ -308,7 +310,8 @@ func on_tween_end():
 	
 func spawn_attack():
 	#spawn damaging projectile
-	pass
+	var projectile = attack.create_instance()
+	projectile.setup(self, target)
 
 
 

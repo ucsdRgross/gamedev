@@ -45,14 +45,14 @@ _global_script_classes=[ {
 "path": "res://resources/PathFinder.gd"
 }, {
 "base": "Node2D",
+"class": "Projectile",
+"language": "GDScript",
+"path": "res://Main/GameBoard/Units/BaseUnit/attackDefault.gd"
+}, {
+"base": "Node2D",
 "class": "Unit",
 "language": "GDScript",
 "path": "res://Main/GameBoard/Units/BaseUnit/Unit.gd"
-}, {
-"base": "Node2D",
-"class": "attackDefault",
-"language": "GDScript",
-"path": "res://Main/GameBoard/Units/BaseUnit/attackDefault.gd"
 } ]
 _global_script_class_icons={
 "Cursor": "",
@@ -62,8 +62,8 @@ _global_script_class_icons={
 "Hitbox": "",
 "PanningCamera2D": "",
 "PathFinder": "",
-"Unit": "",
-"attackDefault": ""
+"Projectile": "",
+"Unit": ""
 }
 
 [application]

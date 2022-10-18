@@ -24,13 +24,13 @@ show_behind_parent = true
 position = Vector2( 0, 4 )
 texture = ExtResource( 2 )
 
-[node name="attackDefault" parent="." instance_placeholder="res://Main/GameBoard/Units/BaseUnit/attackDefault.tscn"]
+[node name="Independents" type="Node" parent="."]
 
-[node name="Node" type="Node" parent="."]
-
-[node name="Line2D" type="Line2D" parent="Node"]
+[node name="Line2D" type="Line2D" parent="Independents"]
 width = 2.0
 default_color = Color( 1, 1, 1, 1 )
+
+[node name="Attack" parent="Independents" instance_placeholder="res://Main/GameBoard/Units/BaseUnit/attackDefault.tscn"]
 
 [node name="Detection" parent="." instance=ExtResource( 5 )]
 collision_layer = 0
