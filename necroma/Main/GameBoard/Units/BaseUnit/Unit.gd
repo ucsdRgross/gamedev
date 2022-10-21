@@ -161,7 +161,13 @@ func jump() -> void:
 	jump.tween_property(sprite, "scale", default_scale, move_duration/4)
 
 func _on_jump_finished() -> void:
-	if is_in_group("enemies"):
+	#for friends, check if next path is blocked by an enemy, and attack if it is
+	if is_in_group("friends"):
+		if is_walking:
+			if not _astar.can_move_to(self,self, current_path[1]):
+				if will_attack:
+					can_attack()
+	elif is_in_group("enemies"):
 		if will_attack:
 			can_attack()
 
@@ -288,7 +294,8 @@ func _on_Detection_area_entered(area):
 func can_attack():
 	will_attack = false
 	self.is_walking = false
-	current_path.resize(0)
+	if is_in_group("enemies"):
+		current_path.resize(0)
 	state = ATTACK
 	start_attack()
 	
@@ -303,13 +310,32 @@ func start_attack():
 	#attack animation
 	
 func _on_attack_finished():
+	#spawn actual projectile
 	spawn_attack()
-	#if target in detection.get_overlapping_areas().empty():
 	
-	#if target still exists, attack again
+	#for friends, if friend still has path to walk, stop attacking and switch back to moving,
+	#continue walking path instead while ignoring nearby enemies
+	if is_in_group("friends") and current_path.size() > 1 and _astar.can_move_to(self,self, current_path[1]):
+		is_walking = true
+		target = null
+		return
+	
+	#if target is still within range, attack again
 	#else, look for more targets within detection range
 	#otherwise switch states to idle
-	start_attack()
+	var areas_in_range = detection.get_overlapping_areas()
+	for area in areas_in_range:
+		print(area)
+		print(area.get_parent())
+		if target == area.get_parent():
+			start_attack()
+			return
+	if not areas_in_range.empty():
+		target = areas_in_range[0].get_parent()
+		start_attack()
+	else:
+		target = null
+		state = IDLE
 	
 func spawn_attack():
 	#spawn damaging projectile
