@@ -1,7 +1,14 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://Main/Game/Items/Blueprint.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Main/Game/Items/Egg/Egg.gd" type="Script" id=2]
+[ext_resource path="res://spritesheet1.png" type="Texture" id=3]
 
 [node name="Egg" instance=ExtResource( 1 )]
 script = ExtResource( 2 )
+
+[node name="Sprite" parent="." index="1"]
+scale = Vector2( 2, 2 )
+texture = ExtResource( 3 )
+hframes = 6
+vframes = 2

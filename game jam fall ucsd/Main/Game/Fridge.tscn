@@ -1,11 +1,14 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=9 format=2]
 
 [ext_resource path="res://Main/Game/4ItemStorage.gd" type="Script" id=1]
-[ext_resource path="res://icon.png" type="Texture" id=2]
+[ext_resource path="res://Main/Game/Items/Gelatin/gelatin_shadow.png" type="Texture" id=2]
 [ext_resource path="res://KiwiSoda.ttf" type="DynamicFontData" id=3]
+[ext_resource path="res://Main/Game/Items/Milk/MilkBottle_shadow.png" type="Texture" id=4]
+[ext_resource path="res://Main/Game/Items/Egg/EggsB_shadow.png" type="Texture" id=5]
+[ext_resource path="res://Main/Game/Items/Butter/Butter1_shadow.png" type="Texture" id=6]
 
 [sub_resource type="CircleShape2D" id=1]
-radius = 32.9848
+radius = 16.0
 
 [sub_resource type="DynamicFont" id=2]
 outline_size = 1
@@ -25,41 +28,46 @@ collision_mask = 2
 shape = SubResource( 1 )
 
 [node name="GridContainer" type="GridContainer" parent="."]
-visible = false
-margin_left = -112.0
-margin_top = -120.0
-margin_right = 124.0
-margin_bottom = -50.0
-columns = 4
+margin_left = -52.0
+margin_top = -117.0
+margin_right = 107.0
+columns = 2
 
 [node name="Button" type="Button" parent="GridContainer"]
-margin_right = 76.0
-margin_bottom = 70.0
-icon = ExtResource( 2 )
+margin_right = 50.0
+margin_bottom = 50.0
+icon = ExtResource( 4 )
+icon_align = 1
+expand_icon = true
 
 [node name="Milk" parent="GridContainer/Button" instance_placeholder="res://Main/Game/Items/Milk/Milk.tscn"]
 
 [node name="Button2" type="Button" parent="GridContainer"]
-margin_left = 80.0
-margin_right = 156.0
-margin_bottom = 70.0
-icon = ExtResource( 2 )
+margin_left = 50.0
+margin_right = 100.0
+margin_bottom = 50.0
+icon = ExtResource( 5 )
+icon_align = 1
+expand_icon = true
 
 [node name="Egg" parent="GridContainer/Button2" instance_placeholder="res://Main/Game/Items/Egg/Egg.tscn"]
 
 [node name="Button3" type="Button" parent="GridContainer"]
-margin_left = 160.0
-margin_right = 236.0
-margin_bottom = 70.0
-icon = ExtResource( 2 )
+margin_top = 50.0
+margin_right = 50.0
+margin_bottom = 100.0
+icon = ExtResource( 6 )
+expand_icon = true
 
 [node name="Butter" parent="GridContainer/Button3" instance_placeholder="res://Main/Game/Items/Butter/Butter.tscn"]
 
 [node name="Button4" type="Button" parent="GridContainer"]
-margin_left = 240.0
-margin_right = 316.0
-margin_bottom = 70.0
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 100.0
+margin_bottom = 100.0
 icon = ExtResource( 2 )
+expand_icon = true
 
 [node name="Gelatin" parent="GridContainer/Button4" instance_placeholder="res://Main/Game/Items/Gelatin/Gelatin.tscn"]
 

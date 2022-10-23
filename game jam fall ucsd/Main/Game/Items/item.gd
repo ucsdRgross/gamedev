@@ -45,11 +45,12 @@ func _on_Hitbox_area_exited(area):
 
 
 func _on_Hitbox_input_event(viewport, event, shape_idx):
-	if event.is_action_pressed("click") and interactable:
+	if event.is_action_pressed("click") and interactable and PlayerHolding.is_empty():
 		enable_detection(false)
 		get_parent().remove_child(self)
 		PlayerHolding.path.add_child(self)
 		self.global_position = PlayerHolding.path.global_position
+		
 
 func _on_Hitbox_mouse_entered():
 	label.visible = true

@@ -9,7 +9,7 @@ onready var dash_timer = $DashTimer
 #}
 
 const ACCEL = 1600
-const MAX_SPEED = 400
+const MAX_SPEED = 250
 const FRICT = 1600
 
 #var state = MOVE
@@ -55,15 +55,39 @@ func dash():
 		velocity = dir_vector * MAX_SPEED * 3
 		dash_timer.start()
 
-func _on_Area2D_input_event(viewport, event, shape_idx):
+var not_handled = false
+
+func _unhandled_input(event):
 	if event.is_action_pressed("click"):
-		print("clicked")
+		not_handled = true
+	else:
+		not_handled = false
+#		print(inventory.get_children())
+#		if inventory.get_child_count() >0:
+#			var item : Item = inventory.get_child(0)
+#			inventory.remove_child(item)
+#			get_parent().add_child(item)
+#			item.enable_detection(true)
+#			var radial = get_angle_to(get_global_mouse_position())
+#			var dir_vector = Vector2.RIGHT.rotated(radial)
+#			item.global_position = global_position + dir_vector * 50
+
+var can_place = false
+onready var place_grace = $PlaceGrace
+
+func _on_Detector_input_event(viewport, event, shape_idx):
+	if event.is_action_pressed("click") and place_grace.time_left == 0:
+		can_place = false
 		print(inventory.get_children())
-		print(global_position)
-		if inventory.get_child_count() >0:
-			print(inventory.get_child(0).global_position)
+		if inventory.get_child_count() > 0:
+			print("placed")
 			var item : Item = inventory.get_child(0)
 			inventory.remove_child(item)
 			get_parent().add_child(item)
 			item.enable_detection(true)
 			item.global_position = get_global_mouse_position()
+
+
+func _on_Inventory_child_entered_tree(node):
+	place_grace.start()
+	can_place = false

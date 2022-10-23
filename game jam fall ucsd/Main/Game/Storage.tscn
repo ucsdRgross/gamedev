@@ -1,11 +1,13 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://icon.png" type="Texture" id=1]
-[ext_resource path="res://Main/Game/4ItemStorage.gd" type="Script" id=2]
+[ext_resource path="res://Main/Game/3ItemStorage.gd" type="Script" id=2]
 [ext_resource path="res://KiwiSoda.ttf" type="DynamicFontData" id=3]
+[ext_resource path="res://Main/Game/Items/Flour/flour_shadow.png" type="Texture" id=4]
+[ext_resource path="res://Main/Game/Items/Sugar/sugar_shadow.png" type="Texture" id=5]
 
 [sub_resource type="CircleShape2D" id=1]
-radius = 32.0
+radius = 24.0
 
 [sub_resource type="DynamicFont" id=2]
 outline_size = 1
@@ -26,16 +28,17 @@ shape = SubResource( 1 )
 
 [node name="GridContainer" type="GridContainer" parent="."]
 visible = false
-margin_left = -160.0
-margin_top = -128.0
-margin_right = 156.0
-margin_bottom = -58.0
-columns = 4
+margin_left = -51.0
+margin_top = -123.0
+margin_right = 265.0
+margin_bottom = 21.0
+rect_scale = Vector2( 0.667, 0.667 )
+columns = 2
 
 [node name="Button" type="Button" parent="GridContainer"]
 margin_right = 76.0
 margin_bottom = 70.0
-icon = ExtResource( 1 )
+icon = ExtResource( 5 )
 
 [node name="Sugar" parent="GridContainer/Button" instance_placeholder="res://Main/Game/Items/Sugar/Sugar.tscn"]
 
@@ -43,25 +46,17 @@ icon = ExtResource( 1 )
 margin_left = 80.0
 margin_right = 156.0
 margin_bottom = 70.0
-icon = ExtResource( 1 )
+icon = ExtResource( 4 )
 
 [node name="Flour" parent="GridContainer/Button2" instance_placeholder="res://Main/Game/Items/Flour/Flour.tscn"]
 
 [node name="Button3" type="Button" parent="GridContainer"]
-margin_left = 160.0
-margin_right = 236.0
-margin_bottom = 70.0
+margin_top = 74.0
+margin_right = 76.0
+margin_bottom = 144.0
 icon = ExtResource( 1 )
 
 [node name="Chocolate Chips" parent="GridContainer/Button3" instance_placeholder="res://Main/Game/Items/Chocolate Chips/Chocolate Chips.tscn"]
-
-[node name="Button4" type="Button" parent="GridContainer"]
-margin_left = 240.0
-margin_right = 316.0
-margin_bottom = 70.0
-icon = ExtResource( 1 )
-
-[node name="Food Coloring" parent="GridContainer/Button4" instance_placeholder="res://Main/Game/Items/Food Coloring/Food Coloring.tscn"]
 
 [node name="Label" type="Label" parent="."]
 visible = false
@@ -80,4 +75,3 @@ align = 1
 [connection signal="pressed" from="GridContainer/Button" to="." method="_on_Button_pressed"]
 [connection signal="pressed" from="GridContainer/Button2" to="." method="_on_Button2_pressed"]
 [connection signal="pressed" from="GridContainer/Button3" to="." method="_on_Button3_pressed"]
-[connection signal="pressed" from="GridContainer/Button4" to="." method="_on_Button4_pressed"]
