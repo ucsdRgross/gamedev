@@ -13,6 +13,7 @@ onready var label = $Label
 
 var id = "Item"
 
+var knockback_enabled = true
 #func _init(item_name):
 #	id = item_name
 
@@ -23,21 +24,33 @@ func _ready():
 func setup():
 	pass
 	
+func new_id(name):
+	id = name
+	label.text = id
+	
 func _physics_process(delta):
 	if knock_back != Vector2.ZERO:
 		knock_back = knock_back.move_toward(Vector2.ZERO, FRICT * delta)
 		knock_back = move_and_slide(knock_back)
 
 func enable_detection(value):
-	hitbox.monitorable = value
-	hitbox.monitoring = value
+	knockback_enabled = value
+	hitbox.set_collision_layer_bit(0,value)
+	hitbox.set_collision_mask_bit(0,value)
+	#hitbox.set_collision_layer_bit(1,value)
+	#hitbox.set_collision_mask_bit(1,value)
+	set_collision_layer_bit(0,value)
+		
+#	hitbox.monitorable = value
+#	hitbox.monitoring = value
 
 func _on_Hitbox_area_entered(area):
 	if area.name == "Detector":
 		interactable = true
 		return
-	knock_back = global_position - area.get_parent().global_position
-	knock_back = knock_back.normalized() * ACCEL
+	if knockback_enabled:
+		knock_back = global_position - area.get_parent().global_position
+		knock_back = knock_back.normalized() * ACCEL
 
 func _on_Hitbox_area_exited(area):
 	if area.name == "Detector":

@@ -206,7 +206,7 @@ collision_layer = 2
 collision_mask = 2
 
 [node name="InteractCollision" type="CollisionShape2D" parent="Detector"]
-position = Vector2( 0, -35.982 )
+position = Vector2( 0, -19.4903 )
 scale = Vector2( 0.667, 0.667 )
 shape = SubResource( 2 )
 

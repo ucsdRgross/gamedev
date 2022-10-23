@@ -54,11 +54,9 @@ func dash():
 		dash_timer.start()
 
 func _on_Detector_input_event(viewport, event, shape_idx):
-	print(event)
 	if event.is_action_pressed("drop"):
 		print(inventory.get_children())
 		if inventory.get_child_count() > 0:
-			print("placed")
 			var item : Item = inventory.get_child(0)
 			inventory.remove_child(item)
 			get_parent().add_child(item)

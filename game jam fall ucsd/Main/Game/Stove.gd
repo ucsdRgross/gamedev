@@ -1,5 +1,6 @@
 extends Node2D
 
+var id = "Stove"
 var interactable = false
 
 onready var label = $Label
@@ -24,12 +25,15 @@ func _on_Area2D_input_event(viewport, event, shape_idx):
 					item.enable_detection(false)
 					hand.remove_child(item)
 					inventory.add_child(item)
-					print("add cooking")
+					if "Sugar" in item.id or "Chocolate" in item.id:
+						item.start_cook()
 		else:
 			if PlayerHolding.is_empty():
 				var item : Item = inventory.get_child(0)
 				inventory.remove_child(item)
 				PlayerHolding.path.add_child(item)
+				item.stop_cooking()
+				
 			
 
 func _on_Area2D_mouse_entered():

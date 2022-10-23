@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=2]
+[gd_scene load_steps=29 format=2]
 
 [ext_resource path="res://Main/Game/Player/Player.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Main/Game/Fridge.tscn" type="PackedScene" id=2]
@@ -7,10 +7,15 @@
 [ext_resource path="res://Main/Game/Stove.tscn" type="PackedScene" id=5]
 [ext_resource path="res://Main/Game/Items/Pot/Pot.tscn" type="PackedScene" id=6]
 [ext_resource path="res://kitchen.png" type="Texture" id=7]
-[ext_resource path="res://Something Sinister is Abrewin.ogg" type="AudioStream" id=8]
+[ext_resource path="res://Something_Sinister_is_Abrewin_PROPER (1).wav" type="AudioStream" id=8]
 [ext_resource path="res://Main/Game/TableTop.tscn" type="PackedScene" id=9]
 [ext_resource path="res://Main/Game/Stove.gd" type="Script" id=10]
 [ext_resource path="res://table_OVER.png" type="Texture" id=11]
+[ext_resource path="res://Main/Game/Items/Hard Candy/Hard Candy.tscn" type="PackedScene" id=12]
+[ext_resource path="res://Main/Game/Items/Chocolate Chip Cookie/Chocolate Chip Cookie.tscn" type="PackedScene" id=13]
+[ext_resource path="res://Main/Game/Items/Chocolate Bar/Chocolate Bar.tscn" type="PackedScene" id=14]
+[ext_resource path="res://Main/Game/Items/Knife/Knife.tscn" type="PackedScene" id=15]
+[ext_resource path="res://Main/Game/Trickers/Tricker.tscn" type="PackedScene" id=16]
 
 [sub_resource type="RectangleShape2D" id=1]
 extents = Vector2( 374.378, 127.186 )
@@ -38,6 +43,21 @@ extents = Vector2( 101, 48.4356 )
 
 [sub_resource type="RectangleShape2D" id=9]
 extents = Vector2( 23.7528, 50.1135 )
+
+[sub_resource type="Curve2D" id=11]
+_data = {
+"points": PoolVector2Array( 0, 0, 0, 0, 77, 82, 0, 0, 0, 0, 55, 178, -32.1086, -79.6769, 32.1086, 79.6769, 60, 364, -57.0819, -38.0546, 57.0819, 38.0546, 118, 474, -57.0819, 36.8654, 57.0819, -36.8654, 231, 489, -35.6762, 96.3258, 35.6762, -96.3258, 296, 360, 9.51366, 11.8921, -9.51366, -11.8921, 282, 216, 29.7302, 53.5143, -29.7302, -53.5143, 268, 104, 11.8921, 13.0813, -11.8921, -13.0813, 218, 51, 90.3797, -7.13524, -90.3797, 7.13524, 133, 25, 0, 0, 0, 0, 82, 66, 0, 0, 0, 0, 77, 82 )
+}
+
+[sub_resource type="Curve2D" id=12]
+_data = {
+"points": PoolVector2Array( -92.102, 70.7906, 92.102, -70.7906, 43, 65, 0, 0, 0, 0, 153, 138, -39.4723, 30.204, 39.4723, -30.204, 270, 247, 0, 0, 0, 0, 302, 377, -8.09688, -49.0815, 8.09688, 49.0815, 265, 464, 28.3391, -52.857, -28.3391, 52.857, 113, 508, -69.8355, 1.88775, 69.8355, -1.88775, 46, 436, -34.4117, -50.0253, 34.4117, 50.0253, 125, 372, 0, 0, 0, 0, 232, 316, -36.8111, 25.4846, 36.8111, -25.4846, 296, 233, -40.5866, 10.3826, 40.5866, -10.3826, 291, 194, 15.102, -38.6988, -15.102, 38.6988, 272, 156, -16.9897, -41.5305, 16.9897, 41.5305, 186, 182, 50.9692, -1.88775, -50.9692, 1.88775, 74, 197, -51.9131, -44.3621, 51.9131, 44.3621, 50, 132, -39.4723, -22.653, 39.4723, 22.653, 35, 69, 0, 0, 0, 0, 43, 65 )
+}
+
+[sub_resource type="Curve2D" id=13]
+_data = {
+"points": PoolVector2Array( 63.3461, -40.5866, -63.3461, 40.5866, 186.945, 106, 15.607, -48.1376, -15.607, 48.1376, 104.27, 204, -5.50836, -61.3518, 5.50836, 61.3518, 107.188, 278, -27.5418, -48.1376, 27.5418, 48.1376, 146.094, 388, -42.2307, -3.7755, 42.2307, 3.7755, 216.125, 434, -11.9348, 45.306, 11.9348, -45.306, 268.648, 375, -21.1154, -22.653, 21.1154, 22.653, 245.304, 303, -31.214, -99.1068, 31.214, 99.1068, 197.644, 262, -19.2792, 26.4285, 19.2792, -26.4285, 225.851, 206, -57.8377, 19.8214, 57.8377, -19.8214, 260.867, 166, -23.8695, -56.6325, 23.8695, 56.6325, 241.414, 104, 0, 0, 0, 0, 192.781, 99, 18.3612, -91.5558, -18.3612, 91.5558, 184.027, 106, 0, 0, 0, 0, 186.945, 106 )
+}
 
 [node name="Game" type="Node2D"]
 script = ExtResource( 10 )
@@ -104,89 +124,87 @@ position = Vector2( 768, 170 )
 [node name="Stove2" parent="." instance=ExtResource( 5 )]
 position = Vector2( 734, 170 )
 
-[node name="TableTops" type="Node2D" parent="."]
-position = Vector2( 339, 1 )
-
-[node name="TableTop" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 257, 166 )
+[node name="TableTop" parent="." instance=ExtResource( 9 )]
+position = Vector2( 596, 167 )
 z_index = 1
 
-[node name="TableTop2" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 223, 165 )
+[node name="TableTop2" parent="." instance=ExtResource( 9 )]
+position = Vector2( 562, 166 )
 z_index = 1
 
-[node name="TableTop6" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 126, 166 )
+[node name="TableTop6" parent="." instance=ExtResource( 9 )]
+position = Vector2( 465, 167 )
 z_index = 1
 
-[node name="TableTop7" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 91, 166 )
+[node name="TableTop7" parent="." instance=ExtResource( 9 )]
+position = Vector2( 430, 167 )
 z_index = 1
 
-[node name="TableTop8" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 74, 201 )
+[node name="TableTop8" parent="." instance=ExtResource( 9 )]
+position = Vector2( 413, 202 )
 z_index = 1
 
-[node name="TableTop9" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 73, 237 )
+[node name="TableTop9" parent="." instance=ExtResource( 9 )]
+position = Vector2( 412, 238 )
 z_index = 1
 
-[node name="TableTop10" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 73, 273 )
+[node name="TableTop10" parent="." instance=ExtResource( 9 )]
+position = Vector2( 412, 274 )
 z_index = 1
 
-[node name="TableTop11" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 73, 307 )
+[node name="TableTop11" parent="." instance=ExtResource( 9 )]
+position = Vector2( 412, 308 )
 z_index = 1
 
-[node name="TableTop12" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 260, 291 )
+[node name="TableTop12" parent="." instance=ExtResource( 9 )]
+position = Vector2( 599, 292 )
 z_index = 1
 
-[node name="TableTop13" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 260, 326 )
+[node name="TableTop13" parent="." instance=ExtResource( 9 )]
+position = Vector2( 599, 327 )
 z_index = 1
 
-[node name="TableTop14" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 294, 291 )
+[node name="TableTop14" parent="." instance=ExtResource( 9 )]
+position = Vector2( 633, 292 )
 z_index = 1
 
-[node name="TableTop15" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 294, 326 )
+[node name="TableTop15" parent="." instance=ExtResource( 9 )]
+position = Vector2( 633, 327 )
 z_index = 1
 
-[node name="TableTop16" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 329, 291 )
+[node name="TableTop16" parent="." instance=ExtResource( 9 )]
+position = Vector2( 668, 292 )
 z_index = 1
 
-[node name="TableTop17" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 329, 326 )
+[node name="TableTop17" parent="." instance=ExtResource( 9 )]
+position = Vector2( 668, 327 )
 z_index = 1
 
-[node name="TableTop18" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 363, 291 )
+[node name="TableTop18" parent="." instance=ExtResource( 9 )]
+position = Vector2( 702, 292 )
 z_index = 1
 
-[node name="TableTop19" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 364, 326 )
+[node name="TableTop19" parent="." instance=ExtResource( 9 )]
+position = Vector2( 703, 327 )
 z_index = 1
 
-[node name="TableTop3" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 292, 166 )
+[node name="TableTop3" parent="." instance=ExtResource( 9 )]
+position = Vector2( 631, 167 )
 z_index = 1
 
-[node name="TableTop4" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 326, 167 )
+[node name="TableTop4" parent="." instance=ExtResource( 9 )]
+position = Vector2( 665, 168 )
 z_index = 1
 
-[node name="TableTop5" parent="TableTops" instance=ExtResource( 9 )]
-position = Vector2( 360, 167 )
+[node name="TableTop5" parent="." instance=ExtResource( 9 )]
+position = Vector2( 699, 168 )
 z_index = 1
 
 [node name="YSort" type="YSort" parent="."]
 
-[node name="Player" parent="YSort" instance=ExtResource( 1 )]
-position = Vector2( 861, 405 )
+[node name="Chocolate Chip Cookie" parent="YSort" instance=ExtResource( 13 )]
+position = Vector2( 508, 402 )
+scale = Vector2( 0.444889, 0.444889 )
 
 [node name="Pot" parent="YSort" instance=ExtResource( 6 )]
 position = Vector2( 863, 455 )
@@ -195,6 +213,9 @@ scale = Vector2( 1, 1 )
 [node name="Pot2" parent="YSort" instance=ExtResource( 6 )]
 position = Vector2( 923, 458 )
 scale = Vector2( 1, 1 )
+
+[node name="Player" parent="YSort" instance=ExtResource( 1 )]
+position = Vector2( 861, 405 )
 
 [node name="Pan" parent="YSort" instance=ExtResource( 3 )]
 position = Vector2( 717, 456 )
@@ -209,3 +230,46 @@ position = Vector2( 649, 282 )
 position = Vector2( -169, -12 )
 scale = Vector2( 2, 2 )
 texture = ExtResource( 11 )
+
+[node name="Chocolate Bar" parent="YSort" instance=ExtResource( 14 )]
+position = Vector2( 593, 447 )
+
+[node name="Hard Candy" parent="YSort" instance=ExtResource( 12 )]
+position = Vector2( 516, 451 )
+
+[node name="Knife" parent="YSort" instance=ExtResource( 15 )]
+position = Vector2( 658, 429 )
+
+[node name="Trickers" type="Node2D" parent="."]
+
+[node name="Path2D" type="Path2D" parent="Trickers"]
+position = Vector2( -15, -11 )
+curve = SubResource( 11 )
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Trickers/Path2D"]
+position = Vector2( 167, -207 )
+rotation = 2.53049
+
+[node name="Tricker" parent="Trickers/Path2D/PathFollow2D" instance=ExtResource( 16 )]
+
+[node name="Path2D2" type="Path2D" parent="Trickers"]
+position = Vector2( -13.5612, -11 )
+scale = Vector2( 0.932581, 1 )
+curve = SubResource( 12 )
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Trickers/Path2D2"]
+position = Vector2( 167, -207 )
+rotation = 2.53049
+
+[node name="Tricker" parent="Trickers/Path2D2/PathFollow2D" instance=ExtResource( 16 )]
+
+[node name="Path2D3" type="Path2D" parent="Trickers"]
+position = Vector2( -20.202, -11 )
+scale = Vector2( 1.02812, 1 )
+curve = SubResource( 13 )
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Trickers/Path2D3"]
+position = Vector2( 170.183, -204.77 )
+rotation = 2.53049
+
+[node name="Tricker" parent="Trickers/Path2D3/PathFollow2D" instance=ExtResource( 16 )]
