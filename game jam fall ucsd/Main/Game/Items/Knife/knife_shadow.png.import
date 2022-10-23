@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex"
+path="res://.import/knife_shadow.png-d3cca86206fc8665b64eb8cc563b1e4b.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Main/Game/Items/Sugar/sugar_shadow.png"
-dest_files=[ "res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex" ]
+source_file="res://Main/Game/Items/Knife/knife_shadow.png"
+dest_files=[ "res://.import/knife_shadow.png-d3cca86206fc8665b64eb8cc563b1e4b.stex" ]
 
 [params]
 

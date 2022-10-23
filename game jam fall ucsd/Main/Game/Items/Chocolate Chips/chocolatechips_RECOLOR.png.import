@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex"
+path="res://.import/chocolatechips_RECOLOR.png-7c7cf347fed7c833ea47987320d2f459.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Main/Game/Items/Sugar/sugar_shadow.png"
-dest_files=[ "res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex" ]
+source_file="res://Main/Game/Items/Chocolate Chips/chocolatechips_RECOLOR.png"
+dest_files=[ "res://.import/chocolatechips_RECOLOR.png-7c7cf347fed7c833ea47987320d2f459.stex" ]
 
 [params]
 

@@ -8,7 +8,7 @@
 script = ExtResource( 2 )
 
 [node name="Sprite" parent="." index="1"]
-scale = Vector2( 2, 2 )
+scale = Vector2( 3, 3 )
 texture = ExtResource( 3 )
 hframes = 6
 vframes = 2

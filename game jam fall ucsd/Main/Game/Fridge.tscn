@@ -27,15 +27,18 @@ collision_mask = 2
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource( 1 )
 
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="GridContainer" type="Control" parent="."]
+visible = false
 margin_left = -52.0
 margin_top = -117.0
-margin_right = 107.0
-columns = 2
+margin_right = 22.0
+margin_bottom = -27.0
 
 [node name="Button" type="Button" parent="GridContainer"]
-margin_right = 50.0
-margin_bottom = 50.0
+margin_left = 2.0
+margin_top = 11.0
+margin_right = 52.0
+margin_bottom = 61.0
 icon = ExtResource( 4 )
 icon_align = 1
 expand_icon = true
@@ -43,9 +46,10 @@ expand_icon = true
 [node name="Milk" parent="GridContainer/Button" instance_placeholder="res://Main/Game/Items/Milk/Milk.tscn"]
 
 [node name="Button2" type="Button" parent="GridContainer"]
-margin_left = 50.0
-margin_right = 100.0
-margin_bottom = 50.0
+margin_left = 52.0
+margin_top = 11.0
+margin_right = 102.0
+margin_bottom = 61.0
 icon = ExtResource( 5 )
 icon_align = 1
 expand_icon = true
@@ -53,19 +57,20 @@ expand_icon = true
 [node name="Egg" parent="GridContainer/Button2" instance_placeholder="res://Main/Game/Items/Egg/Egg.tscn"]
 
 [node name="Button3" type="Button" parent="GridContainer"]
-margin_top = 50.0
-margin_right = 50.0
-margin_bottom = 100.0
+margin_left = 2.0
+margin_top = 61.0
+margin_right = 52.0
+margin_bottom = 111.0
 icon = ExtResource( 6 )
 expand_icon = true
 
 [node name="Butter" parent="GridContainer/Button3" instance_placeholder="res://Main/Game/Items/Butter/Butter.tscn"]
 
 [node name="Button4" type="Button" parent="GridContainer"]
-margin_left = 50.0
-margin_top = 50.0
-margin_right = 100.0
-margin_bottom = 100.0
+margin_left = 52.0
+margin_top = 61.0
+margin_right = 102.0
+margin_bottom = 111.0
 icon = ExtResource( 2 )
 expand_icon = true
 

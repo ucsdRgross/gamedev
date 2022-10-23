@@ -1,8 +1,8 @@
-[gd_scene load_steps=20 format=2]
+[gd_scene load_steps=21 format=2]
 
 [ext_resource path="res://Main/Game/Player/Player.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Main/Game/Fridge.tscn" type="PackedScene" id=2]
-[ext_resource path="res://Main/Game/Items/Blueprint.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Main/Game/Items/Pan/Pan.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Main/Game/Storage.tscn" type="PackedScene" id=4]
 [ext_resource path="res://Main/Game/Stove.tscn" type="PackedScene" id=5]
 [ext_resource path="res://Main/Game/Items/Pot/Pot.tscn" type="PackedScene" id=6]
@@ -10,6 +10,7 @@
 [ext_resource path="res://Something Sinister is Abrewin.ogg" type="AudioStream" id=8]
 [ext_resource path="res://Main/Game/TableTop.tscn" type="PackedScene" id=9]
 [ext_resource path="res://Main/Game/Stove.gd" type="Script" id=10]
+[ext_resource path="res://table_OVER.png" type="Texture" id=11]
 
 [sub_resource type="RectangleShape2D" id=1]
 extents = Vector2( 374.378, 127.186 )
@@ -91,10 +92,11 @@ position = Vector2( 90.7961, 591.954 )
 shape = SubResource( 9 )
 
 [node name="Fridge" parent="." instance=ExtResource( 2 )]
-position = Vector2( 888, 165 )
+position = Vector2( 886, 147 )
 
 [node name="Storage" parent="." instance=ExtResource( 4 )]
-position = Vector2( 820, 152 )
+position = Vector2( 819, 135 )
+scale = Vector2( 1.00642, 1 )
 
 [node name="Stove" parent="." instance=ExtResource( 5 )]
 position = Vector2( 768, 170 )
@@ -107,60 +109,79 @@ position = Vector2( 339, 1 )
 
 [node name="TableTop" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 257, 166 )
+z_index = 1
 
 [node name="TableTop2" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 223, 165 )
+z_index = 1
 
 [node name="TableTop6" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 126, 166 )
+z_index = 1
 
 [node name="TableTop7" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 91, 166 )
+z_index = 1
 
 [node name="TableTop8" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 74, 201 )
+z_index = 1
 
 [node name="TableTop9" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 73, 237 )
+z_index = 1
 
 [node name="TableTop10" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 73, 273 )
+z_index = 1
 
 [node name="TableTop11" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 73, 307 )
+z_index = 1
 
 [node name="TableTop12" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 260, 291 )
+z_index = 1
 
 [node name="TableTop13" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 260, 326 )
+z_index = 1
 
 [node name="TableTop14" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 294, 291 )
+z_index = 1
 
 [node name="TableTop15" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 294, 326 )
+z_index = 1
 
 [node name="TableTop16" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 329, 291 )
+z_index = 1
 
 [node name="TableTop17" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 329, 326 )
+z_index = 1
 
 [node name="TableTop18" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 363, 291 )
+z_index = 1
 
 [node name="TableTop19" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 364, 326 )
+z_index = 1
 
 [node name="TableTop3" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 292, 166 )
+z_index = 1
 
 [node name="TableTop4" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 326, 167 )
+z_index = 1
 
 [node name="TableTop5" parent="TableTops" instance=ExtResource( 9 )]
 position = Vector2( 360, 167 )
+z_index = 1
 
 [node name="YSort" type="YSort" parent="."]
 
@@ -168,8 +189,23 @@ position = Vector2( 360, 167 )
 position = Vector2( 861, 405 )
 
 [node name="Pot" parent="YSort" instance=ExtResource( 6 )]
-position = Vector2( 796, 302 )
+position = Vector2( 863, 455 )
 scale = Vector2( 1, 1 )
 
-[node name="Blueprint" parent="YSort" instance=ExtResource( 3 )]
-position = Vector2( 701, 408 )
+[node name="Pot2" parent="YSort" instance=ExtResource( 6 )]
+position = Vector2( 923, 458 )
+scale = Vector2( 1, 1 )
+
+[node name="Pan" parent="YSort" instance=ExtResource( 3 )]
+position = Vector2( 717, 456 )
+
+[node name="Pan2" parent="YSort" instance=ExtResource( 3 )]
+position = Vector2( 793, 452 )
+
+[node name="Table" type="Node2D" parent="YSort"]
+position = Vector2( 649, 282 )
+
+[node name="TableOver" type="Sprite" parent="YSort/Table"]
+position = Vector2( -169, -12 )
+scale = Vector2( 2, 2 )
+texture = ExtResource( 11 )

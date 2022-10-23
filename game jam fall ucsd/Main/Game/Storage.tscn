@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=2]
 
-[ext_resource path="res://icon.png" type="Texture" id=1]
+[ext_resource path="res://Main/Game/Items/Chocolate Chips/chocolatechips_shadow.png" type="Texture" id=1]
 [ext_resource path="res://Main/Game/3ItemStorage.gd" type="Script" id=2]
 [ext_resource path="res://KiwiSoda.ttf" type="DynamicFontData" id=3]
 [ext_resource path="res://Main/Game/Items/Flour/flour_shadow.png" type="Texture" id=4]
@@ -26,35 +26,40 @@ collision_mask = 2
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource( 1 )
 
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="GridContainer" type="Control" parent="."]
 visible = false
 margin_left = -51.0
 margin_top = -123.0
 margin_right = 265.0
 margin_bottom = 21.0
 rect_scale = Vector2( 0.667, 0.667 )
-columns = 2
 
 [node name="Button" type="Button" parent="GridContainer"]
+margin_top = 44.9775
 margin_right = 76.0
-margin_bottom = 70.0
+margin_bottom = 114.978
 icon = ExtResource( 5 )
+expand_icon = true
 
 [node name="Sugar" parent="GridContainer/Button" instance_placeholder="res://Main/Game/Items/Sugar/Sugar.tscn"]
 
 [node name="Button2" type="Button" parent="GridContainer"]
-margin_left = 80.0
-margin_right = 156.0
-margin_bottom = 70.0
+margin_left = 76.4618
+margin_top = 44.9775
+margin_right = 152.462
+margin_bottom = 114.978
 icon = ExtResource( 4 )
+expand_icon = true
 
 [node name="Flour" parent="GridContainer/Button2" instance_placeholder="res://Main/Game/Items/Flour/Flour.tscn"]
 
 [node name="Button3" type="Button" parent="GridContainer"]
-margin_top = 74.0
-margin_right = 76.0
-margin_bottom = 144.0
+margin_left = 38.9805
+margin_top = 115.442
+margin_right = 114.981
+margin_bottom = 185.442
 icon = ExtResource( 1 )
+expand_icon = true
 
 [node name="Chocolate Chips" parent="GridContainer/Button3" instance_placeholder="res://Main/Game/Items/Chocolate Chips/Chocolate Chips.tscn"]
 

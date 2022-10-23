@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex"
+path="res://.import/tray_shadow.png-2fe253e520d43ec8d6307001055fdc2c.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Main/Game/Items/Sugar/sugar_shadow.png"
-dest_files=[ "res://.import/sugar_shadow.png-92986154ab36d86ace9b66e4d7839712.stex" ]
+source_file="res://Main/Game/Items/Pan/tray_shadow.png"
+dest_files=[ "res://.import/tray_shadow.png-2fe253e520d43ec8d6307001055fdc2c.stex" ]
 
 [params]
 

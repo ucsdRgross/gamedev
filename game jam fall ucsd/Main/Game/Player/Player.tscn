@@ -1,19 +1,179 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=16 format=2]
 
-[ext_resource path="res://icon.png" type="Texture" id=1]
+[ext_resource path="res://Main/Game/Player/MAIN_CHAR.png" type="Texture" id=1]
 [ext_resource path="res://Main/Game/Player/Player.gd" type="Script" id=2]
 [ext_resource path="res://Main/Game/Player/Player_holding.gd" type="Script" id=3]
 
-[sub_resource type="CapsuleShape2D" id=1]
-radius = 31.0
-height = 0.0
-
 [sub_resource type="CapsuleShape2D" id=3]
-radius = 17.982
-height = 35.964
+radius = 8.99546
+height = 35.9821
 
 [sub_resource type="CircleShape2D" id=2]
 radius = 107.892
+
+[sub_resource type="AnimationNodeAnimation" id=12]
+animation = "left"
+
+[sub_resource type="AnimationNodeAnimation" id=13]
+animation = "right"
+
+[sub_resource type="AnimationNodeAnimation" id=14]
+animation = "up"
+
+[sub_resource type="AnimationNodeAnimation" id=15]
+animation = "down"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id=16]
+blend_point_0/node = SubResource( 12 )
+blend_point_0/pos = Vector2( -1, 0 )
+blend_point_1/node = SubResource( 13 )
+blend_point_1/pos = Vector2( 1, 0 )
+blend_point_2/node = SubResource( 14 )
+blend_point_2/pos = Vector2( 0, -1.1 )
+blend_point_3/node = SubResource( 15 )
+blend_point_3/pos = Vector2( 0, 1.1 )
+min_space = Vector2( -1, -1.1 )
+max_space = Vector2( 1, 1.1 )
+blend_mode = 1
+
+[sub_resource type="Animation" id=7]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/path = NodePath("../Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = false
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ 2 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("../Sprite:flip_h")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = false
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ true ]
+}
+
+[sub_resource type="Animation" id=11]
+resource_name = "down"
+length = 0.1
+tracks/0/type = "value"
+tracks/0/path = NodePath("../Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("../Sprite:flip_h")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0.1 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ false ]
+}
+
+[sub_resource type="Animation" id=8]
+resource_name = "left"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/path = NodePath("../Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.0157977, 0.015835 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ 2, 2, 2 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("../Sprite:flip_h")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = false
+tracks/1/keys = {
+"times": PoolRealArray( 0.1 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ false ]
+}
+
+[sub_resource type="Animation" id=9]
+resource_name = "right"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/path = NodePath("../Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0.1 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 2 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("../Sprite:flip_h")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0.1 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ true ]
+}
+
+[sub_resource type="Animation" id=10]
+resource_name = "up"
+length = 0.1
+tracks/0/type = "value"
+tracks/0/path = NodePath("../Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 1 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("../Sprite:flip_h")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0.1 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ false ]
+}
 
 [node name="Player" type="KinematicBody2D"]
 collision_mask = 0
@@ -21,19 +181,21 @@ script = ExtResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]
 position = Vector2( 0, -33 )
-scale = Vector2( 0.667, 0.667 )
+scale = Vector2( 2, 2 )
 texture = ExtResource( 1 )
+hframes = 3
+frame = 2
 
 [node name="MoveCollision" type="CollisionShape2D" parent="."]
-position = Vector2( 0, -16 )
+position = Vector2( 2.27237e-12, -6 )
+rotation = 1.5708
 scale = Vector2( 0.667, 0.667 )
-shape = SubResource( 1 )
+shape = SubResource( 3 )
 
 [node name="Hitbox" type="Area2D" parent="."]
-scale = Vector2( 0.667, 0.667 )
 
 [node name="MoveCollision" type="CollisionShape2D" parent="Hitbox"]
-position = Vector2( 0, -23.988 )
+position = Vector2( -4.54747e-13, -6 )
 rotation = 1.5708
 scale = Vector2( 0.667, 0.667 )
 shape = SubResource( 3 )
@@ -59,6 +221,20 @@ script = ExtResource( 3 )
 [node name="PlaceGrace" type="Timer" parent="."]
 wait_time = 0.1
 one_shot = true
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+tree_root = SubResource( 16 )
+anim_player = NodePath("AnimationPlayer")
+active = true
+parameters/blend_position = Vector2( -0.00545454, 0.584052 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="AnimationTree"]
+autoplay = "down"
+anims/RESET = SubResource( 7 )
+anims/down = SubResource( 11 )
+anims/left = SubResource( 8 )
+anims/right = SubResource( 9 )
+anims/up = SubResource( 10 )
 
 [connection signal="input_event" from="Detector" to="." method="_on_Detector_input_event"]
 [connection signal="child_entered_tree" from="Inventory" to="." method="_on_Inventory_child_entered_tree"]
