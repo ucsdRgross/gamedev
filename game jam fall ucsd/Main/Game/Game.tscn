@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://Main/Game/Player/Player.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Main/Game/Fridge.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Main/Game/Items/Blueprint.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Main/Game/Storage.tscn" type="PackedScene" id=4]
+
+[node name="Game" type="Node2D"]
+
+[node name="YSort" type="YSort" parent="."]
+
+[node name="Player" parent="YSort" instance=ExtResource( 1 )]
+position = Vector2( 757, 285 )
+
+[node name="Blueprint" parent="YSort" instance=ExtResource( 3 )]
+position = Vector2( 584, 288 )
+
+[node name="RoomCollisions" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="RoomCollisions"]
+polygon = PoolVector2Array( 64, 656, 1088, 656, 1088, -64, 64, -64, 64, 0, 1024, 0, 1024, 600, 64, 600 )
+
+[node name="Fridge" parent="." instance=ExtResource( 2 )]
+position = Vector2( 528, 440 )
+
+[node name="Storage" parent="." instance=ExtResource( 4 )]
+position = Vector2( 360, 312 )
