@@ -41,3 +41,11 @@ func give_item(parent, instance):
 	parent.remove_child(instance)
 	PlayerHolding.path.add_child(instance)
 	instance.enable_detection(false)
+	
+onready var label = $Label
+
+func _on_Area2D_mouse_entered():
+	label.visible = true
+
+func _on_Area2D_mouse_exited():
+	label.visible = false

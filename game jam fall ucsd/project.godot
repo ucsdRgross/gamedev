@@ -27,7 +27,7 @@ _global_script_class_icons={
 [application]
 
 config/name="Game Jam Fall Ucsd"
-run/main_scene="res://Main/Game/Items/Blueprint.tscn"
+run/main_scene="res://Main.tscn"
 config/icon="res://icon.png"
 
 [autoload]
@@ -36,6 +36,8 @@ PlayerHolding="*res://Main/Game/Player/Player_holding.gd"
 
 [display]
 
+window/size/width=1176
+window/size/height=795
 window/stretch/mode="2d"
 window/stretch/aspect="keep"
 

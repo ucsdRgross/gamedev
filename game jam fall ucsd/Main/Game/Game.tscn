@@ -1,27 +1,99 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://Main/Game/Player/Player.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Main/Game/Fridge.tscn" type="PackedScene" id=2]
 [ext_resource path="res://Main/Game/Items/Blueprint.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Main/Game/Storage.tscn" type="PackedScene" id=4]
+[ext_resource path="res://Main/Game/Stove.tscn" type="PackedScene" id=5]
+[ext_resource path="res://Main/Game/Items/Pot/Pot.tscn" type="PackedScene" id=6]
+[ext_resource path="res://kitchen.png" type="Texture" id=7]
+[ext_resource path="res://Something Sinister is Abrewin.ogg" type="AudioStream" id=8]
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 369, 127 )
+
+[sub_resource type="RectangleShape2D" id=2]
+extents = Vector2( 82.5, 114.5 )
+
+[sub_resource type="RectangleShape2D" id=3]
+extents = Vector2( 40, 130.5 )
+
+[sub_resource type="RectangleShape2D" id=4]
+extents = Vector2( 52, 109 )
+
+[sub_resource type="RectangleShape2D" id=5]
+extents = Vector2( 96.5, 84.5 )
+
+[sub_resource type="RectangleShape2D" id=6]
+extents = Vector2( 32, 340 )
+
+[sub_resource type="RectangleShape2D" id=7]
+extents = Vector2( 542.5, 28.5 )
+
+[sub_resource type="RectangleShape2D" id=8]
+extents = Vector2( 101, 56 )
 
 [node name="Game" type="Node2D"]
+
+[node name="Kitchen" type="Sprite" parent="."]
+position = Vector2( 591.241, 400.609 )
+scale = Vector2( 3.01427, 3.01427 )
+texture = ExtResource( 7 )
 
 [node name="YSort" type="YSort" parent="."]
 
 [node name="Player" parent="YSort" instance=ExtResource( 1 )]
-position = Vector2( 757, 285 )
+position = Vector2( 856, 568 )
 
 [node name="Blueprint" parent="YSort" instance=ExtResource( 3 )]
 position = Vector2( 584, 288 )
 
 [node name="RoomCollisions" type="StaticBody2D" parent="."]
 
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="RoomCollisions"]
-polygon = PoolVector2Array( 64, 656, 1088, 656, 1088, -64, 64, -64, 64, 0, 1024, 0, 1024, 600, 64, 600 )
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 431, 185 )
+shape = SubResource( 1 )
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 85.5, 424 )
+shape = SubResource( 2 )
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 40, 669.5 )
+shape = SubResource( 3 )
+
+[node name="CollisionShape2D4" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 852, 165 )
+shape = SubResource( 4 )
+
+[node name="CollisionShape2D5" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 999.5, 140.5 )
+shape = SubResource( 5 )
+
+[node name="CollisionShape2D6" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 1128, 396 )
+shape = SubResource( 6 )
+
+[node name="CollisionShape2D7" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 617.5, 752 )
+shape = SubResource( 7 )
+
+[node name="CollisionShape2D8" type="CollisionShape2D" parent="RoomCollisions"]
+position = Vector2( 488, 456 )
+shape = SubResource( 8 )
 
 [node name="Fridge" parent="." instance=ExtResource( 2 )]
 position = Vector2( 528, 440 )
 
 [node name="Storage" parent="." instance=ExtResource( 4 )]
 position = Vector2( 360, 312 )
+
+[node name="Stove" parent="." instance=ExtResource( 5 )]
+position = Vector2( 672, 256 )
+
+[node name="Pot" parent="." instance=ExtResource( 6 )]
+position = Vector2( 232, 192 )
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 8 )
+autoplay = true
