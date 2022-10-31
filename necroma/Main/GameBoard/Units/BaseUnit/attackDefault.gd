@@ -14,15 +14,15 @@ onready var timer := $Lifetime
 onready var hitbox := $Hitbox
 onready var sprite := $Sprite
 
-func setup(parent: Unit, target: Unit) -> void:
+func setup(parent: Unit, target_position: Vector2) -> void:
 	self.parent = parent
-	self.target = target
+	self.target = target_position
 	position = parent.position
 	if parent.is_in_group("friends"):
 		hitbox.set_collision_mask_bit(1, true)
 	else:
 		hitbox.set_collision_mask_bit(0, true)
-	direction = get_angle_to(target.position)
+	direction = get_angle_to(target)
 	sprite.rotate(direction)
 	calc_normalized_ellipse(direction)
 	

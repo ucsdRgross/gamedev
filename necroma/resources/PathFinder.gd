@@ -52,7 +52,8 @@ func can_move_to(original_unit, unit, cell: Vector2) -> bool:
 	if not unit_ahead.is_walking:
 		return false
 	#if units are facing towards each other, dont phase through each other
-	if unit.facing_direction == unit_ahead.facing_direction * -1:
+	#if unit in front is moving onto same cell as current unit, dont move
+	if unit.cell == unit_ahead.current_path[1]:
 		return false
 	if unit_ahead.will_move:
 		return true
