@@ -1,8 +1,10 @@
-[gd_scene load_steps=10 format=3 uid="uid://dqp0pkiui6vlq"]
+[gd_scene load_steps=13 format=3 uid="uid://dqp0pkiui6vlq"]
 
 [ext_resource type="Texture2D" uid="uid://cnbx544o04rlx" path="res://prototype textures/PNG/Green/texture_01.png" id="1_jdaj1"]
 [ext_resource type="Texture2D" uid="uid://it4amfah3jhf" path="res://prototype textures/PNG/Purple/texture_13.png" id="2_bj2o8"]
 [ext_resource type="PackedScene" uid="uid://ddkr3vq044jkx" path="res://y_bot.tscn" id="3_3qmbk"]
+[ext_resource type="Script" path="res://PlayerCamera.gd" id="4_2v512"]
+[ext_resource type="Script" path="res://CameraData.gd" id="5_jrq6p"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_wgohj"]
 size = Vector2(100, 100)
@@ -21,6 +23,14 @@ albedo_texture = ExtResource("2_bj2o8")
 
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_uhslt"]
 data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[sub_resource type="Resource" id="Resource_up2ut"]
+script = ExtResource("5_jrq6p")
+target_offset = null
+rotation = null
+pitch_limit = Vector2(-45, 80)
+anchor_offset = Vector3(0, 1.506, 0)
+look_target = null
 
 [node name="Main" type="Node3D"]
 
@@ -96,4 +106,9 @@ transform = Transform3D(1, 0, 0, 0, 1, -9.53674e-07, 0, 0, 1, 0, 0, 0)
 shape = SubResource("ConcavePolygonShape3D_uhslt")
 
 [node name="yBot" parent="." instance=ExtResource("3_3qmbk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.121534, 0, -0.336755)
+
+[node name="PlayerCamera" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.59649, -3.83921)
+script = ExtResource("4_2v512")
+target = NodePath("../yBot")
+setup = SubResource("Resource_up2ut")

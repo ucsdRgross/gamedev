@@ -8,6 +8,16 @@
 
 config_version=5
 
+_global_script_classes=[{
+"base": "Resource",
+"class": &"CameraData",
+"language": &"GDScript",
+"path": "res://CameraData.gd"
+}]
+_global_script_class_icons={
+"CameraData": ""
+}
+
 [application]
 
 config/name="Martial Rhythm"
