@@ -105,10 +105,11 @@ surface_material_override/0 = SubResource("StandardMaterial3D_2qewk")
 transform = Transform3D(1, 0, 0, 0, 1, -9.53674e-07, 0, 0, 1, 0, 0, 0)
 shape = SubResource("ConcavePolygonShape3D_uhslt")
 
-[node name="yBot" parent="." instance=ExtResource("3_3qmbk")]
+[node name="yBot" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("3_3qmbk")]
+camera = NodePath("../PlayerCamera")
 
 [node name="PlayerCamera" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.59649, -3.83921)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.596, -1.35407)
 script = ExtResource("4_2v512")
 target = NodePath("../yBot")
 setup = SubResource("Resource_up2ut")
