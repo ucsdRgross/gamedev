@@ -2,22 +2,24 @@ extends RigidBody3D
 
 @onready var ground_ray = $GroundRay
 
-const max_speed := 8
-const acceleration := 200
-const max_acceleration_force := 150
+const max_speed : float = 8
+const acceleration : float = 200
+const max_acceleration_force :float = 150
 
 const ride_height := 1.5
-const ride_spring_strength := 2000.0
-const ride_spring_damper := 100.0
+const ride_spring_strength := 200.0
+const ride_spring_damper := 10.0
 
-const upright_spring_strength := 2000.0
-const upright_spring_damper := 100.0
+const upright_spring_strength := 100.0
+const upright_spring_damper := 0.3
 
 const jump_velocity := 7.5
-const jump_duration := 2/3
-
+const jump_duration := 1.0/3
+var jump_timer := Timer.new()
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+var look_direction := Vector3.FORWARD
 
 #floating capsule theory
 #https://www.youtube.com/watch?v=qdskE8PJy6Q
@@ -31,41 +33,68 @@ enum STATES {
 
 var state = STATES.IDLE
 
-func _physics_process(delta):
+func _ready():
+	add_child(jump_timer)
+	jump_timer.one_shot = true
+	jump_timer.autostart = true
+
+func _integrate_forces(state):
 	ground_ray.global_rotation = Vector3.ZERO
 	
 	match state:
 		STATES.IDLE:
 			pass
-			
+	
+	update_movement()
 	update_ride_spring()
 	update_upright_force()
 	
-	transform = transform.orthonormalized()
+	if jump_timer.is_stopped():
+		ground_ray.enabled = true
 	
-	# Get the input direction and handle the movement/deceleration.
-	# As good practice, you should replace UI actions with custom gameplay actions.
-#	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-#	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-#	if direction:
-#		velocity.x = direction.x * SPEED
-#		velocity.z = direction.z * SPEED
-#	else:
-#		velocity.x = move_toward(velocity.x, 0, SPEED)
-#		velocity.z = move_toward(velocity.z, 0, SPEED)
-
-	
+	if Input.is_action_just_pressed("ui_accept") and ground_ray.is_colliding() and jump_timer.is_stopped():
+		linear_velocity.y = 0
+		apply_central_impulse(Vector3.UP * jump_velocity * gravity)
+		ground_ray.enabled = false
+		jump_timer.start(jump_duration)
 		
-#	if Input.is_action_just_pressed("ui_accept") and on_floor:
-#		velocity.y += JUMP_VELOCITY
+		
+	
+	transform = transform.orthonormalized()
+
+func update_movement():
+	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
+	if direction:
+		look_direction = direction
+	var cur_vel := linear_velocity.normalized()
+	var vel_dot := direction.dot(cur_vel)
+	
+	#turn around increase, double acceleration when turning around
+	if vel_dot < 0:
+		vel_dot = -sin(vel_dot*PI + PI/2)/2 + 1.5
+	else:
+		vel_dot = 1
+	
+	var accel := acceleration * vel_dot
+	var goal_vel := direction * max_speed #* speed_modifier
+	cur_vel = cur_vel.move_toward(goal_vel, accel )# * delta)
+	#calculate necessary force to reach cur_vel
+	var needed_accel : Vector3 = (cur_vel - linear_velocity) / (1.0/60)
+	var max_accel = max_acceleration_force * vel_dot #* acceleration_modifier
+	needed_accel = needed_accel.limit_length(max_accel)
+	needed_accel.y = 0
+	apply_force(needed_accel, Vector3(0,0.2,0))
+	
 
 func update_upright_force():
-	var rot_correction := Quaternion(Vector3.UP, rotation.normalized())
-	var rot_axis : Vector3 = rot_correction.get_axis()
-	var rot_radian : float = deg_to_rad(rot_correction.get_angle())
-	var rot_force : Vector3 = (rot_axis * (rot_radian * upright_spring_strength) - (angular_velocity * upright_spring_damper))
-	apply_torque_impulse(rot_force.normalized())
-	
+	var currentRot := basis.get_rotation_quaternion()
+	var _uprightTargetRot := Transform3D.IDENTITY.looking_at(look_direction, Vector3.UP).basis.get_rotation_quaternion()
+	var toGoal := shortest_rotation(_uprightTargetRot, currentRot)
+	var rot_axis : Vector3 = toGoal.get_axis().normalized()
+	var rot_radians : float = deg_to_rad(toGoal.get_angle())
+	apply_torque_impulse((rot_axis * (rot_radians * upright_spring_strength)) - (angular_velocity * upright_spring_damper))
+
 
 func update_ride_spring():
 	if ground_ray.is_colliding():
@@ -85,7 +114,13 @@ func update_ride_spring():
 		var x := ray_dist - ride_height 
 
 		var spring_force := (x * ride_spring_strength) - (rel_vel * ride_spring_damper)
-		apply_force(ray_dir * spring_force)
+		apply_force(ray_dir * spring_force * mass)
 		
 		if "apply_force(" in hit_body:
 			hit_body.apply_central_force(ray_dir * -spring_force)
+			
+func shortest_rotation(a : Quaternion, b : Quaternion) -> Quaternion:
+	if a.dot(b) < 0:
+		return a * (b * -1).inverse()
+	else:
+		return a * b.inverse()

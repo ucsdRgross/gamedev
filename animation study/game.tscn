@@ -1,7 +1,8 @@
-[gd_scene load_steps=15 format=3 uid="uid://bgylbywn3e1g6"]
+[gd_scene load_steps=16 format=3 uid="uid://bgylbywn3e1g6"]
 
 [ext_resource type="Texture2D" uid="uid://bxs4c0y60hcpk" path="res://prototype textures/PNG/Dark/texture_05.png" id="1_an8hd"]
 [ext_resource type="Script" path="res://Character.gd" id="1_eijcg"]
+[ext_resource type="Script" path="res://CharacterCamera.gd" id="2_djrxu"]
 
 [sub_resource type="Environment" id="Environment_tug23"]
 background_mode = 1
@@ -46,12 +47,11 @@ shadow_enabled = true
 [node name="Character" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.88188, 0)
 mass = 10.0
-inertia = Vector3(10, 10, 10)
 physics_material_override = SubResource("PhysicsMaterial_t2gn7")
 script = ExtResource("1_eijcg")
 
 [node name="face" type="MeshInstance3D" parent="Character"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.695735, 0.798723, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.799, -0.509)
 mesh = SubResource("SphereMesh_mrxo0")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Character"]
@@ -65,6 +65,7 @@ target_position = Vector3(0, -2, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.20864, 7.62676)
+script = ExtResource("2_djrxu")
 
 [node name="Ground" type="MeshInstance3D" parent="."]
 transform = Transform3D(100, 0, 0, 0, 100, 0, 0, 0, 100, 0, 0, 0)
@@ -78,8 +79,8 @@ skeleton = NodePath("")
 shape = SubResource("ConcavePolygonShape3D_1sf32")
 
 [node name="Box" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.47075, 3.40523, 0)
-mass = 10.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.47075, 4.7118, 0)
+mass = 38.39
 metadata/_edit_group_ = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Box"]
