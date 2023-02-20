@@ -1,6 +1,8 @@
 extends Camera3D
 
-var offset = position
+@onready var character = $"../Character"
+
+@onready var offset = global_position - character.global_position
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

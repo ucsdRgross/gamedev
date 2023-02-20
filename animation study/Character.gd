@@ -1,6 +1,8 @@
 extends RigidBody3D
 
 @onready var ground_ray = $GroundRay
+@onready var miss_study = $MissStudy
+@onready var wheel = $wheel
 
 const max_speed : float = 8
 const acceleration : float = 200
@@ -37,6 +39,8 @@ func _ready():
 	add_child(jump_timer)
 	jump_timer.one_shot = true
 	jump_timer.autostart = true
+	
+	#var anim : AnimationPlayer = miss_study.AnimationPlayer
 
 func _integrate_forces(state):
 	ground_ray.global_rotation = Vector3.ZERO
@@ -48,6 +52,7 @@ func _integrate_forces(state):
 	update_movement()
 	update_ride_spring()
 	update_upright_force()
+	rotate_wheel()
 	
 	if jump_timer.is_stopped():
 		ground_ray.enabled = true
@@ -61,6 +66,13 @@ func _integrate_forces(state):
 		
 	
 	transform = transform.orthonormalized()
+	
+func rotate_wheel():
+	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * wheel.scale.x / 2) * 0.1 * 1.5
+	var anim : AnimationPlayer = $MissStudy/AnimationPlayer
+	anim.speed_scale = turn * 2
+	#print(turn)
+	wheel.rotate(Vector3.LEFT, turn)
 
 func update_movement():
 	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
