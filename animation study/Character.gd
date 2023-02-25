@@ -52,6 +52,7 @@ func _integrate_forces(state):
 	update_movement()
 	update_ride_spring()
 	update_upright_force()
+	update_animation()
 	rotate_wheel()
 	
 	if jump_timer.is_stopped():
@@ -66,11 +67,17 @@ func _integrate_forces(state):
 		
 	
 	transform = transform.orthonormalized()
+
+func update_animation():
+	var cur_vel := Vector3(linear_velocity.x, 0, linear_velocity.z)
+	var v := cur_vel.length()/max_speed
+	$MissStudy/AnimationTree["parameters/Blend3/blend_amount"] = v * 2 - 1
+	
 	
 func rotate_wheel():
 	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * wheel.scale.x / 2) * 0.1 * 1.5
 	var anim : AnimationPlayer = $MissStudy/AnimationPlayer
-	anim.speed_scale = turn * 2
+	anim.speed_scale = turn * 2 #* 10
 	#print(turn)
 	wheel.rotate(Vector3.LEFT, turn)
 
@@ -79,8 +86,9 @@ func update_movement():
 	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
 	if direction:
 		look_direction = direction
-	var cur_vel := linear_velocity.normalized()
-	var vel_dot := direction.dot(cur_vel)
+	var cur_vel := Vector3(linear_velocity.x, 0, linear_velocity.z)
+	var cur_dir := cur_vel.normalized()
+	var vel_dot := direction.dot(cur_dir)
 	
 	#turn around increase, double acceleration when turning around
 	if vel_dot < 0:
@@ -90,13 +98,15 @@ func update_movement():
 	
 	var accel := acceleration * vel_dot
 	var goal_vel := direction * max_speed #* speed_modifier
-	cur_vel = cur_vel.move_toward(goal_vel, accel )# * delta)
+	goal_vel = cur_dir.move_toward(goal_vel, accel )# * delta)
 	#calculate necessary force to reach cur_vel
-	var needed_accel : Vector3 = (cur_vel - linear_velocity) / (1.0/60)
+	var needed_accel : Vector3 = (goal_vel - cur_vel) / (1.0/60)
 	var max_accel = max_acceleration_force * vel_dot #* acceleration_modifier
 	needed_accel = needed_accel.limit_length(max_accel)
 	needed_accel.y = 0
-	apply_force(needed_accel, Vector3(0,0.2,0))
+	#applying force offset from center causes tilt
+	var tilt_factor := Vector3(0,0.2,0)
+	apply_force(needed_accel, tilt_factor)
 	
 
 func update_upright_force():
