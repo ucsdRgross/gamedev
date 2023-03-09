@@ -1,0 +1,75 @@
+[gd_scene load_steps=13 format=3 uid="uid://fc3wtubhlbcb"]
+
+[ext_resource type="PackedScene" uid="uid://cue63i85uad8i" path="res://selection_tool.tscn" id="1_8lgy8"]
+[ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="1_s2pm5"]
+[ext_resource type="Script" path="res://Player.gd" id="2_yo4ux"]
+[ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="3_f1qtl"]
+[ext_resource type="Script" path="res://DrawTool.gd" id="4_i3y68"]
+[ext_resource type="Script" path="res://LassoMesh.gd" id="4_ro6jh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
+albedo_texture = ExtResource("1_s2pm5")
+uv1_scale = Vector3(50, 50, 50)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1d2an"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nujxj"]
+size = Vector3(2, 1, 2)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_4rk40"]
+use_colors = true
+use_custom_data = true
+
+[node name="Main" type="Node3D"]
+
+[node name="SelectionTool" parent="." instance=ExtResource("1_8lgy8")]
+transform = Transform3D(50, 0, 0, 0, -2.18557e-06, 50, 0, -50, -2.18557e-06, 0, 0.19823, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_qlogs")
+mesh = SubResource("PlaneMesh_1d2an")
+
+[node name="StaticBody3D2" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500208, 0)
+shape = SubResource("BoxShape3D_nujxj")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("2_yo4ux")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 10.2339, 6.40831)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+mesh = SubResource("CapsuleMesh_mvl48")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("3_f1qtl")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.730162, -0.591733, 0.341637, 0, 0.5, 0.866025, -0.683274, 0.632339, -0.365081, 0, 20.429, 0)
+light_color = Color(0.992157, 0.945098, 0.878431, 1)
+light_energy = 1.25
+light_volumetric_fog_energy = 0.642
+light_angular_distance = 0.8
+shadow_enabled = true
+shadow_blur = 2.0
+directional_shadow_blend_splits = true
+
+[node name="LassoMesh" type="MultiMeshInstance3D" parent="."]
+multimesh = SubResource("MultiMesh_4rk40")
+script = ExtResource("4_ro6jh")
+
+[node name="DrawTool" type="Node" parent="."]
+process_mode = 4
+script = ExtResource("4_i3y68")

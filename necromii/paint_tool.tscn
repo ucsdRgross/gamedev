@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://dkd5omcpgnv8d"]
+
+[ext_resource type="Texture2D" uid="uid://dim3aryiuo253" path="res://icon.svg" id="1_27c7y"]
+[ext_resource type="Script" path="res://paint_tool.gd" id="1_hm6u6"]
+
+[node name="PaintTool" type="TextureRect"]
+texture = ExtResource("1_27c7y")
+script = ExtResource("1_hm6u6")
