@@ -20,7 +20,7 @@ func _ready():
 	node_area.mouse_entered.connect(self._mouse_entered_area)
 
 func _process(delta):
-	if (is_mouse_inside or is_mouse_held):
+	if is_mouse_held:
 		var forced_event = InputEventMouseMotion.new()
 		var pos : Vector2 = get_viewport().get_mouse_position()
 		forced_event.position = pos
@@ -58,8 +58,9 @@ func handle_mouse(event):
 		is_mouse_held = event.pressed
 
 	# Find mouse position in Area3D
-	var mouse_pos3D = find_mouse(event.global_position)
-
+	#var mouse_pos3D = find_mouse(event.global_position)
+	var mouse_pos3D = find_mouse(get_viewport().get_mouse_position())
+	
 	# Check if the mouse is outside of bounds, use last position to avoid errors
 	# NOTE: mouse_exited signal was unrealiable in this situation
 	is_mouse_inside = mouse_pos3D != null
@@ -125,7 +126,7 @@ func find_mouse(global_position):
 	parameters.collide_with_bodies = false
 	parameters.collide_with_areas = true
 	var result = get_world_3d().direct_space_state.intersect_ray(parameters)
-
+	
 	if result.size() > 0:
 		return result.position
 	else:
