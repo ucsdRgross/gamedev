@@ -8,6 +8,8 @@ var mouse_pos : Vector2i
 var start_pos : Vector2i
 var is_drawing := false
 
+signal polygons2d_created(polygons : Array[PackedVector2Array])
+
 func _ready():
 	bitmap.create(size_v)
 	self.texture = ImageTexture.create_from_image(bitmap.convert_to_image())
@@ -37,10 +39,10 @@ func _gui_input(event):
 		draw()
 			
 func create_colliders():
-	print(get_child_count())
 	for child in get_children():
 		remove_child(child)
 	var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
+	polygons2d_created.emit(polygons)
 	for polygon in polygons:
 		var collider := CollisionPolygon2D.new()
 		collider.polygon = polygon

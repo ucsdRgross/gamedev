@@ -11,6 +11,8 @@ var last_mouse_pos3D = null
 # The last processed input touch/mouse event. To calculate relative movement.
 var last_mouse_pos2D = null
 
+var selection_polygons : Array[PackedVector2Array]
+
 @onready var node_viewport = $SubViewport
 @onready var node_quad = $Quad
 @onready var node_area = $Quad/Area3D
@@ -26,7 +28,36 @@ func _process(delta):
 		forced_event.position = pos
 		forced_event.global_position = pos
 		handle_mouse(forced_event)
+		#print(last_mouse_pos2D)
+#	if last_mouse_pos2D:
+#		print(last_mouse_pos2D)
+#		print(in_selection(last_mouse_pos2D))
+		
+func in_selection(pos : Vector3):
+	for polygon in selection_polygons:
+		if Geometry2D.is_point_in_polygon(convert_pos(pos), polygon):
+			return true
+	return false
 
+#convert global position to 2d viewport pos
+func convert_pos(pos : Vector3):
+	var new_pos := Vector2(pos.x, pos.z) - Vector2(position.x, position.z)
+	quad_mesh_size = node_quad.mesh.size
+	# We need to convert it into the following range: 0 -> quad_size
+	new_pos.x += scale.x
+	new_pos.y += scale.z
+	# Then we need to convert it into the following range: 0 -> 1
+	new_pos.x = new_pos.x / (scale.x * 2) 
+	new_pos.y = new_pos.y / (scale.y * 2)
+
+	# Finally, we convert the position to the following range: 0 -> viewport.size
+	new_pos.x = new_pos.x * node_viewport.size.x
+	new_pos.y = new_pos.y * node_viewport.size.y
+	return new_pos
+		
+func _on_paint_tool_polygons_2d_created(polygons):
+	selection_polygons = polygons
+	
 func _mouse_entered_area():
 	is_mouse_inside = true
 	
@@ -58,8 +89,8 @@ func handle_mouse(event):
 		is_mouse_held = event.pressed
 
 	# Find mouse position in Area3D
-	#var mouse_pos3D = find_mouse(event.global_position)
-	var mouse_pos3D = find_mouse(get_viewport().get_mouse_position())
+	var mouse_pos3D = find_mouse(event.position)
+	#var mouse_pos3D = find_mouse(get_viewport().get_mouse_position())
 	
 	# Check if the mouse is outside of bounds, use last position to avoid errors
 	# NOTE: mouse_exited signal was unrealiable in this situation
@@ -150,3 +181,6 @@ func find_further_distance_to(origin):
 			far_dist = temp_dist
 
 	return far_dist
+
+
+

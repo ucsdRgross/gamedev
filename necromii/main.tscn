@@ -1,11 +1,20 @@
 [gd_scene load_steps=13 format=3 uid="uid://fc3wtubhlbcb"]
 
 [ext_resource type="PackedScene" uid="uid://cue63i85uad8i" path="res://selection_tool.tscn" id="1_8lgy8"]
+[ext_resource type="Script" path="res://main.gd" id="1_d5fkg"]
 [ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="1_s2pm5"]
 [ext_resource type="Script" path="res://Player.gd" id="2_yo4ux"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="3_f1qtl"]
-[ext_resource type="Script" path="res://DrawTool.gd" id="4_i3y68"]
-[ext_resource type="Script" path="res://LassoMesh.gd" id="4_ro6jh"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_e0in6"]
+viewport_path = NodePath("SelectionTool/SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_87qmj"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_texture = SubResource("ViewportTexture_e0in6")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
 albedo_texture = ExtResource("1_s2pm5")
@@ -20,14 +29,14 @@ size = Vector3(2, 1, 2)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
 
-[sub_resource type="MultiMesh" id="MultiMesh_4rk40"]
-use_colors = true
-use_custom_data = true
-
 [node name="Main" type="Node3D"]
+script = ExtResource("1_d5fkg")
 
 [node name="SelectionTool" parent="." instance=ExtResource("1_8lgy8")]
-transform = Transform3D(50, 0, 0, 0, -2.18557e-06, 50, 0, -50, -2.18557e-06, 0, 0.19823, 0)
+transform = Transform3D(50, 0, 0, 0, -2.18557e-06, 50, 0, -50, -2.18557e-06, 0, 0.198, 0)
+
+[node name="Quad" parent="SelectionTool" index="1"]
+surface_material_override/0 = SubResource("StandardMaterial3D_87qmj")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, 0, 0)
@@ -66,10 +75,6 @@ shadow_enabled = true
 shadow_blur = 2.0
 directional_shadow_blend_splits = true
 
-[node name="LassoMesh" type="MultiMeshInstance3D" parent="."]
-multimesh = SubResource("MultiMesh_4rk40")
-script = ExtResource("4_ro6jh")
+[connection signal="polygons2d_created" from="SelectionTool/SubViewport/PaintTool" to="SelectionTool" method="_on_paint_tool_polygons_2d_created"]
 
-[node name="DrawTool" type="Node" parent="."]
-process_mode = 4
-script = ExtResource("4_i3y68")
+[editable path="SelectionTool"]
