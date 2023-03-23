@@ -7,8 +7,10 @@ var last_mouse_pos : Vector2i
 var mouse_pos : Vector2i
 var start_pos : Vector2i
 var is_drawing := false
+#[top left x, top left y, bot right x, bot right y]
+var bounds : Array = [0, 0, 0, 0]
 
-signal polygons2d_created(polygons : Array[PackedVector2Array])
+signal polygons2d_created(polygons : Array[PackedVector2Array], rect : Rect2i)
 
 func _ready():
 	bitmap.create(size_v)
@@ -18,17 +20,19 @@ func _gui_input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
-			mouse_pos = clamp_to_circle(event.position)
+			mouse_pos = clamp_to_circle(event.position)			
 			break
 	if event.is_action_pressed("Left Click"):
 		bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
 		is_drawing = true
 		start_pos = clamp_to_circle(event.position)
+		bounds = [start_pos.x, start_pos.y, start_pos.x, start_pos.y]
 	if event.is_action_released("Left Click"):
 		is_drawing = false
 		
 	if event.is_action_released("Right Click"):
 		start_pos = clamp_to_circle(event.position)
+		bounds = [start_pos.x, start_pos.y, start_pos.x, start_pos.y]
 		bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
 		var image = bitmap.convert_to_image()
 		self.texture.update(image)
@@ -37,6 +41,17 @@ func _gui_input(event):
 		
 	if is_drawing:
 		draw()
+		find_bounds()
+
+func find_bounds():
+	if mouse_pos.x < bounds[0]:
+		bounds[0] = mouse_pos.x
+	elif mouse_pos.x > bounds[2]:
+		bounds[2] = mouse_pos.x
+	if mouse_pos.y < bounds[1]:
+		bounds[1] = mouse_pos.y
+	elif mouse_pos.y > bounds[3]:
+		bounds[3] = mouse_pos.y
 			
 func create_colliders():
 	for child in get_children():
@@ -47,6 +62,9 @@ func create_colliders():
 		var collider := CollisionPolygon2D.new()
 		collider.polygon = polygon
 		add_child(collider)	
+	var collider := CollisionPolygon2D.new()
+	collider.polygon = [Vector2(bounds[0], bounds[1]), Vector2(bounds[0], bounds[3]), Vector2(bounds[2], bounds[3]), Vector2(bounds[2], bounds[1])]
+	add_child(collider)	
 		
 func clamp_to_circle(pos : Vector2) -> Vector2:
 	pos = pos - size_v/2
