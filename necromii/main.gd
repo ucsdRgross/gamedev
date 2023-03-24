@@ -12,5 +12,6 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	var i = selection_tool.in_selection(player.position)
+	#var i = selection_tool.in_selection(player.position)
 	#print(i)
+	pass

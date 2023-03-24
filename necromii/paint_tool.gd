@@ -1,6 +1,6 @@
 extends TextureRect
 
-var bitmap_size : int = 512/2
+var bitmap_size : int = 512
 var size_v := Vector2(bitmap_size,bitmap_size)
 var bitmap : BitMap = BitMap.new()
 var last_mouse_pos : Vector2i
@@ -8,21 +8,25 @@ var mouse_pos : Vector2i
 var start_pos : Vector2i
 var is_drawing := false
 #[top left x, top left y, bot right x, bot right y]
-var bounds : Array = [0, 0, 0, 0]
+var bounds : Array = [0.0, 0.0, 0.0, 0.0]
+@onready var line_2d = $Line2D
+@onready var polygon_2d = $Polygon2D
 
-signal polygons2d_created(polygons : Array[PackedVector2Array], rect : Rect2i)
+signal polygons2d_created(polygons : Array[PackedVector2Array])
 
 func _ready():
 	bitmap.create(size_v)
 	self.texture = ImageTexture.create_from_image(bitmap.convert_to_image())
+	material.set_shader_parameter("texture_size", Vector2(bitmap_size, bitmap_size))
 
 func _gui_input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
-			mouse_pos = clamp_to_circle(event.position)			
+			mouse_pos = clamp_to_circle(event.position)
 			break
 	if event.is_action_pressed("Left Click"):
+		line_2d.clear_points()
 		bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
 		is_drawing = true
 		start_pos = clamp_to_circle(event.position)
@@ -36,8 +40,11 @@ func _gui_input(event):
 		bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
 		var image = bitmap.convert_to_image()
 		self.texture.update(image)
-		for child in get_children():
-			remove_child(child)
+		#for child in get_children():
+		#	remove_child(child)
+		line_2d.clear_points()
+		#material.set_shader_parameter("size", line_2d.get_point_count())
+		#material.set_shader_parameter("line_points", line_2d.points)
 		
 	if is_drawing:
 		draw()
@@ -52,19 +59,27 @@ func find_bounds():
 		bounds[1] = mouse_pos.y
 	elif mouse_pos.y > bounds[3]:
 		bounds[3] = mouse_pos.y
+	#material.set_shader_parameter("bounds", [Vector2(bounds[0],bounds[1]), Vector2(bounds[2],bounds[3])])
 			
 func create_colliders():
-	for child in get_children():
-		remove_child(child)
-	var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
-	polygons2d_created.emit(polygons)
-	for polygon in polygons:
-		var collider := CollisionPolygon2D.new()
-		collider.polygon = polygon
-		add_child(collider)	
+#	for child in get_children():
+#		remove_child(child)
+	#var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
+	#var polygons : Array[PackedVector2Array] = Geometry2D.decompose_polygon_in_convex(line_2d.points)
+	var p : Array[PackedVector2Array] = [line_2d.points]
+	polygons2d_created.emit(p)
+	#for polygon in polygons:
+#		var collider := CollisionPolygon2D.new()
+#		collider.polygon = polygon
+#		add_child(collider)	
+	
+	#polygon_2d.set_polygons(polygons)
+	material.set_shader_parameter("size", line_2d.get_point_count())
+	material.set_shader_parameter("line_points", line_2d.points)	
+		
 	var collider := CollisionPolygon2D.new()
 	collider.polygon = [Vector2(bounds[0], bounds[1]), Vector2(bounds[0], bounds[3]), Vector2(bounds[2], bounds[3]), Vector2(bounds[2], bounds[1])]
-	add_child(collider)	
+	#add_child(collider)	
 		
 func clamp_to_circle(pos : Vector2) -> Vector2:
 	pos = pos - size_v/2
@@ -76,7 +91,14 @@ func draw():
 	if is_drawing:
 		#mouse_pos = clamp_to_circle(mouse_pos)
 		#last_mouse_pos = clamp_to_circle(last_mouse_pos)
-		
+		var array_size = line_2d.get_point_count()
+		if array_size == 0 or line_2d.get_point_position(array_size - 1).distance_squared_to(mouse_pos) > 10:
+			line_2d.add_point(mouse_pos)
+		if array_size > 3:
+			line_2d.add_point(line_2d.get_point_position(0))
+			create_colliders()
+			line_2d.remove_point(array_size - 1)
+		return
 		plot_line(mouse_pos.x, mouse_pos.y, last_mouse_pos.x, last_mouse_pos.y)
 		#lasso finisher straight line
 		var drawn : PackedVector2Array = plot_line(mouse_pos.x, mouse_pos.y, start_pos.x, start_pos.y, true, true)
