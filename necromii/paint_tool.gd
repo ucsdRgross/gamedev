@@ -17,7 +17,6 @@ signal polygons2d_created(polygons : Array[PackedVector2Array])
 func _ready():
 	bitmap.create(size_v)
 	self.texture = ImageTexture.create_from_image(bitmap.convert_to_image())
-	material.set_shader_parameter("texture_size", Vector2(bitmap_size, bitmap_size))
 
 func _gui_input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
@@ -43,12 +42,12 @@ func _gui_input(event):
 		#for child in get_children():
 		#	remove_child(child)
 		line_2d.clear_points()
-		#material.set_shader_parameter("size", line_2d.get_point_count())
-		#material.set_shader_parameter("line_points", line_2d.points)
+		material.set_shader_parameter("size", line_2d.get_point_count())
+		material.set_shader_parameter("points", line_2d.points)
 		
 	if is_drawing:
 		draw()
-		find_bounds()
+		
 
 func find_bounds():
 	if mouse_pos.x < bounds[0]:
@@ -59,23 +58,27 @@ func find_bounds():
 		bounds[1] = mouse_pos.y
 	elif mouse_pos.y > bounds[3]:
 		bounds[3] = mouse_pos.y
-	#material.set_shader_parameter("bounds", [Vector2(bounds[0],bounds[1]), Vector2(bounds[2],bounds[3])])
+	material.set_shader_parameter("bounds", [Vector2(bounds[0],bounds[1]), Vector2(bounds[2],bounds[3])])
 			
 func create_colliders():
 #	for child in get_children():
 #		remove_child(child)
-	#var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
+	var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
 	#var polygons : Array[PackedVector2Array] = Geometry2D.decompose_polygon_in_convex(line_2d.points)
-	var p : Array[PackedVector2Array] = [line_2d.points]
-	polygons2d_created.emit(p)
-	#for polygon in polygons:
+	#var p : Array[PackedVector2Array] = [line_2d.points]
+	#polygons2d_created.emit(p)
+	var count := 0
+	for polygon in polygons:
+		count += polygon.size()
 #		var collider := CollisionPolygon2D.new()
 #		collider.polygon = polygon
 #		add_child(collider)	
-	
+	print("opqaue" + str(count))
+	print("size" + str(line_2d.get_point_count()))
 	#polygon_2d.set_polygons(polygons)
 	material.set_shader_parameter("size", line_2d.get_point_count())
-	material.set_shader_parameter("line_points", line_2d.points)	
+	#since gpu can only accept so many points, take the newest 4000 points
+	material.set_shader_parameter("points", line_2d.points)	
 		
 	var collider := CollisionPolygon2D.new()
 	collider.polygon = [Vector2(bounds[0], bounds[1]), Vector2(bounds[0], bounds[3]), Vector2(bounds[2], bounds[3]), Vector2(bounds[2], bounds[1])]
@@ -89,16 +92,17 @@ func clamp_to_circle(pos : Vector2) -> Vector2:
 		
 func draw():
 	if is_drawing:
+		find_bounds()
 		#mouse_pos = clamp_to_circle(mouse_pos)
 		#last_mouse_pos = clamp_to_circle(last_mouse_pos)
 		var array_size = line_2d.get_point_count()
-		if array_size == 0 or line_2d.get_point_position(array_size - 1).distance_squared_to(mouse_pos) > 10:
+		if array_size == 0 or line_2d.get_point_position(array_size - 1).distance_squared_to(mouse_pos) > 1:
 			line_2d.add_point(mouse_pos)
 		if array_size > 3:
 			line_2d.add_point(line_2d.get_point_position(0))
-			create_colliders()
+			#create_colliders()
 			line_2d.remove_point(array_size - 1)
-		return
+
 		plot_line(mouse_pos.x, mouse_pos.y, last_mouse_pos.x, last_mouse_pos.y)
 		#lasso finisher straight line
 		var drawn : PackedVector2Array = plot_line(mouse_pos.x, mouse_pos.y, start_pos.x, start_pos.y, true, true)

@@ -9,7 +9,6 @@ resource_local_to_scene = true
 shader = ExtResource("1_exikt")
 shader_parameter/size = null
 shader_parameter/points = null
-shader_parameter/texture_size = null
 shader_parameter/bounds = null
 
 [node name="PaintTool" type="TextureRect"]
@@ -18,9 +17,10 @@ texture = ExtResource("1_27c7y")
 script = ExtResource("1_hm6u6")
 
 [node name="Line2D" type="Line2D" parent="."]
-width = 1.0
+width = 3.0
 joint_mode = 2
 begin_cap_mode = 2
 end_cap_mode = 2
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
+visible = false
