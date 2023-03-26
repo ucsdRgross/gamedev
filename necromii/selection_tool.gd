@@ -11,7 +11,7 @@ var last_mouse_pos3D = null
 # The last processed input touch/mouse event. To calculate relative movement.
 var last_mouse_pos2D = null
 
-var selection_polygons : Array[PackedVector2Array]
+var selection_polygon : PackedVector2Array
 
 @onready var node_viewport = $SubViewport
 @onready var node_quad = $Quad
@@ -20,6 +20,7 @@ var selection_polygons : Array[PackedVector2Array]
 func _ready():
 	Input.use_accumulated_input = false
 	node_area.mouse_entered.connect(self._mouse_entered_area)
+	Global.SelectionTool = self
 
 func _process(delta):
 	if is_mouse_held:
@@ -34,9 +35,8 @@ func _process(delta):
 #		print(in_selection(last_mouse_pos2D))
 		
 func in_selection(pos : Vector3):
-	for polygon in selection_polygons:
-		if Geometry2D.is_point_in_polygon(convert_pos(pos), polygon):
-			return true
+	if Geometry2D.is_point_in_polygon(convert_pos(pos), selection_polygon):
+		return true
 	return false
 
 #convert global position to 2d viewport pos
@@ -55,8 +55,8 @@ func convert_pos(pos : Vector3):
 	new_pos.y = new_pos.y * node_viewport.size.y
 	return new_pos
 		
-func _on_paint_tool_polygons_2d_created(polygons):
-	selection_polygons = polygons
+func _on_paint_tool_polygon_2d_created(polygon):
+	selection_polygon = polygon
 	
 func _mouse_entered_area():
 	is_mouse_inside = true

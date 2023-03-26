@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://selection_tool.gd" id="1_iofyd"]
 [ext_resource type="Shader" path="res://selection_highlight.gdshader" id="3_d0oyj"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_rp0qs"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_f5peq"]
 resource_local_to_scene = true
 shader = ExtResource("3_d0oyj")
 shader_parameter/size = null
@@ -38,7 +38,7 @@ disable_3d = true
 render_target_update_mode = 4
 
 [node name="PaintTool" parent="SubViewport" instance=ExtResource("1_07ukl")]
-material = SubResource("ShaderMaterial_rp0qs")
+material = SubResource("ShaderMaterial_f5peq")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_dfqu7")
@@ -51,4 +51,4 @@ input_capture_on_drag = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
 shape = SubResource("BoxShape3D_47p53")
 
-[connection signal="polygons2d_created" from="SubViewport/PaintTool" to="." method="_on_paint_tool_polygons_2d_created"]
+[connection signal="polygon2d_created" from="SubViewport/PaintTool" to="." method="_on_paint_tool_polygon_2d_created"]

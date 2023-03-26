@@ -9,6 +9,13 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 
 func _physics_process(delta):
+	
+	var is_selected : bool = Global.SelectionTool.in_selection(position)
+	if is_selected:
+		$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
+	else:
+		$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
+	
 	# Add the gravity.
 	if not is_on_floor():
 		velocity.y -= gravity * delta
