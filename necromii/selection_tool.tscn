@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://selection_tool.gd" id="1_iofyd"]
 [ext_resource type="Shader" path="res://selection_highlight.gdshader" id="3_d0oyj"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_f5peq"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_q8ic8"]
 resource_local_to_scene = true
 shader = ExtResource("3_d0oyj")
 shader_parameter/size = null
@@ -38,7 +38,7 @@ disable_3d = true
 render_target_update_mode = 4
 
 [node name="PaintTool" parent="SubViewport" instance=ExtResource("1_07ukl")]
-material = SubResource("ShaderMaterial_f5peq")
+material = SubResource("ShaderMaterial_q8ic8")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_dfqu7")

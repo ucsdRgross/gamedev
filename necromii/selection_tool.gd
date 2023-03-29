@@ -55,8 +55,9 @@ func convert_pos(pos : Vector3):
 	new_pos.y = new_pos.y * node_viewport.size.y
 	return new_pos
 		
-func _on_paint_tool_polygon_2d_created(polygon):
+func _on_paint_tool_polygon_2d_created(polygon : PackedVector2Array):
 	selection_polygon = polygon
+	
 	
 func _mouse_entered_area():
 	is_mouse_inside = true
