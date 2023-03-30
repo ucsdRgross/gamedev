@@ -35,7 +35,9 @@ func _gui_input(event):
 			break
 	if event.is_action_pressed("Left Click"):
 		if Global.is_modifying:# and Geometry2D.is_point_in_polygon(mouse_pos, line_2d.points):
-			modifying = TRANSFORMING.TRANSLATING
+			#modifying = TRANSFORMING.TRANSLATING
+			#modifying = TRANSFORMING.SCALING
+			modifying = TRANSFORMING.ROTATING
 		else:
 			line_2d.clear_points()
 			#bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
@@ -91,7 +93,77 @@ func modify():
 		#material.set_shader_parameter("bounds", bounds)
 		
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-			
+		
+	elif modifying == TRANSFORMING.SCALING:
+		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
+		var scale_factor := (Vector2(mouse_pos) - origin) / (Vector2(last_mouse_pos) - origin)
+		#accomadate divide by zero
+		if is_inf(scale_factor.x) or is_nan(scale_factor.x):
+			scale_factor.x = 0
+		if is_inf(scale_factor.y) or is_nan(scale_factor.y):
+			scale_factor.y = 0
+		print(scale_factor)
+		for corner in polygon:
+			var vector := corner - Vector2(origin)
+			var new_point := vector * scale_factor + Vector2(origin)
+			var clamped := clamp_to_circle(new_point)
+			if clamped != new_point:
+				scale_factor = (clamped - origin) / (corner - origin)
+				if is_inf(scale_factor.x) or is_nan(scale_factor.x):
+					scale_factor.x = 0
+				if is_inf(scale_factor.y) or is_nan(scale_factor.y):
+					scale_factor.y = 0
+		
+		var new_bound : PackedVector2Array = [origin, origin]
+		for i in range(polygon.size()):
+			var og_point := polygon[i]
+			var vector := og_point - Vector2(origin)
+			polygon[i] = vector * scale_factor + Vector2(origin)
+			if polygon[i].x < new_bound[0].x:
+				new_bound[0].x = polygon[i].x
+			elif polygon[i].x > new_bound[1].x:
+				new_bound[1].x = polygon[i].x
+			if polygon[i].y < new_bound[0].y:
+				new_bound[0].y = polygon[i].y
+			elif polygon[i].y > new_bound[1].y:
+				new_bound[1].y = polygon[i].y
+		print(polygon[0])
+		material.set_shader_parameter("points", polygon)
+		polygon2d_created.emit(polygon)
+		#print(bounds)
+		
+		bounds = new_bound
+		material.set_shader_parameter("bounds", bounds)
+		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+	
+	elif modifying == TRANSFORMING.ROTATING:
+		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
+		var rotate := (Vector2(last_mouse_pos) - origin).angle_to((Vector2(mouse_pos) - origin))
+		for corner in polygon:
+			var vector := corner - Vector2(origin)
+			var new_point := vector.rotated(rotate) + Vector2(origin)
+			var clamped := clamp_to_circle(new_point)
+			if clamped != new_point:
+				rotate = 0 #(corner - origin).angle_to(clamped - origin)
+		var new_bound : PackedVector2Array = [origin, origin]
+		for i in range(polygon.size()):
+			var og_point := polygon[i]
+			var vector := og_point - Vector2(origin)
+			polygon[i] = vector.rotated(rotate) + Vector2(origin)
+			if polygon[i].x < new_bound[0].x:
+				new_bound[0].x = polygon[i].x
+			elif polygon[i].x > new_bound[1].x:
+				new_bound[1].x = polygon[i].x
+			if polygon[i].y < new_bound[0].y:
+				new_bound[0].y = polygon[i].y
+			elif polygon[i].y > new_bound[1].y:
+				new_bound[1].y = polygon[i].y
+		material.set_shader_parameter("points", polygon)
+		polygon2d_created.emit(polygon)
+		bounds = new_bound
+		material.set_shader_parameter("bounds", bounds)
+		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+	
 func draw():
 	find_bounds()
 	var array_size = line_2d.get_point_count()
