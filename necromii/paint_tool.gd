@@ -6,10 +6,9 @@ var bitmap : BitMap = BitMap.new()
 var last_mouse_pos : Vector2i
 var mouse_pos : Vector2i
 var start_pos : Vector2i
-var is_drawing := false
+var can_transform := false
 #[top left x, top left y, bot right x, bot right y]
 var bounds : PackedVector2Array = [Vector2(0,0), Vector2(0,0)]
-var polygon : PackedVector2Array
 
 enum TRANSFORMING {
 	NOTHING,
@@ -20,7 +19,9 @@ enum TRANSFORMING {
 var modifying := TRANSFORMING.NOTHING
 
 @onready var line_2d = $Line2D
+@onready var grid_container = $GridContainer
 
+var polygon : PackedVector2Array
 signal polygon2d_created(polygon : PackedVector2Array)
 
 func _ready():
@@ -37,7 +38,8 @@ func _gui_input(event):
 		if Global.is_modifying:# and Geometry2D.is_point_in_polygon(mouse_pos, line_2d.points):
 			#modifying = TRANSFORMING.TRANSLATING
 			#modifying = TRANSFORMING.SCALING
-			modifying = TRANSFORMING.ROTATING
+			#modifying = TRANSFORMING.ROTATING
+			can_transform = true
 		else:
 			line_2d.clear_points()
 			#bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
@@ -51,8 +53,15 @@ func _gui_input(event):
 			line_2d.add_point(line_2d.get_point_position(0))
 			polygon = line_2d.points
 			line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+			grid_container.visible = true
+			grid_container.position = (bounds[0] + bounds[1]) / 2 - grid_container.size / 2
+		
 		elif Global.is_modifying:
+			if modifying == TRANSFORMING.ROTATING:
+				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 			modifying = TRANSFORMING.NOTHING
+			can_transform = false
+			
 		
 	if event.is_action_released("Right Click"):
 		Global.is_modifying = false
@@ -68,11 +77,12 @@ func _gui_input(event):
 		material.set_shader_parameter("size", line_2d.get_point_count())
 		material.set_shader_parameter("points", line_2d.points)
 		polygon2d_created.emit(line_2d.points)
+		grid_container.visible = false
 		
 	if Global.is_drawing:
 		draw()	
 		
-	elif Global.is_modifying:
+	elif can_transform:
 		modify()
 		
 func modify():
@@ -93,6 +103,7 @@ func modify():
 		#material.set_shader_parameter("bounds", bounds)
 		
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+		grid_container.position += change
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
@@ -104,11 +115,11 @@ func modify():
 			scale_factor.y = 0
 		print(scale_factor)
 		for corner in polygon:
-			var vector := corner - Vector2(origin)
-			var new_point := vector * scale_factor + Vector2(origin)
+			var vector := corner - origin
+			var new_point := vector * scale_factor + origin
 			var clamped := clamp_to_circle(new_point)
 			if clamped != new_point:
-				scale_factor = (clamped - origin) / (corner - origin)
+				scale_factor = (clamped - origin) / vector
 				if is_inf(scale_factor.x) or is_nan(scale_factor.x):
 					scale_factor.x = 0
 				if is_inf(scale_factor.y) or is_nan(scale_factor.y):
@@ -117,8 +128,8 @@ func modify():
 		var new_bound : PackedVector2Array = [origin, origin]
 		for i in range(polygon.size()):
 			var og_point := polygon[i]
-			var vector := og_point - Vector2(origin)
-			polygon[i] = vector * scale_factor + Vector2(origin)
+			var vector := og_point - origin
+			polygon[i] = vector * scale_factor + origin
 			if polygon[i].x < new_bound[0].x:
 				new_bound[0].x = polygon[i].x
 			elif polygon[i].x > new_bound[1].x:
@@ -137,19 +148,21 @@ func modify():
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 	
 	elif modifying == TRANSFORMING.ROTATING:
-		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
+		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2
 		var rotate := (Vector2(last_mouse_pos) - origin).angle_to((Vector2(mouse_pos) - origin))
 		for corner in polygon:
-			var vector := corner - Vector2(origin)
-			var new_point := vector.rotated(rotate) + Vector2(origin)
+			var vector := corner - origin
+			var new_point := vector.rotated(rotate) + origin
 			var clamped := clamp_to_circle(new_point)
-			if clamped != new_point:
-				rotate = 0 #(corner - origin).angle_to(clamped - origin)
+			#cannot use != because of floating point error
+			if clamped.distance_squared_to(new_point) > 0.0001:
+				rotate = 0
+				break
 		var new_bound : PackedVector2Array = [origin, origin]
 		for i in range(polygon.size()):
 			var og_point := polygon[i]
-			var vector := og_point - Vector2(origin)
-			polygon[i] = vector.rotated(rotate) + Vector2(origin)
+			var vector := og_point - origin
+			polygon[i] = vector.rotated(rotate) + origin
 			if polygon[i].x < new_bound[0].x:
 				new_bound[0].x = polygon[i].x
 			elif polygon[i].x > new_bound[1].x:
@@ -158,11 +171,16 @@ func modify():
 				new_bound[0].y = polygon[i].y
 			elif polygon[i].y > new_bound[1].y:
 				new_bound[1].y = polygon[i].y
+			$Sprite2D.position = origin
 		material.set_shader_parameter("points", polygon)
 		polygon2d_created.emit(polygon)
 		bounds = new_bound
 		material.set_shader_parameter("bounds", bounds)
-		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+		for i in range(line_2d.get_point_count()):
+			var og_point : Vector2 = line_2d.get_point_position(i)
+			var vector := og_point - origin
+			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
+		#line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 	
 func draw():
 	find_bounds()
@@ -269,3 +287,19 @@ func clamp_to_circle(pos : Vector2) -> Vector2:
 #
 #	if record:
 #		return drawn
+
+func _on_grid_container_mouse_exited():
+	pass
+	#modifying = TRANSFORMING.NOTHING
+
+func _on_scale_region_mouse_entered():
+	modifying = TRANSFORMING.SCALING
+	print("s")
+
+func _on_rotating_region_mouse_entered():
+	modifying = TRANSFORMING.ROTATING
+	print("r")
+
+func _on_translating_region_mouse_entered():
+	modifying = TRANSFORMING.TRANSLATING
+	print("t")

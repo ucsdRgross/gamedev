@@ -13,7 +13,6 @@ shader_parameter/bounds = null
 
 [node name="PaintTool" type="TextureRect"]
 material = SubResource("ShaderMaterial_5eaix")
-texture = ExtResource("1_27c7y")
 script = ExtResource("1_hm6u6")
 
 [node name="Line2D" type="Line2D" parent="."]
@@ -22,3 +21,126 @@ joint_mode = 2
 begin_cap_mode = 2
 end_cap_mode = 2
 round_precision = 4
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.210526, 0.222222)
+texture = ExtResource("1_27c7y")
+
+[node name="GridContainer" type="GridContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_right = 180.0
+offset_bottom = 180.0
+theme_override_constants/h_separation = 70
+theme_override_constants/v_separation = 70
+columns = 3
+
+[node name="Control" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control2" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control2"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control3" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control3"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control4" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control4"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control5" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TranslatingRegion" type="ColorRect" parent="GridContainer/Control5"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control6" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control6"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control7" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control7"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control8" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control8"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[node name="Control9" type="Control" parent="GridContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control9"]
+layout_mode = 2
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+color = Color(1, 1, 1, 0.498039)
+
+[connection signal="mouse_exited" from="GridContainer" to="." method="_on_grid_container_mouse_exited"]
+[connection signal="mouse_entered" from="GridContainer/Control/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control2/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control3/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control4/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control5/TranslatingRegion" to="." method="_on_translating_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control6/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control7/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control8/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="GridContainer/Control9/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
