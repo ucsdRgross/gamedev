@@ -38,6 +38,13 @@ float gaussian3x3( sampler2D tex, vec2 uv, vec2 pixel_size )
 	return p;
 }
 
+//skew model torwards camera
+void vertex() {
+	vec3 _Skew = vec3(0, 0.2, 0.2);
+	VERTEX.y += _Skew.y * VERTEX.z * VERTEX.y;
+	VERTEX.z -= _Skew.z * VERTEX.y;
+}
+
 void fragment( )
 {
 	if (on) {
