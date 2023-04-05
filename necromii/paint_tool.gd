@@ -26,7 +26,12 @@ func _ready():
 	texture = ImageTexture.new()
 	texture.set_size_override(Vector2i(texture_size, texture_size))
 
-func _input(event):
+
+#_gui_input necessary to prevent stacked mouse events from _input which causes unwanted behavior
+#however _input still needed to detect mouse release as _gui_input is buggy in that aspect
+#specifically _gui_input will not detect mouse click release when mouse is moved off of control node while clicked, 
+#or in this case if control node is hidden
+func _gui_input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
@@ -42,22 +47,7 @@ func _input(event):
 			Global.is_drawing = true
 			start_pos = clamp_to_circle(event.position)
 			bounds = [Vector2(start_pos.x, start_pos.y), Vector2(start_pos.x, start_pos.y)]
-	if event.is_action_released("Left Click"):
-		if Global.is_drawing:
-			Global.is_drawing = false
-			Global.is_modifying = true
-			line_2d.add_point(line_2d.get_point_position(0))
-			polygon = line_2d.points
-			line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-			show_transform_ui()
-			
-		elif Global.is_modifying:
-			if modifying == TRANSFORMING.ROTATING:
-				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-			can_transform = false
-			show_transform_ui()
-					
-		
+	
 	if event.is_action_released("Right Click"):
 		Global.is_modifying = false
 		modifying = TRANSFORMING.NOTHING
@@ -74,6 +64,22 @@ func _input(event):
 		
 	elif can_transform:
 		modify()
+
+func _input(event):
+	if event.is_action_released("Left Click"):
+		if Global.is_drawing:
+			Global.is_drawing = false
+			Global.is_modifying = true
+			line_2d.add_point(line_2d.get_point_position(0))
+			polygon = line_2d.points
+			line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+			show_transform_ui()
+			
+		elif Global.is_modifying:
+			if modifying == TRANSFORMING.ROTATING:
+				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+			can_transform = false
+			show_transform_ui()
 
 func modify():
 	if modifying == TRANSFORMING.TRANSLATING:
