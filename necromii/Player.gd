@@ -7,14 +7,10 @@ const JUMP_VELOCITY = 4.5
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
+func _ready():
+	Signals.new_selection.connect(self._on_new_selection)
 
 func _physics_process(delta):
-	
-	var is_selected : bool = Global.SelectionTool.in_selection(position)
-	if is_selected:
-		$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
-	else:
-		$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
 	
 	# Add the gravity.
 	if not is_on_floor():
@@ -36,3 +32,10 @@ func _physics_process(delta):
 		velocity.z = move_toward(velocity.z, 0, SPEED)
 
 	move_and_slide()
+	
+func _on_new_selection(polygon):
+	var is_selected : bool = Global.SelectionTool.in_selection(position)
+	if is_selected:
+		$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
+	else:
+		$MeshInstance3D.material_overlay.set_shader_parameter("on", false)

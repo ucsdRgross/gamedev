@@ -151,13 +151,6 @@ mouse_filter = 1
 mouse_default_cursor_shape = 12
 color = Color(1, 1, 0.564706, 0.666667)
 
-[node name="Control" type="Control" parent="."]
-visible = false
-anchors_preset = 0
-offset_right = 4096.0
-offset_bottom = 4096.0
-mouse_filter = 1
-
 [connection signal="mouse_exited" from="TransformUI" to="." method="_on_transform_ui_mouse_exited"]
 [connection signal="mouse_entered" from="TransformUI/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
 [connection signal="mouse_entered" from="TransformUI/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]

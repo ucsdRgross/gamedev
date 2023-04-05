@@ -22,9 +22,13 @@ func _ready():
 	Input.use_accumulated_input = false
 	node_area.mouse_entered.connect(self._mouse_entered_area)
 	Global.SelectionTool = self
+	Signals.new_selection.connect(self._on_new_selection)
 	node_viewport.size.y = node_viewport.size.x
 	paint_tool.texture_size = node_viewport.size.x
 	paint_tool.texture.set_size_override(Vector2i(node_viewport.size.x, node_viewport.size.x))
+
+func _on_new_selection(polygon : PackedVector2Array):
+	selection_polygon = polygon
 
 func _process(delta):
 	if is_mouse_held:
@@ -58,10 +62,6 @@ func convert_pos(pos : Vector3):
 	new_pos.x = new_pos.x * node_viewport.size.x
 	new_pos.y = new_pos.y * node_viewport.size.y
 	return new_pos
-		
-func _on_paint_tool_polygon_2d_created(polygon : PackedVector2Array):
-	selection_polygon = polygon
-	
 	
 func _mouse_entered_area():
 	is_mouse_inside = true
