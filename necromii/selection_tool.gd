@@ -16,11 +16,15 @@ var selection_polygon : PackedVector2Array
 @onready var node_viewport = $SubViewport
 @onready var node_quad = $Quad
 @onready var node_area = $Quad/Area3D
+@onready var paint_tool = $SubViewport/PaintTool
 
 func _ready():
 	Input.use_accumulated_input = false
 	node_area.mouse_entered.connect(self._mouse_entered_area)
 	Global.SelectionTool = self
+	node_viewport.size.y = node_viewport.size.x
+	paint_tool.texture_size = node_viewport.size.x
+	paint_tool.texture.set_size_override(Vector2i(node_viewport.size.x, node_viewport.size.x))
 
 func _process(delta):
 	if is_mouse_held:

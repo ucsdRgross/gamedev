@@ -1,13 +1,11 @@
 extends TextureRect
 
-var bitmap_size : int = 512
-var size_v := Vector2(bitmap_size,bitmap_size)
-var bitmap : BitMap = BitMap.new()
+var texture_size : int = 512
 var last_mouse_pos : Vector2i
 var mouse_pos : Vector2i
 var start_pos : Vector2i
 var can_transform := false
-#[top left x, top left y, bot right x, bot right y]
+#[top left, bot right]
 var bounds : PackedVector2Array = [Vector2(0,0), Vector2(0,0)]
 
 enum TRANSFORMING {
@@ -19,30 +17,28 @@ enum TRANSFORMING {
 var modifying := TRANSFORMING.NOTHING
 
 @onready var line_2d = $Line2D
-@onready var grid_container = $GridContainer
+@onready var transform_ui = $TransformUI
 
 var polygon : PackedVector2Array
 signal polygon2d_created(polygon : PackedVector2Array)
 
 func _ready():
-	bitmap.create(size_v)
-	self.texture = ImageTexture.create_from_image(bitmap.convert_to_image())
+	texture = ImageTexture.new()
+	texture.set_size_override(Vector2i(texture_size, texture_size))
 
-func _gui_input(event):
+func _input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
 			mouse_pos = clamp_to_circle(event.position)
 			break
 	if event.is_action_pressed("Left Click"):
-		if Global.is_modifying:# and Geometry2D.is_point_in_polygon(mouse_pos, line_2d.points):
-			#modifying = TRANSFORMING.TRANSLATING
-			#modifying = TRANSFORMING.SCALING
-			#modifying = TRANSFORMING.ROTATING
-			can_transform = true
+		if Global.is_modifying:
+			if modifying != TRANSFORMING.NOTHING:
+				can_transform = true
+				transform_ui.visible = false
 		else:
 			line_2d.clear_points()
-			#bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
 			Global.is_drawing = true
 			start_pos = clamp_to_circle(event.position)
 			bounds = [Vector2(start_pos.x, start_pos.y), Vector2(start_pos.x, start_pos.y)]
@@ -53,38 +49,32 @@ func _gui_input(event):
 			line_2d.add_point(line_2d.get_point_position(0))
 			polygon = line_2d.points
 			line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-			grid_container.visible = true
-			grid_container.position = (bounds[0] + bounds[1]) / 2 - grid_container.size / 2
-		
+			show_transform_ui()
+			
 		elif Global.is_modifying:
 			if modifying == TRANSFORMING.ROTATING:
 				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-			modifying = TRANSFORMING.NOTHING
 			can_transform = false
-			
+			show_transform_ui()
+					
 		
 	if event.is_action_released("Right Click"):
 		Global.is_modifying = false
 		modifying = TRANSFORMING.NOTHING
 		start_pos = clamp_to_circle(event.position)
 		bounds = [Vector2(start_pos.x, start_pos.y), Vector2(start_pos.x, start_pos.y)]
-		#bitmap.set_bit_rect(Rect2(Vector2(0, 0), bitmap.get_size()), false)
-		#var image = bitmap.convert_to_image()
-		#self.texture.update(image)
-		#for child in get_children():
-		#	remove_child(child)
 		line_2d.clear_points()
 		material.set_shader_parameter("size", line_2d.get_point_count())
 		material.set_shader_parameter("points", line_2d.points)
 		polygon2d_created.emit(line_2d.points)
-		grid_container.visible = false
+		transform_ui.visible = false
 		
 	if Global.is_drawing:
 		draw()	
 		
 	elif can_transform:
 		modify()
-		
+
 func modify():
 	if modifying == TRANSFORMING.TRANSLATING:
 		var change : Vector2 = mouse_pos - last_mouse_pos
@@ -103,7 +93,7 @@ func modify():
 		#material.set_shader_parameter("bounds", bounds)
 		
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-		grid_container.position += change
+		transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size / 2
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
@@ -141,8 +131,6 @@ func modify():
 		print(polygon[0])
 		material.set_shader_parameter("points", polygon)
 		polygon2d_created.emit(polygon)
-		#print(bounds)
-		
 		bounds = new_bound
 		material.set_shader_parameter("bounds", bounds)
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
@@ -171,7 +159,6 @@ func modify():
 				new_bound[0].y = polygon[i].y
 			elif polygon[i].y > new_bound[1].y:
 				new_bound[1].y = polygon[i].y
-			$Sprite2D.position = origin
 		material.set_shader_parameter("points", polygon)
 		polygon2d_created.emit(polygon)
 		bounds = new_bound
@@ -180,7 +167,6 @@ func modify():
 			var og_point : Vector2 = line_2d.get_point_position(i)
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
-		#line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 	
 func draw():
 	find_bounds()
@@ -202,16 +188,14 @@ func draw():
 		create_colliders()
 		line_2d.remove_point(line_2d.get_point_count() - 1)
 
-#		#plot_line(mouse_pos.x, mouse_pos.y, last_mouse_pos.x, last_mouse_pos.y)
-#		#lasso finisher straight line
-#		#var drawn : PackedVector2Array = plot_line(mouse_pos.x, mouse_pos.y, start_pos.x, start_pos.y, true, true)
-#		#create_colliders()
-#
-#		var image = bitmap.convert_to_image()
-#		self.texture.update(image)
-#
-#		for point in drawn:
-#			bitmap.set_bit(point.x, point.y, false)
+func show_transform_ui():
+	transform_ui.visible = true
+	var center := (bounds[0] + bounds[1]) / 2
+	var new_scale : Vector2 = (bounds[1] - bounds[0]) / transform_ui.size
+	#makes scale and rotate outside of polygon, which looks better for now, but can be removed once there is actual ui art
+	new_scale *= 4.5/3
+	transform_ui.scale = new_scale.clamp(Vector2(1, 1), new_scale)
+	transform_ui.position = center - transform_ui.size * transform_ui.scale / 2
 
 func find_bounds():
 	if mouse_pos.x < bounds[0].x:
@@ -225,81 +209,25 @@ func find_bounds():
 	material.set_shader_parameter("bounds", bounds)
 
 func create_colliders():
-#	for child in get_children():
-#		remove_child(child)
-#	var polygons := bitmap.opaque_to_polygons(Rect2(Vector2(0, 0), bitmap.get_size()), 2.0)
-#	#var polygons : Array[PackedVector2Array] = Geometry2D.decompose_polygon_in_convex(line_2d.points)
-#	#var p : Array[PackedVector2Array] = [line_2d.points]
-#	#polygons2d_created.emit(p)
-#	var count := 0
-#	for polygon in polygons:
-#		count += polygon.size()
-##		var collider := CollisionPolygon2D.new()
-##		collider.polygon = polygon
-##		add_child(collider)	
-#	print("opqaue" + str(count))
-#	print("size" + str(line_2d.get_point_count()))
-	#polygon_2d.set_polygons(polygons)
 	material.set_shader_parameter("size", line_2d.get_point_count())
-	#since gpu can only accept so many points, take the newest 4000 points
 	material.set_shader_parameter("points", line_2d.points)	
 	polygon2d_created.emit(line_2d.points)
-		
-	#var collider := CollisionPolygon2D.new()
-	#collider.polygon = [Vector2(bounds[0], bounds[1]), Vector2(bounds[0], bounds[3]), Vector2(bounds[2], bounds[3]), Vector2(bounds[2], bounds[1])]
-	#add_child(collider)			
 
 func clamp_to_circle(pos : Vector2) -> Vector2:
-	pos = pos - size_v/2
-	pos = pos.limit_length(bitmap_size/2 - 1)
-	pos = pos + size_v/2
+	var texture_center := Vector2(texture_size, texture_size)/2
+	pos = pos - texture_center
+	pos = pos.limit_length(texture_center.x - 1)
+	pos = pos + texture_center
 	return pos
-	
-
-
-#https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-#func plot_line(x0 : int, y0 : int, x1 : int, y1 : int, bit : bool = true, record : bool = false):
-#	var dx : int = abs(x1 - x0)
-#	var sx : int = 1 if x0 < x1 else -1
-#	var dy : int = -abs(y1 - y0)
-#	var sy : int = 1 if y0 < y1 else -1
-#	var error : int = dx + dy
-#	var drawn : PackedVector2Array 
-#
-#	while true:
-#		if record:
-#			if !bitmap.get_bit(x0, y0):
-#				drawn.append(Vector2i(x0, y0))
-#		bitmap.set_bit(x0, y0, bit)
-#		if x0 == x1 && y0 == y1:
-#			break
-#		var e2 : int = 2 * error
-#		if e2 >= dy:
-#			if x0 == x1:
-#				break
-#			error = error + dy
-#			x0 = x0 + sx
-#		if e2 <= dx:
-#			if y0 == y1:
-#				break
-#			error = error + dx
-#			y0 = y0 + sy
-#
-#	if record:
-#		return drawn
-
-func _on_grid_container_mouse_exited():
-	pass
-	#modifying = TRANSFORMING.NOTHING
 
 func _on_scale_region_mouse_entered():
 	modifying = TRANSFORMING.SCALING
-	print("s")
 
 func _on_rotating_region_mouse_entered():
 	modifying = TRANSFORMING.ROTATING
-	print("r")
 
 func _on_translating_region_mouse_entered():
 	modifying = TRANSFORMING.TRANSLATING
-	print("t")
+
+func _on_transform_ui_mouse_exited():
+	modifying = TRANSFORMING.NOTHING

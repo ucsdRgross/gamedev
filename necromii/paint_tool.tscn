@@ -1,6 +1,5 @@
-[gd_scene load_steps=5 format=3 uid="uid://dkd5omcpgnv8d"]
+[gd_scene load_steps=4 format=3 uid="uid://dkd5omcpgnv8d"]
 
-[ext_resource type="Texture2D" uid="uid://dim3aryiuo253" path="res://icon.svg" id="1_27c7y"]
 [ext_resource type="Shader" path="res://selection_highlight.gdshader" id="1_exikt"]
 [ext_resource type="Script" path="res://paint_tool.gd" id="1_hm6u6"]
 
@@ -17,130 +16,148 @@ script = ExtResource("1_hm6u6")
 
 [node name="Line2D" type="Line2D" parent="."]
 width = 3.0
+default_color = Color(1, 1, 1, 0.392157)
 joint_mode = 2
 begin_cap_mode = 2
 end_cap_mode = 2
 round_precision = 4
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(0.210526, 0.222222)
-texture = ExtResource("1_27c7y")
-
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="TransformUI" type="Control" parent="."]
 visible = false
-layout_mode = 0
+anchors_preset = 0
 offset_right = 180.0
 offset_bottom = 180.0
-theme_override_constants/h_separation = 70
-theme_override_constants/v_separation = 70
-columns = 3
-
-[node name="Control" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
 
-[node name="Control2" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control2"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="ScaleRegion" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+offset_right = 30.0
+offset_bottom = 30.0
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 12
+color = Color(1, 1, 0.564706, 0.666667)
 
-[node name="Control3" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control3"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="RotatingRegion" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -60.0
+offset_right = 60.0
+offset_bottom = 30.0
+grow_horizontal = 2
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 5
+color = Color(1, 0.670588, 1, 0.392157)
 
-[node name="Control4" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control4"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="ScaleRegion2" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -30.0
+offset_bottom = 30.0
+grow_horizontal = 0
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 11
+color = Color(1, 1, 0.564706, 0.666667)
 
-[node name="Control5" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="TranslatingRegion" type="ColorRect" parent="GridContainer/Control5"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="RotatingRegion2" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -60.0
+offset_right = 30.0
+offset_bottom = 60.0
+grow_vertical = 2
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 5
+color = Color(1, 0.670588, 1, 0.392157)
 
-[node name="Control6" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control6"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="TranslatingRegion" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -60.0
+offset_right = 60.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 13
+color = Color(0.729412, 1, 1, 0.117647)
 
-[node name="Control7" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control7"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="RotatingRegion3" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -60.0
+offset_bottom = 60.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 5
+color = Color(1, 0.670588, 1, 0.392157)
 
-[node name="Control8" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="RotatingRegion" type="ColorRect" parent="GridContainer/Control8"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="ScaleRegion3" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -30.0
+offset_right = 30.0
+grow_vertical = 0
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 11
+color = Color(1, 1, 0.564706, 0.666667)
 
-[node name="Control9" type="Control" parent="GridContainer"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ScaleRegion" type="ColorRect" parent="GridContainer/Control9"]
-layout_mode = 2
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="RotatingRegion4" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+grow_horizontal = 2
+grow_vertical = 0
 mouse_filter = 1
-color = Color(1, 1, 1, 0.498039)
+mouse_default_cursor_shape = 5
+color = Color(1, 0.670588, 1, 0.392157)
 
-[connection signal="mouse_exited" from="GridContainer" to="." method="_on_grid_container_mouse_exited"]
-[connection signal="mouse_entered" from="GridContainer/Control/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control2/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control3/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control4/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control5/TranslatingRegion" to="." method="_on_translating_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control6/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control7/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control8/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="GridContainer/Control9/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[node name="ScaleRegion4" type="ColorRect" parent="TransformUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 1
+mouse_default_cursor_shape = 12
+color = Color(1, 1, 0.564706, 0.666667)
+
+[connection signal="mouse_exited" from="TransformUI" to="." method="_on_transform_ui_mouse_exited"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion2" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion2" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/TranslatingRegion" to="." method="_on_translating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion3" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion3" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion4" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion4" to="." method="_on_scale_region_mouse_entered"]

@@ -24,7 +24,7 @@ void fragment() {
 		}
 	}
 	if (inside ) {
-		c = vec4(UV.x + sin(TIME) / 5.0, 1.0 - abs(UV.x + sin(TIME * 1.5)/5.0 - UV.y + cos(TIME * 2.0)/5.0), UV.y + cos(TIME * 2.5)/5.0, 1.4 - (mod(UV.x, 0.1) - mod(UV.y, 0.1)) - abs(sin(TIME * 0.75)));
+		c = vec4(UV.x + sin(TIME) / 5.0, 1.0 - abs(UV.x + sin(TIME * 1.5)/5.0 - UV.y + cos(TIME * 2.0)/5.0), UV.y + cos(TIME * 2.5)/5.0, 1.45 - (mod(UV.x, 0.1) - mod(UV.y, 0.1)) - abs(sin(TIME * 0.75)));
 	}
 	COLOR = c;
 }
