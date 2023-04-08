@@ -43,12 +43,12 @@ func _process(delta):
 #		print(in_selection(last_mouse_pos2D))
 		
 func in_selection(pos : Vector3):
-	if Geometry2D.is_point_in_polygon(convert_pos(pos), selection_polygon):
+	if Geometry2D.is_point_in_polygon(global_to_viewport(pos), selection_polygon):
 		return true
 	return false
 
 #convert global position to 2d viewport pos
-func convert_pos(pos : Vector3):
+func global_to_viewport(pos : Vector3) -> Vector2:
 	var new_pos := Vector2(pos.x, pos.z) - Vector2(position.x, position.z)
 	quad_mesh_size = node_quad.mesh.size
 	# We need to convert it into the following range: 0 -> quad_size
@@ -61,6 +61,10 @@ func convert_pos(pos : Vector3):
 	# Finally, we convert the position to the following range: 0 -> viewport.size
 	new_pos.x = new_pos.x * node_viewport.size.x
 	new_pos.y = new_pos.y * node_viewport.size.y
+	return new_pos
+	
+func viewport_to_global(pos : Vector2) -> Vector3: 
+	var new_pos 
 	return new_pos
 	
 func _mouse_entered_area():

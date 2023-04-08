@@ -99,6 +99,7 @@ func modify():
 		
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 		transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size / 2
+		Signals.selection_changed.emit(0, change, Vector2.ZERO)
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2

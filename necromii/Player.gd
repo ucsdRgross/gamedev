@@ -3,12 +3,16 @@ extends CharacterBody3D
 
 const SPEED = 20.0
 const JUMP_VELOCITY = 4.5
+var is_selected := false
+var goal_position
+var paused := false
 
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 func _ready():
 	Signals.new_selection.connect(self._on_new_selection)
+	Signals.selection_changed.connect(self._on_selection_changed)
 
 func _physics_process(delta):
 	
@@ -34,8 +38,21 @@ func _physics_process(delta):
 	move_and_slide()
 	
 func _on_new_selection(polygon):
-	var is_selected : bool = Global.SelectionTool.in_selection(position)
+	is_selected = Global.SelectionTool.in_selection(position)
 	if is_selected:
 		$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
+		paused = true
 	else:
 		$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
+		
+func _on_selection_changed(move_type : int, change, center : Vector2):
+	if is_selected:
+		match move_type:
+			0: #translational
+				pass
+			1: #scale
+				pass
+			2: #rotational
+				pass
+	else:
+		paused = false
