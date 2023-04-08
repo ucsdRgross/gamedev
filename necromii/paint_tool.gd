@@ -1,12 +1,12 @@
 extends TextureRect
 
 var texture_size : int = 512
-var last_mouse_pos : Vector2i
-var mouse_pos : Vector2i
-var start_pos : Vector2i
+var last_mouse_pos : Vector2
+var mouse_pos : Vector2
+var start_pos : Vector2
 var can_transform := false
 #[top left, bot right]
-var bounds : PackedVector2Array = [Vector2(0,0), Vector2(0,0)]
+var bounds : PackedVector2Array = [Vector2.ZERO, Vector2.ZERO]
 
 enum TRANSFORMING {
 	NOTHING,
@@ -24,6 +24,7 @@ var polygon : PackedVector2Array
 func _ready():
 	texture = ImageTexture.new()
 	texture.set_size_override(Vector2i(texture_size, texture_size))
+	Input.use_accumulated_input = false
 
 
 #_gui_input necessary to prevent stacked mouse events from _input which causes unwanted behavior
@@ -45,13 +46,14 @@ func _gui_input(event):
 			line_2d.clear_points()
 			Global.is_drawing = true
 			start_pos = clamp_to_circle(event.position)
-			bounds = [Vector2(start_pos.x, start_pos.y), Vector2(start_pos.x, start_pos.y)]
+			bounds = [start_pos, start_pos]
 	
 	if event.is_action_released("Right Click"):
 		Global.is_modifying = false
+		can_transform = false
 		modifying = TRANSFORMING.NOTHING
 		start_pos = clamp_to_circle(event.position)
-		bounds = [Vector2(start_pos.x, start_pos.y), Vector2(start_pos.x, start_pos.y)]
+		bounds = [start_pos, start_pos]
 		line_2d.clear_points()
 		material.set_shader_parameter("size", line_2d.get_point_count())
 		material.set_shader_parameter("points", line_2d.points)
@@ -103,7 +105,7 @@ func modify():
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
-		var scale_factor := (Vector2(mouse_pos) - origin) / (Vector2(last_mouse_pos) - origin)
+		var scale_factor := (mouse_pos - origin) / (last_mouse_pos - origin)
 		#accomadate divide by zero
 		if is_inf(scale_factor.x) or is_nan(scale_factor.x):
 			scale_factor.x = 0
@@ -141,7 +143,7 @@ func modify():
 	
 	elif modifying == TRANSFORMING.ROTATING:
 		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2
-		var rotate := (Vector2(last_mouse_pos) - origin).angle_to((Vector2(mouse_pos) - origin))
+		var rotate := (last_mouse_pos - origin).angle_to(mouse_pos - origin)
 		for corner in polygon:
 			var vector := corner - origin
 			var new_point := vector.rotated(rotate) + origin
@@ -178,7 +180,7 @@ func draw():
 	if array_size < 2:
 		line_2d.add_point(mouse_pos)
 	else:
-		var dot : float = (Vector2(mouse_pos) - line_2d.get_point_position(array_size - 1)).normalized().dot((line_2d.get_point_position(array_size - 1) - line_2d.get_point_position(array_size - 2)).normalized())	 
+		var dot : float = (mouse_pos - line_2d.get_point_position(array_size - 1)).normalized().dot((line_2d.get_point_position(array_size - 1) - line_2d.get_point_position(array_size - 2)).normalized())	 
 		if dot >= 0.95:
 			line_2d.remove_point(array_size - 1)
 			line_2d.add_point(mouse_pos)
@@ -199,7 +201,7 @@ func show_transform_ui():
 	var center := (bounds[0] + bounds[1]) / 2
 	var new_scale : Vector2 = (bounds[1] - bounds[0]) / transform_ui.size
 	#makes scale and rotate outside of polygon, which looks better for now, but can be removed once there is actual ui art
-	new_scale *= 4.5/3
+	new_scale *= 1.5
 	transform_ui.scale = new_scale.clamp(Vector2(1, 1), new_scale)
 	transform_ui.position = center - transform_ui.size * transform_ui.scale / 2
 

@@ -19,7 +19,7 @@ var selection_polygon : PackedVector2Array
 @onready var paint_tool = $SubViewport/PaintTool
 
 func _ready():
-	Input.use_accumulated_input = false
+	
 	node_area.mouse_entered.connect(self._mouse_entered_area)
 	Global.SelectionTool = self
 	Signals.new_selection.connect(self._on_new_selection)
@@ -35,12 +35,7 @@ func _process(delta):
 		var forced_event = InputEventMouseMotion.new()
 		var pos : Vector2 = get_viewport().get_mouse_position()
 		forced_event.position = pos
-		forced_event.global_position = pos
 		handle_mouse(forced_event)
-		#print(last_mouse_pos2D)
-#	if last_mouse_pos2D:
-#		print(last_mouse_pos2D)
-#		print(in_selection(last_mouse_pos2D))
 		
 func in_selection(pos : Vector3):
 	if Geometry2D.is_point_in_polygon(global_to_viewport(pos), selection_polygon):
@@ -78,7 +73,6 @@ func _unhandled_input(event):
 		if is_instance_of(event, mouse_event):
 			is_mouse_event = true
 			break
-
 	# If the event is a mouse/touch event and/or the mouse is either held or inside the area, then
 	# we need to do some additional processing in the handle_mouse function before passing the event to the viewport.
 	# If the event is not a mouse/touch event, then we can just pass the event directly to the viewport.
@@ -86,7 +80,7 @@ func _unhandled_input(event):
 		handle_mouse(event)
 	elif not is_mouse_event:
 		node_viewport.push_input(event)
-
+	
 
 # Handle mouse events inside Area3D. (Area3D.input_event had many issues with dragging)
 func handle_mouse(event):
