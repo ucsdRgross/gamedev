@@ -3,9 +3,9 @@ extends Node3D
 # The size of the quad mesh itself.
 var quad_mesh_size
 # Used for checking if the mouse is inside the Area3D
-var is_mouse_inside = false
+var is_mouse_inside := false
 # Used for checking if the mouse was pressed inside the Area3D
-var is_mouse_held = false
+var is_mouse_held := false
 # The last non-empty mouse position. Used when dragging outside of the box.
 var last_mouse_pos3D = null
 # The last processed input touch/mouse event. To calculate relative movement.
@@ -30,7 +30,7 @@ func _ready():
 func _on_new_selection(polygon : PackedVector2Array):
 	selection_polygon = polygon
 
-func _process(delta):
+func _physics_process(delta):
 	if is_mouse_held:
 		var forced_event = InputEventMouseMotion.new()
 		var pos : Vector2 = get_viewport().get_mouse_position()
@@ -45,10 +45,9 @@ func in_selection(pos : Vector3):
 #convert global position to 2d viewport pos
 func global_to_viewport(pos : Vector3) -> Vector2:
 	var new_pos := Vector2(pos.x, pos.z) - Vector2(position.x, position.z)
-	quad_mesh_size = node_quad.mesh.size
 	# We need to convert it into the following range: 0 -> quad_size
 	new_pos.x += scale.x
-	new_pos.y += scale.z
+	new_pos.y += scale.y
 	# Then we need to convert it into the following range: 0 -> 1
 	new_pos.x = new_pos.x / (scale.x * 2) 
 	new_pos.y = new_pos.y / (scale.y * 2)
@@ -57,10 +56,14 @@ func global_to_viewport(pos : Vector3) -> Vector2:
 	new_pos.x = new_pos.x * node_viewport.size.x
 	new_pos.y = new_pos.y * node_viewport.size.y
 	return new_pos
-	
-func viewport_to_global(pos : Vector2) -> Vector3: 
-	var new_pos 
-	return new_pos
+
+#reverse above but doesnt care about position
+func pixel_to_global(pos : Vector2) -> Vector3: 
+	pos.x /= node_viewport.size.x
+	pos.y /= node_viewport.size.y
+	pos.x *= scale.x * 2
+	pos.y *= scale.y * 2
+	return Vector3(pos.x, 0, pos.y)
 	
 func _mouse_entered_area():
 	is_mouse_inside = true
