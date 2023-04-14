@@ -81,12 +81,13 @@ func _on_selection_changed(move_type : int, change, center : Vector2):
 			reset_goal = false
 		match move_type:
 			0: #translational
-				print(change)
 				var xyz : Vector3 = Global.SelectionTool.pixel_to_global(change)
 				goal_position += xyz
 				navigation_agent.set_target_position(goal_position)
 			1: #scale
-				var factor : float = change
+				var factor : Vector2 = change
+				var xyz : Vector3 = Global.SelectionTool.viewport_to_global(center)
+				print(xyz)
 			2: #rotational
 				var angle : float = change
 	paused = false

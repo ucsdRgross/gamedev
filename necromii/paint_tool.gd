@@ -140,6 +140,7 @@ func modify():
 		bounds = new_bound
 		material.set_shader_parameter("bounds", bounds)
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+		Signals.selection_changed.emit(1, scale_factor, origin)
 	
 	elif modifying == TRANSFORMING.ROTATING:
 		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2

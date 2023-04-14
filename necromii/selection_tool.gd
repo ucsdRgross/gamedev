@@ -57,7 +57,19 @@ func global_to_viewport(pos : Vector3) -> Vector2:
 	new_pos.y = new_pos.y * node_viewport.size.y
 	return new_pos
 
-#reverse above but doesnt care about position
+#reverse of above
+func viewport_to_global(pos : Vector2) -> Vector3:
+	pos.x /= node_viewport.size.x
+	pos.y /= node_viewport.size.y
+	pos.x *= scale.x * 2
+	pos.y *= scale.y * 2
+	pos.x -= scale.x
+	pos.y -= scale.z
+	pos.x += position.x
+	pos.y += position.y
+	return Vector3(pos.x, position.y, pos.y)
+
+#same as above but doesnt care about position, just relative change
 func pixel_to_global(pos : Vector2) -> Vector3: 
 	pos.x /= node_viewport.size.x
 	pos.y /= node_viewport.size.y
