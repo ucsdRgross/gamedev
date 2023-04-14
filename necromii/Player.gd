@@ -86,9 +86,16 @@ func _on_selection_changed(move_type : int, change, center : Vector2):
 				navigation_agent.set_target_position(goal_position)
 			1: #scale
 				var factor : Vector2 = change
-				var xyz : Vector3 = Global.SelectionTool.viewport_to_global(center)
-				print(xyz)
+				var origin : Vector3 = Global.SelectionTool.viewport_to_global(center)
+				var vector := goal_position - origin
+				goal_position = vector * Vector3(factor.x, 0, factor.y) + origin
+				navigation_agent.set_target_position(goal_position)
 			2: #rotational
 				var angle : float = change
+				var origin : Vector3 = Global.SelectionTool.viewport_to_global(center)
+				var vector := goal_position - origin
+				var vector2 : Vector2 = Vector2(vector.x, vector.z).rotated(angle)
+				goal_position = Vector3(vector2.x, 0, vector2.y) + origin
+				navigation_agent.set_target_position(goal_position)
 	paused = false
 

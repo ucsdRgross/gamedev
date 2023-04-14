@@ -174,6 +174,7 @@ func modify():
 			var og_point : Vector2 = line_2d.get_point_position(i)
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
+		Signals.selection_changed.emit(2, rotate, origin)
 	
 func draw():
 	find_bounds()
