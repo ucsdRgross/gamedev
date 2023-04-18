@@ -57,6 +57,10 @@ Right={
 ]
 }
 
+[physics]
+
+3d/default_gravity=19.6
+
 [rendering]
 
 renderer/rendering_method="mobile"
