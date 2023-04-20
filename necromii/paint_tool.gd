@@ -25,7 +25,7 @@ func _ready():
 	texture = ImageTexture.new()
 	texture.set_size_override(Vector2i(texture_size, texture_size))
 	Input.use_accumulated_input = false
-
+	Signals.player_move_selection.connect(self._on_player_move_selection)
 
 #_gui_input necessary to prevent stacked mouse events from _input which causes unwanted behavior
 #however _input still needed to detect mouse release as _gui_input is buggy in that aspect
@@ -48,7 +48,7 @@ func _gui_input(event):
 			start_pos = clamp_to_circle(event.position)
 			bounds = [start_pos, start_pos]
 	
-	if event.is_action_released("Right Click"):
+	if event.is_action_pressed("Right Click"):
 		Global.is_modifying = false
 		can_transform = false
 		modifying = TRANSFORMING.NOTHING
@@ -85,23 +85,7 @@ func _input(event):
 func modify():
 	if modifying == TRANSFORMING.TRANSLATING:
 		var change : Vector2 = mouse_pos - last_mouse_pos
-		#clamp changes to circle
-		for corner in polygon:
-			var clamped := clamp_to_circle(corner + change)
-			if clamped != corner + change:
-				change = clamped - corner
-				
-		for i in range(polygon.size()):
-			polygon[i] += change
-		material.set_shader_parameter("points", polygon)
-		#polygon2d_created.emit(polygon)
-		for i in range(bounds.size()):
-			bounds[i] += change
-		#material.set_shader_parameter("bounds", bounds)
-		
-		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-		transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size / 2
-		Signals.selection_changed.emit(0, change, Vector2.ZERO)
+		move_selection(change)
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
@@ -175,7 +159,26 @@ func modify():
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
 		Signals.selection_changed.emit(2, rotate, origin)
+
+func move_selection(change : Vector2):
+	#clamp changes to circle
+	for corner in polygon:
+		var clamped := clamp_to_circle(corner + change)
+		if clamped != corner + change:
+			change = clamped - corner
+			
+	for i in range(polygon.size()):
+		polygon[i] += change
+	material.set_shader_parameter("points", polygon)
+	Signals.new_selection.emit(polygon)
+	for i in range(bounds.size()):
+		bounds[i] += change
+	#material.set_shader_parameter("bounds", bounds)
 	
+	line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+	transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size / 2
+	Signals.selection_changed.emit(0, change, Vector2.ZERO)
+
 func draw():
 	find_bounds()
 	var array_size = line_2d.get_point_count()
@@ -237,3 +240,12 @@ func _on_translating_region_mouse_entered():
 
 func _on_transform_ui_mouse_exited():
 	modifying = TRANSFORMING.NOTHING
+	
+func _on_player_move_selection(change : Vector2, moving : bool):
+	if moving:
+		modifying = TRANSFORMING.TRANSLATING
+		transform_ui.visible = false
+		move_selection(change)
+	else:
+		can_transform = false
+		show_transform_ui()

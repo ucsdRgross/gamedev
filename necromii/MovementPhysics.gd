@@ -4,7 +4,7 @@ extends Node
 @export var acceleration : float = 200
 @export var max_acceleration_force :float = 150
 
-@export var ride_height := 1.5
+@export var ride_height := 0.5
 @export var ride_spring_strength := 200.0
 @export var ride_spring_damper := 10.0
 
@@ -12,6 +12,7 @@ extends Node
 @export var upright_spring_damper := 0.3
 
 @export var jump_velocity := 7.5
+@export var tilt_factor := Vector3(0,0.25,0)
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -45,27 +46,31 @@ func update_movement(velocity : Vector3):
 	
 	var accel := acceleration * vel_dot
 	var goal_vel : Vector3 = velocity
-	goal_vel = cur_vel.move_toward(goal_vel + floor_velocity, accel * (1.0/60))# * delta)
+	goal_vel = cur_vel.move_toward(goal_vel + floor_velocity, accel * (1.0/60))
 	#calculate necessary force to reach goal_vel
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / (1.0/60)
 	var max_accel = max_acceleration_force * vel_dot #* acceleration_modifier
 	needed_accel = needed_accel.limit_length(max_accel)
-	needed_accel.y = 0
 	#applying force offset from center causes tilt
-	var tilt_factor := Vector3(0,0.2,0)
-	body.apply_force(needed_accel, tilt_factor)
+	var tilt := tilt_factor
+	if goal_vel.dot(needed_accel) <= 0:
+		tilt *= -0.6
+	body.apply_force(needed_accel, tilt)
 	movement_velocity = goal_vel
 	
 func update_upright_force():
 	var currentRot := body.basis.get_rotation_quaternion()
 	var _uprightTargetRot := Transform3D.IDENTITY.looking_at(look_direction, Vector3.UP).basis.get_rotation_quaternion()
 	var toGoal := shortest_rotation(_uprightTargetRot, currentRot)
-	var rot_axis : Vector3 = toGoal.get_axis().normalized()
+	var rot_axis : Vector3 = toGoal.get_axis()
+	if rot_axis == Vector3.ZERO:
+		return
+	rot_axis = rot_axis.normalized()
 	var rot_radians : float = deg_to_rad(toGoal.get_angle())
 	body.apply_torque_impulse((rot_axis * (rot_radians * upright_spring_strength)) - (body.angular_velocity * upright_spring_damper))
 
 func update_ride_spring():
-	ground_ray.global_rotation = Vector3.ZERO
+	ground_ray.global_rotation = Vector3.DOWN
 	if ground_ray.is_colliding():
 		var ray_dir := Vector3.DOWN
 		#if ray hits another rigidbody
@@ -90,30 +95,30 @@ func update_ride_spring():
 #			print(hit_body.velocity)
 #			apply_force(Vector3(hit_body.velocity.x, 0, hit_body.velocity.z))
 		
-		if hit_body is RigidBody3D: #.has_method("apply_force"):
-			var relative_pos : Vector3 = ground_ray.get_collision_point() - hit_body.global_position
-			relative_pos.y = 0
-			hit_body.apply_force(ray_dir * -spring_force, relative_pos)
-			#print(hit_body.linear_velocity)
-			floor_velocity = hit_body.linear_velocity
-			var ang := Vector3(-hit_body.angular_velocity.z, hit_body.angular_velocity.y, hit_body.angular_velocity.x) * relative_pos.length()
-			#do apply force here instead using same logic as movement, calculate force necessary to reach floor velocity
-			#calculate necessary force to reach goal_vel
-			var needed_accel : Vector3 = (floor_velocity) / (1.0/60)
-			#applying force offset from center causes tilt
-			var tilt_factor := Vector3(0,0.2,0)
-			#apply_force(needed_accel * 0.75, tilt_factor)
-			
-			
-			#linear_velocity = movement_velocity + floor_velocity
-			
-#			apply_force(Vector3(hit_body.linear_velocity.x, 0, hit_body.linear_velocity.z))
+#		if hit_body is RigidBody3D: #.has_method("apply_force"):
+#			var relative_pos : Vector3 = ground_ray.get_collision_point() - hit_body.global_position
+#			relative_pos.y = 0
+#			hit_body.apply_force(ray_dir * -spring_force, relative_pos)
+#			#print(hit_body.linear_velocity)
+#			floor_velocity = hit_body.linear_velocity
+#			var ang := Vector3(-hit_body.angular_velocity.z, hit_body.angular_velocity.y, hit_body.angular_velocity.x) * relative_pos.length()
+#			#do apply force here instead using same logic as movement, calculate force necessary to reach floor velocity
+#			#calculate necessary force to reach goal_vel
+#			var needed_accel : Vector3 = (floor_velocity) / (1.0/60)
+#			#applying force offset from center causes tilt
+#			var tilt_factor := Vector3(0,0.25,0)
+#			#apply_force(needed_accel * 0.75, tilt_factor)
 #
-#			#account for platform rotation
-#			var ang := Vector3(-hit_body.angular_velocity.z, hit_body.angular_velocity.y, hit_body.angular_velocity.x)
-#			apply_force(ang * relative_pos.length() * 10)
-		else:
-			floor_velocity = Vector3.ZERO
+#
+#			#linear_velocity = movement_velocity + floor_velocity
+#
+##			apply_force(Vector3(hit_body.linear_velocity.x, 0, hit_body.linear_velocity.z))
+##
+##			#account for platform rotation
+##			var ang := Vector3(-hit_body.angular_velocity.z, hit_body.angular_velocity.y, hit_body.angular_velocity.x)
+##			apply_force(ang * relative_pos.length() * 10)
+#		else:
+#			floor_velocity = Vector3.ZERO
 			
 func jump():
 	if ground_ray.is_colliding() and jump_timer.is_stopped():
