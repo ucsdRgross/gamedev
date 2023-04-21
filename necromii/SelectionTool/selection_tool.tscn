@@ -1,12 +1,12 @@
-[gd_scene load_steps=9 format=3 uid="uid://cue63i85uad8i"]
+[gd_scene load_steps=9 format=3]
 
-[ext_resource type="PackedScene" uid="uid://dkd5omcpgnv8d" path="res://paint_tool.tscn" id="1_07ukl"]
-[ext_resource type="Script" path="res://selection_tool.gd" id="1_iofyd"]
-[ext_resource type="Shader" path="res://selection_highlight.gdshader" id="3_d0oyj"]
+[ext_resource type="Script" path="res://SelectionTool/selection_tool.gd" id="1_gtwli"]
+[ext_resource type="PackedScene" uid="uid://bprs0nlsjux8" path="res://SelectionTool/paint_tool.tscn" id="2_c085j"]
+[ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="3_wdys3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_m4sbu"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_a1me4"]
 resource_local_to_scene = true
-shader = ExtResource("3_d0oyj")
+shader = ExtResource("3_wdys3")
 shader_parameter/size = null
 shader_parameter/points = null
 shader_parameter/bounds = null
@@ -28,7 +28,7 @@ albedo_texture = SubResource("ViewportTexture_dkxwf")
 size = Vector3(3, 3, 0.1)
 
 [node name="SelectionTool" type="Node3D"]
-script = ExtResource("1_iofyd")
+script = ExtResource("1_gtwli")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.22378)
@@ -38,8 +38,8 @@ disable_3d = true
 size = Vector2i(2048, 2048)
 render_target_update_mode = 4
 
-[node name="PaintTool" parent="SubViewport" instance=ExtResource("1_07ukl")]
-material = SubResource("ShaderMaterial_m4sbu")
+[node name="PaintTool" parent="SubViewport" instance=ExtResource("2_c085j")]
+material = SubResource("ShaderMaterial_a1me4")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_dfqu7")

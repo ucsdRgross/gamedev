@@ -1,21 +1,17 @@
-[gd_scene load_steps=11 format=3 uid="uid://dbji8pegsqjn0"]
+[gd_scene load_steps=9 format=3 uid="uid://drmxkipdm1eih"]
 
-[ext_resource type="Script" path="res://Player.gd" id="1_dey51"]
-[ext_resource type="Script" path="res://MovementPhysics.gd" id="2_b00s4"]
-[ext_resource type="Shader" path="res://skew.gdshader" id="3_xd83x"]
-[ext_resource type="Shader" path="res://highlight.gdshader" id="4_b2pde"]
-[ext_resource type="Script" path="res://NavigationTargetLogic.gd" id="5_vmmas"]
-
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
-friction = 0.1
+[ext_resource type="Script" path="res://Components/MovementPhysics.gd" id="1_p558p"]
+[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="2_scfel"]
+[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_f47io"]
+[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="4_fr0hm"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
 render_priority = 0
-shader = ExtResource("3_xd83x")
+shader = ExtResource("2_scfel")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
 render_priority = 0
-shader = ExtResource("4_b2pde")
+shader = ExtResource("3_f47io")
 shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
@@ -27,13 +23,10 @@ shader_parameter/on = false
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
 
-[node name="Player" type="RigidBody3D"]
-mass = 10.0
-physics_material_override = SubResource("PhysicsMaterial_3d5xi")
-script = ExtResource("1_dey51")
+[node name="BaseMinion" type="RigidBody3D"]
 
 [node name="MovementPhysics" type="Node3D" parent="."]
-script = ExtResource("2_b00s4")
+script = ExtResource("1_p558p")
 acceleration = 400.0
 max_acceleration_force = 300.0
 
@@ -55,9 +48,7 @@ shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 avoidance_enabled = true
-radius = 2.0
 debug_enabled = true
-script = ExtResource("5_vmmas")
+script = ExtResource("4_fr0hm")
 
-[connection signal="timeout" from="MovementPhysics/JumpTimer" to="MovementPhysics" method="_on_jump_timer_timeout"]
-[connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]
+[connection signal="timeout" from="MovementPhysics/JumpTimer" to="MovementPhysics" method="_on_jump_timer_timeout" flags=18]

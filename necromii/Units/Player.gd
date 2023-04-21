@@ -34,9 +34,8 @@ func _physics_process(_delta):
 		movement_physics.jump()
 	
 	if is_selected and Global.is_modifying:
-		if not Global.SelectionTool.is_mouse_held:
-			var change : Vector2 = Global.SelectionTool.global_to_viewport_relative(position - last_pos)
-			Signals.player_move_selection.emit(change, direction != Vector3.ZERO)
+		var change : Vector2 = Global.SelectionTool.global_to_viewport_relative(position - last_pos)
+		Signals.player_move_selection.emit(change)
 	
 	last_pos = position
 	#update_animation()

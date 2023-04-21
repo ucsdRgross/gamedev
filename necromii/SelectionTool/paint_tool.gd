@@ -5,6 +5,7 @@ var last_mouse_pos : Vector2
 var mouse_pos : Vector2
 var start_pos : Vector2
 var can_transform := false
+var last_origin : Vector2
 #[top left, bot right]
 var bounds : PackedVector2Array = [Vector2.ZERO, Vector2.ZERO]
 
@@ -20,6 +21,7 @@ var modifying := TRANSFORMING.NOTHING
 @onready var transform_ui = $TransformUI
 
 var polygon : PackedVector2Array
+var last_polygon : PackedVector2Array
 
 func _ready():
 	texture = ImageTexture.new()
@@ -49,22 +51,34 @@ func _gui_input(event):
 			bounds = [start_pos, start_pos]
 	
 	if event.is_action_pressed("Right Click"):
-		Global.is_modifying = false
-		can_transform = false
-		modifying = TRANSFORMING.NOTHING
-		start_pos = clamp_to_circle(event.position)
-		bounds = [start_pos, start_pos]
-		line_2d.clear_points()
-		material.set_shader_parameter("size", line_2d.get_point_count())
-		material.set_shader_parameter("points", line_2d.points)
-		Signals.new_selection.emit(line_2d.points)
-		transform_ui.visible = false
+		if not Global.is_drawing:	
+			if Global.is_modifying:
+				last_polygon = polygon
+				Global.is_modifying = false
+				can_transform = false
+				modifying = TRANSFORMING.NOTHING
+				start_pos = clamp_to_circle(event.position)
+				line_2d.clear_points()
+				material.set_shader_parameter("size", line_2d.get_point_count())
+				material.set_shader_parameter("points", line_2d.points)
+				Signals.new_selection.emit(line_2d.points)
+				transform_ui.visible = false
+			else:
+				polygon = last_polygon
+				Global.is_modifying = true
+				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
+				material.set_shader_parameter("size", polygon.size())
+				material.set_shader_parameter("points", polygon)
+				Signals.new_selection.emit(polygon)
+				show_transform_ui()
 		
 	if Global.is_drawing:
 		draw()	
 		
 	elif can_transform:
 		modify()
+	if modifying != TRANSFORMING.ROTATING:
+		last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
 
 func _input(event):
 	if event.is_action_released("Left Click"):
@@ -75,6 +89,7 @@ func _input(event):
 			polygon = line_2d.points
 			line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 			show_transform_ui()
+			last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
 			
 		elif Global.is_modifying:
 			if modifying == TRANSFORMING.ROTATING:
@@ -89,7 +104,8 @@ func modify():
 		
 	elif modifying == TRANSFORMING.SCALING:
 		var origin := Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
-		var scale_factor := (mouse_pos - origin) / (last_mouse_pos - origin)
+		var scale_factor := (mouse_pos - origin) / (last_mouse_pos - last_origin)
+		#last_origin = origin
 		#accomadate divide by zero
 		if is_inf(scale_factor.x) or is_nan(scale_factor.x):
 			scale_factor.x = 0
@@ -128,7 +144,9 @@ func modify():
 	
 	elif modifying == TRANSFORMING.ROTATING:
 		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2
-		var rotate := (last_mouse_pos - origin).angle_to(mouse_pos - origin)
+		var rotate := (last_mouse_pos - last_origin).angle_to(mouse_pos - origin)
+		last_origin = origin
+		#last_origin = origin
 		for corner in polygon:
 			var vector := corner - origin
 			var new_point := vector.rotated(rotate) + origin
@@ -159,6 +177,7 @@ func modify():
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
 		Signals.selection_changed.emit(2, rotate, origin)
+	
 
 func move_selection(change : Vector2):
 	#clamp changes to circle
@@ -173,10 +192,10 @@ func move_selection(change : Vector2):
 	Signals.new_selection.emit(polygon)
 	for i in range(bounds.size()):
 		bounds[i] += change
+	#last_origin += change
 	#material.set_shader_parameter("bounds", bounds)
-	
 	line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-	transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size / 2
+	transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size * transform_ui.scale / 2
 	Signals.selection_changed.emit(0, change, Vector2.ZERO)
 
 func draw():
@@ -241,11 +260,6 @@ func _on_translating_region_mouse_entered():
 func _on_transform_ui_mouse_exited():
 	modifying = TRANSFORMING.NOTHING
 	
-func _on_player_move_selection(change : Vector2, moving : bool):
-	if moving:
-		modifying = TRANSFORMING.TRANSLATING
-		transform_ui.visible = false
+func _on_player_move_selection(change : Vector2):
+	if not (modifying == TRANSFORMING.TRANSLATING and can_transform):
 		move_selection(change)
-	else:
-		can_transform = false
-		show_transform_ui()

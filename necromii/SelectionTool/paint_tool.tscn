@@ -1,18 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://dkd5omcpgnv8d"]
+[gd_scene load_steps=4 format=3 uid="uid://dfo8hlabm8dbn"]
 
-[ext_resource type="Shader" path="res://selection_highlight.gdshader" id="1_exikt"]
-[ext_resource type="Script" path="res://paint_tool.gd" id="1_hm6u6"]
+[ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="1_lnh8g"]
+[ext_resource type="Script" path="res://SelectionTool/paint_tool.gd" id="2_oe7al"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5eaix"]
 resource_local_to_scene = true
-shader = ExtResource("1_exikt")
+shader = ExtResource("1_lnh8g")
 shader_parameter/size = null
 shader_parameter/points = null
 shader_parameter/bounds = null
 
 [node name="PaintTool" type="TextureRect"]
 material = SubResource("ShaderMaterial_5eaix")
-script = ExtResource("1_hm6u6")
+script = ExtResource("2_oe7al")
 
 [node name="Line2D" type="Line2D" parent="."]
 width = 3.0

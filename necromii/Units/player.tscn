@@ -1,0 +1,59 @@
+[gd_scene load_steps=10 format=3 uid="uid://dtmh7h36yyiyf"]
+
+[ext_resource type="Script" path="res://Units/Player.gd" id="1_e7ent"]
+[ext_resource type="Script" path="res://Components/MovementPhysics.gd" id="2_u7eud"]
+[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="3_d7ijl"]
+[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="4_kaewj"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
+friction = 0.1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
+render_priority = 0
+shader = ExtResource("3_d7ijl")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
+render_priority = 0
+shader = ExtResource("4_kaewj")
+shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
+shader_parameter/luma_coef = 0.1
+shader_parameter/color_coef = 0.1
+shader_parameter/depth_coef = 0.8
+shader_parameter/cutoff = 0.0
+shader_parameter/on = false
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+
+[node name="Player" type="RigidBody3D"]
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_3d5xi")
+script = ExtResource("1_e7ent")
+
+[node name="MovementPhysics" type="Node3D" parent="."]
+script = ExtResource("2_u7eud")
+acceleration = 400.0
+max_acceleration_force = 300.0
+
+[node name="GroundRay" type="RayCast3D" parent="MovementPhysics"]
+transform = Transform3D(25, 0, 0, 0, 1, 0, 0, 0, 25, 0, -1, 0)
+
+[node name="JumpTimer" type="Timer" parent="MovementPhysics"]
+wait_time = 0.1
+one_shot = true
+autostart = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("ShaderMaterial_lt2mp")
+material_overlay = SubResource("ShaderMaterial_4cnt6")
+mesh = SubResource("CapsuleMesh_mvl48")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 2.0
+debug_enabled = true
+
+[connection signal="timeout" from="MovementPhysics/JumpTimer" to="MovementPhysics" method="_on_jump_timer_timeout"]

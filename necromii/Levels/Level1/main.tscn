@@ -1,11 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://fc3wtubhlbcb"]
+[gd_scene load_steps=13 format=3 uid="uid://28kdao4jtvis"]
 
-[ext_resource type="PackedScene" uid="uid://cue63i85uad8i" path="res://selection_tool.tscn" id="1_8lgy8"]
-[ext_resource type="Script" path="res://main.gd" id="1_d5fkg"]
+[ext_resource type="PackedScene" path="res://SelectionTool/selection_tool.tscn" id="1_8lgy8"]
+[ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_d5fkg"]
 [ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="1_s2pm5"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="3_f1qtl"]
-[ext_resource type="Script" path="res://Camera3D.gd" id="4_jsf16"]
-[ext_resource type="PackedScene" uid="uid://dbji8pegsqjn0" path="res://player.tscn" id="5_awk03"]
+[ext_resource type="Script" path="res://Levels/Level1/Camera3D.gd" id="4_jsf16"]
+[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="5_awk03"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
 albedo_texture = ExtResource("1_s2pm5")
@@ -31,14 +31,14 @@ script = ExtResource("1_d5fkg")
 [node name="SelectionTool" parent="." instance=ExtResource("1_8lgy8")]
 transform = Transform3D(50, 0, 0, 0, -2.18557e-06, 50, 0, -50, -2.18557e-06, 0, 0.001, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="Floor" type="MeshInstance3D" parent="."]
 transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_qlogs")
 mesh = SubResource("PlaneMesh_1d2an")
 
-[node name="StaticBody3D2" type="StaticBody3D" parent="MeshInstance3D"]
+[node name="StaticBody3D2" type="StaticBody3D" parent="Floor"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D2"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor/StaticBody3D2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500208, 0)
 shape = SubResource("BoxShape3D_nujxj")
 
@@ -66,12 +66,12 @@ shadow_enabled = true
 shadow_blur = 2.0
 directional_shadow_blend_splits = true
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+[node name="Box" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.32175, 3.2959, 0)
 mesh = SubResource("BoxMesh_jcdbv")
 skeleton = NodePath("")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Box"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D2/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Box/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_4jahb")
