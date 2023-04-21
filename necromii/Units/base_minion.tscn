@@ -1,46 +1,49 @@
-[gd_scene load_steps=9 format=3 uid="uid://drmxkipdm1eih"]
+[gd_scene load_steps=11 format=3 uid="uid://oyvayq6nt3na"]
 
-[ext_resource type="Script" path="res://Components/MovementPhysics.gd" id="1_p558p"]
+[ext_resource type="Script" path="res://Units/base_minion.gd" id="1_jlidr"]
+[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_78orc"]
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="2_scfel"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_f47io"]
-[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="4_fr0hm"]
+[ext_resource type="Script" path="res://NavigationTargetLogic.gd" id="5_ppajl"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
-render_priority = 0
-shader = ExtResource("2_scfel")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nj7kk"]
 render_priority = 0
 shader = ExtResource("3_f47io")
-shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
+shader_parameter/outline_color = Color(0, 0, 0, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
 shader_parameter/depth_coef = 0.8
-shader_parameter/cutoff = 0.0
-shader_parameter/on = false
+shader_parameter/cutoff = 0.2
+shader_parameter/on = null
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_604p0"]
+render_priority = 0
+next_pass = SubResource("ShaderMaterial_nj7kk")
+shader = ExtResource("2_scfel")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_x6r5r"]
+render_priority = 0
+shader = ExtResource("3_f47io")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/luma_coef = 0.1
+shader_parameter/color_coef = 0.1
+shader_parameter/depth_coef = 0.8
+shader_parameter/cutoff = 0.2
+shader_parameter/on = null
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
 
 [node name="BaseMinion" type="RigidBody3D"]
+mass = 10.0
+script = ExtResource("1_jlidr")
 
-[node name="MovementPhysics" type="Node3D" parent="."]
-script = ExtResource("1_p558p")
-acceleration = 400.0
-max_acceleration_force = 300.0
-
-[node name="GroundRay" type="RayCast3D" parent="MovementPhysics"]
-transform = Transform3D(25, 0, 0, 0, 1, 0, 0, 0, 25, 0, -1, 0)
-
-[node name="JumpTimer" type="Timer" parent="MovementPhysics"]
-wait_time = 0.1
-one_shot = true
-autostart = true
+[node name="MovementPhysics" parent="." instance=ExtResource("2_78orc")]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-material_override = SubResource("ShaderMaterial_lt2mp")
-material_overlay = SubResource("ShaderMaterial_4cnt6")
+material_override = SubResource("ShaderMaterial_604p0")
+material_overlay = SubResource("ShaderMaterial_x6r5r")
 mesh = SubResource("CapsuleMesh_mvl48")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -49,6 +52,6 @@ shape = SubResource("CapsuleShape3D_qrji7")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 avoidance_enabled = true
 debug_enabled = true
-script = ExtResource("4_fr0hm")
+script = ExtResource("5_ppajl")
 
-[connection signal="timeout" from="MovementPhysics/JumpTimer" to="MovementPhysics" method="_on_jump_timer_timeout" flags=18]
+[connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]

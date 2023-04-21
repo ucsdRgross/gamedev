@@ -31,12 +31,12 @@ func update(velocity : Vector3):
 
 func update_movement(velocity : Vector3):
 	var direction : Vector3 = velocity.normalized()
-	if direction:
+	if direction != Vector3.ZERO:
 		look_direction = direction
 
 	var cur_vel := Vector3(body.linear_velocity.x, 0, body.linear_velocity.z)
 	var cur_dir := cur_vel.normalized()
-	var vel_dot := direction.dot(cur_dir)
+	var vel_dot := look_direction.dot(cur_dir)
 	
 	#turn around increase, double acceleration when turning around
 	if vel_dot < 0:

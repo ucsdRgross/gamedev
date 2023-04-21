@@ -1,7 +1,7 @@
 [gd_scene load_steps=10 format=3 uid="uid://dtmh7h36yyiyf"]
 
 [ext_resource type="Script" path="res://Units/Player.gd" id="1_e7ent"]
-[ext_resource type="Script" path="res://Components/MovementPhysics.gd" id="2_u7eud"]
+[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_aiiq6"]
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="3_d7ijl"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="4_kaewj"]
 
@@ -31,18 +31,7 @@ mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_3d5xi")
 script = ExtResource("1_e7ent")
 
-[node name="MovementPhysics" type="Node3D" parent="."]
-script = ExtResource("2_u7eud")
-acceleration = 400.0
-max_acceleration_force = 300.0
-
-[node name="GroundRay" type="RayCast3D" parent="MovementPhysics"]
-transform = Transform3D(25, 0, 0, 0, 1, 0, 0, 0, 25, 0, -1, 0)
-
-[node name="JumpTimer" type="Timer" parent="MovementPhysics"]
-wait_time = 0.1
-one_shot = true
-autostart = true
+[node name="MovementPhysics" parent="." instance=ExtResource("2_aiiq6")]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_lt2mp")
@@ -53,7 +42,10 @@ mesh = SubResource("CapsuleMesh_mvl48")
 shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+process_mode = 4
 radius = 2.0
 debug_enabled = true
 
-[connection signal="timeout" from="MovementPhysics/JumpTimer" to="MovementPhysics" method="_on_jump_timer_timeout"]
+[node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="."]
+process_mode = 4
+radius = 2.0

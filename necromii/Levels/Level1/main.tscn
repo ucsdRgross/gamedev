@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://28kdao4jtvis"]
+[gd_scene load_steps=14 format=3 uid="uid://28kdao4jtvis"]
 
 [ext_resource type="PackedScene" path="res://SelectionTool/selection_tool.tscn" id="1_8lgy8"]
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_d5fkg"]
@@ -6,6 +6,7 @@
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="3_f1qtl"]
 [ext_resource type="Script" path="res://Levels/Level1/Camera3D.gd" id="4_jsf16"]
 [ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="5_awk03"]
+[ext_resource type="PackedScene" uid="uid://oyvayq6nt3na" path="res://Units/base_minion.tscn" id="5_e684n"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
 albedo_texture = ExtResource("1_s2pm5")
@@ -49,6 +50,12 @@ navigation_mesh = SubResource("NavigationMesh_7f48g")
 transform = Transform3D(1, 0, 0, 0, 0.34202, 0.939693, 0, -0.939693, 0.34202, 0, 12.7703, 5.071)
 current = true
 script = ExtResource("4_jsf16")
+
+[node name="BaseMinion" parent="." instance=ExtResource("5_e684n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.12855, 2.68603, 0)
+
+[node name="BaseMinion2" parent="." instance=ExtResource("5_e684n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.87145, 2.68603, 0)
 
 [node name="Player" parent="." instance=ExtResource("5_awk03")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
