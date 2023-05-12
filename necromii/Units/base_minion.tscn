@@ -35,6 +35,7 @@ shader_parameter/on = null
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+height = 1.50903
 
 [node name="BaseMinion" type="RigidBody3D"]
 mass = 10.0
@@ -49,6 +50,7 @@ material_overlay = SubResource("ShaderMaterial_x6r5r")
 mesh = SubResource("CapsuleMesh_mvl48")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.273516, 0)
 shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

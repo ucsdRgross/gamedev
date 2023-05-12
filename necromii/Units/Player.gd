@@ -5,6 +5,7 @@ var last_pos : Vector3
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var movement_physics = $MovementPhysics
+@onready var mesh = $LittleWitch/Armature/Skeleton3D/LittleWitch2
 
 enum STATES {
 	IDLE,
@@ -40,7 +41,7 @@ func _physics_process(delta):
 	
 	last_pos = position
 	#update_animation()
-	#rotate_wheel()
+	rotate_wheel()
 	
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(position)
@@ -49,10 +50,14 @@ func detect_selection():
 	else:
 		is_selected = new_is_selected
 		if is_selected:
-			$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
-			
+			mesh.material_overlay.set_shader_parameter("on", true)
 		else:
-			$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
+			mesh.material_overlay.set_shader_parameter("on", false)
+
+#manipulate run speed to match foot against ground
+func rotate_wheel():
+	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * 0.75)
+	$LittleWitch/AnimationTree.set("parameters/RunSpeed/scale", turn)
 
 ##	if paused:
 ##		movement_physics.update(Vector3.ZERO)
