@@ -1,7 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://dtmh7h36yyiyf"]
+[gd_scene load_steps=11 format=3 uid="uid://dtmh7h36yyiyf"]
 
 [ext_resource type="Script" path="res://Units/Player.gd" id="1_e7ent"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_aiiq6"]
+[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="3_8ko61"]
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="3_d7ijl"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="4_kaewj"]
 
@@ -33,19 +34,15 @@ script = ExtResource("1_e7ent")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_aiiq6")]
 
+[node name="LittleWitch" parent="." instance=ExtResource("3_8ko61")]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, 0, -1.5, 0)
+
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
+sorting_use_aabb_center = false
 material_override = SubResource("ShaderMaterial_lt2mp")
 material_overlay = SubResource("ShaderMaterial_4cnt6")
 mesh = SubResource("CapsuleMesh_mvl48")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_qrji7")
-
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-process_mode = 4
-radius = 2.0
-debug_enabled = true
-
-[node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="."]
-process_mode = 4
-radius = 2.0

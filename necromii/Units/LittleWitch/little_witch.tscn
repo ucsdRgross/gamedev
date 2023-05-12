@@ -1,0 +1,79 @@
+[gd_scene load_steps=11 format=3 uid="uid://cq51wxypscfeh"]
+
+[ext_resource type="PackedScene" uid="uid://c5yxxednkqi4r" path="res://Units/LittleWitch/LittleWitch.glb" id="1_of1s7"]
+[ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="2_426hl"]
+[ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="3_xjdty"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rg6yk"]
+resource_name = "Material.001"
+render_priority = 0
+shader = ExtResource("2_426hl")
+shader_parameter/albedo = Color(0, 0, 0, 1)
+shader_parameter/emission = Color(0, 0, 0, 1)
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/texture_emission = ExtResource("3_xjdty")
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_hsyyy"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2wbqj"]
+animation = &"Run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5dlwi"]
+animation = &"Blink"
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_5vynu"]
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_3nk0c"]
+graph_offset = Vector2(-496.272, -16)
+nodes/Add2/node = SubResource("AnimationNodeAdd2_hsyyy")
+nodes/Add2/position = Vector2(140, 80)
+nodes/Animation/node = SubResource("AnimationNodeAnimation_5dlwi")
+nodes/Animation/position = Vector2(-40, 60)
+"nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_2wbqj")
+"nodes/Animation 2/position" = Vector2(-80, 200)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_5vynu")
+nodes/StateMachine/position = Vector2(-240, 100)
+node_connections = [&"output", 0, &"Add2", &"Add2", 0, &"Animation", &"Add2", 1, &"Animation 2"]
+
+[sub_resource type="AnimationNodeStateMachinePlayback" id="AnimationNodeStateMachinePlayback_viy2v"]
+
+[node name="LittleWitch" instance=ExtResource("1_of1s7")]
+
+[node name="Skeleton3D" parent="Armature" index="0"]
+bones/0/position = Vector3(-4.82075e-18, 0.45246, -0.244058)
+bones/0/rotation = Quaternion(-0.0233139, 0.671394, 0.740251, -0.0267357)
+bones/1/rotation = Quaternion(-0.0447237, 0.713194, 0.694559, -0.0833207)
+bones/2/rotation = Quaternion(-0.055939, 0.136891, -0.169986, 0.974288)
+bones/3/rotation = Quaternion(-0.061352, -0.00437236, 0.0262857, 0.99776)
+bones/4/rotation = Quaternion(-0.0117111, -0.231545, 0.0313714, 0.972248)
+bones/6/rotation = Quaternion(0.561206, 0.483025, 0.457288, -0.492567)
+bones/7/rotation = Quaternion(-0.188196, 0.0772461, 0.0527158, 0.977669)
+bones/8/rotation = Quaternion(0.083198, 0.0192155, 0.0165525, 0.99621)
+bones/9/rotation = Quaternion(0.0282505, 0.000137301, 0.00688787, 0.999577)
+bones/10/rotation = Quaternion(0.5316, -0.599865, -0.479869, -0.356777)
+bones/11/rotation = Quaternion(-0.260771, -0.0311182, 0.0556274, 0.963294)
+bones/12/rotation = Quaternion(0.05905, -0.0179367, 0.051373, 0.996771)
+bones/13/rotation = Quaternion(0.0202492, 0.000266682, 0.023619, 0.999516)
+bones/14/rotation = Quaternion(-0.0421627, -0.123459, 0.586433, 0.799422)
+bones/15/rotation = Quaternion(-0.597447, -0.71809, 0.267342, 0.2365)
+bones/16/rotation = Quaternion(0.0247566, 0.0583794, -0.00112143, 0.997987)
+bones/17/rotation = Quaternion(-0.0848233, 0.0443631, -0.799144, 0.59347)
+bones/18/rotation = Quaternion(0.264134, -0.34435, 0.593386, -0.677901)
+bones/19/rotation = Quaternion(0.26791, 0.0209922, 0.0982606, 0.95819)
+
+[node name="LittleWitch2" parent="Armature/Skeleton3D" index="0"]
+sorting_offset = 10.0
+surface_material_override/0 = SubResource("ShaderMaterial_rg6yk")
+
+[node name="AnimationPlayer" parent="." index="1"]
+autoplay = "Idle"
+
+[node name="AnimationTree" type="AnimationTree" parent="." index="2"]
+tree_root = SubResource("AnimationNodeBlendTree_3nk0c")
+anim_player = NodePath("../AnimationPlayer")
+active = true
+parameters/Add2/add_amount = 1.0
+parameters/StateMachine/playback = SubResource("AnimationNodeStateMachinePlayback_viy2v")

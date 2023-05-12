@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://28kdao4jtvis"]
+[gd_scene load_steps=27 format=3 uid="uid://cid4rfwjg5at0"]
 
 [ext_resource type="PackedScene" path="res://SelectionTool/selection_tool.tscn" id="1_8lgy8"]
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_d5fkg"]
@@ -7,6 +7,11 @@
 [ext_resource type="Script" path="res://Levels/Level1/Camera3D.gd" id="4_jsf16"]
 [ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="5_awk03"]
 [ext_resource type="PackedScene" uid="uid://oyvayq6nt3na" path="res://Units/base_minion.tscn" id="5_e684n"]
+[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="8_2v0u5"]
+[ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="9_48uwb"]
+[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="9_t8ohw"]
+[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="10_ek4tn"]
+[ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="10_l3nli"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
 albedo_texture = ExtResource("1_s2pm5")
@@ -21,10 +26,50 @@ size = Vector3(2, 1, 2)
 vertices = PackedVector3Array(-43.5, 0.5, -49.5, -49.5, 0.5, -49.5, -49.5, 0.5, -43.5, -49.5, 0.5, 43.25, -49.5, 0.5, 49.5, -43.5, 0.5, 49.5, 49.5, 0.5, -43.5, 49.5, 0.5, -49.5, 43.25, 0.5, -49.5, 43.25, 0.5, 49.5, 49.5, 0.5, 49.5, 49.5, 0.5, 43.25, -37.25, 0.5, -49.5, -43.5, 0.5, -49.5, -49.5, 0.5, -43.5, -49.5, 0.5, -37.25, -49.5, 0.5, 43.25, -43.5, 0.5, 49.5, -37.25, 0.5, 49.5, -49.5, 0.5, 37, 49.5, 0.5, -37.25, 49.5, 0.5, -43.5, 43.25, 0.5, -49.5, 37, 0.5, -49.5, 37, 0.5, 49.5, 43.25, 0.5, 49.5, 49.5, 0.5, 43.25, -49.5, 0.5, 0, -49.5, 0.5, 6, -6.25, 0.5, 49.5, 18.5, 0.5, 49.5, 49.5, 0.5, 24.75, 49.5, 0.5, 18.5, 12.25, 0.5, 49.5, 49.5, 0.5, -6.25, 49.5, 0.5, -12.5, 12.25, 0.5, -49.5, 6, 0.5, -49.5, 37, 0.5, 49.5, 49.5, 0.5, 43.25, 49.5, 0.5, 37, 30.75, 0.5, 49.5, -31, 0.5, -49.5, -37.25, 0.5, -49.5, -49.5, 0.5, -37.25, -49.5, 0.5, -31, -49.5, 0.5, 37, -37.25, 0.5, 49.5, -31, 0.5, 49.5, -49.5, 0.5, 30.75, 49.5, 0.5, -31, 49.5, 0.5, -37.25, 37, 0.5, -49.5, 30.75, 0.5, -49.5, -12.5, 0.5, -49.5, -18.75, 0.5, -49.5, -49.5, 0.5, -18.75, -49.5, 0.5, -12.5, -49.5, 0.5, 18.5, -18.75, 0.5, 49.5, -12.5, 0.5, 49.5, -49.5, 0.5, 12.25, 49.5, 0.5, -6.25, 6, 0.5, -49.5, 0, 0.5, -49.5, 49.5, 0.5, 0, 49.5, 0.5, -12.5, 49.5, 0.5, -18.75, 18.5, 0.5, -49.5, 12.25, 0.5, -49.5, 30.75, 0.5, 49.5, 49.5, 0.5, 37, 49.5, 0.5, 30.75, 24.75, 0.5, 49.5, -49.5, 0.5, 24.75, -49.5, 0.5, 30.75, -31, 0.5, 49.5, -24.75, 0.5, 49.5, 49.5, 0.5, -31, 30.75, 0.5, -49.5, 24.75, 0.5, -49.5, 49.5, 0.5, -24.75, -24.75, 0.5, -49.5, -31, 0.5, -49.5, -49.5, 0.5, -31, -49.5, 0.5, -24.75, 49.5, 0.5, 0, 0, 0.5, -49.5, -49.5, 0.5, 0, -6.25, 0.5, 49.5, 0, 0.5, 49.5, 49.5, 0.5, 6, 12.25, 0.5, 49.5, 49.5, 0.5, 18.5, 49.5, 0.5, 12.25, 6, 0.5, 49.5, 24.75, 0.5, 49.5, 49.5, 0.5, 30.75, 49.5, 0.5, 24.75, 18.5, 0.5, 49.5, 0, 0.5, -49.5, -6.25, 0.5, -49.5, -49.5, 0.5, -6.25, -49.5, 0.5, 0, 6, 0.5, 49.5, 49.5, 0.5, 12.25, 49.5, 0.5, 6, 0, 0.5, 49.5, -49.5, 0.5, 24.75, -24.75, 0.5, 49.5, -18.75, 0.5, 49.5, -49.5, 0.5, 18.5, 49.5, 0.5, -18.75, 49.5, 0.5, -24.75, 24.75, 0.5, -49.5, 18.5, 0.5, -49.5, -18.75, 0.5, -49.5, -24.75, 0.5, -49.5, -49.5, 0.5, -24.75, -49.5, 0.5, -18.75, -6.25, 0.5, -49.5, -12.5, 0.5, -49.5, -49.5, 0.5, -12.5, -49.5, 0.5, -6.25, -49.5, 0.5, 12.25, -12.5, 0.5, 49.5, -6.25, 0.5, 49.5, -49.5, 0.5, 6)
 polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(5, 4, 3), PackedInt32Array(8, 7, 6), PackedInt32Array(11, 10, 9), PackedInt32Array(13, 12, 14), PackedInt32Array(14, 12, 15), PackedInt32Array(17, 16, 18), PackedInt32Array(18, 16, 19), PackedInt32Array(21, 20, 22), PackedInt32Array(22, 20, 23), PackedInt32Array(26, 25, 24), PackedInt32Array(29, 28, 27), PackedInt32Array(31, 30, 32), PackedInt32Array(32, 30, 33), PackedInt32Array(35, 34, 36), PackedInt32Array(36, 34, 37), PackedInt32Array(39, 38, 40), PackedInt32Array(40, 38, 41), PackedInt32Array(43, 42, 44), PackedInt32Array(44, 42, 45), PackedInt32Array(47, 46, 48), PackedInt32Array(48, 46, 49), PackedInt32Array(51, 50, 52), PackedInt32Array(52, 50, 53), PackedInt32Array(55, 54, 56), PackedInt32Array(56, 54, 57), PackedInt32Array(59, 58, 60), PackedInt32Array(60, 58, 61), PackedInt32Array(63, 62, 64), PackedInt32Array(64, 62, 65), PackedInt32Array(67, 66, 68), PackedInt32Array(68, 66, 69), PackedInt32Array(71, 70, 72), PackedInt32Array(72, 70, 73), PackedInt32Array(75, 74, 76), PackedInt32Array(76, 74, 77), PackedInt32Array(79, 78, 80), PackedInt32Array(80, 78, 81), PackedInt32Array(83, 82, 84), PackedInt32Array(84, 82, 85), PackedInt32Array(91, 90, 86), PackedInt32Array(86, 90, 89), PackedInt32Array(86, 89, 88), PackedInt32Array(86, 88, 87), PackedInt32Array(93, 92, 94), PackedInt32Array(94, 92, 95), PackedInt32Array(97, 96, 98), PackedInt32Array(98, 96, 99), PackedInt32Array(101, 100, 102), PackedInt32Array(102, 100, 103), PackedInt32Array(105, 104, 106), PackedInt32Array(106, 104, 107), PackedInt32Array(109, 108, 110), PackedInt32Array(110, 108, 111), PackedInt32Array(113, 112, 114), PackedInt32Array(114, 112, 115), PackedInt32Array(117, 116, 118), PackedInt32Array(118, 116, 119), PackedInt32Array(121, 120, 122), PackedInt32Array(122, 120, 123), PackedInt32Array(125, 124, 126), PackedInt32Array(126, 124, 127)]
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
+friction = 0.1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
+render_priority = 0
+shader = ExtResource("9_t8ohw")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
+render_priority = 0
+shader = ExtResource("10_ek4tn")
+shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
+shader_parameter/luma_coef = 0.1
+shader_parameter/color_coef = 0.1
+shader_parameter/depth_coef = 0.8
+shader_parameter/cutoff = 0.0
+shader_parameter/on = false
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_w7qef"]
+render_priority = 0
+shader = ExtResource("9_t8ohw")
+
 [sub_resource type="BoxMesh" id="BoxMesh_jcdbv"]
+material = SubResource("ShaderMaterial_w7qef")
 
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_4jahb"]
 data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1ydwi"]
+resource_name = "Material.001"
+render_priority = 0
+shader = ExtResource("10_l3nli")
+shader_parameter/albedo = Color(0, 0, 0, 1)
+shader_parameter/emission = Color(0, 0, 0, 1)
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/texture_emission = ExtResource("9_48uwb")
+
+[sub_resource type="AnimationNodeStateMachinePlayback" id="AnimationNodeStateMachinePlayback_xrkwy"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_d5fkg")
@@ -44,6 +89,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500208, 0)
 shape = SubResource("BoxShape3D_nujxj")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+visible = false
 navigation_mesh = SubResource("NavigationMesh_7f48g")
 
 [node name="Camera3D" type="Camera3D" parent="."]
@@ -58,19 +104,45 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.12855, 2.68603, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.87145, 2.68603, 0)
 
 [node name="Player" parent="." instance=ExtResource("5_awk03")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.5, 0)
+
+[node name="Player2" type="RigidBody3D" parent="."]
+transform = Transform3D(0.0690806, 0.971812, 0.22541, -0.997483, 0.0709054, -1.0215e-09, -0.0159828, -0.224843, 0.974264, 1.4616, 1.24627, -1.04916)
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_3d5xi")
+
+[node name="LittleWitch" parent="Player2" instance=ExtResource("8_2v0u5")]
+transform = Transform3D(-1, 0, 7.45058e-08, -7.45058e-09, 1, -1.49012e-08, -1.04308e-07, 1.49012e-08, -1, -2.38419e-07, -1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player2"]
+visible = false
+material_override = SubResource("ShaderMaterial_lt2mp")
+material_overlay = SubResource("ShaderMaterial_4cnt6")
+mesh = SubResource("CapsuleMesh_mvl48")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player2"]
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="Player2"]
+process_mode = 4
+radius = 2.0
+debug_enabled = true
+
+[node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="Player2"]
+process_mode = 4
+radius = 2.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = ExtResource("3_f1qtl")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.730162, -0.591733, 0.341637, 0, 0.5, 0.866025, -0.683274, 0.632339, -0.365081, 0, 20.429, 0)
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 20.429, 0)
 light_color = Color(0.992157, 0.945098, 0.878431, 1)
 light_energy = 1.25
 light_volumetric_fog_energy = 0.642
 light_angular_distance = 0.8
 shadow_enabled = true
-shadow_blur = 2.0
+shadow_blur = 5.0
 directional_shadow_blend_splits = true
 
 [node name="Box" type="MeshInstance3D" parent="."]
@@ -82,3 +154,38 @@ skeleton = NodePath("")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Box/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_4jahb")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+
+[node name="LittleWitch" parent="." instance=ExtResource("8_2v0u5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.105395, -0.0104008, 1.89644)
+
+[node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
+bones/0/position = Vector3(1.81591e-17, 0.450336, -0.275915)
+bones/0/rotation = Quaternion(0.00056285, 0.626709, 0.778842, -0.025305)
+bones/1/rotation = Quaternion(-0.0279776, 0.715149, 0.696464, -0.0521225)
+bones/2/rotation = Quaternion(-0.0567714, 0.0866321, -0.107577, 0.988787)
+bones/3/rotation = Quaternion(-0.0648551, -0.00271295, 0.0142411, 0.997789)
+bones/4/rotation = Quaternion(-0.0224677, -0.144355, 0.0185501, 0.989097)
+bones/6/rotation = Quaternion(0.557064, 0.506295, 0.462719, -0.468227)
+bones/7/rotation = Quaternion(-0.202143, 0.0686728, 0.0323889, 0.976408)
+bones/8/rotation = Quaternion(0.0786883, 0.0189826, 0.00378087, 0.996711)
+bones/9/rotation = Quaternion(0.0268235, 6.51521e-05, 0.00143977, 0.999639)
+bones/10/rotation = Quaternion(0.538546, -0.579373, -0.476843, -0.383296)
+bones/11/rotation = Quaternion(-0.247489, -0.0398518, 0.0353047, 0.967427)
+bones/12/rotation = Quaternion(0.0636162, -0.0181844, 0.0386152, 0.997061)
+bones/13/rotation = Quaternion(0.0216798, 0.000194552, 0.0181721, 0.9996)
+bones/14/rotation = Quaternion(-0.00670671, -0.0783531, 0.635758, 0.767872)
+bones/15/rotation = Quaternion(-0.67207, -0.635577, 0.33121, 0.186178)
+bones/16/rotation = Quaternion(0.598613, 0.0163696, -0.107256, 0.793656)
+bones/17/rotation = Quaternion(-0.0212063, 0.0309505, -0.765218, 0.642678)
+bones/18/rotation = Quaternion(0.38273, -0.381342, 0.642738, -0.543124)
+bones/19/rotation = Quaternion(0.0981338, -0.00994103, 0.0482634, 0.993953)
+
+[node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
+material_override = SubResource("ShaderMaterial_1ydwi")
+
+[node name="AnimationTree" parent="LittleWitch" index="2"]
+parameters/StateMachine/playback = SubResource("AnimationNodeStateMachinePlayback_xrkwy")
+
+[editable path="LittleWitch"]

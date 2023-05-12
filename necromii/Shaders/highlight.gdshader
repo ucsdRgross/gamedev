@@ -38,11 +38,13 @@ float gaussian3x3( sampler2D tex, vec2 uv, vec2 pixel_size )
 	return p;
 }
 
-const vec3 skew = vec3(0.0, 0.25, -0.40);
+render_mode world_vertex_coords;
+
 //skew model torwards camera
+const float skew_factor = 0.5;
 void vertex() {
-	vec3 s = (vec4(skew, 0.0) * MODELVIEW_MATRIX).xyz;
-	VERTEX += s * VERTEX.y;
+	VERTEX.z -= VERTEX.y * skew_factor;
+	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
 }
 
 void fragment( )

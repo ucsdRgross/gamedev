@@ -16,10 +16,11 @@ enum STATES {
 var state = STATES.IDLE
 
 func _ready():
-	navigation_agent.max_speed = movement_physics.max_speed
+	pass
+	#navigation_agent.max_speed = movement_physics.max_speed
 
 
-func _physics_process(_delta):	
+func _physics_process(delta):	
 	detect_selection()
 	
 	match state:
@@ -28,7 +29,7 @@ func _physics_process(_delta):
 	
 	var input_dir := Input.get_vector("Left", "Right", "Forward", "Back")
 	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
-	movement_physics.update(direction * movement_physics.max_speed)
+	movement_physics.update(delta, direction * movement_physics.max_speed)
 
 	if Input.is_action_just_pressed("ui_accept"):
 		movement_physics.jump()

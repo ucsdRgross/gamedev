@@ -22,6 +22,7 @@ next_pass = SubResource("ShaderMaterial_nj7kk")
 shader = ExtResource("2_scfel")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_x6r5r"]
+resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("3_f47io")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
@@ -42,6 +43,7 @@ script = ExtResource("1_jlidr")
 [node name="MovementPhysics" parent="." instance=ExtResource("2_78orc")]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 material_override = SubResource("ShaderMaterial_604p0")
 material_overlay = SubResource("ShaderMaterial_x6r5r")
 mesh = SubResource("CapsuleMesh_mvl48")
@@ -50,7 +52,6 @@ mesh = SubResource("CapsuleMesh_mvl48")
 shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-avoidance_enabled = true
 debug_enabled = true
 script = ExtResource("5_ppajl")
 

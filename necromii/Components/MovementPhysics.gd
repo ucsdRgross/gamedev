@@ -16,7 +16,7 @@ extends Node
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-var look_direction := Vector3.FORWARD
+var look_direction := Vector3.BACK
 var movement_velocity := Vector3.ZERO
 var floor_velocity := Vector3.ZERO
 
@@ -24,12 +24,12 @@ var floor_velocity := Vector3.ZERO
 @onready var ground_ray : RayCast3D = $GroundRay
 @onready var jump_timer = $JumpTimer
 
-func update(velocity : Vector3):
-	update_movement(velocity)
+func update(delta : float, velocity : Vector3):
+	update_movement(delta, velocity)
 	update_ride_spring()
 	update_upright_force()
 
-func update_movement(velocity : Vector3):
+func update_movement(delta : float, velocity : Vector3):
 	var direction : Vector3 = velocity.normalized()
 	if direction != Vector3.ZERO:
 		look_direction = direction
@@ -46,9 +46,9 @@ func update_movement(velocity : Vector3):
 	
 	var accel := acceleration * vel_dot
 	var goal_vel : Vector3 = velocity
-	goal_vel = cur_vel.move_toward(goal_vel + floor_velocity, accel * (1.0/60))
+	goal_vel = cur_vel.move_toward(goal_vel + floor_velocity, accel * delta)
 	#calculate necessary force to reach goal_vel
-	var needed_accel : Vector3 = (goal_vel - cur_vel) / (1.0/60)
+	var needed_accel : Vector3 = (goal_vel - cur_vel) / delta
 	var max_accel = max_acceleration_force * vel_dot #* acceleration_modifier
 	needed_accel = needed_accel.limit_length(max_accel)
 	#applying force offset from center causes tilt
