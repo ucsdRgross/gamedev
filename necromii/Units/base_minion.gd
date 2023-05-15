@@ -18,8 +18,8 @@ func _physics_process(delta):
 	else:
 		is_paused = false
 	
-	var final := navigation_agent.get_final_position()
-	var target_reached = Vector2(position.x, position.z).distance_to(Vector2(final.x, final.z)) < Vector2(linear_velocity.x, linear_velocity.z).length()/2
+	#var final := navigation_agent.get_final_position()
+	#var target_reached = Vector2(position.x, position.z).distance_to(Vector2(final.x, final.z)) < Vector2(linear_velocity.x, linear_velocity.z).length()/2
 	if !is_paused and !navigation_agent.is_navigation_finished():
 		var direction := navigation_agent.get_next_path_position() - global_transform.origin
 		direction.y = 0

@@ -24,6 +24,10 @@ Signals="*res://Global/Signals.gd"
 
 window/stretch/mode="canvas_items"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/wigglebone/plugin.cfg")
+
 [input]
 
 "Left Click"={

@@ -26,11 +26,11 @@ var floor_velocity := Vector3.ZERO
 
 func update(delta : float, velocity : Vector3):
 	update_movement(delta, velocity)
-	update_ride_spring()
-	update_upright_force()
+	update_ride_spring(delta)
+	update_upright_force(delta)
 
 func update_movement(delta : float, velocity : Vector3):
-	var direction : Vector3 = velocity.normalized()
+	var direction : Vector3 = Vector3(velocity.x, 0, velocity.z).normalized()
 	if direction != Vector3.ZERO:
 		look_direction = direction
 
@@ -58,18 +58,19 @@ func update_movement(delta : float, velocity : Vector3):
 	body.apply_force(needed_accel, tilt)
 	movement_velocity = goal_vel
 	
-func update_upright_force():
+func update_upright_force(delta : float):
 	var currentRot := body.basis.get_rotation_quaternion()
-	var _uprightTargetRot := Transform3D.IDENTITY.looking_at(look_direction, Vector3.UP).basis.get_rotation_quaternion()
-	var toGoal := shortest_rotation(_uprightTargetRot, currentRot)
+	var uprightTargetRot := Transform3D.IDENTITY.looking_at(look_direction, Vector3.UP).basis.get_rotation_quaternion()
+	var toGoal := shortest_rotation(uprightTargetRot, currentRot)
 	var rot_axis : Vector3 = toGoal.get_axis()
-	if rot_axis == Vector3.ZERO:
-		return
-	rot_axis = rot_axis.normalized()
+	#rot_axis = rot_axis.normalized()
 	var rot_radians : float = deg_to_rad(toGoal.get_angle())
-	body.apply_torque_impulse((rot_axis * (rot_radians * upright_spring_strength)) - (body.angular_velocity * upright_spring_damper))
+	var force : Vector3 = ((rot_axis * (rot_radians * upright_spring_strength)) - (body.angular_velocity * upright_spring_damper)) / delta
+	#avoid bug, best guess is that applying tiny forces causes floating point error on basis causing it to be not normalized
+	if force.length_squared() > 0.01:
+		body.apply_torque(force)
 
-func update_ride_spring():
+func update_ride_spring(delta : float):
 	ground_ray.global_rotation = Vector3.DOWN
 	if ground_ray.is_colliding():
 		var ray_dir := Vector3.DOWN
@@ -88,7 +89,7 @@ func update_ride_spring():
 		var x := ray_dist - ride_height 
 
 		var spring_force := (x * ride_spring_strength) - (rel_vel * ride_spring_damper)
-		body.apply_force(ray_dir * spring_force * body.mass)
+		body.apply_force(ray_dir * spring_force * body.mass * 60 * delta)
 		
 #		if hit_body is CharacterBody3D:
 #			#account for platform movement

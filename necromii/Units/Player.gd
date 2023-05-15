@@ -3,7 +3,7 @@ extends RigidBody3D
 var is_selected := false
 var last_pos : Vector3
 
-@onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
+#@onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var movement_physics = $MovementPhysics
 @onready var mesh = $LittleWitch/Armature/Skeleton3D/LittleWitch2
 
@@ -56,7 +56,8 @@ func detect_selection():
 
 #manipulate run speed to match foot against ground
 func rotate_wheel():
-	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * 0.75)
+	var diameter := 1.5 #whatever height of model is
+	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * diameter / 2)
 	$LittleWitch/AnimationTree.set("parameters/RunSpeed/scale", turn)
 
 ##	if paused:

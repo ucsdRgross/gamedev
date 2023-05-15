@@ -1,14 +1,16 @@
-[gd_scene load_steps=12 format=3 uid="uid://cq51wxypscfeh"]
+[gd_scene load_steps=15 format=3 uid="uid://cq51wxypscfeh"]
 
 [ext_resource type="PackedScene" uid="uid://c5yxxednkqi4r" path="res://Units/LittleWitch/LittleWitch.glb" id="1_of1s7"]
 [ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="2_426hl"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="2_xe3xi"]
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="3_xjdty"]
+[ext_resource type="Script" path="res://addons/wigglebone/wiggle_bone.gd" id="5_kxfqh"]
+[ext_resource type="Script" path="res://addons/wigglebone/wiggle_properties.gd" id="6_j2cin"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_mt5p4"]
 render_priority = 0
 shader = ExtResource("2_xe3xi")
-shader_parameter/outline_color = Color(0.823529, 0, 0, 1)
+shader_parameter/outline_color = Color(0.635294, 0.243137, 0.54902, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
 shader_parameter/depth_coef = 0.8
@@ -26,6 +28,16 @@ shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
 shader_parameter/texture_emission = ExtResource("3_xjdty")
+
+[sub_resource type="Resource" id="Resource_wcoc8"]
+script = ExtResource("6_j2cin")
+mode = 0
+stiffness = 0.15
+damping = 0.3
+gravity = Vector3(0, 0, 0)
+length = 0.1
+max_degrees = 60.0
+max_distance = 0.763
 
 [sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_hsyyy"]
 
@@ -52,31 +64,38 @@ node_connections = [&"output", 0, &"Add2", &"Add2", 0, &"Animation", &"Add2", 1,
 [node name="LittleWitch" instance=ExtResource("1_of1s7")]
 
 [node name="Skeleton3D" parent="Armature" index="0"]
-bones/0/position = Vector3(-1.89157e-17, 0.450528, -0.273043)
-bones/0/rotation = Quaternion(-0.0273909, 0.630807, 0.775437, -0.00541485)
-bones/1/rotation = Quaternion(-0.0258971, 0.715329, 0.696639, -0.0482466)
-bones/2/rotation = Quaternion(-0.0568497, 0.080252, -0.099654, 0.99015)
-bones/3/rotation = Quaternion(-0.0645382, -0.00253602, 0.0167926, 0.997771)
-bones/4/rotation = Quaternion(-0.0215628, -0.134032, 0.0189157, 0.990562)
-bones/6/rotation = Quaternion(0.556504, 0.50914, 0.463355, -0.465169)
-bones/7/rotation = Quaternion(-0.203861, 0.0676075, 0.0298693, 0.976206)
-bones/8/rotation = Quaternion(0.0781294, 0.0189535, 0.00220103, 0.996761)
-bones/9/rotation = Quaternion(0.0266321, 5.5482e-05, 0.000709006, 0.999645)
-bones/10/rotation = Quaternion(0.539363, -0.576784, -0.476428, -0.386554)
-bones/11/rotation = Quaternion(-0.245832, -0.0409318, 0.0327855, 0.967893)
-bones/12/rotation = Quaternion(0.0641802, -0.0182148, 0.0370366, 0.997084)
-bones/13/rotation = Quaternion(0.0218716, 0.000184879, 0.0174415, 0.999609)
-bones/14/rotation = Quaternion(0.00185471, -0.0732447, 0.638687, 0.76597)
-bones/15/rotation = Quaternion(-0.583759, -0.620316, 0.428294, 0.301659)
-bones/16/rotation = Quaternion(0.0225941, 0.0503921, -0.0042998, 0.998465)
-bones/17/rotation = Quaternion(-0.0406484, 0.0396268, -0.763166, 0.643704)
-bones/18/rotation = Quaternion(0.551283, -0.494111, 0.515886, -0.431048)
-bones/19/rotation = Quaternion(0.676337, 0.0271402, 0.142211, 0.722224)
+bones/0/position = Vector3(1.81591e-17, 0.4498, -0.283964)
+bones/0/rotation = Quaternion(0.00672382, 0.615056, 0.788156, -0.0217177)
+bones/1/rotation = Quaternion(-0.0205369, 0.715728, 0.697028, -0.0382606)
+bones/2/rotation = Quaternion(-0.0570234, 0.0638132, -0.0792409, 0.993175)
+bones/3/rotation = Quaternion(-0.0657398, -0.00198259, 0.00940147, 0.997791)
+bones/4/rotation = Quaternion(-0.0251989, -0.105918, 0.0131231, 0.993969)
+bones/6/rotation = Quaternion(0.555016, 0.516425, 0.464953, -0.457254)
+bones/7/rotation = Quaternion(-0.208277, 0.0648602, 0.0233778, 0.975637)
+bones/8/rotation = Quaternion(0.0766887, 0.0188784, -0.00186911, 0.996875)
+bones/9/rotation = Quaternion(0.0261387, 3.05469e-05, -0.00117374, 0.999658)
+bones/10/rotation = Quaternion(0.541424, -0.570065, -0.47532, -0.394913)
+bones/11/rotation = Quaternion(-0.241551, -0.0437117, 0.0262949, 0.969046)
+bones/12/rotation = Quaternion(0.0656324, -0.0182929, 0.0329693, 0.997131)
+bones/13/rotation = Quaternion(0.0223658, 0.000159951, 0.015559, 0.999629)
+bones/14/rotation = Quaternion(4.53107e-05, -0.0651493, 0.655578, 0.752312)
+bones/15/rotation = Quaternion(-0.68752, -0.609584, 0.35174, 0.178895)
+bones/16/rotation = Quaternion(0.713982, 0.00257896, -0.128826, 0.688205)
+bones/17/rotation = Quaternion(-0.00322205, 0.02901, -0.748888, 0.662053)
+bones/18/rotation = Quaternion(0.424806, -0.404634, 0.640622, -0.495393)
+bones/19/rotation = Quaternion(0.087994, -0.0176905, 0.0392056, 0.995192)
 
 [node name="LittleWitch2" parent="Armature/Skeleton3D" index="0"]
 sorting_offset = 10.0
 material_overlay = SubResource("ShaderMaterial_mt5p4")
 surface_material_override/0 = SubResource("ShaderMaterial_rg6yk")
+
+[node name="WiggleBone" type="BoneAttachment3D" parent="Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.998593, -0.0525995, -0.00670386, -0.0111051, -0.331084, 0.943535, -0.0518491, -0.942134, -0.331202, 0.00462039, 0.892697, -0.34824)
+bone_name = "Ponytail"
+bone_idx = 5
+script = ExtResource("5_kxfqh")
+properties = SubResource("Resource_wcoc8")
 
 [node name="AnimationPlayer" parent="." index="1"]
 autoplay = "Idle"

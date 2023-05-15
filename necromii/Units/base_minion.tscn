@@ -54,6 +54,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.273516, 0)
 shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 1.5
 debug_enabled = true
 script = ExtResource("5_ppajl")
 
