@@ -11,6 +11,7 @@ friction = 0.1
 height = 1.5
 
 [node name="Player" type="RigidBody3D"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
 mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_3d5xi")
 script = ExtResource("1_e7ent")
@@ -18,32 +19,32 @@ script = ExtResource("1_e7ent")
 [node name="MovementPhysics" parent="." instance=ExtResource("2_aiiq6")]
 
 [node name="LittleWitch" parent="." instance=ExtResource("3_8ko61")]
-transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, 0, -1.5, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(-1.83529e-17, 0.449332, -0.290983)
-bones/0/rotation = Quaternion(-0.0202005, 0.604761, 0.796092, 0.00965132)
-bones/1/rotation = Quaternion(-0.00198784, 0.716398, 0.697679, -0.00370339)
-bones/2/rotation = Quaternion(-0.0573181, 0.00619478, -0.00769241, 0.998307)
-bones/3/rotation = Quaternion(-0.0665104, -0.0002129, 0.00392755, 0.997778)
-bones/4/rotation = Quaternion(-0.0276184, -0.0103051, 0.00268935, 0.999562)
-bones/6/rotation = Quaternion(0.549357, 0.541125, 0.470046, -0.429474)
-bones/7/rotation = Quaternion(-0.223417, 0.0553365, 0.000943994, 0.97315)
-bones/8/rotation = Quaternion(0.0717049, 0.0186165, -0.0159172, 0.997125)
-bones/9/rotation = Quaternion(0.0244354, -5.54852e-05, -0.00767083, 0.999672)
-bones/10/rotation = Quaternion(0.548041, -0.546316, -0.47105, -0.42344)
-bones/11/rotation = Quaternion(-0.226637, -0.0532901, 0.00386261, 0.972513)
-bones/12/rotation = Quaternion(0.0706354, -0.0185598, 0.0189259, 0.99715)
-bones/13/rotation = Quaternion(0.0240704, 7.39146e-05, 0.00906238, 0.999669)
-bones/14/rotation = Quaternion(0.021579, -0.0361928, 0.697469, 0.715375)
-bones/15/rotation = Quaternion(-0.524165, -0.497414, 0.573013, 0.386635)
-bones/16/rotation = Quaternion(0.0686197, 0.0353411, -0.0208237, 0.996799)
-bones/17/rotation = Quaternion(-0.004444, 0.0435644, -0.710827, 0.702002)
-bones/18/rotation = Quaternion(0.687985, -0.561376, 0.406029, -0.216041)
-bones/19/rotation = Quaternion(0.801612, 0.0177778, 0.147321, 0.579136)
+bones/0/position = Vector3(7.64693e-18, 0.452319, -0.246171)
+bones/0/rotation = Quaternion(-0.0205669, 0.668505, 0.742891, -0.028127)
+bones/1/rotation = Quaternion(-0.0439644, 0.713302, 0.694665, -0.0819061)
+bones/2/rotation = Quaternion(-0.0559843, 0.134652, -0.167206, 0.975078)
+bones/3/rotation = Quaternion(-0.0615844, -0.00429633, 0.0256675, 0.997763)
+bones/4/rotation = Quaternion(-0.0124228, -0.227534, 0.0307495, 0.973205)
+bones/6/rotation = Quaternion(0.561032, 0.484095, 0.457546, -0.491474)
+bones/7/rotation = Quaternion(-0.188833, 0.0768575, 0.0517924, 0.977626)
+bones/8/rotation = Quaternion(0.0829931, 0.019205, 0.0159713, 0.996237)
+bones/9/rotation = Quaternion(0.0282409, 0.000136811, 0.00685121, 0.999578)
+bones/10/rotation = Quaternion(0.531929, -0.598949, -0.479744, -0.357991)
+bones/11/rotation = Quaternion(-0.260171, -0.0315157, 0.0547043, 0.963496)
+bones/12/rotation = Quaternion(0.0592581, -0.017948, 0.0507927, 0.996788)
+bones/13/rotation = Quaternion(0.0202589, 0.000266197, 0.0235823, 0.999517)
+bones/14/rotation = Quaternion(-0.0396354, -0.120703, 0.588906, 0.798154)
+bones/15/rotation = Quaternion(-0.603412, -0.713234, 0.270589, 0.23232)
+bones/16/rotation = Quaternion(0.0639393, 0.0564377, -0.00831446, 0.996322)
+bones/17/rotation = Quaternion(-0.0807437, 0.0432903, -0.797746, 0.595993)
+bones/18/rotation = Quaternion(0.270244, -0.345046, 0.598619, -0.670498)
+bones/19/rotation = Quaternion(0.226384, 0.0172909, 0.0904025, 0.96968)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.998966, 0.0454703, -0.000627245, 0.0143309, -0.301693, 0.953297, 0.0431575, -0.95232, -0.302033, -0.00192833, 0.895744, -0.338764)
+transform = Transform3D(0.999704, -0.022255, -0.00984948, -0.00130169, -0.453026, 0.891496, -0.0243023, -0.89122, -0.45292, 0.00760448, 0.879764, -0.382983)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)

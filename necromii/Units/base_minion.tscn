@@ -1,10 +1,10 @@
-[gd_scene load_steps=11 format=3 uid="uid://oyvayq6nt3na"]
+[gd_scene load_steps=11 format=3 uid="uid://cf267qictd8ov"]
 
 [ext_resource type="Script" path="res://Units/base_minion.gd" id="1_jlidr"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_78orc"]
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="2_scfel"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_f47io"]
-[ext_resource type="Script" path="res://NavigationTargetLogic.gd" id="5_ppajl"]
+[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="5_2sci5"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_nj7kk"]
 render_priority = 0
@@ -56,6 +56,6 @@ shape = SubResource("CapsuleShape3D_qrji7")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 1.5
 debug_enabled = true
-script = ExtResource("5_ppajl")
+script = ExtResource("5_2sci5")
 
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]
