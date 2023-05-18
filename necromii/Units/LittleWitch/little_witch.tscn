@@ -92,7 +92,7 @@ blend_shapes/Happy = 1.0
 surface_material_override/0 = SubResource("ShaderMaterial_rg6yk")
 
 [node name="WiggleBone" type="BoneAttachment3D" parent="Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999592, -0.0259745, -0.0118827, -0.000709746, -0.438469, 0.898746, -0.0285547, -0.898371, -0.438309, 0.00665182, 0.881075, -0.380411)
+transform = Transform3D(0.999688, -0.0218168, -0.0121318, 0.0010777, -0.447818, 0.894124, -0.0249398, -0.893858, -0.447655, 0.00665216, 0.881075, -0.380412)
 bone_name = "Ponytail"
 bone_idx = 5
 script = ExtResource("5_kxfqh")

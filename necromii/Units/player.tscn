@@ -44,7 +44,7 @@ bones/18/rotation = Quaternion(0.270244, -0.345046, 0.598619, -0.670498)
 bones/19/rotation = Quaternion(0.226384, 0.0172909, 0.0904025, 0.96968)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999704, -0.022255, -0.00984948, -0.00130169, -0.453026, 0.891496, -0.0243023, -0.89122, -0.45292, 0.00760448, 0.879764, -0.382983)
+transform = Transform3D(0.999845, -0.0145506, -0.00995382, 0.00218297, -0.458083, 0.888906, -0.0174937, -0.88879, -0.45798, 0.00760449, 0.879763, -0.382983)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)

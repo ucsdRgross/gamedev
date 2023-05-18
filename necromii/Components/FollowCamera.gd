@@ -1,9 +1,8 @@
 @tool
 extends Camera3D
 
-@export var target: Node3D
+@onready var target: Node3D = $"../.."
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta):
 	if not target is Node3D:
 		if Engine.is_editor_hint():
@@ -11,4 +10,5 @@ func _process(_delta):
 		return
 		
 	var look := target.global_position
+	look.y -= 1
 	look_at(look)

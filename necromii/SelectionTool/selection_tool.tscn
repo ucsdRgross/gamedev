@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dfo8hlabm8dbn" path="res://SelectionTool/paint_tool.tscn" id="2_c085j"]
 [ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="3_wdys3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_qgolh"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2gl6i"]
 resource_local_to_scene = true
 shader = ExtResource("3_wdys3")
 shader_parameter/size = null
@@ -38,10 +38,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.22378)
 [node name="SubViewport" type="SubViewport" parent="."]
 disable_3d = true
 transparent_bg = true
-size = Vector2i(2048, 2048)
+size = Vector2i(4096, 4096)
 
 [node name="PaintTool" parent="SubViewport" instance=ExtResource("2_c085j")]
-material = SubResource("ShaderMaterial_qgolh")
+material = SubResource("ShaderMaterial_2gl6i")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_dfqu7")

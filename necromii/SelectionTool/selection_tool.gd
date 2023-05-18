@@ -114,7 +114,6 @@ func handle_mouse(event):
 	# Find mouse position in Area3D
 	var mouse_pos3D = find_mouse(event.position)
 	if mouse_pos3D == null:
-		print("outside play area")
 		return
 	#var mouse_pos3D = find_mouse(get_viewport().get_mouse_position())
 	

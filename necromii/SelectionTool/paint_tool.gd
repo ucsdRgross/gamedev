@@ -244,7 +244,7 @@ func find_bounds():
 func clamp_to_circle(pos : Vector2) -> Vector2:
 	var texture_center := Vector2(texture_size, texture_size)/2
 	pos = pos - texture_center
-	pos = pos.limit_length(texture_center.x - 1)
+	pos = pos.limit_length(texture_center.x / 2)
 	pos = pos + texture_center
 	return pos
 
