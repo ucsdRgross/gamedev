@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=31 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="PackedScene" uid="uid://do2to5avngiw1" path="res://SelectionTool/selection_tool.tscn" id="1_8lgy8"]
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_d5fkg"]
@@ -14,6 +14,7 @@
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="9_t8ohw"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="10_ek4tn"]
 [ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="10_l3nli"]
+[ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_2bt3m"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qckf1"]
 size = Vector3(100, 100, 20)
@@ -80,6 +81,7 @@ shader_parameter/uv1_scale = Vector3(1, 1, 1)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/skew_factor = 0.5
 shader_parameter/texture_emission = ExtResource("9_48uwb")
 
 [node name="Main" type="Node3D"]
@@ -233,7 +235,7 @@ script = ExtResource("5_m6dgi")
 target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
 
 [node name="ZoomPath" type="Path3D" parent="."]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.5, 0)
 curve = SubResource("Curve3D_4e02e")
 
 [node name="ZoomPathFollow" type="PathFollow3D" parent="ZoomPath"]
@@ -294,35 +296,36 @@ skeleton = NodePath("")
 shape = SubResource("ConcavePolygonShape3D_4jahb")
 
 [node name="LittleWitch" parent="." instance=ExtResource("8_2v0u5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.105395, -0.0104008, 1.89644)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.10539, -0.0104008, 1.89644)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(-1.89157e-17, 0.450827, -0.268549)
-bones/0/rotation = Quaternion(-0.0277525, 0.63723, 0.770132, -0.00802321)
-bones/1/rotation = Quaternion(-0.0296467, 0.714995, 0.696313, -0.0552322)
-bones/2/rotation = Quaternion(-0.0567043, 0.0917442, -0.113925, 0.987618)
-bones/3/rotation = Quaternion(-0.064044, -0.00290075, 0.0187521, 0.997767)
-bones/4/rotation = Quaternion(-0.0200326, -0.153423, 0.0214288, 0.987725)
-bones/6/rotation = Quaternion(0.557505, 0.504005, 0.462203, -0.470675)
-bones/7/rotation = Quaternion(-0.200763, 0.0695272, 0.0344106, 0.976564)
-bones/8/rotation = Quaternion(0.0791366, 0.0190058, 0.00504872, 0.99667)
-bones/9/rotation = Quaternion(0.0269772, 7.29229e-05, 0.00202622, 0.999634)
-bones/10/rotation = Quaternion(0.537883, -0.581444, -0.477169, -0.380676)
-bones/11/rotation = Quaternion(-0.248817, -0.0389848, 0.0373261, 0.967046)
-bones/12/rotation = Quaternion(0.0631634, -0.0181599, 0.039882, 0.997041)
-bones/13/rotation = Quaternion(0.0215258, 0.00020232, 0.0187585, 0.999592)
-bones/14/rotation = Quaternion(-0.00439344, -0.0813779, 0.628841, 0.773251)
-bones/15/rotation = Quaternion(-0.588863, -0.639798, 0.40056, 0.288877)
-bones/16/rotation = Quaternion(0.0170737, 0.0524152, -0.00234038, 0.998477)
-bones/17/rotation = Quaternion(-0.0482033, 0.0399456, -0.770767, 0.634034)
-bones/18/rotation = Quaternion(0.511344, -0.474732, 0.534516, -0.476916)
-bones/19/rotation = Quaternion(0.639446, 0.0281837, 0.139764, 0.7555)
+bones/0/position = Vector3(0.0165828, 0.358171, -0.283098)
+bones/0/rotation = Quaternion(-3.92699e-05, 0.707107, 0.707106, 3.92703e-05)
+bones/2/rotation = Quaternion(-0.0054808, 4.36769e-08, 0.00527434, 0.999971)
+bones/3/rotation = Quaternion(-0.00180621, 9.35036e-12, 0.00173817, 0.999997)
+bones/4/rotation = Quaternion(-0.00118826, -2.78263e-11, 0.00112812, 0.999999)
+bones/7/rotation = Quaternion(-0.314742, 0.0747889, 0.0713841, 0.94353)
+bones/8/rotation = Quaternion(0.0294367, 0.0192356, 0.0342233, 0.998795)
+bones/9/rotation = Quaternion(0.00547881, 0.000311844, 0.0257478, 0.999653)
+bones/11/rotation = Quaternion(-0.347865, -0.0296496, 0.0720587, 0.934301)
+bones/12/rotation = Quaternion(0.0502609, -0.0194151, -0.0356077, 0.997912)
+bones/13/rotation = Quaternion(0.0358769, -0.000299116, -0.0453315, 0.998327)
+bones/14/rotation = Quaternion(0.00782543, -0.019993, 0.708415, 0.70547)
+bones/15/rotation = Quaternion(-0.471646, -0.480165, 0.572898, 0.467739)
+bones/16/rotation = Quaternion(0.00254474, 0.0499783, -0.0385748, 0.998002)
+bones/17/rotation = Quaternion(0.0103829, 0.0182162, -0.708832, 0.705066)
+bones/18/rotation = Quaternion(0.464329, -0.489614, 0.563455, -0.476651)
+bones/19/rotation = Quaternion(0.00153289, -0.0500454, 0.0474996, 0.997616)
 
 [node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
 material_override = SubResource("ShaderMaterial_1ydwi")
-blend_shapes/Happy = 0.0
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999522, 0.0308981, 0.000884525, 0.0118712, -0.410129, 0.91195, 0.0285403, -0.911504, -0.410299, 0.00655828, 0.891444, -0.359651)
+transform = Transform3D(0.99986, 0.00512374, -0.015904, 0.0166578, -0.2312, 0.972763, 0.00130717, -0.972893, -0.231253, 0.0109777, 0.88852, -0.391979)
+
+[node name="StateChartDebugger" parent="." instance=ExtResource("15_2bt3m")]
+offset_right = -849.0
+offset_bottom = -406.0
+initial_node_to_watch = NodePath("../Player")
 
 [editable path="LittleWitch"]

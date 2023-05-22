@@ -1,8 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://dtmh7h36yyiyf"]
+[gd_scene load_steps=10 format=3 uid="uid://dtmh7h36yyiyf"]
 
 [ext_resource type="Script" path="res://Units/Player.gd" id="1_e7ent"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_aiiq6"]
 [ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="3_8ko61"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/state_chart.gd" id="4_l1trq"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/compound_state.gd" id="6_280c6"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/atomic_state.gd" id="7_n2hjw"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/transition.gd" id="8_7yugj"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
@@ -11,7 +15,7 @@ friction = 0.1
 height = 1.5
 
 [node name="Player" type="RigidBody3D"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.34628, 0)
 mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_3d5xi")
 script = ExtResource("1_e7ent")
@@ -22,32 +26,165 @@ script = ExtResource("1_e7ent")
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(7.64693e-18, 0.452319, -0.246171)
-bones/0/rotation = Quaternion(-0.0205669, 0.668505, 0.742891, -0.028127)
-bones/1/rotation = Quaternion(-0.0439644, 0.713302, 0.694665, -0.0819061)
-bones/2/rotation = Quaternion(-0.0559843, 0.134652, -0.167206, 0.975078)
-bones/3/rotation = Quaternion(-0.0615844, -0.00429633, 0.0256675, 0.997763)
-bones/4/rotation = Quaternion(-0.0124228, -0.227534, 0.0307495, 0.973205)
-bones/6/rotation = Quaternion(0.561032, 0.484095, 0.457546, -0.491474)
-bones/7/rotation = Quaternion(-0.188833, 0.0768575, 0.0517924, 0.977626)
-bones/8/rotation = Quaternion(0.0829931, 0.019205, 0.0159713, 0.996237)
-bones/9/rotation = Quaternion(0.0282409, 0.000136811, 0.00685121, 0.999578)
-bones/10/rotation = Quaternion(0.531929, -0.598949, -0.479744, -0.357991)
-bones/11/rotation = Quaternion(-0.260171, -0.0315157, 0.0547043, 0.963496)
-bones/12/rotation = Quaternion(0.0592581, -0.017948, 0.0507927, 0.996788)
-bones/13/rotation = Quaternion(0.0202589, 0.000266197, 0.0235823, 0.999517)
-bones/14/rotation = Quaternion(-0.0396354, -0.120703, 0.588906, 0.798154)
-bones/15/rotation = Quaternion(-0.603412, -0.713234, 0.270589, 0.23232)
-bones/16/rotation = Quaternion(0.0639393, 0.0564377, -0.00831446, 0.996322)
-bones/17/rotation = Quaternion(-0.0807437, 0.0432903, -0.797746, 0.595993)
-bones/18/rotation = Quaternion(0.270244, -0.345046, 0.598619, -0.670498)
-bones/19/rotation = Quaternion(0.226384, 0.0172909, 0.0904025, 0.96968)
+bones/0/position = Vector3(-0.00739434, 0.364923, -0.295779)
+bones/0/rotation = Quaternion(4.08106e-05, 0.707107, 0.707106, -4.08116e-05)
+bones/2/rotation = Quaternion(-0.00146092, 4.38859e-08, -0.00235178, 0.999996)
+bones/3/rotation = Quaternion(-0.000537979, 1.39586e-10, -0.000774219, 1)
+bones/4/rotation = Quaternion(-0.000404357, -2.75617e-11, -0.000501429, 1)
+bones/7/rotation = Quaternion(-0.329858, 0.0500281, -0.00651476, 0.942681)
+bones/8/rotation = Quaternion(0.0271063, 0.0188973, 0.00930756, 0.999411)
+bones/9/rotation = Quaternion(0.00953864, 7.96618e-05, 0.0120522, 0.999882)
+bones/11/rotation = Quaternion(-0.317859, -0.0676006, -0.0515178, 0.944321)
+bones/12/rotation = Quaternion(0.0215657, -0.0188478, -0.00894625, 0.99955)
+bones/13/rotation = Quaternion(0.00145979, -8.32166e-05, -0.00685965, 0.999975)
+bones/14/rotation = Quaternion(0.00276611, -0.0363456, 0.70703, 0.706244)
+bones/15/rotation = Quaternion(-0.465306, -0.496874, 0.556364, 0.476514)
+bones/16/rotation = Quaternion(-0.00245544, 0.0502169, -0.0495133, 0.997507)
+bones/17/rotation = Quaternion(0.00208498, 0.0368178, -0.70691, 0.706342)
+bones/18/rotation = Quaternion(0.467286, -0.494391, 0.558914, -0.47417)
+bones/19/rotation = Quaternion(-0.0021866, -0.0501871, 0.0471354, 0.997625)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999845, -0.0145506, -0.00995382, 0.00218297, -0.458083, 0.888906, -0.0174937, -0.88879, -0.45798, 0.00760449, 0.879763, -0.382983)
+transform = Transform3D(0.999959, -0.00574627, 0.0070002, -0.00830904, -0.274579, 0.961528, -0.00360309, -0.961547, -0.274616, -0.00488522, 0.900244, -0.400452)
+
+[node name="Physical Bone Root" parent="LittleWitch/Armature/Skeleton3D" index="4"]
+transform = Transform3D(-1, -1.40381e-09, -0.0001142, -1.22765e-09, 0.999761, -1.48864e-06, 0.000114227, -1.5465e-06, -0.999761, -0.0103121, 0.363609, -0.142657)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.44719e-05, -0.000258537, 0.150204)
+body_offset = Transform3D(1, 2.14648e-13, 7.567e-10, -3.7835e-10, 2.85399e-09, -0.999761, 1.98457e-12, 0.999761, 1.11891e-09, 1.44718e-05, 0.150168, 0.000258476)
+
+[node name="Physical Bone Waist" parent="LittleWitch/Armature/Skeleton3D" index="5"]
+transform = Transform3D(1, 0.000114113, 1.40268e-09, 1.22788e-09, 1.48864e-06, -0.999761, -0.000114139, 0.999761, 1.5465e-06, -0.0102635, 0.428594, 0.00756784)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6991e-05, -4.41068e-06, 0.0652589)
+body_offset = Transform3D(1, 7.85803e-10, -9.22804e-13, -1.89164e-12, -1.11891e-09, -0.999761, 2.76486e-10, 0.999761, -2.85399e-09, 1.6991e-05, 0.0652434, 4.40981e-06)
+
+[node name="Physical Bone Chest" parent="LittleWitch/Armature/Skeleton3D" index="6"]
+transform = Transform3D(1.00006, 0.000129954, -0.00656525, -0.00656135, 0.00480142, -1.00018, -9.83982e-05, 1.00018, 0.00480516, -0.0098345, 0.566523, 0.00721551)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.11099e-05, -1.38291e-06, 0.072672)
+body_offset = Transform3D(1.00008, -5.51809e-08, -3.13487e-06, 4.49101e-07, 4.29899e-06, -1.00021, 9.63482e-08, 1.00019, 7.14045e-06, -3.08845e-05, 0.0726873, 8.64267e-07)
+
+[node name="Physical Bone Neck" parent="LittleWitch/Armature/Skeleton3D" index="7"]
+transform = Transform3D(1.00007, 0.00014206, -0.00872432, -0.0087248, 0.00637921, -1.00016, -8.616e-05, 1.00024, 0.00637853, -0.00914126, 0.664611, 0.00670366)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60411e-05, 3.54719e-07, 0.0253607)
+body_offset = Transform3D(1.00011, -1.96669e-08, 3.63243e-07, -3.00648e-07, 1.29687e-06, -1.00022, 2.51399e-07, 1.00026, -1.83005e-07, -3.60543e-05, 0.0253661, -3.50177e-07)
+
+[node name="Physical Bone Head" parent="LittleWitch/Armature/Skeleton3D" index="8"]
+transform = Transform3D(1.00014, 0.00905755, -0.00453981, -0.0101298, 0.891403, -0.455066, -7.68405e-05, 0.455571, 0.891189, -0.00784668, 0.794125, -0.196032)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.32076e-07, 9.76771e-06, 0.227298)
+body_offset = Transform3D(1.00019, -4.04324e-06, 9.19317e-08, -1.99777e-06, 0.887964, -0.461843, -2.33878e-07, 0.462326, 0.887707, -8.53091e-07, 0.104967, -0.201779)
+
+[node name="Physical Bone ShoulderL" parent="LittleWitch/Armature/Skeleton3D" index="9"]
+transform = Transform3D(0.0264149, 0.163281, -0.987064, 0.161482, 0.972927, 0.16508, 0.986579, -0.16362, -0.000579186, 0.0723821, 0.625555, 0.00691611)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.95504e-06, 2.63372e-05, 0.0827838)
+body_offset = Transform3D(1.00006, 2.95043e-06, 1.07617e-05, -2.11189e-06, -3.61925e-06, -1.00077, -3.8445e-06, 1.00001, -0.000466468, -2.84612e-06, 0.0828479, 1.22786e-05)
+
+[node name="Physical Bone ArmL" parent="LittleWitch/Armature/Skeleton3D" index="10"]
+transform = Transform3D(-0.0594835, 0.747585, -0.66172, 0.107137, 0.663835, 0.740389, 0.992601, -0.0268026, -0.119572, 0.213231, 0.54568, 0.0176625)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.74847e-07, -2.04049e-05, 0.08938)
+body_offset = Transform3D(1.00014, 3.81973e-05, 1.48267e-06, 3.60608e-06, 1.94409e-05, -1.00017, 1.0157e-05, 1.00014, 2.89325e-05, -5.06639e-07, 0.0893955, 1.78218e-05)
+
+[node name="Physical Bone ForearmL" parent="LittleWitch/Armature/Skeleton3D" index="11"]
+transform = Transform3D(-0.0658804, 0.700704, -0.710771, 0.0586949, 0.713939, 0.698113, 0.996359, 0.00427484, -0.0881386, 0.327831, 0.425372, 0.0352017)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55915e-06, -0.000251548, 0.0778351)
+body_offset = Transform3D(1.00026, 1.25403e-05, -1.131e-05, 4.76837e-06, 3.0846e-06, -1.00016, -1.12434e-05, 1.00036, -3.99942e-06, -3.67686e-06, 0.0778478, 0.000251949)
+
+[node name="Physical Bone ShoulderR" parent="LittleWitch/Armature/Skeleton3D" index="12"]
+transform = Transform3D(0.0241013, -0.150543, 0.98783, -0.161838, 0.97514, 0.152468, -0.986849, -0.163609, -0.000868764, -0.0912086, 0.626596, 0.00693814)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.63348e-06, 1.19603e-05, 0.0828928)
+body_offset = Transform3D(1.00032, -8.03173e-06, -6.0827e-06, 3.57069e-06, -1.62637e-05, -0.999528, 2.30074e-05, 1.00016, 9.22601e-05, 2.13832e-06, 0.0828536, -1.96099e-05)
+
+[node name="Physical Bone ArmR" parent="LittleWitch/Armature/Skeleton3D" index="13"]
+transform = Transform3D(0.0639326, -0.720463, 0.690725, 0.0164236, 0.692807, 0.721043, -0.997873, -0.0347346, 0.0561136, -0.234816, 0.549575, 0.00199666)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.85834e-06, -2.95635e-05, 0.0893623)
+body_offset = Transform3D(1.00005, -3.5774e-05, -1.11759e-07, -7.77841e-06, 2.98705e-05, -1.00008, 1.37463e-05, 1.00013, -1.73048e-05, -3.84962e-06, 0.0893691, 3.11136e-05)
+
+[node name="Physical Bone ForearmR" parent="LittleWitch/Armature/Skeleton3D" index="14"]
+transform = Transform3D(0.0581899, -0.6897, 0.721904, 0.0641747, 0.724352, 0.686668, -0.996524, 0.00639397, 0.0863673, -0.352931, 0.431888, -0.0097428)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.03604e-07, -0.000311394, 0.077846)
+body_offset = Transform3D(1.00028, -2.96594e-05, 2.28733e-06, -4.82798e-06, -4.92781e-05, -1.00006, 9.33884e-06, 1.00021, -5.05114e-06, 6.16536e-07, 0.0778506, 0.000311852)
+
+[node name="Physical Bone HipL" parent="LittleWitch/Armature/Skeleton3D" index="15"]
+transform = Transform3D(0.00321861, 0.0389341, -0.999597, 0.0517965, 0.998039, 0.0390612, 0.998903, -0.0518756, 0.00119571, 0.0683006, 0.360284, 0.00746937)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.43375e-08, -3.54287e-06, 0.0786126)
+body_offset = Transform3D(1.00025, 3.60981e-06, 7.83708e-07, 4.35743e-07, -2.29152e-06, -1.00036, -2.01166e-06, 1.00014, 1.8562e-06, -3.72529e-08, 0.078641, 3.39746e-06)
+
+[node name="Physical Bone ThighL" parent="LittleWitch/Armature/Skeleton3D" index="16"]
+transform = Transform3D(0.98969, -0.109511, 0.0942234, -0.091624, 0.0297661, 0.994231, -0.111808, -0.993738, 0.0194018, 0.13865, 0.270881, 0.00569185)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.15405e-06, 1.30893e-06, 0.0868316)
+body_offset = Transform3D(1.00019, -7.45058e-07, -8.3528e-06, 4.33344e-06, 1.8198e-06, -0.998874, -4.99189e-07, 1.0002, -2.63564e-06, 4.88013e-06, 0.0867338, -1.08033e-06)
+
+[node name="Physical Bone HipR" parent="LittleWitch/Armature/Skeleton3D" index="17"]
+transform = Transform3D(0.00254318, -0.0416545, 1.00047, -0.0513221, 0.999069, 0.0417558, -0.998908, -0.0514332, 0.000404508, -0.0888664, 0.360059, 0.00752331)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.01729e-06, 1.09247e-05, 0.0785494)
+body_offset = Transform3D(1.00023, -1.05426e-06, -2.91114e-06, -1.25292e-07, -2.95455e-05, -1.00134, -2.2091e-06, 1.00126, -7.60153e-06, 9.24803e-06, 0.0786548, -1.03414e-05)
+
+[node name="Physical Bone ThighR" parent="LittleWitch/Armature/Skeleton3D" index="18"]
+transform = Transform3D(0.987886, 0.108602, -0.112164, 0.109395, 0.0325617, 0.99225, 0.111546, -0.993683, 0.0202521, -0.157661, 0.270878, 0.00575319)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.61412e-07, 6.29197e-06, 0.0865857)
+body_offset = Transform3D(1.00016, 1.15037e-05, 8.26502e-06, 8.04616e-06, -6.65337e-06, -0.998775, -4.52995e-06, 1.00013, -2.71946e-06, -1.17719e-06, 0.0864796, -6.05732e-06)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)
 shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="."]
+
+[node name="StateChart" type="Node" parent="."]
+script = ExtResource("4_l1trq")
+
+[node name="Root" type="Node" parent="StateChart"]
+script = ExtResource("6_280c6")
+initial_state = NodePath("Movement")
+
+[node name="Movement" type="Node" parent="StateChart/Root"]
+script = ExtResource("6_280c6")
+initial_state = NodePath("Grounded")
+
+[node name="Grounded" type="Node" parent="StateChart/Root/Movement"]
+editor_description = "This state is active when the player is on the ground."
+script = ExtResource("7_n2hjw")
+
+[node name="On Jump" type="Node" parent="StateChart/Root/Movement/Grounded"]
+editor_description = "When jumping become airborne and enable double-jump."
+script = ExtResource("8_7yugj")
+to = NodePath("../../Airborne")
+event = &"jump"
+
+[node name="On Airborne" type="Node" parent="StateChart/Root/Movement/Grounded"]
+editor_description = "When becoming airborne (e.g. through falling) move to airborne state."
+script = ExtResource("8_7yugj")
+to = NodePath("../../Airborne")
+event = &"airborne"
+
+[node name="Airborne" type="Node" parent="StateChart/Root/Movement"]
+editor_description = "This is the root state for when the player is in the air. We have sub-states to handle the various input that is allowed when in the air."
+script = ExtResource("6_280c6")
+initial_state = NodePath("CannotJump")
+
+[node name="On Grounded" type="Node" parent="StateChart/Root/Movement/Airborne"]
+script = ExtResource("8_7yugj")
+to = NodePath("../../Grounded")
+event = &"grounded"
+
+[node name="CannotJump" type="Node" parent="StateChart/Root/Movement/Airborne"]
+editor_description = "This state is active when the player is airborne but can no longer jump either because the coyote-jump grace period has expired or the player has already used the double-jump."
+script = ExtResource("7_n2hjw")
+
+[node name="On Ragdoll" type="Node" parent="StateChart/Root/Movement"]
+script = ExtResource("8_7yugj")
+to = NodePath("../../Ragdoll")
+event = &"ragdoll"
+
+[node name="Ragdoll" type="Node" parent="StateChart/Root"]
+script = ExtResource("7_n2hjw")
+
+[node name="Recover" type="Node" parent="StateChart/Root/Ragdoll"]
+script = ExtResource("8_7yugj")
+to = NodePath("../../Movement")
+delay_seconds = 2.0
+
+[connection signal="jumping" from="MovementPhysics" to="." method="_on_movement_physics_jumping"]
+[connection signal="state_physics_processing" from="StateChart/Root/Movement" to="." method="_on_movement_state_physics_processing"]
+[connection signal="state_physics_processing" from="StateChart/Root/Movement/Grounded" to="." method="_on_grounded_state_physics_processing"]
+[connection signal="state_exited" from="StateChart/Root/Ragdoll" to="." method="_on_ragdoll_state_exited"]
 
 [editable path="LittleWitch"]

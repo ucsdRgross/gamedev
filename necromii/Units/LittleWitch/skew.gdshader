@@ -11,7 +11,7 @@ uniform vec3 uv2_offset;
 render_mode world_vertex_coords;
 
 //skew model torwards camera
-const float skew_factor = 0.5;
+uniform float skew_factor = 0.5;
 void vertex() {
 	VERTEX.z -= VERTEX.y * skew_factor;
 	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;

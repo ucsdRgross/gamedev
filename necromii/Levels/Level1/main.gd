@@ -1,7 +1,7 @@
 extends Node3D
 
-@onready var selection_tool = $SelectionTool
-@onready var player = $Player
+#@onready var selection_tool = $SelectionTool
+#@onready var player = $Player
 
 
 

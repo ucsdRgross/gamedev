@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dfo8hlabm8dbn" path="res://SelectionTool/paint_tool.tscn" id="2_c085j"]
 [ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="3_wdys3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_2gl6i"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p1uyq"]
 resource_local_to_scene = true
 shader = ExtResource("3_wdys3")
 shader_parameter/size = null
@@ -14,7 +14,7 @@ shader_parameter/bounds = null
 [sub_resource type="QuadMesh" id="QuadMesh_dfqu7"]
 size = Vector2(2, 2)
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_dkxwf"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_jvl65"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tajhd"]
@@ -22,8 +22,7 @@ resource_local_to_scene = true
 transparency = 1
 blend_mode = 1
 shading_mode = 0
-albedo_texture = SubResource("ViewportTexture_dkxwf")
-albedo_texture_force_srgb = true
+albedo_texture = SubResource("ViewportTexture_jvl65")
 detail_blend_mode = 1
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_47p53"]
@@ -41,7 +40,7 @@ transparent_bg = true
 size = Vector2i(4096, 4096)
 
 [node name="PaintTool" parent="SubViewport" instance=ExtResource("2_c085j")]
-material = SubResource("ShaderMaterial_2gl6i")
+material = SubResource("ShaderMaterial_p1uyq")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_dfqu7")

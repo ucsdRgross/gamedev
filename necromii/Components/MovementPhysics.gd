@@ -24,6 +24,14 @@ var floor_velocity := Vector3.ZERO
 @onready var ground_ray : RayCast3D = $GroundRay
 @onready var jump_timer = $JumpTimer
 
+signal jumping
+
+func _physics_process(delta):
+	ground_ray.global_rotation = Vector3.DOWN
+	
+func is_on_floor():
+	return ground_ray.is_colliding()
+
 func update(delta : float, velocity : Vector3):
 	update_movement(delta, velocity)
 	update_ride_spring(delta)
@@ -54,7 +62,7 @@ func update_movement(delta : float, velocity : Vector3):
 	#applying force offset from center causes tilt
 	var tilt := tilt_factor
 	if goal_vel.dot(needed_accel) <= 0:
-		tilt *= -0.6
+		tilt *= -1.5
 	body.apply_force(needed_accel, tilt)
 	movement_velocity = goal_vel
 	
@@ -71,8 +79,7 @@ func update_upright_force(delta : float):
 		body.apply_torque(force)
 
 func update_ride_spring(delta : float):
-	ground_ray.global_rotation = Vector3.DOWN
-	if ground_ray.is_colliding():
+	if is_on_floor():
 		var ray_dir := Vector3.DOWN
 		#if ray hits another rigidbody
 		var collider_vel := Vector3.ZERO
@@ -122,11 +129,13 @@ func update_ride_spring(delta : float):
 #			floor_velocity = Vector3.ZERO
 			
 func jump():
-	if ground_ray.is_colliding() and jump_timer.is_stopped():
+	if is_on_floor() and jump_timer.is_stopped():
 		body.linear_velocity.y = 0
 		body.apply_central_impulse(Vector3.UP * jump_velocity * body.mass + Vector3.UP * gravity)
 		ground_ray.enabled = false
 		jump_timer.start()
+		jumping.emit()
+
 
 func _on_jump_timer_timeout():
 	ground_ray.enabled = true

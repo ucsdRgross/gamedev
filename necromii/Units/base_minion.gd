@@ -2,9 +2,13 @@ extends RigidBody3D
 
 var is_selected := false
 var is_paused := false
+var delta := 0.0
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var movement_physics = $MovementPhysics
+
+enum states {IDLE, JUMP, RAGDOLL}
+var state := states.IDLE
 
 func _ready():
 	Signals.finished_drawing.connect(self._on_finished_drawing)
@@ -24,10 +28,10 @@ func _physics_process(delta):
 		var direction := navigation_agent.get_next_path_position() - global_transform.origin
 		direction.y = 0
 		var new_velocity: Vector3 = direction.normalized() * navigation_agent.max_speed
-		#new_velocity.y = 0
-		#movement_physics.update(new_velocity)
 		navigation_agent.agent_height_offset = -position.y
-		movement_physics.update(delta, new_velocity)#navigation_agent.set_velocity(new_velocity)
+		#movement_physics.update(delta, new_velocity)
+		self.delta = delta
+		navigation_agent.set_velocity(new_velocity)
 		#above function leads to _on_navigation_agent_3d_veocity_computed signal 
 	else:
 		movement_physics.update(delta, Vector3.ZERO)
@@ -40,7 +44,7 @@ func _physics_process(delta):
 
 func _on_navigation_agent_3d_velocity_computed(safe_velocity: Vector3):
 	# Move CharacterBody3D with the computed `safe_velocity` to avoid dynamic obstacles.
-	movement_physics.update(safe_velocity)
+	movement_physics.update(delta, safe_velocity)
 	
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(position)

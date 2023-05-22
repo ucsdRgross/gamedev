@@ -6,42 +6,55 @@ var last_pos : Vector3
 #@onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var movement_physics = $MovementPhysics
 @onready var mesh = $LittleWitch/Armature/Skeleton3D/LittleWitch2
-
-enum STATES {
-	IDLE,
-	WALK,
-	RUN,
-	JUMP
-}
-
-var state = STATES.IDLE
+@onready var state_chart = $StateChart
+@onready var anim_tree = $LittleWitch/AnimationTree
 
 func _ready():
+	#$LittleWitch/Armature/Skeleton3D/SkeletonIK3D.start()
 	pass
 	#navigation_agent.max_speed = movement_physics.max_speed
 
 
-func _physics_process(delta):	
+func _on_movement_state_physics_processing(delta):
 	detect_selection()
-	
-	match state:
-		STATES.IDLE:
-			pass
 	
 	var input_dir := Input.get_vector("Left", "Right", "Forward", "Back")
 	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
 	movement_physics.update(delta, direction * movement_physics.max_speed)
+	
+	if movement_physics.is_on_floor():
+		state_chart.send_event("grounded")
+	else:
+		state_chart.send_event("airborne")
+		anim_tree["parameters/Movement/transition_request"] = "Jump"
 
 	if Input.is_action_just_pressed("ui_accept"):
 		movement_physics.jump()
 	
+	if Input.is_action_just_pressed("ui_cancel"):
+		state_chart.send_event("ragdoll")
+		$LittleWitch/Armature/Skeleton3D.physical_bones_start_simulation()
+	
+#	var tween
+#	print($LittleWitch/Armature/Skeleton3D/SkeletonIK3D.interpolation)
+#	if Input.is_action_just_pressed("Left Click"):
+#		if tween:
+#			tween.kill()
+#		tween = create_tween()
+#		tween.tween_property($LittleWitch/Armature/Skeleton3D/SkeletonIK3D, "interpolation", 1, 3)
+#	elif Input.is_action_just_released("Left Click"):
+#		if tween:
+#			tween.kill()
+#		tween = create_tween()
+#		tween.tween_property($LittleWitch/Armature/Skeleton3D/SkeletonIK3D, "interpolation", 0, 3)
+#
 	if is_selected and Global.is_modifying:
 		var change : Vector2 = Global.SelectionTool.global_to_viewport_relative(position - last_pos)
 		Signals.player_move_selection.emit(change)
 	
 	last_pos = position
 	#update_animation()
-	rotate_wheel()
+	
 	
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(position)
@@ -58,7 +71,7 @@ func detect_selection():
 func rotate_wheel():
 	var diameter := 1.5 #whatever height of model is
 	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * diameter / 2)
-	$LittleWitch/AnimationTree.set("parameters/RunSpeed/scale", turn)
+	anim_tree["parameters/RunSpeed/scale"] = turn
 
 ##	if paused:
 ##		movement_physics.update(Vector3.ZERO)
@@ -78,3 +91,20 @@ func rotate_wheel():
 #			#above function leads to _on_navigation_agent_3d_velocity_computed signal 
 #		else:
 #			movement_physics.update(Vector3.ZERO)
+
+
+func _on_movement_physics_jumping():
+	pass
+	
+func _on_grounded_state_physics_processing(delta):
+	var vel := linear_velocity
+	vel.y = 0
+	if vel.length_squared() <= 0.05:
+		anim_tree["parameters/Movement/transition_request"] = "Idle"
+	else:
+		anim_tree["parameters/Movement/transition_request"] = "Run"
+		rotate_wheel()
+
+func _on_ragdoll_state_exited():
+	last_pos = position
+	$LittleWitch/Armature/Skeleton3D.physical_bones_stop_simulation()
