@@ -1,14 +1,14 @@
 [gd_scene load_steps=11 format=3 uid="uid://cf267qictd8ov"]
 
-[ext_resource type="Script" path="res://Units/base_minion.gd" id="1_a7g8g"]
-[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_qbvyo"]
-[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_n7vmk"]
-[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="4_y21yj"]
-[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="5_qwev6"]
+[ext_resource type="Script" path="res://Units/base_minion.gd" id="1_ot7fk"]
+[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_un5gd"]
+[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_02f6t"]
+[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="4_mq6us"]
+[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="5_l21lo"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_nj7kk"]
 render_priority = 0
-shader = ExtResource("3_n7vmk")
+shader = ExtResource("3_02f6t")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
@@ -19,12 +19,12 @@ shader_parameter/on = null
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_604p0"]
 render_priority = 0
 next_pass = SubResource("ShaderMaterial_nj7kk")
-shader = ExtResource("4_y21yj")
+shader = ExtResource("4_mq6us")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_x6r5r"]
 resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("3_n7vmk")
+shader = ExtResource("3_02f6t")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
@@ -39,9 +39,9 @@ height = 1.50903
 
 [node name="BaseMinion" type="RigidBody3D"]
 mass = 10.0
-script = ExtResource("1_a7g8g")
+script = ExtResource("1_ot7fk")
 
-[node name="MovementPhysics" parent="." instance=ExtResource("2_qbvyo")]
+[node name="MovementPhysics" parent="." instance=ExtResource("2_un5gd")]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -57,6 +57,6 @@ shape = SubResource("CapsuleShape3D_qrji7")
 target_desired_distance = 0.5
 avoidance_enabled = true
 debug_enabled = true
-script = ExtResource("5_qwev6")
+script = ExtResource("5_l21lo")
 
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]

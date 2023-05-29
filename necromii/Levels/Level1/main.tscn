@@ -1,26 +1,26 @@
 [gd_scene load_steps=31 format=3 uid="uid://dqajigklfuj53"]
 
-[ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_xdrv7"]
-[ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_e565w"]
-[ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="3_171ve"]
-[ext_resource type="PackedScene" uid="uid://do2to5avngiw1" path="res://SelectionTool/selection_tool.tscn" id="4_oubup"]
-[ext_resource type="PackedScene" uid="uid://cf267qictd8ov" path="res://Units/base_minion.tscn" id="5_55xem"]
-[ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="6_lpram"]
-[ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_kpkc8"]
-[ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_8y3tl"]
-[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="9_yjkxy"]
-[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="10_72hdd"]
-[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="11_im2oi"]
-[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="12_tmmmf"]
-[ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_sm4gi"]
-[ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_rqcvo"]
-[ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_3wsod"]
+[ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
+[ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
+[ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="3_8hx4y"]
+[ext_resource type="PackedScene" uid="uid://do2to5avngiw1" path="res://SelectionTool/selection_tool.tscn" id="4_o2hhp"]
+[ext_resource type="PackedScene" uid="uid://cf267qictd8ov" path="res://Units/base_minion.tscn" id="5_ji6s2"]
+[ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="6_34uvy"]
+[ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_t02jw"]
+[ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_3sve3"]
+[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="9_iofqv"]
+[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="10_2nknd"]
+[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="11_4rx0m"]
+[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="12_aarag"]
+[ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_ctue8"]
+[ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
+[ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qckf1"]
 size = Vector3(100, 100, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
-albedo_texture = ExtResource("3_171ve")
+albedo_texture = ExtResource("3_8hx4y")
 uv1_scale = Vector3(50, 50, 50)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_1d2an"]
@@ -44,11 +44,11 @@ friction = 0.1
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
 render_priority = 0
-shader = ExtResource("11_im2oi")
+shader = ExtResource("11_4rx0m")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
 render_priority = 0
-shader = ExtResource("12_tmmmf")
+shader = ExtResource("12_aarag")
 shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
 shader_parameter/luma_coef = 0.1
 shader_parameter/color_coef = 0.1
@@ -63,7 +63,7 @@ height = 1.5
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_w7qef"]
 render_priority = 0
-shader = ExtResource("11_im2oi")
+shader = ExtResource("11_4rx0m")
 
 [sub_resource type="BoxMesh" id="BoxMesh_jcdbv"]
 material = SubResource("ShaderMaterial_w7qef")
@@ -74,7 +74,7 @@ data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1ydwi"]
 resource_name = "Material.001"
 render_priority = 0
-shader = ExtResource("13_sm4gi")
+shader = ExtResource("13_ctue8")
 shader_parameter/albedo = Color(0, 0, 0, 1)
 shader_parameter/emission = Color(0, 0, 0, 1)
 shader_parameter/uv1_scale = Vector3(1, 1, 1)
@@ -82,14 +82,14 @@ shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
 shader_parameter/skew_factor = 0.5
-shader_parameter/texture_emission = ExtResource("14_rqcvo")
+shader_parameter/texture_emission = ExtResource("14_f084y")
 
 [node name="Main" type="Node3D" node_paths=PackedStringArray("camera")]
-script = ExtResource("1_xdrv7")
+script = ExtResource("1_nd7o6")
 camera = NodePath("ZoomPath/ZoomPathFollow/ZoomCamera")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = ExtResource("2_e565w")
+environment = ExtResource("2_7ntww")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 20.429, 0)
@@ -221,18 +221,18 @@ shape = SubResource("BoxShape3D_nujxj")
 visible = false
 navigation_mesh = SubResource("NavigationMesh_7f48g")
 
-[node name="SelectionTool" parent="Arena" instance=ExtResource("4_oubup")]
+[node name="SelectionTool" parent="Arena" instance=ExtResource("4_o2hhp")]
 transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 0, 0.1, 0)
 
-[node name="BaseMinion" parent="." instance=ExtResource("5_55xem")]
+[node name="BaseMinion" parent="." instance=ExtResource("5_ji6s2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.12855, 2.68603, 0)
 
-[node name="BaseMinion2" parent="." instance=ExtResource("5_55xem")]
+[node name="BaseMinion2" parent="." instance=ExtResource("5_ji6s2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.87145, 2.68603, 0)
 
 [node name="InterpolatedCamera3D" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
 current = true
-script = ExtResource("6_lpram")
+script = ExtResource("6_34uvy")
 target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
 
 [node name="ZoomPath" type="Path3D" parent="."]
@@ -244,15 +244,15 @@ transform = Transform3D(0.999985, 0, 0, 0, 0.999983, 0, 0, 0, 0.999983, 7.50635e
 progress = 8.94613
 rotation_mode = 0
 loop = false
-script = ExtResource("7_kpkc8")
+script = ExtResource("7_t02jw")
 min_progress = 0.0
 speed = 0.005
 
 [node name="ZoomCamera" type="Camera3D" parent="ZoomPath/ZoomPathFollow"]
 transform = Transform3D(-1, -9.83331e-08, 1.14588e-07, 0, 0.758879, 0.651231, -1.50996e-07, 0.651231, -0.758879, 0, 0, 0)
-script = ExtResource("8_8y3tl")
+script = ExtResource("8_3sve3")
 
-[node name="Player" parent="." instance=ExtResource("9_yjkxy")]
+[node name="Player" parent="." instance=ExtResource("9_iofqv")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.5, 0)
 
 [node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player"]
@@ -265,7 +265,7 @@ transform = Transform3D(0.0690806, 0.971812, 0.22541, -0.997483, 0.0709054, -1.0
 mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_3d5xi")
 
-[node name="LittleWitch" parent="Player2" instance=ExtResource("10_72hdd")]
+[node name="LittleWitch" parent="Player2" instance=ExtResource("10_2nknd")]
 transform = Transform3D(-1, 6.98492e-10, 7.45058e-08, -5.12227e-09, 1, -1.49012e-08, -1.05239e-07, 1.49012e-08, -1, -1.19209e-07, -1, 5.96046e-08)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Player2"]
@@ -287,41 +287,38 @@ skeleton = NodePath("")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Box/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_4jahb")
 
-[node name="LittleWitch" parent="." instance=ExtResource("10_72hdd")]
+[node name="LittleWitch" parent="." instance=ExtResource("10_2nknd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.10539, -0.0104008, 1.89644)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(-0.0260395, 0.340673, -0.250236)
-bones/0/rotation = Quaternion(3.19514e-05, 0.707108, 0.707106, -3.19517e-05)
-bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
-bones/2/rotation = Quaternion(-0.0158974, 4.37767e-08, -0.00828219, 0.999839)
-bones/3/rotation = Quaternion(-0.00523902, -1.21403e-11, -0.0027294, 0.999983)
-bones/4/rotation = Quaternion(-0.00335884, 6.81293e-11, -0.00174989, 0.999993)
-bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
-bones/7/rotation = Quaternion(-0.383831, -0.00339294, -0.193276, 0.902943)
-bones/8/rotation = Quaternion(0.110088, 0.0206479, 0.103687, 0.988283)
-bones/9/rotation = Quaternion(0.10402, 0.000866892, 0.131432, 0.985852)
-bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
-bones/11/rotation = Quaternion(-0.314357, -0.0755375, -0.0744875, 0.943358)
-bones/12/rotation = Quaternion(0.049759, -0.0201785, -0.0996838, 0.993569)
-bones/13/rotation = Quaternion(0.0158898, -0.000904087, -0.0746763, 0.997081)
-bones/14/rotation = Quaternion(0.0301135, 0.0288243, 0.712212, 0.700726)
-bones/15/rotation = Quaternion(-0.46157, -0.470561, 0.581559, 0.476775)
-bones/16/rotation = Quaternion(0.0118664, 0.0495661, -0.0422769, 0.997805)
-bones/17/rotation = Quaternion(0.0226963, -0.0236563, -0.711265, 0.702159)
-bones/18/rotation = Quaternion(0.481945, -0.44225, 0.607938, -0.450062)
-bones/19/rotation = Quaternion(0.0148072, -0.0494453, 0.0163717, 0.998533)
+bones/0/position = Vector3(-0.0123477, 0.354715, -0.276606)
+bones/0/rotation = Quaternion(2.99177e-05, 0.707108, 0.707106, -2.99179e-05)
+bones/2/rotation = Quaternion(-0.00753849, 4.37551e-08, -0.00392738, 0.999964)
+bones/3/rotation = Quaternion(-0.00248429, -1.25603e-11, -0.00129425, 0.999996)
+bones/4/rotation = Quaternion(-0.00163352, 1.86982e-11, -0.000851034, 0.999998)
+bones/7/rotation = Quaternion(-0.353309, 0.0310538, -0.0755544, 0.931934)
+bones/8/rotation = Quaternion(0.0621233, 0.0196717, 0.049092, 0.996666)
+bones/9/rotation = Quaternion(0.0493912, 0.000411717, 0.0624075, 0.996828)
+bones/11/rotation = Quaternion(-0.317942, -0.0675723, -0.0514475, 0.944299)
+bones/12/rotation = Quaternion(0.0334642, -0.0194291, -0.0471736, 0.998137)
+bones/13/rotation = Quaternion(0.00753695, -0.000428922, -0.0354205, 0.999344)
+bones/14/rotation = Quaternion(0.0142836, -0.0089254, 0.709648, 0.704356)
+bones/15/rotation = Quaternion(-0.463809, -0.485877, 0.567063, 0.476702)
+bones/16/rotation = Quaternion(0.00357342, 0.0499384, -0.0464684, 0.997664)
+bones/17/rotation = Quaternion(0.0107649, 0.0113723, -0.709099, 0.704935)
+bones/18/rotation = Quaternion(0.473797, -0.47279, 0.579962, -0.46436)
+bones/19/rotation = Quaternion(0.00496787, -0.0498885, 0.0341908, 0.998157)
 
 [node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
 material_override = SubResource("ShaderMaterial_1ydwi")
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.996905, 0.0784346, 0.00541972, -0.012332, 0.0879141, 0.996052, 0.0776484, -0.993036, 0.0886092, -0.0151573, 0.863708, -0.374204)
+transform = Transform3D(0.998545, -0.0534774, 0.00696848, -0.0162055, -0.174298, 0.98456, -0.0514371, -0.98324, -0.174911, -0.00189313, 0.898787, -0.399789)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0
 
-[node name="StateChartDebugger" parent="." instance=ExtResource("15_3wsod")]
+[node name="StateChartDebugger" parent="." instance=ExtResource("15_ekbj3")]
 offset_right = -849.0
 offset_bottom = -406.0
 initial_node_to_watch = NodePath("../Player")

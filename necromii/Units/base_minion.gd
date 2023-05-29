@@ -37,7 +37,7 @@ func _physics_process(delta):
 	else:
 		movement_physics.update(delta, Vector3.ZERO)
 
-	if is_selected and Input.is_action_just_pressed("ui_accept") :
+	if is_selected and Input.is_action_just_pressed("ui_accept") and Global.player_selected:
 		movement_physics.jump()
 
 	#update_animation()

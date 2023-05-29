@@ -62,6 +62,7 @@ func detect_selection():
 		return
 	else:
 		is_selected = new_is_selected
+		Global.player_selected = is_selected
 		if is_selected:
 			mesh.material_overlay.set_shader_parameter("on", true)
 		else:
