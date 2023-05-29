@@ -1,6 +1,6 @@
 extends CharacterBody3D
 
-@export @onready var camera : Node
+@export var camera : Node
 
 @onready var animation_tree = $AnimationTree
 

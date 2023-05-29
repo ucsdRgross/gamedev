@@ -1,7 +1,7 @@
 extends Camera3D
 
-@export @onready var target : Node3D
-@export @onready var setup : Resource
+@export var target : Node3D
+@export var setup : Resource
 
 func _ready():
 	#Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
