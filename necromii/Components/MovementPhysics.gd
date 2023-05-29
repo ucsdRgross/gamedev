@@ -139,7 +139,11 @@ func jump():
 
 func _on_jump_timer_timeout():
 	ground_ray.enabled = true
-		
+
+#set look direction when character is not moving
+func set_look_direction(dir : Vector3):
+	look_direction = dir
+	
 func shortest_rotation(a : Quaternion, b : Quaternion) -> Quaternion:
 	if a.dot(b) < 0:
 		return a * (b * -1).inverse()

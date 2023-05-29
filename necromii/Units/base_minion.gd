@@ -31,6 +31,7 @@ func _physics_process(delta):
 		navigation_agent.agent_height_offset = -position.y
 		#movement_physics.update(delta, new_velocity)
 		self.delta = delta
+		navigation_agent.avoidance_enabled = true
 		navigation_agent.set_velocity(new_velocity)
 		#above function leads to _on_navigation_agent_3d_veocity_computed signal 
 	else:
@@ -45,6 +46,7 @@ func _physics_process(delta):
 func _on_navigation_agent_3d_velocity_computed(safe_velocity: Vector3):
 	# Move CharacterBody3D with the computed `safe_velocity` to avoid dynamic obstacles.
 	movement_physics.update(delta, safe_velocity)
+	navigation_agent.avoidance_enabled = false
 	
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(position)

@@ -72,6 +72,7 @@ func rotate_wheel():
 	var diameter := 1.5 #whatever height of model is
 	var turn = Vector3(linear_velocity.x, 0, linear_velocity.z).length() / (2 * PI * diameter / 2)
 	anim_tree["parameters/RunSpeed/scale"] = turn
+	anim_tree["parameters/RunBlend/blend_amount"] = clamp(turn, 0, 1)
 
 ##	if paused:
 ##		movement_physics.update(Vector3.ZERO)
