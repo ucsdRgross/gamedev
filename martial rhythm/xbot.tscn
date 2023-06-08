@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://c22kmbk63vndh"]
 
-[ext_resource type="PackedScene" uid="uid://csv4df51iealw" path="res://Punch To Elbow Combo.fbx" id="1_7s2yq"]
+[ext_resource type="PackedScene" uid="uid://csv4df51iealw" path="res://Punch To Elbow Combo.fbx" id="1_hv6j5"]
 
-[node name="Punch To Elbow Combo" instance=ExtResource("1_7s2yq")]
+[node name="Punch To Elbow Combo" instance=ExtResource("1_hv6j5")]
 
 [node name="Skeleton3D" parent="RootNode" index="0"]
 bones/0/position = Vector3(-0.0690005, 0.839, 2.67755)
