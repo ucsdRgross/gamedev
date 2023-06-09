@@ -1,5 +1,6 @@
-[gd_scene load_steps=87 format=3 uid="uid://pxa3mjpvliao"]
+[gd_scene load_steps=88 format=3 uid="uid://pxa3mjpvliao"]
 
+[ext_resource type="Script" path="res://card.gd" id="1_4bjeb"]
 [ext_resource type="Texture2D" uid="uid://dw1fc42krl3vi" path="res://Tilesheet/cardsSmall_tilemap_packed.png" id="1_xud8e"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2sdrm"]
@@ -602,9 +603,14 @@ animations = [{
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 3
 anchors_preset = 0
+mouse_filter = 1
+script = ExtResource("1_4bjeb")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
 position = Vector2(32, 32)
 scale = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_6gaun")
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
