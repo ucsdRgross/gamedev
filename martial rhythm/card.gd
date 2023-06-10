@@ -4,7 +4,10 @@ signal mouse_over_card(index)
 signal mouse_leave_card
 
 func _get_drag_data(_pos):
-	set_drag_preview(self.duplicate())
+	var preview := self.duplicate()
+	preview.modulate = Color("ffffffff")
+	preview.get_child(0).position += Vector2(-32, -32)
+	set_drag_preview(preview)
 	return self
 
 
