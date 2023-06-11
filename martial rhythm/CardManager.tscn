@@ -1,8 +1,99 @@
-[gd_scene load_steps=4 format=3 uid="uid://bas1mciso4i7"]
+[gd_scene load_steps=23 format=3 uid="uid://bas1mciso4i7"]
 
-[ext_resource type="Script" path="res://CardManager.gd" id="1_w7qej"]
+[ext_resource type="Script" path="res://CardPlayer.gd" id="1_iij15"]
 [ext_resource type="PackedScene" uid="uid://pxa3mjpvliao" path="res://card.tscn" id="2_3qxew"]
-[ext_resource type="Script" path="res://LibraryContainer.gd" id="3_ils3k"]
+[ext_resource type="Texture2D" uid="uid://dw1fc42krl3vi" path="res://Tilesheet/cardsSmall_tilemap_packed.png" id="3_ras46"]
+[ext_resource type="Script" path="res://CardContainer.gd" id="4_bx0tx"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4r6gb"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5juuq"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gtd30"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w1v7w"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bfca2"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f8rri"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_50lrj"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0wyda"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_emsom"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j3duo"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wtf8s"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xhbnv"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_11vud"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qm4h0"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y2lr6"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_eryt4"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hw8uh"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kougp"]
+resource_local_to_scene = true
+atlas = ExtResource("3_ras46")
+region = Rect2(0, 0, 16, 16)
 
 [node name="CardManager" type="Control"]
 layout_mode = 3
@@ -11,9 +102,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_w7qej")
 
-[node name="Cards" type="Control" parent="."]
+[node name="CardPlayer" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -22,8 +112,9 @@ anchor_right = 0.5
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 0
+script = ExtResource("1_iij15")
 
-[node name="Hand" type="HSplitContainer" parent="Cards"]
+[node name="Hand" type="HSplitContainer" parent="CardPlayer"]
 layout_mode = 1
 offset_left = -96.0
 offset_top = -96.0
@@ -32,47 +123,77 @@ offset_bottom = -96.0
 scale = Vector2(1.5, 1.5)
 theme_override_constants/separation = 64
 
-[node name="Left" type="Control" parent="Cards/Hand"]
+[node name="Left" type="Control" parent="CardPlayer/Hand"]
 layout_mode = 2
 
-[node name="Card" parent="Cards/Hand/Left" instance=ExtResource("2_3qxew")]
+[node name="Card" parent="CardPlayer/Hand/Left" instance=ExtResource("2_3qxew")]
 layout_mode = 1
 
-[node name="Right" type="Control" parent="Cards/Hand"]
+[node name="TextureRect" parent="CardPlayer/Hand/Left/Card" index="0"]
+texture = SubResource("AtlasTexture_4r6gb")
+
+[node name="Right" type="Control" parent="CardPlayer/Hand"]
 layout_mode = 2
 
-[node name="Card" parent="Cards/Hand/Right" instance=ExtResource("2_3qxew")]
+[node name="Card" parent="CardPlayer/Hand/Right" instance=ExtResource("2_3qxew")]
 
-[node name="Deck" type="HFlowContainer" parent="Cards"]
+[node name="TextureRect" parent="CardPlayer/Hand/Right/Card" index="0"]
+texture = SubResource("AtlasTexture_5juuq")
+
+[node name="Deck" type="HFlowContainer" parent="CardPlayer"]
 layout_mode = 1
 offset_left = 96.0
 offset_top = -64.0
 offset_right = 446.0
 offset_bottom = 384.0
 
-[node name="Card" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="Card" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card2" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card" index="0"]
+texture = SubResource("AtlasTexture_gtd30")
+
+[node name="Card2" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card3" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card2" index="0"]
+texture = SubResource("AtlasTexture_w1v7w")
+
+[node name="Card3" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card4" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card3" index="0"]
+texture = SubResource("AtlasTexture_bfca2")
+
+[node name="Card4" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card5" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card4" index="0"]
+texture = SubResource("AtlasTexture_f8rri")
+
+[node name="Card5" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card6" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card5" index="0"]
+texture = SubResource("AtlasTexture_50lrj")
+
+[node name="Card6" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card7" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card6" index="0"]
+texture = SubResource("AtlasTexture_0wyda")
+
+[node name="Card7" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="Card8" parent="Cards/Deck" instance=ExtResource("2_3qxew")]
+[node name="TextureRect" parent="CardPlayer/Deck/Card7" index="0"]
+texture = SubResource("AtlasTexture_emsom")
+
+[node name="Card8" parent="CardPlayer/Deck" instance=ExtResource("2_3qxew")]
 layout_mode = 2
+
+[node name="TextureRect" parent="CardPlayer/Deck/Card8" index="0"]
+texture = SubResource("AtlasTexture_j3duo")
 
 [node name="Deckbuilder" type="Control" parent="."]
 layout_mode = 1
@@ -83,6 +204,22 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
 
+[node name="MarginContainer2" type="MarginContainer" parent="Deckbuilder"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 65
+theme_override_constants/margin_top = 65
+theme_override_constants/margin_right = 65
+theme_override_constants/margin_bottom = 65
+
+[node name="ColorRect" type="ColorRect" parent="Deckbuilder/MarginContainer2"]
+layout_mode = 2
+color = Color(0.227451, 0.227451, 0.227451, 1)
+
 [node name="MarginContainer" type="MarginContainer" parent="Deckbuilder"]
 layout_mode = 1
 anchors_preset = 15
@@ -90,79 +227,76 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 75
+theme_override_constants/margin_top = 75
+theme_override_constants/margin_right = 75
+theme_override_constants/margin_bottom = 75
 
 [node name="HSplitContainer" type="HSplitContainer" parent="Deckbuilder/MarginContainer"]
 layout_mode = 2
-split_offset = 355
+split_offset = 150
 
 [node name="Deck" type="Control" parent="Deckbuilder/MarginContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
 
-[node name="GraphEdit" type="GraphEdit" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck"]
+[node name="ColorRect" type="ColorRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeckContainer" type="HFlowContainer" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer"]
+layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 1
-use_snap = false
+size_flags_vertical = 3
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
+script = ExtResource("4_bx0tx")
 
-[node name="GraphNode" type="GraphNode" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit"]
-layout_mode = 0
-offset_left = 430.0
-offset_top = 222.0
-offset_right = 530.0
-offset_bottom = 340.0
-mouse_filter = 1
-title = "Test"
-position_offset = Vector2(430, 222)
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Card" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit/GraphNode" instance=ExtResource("2_3qxew")]
+[node name="Card" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="GraphNode2" type="GraphNode" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit"]
-layout_mode = 0
-offset_left = 618.0
-offset_top = 227.0
-offset_right = 718.0
-offset_bottom = 345.0
-mouse_filter = 1
-title = "Test"
-position_offset = Vector2(618, 227)
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card" index="0"]
+texture = SubResource("AtlasTexture_wtf8s")
 
-[node name="Card" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit/GraphNode2" instance=ExtResource("2_3qxew")]
+[node name="Card2" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
+
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card2" index="0"]
+texture = SubResource("AtlasTexture_wtf8s")
+
+[node name="Card3" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer" instance=ExtResource("2_3qxew")]
+layout_mode = 2
+
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card3" index="0"]
+texture = SubResource("AtlasTexture_wtf8s")
 
 [node name="Library" type="Control" parent="Deckbuilder/MarginContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
+
+[node name="ColorRect" type="ColorRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.392157, 0.392157, 0.392157, 1)
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Deckbuilder/MarginContainer/HSplitContainer/Library"]
 layout_mode = 1
@@ -177,74 +311,71 @@ follow_focus = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = -1
-theme_override_constants/v_separation = -1
-script = ExtResource("3_ils3k")
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
+script = ExtResource("4_bx0tx")
 
 [node name="Card" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card" index="0"]
+texture = SubResource("AtlasTexture_wtf8s")
+
 [node name="Card2" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card2" index="0"]
-frame = 1
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card2" index="0"]
+texture = SubResource("AtlasTexture_xhbnv")
 
 [node name="Card3" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card3" index="0"]
-frame = 2
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card3" index="0"]
+texture = SubResource("AtlasTexture_11vud")
 
 [node name="Card4" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card4" index="0"]
-frame = 3
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card4" index="0"]
+texture = SubResource("AtlasTexture_qm4h0")
 
 [node name="Card5" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card5" index="0"]
-frame = 4
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card5" index="0"]
+texture = SubResource("AtlasTexture_y2lr6")
 
 [node name="Card6" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card6" index="0"]
-frame = 5
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card6" index="0"]
+texture = SubResource("AtlasTexture_eryt4")
 
 [node name="Card7" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card7" index="0"]
-frame = 6
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card7" index="0"]
+texture = SubResource("AtlasTexture_hw8uh")
 
 [node name="Card8" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" instance=ExtResource("2_3qxew")]
 layout_mode = 2
 
-[node name="AnimatedSprite2D" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card8" index="0"]
-frame = 7
+[node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card8" index="0"]
+texture = SubResource("AtlasTexture_kougp")
 
-[node name="CardPlaceholder" type="Control" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer"]
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-mouse_filter = 2
-
-[connection signal="child_entered_tree" from="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" to="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer" method="_on_child_entered_tree"]
-
-[editable path="Cards/Hand/Left/Card"]
-[editable path="Cards/Hand/Right/Card"]
-[editable path="Cards/Deck/Card"]
-[editable path="Cards/Deck/Card2"]
-[editable path="Cards/Deck/Card3"]
-[editable path="Cards/Deck/Card4"]
-[editable path="Cards/Deck/Card5"]
-[editable path="Cards/Deck/Card6"]
-[editable path="Cards/Deck/Card7"]
-[editable path="Cards/Deck/Card8"]
-[editable path="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit/GraphNode/Card"]
-[editable path="Deckbuilder/MarginContainer/HSplitContainer/Deck/GraphEdit/GraphNode2/Card"]
+[editable path="CardPlayer/Hand/Left/Card"]
+[editable path="CardPlayer/Hand/Right/Card"]
+[editable path="CardPlayer/Deck/Card"]
+[editable path="CardPlayer/Deck/Card2"]
+[editable path="CardPlayer/Deck/Card3"]
+[editable path="CardPlayer/Deck/Card4"]
+[editable path="CardPlayer/Deck/Card5"]
+[editable path="CardPlayer/Deck/Card6"]
+[editable path="CardPlayer/Deck/Card7"]
+[editable path="CardPlayer/Deck/Card8"]
+[editable path="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card"]
+[editable path="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card2"]
+[editable path="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer/DeckContainer/Card3"]
 [editable path="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card"]
 [editable path="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card2"]
 [editable path="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card3"]

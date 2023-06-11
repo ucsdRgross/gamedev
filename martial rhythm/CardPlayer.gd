@@ -1,9 +1,8 @@
 extends Control
 
-@onready var hand = $Cards/Hand
-@onready var left = $Cards/Hand/Left
-@onready var right = $Cards/Hand/Right
-@onready var deck = $Cards/Deck
+@onready var left := $Hand/Left
+@onready var right := $Hand/Right
+@onready var deck := $Deck
 
 const card := preload("res://card.tscn")
 
@@ -18,8 +17,8 @@ func _ready():
 		
 	for i in range(50):
 		var new_card := card.instantiate()
-		var sprite := new_card.get_child(0)
-		sprite.frame = randi() % 84
+		var rect := new_card.get_child(0)
+		rect.texture.region = Rect2((randi() % 14) * 16, 0, 16, 16)
 		deck.add_child(new_card)
 		
 	for h in [left, right]:
@@ -28,15 +27,19 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	
 	if Input.is_action_just_pressed("LClick"):
-		if left.get_child_count() > 0:
-			left.get_child(0).free()
-		if deck.get_child_count() > 0:
-			deck.get_child(0).reparent(left, false)
+		if not play_card(left):
+			play_card(right)
 	
 	elif Input.is_action_just_pressed("RClick"):
-		if right.get_child_count() > 0:
-			right.get_child(0).free()
-		if deck.get_child_count() > 0:
-			deck.get_child(0).reparent(right, false)
+		if not play_card(right):
+			play_card(left)
+
+func play_card(hand : Control) -> bool:
+	var played := false
+	if hand.get_child_count() > 0:
+		hand.get_child(0).free()
+		played = true
+	if deck.get_child_count() > 0:
+		deck.get_child(0).reparent(hand, false)
+	return played
