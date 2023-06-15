@@ -36,7 +36,7 @@ func _ready():
 func _notification(what : int):
 	match what:
 		NOTIFICATION_DRAG_BEGIN:
-			var card : Control = get_tree().get_root().gui_get_drag_data()
+			var card : Control = get_viewport().gui_get_drag_data()
 			drag_card = card
 			if self == card.get_parent():
 				drag_card_parent = true
@@ -45,7 +45,7 @@ func _notification(what : int):
 			else:
 				drag_card_parent = false
 		NOTIFICATION_DRAG_END:
-			if not get_tree().get_root().gui_is_drag_successful():
+			if not get_viewport().gui_is_drag_successful():
 				if drag_card_parent:
 					add_child(drag_card)
 					#drag_card.reparent(self, false)
@@ -66,7 +66,7 @@ func _on_child_exiting_tree(node : Node):
 
 func _on_mouse_over_card(index):
 	selected_index = index
-	if get_tree().get_root().gui_is_dragging():
+	if get_viewport().gui_is_dragging():
 		move_child(placeholder, selected_index)
 
 func _on_mouse_leave_card():

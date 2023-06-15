@@ -1,8 +1,8 @@
 extends Control
 
-@onready var left := $Hand/Left
-@onready var right := $Hand/Right
-@onready var deck := $Deck
+@onready var left := %Left
+@onready var right := %Right
+@onready var deck := %Deck
 
 const card := preload("res://card.tscn")
 
@@ -25,15 +25,14 @@ func _ready():
 		if deck.get_child_count() > 0:
 			deck.get_child(0).reparent(h, false)
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	if Input.is_action_just_pressed("LClick"):
-		if not play_card(left):
-			play_card(right)
-	
-	elif Input.is_action_just_pressed("RClick"):
-		if not play_card(right):
-			play_card(left)
+func _input(event):
+	if visible:
+		if event.is_action_pressed("LClick"):
+			if not play_card(left):
+				play_card(right)
+		elif event.is_action_pressed("RClick"):
+			if not play_card(right):
+				play_card(left)
 
 func play_card(hand : Control) -> bool:
 	var played := false
@@ -42,4 +41,5 @@ func play_card(hand : Control) -> bool:
 		played = true
 	if deck.get_child_count() > 0:
 		deck.get_child(0).reparent(hand, false)
+		hand.get_child(0).position = Vector2.ZERO
 	return played
