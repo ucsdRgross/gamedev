@@ -8,12 +8,17 @@ extends RigidBody3D
 func _ready():
 	_camera_controller.setup(self)
 
+func _input(event):
+	if event.is_action_pressed("LClick"):
+		$PunchCard.execute(self)
 	
 func _physics_process(delta):
 	# Calculate ground height for camera controller
 	if _movement_physics.ground_ray.is_colliding():
 		_ground_height = _movement_physics.ground_ray.get_collision_point().y
 	if _movement_physics.ground_ray.global_position.y < _ground_height:
+		_ground_height = global_position.y
+	if _movement_physics.ground_ray.global_position.y > _ground_height + 5:
 		_ground_height = global_position.y
 	
 	#calculate movement

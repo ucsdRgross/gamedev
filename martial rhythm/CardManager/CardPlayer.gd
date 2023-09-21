@@ -4,7 +4,7 @@ extends Control
 @onready var right := %Right
 @onready var deck := %Deck
 
-const card := preload("res://CardManager/card.tscn")
+const card := preload("res://Cards/card.tscn")
 
 
 # Called when the node enters the scene tree for the first time.

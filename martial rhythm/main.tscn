@@ -1,9 +1,10 @@
-[gd_scene load_steps=12 format=3 uid="uid://dqp0pkiui6vlq"]
+[gd_scene load_steps=13 format=3 uid="uid://dqp0pkiui6vlq"]
 
 [ext_resource type="Environment" uid="uid://i6aqquabcqp1" path="res://outdoor_environment.tres" id="1_porbk"]
 [ext_resource type="PackedScene" uid="uid://cenuetlobkjjx" path="res://Player/Player.tscn" id="1_toe0g"]
 [ext_resource type="Texture2D" uid="uid://cnbx544o04rlx" path="res://prototype textures/PNG/Green/texture_01.png" id="2_km27c"]
 [ext_resource type="Texture2D" uid="uid://it4amfah3jhf" path="res://prototype textures/PNG/Purple/texture_13.png" id="3_xax6t"]
+[ext_resource type="PackedScene" uid="uid://bk8owwtv5201q" path="res://Cards/Punch/punch_card.tscn" id="6_y2ggc"]
 [ext_resource type="PackedScene" uid="uid://bas1mciso4i7" path="res://CardManager/CardManager.tscn" id="8_ujali"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_wgohj"]
@@ -28,6 +29,8 @@ data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0
 
 [node name="Player" parent="." instance=ExtResource("1_toe0g")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.77681, 0)
+
+[node name="PunchCard" parent="Player" instance=ExtResource("6_y2ggc")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = ExtResource("1_porbk")

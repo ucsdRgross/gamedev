@@ -9,7 +9,7 @@ var placeholder := Control.new()
 var drag_card : Control
 var drag_card_parent := false
 
-const card := preload("res://CardManager/card.tscn")
+const card := preload("res://Cards/card.tscn")
 
 func _ready():
 	self.child_entered_tree.connect(_on_child_entered_tree)

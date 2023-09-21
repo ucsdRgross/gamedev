@@ -1,11 +1,11 @@
 [gd_scene load_steps=4 format=3 uid="uid://pxa3mjpvliao"]
 
-[ext_resource type="Script" path="res://CardManager/card.gd" id="1_4bjeb"]
-[ext_resource type="Texture2D" uid="uid://dw1fc42krl3vi" path="res://Tilesheet/cardsSmall_tilemap_packed.png" id="1_xud8e"]
+[ext_resource type="Script" path="res://Cards/card.gd" id="1_jca37"]
+[ext_resource type="Texture2D" uid="uid://dw1fc42krl3vi" path="res://Tilesheet/cardsSmall_tilemap_packed.png" id="2_l442p"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pnddi"]
 resource_local_to_scene = true
-atlas = ExtResource("1_xud8e")
+atlas = ExtResource("2_l442p")
 region = Rect2(0, 0, 16, 16)
 
 [node name="Card" type="Control"]
@@ -13,7 +13,7 @@ custom_minimum_size = Vector2(64, 64)
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
-script = ExtResource("1_4bjeb")
+script = ExtResource("1_jca37")
 
 [node name="TextureRect" type="TextureRect" parent="."]
 texture_filter = 1

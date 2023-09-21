@@ -1,3 +1,4 @@
+class_name Card
 extends Control
 
 signal mouse_over_card(index)
