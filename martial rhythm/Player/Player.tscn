@@ -1,0 +1,34 @@
+[gd_scene load_steps=7 format=3 uid="uid://cenuetlobkjjx"]
+
+[ext_resource type="Script" path="res://Player/Player.gd" id="1_1y130"]
+[ext_resource type="PackedScene" uid="uid://c642iqjeigesu" path="res://Player/camera_controller.tscn" id="2_dyo1m"]
+[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_huu6j"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_eid3x"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_snsbd"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_yjr3s"]
+size = Vector3(0.625, 0.155, 0.375)
+
+[node name="Player" type="RigidBody3D"]
+script = ExtResource("1_1y130")
+
+[node name="CameraController" parent="." instance=ExtResource("2_dyo1m")]
+
+[node name="MovementPhysics" parent="." instance=ExtResource("2_huu6j")]
+upright_spring_strength = 25.0
+upright_spring_damper = 0.1
+jump_velocity = 6.0
+
+[node name="body" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_eid3x")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_snsbd")
+
+[node name="eye" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.474678, -0.455968)
+mesh = SubResource("BoxMesh_yjr3s")
+
+[editable path="MovementPhysics"]
