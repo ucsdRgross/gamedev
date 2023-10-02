@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://bk8owwtv5201q"]
+
+[ext_resource type="PackedScene" uid="uid://pxa3mjpvliao" path="res://Cards/card.tscn" id="1_hofq3"]
+[ext_resource type="Script" path="res://Cards/Punch/punch_card.gd" id="2_135ub"]
+[ext_resource type="Texture2D" uid="uid://dw1fc42krl3vi" path="res://Tilesheet/cardsSmall_tilemap_packed.png" id="3_cuhss"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6aqcl"]
+resource_local_to_scene = true
+atlas = ExtResource("3_cuhss")
+region = Rect2(0, 0, 16, 16)
+
+[node name="PunchCard" instance=ExtResource("1_hofq3")]
+script = ExtResource("2_135ub")
+
+[node name="TextureRect" parent="." index="0"]
+texture = SubResource("AtlasTexture_6aqcl")
+
+[node name="PunchAbility" parent="." index="1" instance_placeholder="res://Cards/Punch/punch_ability.tscn"]

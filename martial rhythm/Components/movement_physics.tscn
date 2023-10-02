@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://lek0jjxj3i5y"]
+
+[ext_resource type="Script" path="res://Components/MovementPhysics.gd" id="1_xce66"]
+
+[node name="MovementPhysics" type="Node3D"]
+script = ExtResource("1_xce66")
+
+[node name="GroundRay" type="RayCast3D" parent="."]
+transform = Transform3D(25, 0, 0, 0, 1, 0, 0, 0, 25, 0, -1, 0)
+
+[node name="JumpTimer" type="Timer" parent="."]
+wait_time = 0.15
+one_shot = true
+autostart = true
+
+[connection signal="timeout" from="JumpTimer" to="." method="_on_jump_timer_timeout"]
