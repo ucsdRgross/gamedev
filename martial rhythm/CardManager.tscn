@@ -280,6 +280,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="DeckContainer" type="HFlowContainer" parent="Deckbuilder/MarginContainer/HSplitContainer/Deck/ScrollContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -383,6 +384,8 @@ layout_mode = 2
 
 [node name="TextureRect" parent="Deckbuilder/MarginContainer/HSplitContainer/Library/ScrollContainer/LibraryContainer/Card8" index="0"]
 texture = SubResource("AtlasTexture_kougp")
+
+[connection signal="hand_empty" from="CardPlayer" to="." method="_on_card_player_hand_empty"]
 
 [editable path="CardPlayer/Hand/Left/Card"]
 [editable path="CardPlayer/Hand/Right/Card"]
