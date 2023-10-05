@@ -16,3 +16,5 @@ script = ExtResource("2_135ub")
 texture = SubResource("AtlasTexture_6aqcl")
 
 [node name="PunchAbility" parent="." index="1" instance_placeholder="res://Cards/Punch/punch_ability.tscn"]
+collision_layer = 0
+collision_mask = 0

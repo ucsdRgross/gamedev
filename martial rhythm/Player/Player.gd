@@ -5,12 +5,19 @@ extends RigidBody3D
 
 @onready var _ground_height: float = 0.0
 
+@onready var health_bar : HealthBar = $HealthBar
+@export var health_manager : HealthManager
+
 func _ready():
 	_camera_controller.setup(self)
+	health_bar.set_max_health(health_manager.max_health)
+	health_bar.set_health(health_manager.health)
+	health_manager.health_changed.connect(health_bar.set_health)
 
 func _input(event):
 	if event.is_action_pressed("LClick"):
 		$PunchCard.execute(self)
+		health_manager.damage(1)
 	
 func _physics_process(delta):
 	# Calculate ground height for camera controller

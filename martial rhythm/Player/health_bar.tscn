@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://bmlxukbjgaxbd"]
+
+[ext_resource type="Script" path="res://Player/HealthBar.gd" id="1_gautv"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_k32ja"]
+viewport_path = NodePath("HealthBar/SubViewport")
+
+[node name="HealthBar" type="Sprite3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.21936, 0)
+billboard = 1
+no_depth_test = true
+alpha_cut = 1
+texture = SubResource("ViewportTexture_k32ja")
+script = ExtResource("1_gautv")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(100, 30)
+
+[node name="ProgressBar" type="ProgressBar" parent="SubViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
