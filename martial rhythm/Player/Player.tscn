@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://Player/HealthManager.gd" id="2_akc3o"]
 [ext_resource type="PackedScene" uid="uid://c642iqjeigesu" path="res://Player/camera_controller.tscn" id="2_dyo1m"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_huu6j"]
-[ext_resource type="Script" path="res://Player/HealthBar.gd" id="5_65ery"]
+[ext_resource type="PackedScene" uid="uid://bmlxukbjgaxbd" path="res://Player/health_bar.tscn" id="5_0124o"]
 
 [sub_resource type="Resource" id="Resource_f6wd1"]
 script = ExtResource("2_akc3o")
@@ -18,8 +18,8 @@ health = 100
 [sub_resource type="BoxMesh" id="BoxMesh_yjr3s"]
 size = Vector3(0.625, 0.155, 0.375)
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_k32ja"]
-viewport_path = NodePath("HealthBar/SubViewport")
+[sub_resource type="ViewportTexture" id="ViewportTexture_287pg"]
+viewport_path = NodePath("SubViewport")
 
 [node name="Player" type="RigidBody3D"]
 script = ExtResource("1_1y130")
@@ -42,24 +42,8 @@ shape = SubResource("CapsuleShape3D_snsbd")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.474678, -0.455968)
 mesh = SubResource("BoxMesh_yjr3s")
 
-[node name="HealthBar" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.21936, 0)
-billboard = 1
-no_depth_test = true
-alpha_cut = 1
-texture = SubResource("ViewportTexture_k32ja")
-script = ExtResource("5_65ery")
-
-[node name="SubViewport" type="SubViewport" parent="HealthBar"]
-transparent_bg = true
-size = Vector2i(100, 30)
-
-[node name="ProgressBar" type="ProgressBar" parent="HealthBar/SubViewport"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-size_flags_horizontal = 4
+[node name="HealthBar" parent="." instance=ExtResource("5_0124o")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.33549, 0)
+texture = SubResource("ViewportTexture_287pg")
 
 [editable path="MovementPhysics"]

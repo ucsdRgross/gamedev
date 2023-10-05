@@ -10,9 +10,7 @@ extends RigidBody3D
 
 func _ready():
 	_camera_controller.setup(self)
-	health_bar.set_max_health(health_manager.max_health)
-	health_bar.set_health(health_manager.health)
-	health_manager.health_changed.connect(health_bar.set_health)
+	health_bar.attach(health_manager)
 
 func _input(event):
 	if event.is_action_pressed("LClick"):

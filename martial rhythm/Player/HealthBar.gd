@@ -8,3 +8,8 @@ func set_health(val:int):
 	
 func set_max_health(val:int):
 	bar.max_value = val
+
+func attach(hd:HealthManager):
+	set_max_health(hd.max_health)
+	set_health(hd.health)
+	hd.health_changed.connect(set_health)

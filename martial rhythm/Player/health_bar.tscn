@@ -2,15 +2,14 @@
 
 [ext_resource type="Script" path="res://Player/HealthBar.gd" id="1_gautv"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_k32ja"]
-viewport_path = NodePath("HealthBar/SubViewport")
+[sub_resource type="ViewportTexture" id="ViewportTexture_fbwun"]
+viewport_path = NodePath("SubViewport")
 
 [node name="HealthBar" type="Sprite3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.21936, 0)
 billboard = 1
 no_depth_test = true
 alpha_cut = 1
-texture = SubResource("ViewportTexture_k32ja")
+texture = SubResource("ViewportTexture_fbwun")
 script = ExtResource("1_gautv")
 
 [node name="SubViewport" type="SubViewport" parent="."]
@@ -24,3 +23,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
+value = 100.0
