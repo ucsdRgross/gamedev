@@ -1,15 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://cenuetlobkjjx"]
+[gd_scene load_steps=9 format=3 uid="uid://cenuetlobkjjx"]
 
 [ext_resource type="Script" path="res://Player/Player.gd" id="1_1y130"]
-[ext_resource type="Script" path="res://Player/HealthManager.gd" id="2_akc3o"]
 [ext_resource type="PackedScene" uid="uid://c642iqjeigesu" path="res://Player/camera_controller.tscn" id="2_dyo1m"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_huu6j"]
 [ext_resource type="PackedScene" uid="uid://bmlxukbjgaxbd" path="res://Player/health_bar.tscn" id="5_0124o"]
-
-[sub_resource type="Resource" id="Resource_f6wd1"]
-script = ExtResource("2_akc3o")
-max_health = 100
-health = 100
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_eid3x"]
 
@@ -18,12 +12,13 @@ health = 100
 [sub_resource type="BoxMesh" id="BoxMesh_yjr3s"]
 size = Vector3(0.625, 0.155, 0.375)
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_287pg"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_sc7pg"]
 viewport_path = NodePath("SubViewport")
 
 [node name="Player" type="RigidBody3D"]
+collision_layer = 2
+collision_mask = 23
 script = ExtResource("1_1y130")
-health_manager = SubResource("Resource_f6wd1")
 
 [node name="CameraController" parent="." instance=ExtResource("2_dyo1m")]
 
@@ -44,6 +39,6 @@ mesh = SubResource("BoxMesh_yjr3s")
 
 [node name="HealthBar" parent="." instance=ExtResource("5_0124o")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.33549, 0)
-texture = SubResource("ViewportTexture_287pg")
+texture = SubResource("ViewportTexture_sc7pg")
 
 [editable path="MovementPhysics"]

@@ -1,0 +1,34 @@
+[gd_scene load_steps=7 format=3 uid="uid://sybscs6k4unp"]
+
+[ext_resource type="Script" path="res://Enemy.gd" id="1_g5iwh"]
+[ext_resource type="PackedScene" uid="uid://bmlxukbjgaxbd" path="res://Player/health_bar.tscn" id="5_imyaw"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_eid3x"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_snsbd"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_yjr3s"]
+size = Vector3(0.625, 0.155, 0.375)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_ur4tw"]
+viewport_path = NodePath("SubViewport")
+
+[node name="Enemy" type="RigidBody3D"]
+collision_layer = 4
+collision_mask = 7
+freeze = true
+script = ExtResource("1_g5iwh")
+
+[node name="body" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_eid3x")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_snsbd")
+
+[node name="eye" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.474678, -0.455968)
+mesh = SubResource("BoxMesh_yjr3s")
+
+[node name="HealthBar" parent="." instance=ExtResource("5_imyaw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.33549, 0)
+texture = SubResource("ViewportTexture_ur4tw")

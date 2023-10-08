@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bmlxukbjgaxbd"]
 
-[ext_resource type="Script" path="res://Player/HealthBar.gd" id="1_gautv"]
+[ext_resource type="Script" path="res://Components/HealthBar.gd" id="1_02ekk"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_fbwun"]
 viewport_path = NodePath("SubViewport")
@@ -10,7 +10,7 @@ billboard = 1
 no_depth_test = true
 alpha_cut = 1
 texture = SubResource("ViewportTexture_fbwun")
-script = ExtResource("1_gautv")
+script = ExtResource("1_02ekk")
 
 [node name="SubViewport" type="SubViewport" parent="."]
 transparent_bg = true

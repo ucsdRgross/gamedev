@@ -1,4 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://cu71sgnm03rxh"]
+[gd_scene load_steps=10 format=3 uid="uid://cu71sgnm03rxh"]
+
+[ext_resource type="Script" path="res://Cards/Punch/punch_ability.gd" id="1_lvloi"]
+[ext_resource type="PackedScene" uid="uid://bmlxukbjgaxbd" path="res://Components/health_bar.tscn" id="2_aue1a"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_nhelb"]
 
@@ -86,7 +89,13 @@ _data = {
 }
 point_count = 3
 
-[node name="PunchAbility" type="RigidBody3D"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_eaiwl"]
+viewport_path = NodePath("SubViewport")
+
+[node name="PunchAbility" type="Area3D"]
+collision_layer = 8
+collision_mask = 15
+script = ExtResource("1_lvloi")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("SphereMesh_nhelb")
@@ -108,8 +117,17 @@ transform = Transform3D(0.973203, 0.229948, 0, -0.229948, 0.973203, 0, 0, 0, 1, 
 curve = SubResource("Curve3D_5ijke")
 
 [node name="PathFollow3D" type="PathFollow3D" parent="Path3D"]
-transform = Transform3D(-0.0152347, 0.572903, 0.819366, -2.97998e-08, 0.819442, -0.572982, -0.999798, -0.00872977, -0.0124853, 0.334417, 0.00319651, 6.94956)
+transform = Transform3D(-0.0152347, 0.5729, 0.819363, -2.97998e-08, 0.819438, -0.57298, -0.999798, -0.00872972, -0.0124852, 0.334417, 0.00319651, 6.94956)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Path3D/PathFollow3D"]
 mesh = SubResource("SphereMesh_nhelb")
 skeleton = NodePath("../..")
+
+[node name="HealthBar" parent="." instance=ExtResource("2_aue1a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.723895, 0)
+visible = false
+texture = SubResource("ViewportTexture_eaiwl")
+max_health = 2
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
