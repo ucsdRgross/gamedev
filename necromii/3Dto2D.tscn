@@ -1,0 +1,72 @@
+[gd_scene load_steps=6 format=3 uid="uid://kt3jxcq3hmin"]
+
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="1_q04xk"]
+[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="2_6eyuw"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_skj47"]
+viewport_path = NodePath("MeshInstance3D/SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mdiww"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("1_q04xk")
+shader_parameter/extruded_alpha_cull = 0.247
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/precision = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = Color(0.92549, 0, 0, 1)
+shader_parameter/mix_strength = 1.0
+shader_parameter/Texture = SubResource("ViewportTexture_skj47")
+
+[sub_resource type="BoxMesh" id="BoxMesh_1stqj"]
+material = SubResource("ShaderMaterial_mdiww")
+
+[node name="Node3D" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.314, -2.15559, 0.881756, 0)
+mesh = SubResource("BoxMesh_1stqj")
+
+[node name="SubViewport" type="SubViewport" parent="MeshInstance3D"]
+transparent_bg = true
+size = Vector2i(30, 30)
+
+[node name="Player" parent="MeshInstance3D/SubViewport" instance=ExtResource("2_6eyuw")]
+
+[node name="Skeleton3D" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature" index="0"]
+bones/0/position = Vector3(1.89157e-17, 0.4519, -0.252451)
+bones/0/rotation = Quaternion(0.0260966, 0.659854, 0.750671, 0.0201284)
+bones/1/rotation = Quaternion(0.039773, 0.713866, 0.695214, 0.0740975)
+bones/2/rotation = Quaternion(-0.0562222, -0.122213, 0.151759, 0.97922)
+bones/3/rotation = Quaternion(-0.0622747, 0.0038889, -0.0239286, 0.997763)
+bones/4/rotation = Quaternion(-0.0145675, 0.205972, -0.0281749, 0.978044)
+bones/6/rotation = Quaternion(-0.533721, -0.593873, -0.479033, 0.364671)
+bones/7/rotation = Quaternion(-0.256855, 0.0337073, -0.0496118, 0.964587)
+bones/8/rotation = Quaternion(0.0604045, 0.0180105, -0.0475928, 0.996876)
+bones/9/rotation = Quaternion(0.0205879, -0.000249599, -0.0223295, 0.999538)
+bones/10/rotation = Quaternion(-0.560049, 0.489973, 0.458952, 0.485422)
+bones/11/rotation = Quaternion(-0.192341, -0.0747122, -0.0466987, 0.977365)
+bones/12/rotation = Quaternion(0.081863, -0.0191468, -0.0127675, 0.996378)
+bones/13/rotation = Quaternion(0.0279128, -0.000120215, -0.00559802, 0.999594)
+bones/14/rotation = Quaternion(-0.0729629, -0.0428993, 0.790226, 0.606943)
+bones/15/rotation = Quaternion(-0.356321, -0.396645, 0.578633, 0.617163)
+bones/16/rotation = Quaternion(0.416586, -0.0249094, -0.11694, 0.901199)
+bones/17/rotation = Quaternion(-0.0287121, 0.108957, -0.600765, 0.791445)
+bones/18/rotation = Quaternion(-0.594788, 0.693767, -0.314698, 0.256669)
+bones/19/rotation = Quaternion(0.0111097, -0.0568991, -0.000684012, 0.998318)
+
+[node name="LittleWitch2" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature/Skeleton3D" index="0"]
+blend_shapes/Happy = 1.0
+
+[node name="WiggleBone" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.998295, 0.0581011, 0.0056097, 0.0213117, -0.452266, 0.891629, 0.0543416, -0.889989, -0.452733, -0.00814118, 0.88314, -0.3778)
+
+[node name="Camera3D" type="Camera3D" parent="MeshInstance3D/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.959934, 2.10176)
+projection = 1
+size = 2.0
+
+[editable path="MeshInstance3D/SubViewport/Player"]
+[editable path="MeshInstance3D/SubViewport/Player/LittleWitch"]
