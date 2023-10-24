@@ -99,3 +99,5 @@ autowrap_mode = 2
 
 [connection signal="pressed" from="NextRoundButton" to="." method="_on_next_round_button_pressed"]
 [connection signal="pressed" from="AddCoalToDrillButton" to="." method="_on_add_coal_to_drill_button_pressed"]
+[connection signal="state_stepped" from="StateChart/Root/Drill/Drill Has Coal" to="." method="_on_drill_has_coal_state_stepped"]
+[connection signal="state_stepped" from="StateChart/Root/Drill/Drill Has No Coal" to="." method="_on_drill_has_no_coal_state_stepped"]

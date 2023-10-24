@@ -18,11 +18,18 @@ signal state_processing(delta:float)
 ## Called when the state is physics processing.
 signal state_physics_processing(delta:float)
 
+## Called when the state chart step function is called.
+signal state_stepped()
+
 ## Called when the state is receiving input.
 signal state_input(event:InputEvent)
 
 ## Called when the state is receiving unhandled input.
 signal state_unhandled_input(event:InputEvent)
+
+## Called every frame while a delayed transition is pending for this state.
+## Returns the initial delay and the remaining delay of the transition.
+signal transition_pending(initial_delay:float, remaining_delay:float)
 
 
 ## Whether the state is currently active (internal flag, use active).
@@ -43,6 +50,25 @@ var _pending_transition_time:float = 0
 var _transitions:Array[Transition] = []
 
 
+## The state chart that owns this state.
+@onready var _chart = _find_chart(get_parent())
+
+## Finds the owning state chart by moving upwards.
+func _find_chart(parent:Node):
+	if parent is StateChart:
+		return parent
+	
+	return _find_chart(parent.get_parent())	
+
+## Runs a transition either immediately or delayed depending on the 
+## transition settings.
+func _run_transition(transition:Transition):
+	if transition.delay_seconds > 0:
+		_queue_transition(transition)
+	else:
+		_chart._run_transition(transition, self)
+		
+	
 
 ## Called when the state chart is built.
 func _state_init():
@@ -77,8 +103,7 @@ func _state_enter(expect_transition:bool = false):
 	for transition in _transitions:
 		if not transition.has_event and transition.evaluate_guard():
 			# first match wins
-			_queue_transition(transition)
-			
+			_run_transition(transition)
 
 ## Called when the state is exited.
 func _state_exit():
@@ -180,6 +205,10 @@ func _process(delta:float):
 	# check if there is a pending transition
 	if _pending_transition != null:
 		_pending_transition_time -= delta
+		
+		# Notify interested parties that currently a transition is pending.
+		transition_pending.emit(_pending_transition.delay_seconds, max(0, _pending_transition_time))
+		
 		# if the transition is ready, trigger it
 		# and clear it.
 		if _pending_transition_time <= 0:
@@ -187,7 +216,8 @@ func _process(delta:float):
 			_pending_transition = null
 			_pending_transition_time = 0
 			# print("requesting transition from " + name + " to " + transition_to_send.to.get_concatenated_names() + " now")
-			_handle_transition(transition_to_send, self)
+			_chart._run_transition(transition_to_send, self)
+
 
 
 func _handle_transition(transition:Transition, source:State):
@@ -199,6 +229,9 @@ func _physics_process(delta:float):
 		return
 	state_physics_processing.emit(delta)
 
+## Called when the state chart step function is called.
+func _state_step():
+	state_stepped.emit()
 
 func _input(event:InputEvent):
 	state_input.emit(event)
@@ -220,7 +253,7 @@ func _state_event(event:StringName) -> bool:
 		if transition.event == event and transition.evaluate_guard():
 			# print(name +  ": consuming event " + event)
 			# first match wins
-			_queue_transition(transition)
+			_run_transition(transition)
 			return true
 	return false
 

@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 Global="*res://Global/Global.gd"
 Signals="*res://Global/Signals.gd"
+DebugMenu="*res://addons/debug_menu/debug_menu.tscn"
 
 [display]
 
@@ -26,7 +27,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_state_charts/plugin.cfg", "res://addons/interpolated_camera_3d/plugin.cfg", "res://addons/wigglebone/plugin.cfg")
+enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/godot_state_charts/plugin.cfg", "res://addons/interpolated_camera_3d/plugin.cfg", "res://addons/wigglebone/plugin.cfg")
 
 [input]
 
@@ -64,7 +65,3 @@ Right={
 [physics]
 
 3d/default_gravity=19.6
-
-[rendering]
-
-renderer/rendering_method="mobile"
