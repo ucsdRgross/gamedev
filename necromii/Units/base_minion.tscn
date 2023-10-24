@@ -32,7 +32,7 @@ shader_parameter/depth_coef = 0.8
 shader_parameter/cutoff = 0.2
 shader_parameter/on = null
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6r5el"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
 height = 1.50903
@@ -47,7 +47,7 @@ script = ExtResource("1_ot7fk")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 material_override = SubResource("ShaderMaterial_604p0")
 material_overlay = SubResource("ShaderMaterial_x6r5r")
-mesh = SubResource("CapsuleMesh_mvl48")
+mesh = SubResource("CapsuleMesh_6r5el")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.273516, 0)

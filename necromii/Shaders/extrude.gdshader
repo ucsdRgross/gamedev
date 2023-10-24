@@ -1,6 +1,15 @@
 shader_type spatial;
 render_mode unshaded;
 
+render_mode world_vertex_coords;
+
+//skew model torwards camera
+const float skew_factor = 0.5;
+void vertex() {
+	VERTEX.z -= VERTEX.y * skew_factor;
+	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
+}
+
 // Will ignore pixels with alpha below this value for extrusion
 uniform float extruded_alpha_cull : hint_range(0.0, 1.0) = 1.0;
 // If pixels with alpha are extruded, this sets the alpha to 1
@@ -19,13 +28,17 @@ uniform vec4 color_mix : source_color;
 // 0 is no mix, 1 is solid color
 uniform float mix_strength : hint_range(0.0, 1.0);
 // 2D image where opaque pixels are extruded
-uniform sampler2D Texture : source_color;
+uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 
 varying float pixel_size;
 struct imgPoint {
 	vec4 color;
 	vec2 uv;
 };
+
+bool isInImg(vec2 uv){
+	return uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0;
+}
 
 // Return colored pixel found starting from UV with given slope
 imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
@@ -34,7 +47,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	// Flip y as UV has inverted y axis
 	slope.y *= -1.0;
 	// While not yet hit edge of image texture
-	while (pos_on_img.x >= 0.0 && pos_on_img.y >= 0.0 && pos_on_img.x <= 1.0 && pos_on_img.y <= 1.0) {
+	while (isInImg(pos_on_img)) {
 		// Flip image for back face
 		if (flipped) color = texture(Texture, vec2(-pos_on_img.x, pos_on_img.y) + offset);
 		else color = texture(Texture, pos_on_img + offset);
@@ -99,7 +112,7 @@ void fragment() {
 			vec3 point = vec3(UVtoXY(adjusted_UV),2.0);
 			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 			vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0,1.0);
-			if (uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0) {
+			if (isInImg(uv_point)) {
 				imgPoint second_pixel = imgExtrude(uv_point, -model_ray.xy, false);
 				// If second raycast does not hit same texture on backface, then that pixel is clear
 				if (model_ray.y <= 0.0 && second_pixel.uv.y < first_pixel.uv.y ) ALPHA = 0.0;
@@ -123,7 +136,7 @@ void fragment() {
 			vec3 point = vec3(UVtoXY(vec2(-adjusted_UV.x, adjusted_UV.y)),-2.0);
 			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 			vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(1.0,1.0);
-			if ((uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0)) {
+			if (isInImg(uv_point)) {
 				imgPoint second_pixel = imgExtrude(uv_point, -model_ray.xy, false);
 				if (model_ray.y <= 0.0 && second_pixel.uv.y < first_pixel.uv.y ) ALPHA = 0.0;
 				else if (model_ray.y > 0.0 && second_pixel.uv.y > first_pixel.uv.y ) ALPHA = 0.0;
@@ -146,7 +159,7 @@ void fragment() {
 		else point = vec3(1.0, xy.y, 1.0 - xy.x);
 		ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0,1.0);
-		if ((uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0)) {
+		if (isInImg(uv_point)) {
 			// If ray collides with nothing then there can't be extrusion there
 			vec4 img_color = imgExtrude(uv_point, -model_ray.xy, false).color;
 			if (img_color.w == 0.0) ALPHA = 0.0;
@@ -167,7 +180,7 @@ void fragment() {
 		else point = vec3(-1.0, xy.y, 1.0 + xy.x);
 		ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0,1.0);
-		if ((uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0)) {
+		if (isInImg(uv_point)) {
 			vec4 img_color = imgExtrude(uv_point, -model_ray.xy, false).color;
 			if (img_color.w == 0.0) ALPHA = 0.0;
 		}
@@ -188,7 +201,7 @@ void fragment() {
 		else point = vec3(xy.x, 1.0, xy.y + 1.0);
 		ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(1.0,1.0);
-		if ((uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0)) {
+		if (isInImg(uv_point)) {
 			vec4 img_color = imgExtrude(uv_point, -model_ray.xy, false).color;
 			if (img_color.w == 0.0) ALPHA = 0.0;
 		}
@@ -210,7 +223,7 @@ void fragment() {
 		else point = vec3(xy.x, -1.0, xy.y + 1.0);
 		ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0,1.0);
-		if ((uv_point.x >= 0.0 && uv_point.y >= 0.0 && uv_point.x <= 1.0 && uv_point.y <= 1.0)) {
+		if (isInImg(uv_point)) {
 			vec4 img_color = imgExtrude(uv_point, -model_ray.xy, false).color;
 			if (img_color.w == 0.0) ALPHA = 0.0;
 		}

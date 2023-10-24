@@ -870,42 +870,43 @@ _data = {
 [node name="LittleWitch" instance=ExtResource("1_x2vbb")]
 
 [node name="Skeleton3D" parent="Armature" index="0"]
-bones/0/position = Vector3(0.0131994, 0.36128, -0.288936)
-bones/0/rotation = Quaternion(-3.98399e-05, 0.707107, 0.707106, 3.98402e-05)
+bones/0/position = Vector3(0.0227049, 0.344093, -0.256658)
+bones/0/rotation = Quaternion(-3.064e-05, 0.707108, 0.707106, 3.0642e-05)
 bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
-bones/2/rotation = Quaternion(-0.00363011, 4.36859e-08, 0.00419815, 0.999985)
-bones/3/rotation = Quaternion(-0.00119632, 1.33903e-11, 0.00138352, 0.999998)
-bones/4/rotation = Quaternion(-0.000847038, -2.42038e-11, 0.000900913, 0.999999)
+bones/2/rotation = Quaternion(-0.0138618, 4.34124e-08, 0.00722167, 0.999878)
+bones/3/rotation = Quaternion(-0.00456813, -1.52669e-10, 0.00237989, 0.999987)
+bones/4/rotation = Quaternion(-0.00284651, 5.67861e-12, 0.00149047, 0.999995)
 bones/5/rotation = Quaternion(-0.805321, -7.06718e-08, 9.60018e-08, 0.592838)
 bones/5/scale = Vector3(1, 1, 1)
 bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
-bones/7/rotation = Quaternion(-0.315735, 0.0727301, 0.0651135, 0.943812)
-bones/8/rotation = Quaternion(0.0258125, 0.0190586, 0.0225793, 0.99923)
+bones/7/rotation = Quaternion(-0.315243, 0.073973, 0.0689154, 0.94361)
+bones/8/rotation = Quaternion(0.0458041, 0.0200016, 0.0869225, 0.994961)
 bones/8/scale = Vector3(1, 1, 1)
-bones/9/rotation = Quaternion(0.00362795, 0.000206553, 0.0170494, 0.999848)
+bones/9/rotation = Quaternion(0.0138578, 0.000788495, 0.0651267, 0.99778)
 bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
-bones/11/rotation = Quaternion(-0.340047, -0.037472, 0.0447125, 0.938597)
-bones/12/rotation = Quaternion(0.0395926, -0.0191793, -0.0234869, 0.998756)
+bones/11/rotation = Quaternion(-0.376983, -0.00461774, 0.164926, 0.911407)
+bones/12/rotation = Quaternion(0.0984598, -0.0204204, -0.0904405, 0.990812)
 bones/12/scale = Vector3(1, 1, 1)
-bones/13/rotation = Quaternion(0.0237326, -0.000197928, -0.0299868, 0.999269)
-bones/14/rotation = Quaternion(0.00518193, -0.0277426, 0.70775, 0.705899)
+bones/13/rotation = Quaternion(0.0907882, -0.000756645, -0.114714, 0.989241)
+bones/14/rotation = Quaternion(0.0197933, 0.0151281, 0.710828, 0.702925)
 bones/14/scale = Vector3(1, 1, 1)
-bones/15/rotation = Quaternion(-0.469664, -0.486745, 0.566489, 0.470728)
-bones/16/rotation = Quaternion(0.000366215, 0.0500733, -0.0425168, 0.99784)
+bones/15/rotation = Quaternion(-0.480049, -0.449769, 0.601235, 0.453627)
+bones/16/rotation = Quaternion(0.0124114, 0.0495551, -0.0207121, 0.998479)
 bones/16/scale = Vector3(1, 1, 1)
-bones/17/rotation = Quaternion(0.00687514, 0.0265675, -0.708036, 0.705643)
+bones/17/rotation = Quaternion(0.0262628, -0.0196347, -0.711698, 0.70172)
 bones/17/scale = Vector3(1, 1, 1)
-bones/18/rotation = Quaternion(0.464785, -0.492963, 0.560197, -0.476593)
-bones/19/rotation = Quaternion(-0.000303202, -0.0501263, 0.0484268, 0.997568)
+bones/18/rotation = Quaternion(0.462135, -0.474311, 0.578052, -0.476777)
+bones/19/rotation = Quaternion(0.00984681, -0.0496571, 0.0432981, 0.997779)
 bones/19/scale = Vector3(1, 1, 1)
 
 [node name="LittleWitch2" parent="Armature/Skeleton3D" index="0"]
 sorting_offset = 10.0
 material_overlay = SubResource("ShaderMaterial_mt5p4")
+blend_shapes/Happy = 1.0
 surface_material_override/0 = SubResource("ShaderMaterial_rg6yk")
 
 [node name="WiggleBone" type="BoneAttachment3D" parent="Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.992358, 0.114178, -0.0467929, 0.0108947, 0.296659, 0.954921, 0.122913, -0.948133, 0.293148, 0.00698211, 0.897145, -0.398283)
+transform = Transform3D(0.999269, 0.03159, -0.0215376, 0.0329014, -0.423551, 0.905275, 0.0194754, -0.905321, -0.424281, 0.0170696, 0.859073, -0.370498)
 bone_name = "Ponytail"
 bone_idx = 5
 script = ExtResource("5_301ki")

@@ -36,32 +36,26 @@ size = Vector2i(30, 30)
 [node name="Player" parent="MeshInstance3D/SubViewport" instance=ExtResource("2_6eyuw")]
 
 [node name="Skeleton3D" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(1.89157e-17, 0.4519, -0.252451)
-bones/0/rotation = Quaternion(0.0260966, 0.659854, 0.750671, 0.0201284)
-bones/1/rotation = Quaternion(0.039773, 0.713866, 0.695214, 0.0740975)
-bones/2/rotation = Quaternion(-0.0562222, -0.122213, 0.151759, 0.97922)
-bones/3/rotation = Quaternion(-0.0622747, 0.0038889, -0.0239286, 0.997763)
-bones/4/rotation = Quaternion(-0.0145675, 0.205972, -0.0281749, 0.978044)
-bones/6/rotation = Quaternion(-0.533721, -0.593873, -0.479033, 0.364671)
-bones/7/rotation = Quaternion(-0.256855, 0.0337073, -0.0496118, 0.964587)
-bones/8/rotation = Quaternion(0.0604045, 0.0180105, -0.0475928, 0.996876)
-bones/9/rotation = Quaternion(0.0205879, -0.000249599, -0.0223295, 0.999538)
-bones/10/rotation = Quaternion(-0.560049, 0.489973, 0.458952, 0.485422)
-bones/11/rotation = Quaternion(-0.192341, -0.0747122, -0.0466987, 0.977365)
-bones/12/rotation = Quaternion(0.081863, -0.0191468, -0.0127675, 0.996378)
-bones/13/rotation = Quaternion(0.0279128, -0.000120215, -0.00559802, 0.999594)
-bones/14/rotation = Quaternion(-0.0729629, -0.0428993, 0.790226, 0.606943)
-bones/15/rotation = Quaternion(-0.356321, -0.396645, 0.578633, 0.617163)
-bones/16/rotation = Quaternion(0.416586, -0.0249094, -0.11694, 0.901199)
-bones/17/rotation = Quaternion(-0.0287121, 0.108957, -0.600765, 0.791445)
-bones/18/rotation = Quaternion(-0.594788, 0.693767, -0.314698, 0.256669)
-bones/19/rotation = Quaternion(0.0111097, -0.0568991, -0.000684012, 0.998318)
-
-[node name="LittleWitch2" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature/Skeleton3D" index="0"]
-blend_shapes/Happy = 1.0
+bones/0/position = Vector3(0.0318264, 0.337478, -0.244235)
+bones/0/rotation = Quaternion(-3.59391e-05, 0.707108, 0.707106, 3.59401e-05)
+bones/2/rotation = Quaternion(-0.0177992, 4.36605e-08, 0.0101226, 0.99979)
+bones/3/rotation = Quaternion(-0.00586584, -5.51854e-11, 0.00333596, 0.999977)
+bones/4/rotation = Quaternion(-0.00382984, 7.92422e-15, 0.00217803, 0.99999)
+bones/7/rotation = Quaternion(-0.312011, 0.080453, 0.0886858, 0.942503)
+bones/8/rotation = Quaternion(0.0534437, 0.0203403, 0.111584, 0.992108)
+bones/9/rotation = Quaternion(0.0177864, 0.00101197, 0.0835897, 0.996341)
+bones/11/rotation = Quaternion(-0.39016, 0.0144859, 0.227977, 0.89196)
+bones/12/rotation = Quaternion(0.120911, -0.0208544, -0.116021, 0.985639)
+bones/13/rotation = Quaternion(0.116319, -0.000969373, -0.146972, 0.982277)
+bones/14/rotation = Quaternion(0.0254063, 0.0316206, 0.711621, 0.701392)
+bones/15/rotation = Quaternion(-0.483665, -0.43518, 0.614133, 0.446684)
+bones/16/rotation = Quaternion(0.0170448, 0.0493359, -0.0123162, 0.998561)
+bones/17/rotation = Quaternion(0.0337074, -0.0374049, -0.712626, 0.699735)
+bones/18/rotation = Quaternion(0.461031, -0.467047, 0.584821, -0.476762)
+bones/19/rotation = Quaternion(0.0137536, -0.0494864, 0.0413227, 0.997825)
 
 [node name="WiggleBone" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.998295, 0.0581011, 0.0056097, 0.0213117, -0.452266, 0.891629, 0.0543416, -0.889989, -0.452733, -0.00814118, 0.88314, -0.3778)
+transform = Transform3D(0.999511, 0.0102011, -0.0295521, 0.031254, -0.348968, 0.936613, -0.000758215, -0.937079, -0.349117, 0.0212971, 0.851961, -0.36581)
 
 [node name="Camera3D" type="Camera3D" parent="MeshInstance3D/SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.959934, 2.10176)

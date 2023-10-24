@@ -56,10 +56,10 @@ func detect_selection():
 		is_selected = new_is_selected
 		navigation_agent.enabled = is_selected
 		if is_selected:
-			$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
+#			$MeshInstance3D.material_overlay.set_shader_parameter("on", true)
 			is_paused = true
-		else:
-			$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
+#		else:
+#			$MeshInstance3D.material_overlay.set_shader_parameter("on", false)
 
 func _on_finished_drawing():
 	if navigation_agent.enabled:
