@@ -6,9 +6,16 @@ var delta := 0.0
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var movement_physics = $MovementPhysics
+@onready var animation_player = $AnimationPlayer
+@onready var health_bar = $HealthBar
 
 enum states {IDLE, JUMP, RAGDOLL}
 var state := states.IDLE
+
+func _input(event):
+	if event.is_action_pressed("Action"):
+		if animation_player:
+			animation_player.play("attack")
 
 func _ready():
 	Signals.finished_drawing.connect(self._on_finished_drawing)
@@ -21,7 +28,6 @@ func _physics_process(delta):
 		detect_selection()
 	else:
 		is_paused = false
-	
 	#var final := navigation_agent.get_final_position()
 	#var target_reached = Vector2(position.x, position.z).distance_to(Vector2(final.x, final.z)) < Vector2(linear_velocity.x, linear_velocity.z).length()/2
 	if !is_paused and !navigation_agent.is_navigation_finished():

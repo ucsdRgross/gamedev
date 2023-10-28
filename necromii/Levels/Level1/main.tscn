@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=45 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://cf267qictd8ov" path="res://Units/base_minion.tscn" id="5_ji6s2"]
 [ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="6_34uvy"]
 [ext_resource type="Script" path="res://Units/base_minion.gd" id="6_w8i5a"]
+[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="7_qsrub"]
 [ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_t02jw"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="7_uvf54"]
 [ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_3sve3"]
@@ -20,6 +21,7 @@
 [ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_ctue8"]
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
+[ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qckf1"]
 size = Vector3(100, 100, 20)
@@ -30,12 +32,14 @@ uv1_scale = Vector3(50, 50, 50)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_1d2an"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_nujxj"]
-size = Vector3(2, 1, 2)
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_u81ob"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_7f48g"]
 vertices = PackedVector3Array(-93.5, 0.5, -99.5, -99.5, 0.5, -99.5, -99.5, 0.5, -93.5, -99.5, 0.5, 93.25, -99.5, 0.5, 99.5, -93.5, 0.5, 99.5, 99.5, 0.5, -93.5, 99.5, 0.5, -99.5, 93.25, 0.5, -99.5, 93.25, 0.5, 99.5, 99.5, 0.5, 99.5, 99.5, 0.5, 93.25, -87.25, 0.5, -99.5, -93.5, 0.5, -99.5, -99.5, 0.5, -93.5, -99.5, 0.5, -87.25, -99.5, 0.5, 93.25, -93.5, 0.5, 99.5, -87.25, 0.5, 99.5, -99.5, 0.5, 87, 99.5, 0.5, -87.25, 99.5, 0.5, -93.5, 93.25, 0.5, -99.5, 87, 0.5, -99.5, 87, 0.5, 99.5, 93.25, 0.5, 99.5, 99.5, 0.5, 93.25, -6.25, 0.5, -99.5, -12.5, 0.5, -99.5, -99.5, 0.5, -12.5, -99.5, 0.5, -6.25, 43.5, 0.5, 99.5, 99.5, 0.5, 49.75, 99.5, 0.5, 43.5, 37.25, 0.5, 99.5, 99.5, 0.5, -18.75, 99.5, 0.5, -25, 24.75, 0.5, -99.5, 18.5, 0.5, -99.5, 87, 0.5, 99.5, 99.5, 0.5, 93.25, 99.5, 0.5, 87, 80.75, 0.5, 99.5, -81, 0.5, -99.5, -87.25, 0.5, -99.5, -99.5, 0.5, -87.25, -99.5, 0.5, -81, -99.5, 0.5, 87, -87.25, 0.5, 99.5, -81, 0.5, 99.5, -99.5, 0.5, 80.75, 99.5, 0.5, -81, 99.5, 0.5, -87.25, 87, 0.5, -99.5, 80.75, 0.5, -99.5, -37.5, 0.5, -99.5, -43.75, 0.5, -99.5, -99.5, 0.5, -43.75, -99.5, 0.5, -37.5, -99.5, 0.5, 43.5, -43.75, 0.5, 99.5, -37.5, 0.5, 99.5, -99.5, 0.5, 37.25, -99.5, 0.5, 12.25, -12.5, 0.5, 99.5, -6.25, 0.5, 99.5, -99.5, 0.5, 6, 99.5, 0.5, -37.5, 99.5, 0.5, -43.75, 43.5, 0.5, -99.5, 37.25, 0.5, -99.5, 80.75, 0.5, 99.5, 99.5, 0.5, 87, 99.5, 0.5, 80.75, 74.5, 0.5, 99.5, -74.75, 0.5, -99.5, -81, 0.5, -99.5, -99.5, 0.5, -81, -99.5, 0.5, -74.75, -99.5, 0.5, 80.75, -81, 0.5, 99.5, -74.75, 0.5, 99.5, -99.5, 0.5, 74.5, 99.5, 0.5, -74.75, 99.5, 0.5, -81, 80.75, 0.5, -99.5, 74.5, 0.5, -99.5, -99.5, 0.5, 0, -99.5, 0.5, 6, -6.25, 0.5, 99.5, 18.5, 0.5, 99.5, 99.5, 0.5, 24.75, 99.5, 0.5, 18.5, 12.25, 0.5, 99.5, 37.25, 0.5, 99.5, 99.5, 0.5, 43.5, 99.5, 0.5, 37.25, 31, 0.5, 99.5, 99.5, 0.5, -6.25, 99.5, 0.5, -12.5, 12.25, 0.5, -99.5, 6, 0.5, -99.5, 74.5, 0.5, 99.5, 99.5, 0.5, 80.75, 99.5, 0.5, 74.5, 68.25, 0.5, 99.5, -68.5, 0.5, -99.5, -74.75, 0.5, -99.5, -99.5, 0.5, -74.75, -99.5, 0.5, -68.5, -99.5, 0.5, 74.5, -74.75, 0.5, 99.5, -68.5, 0.5, 99.5, -99.5, 0.5, 68.25, 99.5, 0.5, -68.5, 99.5, 0.5, -74.75, 74.5, 0.5, -99.5, 68.25, 0.5, -99.5, -31.25, 0.5, -99.5, -37.5, 0.5, -99.5, -99.5, 0.5, -37.5, -99.5, 0.5, -31.25, -99.5, 0.5, 37.25, -37.5, 0.5, 99.5, -31.25, 0.5, 99.5, -99.5, 0.5, 31, -12.5, 0.5, -99.5, -18.75, 0.5, -99.5, -99.5, 0.5, -18.75, -99.5, 0.5, -12.5, 99.5, 0.5, -31.25, 99.5, 0.5, -37.5, 37.25, 0.5, -99.5, 31, 0.5, -99.5, 68.25, 0.5, 99.5, 99.5, 0.5, 74.5, 99.5, 0.5, 68.25, 62, 0.5, 99.5, -62.25, 0.5, -99.5, -68.5, 0.5, -99.5, -99.5, 0.5, -68.5, -99.5, 0.5, -62.25, -99.5, 0.5, 68.25, -68.5, 0.5, 99.5, -62.25, 0.5, 99.5, -99.5, 0.5, 62, 99.5, 0.5, -62.25, 99.5, 0.5, -68.5, 68.25, 0.5, -99.5, 62, 0.5, -99.5, -99.5, 0.5, 18.5, -18.75, 0.5, 99.5, -12.5, 0.5, 99.5, -99.5, 0.5, 12.25, 99.5, 0.5, -6.25, 6, 0.5, -99.5, 0, 0.5, -99.5, 99.5, 0.5, 0, 31, 0.5, 99.5, 99.5, 0.5, 37.25, 99.5, 0.5, 31, 24.75, 0.5, 99.5, 99.5, 0.5, -12.5, 99.5, 0.5, -18.75, 18.5, 0.5, -99.5, 12.25, 0.5, -99.5, 62, 0.5, 99.5, 99.5, 0.5, 68.25, 99.5, 0.5, 62, 55.75, 0.5, 99.5, -56, 0.5, -99.5, -62.25, 0.5, -99.5, -99.5, 0.5, -62.25, -99.5, 0.5, -56, -99.5, 0.5, 62, -62.25, 0.5, 99.5, -56, 0.5, 99.5, -99.5, 0.5, 55.75, 99.5, 0.5, -56, 99.5, 0.5, -62.25, 62, 0.5, -99.5, 55.75, 0.5, -99.5, -25, 0.5, -99.5, -31.25, 0.5, -99.5, -99.5, 0.5, -31.25, -99.5, 0.5, -25, -99.5, 0.5, 31, -31.25, 0.5, 99.5, -25, 0.5, 99.5, -99.5, 0.5, 24.75, 99.5, 0.5, 0, 0, 0.5, -99.5, -99.5, 0.5, 0, -6.25, 0.5, 99.5, 0, 0.5, 99.5, 99.5, 0.5, 6, 99.5, 0.5, -25, 99.5, 0.5, -31.25, 31, 0.5, -99.5, 24.75, 0.5, -99.5, 55.75, 0.5, 99.5, 99.5, 0.5, 62, 99.5, 0.5, 55.75, 49.75, 0.5, 99.5, -99.5, 0.5, 49.75, -99.5, 0.5, 55.75, -56, 0.5, 99.5, -49.75, 0.5, 99.5, 99.5, 0.5, -56, 55.75, 0.5, -99.5, 49.75, 0.5, -99.5, 99.5, 0.5, -49.75, -49.75, 0.5, -99.5, -56, 0.5, -99.5, -99.5, 0.5, -56, -99.5, 0.5, -49.75, 6, 0.5, 99.5, 99.5, 0.5, 12.25, 99.5, 0.5, 6, 0, 0.5, 99.5, 24.75, 0.5, 99.5, 99.5, 0.5, 31, 99.5, 0.5, 24.75, 18.5, 0.5, 99.5, 49.75, 0.5, 99.5, 99.5, 0.5, 55.75, 99.5, 0.5, 49.75, 43.5, 0.5, 99.5, 0, 0.5, -99.5, -6.25, 0.5, -99.5, -99.5, 0.5, -6.25, -99.5, 0.5, 0, 12.25, 0.5, 99.5, 99.5, 0.5, 18.5, 99.5, 0.5, 12.25, 6, 0.5, 99.5, -99.5, 0.5, 49.75, -49.75, 0.5, 99.5, -43.75, 0.5, 99.5, -99.5, 0.5, 43.5, 99.5, 0.5, -43.75, 99.5, 0.5, -49.75, 49.75, 0.5, -99.5, 43.5, 0.5, -99.5, -43.75, 0.5, -99.5, -49.75, 0.5, -99.5, -99.5, 0.5, -49.75, -99.5, 0.5, -43.75, -18.75, 0.5, -99.5, -25, 0.5, -99.5, -99.5, 0.5, -25, -99.5, 0.5, -18.75, -99.5, 0.5, 24.75, -25, 0.5, 99.5, -18.75, 0.5, 99.5, -99.5, 0.5, 18.5)
 polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(5, 4, 3), PackedInt32Array(8, 7, 6), PackedInt32Array(11, 10, 9), PackedInt32Array(13, 12, 14), PackedInt32Array(14, 12, 15), PackedInt32Array(17, 16, 18), PackedInt32Array(18, 16, 19), PackedInt32Array(21, 20, 22), PackedInt32Array(22, 20, 23), PackedInt32Array(26, 25, 24), PackedInt32Array(28, 27, 29), PackedInt32Array(29, 27, 30), PackedInt32Array(32, 31, 33), PackedInt32Array(33, 31, 34), PackedInt32Array(36, 35, 37), PackedInt32Array(37, 35, 38), PackedInt32Array(40, 39, 41), PackedInt32Array(41, 39, 42), PackedInt32Array(44, 43, 45), PackedInt32Array(45, 43, 46), PackedInt32Array(48, 47, 49), PackedInt32Array(49, 47, 50), PackedInt32Array(52, 51, 53), PackedInt32Array(53, 51, 54), PackedInt32Array(56, 55, 57), PackedInt32Array(57, 55, 58), PackedInt32Array(60, 59, 61), PackedInt32Array(61, 59, 62), PackedInt32Array(64, 63, 65), PackedInt32Array(65, 63, 66), PackedInt32Array(68, 67, 69), PackedInt32Array(69, 67, 70), PackedInt32Array(72, 71, 73), PackedInt32Array(73, 71, 74), PackedInt32Array(76, 75, 77), PackedInt32Array(77, 75, 78), PackedInt32Array(80, 79, 81), PackedInt32Array(81, 79, 82), PackedInt32Array(84, 83, 85), PackedInt32Array(85, 83, 86), PackedInt32Array(89, 88, 87), PackedInt32Array(91, 90, 92), PackedInt32Array(92, 90, 93), PackedInt32Array(95, 94, 96), PackedInt32Array(96, 94, 97), PackedInt32Array(99, 98, 100), PackedInt32Array(100, 98, 101), PackedInt32Array(103, 102, 104), PackedInt32Array(104, 102, 105), PackedInt32Array(107, 106, 108), PackedInt32Array(108, 106, 109), PackedInt32Array(111, 110, 112), PackedInt32Array(112, 110, 113), PackedInt32Array(115, 114, 116), PackedInt32Array(116, 114, 117), PackedInt32Array(119, 118, 120), PackedInt32Array(120, 118, 121), PackedInt32Array(123, 122, 124), PackedInt32Array(124, 122, 125), PackedInt32Array(127, 126, 128), PackedInt32Array(128, 126, 129), PackedInt32Array(131, 130, 132), PackedInt32Array(132, 130, 133), PackedInt32Array(135, 134, 136), PackedInt32Array(136, 134, 137), PackedInt32Array(139, 138, 140), PackedInt32Array(140, 138, 141), PackedInt32Array(143, 142, 144), PackedInt32Array(144, 142, 145), PackedInt32Array(147, 146, 148), PackedInt32Array(148, 146, 149), PackedInt32Array(151, 150, 152), PackedInt32Array(152, 150, 153), PackedInt32Array(155, 154, 156), PackedInt32Array(156, 154, 157), PackedInt32Array(159, 158, 160), PackedInt32Array(160, 158, 161), PackedInt32Array(163, 162, 164), PackedInt32Array(164, 162, 165), PackedInt32Array(167, 166, 168), PackedInt32Array(168, 166, 169), PackedInt32Array(171, 170, 172), PackedInt32Array(172, 170, 173), PackedInt32Array(175, 174, 176), PackedInt32Array(176, 174, 177), PackedInt32Array(179, 178, 180), PackedInt32Array(180, 178, 181), PackedInt32Array(183, 182, 184), PackedInt32Array(184, 182, 185), PackedInt32Array(187, 186, 188), PackedInt32Array(188, 186, 189), PackedInt32Array(195, 194, 190), PackedInt32Array(190, 194, 193), PackedInt32Array(190, 193, 192), PackedInt32Array(190, 192, 191), PackedInt32Array(197, 196, 198), PackedInt32Array(198, 196, 199), PackedInt32Array(201, 200, 202), PackedInt32Array(202, 200, 203), PackedInt32Array(205, 204, 206), PackedInt32Array(206, 204, 207), PackedInt32Array(209, 208, 210), PackedInt32Array(210, 208, 211), PackedInt32Array(213, 212, 214), PackedInt32Array(214, 212, 215), PackedInt32Array(216, 219, 217), PackedInt32Array(217, 219, 218), PackedInt32Array(221, 220, 222), PackedInt32Array(222, 220, 223), PackedInt32Array(225, 224, 226), PackedInt32Array(226, 224, 227), PackedInt32Array(229, 228, 230), PackedInt32Array(230, 228, 231), PackedInt32Array(233, 232, 234), PackedInt32Array(234, 232, 235), PackedInt32Array(237, 236, 238), PackedInt32Array(238, 236, 239), PackedInt32Array(241, 240, 242), PackedInt32Array(242, 240, 243), PackedInt32Array(245, 244, 246), PackedInt32Array(246, 244, 247), PackedInt32Array(249, 248, 250), PackedInt32Array(250, 248, 251), PackedInt32Array(253, 252, 254), PackedInt32Array(254, 252, 255)]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_b2jwt"]
+viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
 viewport_path = NodePath("BaseMinion2/SubViewport")
@@ -247,11 +251,9 @@ skeleton = NodePath("../..")
 [node name="StaticBody3D2" type="StaticBody3D" parent="Arena/Floor"]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Arena/Floor/StaticBody3D2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500208, 0)
-shape = SubResource("BoxShape3D_nujxj")
+shape = SubResource("WorldBoundaryShape3D_u81ob")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="Arena"]
-visible = false
 navigation_mesh = SubResource("NavigationMesh_7f48g")
 
 [node name="SelectionTool" parent="Arena" instance=ExtResource("4_o2hhp")]
@@ -259,12 +261,21 @@ transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 
 
 [node name="BaseMinion" parent="." instance=ExtResource("5_ji6s2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.12855, 2.68603, 0)
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+
+[node name="BaseMinion3" parent="." instance=ExtResource("5_ji6s2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.14833, 3.66931, 0)
 
 [node name="BaseMinion2" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.87145, 2.68603, 0)
 mass = 10.0
 lock_rotation = true
 script = ExtResource("6_w8i5a")
+
+[node name="HealthBar" parent="BaseMinion2" instance=ExtResource("7_qsrub")]
+transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
+texture = SubResource("ViewportTexture_b2jwt")
 
 [node name="MovementPhysics" parent="BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -318,6 +329,8 @@ script = ExtResource("8_3sve3")
 
 [node name="Player" parent="." instance=ExtResource("9_iofqv")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.5, 0)
+axis_lock_angular_x = true
+axis_lock_angular_z = true
 
 [node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player"]
 remote_path = NodePath("../../ZoomPath")
@@ -355,43 +368,52 @@ shape = SubResource("ConcavePolygonShape3D_4jahb")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.10539, -0.0104008, 1.89644)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(-0.00936362, 0.364033, -0.294107)
-bones/0/rotation = Quaternion(4.05258e-05, 0.707107, 0.707106, -4.05268e-05)
-bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
-bones/2/rotation = Quaternion(-0.00199088, 4.39198e-08, -0.00297813, 0.999994)
-bones/3/rotation = Quaternion(-0.000656112, 1.59262e-10, -0.00098147, 0.999999)
-bones/4/rotation = Quaternion(-0.000540505, -3.20132e-11, -0.000635068, 1)
-bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
-bones/7/rotation = Quaternion(-0.332637, 0.0466745, -0.0176568, 0.941734)
-bones/8/rotation = Quaternion(0.0301556, 0.0189668, 0.0127696, 0.999284)
-bones/9/rotation = Quaternion(0.0130033, 0.00010853, 0.0164299, 0.99978)
-bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
-bones/11/rotation = Quaternion(-0.317057, -0.0693901, -0.056684, 0.944165)
-bones/12/rotation = Quaternion(0.0226032, -0.0188997, -0.0122758, 0.99949)
-bones/13/rotation = Quaternion(0.00198941, -0.000113344, -0.00934867, 0.999954)
-bones/14/rotation = Quaternion(0.00376981, -0.0339576, 0.707283, 0.706104)
-bones/15/rotation = Quaternion(-0.46518, -0.49592, 0.557302, 0.476534)
-bones/16/rotation = Quaternion(-0.00192957, 0.050196, -0.0492479, 0.997523)
-bones/17/rotation = Quaternion(0.00284149, 0.0346014, -0.707121, 0.70624)
-bones/18/rotation = Quaternion(0.467873, -0.49253, 0.560771, -0.473335)
-bones/19/rotation = Quaternion(-0.00156301, -0.0501582, 0.0460071, 0.99768)
+bones/0/position = Vector3(-0.0287887, 0.342439, -0.253552)
+bones/0/rotation = Quaternion(3.71468e-05, 0.707108, 0.707106, -3.71475e-05)
+bones/2/rotation = Quaternion(-0.0148463, 4.39539e-08, -0.00915656, 0.999848)
+bones/3/rotation = Quaternion(-0.00489264, 1.61376e-10, -0.00301756, 0.999983)
+bones/4/rotation = Quaternion(-0.00270479, 2.64852e-12, -0.00176412, 0.999995)
+bones/7/rotation = Quaternion(-0.381158, -0.00406034, -0.193076, 0.904115)
+bones/8/rotation = Quaternion(0.104088, 0.0205312, 0.0968513, 0.989628)
+bones/9/rotation = Quaternion(0.0971931, 0.000810016, 0.122807, 0.98766)
+bones/11/rotation = Quaternion(-0.312329, -0.0797164, -0.0866001, 0.942654)
+bones/12/rotation = Quaternion(0.0477181, -0.0200877, -0.0930974, 0.99431)
+bones/13/rotation = Quaternion(0.0148409, -0.000844428, -0.0697468, 0.997454)
+bones/14/rotation = Quaternion(0.0281258, 0.0240801, 0.711956, 0.701248)
+bones/15/rotation = Quaternion(-0.461863, -0.472498, 0.57975, 0.476778)
+bones/16/rotation = Quaternion(0.0108242, 0.0496226, -0.0428042, 0.997792)
+bones/17/rotation = Quaternion(0.0211978, -0.0192535, -0.711047, 0.702562)
+bones/18/rotation = Quaternion(0.480973, -0.446138, 0.604486, -0.451909)
+bones/19/rotation = Quaternion(0.0135699, -0.0494927, 0.0186126, 0.998509)
 
 [node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
 material_override = SubResource("ShaderMaterial_1ydwi")
-blend_shapes/Happy = 0.0
+blend_shapes/Happy = 1.0
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.9999, -0.00839125, 0.0114275, -0.0134463, -0.30579, 0.952004, -0.00449409, -0.952062, -0.305872, -0.00808593, 0.895152, -0.396737)
+transform = Transform3D(0.999538, -0.016677, 0.0254034, -0.0301909, -0.44982, 0.892609, -0.00345908, -0.892963, -0.450116, -0.0197519, 0.859322, -0.370543)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0
 
 [node name="StateChartDebugger" parent="." instance=ExtResource("15_ekbj3")]
-visible = false
 offset_right = -849.0
 offset_bottom = -406.0
 initial_node_to_watch = NodePath("../Player")
 
+[node name="Spawner" type="Node3D" parent="."]
+script = ExtResource("22_tpnwq")
+
+[node name="Timer" type="Timer" parent="Spawner"]
+process_callback = 0
+
+[node name="Spawnlings" type="Node3D" parent="Spawner"]
+
+[node name="BaseMinion" parent="Spawner/Spawnlings" instance_placeholder="res://Units/base_minion.tscn"]
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+
 [connection signal="velocity_computed" from="BaseMinion2/NavigationAgent3D" to="BaseMinion2" method="_on_navigation_agent_3d_velocity_computed" flags=18]
+[connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
 
 [editable path="LittleWitch"]

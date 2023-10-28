@@ -8,6 +8,7 @@ var last_pos : Vector3
 @onready var mesh = $LittleWitch/Armature/Skeleton3D/LittleWitch2
 @onready var state_chart = $StateChart
 @onready var anim_tree = $LittleWitch/AnimationTree
+@onready var health_bar = $HealthBar
 
 func _ready():
 	#$LittleWitch/Armature/Skeleton3D/SkeletonIK3D.start()

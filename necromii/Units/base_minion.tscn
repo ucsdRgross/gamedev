@@ -1,10 +1,15 @@
-[gd_scene load_steps=11 format=3 uid="uid://cf267qictd8ov"]
+[gd_scene load_steps=19 format=3 uid="uid://cf267qictd8ov"]
 
 [ext_resource type="Script" path="res://Units/base_minion.gd" id="1_ot7fk"]
+[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_5fbwl"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="2_un5gd"]
 [ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="3_02f6t"]
 [ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="4_mq6us"]
 [ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="5_l21lo"]
+[ext_resource type="Script" path="res://Units/Damager.gd" id="6_7ynm6"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_kbwhf"]
+viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_nj7kk"]
 render_priority = 0
@@ -34,12 +39,94 @@ shader_parameter/on = null
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_6r5el"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lg5ra"]
 height = 1.50903
+
+[sub_resource type="Animation" id="Animation_x3foo"]
+resource_name = "attack"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/1/type = "method"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Area3D")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.5),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"reset"
+}]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Area3D:monitoring")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+
+[sub_resource type="Animation" id="Animation_k6a7s"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Area3D:monitoring")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_7yuht"]
+_data = {
+"RESET": SubResource("Animation_k6a7s"),
+"attack": SubResource("Animation_x3foo")
+}
+
+[sub_resource type="SphereMesh" id="SphereMesh_2m7yo"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_8aobe"]
 
 [node name="BaseMinion" type="RigidBody3D"]
 mass = 10.0
 script = ExtResource("1_ot7fk")
+
+[node name="HealthBar" parent="." instance=ExtResource("2_5fbwl")]
+texture = SubResource("ViewportTexture_kbwhf")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_un5gd")]
 
@@ -51,7 +138,7 @@ mesh = SubResource("CapsuleMesh_6r5el")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.273516, 0)
-shape = SubResource("CapsuleShape3D_qrji7")
+shape = SubResource("CapsuleShape3D_lg5ra")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 target_desired_distance = 0.5
@@ -59,4 +146,25 @@ avoidance_enabled = true
 debug_enabled = true
 script = ExtResource("5_l21lo")
 
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+root_node = NodePath("../Damager")
+libraries = {
+"": SubResource("AnimationLibrary_7yuht")
+}
+
+[node name="Damager" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.250019, -1.73602)
+visible = false
+mesh = SubResource("SphereMesh_2m7yo")
+
+[node name="Area3D" type="Area3D" parent="Damager"]
+monitoring = false
+monitorable = false
+script = ExtResource("6_7ynm6")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Damager/Area3D"]
+shape = SubResource("SphereShape3D_8aobe")
+
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]
+[connection signal="area_entered" from="Damager/Area3D" to="Damager/Area3D" method="_on_area_entered"]
+[connection signal="body_entered" from="Damager/Area3D" to="Damager/Area3D" method="_on_body_entered"]
