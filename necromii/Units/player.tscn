@@ -12,7 +12,7 @@
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_f4l24"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_sqq43"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
@@ -26,7 +26,7 @@ script = ExtResource("1_dlni2")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_t0eip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
-texture = SubResource("ViewportTexture_f4l24")
+texture = SubResource("ViewportTexture_sqq43")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_k6ysm")]
 
@@ -53,7 +53,7 @@ bones/18/rotation = Quaternion(0.461031, -0.467046, 0.584821, -0.476762)
 bones/19/rotation = Quaternion(0.0137539, -0.0494864, 0.0413226, 0.997825)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999363, 0.026708, -0.0236888, 0.0314151, -0.342723, 0.938911, 0.0169577, -0.939057, -0.343343, 0.0170894, 0.868911, -0.377965)
+transform = Transform3D(0.999511, 0.0102013, -0.0295524, 0.0312543, -0.348969, 0.936613, -0.000758234, -0.937079, -0.349117, 0.0212973, 0.85196, -0.365809)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0
