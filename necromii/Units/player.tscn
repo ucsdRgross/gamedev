@@ -12,7 +12,7 @@
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_sqq43"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_7ljok"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
@@ -26,7 +26,7 @@ script = ExtResource("1_dlni2")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_t0eip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
-texture = SubResource("ViewportTexture_sqq43")
+texture = SubResource("ViewportTexture_7ljok")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_k6ysm")]
 
@@ -34,26 +34,29 @@ texture = SubResource("ViewportTexture_sqq43")
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(0.0318267, 0.337477, -0.244234)
-bones/0/rotation = Quaternion(-3.5939e-05, 0.707108, 0.707106, 3.594e-05)
-bones/2/rotation = Quaternion(-0.0177994, 4.36605e-08, 0.0101227, 0.99979)
-bones/3/rotation = Quaternion(-0.00586593, -5.51875e-11, 0.003336, 0.999977)
-bones/4/rotation = Quaternion(-0.00382991, 9.80119e-15, 0.00217805, 0.99999)
-bones/7/rotation = Quaternion(-0.312011, 0.0804531, 0.088686, 0.942503)
-bones/8/rotation = Quaternion(0.0534442, 0.0203404, 0.111586, 0.992108)
-bones/9/rotation = Quaternion(0.0177867, 0.00101199, 0.0835911, 0.996341)
-bones/11/rotation = Quaternion(-0.39016, 0.0144868, 0.22798, 0.891958)
-bones/12/rotation = Quaternion(0.120912, -0.0208545, -0.116023, 0.985639)
-bones/13/rotation = Quaternion(0.116321, -0.000969388, -0.146974, 0.982276)
-bones/14/rotation = Quaternion(0.0254067, 0.0316218, 0.711621, 0.701392)
-bones/15/rotation = Quaternion(-0.483666, -0.435179, 0.614134, 0.446684)
-bones/16/rotation = Quaternion(0.0170452, 0.0493359, -0.0123156, 0.998561)
-bones/17/rotation = Quaternion(0.0337079, -0.0374062, -0.712626, 0.699735)
-bones/18/rotation = Quaternion(0.461031, -0.467046, 0.584821, -0.476762)
-bones/19/rotation = Quaternion(0.0137539, -0.0494864, 0.0413226, 0.997825)
+bones/0/position = Vector3(-0.00194939, 0.365378, -0.296634)
+bones/0/rotation = Quaternion(2.77915e-05, 0.707108, 0.707105, -2.77916e-05)
+bones/2/rotation = Quaternion(-0.00119007, 4.37165e-08, -0.000620003, 0.999999)
+bones/3/rotation = Quaternion(-0.000686338, 3.92416e-13, -0.000357567, 1)
+bones/4/rotation = Quaternion(-0.000586224, 5.84239e-12, -0.000305418, 1)
+bones/7/rotation = Quaternion(-0.326332, 0.0567153, 0.0141663, 0.943446)
+bones/8/rotation = Quaternion(0.0255431, 0.0188615, 0.0075329, 0.999467)
+bones/9/rotation = Quaternion(0.00776009, 6.48414e-05, 0.00980495, 0.999922)
+bones/11/rotation = Quaternion(-0.320535, -0.0614969, -0.0339327, 0.944629)
+bones/12/rotation = Quaternion(0.0210344, -0.0188212, -0.00724168, 0.999575)
+bones/13/rotation = Quaternion(0.00118887, -6.78054e-05, -0.00558646, 0.999984)
+bones/14/rotation = Quaternion(0.00225267, -0.0375671, 0.706899, 0.706313)
+bones/15/rotation = Quaternion(-0.46537, -0.497362, 0.555884, 0.476503)
+bones/16/rotation = Quaternion(-0.00272468, 0.0502182, -0.0496489, 0.9975)
+bones/17/rotation = Quaternion(0.00169807, 0.0379514, -0.7068, 0.706393)
+bones/18/rotation = Quaternion(0.466984, -0.495342, 0.557962, -0.474596)
+bones/19/rotation = Quaternion(-0.0025049, -0.0502113, 0.0477121, 0.997595)
+
+[node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
+blend_shapes/Happy = 1.0
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999511, 0.0102013, -0.0295524, 0.0312543, -0.348969, 0.936613, -0.000758234, -0.937079, -0.349117, 0.0212973, 0.85196, -0.365809)
+transform = Transform3D(0.999997, -0.000843286, 0.00242427, -0.00256574, -0.301788, 0.953372, -7.2348e-05, -0.953375, -0.301789, -0.00114061, 0.900658, -0.401241)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0
@@ -63,6 +66,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)
 shape = SubResource("CapsuleShape3D_qrji7")
 
 [node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.607162, 0)
+radius = 1.0
 
 [node name="StateChart" type="Node" parent="."]
 script = ExtResource("4_v5nrd")

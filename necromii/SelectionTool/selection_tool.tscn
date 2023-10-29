@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dfo8hlabm8dbn" path="res://SelectionTool/paint_tool.tscn" id="2_c085j"]
 [ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="3_wdys3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_1wg5e"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fbtbb"]
 resource_local_to_scene = true
 shader = ExtResource("3_wdys3")
 shader_parameter/size = null
@@ -33,6 +33,7 @@ script = ExtResource("1_gtwli")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.22378)
+projection = 1
 
 [node name="SubViewport" type="SubViewport" parent="."]
 disable_3d = true
@@ -40,9 +41,10 @@ transparent_bg = true
 size = Vector2i(4096, 4096)
 
 [node name="PaintTool" parent="SubViewport" instance=ExtResource("2_c085j")]
-material = SubResource("ShaderMaterial_1wg5e")
+material = SubResource("ShaderMaterial_fbtbb")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
+sorting_offset = -1000.0
 mesh = SubResource("QuadMesh_dfqu7")
 surface_material_override/0 = SubResource("StandardMaterial3D_tajhd")
 

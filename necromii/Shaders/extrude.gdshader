@@ -20,7 +20,7 @@ uniform bool keep_image = true;
 uniform float image_alpha_cull : hint_range(0.0, 1.0) = 1.0;
 // When searching for texture edges, how big should steps be
 // If 5, extrusion is precise to 1/5 pixel increments
-uniform float precision : hint_range(1, 8) = 1.0;
+uniform float precision : hint_range(0, 1) = 1.0;
 // Offset extruded portion
 uniform vec2 offset = vec2(0.0);
 // Change color of extruded portion

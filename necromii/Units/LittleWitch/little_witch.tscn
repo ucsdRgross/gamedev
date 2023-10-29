@@ -905,7 +905,7 @@ material_overlay = SubResource("ShaderMaterial_mt5p4")
 surface_material_override/0 = SubResource("ShaderMaterial_rg6yk")
 
 [node name="WiggleBone" type="BoneAttachment3D" parent="Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999766, -0.000114148, 0.0216476, -0.0207903, -0.283739, 0.958676, 0.00603282, -0.958902, -0.283675, -0.0153271, 0.875126, -0.382428)
+transform = Transform3D(0.999933, -0.00360323, 0.0110113, -0.0115857, -0.306111, 0.951926, -5.93346e-05, -0.951989, -0.306132, -0.00779519, 0.895697, -0.397133)
 bone_name = "Ponytail"
 bone_idx = 5
 script = ExtResource("5_301ki")

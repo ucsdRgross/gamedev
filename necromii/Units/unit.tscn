@@ -2,30 +2,30 @@
 
 [ext_resource type="Script" path="res://Units/unit.gd" id="1_gumkx"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_w7nk5"]
-[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_k7ysu"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_cqfm6"]
 [ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="6_3x2rj"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="6_c4xrq"]
 [ext_resource type="Script" path="res://Units/Damager.gd" id="7_gxioy"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_rh74n"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_dtt7r"]
 viewport_path = NodePath("SubViewport")
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_rvuno"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
 viewport_path = NodePath("SubViewport")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_pjcy0"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0ytnk"]
 resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("3_k7ysu")
+shader = ExtResource("3_cqfm6")
 shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
-shader_parameter/precision = 1.0
+shader_parameter/precision = 0.05
 shader_parameter/offset = Vector2(0, 0)
 shader_parameter/color_mix = null
 shader_parameter/mix_strength = 1.0
-shader_parameter/Texture = SubResource("ViewportTexture_rvuno")
+shader_parameter/Texture = SubResource("ViewportTexture_2m7k3")
 
 [sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
 
@@ -121,11 +121,11 @@ script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_rh74n")
+texture = SubResource("ViewportTexture_dtt7r")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 1, 0)
-material_override = SubResource("ShaderMaterial_pjcy0")
+material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -136,7 +136,6 @@ shape = SubResource("BoxShape3D_fqrte")
 target_desired_distance = 0.5
 avoidance_enabled = true
 radius = 1.0
-debug_enabled = true
 script = ExtResource("6_3x2rj")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
@@ -154,9 +153,10 @@ texture = SubResource("AtlasTexture_khmdf")
 centered = false
 
 [node name="RotationPoint" type="Node3D" parent="."]
+visible = false
 
 [node name="Damager" type="MeshInstance3D" parent="RotationPoint"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.822124, -1.30966)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.822124, -1.31359)
 visible = false
 mesh = SubResource("SphereMesh_2m7yo")
 skeleton = NodePath("../..")
@@ -168,6 +168,41 @@ script = ExtResource("7_gxioy")
 
 [node name="CollisionShape3D2" type="CollisionShape3D" parent="RotationPoint/Damager/Area3D"]
 shape = SubResource("SphereShape3D_8aobe")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941305, 0)
+visible = false
+texture_filter = 2
+texture = ExtResource("6_c4xrq")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="Sprite3D2" type="Sprite3D" parent="."]
+transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.2)
+visible = false
+modulate = Color(0, 0, 0, 1)
+texture_filter = 2
+texture = ExtResource("6_c4xrq")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="Sprite3D3" type="Sprite3D" parent="."]
+transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.4)
+visible = false
+modulate = Color(0, 0, 0, 1)
+texture_filter = 2
+texture = ExtResource("6_c4xrq")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="Sprite3D4" type="Sprite3D" parent="."]
+transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.6)
+visible = false
+modulate = Color(0, 0, 0, 1)
+texture_filter = 2
+texture = ExtResource("6_c4xrq")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
 
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]
 [connection signal="area_entered" from="RotationPoint/Damager/Area3D" to="RotationPoint/Damager/Area3D" method="_on_area_entered"]

@@ -3,26 +3,25 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://mqm4ihplfdu2"
-path.s3tc="res://.godot/imported/Skeleton-Soldier.png-5167fd56d8a237c073c0b3da258526c5.s3tc.ctex"
+path="res://.godot/imported/Skeleton-Soldier.png-5167fd56d8a237c073c0b3da258526c5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png"
-dest_files=["res://.godot/imported/Skeleton-Soldier.png-5167fd56d8a237c073c0b3da258526c5.s3tc.ctex"]
+dest_files=["res://.godot/imported/Skeleton-Soldier.png-5167fd56d8a237c073c0b3da258526c5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

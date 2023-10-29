@@ -56,7 +56,6 @@ func _on_movement_state_physics_processing(delta):
 	last_pos = position
 	#update_animation()
 	
-	
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(position)
 	if new_is_selected == is_selected:
