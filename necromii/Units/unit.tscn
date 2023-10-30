@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="6_c4xrq"]
 [ext_resource type="Script" path="res://Units/Damager.gd" id="7_gxioy"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_dtt7r"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_eag5w"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
@@ -21,10 +21,11 @@ shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
-shader_parameter/precision = 0.05
 shader_parameter/offset = Vector2(0, 0)
 shader_parameter/color_mix = null
 shader_parameter/mix_strength = 1.0
+shader_parameter/loops = 4
+shader_parameter/bias = 2.0
 shader_parameter/Texture = SubResource("ViewportTexture_2m7k3")
 
 [sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
@@ -121,7 +122,7 @@ script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_dtt7r")
+texture = SubResource("ViewportTexture_eag5w")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 1, 0)

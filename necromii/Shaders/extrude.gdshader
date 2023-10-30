@@ -18,17 +18,19 @@ uniform bool opaque_extrude = true;
 uniform bool keep_image = true;
 // Same as above but for original image
 uniform float image_alpha_cull : hint_range(0.0, 1.0) = 1.0;
-// When searching for texture edges, how big should steps be
-// If 5, extrusion is precise to 1/5 pixel increments
-uniform float precision : hint_range(0, 1) = 1.0;
 // Offset extruded portion
 uniform vec2 offset = vec2(0.0);
 // Change color of extruded portion
 uniform vec4 color_mix : source_color;
 // 0 is no mix, 1 is solid color
-uniform float mix_strength : hint_range(0.0, 1.0);
+uniform float mix_strength : hint_range(0.0, 1.0) = 1.0;
 // 2D image where opaque pixels are extruded
 uniform sampler2D Texture : source_color, filter_nearest_mipmap;
+// Maximum amount of texture() checks per pixel
+uniform int loops = 10;
+// Shifts ray intersection checks
+uniform float bias = 1;
+
 
 varying float pixel_size;
 struct imgPoint {
@@ -36,8 +38,49 @@ struct imgPoint {
 	vec2 uv;
 };
 
+
 bool isInImg(vec2 uv){
-	return uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0;
+	return 	uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0;
+}
+
+vec2 getPositionAlongTheLine(vec2 a, vec2 b, float percentage) {
+    return vec2(a.x * (1.0 - percentage) + b.x * percentage, a.y * (1.0 - percentage) + b.y * percentage);
+}
+
+vec2 lineImgIntersect(vec2 x, vec2 y){
+	float t = 0.0;
+	float xY = y.x;
+	float yY = -y.y;
+	float xX = x.x;
+	float yX = -x.y;
+	float xA = 0.0;
+	float yA = -1.0;
+	float xC = 1.0;
+	float yC = -0.0;
+	if(xY == xX) {
+		t =  max((yA - yX)/(yY - yX), (yC - yX)/(yY - yX));
+	} else {
+		if(yY == yX) {
+			t = max((xA - xX)/(xY - xX), (xC - xX)/(xY - xX));
+		} else {
+			if(xY > xX) {
+				if(yY > yX) {
+					t = min((xC - xX)/(xY - xX), (yC - yX)/(yY - yX));
+				} else {
+					t = min((xC - xX)/(xY - xX), (yA - yX)/(yY - yX));
+				}
+			} else {
+				if(yY > yX) {
+					t = min((xA - xX)/(xY - xX), (yC - yX)/(yY - yX));
+				} else {
+					t = min((xA - xX)/(xY - xX), (yA - yX)/(yY - yX));
+				}
+			}
+		}
+	}
+	float xE = t * xY + (1.0 - t) * xX;
+	float yE = t * yY + (1.0 - t) * yX;
+	return vec2(xE, -yE);
 }
 
 // Return colored pixel found starting from UV with given slope
@@ -46,21 +89,21 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	slope = normalize(slope);
 	// Flip y as UV has inverted y axis
 	slope.y *= -1.0;
-	// While not yet hit edge of image texture
-	while (isInImg(pos_on_img)) {
-		// Flip image for back face
-		if (flipped) color = texture(Texture, vec2(-pos_on_img.x, pos_on_img.y) + offset);
-		else color = texture(Texture, pos_on_img + offset);
-		// Colored pixel found
+	// Find intersect with image edge
+	vec2 edge = lineImgIntersect(pos_on_img, pos_on_img + slope);
+	for (int i = 1; i < loops; i++){
+		float percentage = float(i) * 1.0/float(loops);
+		percentage = pow(percentage, bias);
+		vec2 checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
+		if (flipped) color = texture(Texture, vec2(-checkPoint.x, checkPoint.y) + offset);
+		else color = texture(Texture, checkPoint + offset);
 		if (color.w >= extruded_alpha_cull) {
 			if (opaque_extrude) color.w = 1.0;
 			color = mix(color, color_mix, mix_strength);
 			return imgPoint(color, pos_on_img);
 		}
-		float pixel_step = 1.0 / pixel_size / precision;
-		pos_on_img += slope * pixel_step;
 	}
-	return imgPoint(vec4(0.0), pos_on_img);
+	return imgPoint(vec4(0.0), edge);
 }
 
 vec2 UVtoXY(vec2 uv){
