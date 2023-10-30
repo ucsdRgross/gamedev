@@ -46,7 +46,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_dfvdi"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_d1tpv"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -56,11 +56,11 @@ viewport_path = NodePath("BaseMinion2/SubViewport")
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("9_mx5uo")
+shader_parameter/skew_factor = 0.5
 shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
-shader_parameter/precision = 1.0
 shader_parameter/offset = Vector2(0, 0)
 shader_parameter/color_mix = null
 shader_parameter/mix_strength = 1.0
@@ -163,7 +163,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_dfvdi")
+texture = SubResource("ViewportTexture_d1tpv")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -411,8 +411,9 @@ initial_node_to_watch = NodePath("../Player")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 script = ExtResource("22_tpnwq")
-spawn_cap = 100
-spawn_interval = 0.1
+spawn_cap = 200
+spawn_interval = 0.01
+spawn_radius = 30.0
 
 [node name="Timer" type="Timer" parent="Spawner"]
 process_callback = 0

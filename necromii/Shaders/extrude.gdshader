@@ -4,7 +4,7 @@ render_mode unshaded;
 render_mode world_vertex_coords;
 
 //skew model torwards camera
-const float skew_factor = 0.5;
+uniform float skew_factor = 0.5;
 void vertex() {
 	VERTEX.z -= VERTEX.y * skew_factor;
 	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
@@ -29,7 +29,7 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // Maximum amount of texture() checks per pixel
 uniform int loops = 10;
 // Shifts ray intersection checks
-uniform float bias = 1;
+uniform float bias = 2;
 
 
 varying float pixel_size;
@@ -91,9 +91,10 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	slope.y *= -1.0;
 	// Find intersect with image edge
 	vec2 edge = lineImgIntersect(pos_on_img, pos_on_img + slope);
-	for (int i = 1; i < loops; i++){
+	for (int i = 1; i <= loops; i++){
 		float percentage = float(i) * 1.0/float(loops);
-		percentage = pow(percentage, bias);
+		// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
+		percentage = pow(percentage, bias) - 0.00001;
 		vec2 checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
 		if (flipped) color = texture(Texture, vec2(-checkPoint.x, checkPoint.y) + offset);
 		else color = texture(Texture, checkPoint + offset);
@@ -129,7 +130,9 @@ void fragment() {
 	// Get the camera direction by sustracting the camera position from the fragment position
 	vec3 camera_ray = normalize(frag_pos - CAMERA_POSITION_WORLD);
 	// Get transformed camera ray to handle rotation and scaling
-	vec3 model_ray = normalize((inverse(MODEL_MATRIX) * vec4(camera_ray, 0.0)).xyz);
+	mat4 shear_matrix = mat4(1.0);
+	shear_matrix[1][2] = -skew_factor * 1.0/MODEL_MATRIX[2][2] * MODEL_MATRIX[1][1];
+	vec3 model_ray = normalize((inverse(MODEL_MATRIX * shear_matrix) * vec4(camera_ray, 0.0)).xyz);
 	
 	// Determine which face of the cube we are looking at
 	ivec2 face = ivec2(UV / vec2(1.0/3.0, 1.0/2.0));
