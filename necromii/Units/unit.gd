@@ -12,7 +12,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var animation_player = $AnimationPlayer
 @onready var health_bar = $HealthBar
-@onready var mesh_instance_3d = $MeshInstance3D
+@onready var mesh_instance_3d = $ShearTransform/MeshInstance3D
 
 enum states {IDLE, JUMP, RAGDOLL}
 var state := states.IDLE

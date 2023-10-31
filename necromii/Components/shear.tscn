@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://ddiygx6bcqwkh"]
+
+[ext_resource type="Script" path="res://Components/shear.gd" id="1_ec0h3"]
+
+[node name="ShearTransform" type="Node3D"]
+script = ExtResource("1_ec0h3")
+metadata/_edit_group_ = true
+
+[connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]

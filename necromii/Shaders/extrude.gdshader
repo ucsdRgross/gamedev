@@ -1,15 +1,6 @@
 shader_type spatial;
 render_mode unshaded;
 
-render_mode world_vertex_coords;
-
-//skew model torwards camera
-uniform float skew_factor = 0.5;
-void vertex() {
-	VERTEX.z -= VERTEX.y * skew_factor;
-	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
-}
-
 // Will ignore pixels with alpha below this value for extrusion
 uniform float extruded_alpha_cull : hint_range(0.0, 1.0) = 1.0;
 // If pixels with alpha are extruded, this sets the alpha to 1
@@ -26,9 +17,12 @@ uniform vec4 color_mix : source_color;
 uniform float mix_strength : hint_range(0.0, 1.0) = 1.0;
 // 2D image where opaque pixels are extruded
 uniform sampler2D Texture : source_color, filter_nearest_mipmap;
-// Maximum amount of texture() checks per pixel
+// Line is drawn to find colored pixel, below number puts that amount of points along line to check for collision
+// In other words, maximum amount of texture() calls, too many texture() calls will cause lag
+// Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
+// Too low and thin sections of image will not be extruded 
 uniform int loops = 10;
-// Shifts ray intersection checks
+// Shifts ray intersection checks, can increase thickness at low loops
 uniform float bias = 2;
 
 
@@ -86,7 +80,6 @@ vec2 lineImgIntersect(vec2 x, vec2 y){
 // Return colored pixel found starting from UV with given slope
 imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	vec4 color;
-	slope = normalize(slope);
 	// Flip y as UV has inverted y axis
 	slope.y *= -1.0;
 	// Find intersect with image edge
@@ -130,9 +123,7 @@ void fragment() {
 	// Get the camera direction by sustracting the camera position from the fragment position
 	vec3 camera_ray = normalize(frag_pos - CAMERA_POSITION_WORLD);
 	// Get transformed camera ray to handle rotation and scaling
-	mat4 shear_matrix = mat4(1.0);
-	shear_matrix[1][2] = -skew_factor * 1.0/MODEL_MATRIX[2][2] * MODEL_MATRIX[1][1];
-	vec3 model_ray = normalize((inverse(MODEL_MATRIX * shear_matrix) * vec4(camera_ray, 0.0)).xyz);
+	vec3 model_ray = normalize((inverse(MODEL_MATRIX) * vec4(camera_ray, 0.0)).xyz);
 	
 	// Determine which face of the cube we are looking at
 	ivec2 face = ivec2(UV / vec2(1.0/3.0, 1.0/2.0));

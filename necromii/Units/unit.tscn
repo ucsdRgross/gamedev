@@ -1,13 +1,19 @@
-[gd_scene load_steps=18 format=3 uid="uid://bfol62codcs74"]
+[gd_scene load_steps=25 format=3 uid="uid://bfol62codcs74"]
 
 [ext_resource type="Script" path="res://Units/unit.gd" id="1_gumkx"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_w7nk5"]
+[ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="3_1fdup"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_cqfm6"]
+[ext_resource type="Shader" path="res://Shaders/watercolor.gdshader" id="5_jnxht"]
 [ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="6_3x2rj"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="6_c4xrq"]
+[ext_resource type="Texture2D" uid="uid://ry4ptyqsdp42" path="res://Shaders/paper-texture.jpg" id="6_f18cx"]
 [ext_resource type="Script" path="res://Units/Damager.gd" id="7_gxioy"]
+[ext_resource type="Texture2D" uid="uid://ij4kyhmbwsuy" path="res://Shaders/perlin.png" id="7_wkqe1"]
+[ext_resource type="Texture2D" uid="uid://dll7rig8vxpx3" path="res://Shaders/samples64_quad.png" id="8_gym2r"]
+[ext_resource type="Texture2D" uid="uid://c4phuixy0jc3l" path="res://Shaders/turbulent.jpg" id="9_q8vg7"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_l7u8f"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_ku7ji"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
@@ -17,7 +23,6 @@ viewport_path = NodePath("SubViewport")
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("3_cqfm6")
-shader_parameter/skew_factor = 0.5
 shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
@@ -109,6 +114,24 @@ _data = {
 "attack": SubResource("Animation_x3foo")
 }
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tcgco"]
+shader = ExtResource("5_jnxht")
+shader_parameter/turbulent_scale = 0.5
+shader_parameter/pigment_scale = 1.0
+shader_parameter/paper_scale = 1.5
+shader_parameter/edge_detection = 0.3
+shader_parameter/wobbly_strength = 0.15
+shader_parameter/scaleX = -0.125
+shader_parameter/scaleY = 1.79
+shader_parameter/scaleY2 = 1.8
+shader_parameter/sigma_r2 = 0.2
+shader_parameter/dark_edges_range = 0.0
+shader_parameter/dark_edges_darkeness = 0.045
+shader_parameter/turbulent_texture = ExtResource("9_q8vg7")
+shader_parameter/pigment_texture = ExtResource("7_wkqe1")
+shader_parameter/paper_texture = ExtResource("6_f18cx")
+shader_parameter/sTextureSamples = ExtResource("8_gym2r")
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_khmdf"]
 atlas = ExtResource("6_c4xrq")
 region = Rect2(0, 0, 16, 16)
@@ -123,13 +146,18 @@ script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-visible = false
-texture = SubResource("ViewportTexture_l7u8f")
+texture = SubResource("ViewportTexture_ku7ji")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 1, 0)
+[node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
+shear_factor = 0.5
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1, 0.5, 0, 1, 0)
+top_level = true
 material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")
+skeleton = NodePath("../..")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
@@ -150,9 +178,12 @@ libraries = {
 
 [node name="SubViewport" type="SubViewport" parent="."]
 transparent_bg = true
-size = Vector2i(16, 16)
+canvas_item_default_texture_filter = 0
+size = Vector2i(64, 64)
 
 [node name="Sprite2D" type="Sprite2D" parent="SubViewport"]
+material = SubResource("ShaderMaterial_tcgco")
+scale = Vector2(4, 4)
 texture = SubResource("AtlasTexture_khmdf")
 centered = false
 
@@ -176,33 +207,6 @@ shape = SubResource("SphereShape3D_8aobe")
 [node name="Sprite3D" type="Sprite3D" parent="."]
 transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941305, 0)
 visible = false
-texture_filter = 2
-texture = ExtResource("6_c4xrq")
-region_enabled = true
-region_rect = Rect2(0, 0, 16, 16)
-
-[node name="Sprite3D2" type="Sprite3D" parent="."]
-transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.2)
-visible = false
-modulate = Color(0, 0, 0, 1)
-texture_filter = 2
-texture = ExtResource("6_c4xrq")
-region_enabled = true
-region_rect = Rect2(0, 0, 16, 16)
-
-[node name="Sprite3D3" type="Sprite3D" parent="."]
-transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.4)
-visible = false
-modulate = Color(0, 0, 0, 1)
-texture_filter = 2
-texture = ExtResource("6_c4xrq")
-region_enabled = true
-region_rect = Rect2(0, 0, 16, 16)
-
-[node name="Sprite3D4" type="Sprite3D" parent="."]
-transform = Transform3D(16, 0, 0, 0, 16, 0, 0, 0, 16, 0, 0.941, -0.6)
-visible = false
-modulate = Color(0, 0, 0, 1)
 texture_filter = 2
 texture = ExtResource("6_c4xrq")
 region_enabled = true

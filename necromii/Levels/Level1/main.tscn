@@ -46,7 +46,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_d1tpv"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_ctjoq"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -56,7 +56,6 @@ viewport_path = NodePath("BaseMinion2/SubViewport")
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("9_mx5uo")
-shader_parameter/skew_factor = 0.5
 shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
@@ -163,7 +162,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_d1tpv")
+texture = SubResource("ViewportTexture_ctjoq")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -390,8 +389,6 @@ script = ExtResource("8_3sve3")
 
 [node name="Player" parent="." instance=ExtResource("9_iofqv")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.62808, 0)
-axis_lock_angular_x = true
-axis_lock_angular_z = true
 
 [node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player"]
 remote_path = NodePath("../../ZoomPath")
@@ -423,13 +420,16 @@ process_callback = 0
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/unit.tscn"]
 
 [node name="Unit" parent="." instance=ExtResource("23_toaf3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.07718, 1, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.2959, 3.48093, 4.46314)
 
 [node name="Unit2" parent="." instance=ExtResource("23_toaf3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.50021, 2.52447, 8.90559)
 
 [node name="Unit3" parent="." instance=ExtResource("23_toaf3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.01601, 1, 4.47138)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.09551, 3.04802, 4.47138)
+
+[node name="Unit4" parent="." instance=ExtResource("23_toaf3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
 
 [connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed" flags=18]
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
