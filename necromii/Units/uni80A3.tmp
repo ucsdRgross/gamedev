@@ -13,7 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://dll7rig8vxpx3" path="res://Shaders/samples64_quad.png" id="8_gym2r"]
 [ext_resource type="Texture2D" uid="uid://c4phuixy0jc3l" path="res://Shaders/turbulent.jpg" id="9_q8vg7"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_nwoor"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_3do2b"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
@@ -146,7 +146,7 @@ script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_nwoor")
+texture = SubResource("ViewportTexture_3do2b")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 1, 0)
@@ -164,10 +164,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 shape = SubResource("BoxShape3D_fqrte")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+target_desired_distance = 0.5
+avoidance_enabled = true
 height = 2.0
+radius = 1.0
 neighbor_distance = 5.0
-max_neighbors = 1
-time_horizon_agents = 2.5
+max_neighbors = 3
 script = ExtResource("6_3x2rj")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
@@ -214,7 +216,6 @@ region_rect = Rect2(0, 0, 16, 16)
 
 [node name="AvoidanceDisabled" type="Timer" parent="."]
 process_callback = 0
-wait_time = 1.5
 one_shot = true
 
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]

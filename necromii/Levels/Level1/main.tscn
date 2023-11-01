@@ -47,7 +47,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_qjlii"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_cn5hw"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -164,7 +164,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_qjlii")
+texture = SubResource("ViewportTexture_cn5hw")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -251,9 +251,9 @@ directional_shadow_blend_splits = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Arena/Ceiling"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 110, 0)
-shape = SubResource("BoxShape3D_qckf1")
 
 [node name="Ring" type="Node3D" parent="Arena"]
+process_mode = 4
 
 [node name="RingSegment" type="StaticBody3D" parent="Arena/Ring"]
 

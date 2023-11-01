@@ -13,6 +13,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var animation_player = $AnimationPlayer
 @onready var health_bar = $HealthBar
 @onready var mesh_instance_3d = $ShearTransform/MeshInstance3D
+@onready var avoidance_disabled = $AvoidanceDisabled
 
 enum states {IDLE, JUMP, RAGDOLL}
 var state := states.IDLE
@@ -52,10 +53,19 @@ func _physics_process(delta):
 	var direction: Vector3 = navigation_agent.get_next_path_position() - global_position
 	direction.y = 0
 	var new_velocity: Vector3 = direction.normalized() * SPEED
-	if is_paused:
+	if is_paused or navigation_agent.is_navigation_finished():
 		new_velocity.x = move_toward(velocity.x, 0, SPEED)
 		new_velocity.z = move_toward(velocity.z, 0, SPEED)
-	navigation_agent.set_velocity(new_velocity)
+	if navigation_agent.avoidance_enabled:
+		navigation_agent.set_velocity(new_velocity)
+		if navigation_agent.is_navigation_finished() or get_slide_collision_count() == 0:
+			avoidance_disabled.start()
+	else:
+		_on_navigation_agent_3d_velocity_computed(new_velocity)
+		if get_slide_collision_count() > 0:
+			if randf() < delta:
+				navigation_agent.avoidance_enabled = true
+				navigation_agent.radius *= 2
 
 func _on_navigation_agent_3d_velocity_computed(safe_velocity: Vector3):
 	# Move CharacterBody3D with the computed `safe_velocity` to avoid dynamic obstacles.
@@ -81,3 +91,8 @@ func detect_selection():
 func _on_finished_drawing():
 	if navigation_agent.enabled:
 		navigation_agent.target_position = position
+
+
+func _on_avoidance_disabled_timeout():
+	navigation_agent.avoidance_enabled = false
+	navigation_agent.radius /= 2

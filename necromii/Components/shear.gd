@@ -12,7 +12,7 @@ extends Node3D
 #	VERTEX.z -= VERTEX.y * skew_factor;
 #	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
 #}
-func _process(delta):
+func _physics_process(delta):
 	for child in get_children():
 		child.global_position = global_position
 		var shear := Basis()
