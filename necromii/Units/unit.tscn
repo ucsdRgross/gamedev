@@ -13,7 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://dll7rig8vxpx3" path="res://Shaders/samples64_quad.png" id="8_gym2r"]
 [ext_resource type="Texture2D" uid="uid://c4phuixy0jc3l" path="res://Shaders/turbulent.jpg" id="9_q8vg7"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_ku7ji"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_wmcmr"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
@@ -142,18 +142,19 @@ margin = Rect2(0, 2, 0, 0)
 [sub_resource type="SphereShape3D" id="SphereShape3D_8aobe"]
 
 [node name="Unit" type="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_ku7ji")
+texture = SubResource("ViewportTexture_wmcmr")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
+transform = Transform3D(2, 0, 0, 0, 3.68, 0, 0, 0, 0.5, 0, 1, 0)
 shear_factor = 0.5
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1, 0.5, 0, 1, 0)
+transform = Transform3D(2, 0, 0, 0, 3.68, 0, 0, -1.84, 0.5, 0, 1, 0)
 top_level = true
 material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")

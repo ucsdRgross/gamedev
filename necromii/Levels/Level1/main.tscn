@@ -30,6 +30,7 @@ friction = 0.1
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
 render_priority = 0
 shader = ExtResource("11_4rx0m")
+shader_parameter/skew_factor = 0.5
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
 render_priority = 0
@@ -46,7 +47,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_ctjoq"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_qjlii"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -79,6 +80,7 @@ region = Rect2(0, 0, 16, 16)
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_w7qef"]
 render_priority = 0
 shader = ExtResource("11_4rx0m")
+shader_parameter/skew_factor = 0.5
 
 [sub_resource type="BoxMesh" id="BoxMesh_jcdbv"]
 material = SubResource("ShaderMaterial_w7qef")
@@ -162,7 +164,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_ctjoq")
+texture = SubResource("ViewportTexture_qjlii")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
