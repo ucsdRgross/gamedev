@@ -21,12 +21,10 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // In other words, maximum amount of texture() calls, too many texture() calls will cause lag
 // Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
 // Too low and thin sections of image will not be extruded 
-uniform int loops = 10;
+uniform int texture_calls = 10;
 // Shifts ray intersection checks, can increase thickness at low loops
-uniform float bias = 2;
+uniform float ray_bias = 2;
 
-
-varying float pixel_size;
 struct imgPoint {
 	vec4 color;
 	vec2 uv;
@@ -84,10 +82,10 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	slope.y *= -1.0;
 	// Find intersect with image edge
 	vec2 edge = lineImgIntersect(pos_on_img, pos_on_img + slope);
-	for (int i = 1; i <= loops; i++){
-		float percentage = float(i) * 1.0/float(loops);
+	for (int i = 1; i <= texture_calls; i++){
+		float percentage = float(i) * 1.0/float(texture_calls);
 		// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
-		percentage = pow(percentage, bias) - 0.00001;
+		percentage = pow(percentage, ray_bias) - 0.00001;
 		vec2 checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
 		if (flipped) color = texture(Texture, vec2(-checkPoint.x, checkPoint.y) + offset);
 		else color = texture(Texture, checkPoint + offset);
@@ -117,7 +115,6 @@ vec3 PlaneLineIntersection(vec3 plane_point, vec3 plane_normal, vec3 line_point,
 }
 
 void fragment() {
-	pixel_size = max(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y);
 	// Get fragment position in world space coordinates
 	vec3 frag_pos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	// Get the camera direction by sustracting the camera position from the fragment position
