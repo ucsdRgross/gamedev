@@ -22,14 +22,20 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
 // Too low and thin sections of image will not be extruded 
 uniform int texture_calls = 10;
-// Shifts ray intersection checks, can increase thickness at low loops
+// Shifts ray intersection checks, can increase thickness at low texture calls
 uniform float ray_bias = 2;
+// Allow hollow regions in texture to extrude forever
+// Turning this on reduces number of texture calls needed for a full extrude significantly 
+uniform bool infinite_holes = false;
+// Parameters to change if your texture is a spritesheet
+uniform int Hframes = 1;
+uniform int Vframes = 1;
+uniform int frame = 0;
 
 struct imgPoint {
 	vec4 color;
 	vec2 uv;
 };
-
 
 bool isInImg(vec2 uv){
 	return 	uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0;
@@ -75,6 +81,21 @@ vec2 lineImgIntersect(vec2 x, vec2 y){
 	return vec2(xE, -yE);
 }
 
+vec2 frameUV(vec2 uv){
+	int hFrame = frame % Hframes;
+	int vFrame = frame / Vframes;
+	uv.x = uv.x/float(Hframes) + float(hFrame)/float(Hframes);
+	uv.y = uv.y/float(Vframes) + float(vFrame)/float(Vframes);
+	return uv;
+}
+
+vec2 flippedFrameUV(vec2 uv){
+	float frameCenter = 0.5/float(Hframes) + float(frame % Hframes)/float(Hframes);
+	uv = frameUV(uv);
+	uv.x = -(uv.x - frameCenter) + frameCenter;
+	return uv;
+}
+
 // Return colored pixel found starting from UV with given slope
 imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	vec4 color;
@@ -82,17 +103,24 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	slope.y *= -1.0;
 	// Find intersect with image edge
 	vec2 edge = lineImgIntersect(pos_on_img, pos_on_img + slope);
-	for (int i = 1; i <= texture_calls; i++){
+	if (flipped) {
+		pos_on_img = flippedFrameUV(pos_on_img);
+		edge = flippedFrameUV(edge);
+	} else {
+		pos_on_img = frameUV(pos_on_img);
+		edge = frameUV(edge);
+	}
+	for (int i = 0; i < texture_calls; i++){
 		float percentage = float(i) * 1.0/float(texture_calls);
 		// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
 		percentage = pow(percentage, ray_bias) - 0.00001;
 		vec2 checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
-		if (flipped) color = texture(Texture, vec2(-checkPoint.x, checkPoint.y) + offset);
-		else color = texture(Texture, checkPoint + offset);
+		color = texture(Texture, checkPoint + offset);
 		if (color.w >= extruded_alpha_cull) {
 			if (opaque_extrude) color.w = 1.0;
 			color = mix(color, color_mix, mix_strength);
-			return imgPoint(color, pos_on_img);
+			if (infinite_holes) return imgPoint(color, pos_on_img);
+			return imgPoint(color, checkPoint);
 		}
 	}
 	return imgPoint(vec4(0.0), edge);
@@ -130,7 +158,7 @@ void fragment() {
 	// Z
 	if (face.x == 0 && face.y == 0) {
 		// No need to extrude if already on colored pixel
-		vec4 color = texture(Texture, adjusted_UV);
+		vec4 color = texture(Texture, frameUV(adjusted_UV));
 		if (color.w >= image_alpha_cull && keep_image) {
 			ALBEDO = color.rgb;
 			ALPHA = color.w;
@@ -157,8 +185,7 @@ void fragment() {
 	// -Z
 	else if (face.x == 2 && face.y == 0) {
 		// Back face has to be flipped in order to line up with front face
-		vec2 correct_UV = vec2(-adjusted_UV.x, adjusted_UV.y);
-		vec4 color = texture(Texture, correct_UV);
+		vec4 color = texture(Texture, flippedFrameUV(adjusted_UV));
 		if (color.w >= image_alpha_cull && keep_image) {
 			ALBEDO = color.rgb;
 			ALPHA = color.w;

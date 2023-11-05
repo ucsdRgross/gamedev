@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://bfol62codcs74"]
+[gd_scene load_steps=24 format=3 uid="uid://bfol62codcs74"]
 
 [ext_resource type="Script" path="res://Units/unit.gd" id="1_gumkx"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_w7nk5"]
@@ -13,10 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://dll7rig8vxpx3" path="res://Shaders/samples64_quad.png" id="8_gym2r"]
 [ext_resource type="Texture2D" uid="uid://c4phuixy0jc3l" path="res://Shaders/turbulent.jpg" id="9_q8vg7"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_g42ta"]
-viewport_path = NodePath("SubViewport")
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_2m7k3"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_qgibi"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0ytnk"]
@@ -30,9 +27,13 @@ shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0)
 shader_parameter/color_mix = null
 shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 4
+shader_parameter/texture_calls = 3
 shader_parameter/ray_bias = 2.0
-shader_parameter/Texture = SubResource("ViewportTexture_2m7k3")
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("6_c4xrq")
 
 [sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
 
@@ -142,19 +143,18 @@ margin = Rect2(0, 2, 0, 0)
 [sub_resource type="SphereShape3D" id="SphereShape3D_8aobe"]
 
 [node name="Unit" type="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("1_gumkx")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_g42ta")
+texture = SubResource("ViewportTexture_qgibi")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
-transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, 0, 0, 0.5, 0, 1, 0)
+transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, 0, 0, 0.5, 0, 0.75028, 0)
 shear_factor = 0.667
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
-transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, -0.00842828, -1.33397, 0.5, 0, 1, 0)
+transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, -0.00842828, -1.33397, 0.5, 0, 0.75028, 0)
 top_level = true
 material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")
