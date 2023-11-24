@@ -9,11 +9,13 @@ var delta := 0.0
 
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-@onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var animation_player = $AnimationPlayer
-@onready var health_bar = $HealthBar
-@onready var mesh_instance_3d = $ShearTransform/MeshInstance3D
-@onready var avoidance_disabled = $AvoidanceDisabled
+@onready var collision_shape_3d : CollisionShape3D = $CollisionShape3D
+@onready var navigation_agent : NavigationAgent3D = $NavigationAgent3D
+@onready var animation_player : AnimationPlayer = $AnimationPlayer
+@onready var health_bar : Sprite3D = $HealthBar
+@onready var mesh_instance_3d : MeshInstance3D = $ShearTransform/MeshInstance3D
+@onready var avoidance_disabled : Timer = $AvoidanceDisabled
+@onready var avoid_bodies : Area3D = $AvoidBodies
 
 enum states {IDLE, JUMP, RAGDOLL}
 var state := states.IDLE
@@ -49,6 +51,18 @@ func _physics_process(delta):
 	if navigation_agent.is_navigation_finished() and navigation_agent.distance_to_target() > navigation_agent.radius * 2:
 		navigation_agent.target_position = navigation_agent.target_position
 	
+#	var direction: Vector3 = navigation_agent.get_next_path_position() - global_position
+#	if is_paused or navigation_agent.is_navigation_finished():
+#		direction = avoid_bodies.get_avoidance_vector(Vector3.ZERO)
+#	else:
+#		direction = avoid_bodies.get_avoidance_vector(direction.normalized())
+#
+#	var new_velocity: Vector3 = direction * SPEED
+#	velocity.x = new_velocity.x
+#	velocity.z = new_velocity.z
+#	move_and_slide()
+	
+
 	navigation_agent.agent_height_offset = -position.y
 	var direction: Vector3 = navigation_agent.get_next_path_position() - global_position
 	direction.y = 0

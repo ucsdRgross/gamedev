@@ -13,6 +13,9 @@ func _ready():
 	timer.start()
 
 func _on_timer_timeout():
+	if spawn_cap <= 0:
+		timer.stop()
+		return
 	spawn_cap -= 1
 	var spawnling = spawnlings.get_children().pick_random().create_instance()
 	spawnlings.remove_child(spawnling)
@@ -20,10 +23,12 @@ func _on_timer_timeout():
 	get_parent().add_child(spawnling)
 	
 	
-	if spawn_cap <= 0:
-		timer.stop()
-	
 func rand_point_ring() -> Vector3:
-	var angle := randf() * PI * 2
-	return Vector3(cos(angle)*spawn_radius, 1, sin(angle)*spawn_radius)
+	var r = spawn_radius * sqrt(randf())
+	var theta = randf() * 2 * PI
+	var x = global_position.x + r * cos(theta)
+	var z = global_position.z + r * sin(theta)
+#	var angle := randf() * PI * 2
+#	return Vector3(cos(angle)*spawn_radius, 1, sin(angle)*spawn_radius)
+	return Vector3(x, global_position.y + 1, z)
 	

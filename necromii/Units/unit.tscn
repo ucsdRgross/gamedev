@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://bfol62codcs74"]
+[gd_scene load_steps=26 format=3 uid="uid://bfol62codcs74"]
 
 [ext_resource type="Script" path="res://Units/unit.gd" id="1_gumkx"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_w7nk5"]
@@ -12,8 +12,12 @@
 [ext_resource type="Texture2D" uid="uid://ij4kyhmbwsuy" path="res://Shaders/perlin.png" id="7_wkqe1"]
 [ext_resource type="Texture2D" uid="uid://dll7rig8vxpx3" path="res://Shaders/samples64_quad.png" id="8_gym2r"]
 [ext_resource type="Texture2D" uid="uid://c4phuixy0jc3l" path="res://Shaders/turbulent.jpg" id="9_q8vg7"]
+[ext_resource type="Script" path="res://Units/AvoidBodies.gd" id="13_vwyn8"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_qgibi"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_fqrte"]
+size = Vector3(1.8, 1.5, 0.75)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_cksad"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0ytnk"]
@@ -36,9 +40,6 @@ shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("6_c4xrq")
 
 [sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_fqrte"]
-size = Vector3(1.8, 1.5, 0.75)
 
 [sub_resource type="Animation" id="Animation_k6a7s"]
 length = 0.001
@@ -142,12 +143,20 @@ margin = Rect2(0, 2, 0, 0)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_8aobe"]
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_g75j0"]
+height = 0.1
+radius = 2.0
+
 [node name="Unit" type="CharacterBody3D"]
 script = ExtResource("1_gumkx")
 
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("BoxShape3D_fqrte")
+
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_qgibi")
+texture = SubResource("ViewportTexture_cksad")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
 transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, 0, 0, 0.5, 0, 0.75028, 0)
@@ -160,13 +169,9 @@ material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")
 skeleton = NodePath("../..")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
-shape = SubResource("BoxShape3D_fqrte")
-
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 height = 2.0
-neighbor_distance = 5.0
+neighbor_distance = 4.0
 max_neighbors = 1
 time_horizon_agents = 2.5
 script = ExtResource("6_3x2rj")
@@ -215,8 +220,16 @@ region_rect = Rect2(0, 0, 16, 16)
 
 [node name="AvoidanceDisabled" type="Timer" parent="."]
 process_callback = 0
-wait_time = 1.5
+wait_time = 0.5
 one_shot = true
+
+[node name="AvoidBodies" type="Area3D" parent="."]
+monitorable = false
+script = ExtResource("13_vwyn8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AvoidBodies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CylinderShape3D_g75j0")
 
 [connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]
 [connection signal="area_entered" from="RotationPoint/Damager/Area3D" to="RotationPoint/Damager/Area3D" method="_on_area_entered"]
