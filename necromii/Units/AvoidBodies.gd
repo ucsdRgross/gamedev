@@ -13,7 +13,7 @@ func get_avoidance_vector(goal_vec3: Vector3) -> Vector3:
 	
 	var detect_count : int = 0
 	for body in overlapping_bodies:
-		if body == get_parent():
+		if body == owner:
 			continue
 		var body_vec3 : Vector3 = global_position - body.global_position
 		var body_vec2 : Vector2 = Vector2(body_vec3.x, body_vec3.z)

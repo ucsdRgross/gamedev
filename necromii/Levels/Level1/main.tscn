@@ -47,7 +47,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_veupt"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_rebnq"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -168,7 +168,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_veupt")
+texture = SubResource("ViewportTexture_rebnq")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -414,7 +414,7 @@ initial_node_to_watch = NodePath("../Player")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 script = ExtResource("22_tpnwq")
-spawn_cap = 215
+spawn_cap = 200
 spawn_interval = 0.01
 spawn_radius = 30.0
 
@@ -426,16 +426,24 @@ process_callback = 0
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/unit.tscn"]
 
 [node name="Unit" parent="." instance=ExtResource("23_toaf3")]
+process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.2959, 3.48093, 4.46314)
+visible = false
 
 [node name="Unit2" parent="." instance=ExtResource("23_toaf3")]
+process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.50021, 2.52447, 8.90559)
+visible = false
 
 [node name="Unit3" parent="." instance=ExtResource("23_toaf3")]
+process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.09551, 3.04802, 4.47138)
+visible = false
 
 [node name="Unit4" parent="." instance=ExtResource("23_toaf3")]
+process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
+visible = false
 
 [connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed" flags=18]
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

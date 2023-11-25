@@ -20,7 +20,7 @@ func _on_timer_timeout():
 	var spawnling = spawnlings.get_children().pick_random().create_instance()
 	spawnlings.remove_child(spawnling)
 	spawnling.position = rand_point_ring()
-	get_parent().add_child(spawnling)
+	owner.add_child(spawnling)
 	
 	
 func rand_point_ring() -> Vector3:

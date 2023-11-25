@@ -17,6 +17,7 @@ func _process(delta):
 	pass
 
 func _physics_process(delta):
+	#print(Global.avoidance_enabled_count)
 	if Input.is_action_pressed("Left Click"):
 		var mouse_pos := get_viewport().get_mouse_position()
 		var ray_length := 100
@@ -28,7 +29,7 @@ func _physics_process(delta):
 		ray_query.to = to
 		ray_query.collide_with_areas = true
 		var raycast_result := space.intersect_ray(ray_query)
-		print(raycast_result)
+		#print(raycast_result)
 		var posa : Vector3 = raycast_result["position"]
 		var posb : Vector3 = $Player.position
 		var dir := (posa-posb)
