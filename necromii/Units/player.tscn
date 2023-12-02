@@ -12,7 +12,7 @@
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_jp75b"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_8sksk"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
@@ -26,7 +26,7 @@ script = ExtResource("1_dlni2")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_t0eip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
-texture = SubResource("ViewportTexture_jp75b")
+texture = SubResource("ViewportTexture_8sksk")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_k6ysm")]
 
@@ -36,15 +36,12 @@ transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
 bones/0/position = Vector3(-0.0198008, 0.354716, -0.276609)
 bones/0/rotation = Quaternion(3.89077e-05, 0.707107, 0.707106, -3.89085e-05)
-bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
 bones/2/rotation = Quaternion(-0.00753758, 4.39438e-08, -0.00629792, 0.999952)
 bones/3/rotation = Quaternion(-0.00248402, 1.74148e-10, -0.00207548, 0.999995)
 bones/4/rotation = Quaternion(-0.00164571, -3.2313e-11, -0.00133677, 0.999998)
-bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
 bones/7/rotation = Quaternion(-0.356107, 0.0226681, -0.100555, 0.928742)
 bones/8/rotation = Quaternion(0.0621151, 0.0196715, 0.0490827, 0.996667)
 bones/9/rotation = Quaternion(0.0493799, 0.000411627, 0.0623932, 0.996829)
-bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
 bones/11/rotation = Quaternion(-0.313926, -0.0762408, -0.0765087, 0.943284)
 bones/12/rotation = Quaternion(0.0334619, -0.019429, -0.0471663, 0.998137)
 bones/13/rotation = Quaternion(0.00753597, -0.000428867, -0.0354158, 0.999344)
@@ -56,7 +53,7 @@ bones/18/rotation = Quaternion(0.473795, -0.472794, 0.579958, -0.464362)
 bones/19/rotation = Quaternion(0.00496606, -0.0498728, 0.0341927, 0.998158)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999596, -0.0202475, 0.0199505, -0.0260542, -0.372018, 0.92786, -0.0113649, -0.928005, -0.372395, -0.0147213, 0.877157, -0.383883)
+transform = Transform3D(0.999811, -0.00609004, 0.018438, -0.0194174, -0.319228, 0.947479, 0.000115726, -0.947659, -0.319286, -0.0131355, 0.882433, -0.387658)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0

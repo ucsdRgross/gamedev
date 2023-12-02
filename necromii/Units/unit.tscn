@@ -17,7 +17,7 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_fqrte"]
 size = Vector3(1.8, 1.5, 0.75)
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_lrc21"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_qou5j"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0ytnk"]
@@ -148,6 +148,7 @@ height = 0.1
 radius = 1.1
 
 [node name="Unit" type="CharacterBody3D"]
+safe_margin = 0.1
 script = ExtResource("1_gumkx")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -156,14 +157,13 @@ shape = SubResource("BoxShape3D_fqrte")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_w7nk5")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_lrc21")
+texture = SubResource("ViewportTexture_qou5j")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_1fdup")]
-transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, 0, 0, 0.5, 0, 0.75028, 0)
-shear_factor = 0.667
+transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, 0, 0, 0.5, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
-transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, -0.00842828, -1.33397, 0.5, 0, 0.75028, 0)
+transform = Transform3D(1.99996, -0.0126361, 0, 0.0126361, 1.99996, 0, -0.00842828, -1.33397, 0.5, 0, 0, 0)
 top_level = true
 material_override = SubResource("ShaderMaterial_0ytnk")
 mesh = SubResource("BoxMesh_eim3t")
@@ -171,9 +171,8 @@ skeleton = NodePath("../..")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 height = 2.0
-radius = 1.0
-neighbor_distance = 4.0
-max_neighbors = 1
+radius = 2.0
+neighbor_distance = 5.0
 time_horizon_agents = 2.5
 script = ExtResource("6_3x2rj")
 

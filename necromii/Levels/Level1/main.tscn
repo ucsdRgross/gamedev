@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=46 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -22,6 +22,7 @@
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
+[ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
 [ext_resource type="PackedScene" uid="uid://bfol62codcs74" path="res://Units/unit.tscn" id="23_toaf3"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
@@ -47,7 +48,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_rebnq"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_f7r4r"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -168,7 +169,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_rebnq")
+texture = SubResource("ViewportTexture_f7r4r")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -414,7 +415,7 @@ initial_node_to_watch = NodePath("../Player")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 script = ExtResource("22_tpnwq")
-spawn_cap = 200
+spawn_cap = 500
 spawn_interval = 0.01
 spawn_radius = 30.0
 
@@ -423,7 +424,13 @@ process_callback = 0
 
 [node name="Spawnlings" type="Node3D" parent="Spawner"]
 
-[node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/unit.tscn"]
+[node name="RigidUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/rigid_unit.tscn"]
+
+[node name="RigidUnit" parent="." instance=ExtResource("23_5cikp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.14069, 3.80047, 1.76019)
+
+[node name="Unit5" parent="." instance_placeholder="res://Units/unit.tscn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 
 [node name="Unit" parent="." instance=ExtResource("23_toaf3")]
 process_mode = 4

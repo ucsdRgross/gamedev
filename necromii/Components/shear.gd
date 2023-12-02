@@ -1,7 +1,7 @@
 @tool
 extends Node3D
 
-@export var shear_factor : float = 0
+@export var shear_factor : float = 0.667
 
 #function imitates this vertex shader
 #render_mode world_vertex_coords;

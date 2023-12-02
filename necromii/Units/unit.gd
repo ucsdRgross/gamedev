@@ -15,7 +15,6 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var health_bar : Sprite3D = $HealthBar
 @onready var mesh_instance_3d : MeshInstance3D = $ShearTransform/MeshInstance3D
 @onready var avoidance_disabled : Timer = $AvoidanceDisabled
-#@onready var avoid_bodies : Area3D = $AvoidBodies
 @onready var avoidance_detector = $AvoidanceDetector
 
 enum states {IDLE, JUMP, RAGDOLL}
@@ -29,11 +28,6 @@ func _input(event):
 func _ready():
 	Signals.finished_drawing.connect(self._on_finished_drawing)
 	navigation_agent.max_speed = SPEED
-	call_deferred("agent_setup")
-
-func agent_setup():
-	await get_tree().physics_frame
-#	navigation_agent.target_position = position
 
 func _physics_process(delta):
 	if not is_on_floor():

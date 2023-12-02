@@ -30,5 +30,5 @@ func rand_point_ring() -> Vector3:
 	var z = global_position.z + r * sin(theta)
 #	var angle := randf() * PI * 2
 #	return Vector3(cos(angle)*spawn_radius, 1, sin(angle)*spawn_radius)
-	return Vector3(x, global_position.y + 1, z)
+	return Vector3(x, global_position.y + 5, z)
 	

@@ -21,6 +21,10 @@ Global="*res://Global/Global.gd"
 Signals="*res://Global/Signals.gd"
 DebugMenu="*res://addons/debug_menu/debug_menu.tscn"
 
+[display]
+
+window/size/always_on_top=true
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/godot_state_charts/plugin.cfg", "res://addons/interpolated_camera_3d/plugin.cfg", "res://addons/wigglebone/plugin.cfg")
@@ -66,6 +70,7 @@ Action={
 [physics]
 
 3d/default_gravity=19.6
+3d/solver/solver_iterations=4
 
 [rendering]
 
