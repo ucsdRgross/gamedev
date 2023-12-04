@@ -2,7 +2,7 @@
 extends Node3D
 
 @export var shear_factor : float = 0.667
-
+#@onready var last_transform := global_transform
 #function imitates this vertex shader
 #render_mode world_vertex_coords;
 #// Skew for when camera is top down so mesh has slight billboard affect
@@ -12,7 +12,8 @@ extends Node3D
 #	VERTEX.z -= VERTEX.y * skew_factor;
 #	VERTEX.z += NODE_POSITION_WORLD.y * skew_factor;
 #}
-func _process(delta):
+func _physics_process(delta):
+	#if !global_transform.is_equal_approx(last_transform):
 	for child in get_children():
 		child.global_position = global_position
 		var shear := Basis()
@@ -29,6 +30,7 @@ func _process(delta):
 		shear.y.z *= rot_factor_x * rot_factor_z
 		shear.x.z *= rot_factor_x
 		child.basis = global_transform.basis * shear
-		
+	#last_transform = global_transform
+	
 func _on_child_entered_tree(node : Node3D):
 	node.top_level = true

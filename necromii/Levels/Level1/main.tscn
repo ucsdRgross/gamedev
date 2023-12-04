@@ -11,7 +11,6 @@
 [ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_t02jw"]
 [ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="7_uvf54"]
 [ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_3sve3"]
-[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="9_iofqv"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="9_mx5uo"]
 [ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="10_2nknd"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="10_xu6l8"]
@@ -21,6 +20,7 @@
 [ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_ctue8"]
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
+[ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="20_yd0ui"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 [ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
 [ext_resource type="PackedScene" uid="uid://bfol62codcs74" path="res://Units/unit.tscn" id="23_toaf3"]
@@ -48,7 +48,7 @@ shader_parameter/on = false
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
 height = 1.5
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_qnwd2"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_2g6l6"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
@@ -169,7 +169,7 @@ script = ExtResource("6_w8i5a")
 
 [node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
 transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_qnwd2")
+texture = SubResource("ViewportTexture_2g6l6")
 
 [node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
 
@@ -378,7 +378,7 @@ script = ExtResource("6_34uvy")
 target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
 
 [node name="ZoomPath" type="Path3D" parent="."]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.62808, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
 curve = SubResource("Curve3D_4e02e")
 
 [node name="ZoomPathFollow" type="PathFollow3D" parent="ZoomPath"]
@@ -394,8 +394,18 @@ speed = 0.005
 transform = Transform3D(-1, -9.83331e-08, 1.14588e-07, 0, 0.758879, 0.651231, -1.50996e-07, 0.651231, -0.758879, 0, 0, 0)
 script = ExtResource("8_3sve3")
 
-[node name="Player" parent="." instance=ExtResource("9_iofqv")]
+[node name="Player2" parent="." instance=ExtResource("20_yd0ui")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player2"]
+remote_path = NodePath("../../ZoomPath")
+update_rotation = false
+update_scale = false
+
+[node name="Player" parent="." instance_placeholder="res://Units/player.tscn"]
+process_mode = 4
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.62808, 0)
+visible = false
 
 [node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player"]
 remote_path = NodePath("../../ZoomPath")
@@ -415,7 +425,7 @@ initial_node_to_watch = NodePath("../Player")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 script = ExtResource("22_tpnwq")
-spawn_cap = 200
+spawn_cap = 0
 spawn_interval = 0.01
 spawn_radius = 30.0
 

@@ -1,7 +1,7 @@
 extends RigidBody3D
 
 @export var SPEED = 5.0
-@export var JUMP_VELOCITY = 4.5
+@export var JUMP_VELOCITY = 6
 @export var acceleration : float = 200
 @export var max_acceleration_force :float = 150
 
@@ -19,11 +19,12 @@ var gravity = ProjectSettings.get_setting(&"physics/3d/default_gravity")
 func _ready():
 	Signals.finished_drawing.connect(self._on_finished_drawing)
 	navigation_agent.max_speed = SPEED
+	await get_tree().physics_frame
 
 func _physics_process(delta):
 	if is_selected and Input.is_action_just_pressed(&"ui_accept") and Global.player_selected and shape_cast_3d.is_colliding():
-		#linear_velocity.y = 0
-		apply_central_impulse(Vector3.UP * JUMP_VELOCITY * 2 * mass + Vector3.UP * gravity)
+		linear_velocity.y = JUMP_VELOCITY
+		#apply_central_impulse(Vector3.UP * JUMP_VELOCITY * 2 * mass + Vector3.UP * gravity)
 	
 	if Global.is_drawing:
 		detect_selection()

@@ -15,7 +15,7 @@ absorbent = true
 [sub_resource type="SphereShape3D" id="SphereShape3D_urnno"]
 radius = 0.75
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_bb0vk"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_oij12"]
@@ -58,7 +58,7 @@ shape = SubResource("SphereShape3D_urnno")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_seihm")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_bb0vk")
+texture = SubResource("ViewportTexture_y3pva")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_mwyf6")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)

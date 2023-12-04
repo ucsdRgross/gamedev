@@ -1,0 +1,138 @@
+[gd_scene load_steps=12 format=3 uid="uid://dyueqg0efaw64"]
+
+[ext_resource type="Script" path="res://Units/player_v2.gd" id="1_g1v30"]
+[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_o78ao"]
+[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="4_r7bbg"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/state_chart.gd" id="5_t8k2f"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/compound_state.gd" id="6_cqq8a"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/atomic_state.gd" id="7_u5a48"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/transition.gd" id="8_w5fi0"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
+friction = 0.1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_aimxp"]
+height = 0.5
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_b31an"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+height = 1.5
+
+[node name="Player" type="RigidBody3D"]
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_3d5xi")
+script = ExtResource("1_g1v30")
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="."]
+shape = SubResource("CylinderShape3D_aimxp")
+target_position = Vector3(0, -0.75, 0)
+
+[node name="HealthBar" parent="." instance=ExtResource("2_o78ao")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
+texture = SubResource("ViewportTexture_b31an")
+
+[node name="LittleWitch" parent="." instance=ExtResource("4_r7bbg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, 0)
+
+[node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
+bones/0/position = Vector3(-0.0227615, 0.344035, -0.25655)
+bones/0/rotation = Quaternion(3.14438e-05, 0.707108, 0.707106, -3.14441e-05)
+bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
+bones/2/rotation = Quaternion(-0.0138963, 4.3782e-08, -0.00723965, 0.999877)
+bones/3/rotation = Quaternion(-0.0045795, 1.08791e-12, -0.00238581, 0.999987)
+bones/4/rotation = Quaternion(-0.00297156, 4.69317e-11, -0.00154813, 0.999994)
+bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
+bones/7/rotation = Quaternion(-0.377109, 0.00485201, -0.165378, 0.911271)
+bones/8/rotation = Quaternion(0.0986573, 0.0204243, 0.0906651, 0.990772)
+bones/9/rotation = Quaternion(0.0910129, 0.00075852, 0.114998, 0.989187)
+bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
+bones/11/rotation = Quaternion(-0.315233, -0.0736347, -0.0689754, 0.943636)
+bones/12/rotation = Quaternion(0.0458713, -0.0200046, -0.087139, 0.994938)
+bones/13/rotation = Quaternion(0.0138923, -0.000790454, -0.0652886, 0.997769)
+bones/14/rotation = Quaternion(0.0263281, 0.0197906, 0.711708, 0.701703)
+bones/15/rotation = Quaternion(-0.462125, -0.474247, 0.578112, 0.476777)
+bones/16/rotation = Quaternion(0.00988104, 0.0496556, -0.0432808, 0.997779)
+bones/17/rotation = Quaternion(0.0198425, -0.0152727, -0.710836, 0.702912)
+bones/18/rotation = Quaternion(0.480082, -0.449642, 0.60135, -0.453566)
+bones/19/rotation = Quaternion(0.0124521, -0.0495533, 0.0206385, 0.998481)
+
+[node name="LittleWitch2" parent="LittleWitch/Armature/Skeleton3D" index="0"]
+blend_shapes/Happy = 1.0
+
+[node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.999924, -0.00598521, 0.0108263, -0.0120432, -0.270979, 0.96251, -0.00282713, -0.962567, -0.271031, -0.00752282, 0.884273, -0.388931)
+
+[node name="AnimationTree" parent="LittleWitch" index="2"]
+parameters/RunBlend/blend_amount = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="NavigationObstacle3D" type="NavigationObstacle3D" parent="."]
+radius = 1.0
+
+[node name="StateChart" type="Node" parent="."]
+script = ExtResource("5_t8k2f")
+
+[node name="Root" type="Node" parent="StateChart"]
+script = ExtResource("6_cqq8a")
+initial_state = NodePath("Movement")
+
+[node name="Movement" type="Node" parent="StateChart/Root"]
+script = ExtResource("6_cqq8a")
+initial_state = NodePath("Grounded")
+
+[node name="Grounded" type="Node" parent="StateChart/Root/Movement"]
+editor_description = "This state is active when the player is on the ground."
+script = ExtResource("7_u5a48")
+
+[node name="On Jump" type="Node" parent="StateChart/Root/Movement/Grounded"]
+process_mode = 4
+editor_description = "When jumping become airborne and enable double-jump."
+script = ExtResource("8_w5fi0")
+to = NodePath("../../Airborne")
+event = &"jump"
+
+[node name="On Airborne" type="Node" parent="StateChart/Root/Movement/Grounded"]
+editor_description = "When becoming airborne (e.g. through falling) move to airborne state."
+script = ExtResource("8_w5fi0")
+to = NodePath("../../Airborne")
+event = &"airborne"
+
+[node name="Airborne" type="Node" parent="StateChart/Root/Movement"]
+editor_description = "This is the root state for when the player is in the air. We have sub-states to handle the various input that is allowed when in the air."
+script = ExtResource("6_cqq8a")
+initial_state = NodePath("CannotJump")
+
+[node name="On Grounded" type="Node" parent="StateChart/Root/Movement/Airborne"]
+script = ExtResource("8_w5fi0")
+to = NodePath("../../Grounded")
+event = &"grounded"
+
+[node name="CannotJump" type="Node" parent="StateChart/Root/Movement/Airborne"]
+process_mode = 4
+editor_description = "This state is active when the player is airborne but can no longer jump either because the coyote-jump grace period has expired or the player has already used the double-jump."
+script = ExtResource("7_u5a48")
+
+[node name="On Ragdoll" type="Node" parent="StateChart/Root/Movement"]
+script = ExtResource("8_w5fi0")
+to = NodePath("../../Ragdoll")
+event = &"ragdoll"
+
+[node name="Ragdoll" type="Node" parent="StateChart/Root"]
+script = ExtResource("7_u5a48")
+
+[node name="Recover" type="Node" parent="StateChart/Root/Ragdoll"]
+script = ExtResource("8_w5fi0")
+to = NodePath("../../Movement")
+delay_seconds = 2.0
+
+[connection signal="state_physics_processing" from="StateChart/Root/Movement" to="." method="_on_movement_state_physics_processing"]
+[connection signal="state_physics_processing" from="StateChart/Root/Movement/Grounded" to="." method="_on_grounded_state_physics_processing"]
+[connection signal="state_exited" from="StateChart/Root/Ragdoll" to="." method="_on_ragdoll_state_exited"]
+
+[editable path="LittleWitch"]
