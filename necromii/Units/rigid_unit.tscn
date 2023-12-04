@@ -15,7 +15,7 @@ absorbent = true
 [sub_resource type="SphereShape3D" id="SphereShape3D_urnno"]
 radius = 0.75
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_mkytm"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_bb0vk"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_oij12"]
@@ -50,13 +50,15 @@ mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_ahy0n")
 linear_damp = 0.5
 script = ExtResource("2_fplp8")
+acceleration = 50.0
+max_acceleration_force = 100.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_urnno")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_seihm")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_mkytm")
+texture = SubResource("ViewportTexture_bb0vk")
 
 [node name="ShearTransform" parent="." instance=ExtResource("3_mwyf6")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
@@ -79,5 +81,3 @@ script = ExtResource("6_x2sds")
 [node name="ShapeCast3D" type="ShapeCast3D" parent="."]
 shape = SubResource("CylinderShape3D_w62yk")
 target_position = Vector3(0, -0.75, 0)
-
-[connection signal="velocity_computed" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_velocity_computed"]

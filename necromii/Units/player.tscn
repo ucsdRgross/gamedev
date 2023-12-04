@@ -12,7 +12,7 @@
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_8sksk"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_uer28"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
@@ -26,7 +26,7 @@ script = ExtResource("1_dlni2")
 
 [node name="HealthBar" parent="." instance=ExtResource("2_t0eip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
-texture = SubResource("ViewportTexture_8sksk")
+texture = SubResource("ViewportTexture_uer28")
 
 [node name="MovementPhysics" parent="." instance=ExtResource("2_k6ysm")]
 
@@ -34,26 +34,29 @@ texture = SubResource("ViewportTexture_8sksk")
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
 
 [node name="Skeleton3D" parent="LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(-0.0198008, 0.354716, -0.276609)
-bones/0/rotation = Quaternion(3.89077e-05, 0.707107, 0.707106, -3.89085e-05)
-bones/2/rotation = Quaternion(-0.00753758, 4.39438e-08, -0.00629792, 0.999952)
-bones/3/rotation = Quaternion(-0.00248402, 1.74148e-10, -0.00207548, 0.999995)
-bones/4/rotation = Quaternion(-0.00164571, -3.2313e-11, -0.00133677, 0.999998)
-bones/7/rotation = Quaternion(-0.356107, 0.0226681, -0.100555, 0.928742)
-bones/8/rotation = Quaternion(0.0621151, 0.0196715, 0.0490827, 0.996667)
-bones/9/rotation = Quaternion(0.0493799, 0.000411627, 0.0623932, 0.996829)
-bones/11/rotation = Quaternion(-0.313926, -0.0762408, -0.0765087, 0.943284)
-bones/12/rotation = Quaternion(0.0334619, -0.019429, -0.0471663, 0.998137)
-bones/13/rotation = Quaternion(0.00753597, -0.000428867, -0.0354158, 0.999344)
-bones/14/rotation = Quaternion(0.0142817, -0.00892996, 0.709647, 0.704356)
-bones/15/rotation = Quaternion(-0.463809, -0.485879, 0.56706, 0.476702)
-bones/16/rotation = Quaternion(0.00357341, 0.0499542, -0.0464689, 0.997663)
-bones/17/rotation = Quaternion(0.0107635, 0.0113764, -0.709098, 0.704936)
-bones/18/rotation = Quaternion(0.473795, -0.472794, 0.579958, -0.464362)
-bones/19/rotation = Quaternion(0.00496606, -0.0498728, 0.0341927, 0.998158)
+bones/0/position = Vector3(0.0344757, 0.332111, -0.234154)
+bones/0/rotation = Quaternion(-3.36021e-05, 0.707108, 0.707106, 3.36036e-05)
+bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
+bones/2/rotation = Quaternion(-0.0206579, 4.34354e-08, 0.0108313, 0.999728)
+bones/3/rotation = Quaternion(-0.00671916, -1.83962e-10, 0.00351646, 0.999971)
+bones/4/rotation = Quaternion(-0.00340249, 2.65016e-12, 0.00187743, 0.999992)
+bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
+bones/7/rotation = Quaternion(-0.312029, 0.0804895, 0.0888033, 0.942483)
+bones/8/rotation = Quaternion(0.0596041, 0.0206046, 0.131501, 0.989308)
+bones/9/rotation = Quaternion(0.0209661, 0.00119286, 0.0985335, 0.994912)
+bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
+bones/11/rotation = Quaternion(-0.399146, 0.0242942, 0.263074, 0.878)
+bones/12/rotation = Quaternion(0.138961, -0.0211875, -0.136606, 0.980602)
+bones/13/rotation = Quaternion(0.136783, -0.00113988, -0.17283, 0.975407)
+bones/14/rotation = Quaternion(0.0299511, 0.044984, 0.712103, 0.699992)
+bones/15/rotation = Quaternion(-0.48644, -0.423217, 0.624386, 0.440914)
+bones/16/rotation = Quaternion(0.0208029, 0.0491649, -0.00550478, 0.998559)
+bones/17/rotation = Quaternion(0.0397321, -0.0517979, -0.713181, 0.697933)
+bones/18/rotation = Quaternion(0.460103, -0.461119, 0.590268, -0.476715)
+bones/19/rotation = Quaternion(0.0169228, -0.0493372, 0.0397192, 0.997849)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999811, -0.00609004, 0.018438, -0.0194174, -0.319228, 0.947479, 0.000115726, -0.947659, -0.319286, -0.0131355, 0.882433, -0.387658)
+transform = Transform3D(0.999197, 0.0276136, -0.029039, 0.0379306, -0.418014, 0.907649, 0.0129247, -0.908021, -0.418726, 0.0223122, 0.84809, -0.362478)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0
