@@ -68,7 +68,7 @@ func move(delta : float, direction : Vector3):
 #	apply_force(needed_accel * mass)
 	
 func detect_selection():
-	var new_is_selected : bool = Global.SelectionTool.in_selection(position)
+	var new_is_selected : bool = Global.SelectionTool.in_selection(global_position)
 	if new_is_selected == is_selected:
 		return
 	else:
@@ -82,4 +82,4 @@ func detect_selection():
 
 func _on_finished_drawing():
 	if navigation_agent.enabled:
-		navigation_agent.target_position = position
+		navigation_agent.target_position = global_position

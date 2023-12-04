@@ -258,7 +258,8 @@ func _on_translating_region_mouse_entered():
 	modifying = TRANSFORMING.TRANSLATING
 
 func _on_transform_ui_mouse_exited():
-	modifying = TRANSFORMING.NOTHING
+	if !can_transform:
+		modifying = TRANSFORMING.NOTHING
 	
 func _on_player_move_selection(change : Vector2):
 	if not (modifying == TRANSFORMING.TRANSLATING and can_transform):
