@@ -16,21 +16,21 @@ var selection_polygon : PackedVector2Array
 @onready var node_viewport = $SubViewport
 @onready var node_quad = $Quad
 @onready var node_area = $Quad/Area3D
-@onready var paint_tool = $SubViewport/PaintTool
+@onready var _2d_world = $"SubViewport/2DWorld"
 
 func _ready():
 	node_area.mouse_entered.connect(self._mouse_entered_area)
 	Global.SelectionTool = self
 	Signals.new_selection.connect(self._on_new_selection)
 	node_viewport.size.y = node_viewport.size.x
-	paint_tool.texture_size = node_viewport.size.x
-	paint_tool.texture.set_size_override(Vector2i(node_viewport.size.x, node_viewport.size.x))
+	_2d_world.paint_tool.texture_size = node_viewport.size.x
+	_2d_world.paint_tool.texture.set_size_override(Vector2i(node_viewport.size.x, node_viewport.size.x))
 
 func _on_new_selection(polygon : PackedVector2Array):
 	selection_polygon = polygon
 
 func _physics_process(_delta):
-	paint_tool.world_pos = global_to_viewport_relative(global_position)
+	_2d_world.camera_2d.position = global_to_viewport_relative(global_position)
 	if is_mouse_held:
 		var forced_event = InputEventMouseMotion.new()
 		var pos : Vector2 = get_viewport().get_mouse_position()

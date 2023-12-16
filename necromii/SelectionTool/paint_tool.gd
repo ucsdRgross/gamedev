@@ -1,5 +1,6 @@
 extends TextureRect
 
+#texture size is overriden by viewport size
 var texture_size : int = 512
 var last_mouse_pos : Vector2
 var mouse_pos : Vector2
@@ -17,25 +18,11 @@ enum TRANSFORMING {
 }
 var modifying := TRANSFORMING.NOTHING
 
-@onready var line_2d = $Line2D
-@onready var transform_ui = $TransformUI
+@onready var line_2d = $"../../Line2D"
+@onready var transform_ui = $"../../TransformUI"
 
 var polygon : PackedVector2Array
 var last_polygon : PackedVector2Array
-
-var world_pos := Vector2.ZERO:
-	set(val):
-		var diff = world_pos - val
-		line_2d.position += diff
-		transform_ui.position += diff
-		for i in polygon.size():
-			polygon[i] += diff
-		for i in bounds.size():
-			bounds[i] += diff
-		material.set_shader_parameter(&"points", polygon)
-		#Signals.new_selection.emit(polygon)
-		#last_origin += diff
-		world_pos = val
 
 func _ready():
 	texture = ImageTexture.new()
@@ -43,11 +30,10 @@ func _ready():
 	Input.use_accumulated_input = false
 	Signals.player_move_selection.connect(self._on_player_move_selection)
 
-#_gui_input necessary to prevent stacked mouse events from _input which causes unwanted behavior
-#however _input still needed to detect mouse release as _gui_input is buggy in that aspect
-#specifically _gui_input will not detect mouse click release when mouse is moved off of control node while clicked, 
-#or in this case if control node is hidden
-func _gui_input(event):
+func _process(delta):
+	material.set_shader_parameter(&"world_pos", global_position)
+
+func _input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
@@ -94,7 +80,6 @@ func _gui_input(event):
 	if modifying != TRANSFORMING.ROTATING:
 		last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
 
-func _input(event):
 	if event.is_action_released(&"Left Click"):
 		if Global.is_drawing:
 			Global.is_drawing = false
