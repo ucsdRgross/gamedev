@@ -23,6 +23,20 @@ var modifying := TRANSFORMING.NOTHING
 var polygon : PackedVector2Array
 var last_polygon : PackedVector2Array
 
+var world_pos := Vector2.ZERO:
+	set(val):
+		var diff = world_pos - val
+		line_2d.position += diff
+		transform_ui.position += diff
+		for i in polygon.size():
+			polygon[i] += diff
+		for i in bounds.size():
+			bounds[i] += diff
+		material.set_shader_parameter(&"points", polygon)
+		#Signals.new_selection.emit(polygon)
+		#last_origin += diff
+		world_pos = val
+
 func _ready():
 	texture = ImageTexture.new()
 	texture.set_size_override(Vector2i(texture_size, texture_size))
@@ -37,9 +51,9 @@ func _gui_input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
-			mouse_pos = clamp_to_circle(event.position)
+			mouse_pos = event.position
 			break
-	if event.is_action_pressed("Left Click"):
+	if event.is_action_pressed(&"Left Click"):
 		if Global.is_modifying:
 			if modifying != TRANSFORMING.NOTHING:
 				can_transform = true
@@ -47,28 +61,28 @@ func _gui_input(event):
 		else:
 			line_2d.clear_points()
 			Global.is_drawing = true
-			start_pos = clamp_to_circle(event.position)
+			start_pos = event.position
 			bounds = [start_pos, start_pos]
 	
-	if event.is_action_pressed("Right Click"):
+	if event.is_action_pressed(&"Right Click"):
 		if not Global.is_drawing:	
 			if Global.is_modifying:
 				last_polygon = polygon
 				Global.is_modifying = false
 				can_transform = false
 				modifying = TRANSFORMING.NOTHING
-				start_pos = clamp_to_circle(event.position)
+				start_pos = event.position
 				line_2d.clear_points()
-				material.set_shader_parameter("size", line_2d.get_point_count())
-				material.set_shader_parameter("points", line_2d.points)
+				material.set_shader_parameter(&"size", line_2d.get_point_count())
+				material.set_shader_parameter(&"points", line_2d.points)
 				Signals.new_selection.emit(line_2d.points)
 				transform_ui.visible = false
 			else:
 				polygon = last_polygon
 				Global.is_modifying = true
 				line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-				material.set_shader_parameter("size", polygon.size())
-				material.set_shader_parameter("points", polygon)
+				material.set_shader_parameter(&"size", polygon.size())
+				material.set_shader_parameter(&"points", polygon)
 				Signals.new_selection.emit(polygon)
 				show_transform_ui()
 		
@@ -81,7 +95,7 @@ func _gui_input(event):
 		last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
 
 func _input(event):
-	if event.is_action_released("Left Click"):
+	if event.is_action_released(&"Left Click"):
 		if Global.is_drawing:
 			Global.is_drawing = false
 			Global.is_modifying = true
@@ -111,17 +125,6 @@ func modify():
 			scale_factor.x = 0
 		if is_inf(scale_factor.y) or is_nan(scale_factor.y):
 			scale_factor.y = 0
-		for corner in polygon:
-			var vector := corner - origin
-			var new_point := vector * scale_factor + origin
-			var clamped := clamp_to_circle(new_point)
-			if clamped != new_point:
-				scale_factor = (clamped - origin) / vector
-				if is_inf(scale_factor.x) or is_nan(scale_factor.x):
-					scale_factor.x = 0
-				if is_inf(scale_factor.y) or is_nan(scale_factor.y):
-					scale_factor.y = 0
-		
 		var new_bound : PackedVector2Array = [origin, origin]
 		for i in range(polygon.size()):
 			var og_point := polygon[i]
@@ -135,10 +138,10 @@ func modify():
 				new_bound[0].y = polygon[i].y
 			elif polygon[i].y > new_bound[1].y:
 				new_bound[1].y = polygon[i].y
-		material.set_shader_parameter("points", polygon)
+		material.set_shader_parameter(&"points", polygon)
 		#polygon2d_created.emit(polygon)
 		bounds = new_bound
-		material.set_shader_parameter("bounds", bounds)
+		material.set_shader_parameter(&"bounds", bounds)
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 		Signals.selection_changed.emit(1, scale_factor, origin)
 	
@@ -146,15 +149,6 @@ func modify():
 		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2
 		var rotate := (last_mouse_pos - last_origin).angle_to(mouse_pos - origin)
 		last_origin = origin
-		#last_origin = origin
-		for corner in polygon:
-			var vector := corner - origin
-			var new_point := vector.rotated(rotate) + origin
-			var clamped := clamp_to_circle(new_point)
-			#cannot use != because of floating point error
-			if clamped.distance_squared_to(new_point) > 0.0001:
-				rotate = 0
-				break
 		var new_bound : PackedVector2Array = [origin, origin]
 		for i in range(polygon.size()):
 			var og_point := polygon[i]
@@ -168,10 +162,10 @@ func modify():
 				new_bound[0].y = polygon[i].y
 			elif polygon[i].y > new_bound[1].y:
 				new_bound[1].y = polygon[i].y
-		material.set_shader_parameter("points", polygon)
+		material.set_shader_parameter(&"points", polygon)
 		#polygon2d_created.emit(polygon)
 		bounds = new_bound
-		material.set_shader_parameter("bounds", bounds)
+		material.set_shader_parameter(&"bounds", bounds)
 		for i in range(line_2d.get_point_count()):
 			var og_point : Vector2 = line_2d.get_point_position(i)
 			var vector := og_point - origin
@@ -179,16 +173,10 @@ func modify():
 		Signals.selection_changed.emit(2, rotate, origin)
 	
 
-func move_selection(change : Vector2):
-	#clamp changes to circle
-	for corner in polygon:
-		var clamped := clamp_to_circle(corner + change)
-		if clamped != corner + change:
-			change = clamped - corner
-			
+func move_selection(change : Vector2):		
 	for i in range(polygon.size()):
 		polygon[i] += change
-	material.set_shader_parameter("points", polygon)
+	material.set_shader_parameter(&"points", polygon)
 	Signals.new_selection.emit(polygon)
 	for i in range(bounds.size()):
 		bounds[i] += change
@@ -215,8 +203,8 @@ func draw():
 		
 	if array_size >= 3:
 		line_2d.add_point(line_2d.get_point_position(0))
-		material.set_shader_parameter("size", line_2d.get_point_count())
-		material.set_shader_parameter("points", line_2d.points)	
+		material.set_shader_parameter(&"size", line_2d.get_point_count())
+		material.set_shader_parameter(&"points", line_2d.points)	
 		Signals.new_selection.emit(line_2d.points)
 		line_2d.remove_point(line_2d.get_point_count() - 1)
 
@@ -238,16 +226,8 @@ func find_bounds():
 		bounds[0].y = mouse_pos.y
 	elif mouse_pos.y > bounds[1].y:
 		bounds[1].y = mouse_pos.y
-	material.set_shader_parameter("bounds", bounds)
+	material.set_shader_parameter(&"bounds", bounds)
 	
-
-func clamp_to_circle(pos : Vector2) -> Vector2:
-	var texture_center := Vector2(texture_size, texture_size)/2
-	pos = pos - texture_center
-	pos = pos.limit_length(texture_center.x / 2)
-	pos = pos + texture_center
-	return pos
-
 func _on_scale_region_mouse_entered():
 	modifying = TRANSFORMING.SCALING
 

@@ -30,11 +30,13 @@ func _on_new_selection(polygon : PackedVector2Array):
 	selection_polygon = polygon
 
 func _physics_process(_delta):
+	paint_tool.world_pos = global_to_viewport_relative(global_position)
 	if is_mouse_held:
 		var forced_event = InputEventMouseMotion.new()
 		var pos : Vector2 = get_viewport().get_mouse_position()
 		forced_event.position = pos
 		handle_mouse(forced_event)
+	
 		
 func in_selection(pos : Vector3):
 	if Geometry2D.is_point_in_polygon(global_to_viewport(pos), selection_polygon):

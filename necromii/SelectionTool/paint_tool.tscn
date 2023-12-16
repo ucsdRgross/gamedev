@@ -15,7 +15,6 @@ material = SubResource("ShaderMaterial_5eaix")
 script = ExtResource("2_5fyrj")
 
 [node name="Line2D" type="Line2D" parent="."]
-width = 3.0
 default_color = Color(1, 1, 1, 0.392157)
 joint_mode = 2
 begin_cap_mode = 2
