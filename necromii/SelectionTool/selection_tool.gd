@@ -23,7 +23,7 @@ func _ready():
 	Global.SelectionTool = self
 	Signals.new_selection.connect(self._on_new_selection)
 	node_viewport.size.y = node_viewport.size.x
-	_2d_world.paint_tool.texture_size = node_viewport.size.x
+	_2d_world.texture_size = node_viewport.size.x
 	_2d_world.paint_tool.texture.set_size_override(Vector2i(node_viewport.size.x, node_viewport.size.x))
 
 func _on_new_selection(polygon : PackedVector2Array):
@@ -39,7 +39,7 @@ func _physics_process(_delta):
 	
 		
 func in_selection(pos : Vector3):
-	if Geometry2D.is_point_in_polygon(global_to_viewport(pos), selection_polygon):
+	if Geometry2D.is_point_in_polygon(global_to_viewport(pos) + _2d_world.camera_2d.position, selection_polygon):
 		return true
 	return false
 

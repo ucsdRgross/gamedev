@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://dfo8hlabm8dbn"]
+[gd_scene load_steps=4 format=3 uid="uid://dfo8hlabm8dbn"]
 
 [ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="1_3hr67"]
 [ext_resource type="Script" path="res://SelectionTool/2DWorld.gd" id="1_p3txs"]
-[ext_resource type="Script" path="res://SelectionTool/paint_tool.gd" id="2_5fyrj"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5eaix"]
 resource_local_to_scene = true
@@ -20,7 +19,6 @@ anchor_mode = 0
 
 [node name="PaintTool" type="TextureRect" parent="Camera2D"]
 material = SubResource("ShaderMaterial_5eaix")
-script = ExtResource("2_5fyrj")
 metadata/_edit_use_anchors_ = true
 
 [node name="Line2D" type="Line2D" parent="."]
@@ -160,13 +158,13 @@ mouse_filter = 1
 mouse_default_cursor_shape = 12
 color = Color(1, 1, 0.564706, 0.666667)
 
-[connection signal="mouse_exited" from="TransformUI" to="Camera2D/PaintTool" method="_on_transform_ui_mouse_exited"]
-[connection signal="mouse_entered" from="TransformUI/ScaleRegion" to="Camera2D/PaintTool" method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/RotatingRegion" to="Camera2D/PaintTool" method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/ScaleRegion2" to="Camera2D/PaintTool" method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/RotatingRegion2" to="Camera2D/PaintTool" method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/TranslatingRegion" to="Camera2D/PaintTool" method="_on_translating_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/RotatingRegion3" to="Camera2D/PaintTool" method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/ScaleRegion3" to="Camera2D/PaintTool" method="_on_scale_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/RotatingRegion4" to="Camera2D/PaintTool" method="_on_rotating_region_mouse_entered"]
-[connection signal="mouse_entered" from="TransformUI/ScaleRegion4" to="Camera2D/PaintTool" method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_exited" from="TransformUI" to="." method="_on_transform_ui_mouse_exited"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion2" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion2" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/TranslatingRegion" to="." method="_on_translating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion3" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion3" to="." method="_on_scale_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/RotatingRegion4" to="." method="_on_rotating_region_mouse_entered"]
+[connection signal="mouse_entered" from="TransformUI/ScaleRegion4" to="." method="_on_scale_region_mouse_entered"]

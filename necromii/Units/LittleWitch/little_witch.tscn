@@ -40,79 +40,6 @@ length = 0.1
 max_degrees = 60.0
 max_distance = 0.763
 
-[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_hsyyy"]
-filters = ["Armature/Skeleton3D/LittleWitch2:Death", "Armature/Skeleton3D/LittleWitch2:Happy"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mpi00"]
-animation = &"Run"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gk0cy"]
-animation = &"Jump"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wh85d"]
-animation = &"Idle"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_yhfg4"]
-animation = &"DeathEyes"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_w32hn"]
-animation = &"A-Pose"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5dlwi"]
-animation = &"Blink"
-
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_8bs7p"]
-input_0/name = "Blink"
-input_0/auto_advance = false
-input_0/reset = true
-input_1/name = "Death"
-input_1/auto_advance = false
-input_1/reset = true
-
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_ivrh3"]
-sync = true
-xfade_time = 0.25
-input_0/name = "Idle"
-input_0/auto_advance = false
-input_0/reset = false
-input_1/name = "Run"
-input_1/auto_advance = false
-input_1/reset = false
-input_2/name = "Jump"
-input_2/auto_advance = false
-input_2/reset = false
-
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_a273p"]
-
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_uh5kf"]
-
-[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_3nk0c"]
-graph_offset = Vector2(-289, 60)
-nodes/Add2/node = SubResource("AnimationNodeAdd2_hsyyy")
-nodes/Add2/position = Vector2(580, 100)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_5dlwi")
-nodes/Animation/position = Vector2(120, -40)
-"nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_mpi00")
-"nodes/Animation 2/position" = Vector2(-80, 280)
-"nodes/Animation 3/node" = SubResource("AnimationNodeAnimation_gk0cy")
-"nodes/Animation 3/position" = Vector2(240, 520)
-"nodes/Animation 4/node" = SubResource("AnimationNodeAnimation_wh85d")
-"nodes/Animation 4/position" = Vector2(220, 200)
-"nodes/Animation 5/node" = SubResource("AnimationNodeAnimation_yhfg4")
-"nodes/Animation 5/position" = Vector2(120, 80)
-"nodes/Animation 6/node" = SubResource("AnimationNodeAnimation_w32hn")
-"nodes/Animation 6/position" = Vector2(-80, 440)
-nodes/Eyes/node = SubResource("AnimationNodeTransition_8bs7p")
-nodes/Eyes/position = Vector2(380, 0)
-nodes/Movement/node = SubResource("AnimationNodeTransition_ivrh3")
-nodes/Movement/position = Vector2(420, 200)
-nodes/RunBlend/node = SubResource("AnimationNodeBlend2_a273p")
-nodes/RunBlend/position = Vector2(220, 320)
-nodes/RunSpeed/node = SubResource("AnimationNodeTimeScale_uh5kf")
-nodes/RunSpeed/position = Vector2(80, 280)
-nodes/output/position = Vector2(820, 100)
-node_connections = [&"output", 0, &"Add2", &"Add2", 0, &"Movement", &"Add2", 1, &"Eyes", &"Eyes", 0, &"Animation", &"Eyes", 1, &"Animation 5", &"Movement", 0, &"Animation 4", &"Movement", 1, &"RunBlend", &"Movement", 2, &"Animation 3", &"RunBlend", 0, &"Animation 6", &"RunBlend", 1, &"RunSpeed", &"RunSpeed", 0, &"Animation 2"]
-
 [sub_resource type="Animation" id="Animation_ijx7g"]
 resource_name = "A-Pose"
 tracks/0/type = "position_3d"
@@ -867,6 +794,79 @@ _data = {
 "T-Pose": SubResource("Animation_hsb0d")
 }
 
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_hsyyy"]
+filters = ["Armature/Skeleton3D/LittleWitch2:Death", "Armature/Skeleton3D/LittleWitch2:Happy"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mpi00"]
+animation = &"Run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gk0cy"]
+animation = &"Jump"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wh85d"]
+animation = &"Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_yhfg4"]
+animation = &"DeathEyes"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_w32hn"]
+animation = &"A-Pose"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5dlwi"]
+animation = &"Blink"
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_8bs7p"]
+input_0/name = "Blink"
+input_0/auto_advance = false
+input_0/reset = true
+input_1/name = "Death"
+input_1/auto_advance = false
+input_1/reset = true
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_ivrh3"]
+sync = true
+xfade_time = 0.25
+input_0/name = "Idle"
+input_0/auto_advance = false
+input_0/reset = false
+input_1/name = "Run"
+input_1/auto_advance = false
+input_1/reset = false
+input_2/name = "Jump"
+input_2/auto_advance = false
+input_2/reset = false
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_a273p"]
+
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_uh5kf"]
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_3nk0c"]
+graph_offset = Vector2(-289, 60)
+nodes/Add2/node = SubResource("AnimationNodeAdd2_hsyyy")
+nodes/Add2/position = Vector2(580, 100)
+nodes/Animation/node = SubResource("AnimationNodeAnimation_5dlwi")
+nodes/Animation/position = Vector2(120, -40)
+"nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_mpi00")
+"nodes/Animation 2/position" = Vector2(-80, 280)
+"nodes/Animation 3/node" = SubResource("AnimationNodeAnimation_gk0cy")
+"nodes/Animation 3/position" = Vector2(240, 520)
+"nodes/Animation 4/node" = SubResource("AnimationNodeAnimation_wh85d")
+"nodes/Animation 4/position" = Vector2(220, 200)
+"nodes/Animation 5/node" = SubResource("AnimationNodeAnimation_yhfg4")
+"nodes/Animation 5/position" = Vector2(120, 80)
+"nodes/Animation 6/node" = SubResource("AnimationNodeAnimation_w32hn")
+"nodes/Animation 6/position" = Vector2(-80, 440)
+nodes/Eyes/node = SubResource("AnimationNodeTransition_8bs7p")
+nodes/Eyes/position = Vector2(380, 0)
+nodes/Movement/node = SubResource("AnimationNodeTransition_ivrh3")
+nodes/Movement/position = Vector2(420, 200)
+nodes/RunBlend/node = SubResource("AnimationNodeBlend2_a273p")
+nodes/RunBlend/position = Vector2(220, 320)
+nodes/RunSpeed/node = SubResource("AnimationNodeTimeScale_uh5kf")
+nodes/RunSpeed/position = Vector2(80, 280)
+nodes/output/position = Vector2(820, 100)
+node_connections = [&"Add2", 0, &"Movement", &"Add2", 1, &"Eyes", &"Eyes", 0, &"Animation", &"Eyes", 1, &"Animation 5", &"Movement", 0, &"Animation 4", &"Movement", 1, &"RunBlend", &"Movement", 2, &"Animation 3", &"RunBlend", 0, &"Animation 6", &"RunBlend", 1, &"RunSpeed", &"RunSpeed", 0, &"Animation 2", &"output", 0, &"Add2"]
+
 [node name="LittleWitch" instance=ExtResource("1_x2vbb")]
 
 [node name="Skeleton3D" parent="Armature" index="0"]
@@ -915,9 +915,11 @@ properties = SubResource("Resource_wcoc8")
 top_level = true
 
 [node name="AnimationTree" type="AnimationTree" parent="." index="2"]
+libraries = {
+"": SubResource("AnimationLibrary_5u6y8")
+}
 tree_root = SubResource("AnimationNodeBlendTree_3nk0c")
 anim_player = NodePath("../AnimPlayer")
-active = true
 parameters/Add2/add_amount = 1.0
 parameters/Eyes/current_state = "Blink"
 parameters/Eyes/transition_request = ""
