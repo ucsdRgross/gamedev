@@ -30,7 +30,7 @@ func _ready():
 	Input.use_accumulated_input = false
 	Signals.player_move_selection.connect(self._on_player_move_selection)
 
-func _process(delta):
+func _physics_process(delta):
 	material.set_shader_parameter(&"world_pos", global_position)
 
 func _input(event):

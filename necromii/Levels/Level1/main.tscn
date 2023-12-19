@@ -1,4 +1,4 @@
-[gd_scene load_steps=47 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=52 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -20,6 +20,7 @@
 [ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_ctue8"]
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
+[ext_resource type="Shader" path="res://Shaders/depth.gdshader" id="18_k3brg"]
 [ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="20_yd0ui"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 [ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
@@ -121,6 +122,23 @@ size = Vector3(2000, 1000, 2000)
 vertices = PackedVector3Array(-0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5)
 polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
 
+[sub_resource type="CameraAttributesPhysical" id="CameraAttributesPhysical_phr6x"]
+frustum_focal_length = 14.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_en24y"]
+render_priority = 0
+shader = ExtResource("18_k3brg")
+shader_parameter/focal_point = Vector3(0, 0, 0)
+shader_parameter/DoF = 5.0
+shader_parameter/blur = 0.5
+shader_parameter/blur_cap = 2.0
+shader_parameter/blur_rate = 2.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_75k8n"]
+material = SubResource("ShaderMaterial_en24y")
+flip_faces = true
+size = Vector2(2, 2)
+
 [sub_resource type="Curve3D" id="Curve3D_4e02e"]
 _data = {
 "points": PackedVector3Array(0, 0, 0, 0, 0, 0, 2.50628e-07, -0.0700216, -2.86685, -2.87021e-08, -8.53779, 0.328314, 2.87021e-08, 8.53779, -0.328314, 8.01878e-07, 10.1035, -9.17241, 6.14488e-08, -30.0487, -0.702892, -6.14488e-08, 30.0487, 0.702892, 7.55787e-07, 40.5721, -8.6452),
@@ -131,6 +149,9 @@ point_count = 3
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_if7gh"]
 shader = ExtResource("25_suggy")
 shader_parameter/effect_amount = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_ut8hf"]
+size = Vector3(12.42, 25.15, 4.695)
 
 [node name="Main" type="Node3D" node_paths=PackedStringArray("camera")]
 script = ExtResource("1_nd7o6")
@@ -272,16 +293,19 @@ shape = SubResource("BoxShape3D_jtvvi")
 transform = Transform3D(2000, 0, 0, 0, 1, 0, 0, 0, 2000, 0, 0, 0)
 navigation_mesh = SubResource("NavigationMesh_uexb2")
 
-[node name="SelectionTool" parent="Arena" instance=ExtResource("4_o2hhp")]
-transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 0, 1.8108, 0)
-
 [node name="InterpolatedCamera3D" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+attributes = SubResource("CameraAttributesPhysical_phr6x")
 current = true
 script = ExtResource("6_34uvy")
 target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
 
+[node name="Depth" type="MeshInstance3D" parent="InterpolatedCamera3D"]
+visible = false
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_75k8n")
+
 [node name="ZoomPath" type="Path3D" parent="."]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.62808, 0)
 curve = SubResource("Curve3D_4e02e")
 
 [node name="ZoomPathFollow" type="PathFollow3D" parent="ZoomPath"]
@@ -295,20 +319,8 @@ speed = 0.02
 
 [node name="ZoomCamera" type="Camera3D" parent="ZoomPath/ZoomPathFollow"]
 transform = Transform3D(-1, -9.83331e-08, 1.14588e-07, 0, 0.758879, 0.651231, -1.50996e-07, 0.651231, -0.758879, 0, 0, 0)
+fov = 77.3196
 script = ExtResource("8_3sve3")
-
-[node name="Player2" parent="." instance=ExtResource("20_yd0ui")]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
-
-[node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player2"]
-remote_path = NodePath("../../ZoomPath")
-update_rotation = false
-update_scale = false
-
-[node name="RemoteTransform3D2" type="RemoteTransform3D" parent="Player2"]
-remote_path = NodePath("../../Arena/SelectionTool")
-update_rotation = false
-update_scale = false
 
 [node name="Player" parent="." instance_placeholder="res://Units/player.tscn"]
 process_mode = 4
@@ -371,6 +383,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
 visible = false
 
 [node name="TiltShift" type="ColorRect" parent="."]
+visible = false
 material = SubResource("ShaderMaterial_if7gh")
 anchors_preset = 15
 anchor_right = 1.0
@@ -379,12 +392,39 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="FishEye" type="ColorRect" parent="."]
+visible = false
 material = SubResource("ShaderMaterial_if7gh")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.6096, 14.1323, 0)
+visible = false
+mesh = SubResource("BoxMesh_ut8hf")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.7341, 14.1323, -12.2483)
+visible = false
+mesh = SubResource("BoxMesh_ut8hf")
+
+[node name="SelectionTool" parent="." instance=ExtResource("4_o2hhp")]
+transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 0, 1.8108, 0)
+
+[node name="Player2" parent="." instance=ExtResource("20_yd0ui")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="Player2"]
+remote_path = NodePath("../../ZoomPath")
+update_rotation = false
+update_scale = false
+
+[node name="RemoteTransform3D2" type="RemoteTransform3D" parent="Player2"]
+remote_path = NodePath("../../SelectionTool")
+update_rotation = false
+update_scale = false
 
 [connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed"]
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

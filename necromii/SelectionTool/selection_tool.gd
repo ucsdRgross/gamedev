@@ -31,12 +31,6 @@ func _on_new_selection(polygon : PackedVector2Array):
 
 func _physics_process(_delta):
 	_2d_world.camera_2d.position = global_to_viewport_relative(global_position)
-	if is_mouse_held:
-		var forced_event = InputEventMouseMotion.new()
-		var pos : Vector2 = get_viewport().get_mouse_position()
-		forced_event.position = pos
-		handle_mouse(forced_event)
-	
 		
 func in_selection(pos : Vector3):
 	if Geometry2D.is_point_in_polygon(global_to_viewport(pos) + _2d_world.camera_2d.position, selection_polygon):
@@ -102,7 +96,11 @@ func _unhandled_input(event):
 		handle_mouse(event)
 	elif not is_mouse_event:
 		node_viewport.push_input(event)
-	
+		if is_mouse_held:
+			var forced_event = InputEventMouseMotion.new()
+			var pos : Vector2 = get_viewport().get_mouse_position()
+			forced_event.position = pos
+			handle_mouse(forced_event)
 
 # Handle mouse events inside Area3D. (Area3D.input_event had many issues with dragging)
 func handle_mouse(event):

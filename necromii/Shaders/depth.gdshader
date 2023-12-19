@@ -1,0 +1,50 @@
+shader_type spatial;
+render_mode unshaded;
+uniform sampler2D depth_texture : source_color, hint_depth_texture;
+varying mat4 CAMERA;
+uniform vec3 focal_point = vec3(0.0);
+uniform float DoF = 5.0;
+uniform float blur: hint_range(0.0,8.0) = 2.0;
+uniform float blur_cap: hint_range(0.0,8.0) = 2.0;
+uniform float blur_rate = 2.0;
+uniform sampler2D screen_texture : hint_screen_texture, filter_nearest;
+
+void vertex() {
+	POSITION = vec4(VERTEX, 1.0);
+	CAMERA = INV_VIEW_MATRIX;
+}
+
+vec3 PlaneLineIntersection(vec3 plane_point, vec3 plane_normal, vec3 line_point, vec3 line_dir){
+	float t = (dot(plane_normal, plane_point) - dot(plane_normal, line_point)) / (dot(plane_normal, normalize(line_dir)));
+	return line_point + normalize(line_dir) * t;
+}
+
+float PlanePointDist(vec3 pn, vec3 pp, vec3 p){
+	float d = -distance(pp, vec3(0.0));
+	float a = abs((pn.x * p.x + pn.y * p.y + pn.z * p.z + d));
+    float b = sqrt(pn.x * pn.x + pn.y * pn.y + pn.z * pn.z);
+	return a/b;
+}
+
+void fragment() {
+	float depth = texture(depth_texture, SCREEN_UV).x;
+	vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
+	vec4 view = INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
+	view.xyz /= view.w;
+	float linear_depth = -view.z;
+	vec4 world = CAMERA * INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
+	vec3 world_position = world.xyz / world.w;
+	vec3 focal_plane_normal = focal_point - CAMERA_POSITION_WORLD;
+	float dist_to_plane = PlanePointDist(focal_plane_normal, focal_point, world_position);
+	if (dist_to_plane > DoF) {
+		//float blur_amount = blur * (1.0 - (1.0/(dist_to_plane-DoF)));
+		float blur_amount = clamp((dist_to_plane-DoF)/blur_rate, 0.0, blur_cap);
+		vec4 color = textureLod(screen_texture, SCREEN_UV, blur_amount);
+		ALBEDO = color.xyz;
+		ALPHA = 1.0;
+		//ALBEDO = vec3(dist_to_plane/DoF,linear_depth,linear_depth);
+		//ALPHA = 0.5;
+	} else {
+		ALPHA = 0.0;
+	}
+}

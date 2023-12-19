@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded;
+render_mode unshaded, depth_prepass_alpha;
 
 // Will ignore pixels with alpha below this value for extrusion
 uniform float extruded_alpha_cull : hint_range(0.0, 1.0) = 1.0;

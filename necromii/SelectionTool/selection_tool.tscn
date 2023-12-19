@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dfo8hlabm8dbn" path="res://SelectionTool/paint_tool.tscn" id="2_c085j"]
 [ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="3_wdys3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_66yeh"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ky3q3"]
 resource_local_to_scene = true
 shader = ExtResource("3_wdys3")
 shader_parameter/size = null
@@ -42,10 +42,9 @@ transparent_bg = true
 size = Vector2i(4096, 4096)
 
 [node name="2DWorld" parent="SubViewport" instance=ExtResource("2_c085j")]
-material = SubResource("ShaderMaterial_66yeh")
+material = SubResource("ShaderMaterial_ky3q3")
 
 [node name="Quad" type="MeshInstance3D" parent="."]
-sorting_offset = -1000.0
 mesh = SubResource("QuadMesh_dfqu7")
 surface_material_override/0 = SubResource("StandardMaterial3D_tajhd")
 
