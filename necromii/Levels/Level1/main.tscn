@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=47 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -24,6 +24,7 @@
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 [ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
 [ext_resource type="PackedScene" uid="uid://bfol62codcs74" path="res://Units/unit.tscn" id="23_toaf3"]
+[ext_resource type="Shader" path="res://Shaders/fisheye.gdshader" id="25_suggy"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
@@ -126,6 +127,10 @@ _data = {
 "tilts": PackedFloat32Array(0, 0, 0)
 }
 point_count = 3
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_if7gh"]
+shader = ExtResource("25_suggy")
+shader_parameter/effect_amount = 0.5
 
 [node name="Main" type="Node3D" node_paths=PackedStringArray("camera")]
 script = ExtResource("1_nd7o6")
@@ -286,7 +291,7 @@ rotation_mode = 0
 loop = false
 script = ExtResource("7_t02jw")
 min_progress = 0.0
-speed = 0.005
+speed = 0.02
 
 [node name="ZoomCamera" type="Camera3D" parent="ZoomPath/ZoomPathFollow"]
 transform = Transform3D(-1, -9.83331e-08, 1.14588e-07, 0, 0.758879, 0.651231, -1.50996e-07, 0.651231, -0.758879, 0, 0, 0)
@@ -364,6 +369,22 @@ visible = false
 process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
 visible = false
+
+[node name="TiltShift" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_if7gh")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FishEye" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_if7gh")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed"]
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
