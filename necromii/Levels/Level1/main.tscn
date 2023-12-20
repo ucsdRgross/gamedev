@@ -133,6 +133,7 @@ shader_parameter/focal_point = Vector3(0, 0, 0)
 shader_parameter/DoF = 5.0
 shader_parameter/blur_cap = 2.0
 shader_parameter/blur_rate = 2.0
+shader_parameter/vertical_bias = 1.0
 
 [sub_resource type="QuadMesh" id="QuadMesh_75k8n"]
 material = SubResource("ShaderMaterial_en24y")

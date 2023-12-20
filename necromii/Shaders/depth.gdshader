@@ -4,6 +4,7 @@ uniform sampler2D depth_texture : source_color, hint_depth_texture;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 varying mat4 CAMERA;
 // focal point of camera in world space
+// change this in code to follow where camera is looking at, or follow player position
 uniform vec3 focal_point = vec3(0.0);
 // depth of field / width of focal plane in meters
 uniform float DoF = 5.0;
@@ -12,15 +13,17 @@ uniform float blur_cap: hint_range(0.0,8.0) = 2.0;
 // how quickly blur occurs away from focal plane
 // bigger number is slower, smaller number is faster
 uniform float blur_rate = 2.0;
+// multiples y vector of focal plane to make it less or more vertical
+// value of 1.0 is no change, 0.0 will make focal plane vertical regardless of camera angle
+// focal plane is typically perpendicular to camera view, 
+// but a more vertical focal plane may sometimes look better
+// if we want background to blur consistently regardless of distance to plane
+// ex: tall buildings show up focused in background because they are technically equally close
+uniform float vertical_bias = 1.0;
 
 void vertex() {
 	POSITION = vec4(VERTEX, 1.0);
 	CAMERA = INV_VIEW_MATRIX;
-}
-
-vec3 PlaneLineIntersection(vec3 plane_point, vec3 plane_normal, vec3 line_point, vec3 line_dir){
-	float t = (dot(plane_normal, plane_point) - dot(plane_normal, line_point)) / (dot(plane_normal, normalize(line_dir)));
-	return line_point + normalize(line_dir) * t;
 }
 
 float PlanePointDist(vec3 pn, vec3 pp, vec3 p){
@@ -39,6 +42,7 @@ void fragment() {
 	vec4 world = CAMERA * INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
 	vec3 world_position = world.xyz / world.w;
 	vec3 focal_plane_normal = focal_point - CAMERA_POSITION_WORLD;
+	focal_plane_normal.y *= vertical_bias;
 	float dist_to_plane = PlanePointDist(focal_plane_normal, focal_point, world_position);
 	float blur_amount = clamp((dist_to_plane-DoF)/blur_rate, 0.0, blur_cap);
 	vec4 color = textureLod(screen_texture, SCREEN_UV, blur_amount);
