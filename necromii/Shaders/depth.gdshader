@@ -1,13 +1,17 @@
 shader_type spatial;
 render_mode unshaded;
 uniform sampler2D depth_texture : source_color, hint_depth_texture;
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 varying mat4 CAMERA;
+// focal point of camera in world space
 uniform vec3 focal_point = vec3(0.0);
+// depth of field / width of focal plane in meters
 uniform float DoF = 5.0;
-uniform float blur: hint_range(0.0,8.0) = 2.0;
+// maximum amount of blur based off of distance from focal plane
 uniform float blur_cap: hint_range(0.0,8.0) = 2.0;
+// how quickly blur occurs away from focal plane
+// bigger number is slower, smaller number is faster
 uniform float blur_rate = 2.0;
-uniform sampler2D screen_texture : hint_screen_texture, filter_nearest;
 
 void vertex() {
 	POSITION = vec4(VERTEX, 1.0);
@@ -20,7 +24,7 @@ vec3 PlaneLineIntersection(vec3 plane_point, vec3 plane_normal, vec3 line_point,
 }
 
 float PlanePointDist(vec3 pn, vec3 pp, vec3 p){
-	float d = -distance(pp, vec3(0.0));
+	float d = -(pn.x * pp.x + pn.y * pp.y + pn.z * pp.z);
 	float a = abs((pn.x * p.x + pn.y * p.y + pn.z * p.z + d));
     float b = sqrt(pn.x * pn.x + pn.y * pn.y + pn.z * pn.z);
 	return a/b;
@@ -36,15 +40,7 @@ void fragment() {
 	vec3 world_position = world.xyz / world.w;
 	vec3 focal_plane_normal = focal_point - CAMERA_POSITION_WORLD;
 	float dist_to_plane = PlanePointDist(focal_plane_normal, focal_point, world_position);
-	if (dist_to_plane > DoF) {
-		//float blur_amount = blur * (1.0 - (1.0/(dist_to_plane-DoF)));
-		float blur_amount = clamp((dist_to_plane-DoF)/blur_rate, 0.0, blur_cap);
-		vec4 color = textureLod(screen_texture, SCREEN_UV, blur_amount);
-		ALBEDO = color.xyz;
-		ALPHA = 1.0;
-		//ALBEDO = vec3(dist_to_plane/DoF,linear_depth,linear_depth);
-		//ALPHA = 0.5;
-	} else {
-		ALPHA = 0.0;
-	}
+	float blur_amount = clamp((dist_to_plane-DoF)/blur_rate, 0.0, blur_cap);
+	vec4 color = textureLod(screen_texture, SCREEN_UV, blur_amount);
+	ALBEDO = color.xyz;
 }

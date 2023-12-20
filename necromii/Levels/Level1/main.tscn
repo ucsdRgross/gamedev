@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=54 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -21,6 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
 [ext_resource type="Shader" path="res://Shaders/depth.gdshader" id="18_k3brg"]
+[ext_resource type="Script" path="res://Levels/Level1/TiltShiftFocal.gd" id="18_x7kmu"]
 [ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="20_yd0ui"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 [ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
@@ -130,7 +131,6 @@ render_priority = 0
 shader = ExtResource("18_k3brg")
 shader_parameter/focal_point = Vector3(0, 0, 0)
 shader_parameter/DoF = 5.0
-shader_parameter/blur = 0.5
 shader_parameter/blur_cap = 2.0
 shader_parameter/blur_rate = 2.0
 
@@ -152,6 +152,10 @@ shader_parameter/effect_amount = 0.5
 
 [sub_resource type="BoxMesh" id="BoxMesh_ut8hf"]
 size = Vector3(12.42, 25.15, 4.695)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q0aup"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.490196)
 
 [node name="Main" type="Node3D" node_paths=PackedStringArray("camera")]
 script = ExtResource("1_nd7o6")
@@ -272,7 +276,6 @@ light_energy = 1.25
 light_volumetric_fog_energy = 0.642
 light_angular_distance = 0.8
 shadow_enabled = true
-shadow_blur = 5.0
 directional_shadow_blend_splits = true
 
 [node name="Arena" type="Node3D" parent="."]
@@ -300,9 +303,11 @@ script = ExtResource("6_34uvy")
 target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
 
 [node name="Depth" type="MeshInstance3D" parent="InterpolatedCamera3D"]
-visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.193378, -3.8147e-06, -0.00337601)
+sorting_offset = -100.0
 extra_cull_margin = 16384.0
 mesh = SubResource("QuadMesh_75k8n")
+script = ExtResource("18_x7kmu")
 
 [node name="ZoomPath" type="Path3D" parent="."]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.62808, 0)
@@ -402,12 +407,11 @@ grow_vertical = 2
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.6096, 14.1323, 0)
-visible = false
 mesh = SubResource("BoxMesh_ut8hf")
+surface_material_override/0 = SubResource("StandardMaterial3D_q0aup")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.7341, 14.1323, -12.2483)
-visible = false
 mesh = SubResource("BoxMesh_ut8hf")
 
 [node name="SelectionTool" parent="." instance=ExtResource("4_o2hhp")]
