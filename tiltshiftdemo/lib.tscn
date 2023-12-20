@@ -1,0 +1,66 @@
+[gd_scene load_steps=15 format=3 uid="uid://b5e3kc5wq4sr"]
+
+[ext_resource type="PackedScene" uid="uid://c1ux6p8vh688s" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_A.gltf" id="1_yy7bn"]
+[ext_resource type="PackedScene" uid="uid://xx1e5hcwkcoa" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_B.gltf" id="2_t6a0o"]
+[ext_resource type="PackedScene" uid="uid://b7lgbconyb0wx" path="res://addons/kaykit_city_builder_bits/Assets/gltf/base.gltf" id="3_tfbol"]
+[ext_resource type="PackedScene" uid="uid://d1lqqti4ik340" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_C.gltf" id="4_bjl5v"]
+[ext_resource type="PackedScene" uid="uid://ceeqp4js7rayv" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_D.gltf" id="5_l4aqu"]
+[ext_resource type="PackedScene" uid="uid://dxnvhqp4s1l6y" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_E.gltf" id="6_640io"]
+[ext_resource type="PackedScene" uid="uid://btjhx4j15htm6" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_F.gltf" id="7_68v0g"]
+[ext_resource type="PackedScene" uid="uid://dlsetad72cbe1" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_G.gltf" id="8_isl10"]
+[ext_resource type="PackedScene" uid="uid://bl5tmgo4sd3d2" path="res://addons/kaykit_city_builder_bits/Assets/gltf/building_H.gltf" id="9_s2tup"]
+[ext_resource type="PackedScene" uid="uid://dires2m5cuu3y" path="res://addons/kaykit_city_builder_bits/Assets/gltf/road_corner.gltf" id="10_uqj3k"]
+[ext_resource type="PackedScene" uid="uid://crgvssesoyb87" path="res://addons/kaykit_city_builder_bits/Assets/gltf/road_corner_curved.gltf" id="11_wlvop"]
+[ext_resource type="PackedScene" uid="uid://d2ll42lxotne5" path="res://addons/kaykit_city_builder_bits/Assets/gltf/road_junction.gltf" id="12_8g8yi"]
+[ext_resource type="PackedScene" uid="uid://dwfotb3uouxa4" path="res://addons/kaykit_city_builder_bits/Assets/gltf/road_straight.gltf" id="13_yarb8"]
+[ext_resource type="PackedScene" uid="uid://cbvr4q177w8u2" path="res://addons/kaykit_city_builder_bits/Assets/gltf/road_tsplit.gltf" id="14_hfaso"]
+
+[node name="lib" type="Node3D"]
+
+[node name="building_A2" parent="." instance=ExtResource("1_yy7bn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 3)
+
+[node name="building_B2" parent="." instance=ExtResource("2_t6a0o")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 1)
+
+[node name="base2" parent="." instance=ExtResource("3_tfbol")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1)
+
+[node name="building_A3" parent="." instance=ExtResource("1_yy7bn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 1)
+
+[node name="building_B3" parent="." instance=ExtResource("2_t6a0o")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.0009, 0, 1)
+
+[node name="building_C2" parent="." instance=ExtResource("4_bjl5v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 3)
+
+[node name="building_D2" parent="." instance=ExtResource("5_l4aqu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 3)
+
+[node name="building_E2" parent="." instance=ExtResource("6_640io")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 5)
+
+[node name="building_F2" parent="." instance=ExtResource("7_68v0g")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 5)
+
+[node name="building_G2" parent="." instance=ExtResource("8_isl10")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 5)
+
+[node name="building_H2" parent="." instance=ExtResource("9_s2tup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 3)
+
+[node name="road_corner2" parent="." instance=ExtResource("10_uqj3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 7)
+
+[node name="road_corner_curved2" parent="." instance=ExtResource("11_wlvop")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 5)
+
+[node name="road_junction2" parent="." instance=ExtResource("12_8g8yi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 7)
+
+[node name="road_straight2" parent="." instance=ExtResource("13_yarb8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 7)
+
+[node name="road_tsplit2" parent="." instance=ExtResource("14_hfaso")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.00001, 0, 7)

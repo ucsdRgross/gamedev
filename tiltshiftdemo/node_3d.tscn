@@ -1,0 +1,138 @@
+[gd_scene load_steps=17 format=3 uid="uid://b1caekkcitqnq"]
+
+[ext_resource type="MeshLibrary" uid="uid://dxlhvg3fjfhjw" path="res://city.tres" id="1_d08ox"]
+[ext_resource type="PackedScene" uid="uid://b5e3kc5wq4sr" path="res://lib.tscn" id="2_4aivh"]
+[ext_resource type="PackedScene" uid="uid://ctqyd6js8t0bq" path="res://addons/kaykit_city_builder_bits/Assets/gltf/car_taxi.gltf" id="4_7hvc5"]
+[ext_resource type="Script" path="res://focal.gd" id="4_84rjy"]
+[ext_resource type="Shader" path="res://tiltshift.gdshader" id="4_l8vba"]
+[ext_resource type="Shader" path="res://sky.gdshader" id="5_5aliv"]
+
+[sub_resource type="Gradient" id="Gradient_js1ty"]
+offsets = PackedFloat32Array(0.576923, 0.807692)
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_wtlkh"]
+width = 1024
+height = 1024
+seamless = true
+color_ramp = SubResource("Gradient_js1ty")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ntkjx"]
+shader = ExtResource("5_5aliv")
+shader_parameter/top_color = Color(0.341176, 0.8, 1, 1)
+shader_parameter/bottom_color = Color(0.415686, 0.231373, 0.152941, 1)
+shader_parameter/sun_scatter = Color(0.627451, 1, 1, 1)
+shader_parameter/star_stength = 0.0
+shader_parameter/clouds_tint = Color(1, 1, 1, 1)
+shader_parameter/clouds_sampler = SubResource("NoiseTexture2D_wtlkh")
+
+[sub_resource type="Sky" id="Sky_x8bgt"]
+sky_material = SubResource("ShaderMaterial_ntkjx")
+
+[sub_resource type="Environment" id="Environment_jasil"]
+background_mode = 2
+sky = SubResource("Sky_x8bgt")
+ambient_light_color = Color(0.784314, 0.8, 0, 1)
+ambient_light_sky_contribution = 0.78
+tonemap_mode = 2
+glow_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.690196, 0.941176, 1, 1)
+fog_light_energy = 0.2
+fog_sky_affect = 0.0
+fog_height_density = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fks0p"]
+render_priority = 0
+shader = ExtResource("4_l8vba")
+shader_parameter/focal_point = Vector3(22.4, 11.35, 67.08)
+shader_parameter/DoF = 7.0
+shader_parameter/blur_cap = 2.5
+shader_parameter/blur_rate = 2.665
+shader_parameter/vertical_bias = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_6u0sl"]
+material = SubResource("ShaderMaterial_fks0p")
+flip_faces = true
+size = Vector2(2, 2)
+
+[sub_resource type="Animation" id="Animation_0t8kw"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("car_taxi2:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(2.23997, 1.13461, 7.31777)]
+}
+
+[sub_resource type="Animation" id="Animation_l04ea"]
+resource_name = "car move"
+length = 6.015
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("car_taxi2:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(2.24, 1.135, 6.708), Vector3(9.76, 1.135, 6.708)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_kbftv"]
+_data = {
+"RESET": SubResource("Animation_0t8kw"),
+"car move": SubResource("Animation_l04ea")
+}
+
+[node name="Node3D" type="Node3D"]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
+
+[node name="GridMap" type="GridMap" parent="."]
+mesh_library = ExtResource("1_d08ox")
+data = {
+"cells": PackedInt32Array(3, 3, 1048588, 3, 4, 8, 3, 5, 1048588, 2, 5, 1048588, 1, 5, 1048588, 0, 5, 1048586, 0, 4, 655372, 0, 3, 13, 1, 3, 1048588, 2, 2, 8, 3, 2, 7, 4, 2, 6, 4, 3, 1048588, 2, 4, 7, 1, 4, 6, 1, 2, 7, 2, 3, 1048588, 2, 1, 655366, 3, 1, 655367, 0, 2, 655372, 0, 1, 655372, 1, 0, 1048588, 2, 0, 1048588, 3, 0, 1048588, 4, 0, 1048588, 4, 1, 1048584, 5, 1, 655372, 5, 2, 655372, 5, 3, 655373, 5, 4, 655372, 4, 4, 6, 4, 5, 1048588, 5, 0, 1441802, 0, 0, 10, 1, 1, 1441799, 5, 5, 655370, -65536, 6, 8, -65535, 6, 8, -65534, 6, 8, -65533, 6, 8, -65532, 6, 8, -65531, 6, 8, -131072, 7, 5, -131071, 7, 5, -131070, 7, 5, -131069, 7, 5, -131068, 7, 5, -131067, 7, 5, -196608, 8, 7, -196607, 8, 7, -196606, 8, 7, -196605, 8, 7, -196604, 8, 7, -196603, 8, 7)
+}
+metadata/_editor_floor_ = Vector3(0, 0, 0)
+
+[node name="lib" parent="." instance=ExtResource("2_4aivh")]
+visible = false
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.124225, -0.610666, 0.782084, 0.437708, 0.741082, 0.509126, -0.890494, 0.279078, 0.359355, 16.854, 6.99074, 12.3274)
+light_color = Color(1, 1, 0.913725, 1)
+light_energy = 1.25
+shadow_enabled = true
+directional_shadow_blend_splits = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_jasil")
+
+[node name="car_taxi2" parent="." instance=ExtResource("4_7hvc5")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 2.23997, 1.13461, 7.31777)
+
+[node name="focal" type="Node3D" parent="car_taxi2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.287849, 0)
+script = ExtResource("4_84rjy")
+
+[node name="Camera3D" type="Camera3D" parent="car_taxi2"]
+transform = Transform3D(-0.587785, 0.615182, -0.525414, 0, 0.649448, 0.760405, 0.809017, 0.446956, -0.381736, -1.5, 3.611, -1.083)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="car_taxi2/Camera3D"]
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_6u0sl")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_kbftv")
+}
+autoplay = "car move"
+speed_scale = 1.5
