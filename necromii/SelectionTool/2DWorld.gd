@@ -34,13 +34,23 @@ func _ready():
 
 func _process(delta):
 	paint_tool.material.set_shader_parameter(&"world_pos", paint_tool.global_position)
+	camera_2d.position.x -= 0.05
 
 func _input(event):
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
 			last_mouse_pos = mouse_pos
 			mouse_pos = event.position + paint_tool.global_position
+			
+			if Global.is_drawing:
+				draw()	
+			elif can_transform:
+				modify()
+			if modifying != TRANSFORMING.ROTATING:
+				last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
+			
 			break
+			
 	if event.is_action_pressed(&"Left Click"):
 		if Global.is_modifying:
 			if modifying != TRANSFORMING.NOTHING:
@@ -73,14 +83,6 @@ func _input(event):
 				paint_tool.material.set_shader_parameter(&"points", polygon)
 				Signals.new_selection.emit(polygon)
 				show_transform_ui()
-		
-	if Global.is_drawing:
-		draw()	
-		
-	elif can_transform:
-		modify()
-	if modifying != TRANSFORMING.ROTATING:
-		last_origin = Vector2(bounds[0].x + bounds[1].x, bounds[0].y + bounds[1].y) / 2
 
 	if event.is_action_released(&"Left Click"):
 		if Global.is_drawing:
