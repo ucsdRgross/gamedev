@@ -1,6 +1,6 @@
 // Converted from https://www.shadertoy.com/view/td2GzW
 shader_type canvas_item;
-uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear_mipmap;
+uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear_mipmap, repeat_disable;
 
 // Anti fish eye (negative amount) / fish eye (positive)
 uniform float effect_amount : hint_range(-2.5, 2.5) = 1.0;

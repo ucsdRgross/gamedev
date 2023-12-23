@@ -1,4 +1,4 @@
-[gd_scene load_steps=54 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=57 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -27,6 +27,8 @@
 [ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
 [ext_resource type="PackedScene" uid="uid://bfol62codcs74" path="res://Units/unit.tscn" id="23_toaf3"]
 [ext_resource type="Shader" path="res://Shaders/fisheye.gdshader" id="25_suggy"]
+[ext_resource type="Shader" path="res://Shaders/retro.gdshader" id="26_osyto"]
+[ext_resource type="Script" path="res://Components/Remote.gd" id="29_ci88v"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
 friction = 0.1
@@ -147,9 +149,18 @@ _data = {
 }
 point_count = 3
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_acvib"]
+shader = ExtResource("26_osyto")
+shader_parameter/change_color_depth = true
+shader_parameter/target_color_depth = 5
+shader_parameter/dithering = true
+shader_parameter/scale_resolution = true
+shader_parameter/target_resolution_scale = 3
+shader_parameter/enable_recolor = false
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_if7gh"]
 shader = ExtResource("25_suggy")
-shader_parameter/effect_amount = 0.5
+shader_parameter/effect_amount = 1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_ut8hf"]
 size = Vector3(12.42, 25.15, 4.695)
@@ -388,14 +399,15 @@ process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
 visible = false
 
-[node name="TiltShift" type="ColorRect" parent="."]
+[node name="Retro" type="ColorRect" parent="."]
 visible = false
-material = SubResource("ShaderMaterial_if7gh")
+material = SubResource("ShaderMaterial_acvib")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="FishEye" type="ColorRect" parent="."]
 visible = false
@@ -405,6 +417,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.6096, 14.1323, 0)
@@ -416,7 +429,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.7341, 14.1323, -12.2483)
 mesh = SubResource("BoxMesh_ut8hf")
 
 [node name="SelectionTool" parent="." instance=ExtResource("4_o2hhp")]
-transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 0, 1.8108, 0)
+transform = Transform3D(100, 0, 0, 0, -4.37114e-06, 100, 0, -100, -4.37114e-06, 0, 0.033, 0)
 
 [node name="Player2" parent="." instance=ExtResource("20_yd0ui")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
@@ -426,10 +439,10 @@ remote_path = NodePath("../../ZoomPath")
 update_rotation = false
 update_scale = false
 
-[node name="RemoteTransform3D2" type="RemoteTransform3D" parent="Player2"]
+[node name="Remote" type="Node3D" parent="Player2" node_paths=PackedStringArray("remote_path")]
+script = ExtResource("29_ci88v")
 remote_path = NodePath("../../SelectionTool")
-update_rotation = false
-update_scale = false
+y = false
 
 [connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed"]
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
