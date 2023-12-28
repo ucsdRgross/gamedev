@@ -53,7 +53,7 @@ bones/18/rotation = Quaternion(0.48657, -0.422638, 0.624876, -0.440633)
 bones/19/rotation = Quaternion(0.020984, -0.0491562, 0.00517634, 0.998557)
 
 [node name="WiggleBone" parent="LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.999321, -0.0213293, 0.0300416, -0.0361443, -0.409453, 0.911615, -0.0071435, -0.912082, -0.409946, -0.0232175, 0.843599, -0.358599)
+transform = Transform3D(0.999466, -0.0107505, 0.030864, -0.0326699, -0.355079, 0.934265, 0.000915348, -0.934775, -0.355241, -0.023718, 0.843554, -0.357629)
 
 [node name="AnimationTree" parent="LittleWitch" index="2"]
 parameters/RunBlend/blend_amount = 0

@@ -34,6 +34,6 @@ func _on_selection_changed(move_type : int, change, center : Vector2):
 func _update_target_position_async():
 	if not update_target:
 		update_target = true
-		await get_tree().create_timer(randf()/8, false, true).timeout
+		await get_tree().create_timer(randf()/16, false, true).timeout
 		target_position = position_buffer
 		update_target = false

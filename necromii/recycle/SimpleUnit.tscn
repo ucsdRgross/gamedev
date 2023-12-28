@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=13 format=3 uid="uid://buvusd43qyx6b"]
 
-[ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
-[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="3_56h63"]
-[ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="4_6x35f"]
-[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="5_sfs71"]
-[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="6_1syjn"]
+[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="1_fe2ks"]
+[ext_resource type="Script" path="res://Units/SimpleUnit.gd" id="1_ujvy0"]
+[ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="2_te7bk"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_vlfca"]
+[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="4_fdfjl"]
+[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="5_ter2h"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ahy0n"]
 friction = 0.5
@@ -20,7 +21,7 @@ viewport_path = NodePath("SubViewport")
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_oij12"]
 resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("5_sfs71")
+shader = ExtResource("3_vlfca")
 shader_parameter/extruded_alpha_cull = 1.0
 shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
@@ -34,30 +35,30 @@ shader_parameter/infinite_holes = true
 shader_parameter/Hframes = 5
 shader_parameter/Vframes = 12
 shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("6_1syjn")
+shader_parameter/Texture = ExtResource("4_fdfjl")
 
 [sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_w62yk"]
 height = 0.5
 
-[node name="Unit" type="RigidBody3D"]
+[node name="SimpleUnit" type="RigidBody3D"]
 axis_lock_angular_x = true
 axis_lock_angular_y = true
 axis_lock_angular_z = true
 mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_ahy0n")
 linear_damp = 0.5
-script = ExtResource("1_iay06")
+script = ExtResource("1_ujvy0")
 
-[node name="Collision" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_urnno")
 
-[node name="HealthBar" parent="." instance=ExtResource("3_56h63")]
+[node name="HealthBar" parent="." instance=ExtResource("1_fe2ks")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 texture = SubResource("ViewportTexture_y3pva")
 
-[node name="ShearTransform" parent="." instance=ExtResource("4_6x35f")]
+[node name="ShearTransform" parent="." instance=ExtResource("2_te7bk")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
@@ -73,6 +74,7 @@ height = 2.0
 radius = 0.8
 neighbor_distance = 5.0
 max_neighbors = 5
+script = ExtResource("5_ter2h")
 
 [node name="GroundCast" type="ShapeCast3D" parent="."]
 shape = SubResource("CylinderShape3D_w62yk")

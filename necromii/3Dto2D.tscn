@@ -1,10 +1,17 @@
-[gd_scene load_steps=7 format=3 uid="uid://kt3jxcq3hmin"]
+[gd_scene load_steps=20 format=3 uid="uid://kt3jxcq3hmin"]
 
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="1_q04xk"]
-[ext_resource type="PackedScene" uid="uid://dtmh7h36yyiyf" path="res://Units/player.tscn" id="2_6eyuw"]
+[ext_resource type="Script" path="res://Units/Player.gd" id="2_cgdas"]
+[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="3_ex0ib"]
+[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="4_vgh2j"]
+[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="5_eqe0k"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/state_chart.gd" id="6_ui64h"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/compound_state.gd" id="7_0s8np"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/atomic_state.gd" id="8_f6ufy"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/transition.gd" id="9_tmgt0"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_skj47"]
-viewport_path = NodePath("MeshInstance3D/SubViewport")
+viewport_path = NodePath("MeshInstance3D/SubViewport2")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_mdiww"]
 resource_local_to_scene = true
@@ -16,8 +23,8 @@ shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0)
 shader_parameter/color_mix = Color(0.92549, 0, 0, 1)
-shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 10
+shader_parameter/mix_strength = 0.0
+shader_parameter/texture_calls = 270
 shader_parameter/ray_bias = 2.0
 shader_parameter/infinite_holes = false
 shader_parameter/Hframes = 1
@@ -28,8 +35,97 @@ shader_parameter/Texture = SubResource("ViewportTexture_skj47")
 [sub_resource type="BoxMesh" id="BoxMesh_1stqj"]
 material = SubResource("ShaderMaterial_mdiww")
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
+friction = 0.1
+
 [sub_resource type="ViewportTexture" id="ViewportTexture_etb2q"]
 viewport_path = NodePath("SubViewport")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
+height = 1.5
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_8mpq4"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="Animation" id="Animation_pe3fa"]
+resource_name = "rotate"
+length = 2.0
+loop_mode = 1
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = false
+tracks/0/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 1.075, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 1)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0, 0),
+"points": PackedFloat32Array(-3.14159, -0.25, 0, 0.25, 0, -1.5708, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 1.5708, -0.25, 0, 0.25, 0, -3.14159, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = false
+tracks/2/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, -2.02, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 1)
+}
+
+[sub_resource type="Animation" id="Animation_sw1h2"]
+length = 0.001
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(-3.14159, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("MeshInstance3D/SubViewport2/Player:rotation:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_qy43q"]
+_data = {
+"RESET": SubResource("Animation_sw1h2"),
+"rotate": SubResource("Animation_pe3fa")
+}
 
 [node name="Node3D" type="Node3D"]
 
@@ -41,37 +137,238 @@ mesh = SubResource("BoxMesh_1stqj")
 transparent_bg = true
 size = Vector2i(30, 30)
 
-[node name="Player" parent="MeshInstance3D/SubViewport" instance=ExtResource("2_6eyuw")]
+[node name="Player" type="RigidBody3D" parent="MeshInstance3D/SubViewport"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.34628, 0)
+visible = false
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_3d5xi")
+script = ExtResource("2_cgdas")
 
-[node name="HealthBar" parent="MeshInstance3D/SubViewport/Player" index="0"]
+[node name="HealthBar" parent="MeshInstance3D/SubViewport/Player" instance=ExtResource("3_ex0ib")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
 texture = SubResource("ViewportTexture_etb2q")
 
+[node name="MovementPhysics" parent="MeshInstance3D/SubViewport/Player" instance=ExtResource("4_vgh2j")]
+
+[node name="LittleWitch" parent="MeshInstance3D/SubViewport/Player" instance=ExtResource("5_eqe0k")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
+
 [node name="Skeleton3D" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(0.00036212, 0.366578, -0.298887)
-bones/0/rotation = Quaternion(-5.00945e-06, 0.707107, 0.707106, 5.00901e-06)
-bones/2/rotation = Quaternion(-0.000476023, 4.37445e-08, 0.000115171, 1)
-bones/3/rotation = Quaternion(-0.00025306, 3.64348e-11, 3.93786e-05, 1)
-bones/4/rotation = Quaternion(-0.000254516, -1.90203e-11, 2.08468e-05, 1)
-bones/7/rotation = Quaternion(-0.321706, 0.0611199, 0.0294663, 0.944405)
-bones/8/rotation = Quaternion(0.0204302, 0.0187581, 0.00281125, 0.999611)
-bones/9/rotation = Quaternion(0.0016311, 2.67125e-05, 0.00297635, 0.999994)
-bones/11/rotation = Quaternion(-0.322262, -0.0592043, -0.0266046, 0.944423)
-bones/12/rotation = Quaternion(0.0206482, -0.01876, -0.00282534, 0.999607)
-bones/13/rotation = Quaternion(0.00194881, -2.65696e-05, -0.00318032, 0.999993)
-bones/14/rotation = Quaternion(0.000776743, -0.0408683, 0.706524, 0.706507)
-bones/15/rotation = Quaternion(-0.465901, -0.498193, 0.555085, 0.476047)
-bones/16/rotation = Quaternion(-0.00338382, 0.0502474, -0.0495724, 0.9975)
-bones/17/rotation = Quaternion(0.000803557, 0.0408497, -0.706529, 0.706503)
-bones/18/rotation = Quaternion(0.465823, -0.498291, 0.554984, -0.476139)
-bones/19/rotation = Quaternion(-0.00339438, -0.0502489, 0.049666, 0.997495)
+bones/0/position = Vector3(-0.00377481, 0.363506, -0.293118)
+bones/0/rotation = Quaternion(2.8333e-05, 0.707108, 0.707105, -2.83331e-05)
+bones/2/rotation = Quaternion(-0.00230452, 4.37219e-08, -0.0012006, 0.999997)
+bones/3/rotation = Quaternion(-0.000879281, -1.56511e-13, -0.000458086, 1)
+bones/4/rotation = Quaternion(-0.00080278, 8.05513e-12, -0.000418239, 1)
+bones/7/rotation = Quaternion(-0.331272, 0.0522688, -0.00150731, 0.942085)
+bones/8/rotation = Quaternion(0.0319617, 0.0190078, 0.0148204, 0.999198)
+bones/9/rotation = Quaternion(0.0150564, 0.000125636, 0.0190241, 0.999706)
+bones/11/rotation = Quaternion(-0.320088, -0.0625649, -0.0370078, 0.944595)
+bones/12/rotation = Quaternion(0.0232174, -0.0189302, -0.0142473, 0.99945)
+bones/13/rotation = Quaternion(0.0023029, -0.000131178, -0.0108221, 0.999939)
+bones/14/rotation = Quaternion(0.00436396, -0.0325439, 0.707431, 0.706019)
+bones/15/rotation = Quaternion(-0.465105, -0.495355, 0.557857, 0.476547)
+bones/16/rotation = Quaternion(-0.00161908, 0.0501692, -0.0490908, 0.997532)
+bones/17/rotation = Quaternion(0.0032893, 0.0332892, -0.707244, 0.706178)
+bones/18/rotation = Quaternion(0.468218, -0.491426, 0.561868, -0.472839)
+bones/19/rotation = Quaternion(-0.00119323, -0.0501555, 0.0453395, 0.997711)
 
 [node name="WiggleBone" parent="MeshInstance3D/SubViewport/Player/LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(1, 0.000118131, -0.000330835, 0.000351021, -0.298965, 0.954264, 1.38204e-05, -0.954264, -0.298965, 0.000240719, 0.903056, -0.40255)
+transform = Transform3D(0.972698, 0.212521, 0.0932387, 0.150147, -0.882637, 0.44543, 0.176959, -0.419269, -0.890449, -0.00116947, 0.90056, -0.401185)
+
+[node name="AnimationTree" parent="MeshInstance3D/SubViewport/Player/LittleWitch" index="2"]
+parameters/RunBlend/blend_amount = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/SubViewport/Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="StateChart" type="Node" parent="MeshInstance3D/SubViewport/Player"]
+script = ExtResource("6_ui64h")
+
+[node name="Root" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart"]
+script = ExtResource("7_0s8np")
+initial_state = NodePath("Movement")
+
+[node name="Movement" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root"]
+script = ExtResource("7_0s8np")
+initial_state = NodePath("Grounded")
+
+[node name="Grounded" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement"]
+editor_description = "This state is active when the player is on the ground."
+script = ExtResource("8_f6ufy")
+
+[node name="On Jump" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement/Grounded"]
+process_mode = 4
+editor_description = "When jumping become airborne and enable double-jump."
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Airborne")
+event = &"jump"
+
+[node name="On Airborne" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement/Grounded"]
+editor_description = "When becoming airborne (e.g. through falling) move to airborne state."
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Airborne")
+event = &"airborne"
+
+[node name="Airborne" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement"]
+editor_description = "This is the root state for when the player is in the air. We have sub-states to handle the various input that is allowed when in the air."
+script = ExtResource("7_0s8np")
+initial_state = NodePath("CannotJump")
+
+[node name="On Grounded" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement/Airborne"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Grounded")
+event = &"grounded"
+
+[node name="CannotJump" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement/Airborne"]
+process_mode = 4
+editor_description = "This state is active when the player is airborne but can no longer jump either because the coyote-jump grace period has expired or the player has already used the double-jump."
+script = ExtResource("8_f6ufy")
+
+[node name="On Ragdoll" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Ragdoll")
+event = &"ragdoll"
+
+[node name="Ragdoll" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root"]
+script = ExtResource("8_f6ufy")
+
+[node name="Recover" type="Node" parent="MeshInstance3D/SubViewport/Player/StateChart/Root/Ragdoll"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Movement")
+delay_seconds = 2.0
 
 [node name="Camera3D" type="Camera3D" parent="MeshInstance3D/SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.959934, 2.10176)
 projection = 1
 size = 2.0
 
-[editable path="MeshInstance3D/SubViewport/Player"]
+[node name="SubViewport2" type="SubViewport" parent="MeshInstance3D"]
+transparent_bg = true
+size = Vector2i(18, 19)
+
+[node name="Player" type="RigidBody3D" parent="MeshInstance3D/SubViewport2"]
+transform = Transform3D(-1, 0, -1.50996e-07, 0, 1, 0, 1.50996e-07, 0, -1, 0, 1.34628, 0)
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_3d5xi")
+script = ExtResource("2_cgdas")
+
+[node name="HealthBar" parent="MeshInstance3D/SubViewport2/Player" instance=ExtResource("3_ex0ib")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.00242, 0)
+texture = SubResource("ViewportTexture_8mpq4")
+
+[node name="MovementPhysics" parent="MeshInstance3D/SubViewport2/Player" instance=ExtResource("4_vgh2j")]
+
+[node name="LittleWitch" parent="MeshInstance3D/SubViewport2/Player" instance=ExtResource("5_eqe0k")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -1.333, 0)
+
+[node name="Skeleton3D" parent="MeshInstance3D/SubViewport2/Player/LittleWitch/Armature" index="0"]
+bones/0/position = Vector3(0, 0.367378, -0.300388)
+bones/0/rotation = Quaternion(0, 0.707107, 0.707107, 0)
+bones/1/rotation = Quaternion(3.09086e-08, 0.707107, 0.707107, 3.09086e-08)
+bones/2/rotation = Quaternion(7.56594e-09, 4.37114e-08, -3.30718e-16, 1)
+bones/3/rotation = Quaternion(2.70004e-09, -1.3713e-31, -5.29396e-23, 1)
+bones/4/rotation = Quaternion(2.10718e-08, 5.51127e-32, 0, 1)
+bones/6/rotation = Quaternion(0.579466, 0.493645, 0.493645, -0.420534)
+bones/7/rotation = Quaternion(0.064027, 0.0641853, -0.00611686, 0.995863)
+bones/8/rotation = Quaternion(0.0187057, 0.0187039, -0.000227762, 0.99965)
+bones/9/rotation = Quaternion(1.93719e-07, 1.84992e-07, 1.29239e-09, 1)
+bones/10/rotation = Quaternion(0.579466, -0.493645, -0.493645, -0.420534)
+bones/11/rotation = Quaternion(0.064027, -0.0641853, 0.00611686, 0.995863)
+bones/12/rotation = Quaternion(0.0187057, -0.0187039, 0.000227762, 0.99965)
+bones/13/rotation = Quaternion(1.93719e-07, -1.84992e-07, -1.29239e-09, 1)
+bones/14/rotation = Quaternion(-1.9029e-09, -0.0429253, 0.706307, 0.706603)
+bones/15/rotation = Quaternion(-0.465649, -0.4995, 0.553773, 0.476452)
+bones/16/rotation = Quaternion(-0.00390531, 0.0502704, -0.0502448, 0.997463)
+bones/17/rotation = Quaternion(-1.9029e-09, 0.0429253, -0.706307, 0.706603)
+bones/18/rotation = Quaternion(0.465649, -0.4995, 0.553773, -0.476452)
+bones/19/rotation = Quaternion(-0.00390531, -0.0502704, 0.0502448, 0.997463)
+
+[node name="WiggleBone" parent="MeshInstance3D/SubViewport2/Player/LittleWitch/Armature/Skeleton3D" index="1"]
+transform = Transform3D(1, -2.84217e-14, -2.38419e-07, 2.27654e-07, -0.297086, 0.954851, -7.08307e-08, -0.954851, -0.297086, 3.06738e-15, 0.904649, -0.403425)
+
+[node name="AnimationTree" parent="MeshInstance3D/SubViewport2/Player/LittleWitch" index="2"]
+active = false
+parameters/RunBlend/blend_amount = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/SubViewport2/Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.272481, 0)
+shape = SubResource("CapsuleShape3D_qrji7")
+
+[node name="StateChart" type="Node" parent="MeshInstance3D/SubViewport2/Player"]
+script = ExtResource("6_ui64h")
+
+[node name="Root" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart"]
+script = ExtResource("7_0s8np")
+initial_state = NodePath("Movement")
+
+[node name="Movement" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root"]
+script = ExtResource("7_0s8np")
+initial_state = NodePath("Grounded")
+
+[node name="Grounded" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement"]
+editor_description = "This state is active when the player is on the ground."
+script = ExtResource("8_f6ufy")
+
+[node name="On Jump" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement/Grounded"]
+process_mode = 4
+editor_description = "When jumping become airborne and enable double-jump."
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Airborne")
+event = &"jump"
+
+[node name="On Airborne" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement/Grounded"]
+editor_description = "When becoming airborne (e.g. through falling) move to airborne state."
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Airborne")
+event = &"airborne"
+
+[node name="Airborne" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement"]
+editor_description = "This is the root state for when the player is in the air. We have sub-states to handle the various input that is allowed when in the air."
+script = ExtResource("7_0s8np")
+initial_state = NodePath("CannotJump")
+
+[node name="On Grounded" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement/Airborne"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Grounded")
+event = &"grounded"
+
+[node name="CannotJump" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement/Airborne"]
+process_mode = 4
+editor_description = "This state is active when the player is airborne but can no longer jump either because the coyote-jump grace period has expired or the player has already used the double-jump."
+script = ExtResource("8_f6ufy")
+
+[node name="On Ragdoll" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Ragdoll")
+event = &"ragdoll"
+
+[node name="Ragdoll" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root"]
+script = ExtResource("8_f6ufy")
+
+[node name="Recover" type="Node" parent="MeshInstance3D/SubViewport2/Player/StateChart/Root/Ragdoll"]
+script = ExtResource("9_tmgt0")
+to = NodePath("../../Movement")
+delay_seconds = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="MeshInstance3D/SubViewport2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.959934, 2.10176)
+projection = 1
+size = 2.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_qy43q")
+}
+
+[connection signal="jumping" from="MeshInstance3D/SubViewport/Player/MovementPhysics" to="MeshInstance3D/SubViewport/Player" method="_on_movement_physics_jumping"]
+[connection signal="state_physics_processing" from="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement" to="MeshInstance3D/SubViewport/Player" method="_on_movement_state_physics_processing"]
+[connection signal="state_physics_processing" from="MeshInstance3D/SubViewport/Player/StateChart/Root/Movement/Grounded" to="MeshInstance3D/SubViewport/Player" method="_on_grounded_state_physics_processing"]
+[connection signal="state_exited" from="MeshInstance3D/SubViewport/Player/StateChart/Root/Ragdoll" to="MeshInstance3D/SubViewport/Player" method="_on_ragdoll_state_exited"]
+[connection signal="jumping" from="MeshInstance3D/SubViewport2/Player/MovementPhysics" to="MeshInstance3D/SubViewport2/Player" method="_on_movement_physics_jumping"]
+[connection signal="state_physics_processing" from="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement" to="MeshInstance3D/SubViewport2/Player" method="_on_movement_state_physics_processing"]
+[connection signal="state_physics_processing" from="MeshInstance3D/SubViewport2/Player/StateChart/Root/Movement/Grounded" to="MeshInstance3D/SubViewport2/Player" method="_on_grounded_state_physics_processing"]
+[connection signal="state_exited" from="MeshInstance3D/SubViewport2/Player/StateChart/Root/Ragdoll" to="MeshInstance3D/SubViewport2/Player" method="_on_ragdoll_state_exited"]
+
 [editable path="MeshInstance3D/SubViewport/Player/LittleWitch"]
+[editable path="MeshInstance3D/SubViewport2/Player/LittleWitch"]

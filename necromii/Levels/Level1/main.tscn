@@ -1,115 +1,21 @@
-[gd_scene load_steps=57 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=29 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
 [ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="3_8hx4y"]
 [ext_resource type="PackedScene" uid="uid://do2to5avngiw1" path="res://SelectionTool/selection_tool.tscn" id="4_o2hhp"]
-[ext_resource type="PackedScene" uid="uid://cf267qictd8ov" path="res://Units/base_minion.tscn" id="5_ji6s2"]
 [ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="6_34uvy"]
-[ext_resource type="Script" path="res://Units/base_minion.gd" id="6_w8i5a"]
-[ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="7_qsrub"]
 [ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_t02jw"]
-[ext_resource type="PackedScene" uid="uid://lek0jjxj3i5y" path="res://Components/movement_physics.tscn" id="7_uvf54"]
 [ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_3sve3"]
-[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="9_mx5uo"]
-[ext_resource type="PackedScene" uid="uid://cq51wxypscfeh" path="res://Units/LittleWitch/little_witch.tscn" id="10_2nknd"]
-[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="10_xu6l8"]
-[ext_resource type="Shader" path="res://Shaders/skew.gdshader" id="11_4rx0m"]
-[ext_resource type="Script" path="res://Components/NavigationTargetLogic.gd" id="11_j72fe"]
-[ext_resource type="Shader" path="res://Shaders/highlight.gdshader" id="12_aarag"]
-[ext_resource type="Shader" path="res://Units/LittleWitch/skew.gdshader" id="13_ctue8"]
-[ext_resource type="Texture2D" uid="uid://bsbyn1g7u5u0s" path="res://Units/LittleWitch/LittleWitch_apollo-8x.png" id="14_f084y"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
 [ext_resource type="Shader" path="res://Shaders/depth.gdshader" id="18_k3brg"]
 [ext_resource type="Script" path="res://Levels/Level1/TiltShiftFocal.gd" id="18_x7kmu"]
 [ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="20_yd0ui"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
-[ext_resource type="PackedScene" uid="uid://buvusd43qyx6b" path="res://Units/rigid_unit.tscn" id="23_5cikp"]
-[ext_resource type="PackedScene" uid="uid://bfol62codcs74" path="res://Units/unit.tscn" id="23_toaf3"]
+[ext_resource type="PackedScene" uid="uid://byrht1ja3k8m" path="res://Units/SimpleUnit.tscn" id="23_5cikp"]
 [ext_resource type="Shader" path="res://Shaders/fisheye.gdshader" id="25_suggy"]
 [ext_resource type="Shader" path="res://Shaders/retro.gdshader" id="26_osyto"]
 [ext_resource type="Script" path="res://Components/Remote.gd" id="29_ci88v"]
-
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3d5xi"]
-friction = 0.1
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_lt2mp"]
-render_priority = 0
-shader = ExtResource("11_4rx0m")
-shader_parameter/skew_factor = 0.5
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_4cnt6"]
-render_priority = 0
-shader = ExtResource("12_aarag")
-shader_parameter/outline_color = Color(0.811765, 0, 0, 1)
-shader_parameter/luma_coef = 0.1
-shader_parameter/color_coef = 0.1
-shader_parameter/depth_coef = 0.8
-shader_parameter/cutoff = 0.0
-shader_parameter/on = false
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_mvl48"]
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yo8on"]
-height = 1.5
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_2g6l6"]
-viewport_path = NodePath("SubViewport")
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_c6h0l"]
-viewport_path = NodePath("BaseMinion2/SubViewport")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vjdr2"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("9_mx5uo")
-shader_parameter/extruded_alpha_cull = 1.0
-shader_parameter/opaque_extrude = true
-shader_parameter/keep_image = true
-shader_parameter/image_alpha_cull = 1.0
-shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
-shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 10
-shader_parameter/ray_bias = 2.0
-shader_parameter/infinite_holes = false
-shader_parameter/Hframes = 1
-shader_parameter/Vframes = 1
-shader_parameter/frame = 0
-shader_parameter/Texture = SubResource("ViewportTexture_c6h0l")
-
-[sub_resource type="BoxMesh" id="BoxMesh_ihq5f"]
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qrji7"]
-height = 1.50903
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_tjs1k"]
-atlas = ExtResource("10_xu6l8")
-region = Rect2(0, 0, 16, 16)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_w7qef"]
-render_priority = 0
-shader = ExtResource("11_4rx0m")
-shader_parameter/skew_factor = 0.5
-
-[sub_resource type="BoxMesh" id="BoxMesh_jcdbv"]
-material = SubResource("ShaderMaterial_w7qef")
-
-[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_4jahb"]
-data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_1ydwi"]
-resource_name = "Material.001"
-render_priority = 0
-shader = ExtResource("13_ctue8")
-shader_parameter/albedo = Color(0, 0, 0, 1)
-shader_parameter/emission = Color(0, 0, 0, 1)
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-shader_parameter/skew_factor = 0.5
-shader_parameter/texture_emission = ExtResource("14_f084y")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlogs"]
 albedo_texture = ExtResource("3_8hx4y")
@@ -172,111 +78,6 @@ albedo_color = Color(1, 1, 1, 0.490196)
 [node name="Main" type="Node3D" node_paths=PackedStringArray("camera")]
 script = ExtResource("1_nd7o6")
 camera = NodePath("ZoomPath/ZoomPathFollow/ZoomCamera")
-
-[node name="trash" type="Node3D" parent="."]
-process_mode = 4
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.12855, 2.68603, 0)
-visible = false
-
-[node name="Player2" type="RigidBody3D" parent="trash"]
-transform = Transform3D(0.0690806, 0.971812, 0.22541, -0.997483, 0.0709054, -1.0215e-09, -0.0159828, -0.224843, 0.974264, 3.59015, -1.43976, -1.04916)
-mass = 10.0
-physics_material_override = SubResource("PhysicsMaterial_3d5xi")
-
-[node name="LittleWitch" parent="trash/Player2" instance=ExtResource("10_2nknd")]
-transform = Transform3D(-1, 6.98492e-10, 7.45058e-08, -5.12227e-09, 1, -1.49012e-08, -1.05239e-07, 1.49012e-08, -1, -1.19209e-07, -1, 5.96046e-08)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="trash/Player2"]
-visible = false
-material_override = SubResource("ShaderMaterial_lt2mp")
-material_overlay = SubResource("ShaderMaterial_4cnt6")
-mesh = SubResource("CapsuleMesh_mvl48")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="trash/Player2"]
-shape = SubResource("CapsuleShape3D_yo8on")
-
-[node name="BaseMinion" parent="trash" instance=ExtResource("5_ji6s2")]
-axis_lock_angular_x = true
-axis_lock_angular_z = true
-
-[node name="BaseMinion3" parent="trash" instance=ExtResource("5_ji6s2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.27688, 0.98328, 0)
-
-[node name="BaseMinion2" type="RigidBody3D" parent="trash"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 0)
-mass = 10.0
-lock_rotation = true
-script = ExtResource("6_w8i5a")
-
-[node name="HealthBar" parent="trash/BaseMinion2" instance=ExtResource("7_qsrub")]
-transform = Transform3D(1, 0, 0, 0, 0.999987, 0.0051836, 0, -0.0051836, 0.999987, 0, 0.707963, -0.68449)
-texture = SubResource("ViewportTexture_2g6l6")
-
-[node name="MovementPhysics" parent="trash/BaseMinion2" instance=ExtResource("7_uvf54")]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="trash/BaseMinion2"]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.6, 0, -0.5, 0)
-material_override = SubResource("ShaderMaterial_vjdr2")
-mesh = SubResource("BoxMesh_ihq5f")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="trash/BaseMinion2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.273516, 0)
-shape = SubResource("CapsuleShape3D_qrji7")
-
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="trash/BaseMinion2"]
-target_desired_distance = 0.5
-avoidance_enabled = true
-debug_enabled = true
-script = ExtResource("11_j72fe")
-
-[node name="SubViewport" type="SubViewport" parent="trash/BaseMinion2"]
-transparent_bg = true
-size = Vector2i(16, 16)
-
-[node name="Sprite2D" type="Sprite2D" parent="trash/BaseMinion2/SubViewport"]
-texture = SubResource("AtlasTexture_tjs1k")
-centered = false
-
-[node name="Box" type="MeshInstance3D" parent="trash"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1932, 0.60987, 0)
-mesh = SubResource("BoxMesh_jcdbv")
-skeleton = NodePath("")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="trash/Box"]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="trash/Box/StaticBody3D"]
-shape = SubResource("ConcavePolygonShape3D_4jahb")
-
-[node name="LittleWitch" parent="trash" instance=ExtResource("10_2nknd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.97684, -2.69643, 1.89644)
-
-[node name="Skeleton3D" parent="trash/LittleWitch/Armature" index="0"]
-bones/0/position = Vector3(0.0342951, 0.333034, -0.235889)
-bones/0/rotation = Quaternion(-3.48631e-05, 0.707108, 0.707106, 3.48643e-05)
-bones/2/rotation = Quaternion(-0.0203315, 4.36238e-08, 0.0108627, 0.999734)
-bones/3/rotation = Quaternion(-0.00652905, -1.36356e-10, 0.00352952, 0.999972)
-bones/4/rotation = Quaternion(-0.00363916, 1.361e-12, 0.00204215, 0.999991)
-bones/7/rotation = Quaternion(-0.31187, 0.0807847, 0.0897042, 0.942425)
-bones/8/rotation = Quaternion(0.0585474, 0.0205598, 0.128083, 0.98982)
-bones/9/rotation = Quaternion(0.0204198, 0.00116178, 0.0959658, 0.995175)
-bones/11/rotation = Quaternion(-0.397666, 0.0229315, 0.257938, 0.880229)
-bones/12/rotation = Quaternion(0.13587, -0.0211315, -0.133079, 0.981521)
-bones/13/rotation = Quaternion(0.133284, -0.00111073, -0.168409, 0.976664)
-bones/14/rotation = Quaternion(0.02917, 0.0426868, 0.71203, 0.700243)
-bones/15/rotation = Quaternion(-0.485973, -0.425282, 0.622636, 0.441915)
-bones/16/rotation = Quaternion(0.0201565, 0.0491939, -0.00667651, 0.998564)
-bones/17/rotation = Quaternion(0.038697, -0.0493243, -0.713099, 0.698255)
-bones/18/rotation = Quaternion(0.460265, -0.462141, 0.589334, -0.476726)
-bones/19/rotation = Quaternion(0.0163775, -0.0493635, 0.0399952, 0.997845)
-
-[node name="LittleWitch2" parent="trash/LittleWitch/Armature/Skeleton3D" index="0"]
-material_override = SubResource("ShaderMaterial_1ydwi")
-
-[node name="WiggleBone" parent="trash/LittleWitch/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.99946, 0.0108005, -0.0310312, 0.0328444, -0.354578, 0.93445, -0.000910456, -0.934964, -0.354741, 0.0231757, 0.844961, -0.359647)
-
-[node name="AnimationTree" parent="trash/LittleWitch" index="2"]
-parameters/RunBlend/blend_amount = 0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = ExtResource("2_7ntww")
@@ -362,7 +163,7 @@ initial_node_to_watch = NodePath("../Player")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
 script = ExtResource("22_tpnwq")
-spawn_cap = 100
+spawn_cap = 35
 spawn_interval = 0.01
 spawn_radius = 30.0
 
@@ -371,33 +172,8 @@ process_callback = 0
 
 [node name="Spawnlings" type="Node3D" parent="Spawner"]
 
-[node name="RigidUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/rigid_unit.tscn"]
-
-[node name="RigidUnit" parent="." instance=ExtResource("23_5cikp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.14069, 3.80047, 1.76019)
-
-[node name="Unit5" parent="." instance_placeholder="res://Units/unit.tscn"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.04619, 0)
-
-[node name="Unit" parent="." instance=ExtResource("23_toaf3")]
-process_mode = 4
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.2959, 3.48093, 4.46314)
-visible = false
-
-[node name="Unit2" parent="." instance=ExtResource("23_toaf3")]
-process_mode = 4
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.50021, 2.52447, 8.90559)
-visible = false
-
-[node name="Unit3" parent="." instance=ExtResource("23_toaf3")]
-process_mode = 4
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.09551, 3.04802, 4.47138)
-visible = false
-
-[node name="Unit4" parent="." instance=ExtResource("23_toaf3")]
-process_mode = 4
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3645, 11.7108, -3.82845)
-visible = false
+[node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 7.14943, -0.261914)
 
 [node name="Retro" type="ColorRect" parent="."]
 visible = false
@@ -421,11 +197,13 @@ mouse_filter = 2
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.6096, 14.1323, 0)
+visible = false
 mesh = SubResource("BoxMesh_ut8hf")
 surface_material_override/0 = SubResource("StandardMaterial3D_q0aup")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.7341, 14.1323, -12.2483)
+visible = false
 mesh = SubResource("BoxMesh_ut8hf")
 
 [node name="SelectionTool" parent="." instance=ExtResource("4_o2hhp")]
@@ -444,7 +222,7 @@ script = ExtResource("29_ci88v")
 remote_path = NodePath("../../SelectionTool")
 y = false
 
-[connection signal="velocity_computed" from="trash/BaseMinion2/NavigationAgent3D" to="trash/BaseMinion2" method="_on_navigation_agent_3d_velocity_computed"]
-[connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
+[node name="SimpleUnit2" parent="." instance=ExtResource("23_5cikp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 2.10324, -0.261914)
 
-[editable path="trash/LittleWitch"]
+[connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

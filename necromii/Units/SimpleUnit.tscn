@@ -1,0 +1,51 @@
+[gd_scene load_steps=11 format=3 uid="uid://byrht1ja3k8m"]
+
+[ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_lw2hx"]
+[ext_resource type="Script" path="res://Units/SimpleUnit.gd" id="1_ujvy0"]
+[ext_resource type="Script" path="res://ai/MinionAI.gd" id="2_udogr"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_vlfca"]
+[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="4_fdfjl"]
+[ext_resource type="Script" path="res://abilities/walk.gd" id="4_m6edx"]
+
+[sub_resource type="Resource" id="Resource_x5qlk"]
+script = ExtResource("2_udogr")
+
+[sub_resource type="Resource" id="Resource_vua0m"]
+script = ExtResource("4_m6edx")
+SPEED = 10.0
+JUMP_VELOCITY = 10.0
+ACCELERATION_FORCE = 200.0
+MAX_ACCELERATION_FORCE = 150.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xm3ux"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("3_vlfca")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 3
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("4_fdfjl")
+
+[node name="SimpleUnit" instance=ExtResource("1_lw2hx")]
+script = ExtResource("1_ujvy0")
+ai = SubResource("Resource_x5qlk")
+movement_ability = SubResource("Resource_vua0m")
+
+[node name="HealthBar" parent="." index="1"]
+texture = SubResource("ViewportTexture_y3pva")
+
+[node name="MeshInstance3D" parent="ShearTransform" index="0"]
+material_override = SubResource("ShaderMaterial_xm3ux")
