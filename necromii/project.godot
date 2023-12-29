@@ -67,8 +67,14 @@ Action={
 ]
 }
 
+[layer_names]
+
+3d_physics/layer_1="World"
+3d_physics/layer_2="Units"
+
 [physics]
 
+3d/run_on_separate_thread=true
 3d/physics_engine="JoltPhysics3D"
 3d/default_gravity=19.6
 3d/solver/solver_iterations=4

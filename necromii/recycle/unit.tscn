@@ -1,6 +1,6 @@
 [gd_scene load_steps=26 format=3 uid="uid://bfol62codcs74"]
 
-[ext_resource type="Script" path="res://recycle/unit.gd" id="1_gumkx"]
+[ext_resource type="Script" path="res://recycle/old_unit.gd" id="1_gumkx"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="2_w7nk5"]
 [ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="3_1fdup"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_cqfm6"]

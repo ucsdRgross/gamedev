@@ -1,7 +1,6 @@
-[gd_scene load_steps=16 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=14 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
-[ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
 [ext_resource type="PackedScene" uid="uid://cka37m5i2kq54" path="res://Components/health_bar.tscn" id="3_56h63"]
 [ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="4_6x35f"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="5_sfs71"]
@@ -11,11 +10,6 @@
 friction = 0.5
 bounce = 0.5
 absorbent = true
-
-[sub_resource type="Resource" id="Resource_101b7"]
-script = ExtResource("2_e55jt")
-base_health = 0.0
-base_damage = 0.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_urnno"]
 radius = 0.75
@@ -47,7 +41,7 @@ shader_parameter/Texture = ExtResource("6_1syjn")
 [sub_resource type="SphereShape3D" id="SphereShape3D_n8rd4"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_oamlf"]
-radius = 2.0
+radius = 11.322
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_2m2e5"]
 radius = 10.0
@@ -61,7 +55,6 @@ mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_ahy0n")
 linear_damp = 0.5
 script = ExtResource("1_iay06")
-stats = SubResource("Resource_101b7")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_urnno")

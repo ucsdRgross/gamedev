@@ -20,11 +20,22 @@ func setup(body : Unit):
 	await body.get_tree().physics_frame
 	body.navigation_agent.target_position = body.position
 	position_buffer = body.position
+	body.detect_range.monitoring = false
+
+func _notification(what):
+	if what == NOTIFICATION_PREDELETE:
+		if body and is_instance_valid(body.detect_range):
+			body.detect_range.monitoring = true
 
 func tick(delta : float):
-	if is_selected and Input.is_action_just_pressed(&"ui_accept") and Global.player_selected and body.ground_cast.is_colliding():
-		body.jump()
-	
+	if is_selected and Input.is_action_just_pressed(&"ui_accept"):# and Global.player_selected:
+		body.action()
+		
+	if body.navigation_agent.is_navigation_finished():
+		var target := closest_enemy()
+		if target:
+			body.attack(target)
+
 	if Global.is_drawing:
 		detect_selection()
 	else:
@@ -36,9 +47,6 @@ func tick(delta : float):
 	if body.navigation_agent.is_navigation_finished() and body.navigation_agent.distance_to_target() > body.navigation_agent.radius * 2:
 		body.navigation_agent.target_position = body.navigation_agent.target_position
 	
-	#if body.navigation_agent.is_navigation_finished():
-		#pass
-	
 	if is_paused or body.navigation_agent.is_navigation_finished():
 		body.move(delta, Vector3.ZERO)
 	else:
@@ -47,6 +55,17 @@ func tick(delta : float):
 		if direction.length_squared() > 1:
 			direction = direction.normalized()	
 		body.move(delta, direction)
+
+func closest_enemy() -> Unit:
+	var closest : Unit = null
+	var shortest := INF
+	for unit in body.attack_range.get_overlapping_bodies():
+		if unit != body:
+			var dist := body.global_position.distance_squared_to(unit.global_position)
+			if dist < shortest:
+				shortest = dist
+				closest = unit
+	return closest
 
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(body.global_position)

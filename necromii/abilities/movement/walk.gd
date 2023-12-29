@@ -1,5 +1,5 @@
-extends Ability
-class_name WalkAbility
+extends Movement
+class_name Walk
 
 @export var SPEED : float = 10
 @export var ACCELERATION_FORCE : float = 200

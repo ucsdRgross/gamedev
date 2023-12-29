@@ -1,24 +1,23 @@
-[gd_scene load_steps=13 format=3 uid="uid://byrht1ja3k8m"]
+[gd_scene load_steps=12 format=3 uid="uid://byrht1ja3k8m"]
 
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_lw2hx"]
-[ext_resource type="Script" path="res://Units/SimpleUnit.gd" id="1_ujvy0"]
-[ext_resource type="Script" path="res://ai/MinionAI.gd" id="2_udogr"]
+[ext_resource type="Script" path="res://ai/MinionAI.gd" id="2_gl7xp"]
+[ext_resource type="Script" path="res://abilities/movement/walk.gd" id="3_l3sbd"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_vlfca"]
+[ext_resource type="Script" path="res://abilities/action/jump.gd" id="4_emd2s"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="4_fdfjl"]
-[ext_resource type="Script" path="res://abilities/walk.gd" id="4_m6edx"]
-[ext_resource type="Script" path="res://abilities/jump.gd" id="5_qsdfv"]
 
-[sub_resource type="Resource" id="Resource_x5qlk"]
-script = ExtResource("2_udogr")
+[sub_resource type="Resource" id="Resource_gmtvt"]
+script = ExtResource("2_gl7xp")
 
-[sub_resource type="Resource" id="Resource_vua0m"]
-script = ExtResource("4_m6edx")
+[sub_resource type="Resource" id="Resource_ekb1v"]
+script = ExtResource("3_l3sbd")
 SPEED = 10.0
 ACCELERATION_FORCE = 200.0
 MAX_ACCELERATION_FORCE = 150.0
 
-[sub_resource type="Resource" id="Resource_m55q8"]
-script = ExtResource("5_qsdfv")
+[sub_resource type="Resource" id="Resource_j87hd"]
+script = ExtResource("4_emd2s")
 JUMP_VELOCITY = 10.0
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
@@ -44,10 +43,9 @@ shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("4_fdfjl")
 
 [node name="SimpleUnit" instance=ExtResource("1_lw2hx")]
-script = ExtResource("1_ujvy0")
-ai = SubResource("Resource_x5qlk")
-movement_ability = SubResource("Resource_vua0m")
-jump_ability = SubResource("Resource_m55q8")
+ai = SubResource("Resource_gmtvt")
+movement_ability = SubResource("Resource_ekb1v")
+action_ability = SubResource("Resource_j87hd")
 
 [node name="HealthBar" parent="." index="1"]
 texture = SubResource("ViewportTexture_y3pva")

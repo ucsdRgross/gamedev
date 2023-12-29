@@ -9,3 +9,5 @@ func setup(body : Unit):
 
 func tick(delta : float):
 	pass
+	#await attack()
+	#move()
