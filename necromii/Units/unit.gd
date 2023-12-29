@@ -7,6 +7,7 @@ var team : int
 
 @export_category('Abilities')
 @export var movement_ability : Ability
+@export var jump_ability : Ability
 @export var attack_ability : Ability
 @export var special_ability : Ability
 
@@ -20,8 +21,10 @@ var team : int
 func _ready():
 	replaceAI(ai if ai else AI.new())
 	replaceMovement(movement_ability if movement_ability else Ability.new())
+	replaceJump(jump_ability if jump_ability else Ability.new())
 	replaceAttack(attack_ability if attack_ability else Ability.new())
 	replaceSpecial(special_ability if special_ability else Ability.new())
+	
 
 func replaceAI(new_ai : AI):
 	ai = new_ai.duplicate()
@@ -34,8 +37,12 @@ func replaceMovement(new_m : Ability):
 func move(delta : float, dir : Vector3):
 	movement_ability.move(delta, dir)
 
+func replaceJump(new_j : Ability):
+	jump_ability = new_j.duplicate()
+	jump_ability.setup(self)
+
 func jump():
-	movement_ability.jump()
+	jump_ability.jump()
 	
 func replaceAttack(new_a : Ability):
 	attack_ability = new_a.duplicate()

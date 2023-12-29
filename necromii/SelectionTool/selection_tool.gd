@@ -1,22 +1,22 @@
 extends Node3D
 
 # The size of the quad mesh itself.
-var quad_mesh_size
+var quad_mesh_size : Vector2
 # Used for checking if the mouse is inside the Area3D
 var is_mouse_inside := false
 # Used for checking if the mouse was pressed inside the Area3D
 var is_mouse_held := false
 # The last non-empty mouse position. Used when dragging outside of the box.
-var last_mouse_pos3D = null
+var last_mouse_pos3D : Vector3
 # The last processed input touch/mouse event. To calculate relative movement.
-var last_mouse_pos2D = null
+var last_mouse_pos2D : Vector2
 
 var selection_polygon : PackedVector2Array
 
-@onready var node_viewport = $SubViewport
-@onready var node_quad = $Quad
-@onready var node_area = $Quad/Area3D
-@onready var _2d_world = $"SubViewport/2DWorld"
+@onready var node_viewport : SubViewport = $SubViewport
+@onready var node_quad : MeshInstance3D = $Quad
+@onready var node_area : Area3D = $Quad/Area3D
+@onready var _2d_world : Node2D = $"SubViewport/2DWorld"
 
 func _ready():
 	node_area.mouse_entered.connect(self._mouse_entered_area)
@@ -66,8 +66,6 @@ func viewport_to_global(pos : Vector2) -> Vector3:
 	pos.y *= scale.y * 2
 	pos.x -= scale.x
 	pos.y -= scale.z
-	pos.x += position.x
-	pos.y += position.y
 	return Vector3(pos.x, position.y, pos.y)
 
 #same as above but doesnt care about position, just relative change

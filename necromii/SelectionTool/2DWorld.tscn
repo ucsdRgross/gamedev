@@ -1,18 +1,18 @@
 [gd_scene load_steps=4 format=3 uid="uid://dfo8hlabm8dbn"]
 
-[ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="1_3hr67"]
-[ext_resource type="Script" path="res://SelectionTool/2DWorld.gd" id="1_p3txs"]
+[ext_resource type="Script" path="res://SelectionTool/2DWorld.gd" id="1_0267l"]
+[ext_resource type="Shader" path="res://Shaders/selection_highlight.gdshader" id="2_ylrno"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5eaix"]
 resource_local_to_scene = true
-shader = ExtResource("1_3hr67")
+shader = ExtResource("2_ylrno")
 shader_parameter/size = null
 shader_parameter/points = null
 shader_parameter/bounds = null
 shader_parameter/world_pos = null
 
 [node name="2DWorld" type="Node2D"]
-script = ExtResource("1_p3txs")
+script = ExtResource("1_0267l")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0

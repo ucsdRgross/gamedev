@@ -2,7 +2,6 @@ extends Ability
 class_name WalkAbility
 
 @export var SPEED : float = 10
-@export var JUMP_VELOCITY : float = 10
 @export var ACCELERATION_FORCE : float = 200
 @export var MAX_ACCELERATION_FORCE : float = 150
 
@@ -15,6 +14,3 @@ func move(delta : float, direction : Vector3):
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / delta
 	needed_accel = needed_accel.limit_length(MAX_ACCELERATION_FORCE)
 	body.apply_force(needed_accel * body.mass)
-
-func jump():
-	body.linear_velocity.y = JUMP_VELOCITY

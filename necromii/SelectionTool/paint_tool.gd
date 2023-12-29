@@ -128,7 +128,7 @@ func modify():
 		bounds = new_bound
 		material.set_shader_parameter(&"bounds", bounds)
 		line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
-		Signals.selection_changed.emit(1, scale_factor, origin)
+		Signals.selection_scaled.emit(scale_factor, origin)
 	
 	elif modifying == TRANSFORMING.ROTATING:
 		var origin := Vector2(line_2d.points[0].x + line_2d.points[2].x, line_2d.points[0].y + line_2d.points[2].y) / 2
@@ -155,7 +155,7 @@ func modify():
 			var og_point : Vector2 = line_2d.get_point_position(i)
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
-		Signals.selection_changed.emit(2, rotate, origin)
+		Signals.selection_rotated.emit(rotate, origin)
 	
 
 func move_selection(change : Vector2):		
@@ -169,7 +169,7 @@ func move_selection(change : Vector2):
 	#material.set_shader_parameter("bounds", bounds)
 	line_2d.points = [bounds[0], Vector2(bounds[0].x, bounds[1].y), bounds[1], Vector2(bounds[1].x, bounds[0].y), bounds[0]]
 	transform_ui.position = (bounds[0] + bounds[1]) / 2 - transform_ui.size * transform_ui.scale / 2
-	Signals.selection_changed.emit(0, change, Vector2.ZERO)
+	Signals.selection_moved.emit(change)
 
 func draw():
 	find_bounds()
