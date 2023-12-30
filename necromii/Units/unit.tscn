@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=17 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
@@ -22,6 +22,9 @@ radius = 0.75
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
 viewport_path = NodePath("SubViewport")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_0gto0"]
+radius = 0.75
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_oij12"]
 resource_local_to_scene = true
@@ -70,6 +73,13 @@ shape = SubResource("SphereShape3D_urnno")
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 texture = SubResource("ViewportTexture_y3pva")
 
+[node name="HurtBox" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBox"]
+shape = SubResource("SphereShape3D_0gto0")
+
 [node name="ShearTransform" parent="." instance=ExtResource("4_6x35f")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
 
@@ -81,7 +91,6 @@ mesh = SubResource("BoxMesh_eim3t")
 skeleton = NodePath("../..")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-avoidance_enabled = true
 height = 2.0
 radius = 0.8
 neighbor_distance = 5.0
@@ -110,3 +119,5 @@ monitorable = false
 shape = SubResource("SphereShape3D_2m2e5")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[connection signal="area_entered" from="HurtBox" to="HealthBar" method="_on_hurt_box_area_entered"]

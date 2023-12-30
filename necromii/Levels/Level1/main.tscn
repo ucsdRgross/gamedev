@@ -34,7 +34,7 @@ polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
 [sub_resource type="CameraAttributesPhysical" id="CameraAttributesPhysical_phr6x"]
 frustum_focal_length = 14.0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_en24y"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_oo1lu"]
 render_priority = 0
 shader = ExtResource("18_k3brg")
 shader_parameter/focal_point = Vector3(0, 0, 0)
@@ -44,7 +44,7 @@ shader_parameter/blur_rate = 2.0
 shader_parameter/vertical_bias = 1.0
 
 [sub_resource type="QuadMesh" id="QuadMesh_75k8n"]
-material = SubResource("ShaderMaterial_en24y")
+material = SubResource("ShaderMaterial_oo1lu")
 flip_faces = true
 size = Vector2(2, 2)
 

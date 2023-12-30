@@ -1,10 +1,14 @@
-extends Resource
+extends Node3D
 class_name Ability
 
-var body : Unit
+func _ready():
+	assert(get_parent() is Unit)
 
-func setup(body : Unit):
-	self.body = body
+func can_cast() -> bool:
+	return true
 
-func interrupt():
-	pass
+func lock():
+	get_parent().lock(Callable())
+
+func unlock():
+	get_parent().unlock()

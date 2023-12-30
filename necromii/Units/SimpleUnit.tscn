@@ -1,24 +1,15 @@
-[gd_scene load_steps=12 format=3 uid="uid://byrht1ja3k8m"]
+[gd_scene load_steps=11 format=3 uid="uid://byrht1ja3k8m"]
 
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_lw2hx"]
 [ext_resource type="Script" path="res://ai/MinionAI.gd" id="2_gl7xp"]
-[ext_resource type="Script" path="res://abilities/movement/walk.gd" id="3_l3sbd"]
+[ext_resource type="PackedScene" uid="uid://msgx0ax7iphm" path="res://abilities/movement/walk.tscn" id="3_t8r50"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_vlfca"]
-[ext_resource type="Script" path="res://abilities/action/jump.gd" id="4_emd2s"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="4_fdfjl"]
+[ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="4_lx38c"]
+[ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/slash.tscn" id="5_ahsfi"]
 
 [sub_resource type="Resource" id="Resource_gmtvt"]
 script = ExtResource("2_gl7xp")
-
-[sub_resource type="Resource" id="Resource_ekb1v"]
-script = ExtResource("3_l3sbd")
-SPEED = 10.0
-ACCELERATION_FORCE = 200.0
-MAX_ACCELERATION_FORCE = 150.0
-
-[sub_resource type="Resource" id="Resource_j87hd"]
-script = ExtResource("4_emd2s")
-JUMP_VELOCITY = 10.0
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
 viewport_path = NodePath("SubViewport")
@@ -42,12 +33,19 @@ shader_parameter/Vframes = 12
 shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("4_fdfjl")
 
-[node name="SimpleUnit" instance=ExtResource("1_lw2hx")]
+[node name="SimpleUnit" node_paths=PackedStringArray("movement_ability", "action_ability", "attack_ability") instance=ExtResource("1_lw2hx")]
 ai = SubResource("Resource_gmtvt")
-movement_ability = SubResource("Resource_ekb1v")
-action_ability = SubResource("Resource_j87hd")
+movement_ability = NodePath("Walk")
+action_ability = NodePath("Jump")
+attack_ability = NodePath("Slash")
 
-[node name="HealthBar" parent="." index="1"]
+[node name="Walk" parent="." index="0" instance=ExtResource("3_t8r50")]
+
+[node name="Jump" parent="." index="1" instance=ExtResource("4_lx38c")]
+
+[node name="Slash" parent="." index="2" instance=ExtResource("5_ahsfi")]
+
+[node name="HealthBar" parent="." index="4"]
 texture = SubResource("ViewportTexture_y3pva")
 
 [node name="MeshInstance3D" parent="ShearTransform" index="0"]

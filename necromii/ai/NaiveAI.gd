@@ -1,5 +1,5 @@
 extends AI
-class_name NaiveAI 
+class_name NaiveAI
 #Move towards closest enemy and attack closest enemy in range
 
 #var body : Unit

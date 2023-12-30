@@ -1,0 +1,164 @@
+[gd_scene load_steps=25 format=3 uid="uid://ct5e0ate3a4j2"]
+
+[ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="1_aq325"]
+[ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="2_ys0ak"]
+[ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="3_lkqbc"]
+[ext_resource type="Shader" path="res://Shaders/depth.gdshader" id="4_q85ue"]
+[ext_resource type="Script" path="res://Levels/Level1/TiltShiftFocal.gd" id="5_upfpi"]
+[ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="6_sthm5"]
+[ext_resource type="Script" path="res://Components/FollowCamera.gd" id="7_iwcs2"]
+[ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="8_0bqg3"]
+[ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="9_y6ij2"]
+[ext_resource type="PackedScene" uid="uid://msgx0ax7iphm" path="res://abilities/movement/walk.tscn" id="10_525ue"]
+[ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="10_bm3sx"]
+[ext_resource type="Script" path="res://Components/Remote.gd" id="10_hju1l"]
+[ext_resource type="Script" path="res://ai/PlayerAI.gd" id="10_ir1rw"]
+[ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="11_1a174"]
+[ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/slash.tscn" id="12_2i6y1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbe6s"]
+albedo_texture = ExtResource("2_ys0ak")
+uv1_scale = Vector3(100, 100, 100)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_p53p3"]
+size = Vector2(2000, 2000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_aarab"]
+size = Vector3(2000, 1000, 2000)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_lb76i"]
+vertices = PackedVector3Array(-0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+
+[sub_resource type="CameraAttributesPhysical" id="CameraAttributesPhysical_hifa4"]
+frustum_focal_length = 14.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_en24y"]
+render_priority = 0
+shader = ExtResource("4_q85ue")
+shader_parameter/focal_point = Vector3(0, 0, 0)
+shader_parameter/DoF = 5.0
+shader_parameter/blur_cap = 2.0
+shader_parameter/blur_rate = 2.0
+shader_parameter/vertical_bias = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_xvwlg"]
+material = SubResource("ShaderMaterial_en24y")
+flip_faces = true
+size = Vector2(2, 2)
+
+[sub_resource type="Curve3D" id="Curve3D_0jd1k"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 2.50628e-07, -0.0700216, -2.86685, -2.87021e-08, -8.53779, 0.328314, 2.87021e-08, 8.53779, -0.328314, 8.01878e-07, 10.1035, -9.17241, 6.14488e-08, -30.0487, -0.702892, -6.14488e-08, 30.0487, 0.702892, 7.55787e-07, 40.5721, -8.6452),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="Resource" id="Resource_kdtnb"]
+script = ExtResource("10_ir1rw")
+
+[node name="TestWorld" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_aq325")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 20.429, 0)
+light_color = Color(0.992157, 0.945098, 0.878431, 1)
+light_energy = 1.25
+light_volumetric_fog_energy = 0.642
+light_angular_distance = 0.8
+shadow_enabled = true
+directional_shadow_blend_splits = true
+
+[node name="Arena" type="Node3D" parent="."]
+
+[node name="Floor" type="MeshInstance3D" parent="Arena"]
+material_override = SubResource("StandardMaterial3D_pbe6s")
+mesh = SubResource("PlaneMesh_p53p3")
+skeleton = NodePath("../..")
+
+[node name="StaticBody3D2" type="StaticBody3D" parent="Arena/Floor"]
+input_ray_pickable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Arena/Floor/StaticBody3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -500, 0)
+shape = SubResource("BoxShape3D_aarab")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Arena"]
+transform = Transform3D(2000, 0, 0, 0, 1, 0, 0, 0, 2000, 0, 0, 0)
+navigation_mesh = SubResource("NavigationMesh_lb76i")
+
+[node name="InterpolatedCamera3D" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+attributes = SubResource("CameraAttributesPhysical_hifa4")
+current = true
+script = ExtResource("3_lkqbc")
+target = NodePath("../ZoomPath/ZoomPathFollow/ZoomCamera")
+
+[node name="Depth" type="MeshInstance3D" parent="InterpolatedCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.193378, -3.8147e-06, -0.00337601)
+sorting_offset = -100.0
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_xvwlg")
+script = ExtResource("5_upfpi")
+
+[node name="ZoomPath" type="Path3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 3.19361, 0)
+curve = SubResource("Curve3D_0jd1k")
+
+[node name="ZoomPathFollow" type="PathFollow3D" parent="ZoomPath"]
+transform = Transform3D(0.999985, 0, 0, 0, 0.999983, 0, 0, 0, 0.999983, 7.50635e-07, 6.36829, -8.58626)
+progress = 8.94613
+rotation_mode = 0
+loop = false
+script = ExtResource("6_sthm5")
+min_progress = 0.0
+speed = 0.02
+
+[node name="ZoomCamera" type="Camera3D" parent="ZoomPath/ZoomPathFollow"]
+transform = Transform3D(-1, -9.83331e-08, 1.14588e-07, 0, 0.758879, 0.651231, -1.50996e-07, 0.651231, -0.758879, 0, 0, 0)
+fov = 77.3196
+script = ExtResource("7_iwcs2")
+
+[node name="Spawner" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.26305, 0)
+script = ExtResource("8_0bqg3")
+spawn_interval = 0.01
+spawn_radius = 30.0
+
+[node name="Timer" type="Timer" parent="Spawner"]
+process_callback = 0
+
+[node name="Spawnlings" type="Node3D" parent="Spawner"]
+
+[node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
+
+[node name="TestPlayer" parent="." node_paths=PackedStringArray("movement_ability", "action_ability", "attack_ability") instance=ExtResource("10_bm3sx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.38281, 0)
+ai = SubResource("Resource_kdtnb")
+movement_ability = NodePath("Walk")
+action_ability = NodePath("Jump")
+attack_ability = NodePath("Slash")
+
+[node name="Walk" parent="TestPlayer" instance=ExtResource("10_525ue")]
+
+[node name="Jump" parent="TestPlayer" instance=ExtResource("11_1a174")]
+
+[node name="Slash" parent="TestPlayer" instance=ExtResource("12_2i6y1")]
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="TestPlayer"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+remote_path = NodePath("../../ZoomPath")
+update_rotation = false
+update_scale = false
+
+[node name="Remote" type="Node3D" parent="TestPlayer"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+script = ExtResource("10_hju1l")
+y = false
+
+[node name="Player2" parent="." instance=ExtResource("9_y6ij2")]
+process_mode = 4
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)
+
+[connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

@@ -1,5 +1,5 @@
 extends AI
-class_name MinionAI 
+class_name MinionAI
 #Makes unit movement controllable by player
 
 var is_selected := false
@@ -29,17 +29,24 @@ func _notification(what):
 
 func tick(delta : float):
 	if is_selected and Input.is_action_just_pressed(&"ui_accept"):# and Global.player_selected:
-		body.action()
+		if body.can_action():
+			body.action()
 		
 	if body.navigation_agent.is_navigation_finished():
-		var target := closest_enemy()
-		if target:
-			body.attack(target)
+		if body.can_attack():
+			var target := closest_enemy()
+			if target:
+				body.attack(target)
+	else:
+		body.interrupt()
 
 	if Global.is_drawing:
 		detect_selection()
 	else:
 		is_paused = false
+	
+	if lock:
+		return
 	
 	#stay attached to navigation surface when jumping
 	body.navigation_agent.agent_height_offset = clamp(-body.global_position.y, -5, 0)
@@ -82,6 +89,7 @@ func detect_selection():
 
 func _on_finished_drawing():
 	if enabled:
+		position_buffer = body.global_position
 		body.navigation_agent.target_position = body.global_position
 
 func _on_selection_moved(change : Vector2):
@@ -109,6 +117,7 @@ func in_selection() -> bool:
 	return enabled
 
 func _update_target_position_async():
+	body.interrupt()
 	if not update_target:
 		update_target = true
 		await body.get_tree().create_timer(randf()/16, false, true).timeout

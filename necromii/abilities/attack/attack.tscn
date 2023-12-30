@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://cx2e33sh8dsnw"]
+
+[ext_resource type="Script" path="res://abilities/attack/attack.gd" id="1_3h26t"]
+
+[node name="Attack" type="Node3D"]
+script = ExtResource("1_3h26t")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+callback_mode_process = 0

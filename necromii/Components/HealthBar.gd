@@ -36,3 +36,6 @@ func set_bar_health(val:int):
 func set_bar_max_health(val:int):
 	if bar:
 		bar.max_value = val
+
+func _on_hurt_box_area_entered(area:Area3D):
+	print('ow ', area.get_parent().damage)
