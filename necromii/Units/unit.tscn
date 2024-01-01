@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=18 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
@@ -19,6 +19,9 @@ base_damage = 0.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_urnno"]
 radius = 0.75
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2lubs"]
+size = Vector3(1.5725, 1.392, 0.49)
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
 viewport_path = NodePath("SubViewport")
@@ -69,6 +72,11 @@ stats = SubResource("Resource_101b7")
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_urnno")
 
+[node name="Collision2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.838671, 0.544639, 0, -0.544639, 0.838671, 0.00734586, 0.0204105, -0.0602681)
+shape = SubResource("BoxShape3D_2lubs")
+disabled = true
+
 [node name="HealthBar" parent="." instance=ExtResource("3_56h63")]
 transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 texture = SubResource("ViewportTexture_y3pva")
@@ -89,6 +97,9 @@ top_level = true
 material_override = SubResource("ShaderMaterial_oij12")
 mesh = SubResource("BoxMesh_eim3t")
 skeleton = NodePath("../..")
+
+[node name="VisibleOnScreenEnabler3D" type="VisibleOnScreenEnabler3D" parent="."]
+enable_node_path = NodePath("../ShearTransform")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 height = 2.0

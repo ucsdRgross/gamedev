@@ -7,3 +7,6 @@ script = ExtResource("1_3h26t")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 callback_mode_process = 0
+
+[node name="Cooldown" type="Timer" parent="."]
+one_shot = true

@@ -33,11 +33,11 @@ shader_parameter/Vframes = 12
 shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("4_fdfjl")
 
-[node name="SimpleUnit" node_paths=PackedStringArray("movement_ability", "action_ability", "attack_ability") instance=ExtResource("1_lw2hx")]
+[node name="SimpleUnit" node_paths=PackedStringArray("movement_ability", "attack_ability", "action_ability") instance=ExtResource("1_lw2hx")]
 ai = SubResource("Resource_gmtvt")
 movement_ability = NodePath("Walk")
-action_ability = NodePath("Jump")
 attack_ability = NodePath("Slash")
+action_ability = NodePath("Jump")
 
 [node name="Walk" parent="." index="0" instance=ExtResource("3_t8r50")]
 

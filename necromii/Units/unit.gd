@@ -10,8 +10,8 @@ var team : int
 
 @export_category('Abilities')
 @export var movement_ability : Movement = Movement.new()
-@export var action_ability : Action = Action.new()
 @export var attack_ability : Attack = Attack.new()
+@export var action_ability : Action = Action.new()
 
 @onready var collision : CollisionShape3D = $Collision
 @onready var hurt_box : Area3D = $HurtBox

@@ -133,12 +133,14 @@ process_callback = 0
 
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
 
-[node name="TestPlayer" parent="." node_paths=PackedStringArray("movement_ability", "action_ability", "attack_ability") instance=ExtResource("10_bm3sx")]
+[node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
+
+[node name="TestPlayer" parent="." node_paths=PackedStringArray("movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.38281, 0)
 ai = SubResource("Resource_kdtnb")
 movement_ability = NodePath("Walk")
-action_ability = NodePath("Jump")
 attack_ability = NodePath("Slash")
+action_ability = NodePath("Jump")
 
 [node name="Walk" parent="TestPlayer" instance=ExtResource("10_525ue")]
 
