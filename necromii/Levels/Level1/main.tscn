@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=36 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="18_2mc7e"]
 [ext_resource type="Shader" path="res://Shaders/depth.gdshader" id="18_k3brg"]
 [ext_resource type="Script" path="res://Levels/Level1/TiltShiftFocal.gd" id="18_x7kmu"]
+[ext_resource type="Script" path="res://ViewTransform.gd" id="19_dmgdw"]
 [ext_resource type="PackedScene" uid="uid://dyueqg0efaw64" path="res://Units/player_v2.tscn" id="20_yd0ui"]
 [ext_resource type="Script" path="res://Levels/Level1/Spawner.gd" id="22_tpnwq"]
 [ext_resource type="PackedScene" uid="uid://byrht1ja3k8m" path="res://Units/SimpleUnit.tscn" id="23_5cikp"]
@@ -79,6 +80,25 @@ albedo_color = Color(1, 1, 1, 0.490196)
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_d0wu8"]
 viewport_path = NodePath("SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_135fs"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("17_7qnan")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 3
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("18_2mc7e")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_h33uv"]
 resource_local_to_scene = true
@@ -190,6 +210,9 @@ process_callback = 0
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 7.14943, -0.261914)
+collision_layer = 3
+collision_mask = 1
+linear_damp = 0.5
 
 [node name="Retro" type="ColorRect" parent="."]
 visible = false
@@ -240,22 +263,26 @@ y = false
 
 [node name="SimpleUnit2" parent="." instance=ExtResource("23_5cikp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 2.10324, -0.261914)
+collision_layer = 3
+collision_mask = 1
+linear_damp = 0.5
 
-[node name="Collision" parent="SimpleUnit2" index="3"]
-disabled = true
-
-[node name="Collision2" parent="SimpleUnit2" index="4"]
-disabled = false
-
-[node name="HealthBar" parent="SimpleUnit2" index="5"]
+[node name="HealthBar" parent="SimpleUnit2" index="6"]
 texture = SubResource("ViewportTexture_d0wu8")
+
+[node name="MeshInstance3D2" parent="SimpleUnit2" index="8"]
+visible = true
+material_override = SubResource("ShaderMaterial_135fs")
 
 [node name="MeshInstance3D" parent="SimpleUnit2/ShearTransform" index="0"]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 3.60448, 2.10324, -0.261914)
 material_override = SubResource("ShaderMaterial_h33uv")
+skeleton = NodePath("../..")
+script = ExtResource("19_dmgdw")
+t = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 3.60448, 2.10324, -0.261914)
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="SimpleUnit2"]
-transform = Transform3D(2, 0, 0, 0, 1.99994, 0.277446, 0, -1.33396, 0.415961, 6.13111, 2.10324, -0.261914)
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="SimpleUnit2"]
+transform = Transform3D(2, 0, 0, 0, 1.99994, 0.277446, 0, -1.33396, 0.415961, 6.60854, 2.10324, -0.261914)
 top_level = true
 material_override = SubResource("ShaderMaterial_h33uv")
 mesh = SubResource("BoxMesh_eim3t")

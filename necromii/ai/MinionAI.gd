@@ -15,28 +15,19 @@ func _init():
 	Signals.selection_scaled.connect(self._on_selection_scaled)
 	Signals.selection_rotated.connect(self._on_selection_rotated)
 
-func setup(body : Unit):
-	super.setup(body)
+func _ready():
+	body = get_parent()
 	await body.get_tree().physics_frame
-	body.navigation_agent.target_position = body.position
-	position_buffer = body.position
-	body.detect_range.monitoring = false
-
-func _notification(what):
-	if what == NOTIFICATION_PREDELETE:
-		if body and is_instance_valid(body.detect_range):
-			body.detect_range.monitoring = true
+	position_buffer = body.global_position
+	position_buffer.y = 0
+	body.navigation_agent.target_position = position_buffer
 
 func tick(delta : float):
 	if is_selected and Input.is_action_just_pressed(&"ui_accept"):# and Global.player_selected:
-		if body.can_action():
-			body.action()
+		body.action()
 		
 	if body.navigation_agent.is_navigation_finished():
-		if body.can_attack():
-			var target := closest_enemy()
-			if target:
-				body.attack(target)
+		body.attack()
 	else:
 		body.interrupt()
 
@@ -51,7 +42,7 @@ func tick(delta : float):
 	#stay attached to navigation surface when jumping
 	body.navigation_agent.agent_height_offset = clamp(-body.global_position.y, -5, 0)
 	#if pushed out of place, return to it
-	if body.navigation_agent.is_navigation_finished() and body.navigation_agent.distance_to_target() > body.navigation_agent.radius * 2:
+	if body.navigation_agent.is_navigation_finished() and body.navigation_agent.distance_to_target() > body.navigation_agent.radius * 2.5:
 		body.navigation_agent.target_position = body.navigation_agent.target_position
 	
 	if is_paused or body.navigation_agent.is_navigation_finished():
@@ -62,17 +53,6 @@ func tick(delta : float):
 		if direction.length_squared() > 1:
 			direction = direction.normalized()	
 		body.move(delta, direction)
-
-func closest_enemy() -> Unit:
-	var closest : Unit = null
-	var shortest := INF
-	for unit in body.attack_range.get_overlapping_bodies():
-		if unit != body:
-			var dist := body.global_position.distance_squared_to(unit.global_position)
-			if dist < shortest:
-				shortest = dist
-				closest = unit
-	return closest
 
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(body.global_position)
@@ -120,6 +100,6 @@ func _update_target_position_async():
 	body.interrupt()
 	if not update_target:
 		update_target = true
-		await body.get_tree().create_timer(randf()/16, false, true).timeout
+		await body.get_tree().create_timer(randf()/8, false, true).timeout
 		body.navigation_agent.target_position = position_buffer
 		update_target = false

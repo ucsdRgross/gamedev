@@ -1,11 +1,9 @@
-extends Resource
+extends Node3D
 class_name AI 
 
-var body : Unit
-var lock : Callable = Callable()
+@onready var body : Unit = get_parent()
 
-func setup(body : Unit):
-	self.body = body
+var lock : Callable = Callable()
 
 func tick(delta : float):
 	pass

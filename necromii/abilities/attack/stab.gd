@@ -1,19 +1,30 @@
 extends Attack
 
-var damage : float = 1
-
 var target : RigidBody3D
+@onready var attack_range = $AttackRange
 
-func attack(t : RigidBody3D):
-	target = t
-	look_at(target.global_position)
-	step_pos = global_position
-	animation_player.play(&'slash')
-	lock()
-	set_physics_process(true)
+func attack():
+	if can_cast():
+		target = closest_enemy()
+		if target:
+			look_at(target.global_position)
+			step_pos = global_position
+			animation_player.play(&'slash')
+			set_physics_process(true)
 
 func can_cast() -> bool:
 	return !animation_player.is_playing() and cooldown.is_stopped()
+
+func closest_enemy() -> Unit:
+	var closest : Unit = null
+	var shortest := INF
+	for unit in attack_range.get_overlapping_bodies():
+		if unit != body:
+			var dist := global_position.distance_squared_to(unit.global_position)
+			if dist < shortest:
+				shortest = dist
+				closest = unit
+	return closest
 
 func stop():
 	super.stop()
@@ -34,12 +45,12 @@ func _physics_process(delta):
 	direction.y = 0
 	if direction.length_squared() > 1:
 		direction = direction.normalized()	
-	var cur_vel := Vector3(get_parent().linear_velocity.x, 0, get_parent().linear_velocity.z)
+	var cur_vel := Vector3(body.linear_velocity.x, 0, body.linear_velocity.z)
 	var goal_vel : Vector3 = direction * SPEED
 	goal_vel = cur_vel.move_toward(goal_vel, ACCELERATION_FORCE * delta)
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / delta
 	needed_accel = needed_accel.limit_length(MAX_ACCELERATION_FORCE)
-	get_parent().apply_force(needed_accel * get_parent().mass)
+	body.apply_force(needed_accel * body.mass)
 
 #assume enemy in direction of (0,0,-1) and player at (0,0,0), pass in points based on this grid
 func new_step(on_target:bool, v : Vector3):

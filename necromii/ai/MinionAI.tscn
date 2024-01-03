@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://11n31axmco1n"]
+
+[ext_resource type="Script" path="res://ai/MinionAI.gd" id="1_durpq"]
+
+[node name="MinionAi" type="Node3D"]
+script = ExtResource("1_durpq")

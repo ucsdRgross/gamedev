@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://hys76ovny7gl"]
+
+[ext_resource type="Script" path="res://ai/PlayerAI.gd" id="1_2rk8h"]
+
+[node name="PlayerAi" type="Node3D"]
+script = ExtResource("1_2rk8h")

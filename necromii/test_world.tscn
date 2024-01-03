@@ -12,9 +12,9 @@
 [ext_resource type="PackedScene" uid="uid://msgx0ax7iphm" path="res://abilities/movement/walk.tscn" id="10_525ue"]
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="10_bm3sx"]
 [ext_resource type="Script" path="res://Components/Remote.gd" id="10_hju1l"]
-[ext_resource type="Script" path="res://ai/PlayerAI.gd" id="10_ir1rw"]
+[ext_resource type="PackedScene" uid="uid://hys76ovny7gl" path="res://ai/PlayerAI.tscn" id="10_y5qt4"]
 [ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="11_1a174"]
-[ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/slash.tscn" id="12_2i6y1"]
+[ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/stab.tscn" id="12_2i6y1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbe6s"]
 albedo_texture = ExtResource("2_ys0ak")
@@ -22,6 +22,9 @@ uv1_scale = Vector3(100, 100, 100)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_p53p3"]
 size = Vector2(2000, 2000)
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_yo40y"]
+friction = 0.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_aarab"]
 size = Vector3(2000, 1000, 2000)
@@ -54,9 +57,6 @@ _data = {
 }
 point_count = 3
 
-[sub_resource type="Resource" id="Resource_kdtnb"]
-script = ExtResource("10_ir1rw")
-
 [node name="TestWorld" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -80,6 +80,7 @@ skeleton = NodePath("../..")
 
 [node name="StaticBody3D2" type="StaticBody3D" parent="Arena/Floor"]
 input_ray_pickable = false
+physics_material_override = SubResource("PhysicsMaterial_yo40y")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Arena/Floor/StaticBody3D2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -500, 0)
@@ -132,21 +133,28 @@ process_callback = 0
 [node name="Spawnlings" type="Node3D" parent="Spawner"]
 
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.14362, 0)
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
+collision_layer = 3
+collision_mask = 1
+linear_damp = 0.5
 
-[node name="TestPlayer" parent="." node_paths=PackedStringArray("movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
+[node name="TestPlayer" parent="." node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.38281, 0)
-ai = SubResource("Resource_kdtnb")
+ai = NodePath("PlayerAi")
 movement_ability = NodePath("Walk")
-attack_ability = NodePath("Slash")
+attack_ability = NodePath("Stab")
 action_ability = NodePath("Jump")
+
+[node name="PlayerAi" parent="TestPlayer" instance=ExtResource("10_y5qt4")]
 
 [node name="Walk" parent="TestPlayer" instance=ExtResource("10_525ue")]
 
 [node name="Jump" parent="TestPlayer" instance=ExtResource("11_1a174")]
 
-[node name="Slash" parent="TestPlayer" instance=ExtResource("12_2i6y1")]
+[node name="Stab" parent="TestPlayer" instance=ExtResource("12_2i6y1")]
 
 [node name="RemoteTransform3D" type="RemoteTransform3D" parent="TestPlayer"]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.8108, 0)

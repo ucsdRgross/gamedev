@@ -5,10 +5,9 @@ class_name Attack
 @onready var cooldown = $Cooldown
 
 func _ready():
-	super._ready()
 	set_physics_process(false)
 
-func attack(target : RigidBody3D):
+func attack():
 	pass
 
 func stop():
@@ -16,8 +15,8 @@ func stop():
 	set_physics_process(false)
 
 func lock():
-	get_parent().lock(stop)
+	body.lock(stop)
 
 func unlock():
 	set_physics_process(false)
-	get_parent().unlock()
+	body.unlock()

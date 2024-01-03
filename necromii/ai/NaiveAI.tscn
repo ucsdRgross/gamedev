@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1e8iam4o3j21"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_c6ab4"]
+radius = 10.0
+
+[node name="NaiveAi" type="Node3D"]
+
+[node name="DetectRange" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+input_ray_pickable = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectRange"]
+shape = SubResource("SphereShape3D_c6ab4")

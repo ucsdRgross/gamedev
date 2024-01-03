@@ -1,9 +1,8 @@
 extends Action
 
 @export var JUMP_VELOCITY : float = 10
+@onready var ground_cast = $GroundCast
 
 func action():
-	get_parent().linear_velocity.y = JUMP_VELOCITY
-
-func can_cast():
-	return get_parent().ground_cast.is_colliding()
+	if ground_cast.is_colliding():
+		body.linear_velocity.y = JUMP_VELOCITY

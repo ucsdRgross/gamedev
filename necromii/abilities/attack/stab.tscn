@@ -1,8 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://cp545y361wicn"]
+[gd_scene load_steps=9 format=3 uid="uid://cp545y361wicn"]
 
-[ext_resource type="PackedScene" uid="uid://cx2e33sh8dsnw" path="res://abilities/attack/attack.tscn" id="1_g7ey5"]
-[ext_resource type="Script" path="res://abilities/attack/slash.gd" id="1_p4oa5"]
-[ext_resource type="Texture2D" uid="uid://dim3aryiuo253" path="res://icon.svg" id="3_jdesy"]
+[ext_resource type="PackedScene" uid="uid://cx2e33sh8dsnw" path="res://abilities/attack/attack.tscn" id="1_ps1r8"]
+[ext_resource type="Script" path="res://abilities/attack/stab.gd" id="2_e3tag"]
+[ext_resource type="Texture2D" uid="uid://dim3aryiuo253" path="res://icon.svg" id="3_fq7jp"]
 
 [sub_resource type="Animation" id="Animation_fupjq"]
 length = 0.001
@@ -29,6 +29,17 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [false]
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Area3D:position:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(-1, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
 }
 
 [sub_resource type="Animation" id="Animation_nehbp"]
@@ -57,7 +68,7 @@ tracks/1/path = NodePath("Area3D:visible")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.7, 1),
+"times": PackedFloat32Array(0, 0.5, 1),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 1,
 "values": [false, true, false]
@@ -81,7 +92,7 @@ tracks/3/path = NodePath(".")
 tracks/3/interp = 1
 tracks/3/loop_wrap = true
 tracks/3/keys = {
-"times": PackedFloat32Array(0),
+"times": PackedFloat32Array(0.2),
 "transitions": PackedFloat32Array(1),
 "values": [{
 "args": [false, Vector3(0, 0, 1)],
@@ -109,12 +120,23 @@ tracks/5/path = NodePath("Cooldown")
 tracks/5/interp = 1
 tracks/5/loop_wrap = true
 tracks/5/keys = {
-"times": PackedFloat32Array(0.9),
+"times": PackedFloat32Array(1),
 "transitions": PackedFloat32Array(1),
 "values": [{
 "args": [-1],
 "method": &"start"
 }]
+}
+tracks/6/type = "bezier"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Area3D:position:z")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(-1, -0.25, 0, 0.25, 0, -2, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0.6, 1)
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_4e8by"]
@@ -127,8 +149,12 @@ _data = {
 height = 0.318741
 radius = 0.604786
 
-[node name="Slash" instance=ExtResource("1_g7ey5")]
-script = ExtResource("1_p4oa5")
+[sub_resource type="SphereShape3D" id="SphereShape3D_okwk6"]
+radius = 2.0
+
+[node name="Stab" instance=ExtResource("1_ps1r8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8.74082e-11)
+script = ExtResource("2_e3tag")
 
 [node name="AnimationPlayer" parent="." index="0"]
 libraries = {
@@ -136,7 +162,7 @@ libraries = {
 }
 
 [node name="Area3D" type="Area3D" parent="." index="1"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.647)
+transform = Transform3D(1, 0, -3.72529e-09, 0, 1, 0, 3.72529e-09, 0, 1, 0, 0, -1)
 visible = false
 collision_layer = 0
 collision_mask = 4
@@ -147,5 +173,14 @@ monitorable = false
 shape = SubResource("CylinderShape3D_5ug5e")
 
 [node name="Sprite3D" type="Sprite3D" parent="Area3D" index="1"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
-texture = ExtResource("3_jdesy")
+transform = Transform3D(0.605532, 0, 8.27181e-25, 0, -4.39298e-08, -0.0746656, -6.66134e-16, -1.005, 3.26374e-09, 0, 0, 0)
+texture = ExtResource("3_fq7jp")
+
+[node name="AttackRange" type="Area3D" parent="." index="3"]
+collision_layer = 0
+collision_mask = 2
+input_ray_pickable = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackRange" index="0"]
+shape = SubResource("SphereShape3D_okwk6")
