@@ -1,0 +1,111 @@
+[gd_scene load_steps=9 format=3 uid="uid://py0pxs14yqen"]
+
+[ext_resource type="Script" path="res://lookat.gd" id="1_0n5t7"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="2_piwkm"]
+[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="3_t1tlv"]
+
+[sub_resource type="Animation" id="Animation_ak3e7"]
+resource_name = "piston"
+loop_mode = 1
+step = 0.05
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("circle:rotation:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.05, 0, 0.25, 0.5, 0.75, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [6.28319, 0.0, 1.571, 3.141, 4.712, 6.283]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("bob:position:y")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(-0.05, 0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [1.5, 1.5, 2.0, 1.5]
+}
+
+[sub_resource type="Animation" id="Animation_mpf5k"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("circle:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("bob:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 1.5, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_tydmk"]
+_data = {
+"RESET": SubResource("Animation_mpf5k"),
+"piston": SubResource("Animation_ak3e7")
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lra15"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_piwkm")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 3
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("3_t1tlv")
+
+[sub_resource type="BoxMesh" id="BoxMesh_6bisa"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_tydmk")
+}
+
+[node name="bob" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.163576, 0.986528, 0, -0.986528, 0.163576, 0, 1.5, 0)
+script = ExtResource("1_0n5t7")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="bob"]
+transform = Transform3D(2, 0, 0, 0, -8.74228e-08, -0.5, 0, 2, -2.18557e-08, 0, 0, -0.75)
+material_override = SubResource("ShaderMaterial_lra15")
+mesh = SubResource("BoxMesh_6bisa")
+skeleton = NodePath("../..")
+
+[node name="circle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+
+[node name="radius" type="Marker3D" parent="circle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
