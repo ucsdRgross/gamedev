@@ -18,8 +18,8 @@ var team : int
 @onready var hurt_box : Area3D = $HurtBox
 @onready var navigation_agent : NavigationAgent3D = $NavigationAgent3D
 @onready var health_bar : Sprite3D = $HealthBar
-@onready var mesh : MeshInstance3D = $ShearTransform/MeshInstance3D
-@onready var animation_player : AnimationPlayer = $AnimationPlayer
+@onready var model : MeshInstance3D = $ShearTransform/MeshInstance3D
+@onready var model_transform : Node3D = $ShearTransform
 
 func _physics_process(delta):
 	ai.tick(delta)

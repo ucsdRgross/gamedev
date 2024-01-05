@@ -81,7 +81,7 @@ albedo_color = Color(1, 1, 1, 0.490196)
 [sub_resource type="ViewportTexture" id="ViewportTexture_d0wu8"]
 viewport_path = NodePath("SubViewport")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_135fs"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_l8dqi"]
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("17_7qnan")
@@ -211,7 +211,6 @@ process_callback = 0
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 7.14943, -0.261914)
 collision_layer = 3
-collision_mask = 1
 linear_damp = 0.5
 
 [node name="Retro" type="ColorRect" parent="."]
@@ -264,15 +263,14 @@ y = false
 [node name="SimpleUnit2" parent="." instance=ExtResource("23_5cikp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 2.10324, -0.261914)
 collision_layer = 3
-collision_mask = 1
 linear_damp = 0.5
 
 [node name="HealthBar" parent="SimpleUnit2" index="6"]
 texture = SubResource("ViewportTexture_d0wu8")
 
-[node name="MeshInstance3D2" parent="SimpleUnit2" index="8"]
-visible = true
-material_override = SubResource("ShaderMaterial_135fs")
+[node name="Model" parent="SimpleUnit2" index="8"]
+unique_name_in_owner = true
+material_override = SubResource("ShaderMaterial_l8dqi")
 
 [node name="MeshInstance3D" parent="SimpleUnit2/ShearTransform" index="0"]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 3.60448, 2.10324, -0.261914)

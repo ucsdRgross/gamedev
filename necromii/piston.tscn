@@ -4,21 +4,47 @@
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="2_piwkm"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="3_t1tlv"]
 
+[sub_resource type="Animation" id="Animation_mpf5k"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("offset/circle:rotation:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("bob:position:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.5]
+}
+
 [sub_resource type="Animation" id="Animation_ak3e7"]
 resource_name = "piston"
-loop_mode = 1
 step = 0.05
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("circle:rotation:x")
+tracks/0/path = NodePath("offset/circle:rotation:x")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(-0.05, 0, 0.25, 0.5, 0.75, 1),
 "transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
 "update": 0,
-"values": [6.28319, 0.0, 1.571, 3.141, 4.712, 6.283]
+"values": [6.28319, 6.03, 4.459, 2.889, 1.318, -0.253]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -27,37 +53,10 @@ tracks/1/path = NodePath("bob:position:y")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(-0.05, 0, 0.5, 1),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
+"times": PackedFloat32Array(-0.05, 0, 0.25, 0.5, 0.65, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
 "update": 0,
-"values": [1.5, 1.5, 2.0, 1.5]
-}
-
-[sub_resource type="Animation" id="Animation_mpf5k"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("circle:rotation")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector3(0, 0, 0)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("bob:position")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector3(0, 1.5, 0)]
+"values": [1.5, 1.5, 1.5, 2.0, 2.0, 1.5, 1.5]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_tydmk"]
@@ -93,19 +92,31 @@ shader_parameter/Texture = ExtResource("3_t1tlv")
 libraries = {
 "": SubResource("AnimationLibrary_tydmk")
 }
+autoplay = "piston"
 
-[node name="bob" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.163576, 0.986528, 0, -0.986528, 0.163576, 0, 1.5, 0)
-script = ExtResource("1_0n5t7")
+[node name="Node3D" type="Node3D" parent="."]
+transform = Transform3D(1.99969, 0, 0, 0, 1.99374, 0.0384989, 0, -0.153996, 0.498434, 0, 0.752229, 0.0577576)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="bob"]
-transform = Transform3D(2, 0, 0, 0, -8.74228e-08, -0.5, 0, 2, -2.18557e-08, 0, 0, -0.75)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_lra15")
 mesh = SubResource("BoxMesh_6bisa")
 skeleton = NodePath("../..")
 
+[node name="bob" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -0.0770102, 0.997027, 0, -0.997027, -0.0770102, 0, 1.5, 0)
+script = ExtResource("1_0n5t7")
+
+[node name="remote" type="RemoteTransform3D" parent="bob"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 7.45058e-09, -0.75)
+remote_path = NodePath("../../Node3D")
+update_scale = false
+
 [node name="circle" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0.000185315, 0, -0.000185315, 1, 0, 0.25, 0)
 
 [node name="radius" type="Marker3D" parent="circle"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.64555, 3.22341)

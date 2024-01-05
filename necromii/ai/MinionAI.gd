@@ -62,10 +62,10 @@ func detect_selection():
 		is_selected = new_is_selected
 		enabled = is_selected
 		if is_selected:
-			body.mesh.material_override.set_shader_parameter(&"color_mix", Color.RED)
+			body.model.material_override.set_shader_parameter(&"color_mix", Color.RED)
 			is_paused = true
 		else:
-			body.mesh.material_override.set_shader_parameter(&"color_mix", Color.BLUE)
+			body.model.material_override.set_shader_parameter(&"color_mix", Color.BLUE)
 
 func _on_finished_drawing():
 	if enabled:
