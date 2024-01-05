@@ -1,7 +1,9 @@
 extends Sprite3D
 class_name HealthBar
 
-@onready var bar = $SubViewport/ProgressBar
+@onready var bar : ProgressBar = $SubViewport/ProgressBar
+@onready var fill_stylebox : StyleBoxFlat = bar.get_theme_stylebox('fill')
+const color_gradient : GradientTexture1D = preload("res://resources/HealthGradient.tres")
 
 @export_subgroup("Health")
 @export var max_health : int = 100:
@@ -32,6 +34,7 @@ func heal(h : int):
 func set_bar_health(val:int):
 	if bar:
 		bar.value = val
+		fill_stylebox.bg_color = color_gradient.gradient.sample(health/max_health)
 	
 func set_bar_max_health(val:int):
 	if bar:

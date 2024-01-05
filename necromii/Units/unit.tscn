@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=18 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
@@ -6,6 +6,9 @@
 [ext_resource type="PackedScene" uid="uid://ddiygx6bcqwkh" path="res://Components/shear.tscn" id="4_6x35f"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="5_sfs71"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="6_1syjn"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/state_chart.gd" id="7_v8k2c"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/compound_state.gd" id="8_jivjo"]
+[ext_resource type="Script" path="res://addons/godot_state_charts/atomic_state.gd" id="9_le8wb"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ahy0n"]
 friction = 0.5
@@ -102,5 +105,18 @@ height = 2.0
 radius = 0.8
 neighbor_distance = 5.0
 max_neighbors = 5
+
+[node name="StateChart" type="Node" parent="."]
+script = ExtResource("7_v8k2c")
+
+[node name="CompoundState" type="Node" parent="StateChart"]
+script = ExtResource("8_jivjo")
+initial_state = NodePath("Alive")
+
+[node name="Alive" type="Node" parent="StateChart/CompoundState"]
+script = ExtResource("9_le8wb")
+
+[node name="Dead" type="Node" parent="StateChart/CompoundState"]
+script = ExtResource("9_le8wb")
 
 [connection signal="area_entered" from="HurtBox" to="HealthBar" method="_on_hurt_box_area_entered"]

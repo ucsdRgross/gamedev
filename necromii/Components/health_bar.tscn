@@ -1,26 +1,40 @@
-[gd_scene load_steps=3 format=3 uid="uid://cka37m5i2kq54"]
+[gd_scene load_steps=5 format=3 uid="uid://cka37m5i2kq54"]
 
 [ext_resource type="Script" path="res://Components/HealthBar.gd" id="1_02ekk"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_fbwun"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_hfhp8"]
 viewport_path = NodePath("SubViewport")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t881w"]
+bg_color = Color(0.0470588, 0.0470588, 0.0470588, 0.27451)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iw76c"]
+bg_color = Color(0, 1, 1, 1)
 
 [node name="HealthBar" type="Sprite3D"]
 billboard = 1
 no_depth_test = true
 alpha_cut = 1
-texture = SubResource("ViewportTexture_fbwun")
+texture = SubResource("ViewportTexture_hfhp8")
 script = ExtResource("1_02ekk")
 
 [node name="SubViewport" type="SubViewport" parent="."]
 transparent_bg = true
-size = Vector2i(100, 30)
+size = Vector2i(128, 16)
 
 [node name="ProgressBar" type="ProgressBar" parent="SubViewport"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -64.0
+offset_top = -8.0
+offset_right = 63.0
+offset_bottom = 8.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_t881w")
+theme_override_styles/fill = SubResource("StyleBoxFlat_iw76c")
 value = 100.0
+show_percentage = false
