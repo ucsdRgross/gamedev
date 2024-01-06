@@ -66,10 +66,10 @@ tracks/0/path = NodePath("offset/circle:rotation:x")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(-0.05, 0, 0.25, 0.5, 0.75, 1),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.25, 0.5, 0.75, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [6.28319, 6.03, 4.459, 2.889, 1.318, -0.253]
+"values": [6.03, 4.459, 2.889, 1.318, -0.253]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -78,10 +78,10 @@ tracks/1/path = NodePath("bob:position:y")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(-0.05, 0, 0.25, 0.5, 0.65, 0.9, 1),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.25, 0.5, 0.65, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
 "update": 0,
-"values": [1.5, 1.5, 1.5, 2.0, 2.0, 1.5, 1.5]
+"values": [1.5, 1.5, 2.0, 2.0, 1.5, 1.5]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -153,21 +153,22 @@ update_rotation = false
 update_scale = false
 
 [node name="bob" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.0712469, 0.997456, 0, -0.997456, 0.0712469, 0, 1.5, 0)
+transform = Transform3D(1, 0, 0, 0, -4.37113e-08, 0.999997, 0, -0.999997, -4.37113e-08, 0, 1.5, 0)
 script = ExtResource("2_ljp5t")
 
-[node name="RemoteTransform" type="RemoteTransform3D" parent="bob"]
+[node name="correction" type="Node3D" parent="bob"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 7.45058e-09, -0.75)
+
+[node name="RemoteTransform" type="RemoteTransform3D" parent="bob/correction"]
 update_scale = false
 
-[node name="Model" type="MeshInstance3D" parent="bob/RemoteTransform"]
+[node name="Model" type="MeshInstance3D" parent="bob/correction/RemoteTransform"]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
 visible = false
 material_override = SubResource("ShaderMaterial_uj258")
 mesh = SubResource("BoxMesh_jgros")
 
 [node name="offset" type="Node3D" parent="."]
-visible = false
 
 [node name="circle" type="Marker3D" parent="offset"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -0.125)

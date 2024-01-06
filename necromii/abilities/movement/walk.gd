@@ -4,7 +4,7 @@ extends Movement
 @export var ACCELERATION_FORCE : float = 200
 @export var MAX_ACCELERATION_FORCE : float = 150
 @onready var animation_player : AnimationPlayer = $AnimationPlayer
-@onready var remote_transform : RemoteTransform3D = $bob/RemoteTransform
+@onready var remote_transform : RemoteTransform3D = $bob/correction/RemoteTransform
 
 func _ready():
 	await get_parent().ready
@@ -15,7 +15,7 @@ func move(delta : float, direction : Vector3):
 	if direction != Vector3.ZERO:
 		look_direction = direction
 		$offset.rotation = Vector3(0,atan2(-look_direction.x, -look_direction.z),0)
-		if abs(body.linear_velocity.y) > 0.1:
+		if abs(body.linear_velocity.y) > 0.2:
 			animation_player.pause()
 		else:
 			animation_player.play(&'piston')
@@ -31,3 +31,9 @@ func move(delta : float, direction : Vector3):
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / delta
 	needed_accel = needed_accel.limit_length(MAX_ACCELERATION_FORCE )#* vel_dot)
 	body.apply_force(needed_accel * body.mass)
+
+func _notification(what):
+	if what == NOTIFICATION_DISABLED:
+		remote_transform.use_global_coordinates = false
+	if what == NOTIFICATION_ENABLED:
+		remote_transform.use_global_coordinates = true

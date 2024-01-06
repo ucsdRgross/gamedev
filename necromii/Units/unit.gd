@@ -7,6 +7,7 @@ class_name Unit
 #@export var effects : Array[Effect]
 
 var team : int
+var alive : bool = true
 
 @export_category('Abilities')
 @export var movement_ability : Movement = Movement.new()
@@ -18,15 +19,16 @@ var team : int
 @onready var hurt_box : Area3D = $HurtBox
 @onready var navigation_agent : NavigationAgent3D = $NavigationAgent3D
 @onready var health_bar : Sprite3D = $HealthBar
-@onready var model : MeshInstance3D = $ShearTransform/MeshInstance3D
-@onready var model_transform : Node3D = $ShearTransform
+@onready var model : MeshInstance3D = $ModelTransform/Model
+@onready var model_transform : Node3D = $ModelTransform
 
 func _ready():
 	collision_layer = 2
 	collision_mask = 3
 
 func _physics_process(delta):
-	ai.tick(delta)
+	if alive:
+		ai.tick(delta)
 
 func replaceAI(new_ai : AI):
 	pass
@@ -81,10 +83,15 @@ func damage(d : int):
 	health_bar.damage(d)
 
 func death():
+	ai.interrupt()
+	alive = false
+	ai.process_mode = Node.PROCESS_MODE_DISABLED
+	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
+	action_ability.process_mode = Node.PROCESS_MODE_DISABLED
+	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	sphere.disabled = true
 	box.disabled = false
 	print('died')
 	axis_lock_angular_x = false
 	axis_lock_angular_y = false
 	axis_lock_angular_z = false
-

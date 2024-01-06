@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=38 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -115,6 +115,8 @@ shader_parameter/Hframes = 5
 shader_parameter/Vframes = 12
 shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("18_2mc7e")
+
+[sub_resource type="BoxMesh" id="BoxMesh_eim3t"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_c7pkd"]
 resource_local_to_scene = true
@@ -283,14 +285,24 @@ collision_mask = 1
 linear_damp = 0.5
 stats = SubResource("Resource_1bxm5")
 
+[node name="Box" parent="SimpleUnit2" index="5"]
+transform = Transform3D(1, 0, 0, 0, 0.838671, 0.544639, 0, -0.544639, 0.838671, 0.00734586, 0.0204105, -0.0602681)
+
 [node name="HealthBar" parent="SimpleUnit2" index="6"]
 texture = SubResource("ViewportTexture_h13f5")
 
 [node name="Model" parent="SimpleUnit2" index="8"]
+transform = Transform3D(2, 0, 0, 0, 1.99999, 0, 0, 0, 0.5, 0, 0, 0)
+visible = false
 material_override = SubResource("ShaderMaterial_t7dno")
+mesh = SubResource("BoxMesh_eim3t")
+
+[node name="ShearTransform" parent="SimpleUnit2" index="9"]
+visible = true
 
 [node name="MeshInstance3D" parent="SimpleUnit2/ShearTransform" index="0"]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 3.60448, 2.10324, -0.261914)
+visible = true
 material_override = SubResource("ShaderMaterial_c7pkd")
 
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

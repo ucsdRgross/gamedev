@@ -71,4 +71,4 @@ func _on_area_3d_area_entered(area:Area3D):
 	if area.get_parent() is Unit:
 		var target : Unit = area.get_parent()
 		if body.team != target.team:
-			target.damage(10)
+			target.damage(50)

@@ -27,7 +27,8 @@ func _ready():
 	set_bar_max_health(max_health)
 	set_bar_health(health)
 	get_parent().add_to_group("damageable")
-	no_health.connect(get_parent().death)
+	if get_parent().has_method('death'):
+		no_health.connect(get_parent().death)
 
 func damage(dmg : float):
 	health = health - dmg

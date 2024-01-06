@@ -69,7 +69,7 @@ stats = SubResource("Resource_101b7")
 shape = SubResource("SphereShape3D_urnno")
 
 [node name="Box" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.838671, 0.544639, 0, -0.544639, 0.838671, 0.00734586, 0.0204105, -0.0602681)
+transform = Transform3D(1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026, 0, 0, 0)
 shape = SubResource("BoxShape3D_2lubs")
 disabled = true
 
@@ -84,14 +84,17 @@ collision_mask = 0
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBox"]
 shape = SubResource("SphereShape3D_0gto0")
 
-[node name="Model" type="MeshInstance3D" parent="."]
-transform = Transform3D(2, 0, 0, 0, 1.99999, 0, 0, 0, 0.5, 0, 0, 0)
-visible = false
+[node name="ModelTransform" type="Node3D" parent="."]
+
+[node name="Model" type="MeshInstance3D" parent="ModelTransform"]
+transform = Transform3D(2, 0, 0, 0, 1.73204, 0.25, 0, -0.999995, 0.433013, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_oij12")
 mesh = SubResource("BoxMesh_eim3t")
+skeleton = NodePath("../..")
 
 [node name="ShearTransform" parent="." instance=ExtResource("4_6x35f")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
+visible = false
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ShearTransform"]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 0, 0, 0)
@@ -107,3 +110,5 @@ height = 2.0
 radius = 0.8
 neighbor_distance = 5.0
 max_neighbors = 5
+
+[node name="Node3D" type="Node3D" parent="."]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://ct5e0ate3a4j2"]
+[gd_scene load_steps=24 format=3 uid="uid://ct5e0ate3a4j2"]
 
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="1_aq325"]
 [ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="2_ys0ak"]
@@ -13,8 +13,6 @@
 [ext_resource type="PackedScene" uid="uid://hys76ovny7gl" path="res://ai/PlayerAI.tscn" id="10_y5qt4"]
 [ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="11_1a174"]
 [ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/stab.tscn" id="12_2i6y1"]
-[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="12_qqb5l"]
-[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="13_fxte0"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbe6s"]
 albedo_texture = ExtResource("2_ys0ak")
@@ -66,25 +64,6 @@ base_health = 100.0
 cur_health = 100.0
 base_damage = 10.0
 cur_damage = 10.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ucl7f"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("12_qqb5l")
-shader_parameter/extruded_alpha_cull = 1.0
-shader_parameter/opaque_extrude = true
-shader_parameter/keep_image = true
-shader_parameter/image_alpha_cull = 1.0
-shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
-shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 3
-shader_parameter/ray_bias = 2.0
-shader_parameter/infinite_holes = true
-shader_parameter/Hframes = 5
-shader_parameter/Vframes = 12
-shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("13_fxte0")
 
 [node name="TestWorld" type="Node3D"]
 
@@ -146,6 +125,7 @@ script = ExtResource("7_iwcs2")
 [node name="Spawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.26305, 0)
 script = ExtResource("8_0bqg3")
+spawn_cap = 50
 spawn_interval = 0.01
 spawn_radius = 30.0
 
@@ -176,9 +156,6 @@ action_ability = NodePath("Jump")
 
 [node name="Walk" parent="TestPlayer" instance=ExtResource("10_525ue")]
 
-[node name="Model" parent="TestPlayer/Walk/bob/RemoteTransform" index="0"]
-material_override = SubResource("ShaderMaterial_ucl7f")
-
 [node name="Jump" parent="TestPlayer" instance=ExtResource("11_1a174")]
 
 [node name="Stab" parent="TestPlayer" instance=ExtResource("12_2i6y1")]
@@ -195,5 +172,3 @@ script = ExtResource("10_hju1l")
 y = false
 
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
-
-[editable path="TestPlayer/Walk"]
