@@ -5,18 +5,21 @@ class_name HealthBar
 @onready var fill_stylebox : StyleBoxFlat = bar.get_theme_stylebox('fill')
 const color_gradient : GradientTexture1D = preload("res://resources/HealthGradient.tres")
 
+signal no_health
+
 @export_subgroup("Health")
-@export var max_health : int = 100:
+@export var max_health : float = 100:
 	set(val):
 		max_health = val
 		health = health
 		set_bar_max_health(max_health)
-@export var health : int = 100:
+@export var health : float = 100:
 	set(val):
 		health = clamp(val, 0, max_health)
 		set_bar_health(health)
 		if health <= 0:
-			get_parent().queue_free()
+			#get_parent().interrupt()
+			no_health.emit()
 
 func _ready():
 #	texture = ViewportTexture.new()
@@ -24,21 +27,19 @@ func _ready():
 	set_bar_max_health(max_health)
 	set_bar_health(health)
 	get_parent().add_to_group("damageable")
+	no_health.connect(get_parent().death)
 
-func damage(dmg : int):
+func damage(dmg : float):
 	health = health - dmg
 
-func heal(h : int):
+func heal(h : float):
 	health = health + h
 
-func set_bar_health(val:int):
+func set_bar_health(val:float):
 	if bar:
 		bar.value = val
 		fill_stylebox.bg_color = color_gradient.gradient.sample(health/max_health)
 	
-func set_bar_max_health(val:int):
+func set_bar_max_health(val:float):
 	if bar:
 		bar.max_value = val
-
-func _on_hurt_box_area_entered(area:Area3D):
-	print('ow ', area.get_parent().damage)

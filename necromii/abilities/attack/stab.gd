@@ -1,13 +1,15 @@
 extends Attack
 
 var target : RigidBody3D
+var last_target_pos : Vector3
 @onready var attack_range = $AttackRange
 
 func attack():
 	if can_cast():
 		target = closest_enemy()
 		if target:
-			look_at(target.global_position)
+			last_target_pos = target.global_position
+			look_at(last_target_pos)
 			step_pos = global_position
 			animation_player.play(&'slash')
 			set_physics_process(true)
@@ -54,11 +56,19 @@ func _physics_process(delta):
 
 #assume enemy in direction of (0,0,-1) and player at (0,0,0), pass in points based on this grid
 func new_step(on_target:bool, v : Vector3):
-	var direction: Vector3 = target.global_position - global_position
+	if is_instance_valid(target):
+		last_target_pos = target.global_position
+	var direction: Vector3 = last_target_pos - global_position
 	var angle : float = Vector3.FORWARD.angle_to(direction)
 	v = v.rotated(Vector3.FORWARD.cross(direction).normalized(), angle)
 	if on_target:
-		step_pos = target.global_position + v
+		step_pos = last_target_pos + v
 	else:
 		step_pos = global_position + v
-	global_transform = global_transform.looking_at(target.global_position)
+	global_transform = global_transform.looking_at(last_target_pos)
+
+func _on_area_3d_area_entered(area:Area3D):
+	if area.get_parent() is Unit:
+		var target : Unit = area.get_parent()
+		if body.team != target.team:
+			target.damage(10)

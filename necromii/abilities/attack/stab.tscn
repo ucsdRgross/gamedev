@@ -167,7 +167,6 @@ visible = false
 collision_layer = 0
 collision_mask = 4
 monitoring = false
-monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" index="0"]
 shape = SubResource("CylinderShape3D_5ug5e")
@@ -184,3 +183,5 @@ monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AttackRange" index="0"]
 shape = SubResource("SphereShape3D_okwk6")
+
+[connection signal="area_entered" from="Area3D" to="." method="_on_area_3d_area_entered"]

@@ -23,6 +23,7 @@ var team : int
 
 func _ready():
 	collision_layer = 2
+	collision_mask = 3
 
 func _physics_process(delta):
 	ai.tick(delta)
@@ -75,3 +76,15 @@ func replaceAttack(a : Attack):
 
 func attack():
 	attack_ability.attack()
+	
+func damage(d : int):
+	health_bar.damage(d)
+
+func death():
+	sphere.disabled = true
+	box.disabled = false
+	print('died')
+	axis_lock_angular_x = false
+	axis_lock_angular_y = false
+	axis_lock_angular_z = false
+

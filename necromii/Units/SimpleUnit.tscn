@@ -1,6 +1,7 @@
 [gd_scene load_steps=11 format=3 uid="uid://byrht1ja3k8m"]
 
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_lw2hx"]
+[ext_resource type="Script" path="res://abilities/stats.gd" id="2_83lsd"]
 [ext_resource type="PackedScene" uid="uid://11n31axmco1n" path="res://ai/MinionAI.tscn" id="2_ypa10"]
 [ext_resource type="PackedScene" uid="uid://msgx0ax7iphm" path="res://abilities/movement/walk.tscn" id="3_t8r50"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_vlfca"]
@@ -8,27 +9,13 @@
 [ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="4_lx38c"]
 [ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/stab.tscn" id="5_2vtfw"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
-viewport_path = NodePath("SubViewport")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vfrup"]
+[sub_resource type="Resource" id="Resource_3kfxe"]
 resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("3_vlfca")
-shader_parameter/extruded_alpha_cull = 1.0
-shader_parameter/opaque_extrude = true
-shader_parameter/keep_image = true
-shader_parameter/image_alpha_cull = 1.0
-shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
-shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 3
-shader_parameter/ray_bias = 2.0
-shader_parameter/infinite_holes = true
-shader_parameter/Hframes = 5
-shader_parameter/Vframes = 12
-shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("4_fdfjl")
+script = ExtResource("2_83lsd")
+base_health = 100.0
+cur_health = 100.0
+base_damage = 10.0
+cur_damage = 10.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_xm3ux"]
 resource_local_to_scene = true
@@ -51,6 +38,7 @@ shader_parameter/Texture = ExtResource("4_fdfjl")
 
 [node name="SimpleUnit" node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("1_lw2hx")]
 ai = NodePath("MinionAi")
+stats = SubResource("Resource_3kfxe")
 movement_ability = NodePath("Walk")
 attack_ability = NodePath("Stab")
 action_ability = NodePath("Jump")
@@ -62,12 +50,6 @@ action_ability = NodePath("Jump")
 [node name="Jump" parent="." index="2" instance=ExtResource("4_lx38c")]
 
 [node name="Stab" parent="." index="3" instance=ExtResource("5_2vtfw")]
-
-[node name="HealthBar" parent="." index="6"]
-texture = SubResource("ViewportTexture_y3pva")
-
-[node name="Model" parent="." index="8"]
-material_override = SubResource("ShaderMaterial_vfrup")
 
 [node name="MeshInstance3D" parent="ShearTransform" index="0"]
 material_override = SubResource("ShaderMaterial_xm3ux")

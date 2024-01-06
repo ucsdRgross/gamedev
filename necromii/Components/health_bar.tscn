@@ -6,15 +6,15 @@
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t881w"]
-bg_color = Color(0.0470588, 0.0470588, 0.0470588, 0.27451)
+bg_color = Color(0.0470588, 0.0470588, 0.0470588, 0.521569)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iw76c"]
+resource_local_to_scene = true
 bg_color = Color(0, 1, 1, 1)
 
 [node name="HealthBar" type="Sprite3D"]
 billboard = 1
 no_depth_test = true
-alpha_cut = 1
 texture = SubResource("ViewportTexture_hfhp8")
 script = ExtResource("1_02ekk")
 

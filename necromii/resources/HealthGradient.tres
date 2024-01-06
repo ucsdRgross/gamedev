@@ -1,9 +1,10 @@
 [gd_resource type="GradientTexture1D" load_steps=2 format=3 uid="uid://dg0dw4xoalrgw"]
 
 [sub_resource type="Gradient" id="Gradient_ckafh"]
-interpolation_color_space = 2
+interpolation_mode = 2
 offsets = PackedFloat32Array(0, 0.5, 1)
 colors = PackedColorArray(1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1)
 
 [resource]
 gradient = SubResource("Gradient_ckafh")
+width = 8

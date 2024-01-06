@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://dqajigklfuj53"]
+[gd_scene load_steps=37 format=3 uid="uid://dqajigklfuj53"]
 
 [ext_resource type="Script" path="res://Levels/Level1/main.gd" id="1_nd7o6"]
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="2_7ntww"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://addons/interpolated_camera_3d/interpolated_camera_3d.gd" id="6_34uvy"]
 [ext_resource type="Script" path="res://Components/ZoomPathFollow.gd" id="7_t02jw"]
 [ext_resource type="Script" path="res://Components/FollowCamera.gd" id="8_3sve3"]
+[ext_resource type="Script" path="res://abilities/stats.gd" id="11_t3ick"]
 [ext_resource type="PackedScene" uid="uid://bcwkugn6v3oy7" path="res://addons/godot_state_charts/utilities/state_chart_debugger.tscn" id="15_ekbj3"]
 [ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="17_7qnan"]
 [ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="18_2mc7e"]
@@ -57,6 +58,14 @@ _data = {
 }
 point_count = 3
 
+[sub_resource type="Resource" id="Resource_thu8n"]
+resource_local_to_scene = true
+script = ExtResource("11_t3ick")
+base_health = 100.0
+cur_health = 100.0
+base_damage = 10.0
+cur_damage = 10.0
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_acvib"]
 shader = ExtResource("26_osyto")
 shader_parameter/change_color_depth = true
@@ -76,6 +85,14 @@ size = Vector3(12.42, 25.15, 4.695)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q0aup"]
 transparency = 1
 albedo_color = Color(1, 1, 1, 0.490196)
+
+[sub_resource type="Resource" id="Resource_1bxm5"]
+resource_local_to_scene = true
+script = ExtResource("11_t3ick")
+base_health = 100.0
+cur_health = 100.0
+base_damage = 10.0
+cur_damage = 10.0
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_h13f5"]
 viewport_path = NodePath("SubViewport")
@@ -208,7 +225,9 @@ process_callback = 0
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 7.14943, -0.261914)
 collision_layer = 3
+collision_mask = 1
 linear_damp = 0.5
+stats = SubResource("Resource_thu8n")
 
 [node name="Retro" type="ColorRect" parent="."]
 visible = false
@@ -260,7 +279,9 @@ y = false
 [node name="SimpleUnit2" parent="." instance=ExtResource("23_5cikp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 2.10324, -0.261914)
 collision_layer = 3
+collision_mask = 1
 linear_damp = 0.5
+stats = SubResource("Resource_1bxm5")
 
 [node name="HealthBar" parent="SimpleUnit2" index="6"]
 texture = SubResource("ViewportTexture_h13f5")
@@ -273,5 +294,6 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, -1.334, 0.5, 3.60448, 2.10324, -0.2
 material_override = SubResource("ShaderMaterial_c7pkd")
 
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]
+[connection signal="area_entered" from="SimpleUnit2/HurtBox" to="SimpleUnit2/HealthBar" method="_on_hurt_box_area_entered"]
 
 [editable path="SimpleUnit2"]
