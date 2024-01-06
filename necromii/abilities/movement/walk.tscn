@@ -1,7 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://msgx0ax7iphm"]
+[gd_scene load_steps=10 format=3 uid="uid://msgx0ax7iphm"]
 
 [ext_resource type="Script" path="res://abilities/movement/walk.gd" id="1_6qwro"]
 [ext_resource type="Script" path="res://lookat.gd" id="2_ljp5t"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="3_ogpf5"]
+[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="4_6uy1b"]
 
 [sub_resource type="Animation" id="Animation_mpf5k"]
 length = 0.001
@@ -29,10 +31,34 @@ tracks/1/keys = {
 "update": 0,
 "values": [1.5]
 }
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("rotation/RemoteTransform3D:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("rotation/RemoteTransform3D:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
 
 [sub_resource type="Animation" id="Animation_ak3e7"]
 resource_name = "piston"
-step = 0.05
+step = 0.025
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -57,12 +83,57 @@ tracks/1/keys = {
 "update": 0,
 "values": [1.5, 1.5, 1.5, 2.0, 2.0, 1.5, 1.5]
 }
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = false
+tracks/2/path = NodePath("rotation/RemoteTransform3D:position")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.5, 0.65, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0.5, 0), Vector3(0, 0.5, 0), Vector3(0, 0, 0), Vector3(0, 0, 0)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = false
+tracks/3/path = NodePath("rotation/RemoteTransform3D:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.204204, 0, 0), Vector3(-0.308923, 0, 0), Vector3(-0.118682, 0, 0), Vector3(0.195477, 0, 0), Vector3(0.352556, 0, 0), Vector3(0.347321, 0, 0), Vector3(0.218166, 0, 0), Vector3(0, 0, 0)]
+}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_tydmk"]
 _data = {
 "RESET": SubResource("Animation_mpf5k"),
 "piston": SubResource("Animation_ak3e7")
 }
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_uj258"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("3_ogpf5")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 3
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("4_6uy1b")
+
+[sub_resource type="BoxMesh" id="BoxMesh_jgros"]
 
 [node name="Walk" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, 0)
@@ -73,15 +144,30 @@ libraries = {
 "": SubResource("AnimationLibrary_tydmk")
 }
 
+[node name="rotation" type="Node3D" parent="."]
+process_mode = 4
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="rotation"]
+process_mode = 4
+update_rotation = false
+update_scale = false
+
 [node name="bob" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37113e-08, 0.999997, 0, -0.999997, -4.37113e-08, 0, 1.5, 0)
+transform = Transform3D(1, 0, 0, 0, 0.0712469, 0.997456, 0, -0.997456, 0.0712469, 0, 1.5, 0)
 script = ExtResource("2_ljp5t")
 
 [node name="RemoteTransform" type="RemoteTransform3D" parent="bob"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 7.45058e-09, -0.75)
 update_scale = false
 
+[node name="Model" type="MeshInstance3D" parent="bob/RemoteTransform"]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
+visible = false
+material_override = SubResource("ShaderMaterial_uj258")
+mesh = SubResource("BoxMesh_jgros")
+
 [node name="offset" type="Node3D" parent="."]
+visible = false
 
 [node name="circle" type="Marker3D" parent="offset"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -0.125)
@@ -91,3 +177,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.64555, 3.22341)
+visible = false

@@ -98,7 +98,6 @@ autoplay = "piston"
 transform = Transform3D(1.99969, 0, 0, 0, 1.99374, 0.0384989, 0, -0.153996, 0.498434, 0, 0.752229, 0.0577576)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_lra15")
 mesh = SubResource("BoxMesh_6bisa")
 skeleton = NodePath("../..")

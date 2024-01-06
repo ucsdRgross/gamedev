@@ -11,7 +11,7 @@
 [sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
 viewport_path = NodePath("SubViewport")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ncg51"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vfrup"]
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("3_vlfca")
@@ -66,8 +66,8 @@ action_ability = NodePath("Jump")
 [node name="HealthBar" parent="." index="6"]
 texture = SubResource("ViewportTexture_y3pva")
 
-[node name="MeshInstance3D2" parent="." index="8"]
-material_override = SubResource("ShaderMaterial_ncg51")
+[node name="Model" parent="." index="8"]
+material_override = SubResource("ShaderMaterial_vfrup")
 
 [node name="MeshInstance3D" parent="ShearTransform" index="0"]
 material_override = SubResource("ShaderMaterial_xm3ux")

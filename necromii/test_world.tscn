@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://ct5e0ate3a4j2"]
+[gd_scene load_steps=28 format=3 uid="uid://ct5e0ate3a4j2"]
 
 [ext_resource type="Environment" uid="uid://me25morm0700" path="res://sky/outdoor_environment.tres" id="1_aq325"]
 [ext_resource type="Texture2D" uid="uid://c5aj6yos4imu8" path="res://PNG/Green/texture_10.png" id="2_ys0ak"]
@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" uid="uid://hys76ovny7gl" path="res://ai/PlayerAI.tscn" id="10_y5qt4"]
 [ext_resource type="PackedScene" uid="uid://bykgh1cm7hsy1" path="res://abilities/action/jump.tscn" id="11_1a174"]
 [ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/stab.tscn" id="12_2i6y1"]
+[ext_resource type="Shader" path="res://Shaders/extrude.gdshader" id="12_qqb5l"]
+[ext_resource type="Texture2D" uid="uid://mqm4ihplfdu2" path="res://Units/MiniWorldSprites/Characters/Monsters/Undead/Skeleton-Soldier.png" id="13_fxte0"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbe6s"]
 albedo_texture = ExtResource("2_ys0ak")
@@ -56,6 +58,25 @@ _data = {
 "tilts": PackedFloat32Array(0, 0, 0)
 }
 point_count = 3
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ucl7f"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("12_qqb5l")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 3
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 12
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("13_fxte0")
 
 [node name="TestWorld" type="Node3D"]
 
@@ -137,7 +158,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.14362, 0)
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
-collision_layer = 3
 linear_damp = 0.5
 
 [node name="TestPlayer" parent="." node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
@@ -151,11 +171,8 @@ action_ability = NodePath("Jump")
 
 [node name="Walk" parent="TestPlayer" instance=ExtResource("10_525ue")]
 
-[node name="bob" parent="TestPlayer/Walk" index="1"]
-transform = Transform3D(1, 0, 0, 0, 0.0712469, 0.997456, 0, -0.997456, 0.0712469, 0, 1.5, 0)
-
-[node name="circle" parent="TestPlayer/Walk/offset" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -0.125)
+[node name="Model" parent="TestPlayer/Walk/bob/RemoteTransform" index="0"]
+material_override = SubResource("ShaderMaterial_ucl7f")
 
 [node name="Jump" parent="TestPlayer" instance=ExtResource("11_1a174")]
 

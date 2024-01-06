@@ -21,6 +21,9 @@ var team : int
 @onready var model : MeshInstance3D = $ShearTransform/MeshInstance3D
 @onready var model_transform : Node3D = $ShearTransform
 
+func _ready():
+	collision_layer = 2
+
 func _physics_process(delta):
 	ai.tick(delta)
 
