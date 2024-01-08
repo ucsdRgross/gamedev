@@ -10,3 +10,4 @@ script = ExtResource("1_k6xr3")
 [node name="GroundCast" type="ShapeCast3D" parent="."]
 shape = SubResource("SphereShape3D_4ixup")
 target_position = Vector3(0, -0.5, 0)
+collision_mask = 3

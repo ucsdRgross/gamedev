@@ -114,7 +114,7 @@ func modify():
 		if is_inf(scale_factor.y) or is_nan(scale_factor.y):
 			scale_factor.y = 0
 		var new_bound : PackedVector2Array = [origin, origin]
-		for i in range(polygon.size()):
+		for i:int in range(polygon.size()):
 			var og_point := polygon[i]
 			var vector := og_point - origin
 			polygon[i] = vector * scale_factor + origin
@@ -138,7 +138,7 @@ func modify():
 		var rotate := (last_mouse_pos - last_origin).angle_to(mouse_pos - origin)
 		last_origin = origin
 		var new_bound : PackedVector2Array = [origin, origin]
-		for i in range(polygon.size()):
+		for i:int in range(polygon.size()):
 			var og_point := polygon[i]
 			var vector := og_point - origin
 			polygon[i] = vector.rotated(rotate) + origin
@@ -154,7 +154,7 @@ func modify():
 		#polygon2d_created.emit(polygon)
 		bounds = new_bound
 		paint_tool.material.set_shader_parameter(&"bounds", bounds)
-		for i in range(line_2d.get_point_count()):
+		for i:int in range(line_2d.get_point_count()):
 			var og_point : Vector2 = line_2d.get_point_position(i)
 			var vector := og_point - origin
 			line_2d.set_point_position(i, vector.rotated(rotate) + origin)
@@ -162,11 +162,11 @@ func modify():
 	
 
 func move_selection(change : Vector2):
-	for i in range(polygon.size()):
+	for i:int in range(polygon.size()):
 		polygon[i] += change
 	paint_tool.material.set_shader_parameter(&"points", polygon)
 	Signals.new_selection.emit(polygon)
-	for i in range(bounds.size()):
+	for i:int in range(bounds.size()):
 		bounds[i] += change
 	#last_origin += change
 	#material.set_shader_parameter("bounds", bounds)

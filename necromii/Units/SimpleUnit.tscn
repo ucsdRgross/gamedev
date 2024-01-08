@@ -1,6 +1,6 @@
 [gd_scene load_steps=12 format=3 uid="uid://byrht1ja3k8m"]
 
-[ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_lw2hx"]
+[ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_skrae"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_83lsd"]
 [ext_resource type="PackedScene" uid="uid://11n31axmco1n" path="res://ai/MinionAI.tscn" id="2_ypa10"]
 [ext_resource type="PackedScene" uid="uid://msgx0ax7iphm" path="res://abilities/movement/walk.tscn" id="3_t8r50"]
@@ -13,9 +13,12 @@
 resource_local_to_scene = true
 script = ExtResource("2_83lsd")
 base_health = 100.0
-cur_health = 100.0
 base_damage = 10.0
-cur_damage = 10.0
+base_defense = 0.0
+base_haste = 0.0
+base_speed = 10.0
+base_accel_force = 200.0
+base_accel_force_cap = 150.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qlas1"]
 resource_local_to_scene = true
@@ -55,7 +58,7 @@ shader_parameter/Vframes = 12
 shader_parameter/frame = 0
 shader_parameter/Texture = ExtResource("4_fdfjl")
 
-[node name="SimpleUnit" node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("1_lw2hx")]
+[node name="SimpleUnit" node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("1_skrae")]
 ai = NodePath("MinionAi")
 stats = SubResource("Resource_3kfxe")
 movement_ability = NodePath("Walk")

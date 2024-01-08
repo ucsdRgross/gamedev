@@ -1,7 +1,10 @@
 extends Action
 
 @export var JUMP_VELOCITY : float = 10
-@onready var ground_cast = $GroundCast
+@onready var ground_cast : ShapeCast3D = $GroundCast
+
+func _ready():
+	ground_cast.add_exception(body)
 
 func action():
 	if ground_cast.is_colliding():

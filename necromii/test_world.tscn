@@ -45,25 +45,34 @@ point_count = 3
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
-cur_health = 100.0
 base_damage = 10.0
-cur_damage = 10.0
+base_defense = 0.0
+base_haste = 0.0
+base_speed = 10.0
+base_accel_force = 200.0
+base_accel_force_cap = 150.0
 
 [sub_resource type="Resource" id="Resource_fq7jx"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
-cur_health = 100.0
 base_damage = 10.0
-cur_damage = 10.0
+base_defense = 0.0
+base_haste = 0.0
+base_speed = 10.0
+base_accel_force = 200.0
+base_accel_force_cap = 150.0
 
 [sub_resource type="Resource" id="Resource_ct87d"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
-cur_health = 100.0
 base_damage = 10.0
-cur_damage = 10.0
+base_defense = 0.0
+base_haste = 0.0
+base_speed = 10.0
+base_accel_force = 200.0
+base_accel_force_cap = 150.0
 
 [node name="TestWorld" type="Node3D"]
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=14 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
@@ -17,18 +17,18 @@ absorbent = true
 resource_local_to_scene = true
 script = ExtResource("2_e55jt")
 base_health = 100.0
-cur_health = 100.0
 base_damage = 10.0
-cur_damage = 10.0
+base_defense = 0.0
+base_haste = 0.0
+base_speed = 10.0
+base_accel_force = 200.0
+base_accel_force_cap = 150.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_urnno"]
 radius = 0.75
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_2lubs"]
 size = Vector3(1.5725, 1.392, 0.49)
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_y3pva"]
-viewport_path = NodePath("SubViewport")
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_0gto0"]
 radius = 0.75
@@ -74,8 +74,8 @@ shape = SubResource("BoxShape3D_2lubs")
 disabled = true
 
 [node name="HealthBar" parent="." instance=ExtResource("3_56h63")]
-transform = Transform3D(1.37, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-texture = SubResource("ViewportTexture_y3pva")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+top_level = true
 
 [node name="HurtBox" type="Area3D" parent="."]
 collision_layer = 4

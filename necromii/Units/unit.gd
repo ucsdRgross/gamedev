@@ -1,13 +1,13 @@
 extends RigidBody3D
-class_name Unit 
+class_name Unit
 
 @export var ai : AI = AI.new()
 @export var texture : Texture2D
 @export var stats : Stats = Stats.new()
 #@export var effects : Array[Effect]
 
-var team : int
-var alive : bool = true
+#negative means dead
+var team : int = 1
 
 @export_category('Abilities')
 @export var movement_ability : Movement = Movement.new()
@@ -27,7 +27,7 @@ func _ready():
 	collision_mask = 3
 
 func _physics_process(delta):
-	if alive:
+	if team > 0:
 		ai.tick(delta)
 
 func replaceAI(new_ai : AI):
@@ -84,7 +84,7 @@ func damage(d : int):
 
 func death():
 	ai.interrupt()
-	alive = false
+	team *= -1
 	ai.process_mode = Node.PROCESS_MODE_DISABLED
 	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	action_ability.process_mode = Node.PROCESS_MODE_DISABLED

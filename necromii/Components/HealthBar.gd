@@ -1,9 +1,12 @@
+@tool
 extends Sprite3D
 class_name HealthBar
 
 @onready var bar : ProgressBar = $SubViewport/ProgressBar
 @onready var fill_stylebox : StyleBoxFlat = bar.get_theme_stylebox('fill')
 const color_gradient : GradientTexture1D = preload("res://resources/HealthGradient.tres")
+const dead_gradient : GradientTexture1D = preload("res://resources/HealthGradient.tres")
+@export var hover : Vector3 = Vector3(0,1,0)
 
 signal no_health
 
@@ -26,9 +29,12 @@ func _ready():
 #	texture.viewport_path = $SubViewport.get_path()
 	set_bar_max_health(max_health)
 	set_bar_health(health)
-	get_parent().add_to_group("damageable")
+	#get_parent().add_to_group("damageable")
 	if get_parent().has_method('death'):
 		no_health.connect(get_parent().death)
+
+func _process(delta):
+	global_position = get_parent().global_position + hover
 
 func damage(dmg : float):
 	health = health - dmg

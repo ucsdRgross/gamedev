@@ -5,7 +5,7 @@ const keys : Array[StringName] = [&'ui_accept',&"Left", &"Right", &"Forward", &"
 
 func tick(delta : float):
 	var pressed = false
-	for k in keys:
+	for k : StringName in keys:
 		if Input.is_action_pressed(k):
 			pressed = true
 			break

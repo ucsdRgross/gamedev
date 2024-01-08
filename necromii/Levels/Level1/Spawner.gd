@@ -19,8 +19,8 @@ func _on_timer_timeout():
 	spawn_cap -= 1
 	var spawnling = spawnlings.get_children().pick_random().create_instance()
 	spawnlings.remove_child(spawnling)
-	spawnling.position = rand_point_ring()
-	spawnling.team = spawn_cap
+	spawnling.global_position = rand_point_ring()
+	spawnling.team = max(1, spawn_cap)
 	owner.add_child(spawnling)
 	
 	
