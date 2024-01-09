@@ -20,6 +20,7 @@ base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
+base_mana = 0.0
 base_speed = 10.0
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
@@ -74,8 +75,9 @@ shape = SubResource("BoxShape3D_2lubs")
 disabled = true
 
 [node name="HealthBar" parent="." instance=ExtResource("3_56h63")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24, -0.41)
 top_level = true
+hover = Vector3(0, 1.24, -0.41)
 
 [node name="HurtBox" type="Area3D" parent="."]
 collision_layer = 4

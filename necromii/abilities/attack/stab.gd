@@ -21,7 +21,7 @@ func closest_enemy() -> Unit:
 	var closest : Unit = null
 	var shortest := INF
 	for unit:Unit in attack_range.get_overlapping_bodies():
-		if unit != body and unit.team > 0 and unit.team != body.team:
+		if unit != body and unit.alive and unit.team != body.team:
 			var dist := global_position.distance_squared_to(unit.global_position)
 			if dist < shortest:
 				shortest = dist

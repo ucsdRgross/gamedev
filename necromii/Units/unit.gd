@@ -6,8 +6,8 @@ class_name Unit
 @export var stats : Stats = Stats.new()
 #@export var effects : Array[Effect]
 
-#negative means dead
-var team : int = 1
+var alive : bool = true
+var team : int = 0
 
 @export_category('Abilities')
 @export var movement_ability : Movement = Movement.new()
@@ -27,7 +27,7 @@ func _ready():
 	collision_mask = 3
 
 func _physics_process(delta):
-	if team > 0:
+	if alive:
 		ai.tick(delta)
 
 func replaceAI(new_ai : AI):
@@ -84,14 +84,48 @@ func damage(d : int):
 
 func death():
 	ai.interrupt()
-	team *= -1
+	alive = false
 	ai.process_mode = Node.PROCESS_MODE_DISABLED
 	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	action_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	sphere.disabled = true
 	box.disabled = false
-	print('died')
 	axis_lock_angular_x = false
 	axis_lock_angular_y = false
 	axis_lock_angular_z = false
+	print('died')
+
+var revival = false
+func undeath():
+	revival = true
+
+func revive():
+	alive = true
+	ai.process_mode = Node.PROCESS_MODE_INHERIT
+	movement_ability.process_mode = Node.PROCESS_MODE_INHERIT
+	action_ability.process_mode = Node.PROCESS_MODE_INHERIT
+	movement_ability.process_mode = Node.PROCESS_MODE_INHERIT
+	sphere.disabled = false
+	box.disabled = true
+	axis_lock_angular_x = true
+	axis_lock_angular_y = true
+	axis_lock_angular_z = true
+	print('alived')
+
+var speed: float = 0.1
+func look_follow(state: PhysicsDirectBodyState3D) -> void:
+	var forward_local_axis: Vector3 = Vector3(0, 0, 1)
+	var forward_dir: Vector3 = (global_transform.basis * forward_local_axis).normalized()
+	var target_dir: Vector3 = Vector3(0, 0, -1)
+	var local_speed: float = clampf(speed, 0, acos(forward_dir.dot(target_dir)))
+	if forward_dir.dot(target_dir) < 0.95:
+		state.angular_velocity = local_speed * forward_dir.cross(target_dir) / state.step
+	else:
+		state.transform.basis = Quaternion()
+		revival = false
+		revive()
+
+func _integrate_forces(state):
+	if revival:
+		look_follow(state)

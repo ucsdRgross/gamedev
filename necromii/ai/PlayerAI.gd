@@ -3,6 +3,18 @@ class_name PlayerAI
 
 const keys : Array[StringName] = [&'ui_accept',&"Left", &"Right", &"Forward", &"Back"]
 
+func _ready():
+	body.body_entered.connect(_on_body_entered)
+	body.body_exited.connect(_on_body_exited)
+	body.contact_monitor = true
+	body.max_contacts_reported = 1
+
+func _exit_tree():
+	body.body_entered.disconnect(_on_body_entered)
+	body.body_exited.disconnect(_on_body_exited)
+	body.contact_monitor = false
+	body.max_contacts_reported = 0
+
 func tick(delta : float):
 	var pressed = false
 	for k : StringName in keys:
@@ -54,3 +66,13 @@ func tick(delta : float):
 	#if result.size() > 0:
 		#return result.position
 	#return null
+
+
+func _on_body_entered(body:PhysicsBody3D):
+	if body.has_method('damage'):
+		if not body.alive:
+			body.team = self.body.team
+			body.damage(-50)
+
+func _on_body_exited(body:PhysicsBody3D):
+	pass#print(body)
