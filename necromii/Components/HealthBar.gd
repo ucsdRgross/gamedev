@@ -9,9 +9,6 @@ const color_gradient : GradientTexture1D = preload("res://resources/HealthGradie
 const dead_gradient : GradientTexture1D = preload("res://resources/DeadHealthGradient.tres")
 @export var hover : Vector3 = Vector3(0,1,0)
 
-signal no_health
-signal full_health
-
 @export_subgroup("Health")
 @export var max_health : float = 100:
 	set(val):
@@ -23,9 +20,9 @@ signal full_health
 		health = clamp(val, 0, max_health)
 		set_bar_health(health)
 		if health <= 0 and body.alive:
-			no_health.emit()
+			body.death()
 		if health >= 100 and not body.alive:
-			full_health.emit()
+			body.undeath()
 
 func _ready():
 #	texture = ViewportTexture.new()
@@ -34,8 +31,6 @@ func _ready():
 		set_process(false)
 	set_bar_max_health(max_health)
 	set_bar_health(health)
-	no_health.connect(body.death)
-	full_health.connect(body.undeath)
 
 func _process(delta):
 	global_position = body.global_position + hover

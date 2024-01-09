@@ -1,9 +1,16 @@
 extends Resource
 class_name Stats 
 
+signal health_changed(new_health:float)
+signal no_health
+signal full_health
+
 #@export var species : String
 @export var base_health : float = 100
-var health : float = base_health
+var health : float = base_health:
+	set(value):
+		health = value
+		health_changed.emit(health)
 @export var base_damage : float = 10
 var damage : float  = base_damage
 @export var base_defense : float = 0

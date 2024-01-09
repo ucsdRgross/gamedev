@@ -113,14 +113,14 @@ func revive():
 	axis_lock_angular_z = true
 	print('alived')
 
-var speed: float = 0.1
-func look_follow(state: PhysicsDirectBodyState3D) -> void:
-	var forward_local_axis: Vector3 = Vector3(0, 0, 1)
-	var forward_dir: Vector3 = (global_transform.basis * forward_local_axis).normalized()
-	var target_dir: Vector3 = Vector3(0, 0, -1)
-	var local_speed: float = clampf(speed, 0, acos(forward_dir.dot(target_dir)))
-	if forward_dir.dot(target_dir) < 0.95:
-		state.angular_velocity = local_speed * forward_dir.cross(target_dir) / state.step
+var speed: float = 0.07
+func upright(state: PhysicsDirectBodyState3D) -> void:
+	var A := global_transform.basis.get_rotation_quaternion()
+	var d := A.dot(Quaternion())
+	var local_speed: float = clampf(speed, 0, acos(d))
+	var R := A.inverse() * Quaternion()
+	if d < 0.99:
+		state.angular_velocity = local_speed * R.get_euler() / state.step
 	else:
 		state.transform.basis = Quaternion()
 		revival = false
@@ -128,4 +128,4 @@ func look_follow(state: PhysicsDirectBodyState3D) -> void:
 
 func _integrate_forces(state):
 	if revival:
-		look_follow(state)
+		upright(state)

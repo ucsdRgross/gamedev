@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://byrht1ja3k8m"]
+[gd_scene load_steps=13 format=3 uid="uid://byrht1ja3k8m"]
 
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_skrae"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_83lsd"]
@@ -20,6 +20,9 @@ base_mana = 0.0
 base_speed = 10.0
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_jd4by"]
+viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qlas1"]
 resource_local_to_scene = true
@@ -73,6 +76,9 @@ action_ability = NodePath("Jump")
 [node name="Jump" parent="." index="2" instance=ExtResource("4_lx38c")]
 
 [node name="Stab" parent="." index="3" instance=ExtResource("5_2vtfw")]
+
+[node name="HealthBar" parent="." index="6"]
+texture = SubResource("ViewportTexture_jd4by")
 
 [node name="Model" parent="ModelTransform" index="0"]
 material_override = SubResource("ShaderMaterial_qlas1")
