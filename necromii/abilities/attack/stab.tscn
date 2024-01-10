@@ -155,6 +155,8 @@ radius = 2.0
 [node name="Stab" instance=ExtResource("1_ps1r8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8.74082e-11)
 script = ExtResource("2_e3tag")
+damage_ratio = 1.0
+speed_ratio = 0.5
 
 [node name="AnimationPlayer" parent="." index="0"]
 libraries = {

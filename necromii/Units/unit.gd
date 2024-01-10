@@ -3,7 +3,7 @@ class_name Unit
 
 @export var ai : AI = AI.new()
 @export var texture : Texture2D
-@export var stats : Stats = Stats.new()
+@export var stats : Stats
 #@export var effects : Array[Effect]
 
 var alive : bool = true
@@ -24,6 +24,7 @@ signal state_process(state : PhysicsDirectBodyState3D)
 @onready var model_transform : Node3D = $ModelTransform
 
 func _ready():
+	stats = stats.duplicate()
 	collision_layer = 2
 	collision_mask = 3
 
@@ -82,8 +83,13 @@ func replaceAttack(a : Attack):
 func attack():
 	attack_ability.attack()
 	
-func damage(d : int):
-	health_bar.damage(d)
+func damage(dam : float):
+	var mitigated_damage := dam
+	stats.health = clamp(stats.health - mitigated_damage, 0, stats.base_health)
+	if stats.health <= 0 and alive:
+		death()
+	if stats.health >= 100 and not alive:
+		undeath()
 
 func death():
 	ai.interrupt()
@@ -95,6 +101,9 @@ func death():
 	sphere.disabled = true
 	box.disabled = false
 	lock_rotation = false
+	axis_lock_angular_x = false
+	axis_lock_angular_y = false
+	axis_lock_angular_z = false
 	print('died')
 
 var revival = false
@@ -109,7 +118,9 @@ func revive():
 	movement_ability.process_mode = Node.PROCESS_MODE_INHERIT
 	sphere.disabled = false
 	box.disabled = true
-	lock_rotation = true
+	axis_lock_angular_x = true
+	axis_lock_angular_y = true
+	axis_lock_angular_z = true
 	print('alived')
 
 var speed: float = 0.07

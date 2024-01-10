@@ -41,7 +41,7 @@ _data = {
 }
 point_count = 3
 
-[sub_resource type="Resource" id="Resource_kncyy"]
+[sub_resource type="Resource" id="Resource_4jw1e"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
@@ -50,10 +50,12 @@ base_defense = 0.0
 base_haste = 0.0
 base_mana = 0.0
 base_speed = 10.0
+speed = null
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
+general_effectiveness = 1.0
 
-[sub_resource type="Resource" id="Resource_fq7jx"]
+[sub_resource type="Resource" id="Resource_61p0e"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
@@ -62,20 +64,23 @@ base_defense = 0.0
 base_haste = 0.0
 base_mana = 0.0
 base_speed = 10.0
+speed = null
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
+general_effectiveness = 1.0
 
 [sub_resource type="Resource" id="Resource_ct87d"]
-resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
-base_damage = 10.0
+base_damage = 50.1
 base_defense = 0.0
 base_haste = 0.0
 base_mana = 0.0
 base_speed = 10.0
+speed = null
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
+general_effectiveness = 1.0
 
 [node name="TestWorld" type="Node3D"]
 
@@ -148,18 +153,14 @@ process_callback = 0
 
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.14362, 0)
-stats = SubResource("Resource_kncyy")
+stats = SubResource("Resource_4jw1e")
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
 collision_mask = 1
-axis_lock_angular_x = true
-axis_lock_angular_y = true
-axis_lock_angular_z = true
 can_sleep = true
-lock_rotation = false
 linear_damp = 0.5
-stats = SubResource("Resource_fq7jx")
+stats = SubResource("Resource_61p0e")
 
 [node name="TestPlayer" parent="." node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.738, 0)

@@ -3,6 +3,8 @@ extends Attack
 var target : RigidBody3D
 var last_target_pos : Vector3
 @onready var attack_range = $AttackRange
+@export var damage_ratio : float = 1.0
+@export var speed_ratio : float = 0.5
 
 func attack():
 	if can_cast():
@@ -32,12 +34,7 @@ func stop():
 	super.stop()
 	cooldown.start()
 	
-var SPEED : float = 5
-var ACCELERATION_FORCE : float = 100
-var MAX_ACCELERATION_FORCE : float = 150
 var step_pos := Vector3.ZERO
-#var can_rotate := true
-#var rotate_speed := 2
 
 func _physics_process(delta):
 	#if can_rotate:
@@ -48,10 +45,10 @@ func _physics_process(delta):
 	if direction.length_squared() > 1:
 		direction = direction.normalized()	
 	var cur_vel := Vector3(body.linear_velocity.x, 0, body.linear_velocity.z)
-	var goal_vel : Vector3 = direction * SPEED
-	goal_vel = cur_vel.move_toward(goal_vel, ACCELERATION_FORCE * delta)
+	var goal_vel : Vector3 = direction * body.stats.speed * speed_ratio
+	goal_vel = cur_vel.move_toward(goal_vel, body.stats.accel_force * speed_ratio * delta)
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / delta
-	needed_accel = needed_accel.limit_length(MAX_ACCELERATION_FORCE)
+	needed_accel = needed_accel.limit_length(body.stats.accel_force_cap * speed_ratio)
 	body.apply_force(needed_accel * body.mass)
 
 #assume enemy in direction of (0,0,-1) and player at (0,0,0), pass in points based on this grid
@@ -71,4 +68,4 @@ func _on_area_3d_area_entered(area:Area3D):
 	if area.get_parent() is Unit:
 		var target : Unit = area.get_parent()
 		if body.team != target.team:
-			target.damage(50)
+			target.damage(body.stats.damage * damage_ratio)

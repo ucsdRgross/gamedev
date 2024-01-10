@@ -1,10 +1,8 @@
 extends Movement
 
-@export var SPEED : float = 10
-@export var ACCELERATION_FORCE : float = 200
-@export var MAX_ACCELERATION_FORCE : float = 150
 @onready var animation_player : AnimationPlayer = $AnimationPlayer
 @onready var remote_transform : RemoteTransform3D = $bob/correction/RemoteTransform
+@export var speed_ratio : float = 1.0
 
 func _ready():
 	await get_parent().ready
@@ -30,12 +28,12 @@ func move(state: PhysicsDirectBodyState3D, target : Vector3):
 	var cur_vel := Vector3(state.linear_velocity.x, 0, state.linear_velocity.z)
 	var vel_dot := look_direction.dot(cur_vel.normalized())
 	vel_dot = -sin(vel_dot*PI + PI/2)/2 + 1.5 if vel_dot < 0 else 1
-	var goal_vel : Vector3 = direction * SPEED
-	goal_vel = cur_vel.move_toward(goal_vel, ACCELERATION_FORCE * vel_dot * state.step)
+	var goal_vel : Vector3 = direction * body.stats.speed * speed_ratio
+	goal_vel = cur_vel.move_toward(goal_vel, body.stats.accel_force * vel_dot * state.step)
 	#body.navigation_agent.set_velocity(goal_vel)
 	#goal_vel = await body.navigation_agent.velocity_computed
 	var needed_accel : Vector3 = (goal_vel - cur_vel) / state.step
-	needed_accel = needed_accel.limit_length(MAX_ACCELERATION_FORCE )#* vel_dot)
+	needed_accel = needed_accel.limit_length(body.stats.accel_force_cap )#* vel_dot)
 	state.apply_force(needed_accel / state.inverse_mass)
 
 func _notification(what):
