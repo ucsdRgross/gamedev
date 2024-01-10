@@ -5,7 +5,10 @@ class_name AI
 
 var lock : Callable = Callable()
 
-func tick(delta : float):
+#func _ready():
+	#body.state_process.connect(tick)
+
+func tick(state: PhysicsDirectBodyState3D):
 	pass
 
 func interrupt():

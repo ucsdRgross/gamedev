@@ -4,6 +4,7 @@ class_name PlayerAI
 const keys : Array[StringName] = [&'ui_accept',&"Left", &"Right", &"Forward", &"Back"]
 
 func _ready():
+	body.state_process.connect(tick)
 	body.body_entered.connect(_on_body_entered)
 	body.body_exited.connect(_on_body_exited)
 	body.contact_monitor = true
@@ -15,7 +16,7 @@ func _exit_tree():
 	body.contact_monitor = false
 	body.max_contacts_reported = 0
 
-func tick(delta : float):
+func tick(state: PhysicsDirectBodyState3D):
 	var pressed = false
 	for k : StringName in keys:
 		if Input.is_action_pressed(k):
@@ -30,8 +31,8 @@ func tick(delta : float):
 		return
 		
 	var input_dir := Input.get_vector(&"Left", &"Right", &"Forward", &"Back")
-	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
-	body.move(delta, direction)
+	var target := Vector3(input_dir.x, 0, input_dir.y) * 10 + state.transform.origin
+	body.move(state, target)
 	
 	if Input.is_action_pressed(&'ui_accept'):
 		body.action()

@@ -153,6 +153,11 @@ stats = SubResource("Resource_kncyy")
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
 collision_mask = 1
+axis_lock_angular_x = true
+axis_lock_angular_y = true
+axis_lock_angular_z = true
+can_sleep = true
+lock_rotation = false
 linear_damp = 0.5
 stats = SubResource("Resource_fq7jx")
 

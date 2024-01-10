@@ -21,7 +21,7 @@ base_speed = 10.0
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_jd4by"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_fkud4"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qlas1"]
@@ -78,7 +78,7 @@ action_ability = NodePath("Jump")
 [node name="Stab" parent="." index="3" instance=ExtResource("5_2vtfw")]
 
 [node name="HealthBar" parent="." index="6"]
-texture = SubResource("ViewportTexture_jd4by")
+texture = SubResource("ViewportTexture_fkud4")
 
 [node name="Model" parent="ModelTransform" index="0"]
 material_override = SubResource("ShaderMaterial_qlas1")

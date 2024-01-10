@@ -1,5 +1,5 @@
 extends Ability
 class_name Movement
 
-func move(delta : float, dir : Vector3):
+func move(state: PhysicsDirectBodyState3D, target : Vector3):
 	pass
