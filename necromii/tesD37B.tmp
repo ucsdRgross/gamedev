@@ -41,7 +41,7 @@ _data = {
 }
 point_count = 3
 
-[sub_resource type="Resource" id="Resource_ngejf"]
+[sub_resource type="Resource" id="Resource_pgukj"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
@@ -55,7 +55,7 @@ base_accel_force = 200.0
 base_accel_force_cap = 150.0
 general_effectiveness = 1.0
 
-[sub_resource type="Resource" id="Resource_ooel0"]
+[sub_resource type="Resource" id="Resource_p1hiv"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
@@ -153,13 +153,13 @@ process_callback = 0
 
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.14362, 0)
-stats = SubResource("Resource_ngejf")
+stats = SubResource("Resource_pgukj")
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
 collision_mask = 1
 linear_damp = 0.5
-stats = SubResource("Resource_ooel0")
+stats = SubResource("Resource_p1hiv")
 
 [node name="TestPlayer" parent="." node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.738, 0)

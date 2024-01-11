@@ -9,7 +9,9 @@ class_name Unit
 var alive : bool = true
 var team : int = 0
 
+signal revived
 signal state_process(state : PhysicsDirectBodyState3D)
+
 @export_category('Abilities')
 @export var movement_ability : Movement = Movement.new()
 @export var attack_ability : Attack = Attack.new()
@@ -28,9 +30,12 @@ func _ready():
 	collision_layer = 2
 	collision_mask = 3
 
-func _integrate_forces(state: PhysicsDirectBodyState3D):
+func _physics_process(delta):
 	if alive:
-		state_process.emit(state)
+		ai.tick()
+
+func _integrate_forces(state: PhysicsDirectBodyState3D):
+	state_process.emit(state)
 	if revival:
 		upright(state)
 
@@ -56,8 +61,8 @@ func replaceMovement(m : Movement):
 	pass
 	#movement_ability.setup(self)
 
-func move(state: PhysicsDirectBodyState3D, target : Vector3):
-	movement_ability.move(state, target)
+func move( target : Vector3):
+	movement_ability.move(target)
 
 #func can_move() -> bool:
 	#return movement_ability.can_cast()
@@ -122,6 +127,7 @@ func revive():
 	axis_lock_angular_y = true
 	axis_lock_angular_z = true
 	print('alived')
+	revived.emit()
 
 var speed: float = 0.07
 func upright(state: PhysicsDirectBodyState3D) -> void:

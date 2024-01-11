@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cp23041nb58we"]
+[gd_scene load_steps=15 format=3 uid="uid://cp23041nb58we"]
 
 [ext_resource type="Script" path="res://Units/Unit.gd" id="1_iay06"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_e55jt"]
@@ -32,6 +32,9 @@ radius = 0.75
 [sub_resource type="BoxShape3D" id="BoxShape3D_2lubs"]
 size = Vector3(1.5725, 1.392, 0.49)
 
+[sub_resource type="ViewportTexture" id="ViewportTexture_kjo5c"]
+viewport_path = NodePath("SubViewport")
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_0gto0"]
 radius = 0.75
 
@@ -64,7 +67,6 @@ axis_lock_angular_y = true
 axis_lock_angular_z = true
 mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_ahy0n")
-can_sleep = false
 script = ExtResource("1_iay06")
 stats = SubResource("Resource_6vhw6")
 
@@ -79,6 +81,7 @@ disabled = true
 [node name="HealthBar" parent="." instance=ExtResource("3_56h63")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24, -0.41)
 top_level = true
+texture = SubResource("ViewportTexture_kjo5c")
 hover = Vector3(0, 1.24, -0.41)
 
 [node name="HurtBox" type="Area3D" parent="."]

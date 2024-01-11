@@ -10,8 +10,9 @@ var position_buffer : Vector3
 var update_target := false
 
 func _ready():
-	body.state_process.connect(tick)
+	#body.state_process.connect(tick)
 	await body.get_tree().physics_frame
+	body.revived.connect(on_revived)
 	position_buffer = body.global_position
 	position_buffer.y = 0
 	body.navigation_agent.target_position = position_buffer
@@ -20,7 +21,7 @@ func _ready():
 	Signals.selection_scaled.connect(self._on_selection_scaled)
 	Signals.selection_rotated.connect(self._on_selection_rotated)
 
-func tick(state: PhysicsDirectBodyState3D):
+func tick():
 	if is_selected and Input.is_action_just_pressed(&"ui_accept"):# and Global.player_selected:
 		body.action()
 		
@@ -44,13 +45,13 @@ func tick(state: PhysicsDirectBodyState3D):
 		body.navigation_agent.target_position = body.navigation_agent.target_position
 	
 	if is_paused or body.navigation_agent.is_navigation_finished():
-		body.move(state, body.global_position)
+		body.move(body.global_position)
 	else:
 		#var direction: Vector3 = body.navigation_agent.get_next_path_position() - body.global_position
 		#direction.y = 0
 		#if direction.length_squared() > 1:
 			#direction = direction.normalized()
-		body.move(state, body.navigation_agent.get_next_path_position())
+		body.move(body.navigation_agent.get_next_path_position())
 
 func detect_selection():
 	var new_is_selected : bool = Global.SelectionTool.in_selection(body.global_position)
@@ -69,6 +70,10 @@ func _on_finished_drawing():
 	if enabled:
 		position_buffer = body.global_position
 		body.navigation_agent.target_position = body.global_position
+
+func on_revived():
+	position_buffer = body.global_position
+	body.navigation_agent.target_position = body.global_position
 
 func _on_selection_moved(change : Vector2):
 	if in_selection():

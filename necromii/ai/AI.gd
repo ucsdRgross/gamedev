@@ -8,7 +8,7 @@ var lock : Callable = Callable()
 #func _ready():
 	#body.state_process.connect(tick)
 
-func tick(state: PhysicsDirectBodyState3D):
+func tick():
 	pass
 
 func interrupt():
