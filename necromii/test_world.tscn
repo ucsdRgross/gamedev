@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" uid="uid://cp545y361wicn" path="res://abilities/attack/stab.tscn" id="12_2i6y1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbe6s"]
+albedo_color = Color(1, 0.968627, 0.941176, 1)
 albedo_texture = ExtResource("2_ys0ak")
 uv1_scale = Vector3(100, 100, 100)
 
@@ -41,28 +42,28 @@ _data = {
 }
 point_count = 3
 
-[sub_resource type="Resource" id="Resource_ngejf"]
+[sub_resource type="Resource" id="Resource_rcva8"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
 general_effectiveness = 1.0
 
-[sub_resource type="Resource" id="Resource_ooel0"]
+[sub_resource type="Resource" id="Resource_fxuqu"]
 resource_local_to_scene = true
 script = ExtResource("9_7ckwb")
 base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
@@ -75,7 +76,7 @@ base_health = 100.0
 base_damage = 50.1
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
@@ -153,13 +154,13 @@ process_callback = 0
 
 [node name="Unit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/Unit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.14362, 0)
-stats = SubResource("Resource_ngejf")
+stats = SubResource("Resource_rcva8")
 
 [node name="SimpleUnit" parent="Spawner/Spawnlings" instance_placeholder="res://Units/SimpleUnit.tscn"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.30429, 0)
 collision_mask = 1
 linear_damp = 0.5
-stats = SubResource("Resource_ooel0")
+stats = SubResource("Resource_fxuqu")
 
 [node name="TestPlayer" parent="." node_paths=PackedStringArray("ai", "movement_ability", "attack_ability", "action_ability") instance=ExtResource("10_bm3sx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.738, 0)

@@ -36,7 +36,7 @@ var defense : float  = base_defense * defense_modifier
 @export var base_haste : float = 0
 var haste : float = base_haste
 
-@export var base_mana : float = 0
+@export var base_mana : float = 100
 var mana : float = base_mana
 
 @export var base_speed : float = 10

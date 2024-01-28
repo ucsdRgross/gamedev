@@ -19,6 +19,7 @@ signal state_process(state : PhysicsDirectBodyState3D)
 
 @onready var sphere : CollisionShape3D = $Sphere
 @onready var box : CollisionShape3D = $Box
+@onready var feet : CollisionShape3D = $Feet
 @onready var hurt_box : Area3D = $HurtBox
 @onready var navigation_agent : NavigationAgent3D = $NavigationAgent3D
 @onready var health_bar : Sprite3D = $HealthBar
@@ -105,6 +106,7 @@ func death():
 	movement_ability.process_mode = Node.PROCESS_MODE_DISABLED
 	sphere.disabled = true
 	box.disabled = false
+	feet.disabled = false
 	lock_rotation = false
 	axis_lock_angular_x = false
 	axis_lock_angular_y = false
@@ -113,23 +115,25 @@ func death():
 
 var revival = false
 func undeath():
+	alive = true
 	revival = true
 
 func revive():
-	alive = true
+	#alive = true
 	ai.process_mode = Node.PROCESS_MODE_INHERIT
 	movement_ability.process_mode = Node.PROCESS_MODE_INHERIT
 	action_ability.process_mode = Node.PROCESS_MODE_INHERIT
 	movement_ability.process_mode = Node.PROCESS_MODE_INHERIT
 	sphere.disabled = false
 	box.disabled = true
+	feet.disabled = true
 	axis_lock_angular_x = true
 	axis_lock_angular_y = true
 	axis_lock_angular_z = true
 	print('alived')
 	revived.emit()
 
-var speed: float = 0.07
+var speed: float = 0.1
 func upright(state: PhysicsDirectBodyState3D) -> void:
 	var A := global_transform.basis.get_rotation_quaternion()
 	var d := A.dot(Quaternion())

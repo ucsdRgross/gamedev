@@ -56,14 +56,14 @@ _data = {
 }
 point_count = 3
 
-[sub_resource type="Resource" id="Resource_bw81v"]
+[sub_resource type="Resource" id="Resource_aec61"]
 resource_local_to_scene = true
 script = ExtResource("11_t3ick")
 base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
@@ -90,14 +90,14 @@ size = Vector3(12.42, 25.15, 4.695)
 transparency = 1
 albedo_color = Color(1, 1, 1, 0.490196)
 
-[sub_resource type="Resource" id="Resource_0itdu"]
+[sub_resource type="Resource" id="Resource_yvpmq"]
 resource_local_to_scene = true
 script = ExtResource("11_t3ick")
 base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
@@ -196,7 +196,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 7.14943, -0.261914)
 collision_layer = 3
 collision_mask = 1
 linear_damp = 0.5
-stats = SubResource("Resource_bw81v")
+stats = SubResource("Resource_aec61")
 
 [node name="Retro" type="ColorRect" parent="."]
 visible = false
@@ -250,6 +250,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.60448, 2.10324, -0.261914)
 collision_layer = 3
 collision_mask = 1
 linear_damp = 0.5
-stats = SubResource("Resource_0itdu")
+stats = SubResource("Resource_yvpmq")
 
 [connection signal="timeout" from="Spawner/Timer" to="Spawner" method="_on_timer_timeout"]

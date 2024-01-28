@@ -34,7 +34,7 @@ func _process(delta):
 
 func on_health_changed(new_health:float):
 	bar.value = new_health
-	if body.alive:
+	if body.alive or bar.value >= bar.max_value:
 		fill_stylebox.bg_color = color_gradient.gradient.sample(body.stats.health/body.stats.base_health)
 	else:
 		fill_stylebox.bg_color = dead_gradient.gradient.sample(body.stats.health/body.stats.base_health)

@@ -4,3 +4,11 @@
 
 [node name="PlayerAi" type="Node3D"]
 script = ExtResource("1_2rk8h")
+
+[node name="ManaBar" type="ProgressBar" parent="."]
+anchors_preset = -1
+anchor_right = 0.150625
+anchor_bottom = 0.0802593
+offset_right = 0.479996
+offset_bottom = -0.00800323
+metadata/_edit_use_anchors_ = true

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://byrht1ja3k8m"]
+[gd_scene load_steps=11 format=3 uid="uid://byrht1ja3k8m"]
 
 [ext_resource type="PackedScene" uid="uid://cp23041nb58we" path="res://Units/Unit.tscn" id="1_skrae"]
 [ext_resource type="Script" path="res://abilities/stats.gd" id="2_83lsd"]
@@ -15,31 +15,12 @@ base_health = 100.0
 base_damage = 10.0
 base_defense = 0.0
 base_haste = 0.0
-base_mana = 0.0
+base_mana = 100.0
 base_speed = 10.0
 speed = null
 base_accel_force = 200.0
 base_accel_force_cap = 150.0
 general_effectiveness = 1.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_qlas1"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("3_vlfca")
-shader_parameter/extruded_alpha_cull = 1.0
-shader_parameter/opaque_extrude = true
-shader_parameter/keep_image = true
-shader_parameter/image_alpha_cull = 1.0
-shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
-shader_parameter/mix_strength = 1.0
-shader_parameter/texture_calls = 3
-shader_parameter/ray_bias = 2.0
-shader_parameter/infinite_holes = true
-shader_parameter/Hframes = 5
-shader_parameter/Vframes = 12
-shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("4_fdfjl")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_xm3ux"]
 resource_local_to_scene = true
@@ -74,9 +55,6 @@ action_ability = NodePath("Jump")
 [node name="Jump" parent="." index="2" instance=ExtResource("4_lx38c")]
 
 [node name="Stab" parent="." index="3" instance=ExtResource("5_2vtfw")]
-
-[node name="Model" parent="ModelTransform" index="0"]
-material_override = SubResource("ShaderMaterial_qlas1")
 
 [node name="MeshInstance3D" parent="ShearTransform" index="0"]
 material_override = SubResource("ShaderMaterial_xm3ux")

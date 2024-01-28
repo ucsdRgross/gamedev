@@ -2,6 +2,9 @@ extends AI
 class_name PlayerAI
 
 const keys : Array[StringName] = [&'ui_accept',&"Left", &"Right", &"Forward", &"Back"]
+@onready var mana_bar : ProgressBar = $ManaBar
+var contact : Unit = null
+var last_y_vel : float
 
 func _ready():
 	#body.state_process.connect(tick)
@@ -9,6 +12,8 @@ func _ready():
 	body.body_exited.connect(_on_body_exited)
 	body.contact_monitor = true
 	body.max_contacts_reported = 1
+	mana_bar.max_value = body.stats.base_mana
+	mana_bar.value = 0
 
 func _exit_tree():
 	body.body_entered.disconnect(_on_body_entered)
@@ -17,7 +22,17 @@ func _exit_tree():
 	body.max_contacts_reported = 0
 
 func tick():
-	print(body.sleeping)
+	last_y_vel = body.linear_velocity.y
+	mana_bar.value += 9.0/60
+	if contact:
+		if not contact.alive:
+			var cur_mana := mana_bar.value
+			var drain_rate := 10.0/60
+			if drain_rate > cur_mana:
+				drain_rate = cur_mana
+			mana_bar.value -= drain_rate
+			contact.damage(-drain_rate)
+	
 	var pressed = false
 	for k : StringName in keys:
 		if Input.is_action_pressed(k):
@@ -73,8 +88,16 @@ func tick():
 func _on_body_entered(body:PhysicsBody3D):
 	if body.has_method('damage'):
 		if not body.alive:
+			contact = body
 			body.team = self.body.team
-			body.damage(-50)
+			var cur_mana := mana_bar.value
+			var drain : float = 2.0 * max(0, -last_y_vel)
+			print(drain)
+			if drain > cur_mana:
+				drain = cur_mana
+			mana_bar.value -= drain
+			body.damage(-drain)
 
 func _on_body_exited(body:PhysicsBody3D):
-	pass#print(body)
+	if contact == body:
+		contact = null
