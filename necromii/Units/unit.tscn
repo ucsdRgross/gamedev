@@ -30,11 +30,11 @@ general_effectiveness = 1.0
 radius = 0.75
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_2lubs"]
-size = Vector3(1.5725, 1.24276, 0.300461)
+size = Vector3(1.50897, 1.19042, 0.498047)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_57tku"]
-radius = 0.15
-height = 1.57118
+radius = 0.247679
+height = 1.51157
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_uo1ds"]
 viewport_path = NodePath("SubViewport")
@@ -77,12 +77,12 @@ stats = SubResource("Resource_6vhw6")
 shape = SubResource("SphereShape3D_urnno")
 
 [node name="Box" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.838671, 0.544639, 0, -0.544639, 0.838671, 0, 0.0627092, -0.0404429)
+transform = Transform3D(1, 0, 0, 0, 0.838671, 0.544639, 0, -0.544639, 0.838671, -0.000887692, 0.138954, -0.0897996)
 shape = SubResource("BoxShape3D_2lubs")
 disabled = true
 
 [node name="Feet" type="CollisionShape3D" parent="."]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.457312, 0.299346)
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.377244, 0.246618)
 shape = SubResource("CapsuleShape3D_57tku")
 disabled = true
 
@@ -102,7 +102,7 @@ shape = SubResource("SphereShape3D_0gto0")
 [node name="ModelTransform" type="Node3D" parent="."]
 
 [node name="Model" type="MeshInstance3D" parent="ModelTransform"]
-transform = Transform3D(2, 0, 0, 0, 1.67734, 0.163392, 0, -1.08928, 0.251601, 0, 0, 0)
+transform = Transform3D(2, 0, 0, 0, 1.67734, 0.27232, 0, -1.08928, 0.419335, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_oij12")
 mesh = SubResource("BoxMesh_eim3t")
 skeleton = NodePath("../..")

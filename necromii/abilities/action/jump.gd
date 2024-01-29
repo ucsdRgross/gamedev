@@ -8,6 +8,7 @@ func _ready():
 	await body.ready
 	ground_cast.add_exception(body)
 	global_position = body.feet.global_position
+	global_position.y -= body.feet.shape.radius
 
 func action():
 	if ground_cast.is_colliding():

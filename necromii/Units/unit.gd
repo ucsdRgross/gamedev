@@ -117,6 +117,7 @@ var revival = false
 func undeath():
 	alive = true
 	revival = true
+	revived.emit()
 
 func revive():
 	#alive = true
@@ -131,7 +132,6 @@ func revive():
 	axis_lock_angular_y = true
 	axis_lock_angular_z = true
 	print('alived')
-	revived.emit()
 
 var speed: float = 0.1
 func upright(state: PhysicsDirectBodyState3D) -> void:
