@@ -1,0 +1,976 @@
+[gd_scene load_steps=80 format=3 uid="uid://5ppluykhrj4s"]
+
+[ext_resource type="Script" path="res://node_3d.gd" id="1_tnlai"]
+[ext_resource type="Texture2D" uid="uid://b1yrne2jugttl" path="res://character_robot_idle.png" id="2_7r4yo"]
+[ext_resource type="PackedScene" uid="uid://2oxdgu03lnbk" path="res://addons/character-controller/example/main/player.tscn" id="2_iko5y"]
+[ext_resource type="Script" path="res://Sprite3D.gd" id="2_rmp6t"]
+[ext_resource type="Shader" path="res://node_3d.gdshader" id="4_o7wd5"]
+[ext_resource type="Shader" path="res://extrude.gdshader" id="5_18qgr"]
+[ext_resource type="PackedScene" uid="uid://dkob6qmyey6ca" path="res://shear.tscn" id="5_nfpwu"]
+[ext_resource type="Shader" path="res://faded.gdshader" id="6_04pl3"]
+[ext_resource type="Texture2D" uid="uid://cv1dkxhmcucnt" path="res://character_robot_sheetHD.png" id="6_5yjax"]
+[ext_resource type="Shader" path="res://rainbow.gdshader" id="6_lb58q"]
+[ext_resource type="Texture2D" uid="uid://ch4upb8v70urm" path="res://mess.png" id="7_6p3dg"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_tfvkg"]
+size = Vector2(100, 100)
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_tocfv"]
+data = PackedVector3Array(50, 0, 50, -50, 0, 50, 50, 0, -50, -50, 0, 50, -50, 0, -50, 50, 0, -50)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k5cj4"]
+render_priority = 0
+shader = ExtResource("5_18qgr")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 0.0
+shader_parameter/texture_calls = 10
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = false
+shader_parameter/Hframes = 5
+shader_parameter/Vframes = 5
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("6_5yjax")
+
+[sub_resource type="BoxMesh" id="BoxMesh_vuv0a"]
+
+[sub_resource type="Animation" id="Animation_qsk0d"]
+length = 0.001
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("../../../MeshInstance3D12:rotation:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("../../../MeshInstance3D12:rotation:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("../../../MeshInstance3D12:rotation:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/3/type = "bezier"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:r")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0.172549, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:g")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/5/type = "bezier"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:b")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0.0588235, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/6/type = "bezier"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:a")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(1, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/7/type = "bezier"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/mix_strength")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/8/type = "bezier"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/offset:x")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/9/type = "bezier"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/offset:y")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="Animation" id="Animation_oum66"]
+resource_name = "new_animation"
+length = 9.5
+loop_mode = 1
+tracks/0/type = "method"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [&"new_animation", 0.525, false],
+"method": &"play"
+}]
+}
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("../../../MeshInstance3D12")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array()
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = false
+tracks/2/path = NodePath("../../../MeshInstance3D12:rotation:x")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(-6.283, -0.25, 0, 0.25, 0, 6.28319, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 9)
+}
+tracks/3/type = "bezier"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("../../../MeshInstance3D12:rotation:y")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(-6.283, -0.25, 0, 0.25, 0, 6.283, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 9)
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = false
+tracks/4/path = NodePath("../../../MeshInstance3D12:rotation:z")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(-6.283, -0.25, 0, 0.25, 0, 6.283, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 9)
+}
+tracks/5/type = "bezier"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:r")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 0.627451, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 1.6, 3.1, 5.1, 7.1)
+}
+tracks/6/type = "bezier"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:g")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0.458824, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 1.6, 3.1, 5.1, 7.1)
+}
+tracks/7/type = "bezier"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:b")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0.952941, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 1.6, 3.1, 5.1, 7.1)
+}
+tracks/8/type = "bezier"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/color_mix:a")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0, 0),
+"points": PackedFloat32Array(1, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 1.6, 3.1, 5.1, 7.1)
+}
+tracks/9/type = "bezier"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/mix_strength")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 4.5, 9)
+}
+tracks/10/type = "bezier"
+tracks/10/imported = false
+tracks/10/enabled = false
+tracks/10/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/offset:x")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0.2, -0.25, 0, 0.25, 0, -0.2, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(5.2, 6.4, 7.9, 9)
+}
+tracks/11/type = "bezier"
+tracks/11/imported = false
+tracks/11/enabled = false
+tracks/11/path = NodePath("../../../MeshInstance3D12:material_override:shader_parameter/offset:y")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, -0.185, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(5.2, 5.5, 7.2)
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("../../../MeshInstance3D12:visible")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 9.1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_4og5f"]
+_data = {
+"RESET": SubResource("Animation_qsk0d"),
+"new_animation": SubResource("Animation_oum66")
+}
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_iydqb"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(0, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_04s4x"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(192, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l7iyj"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(384, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cr6ud"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(576, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e4qgr"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(768, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_m21uh"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(960, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ueji4"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1152, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pvhjy"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1344, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_abm6g"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1536, 0, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l8007"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(0, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_11drl"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(192, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6cxkr"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(384, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lwyw8"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(576, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_do8t0"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(768, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wyyaa"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(960, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ywhx"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1152, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8yhur"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1344, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wgcqh"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1536, 256, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gjbrt"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(0, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ssiv"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(192, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6ifnw"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(384, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ed1a7"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(576, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dbwhy"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(768, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cpp3t"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(960, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cq7yd"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1152, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_amf8c"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1344, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g37tu"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1536, 512, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_apk36"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(0, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ows3h"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(192, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_80lqn"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(384, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_emtkm"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(576, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_guw1m"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(768, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sqkom"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(960, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_af8uu"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1152, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gvf3i"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1344, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n6g8a"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1536, 768, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k8re0"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(0, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_445j7"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(192, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p6v0w"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(384, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6jh50"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(576, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_eutgk"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(768, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8r0eg"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(960, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lchga"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1152, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ihutg"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1344, 1024, 192, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g70px"]
+atlas = ExtResource("6_5yjax")
+region = Rect2(1536, 1024, 192, 256)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_s0dkq"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_iydqb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_04s4x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_l7iyj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cr6ud")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e4qgr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_m21uh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ueji4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pvhjy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_abm6g")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_l8007")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_11drl")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6cxkr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lwyw8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_do8t0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wyyaa")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ywhx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8yhur")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wgcqh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gjbrt")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ssiv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6ifnw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ed1a7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dbwhy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cpp3t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cq7yd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_amf8c")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g37tu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_apk36")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ows3h")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_80lqn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_emtkm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_guw1m")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sqkom")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_af8uu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gvf3i")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n6g8a")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k8re0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_445j7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p6v0w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6jh50")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_eutgk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8r0eg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lchga")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ihutg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g70px")
+}],
+"loop": true,
+"name": &"new_animation",
+"speed": 5.0
+}]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3jc42"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("5_18qgr")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = Color(0.172549, 0, 0.0588235, 1)
+shader_parameter/mix_strength = 0.0
+shader_parameter/texture_calls = 10
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = false
+shader_parameter/Hframes = 1
+shader_parameter/Vframes = 1
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("2_7r4yo")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tlb6p"]
+render_priority = 0
+shader = ExtResource("4_o7wd5")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = false
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/precision = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = Color(0.364706, 0, 0, 1)
+shader_parameter/mix_strength = 1.0
+shader_parameter/Texture = ExtResource("7_6p3dg")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_228pq"]
+emission_enabled = true
+emission = Color(0.972549, 0.85098, 0.811765, 1)
+
+[sub_resource type="Animation" id="Animation_ijhdm"]
+length = 1.078
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:material_override:shader_parameter/offset:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:material_override:shader_parameter/offset:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".:rotation:x")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/3/type = "bezier"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".:rotation:y")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(-0.346256, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath(".:rotation:z")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="Animation" id="Animation_aja6m"]
+resource_name = "slide"
+length = 5.0
+loop_mode = 1
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:material_override:shader_parameter/offset:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, -0.505, -0.25, 0, 0.25, 0, 1, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 2.5, 5)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:material_override:shader_parameter/offset:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0.5, -0.25, 0, 0.25, 0, -0.5, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 1.4, 3.6, 5)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".:rotation:x")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 2.49712, 2.5, 5)
+}
+tracks/3/type = "bezier"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".:rotation:y")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0.785398, -0.25, 0, 0.25, 0, 0.785398, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 2.49712, 2.5, 5)
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath(".:rotation:z")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0, 0, 0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(-0.1, 2.49712, 2.5, 5)
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_oebql"]
+_data = {
+"RESET": SubResource("Animation_ijhdm"),
+"slide": SubResource("Animation_aja6m")
+}
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hjt65"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kfxa0"]
+render_priority = 0
+shader = ExtResource("6_04pl3")
+
+[sub_resource type="BoxMesh" id="BoxMesh_agudr"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_763e7"]
+render_priority = 0
+shader = ExtResource("6_lb58q")
+
+[sub_resource type="SphereMesh" id="SphereMesh_ybc5t"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pxqh0"]
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_55urd"]
+flip_faces = true
+radius = 100.0
+height = 100.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cxd8h"]
+render_priority = 0
+shader = ExtResource("5_18qgr")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = null
+shader_parameter/mix_strength = 1.0
+shader_parameter/texture_calls = 10
+shader_parameter/ray_bias = 2.0
+shader_parameter/infinite_holes = false
+shader_parameter/Hframes = 1
+shader_parameter/Vframes = 1
+shader_parameter/frame = 0
+shader_parameter/Texture = ExtResource("2_7r4yo")
+
+[sub_resource type="SphereMesh" id="SphereMesh_jy3cx"]
+material = SubResource("ShaderMaterial_cxd8h")
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_tnlai")
+
+[node name="Player" parent="." instance=ExtResource("2_iko5y")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.158, 3.275)
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.4196, 1.57644, 0.00263679)
+alpha_cut = 1
+texture = ExtResource("2_7r4yo")
+script = ExtResource("2_rmp6t")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_tfvkg")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("ConcavePolygonShape3D_tocfv")
+
+[node name="MeshInstance3D12" type="MeshInstance3D" parent="."]
+transform = Transform3D(2.2804, 0, 0, 0, 2, 0, 0, 0, 1.26105, -9.46393, 1.82583, 5.09789)
+top_level = true
+material_override = SubResource("ShaderMaterial_k5cj4")
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="MeshInstance3D12"]
+root_node = NodePath("../SubViewport/AnimatedSprite2D")
+libraries = {
+"": SubResource("AnimationLibrary_4og5f")
+}
+autoplay = "new_animation"
+
+[node name="SubViewport" type="SubViewport" parent="MeshInstance3D12"]
+transparent_bg = true
+size = Vector2i(192, 256)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="MeshInstance3D12/SubViewport"]
+sprite_frames = SubResource("SpriteFrames_s0dkq")
+animation = &"new_animation"
+centered = false
+
+[node name="ShearChildren" parent="." instance=ExtResource("5_nfpwu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -12.4317, 1.14587, 6.1788)
+shear_factor = 0.0
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ShearChildren"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -12.4317, 1.64587, 6.1788)
+top_level = true
+material_override = SubResource("ShaderMaterial_3jc42")
+mesh = SubResource("BoxMesh_vuv0a")
+skeleton = NodePath("../..")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="ShearChildren/MeshInstance3D2"]
+root_node = NodePath("../SubViewport/AnimatedSprite2D")
+libraries = {
+"": SubResource("AnimationLibrary_4og5f")
+}
+autoplay = "new_animation"
+
+[node name="SubViewport" type="SubViewport" parent="ShearChildren/MeshInstance3D2"]
+transparent_bg = true
+size = Vector2i(192, 256)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="ShearChildren/MeshInstance3D2/SubViewport"]
+sprite_frames = SubResource("SpriteFrames_s0dkq")
+animation = &"new_animation"
+centered = false
+
+[node name="ShearChildren2" parent="." instance=ExtResource("5_nfpwu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -14.0472, 1.14587, 6.1788)
+shear_factor = 0.0
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ShearChildren2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -14.0472, 1.64587, 6.1788)
+top_level = true
+material_override = SubResource("ShaderMaterial_3jc42")
+mesh = SubResource("BoxMesh_vuv0a")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D9" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94065, 0, -0.178481, 0, 1, 0, 0.339378, 0, 0.494694, 1.61299, 1.58888, 4.2584)
+material_override = SubResource("ShaderMaterial_tlb6p")
+material_overlay = SubResource("StandardMaterial3D_228pq")
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="MeshInstance3D9"]
+libraries = {
+"": SubResource("AnimationLibrary_oebql")
+}
+autoplay = "slide"
+
+[node name="MeshInstance3D8" type="MeshInstance3D" parent="."]
+transform = Transform3D(-8.74228e-08, 0, 2, 0, 2.484, 0, -2, 0, -8.74228e-08, 5.38787, 1.58888, 1.75393)
+material_override = SubResource("ShaderMaterial_3jc42")
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="MeshInstance3D7" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.91403, 0, 0, 0, 2.48432, 0, 0, 0, 1.435, -5.2167, 1.58888, -0.628605)
+material_override = SubResource("StandardMaterial3D_hjt65")
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.673, 0, 0, 0, 2.284, 0, 0, 0, 1.319, 2.78261, 1.5591, -0.628605)
+material_override = SubResource("ShaderMaterial_kfxa0")
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.01466, 8.49931, -5.16777)
+mesh = SubResource("BoxMesh_agudr")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, 0.5)
+material_override = SubResource("ShaderMaterial_763e7")
+mesh = SubResource("BoxMesh_agudr")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.80659, 1.20537, -3.1928)
+mesh = SubResource("SphereMesh_ybc5t")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.999497, 0.0295842, -0.0114226, 0.0285106, -0.680539, 0.732157, 0.0138867, -0.732114, -0.68104, 2.38419e-07, 6.75484, -0.601989)
+shadow_enabled = true
+
+[node name="MeshInstance3D10" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_pxqh0")
+mesh = SubResource("SphereMesh_55urd")
+
+[node name="MeshInstance3D11" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.10579, 1.06547)
+mesh = SubResource("SphereMesh_jy3cx")
+
+[node name="sorute" type="MeshInstance3D" parent="."]
+transform = Transform3D(2, 0, 0, 0, 2.66, 0, 0, 0, 0.417956, -14.1472, 2.0338, -1.4468)
+mesh = SubResource("BoxMesh_vuv0a")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="sorute"]
+libraries = {
+"": SubResource("AnimationLibrary_4og5f")
+}
+autoplay = "RESET"

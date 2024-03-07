@@ -1,0 +1,54 @@
+[gd_scene load_steps=10 format=3 uid="uid://bbxhtecykvx02"]
+
+[ext_resource type="Script" path="res://Camera3D.gd" id="1_0y38e"]
+[ext_resource type="Script" path="res://3dto2dCamera.gd" id="2_3rdq3"]
+[ext_resource type="Texture2D" uid="uid://b1yrne2jugttl" path="res://character_robot_idle.png" id="2_4p7pd"]
+[ext_resource type="Texture2D" uid="uid://ch4upb8v70urm" path="res://mess.png" id="2_gpwi3"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_wmgtl"]
+viewport_path = NodePath("Camera3D/SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chhv0"]
+resource_local_to_scene = true
+albedo_texture = SubResource("ViewportTexture_wmgtl")
+
+[sub_resource type="QuadMesh" id="QuadMesh_7crrn"]
+size = Vector2(5, 5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4ccft"]
+transparency = 1
+albedo_texture = ExtResource("2_gpwi3")
+uv1_scale = Vector3(200, 200, 200)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_tg5d0"]
+material = SubResource("StandardMaterial3D_4ccft")
+size = Vector2(200, 200)
+
+[node name="Node3D" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 3.98008, 0)
+script = ExtResource("1_0y38e")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.67616e-07, -3.83461)
+material_override = SubResource("StandardMaterial3D_chhv0")
+mesh = SubResource("QuadMesh_7crrn")
+script = ExtResource("2_3rdq3")
+
+[node name="SubViewport" type="SubViewport" parent="Camera3D"]
+
+[node name="Camera2D" type="Camera2D" parent="Camera3D/SubViewport"]
+
+[node name="Node2D" type="Node2D" parent="Camera3D/SubViewport"]
+
+[node name="CharacterRobotIdle" type="Sprite2D" parent="Camera3D/SubViewport/Node2D"]
+position = Vector2(88, 83)
+scale = Vector2(0.598958, 0.621094)
+texture = ExtResource("2_4p7pd")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_tg5d0")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -0.0398876, 0.999204, 0, -0.999204, -0.0398876, 0, 10.5757, 0)

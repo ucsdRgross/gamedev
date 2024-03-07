@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3 uid="uid://dc80km4xx7xj7"]
+
+[ext_resource type="Script" path="res://LineRect.gd" id="1_2ecc7"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_im6mg"]
+radius = 5.0
+height = 10.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_8602f"]
+radius = 5.0
+height = 10.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_73sxr"]
+radius = 5.0
+height = 10.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_gauch"]
+radius = 5.0
+height = 10.0
+
+[node name="Node2D" type="Node2D"]
+position = Vector2(428, 246)
+script = ExtResource("1_2ecc7")
+
+[node name="A" type="MeshInstance2D" parent="."]
+modulate = Color(1, 0.643137, 1, 1)
+position = Vector2(0, 116)
+mesh = SubResource("SphereMesh_im6mg")
+
+[node name="C" type="MeshInstance2D" parent="."]
+modulate = Color(1, 0.643137, 1, 1)
+position = Vector2(165, 0)
+mesh = SubResource("SphereMesh_8602f")
+
+[node name="X" type="MeshInstance2D" parent="."]
+position = Vector2(50, 48)
+mesh = SubResource("SphereMesh_73sxr")
+
+[node name="Y" type="MeshInstance2D" parent="."]
+modulate = Color(1, 1, 0.368627, 1)
+position = Vector2(208, 51)
+mesh = SubResource("SphereMesh_gauch")
+
+[node name="E" type="MeshInstance2D" parent="."]
+modulate = Color(0, 0.592157, 1, 1)
+position = Vector2(-299, -175)
+mesh = SubResource("SphereMesh_73sxr")
