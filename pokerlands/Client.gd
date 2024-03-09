@@ -170,10 +170,13 @@ func StartGame():
 		"lobbyID" : lobbyValue
 	}
 	peer.put_packet(JSON.stringify(message).to_utf8_buffer())
-	var scene = load("res://Multiplayer Tutorial Source Files/testScene.tscn").instantiate()
+	var scene = load("res://CardGame/cardGameDemo.tscn").instantiate()
 	get_tree().root.add_child(scene)
 
 func _on_join_lobby_button_down():
+	connectToServer("")
+	await get_tree().create_timer(1).timeout
+	print('check')
 	var message ={
 		"id" : id,
 		"message" : Message.lobby,
@@ -182,3 +185,4 @@ func _on_join_lobby_button_down():
 	}
 	peer.put_packet(JSON.stringify(message).to_utf8_buffer())
 	pass # Replace with function body.
+

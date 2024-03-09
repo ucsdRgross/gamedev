@@ -66,8 +66,7 @@ func peer_disconnected(id):
 
 func JoinLobby(user):
 	var result = ""
-	if user.lobbyValue == "":
-		user.lobbyValue = generateRandomString()
+	if user.lobbyValue not in lobbies:
 		lobbies[user.lobbyValue] = Lobby.new(user.id)
 		print(user.lobbyValue)
 	var player = lobbies[user.lobbyValue].AddPlayer(user.id, user.name)

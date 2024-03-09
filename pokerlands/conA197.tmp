@@ -45,8 +45,7 @@ offset_left = 37.0
 offset_top = 219.0
 offset_right = 176.0
 offset_bottom = 250.0
-text = "Start Game
-"
+text = "Send Test Packet"
 
 [node name="JoinLobby" type="Button" parent="."]
 layout_mode = 0

@@ -1,0 +1,52 @@
+[gd_scene load_steps=3 format=3 uid="uid://pxqkgtqvvgnm"]
+
+[ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
+[ext_resource type="PackedScene" uid="uid://b8nb6d37ovhyu" path="res://CardGame/cardPlayer.tscn" id="2_d2r2q"]
+
+[node name="CardGameDemo" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_n005u")
+PlayerScene = ExtResource("2_d2r2q")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+color = Color(0.176471, 0.466667, 0.176471, 1)
+
+[node name="CardPlayer" parent="." instance=ExtResource("2_d2r2q")]
+position = Vector2(211, 345)
+
+[node name="SpawnLocations" type="Node2D" parent="."]
+
+[node name="1" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
+position = Vector2(571, 537)
+
+[node name="2" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
+position = Vector2(574, 100)
+rotation = 3.14159
+
+[node name="SpawnCamera" type="Node2D" parent="."]
+
+[node name="1" type="Camera2D" parent="SpawnCamera" groups=["PlayerCamera"]]
+visible = false
+position = Vector2(576, 324)
+rotation = -3.14159
+ignore_rotation = false
+enabled = false
+
+[node name="2" type="Camera2D" parent="SpawnCamera" groups=["PlayerCamera"]]
+visible = false
+position = Vector2(576, 324)
+enabled = false
