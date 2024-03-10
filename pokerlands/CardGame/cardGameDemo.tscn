@@ -26,27 +26,27 @@ size_flags_vertical = 3
 color = Color(0.176471, 0.466667, 0.176471, 1)
 
 [node name="CardPlayer" parent="." instance=ExtResource("2_d2r2q")]
-position = Vector2(211, 345)
+position = Vector2(222, 326)
+
+[node name="camera" type="Camera2D" parent="." groups=["PlayerCamera"]]
+position = Vector2(576, 324)
+ignore_rotation = false
 
 [node name="SpawnLocations" type="Node2D" parent="."]
-
-[node name="1" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
-position = Vector2(571, 537)
 
 [node name="2" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
 position = Vector2(574, 100)
 rotation = 3.14159
 
-[node name="SpawnCamera" type="Node2D" parent="."]
+[node name="1" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
+position = Vector2(571, 537)
 
-[node name="1" type="Camera2D" parent="SpawnCamera" groups=["PlayerCamera"]]
-visible = false
-position = Vector2(576, 324)
-rotation = -3.14159
-ignore_rotation = false
-enabled = false
-
-[node name="2" type="Camera2D" parent="SpawnCamera" groups=["PlayerCamera"]]
-visible = false
-position = Vector2(576, 324)
-enabled = false
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 914.0
+offset_top = 65.0
+offset_right = 1112.0
+offset_bottom = 537.0
+theme_type_variation = &"HeaderLarge"
+theme_override_font_sizes/font_size = 346
+text = "1"

@@ -9,16 +9,15 @@ func _ready():
 		var currentPlayer = PlayerScene.instantiate()
 		currentPlayer.name = str(GameManager.Players[i].id)
 		add_child(currentPlayer)
+		var camera = $camera
 		for spawn in get_tree().get_nodes_in_group("PlayerSpawnPoint"):
 			if spawn.name == str(GameManager.Players[i].index):
 				currentPlayer.global_position = spawn.global_position
 				currentPlayer.global_rotation = spawn.global_rotation
-				
 		if multiplayer.get_unique_id() == GameManager.Players[i].id:
-			for camera : Camera2D in get_tree().get_nodes_in_group("PlayerCamera"):
-				if camera.name == str(index):
-						camera.visible = true
-						camera.enabled = true
+			$Label.text = str(GameManager.Players[i].index)
+			if GameManager.Players[i].index == 2:
+				camera.rotation_degrees = 180
 		index += 1
 	pass # Replace with function body.
 
