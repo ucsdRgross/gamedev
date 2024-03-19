@@ -3,7 +3,10 @@ class_name Player
 
 func _ready() -> void:
 	print(str(name))
-	$MultiplayerSynchronizer.set_multiplayer_authority(str(name).to_int())
+	#$MultiplayerSynchronizer.set_multiplayer_authority(str(name).to_int())
+
+func set_authority(id : int) -> void:
+	$MultiplayerSynchronizer.set_multiplayer_authority(id)
 
 var dragging = false
 

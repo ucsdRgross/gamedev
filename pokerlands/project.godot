@@ -18,6 +18,10 @@ config/features=PackedStringArray("4.2", "Forward Plus")
 
 GameManager="*res://Multiplayer Tutorial Source Files/GameManager.gd"
 
+[display]
+
+window/stretch/mode="viewport"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/simple_card_pile_ui/plugin.cfg")

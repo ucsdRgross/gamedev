@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://pxqkgtqvvgnm"]
+[gd_scene load_steps=6 format=3 uid="uid://pxqkgtqvvgnm"]
 
 [ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
 [ext_resource type="PackedScene" uid="uid://b8nb6d37ovhyu" path="res://CardGame/cardPlayer.tscn" id="2_d2r2q"]
+[ext_resource type="PackedScene" uid="uid://cf7nxj5iha355" path="res://CardGame/card.tscn" id="3_47lf0"]
+[ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/card_placeholder.tscn" id="4_rfa0w"]
+[ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
 
 [node name="CardGameDemo" type="Control"]
 layout_mode = 3
@@ -10,10 +13,12 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_n005u")
 PlayerScene = ExtResource("2_d2r2q")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="Table" type="ColorRect" parent="."]
 show_behind_parent = true
 layout_mode = 1
 anchors_preset = 15
@@ -24,29 +29,110 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 color = Color(0.176471, 0.466667, 0.176471, 1)
-
-[node name="CardPlayer" parent="." instance=ExtResource("2_d2r2q")]
-position = Vector2(222, 326)
+metadata/_edit_use_anchors_ = true
 
 [node name="camera" type="Camera2D" parent="." groups=["PlayerCamera"]]
 position = Vector2(576, 324)
 ignore_rotation = false
 
-[node name="SpawnLocations" type="Node2D" parent="."]
-
-[node name="2" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
-position = Vector2(574, 100)
-rotation = 3.14159
-
-[node name="1" type="Node2D" parent="SpawnLocations" groups=["PlayerSpawnPoint"]]
-position = Vector2(571, 537)
-
 [node name="Label" type="Label" parent="."]
 layout_mode = 0
-offset_left = 914.0
-offset_top = 65.0
-offset_right = 1112.0
-offset_bottom = 537.0
+offset_left = 26.0
+offset_top = 263.0
+offset_right = 69.0
+offset_bottom = 368.0
 theme_type_variation = &"HeaderLarge"
-theme_override_font_sizes/font_size = 346
+theme_override_font_sizes/font_size = 76
 text = "1"
+
+[node name="CardPlayer1" parent="." instance=ExtResource("2_d2r2q")]
+position = Vector2(1071, 566)
+
+[node name="CardPlayer2" parent="." instance=ExtResource("2_d2r2q")]
+position = Vector2(1091, 75)
+rotation = 3.14159
+
+[node name="Card" parent="." instance=ExtResource("3_47lf0")]
+visible = false
+position = Vector2(63, 90)
+
+[node name="CardPlaceholder" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 536.0
+offset_top = 325.0
+offset_right = 599.0
+offset_bottom = 415.0
+
+[node name="CardPlaceholder2" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 658.0
+offset_top = 321.0
+offset_right = 721.0
+offset_bottom = 411.0
+
+[node name="CardPlaceholder3" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 775.0
+offset_top = 311.0
+offset_right = 838.0
+offset_bottom = 401.0
+
+[node name="CardPlaceholder4" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 784.0
+offset_top = 158.0
+offset_right = 847.0
+offset_bottom = 248.0
+
+[node name="CardPlaceholder5" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 537.0
+offset_top = 165.0
+offset_right = 600.0
+offset_bottom = 255.0
+
+[node name="CardPlaceholder6" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 666.0
+offset_top = 161.0
+offset_right = 729.0
+offset_bottom = 251.0
+
+[node name="CardPlaceholder7" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 305.0
+offset_top = 184.0
+offset_right = 368.0
+offset_bottom = 274.0
+
+[node name="CardPlaceholder8" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 390.0
+offset_top = 485.0
+offset_right = 453.0
+offset_bottom = 575.0
+
+[node name="CardPlaceholder9" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 890.0
+offset_top = 499.0
+offset_right = 953.0
+offset_bottom = 589.0
+
+[node name="CardPlaceholder10" parent="." instance=ExtResource("4_rfa0w")]
+layout_mode = 0
+offset_left = 903.0
+offset_top = 4.00003
+offset_right = 966.0
+offset_bottom = 94.0
+
+[node name="Icon" type="Sprite2D" parent="."]
+modulate = Color(1, 0.541176, 1, 1)
+position = Vector2(211, 146)
+scale = Vector2(1.73438, 1.75781)
+texture = ExtResource("5_bnqtw")
+
+[node name="Icon2" type="Sprite2D" parent="."]
+position = Vector2(198, 465)
+scale = Vector2(1.675, 1.675)
+texture = ExtResource("5_bnqtw")

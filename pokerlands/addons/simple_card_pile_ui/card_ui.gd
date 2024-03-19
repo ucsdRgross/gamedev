@@ -20,7 +20,7 @@ var backface_texture : String
 var is_clicked := false
 var mouse_is_hovering := false
 var target_position := Vector2.ZERO
-var return_speed := 0.2
+var return_speed := 0.5
 var hover_distance := 10
 var drag_when_clicked := true
 
@@ -137,9 +137,11 @@ func _process(_delta):
 	if is_clicked and drag_when_clicked:
 		target_position = get_global_mouse_position() - custom_minimum_size * 0.5
 	if is_clicked:
-		position = target_position
+		position = lerp(position, target_position, return_speed*100*_delta)#target_position
+		#position = position.move_toward(target_position, 1000*_delta)
 	elif position != target_position:
-		position = lerp(position, target_position, return_speed)
+		position = lerp(position, target_position, return_speed*100*_delta)
+		#position = position.move_toward(target_position, 1000*_delta)
 		
 	if Engine.is_editor_hint() and last_child_count != get_child_count():
 		update_configuration_warnings()

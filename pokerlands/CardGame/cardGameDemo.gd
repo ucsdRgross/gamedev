@@ -1,26 +1,21 @@
 extends Control
 
 @export var PlayerScene : PackedScene
+@onready var card_player_1: Player = $CardPlayer1
+@onready var card_player_2: Player = $CardPlayer2
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	var index = 1
 	for i in GameManager.Players:
-		var currentPlayer = PlayerScene.instantiate()
-		currentPlayer.name = str(GameManager.Players[i].id)
-		add_child(currentPlayer)
-		var camera = $camera
-		for spawn in get_tree().get_nodes_in_group("PlayerSpawnPoint"):
-			if spawn.name == str(GameManager.Players[i].index):
-				currentPlayer.global_position = spawn.global_position
-				currentPlayer.global_rotation = spawn.global_rotation
-		if multiplayer.get_unique_id() == GameManager.Players[i].id:
-			$Label.text = str(GameManager.Players[i].index)
-			if GameManager.Players[i].index == 2:
-				camera.rotation_degrees = 180
+		if GameManager.Players[i].index == 1:
+				card_player_1.set_authority(GameManager.Players[i].id)
+		if GameManager.Players[i].index == 2:
+			card_player_2.set_authority(GameManager.Players[i].id)
+			if multiplayer.get_unique_id() == GameManager.Players[i].id:
+				$Label.text = str(GameManager.Players[i].index)
+				$camera.rotation_degrees = 180
 		index += 1
-	pass # Replace with function body.
-
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
