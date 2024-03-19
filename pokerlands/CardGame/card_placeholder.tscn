@@ -3,5 +3,5 @@
 [node name="CardPlaceholder" type="ColorRect"]
 offset_right = 63.0
 offset_bottom = 90.0
-scale = Vector2(2, 2)
+scale = Vector2(1.5, 1.5)
 color = Color(0.121569, 0.345098, 0.121569, 1)
