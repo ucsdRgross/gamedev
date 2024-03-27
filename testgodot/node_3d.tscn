@@ -639,7 +639,7 @@ shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0.001)
 shader_parameter/color_mix = Color(0.172549, 0, 0.0588235, 1)
 shader_parameter/mix_strength = 0.0
-shader_parameter/texture_calls = 10
+shader_parameter/texture_calls = 15
 shader_parameter/ray_bias = 2.0
 shader_parameter/infinite_holes = false
 shader_parameter/Hframes = 1
@@ -876,11 +876,11 @@ animation = &"new_animation"
 centered = false
 
 [node name="ShearChildren" parent="." instance=ExtResource("5_nfpwu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -12.4317, 1.14587, 6.1788)
+transform = Transform3D(2.34836, 0, 0, 0, 1, 0, 0, 0, 0.802822, -12.4317, 1.14587, 6.1788)
 shear_factor = 0.0
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="ShearChildren"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.209485, -12.4317, 1.64587, 6.1788)
+transform = Transform3D(2.34836, 0, 0, 0, 1, 0, 0, 0, 0.802822, -12.4317, 1.64587, 6.1788)
 top_level = true
 material_override = SubResource("ShaderMaterial_3jc42")
 mesh = SubResource("BoxMesh_vuv0a")

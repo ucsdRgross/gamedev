@@ -110,18 +110,43 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 		pos_on_img = frameUV(pos_on_img);
 		edge = frameUV(edge);
 	}
-	for (int i = 0; i < texture_calls; i++){
-		float percentage = float(i) * 1.0/float(texture_calls);
-		// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
-		percentage = pow(percentage, ray_bias) - 0.00001;
-		vec2 checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
-		color = texture(Texture, checkPoint + offset);
-		if (color.w >= extruded_alpha_cull) {
-			if (opaque_extrude) color.w = 1.0;
-			color = mix(color, color_mix, mix_strength);
-			if (infinite_holes) return imgPoint(color, pos_on_img);
-			return imgPoint(color, checkPoint);
+	bool extrude = false;
+	vec2 checkPoint;
+	float logPoint = 0.0;
+	int calls = texture_calls;
+	float dir = -1.0;
+	float log_percentage;
+	for (int i = 0; i < calls; i++){
+		if (!extrude) {
+			float percentage = float(i) * 1.0/float(texture_calls);
+			// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
+			percentage = pow(percentage, ray_bias) - 0.00001;
+			checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
+			color = texture(Texture, checkPoint + offset);
+			if (color.w >= extruded_alpha_cull) {
+				extrude = true;
+				calls - i;
+				i = 0;
+				log_percentage = percentage;
+			}
+		} else {
+			float incremenet = dir * 1.0/(float(texture_calls)*float(i + 1)*2.0);
+			log_percentage += incremenet;
+			checkPoint = getPositionAlongTheLine(pos_on_img, edge, log_percentage);
+			vec4 check_color = texture(Texture, checkPoint + offset);
+			if (check_color.w >= extruded_alpha_cull) {
+				color = check_color;
+				dir = -1.0;
+			}else{
+				dir = 1.0;
+			}
 		}
+	}
+	if (extrude) {
+		if (opaque_extrude) color.w = 1.0;
+		color = mix(color, color_mix, mix_strength);
+		if (infinite_holes) return imgPoint(color, pos_on_img);
+		return imgPoint(color, checkPoint);
 	}
 	return imgPoint(vec4(0.0), edge);
 }
