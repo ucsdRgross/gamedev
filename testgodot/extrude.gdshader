@@ -140,9 +140,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 				color = check_color;
 				point = check_point;
 				log_dir = -1.0;
-			}else{
-				log_dir = 1.0;
-			}
+			} else log_dir = 1.0;
 		}
 	}
 	if (extrude) {
