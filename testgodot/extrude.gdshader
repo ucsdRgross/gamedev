@@ -21,7 +21,7 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // In other words, maximum amount of texture() calls, too many texture() calls will cause lag
 // Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
 // Too low and thin sections of image will not be extruded 
-uniform int texture_calls = 10;
+uniform int texture_calls = 15;
 // Shifts ray intersection checks, can increase thickness at low texture calls
 uniform float ray_bias = 2;
 // Allow hollow regions in texture to extrude forever
@@ -112,9 +112,8 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	}
 	bool extrude = false;
 	vec2 checkPoint;
-	float logPoint = 0.0;
 	int calls = texture_calls;
-	float dir = -1.0;
+	float log_dir = -1.0;
 	float log_percentage;
 	for (int i = 0; i < calls; i++){
 		if (!extrude) {
@@ -129,16 +128,17 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 				i = 0;
 				log_percentage = percentage;
 			}
+		//use remaining texture() budget to fine tune edge search
 		} else {
-			float incremenet = dir * 1.0/(float(texture_calls)*float(i + 1)*2.0);
+			float incremenet = log_dir * 1.0/(float(texture_calls)*float(i*2));
 			log_percentage += incremenet;
 			checkPoint = getPositionAlongTheLine(pos_on_img, edge, log_percentage);
 			vec4 check_color = texture(Texture, checkPoint + offset);
 			if (check_color.w >= extruded_alpha_cull) {
 				color = check_color;
-				dir = -1.0;
+				log_dir = -1.0;
 			}else{
-				dir = 1.0;
+				log_dir = 1.0;
 			}
 		}
 	}
