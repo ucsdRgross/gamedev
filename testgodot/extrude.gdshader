@@ -21,9 +21,9 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // In other words, maximum amount of texture() calls, too many texture() calls will cause lag
 // Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
 // Too low and thin sections of image will not be extruded 
-uniform int texture_calls = 15;
+uniform int texture_calls = 20;
 // Shifts ray intersection checks, can increase thickness at low texture calls
-uniform float ray_bias = 2;
+uniform float ray_bias = 1;
 // Allow hollow regions in texture to extrude forever
 // Turning this on reduces number of texture calls needed for a full extrude significantly 
 uniform bool infinite_holes = false;
@@ -111,7 +111,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 		edge = frameUV(edge);
 	}
 	bool extrude = false;
-	vec2 checkPoint;
+	vec2 point;
 	int calls = texture_calls;
 	float log_dir = -1.0;
 	float log_percentage;
@@ -120,10 +120,12 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 			float percentage = float(i) * 1.0/float(texture_calls);
 			// Minus a tiny bit so we dont check direct edge, which might find wrapped texture
 			percentage = pow(percentage, ray_bias) - 0.00001;
-			checkPoint = getPositionAlongTheLine(pos_on_img, edge, percentage);
-			color = texture(Texture, checkPoint + offset);
+			point = getPositionAlongTheLine(pos_on_img, edge, percentage);
+			color = texture(Texture, point + offset);
 			if (color.w >= extruded_alpha_cull) {
 				extrude = true;
+				//first checked pixel is img, cannot really tell where edge is
+				if (i == 0) break;
 				calls - i;
 				i = 0;
 				log_percentage = percentage;
@@ -132,10 +134,11 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 		} else {
 			float incremenet = log_dir * 1.0/(float(texture_calls)*float(i*2));
 			log_percentage += incremenet;
-			checkPoint = getPositionAlongTheLine(pos_on_img, edge, log_percentage);
-			vec4 check_color = texture(Texture, checkPoint + offset);
+			vec2 check_point = getPositionAlongTheLine(pos_on_img, edge, log_percentage);
+			vec4 check_color = texture(Texture, check_point + offset);
 			if (check_color.w >= extruded_alpha_cull) {
 				color = check_color;
+				point = check_point;
 				log_dir = -1.0;
 			}else{
 				log_dir = 1.0;
@@ -146,7 +149,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 		if (opaque_extrude) color.w = 1.0;
 		color = mix(color, color_mix, mix_strength);
 		if (infinite_holes) return imgPoint(color, pos_on_img);
-		return imgPoint(color, checkPoint);
+		return imgPoint(color, point);
 	}
 	return imgPoint(vec4(0.0), edge);
 }
