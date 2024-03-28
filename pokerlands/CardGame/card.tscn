@@ -1,12 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://cf7nxj5iha355"]
+[gd_scene load_steps=5 format=3 uid="uid://cf7nxj5iha355"]
 
 [ext_resource type="Script" path="res://CardGame/card.gd" id="1_h8xa8"]
 [ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards (large)/card_back.png" id="2_d08qp"]
 [ext_resource type="Texture2D" uid="uid://gvyugp2ns0xv" path="res://CardGame/Cards (large)/card_clubs_A.png" id="3_l22kr"]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
+size = Vector2(40, 58)
+
 [node name="Card" type="Node2D"]
-scale = Vector2(3, 3)
+scale = Vector2(2.5, 2.5)
 script = ExtResource("1_h8xa8")
+
+[node name="Area2D" type="Area2D" parent="."]
+scale = Vector2(1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_lrxu1")
 
 [node name="BackFace" type="Sprite2D" parent="."]
 texture_filter = 1
