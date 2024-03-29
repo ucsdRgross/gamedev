@@ -6,21 +6,11 @@
 [ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/card_placeholder.tscn" id="4_rfa0w"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
 
-[node name="CardGameDemo" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="CardGameDemo" type="Node"]
 script = ExtResource("1_n005u")
-PlayerScene = ExtResource("2_d2r2q")
 
 [node name="Table" type="ColorRect" parent="."]
 show_behind_parent = true
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -28,33 +18,49 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+mouse_filter = 2
 color = Color(0.176471, 0.466667, 0.176471, 1)
-metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="."]
+offset_left = 812.0
+offset_top = 235.0
+offset_right = 855.0
+offset_bottom = 340.0
+theme_type_variation = &"HeaderLarge"
+theme_override_font_sizes/font_size = 76
+text = "1"
+
+[node name="CardPlaceholder21" type="ColorRect" parent="."]
+offset_left = 11.0
+offset_top = 160.0
+offset_right = 242.0
+offset_bottom = 350.0
+scale = Vector2(1.5, 1.5)
+color = Color(0.121569, 0.345098, 0.121569, 1)
+
+[node name="Label2" type="Label" parent="CardPlaceholder21"]
+layout_mode = 0
+offset_left = 22.6667
+offset_top = 1.33333
+offset_right = 235.667
+offset_bottom = 178.333
+theme_override_font_sizes/font_size = 41
+text = "card 
+info 
+here"
 
 [node name="camera" type="Camera2D" parent="." groups=["PlayerCamera"]]
 position = Vector2(576, 324)
 ignore_rotation = false
 
-[node name="Label" type="Label" parent="."]
-layout_mode = 0
-offset_left = 803.0
-offset_top = 240.75
-offset_right = 846.0
-offset_bottom = 345.75
-theme_type_variation = &"HeaderLarge"
-theme_override_font_sizes/font_size = 76
-text = "1"
-
 [node name="CardPlayer1" parent="." instance=ExtResource("2_d2r2q")]
+visible = false
 position = Vector2(872, 562.75)
 
 [node name="CardPlayer2" parent="." instance=ExtResource("2_d2r2q")]
+visible = false
 position = Vector2(870, 67.75)
 rotation = 3.14159
-
-[node name="Card" parent="." instance=ExtResource("3_47lf0")]
-visible = false
-position = Vector2(63, 90)
 
 [node name="CardPlaceholder" parent="." instance=ExtResource("4_rfa0w")]
 position = Vector2(306, 570)
@@ -127,22 +133,8 @@ position = Vector2(1001, 557.75)
 scale = Vector2(0.853125, 0.767187)
 texture = ExtResource("5_bnqtw")
 
-[node name="CardPlaceholder21" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 11.0
-offset_top = 160.0
-offset_right = 242.0
-offset_bottom = 350.0
-scale = Vector2(1.5, 1.5)
-color = Color(0.121569, 0.345098, 0.121569, 1)
+[node name="Card" parent="." instance=ExtResource("3_47lf0")]
+position = Vector2(845, 120)
 
-[node name="Label2" type="Label" parent="CardPlaceholder21"]
-layout_mode = 0
-offset_left = 22.6667
-offset_top = 1.33333
-offset_right = 235.667
-offset_bottom = 178.333
-theme_override_font_sizes/font_size = 41
-text = "card 
-info 
-here"
+[node name="Card2" parent="." instance=ExtResource("3_47lf0")]
+position = Vector2(782, 410)

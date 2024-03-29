@@ -3,7 +3,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_nf3m3"]
 size = Vector2(100, 145)
 
-[node name="CardPlaceholder" type="StaticBody2D"]
+[node name="CardPlaceholder" type="Area2D"]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_nf3m3")
@@ -15,4 +15,5 @@ offset_right = 50.0
 offset_bottom = 73.0
 size_flags_horizontal = 4
 size_flags_vertical = 4
+mouse_filter = 2
 color = Color(0.121569, 0.345098, 0.121569, 1)

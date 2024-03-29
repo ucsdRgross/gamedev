@@ -7,12 +7,11 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
 size = Vector2(40, 58)
 
-[node name="Card" type="Node2D"]
+[node name="Card" type="Node2D" groups=["cards"]]
 scale = Vector2(2.5, 2.5)
 script = ExtResource("1_h8xa8")
 
 [node name="Area2D" type="Area2D" parent="."]
-scale = Vector2(1, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("RectangleShape2D_lrxu1")
@@ -24,3 +23,6 @@ texture = ExtResource("2_d08qp")
 [node name="FrontFace" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("3_l22kr")
+
+[connection signal="mouse_entered" from="Area2D" to="." method="_on_area_2d_mouse_entered"]
+[connection signal="mouse_exited" from="Area2D" to="." method="_on_area_2d_mouse_exited"]
