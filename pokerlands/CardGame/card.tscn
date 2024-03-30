@@ -7,22 +7,21 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
 size = Vector2(40, 58)
 
-[node name="Card" type="Node2D" groups=["cards"]]
-scale = Vector2(2.5, 2.5)
+[node name="Card" type="RigidBody2D" groups=["cards"]]
+linear_damp = 1.02
 script = ExtResource("1_h8xa8")
 
-[node name="Area2D" type="Area2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+scale = Vector2(2.5, 2.5)
 shape = SubResource("RectangleShape2D_lrxu1")
 
-[node name="BackFace" type="Sprite2D" parent="."]
+[node name="BackFace" type="Sprite2D" parent="CollisionShape2D"]
 texture_filter = 1
 texture = ExtResource("2_d08qp")
 
-[node name="FrontFace" type="Sprite2D" parent="."]
+[node name="FrontFace" type="Sprite2D" parent="CollisionShape2D"]
 texture_filter = 1
 texture = ExtResource("3_l22kr")
 
-[connection signal="mouse_entered" from="Area2D" to="." method="_on_area_2d_mouse_entered"]
-[connection signal="mouse_exited" from="Area2D" to="." method="_on_area_2d_mouse_exited"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

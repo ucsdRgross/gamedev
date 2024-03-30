@@ -21,9 +21,9 @@ func _ready():
 func _process(delta):
 	pass
 
-func _input(event):
-	if event is InputEventMouseButton:
-		if event.button_index == 1 and event.pressed:
-			get_tree().call_group("cards", "_on_mouse_button_1_pressed")
-		elif event.button_index == 1 and not event.pressed:
-			get_tree().call_group("cards", "_on_mouse_button_1_not_pressed")
+#func _input(event):
+	#if event is InputEventMouseButton:
+		#if event.button_index == 1 and event.pressed:
+			#get_tree().call_group("cards", "_on_mouse_button_1_pressed")
+		#elif event.button_index == 1 and not event.pressed:
+			#get_tree().call_group("cards", "_on_mouse_button_1_not_pressed")
