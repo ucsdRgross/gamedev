@@ -1,19 +1,65 @@
-[gd_scene load_steps=6 format=3 uid="uid://pxqkgtqvvgnm"]
+[gd_scene load_steps=13 format=3 uid="uid://pxqkgtqvvgnm"]
 
 [ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
-[ext_resource type="PackedScene" uid="uid://b8nb6d37ovhyu" path="res://CardGame/cardPlayer.tscn" id="2_d2r2q"]
 [ext_resource type="PackedScene" uid="uid://cf7nxj5iha355" path="res://CardGame/card.tscn" id="3_47lf0"]
 [ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/card_placeholder.tscn" id="4_rfa0w"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
 
-[node name="CardGameDemo" type="Node"]
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_eg74a"]
+normal = Vector2(1, 0)
+distance = -75.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tjkxs"]
+normal = Vector2(0, 1)
+distance = -75.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_yiamh"]
+normal = Vector2(-1, 0)
+distance = -1227.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_dbnol"]
+distance = -723.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_a2g6k"]
+normal = Vector2(1, 0)
+distance = -150.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_0t622"]
+normal = Vector2(0, 1)
+distance = -150.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_wrepd"]
+normal = Vector2(-1, 0)
+distance = -1302.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_3wh7i"]
+distance = -798.0
+
+[node name="CardGameDemo" type="Node2D"]
 script = ExtResource("1_n005u")
 
-[node name="Table" type="ColorRect" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = -128
+follow_viewport_enabled = true
+
+[node name="Table" type="ColorRect" parent="CanvasLayer"]
 show_behind_parent = true
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.176471, 0.466667, 0.176471, 1)
+
+[node name="Table" type="ColorRect" parent="."]
+visible = false
+show_behind_parent = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 500.0
+offset_bottom = 500.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
@@ -36,6 +82,7 @@ offset_top = 160.0
 offset_right = 242.0
 offset_bottom = 350.0
 scale = Vector2(1.5, 1.5)
+mouse_filter = 2
 color = Color(0.121569, 0.345098, 0.121569, 1)
 
 [node name="Label2" type="Label" parent="CardPlaceholder21"]
@@ -52,15 +99,6 @@ here"
 [node name="camera" type="Camera2D" parent="." groups=["PlayerCamera"]]
 position = Vector2(576, 324)
 ignore_rotation = false
-
-[node name="CardPlayer1" parent="." instance=ExtResource("2_d2r2q")]
-visible = false
-position = Vector2(872, 562.75)
-
-[node name="CardPlayer2" parent="." instance=ExtResource("2_d2r2q")]
-visible = false
-position = Vector2(870, 67.75)
-rotation = 3.14159
 
 [node name="CardPlaceholder" parent="." instance=ExtResource("4_rfa0w")]
 position = Vector2(306, 570)
@@ -133,8 +171,95 @@ position = Vector2(1001, 557.75)
 scale = Vector2(0.853125, 0.767187)
 texture = ExtResource("5_bnqtw")
 
-[node name="Card" parent="." instance=ExtResource("3_47lf0")]
+[node name="MousePin" type="PinJoint2D" parent="."]
+node_a = NodePath("StaticBody2D")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="MousePin"]
+
+[node name="ColorRect" type="ColorRect" parent="MousePin"]
+z_index = 3250
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+mouse_filter = 2
+color = Color(1, 0.25098, 1, 1)
+
+[node name="Cards" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Card" parent="Cards" instance=ExtResource("3_47lf0")]
 position = Vector2(845, 120)
 
-[node name="Card2" parent="." instance=ExtResource("3_47lf0")]
-position = Vector2(782, 410)
+[node name="Card2" parent="Cards" instance=ExtResource("3_47lf0")]
+position = Vector2(761, 329)
+
+[node name="Borders" type="Node2D" parent="."]
+
+[node name="LeftRight" type="Area2D" parent="Borders"]
+gravity_space_override = 1
+gravity_point_center = Vector2(1, 0)
+gravity_direction = Vector2(1, 0)
+gravity = 3920.0
+linear_damp_space_override = 1
+linear_damp = 10.0
+angular_damp_space_override = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/LeftRight"]
+shape = SubResource("WorldBoundaryShape2D_eg74a")
+
+[node name="TopBot" type="Area2D" parent="Borders"]
+gravity_space_override = 1
+gravity = 3920.0
+linear_damp_space_override = 1
+linear_damp = 10.0
+angular_damp_space_override = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/TopBot"]
+shape = SubResource("WorldBoundaryShape2D_tjkxs")
+
+[node name="RightLeft" type="Area2D" parent="Borders"]
+gravity_space_override = 1
+gravity_point_center = Vector2(-1, 0)
+gravity_direction = Vector2(-1, 0)
+gravity = 3920.0
+linear_damp_space_override = 1
+linear_damp = 10.0
+angular_damp_space_override = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/RightLeft"]
+shape = SubResource("WorldBoundaryShape2D_yiamh")
+
+[node name="BotTop" type="Area2D" parent="Borders"]
+gravity_space_override = 1
+gravity_point_center = Vector2(0, -1)
+gravity_direction = Vector2(0, -1)
+gravity = 3920.0
+linear_damp_space_override = 1
+linear_damp = 10.0
+angular_damp_space_override = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/BotTop"]
+shape = SubResource("WorldBoundaryShape2D_dbnol")
+
+[node name="StaticLR" type="StaticBody2D" parent="Borders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticLR"]
+shape = SubResource("WorldBoundaryShape2D_a2g6k")
+
+[node name="StaticTB" type="StaticBody2D" parent="Borders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticTB"]
+shape = SubResource("WorldBoundaryShape2D_0t622")
+
+[node name="StaticRL" type="StaticBody2D" parent="Borders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticRL"]
+shape = SubResource("WorldBoundaryShape2D_wrepd")
+
+[node name="StaticLBT" type="StaticBody2D" parent="Borders"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticLBT"]
+shape = SubResource("WorldBoundaryShape2D_3wh7i")
+
+[connection signal="child_entered_tree" from="Cards" to="." method="_on_cards_child_entered_tree"]

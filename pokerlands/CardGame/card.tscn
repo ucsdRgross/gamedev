@@ -8,7 +8,10 @@
 size = Vector2(40, 58)
 
 [node name="Card" type="RigidBody2D" groups=["cards"]]
-linear_damp = 1.02
+collision_mask = 0
+input_pickable = true
+linear_damp = 4.0
+angular_damp = 20.0
 script = ExtResource("1_h8xa8")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -23,5 +26,4 @@ texture = ExtResource("2_d08qp")
 texture_filter = 1
 texture = ExtResource("3_l22kr")
 
-[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
-[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="input_event" from="." to="." method="_on_input_event"]

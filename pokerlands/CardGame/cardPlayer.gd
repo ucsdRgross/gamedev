@@ -8,7 +8,7 @@ func _ready() -> void:
 func set_authority(id : int) -> void:
 	$MultiplayerSynchronizer.set_multiplayer_authority(id)
 
-var dragging = false
+var dragging := false
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 
