@@ -29,7 +29,7 @@ func pickup() -> void:
 		return
 	held = true
 
-func drop(impulse:=Vector2.ZERO) -> void:
+func drop() -> void:
 	if held:
 		held = false
 

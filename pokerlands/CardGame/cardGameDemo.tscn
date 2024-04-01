@@ -173,10 +173,12 @@ texture = ExtResource("5_bnqtw")
 
 [node name="MousePin" type="PinJoint2D" parent="."]
 node_a = NodePath("StaticBody2D")
+softness = 3.0
+motor_enabled = true
 
 [node name="StaticBody2D" type="StaticBody2D" parent="MousePin"]
 
-[node name="ColorRect" type="ColorRect" parent="MousePin"]
+[node name="ColorRect" type="ColorRect" parent="MousePin/StaticBody2D"]
 z_index = 3250
 offset_left = -5.0
 offset_top = -5.0

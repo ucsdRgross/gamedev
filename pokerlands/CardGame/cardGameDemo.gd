@@ -20,7 +20,7 @@ var held_card : Card = null
 				#$camera.rotation_degrees = 180
 		#index += 1
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	mouse_pin.global_position = get_global_mouse_position()
 	
 func _on_cards_child_entered_tree(card : Card) -> void:
@@ -38,6 +38,6 @@ func _input(event:InputEvent) -> void:
 		var mouse_event : InputEventMouseButton = event
 		if mouse_event.button_index == 1 and not mouse_event.pressed:
 			if held_card:
-				held_card.drop(Input.get_last_mouse_velocity())
+				held_card.drop()
 				held_card = null
 				mouse_pin.node_b = NodePath()
