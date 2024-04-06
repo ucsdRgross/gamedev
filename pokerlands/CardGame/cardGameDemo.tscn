@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
 [ext_resource type="PackedScene" uid="uid://cf7nxj5iha355" path="res://CardGame/card.tscn" id="3_47lf0"]
-[ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/card_placeholder.tscn" id="4_rfa0w"]
+[ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="4_rfa0w"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_eg74a"]
@@ -191,10 +191,10 @@ color = Color(1, 0.25098, 1, 1)
 unique_name_in_owner = true
 
 [node name="Card" parent="Cards" instance=ExtResource("3_47lf0")]
-position = Vector2(845, 120)
+position = Vector2(952, 233)
 
 [node name="Card2" parent="Cards" instance=ExtResource("3_47lf0")]
-position = Vector2(761, 329)
+position = Vector2(904, 262)
 
 [node name="Borders" type="Node2D" parent="."]
 

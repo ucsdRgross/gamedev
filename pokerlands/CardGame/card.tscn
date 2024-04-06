@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://cf7nxj5iha355"]
+[gd_scene load_steps=6 format=3 uid="uid://cf7nxj5iha355"]
 
 [ext_resource type="Script" path="res://CardGame/card.gd" id="1_h8xa8"]
 [ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards (large)/card_back.png" id="2_d08qp"]
@@ -7,11 +7,14 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
 size = Vector2(40, 58)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dje83"]
+size = Vector2(40, 58)
+
 [node name="Card" type="RigidBody2D" groups=["cards"]]
 collision_mask = 0
 input_pickable = true
 linear_damp = 4.0
-angular_damp = 20.0
+angular_damp = 10.0
 script = ExtResource("1_h8xa8")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -25,5 +28,10 @@ texture = ExtResource("2_d08qp")
 [node name="FrontFace" type="Sprite2D" parent="CollisionShape2D"]
 texture_filter = 1
 texture = ExtResource("3_l22kr")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_dje83")
 
 [connection signal="input_event" from="." to="." method="_on_input_event"]
