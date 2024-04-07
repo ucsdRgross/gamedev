@@ -24,6 +24,7 @@ func _process(delta: float) -> void:
 			timer.stop()
 
 func confirm_card() -> void:
+	timer.stop()
 	if held_card and held_card.in_play:
 		held_card.in_play = false
 		var tween : Tween = create_tween()

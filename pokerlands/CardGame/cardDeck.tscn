@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://cbacwlcc4jbh7"]
+
+[ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards (large)/card_back.png" id="1_8pfkd"]
+[ext_resource type="Script" path="res://CardGame/cardDeck.gd" id="1_cdmk5"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6bi4p"]
+size = Vector2(100, 145)
+
+[node name="CardDeck" type="Area2D"]
+script = ExtResource("1_cdmk5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_6bi4p")
+
+[node name="BackFace3" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(6, 6)
+scale = Vector2(2.5, 2.5)
+texture = ExtResource("1_8pfkd")
+
+[node name="BackFace2" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(3, 3)
+scale = Vector2(2.5, 2.5)
+texture = ExtResource("1_8pfkd")
+
+[node name="BackFace" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(2.5, 2.5)
+texture = ExtResource("1_8pfkd")
+
+[connection signal="input_event" from="." to="." method="_on_input_event"]

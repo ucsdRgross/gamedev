@@ -1,8 +1,9 @@
-[gd_scene load_steps=13 format=3 uid="uid://pxqkgtqvvgnm"]
+[gd_scene load_steps=14 format=3 uid="uid://pxqkgtqvvgnm"]
 
 [ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
 [ext_resource type="PackedScene" uid="uid://cf7nxj5iha355" path="res://CardGame/card.tscn" id="3_47lf0"]
 [ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="4_rfa0w"]
+[ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/cardDeck.tscn" id="5_1yrsx"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_eg74a"]
@@ -187,6 +188,9 @@ offset_bottom = 5.0
 mouse_filter = 2
 color = Color(1, 0.25098, 1, 1)
 
+[node name="CardDeck" parent="." instance=ExtResource("5_1yrsx")]
+position = Vector2(266, 296)
+
 [node name="Cards" type="Node2D" parent="."]
 unique_name_in_owner = true
 
@@ -264,4 +268,5 @@ shape = SubResource("WorldBoundaryShape2D_wrepd")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticLBT"]
 shape = SubResource("WorldBoundaryShape2D_3wh7i")
 
+[connection signal="draw_card" from="CardDeck" to="." method="_on_card_deck_draw_card"]
 [connection signal="child_entered_tree" from="Cards" to="." method="_on_cards_child_entered_tree"]

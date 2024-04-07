@@ -4,6 +4,7 @@ extends Node2D
 #@onready var card_player_1: Player = $CardPlayer1
 #@onready var card_player_2: Player = $CardPlayer2
 @onready var mouse_pin: PinJoint2D = $MousePin
+@onready var cards: Node2D = %Cards
 
 var held_card : Card = null
 
@@ -41,3 +42,9 @@ func _input(event:InputEvent) -> void:
 				held_card.drop()
 				held_card = null
 				mouse_pin.node_b = NodePath()
+
+func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, event: InputEvent) -> void:
+	var card : Card = card_info.instantiate()
+	card.global_position = deck_position
+	cards.add_child(card)
+	card.process_event(event)
