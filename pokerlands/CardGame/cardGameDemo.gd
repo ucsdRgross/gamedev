@@ -33,18 +33,25 @@ func _on_card_clicked(card : Card) -> void:
 		held_card = card
 		mouse_pin.node_b = mouse_pin.get_path_to(held_card)
 		%Cards.move_child(card,-1)
+		
+func drop_held_card() -> void:
+	held_card.drop()
+	held_card = null
+	mouse_pin.node_b = NodePath()
 
 func _input(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		if mouse_event.button_index == 1 and not mouse_event.pressed:
 			if held_card:
-				held_card.drop()
-				held_card = null
-				mouse_pin.node_b = NodePath()
+				drop_held_card()
 
 func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, event: InputEvent) -> void:
 	var card : Card = card_info.instantiate()
 	card.global_position = deck_position
 	cards.add_child(card)
 	card.process_event(event)
+
+func _on_card_discard_deck_discard_card(card: Card) -> void:
+	if held_card == card:
+		drop_held_card()

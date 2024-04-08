@@ -28,9 +28,9 @@ func confirm_card() -> void:
 	if held_card and held_card.in_play:
 		held_card.in_play = false
 		var tween : Tween = create_tween()
-		tween.set_trans(Tween.TRANS_ELASTIC).set_parallel()
-		tween.tween_property(held_card, "global_position", global_position, 0.5)
-		tween.tween_property(held_card, "rotation", rotation, 0.5)
+		tween.set_trans(Tween.TRANS_BACK).set_parallel()
+		tween.tween_property(held_card, "global_position", global_position, 0.3)
+		tween.tween_property(held_card, "rotation", roundf(held_card.rotation/PI)*PI, 0.3)
 
 func _on_timer_timeout() -> void:
 	confirm_card()

@@ -1,10 +1,11 @@
-[gd_scene load_steps=14 format=3 uid="uid://pxqkgtqvvgnm"]
+[gd_scene load_steps=15 format=3 uid="uid://pxqkgtqvvgnm"]
 
 [ext_resource type="Script" path="res://CardGame/cardGameDemo.gd" id="1_n005u"]
 [ext_resource type="PackedScene" uid="uid://cf7nxj5iha355" path="res://CardGame/card.tscn" id="3_47lf0"]
 [ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="4_rfa0w"]
 [ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/cardDeck.tscn" id="5_1yrsx"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="5_bnqtw"]
+[ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/cardDiscardDeck.tscn" id="6_dtcva"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_eg74a"]
 normal = Vector2(1, 0)
@@ -101,26 +102,11 @@ here"
 position = Vector2(576, 324)
 ignore_rotation = false
 
-[node name="CardPlaceholder" parent="." instance=ExtResource("4_rfa0w")]
-position = Vector2(306, 570)
-
-[node name="CardPlaceholder15" parent="." instance=ExtResource("4_rfa0w")]
-position = Vector2(154, 569)
-
 [node name="CardPlaceholder17" parent="." instance=ExtResource("4_rfa0w")]
 position = Vector2(281, 88)
 
 [node name="CardPlaceholder18" parent="." instance=ExtResource("4_rfa0w")]
 position = Vector2(116, 76)
-
-[node name="CardPlaceholder19" parent="." instance=ExtResource("4_rfa0w")]
-position = Vector2(725, 615)
-
-[node name="CardPlaceholder20" parent="." instance=ExtResource("4_rfa0w")]
-position = Vector2(551, 610)
-
-[node name="CardPlaceholder16" parent="." instance=ExtResource("4_rfa0w")]
-position = Vector2(442, 598)
 
 [node name="CardPlaceholder2" parent="." instance=ExtResource("4_rfa0w")]
 position = Vector2(702, 453)
@@ -189,7 +175,10 @@ mouse_filter = 2
 color = Color(1, 0.25098, 1, 1)
 
 [node name="CardDeck" parent="." instance=ExtResource("5_1yrsx")]
-position = Vector2(266, 296)
+position = Vector2(273, 554)
+
+[node name="CardDiscardDeck" parent="." instance=ExtResource("6_dtcva")]
+position = Vector2(92, 554)
 
 [node name="Cards" type="Node2D" parent="."]
 unique_name_in_owner = true
@@ -269,4 +258,5 @@ shape = SubResource("WorldBoundaryShape2D_wrepd")
 shape = SubResource("WorldBoundaryShape2D_3wh7i")
 
 [connection signal="draw_card" from="CardDeck" to="." method="_on_card_deck_draw_card"]
+[connection signal="discard_card" from="CardDiscardDeck" to="." method="_on_card_discard_deck_discard_card"]
 [connection signal="child_entered_tree" from="Cards" to="." method="_on_cards_child_entered_tree"]
