@@ -1,8 +1,10 @@
 extends Area2D
+class_name CardSpace
 
 @onready var timer: Timer = $Timer
 
 var held_card : Card = null
+var active := false
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -16,7 +18,8 @@ func _process(delta: float) -> void:
 						held_card = card
 						timer.stop()
 					if timer.is_stopped():
-						timer.start()
+						if active:
+							timer.start()
 				else:
 					timer.stop()
 		else:
@@ -31,6 +34,12 @@ func confirm_card() -> void:
 		tween.set_trans(Tween.TRANS_BACK).set_parallel()
 		tween.tween_property(held_card, "global_position", global_position, 0.3)
 		tween.tween_property(held_card, "rotation", roundf(held_card.rotation/PI)*PI, 0.3)
+	else:
+		held_card = null
+
+func activate() -> void:
+	active = true
+	confirm_card()
 
 func _on_timer_timeout() -> void:
 	confirm_card()

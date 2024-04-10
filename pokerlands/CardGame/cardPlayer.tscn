@@ -1,49 +1,61 @@
-[gd_scene load_steps=3 format=3 uid="uid://b8nb6d37ovhyu"]
+[gd_scene load_steps=6 format=3 uid="uid://5htxiasabwsw"]
 
-[ext_resource type="Script" path="res://CardGame/cardPlayer.gd" id="1_ahlk0"]
+[ext_resource type="Script" path="res://CardGame/cardPlayer.gd" id="1_uivmn"]
+[ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="2_ap3rq"]
+[ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/cardDeck.tscn" id="3_fl2am"]
+[ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/cardDiscardDeck.tscn" id="4_qkjm1"]
+[ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="5_am78i"]
 
-[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_lwdsk"]
-properties/0/path = NodePath("ColorRect:color")
-properties/0/spawn = true
-properties/0/replication_mode = 2
-properties/1/path = NodePath(".:position")
-properties/1/spawn = true
-properties/1/replication_mode = 2
+[node name="Player1" type="Node2D"]
+position = Vector2(0, 324)
+script = ExtResource("1_uivmn")
 
-[node name="CardPlayer" type="Node2D"]
-script = ExtResource("1_ahlk0")
+[node name="Icon" type="Sprite2D" parent="."]
+modulate = Color(1, 0.541176, 1, 1)
+position = Vector2(1045, 242)
+scale = Vector2(0.757813, 0.714844)
+texture = ExtResource("2_ap3rq")
 
-[node name="ColorRect" type="ColorRect" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -64.0
-offset_top = -64.0
-offset_right = 64.0
-offset_bottom = 64.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="CardDeck" parent="." instance=ExtResource("3_fl2am")]
+position = Vector2(260, 240)
 
-[node name="ColorRect2" type="ColorRect" parent="ColorRect"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -15.0
-offset_top = -106.0
-offset_right = 76.08
-offset_bottom = 22.0
-grow_horizontal = 2
-grow_vertical = 2
-scale = Vector2(0.325656, 0.574495)
+[node name="CardDiscardDeck" parent="." instance=ExtResource("4_qkjm1")]
+position = Vector2(100, 240)
+
+[node name="CardSpace1" parent="." instance=ExtResource("5_am78i")]
+position = Vector2(446, 80)
+
+[node name="CardSpace2" parent="." instance=ExtResource("5_am78i")]
+position = Vector2(576, 80)
+
+[node name="CardSpace3" parent="." instance=ExtResource("5_am78i")]
+position = Vector2(706, 80)
+
+[node name="CardSpace4" parent="." instance=ExtResource("5_am78i")]
+position = Vector2(900, 80)
+
+[node name="CardSpace5" parent="." instance=ExtResource("5_am78i")]
+position = Vector2(1030, 80)
+
+[node name="Cards" type="Node2D" parent="."]
+z_index = 1
+
+[node name="MousePin" type="PinJoint2D" parent="."]
+node_a = NodePath("StaticBody2D")
+softness = 3.0
+motor_enabled = true
+
+[node name="StaticBody2D" type="StaticBody2D" parent="MousePin"]
+
+[node name="ColorRect" type="ColorRect" parent="MousePin/StaticBody2D"]
+z_index = 3250
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
 mouse_filter = 2
+color = Color(1, 0.25098, 1, 1)
 
-[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
-replication_config = SubResource("SceneReplicationConfig_lwdsk")
-
-[connection signal="mouse_entered" from="ColorRect" to="." method="_on_color_rect_mouse_entered"]
-[connection signal="mouse_exited" from="ColorRect" to="." method="_on_color_rect_mouse_exited"]
+[connection signal="draw_card" from="CardDeck" to="." method="_on_card_deck_draw_card"]
+[connection signal="discard_card" from="CardDiscardDeck" to="." method="_on_card_discard_deck_discard_card"]
+[connection signal="child_entered_tree" from="Cards" to="." method="_on_cards_child_entered_tree"]

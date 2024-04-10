@@ -1,32 +1,51 @@
 extends Node2D
-class_name Player
+class_name CardPlayer
 
-func _ready() -> void:
-	print(str(name))
-	#$MultiplayerSynchronizer.set_multiplayer_authority(str(name).to_int())
+@onready var mouse_pin: PinJoint2D = $MousePin
 
-func set_authority(id : int) -> void:
-	$MultiplayerSynchronizer.set_multiplayer_authority(id)
+@onready var card_spaces: Array[CardSpace] = [$CardSpace1, $CardSpace2, $CardSpace3, $CardSpace4, $CardSpace5]
+@onready var cards: Node2D = $Cards
 
-var dragging := false
+var held_card : Card = null
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _physics_process(_delta: float) -> void:
+	mouse_pin.global_position = get_global_mouse_position()
+	
+func _on_cards_child_entered_tree(card : Card) -> void:
+	card.clicked.connect(_on_card_clicked)
+		
+func _on_card_clicked(card : Card) -> void:
+	if !held_card:
+		card.pickup()
+		held_card = card
+		mouse_pin.node_b = mouse_pin.get_path_to(held_card)
+		cards.move_child(card,-1)
+		
+func drop_held_card() -> void:
+	held_card.drop()
+	held_card = null
+	mouse_pin.node_b = NodePath()
 
-func _process(delta: float) -> void:
-	if dragging:
-		global_position = lerp(global_position, get_global_mouse_position(), 15*delta)
+func _input(event:InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		if mouse_event.button_index == 1 and not mouse_event.pressed:
+			if held_card:
+				drop_held_card()
 
-func _input(event: InputEvent) -> void:
-	if $MultiplayerSynchronizer.get_multiplayer_authority() == multiplayer.get_unique_id():
-		if event is InputEventMouseMotion:
-			dragging = (event.button_mask == 1)
+func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, event: InputEvent) -> void:
+	var card : Card = card_info.instantiate()
+	cards.add_child(card)
+	card.global_position = deck_position
+	card.process_event(event)
 
-#@rpc("any_peer","call_local")
-func _on_color_rect_mouse_entered() -> void:
-	if $MultiplayerSynchronizer.get_multiplayer_authority() == multiplayer.get_unique_id():
-		$ColorRect.color = Color.AQUA
+func _on_card_discard_deck_discard_card(card: Card) -> void:
+	if held_card == card:
+		drop_held_card()
 
-#@rpc("any_peer","call_local")
-func _on_color_rect_mouse_exited() -> void:
-	if $MultiplayerSynchronizer.get_multiplayer_authority() == multiplayer.get_unique_id():
-		$ColorRect.color = Color.ALICE_BLUE
+func reset() -> void:
+	for space:CardSpace in card_spaces:
+		space.active = false
+		if space.held_card:
+			space.held_card.queue_free()
+			space.held_card = null

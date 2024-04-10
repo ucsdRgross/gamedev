@@ -18,15 +18,17 @@ func _physics_process(_delta:float) -> void:
 	if held:
 		pass
 
-func _on_input_event(_viewport:Node, event:InputEvent, _shape_idx:int) -> void:
+func _on_control_gui_input(event: InputEvent) -> void:
 	process_event(event)
+
 			
 func process_event(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			print("clicked")
-			clicked.emit(self)
+			#print("clicked")
+			if in_play:
+				clicked.emit(self)
 
 func pickup() -> void:
 	if held:
