@@ -5,6 +5,7 @@ class_name CardPlayer
 
 @onready var card_spaces: Array[CardSpace] = [$CardSpace1, $CardSpace2, $CardSpace3, $CardSpace4, $CardSpace5]
 @onready var cards: Node2D = $Cards
+@onready var card_zone: Area2D = $CardZone
 
 var held_card : Card = null
 
@@ -25,6 +26,8 @@ func drop_held_card() -> void:
 	held_card.drop()
 	held_card = null
 	mouse_pin.node_b = NodePath()
+	print('release')
+	card_zone.position_cards()
 
 func _input(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -37,6 +40,13 @@ func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, eve
 	var card : Card = card_info.instantiate()
 	cards.add_child(card)
 	card.global_position = deck_position
+	
+	var colors = [Color(1.0, 0.0, 0.0, 1.0),
+				Color(0.0, 1.0, 0.0, 1.0),
+				Color(0.0, 0.0, 1.0, 1.0)]
+	randomize()
+	card.modulate = colors[randi() % colors.size()]
+	
 	card.process_event(event)
 
 func _on_card_discard_deck_discard_card(card: Card) -> void:

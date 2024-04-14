@@ -1,9 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://dmi6l3kkgpqne"]
+[gd_scene load_steps=4 format=3 uid="uid://dmi6l3kkgpqne"]
 
 [ext_resource type="Script" path="res://CardGame/cardSpace.gd" id="1_4vnjc"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_nf3m3"]
 size = Vector2(100, 145)
+
+[sub_resource type="Curve2D" id="Curve2D_xha8a"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -48.09, 0, 0, 0, 0, 0, 48.435, 0)
+}
+point_count = 2
 
 [node name="CardSpace" type="Area2D"]
 script = ExtResource("1_4vnjc")
@@ -23,5 +29,8 @@ color = Color(0.121569, 0.345098, 0.121569, 1)
 
 [node name="Timer" type="Timer" parent="."]
 one_shot = true
+
+[node name="Path2D" type="Path2D" parent="."]
+curve = SubResource("Curve2D_xha8a")
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

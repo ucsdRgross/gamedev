@@ -5,6 +5,8 @@ var rank : int = 0
 var suit : int = 0
 var held := false
 var in_play := true
+var goal_position : Vector2
+var tween : Tween
 
 @onready var back_face: Sprite2D = $CollisionShape2D/BackFace
 @onready var front_face: Sprite2D = $CollisionShape2D/FrontFace

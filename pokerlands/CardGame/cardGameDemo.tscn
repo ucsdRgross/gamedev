@@ -192,4 +192,5 @@ wait_time = 10.0
 one_shot = true
 
 [editable path="Player1"]
+[editable path="Player1/CardZone"]
 [editable path="Player2"]

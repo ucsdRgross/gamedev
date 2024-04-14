@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://5htxiasabwsw"]
+[gd_scene load_steps=7 format=3 uid="uid://5htxiasabwsw"]
 
 [ext_resource type="Script" path="res://CardGame/cardPlayer.gd" id="1_uivmn"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="2_ap3rq"]
 [ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/cardDeck.tscn" id="3_fl2am"]
 [ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/cardDiscardDeck.tscn" id="4_qkjm1"]
 [ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="5_am78i"]
+[ext_resource type="PackedScene" uid="uid://ktfm6qa8eb" path="res://CardGame/card_zone.tscn" id="6_apu2s"]
 
 [node name="Player1" type="Node2D"]
 position = Vector2(0, 324)
@@ -36,6 +37,9 @@ position = Vector2(900, 80)
 
 [node name="CardSpace5" parent="." instance=ExtResource("5_am78i")]
 position = Vector2(1030, 80)
+
+[node name="CardZone" parent="." instance=ExtResource("6_apu2s")]
+position = Vector2(580, 239)
 
 [node name="Cards" type="Node2D" parent="."]
 z_index = 1

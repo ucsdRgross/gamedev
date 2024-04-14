@@ -24,6 +24,11 @@ func game_loop() -> void:
 func bet_round(space:int) -> void:
 	for player:CardPlayer in players:
 		player.card_spaces[space].activate()
+		
+func check() -> void:
+	for player:CardPlayer in players:
+		player.card_spaces[3].activate()
+		player.card_spaces[4].activate()
 
 func reset() -> void:
 	for player:CardPlayer in players:
