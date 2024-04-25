@@ -7,6 +7,7 @@ var held := false
 var in_play := true
 var goal_position : Vector2
 var tween : Tween
+static var num_cards : int = 0
 
 @onready var back_face: Sprite2D = $CollisionShape2D/BackFace
 @onready var front_face: Sprite2D = $CollisionShape2D/FrontFace
@@ -15,6 +16,12 @@ signal clicked
 
 func _ready() -> void:
 	show_back()
+
+func _enter_tree() -> void:
+	num_cards += 1
+	
+func _exit_tree() -> void:
+	num_cards -= 1
 
 func _physics_process(_delta:float) -> void:
 	if held:
@@ -36,10 +43,12 @@ func pickup() -> void:
 	if held:
 		return
 	held = true
+	z_index = num_cards	
 
 func drop() -> void:
 	if held:
 		held = false
+		z_index = 0
 
 func show_front()  -> void:
 	front_face.show()

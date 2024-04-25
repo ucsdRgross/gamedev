@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://CardGame/card_zone.gd" id="1_2vbp5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_53rf6"]
-size = Vector2(450, 150)
+size = Vector2(450, 55)
 
 [sub_resource type="Curve2D" id="Curve2D_rceyh"]
 _data = {
@@ -16,6 +16,7 @@ position = Vector2(1, 0)
 script = ExtResource("1_2vbp5")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 0.5)
 shape = SubResource("RectangleShape2D_53rf6")
 
 [node name="HandPath" type="Path2D" parent="."]

@@ -53,6 +53,7 @@ func position_cards() -> void:
 				card.tween.tween_property(card, "global_position", card.goal_position, anim_time)
 				if abs(int(card.rotation_degrees)) % 180 != 0:
 					card.tween.tween_property(card, "rotation", roundf(card.rotation/PI)*PI, anim_time)
+				card.z_index = i - cards.size()
 		else:
 			card.global_position = new_position
 		i += 1
@@ -66,7 +67,6 @@ func sort_position(a:Node2D, b:Node2D) -> bool:
 		b_offset = path.curve.get_closest_offset((b as Card).goal_position - global_position)
 	var buffer : float = path.curve.get_baked_length()/100 / cards.size() * (100/4) 
 	if a is Card and a.held:
-		print(a_offset)
 		if b_offset - buffer < a_offset - buffer and b_offset + buffer > a_offset - buffer:
 			print("right")
 			var move_to : int = cards.find(b) + 1
@@ -80,7 +80,6 @@ func sort_position(a:Node2D, b:Node2D) -> bool:
 				return true
 			return false
 	elif b is Card and b.held:
-		print(b_offset)
 		if a_offset - buffer < b_offset - buffer and a_offset + buffer > b_offset - buffer:
 			print("right")
 			var move_to : int = cards.find(a) + 1
