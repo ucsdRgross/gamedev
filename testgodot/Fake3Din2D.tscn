@@ -1,0 +1,88 @@
+[gd_scene load_steps=6 format=3 uid="uid://c3eneftadmgxr"]
+
+[ext_resource type="Script" path="res://Fake3Dtransform.gd" id="1_3y2l8"]
+[ext_resource type="Texture2D" uid="uid://bs2fc5xl3avrj" path="res://icon.svg" id="2_ao3n2"]
+
+[sub_resource type="Animation" id="Animation_wysf0"]
+resource_name = "3d Rotation"
+length = 10.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Node3D:rotation:x")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 5, 10),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 3.142, 6.283]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Node3D:rotation:y")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 2.5, 5, 7.5, 10),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 3.142, 6.284, 3.142, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Node3D:rotation:z")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 5, 10),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 3.142, 0.0]
+}
+
+[sub_resource type="Animation" id="Animation_1bhh8"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Node3D:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_sd1hl"]
+_data = {
+"3d Rotation": SubResource("Animation_wysf0"),
+"RESET": SubResource("Animation_1bhh8")
+}
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_3y2l8")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(178, 133)
+rotation = -2.42329
+scale = Vector2(0.992584, -0.920777)
+skew = 0.051908
+texture = ExtResource("2_ao3n2")
+
+[node name="Node3D" type="Node3D" parent="."]
+
+[node name="Marker3D" type="Marker3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.205, 0, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_sd1hl")
+}
+autoplay = "3d Rotation"
+speed_scale = 2.079
