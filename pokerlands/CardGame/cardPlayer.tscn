@@ -41,6 +41,11 @@ position = Vector2(1030, 80)
 [node name="CardZone" parent="." instance=ExtResource("6_apu2s")]
 position = Vector2(580, 239)
 
+[node name="CardZone2" parent="." instance=ExtResource("6_apu2s")]
+position = Vector2(206, 72)
+location_sort = false
+moveable_cards = false
+
 [node name="Cards" type="Node2D" parent="."]
 z_index = 1
 

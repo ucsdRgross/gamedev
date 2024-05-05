@@ -1,4 +1,5 @@
 extends Area2D
+class_name CardZone
 
 @onready var path: Path2D = $HandPath
 var tween : Tween = null
@@ -6,6 +7,7 @@ var tween : Tween = null
 @export var location_sort : bool = true
 @export var spaces : int = 3
 @export var max_cards : int = 3
+@export var moveable_cards : bool = true
 var cards : Array[Node2D] = []
 var old_cards : Array[Node2D] = []
 var placeholders : Array[Node2D] = []
@@ -31,8 +33,18 @@ func _process(delta: float) -> void:
 			position_cards()
 			old_cards = cards.duplicate()
 	else:
-		position_cards()
-		old_cards = cards.duplicate()
+		if cards != old_cards:
+			var real_cards : Array[Node2D] = []
+			var placeholder_cards : Array[Node2D] = []
+			for c:Node in cards:
+				if c is Card:
+					real_cards.append(c)
+				else:
+					placeholder_cards.append(c)
+			real_cards.append_array(placeholder_cards)
+			cards = real_cards
+			position_cards()
+			old_cards = cards.duplicate()
 		
 #func _input(event:InputEvent) -> void:
 	#if event is InputEventMouseButton:
@@ -54,6 +66,7 @@ func position_cards() -> void:
 			card.angular_velocity = 0
 			card.goal_position = new_position
 			if not card.held:
+				card.in_play = moveable_cards
 				if card.tween and card.tween.is_running():
 					card.tween.kill()
 				card.tween = create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -130,6 +143,7 @@ func _on_area_entered(area: Area2D) -> void:
 				cards.erase(placeholders.pop_back())
 			cards.append(card)
 			card.goal_position = card.global_position
+			card.parent_zone = self
 			calc_sort_position_buffer()
 			
 func _on_area_exited(area: Area2D) -> void:

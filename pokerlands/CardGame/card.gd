@@ -7,6 +7,7 @@ var held := false
 var in_play := true
 var goal_position : Vector2
 var tween : Tween
+var parent_zone : CardZone
 static var num_cards : int = 0
 
 @onready var back_face: Sprite2D = $CollisionShape2D/BackFace

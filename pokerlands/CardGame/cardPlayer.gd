@@ -24,10 +24,11 @@ func _on_card_clicked(card : Card) -> void:
 		
 func drop_held_card() -> void:
 	held_card.drop()
+	if held_card.parent_zone:
+		held_card.parent_zone.position_cards()
 	held_card = null
 	mouse_pin.node_b = NodePath()
 	print('release')
-	card_zone.position_cards()
 
 func _input(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
