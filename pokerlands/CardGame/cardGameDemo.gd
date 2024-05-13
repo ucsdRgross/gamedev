@@ -11,7 +11,7 @@ func _ready() -> void:
 
 func game_loop() -> void:
 	for i:int in 3:
-		bet_round(i)
+		bet_round()
 		timer.start()
 		await timer.timeout
 	#bet 1
@@ -21,14 +21,16 @@ func game_loop() -> void:
 	reset()
 	game_loop()
 
-func bet_round(space:int) -> void:
+func bet_round() -> void:
 	for player:CardPlayer in players:
-		player.card_spaces[space].activate()
+		player.play_zone.max_cards += 1
+		#player.card_spaces[space].activate()
 		
 func check() -> void:
-	for player:CardPlayer in players:
-		player.card_spaces[3].activate()
-		player.card_spaces[4].activate()
+	pass
+	#for player:CardPlayer in players:
+		#player.card_spaces[3].activate()
+		#player.card_spaces[4].activate()
 
 func reset() -> void:
 	for player:CardPlayer in players:

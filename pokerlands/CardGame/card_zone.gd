@@ -157,7 +157,7 @@ func _on_area_exited(area: Area2D) -> void:
 				cards.append(placeholder)
 				placeholders.append(placeholder)
 			calc_sort_position_buffer()
-		for a:Area2D in get_overlapping_areas():
-			if a.owner not in cards:
-				_on_area_entered(a)
+		#for a:Area2D in get_overlapping_areas():
+			#if a.owner not in cards:
+				#_on_area_entered(a)
 

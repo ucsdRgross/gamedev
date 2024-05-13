@@ -3,9 +3,10 @@ class_name CardPlayer
 
 @onready var mouse_pin: PinJoint2D = $MousePin
 
-@onready var card_spaces: Array[CardSpace] = [$CardSpace1, $CardSpace2, $CardSpace3, $CardSpace4, $CardSpace5]
 @onready var cards: Node2D = $Cards
-@onready var card_zone: Area2D = $CardZone
+@onready var card_zone: Area2D = $HandZone
+@onready var play_zone: CardZone = $PlayZone
+@onready var card_discard_deck: Area2D = $CardDiscardDeck
 
 var held_card : Card = null
 
@@ -55,8 +56,7 @@ func _on_card_discard_deck_discard_card(card: Card) -> void:
 		drop_held_card()
 
 func reset() -> void:
-	for space:CardSpace in card_spaces:
-		space.active = false
-		if space.held_card:
-			space.held_card.queue_free()
-			space.held_card = null
+	for card:Node2D in play_zone.cards:
+		if card is Card:
+			card_discard_deck.delete_card(card)
+	play_zone.max_cards = 0

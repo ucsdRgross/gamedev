@@ -1,10 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://5htxiasabwsw"]
+[gd_scene load_steps=6 format=3 uid="uid://5htxiasabwsw"]
 
 [ext_resource type="Script" path="res://CardGame/cardPlayer.gd" id="1_uivmn"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="2_ap3rq"]
 [ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/cardDeck.tscn" id="3_fl2am"]
 [ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/cardDiscardDeck.tscn" id="4_qkjm1"]
-[ext_resource type="PackedScene" uid="uid://dmi6l3kkgpqne" path="res://CardGame/cardSpace.tscn" id="5_am78i"]
 [ext_resource type="PackedScene" uid="uid://ktfm6qa8eb" path="res://CardGame/card_zone.tscn" id="6_apu2s"]
 
 [node name="Player1" type="Node2D"]
@@ -23,27 +22,13 @@ position = Vector2(260, 240)
 [node name="CardDiscardDeck" parent="." instance=ExtResource("4_qkjm1")]
 position = Vector2(100, 240)
 
-[node name="CardSpace1" parent="." instance=ExtResource("5_am78i")]
-position = Vector2(446, 80)
-
-[node name="CardSpace2" parent="." instance=ExtResource("5_am78i")]
-position = Vector2(576, 80)
-
-[node name="CardSpace3" parent="." instance=ExtResource("5_am78i")]
-position = Vector2(706, 80)
-
-[node name="CardSpace4" parent="." instance=ExtResource("5_am78i")]
-position = Vector2(900, 80)
-
-[node name="CardSpace5" parent="." instance=ExtResource("5_am78i")]
-position = Vector2(1030, 80)
-
-[node name="CardZone" parent="." instance=ExtResource("6_apu2s")]
+[node name="HandZone" parent="." instance=ExtResource("6_apu2s")]
 position = Vector2(580, 239)
 
-[node name="CardZone2" parent="." instance=ExtResource("6_apu2s")]
-position = Vector2(206, 72)
+[node name="PlayZone" parent="." instance=ExtResource("6_apu2s")]
+position = Vector2(577, 68)
 location_sort = false
+max_cards = 0
 moveable_cards = false
 
 [node name="Cards" type="Node2D" parent="."]
@@ -68,3 +53,5 @@ color = Color(1, 0.25098, 1, 1)
 [connection signal="draw_card" from="CardDeck" to="." method="_on_card_deck_draw_card"]
 [connection signal="discard_card" from="CardDiscardDeck" to="." method="_on_card_discard_deck_discard_card"]
 [connection signal="child_entered_tree" from="Cards" to="." method="_on_cards_child_entered_tree"]
+
+[editable path="HandZone"]
