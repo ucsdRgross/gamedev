@@ -12,9 +12,11 @@ func _process(delta: float) -> void:
 				delete_card(card)
 			
 func delete_card(card:Card) -> void:
-	var tween : Tween = create_tween()
 	card.held = false
 	card.in_play = false
-	tween.tween_property(card, "global_position", global_position, 0.2)
-	tween.parallel().tween_property(card, "rotation", roundf(card.rotation/PI)*PI, 0.2)
-	tween.tween_callback(card.queue_free)
+	if card.tween and card.tween.is_running():
+		card.tween.kill()
+	card.tween = create_tween()
+	card.tween.tween_property(card, "global_position", global_position, 0.2)
+	card.tween.parallel().tween_property(card, "rotation", roundf(card.rotation/PI)*PI, 0.2)
+	card.tween.tween_callback(card.queue_free)

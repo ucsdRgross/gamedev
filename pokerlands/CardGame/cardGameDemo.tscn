@@ -109,6 +109,9 @@ ignore_rotation = false
 position = Vector2(1152, 324)
 rotation = 3.14159
 
+[node name="CheckZone" parent="Player2" index="5"]
+position = Vector2(183, 68)
+
 [node name="Borders" type="Node2D" parent="."]
 
 [node name="LeftRight" type="Area2D" parent="Borders"]
@@ -176,6 +179,14 @@ shape = SubResource("WorldBoundaryShape2D_wrepd")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Borders/StaticLBT"]
 shape = SubResource("WorldBoundaryShape2D_3wh7i")
+
+[node name="Button" type="Button" parent="."]
+offset_left = 152.0
+offset_top = 296.0
+offset_right = 311.0
+offset_bottom = 363.0
+text = "Next Round
+"
 
 [node name="Countdown" type="Label" parent="."]
 offset_left = 766.0

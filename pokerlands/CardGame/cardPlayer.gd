@@ -4,9 +4,11 @@ class_name CardPlayer
 @onready var mouse_pin: PinJoint2D = $MousePin
 
 @onready var cards: Node2D = $Cards
-@onready var card_zone: Area2D = $HandZone
-@onready var play_zone: CardZone = $PlayZone
 @onready var card_discard_deck: Area2D = $CardDiscardDeck
+@onready var hand_zone: Area2D = $HandZone
+@onready var bet_zone: CardZone = $BetZone
+@onready var check_zone: CardZone = $CheckZone
+
 
 var held_card : Card = null
 
@@ -55,8 +57,19 @@ func _on_card_discard_deck_discard_card(card: Card) -> void:
 	if held_card == card:
 		drop_held_card()
 
+func bet_round() -> void:
+	bet_zone.max_cards += 1
+	
+func check_round() -> void:
+	check_zone.max_cards = 2
+
 func reset() -> void:
-	for card:Node2D in play_zone.cards:
+	for card:Node2D in bet_zone.cards:
 		if card is Card:
 			card_discard_deck.delete_card(card)
-	play_zone.max_cards = 0
+	bet_zone.max_cards = 0
+	
+	for card:Node2D in check_zone.cards:
+		if card is Card:
+			card_discard_deck.delete_card(card)
+	check_zone.max_cards = 0

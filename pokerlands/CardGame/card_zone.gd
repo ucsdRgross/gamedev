@@ -4,9 +4,9 @@ class_name CardZone
 @onready var path: Path2D = $HandPath
 var tween : Tween = null
 
-@export var location_sort : bool = true
 @export var spaces : int = 3
 @export var max_cards : int = 3
+@export var location_sort : bool = true
 @export var moveable_cards : bool = true
 var cards : Array[Node2D] = []
 var old_cards : Array[Node2D] = []
@@ -131,20 +131,21 @@ func sort_position(a:Node2D, b:Node2D) -> bool:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.owner is Card:
-		var empty_spaces := placeholders.size()
-		if cards.size() < max_cards + empty_spaces:
-			var card : Card = area.owner
-			if empty_spaces:
-				var closest_placholder := func(a:Node2D, b:Node2D):
-					if a.global_position.distance_squared_to(card.global_position) > b.global_position.distance_squared_to(card.global_position):
-						return true
-					return false
-				placeholders.sort_custom(closest_placholder)
-				cards.erase(placeholders.pop_back())
-			cards.append(card)
-			card.goal_position = card.global_position
-			card.parent_zone = self
-			calc_sort_position_buffer()
+		var card : Card = area.owner
+		if card.in_play:
+			var empty_spaces := placeholders.size()
+			if cards.size() < max_cards + empty_spaces:
+				if empty_spaces:
+					var closest_placholder := func(a:Node2D, b:Node2D):
+						if a.global_position.distance_squared_to(card.global_position) > b.global_position.distance_squared_to(card.global_position):
+							return true
+						return false
+					placeholders.sort_custom(closest_placholder)
+					cards.erase(placeholders.pop_back())
+				cards.append(card)
+				card.goal_position = card.global_position
+				card.parent_zone = self
+				calc_sort_position_buffer()
 			
 func _on_area_exited(area: Area2D) -> void:
 	if area.owner is Card:

@@ -5,6 +5,7 @@ extends Node2D
 #@onready var card_player_2: Player = $CardPlayer2
 @onready var players: Array[CardPlayer] = [$Player1, $Player2]
 @onready var timer: Timer = $Countdown/Timer
+@onready var button: Button = $Button
 
 func _ready() -> void:
 	game_loop()
@@ -12,8 +13,13 @@ func _ready() -> void:
 func game_loop() -> void:
 	for i:int in 3:
 		bet_round()
-		timer.start()
-		await timer.timeout
+		#timer.start()
+		#await timer.timeout
+		await button.pressed
+	check_round()
+	#timer.start()
+	#await timer.timeout
+	await button.pressed
 	#bet 1
 	#bet 2
 	#bet 3
@@ -23,14 +29,11 @@ func game_loop() -> void:
 
 func bet_round() -> void:
 	for player:CardPlayer in players:
-		player.play_zone.max_cards += 1
-		#player.card_spaces[space].activate()
+		player.bet_round()
 		
-func check() -> void:
-	pass
-	#for player:CardPlayer in players:
-		#player.card_spaces[3].activate()
-		#player.card_spaces[4].activate()
+func check_round() -> void:
+	for player:CardPlayer in players:
+		player.check_round()
 
 func reset() -> void:
 	for player:CardPlayer in players:
