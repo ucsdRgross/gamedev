@@ -5,15 +5,22 @@ class_name CardPlayer
 
 @onready var cards: Node2D = $Cards
 @onready var card_discard_deck: Area2D = $CardDiscardDeck
-@onready var hand_zone: Area2D = $HandZone
+@onready var hand_zone: CardZone = $HandZone
 @onready var bet_zone: CardZone = $BetZone
 @onready var check_zone: CardZone = $CheckZone
 
+signal card_betted
 
 var held_card : Card = null
 
+func _ready() -> void:
+	for zone : CardZone in [hand_zone, bet_zone, check_zone]:
+		zone.cards_z_index_changed.connect(sort_cards_tree)
+
 func _physics_process(_delta: float) -> void:
 	mouse_pin.global_position = get_global_mouse_position()
+	if held_card and held_card.parent_zone:
+		held_card.parent_zone.arrange_cards()
 	
 func _on_cards_child_entered_tree(card : Card) -> void:
 	card.clicked.connect(_on_card_clicked)
@@ -28,10 +35,14 @@ func _on_card_clicked(card : Card) -> void:
 func drop_held_card() -> void:
 	held_card.drop()
 	if held_card.parent_zone:
+		if held_card.parent_zone == bet_zone:
+			card_betted.emit()
 		held_card.parent_zone.position_cards()
+	#else:
+	#	hand_zone.add_card(held_card, held_card.home_position)
 	held_card = null
 	mouse_pin.node_b = NodePath()
-	print('release')
+	#print('release')
 
 func _input(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -41,17 +52,21 @@ func _input(event:InputEvent) -> void:
 				drop_held_card()
 
 func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, event: InputEvent) -> void:
-	var card : Card = card_info.instantiate()
-	cards.add_child(card)
-	card.global_position = deck_position
-	
-	var colors = [Color(1.0, 0.0, 0.0, 1.0),
-				Color(0.0, 1.0, 0.0, 1.0),
-				Color(0.0, 0.0, 1.0, 1.0)]
-	randomize()
-	card.modulate = colors[randi() % colors.size()]
-	
-	card.process_event(event)
+	if hand_zone.can_add_card():
+		var card : Card = card_info.instantiate()
+		cards.add_child(card)
+		card.global_position = deck_position
+		
+		var colors = [Color(1.0, 0.0, 0.0, 1.0),
+					Color(0.0, 1.0, 0.0, 1.0),
+					Color(0.0, 0.0, 1.0, 1.0)]
+		randomize()
+		card.modulate = colors[randi() % colors.size()]
+		card.parent_zone = hand_zone
+		hand_zone.add_card(card, hand_zone.get_closest_empty_space(card.global_position))
+		hand_zone.arrange_cards()
+
+	#card.process_event(event)
 
 func _on_card_discard_deck_discard_card(card: Card) -> void:
 	if held_card == card:
@@ -73,3 +88,18 @@ func reset() -> void:
 		if card is Card:
 			card_discard_deck.delete_card(card)
 	check_zone.max_cards = 0
+	
+func sort_cards_z(a:CanvasItem, b:CanvasItem) -> bool:
+	if a.z_index == b.z_index:
+		if a.get_index() < b.get_index():
+			return true
+	elif a.z_index < b.z_index:
+		return true
+	return false
+	
+func sort_cards_tree() -> void:
+	var sorted_nodes : Array[Node] = cards.get_children()
+	sorted_nodes.sort_custom(sort_cards_z)
+	for i:int in range(sorted_nodes.size()):
+		cards.move_child(sorted_nodes[i],i)
+	

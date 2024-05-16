@@ -22,6 +22,9 @@ shape = SubResource("RectangleShape2D_53rf6")
 [node name="HandPath" type="Path2D" parent="."]
 curve = SubResource("Curve2D_rceyh")
 
+[node name="ZoneEndMarker" type="Node2D" parent="."]
+position = Vector2(225, 0)
+
 [connection signal="area_entered" from="." to="." method="_on_area_entered"]
 [connection signal="area_exited" from="." to="." method="_on_area_exited"]
 [connection signal="input_event" from="." to="." method="_on_input_event"]

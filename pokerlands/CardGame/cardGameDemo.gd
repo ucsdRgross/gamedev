@@ -8,14 +8,19 @@ extends Node2D
 @onready var button: Button = $Button
 
 func _ready() -> void:
-	game_loop()
+	while true:
+		await game_round()
+		reset()
 
-func game_loop() -> void:
+func game_round() -> void:
 	for i:int in 3:
 		bet_round()
 		#timer.start()
 		#await timer.timeout
 		await button.pressed
+		if folded() > 0:
+			#damage 
+			return
 	check_round()
 	#timer.start()
 	#await timer.timeout
@@ -24,12 +29,14 @@ func game_loop() -> void:
 	#bet 2
 	#bet 3
 	#check
-	reset()
-	game_loop()
+	
 
 func bet_round() -> void:
 	for player:CardPlayer in players:
 		player.bet_round()
+		
+func folded() -> int:
+	return 0
 		
 func check_round() -> void:
 	for player:CardPlayer in players:

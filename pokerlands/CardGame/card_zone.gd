@@ -8,10 +8,13 @@ var tween : Tween = null
 @export var max_cards : int = 3
 @export var location_sort : bool = true
 @export var moveable_cards : bool = true
+@export var card_home : bool = false
 var cards : Array[Node2D] = []
 var old_cards : Array[Node2D] = []
 var placeholders : Array[Node2D] = []
 var anim_time := 0.2
+
+signal cards_z_index_changed
 
 func _ready() -> void:
 	calc_sort_position_buffer()
@@ -20,16 +23,17 @@ func _ready() -> void:
 		placeholder.global_position = global_position
 		cards.append(placeholder)
 		placeholders.append(placeholder)
+		position_cards()
 	
 	#tween = create_tween()
 
-func _process(delta: float) -> void:
+func arrange_cards() -> void:
 	#if not tween.is_running():
 	if location_sort:
 		cards.sort_custom(sort_position)
 		#print('sort')
 		if cards != old_cards:
-			print('changed')
+			#print('changed')
 			position_cards()
 			old_cards = cards.duplicate()
 	else:
@@ -46,16 +50,7 @@ func _process(delta: float) -> void:
 			position_cards()
 			old_cards = cards.duplicate()
 		
-#func _input(event:InputEvent) -> void:
-	#if event is InputEventMouseButton:
-		#var mouse_event : InputEventMouseButton = event
-		#if mouse_event.button_index == 1 and not mouse_event.pressed:
-			#cards.sort_custom(sort_position)
-			#position_cards()
-				#
 func position_cards() -> void:
-	print('positioning')
-	
 	var i : int = 0
 	var dt : float = path.curve.get_baked_length()/cards.size()
 	for card:Node2D in cards:
@@ -65,6 +60,8 @@ func position_cards() -> void:
 			card.linear_velocity = Vector2.ZERO
 			card.angular_velocity = 0
 			card.goal_position = new_position
+			if card_home:
+				card.home_position = new_position
 			if not card.held:
 				card.in_play = moveable_cards
 				if card.tween and card.tween.is_running():
@@ -77,6 +74,7 @@ func position_cards() -> void:
 		else:
 			card.global_position = new_position
 		i += 1
+	cards_z_index_changed.emit()
 
 var buffer : float
 func calc_sort_position_buffer() -> void:
@@ -132,21 +130,35 @@ func sort_position(a:Node2D, b:Node2D) -> bool:
 func _on_area_entered(area: Area2D) -> void:
 	if area.owner is Card:
 		var card : Card = area.owner
-		if card.in_play:
-			var empty_spaces := placeholders.size()
-			if cards.size() < max_cards + empty_spaces:
-				if empty_spaces:
-					var closest_placholder := func(a:Node2D, b:Node2D):
-						if a.global_position.distance_squared_to(card.global_position) > b.global_position.distance_squared_to(card.global_position):
-							return true
-						return false
-					placeholders.sort_custom(closest_placholder)
-					cards.erase(placeholders.pop_back())
-				cards.append(card)
-				card.goal_position = card.global_position
-				card.parent_zone = self
-				calc_sort_position_buffer()
-			
+		if card.in_play and card.parent_zone == null:
+			if can_add_card():
+				add_card(card)
+
+func can_add_card() -> bool:
+	return cards.size() < max_cards + placeholders.size()
+
+func get_closest_empty_space(pos : Vector2) -> Vector2:
+	if placeholders.size():
+		sort_placeholders_from(pos)
+		return placeholders[-1].global_position
+	return ($ZoneEndMarker as Node2D).global_position
+
+func sort_placeholders_from(pos:Vector2) -> void:
+	var closest_placholder := func(a:Node2D, b:Node2D):
+		if a.global_position.distance_squared_to(pos) > b.global_position.distance_squared_to(pos):
+			return true
+		return false
+	placeholders.sort_custom(closest_placholder)
+
+func add_card(card : Card, pos : Vector2 = card.global_position):
+	if placeholders.size():
+		sort_placeholders_from(pos)
+		cards.erase(placeholders.pop_back())
+	cards.append(card)
+	card.goal_position = pos
+	card.parent_zone = self
+	calc_sort_position_buffer()
+				
 func _on_area_exited(area: Area2D) -> void:
 	if area.owner is Card:
 		if area.owner in cards:
@@ -158,6 +170,7 @@ func _on_area_exited(area: Area2D) -> void:
 				cards.append(placeholder)
 				placeholders.append(placeholder)
 			calc_sort_position_buffer()
+			card.parent_zone = null
 		#for a:Area2D in get_overlapping_areas():
 			#if a.owner not in cards:
 				#_on_area_entered(a)
