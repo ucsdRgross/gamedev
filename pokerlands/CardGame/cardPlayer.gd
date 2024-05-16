@@ -37,9 +37,11 @@ func drop_held_card() -> void:
 	if held_card.parent_zone:
 		if held_card.parent_zone == bet_zone:
 			card_betted.emit()
-		held_card.parent_zone.position_cards()
-	#else:
-	#	hand_zone.add_card(held_card, held_card.home_position)
+	else:
+		held_card.parent_zone = hand_zone
+		hand_zone.add_card(held_card, hand_zone.get_closest_empty_space(held_card.global_position))
+		held_card.parent_zone.arrange_cards()
+	held_card.parent_zone.position_cards()
 	held_card = null
 	mouse_pin.node_b = NodePath()
 	#print('release')

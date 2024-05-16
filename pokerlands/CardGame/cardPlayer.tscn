@@ -34,7 +34,6 @@ position = Vector2(100, 240)
 
 [node name="HandZone" parent="." instance=ExtResource("6_apu2s")]
 position = Vector2(580, 239)
-card_home = true
 
 [node name="BetZone" parent="." instance=ExtResource("6_apu2s")]
 position = Vector2(577, 68)

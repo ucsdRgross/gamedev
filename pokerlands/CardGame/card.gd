@@ -6,7 +6,6 @@ var suit : int = 0
 var held := false
 var in_play := true
 var goal_position : Vector2
-var home_position : Vector2
 var tween : Tween
 var parent_zone : CardZone
 static var num_cards : int = 0

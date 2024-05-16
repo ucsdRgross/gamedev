@@ -8,7 +8,6 @@ var tween : Tween = null
 @export var max_cards : int = 3
 @export var location_sort : bool = true
 @export var moveable_cards : bool = true
-@export var card_home : bool = false
 var cards : Array[Node2D] = []
 var old_cards : Array[Node2D] = []
 var placeholders : Array[Node2D] = []
@@ -60,8 +59,6 @@ func position_cards() -> void:
 			card.linear_velocity = Vector2.ZERO
 			card.angular_velocity = 0
 			card.goal_position = new_position
-			if card_home:
-				card.home_position = new_position
 			if not card.held:
 				card.in_play = moveable_cards
 				if card.tween and card.tween.is_running():
