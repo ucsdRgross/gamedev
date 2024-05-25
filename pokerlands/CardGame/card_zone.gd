@@ -155,6 +155,7 @@ func add_card(card : Card, pos : Vector2 = card.global_position):
 	card.goal_position = pos
 	card.parent_zone = self
 	calc_sort_position_buffer()
+	arrange_cards()
 				
 func _on_area_exited(area: Area2D) -> void:
 	if area.owner is Card:

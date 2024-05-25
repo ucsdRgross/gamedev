@@ -9,6 +9,8 @@ class_name CardPlayer
 @onready var bet_zone: CardZone = $BetZone
 @onready var check_zone: CardZone = $CheckZone
 
+var health : int = 100
+
 signal card_betted
 
 var held_card : Card = null
@@ -38,9 +40,7 @@ func drop_held_card() -> void:
 		if held_card.parent_zone == bet_zone:
 			card_betted.emit()
 	else:
-		held_card.parent_zone = hand_zone
 		hand_zone.add_card(held_card, hand_zone.get_closest_empty_space(held_card.global_position))
-		held_card.parent_zone.arrange_cards()
 	held_card.parent_zone.position_cards()
 	held_card = null
 	mouse_pin.node_b = NodePath()
@@ -64,15 +64,15 @@ func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, eve
 					Color(0.0, 0.0, 1.0, 1.0)]
 		randomize()
 		card.modulate = colors[randi() % colors.size()]
-		card.parent_zone = hand_zone
 		hand_zone.add_card(card, hand_zone.get_closest_empty_space(card.global_position))
-		hand_zone.arrange_cards()
 
 	#card.process_event(event)
 
 func _on_card_discard_deck_discard_card(card: Card) -> void:
 	if held_card == card:
-		drop_held_card()
+		held_card.drop()
+		held_card = null
+		mouse_pin.node_b = NodePath()
 
 func bet_round() -> void:
 	bet_zone.max_cards += 1
