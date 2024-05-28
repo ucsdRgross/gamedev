@@ -1,10 +1,10 @@
 extends Area2D
 class_name CardSpace
 
-@onready var timer: Timer = $Timer
-
 var held_card : Card = null
 var active := false
+
+@onready var timer: Timer = $Timer
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:

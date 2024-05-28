@@ -1,6 +1,8 @@
 extends RigidBody2D
 class_name Card
 
+signal clicked
+
 var rank : int = 0 :
 	set (value):
 		rank = value
@@ -23,7 +25,7 @@ static var num_cards : int = 0
 @onready var back_face: Sprite2D = $CollisionShape2D/BackFace
 @onready var front_face: Sprite2D = $CollisionShape2D/FrontFace
 
-signal clicked
+
 
 func _ready() -> void:
 	show_back()

@@ -1,8 +1,7 @@
 extends Area2D
 class_name CardZone
 
-@onready var path: Path2D = $HandPath
-var tween : Tween = null
+signal cards_z_index_changed
 
 @export var spaces : int = 3
 @export var max_cards : int = 3
@@ -12,7 +11,7 @@ var cards : Array[Node2D] = []
 var old_cards : Array[Node2D] = []
 var placeholders : Array[Node2D] = []
 
-signal cards_z_index_changed
+@onready var path: Path2D = $HandPath
 
 func _ready() -> void:
 	calc_sort_position_buffer()
@@ -22,11 +21,8 @@ func _ready() -> void:
 		cards.append(placeholder)
 		placeholders.append(placeholder)
 		position_cards()
-	
-	#tween = create_tween()
 
 func arrange_cards() -> void:
-	#if not tween.is_running():
 	if location_sort:
 		cards.sort_custom(sort_position)
 		#print('sort')

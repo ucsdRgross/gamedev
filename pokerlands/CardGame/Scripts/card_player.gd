@@ -1,19 +1,17 @@
 extends Node2D
 class_name CardPlayer
 
-@onready var mouse_pin: PinJoint2D = $MousePin
+signal card_betted
 
+var health : int = 100
+var held_card : Card = null
+
+@onready var mouse_pin: PinJoint2D = $MousePin
 @onready var cards: Node2D = $Cards
 @onready var card_discard_deck: Area2D = $CardDiscardDeck
 @onready var hand_zone: CardZone = $HandZone
 @onready var bet_zone: CardZone = $BetZone
 @onready var check_zone: CardZone = $CheckZone
-
-var health : int = 100
-
-signal card_betted
-
-var held_card : Card = null
 
 func _ready() -> void:
 	for zone : CardZone in [hand_zone, bet_zone, check_zone]:

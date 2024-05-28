@@ -1,9 +1,9 @@
 [gd_scene load_steps=9 format=3 uid="uid://5htxiasabwsw"]
 
-[ext_resource type="Script" path="res://CardGame/Scripts/cardPlayer.gd" id="1_uivmn"]
+[ext_resource type="Script" path="res://CardGame/Scripts/card_player.gd" id="1_uivmn"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="2_ap3rq"]
 [ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/Scenes/card_deck.tscn" id="3_fl2am"]
-[ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/Scenes/cardDiscardDeck.tscn" id="4_qkjm1"]
+[ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/Scenes/card_discard_deck.tscn" id="4_qkjm1"]
 [ext_resource type="Script" path="res://CardGame/Scripts/card_zone.gd" id="6_2fgfl"]
 [ext_resource type="PackedScene" uid="uid://ktfm6qa8eb" path="res://CardGame/Scenes/card_zone.tscn" id="6_apu2s"]
 

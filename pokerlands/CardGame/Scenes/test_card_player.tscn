@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b8nb6d37ovhyu"]
 
-[ext_resource type="Script" path="res://CardGame/Scripts/testCardPlayer.gd" id="1_gddke"]
+[ext_resource type="Script" path="res://CardGame/Scripts/test_card_player.gd" id="1_gddke"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_lwdsk"]
 properties/0/path = NodePath("ColorRect:color")
