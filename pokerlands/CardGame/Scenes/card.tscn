@@ -1,0 +1,96 @@
+[gd_scene load_steps=7 format=3 uid="uid://cf7nxj5iha355"]
+
+[ext_resource type="Script" path="res://CardGame/Scripts/card.gd" id="1_atmsf"]
+[ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards/card_back.png" id="2_crmob"]
+[ext_resource type="Texture2D" uid="uid://d0wrm32ykk0ii" path="res://CardGame/Cards/card_empty.png" id="3_qfgji"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
+size = Vector2(40, 58)
+
+[sub_resource type="LabelSettings" id="LabelSettings_ywtss"]
+font_color = Color(0, 0, 0, 1)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dje83"]
+size = Vector2(40, 58)
+
+[node name="Card" type="RigidBody2D" groups=["cards"]]
+collision_mask = 0
+linear_damp = 4.0
+angular_damp = 10.0
+script = ExtResource("1_atmsf")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+scale = Vector2(2.5, 2.5)
+shape = SubResource("RectangleShape2D_lrxu1")
+
+[node name="Control" type="Control" parent="CollisionShape2D"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -20.0
+offset_top = -29.0
+offset_right = 20.0
+offset_bottom = 29.0
+
+[node name="BackFace" type="Sprite2D" parent="CollisionShape2D"]
+texture_filter = 1
+texture = ExtResource("2_crmob")
+
+[node name="FrontFace" type="Sprite2D" parent="CollisionShape2D"]
+texture_filter = 1
+texture = ExtResource("3_qfgji")
+
+[node name="Markings" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="Rank" type="Label" parent="Markings"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = -65.0
+offset_bottom = -42.0
+text = "123"
+label_settings = SubResource("LabelSettings_ywtss")
+
+[node name="Suit" type="Label" parent="Markings"]
+layout_mode = 0
+offset_top = -65.0
+offset_right = 40.0
+offset_bottom = -42.0
+text = "♥	"
+label_settings = SubResource("LabelSettings_ywtss")
+horizontal_alignment = 2
+
+[node name="Markings2" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+rotation = 3.14371
+mouse_filter = 2
+
+[node name="Rank" type="Label" parent="Markings2"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = -65.0
+offset_bottom = -42.0
+text = "123"
+label_settings = SubResource("LabelSettings_ywtss")
+
+[node name="Suit" type="Label" parent="Markings2"]
+layout_mode = 0
+offset_top = -65.0
+offset_right = 40.0
+offset_bottom = -42.0
+text = "♥	"
+label_settings = SubResource("LabelSettings_ywtss")
+horizontal_alignment = 2
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_dje83")
+
+[connection signal="gui_input" from="CollisionShape2D/Control" to="." method="_on_control_gui_input"]
