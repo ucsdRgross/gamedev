@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://5htxiasabwsw"]
+[gd_scene load_steps=10 format=3 uid="uid://5htxiasabwsw"]
 
 [ext_resource type="Script" path="res://CardGame/Scripts/card_player.gd" id="1_uivmn"]
 [ext_resource type="Texture2D" uid="uid://bh4xilvgu3miq" path="res://icon.svg" id="2_ap3rq"]
+[ext_resource type="Resource" uid="uid://br26ge2u657pl" path="res://CardGame/Resources/deck.tres" id="2_e1gx6"]
 [ext_resource type="PackedScene" uid="uid://cbacwlcc4jbh7" path="res://CardGame/Scenes/card_deck.tscn" id="3_fl2am"]
 [ext_resource type="PackedScene" uid="uid://byi3whse1g5hq" path="res://CardGame/Scenes/card_discard_deck.tscn" id="4_qkjm1"]
 [ext_resource type="Script" path="res://CardGame/Scripts/card_zone.gd" id="6_2fgfl"]
@@ -19,6 +20,7 @@ point_count = 2
 [node name="Player1" type="Node2D"]
 position = Vector2(0, 324)
 script = ExtResource("1_uivmn")
+deck_info = ExtResource("2_e1gx6")
 
 [node name="Icon" type="Sprite2D" parent="."]
 modulate = Color(1, 0.541176, 1, 1)
@@ -74,7 +76,7 @@ offset_bottom = 5.0
 mouse_filter = 2
 color = Color(1, 0.25098, 1, 1)
 
-[connection signal="draw_card" from="CardDeck" to="." method="_on_card_deck_draw_card"]
+[connection signal="card_drawn" from="CardDeck" to="." method="_on_card_deck_card_drawn"]
 [connection signal="discard_card" from="CardDiscardDeck" to="." method="_on_card_discard_deck_discard_card"]
 [connection signal="area_entered" from="CheckZone" to="CheckZone" method="_on_area_entered"]
 [connection signal="area_exited" from="CheckZone" to="CheckZone" method="_on_area_exited"]

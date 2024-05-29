@@ -3,6 +3,10 @@ class_name CardPlayer
 
 signal card_betted
 
+const CARD = preload("res://CardGame/Cards/card.tscn")
+
+@export var deck_info : Deck
+var deck : Array[CardInfo]
 var health : int = 100
 var held_card : Card = null
 
@@ -12,10 +16,13 @@ var held_card : Card = null
 @onready var hand_zone: CardZone = $HandZone
 @onready var bet_zone: CardZone = $BetZone
 @onready var check_zone: CardZone = $CheckZone
+@onready var card_deck: Area2D = $CardDeck
 
 func _ready() -> void:
 	for zone : CardZone in [hand_zone, bet_zone, check_zone]:
 		zone.cards_z_index_changed.connect(sort_cards_tree)
+	deck = deck_info.cards_info
+	deck.shuffle()
 
 func _physics_process(_delta: float) -> void:
 	mouse_pin.global_position = get_global_mouse_position()
@@ -51,20 +58,13 @@ func _input(event:InputEvent) -> void:
 			if held_card:
 				drop_held_card()
 
-func _on_card_deck_draw_card(card_info: PackedScene, deck_position: Vector2, event: InputEvent) -> void:
+func _on_card_deck_card_drawn() -> void:
 	if hand_zone.can_add_card():
-		var card : Card = card_info.instantiate()
+		var card : Card = CARD.instantiate()
+		card.set_card_info(deck.pop_back())
 		cards.add_child(card)
-		card.global_position = deck_position
-		
-		var colors = [Color(1.0, 0.0, 0.0, 1.0),
-					Color(0.0, 1.0, 0.0, 1.0),
-					Color(0.0, 0.0, 1.0, 1.0)]
-		randomize()
-		card.modulate = colors[randi() % colors.size()]
+		card.global_position = card_deck.global_position
 		hand_zone.add_card(card, hand_zone.get_closest_empty_space(card.global_position))
-
-	#card.process_event(event)
 
 func _on_card_discard_deck_discard_card(card: Card) -> void:
 	if held_card == card:

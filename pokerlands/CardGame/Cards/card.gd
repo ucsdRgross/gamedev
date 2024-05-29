@@ -6,14 +6,16 @@ signal clicked
 var rank : int = 0 :
 	set (value):
 		rank = value
-		($Markings/Rank as Label).text = str(rank)
-		($Markings2/Rank as Label).text = str(rank)
+		marking_rank.text = str(rank)
+		marking_rank2.text = str(rank)
 var suit : int = 0 :
 	set (value):
 		suit = value
 		var suits : String = "♠♣♥♦"
-		($Markings/Suit as Label).text = suits[suit]
-		($Markings2/Suit as Label).text = suits[suit]
+		marking_suit.text = suits[suit]
+		marking_suit2.text = suits[suit]
+var ability : CardAbility
+var card_info : CardInfo
 var held := false
 var in_play := true
 var goal_position : Vector2
@@ -24,11 +26,21 @@ static var num_cards : int = 0
 
 @onready var back_face: Sprite2D = $CollisionShape2D/BackFace
 @onready var front_face: Sprite2D = $CollisionShape2D/FrontFace
+@onready var marking_rank: Label = $CollisionShape2D/FrontFace/Markings/Rank
+@onready var marking_rank2: Label = $CollisionShape2D/FrontFace/Markings2/Rank
+@onready var marking_suit: Label = $CollisionShape2D/FrontFace/Markings/Suit
+@onready var marking_suit2: Label = $CollisionShape2D/FrontFace/Markings2/Suit
 
-
+func set_card_info(info : CardInfo) -> void:
+	card_info = info
 
 func _ready() -> void:
-	show_back()
+	#name = card_info.resource_name
+	rank = card_info.rank
+	suit = card_info.suit
+	ability = card_info.ability
+	pass
+	#show_back()
 
 func _enter_tree() -> void:
 	num_cards += 1

@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://cf7nxj5iha355"]
 
-[ext_resource type="Script" path="res://CardGame/Scripts/card.gd" id="1_atmsf"]
-[ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards/card_back.png" id="2_crmob"]
-[ext_resource type="Texture2D" uid="uid://d0wrm32ykk0ii" path="res://CardGame/Cards/card_empty.png" id="3_qfgji"]
+[ext_resource type="Script" path="res://CardGame/Cards/card.gd" id="1_ouheq"]
+[ext_resource type="Texture2D" uid="uid://cpxlfs8fgkc4x" path="res://CardGame/Cards/Art/card_back.png" id="2_n7e0r"]
+[ext_resource type="Texture2D" uid="uid://d0wrm32ykk0ii" path="res://CardGame/Cards/Art/card_empty.png" id="3_tdgpr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lrxu1"]
 size = Vector2(40, 58)
@@ -17,7 +17,7 @@ size = Vector2(40, 58)
 collision_mask = 0
 linear_damp = 4.0
 angular_damp = 10.0
-script = ExtResource("1_atmsf")
+script = ExtResource("1_ouheq")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 scale = Vector2(2.5, 2.5)
@@ -33,20 +33,21 @@ offset_bottom = 29.0
 
 [node name="BackFace" type="Sprite2D" parent="CollisionShape2D"]
 texture_filter = 1
-texture = ExtResource("2_crmob")
+texture = ExtResource("2_n7e0r")
 
 [node name="FrontFace" type="Sprite2D" parent="CollisionShape2D"]
 texture_filter = 1
-texture = ExtResource("3_qfgji")
+texture = ExtResource("3_tdgpr")
 
-[node name="Markings" type="Control" parent="."]
+[node name="Markings" type="Control" parent="CollisionShape2D/FrontFace"]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
+scale = Vector2(0.4, 0.4)
 mouse_filter = 2
 
-[node name="Rank" type="Label" parent="Markings"]
+[node name="Rank" type="Label" parent="CollisionShape2D/FrontFace/Markings"]
 layout_mode = 0
 offset_left = -40.0
 offset_top = -65.0
@@ -54,7 +55,7 @@ offset_bottom = -42.0
 text = "123"
 label_settings = SubResource("LabelSettings_ywtss")
 
-[node name="Suit" type="Label" parent="Markings"]
+[node name="Suit" type="Label" parent="CollisionShape2D/FrontFace/Markings"]
 layout_mode = 0
 offset_top = -65.0
 offset_right = 40.0
@@ -63,15 +64,16 @@ text = "♥	"
 label_settings = SubResource("LabelSettings_ywtss")
 horizontal_alignment = 2
 
-[node name="Markings2" type="Control" parent="."]
+[node name="Markings2" type="Control" parent="CollisionShape2D/FrontFace"]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 rotation = 3.14371
+scale = Vector2(0.4, 0.4)
 mouse_filter = 2
 
-[node name="Rank" type="Label" parent="Markings2"]
+[node name="Rank" type="Label" parent="CollisionShape2D/FrontFace/Markings2"]
 layout_mode = 0
 offset_left = -40.0
 offset_top = -65.0
@@ -79,7 +81,7 @@ offset_bottom = -42.0
 text = "123"
 label_settings = SubResource("LabelSettings_ywtss")
 
-[node name="Suit" type="Label" parent="Markings2"]
+[node name="Suit" type="Label" parent="CollisionShape2D/FrontFace/Markings2"]
 layout_mode = 0
 offset_top = -65.0
 offset_right = 40.0

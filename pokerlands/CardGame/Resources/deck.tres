@@ -1,0 +1,6 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://br26ge2u657pl"]
+
+[ext_resource type="Script" path="res://CardGame/Resources/default_deck.gd" id="1_61poq"]
+
+[resource]
+script = ExtResource("1_61poq")
