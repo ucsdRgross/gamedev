@@ -7,6 +7,7 @@ const CARD = preload("res://CardGame/Cards/card.tscn")
 
 @export var deck_info : Deck
 var deck : Array[CardInfo]
+var discard : Array[CardInfo]
 var health : int = 100
 var held_card : Card = null
 
@@ -59,18 +60,26 @@ func _input(event:InputEvent) -> void:
 				drop_held_card()
 
 func _on_card_deck_card_drawn() -> void:
-	if hand_zone.can_add_card():
+	if deck.size() <= 0:
+		deck.assign(discard)
+		discard.clear()	
+	if deck.size() > 0 and hand_zone.can_add_card():
 		var card : Card = CARD.instantiate()
 		card.set_card_info(deck.pop_back())
 		cards.add_child(card)
 		card.global_position = card_deck.global_position
 		hand_zone.add_card(card, hand_zone.get_closest_empty_space(card.global_position))
+		
+		if deck.size() <= 0:
+			deck.assign(discard)
+			discard.clear()
 
 func _on_card_discard_deck_discard_card(card: Card) -> void:
 	if held_card == card:
 		held_card.drop()
 		held_card = null
 		mouse_pin.node_b = NodePath()
+	discard.append(card.card_info)
 
 func bet_round() -> void:
 	bet_zone.max_cards += 1
