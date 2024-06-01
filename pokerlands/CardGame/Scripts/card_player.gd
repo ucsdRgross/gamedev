@@ -22,7 +22,7 @@ var held_card : Card = null
 func _ready() -> void:
 	for zone : CardZone in [hand_zone, bet_zone, check_zone]:
 		zone.cards_z_index_changed.connect(sort_cards_tree)
-	deck = deck_info.cards_info
+	deck.assign(deck_info.cards_info)
 	deck.shuffle()
 
 func _physics_process(_delta: float) -> void:

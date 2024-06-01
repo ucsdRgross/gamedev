@@ -8,10 +8,10 @@ func _process(delta: float) -> void:
 		if area.owner is Card:
 			var card : Card = area.owner
 			if card.in_play:
-				discard_card.emit(card)
 				delete_card(card)
 			
 func delete_card(card:Card) -> void:
+	discard_card.emit(card)
 	card.held = false
 	card.in_play = false
 	card.tween_move(global_position)
