@@ -21,6 +21,7 @@ var in_play := true
 var goal_position : Vector2
 var tween : Tween
 var parent_zone : CardZone
+#var time_played : int
 
 static var num_cards : int = 0
 
