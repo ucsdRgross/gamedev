@@ -144,6 +144,7 @@ func add_card(card : Card, pos : Vector2 = card.global_position):
 	cards.append(card)
 	card.goal_position = pos
 	card.parent_zone = self
+	card.time_played = Time.get_ticks_msec()
 	calc_sort_position_buffer()
 	arrange_cards()
 				
