@@ -19,7 +19,7 @@ signal clicked
 
 static var num_cards : int = 0
 
-
+var top_card : Card
 
 @onready var front: Sprite2D = $Front
 @onready var area: Control = $Front/Control
@@ -42,7 +42,11 @@ func _on_control_gui_input(event: InputEvent) -> void:
 				clicked.emit(self)
 
 func add_card(card : Card) -> void:
+	var parent := card.get_parent()
+	if parent is Card:
+		(parent as Card).top_card = null
 	card.reparent(self)
+	top_card = card
 	card.reposition()
 
 func pickup() -> void:
@@ -58,6 +62,12 @@ func reposition() -> void:
 	var parent : Node = get_parent()
 	if parent is Card:
 		global_position = (parent as Card).global_position + (parent as Card).child_offset
+
+func get_last_card() -> Card:
+	var last_card := self
+	while last_card.top_card:
+		last_card = last_card.top_card
+	return last_card
 
 func _enter_tree() -> void:
 	num_cards += 1

@@ -6,40 +6,53 @@
 [node name="Game" type="Node2D"]
 script = ExtResource("1_uqrrr")
 
-[node name="Zone" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(324, 98)
+[node name="Input1" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(319, 98)
 is_zone = true
 clickable = false
 
-[node name="Zone2" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(693, 98)
+[node name="Play1" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(323, 285)
+is_zone = true
+
+[node name="Input2" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(434, 98)
 is_zone = true
 clickable = false
 
-[node name="Zone3" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(570, 97)
+[node name="Play2" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(433, 285)
+is_zone = true
+
+[node name="Input3" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(557, 98)
 is_zone = true
 clickable = false
 
-[node name="Zone4" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(440, 97)
+[node name="Play3" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(556, 285)
+is_zone = true
+
+[node name="Input4" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(683, 98)
 is_zone = true
 clickable = false
 
-[node name="Zone5" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(325, 273)
+[node name="Play4" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(682, 285)
 is_zone = true
 
-[node name="Zone6" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(694, 273)
+[node name="Input5" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(810, 101)
+is_zone = true
+clickable = false
+
+[node name="Play5" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(809, 288)
 is_zone = true
 
-[node name="Zone7" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(571, 272)
-is_zone = true
-
-[node name="Zone8" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(441, 272)
+[node name="Submission" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(950, 205)
 is_zone = true
 
 [node name="Button" type="Button" parent="."]
