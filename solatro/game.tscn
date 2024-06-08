@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://bjgp86y4k3875"]
+
+[ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
+[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://card.tscn" id="1_wutpm"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("1_uqrrr")
+
+[node name="Zone" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(324, 98)
+is_zone = true
+clickable = false
+
+[node name="Zone2" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(693, 98)
+is_zone = true
+clickable = false
+
+[node name="Zone3" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(570, 97)
+is_zone = true
+clickable = false
+
+[node name="Zone4" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(440, 97)
+is_zone = true
+clickable = false
+
+[node name="Zone5" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(325, 273)
+is_zone = true
+
+[node name="Zone6" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(694, 273)
+is_zone = true
+
+[node name="Zone7" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(571, 272)
+is_zone = true
+
+[node name="Zone8" parent="." instance=ExtResource("1_wutpm")]
+position = Vector2(441, 272)
+is_zone = true
+
+[node name="Button" type="Button" parent="."]
+offset_left = 134.0
+offset_top = 130.0
+offset_right = 234.0
+offset_bottom = 192.0
+text = "Next Round
+"
+
+[connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]

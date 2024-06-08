@@ -35,6 +35,19 @@ static func freq_sort(cards:Array[Card]) -> Array[Card]:
 		return frequency[a.rank] > frequency[b.rank]
 	cards.sort_custom(sort_freq)
 	return cards
+	
+static func unique_sort(cards:Array[Card]) -> Array[Card]:
+	var unique := {}
+	for card:Card in cards:
+		var rank : int = card.rank
+		if not unique[rank]:
+			unique[rank] = card
+		elif card.time_played < unique[rank].time_played:
+				unique[rank] = card
+	var new_cards : Array[Card]
+	for rank:int in unique:
+		new_cards.append(unique[rank])
+	return Scoring.rank_sort(new_cards)
 
 #not really possible to break ties if comparing two different poker hands
 func tie_breaker(c1:Array[Card], c2:Array[Card]) -> int:
@@ -117,15 +130,23 @@ class ThreeKind extends Hand:
 		cards = Scoring.rank_sort(cards)
 		for i:int in cards.size() - 2:
 			if cards[i].rank == cards[i+1].rank and cards[i].rank == cards[i+2].rank:
-				return [cards[i], cards[i+1], cards[i+1]]
+				return [cards[i], cards[i+1], cards[i+2]]
 		return []
 		
 class Straight extends Hand:
 	func _init(rank : int = 5) -> void:
 		self.rank = rank
 		name = "Straight"
-	func score(cards:Array[Card]) -> HandResult:
-		return null
+	static func score_cards(cards:Array[Card]) -> Array[Card]:
+		cards = Scoring.unique_sort(cards)
+		for i:int in cards.size() - 4:
+			var rank : int = cards[i].rank
+			if cards[i+1].rank == rank - 1 \
+			and cards[i+2].rank == rank - 2 \
+			and cards[i+3].rank == rank - 3 \
+			and cards[i+4].rank == rank - 4:
+				return [cards[i], cards[i+1], cards[i+2], cards[i+3], cards[i+4]]
+		return []
 
 class Flush extends Hand:
 	func _init(rank : int = 6) -> void:
