@@ -33,6 +33,11 @@ func _on_card_clicked(card : Card) -> void:
 		if card.is_zone:
 			pass
 		else:
+			var next_card := card
+			while next_card.top_card:
+				if not can_pickup_stack(next_card, next_card.top_card):
+					return
+				next_card = next_card.top_card
 			card.pickup()
 			held_card = card
 			held_card_offset = held_card.global_position - get_global_mouse_position()
@@ -40,8 +45,23 @@ func _on_card_clicked(card : Card) -> void:
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.is_zone:
 		return true
+	if stack.top_card == to_stack and to_stack == held_card:
+		return true
+	if not stack.top_card:
+		if stack.suit != to_stack.suit:
+			if to_stack.rank == stack.rank - 1:
+				return true
+			if to_stack.rank == stack.rank + 1:
+				return true
+	return false
+
+func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
+	if stack.is_zone:
+		return true
 	if stack.suit != to_stack.suit:
 		if to_stack.rank == stack.rank - 1:
+			return true
+		if to_stack.rank == stack.rank + 1:
 			return true
 	return false
 
@@ -57,7 +77,11 @@ func _on_button_pressed() -> void:
 			stack[i].get_last_card().add_card(input[i].top_card)
 	for zone : Card in input:
 		var card : Card = CARD.instantiate()
-		card.suit = randi() % 4
+		card.suit = randi() % 3
 		card.rank = randi() % 13
 		add_child(card)
 		zone.add_card(card)
+	var submitted : Card = $Submission
+	if submitted.top_card:
+		submitted.top_card.queue_free()
+		submitted.top_card = null
