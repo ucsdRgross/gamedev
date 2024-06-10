@@ -31,7 +31,7 @@ func _ready() -> void:
 		child_offset = Vector2(0,0)
 
 func set_card_front() -> void:
-	front.frame = 13 * suit + rank
+	front.frame = 13 * (suit - 1) + (rank - 1)
 		
 func _on_control_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:

@@ -1,67 +1,165 @@
-[gd_scene load_steps=3 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=4 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://card.tscn" id="1_wutpm"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
+font_size = 41
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_uqrrr")
 
 [node name="Input1" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(319, 98)
+position = Vector2(198, 90)
 is_zone = true
 clickable = false
 
 [node name="Play1" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(323, 285)
+position = Vector2(202, 277)
 is_zone = true
 
 [node name="Input2" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(434, 98)
+position = Vector2(313, 90)
 is_zone = true
 clickable = false
 
 [node name="Play2" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(433, 285)
+position = Vector2(312, 277)
 is_zone = true
 
 [node name="Input3" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(557, 98)
+position = Vector2(436, 90)
 is_zone = true
 clickable = false
 
 [node name="Play3" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(556, 285)
+position = Vector2(435, 277)
 is_zone = true
 
 [node name="Input4" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(683, 98)
+position = Vector2(562, 90)
 is_zone = true
 clickable = false
 
 [node name="Play4" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(682, 285)
+position = Vector2(561, 277)
 is_zone = true
 
 [node name="Input5" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(810, 101)
+visible = false
+position = Vector2(689, 93)
 is_zone = true
 clickable = false
 
 [node name="Play5" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(809, 288)
+visible = false
+position = Vector2(688, 280)
 is_zone = true
 
 [node name="Submission" parent="." instance=ExtResource("1_wutpm")]
-position = Vector2(950, 205)
+position = Vector2(700, 276)
 is_zone = true
 
-[node name="Button" type="Button" parent="."]
-offset_left = 134.0
-offset_top = 130.0
-offset_right = 234.0
-offset_bottom = 192.0
+[node name="Next" type="Button" parent="."]
+offset_left = 13.0
+offset_top = 122.0
+offset_right = 113.0
+offset_bottom = 184.0
 text = "Next Round
 "
 
+[node name="Reroll" type="Button" parent="."]
+offset_left = 651.0
+offset_top = 40.0
+offset_right = 748.0
+offset_bottom = 96.0
+text = "Reroll"
+
+[node name="Score" type="Label" parent="."]
+offset_left = 880.0
+offset_top = 200.0
+offset_right = 1001.0
+offset_bottom = 261.0
+text = "Score:"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="Score"]
+layout_mode = 0
+offset_left = 149.0
+offset_top = -1.0
+offset_right = 270.0
+offset_bottom = 60.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Total" type="Label" parent="."]
+offset_left = 890.0
+offset_top = 131.0
+offset_right = 1011.0
+offset_bottom = 192.0
+text = "Total: "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="Total"]
+layout_mode = 0
+offset_left = 131.0
+offset_top = 2.0
+offset_right = 243.0
+offset_bottom = 63.0
+text = " 0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Goal" type="Label" parent="."]
+offset_left = 887.0
+offset_top = 67.0
+offset_right = 999.0
+offset_bottom = 128.0
+text = "Goal: "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="Goal"]
+layout_mode = 0
+offset_left = 140.0
+offset_top = 2.0
+offset_right = 258.0
+offset_bottom = 63.0
+text = "100"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Turns" type="Label" parent="."]
+offset_left = 863.0
+offset_top = 5.0
+offset_right = 1009.0
+offset_bottom = 66.0
+text = "Turns:  "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="Turns"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 1.0
+offset_right = 281.0
+offset_bottom = 62.0
+text = "5"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Rerolls" type="Label" parent="."]
+offset_left = 632.0
+offset_top = 115.0
+offset_right = 778.0
+offset_bottom = 172.0
+text = "Rerolls:"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="Rerolls"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 1.0
+offset_right = 208.0
+offset_bottom = 62.0
+text = "5
+"
+label_settings = SubResource("LabelSettings_xc73h")
+
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
-[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Next" to="." method="_on_button_pressed"]

@@ -4,6 +4,26 @@ const CARD = preload("res://card.tscn")
 
 var held_card : Card = null
 var held_card_offset : Vector2
+var turns : int = 20:
+	set(value):
+		($Turns/Label as Label).text = str(value)
+		turns = value
+var goal : int = 100:
+	set(value):
+		($Goal/Label as Label).text = str(value)
+		goal = value
+var total_score : int = 0:
+	set(value):
+		($Total/Label as Label).text = str(value)
+		total_score = value
+var last_score : int = 0:
+	set(value):
+		($Score/Label as Label).text = str(value)
+		last_score = value
+var rerolls : int = 0:
+	set(value):
+		($Rerolls/Label as Label).text = str(value)
+		rerolls = value
 
 func _ready() -> void:
 	randomize()
@@ -69,7 +89,31 @@ func drop_held_card() -> void:
 	held_card.drop()
 	held_card = null
 
+func score(card : Card) -> int:
+	var card_amount : int = 1
+	var rank_total : int = card.rank
+	while card.top_card:
+		card = card.top_card
+		card_amount += 1
+		rank_total += card.rank
+	return rank_total * card_amount
+		
 func _on_button_pressed() -> void:
+	var submitted : Card = $Submission
+	if submitted.top_card:
+		last_score = score(submitted.top_card)
+		total_score += last_score
+		submitted.top_card.queue_free()
+		submitted.top_card = null
+	
+	if total_score >= goal:
+		print('you win!')
+		return
+		
+	if turns <= 0:
+		print('you lose!')
+		return
+	
 	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
 	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
 	for i:int in input.size():
@@ -77,11 +121,9 @@ func _on_button_pressed() -> void:
 			stack[i].get_last_card().add_card(input[i].top_card)
 	for zone : Card in input:
 		var card : Card = CARD.instantiate()
-		card.suit = randi() % 3
-		card.rank = randi() % 13
+		card.suit = randi() % 4 + 1
+		card.rank = randi() % 13 + 1
 		add_child(card)
 		zone.add_card(card)
-	var submitted : Card = $Submission
-	if submitted.top_card:
-		submitted.top_card.queue_free()
-		submitted.top_card = null
+	
+	turns -= 1
