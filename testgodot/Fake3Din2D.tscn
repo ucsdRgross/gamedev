@@ -70,12 +70,10 @@ script = ExtResource("1_3y2l8")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(178, 133)
-rotation = -2.42329
-scale = Vector2(0.992584, -0.920777)
-skew = 0.051908
 texture = ExtResource("2_ao3n2")
 
 [node name="Node3D" type="Node3D" parent="."]
+rotation_edit_mode = 2
 
 [node name="Marker3D" type="Marker3D" parent="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.205, 0, 0)
