@@ -30,7 +30,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if held_card:
-		held_card.global_position = get_global_mouse_position() + held_card_offset
+		held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -50,9 +50,7 @@ func _on_card_clicked(card : Card) -> void:
 			card.add_card(held_card)
 			drop_held_card()
 	elif not held_card:
-		if card.is_zone:
-			pass
-		else:
+		if not card.is_zone:
 			var next_card := card
 			while next_card.top_card:
 				if not can_pickup_stack(next_card, next_card.top_card):
@@ -61,18 +59,21 @@ func _on_card_clicked(card : Card) -> void:
 			card.pickup()
 			held_card = card
 			held_card_offset = held_card.global_position - get_global_mouse_position()
+			if held_card_offset.y < 25:
+				held_card_offset.y = 25
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
-	if stack.is_zone:
-		return true
 	if stack.top_card == to_stack and to_stack == held_card:
 		return true
 	if not stack.top_card:
-		if stack.suit != to_stack.suit:
-			if to_stack.rank == stack.rank - 1:
+		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
+			if stack.is_zone:
 				return true
-			if to_stack.rank == stack.rank + 1:
-				return true
+			if stack.suit != to_stack.suit:
+				if to_stack.rank == stack.rank - 1:
+					return true
+				if to_stack.rank == stack.rank + 1:
+					return true
 	return false
 
 func can_pickup_stack(stack : Card, to_stack : Card) -> bool:

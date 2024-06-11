@@ -13,6 +13,7 @@ script = ExtResource("1_uqrrr")
 position = Vector2(198, 90)
 is_zone = true
 clickable = false
+stack_limit = 1
 
 [node name="Play1" parent="." instance=ExtResource("1_wutpm")]
 position = Vector2(202, 277)
@@ -22,6 +23,7 @@ is_zone = true
 position = Vector2(313, 90)
 is_zone = true
 clickable = false
+stack_limit = 1
 
 [node name="Play2" parent="." instance=ExtResource("1_wutpm")]
 position = Vector2(312, 277)
@@ -31,6 +33,7 @@ is_zone = true
 position = Vector2(436, 90)
 is_zone = true
 clickable = false
+stack_limit = 1
 
 [node name="Play3" parent="." instance=ExtResource("1_wutpm")]
 position = Vector2(435, 277)
@@ -40,6 +43,7 @@ is_zone = true
 position = Vector2(562, 90)
 is_zone = true
 clickable = false
+stack_limit = 1
 
 [node name="Play4" parent="." instance=ExtResource("1_wutpm")]
 position = Vector2(561, 277)
