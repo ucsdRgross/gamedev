@@ -4,26 +4,29 @@
 [ext_resource type="Texture2D" uid="uid://dxwhk3tha7ohc" path="res://CardAssets/deck_thing.png" id="2_ml6fq"]
 
 [node name="Card" type="Node2D"]
+scale = Vector2(2, 2)
 script = ExtResource("1_psde2")
 child_offset = Vector2(0, 40)
 
 [node name="Front" type="Sprite2D" parent="."]
-scale = Vector2(2, 2)
 texture = ExtResource("2_ml6fq")
 hframes = 13
 vframes = 5
 frame = 53
 
-[node name="Control" type="Control" parent="Front"]
+[node name="Control" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -24.0
 offset_top = -40.0
-offset_right = -24.0
-offset_bottom = -40.0
+offset_right = 24.0
+offset_bottom = 40.0
 grow_horizontal = 2
 grow_vertical = 2
+metadata/_edit_use_anchors_ = true
 
-[connection signal="gui_input" from="Front/Control" to="." method="_on_control_gui_input"]
+[connection signal="gui_input" from="Control" to="." method="_on_control_gui_input"]
+[connection signal="mouse_entered" from="Control" to="." method="_on_control_mouse_entered"]
+[connection signal="mouse_exited" from="Control" to="." method="_on_control_mouse_exited"]

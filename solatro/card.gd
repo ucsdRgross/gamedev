@@ -8,7 +8,15 @@ signal clicked
 @export var clickable := true
 @export var rank : int = 0
 @export var stack_limit : int = -1
-@export var transform3d : Transform3D
+@export var basis3d : Basis:
+	set(value):
+		basis3d = value
+		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
+		front.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
+		if basis3d.z[2] < 0:
+			modulate = Color.RED
+		else:
+			modulate = Color.WHITE
 #: 
 	#set(value):
 		#rank = value
@@ -20,22 +28,67 @@ signal clicked
 		#set_card_front() 
 
 static var num_cards : int = 0
+var num : int = 0
 
 var top_card : Card
+var bot_card : Card
 var stack_size : int
-var target_position : Vector2
+var move_tween : Tween
+var tilt_tween : Tween
+var held : bool = false
+var hover : bool = false
+var target_pos : Vector2
 
 @onready var front: Sprite2D = $Front
-@onready var area: Control = $Front/Control
+@onready var area: Control = $Control
 
 func _ready() -> void:
 	if not is_zone:
-		set_card_front() 
+		set_card_front()
 	else:
 		child_offset = Vector2(0,0)
 
+var move_delta : float
+var rot_delta : float
+func _process(delta: float) -> void:
+	if not is_zone:
+		#if held or bot_card:
+		var target : Vector2 
+		if held:
+			target = target_pos
+		elif bot_card:
+			target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*1.25)
+		global_position = global_position.lerp(target, 15 * delta)
+		var move : float = target.x - global_position.x
+		move_delta = lerpf(move_delta, move, 20 * delta)
+		rot_delta = lerpf(rot_delta, move, 20 * delta)
+		rotation_degrees = clampf(rot_delta, -60, 60)
+		
+		var x : float = sin(num + float(Time.get_ticks_msec()) / 1000) * (0.3 if hover else 0.6)
+		var y : float = cos(num + float(Time.get_ticks_msec()) / 1000) * (0.3 if hover else 0.6)
+		
+		if hover:
+			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
+			x += mouse_pos.x
+			y += mouse_pos.y
+		var drift : Vector3 = Vector3(x, y, -sqrt(x**2.0 + y**2.0) - 4)
+		basis3d = basis3d.slerp(Basis.IDENTITY.looking_at(drift), 10 * delta)
+		if not held:
+			front.position.y = sin(num + float(Time.get_ticks_msec()) / 1000)
+			
 func move_to(pos : Vector2) -> void:
-	global_position = pos
+	if move_tween and move_tween.is_running():
+		move_tween.kill()
+	target_pos = pos
+	#if not held:
+		#move_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
+		#move_tween.tween_property(self, "global_position", target_pos, 0.3)
+		#if pos.x > global_position.x:
+			#move_tween.parallel().tween_property(self, "rotation_degrees", 10, 0.2)
+		#else:
+			#move_tween.parallel().tween_property(self, "rotation_degrees", -10, 0.2)
+		##tween.set_ease(Tween.EASE_OUT)
+		#move_tween.tween_property(self, "rotation_degrees", 0, 0.1)
 
 func set_card_front() -> void:
 	front.frame = 13 * (suit - 1) + (rank - 1)
@@ -49,12 +102,14 @@ func _on_control_gui_input(event: InputEvent) -> void:
 				clicked.emit(self)
 
 func add_card(card : Card) -> void:
+	if top_card == card:
+		return
 	var parent := card.get_parent()
 	if parent is Card:
 		(parent as Card).top_card = null
 	card.reparent(self)
 	top_card = card
-	card.reposition()
+	card.bot_card = self
 	if stack_limit > -1:
 		while card:
 			card.stack_limit = stack_limit - 1
@@ -65,21 +120,25 @@ func add_card(card : Card) -> void:
 			card = card.top_card
 
 func pickup() -> void:
-	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card : Card = self
+	held = true
+	while card:
+		card.area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card = card.top_card
 	z_index = num_cards	
-	scale = Vector2(1.15,1.15)
+	create_tween().tween_property(self, 'scale', scale * 1.15, 0.1)
+	#scale = Vector2(1.15,1.15)
 	stack_size = get_stack_size()
 	
 func drop() -> void:
-	area.mouse_filter = Control.MOUSE_FILTER_STOP
-	reposition()
-	z_index = 0
-	scale = Vector2(1,1)
-
-func reposition() -> void:
-	var parent : Node = get_parent()
-	if parent is Card:
-		move_to((parent as Card).global_position + (parent as Card).child_offset)
+	var card : Card = self
+	held = false
+	while card:
+		card.area.mouse_filter = Control.MOUSE_FILTER_STOP
+		card = card.top_card
+	z_index = 1
+	create_tween().tween_property(self, 'scale', scale / 1.15, 0.1)
+	#scale = Vector2(1,1)
 
 func get_last_card() -> Card:
 	var last_card := self
@@ -97,6 +156,13 @@ func get_stack_size() -> int:
 
 func _enter_tree() -> void:
 	num_cards += 1
+	num = num_cards
 	
 func _exit_tree() -> void:
 	num_cards -= 1
+
+func _on_control_mouse_entered() -> void:
+	hover = true
+
+func _on_control_mouse_exited() -> void:
+	hover = false

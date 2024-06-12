@@ -25,6 +25,7 @@ gdscript/warnings/unsafe_call_argument=2
 
 [display]
 
+window/size/always_on_top=true
 window/stretch/mode="canvas_items"
 
 [rendering]

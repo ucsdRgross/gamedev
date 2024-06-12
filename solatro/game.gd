@@ -29,8 +29,9 @@ func _ready() -> void:
 	randomize()
 
 func _process(delta: float) -> void:
-	if held_card:
-		held_card.move_to(get_global_mouse_position() + held_card_offset)
+	pass
+	#if held_card:
+	#	held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -39,6 +40,11 @@ func _input(event: InputEvent) -> void:
 			#print("clicked")
 			if held_card:
 				drop_held_card()
+	if event is InputEventMouseMotion:
+		#var mouse_event : InputEventMouseMotion = event 
+		if held_card:
+			held_card.move_to(get_global_mouse_position() + held_card_offset)
+		
 
 func _on_child_entered_tree(node: Node) -> void:
 	if node is Card:
@@ -59,8 +65,9 @@ func _on_card_clicked(card : Card) -> void:
 			card.pickup()
 			held_card = card
 			held_card_offset = held_card.global_position - get_global_mouse_position()
-			if held_card_offset.y < 25:
-				held_card_offset.y = 25
+			if held_card_offset.y < 80:
+				held_card_offset.y = 80
+			held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.top_card == to_stack and to_stack == held_card:
