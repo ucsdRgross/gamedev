@@ -57,7 +57,7 @@ func _process(delta: float) -> void:
 		if held:
 			target = target_pos
 		elif bot_card:
-			target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*1.25)
+			target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*0.75)
 		global_position = global_position.lerp(target, 15 * delta)
 		var move : float = target.x - global_position.x
 		move_delta = lerpf(move_delta, move, 20 * delta)
@@ -71,10 +71,9 @@ func _process(delta: float) -> void:
 			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
 			x += mouse_pos.x
 			y += mouse_pos.y
-		var drift : Vector3 = Vector3(x, y, -sqrt(x**2.0 + y**2.0) - 4)
+		var drift : Vector3 = Vector3(x, y, -3.5)
 		basis3d = basis3d.slerp(Basis.IDENTITY.looking_at(drift), 10 * delta)
-		if not held:
-			front.position.y = sin(num + float(Time.get_ticks_msec()) / 1000)
+		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 1000)
 			
 func move_to(pos : Vector2) -> void:
 	if move_tween and move_tween.is_running():

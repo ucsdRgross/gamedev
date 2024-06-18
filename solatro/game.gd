@@ -65,8 +65,8 @@ func _on_card_clicked(card : Card) -> void:
 			card.pickup()
 			held_card = card
 			held_card_offset = held_card.global_position - get_global_mouse_position()
-			if held_card_offset.y < 80:
-				held_card_offset.y = 80
+			if held_card_offset.y < 60:
+				held_card_offset.y = 60
 			held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
