@@ -38,6 +38,7 @@ var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
 var target_pos : Vector2
+var reparenting : bool
 
 @onready var front: Sprite2D = $Front
 @onready var area: Control = $Control
@@ -45,6 +46,8 @@ var target_pos : Vector2
 func _ready() -> void:
 	if not is_zone:
 		set_card_front()
+		num_cards += 1
+		num = num_cards
 	else:
 		child_offset = Vector2(0,0)
 
@@ -152,13 +155,6 @@ func get_stack_size() -> int:
 		last_card = last_card.top_card
 		stack_size += 1
 	return stack_size
-
-func _enter_tree() -> void:
-	num_cards += 1
-	num = num_cards
-	
-func _exit_tree() -> void:
-	num_cards -= 1
 
 func _on_control_mouse_entered() -> void:
 	hover = true
