@@ -10,6 +10,7 @@ func _ready() -> void:
 		var card : Card = CARD.instantiate()
 		card.suit = randi() % 4 + 1
 		card.rank = randi() % 13 + 1
+		card.clicked.connect(_on_card_clicked)
 		var zone : Card = c.get_child(0)
 		zone.front.frame = 54
 		grid_container.add_child(card)
@@ -18,3 +19,6 @@ func _ready() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	pass
+
+func _on_card_clicked(card : Card) -> void:
+	card.flipped = false

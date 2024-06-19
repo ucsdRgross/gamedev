@@ -135,5 +135,6 @@ func _on_button_pressed() -> void:
 		card.rank = randi() % 13 + 1
 		add_child(card)
 		zone.add_card(card)
+		card.flipped = false
 	
 	turns -= 1

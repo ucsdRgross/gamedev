@@ -3,12 +3,13 @@ class_name Card
 
 signal clicked
 
+@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0
 @export var child_offset : Vector2
 @export var is_zone := false
 @export var clickable := true
 @export var rank : int = 0
 @export var stack_limit : int = -1
-@export var basis3d : Basis:
+@export var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
 		basis3d = value
 		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
@@ -23,11 +24,13 @@ var show_front := false :
 			else:
 				front.frame = 52
 			show_front = value
+
+
 #: 
 	#set(value):
 		#rank = value
 		#set_card_front() 
-@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0
+
 #: 
 	#set(value):
 		#rank = value
@@ -35,7 +38,6 @@ var show_front := false :
 
 static var num_cards : int = 0
 var num : int = 0
-
 var top_card : Card
 var bot_card : Card
 var stack_size : int
@@ -44,6 +46,7 @@ var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
 var target_pos : Vector2
+var flipped := true
 #var reparenting : bool
 
 @onready var front: Sprite2D = $Front
@@ -51,7 +54,7 @@ var target_pos : Vector2
 
 func _ready() -> void:
 	if not is_zone:
-		show_front = true
+		front.frame = 52
 		num_cards += 1
 		num = num_cards
 	else:
@@ -81,7 +84,7 @@ func _process(delta: float) -> void:
 			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
 			x += mouse_pos.x/1.5
 			y += mouse_pos.y/1.5
-		var drift : Vector3 = Vector3(x, y, -3.5)
+		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
 		basis3d = basis3d.slerp(Basis.IDENTITY.looking_at(drift), 10 * delta)
 		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
 			
