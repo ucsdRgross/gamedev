@@ -107,6 +107,8 @@ func score(card : Card) -> int:
 	return rank_total * card_amount
 		
 func _on_button_pressed() -> void:
+	if held_card:
+		return
 	var submitted : Card = $Submission
 	if submitted.top_card:
 		last_score = score(submitted.top_card)

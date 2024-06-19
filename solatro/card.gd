@@ -13,10 +13,16 @@ signal clicked
 		basis3d = value
 		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
 		front.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
-		if basis3d.z[2] < 0:
-			modulate = Color.RED
-		else:
-			modulate = Color.WHITE
+		show_front = basis3d.z[2] > 0
+			
+var show_front := false :
+	set(value):
+		if value != show_front:
+			if value:
+				front.frame = 13 * (suit - 1) + (rank - 1)
+			else:
+				front.frame = 52
+			show_front = value
 #: 
 	#set(value):
 		#rank = value
@@ -38,20 +44,20 @@ var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
 var target_pos : Vector2
-var reparenting : bool
+#var reparenting : bool
 
 @onready var front: Sprite2D = $Front
 @onready var area: Control = $Control
 
 func _ready() -> void:
 	if not is_zone:
-		set_card_front()
+		show_front = true
 		num_cards += 1
 		num = num_cards
 	else:
 		child_offset = Vector2(0,0)
 
-var move_delta : float
+#var move_delta : float
 var rot_delta : float
 func _process(delta: float) -> void:
 	if not is_zone:
@@ -63,20 +69,21 @@ func _process(delta: float) -> void:
 			target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*0.75)
 		global_position = global_position.lerp(target, 15 * delta)
 		var move : float = target.x - global_position.x
-		move_delta = lerpf(move_delta, move, 20 * delta)
+		#move_delta = lerpf(move_delta, move, 20 * delta)
 		rot_delta = lerpf(rot_delta, move, 20 * delta)
-		rotation_degrees = clampf(rot_delta, -60, 60)
+		rot_delta = clampf(rot_delta, -60, 60)
+		rotation_degrees = rot_delta
 		
-		var x : float = sin(num + float(Time.get_ticks_msec()) / 1000) * (0.3 if hover else 0.6)
-		var y : float = cos(num + float(Time.get_ticks_msec()) / 1000) * (0.3 if hover else 0.6)
+		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
+		var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
 		
 		if hover:
 			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
-			x += mouse_pos.x
-			y += mouse_pos.y
+			x += mouse_pos.x/1.5
+			y += mouse_pos.y/1.5
 		var drift : Vector3 = Vector3(x, y, -3.5)
 		basis3d = basis3d.slerp(Basis.IDENTITY.looking_at(drift), 10 * delta)
-		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 1000)
+		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
 			
 func move_to(pos : Vector2) -> void:
 	if move_tween and move_tween.is_running():
@@ -92,8 +99,8 @@ func move_to(pos : Vector2) -> void:
 		##tween.set_ease(Tween.EASE_OUT)
 		#move_tween.tween_property(self, "rotation_degrees", 0, 0.1)
 
-func set_card_front() -> void:
-	front.frame = 13 * (suit - 1) + (rank - 1)
+#func set_card_front() -> void:
+	#front.frame = 13 * (suit - 1) + (rank - 1)
 		
 func _on_control_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -128,7 +135,9 @@ func pickup() -> void:
 		card.area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card = card.top_card
 	z_index = num_cards	
-	create_tween().tween_property(self, 'scale', scale * 1.15, 0.1)
+	var tween := create_tween()
+	tween.tween_property(self, 'scale', scale * 1.15, 0.1)
+	#tween.tween_property(self, 'scale', Vector2(1.15,1.15), 0.01)
 	#scale = Vector2(1.15,1.15)
 	stack_size = get_stack_size()
 	
@@ -139,7 +148,9 @@ func drop() -> void:
 		card.area.mouse_filter = Control.MOUSE_FILTER_STOP
 		card = card.top_card
 	z_index = 1
-	create_tween().tween_property(self, 'scale', scale / 1.15, 0.1)
+	var tween := create_tween()
+	tween.tween_property(self, 'scale', scale / 1.15, 0.1)
+	#tween.tween_property(self, 'scale', Vector2(1,1), 0.01)
 	#scale = Vector2(1,1)
 
 func get_last_card() -> Card:
