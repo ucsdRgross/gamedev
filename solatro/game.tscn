@@ -1,13 +1,31 @@
-[gd_scene load_steps=4 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=5 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://card.tscn" id="1_wutpm"]
+[ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
 
-[node name="Game" type="Node2D"]
+[node name="Game" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_uqrrr")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_78hkv")
+expand_mode = 5
+stretch_mode = 6
 
 [node name="Input1" parent="." instance=ExtResource("1_wutpm")]
 position = Vector2(198, 90)
@@ -65,6 +83,7 @@ position = Vector2(700, 276)
 is_zone = true
 
 [node name="Next" type="Button" parent="."]
+layout_mode = 0
 offset_left = 13.0
 offset_top = 122.0
 offset_right = 113.0
@@ -73,6 +92,7 @@ text = "Next Round
 "
 
 [node name="Reroll" type="Button" parent="."]
+layout_mode = 0
 offset_left = 651.0
 offset_top = 40.0
 offset_right = 748.0
@@ -80,6 +100,7 @@ offset_bottom = 96.0
 text = "Reroll"
 
 [node name="Score" type="Label" parent="."]
+layout_mode = 0
 offset_left = 880.0
 offset_top = 200.0
 offset_right = 1001.0
@@ -97,6 +118,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Total" type="Label" parent="."]
+layout_mode = 0
 offset_left = 890.0
 offset_top = 131.0
 offset_right = 1011.0
@@ -114,6 +136,7 @@ text = " 0"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Goal" type="Label" parent="."]
+layout_mode = 0
 offset_left = 887.0
 offset_top = 67.0
 offset_right = 999.0
@@ -131,6 +154,7 @@ text = "100"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Turns" type="Label" parent="."]
+layout_mode = 0
 offset_left = 863.0
 offset_top = 5.0
 offset_right = 1009.0
@@ -148,6 +172,7 @@ text = "5"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Rerolls" type="Label" parent="."]
+layout_mode = 0
 offset_left = 632.0
 offset_top = 115.0
 offset_right = 778.0
@@ -166,4 +191,4 @@ text = "5
 label_settings = SubResource("LabelSettings_xc73h")
 
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
-[connection signal="pressed" from="Next" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Next" to="." method="_on_next_pressed"]

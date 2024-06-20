@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 const CARD = preload("res://card.tscn")
 
@@ -106,7 +106,7 @@ func score(card : Card) -> int:
 		rank_total += card.rank
 	return rank_total * card_amount
 		
-func _on_button_pressed() -> void:
+func _on_next_pressed() -> void:
 	if held_card:
 		return
 	var submitted : Card = $Submission
