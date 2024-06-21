@@ -1,0 +1,25 @@
+extends Node
+
+var scene_map := preload("res://map.tscn").instantiate()
+var scene_game := preload("res://game.tscn").instantiate()
+var current_scene : Node = null
+
+func _ready() -> void:
+	(scene_map as Map).card_clicked.connect(enter_game)
+	switch_scene(scene_map)
+
+func enter_game(card:Card) -> void:
+	switch_scene(scene_game)
+
+func switch_scene(new_scene : Node) -> void:
+	if new_scene.is_inside_tree():
+		return
+
+	#Add new scene below old scene to keep 
+	#the same index once old_scene is removed
+	if current_scene and current_scene.is_inside_tree():
+		current_scene.add_sibling(new_scene)
+		remove_child(current_scene)
+	else:
+		add_child(new_scene)
+	current_scene = new_scene

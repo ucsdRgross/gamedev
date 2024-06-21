@@ -6,6 +6,7 @@ signal clicked
 @export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0
 @export var child_offset : Vector2
 @export var is_zone := false
+@export var can_move_anim := true
 @export var clickable := true
 @export var rank : int = 0
 @export var stack_limit : int = -1
@@ -65,17 +66,18 @@ var rot_delta : float
 func _process(delta: float) -> void:
 	if not is_zone:
 		#if held or bot_card:
-		var target : Vector2 
-		if held:
-			target = target_pos
-		elif bot_card:
-			target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*0.75)
-		global_position = global_position.lerp(target, 15 * delta)
-		var move : float = target.x - global_position.x
-		#move_delta = lerpf(move_delta, move, 20 * delta)
-		rot_delta = lerpf(rot_delta, move, 20 * delta)
-		rot_delta = clampf(rot_delta, -60, 60)
-		rotation_degrees = rot_delta
+		if can_move_anim:
+			var target : Vector2 
+			if held:
+				target = target_pos
+			elif bot_card:
+				target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*0.75)
+			global_position = global_position.lerp(target, 15 * delta)
+			var move : float = target.x - global_position.x
+			#move_delta = lerpf(move_delta, move, 20 * delta)
+			rot_delta = lerpf(rot_delta, move, 20 * delta)
+			rot_delta = clampf(rot_delta, -60, 60)
+			rotation_degrees = rot_delta
 		
 		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
 		var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
