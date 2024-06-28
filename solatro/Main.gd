@@ -1,7 +1,7 @@
 extends Node
 
 var scene_map := preload("res://map.tscn").instantiate()
-var scene_game := preload("res://game.tscn").instantiate()
+var scene_game := preload("res://game.tscn")#.instantiate()
 var current_scene : Node = null
 
 func _ready() -> void:
@@ -9,7 +9,12 @@ func _ready() -> void:
 	switch_scene(scene_map)
 
 func enter_game(card:Card) -> void:
-	switch_scene(scene_game)
+	var new_game : Game = scene_game.instantiate()
+	new_game.game_ended.connect(game_ended)
+	switch_scene(new_game)
+
+func game_ended() -> void:
+	switch_scene(scene_map)
 
 func switch_scene(new_scene : Node) -> void:
 	if new_scene.is_inside_tree():

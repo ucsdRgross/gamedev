@@ -46,6 +46,7 @@ func _on_card_clicked(card : Card) -> void:
 										Vector2i(0,1),
 										#Vector2(1,1)
 										]
+	card.z_index = card.num_cards
 	tween_transition = create_tween()
 	tween_transition.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
 	var cols : int = grid_container.columns

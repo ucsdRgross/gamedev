@@ -1,4 +1,7 @@
 extends Control
+class_name Game
+
+signal game_ended
 
 const CARD = preload("res://card.tscn")
 
@@ -8,7 +11,7 @@ var turns : int = 20:
 	set(value):
 		($Turns/Label as Label).text = str(value)
 		turns = value
-var goal : int = 100:
+var goal : int = 1:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
@@ -117,7 +120,7 @@ func _on_next_pressed() -> void:
 		submitted.top_card = null
 	
 	if total_score >= goal:
-		print('you win!')
+		game_ended.emit()
 		return
 		
 	if turns <= 0:
