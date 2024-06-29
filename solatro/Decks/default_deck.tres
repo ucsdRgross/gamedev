@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="Deck" load_steps=2 format=3 uid="uid://3uwspwqrud5"]
+
+[ext_resource type="Script" path="res://Decks/deck.gd" id="1_24rvu"]
+
+[resource]
+script = ExtResource("1_24rvu")
+cards = null

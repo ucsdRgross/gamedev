@@ -3,12 +3,11 @@ class_name Card
 
 signal clicked
 
-@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0
+@export var attributes : CardAttributes
 @export var child_offset : Vector2
 @export var is_zone := false
 @export var can_move_anim := true
 @export var clickable := true
-@export var rank : int = 0
 @export var stack_limit : int = -1
 @export var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
@@ -21,7 +20,7 @@ var show_front := false :
 	set(value):
 		if value != show_front:
 			if value:
-				front.frame = 13 * (suit - 1) + (rank - 1)
+				front.frame = 13 * (attributes.suit - 1) + (attributes.rank - 1)
 			else:
 				front.frame = 52
 			show_front = value

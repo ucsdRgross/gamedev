@@ -3,8 +3,9 @@ class_name Game
 
 signal game_ended
 
-const CARD = preload("res://card.tscn")
+const CARD = preload("res://Cards/card.tscn")
 
+@export var deck : Deck
 var held_card : Card = null
 var held_card_offset : Vector2
 var turns : int = 20:
@@ -27,9 +28,18 @@ var rerolls : int = 0:
 	set(value):
 		($Rerolls/Label as Label).text = str(value)
 		rerolls = value
+var draw_deck : Array[Card]
+var discard_deck : Array[Card]
 
 func _ready() -> void:
-	randomize()
+	add_deck()
+
+func add_deck() -> void:
+	for attribute:CardAttributes in deck.cards:
+		var card : Card = CARD.instantiate()
+		card.attributes = attribute
+		add_child(card)
+	draw_deck.shuffle()
 
 func _process(delta: float) -> void:
 	pass
@@ -79,20 +89,20 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
 			if stack.is_zone:
 				return true
-			if stack.suit != to_stack.suit:
-				if to_stack.rank == stack.rank - 1:
+			if stack.attributes.suit != to_stack.attributes.suit:
+				if to_stack.attributes.rank == stack.attributes.rank - 1:
 					return true
-				if to_stack.rank == stack.rank + 1:
+				if to_stack.attributes.rank == stack.attributes.rank + 1:
 					return true
 	return false
 
 func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
 	if stack.is_zone:
 		return true
-	if stack.suit != to_stack.suit:
-		if to_stack.rank == stack.rank - 1:
+	if stack.attributes.suit != to_stack.attributes.suit:
+		if to_stack.attributes.rank == stack.attributes.rank - 1:
 			return true
-		if to_stack.rank == stack.rank + 1:
+		if to_stack.attributes.rank == stack.attributes.rank + 1:
 			return true
 	return false
 
@@ -102,11 +112,11 @@ func drop_held_card() -> void:
 
 func score(card : Card) -> int:
 	var card_amount : int = 1
-	var rank_total : int = card.rank
+	var rank_total : int = card.attributes.rank
 	while card.top_card:
 		card = card.top_card
 		card_amount += 1
-		rank_total += card.rank
+		rank_total += card.attributes.rank
 	return rank_total * card_amount
 		
 func _on_next_pressed() -> void:
@@ -134,8 +144,9 @@ func _on_next_pressed() -> void:
 			stack[i].get_last_card().add_card(input[i].top_card)
 	for zone : Card in input:
 		var card : Card = CARD.instantiate()
-		card.suit = randi() % 4 + 1
-		card.rank = randi() % 13 + 1
+		card.attributes = CardAttributes.new()\
+						.with_suit(randi() % 4 + 1)\
+						.with_rank(randi() % 13 + 1)
 		add_child(card)
 		zone.add_card(card)
 		card.flipped = false

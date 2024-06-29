@@ -1,15 +1,23 @@
-[gd_scene load_steps=3 format=3 uid="uid://cmvmqwfqk50mf"]
+[gd_scene load_steps=5 format=3 uid="uid://cmvmqwfqk50mf"]
 
-[ext_resource type="Script" path="res://card.gd" id="1_psde2"]
-[ext_resource type="Texture2D" uid="uid://dxwhk3tha7ohc" path="res://Assets/deck_thing.png" id="2_4p04c"]
+[ext_resource type="Script" path="res://Cards/card.gd" id="1_eblgi"]
+[ext_resource type="Texture2D" uid="uid://dxwhk3tha7ohc" path="res://Assets/deck_thing.png" id="2_0uhja"]
+[ext_resource type="Script" path="res://Cards/card_attributes.gd" id="2_m7i1r"]
+
+[sub_resource type="Resource" id="Resource_iacna"]
+resource_local_to_scene = true
+script = ExtResource("2_m7i1r")
+suit = 0
+rank = 0
 
 [node name="Card" type="Node2D"]
 scale = Vector2(2, 2)
-script = ExtResource("1_psde2")
+script = ExtResource("1_eblgi")
+attributes = SubResource("Resource_iacna")
 child_offset = Vector2(0, 40)
 
 [node name="Front" type="Sprite2D" parent="."]
-texture = ExtResource("2_4p04c")
+texture = ExtResource("2_0uhja")
 hframes = 13
 vframes = 5
 frame = 53

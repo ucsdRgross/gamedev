@@ -3,7 +3,7 @@ class_name Map
 
 signal card_clicked(card:Card)
 
-const CARD = preload("res://card.tscn")
+const CARD = preload("res://Cards/card.tscn")
 var containers : Array 
 var index_to_card : Dictionary
 var card_to_index : Dictionary
@@ -16,8 +16,11 @@ func _ready() -> void:
 	var i : int = 0
 	for c:Control in containers:
 		var card : Card = CARD.instantiate()
-		card.suit = randi() % 4 + 1
-		card.rank = randi() % 13 + 1
+		card.attributes = CardAttributes.new()\
+						.with_suit(randi() % 4 + 1)\
+						.with_rank(randi() % 13 + 1)
+		#card.attributes.suit = randi() % 4 + 1
+		#card.attributes.rank = randi() % 13 + 1
 		card.can_move_anim = false
 		card.clicked.connect(_on_card_clicked)
 		var zone : Card = c.get_child(0)

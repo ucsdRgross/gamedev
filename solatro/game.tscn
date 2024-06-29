@@ -1,8 +1,76 @@
-[gd_scene load_steps=5 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=18 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
-[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://card.tscn" id="1_wutpm"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
+[ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
+[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
+[ext_resource type="Script" path="res://Cards/card_attributes.gd" id="4_nruxh"]
+
+[sub_resource type="Resource" id="Resource_er3jg"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_xug7v"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_prrsq"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_rw2se"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_r8mu1"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_d36ns"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_1sktu"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_ag51b"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_5nv3s"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_v8y5d"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
+
+[sub_resource type="Resource" id="Resource_teb1l"]
+resource_local_to_scene = true
+script = ExtResource("4_nruxh")
+suit = 0
+rank = 0
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
@@ -15,6 +83,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uqrrr")
+deck = ExtResource("2_grgi0")
 
 [node name="TextureRect" type="TextureRect" parent="."]
 layout_mode = 1
@@ -27,59 +96,70 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[node name="Input1" parent="." instance=ExtResource("1_wutpm")]
+[node name="Input1" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(198, 90)
+attributes = SubResource("Resource_er3jg")
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Play1" parent="." instance=ExtResource("1_wutpm")]
+[node name="Play1" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(202, 277)
+attributes = SubResource("Resource_xug7v")
 is_zone = true
 
-[node name="Input2" parent="." instance=ExtResource("1_wutpm")]
+[node name="Input2" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(313, 90)
+attributes = SubResource("Resource_prrsq")
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Play2" parent="." instance=ExtResource("1_wutpm")]
+[node name="Play2" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(312, 277)
+attributes = SubResource("Resource_rw2se")
 is_zone = true
 
-[node name="Input3" parent="." instance=ExtResource("1_wutpm")]
+[node name="Input3" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(436, 90)
+attributes = SubResource("Resource_r8mu1")
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Play3" parent="." instance=ExtResource("1_wutpm")]
+[node name="Play3" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(435, 277)
+attributes = SubResource("Resource_d36ns")
 is_zone = true
 
-[node name="Input4" parent="." instance=ExtResource("1_wutpm")]
+[node name="Input4" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(562, 90)
+attributes = SubResource("Resource_1sktu")
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Play4" parent="." instance=ExtResource("1_wutpm")]
+[node name="Play4" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(561, 277)
+attributes = SubResource("Resource_ag51b")
 is_zone = true
 
-[node name="Input5" parent="." instance=ExtResource("1_wutpm")]
+[node name="Input5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(689, 93)
+attributes = SubResource("Resource_5nv3s")
 is_zone = true
 clickable = false
 
-[node name="Play5" parent="." instance=ExtResource("1_wutpm")]
+[node name="Play5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(688, 280)
+attributes = SubResource("Resource_v8y5d")
 is_zone = true
 
-[node name="Submission" parent="." instance=ExtResource("1_wutpm")]
+[node name="Submission" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(700, 276)
+attributes = SubResource("Resource_teb1l")
 is_zone = true
 
 [node name="Next" type="Button" parent="."]
