@@ -12,7 +12,7 @@ var turns : int = 20:
 	set(value):
 		($Turns/Label as Label).text = str(value)
 		turns = value
-var goal : int = 1:
+var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
@@ -28,17 +28,18 @@ var rerolls : int = 0:
 	set(value):
 		($Rerolls/Label as Label).text = str(value)
 		rerolls = value
-var draw_deck : Array[Card]
-var discard_deck : Array[Card]
+var draw_deck : Array[CardAttributes]
+var discard_deck : Array[CardAttributes]
 
 func _ready() -> void:
 	add_deck()
 
 func add_deck() -> void:
-	for attribute:CardAttributes in deck.cards:
-		var card : Card = CARD.instantiate()
-		card.attributes = attribute
-		add_child(card)
+	#for attribute:CardAttributes in deck.cards:
+		#var card : Card = CARD.instantiate()
+		#card.attributes = attribute
+		#add_child(card)
+	draw_deck = deck.cards.duplicate(true)
 	draw_deck.shuffle()
 
 func _process(delta: float) -> void:
@@ -126,6 +127,10 @@ func _on_next_pressed() -> void:
 	if submitted.top_card:
 		last_score = score(submitted.top_card)
 		total_score += last_score
+		var next_card : Card = submitted.top_card
+		while next_card:
+			discard_deck.append(next_card.attributes)
+			next_card = next_card.top_card
 		submitted.top_card.queue_free()
 		submitted.top_card = null
 	
@@ -137,18 +142,27 @@ func _on_next_pressed() -> void:
 		print('you lose!')
 		return
 	
-	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
-	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
+	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4]#, $Input5]
+	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4]#, $Play5]
 	for i:int in input.size():
 		if input[i].top_card:
 			stack[i].get_last_card().add_card(input[i].top_card)
 	for zone : Card in input:
-		var card : Card = CARD.instantiate()
-		card.attributes = CardAttributes.new()\
-						.with_suit(randi() % 4 + 1)\
-						.with_rank(randi() % 13 + 1)
-		add_child(card)
-		zone.add_card(card)
-		card.flipped = false
+		if draw_deck.size() == 0:
+			draw_deck.assign(discard_deck)
+			discard_deck.clear()
+		if draw_deck.size() > 0:
+			var card : Card = CARD.instantiate()
+			card.attributes = draw_deck.pop_back()
+			add_child(card)
+			zone.add_card(card)
+			card.flipped = false
+		#var card : Card = CARD.instantiate()
+		#card.attributes = CardAttributes.new()\
+						#.with_suit(randi() % 4 + 1)\
+						#.with_rank(randi() % 13 + 1)
+		#add_child(card)
+		#zone.add_card(card)
+		#card.flipped = false
 	
 	turns -= 1
