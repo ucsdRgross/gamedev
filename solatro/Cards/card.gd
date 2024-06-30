@@ -60,22 +60,28 @@ func _ready() -> void:
 	else:
 		child_offset = Vector2(0,0)
 
-#var move_delta : float
 var rot_delta : float
+var y_delta : float
 func _process(delta: float) -> void:
 	if not is_zone:
-		#if held or bot_card:
 		if can_move_anim:
 			var target : Vector2 
 			if held:
 				target = target_pos
 			elif bot_card:
-				target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*0.75)
-			global_position = global_position.lerp(target, 15 * delta)
-			var move : float = target.x - global_position.x
-			#move_delta = lerpf(move_delta, move, 20 * delta)
-			rot_delta = lerpf(rot_delta, move, 20 * delta)
-			rot_delta = clampf(rot_delta, -60, 60)
+				target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
+				y_delta += bot_card.y_delta * 0.5
+				
+			target.y -= y_delta
+			var move : Vector2 = target - global_position
+			global_position = global_position.lerp(target, 20 * delta)
+			
+			y_delta = lerpf(y_delta, move.y, 20 * delta)
+			y_delta = clampf(y_delta, -4, 4)
+			
+			rot_delta = lerpf(rot_delta, move.x, 20 * delta)
+			var clamp : float = sqrt(abs(rot_delta) as float) * 5
+			rot_delta = clampf(rot_delta, -clamp, clamp)
 			rotation_degrees = rot_delta
 		
 		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
