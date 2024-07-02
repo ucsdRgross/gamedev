@@ -12,7 +12,7 @@ var turns : int = 20:
 	set(value):
 		($Turns/Label as Label).text = str(value)
 		turns = value
-var goal : int = 100:
+var goal : int = 7:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
@@ -31,7 +31,10 @@ var rerolls : int = 0:
 var draw_deck : Array[CardAttributes]
 var discard_deck : Array[CardAttributes]
 
+var scorers : Array[Scorer.Combo] = [Scorer.Fifteen.new()]
+
 func _ready() -> void:
+	goal = goal
 	add_deck()
 
 func add_deck() -> void:
@@ -98,6 +101,7 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 	return false
 
 func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
+	return true
 	if stack.is_zone:
 		return true
 	if stack.attributes.suit != to_stack.attributes.suit:
@@ -112,13 +116,16 @@ func drop_held_card() -> void:
 	held_card = null
 
 func score(card : Card) -> int:
-	var card_amount : int = 1
-	var rank_total : int = card.attributes.rank
-	while card.top_card:
+	#var card_amount : int = 1
+	#var rank_total : int = card.attributes.rank
+	var stack : Array[Card]
+	while card:
+		stack.append(card)
 		card = card.top_card
-		card_amount += 1
-		rank_total += card.attributes.rank
-	return rank_total * card_amount
+		#card_amount += 1
+		#rank_total += card.attributes.rank
+	#return rank_total * card_amount
+	return 0
 		
 func _on_next_pressed() -> void:
 	if held_card:

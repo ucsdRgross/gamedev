@@ -146,7 +146,7 @@ func pickup() -> void:
 		card = card.top_card
 	z_index = num_cards	
 	var tween := create_tween()
-	tween.tween_property(self, 'scale', scale * 1.15, 0.1)
+	tween.tween_property(self, 'scale', Vector2(1.15,1.15), 0.1)
 	#tween.tween_property(self, 'scale', Vector2(1.15,1.15), 0.01)
 	#scale = Vector2(1.15,1.15)
 	stack_size = get_stack_size()
@@ -154,12 +154,13 @@ func pickup() -> void:
 func drop() -> void:
 	var card : Card = self
 	held = false
+	z_index = 1
+	var tween := create_tween()
+	tween.tween_property(self, 'scale', Vector2(1,1), 0.1)
+	await tween.finished
 	while card:
 		card.area.mouse_filter = Control.MOUSE_FILTER_STOP
 		card = card.top_card
-	z_index = 1
-	var tween := create_tween()
-	tween.tween_property(self, 'scale', scale / 1.15, 0.1)
 	#tween.tween_property(self, 'scale', Vector2(1,1), 0.01)
 	#scale = Vector2(1,1)
 
