@@ -28,8 +28,8 @@ var rerolls : int = 0:
 	set(value):
 		($Rerolls/Label as Label).text = str(value)
 		rerolls = value
-var draw_deck : Array[CardAttributes]
-var discard_deck : Array[CardAttributes]
+var draw_deck : Array[CardData]
+var discard_deck : Array[CardData]
 
 var scorers : Array[Scorer.Combo] = [Scorer.Fifteen.new()]
 
@@ -38,9 +38,9 @@ func _ready() -> void:
 	add_deck()
 
 func add_deck() -> void:
-	#for attribute:CardAttributes in deck.cards:
+	#for attribute:CardData in deck.cards:
 		#var card : Card = CARD.instantiate()
-		#card.attributes = attribute
+		#card.data = attribute
 		#add_child(card)
 	draw_deck = deck.cards.duplicate(true)
 	draw_deck.shuffle()
@@ -93,10 +93,10 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
 			if stack.is_zone:
 				return true
-			if stack.attributes.suit != to_stack.attributes.suit:
-				if to_stack.attributes.rank == stack.attributes.rank - 1:
+			if stack.data.suit != to_stack.data.suit:
+				if to_stack.data.rank == stack.data.rank - 1:
 					return true
-				if to_stack.attributes.rank == stack.attributes.rank + 1:
+				if to_stack.data.rank == stack.data.rank + 1:
 					return true
 	return false
 
@@ -104,10 +104,10 @@ func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
 	return true
 	if stack.is_zone:
 		return true
-	if stack.attributes.suit != to_stack.attributes.suit:
-		if to_stack.attributes.rank == stack.attributes.rank - 1:
+	if stack.data.suit != to_stack.data.suit:
+		if to_stack.data.rank == stack.data.rank - 1:
 			return true
-		if to_stack.attributes.rank == stack.attributes.rank + 1:
+		if to_stack.data.rank == stack.data.rank + 1:
 			return true
 	return false
 
@@ -117,13 +117,13 @@ func drop_held_card() -> void:
 
 func score(card : Card) -> int:
 	#var card_amount : int = 1
-	#var rank_total : int = card.attributes.rank
+	#var rank_total : int = card.data.rank
 	var stack : Array[Card]
 	while card:
 		stack.append(card)
 		card = card.top_card
 		#card_amount += 1
-		#rank_total += card.attributes.rank
+		#rank_total += card.data.rank
 	#return rank_total * card_amount
 	return 0
 		
@@ -136,7 +136,7 @@ func _on_next_pressed() -> void:
 		total_score += last_score
 		var next_card : Card = submitted.top_card
 		while next_card:
-			discard_deck.append(next_card.attributes)
+			discard_deck.append(next_card.data)
 			next_card = next_card.top_card
 		submitted.top_card.queue_free()
 		submitted.top_card = null
@@ -160,12 +160,12 @@ func _on_next_pressed() -> void:
 			discard_deck.clear()
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()
-			card.attributes = draw_deck.pop_back()
+			card.data = draw_deck.pop_back()
 			add_child(card)
 			zone.add_card(card)
 			card.flipped = false
 		#var card : Card = CARD.instantiate()
-		#card.attributes = CardAttributes.new()\
+		#card.data = CardData.new()\
 						#.with_suit(randi() % 4 + 1)\
 						#.with_rank(randi() % 13 + 1)
 		#add_child(card)

@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" path="res://Cards/card.gd" id="1_eblgi"]
 [ext_resource type="Texture2D" uid="uid://dxwhk3tha7ohc" path="res://Assets/deck_thing.png" id="2_0uhja"]
-[ext_resource type="Script" path="res://Cards/card_attributes.gd" id="2_m7i1r"]
+[ext_resource type="Script" path="res://Cards/card_data.gd" id="2_mbvg4"]
 
 [sub_resource type="Resource" id="Resource_iacna"]
 resource_local_to_scene = true
-script = ExtResource("2_m7i1r")
+script = ExtResource("2_mbvg4")
 suit = 0
 rank = 0
 
@@ -15,6 +15,11 @@ scale = Vector2(2, 2)
 script = ExtResource("1_eblgi")
 attributes = SubResource("Resource_iacna")
 child_offset = Vector2(0, 40)
+is_zone = null
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Front" type="Sprite2D" parent="."]
 texture = ExtResource("2_0uhja")

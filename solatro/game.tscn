@@ -4,71 +4,71 @@
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
-[ext_resource type="Script" path="res://Cards/card_attributes.gd" id="4_nruxh"]
+[ext_resource type="Script" path="res://Cards/card_data.gd" id="5_2akhq"]
 
 [sub_resource type="Resource" id="Resource_er3jg"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_xug7v"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_prrsq"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_rw2se"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_r8mu1"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_d36ns"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_1sktu"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_ag51b"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_5nv3s"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_v8y5d"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_teb1l"]
 resource_local_to_scene = true
-script = ExtResource("4_nruxh")
+script = ExtResource("5_2akhq")
 suit = 0
 rank = 0
 

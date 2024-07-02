@@ -3,7 +3,7 @@ class_name Card
 
 signal clicked
 
-@export var attributes : CardAttributes
+@export var data : CardData
 @export var child_offset : Vector2
 @export var is_zone := false
 @export var can_move_anim := true
@@ -20,7 +20,7 @@ var show_front := false :
 	set(value):
 		if value != show_front:
 			if value:
-				front.frame = 13 * (attributes.suit - 1) + (attributes.rank - 1)
+				front.frame = 13 * (data.suit - 1) + (data.rank - 1)
 			else:
 				front.frame = 52
 			show_front = value

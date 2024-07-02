@@ -25,7 +25,7 @@ class Fifteen extends Scorer.Combo:
 #3-7 for run of 3 to 7 cards
 
 static func rank_sort(a:Card, b:Card) -> bool:
-	return a.attributes.rank < b.attributes.rank
+	return a.data.rank < b.data.rank
 	
 static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 	var sign : int = 1
@@ -37,7 +37,7 @@ static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 	var last_index := {0: [-1]}
 	for i:int in cards.size():
 		for s:int in last_index.keys():
-			var new_s : int = s + cards[i].attributes.rank
+			var new_s : int = s + cards[i].data.rank
 			if 0 < (new_s - target) * sign:
 				pass
 			elif new_s in last_index:
@@ -53,7 +53,7 @@ static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 			elif max_i <= i:
 				break
 			else:
-				for answer:Array in recur.call(new_target - cards[i].attributes.rank, i, recur):
+				for answer:Array in recur.call(new_target - cards[i].data.rank, i, recur):
 					answer.append(cards[i])
 					output.append(answer)
 		return output

@@ -3,299 +3,299 @@
 [ext_resource type="Script" path="res://Map.gd" id="1_1blyn"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
-[ext_resource type="Script" path="res://Cards/card_attributes.gd" id="4_dgnc7"]
+[ext_resource type="Script" path="res://Cards/card_data.gd" id="4_r2g0f"]
 
 [sub_resource type="Resource" id="Resource_nkrkq"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_kslmq"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_hqcsi"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_dg7d3"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_g71uf"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_13bf8"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_vhviq"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_2qdgi"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_vl5mj"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_sbq2q"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_48ybp"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_m6imq"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_ij1f6"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_amh0c"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_kc4rf"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_4yd1h"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_toju5"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_gael0"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_eullt"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_axp4m"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_foca0"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_h7w17"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_wocc5"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_bspau"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_oev2q"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_lwqkg"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_sxw1u"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_kdyym"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_6kjks"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_fnq5t"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_twkw4"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_n8wlh"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_s3ow3"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_k1dyn"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_sjn3q"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_t5icc"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_ml01j"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_41prm"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_05bow"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_l1eie"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_t1cwa"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_47op0"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_4t4oc"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_e0pto"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_u1moe"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_iqs8k"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_jninf"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_1pbpg"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
 [sub_resource type="Resource" id="Resource_mcdeb"]
 resource_local_to_scene = true
-script = ExtResource("4_dgnc7")
+script = ExtResource("4_r2g0f")
 suit = 0
 rank = 0
 
