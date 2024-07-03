@@ -31,7 +31,10 @@ var rerolls : int = 0:
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
 
-var scorers : Array[Scoring.Combo] = [Scoring.Fifteen.new(), Scoring.Pairs.new()]
+var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(), 
+									Scoring.Fifteen.new(), 
+									Scoring.Pairs.new(),
+									]
 
 func _ready() -> void:
 	goal = goal

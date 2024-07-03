@@ -10,6 +10,15 @@ class Combo:
 		@warning_ignore("unused_parameter")
 		return [Result.new()]
 
+class Jack extends Scoring.Combo:
+	static func score(cards:Array[Card]) -> Array[Result]:
+		var result := Result.new()
+		result.score_name = "Jack"
+		result.score = 2
+		if cards.size() > 0 and cards[0].data.rank == 11:
+			result.score_combos = [[cards[0]]]
+		return [result]
+
 class Fifteen extends Scoring.Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		var result := Result.new()
@@ -25,16 +34,16 @@ class Pairs extends Scoring.Combo:
 		for card:Card in cards:
 			var rank : int = card.data.rank
 			if rank in ranks:
-				(ranks[rank] as Array).append(card)
+				(ranks[rank] as Array[Card]).append(card)
 			else:
-				ranks[rank] = [card]
+				ranks[rank] = [card] as Array[Card]
 		
 		var pairs := {}
 		for rank:int in ranks:
-			var copies : int = (ranks[rank] as Array).size()
+			var copies : int = (ranks[rank] as Array[Card]).size()
 			if copies > 1:
 				if copies in pairs:
-					(pairs[copies] as Array).append(ranks[rank])
+					(pairs[copies] as Array[Array]).append(ranks[rank])
 				else:
 					pairs[copies] = [ranks[rank]] as Array[Array]
 					
@@ -111,12 +120,12 @@ static func copies(cards:Array[Card], n:int) -> Array[Array]:
 	for card:Card in cards:
 		var rank : int = card.data.rank
 		if rank in ranks:
-			(ranks[rank] as Array).append(card)
+			(ranks[rank] as Array[Card]).append(card)
 		else:
 			ranks[rank] = [card]
 	var output : Array = []
 	for rank:int in ranks:
-		if (ranks[rank] as Array).size() == n:
+		if (ranks[rank] as Array[Card]).size() == n:
 			output.append(ranks[rank])
 	return output
 	
@@ -135,7 +144,7 @@ static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 			if 0 < (new_s - target) * target_sign:
 				pass
 			elif new_s in last_index:
-				(last_index[new_s] as Array).append(i)
+				(last_index[new_s] as Array[int]).append(i)
 			else:
 				last_index[new_s] = [i]
 	
