@@ -6,18 +6,78 @@ class Result:
 	var score : int
 
 class Combo:
-	static func score(cards:Array[Card]) -> Result:
+	static func score(cards:Array[Card]) -> Array[Result]:
 		@warning_ignore("unused_parameter")
-		return Result.new()
+		return [Result.new()]
 
 class Fifteen extends Scoring.Combo:
-	static func score(cards:Array[Card]) -> Result:
+	static func score(cards:Array[Card]) -> Array[Result]:
 		var result := Result.new()
 		result.score_name = "Fifteen"
 		result.score = 2
 		result.score_combos = Scoring.subset_sum_iter(cards, 15)
 		Scoring.organize_combos(result.score_combos, cards)
-		return result
+		return [result]
+
+class Pairs extends Scoring.Combo:
+	static func score(cards:Array[Card]) -> Array[Result]:
+		var ranks := {}
+		for card:Card in cards:
+			var rank : int = card.data.rank
+			if rank in ranks:
+				(ranks[rank] as Array).append(card)
+			else:
+				ranks[rank] = [card]
+		
+		var pairs := {}
+		for rank:int in ranks:
+			var copies : int = (ranks[rank] as Array).size()
+			if copies > 1:
+				if copies in pairs:
+					(pairs[copies] as Array).append(ranks[rank])
+				else:
+					pairs[copies] = [ranks[rank]] as Array[Array]
+					
+		var output : Array[Result] = []
+		var copies := pairs.keys()
+		copies.sort()
+		print(pairs)
+		for pair:int in copies:
+			var result := Result.new()
+			result.score_name = str(pair) + " of a Kind"
+			result.score = pair * (pair - 1)
+			print(pairs[pair])
+			result.score_combos = pairs[pair] #as Array[Array]
+			Scoring.organize_combos(result.score_combos, cards)
+			output.append(result)
+		return output
+		
+#class Pair extends Scoring.Combo:
+	#static func score(cards:Array[Card]) -> Result:
+		#var result := Result.new()
+		#result.score_name = "Pair"
+		#result.score = 2
+		#result.score_combos = Scoring.copies(cards, 2)
+		#Scoring.organize_combos(result.score_combos, cards)
+		#return result
+#
+#class Triplet extends Scoring.Combo:
+	#static func score(cards:Array[Card]) -> Result:
+		#var result := Result.new()
+		#result.score_name = "Triplet"
+		#result.score = 6
+		#result.score_combos = Scoring.copies(cards, 3)
+		#Scoring.organize_combos(result.score_combos, cards)
+		#return result
+#
+#class Quad extends Scoring.Combo:
+	#static func score(cards:Array[Card]) -> Result:
+		#var result := Result.new()
+		#result.score_name = "Triplet"
+		#result.score = 6
+		#result.score_combos = Scoring.copies(cards, 3)
+		#Scoring.organize_combos(result.score_combos, cards)
+		#return result
 
 #2 for every 15
 #2 for every 31
@@ -45,6 +105,20 @@ static func organize_combos(combos:Array[Array], ref:Array[Card]) -> void:
 
 static func rank_sort(a:Card, b:Card) -> bool:
 	return a.data.rank < b.data.rank
+	
+static func copies(cards:Array[Card], n:int) -> Array[Array]:
+	var ranks := {}
+	for card:Card in cards:
+		var rank : int = card.data.rank
+		if rank in ranks:
+			(ranks[rank] as Array).append(card)
+		else:
+			ranks[rank] = [card]
+	var output : Array = []
+	for rank:int in ranks:
+		if (ranks[rank] as Array).size() == n:
+			output.append(ranks[rank])
+	return output
 	
 static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 	cards = cards.duplicate()

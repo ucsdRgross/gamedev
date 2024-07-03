@@ -31,7 +31,7 @@ var rerolls : int = 0:
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
 
-var scorers : Array[Scoring.Combo] = [Scoring.Fifteen.new()]
+var scorers : Array[Scoring.Combo] = [Scoring.Fifteen.new(), Scoring.Pairs.new()]
 
 func _ready() -> void:
 	goal = goal
@@ -125,15 +125,16 @@ func score(card : Card) -> void:
 		print(c.data.rank)
 	var round_score : int = 0
 	for scorer:Scoring.Combo in scorers:
-		var result : Scoring.Result = scorer.score(stack)
-		for a:Array[Card] in result.score_combos:
-			print(a)
-			print(result.score_name, " score: ", result.score)
-			for c:Card in a:
-				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-		for combo:Array[Card] in result.score_combos:
-			total_score += result.score
-			round_score += result.score
+		var results : Array[Scoring.Result] = scorer.score(stack)
+		for result : Scoring.Result in results:
+			for a:Array[Card] in result.score_combos:
+				print(a)
+				print(result.score_name, " score: ", result.score)
+				for c:Card in a:
+					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+			for combo:Array[Card] in result.score_combos:
+				total_score += result.score
+				round_score += result.score
 	print(round_score)
 		
 func _on_next_pressed() -> void:
