@@ -2,7 +2,7 @@ class_name Scoring
 
 class Result:
 	var score_name : String
-	var score_combos : Array[Array]
+	var card_combo : Array[Card]
 	var score : int
 
 class Combo:
@@ -12,21 +12,25 @@ class Combo:
 
 class Jack extends Scoring.Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
-		var result := Result.new()
-		result.score_name = "Jack"
-		result.score = 2
 		if cards.size() > 0 and cards[0].data.rank == 11:
-			result.score_combos = [[cards[0]]]
-		return [result]
+			var result := Result.new()
+			result.score_name = "Jack"
+			result.score = 2
+			result.card_combo = [cards[0]]
+			return [result]
+		return []
 
 class Fifteen extends Scoring.Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
-		var result := Result.new()
-		result.score_name = "Fifteen"
-		result.score = 2
-		result.score_combos = Scoring.subset_sum_iter(cards, 15)
-		Scoring.organize_combos(result.score_combos, cards)
-		return [result]
+		var results : Array[Result] = []
+		for combo:Array[Card] in Scoring.subset_sum_iter(cards, 15):
+			var result := Result.new()
+			result.score_name = "Fifteen"
+			result.score = 2
+			result.card_combo = combo
+			Scoring.stack_order(result.card_combo, cards)
+			results.append(result)
+		return results
 
 class Pairs extends Scoring.Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
@@ -47,19 +51,23 @@ class Pairs extends Scoring.Combo:
 				else:
 					pairs[copies] = [ranks[rank]] as Array[Array]
 					
-		var output : Array[Result] = []
+		var results : Array[Result] = []
 		var copies := pairs.keys()
 		copies.sort()
-		print(pairs)
 		for pair:int in copies:
-			var result := Result.new()
-			result.score_name = str(pair) + " of a Kind"
-			result.score = pair * (pair - 1)
-			print(pairs[pair])
-			result.score_combos = pairs[pair] #as Array[Array]
-			Scoring.organize_combos(result.score_combos, cards)
-			output.append(result)
-		return output
+			for combo:Array[Card] in pairs[pair]:
+				var result := Result.new()
+				if pair == 2:
+					result.score_name = "Pair"
+				elif pair == 3:
+					result.score_name = "Triplet"
+				else:
+					result.score_name = str(pair) + " of a Kind"
+				result.score = pair * (pair - 1)
+				result.card_combo = combo
+				Scoring.stack_order(result.card_combo, cards)
+				results.append(result)
+		return results
 		
 #class Pair extends Scoring.Combo:
 	#static func score(cards:Array[Card]) -> Result:
@@ -95,22 +103,28 @@ class Pairs extends Scoring.Combo:
 #12 for quad
 #3-7 for run of 3 to 7 cards
 
-static func organize_combos(combos:Array[Array], ref:Array[Card]) -> void:
+static func stack_order(combo:Array[Card], ref:Array[Card]) -> void:
 	var card_order := {}
-	var test_order := {}
 	for i:int in ref.size():
 		card_order[ref[i]] = i
-		test_order[ref[i].data.rank] = i
 	var combo_sort := func(a:Card, b:Card) -> bool:
 		return card_order[a] < card_order[b]
-	for combo:Array[Card] in combos:
-		combo.sort_custom(combo_sort)
-	var result_sort := func(a:Array, b:Array) -> bool:
-		for i:int in min(a.size(), b.size()):
-			if card_order[a[i]] != card_order[b[i]]:
-				return card_order[a[i]] < card_order[b[i]]
-		return a.size() < b.size()
-	combos.sort_custom(result_sort)
+	combo.sort_custom(combo_sort)
+
+#static func organize_combos(combos:Array[Array], ref:Array[Card]) -> void:
+	#var card_order := {}
+	#for i:int in ref.size():
+		#card_order[ref[i]] = i
+	#var combo_sort := func(a:Card, b:Card) -> bool:
+		#return card_order[a] < card_order[b]
+	#for combo:Array[Card] in combos:
+		#combo.sort_custom(combo_sort)
+	#var result_sort := func(a:Array, b:Array) -> bool:
+		#for i:int in min(a.size(), b.size()):
+			#if card_order[a[i]] != card_order[b[i]]:
+				#return card_order[a[i]] < card_order[b[i]]
+		#return a.size() < b.size()
+	#combos.sort_custom(result_sort)
 
 static func rank_sort(a:Card, b:Card) -> bool:
 	return a.data.rank < b.data.rank
