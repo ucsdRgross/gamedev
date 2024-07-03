@@ -68,7 +68,18 @@ class Pairs extends Scoring.Combo:
 				Scoring.stack_order(result.card_combo, cards)
 				results.append(result)
 		return results
-		
+
+class Run extends Scoring.Combo:
+	static func score(cards:Array[Card]) -> Array[Result]:
+		for n:int in range(cards.size(), 2, -1):
+			for i:int in cards.size()-n:
+				pass
+		return []
+
+#if (sum([]) - (n^2-n)/2) % min([]) == 0:
+	#return true
+
+
 #class Pair extends Scoring.Combo:
 	#static func score(cards:Array[Card]) -> Result:
 		#var result := Result.new()
