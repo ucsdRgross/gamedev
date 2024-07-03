@@ -80,8 +80,8 @@ func _process(delta: float) -> void:
 			y_delta = clampf(y_delta, -4, 4)
 			
 			rot_delta = lerpf(rot_delta, move.x, 20 * delta)
-			var clamp : float = sqrt(abs(rot_delta) as float) * 5
-			rot_delta = clampf(rot_delta, -clamp, clamp)
+			var clamp_degree : float = sqrt(abs(rot_delta) as float) * 5
+			rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
 			rotation_degrees = rot_delta
 		
 		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
@@ -92,7 +92,7 @@ func _process(delta: float) -> void:
 			x += mouse_pos.x/1.5
 			y += mouse_pos.y/1.5
 		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
-		basis3d = basis3d.slerp(Basis.IDENTITY.looking_at(drift), 10 * delta)
+		basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
 		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
 			
 func move_to(pos : Vector2) -> void:
@@ -171,12 +171,12 @@ func get_last_card() -> Card:
 	return last_card
 
 func get_stack_size() -> int:
-	var stack_size : int = 1
+	var size : int = 1
 	var last_card := self
 	while last_card.top_card:
 		last_card = last_card.top_card
-		stack_size += 1
-	return stack_size
+		size += 1
+	return size
 
 func _on_control_mouse_entered() -> void:
 	hover = true

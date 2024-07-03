@@ -12,7 +12,7 @@ var turns : int = 20:
 	set(value):
 		($Turns/Label as Label).text = str(value)
 		turns = value
-var goal : int = 7:
+var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
@@ -31,7 +31,7 @@ var rerolls : int = 0:
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
 
-var scorers : Array[Scorer.Combo] = [Scorer.Fifteen.new()]
+var scorers : Array[Scoring.Combo] = [Scoring.Fifteen.new()]
 
 func _ready() -> void:
 	goal = goal
@@ -45,10 +45,10 @@ func add_deck() -> void:
 	draw_deck = deck.cards.duplicate(true)
 	draw_deck.shuffle()
 
-func _process(delta: float) -> void:
-	pass
+#func _process(delta: float) -> void:
+	#pass
 	#if held_card:
-	#	held_card.move_to(get_global_mouse_position() + held_card_offset)
+		#held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -115,25 +115,34 @@ func drop_held_card() -> void:
 	held_card.drop()
 	held_card = null
 
-func score(card : Card) -> int:
-	#var card_amount : int = 1
-	#var rank_total : int = card.data.rank
-	var stack : Array[Card]
+func score(card : Card) -> void:
+	var stack : Array[Card] = []
 	while card:
 		stack.append(card)
 		card = card.top_card
-		#card_amount += 1
-		#rank_total += card.data.rank
-	#return rank_total * card_amount
-	return 0
+	print('stack')
+	for c:Card in stack:
+		print(c.data.rank)
+	var round_score : int = 0
+	for scorer:Scoring.Combo in scorers:
+		var result : Scoring.Result = scorer.score(stack)
+		for a:Array[Card] in result.score_combos:
+			print(a)
+			print(result.score_name, " score: ", result.score)
+			for c:Card in a:
+				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+		for combo:Array[Card] in result.score_combos:
+			total_score += result.score
+			round_score += result.score
+	print(round_score)
 		
 func _on_next_pressed() -> void:
 	if held_card:
 		return
 	var submitted : Card = $Submission
 	if submitted.top_card:
-		last_score = score(submitted.top_card)
-		total_score += last_score
+		score(submitted.top_card)
+		#total_score += last_score
 		var next_card : Card = submitted.top_card
 		while next_card:
 			discard_deck.append(next_card.data)
@@ -157,6 +166,7 @@ func _on_next_pressed() -> void:
 	for zone : Card in input:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
+			draw_deck.shuffle()
 			discard_deck.clear()
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()

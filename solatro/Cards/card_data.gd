@@ -6,10 +6,10 @@ class_name CardData
 #@export var effect: String = ""
 #@export var sprite: Texture
 
-func with_suit(suit:int) -> CardData:
-	self.suit = suit
+func with_suit(s:int) -> CardData:
+	self.suit = s
 	return self
 	
-func with_rank(rank:int) -> CardData:
-	self.rank = rank
+func with_rank(r:int) -> CardData:
+	self.rank = r
 	return self

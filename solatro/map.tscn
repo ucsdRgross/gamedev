@@ -1,303 +1,8 @@
-[gd_scene load_steps=54 format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=4 format=3 uid="uid://oc6yiar3wsih"]
 
 [ext_resource type="Script" path="res://Map.gd" id="1_1blyn"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
-[ext_resource type="Script" path="res://Cards/card_data.gd" id="4_r2g0f"]
-
-[sub_resource type="Resource" id="Resource_nkrkq"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_kslmq"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_hqcsi"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_dg7d3"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_g71uf"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_13bf8"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_vhviq"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_2qdgi"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_vl5mj"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_sbq2q"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_48ybp"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_m6imq"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_ij1f6"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_amh0c"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_kc4rf"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_4yd1h"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_toju5"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_gael0"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_eullt"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_axp4m"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_foca0"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_h7w17"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_wocc5"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_bspau"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_oev2q"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_lwqkg"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_sxw1u"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_kdyym"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_6kjks"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_fnq5t"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_twkw4"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_n8wlh"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_s3ow3"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_k1dyn"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_sjn3q"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_t5icc"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_ml01j"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_41prm"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_05bow"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_l1eie"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_t1cwa"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_47op0"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_4t4oc"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_e0pto"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_u1moe"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_iqs8k"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_jninf"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_1pbpg"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
-
-[sub_resource type="Resource" id="Resource_mcdeb"]
-resource_local_to_scene = true
-script = ExtResource("4_r2g0f")
-suit = 0
-rank = 0
 
 [node name="Map" type="Control"]
 layout_mode = 3
@@ -348,7 +53,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_nkrkq")
 is_zone = true
 stack_limit = 1
 
@@ -357,7 +61,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control2" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_kslmq")
 is_zone = true
 stack_limit = 1
 
@@ -366,7 +69,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control3" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_hqcsi")
 is_zone = true
 stack_limit = 1
 
@@ -375,7 +77,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control4" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_dg7d3")
 is_zone = true
 stack_limit = 1
 
@@ -384,7 +85,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control5" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_g71uf")
 is_zone = true
 stack_limit = 1
 
@@ -393,7 +93,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control6" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_13bf8")
 is_zone = true
 stack_limit = 1
 
@@ -402,7 +101,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control7" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_vhviq")
 is_zone = true
 stack_limit = 1
 
@@ -411,7 +109,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control8" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_2qdgi")
 is_zone = true
 stack_limit = 1
 
@@ -420,7 +117,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control9" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_vl5mj")
 is_zone = true
 stack_limit = 1
 
@@ -429,7 +125,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control10" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_sbq2q")
 is_zone = true
 stack_limit = 1
 
@@ -438,7 +133,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control11" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_48ybp")
 is_zone = true
 stack_limit = 1
 
@@ -447,7 +141,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control12" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_m6imq")
 is_zone = true
 stack_limit = 1
 
@@ -456,7 +149,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control13" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_ij1f6")
 is_zone = true
 stack_limit = 1
 
@@ -465,7 +157,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control14" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_amh0c")
 is_zone = true
 stack_limit = 1
 
@@ -474,7 +165,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control15" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_kc4rf")
 is_zone = true
 stack_limit = 1
 
@@ -483,7 +173,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control16" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_4yd1h")
 is_zone = true
 stack_limit = 1
 
@@ -492,7 +181,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control17" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_toju5")
 is_zone = true
 stack_limit = 1
 
@@ -501,7 +189,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control18" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_gael0")
 is_zone = true
 stack_limit = 1
 
@@ -510,7 +197,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control19" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_eullt")
 is_zone = true
 stack_limit = 1
 
@@ -519,7 +205,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control20" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_axp4m")
 is_zone = true
 stack_limit = 1
 
@@ -528,7 +213,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control21" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_foca0")
 is_zone = true
 stack_limit = 1
 
@@ -537,7 +221,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control22" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_h7w17")
 is_zone = true
 stack_limit = 1
 
@@ -546,7 +229,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control23" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_wocc5")
 is_zone = true
 stack_limit = 1
 
@@ -555,7 +237,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control24" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_bspau")
 is_zone = true
 stack_limit = 1
 
@@ -564,7 +245,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control25" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_oev2q")
 is_zone = true
 stack_limit = 1
 
@@ -573,7 +253,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control26" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_lwqkg")
 is_zone = true
 stack_limit = 1
 
@@ -582,7 +261,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control27" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_sxw1u")
 is_zone = true
 stack_limit = 1
 
@@ -591,7 +269,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control28" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_kdyym")
 is_zone = true
 stack_limit = 1
 
@@ -600,7 +277,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control29" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_6kjks")
 is_zone = true
 stack_limit = 1
 
@@ -609,7 +285,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control30" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_fnq5t")
 is_zone = true
 stack_limit = 1
 
@@ -618,7 +293,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control31" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_twkw4")
 is_zone = true
 stack_limit = 1
 
@@ -627,7 +301,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control32" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_n8wlh")
 is_zone = true
 stack_limit = 1
 
@@ -636,7 +309,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control33" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_s3ow3")
 is_zone = true
 stack_limit = 1
 
@@ -645,7 +317,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control34" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_k1dyn")
 is_zone = true
 stack_limit = 1
 
@@ -654,7 +325,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control35" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_sjn3q")
 is_zone = true
 stack_limit = 1
 
@@ -663,7 +333,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control36" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_t5icc")
 is_zone = true
 stack_limit = 1
 
@@ -672,7 +341,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control37" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_ml01j")
 is_zone = true
 stack_limit = 1
 
@@ -681,7 +349,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control38" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_41prm")
 is_zone = true
 stack_limit = 1
 
@@ -690,7 +357,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control39" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_05bow")
 is_zone = true
 stack_limit = 1
 
@@ -699,7 +365,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control40" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_l1eie")
 is_zone = true
 stack_limit = 1
 
@@ -708,7 +373,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control41" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_t1cwa")
 is_zone = true
 stack_limit = 1
 
@@ -717,7 +381,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control42" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_47op0")
 is_zone = true
 stack_limit = 1
 
@@ -726,7 +389,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control43" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_4t4oc")
 is_zone = true
 stack_limit = 1
 
@@ -735,7 +397,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control44" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_e0pto")
 is_zone = true
 stack_limit = 1
 
@@ -744,7 +405,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control45" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_u1moe")
 is_zone = true
 stack_limit = 1
 
@@ -753,7 +413,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control46" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_iqs8k")
 is_zone = true
 stack_limit = 1
 
@@ -762,7 +421,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control47" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_jninf")
 is_zone = true
 stack_limit = 1
 
@@ -771,7 +429,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control48" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_1pbpg")
 is_zone = true
 stack_limit = 1
 
@@ -780,6 +437,5 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="GridContainer/Control49" instance=ExtResource("2_dofqu")]
-attributes = SubResource("Resource_mcdeb")
 is_zone = true
 stack_limit = 1
