@@ -34,6 +34,7 @@ var discard_deck : Array[CardData]
 var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(), 
 									Scoring.Fifteen.new(), 
 									Scoring.Pairs.new(),
+									Scoring.Run.new(),
 									]
 
 func _ready() -> void:

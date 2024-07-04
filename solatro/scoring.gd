@@ -27,7 +27,11 @@ class Fifteen extends Scoring.Combo:
 			var result := Result.new()
 			result.score_name = "Fifteen"
 			result.score = 2
-			result.card_combo = combo
+			#recreate Array[Card] since it thinks it is type Array and errors
+			var _combo : Array[Card] = []
+			for c:Card in combo:
+				_combo.append(c)
+			result.card_combo = _combo
 			Scoring.stack_order(result.card_combo, cards)
 			results.append(result)
 		return results
@@ -65,16 +69,58 @@ class Pairs extends Scoring.Combo:
 					result.score_name = str(pair) + " of a Kind"
 				result.score = pair * (pair - 1)
 				result.card_combo = combo
-				Scoring.stack_order(result.card_combo, cards)
+				#Scoring.stack_order(result.card_combo, cards)
 				results.append(result)
 		return results
 
 class Run extends Scoring.Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
-		for n:int in range(cards.size(), 2, -1):
-			for i:int in cards.size()-n:
-				pass
-		return []
+		if cards.size() < 3:
+			return []
+		var results : Array[Result] = []
+		var recur := func(cards:Array[Card], recur:Callable) -> void:
+			for n:int in range(cards.size(), 2, -1):
+				#print('n',n)
+				for i:int in cards.size()-n+1:
+					#print('i',i)
+					var slice : Array[Card] = cards.slice(i, i+n)
+					#var sum : int = 0
+					#var min : int = slice[0].data.rank
+					#for card:Card in slice:
+						#sum += card.data.rank
+						#if card.data.rank < min:
+							#min = card.data.rank
+					#print('slice')
+					#for c:Card in slice:
+						#print(c.data.rank)
+					slice.sort_custom(Scoring.rank_sort)
+					var is_straight := true
+					for j:int in slice.size()-1:
+						if slice[j].data.rank != slice[j+1].data.rank - 1:
+							is_straight = false
+							break
+					if is_straight:
+						var result := Result.new()
+						result.score_name = str(n) + " Run"
+						result.score = n
+						result.card_combo = slice
+						results.append(result)
+						#print('run')
+						var left : Array[Card] = cards.slice(0,i)
+						#print('left')
+						#for c:Card in left:
+							#print(c.data.rank)
+						if left.size() > 2:
+							recur.call(left, recur)
+						var right : Array[Card] = cards.slice(i+n)
+						#print('right')
+						#for c:Card in right:
+							#print(c.data.rank)
+						if right.size() > 2:
+							recur.call(right, recur)
+						return
+		recur.call(cards, recur)
+		return results
 
 #if (sum([]) - (n^2-n)/2) % min([]) == 0:
 	#return true
