@@ -80,19 +80,8 @@ class Run extends Scoring.Combo:
 		var results : Array[Result] = []
 		var recur := func(cards:Array[Card], recur:Callable) -> void:
 			for n:int in range(cards.size(), 2, -1):
-				#print('n',n)
 				for i:int in cards.size()-n+1:
-					#print('i',i)
 					var slice : Array[Card] = cards.slice(i, i+n)
-					#var sum : int = 0
-					#var min : int = slice[0].data.rank
-					#for card:Card in slice:
-						#sum += card.data.rank
-						#if card.data.rank < min:
-							#min = card.data.rank
-					#print('slice')
-					#for c:Card in slice:
-						#print(c.data.rank)
 					slice.sort_custom(Scoring.rank_sort)
 					var is_straight := true
 					for j:int in slice.size()-1:
@@ -105,17 +94,10 @@ class Run extends Scoring.Combo:
 						result.score = n
 						result.card_combo = slice
 						results.append(result)
-						#print('run')
 						var left : Array[Card] = cards.slice(0,i)
-						#print('left')
-						#for c:Card in left:
-							#print(c.data.rank)
 						if left.size() > 2:
 							recur.call(left, recur)
 						var right : Array[Card] = cards.slice(i+n)
-						#print('right')
-						#for c:Card in right:
-							#print(c.data.rank)
 						if right.size() > 2:
 							recur.call(right, recur)
 						return
