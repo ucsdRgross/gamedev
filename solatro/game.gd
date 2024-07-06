@@ -155,13 +155,20 @@ func score(card : Card) -> void:
 			#total_score += result.score
 			#round_score += result.score
 			
-			tween.tween_callback(set_score_name.bind(result.score_name, str(result.score)))
-			#tween.tween_property(($Score/Label as Label), "text", result.score_name, score_delay)
+			tween.tween_callback(func()->void:
+				($ScoreName as Label).text = result.score_name
+				($ScoreName/Label as Label).text = str(result.score)
+			)
+			tween.tween_method(func(s:float)->void: 
+				($ScoreName as Label).scale = Vector2.ONE * s
+				, 0.9, 1.1, score_delay
+			)
 			tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
 			tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
 			tween.tween_interval(1)
 			tween.chain()
-			
+			tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
+
 	for c:Card in last_scored_cards:
 		tween.tween_property(c.front, "position:x", 0, score_delay)
 		
@@ -218,7 +225,3 @@ func _on_next_pressed() -> void:
 		#card.flipped = false
 	
 	turns -= 1
-
-func set_score_name(score_name:String, score:String) -> void:
-	($ScoreName as Label).text = score_name
-	($ScoreName/Label as Label).text = score
