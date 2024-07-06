@@ -133,11 +133,12 @@ func score(card : Card) -> void:
 	for c:Card in stack:
 		print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 	var round_score : int = 0
-	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD)
+	last_score = 0
+	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART)
 	var score_delay : float = 0.1
+	var last_scored_cards : Array[Card] = []
 	for scorer:Scoring.Combo in scorers:
 		var results : Array[Scoring.Result] = scorer.score(stack)
-		var last_scored_cards : Array[Card] = []
 		for result : Scoring.Result in results:
 			print(result.score_name, "\nscore: ", result.score)
 			
@@ -151,14 +152,18 @@ func score(card : Card) -> void:
 				tween.tween_property(c.front, "position:x", 0, score_delay)
 			last_scored_cards = result.card_combo
 			
-			total_score += result.score
-			round_score += result.score
+			#total_score += result.score
+			#round_score += result.score
 			
+			tween.tween_callback(set_score_name.bind(result.score_name, str(result.score)))
+			#tween.tween_property(($Score/Label as Label), "text", result.score_name, score_delay)
+			tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
+			tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
 			tween.tween_interval(1)
 			tween.chain()
 			
-		for c:Card in last_scored_cards:
-			tween.parallel().tween_property(c.front, "position:x", 0, score_delay)
+	for c:Card in last_scored_cards:
+		tween.tween_property(c.front, "position:x", 0, score_delay)
 		
 	print(round_score)
 	await tween.finished
@@ -213,3 +218,7 @@ func _on_next_pressed() -> void:
 		#card.flipped = false
 	
 	turns -= 1
+
+func set_score_name(score_name:String, score:String) -> void:
+	($ScoreName as Label).text = score_name
+	($ScoreName/Label as Label).text = score

@@ -101,6 +101,28 @@ offset_right = 748.0
 offset_bottom = 96.0
 text = "Reroll"
 
+[node name="ScoreName" type="Label" parent="."]
+layout_mode = 0
+offset_left = 886.0
+offset_top = 341.0
+offset_right = 1135.0
+offset_bottom = 398.0
+text = "ScoreNames
+"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Label" type="Label" parent="ScoreName"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 57.0
+offset_right = 249.0
+offset_bottom = 114.0
+text = "123456789
+"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
 [node name="Score" type="Label" parent="."]
 layout_mode = 0
 offset_left = 880.0
