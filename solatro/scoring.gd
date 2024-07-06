@@ -109,26 +109,25 @@ class Flush extends Scoring.Combo:
 		var results : Array[Result] = []
 		var cur_suit : int = -1
 		var cur_flush : Array[Card] = []
-		var flush_min_size : int = 1
+		var flush_min_size : int = 2
+		var flush_score := func(cur_flush : Array[Card]) -> void:
+			print('flushing')
+			for c:Card in cur_flush:
+				print(c.data.suit)
+			if cur_flush.size() >= flush_min_size:
+				var result := Result.new()
+				var n := cur_flush.size()
+				result.score_name = "Flush " + str(n) 
+				result.score = n
+				result.card_combo = cur_flush
+				results.append(result)
 		for card:Card in cards:
 			if cur_suit == -1 or card.data.suit != cur_suit:
-				if cur_flush.size() > flush_min_size:
-					var result := Result.new()
-					var n := cur_flush.size()
-					result.score_name = "Flush " + str(n) 
-					result.score = n
-					result.card_combo = cur_flush
-					results.append(result)
+				flush_score.call(cur_flush)
 				cur_flush = []
 				cur_suit = card.data.suit
 			cur_flush.append(card)
-		if cur_flush.size() > flush_min_size:
-			var result := Result.new()
-			var n := cur_flush.size()
-			result.score_name = "Flush " + str(n) 
-			result.score = n
-			result.card_combo = cur_flush
-			results.append(result)
+		flush_score.call(cur_flush)
 		return results
 
 #class Pair extends Scoring.Combo:
