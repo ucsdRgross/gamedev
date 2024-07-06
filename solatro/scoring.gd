@@ -90,7 +90,7 @@ class Run extends Scoring.Combo:
 							break
 					if is_straight:
 						var result := Result.new()
-						result.score_name = str(n) + " Run"
+						result.score_name = "Run " + str(n)
 						result.score = n
 						result.card_combo = slice
 						results.append(result)
@@ -104,9 +104,32 @@ class Run extends Scoring.Combo:
 		recur.call(cards, recur)
 		return results
 
-#if (sum([]) - (n^2-n)/2) % min([]) == 0:
-	#return true
-
+class Flush extends Scoring.Combo:
+	static func score(cards:Array[Card]) -> Array[Result]:
+		var results : Array[Result] = []
+		var cur_suit : int = -1
+		var cur_flush : Array[Card] = []
+		var flush_min_size : int = 1
+		for card:Card in cards:
+			if cur_suit == -1 or card.data.suit != cur_suit:
+				if cur_flush.size() > flush_min_size:
+					var result := Result.new()
+					var n := cur_flush.size()
+					result.score_name = "Flush " + str(n) 
+					result.score = n
+					result.card_combo = cur_flush
+					results.append(result)
+				cur_flush = []
+				cur_suit = card.data.suit
+			cur_flush.append(card)
+		if cur_flush.size() > flush_min_size:
+			var result := Result.new()
+			var n := cur_flush.size()
+			result.score_name = "Flush " + str(n) 
+			result.score = n
+			result.card_combo = cur_flush
+			results.append(result)
+		return results
 
 #class Pair extends Scoring.Combo:
 	#static func score(cards:Array[Card]) -> Result:
