@@ -111,9 +111,6 @@ class Flush extends Scoring.Combo:
 		var cur_flush : Array[Card] = []
 		var flush_min_size : int = 2
 		var flush_score := func(cur_flush : Array[Card]) -> void:
-			print('flushing')
-			for c:Card in cur_flush:
-				print(c.data.suit)
 			if cur_flush.size() >= flush_min_size:
 				var result := Result.new()
 				var n := cur_flush.size()

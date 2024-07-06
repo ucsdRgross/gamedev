@@ -8,6 +8,7 @@ const CARD = preload("res://Cards/card.tscn")
 @export var deck : Deck
 var held_card : Card = null
 var held_card_offset : Vector2
+var processing : bool = false
 var turns : int = 20:
 	set(value):
 		($Turns/Label as Label).text = str(value)
@@ -73,6 +74,8 @@ func _on_child_entered_tree(node: Node) -> void:
 		(node as Card).clicked.connect(_on_card_clicked)
 
 func _on_card_clicked(card : Card) -> void:
+	if processing:
+		return
 	if held_card:
 		if can_add_card(card, held_card):
 			card.add_card(held_card)
@@ -121,6 +124,7 @@ func drop_held_card() -> void:
 	held_card = null
 
 func score(card : Card) -> void:
+	processing = true
 	var stack : Array[Card] = []
 	while card:
 		stack.append(card)
@@ -129,22 +133,45 @@ func score(card : Card) -> void:
 	for c:Card in stack:
 		print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 	var round_score : int = 0
+	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD)
+	var score_delay : float = 0.1
 	for scorer:Scoring.Combo in scorers:
 		var results : Array[Scoring.Result] = scorer.score(stack)
+		var last_scored_cards : Array[Card] = []
 		for result : Scoring.Result in results:
 			print(result.score_name, "\nscore: ", result.score)
+			
 			for c:Card in result.card_combo:
+				if c not in last_scored_cards:
+					tween.tween_property(c.front, "position:x", 50, score_delay)
+				last_scored_cards.erase(c)
 				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+				
+			for c:Card in last_scored_cards:
+				tween.tween_property(c.front, "position:x", 0, score_delay)
+			last_scored_cards = result.card_combo
+			
 			total_score += result.score
 			round_score += result.score
+			
+			tween.tween_interval(1)
+			tween.chain()
+			
+		for c:Card in last_scored_cards:
+			tween.parallel().tween_property(c.front, "position:x", 0, score_delay)
+		
 	print(round_score)
+	await tween.finished
+	processing = false
 		
 func _on_next_pressed() -> void:
+	if processing:
+		return
 	if held_card:
 		return
 	var submitted : Card = $Submission
 	if submitted.top_card:
-		score(submitted.top_card)
+		await score(submitted.top_card)
 		#total_score += last_score
 		var next_card : Card = submitted.top_card
 		while next_card:
