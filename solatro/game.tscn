@@ -40,23 +40,23 @@ position = Vector2(202, 277)
 is_zone = true
 
 [node name="Input2" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(313, 90)
+position = Vector2(318, 90)
 is_zone = true
 clickable = false
 stack_limit = 1
 
 [node name="Play2" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(312, 277)
+position = Vector2(320, 276)
 is_zone = true
 
 [node name="Input3" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(436, 90)
+position = Vector2(442, 90)
 is_zone = true
 clickable = false
 stack_limit = 1
 
 [node name="Play3" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(435, 277)
+position = Vector2(440, 277)
 is_zone = true
 
 [node name="Input4" parent="." instance=ExtResource("3_8sseo")]

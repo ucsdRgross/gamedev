@@ -20,9 +20,15 @@ var show_front := false :
 	set(value):
 		if value != show_front:
 			if value:
-				front.frame = 13 * (data.suit - 1) + (data.rank - 1)
+				front.frame = 0
+				rank.frame = 14 * (data.suit - 1) + data.rank
+				suit.frame = 14 * (data.suit - 1)
+				rank.show()
+				suit.show()
 			else:
-				front.frame = 52
+				front.frame = 1
+				rank.hide()
+				suit.hide()
 			show_front = value
 
 
@@ -50,11 +56,16 @@ var flipped := true
 #var reparenting : bool
 
 @onready var front: Sprite2D = $Front
-@onready var area: Control = $Control
+@onready var rank: Sprite2D  = $Front/Rank
+@onready var suit: Sprite2D  = $Front/Suit
+@onready var area: Control = $Front/Control
+
 
 func _ready() -> void:
+	rank.hide()
+	suit.hide()
 	if not is_zone:
-		front.frame = 52
+		front.frame = 1
 		num_cards += 1
 		num = num_cards
 	else:

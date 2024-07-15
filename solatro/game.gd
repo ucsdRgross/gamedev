@@ -178,7 +178,8 @@ func score(card : Card) -> void:
 		tween.tween_property(c.front, "position:x", 0, score_delay)
 		
 	print(round_score)
-	await tween.finished
+	if tween:
+		await tween.finished
 	processing = false
 		
 func _on_next_pressed() -> void:
