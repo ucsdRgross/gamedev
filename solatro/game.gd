@@ -132,42 +132,47 @@ func score(card : Card) -> void:
 	print('stack')
 	for c:Card in stack:
 		print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-	var round_score : int = 0
-	last_score = 0
-	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART)
-	var score_delay : float = 0.1
-	var last_scored_cards : Array[Card] = []
+	
+	var all_results : Array[Scoring.Result]
 	for scorer:Scoring.Combo in scorers:
 		var results : Array[Scoring.Result] = scorer.score(stack)
-		for result : Scoring.Result in results:
-			print(result.score_name, "\nscore: ", result.score)
+		all_results.append_array(results)
+	Scoring.sort_results(all_results, stack)
+	
+	var round_score : int = 0
+	last_score = 0
+	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART) if all_results else null
+	var score_delay : float = 1
+	var last_scored_cards : Array[Card] = []
+	for result : Scoring.Result in all_results:
+		print(result.score_name, "\nscore: ", result.score)
+		
+		for c:Card in result.card_combo:
+			if c not in last_scored_cards:
+				tween.tween_property(c.front, "position:x", 50, score_delay)
+			last_scored_cards.erase(c)
+			print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 			
-			for c:Card in result.card_combo:
-				if c not in last_scored_cards:
-					tween.tween_property(c.front, "position:x", 50, score_delay)
-				last_scored_cards.erase(c)
-				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-				
-			for c:Card in last_scored_cards:
-				tween.tween_property(c.front, "position:x", 0, score_delay)
-			last_scored_cards = result.card_combo
-			
-			#total_score += result.score
-			#round_score += result.score
-			
-			tween.tween_callback(func()->void:
-				($ScoreName as Label).text = result.score_name
-				($ScoreName/Label as Label).text = str(result.score)
-			)
-			tween.tween_method(func(s:float)->void: 
-				($ScoreName as Label).scale = Vector2.ONE * s
-				, 0.9, 1.1, score_delay
-			)
-			tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
-			tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
-			tween.tween_interval(1)
-			tween.chain()
-			tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
+		for c:Card in last_scored_cards:
+			tween.tween_property(c.front, "position:x", 0, score_delay)
+		last_scored_cards = result.card_combo
+		
+		#total_score += result.score
+		#round_score += result.score
+		
+		tween.tween_callback(func()->void:
+			($ScoreName as Label).text = result.score_name
+			($ScoreName/Label as Label).text = str(result.score)
+		)
+		tween.tween_method(func(s:float)->void: 
+			($ScoreName as Label).scale = Vector2.ONE * s
+			, 0.9, 1.1, score_delay
+		)
+		tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
+		tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
+		tween.tween_interval(1)
+		tween.chain()
+		tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
 
 	for c:Card in last_scored_cards:
 		tween.tween_property(c.front, "position:x", 0, score_delay)

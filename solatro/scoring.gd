@@ -93,6 +93,7 @@ class Run extends Scoring.Combo:
 						result.score_name = "Run " + str(n)
 						result.score = n
 						result.card_combo = slice
+						Scoring.stack_order(result.card_combo, cards)
 						results.append(result)
 						var left : Array[Card] = cards.slice(0,i)
 						if left.size() > 2:
@@ -168,6 +169,17 @@ static func stack_order(combo:Array[Card], ref:Array[Card]) -> void:
 	var combo_sort := func(a:Card, b:Card) -> bool:
 		return card_order[a] < card_order[b]
 	combo.sort_custom(combo_sort)
+
+static func sort_results(results:Array[Result], ref:Array[Card]) -> void:
+	var card_order := {}
+	for i:int in ref.size():
+		card_order[ref[i]] = i
+	var order_sort := func(a:Result, b:Result) -> bool:
+		for i:int in min(a.card_combo.size(), b.card_combo.size()):
+			if card_order[a.card_combo[i]] != card_order[b.card_combo[i]]:
+				return card_order[a.card_combo[i]] < card_order[b.card_combo[i]]
+		return a.card_combo.size() < b.card_combo.size()
+	results.sort_custom(order_sort)
 
 #static func organize_combos(combos:Array[Array], ref:Array[Card]) -> void:
 	#var card_order := {}
