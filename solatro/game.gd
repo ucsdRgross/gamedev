@@ -141,8 +141,10 @@ func score(card : Card) -> void:
 	
 	var round_score : int = 0
 	last_score = 0
-	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART) if all_results else null
-	var score_delay : float = 1
+	var tween := create_tween().set_parallel(true)\
+	.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
+	if all_results else null
+	var score_delay : float = .5
 	var last_scored_cards : Array[Card] = []
 	for result : Scoring.Result in all_results:
 		print(result.score_name, "\nscore: ", result.score)
@@ -170,7 +172,7 @@ func score(card : Card) -> void:
 		)
 		tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
 		tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
-		tween.tween_interval(1)
+		tween.tween_interval(1.5)
 		tween.chain()
 		tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
 
