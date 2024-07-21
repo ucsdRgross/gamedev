@@ -39,6 +39,8 @@ var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(),
 									Scoring.Flush.new(),
 									]
 
+var effects : Array[CardSkill] = []
+
 func _ready() -> void:
 	goal = goal
 	add_deck()
@@ -48,8 +50,16 @@ func add_deck() -> void:
 		#var card : Card = CARD.instantiate()
 		#card.data = attribute
 		#add_child(card)
-	draw_deck = deck.cards.duplicate(true)
+	for card_data : CardData in deck.card_datas:
+		effects.append(card_data.skill)
+	draw_deck = deck.card_datas.duplicate(true)
 	draw_deck.shuffle()
+
+#func add_card(card_data:CardData) -> void:
+	#effects.append(card_data.skill)
+#
+#func remove_card(card_data:CardData) -> void:
+	#effects.erase(card_data.skill)
 
 #func _process(delta: float) -> void:
 	#pass
@@ -220,7 +230,8 @@ func _on_next_pressed() -> void:
 			discard_deck.clear()
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()
-			card.data = draw_deck.pop_back()
+			var data : CardData = draw_deck.pop_back()
+			card.add_data(data)
 			add_child(card)
 			zone.add_card(card)
 			card.flipped = false

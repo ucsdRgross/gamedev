@@ -189,6 +189,13 @@ func get_stack_size() -> int:
 		size += 1
 	return size
 
+func add_data(data:CardData) -> void:
+	self.data = data
+	data.card = self
+
+func _exit_tree() -> void:
+	data.card = null
+
 func _on_control_mouse_entered() -> void:
 	hover = true
 

@@ -10,7 +10,7 @@ class Combo:
 		@warning_ignore("unused_parameter")
 		return [Result.new()]
 
-class Jack extends Scoring.Combo:
+class Jack extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		if cards.size() > 0 and cards[0].data.rank == 11:
 			var result := Result.new()
@@ -20,7 +20,7 @@ class Jack extends Scoring.Combo:
 			return [result]
 		return []
 
-class Fifteen extends Scoring.Combo:
+class Fifteen extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		var results : Array[Result] = []
 		for combo:Array[Card] in Scoring.subset_sum_iter(cards, 15):
@@ -36,7 +36,7 @@ class Fifteen extends Scoring.Combo:
 			results.append(result)
 		return results
 
-class Pairs extends Scoring.Combo:
+class Pairs extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		var ranks := {}
 		for card:Card in cards:
@@ -73,7 +73,7 @@ class Pairs extends Scoring.Combo:
 				results.append(result)
 		return results
 
-class Run extends Scoring.Combo:
+class Run extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		if cards.size() < 3:
 			return []
@@ -105,7 +105,7 @@ class Run extends Scoring.Combo:
 		recur.call(cards, recur)
 		return results
 
-class Flush extends Scoring.Combo:
+class Flush extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		var results : Array[Result] = []
 		var cur_suit : int = -1
