@@ -4,6 +4,7 @@ class_name Card
 signal clicked
 
 @export var data : CardData
+@export var skill_img : Texture2D
 @export var child_offset : Vector2
 @export var is_zone := false
 @export var can_move_anim := true
@@ -23,12 +24,18 @@ var show_front := false :
 				front.frame = 0
 				rank.frame = 14 * (data.suit - 1) + data.rank
 				suit.frame = 14 * (data.suit - 1)
+				if data.skill:
+					art.frame = data.skill.frame
+				else:
+					art.frame = 13 * (data.suit - 1) + (data.rank - 1)
 				rank.show()
 				suit.show()
+				art.show()
 			else:
 				front.frame = 1
 				rank.hide()
 				suit.hide()
+				art.hide()
 			show_front = value
 
 
@@ -58,12 +65,14 @@ var flipped := true
 @onready var front: Sprite2D = $Front
 @onready var rank: Sprite2D  = $Front/Rank
 @onready var suit: Sprite2D  = $Front/Suit
+@onready var art: Sprite2D = $Front/Art
 @onready var area: Control = $Front/Control
 
 
 func _ready() -> void:
 	rank.hide()
 	suit.hide()
+	art.hide()
 	if not is_zone:
 		front.frame = 1
 		num_cards += 1
@@ -193,8 +202,8 @@ func add_data(data:CardData) -> void:
 	self.data = data
 	data.card = self
 
-func _exit_tree() -> void:
-	data.card = null
+#func _exit_tree() -> void:
+	#data.card = null
 
 func _on_control_mouse_entered() -> void:
 	hover = true

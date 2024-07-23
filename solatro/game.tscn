@@ -32,57 +32,92 @@ stretch_mode = 6
 [node name="Input1" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(198, 90)
 is_zone = true
+can_move_anim = null
 clickable = false
 stack_limit = 1
+basis3d = null
 
 [node name="Play1" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(202, 277)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Input2" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(318, 90)
 is_zone = true
+can_move_anim = null
 clickable = false
 stack_limit = 1
+basis3d = null
 
 [node name="Play2" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(320, 276)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Input3" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(442, 90)
 is_zone = true
+can_move_anim = null
 clickable = false
 stack_limit = 1
+basis3d = null
 
 [node name="Play3" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(440, 277)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Input4" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(562, 90)
 is_zone = true
+can_move_anim = null
 clickable = false
 stack_limit = 1
+basis3d = null
 
 [node name="Play4" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(561, 277)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Input5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(689, 93)
 is_zone = true
+can_move_anim = null
 clickable = false
+stack_limit = null
+basis3d = null
 
 [node name="Play5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(688, 280)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(700, 276)
 is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = null
+basis3d = null
 
 [node name="Next" type="Button" parent="."]
 layout_mode = 0

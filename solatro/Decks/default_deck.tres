@@ -4,4 +4,4 @@
 
 [resource]
 script = ExtResource("1_24rvu")
-cards = null
+card_datas = null
