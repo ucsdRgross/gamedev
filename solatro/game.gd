@@ -39,7 +39,7 @@ var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(),
 									Scoring.Flush.new(),
 									]
 
-var effects : Array[CardSkill] = []
+var effects : Array[CardModifier] = []
 
 func _ready() -> void:
 	goal = goal
@@ -51,7 +51,12 @@ func add_deck() -> void:
 		#card.data = attribute
 		#add_child(card)
 	for card_data : CardData in deck.card_datas:
-		effects.append(card_data.skill)
+		if card_data.skill:
+			effects.append(card_data.skill.with_game(self))
+		if card_data.type:
+			effects.append(card_data.type.with_game(self))
+		if card_data.stamp:
+			effects.append(card_data.stamp.with_game(self))
 	draw_deck = deck.card_datas.duplicate(true)
 	draw_deck.shuffle()
 
@@ -200,7 +205,16 @@ func _on_next_pressed() -> void:
 	if held_card:
 		return
 	var submitted : Card = $Submission
+	
 	if submitted.top_card:
+		var next_submit : Card = submitted.top_card
+		
+		#cards submitted
+		while next_submit:
+			for effect:CardModifier in effects:
+				effect.on_submit(next_submit)
+			next_submit = next_submit.top_card
+			
 		await score(submitted.top_card)
 		#total_score += last_score
 		var next_card : Card = submitted.top_card
@@ -210,6 +224,10 @@ func _on_next_pressed() -> void:
 		submitted.top_card.queue_free()
 		submitted.top_card = null
 	
+	#round ends
+	for effect:CardModifier in effects:
+		effect.on_round_end()
+	
 	if total_score >= goal:
 		game_ended.emit()
 		return
@@ -217,6 +235,10 @@ func _on_next_pressed() -> void:
 	if turns <= 0:
 		print('you lose!')
 		return
+	
+	#round starts
+	for effect:CardModifier in effects:
+		effect.on_round_start()
 	
 	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4]#, $Input5]
 	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4]#, $Play5]
