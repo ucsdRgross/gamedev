@@ -7,7 +7,6 @@ class Result:
 
 class Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
-		@warning_ignore("unused_parameter")
 		return [Result.new()]
 
 class Jack extends Combo:

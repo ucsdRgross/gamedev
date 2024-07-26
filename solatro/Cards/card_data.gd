@@ -1,16 +1,29 @@
 extends Resource
 class_name CardData
 
-@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0
-@export var rank: int = 0
+signal data_changed
+
+@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0:
+	set(value):
+		suit = value
+		data_changed.emit()
+@export var rank: int = 0:
+	set(value):
+		rank = value
+		data_changed.emit()
+var skill: CardModifier:
+	set(value):
+		skill = value
+		data_changed.emit()
+var type: CardModifier:
+	set(value):
+		type = value
+		data_changed.emit()
+var stamp: CardModifier:
+	set(value):
+		stamp = value
+		data_changed.emit()
 var card: Card
-var skill: CardModifier
-var type: CardModifier
-var stamp: CardModifier
-#@export var ability: 
-#@export var type: 
-#@export var effect: String = ""
-#@export var sprite: Texture
 
 func with_suit(suit:int) -> CardData:
 	self.suit = suit

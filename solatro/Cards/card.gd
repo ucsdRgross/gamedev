@@ -20,24 +20,35 @@ signal clicked
 var show_front := false :
 	set(value):
 		if value != show_front:
-			if value:
-				front.frame = 0
-				rank.frame = 14 * (data.suit - 1) + data.rank
-				suit.frame = 14 * (data.suit - 1)
-				if data.skill:
-					art.frame = data.skill.frame
-				else:
-					art.frame = 13 * (data.suit - 1) + (data.rank - 1)
-				rank.show()
-				suit.show()
-				art.show()
-			else:
-				front.frame = 1
-				rank.hide()
-				suit.hide()
-				art.hide()
+			update_visual(value)
 			show_front = value
 
+func update_visual(show_front:bool) -> void:
+	if show_front:
+		rank.frame = 14 * (data.suit - 1) + data.rank
+		suit.frame = 14 * (data.suit - 1)
+		if data.type:
+			front.frame = data.type.frame
+		else:
+			front.frame = 2
+		if data.stamp:
+			stamp.frame = data.stamp.frame
+			stamp.show()
+		else:
+			stamp.hide()
+		if data.skill:
+			art.frame = data.skill.frame
+		else:
+			art.frame = 13 * (data.suit - 1) + (data.rank - 1)
+		rank.show()
+		suit.show()
+		art.show()
+	else:
+		front.frame = 3
+		rank.hide()
+		stamp.hide()
+		suit.hide()
+		art.hide()
 
 #: 
 	#set(value):
@@ -64,6 +75,7 @@ var flipped := true
 
 @onready var front: Sprite2D = $Front
 @onready var rank: Sprite2D  = $Front/Rank
+@onready var stamp: Sprite2D = $Front/Stamp
 @onready var suit: Sprite2D  = $Front/Suit
 @onready var art: Sprite2D = $Front/Art
 @onready var area: Control = $Front/Control
@@ -71,13 +83,15 @@ var flipped := true
 
 func _ready() -> void:
 	rank.hide()
+	stamp.hide()
 	suit.hide()
 	art.hide()
 	if not is_zone:
-		front.frame = 1
+		front.frame = 3
 		num_cards += 1
 		num = num_cards
 	else:
+		front.frame = 0
 		child_offset = Vector2(0,0)
 
 var rot_delta : float
@@ -201,6 +215,7 @@ func get_stack_size() -> int:
 func add_data(data:CardData) -> void:
 	self.data = data
 	data.card = self
+	data.connect('data_changed', update_visual.bind(show_front))
 
 #func _exit_tree() -> void:
 	#data.card = null

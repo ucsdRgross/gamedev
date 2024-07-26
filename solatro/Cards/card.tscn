@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://cmvmqwfqk50mf"]
 
 [ext_resource type="Script" path="res://Cards/card.gd" id="1_pyuft"]
-[ext_resource type="Texture2D" uid="uid://com1ypipemj2f" path="res://Assets/card_template.png" id="3_mcnwj"]
+[ext_resource type="Texture2D" uid="uid://bycjitrj1cxfq" path="res://Assets/card_template.png" id="3_mcnwj"]
 [ext_resource type="Texture2D" uid="uid://b7ekacb1d5q6o" path="res://Assets/card_art.png" id="4_n51ss"]
 [ext_resource type="Texture2D" uid="uid://c5y0yi0ffmlyw" path="res://Assets/suits.png" id="4_qva5r"]
 
@@ -9,15 +9,11 @@
 scale = Vector2(3, 3)
 script = ExtResource("1_pyuft")
 child_offset = Vector2(0, 45)
-is_zone = null
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Front" type="Sprite2D" parent="."]
 texture = ExtResource("3_mcnwj")
-hframes = 2
+hframes = 5
+frame = 1
 
 [node name="Rank" type="Sprite2D" parent="Front"]
 position = Vector2(-12, -17)
@@ -25,6 +21,13 @@ texture = ExtResource("4_qva5r")
 hframes = 14
 vframes = 5
 frame = 1
+
+[node name="Stamp" type="Sprite2D" parent="Front"]
+position = Vector2(0, -17)
+texture = ExtResource("4_qva5r")
+hframes = 14
+vframes = 5
+frame = 56
 
 [node name="Suit" type="Sprite2D" parent="Front"]
 position = Vector2(12, -17)
