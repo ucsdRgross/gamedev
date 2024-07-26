@@ -42,6 +42,8 @@ func score_rule() -> void:
 	pass
 func on_score(target:Card) -> void:
 	pass
+func on_game_start() -> void:
+	pass
 func on_game_win() -> void:
 	pass
 func on_game_loss() -> void:

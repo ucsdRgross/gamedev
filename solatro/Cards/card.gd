@@ -1,7 +1,9 @@
 extends Node2D
 class_name Card
 
-signal clicked
+signal clicked(card:Card)
+signal hover_entered(card:Card)
+signal hover_exited(card:Card)
 
 @export var data : CardData
 @export var skill_img : Texture2D
@@ -20,10 +22,11 @@ signal clicked
 var show_front := false :
 	set(value):
 		if value != show_front:
-			update_visual(value)
 			show_front = value
+			update_visual()
+			
 
-func update_visual(show_front:bool) -> void:
+func update_visual() -> void:
 	if show_front:
 		rank.frame = 14 * (data.suit - 1) + data.rank
 		suit.frame = 14 * (data.suit - 1)
@@ -215,13 +218,15 @@ func get_stack_size() -> int:
 func add_data(data:CardData) -> void:
 	self.data = data
 	data.card = self
-	data.connect('data_changed', update_visual.bind(show_front))
+	data.connect('data_changed', update_visual)
 
 #func _exit_tree() -> void:
 	#data.card = null
 
 func _on_control_mouse_entered() -> void:
 	hover = true
+	hover_entered.emit(self)
 
 func _on_control_mouse_exited() -> void:
 	hover = false
+	hover_exited.emit(self)

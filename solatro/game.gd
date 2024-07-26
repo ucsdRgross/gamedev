@@ -42,8 +42,13 @@ var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(),
 var effects : Array[CardModifier] = []
 
 func _ready() -> void:
+	($Preview as Control).hide()
+	($Preview/Card as Card).front.self_modulate.a = 0
 	goal = goal
 	add_deck()
+	for effect in effects:
+		if effect:
+			effect.on_game_start()
 
 func add_deck() -> void:
 	#for attribute:CardData in deck.cards:
@@ -51,12 +56,12 @@ func add_deck() -> void:
 		#card.data = attribute
 		#add_child(card)
 	for card_data : CardData in deck.card_datas:
-		if card_data.skill:
-			effects.append(card_data.skill.with_game(self))
-		if card_data.type:
-			effects.append(card_data.type.with_game(self))
-		if card_data.stamp:
-			effects.append(card_data.stamp.with_game(self))
+		effects.append(card_data.skill)
+		effects.append(card_data.type)
+		effects.append(card_data.stamp)
+	for effect in effects:
+		if effect:
+			effect.with_game(self)
 	draw_deck = deck.card_datas.duplicate(true)
 	draw_deck.shuffle()
 
@@ -86,7 +91,11 @@ func _input(event: InputEvent) -> void:
 
 func _on_child_entered_tree(node: Node) -> void:
 	if node is Card:
-		(node as Card).clicked.connect(_on_card_clicked)
+		var card := node as Card
+		card.clicked.connect(_on_card_clicked)
+		if not card.is_zone:
+			card.hover_entered.connect(_on_card_hover_entered)
+			card.hover_exited.connect(_on_card_hover_exited)
 
 func _on_card_clicked(card : Card) -> void:
 	if processing:
@@ -108,6 +117,46 @@ func _on_card_clicked(card : Card) -> void:
 			if held_card_offset.y < 60:
 				held_card_offset.y = 60
 			held_card.move_to(get_global_mouse_position() + held_card_offset)
+
+func _on_card_hover_entered(card : Card) -> void:
+	if held_card:
+		return
+	var zone : Card = $Preview/Card
+	if zone.top_card:
+		zone.top_card.queue_free()
+		zone.top_card = null
+	if card.flipped == true:
+		return
+	#var view_card : Card = card.duplicate(0) as Card
+	var view_card : Card = CARD.instantiate()
+	($Preview as Control).add_child(view_card)
+	view_card.global_position = zone.global_position
+	zone.add_card(view_card)
+	#view_card.area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view_card.clickable = false
+	view_card.data = card.data
+	view_card.flipped = false
+	view_card.basis3d = Basis(Vector3(1,0,0), Vector3(0,1,0), Vector3(0,0,1))
+	var description : String
+	if card.data.skill:
+		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
+	if card.data.stamp:
+		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
+	if card.data.type:
+		description += card.data.type.name + "\n" + card.data.type.description + "\n"
+	($Preview/Label as Label).text = description
+	($Preview as Control).show()
+
+func _on_card_hover_exited(card : Card) -> void:
+	return
+	var zone : Card = $Preview/Card
+	if not zone.top_card.data == card.data:
+		($Preview as Control).hide()
+	return
+	if zone.top_card and zone.top_card.data == card.data:
+		zone.top_card.queue_free()
+		zone.top_card = null
+		($Preview as Control).hide()
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.top_card == to_stack and to_stack == held_card:
@@ -212,7 +261,8 @@ func _on_next_pressed() -> void:
 		#cards submitted
 		while next_submit:
 			for effect:CardModifier in effects:
-				effect.on_submit(next_submit)
+				if effect:
+					effect.on_submit(next_submit)
 			next_submit = next_submit.top_card
 			
 		await score(submitted.top_card)
@@ -226,7 +276,8 @@ func _on_next_pressed() -> void:
 	
 	#round ends
 	for effect:CardModifier in effects:
-		effect.on_round_end()
+		if effect:
+			effect.on_round_end()
 	
 	if total_score >= goal:
 		game_ended.emit()
@@ -238,7 +289,8 @@ func _on_next_pressed() -> void:
 	
 	#round starts
 	for effect:CardModifier in effects:
-		effect.on_round_start()
+		if effect:
+			effect.on_round_start()
 	
 	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4]#, $Input5]
 	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4]#, $Play5]

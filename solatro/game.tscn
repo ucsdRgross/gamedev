@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=7 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
@@ -7,6 +7,11 @@
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
+
+[sub_resource type="LabelSettings" id="LabelSettings_voryx"]
+line_spacing = -3.0
+font_size = 12
+shadow_color = Color(0, 0, 0, 1)
 
 [node name="Game" type="Control"]
 layout_mode = 3
@@ -30,109 +35,74 @@ expand_mode = 5
 stretch_mode = 6
 
 [node name="Input1" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(198, 90)
+position = Vector2(231, 90)
 is_zone = true
-can_move_anim = null
 clickable = false
 stack_limit = 1
-basis3d = null
 
 [node name="Play1" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(202, 277)
+position = Vector2(235, 277)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Input2" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(318, 90)
+position = Vector2(351, 90)
 is_zone = true
-can_move_anim = null
 clickable = false
 stack_limit = 1
-basis3d = null
 
 [node name="Play2" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(320, 276)
+position = Vector2(353, 276)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Input3" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(442, 90)
+position = Vector2(475, 90)
 is_zone = true
-can_move_anim = null
 clickable = false
 stack_limit = 1
-basis3d = null
 
 [node name="Play3" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(440, 277)
+position = Vector2(473, 277)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Input4" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(562, 90)
+position = Vector2(595, 90)
 is_zone = true
-can_move_anim = null
 clickable = false
 stack_limit = 1
-basis3d = null
 
 [node name="Play4" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(561, 277)
+position = Vector2(594, 277)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Input5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(689, 93)
 is_zone = true
-can_move_anim = null
 clickable = false
-stack_limit = null
-basis3d = null
 
 [node name="Play5" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(688, 280)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(700, 276)
+position = Vector2(733, 276)
 is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = null
-basis3d = null
 
 [node name="Next" type="Button" parent="."]
 layout_mode = 0
-offset_left = 13.0
+offset_left = 46.0
 offset_top = 122.0
-offset_right = 113.0
+offset_right = 146.0
 offset_bottom = 184.0
 text = "Next Round
 "
 
 [node name="Reroll" type="Button" parent="."]
 layout_mode = 0
-offset_left = 651.0
+offset_left = 684.0
 offset_top = 40.0
-offset_right = 748.0
+offset_right = 781.0
 offset_bottom = 96.0
 text = "Reroll"
 
@@ -160,9 +130,9 @@ horizontal_alignment = 1
 
 [node name="Score" type="Label" parent="."]
 layout_mode = 0
-offset_left = 880.0
+offset_left = 899.0
 offset_top = 200.0
-offset_right = 1001.0
+offset_right = 1020.0
 offset_bottom = 261.0
 text = "Score:"
 label_settings = SubResource("LabelSettings_xc73h")
@@ -178,9 +148,9 @@ label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Total" type="Label" parent="."]
 layout_mode = 0
-offset_left = 890.0
+offset_left = 909.0
 offset_top = 131.0
-offset_right = 1011.0
+offset_right = 1030.0
 offset_bottom = 192.0
 text = "Total: "
 label_settings = SubResource("LabelSettings_xc73h")
@@ -196,9 +166,9 @@ label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Goal" type="Label" parent="."]
 layout_mode = 0
-offset_left = 887.0
+offset_left = 906.0
 offset_top = 67.0
-offset_right = 999.0
+offset_right = 1018.0
 offset_bottom = 128.0
 text = "Goal: "
 label_settings = SubResource("LabelSettings_xc73h")
@@ -214,9 +184,9 @@ label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Turns" type="Label" parent="."]
 layout_mode = 0
-offset_left = 863.0
+offset_left = 882.0
 offset_top = 5.0
-offset_right = 1009.0
+offset_right = 1028.0
 offset_bottom = 66.0
 text = "Turns:  "
 label_settings = SubResource("LabelSettings_xc73h")
@@ -232,9 +202,9 @@ label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Rerolls" type="Label" parent="."]
 layout_mode = 0
-offset_left = 632.0
+offset_left = 665.0
 offset_top = 115.0
-offset_right = 778.0
+offset_right = 811.0
 offset_bottom = 172.0
 text = "Rerolls:"
 label_settings = SubResource("LabelSettings_xc73h")
@@ -248,6 +218,33 @@ offset_bottom = 62.0
 text = "5
 "
 label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Preview" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 65.0
+offset_top = 361.0
+offset_right = 65.0
+offset_bottom = 361.0
+scale = Vector2(1.25, 1.25)
+
+[node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
+position = Vector2(18.4, -57.6)
+is_zone = true
+can_move_anim = null
+clickable = null
+stack_limit = 1
+basis3d = null
+
+[node name="Label" type="Label" parent="Preview"]
+layout_mode = 0
+offset_left = -43.0
+offset_top = 22.0
+offset_right = 82.0
+offset_bottom = 227.0
+text = "Skill Text
+Skill Text"
+label_settings = SubResource("LabelSettings_voryx")
+autowrap_mode = 3
 
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
