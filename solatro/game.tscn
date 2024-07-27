@@ -228,12 +228,10 @@ offset_bottom = 361.0
 scale = Vector2(1.25, 1.25)
 
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
-position = Vector2(18.4, -57.6)
-is_zone = true
-can_move_anim = null
-clickable = null
-stack_limit = 1
-basis3d = null
+position = Vector2(19.2, -57.6)
+can_move_anim = false
+clickable = false
+stack_limit = 0
 
 [node name="Label" type="Label" parent="Preview"]
 layout_mode = 0

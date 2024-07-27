@@ -42,8 +42,8 @@ var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(),
 var effects : Array[CardModifier] = []
 
 func _ready() -> void:
-	($Preview as Control).hide()
-	($Preview/Card as Card).front.self_modulate.a = 0
+	#($Preview as Control).hide()
+	($Preview/Label as Label).text = ""
 	goal = goal
 	add_deck()
 	for effect in effects:
@@ -121,22 +121,11 @@ func _on_card_clicked(card : Card) -> void:
 func _on_card_hover_entered(card : Card) -> void:
 	if held_card:
 		return
-	var zone : Card = $Preview/Card
-	if zone.top_card:
-		zone.top_card.queue_free()
-		zone.top_card = null
-	if card.flipped == true:
-		return
-	#var view_card : Card = card.duplicate(0) as Card
-	var view_card : Card = CARD.instantiate()
-	($Preview as Control).add_child(view_card)
-	view_card.global_position = zone.global_position
-	zone.add_card(view_card)
-	#view_card.area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view_card.clickable = false
-	view_card.data = card.data
-	view_card.flipped = false
-	view_card.basis3d = Basis(Vector3(1,0,0), Vector3(0,1,0), Vector3(0,0,1))
+	var preview_card : Card = $Preview/Card
+	if not card.flipped:
+		preview_card.data = card.data
+	preview_card.update_visual()
+	preview_card.flipped = card.flipped
 	var description : String
 	if card.data.skill:
 		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
@@ -149,14 +138,10 @@ func _on_card_hover_entered(card : Card) -> void:
 
 func _on_card_hover_exited(card : Card) -> void:
 	return
-	var zone : Card = $Preview/Card
-	if not zone.top_card.data == card.data:
-		($Preview as Control).hide()
-	return
-	if zone.top_card and zone.top_card.data == card.data:
-		zone.top_card.queue_free()
-		zone.top_card = null
-		($Preview as Control).hide()
+	#var zone : Card = $Preview/Card
+	#if not zone.top_card.data == card.data:
+		#($Preview as Control).hide()
+	#return
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.top_card == to_stack and to_stack == held_card:

@@ -11,6 +11,8 @@ var tween_transition : Tween
 @onready var grid_container: GridContainer = $GridContainer
 
 func _ready() -> void:
+	#($Preview as Control).hide()
+	($Preview/Label as Label).text = ""
 	containers = grid_container.get_children()
 	var cols : int = grid_container.columns
 	var i : int = 0
@@ -19,10 +21,9 @@ func _ready() -> void:
 		card.data = CardData.new()\
 						.with_suit(randi() % 4 + 1)\
 						.with_rank(randi() % 13 + 1)
-		#card.data.suit = randi() % 4 + 1
-		#card.data.rank = randi() % 13 + 1
 		card.can_move_anim = false
 		card.clicked.connect(_on_card_clicked)
+		card.hover_entered.connect(_on_card_hover_entered)
 		var zone : Card = c.get_child(0)
 		zone.front.self_modulate.a = 0
 		c.add_child(card)
@@ -71,4 +72,19 @@ func _on_card_clicked(card : Card) -> void:
 				tween_hide.parallel().tween_property(c, "scale", Vector2(0.1,0.1), 0.5)
 				tween_hide.tween_callback(c.hide)
 	#await tween_transition.finished
-	
+
+func _on_card_hover_entered(card : Card) -> void:
+	var preview_card : Card = $Preview/Card
+	if not card.flipped:
+		preview_card.data = card.data
+	preview_card.flipped = card.flipped
+	preview_card.update_visual()
+	var description : String
+	if card.data.skill:
+		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
+	if card.data.stamp:
+		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
+	if card.data.type:
+		description += card.data.type.name + "\n" + card.data.type.description + "\n"
+	($Preview/Label as Label).text = description
+	($Preview as Control).show()

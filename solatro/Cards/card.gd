@@ -6,12 +6,12 @@ signal hover_entered(card:Card)
 signal hover_exited(card:Card)
 
 @export var data : CardData
-@export var skill_img : Texture2D
 @export var child_offset : Vector2
 @export var is_zone := false
 @export var can_move_anim := true
 @export var clickable := true
 @export var stack_limit : int = -1
+@export var flipped := true
 @export var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
 		basis3d = value
@@ -27,7 +27,7 @@ var show_front := false :
 			
 
 func update_visual() -> void:
-	if show_front:
+	if show_front and data:
 		rank.frame = 14 * (data.suit - 1) + data.rank
 		suit.frame = 14 * (data.suit - 1)
 		if data.type:
@@ -53,16 +53,6 @@ func update_visual() -> void:
 		suit.hide()
 		art.hide()
 
-#: 
-	#set(value):
-		#rank = value
-		#set_card_front() 
-
-#: 
-	#set(value):
-		#rank = value
-		#set_card_front() 
-
 static var num_cards : int = 0
 var num : int = 0
 var top_card : Card
@@ -73,7 +63,7 @@ var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
 var target_pos : Vector2
-var flipped := true
+
 #var reparenting : bool
 
 @onready var front: Sprite2D = $Front
@@ -145,9 +135,6 @@ func move_to(pos : Vector2) -> void:
 			#move_tween.parallel().tween_property(self, "rotation_degrees", -10, 0.2)
 		##tween.set_ease(Tween.EASE_OUT)
 		#move_tween.tween_property(self, "rotation_degrees", 0, 0.1)
-
-#func set_card_front() -> void:
-	#front.frame = 13 * (suit - 1) + (rank - 1)
 		
 func _on_control_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
