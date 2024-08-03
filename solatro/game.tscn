@@ -75,35 +75,44 @@ position = Vector2(594, 277)
 is_zone = true
 
 [node name="Input5" parent="." instance=ExtResource("3_8sseo")]
-visible = false
-position = Vector2(689, 93)
+position = Vector2(719, 89)
 is_zone = true
 clickable = false
 
 [node name="Play5" parent="." instance=ExtResource("3_8sseo")]
-visible = false
-position = Vector2(688, 280)
+position = Vector2(718, 276)
 is_zone = true
 
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]
+visible = false
 position = Vector2(733, 276)
 is_zone = true
 
 [node name="Next" type="Button" parent="."]
 layout_mode = 0
-offset_left = 46.0
-offset_top = 122.0
-offset_right = 146.0
-offset_bottom = 184.0
+offset_left = 45.0
+offset_top = 164.0
+offset_right = 145.0
+offset_bottom = 226.0
 text = "Next Round
 "
 
-[node name="Reroll" type="Button" parent="."]
+[node name="Submit" type="Button" parent="."]
 layout_mode = 0
-offset_left = 684.0
-offset_top = 40.0
-offset_right = 781.0
-offset_bottom = 96.0
+offset_left = 784.0
+offset_top = 129.0
+offset_right = 884.0
+offset_bottom = 191.0
+text = "Submit
+"
+
+[node name="Reroll" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 882.0
+offset_top = 265.0
+offset_right = 979.0
+offset_bottom = 321.0
 text = "Reroll"
 
 [node name="ScoreName" type="Label" parent="."]
@@ -201,11 +210,12 @@ text = "5"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Rerolls" type="Label" parent="."]
+visible = false
 layout_mode = 0
-offset_left = 665.0
-offset_top = 115.0
-offset_right = 811.0
-offset_bottom = 172.0
+offset_left = 975.0
+offset_top = 271.0
+offset_right = 1121.0
+offset_bottom = 328.0
 text = "Rerolls:"
 label_settings = SubResource("LabelSettings_xc73h")
 
@@ -222,9 +232,9 @@ label_settings = SubResource("LabelSettings_xc73h")
 [node name="Preview" type="Control" parent="."]
 anchors_preset = 0
 offset_left = 65.0
-offset_top = 361.0
+offset_top = 391.0
 offset_right = 65.0
-offset_bottom = 361.0
+offset_bottom = 391.0
 scale = Vector2(1.25, 1.25)
 
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
@@ -244,5 +254,18 @@ Skill Text"
 label_settings = SubResource("LabelSettings_voryx")
 autowrap_mode = 3
 
+[node name="Deck" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 94.0
+offset_top = 90.0
+offset_right = 94.0
+offset_bottom = 90.0
+
+[node name="Card" parent="Deck" instance=ExtResource("3_8sseo")]
+can_move_anim = false
+clickable = false
+stack_limit = 0
+
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
+[connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]

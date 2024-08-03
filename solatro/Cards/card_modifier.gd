@@ -20,10 +20,10 @@ func on_round_start() -> void:
 	pass
 func on_round_end() -> void:
 	pass
-func on_card_enter_game(target:Card) -> void:
-	pass
-func on_card_leave_game(target:Card) -> void:
-	pass
+#func on_card_enter_game(target:Card) -> void:
+	#pass
+#func on_card_leave_game(target:Card) -> void:
+	#pass
 func stack_rule(target:Card) -> bool:
 	return false
 func on_stack(target:Card) -> void:
@@ -50,10 +50,18 @@ func on_game_loss() -> void:
 	pass
 func on_game_end() -> void:
 	pass
+func on_deck_enter(target:Card) -> void:
+	pass
+func on_discard(target:Card) -> void:
+	pass
+func on_delete(target:Card) -> void:
+	pass
+func on_draw(target:Card) -> void:
+	pass
 func on_deck_shuffle() -> void:
 	pass
 	
-func can_skill() -> bool:
+func is_card_on_top() -> bool:
 	return true
 	
 func on_trigger() -> void:

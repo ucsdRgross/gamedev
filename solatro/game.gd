@@ -277,8 +277,8 @@ func _on_next_pressed() -> void:
 		if effect:
 			effect.on_round_start()
 	
-	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4]#, $Input5]
-	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4]#, $Play5]
+	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
+	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
 	for i:int in input.size():
 		if input[i].top_card:
 			stack[i].get_last_card().add_card(input[i].top_card)
@@ -303,3 +303,6 @@ func _on_next_pressed() -> void:
 		#card.flipped = false
 	
 	turns -= 1
+
+func _on_submit_pressed() -> void:
+	pass # Replace with function body.
