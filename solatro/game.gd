@@ -158,7 +158,7 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 	return false
 
 func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
-	return true
+	#return true
 	if stack.is_zone:
 		return true
 	if stack.data.suit != to_stack.data.suit:
@@ -238,39 +238,39 @@ func _on_next_pressed() -> void:
 		return
 	if held_card:
 		return
-	var submitted : Card = $Submission
-	
-	if submitted.top_card:
-		var next_submit : Card = submitted.top_card
-		
-		#cards submitted
-		while next_submit:
-			for effect:CardModifier in effects:
-				if effect:
-					effect.on_submit(next_submit)
-			next_submit = next_submit.top_card
-			
-		await score(submitted.top_card)
-		#total_score += last_score
-		var next_card : Card = submitted.top_card
-		while next_card:
-			discard_deck.append(next_card.data)
-			next_card = next_card.top_card
-		submitted.top_card.queue_free()
-		submitted.top_card = null
-	
-	#round ends
-	for effect:CardModifier in effects:
-		if effect:
-			effect.on_round_end()
-	
-	if total_score >= goal:
-		game_ended.emit()
-		return
-		
-	if turns <= 0:
-		print('you lose!')
-		return
+	#var submitted : Card = $Submission
+	#
+	#if submitted.top_card:
+		#var next_submit : Card = submitted.top_card
+		#
+		##cards submitted
+		#while next_submit:
+			#for effect:CardModifier in effects:
+				#if effect:
+					#effect.on_submit(next_submit)
+			#next_submit = next_submit.top_card
+			#
+		#await score(submitted.top_card)
+		##total_score += last_score
+		#var next_card : Card = submitted.top_card
+		#while next_card:
+			#discard_deck.append(next_card.data)
+			#next_card = next_card.top_card
+		#submitted.top_card.queue_free()
+		#submitted.top_card = null
+	#
+	##round ends
+	#for effect:CardModifier in effects:
+		#if effect:
+			#effect.on_round_end()
+	#
+	#if total_score >= goal:
+		#game_ended.emit()
+		#return
+		#
+	#if turns <= 0:
+		#print('you lose!')
+		#return
 	
 	#round starts
 	for effect:CardModifier in effects:
@@ -305,4 +305,23 @@ func _on_next_pressed() -> void:
 	turns -= 1
 
 func _on_submit_pressed() -> void:
-	pass # Replace with function body.
+	var cols : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
+	var board_cards : Array[Card]
+	while cols:
+		var next_row : Array[Card]
+		for card in cols:
+			if card.top_card:
+				next_row.append(card.top_card)
+				board_cards.append(card.top_card)
+				for effect:CardModifier in effects:
+					if effect:
+						await effect.on_submit(card.top_card)
+		cols = next_row
+
+		#await score(submitted.top_card)
+		#total_score += last_score
+
+	for card in board_cards:
+		discard_deck.append(card.data)
+		card.queue_free()
+		card.bot_card.top_card = null
