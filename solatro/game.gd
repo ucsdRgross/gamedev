@@ -41,6 +41,11 @@ var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(),
 
 var effects : Array[CardModifier] = []
 
+#var board_array : Array[Array]
+
+@onready var inputs : Array[Card]= [$Input1, $Input2, $Input3, $Input4, $Input5]
+@onready var stacks : Array[Card]= [$Play1, $Play2, $Play3, $Play4, $Play5]
+
 func _ready() -> void:
 	#($Preview as Control).hide()
 	($Preview/Label as Label).text = ""
@@ -277,12 +282,12 @@ func _on_next_pressed() -> void:
 		if effect:
 			effect.on_round_start()
 	
-	var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
-	var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
-	for i:int in input.size():
-		if input[i].top_card:
-			stack[i].get_last_card().add_card(input[i].top_card)
-	for zone : Card in input:
+	#var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
+	#var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
+	for i:int in inputs.size():
+		if inputs[i].top_card:
+			stacks[i].get_last_card().add_card(inputs[i].top_card)
+	for zone : Card in inputs:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
 			draw_deck.shuffle()
@@ -305,23 +310,51 @@ func _on_next_pressed() -> void:
 	turns -= 1
 
 func _on_submit_pressed() -> void:
-	var cols : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
-	var board_cards : Array[Card]
-	while cols:
-		var next_row : Array[Card]
-		for card in cols:
-			if card.top_card:
-				next_row.append(card.top_card)
-				board_cards.append(card.top_card)
-				for effect:CardModifier in effects:
-					if effect:
-						await effect.on_submit(card.top_card)
-		cols = next_row
-
-		#await score(submitted.top_card)
-		#total_score += last_score
-
-	for card in board_cards:
+	var cols : Array[Card] = stacks
+	var board_cols : Array[Array] = get_board_cols()
+	var row_to_score := 0
+	while row_to_score < board_cols[0].size():
+		var row_cards : Array[Card]
+		for i in 5:
+			row_cards.append(board_cols[i][row_to_score])
+		#score horizontally
+		#score vertically
+		#store which cards scored in case of overlap
+		#apply effects to scored cards
+		board_cols = get_board_cols()
+		row_to_score += 1
+	
+	var discards : Array[Card]
+	for i in board_cols[0].size():
+		for j in 5:
+			if board_cols[j][i]:
+				discards.append(board_cols[j][i])
+	discards.reverse()
+	for card in discards:
 		discard_deck.append(card.data)
 		card.queue_free()
 		card.bot_card.top_card = null
+		
+	#discard board
+		#await score(submitted.top_card)
+		#total_score += last_score
+
+#func get_board_rows() -> Array[Array]:
+	#var cols := []
+
+func get_board_cols() -> Array[Array]:
+	var board : Array[Array] = []
+	var max_size := 0
+	for col in stacks:
+		var c := []
+		var col_size := 0
+		while col.top_card:
+			c.append(col.top_card)
+			col = col.top_card
+			col_size += 1
+		board.append(c)
+		if col_size > max_size:
+			max_size = col_size
+	for col in board:
+		col.resize(max_size)
+	return board
