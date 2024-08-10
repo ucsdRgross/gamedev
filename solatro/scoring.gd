@@ -5,6 +5,55 @@ class Result:
 	var card_combo : Array[Card]
 	var score : int
 
+class RowCombo:
+	static func score(cards:Array[Card]) -> Result:
+		return Result.new()
+
+class ColCombo:
+	static func score(card:Card) -> Result:
+		return Result.new()
+
+class All extends RowCombo:
+	static func score(cards:Array[Card]) -> Result:
+		var result := Result.new()
+		result.score_name = "All"
+		result.score = 5
+		result.card_combo = cards
+		return result
+
+class Run extends ColCombo:
+	static func score(card:Card) -> Result:
+		var bot_stack : Array[Card] = [card]
+		var x : int = 0
+		var bot_card := card.bot_card
+		if bot_card.is_zone:
+			return null
+		#ascending or descending
+		if bot_card.data.rank == card.data.rank - 1:
+			x = -1
+		elif bot_card.data.rank == card.data.rank + 1:
+			x = 1
+		else:
+			return null
+		bot_stack.append(bot_card)
+		while not bot_card.bot_card.is_zone:# and \
+				#bot_card.bot_card.data.rank == bot_card.data.rank + x:
+				#bot_card.bot_card.data.rank == bot_card.data.rank + 1\
+				#or bot_card.bot_card.data.rank == bot_card.data.rank - 1:
+			bot_card = bot_card.bot_card
+			bot_stack.append(bot_card)
+		var run_size : int = bot_stack.size()
+		if run_size < 3:
+			return null
+		var result := Result.new()
+		result.score_name = "Run " + str(run_size)
+		result.score = 3 if run_size == 3 else 1
+		result.card_combo = bot_stack
+		return result
+
+
+
+
 class Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		return [Result.new()]
@@ -72,37 +121,37 @@ class Pairs extends Combo:
 				results.append(result)
 		return results
 
-class Run extends Combo:
-	static func score(cards:Array[Card]) -> Array[Result]:
-		if cards.size() < 3:
-			return []
-		var results : Array[Result] = []
-		var recur := func(cards:Array[Card], recur:Callable) -> void:
-			for n:int in range(cards.size(), 2, -1):
-				for i:int in cards.size()-n+1:
-					var slice : Array[Card] = cards.slice(i, i+n)
-					slice.sort_custom(Scoring.rank_sort)
-					var is_straight := true
-					for j:int in slice.size()-1:
-						if slice[j].data.rank != slice[j+1].data.rank - 1:
-							is_straight = false
-							break
-					if is_straight:
-						var result := Result.new()
-						result.score_name = "Run " + str(n)
-						result.score = n
-						result.card_combo = slice
-						Scoring.stack_order(result.card_combo, cards)
-						results.append(result)
-						var left : Array[Card] = cards.slice(0,i)
-						if left.size() > 2:
-							recur.call(left, recur)
-						var right : Array[Card] = cards.slice(i+n)
-						if right.size() > 2:
-							recur.call(right, recur)
-						return
-		recur.call(cards, recur)
-		return results
+#class Run extends Combo:
+	#static func score(cards:Array[Card]) -> Array[Result]:
+		#if cards.size() < 3:
+			#return []
+		#var results : Array[Result] = []
+		#var recur := func(cards:Array[Card], recur:Callable) -> void:
+			#for n:int in range(cards.size(), 2, -1):
+				#for i:int in cards.size()-n+1:
+					#var slice : Array[Card] = cards.slice(i, i+n)
+					#slice.sort_custom(Scoring.rank_sort)
+					#var is_straight := true
+					#for j:int in slice.size()-1:
+						#if slice[j].data.rank != slice[j+1].data.rank - 1:
+							#is_straight = false
+							#break
+					#if is_straight:
+						#var result := Result.new()
+						#result.score_name = "Run " + str(n)
+						#result.score = n
+						#result.card_combo = slice
+						#Scoring.stack_order(result.card_combo, cards)
+						#results.append(result)
+						#var left : Array[Card] = cards.slice(0,i)
+						#if left.size() > 2:
+							#recur.call(left, recur)
+						#var right : Array[Card] = cards.slice(i+n)
+						#if right.size() > 2:
+							#recur.call(right, recur)
+						#return
+		#recur.call(cards, recur)
+		#return results
 
 class Flush extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:

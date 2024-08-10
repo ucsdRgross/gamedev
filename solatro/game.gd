@@ -32,12 +32,15 @@ var rerolls : int = 0:
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
 
-var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(), 
-									Scoring.Fifteen.new(), 
-									Scoring.Pairs.new(),
-									Scoring.Run.new(),
-									Scoring.Flush.new(),
-									]
+#var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(), 
+									#Scoring.Fifteen.new(), 
+									#Scoring.Pairs.new(),
+									#Scoring.Run.new(),
+									#Scoring.Flush.new(),
+									#]
+
+var row_scorers : Array[Scoring.RowCombo] = [Scoring.All.new()]
+var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 
 var effects : Array[CardModifier] = []
 
@@ -177,66 +180,66 @@ func drop_held_card() -> void:
 	held_card.drop()
 	held_card = null
 
-func score(card : Card) -> void:
-	processing = true
-	var stack : Array[Card] = []
-	while card:
-		stack.append(card)
-		card = card.top_card
-	print('stack')
-	for c:Card in stack:
-		print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-	
-	var all_results : Array[Scoring.Result]
-	for scorer:Scoring.Combo in scorers:
-		var results : Array[Scoring.Result] = scorer.score(stack)
-		all_results.append_array(results)
-	Scoring.sort_results(all_results, stack)
-	
-	var round_score : int = 0
-	last_score = 0
-	var tween := create_tween().set_parallel(true)\
-	.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
-	if all_results else null
-	var score_delay : float = .5
-	var last_scored_cards : Array[Card] = []
-	for result : Scoring.Result in all_results:
-		print(result.score_name, "\nscore: ", result.score)
-		
-		for c:Card in result.card_combo:
-			if c not in last_scored_cards:
-				tween.tween_property(c.front, "position:x", 50, score_delay)
-			last_scored_cards.erase(c)
-			print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-			
-		for c:Card in last_scored_cards:
-			tween.tween_property(c.front, "position:x", 0, score_delay)
-		last_scored_cards = result.card_combo
-		
-		#total_score += result.score
-		#round_score += result.score
-		
-		tween.tween_callback(func()->void:
-			($ScoreName as Label).text = result.score_name
-			($ScoreName/Label as Label).text = str(result.score)
-		)
-		tween.tween_method(func(s:float)->void: 
-			($ScoreName as Label).scale = Vector2.ONE * s
-			, 0.9, 1.1, score_delay
-		)
-		tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
-		tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
-		tween.tween_interval(1.5)
-		tween.chain()
-		tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
-
-	for c:Card in last_scored_cards:
-		tween.tween_property(c.front, "position:x", 0, score_delay)
-		
-	print(round_score)
-	if tween:
-		await tween.finished
-	processing = false
+#func score(card : Card) -> void:
+	#processing = true
+	#var stack : Array[Card] = []
+	#while card:
+		#stack.append(card)
+		#card = card.top_card
+	#print('stack')
+	#for c:Card in stack:
+		#print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+	#
+	#var all_results : Array[Scoring.Result]
+	#for scorer:Scoring.Combo in scorers:
+		#var results : Array[Scoring.Result] = scorer.score(stack)
+		#all_results.append_array(results)
+	#Scoring.sort_results(all_results, stack)
+	#
+	#var round_score : int = 0
+	#last_score = 0
+	#var tween := create_tween().set_parallel(true)\
+	#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
+	#if all_results else null
+	#var score_delay : float = .5
+	#var last_scored_cards : Array[Card] = []
+	#for result : Scoring.Result in all_results:
+		#print(result.score_name, "\nscore: ", result.score)
+		#
+		#for c:Card in result.card_combo:
+			#if c not in last_scored_cards:
+				#tween.tween_property(c.front, "position:x", 50, score_delay)
+			#last_scored_cards.erase(c)
+			#print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+			#
+		#for c:Card in last_scored_cards:
+			#tween.tween_property(c.front, "position:x", 0, score_delay)
+		#last_scored_cards = result.card_combo
+		#
+		##total_score += result.score
+		##round_score += result.score
+		#
+		#tween.tween_callback(func()->void:
+			#($ScoreName as Label).text = result.score_name
+			#($ScoreName/Label as Label).text = str(result.score)
+		#)
+		#tween.tween_method(func(s:float)->void: 
+			#($ScoreName as Label).scale = Vector2.ONE * s
+			#, 0.9, 1.1, score_delay
+		#)
+		#tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
+		#tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
+		#tween.tween_interval(1.5)
+		#tween.chain()
+		#tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
+#
+	#for c:Card in last_scored_cards:
+		#tween.tween_property(c.front, "position:x", 0, score_delay)
+		#
+	#print(round_score)
+	#if tween:
+		#await tween.finished
+	#processing = false
 		
 func _on_next_pressed() -> void:
 	if processing:
@@ -310,19 +313,78 @@ func _on_next_pressed() -> void:
 	turns -= 1
 
 func _on_submit_pressed() -> void:
+	processing = true
 	var cols : Array[Card] = stacks
 	var board_cols : Array[Array] = get_board_cols()
 	var row_to_score := 0
+	var round_score : int = 0
+	last_score = 0
+	var tween : Tween# = create_tween().set_parallel(true)#\
+			#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
+	var score_delay : float = .2
+	var last_scored_cards : Array[Card] = []
+		
 	while row_to_score < board_cols[0].size():
 		var row_cards : Array[Card]
 		for i in 5:
-			row_cards.append(board_cols[i][row_to_score])
+			if board_cols[i][row_to_score]:
+				row_cards.append(board_cols[i][row_to_score])
 		#score horizontally
+		for scorer in row_scorers:
+			var result := scorer.score(row_cards)
+			if result:
+				print(result.score_name, "\nscore: ", result.score)
+				tween = create_tween().set_parallel(true)
+				for c:Card in result.card_combo:
+					if c not in last_scored_cards:
+						c.floating = false
+						tween.tween_property(c.front, "position:y", -7, score_delay)
+					last_scored_cards.erase(c)
+					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+				for c:Card in last_scored_cards:
+					tween.tween_property(c.front, "position:y", 0, score_delay)
+					tween.tween_property(c, "floating", false, score_delay)
+				tween.tween_interval(1)
+				last_scored_cards = result.card_combo
+				await tween.finished
 		#score vertically
-		#store which cards scored in case of overlap
+		for scorer in col_scorers:
+			var results : Array[Scoring.Result]
+			for card in row_cards:
+				if card:
+					var result := scorer.score(card)
+					if result:
+						results.append(result)
+			var scored_cards : Array[Card]
+			for result in results:
+				scored_cards.append_array(result.card_combo)
+			for result in results:
+				print(result.score_name, "\nscore: ", result.score)
+			tween = create_tween().set_parallel(true)
+			for c:Card in scored_cards:
+				if c not in last_scored_cards:
+					c.floating = false
+					tween.tween_property(c.front, "position:y", -7, score_delay)
+				last_scored_cards.erase(c)
+				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+			for c:Card in last_scored_cards:
+				tween.tween_property(c.front, "position:y", 0, score_delay)
+				tween.tween_property(c, "floating", false, score_delay)
+			tween.tween_interval(1)
+			last_scored_cards = scored_cards
+			if tween.is_running():
+				await tween.finished
 		#apply effects to scored cards
 		board_cols = get_board_cols()
 		row_to_score += 1
+	
+	if last_scored_cards:
+		tween = create_tween().set_parallel(true)
+	for c:Card in last_scored_cards:
+		tween.tween_property(c.front, "position:y", 0, score_delay)
+		tween.tween_property(c, "floating", false, score_delay)
+	if tween.is_running():
+		await tween.finished
 	
 	var discards : Array[Card]
 	for i in board_cols[0].size():
@@ -338,6 +400,8 @@ func _on_submit_pressed() -> void:
 	#discard board
 		#await score(submitted.top_card)
 		#total_score += last_score
+	
+	processing = false
 
 #func get_board_rows() -> Array[Array]:
 	#var cols := []

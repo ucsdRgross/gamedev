@@ -62,6 +62,7 @@ var move_tween : Tween
 var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
+var floating : bool = true
 var target_pos : Vector2
 
 #var reparenting : bool
@@ -120,7 +121,8 @@ func _process(delta: float) -> void:
 			y += mouse_pos.y/1.5
 		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
 		basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
-		front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
+		if floating:
+			front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
 			
 func move_to(pos : Vector2) -> void:
 	if move_tween and move_tween.is_running():
