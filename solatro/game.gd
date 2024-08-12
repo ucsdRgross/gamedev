@@ -4,6 +4,7 @@ class_name Game
 signal game_ended
 
 const CARD = preload("res://Cards/card.tscn")
+const TEXT_POPUP = preload("res://text_popup.tscn")
 
 @export var deck : Deck
 var held_card : Card = null
@@ -346,6 +347,14 @@ func _on_submit_pressed() -> void:
 					tween.tween_property(c, "floating", false, score_delay)
 				tween.tween_interval(1)
 				last_scored_cards = result.card_combo
+				var combo_pos : Vector2
+				for card in result.card_combo:
+					combo_pos += card.global_position
+				combo_pos /= result.card_combo.size()
+				add_child(TextPopup.new_popup(result.score_name, combo_pos, score_delay))
+				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
+				#popup.global_position = combo_pos
+				#add_child(popup)
 				await tween.finished
 		#score vertically
 		for scorer in col_scorers:
