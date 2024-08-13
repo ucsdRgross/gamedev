@@ -11,6 +11,7 @@ static func new_popup(text:String, glo_pos: Vector2, lifetime:float=1.0) -> Text
 	set_data(new_popup, text, glo_pos, lifetime)
 	return new_popup
 
+#private
 static func set_data(new_popup:TextPopup, text:String, glo_pos: Vector2, lifetime:float) -> void:
 	await new_popup.ready
 	new_popup.label.text = text

@@ -367,8 +367,12 @@ func _on_submit_pressed() -> void:
 			var scored_cards : Array[Card]
 			for result in results:
 				scored_cards.append_array(result.card_combo)
-			for result in results:
 				print(result.score_name, "\nscore: ", result.score)
+				var combo_pos : Vector2
+				for card in result.card_combo:
+					combo_pos += card.global_position
+				combo_pos /= result.card_combo.size()
+				add_child(TextPopup.new_popup(result.score_name, combo_pos, score_delay))
 			tween = create_tween().set_parallel(true)
 			for c:Card in scored_cards:
 				if c not in last_scored_cards:
