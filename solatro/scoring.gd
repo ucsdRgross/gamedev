@@ -29,12 +29,12 @@ class Run extends ColCombo:
 		if bot_card.is_zone:
 			return null
 		#ascending or descending
-		if bot_card.data.rank == card.data.rank - 1:
-			x = -1
-		elif bot_card.data.rank == card.data.rank + 1:
-			x = 1
-		else:
-			return null
+		#if bot_card.data.rank == card.data.rank - 1:
+			#x = -1
+		#elif bot_card.data.rank == card.data.rank + 1:
+			#x = 1
+		#else:
+			#return null
 		bot_stack.append(bot_card)
 		while not bot_card.bot_card.is_zone:# and \
 				#bot_card.bot_card.data.rank == bot_card.data.rank + x:

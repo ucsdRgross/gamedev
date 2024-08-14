@@ -10,10 +10,10 @@ const TEXT_POPUP = preload("res://text_popup.tscn")
 var held_card : Card = null
 var held_card_offset : Vector2
 var processing : bool = false
-var turns : int = 20:
-	set(value):
-		($Turns/Label as Label).text = str(value)
-		turns = value
+#var turns : int = 20:
+	#set(value):
+		#($Turns/Label as Label).text = str(value)
+		#turns = value
 var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
@@ -22,14 +22,26 @@ var total_score : int = 0:
 	set(value):
 		($Total/Label as Label).text = str(value)
 		total_score = value
-var last_score : int = 0:
+#var last_score : int = 0:
+	#set(value):
+		#($Score/Label as Label).text = str(value)
+		#last_score = value
+#var rerolls : int = 0:
+	#set(value):
+		#($Rerolls/Label as Label).text = str(value)
+		#rerolls = value
+var mult_score : int = 0:
 	set(value):
-		($Score/Label as Label).text = str(value)
-		last_score = value
-var rerolls : int = 0:
+		($MultScore as Label).text = str(value)
+		mult_score = value
+var col_total : int = 0:
 	set(value):
-		($Rerolls/Label as Label).text = str(value)
-		rerolls = value
+		($MultScore/Col as Label).text = str(value)
+		col_total = value
+var row_total : int = 0:
+	set(value):
+		($MultScore/Row as Label).text = str(value)
+		row_total = value
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
 
@@ -45,14 +57,17 @@ var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 
 var effects : Array[CardModifier] = []
 
-#var board_array : Array[Array]
-
 @onready var inputs : Array[Card]= [$Input1, $Input2, $Input3, $Input4, $Input5]
 @onready var stacks : Array[Card]= [$Play1, $Play2, $Play3, $Play4, $Play5]
+@onready var col_scores : Array[Label]= [$ColScores/ColScore1, $ColScores/ColScore2, $ColScores/ColScore3, $ColScores/ColScore4, $ColScores/ColScore5]
+
 
 func _ready() -> void:
 	#($Preview as Control).hide()
 	($Preview/Label as Label).text = ""
+	for label in col_scores:
+		label.text = str(0)
+		label.hide()
 	goal = goal
 	add_deck()
 	for effect in effects:
@@ -311,20 +326,31 @@ func _on_next_pressed() -> void:
 		#zone.add_card(card)
 		#card.flipped = false
 	
-	turns -= 1
+	#turns -= 1
+
+#class ColResult:
+	#func _init(result : Scoring.Result, start_card : Card, col : int) -> void:
+		#self.result = result
+		#self.start_card = start_card
+		#self.col = col
+	#var result : Scoring.Result
+	#var start_card : Card
+	#var col : int
 
 func _on_submit_pressed() -> void:
+	if processing:
+		return
 	processing = true
 	var cols : Array[Card] = stacks
 	var board_cols : Array[Array] = get_board_cols()
 	var row_to_score := 0
 	var round_score : int = 0
-	last_score = 0
+	#last_score = 0
 	var tween : Tween# = create_tween().set_parallel(true)#\
 			#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
-	var score_delay : float = .2
+	var score_delay : float = .5
 	var last_scored_cards : Array[Card] = []
-		
+	
 	while row_to_score < board_cols[0].size():
 		var row_cards : Array[Card]
 		for i in 5:
@@ -345,7 +371,7 @@ func _on_submit_pressed() -> void:
 				for c:Card in last_scored_cards:
 					tween.tween_property(c.front, "position:y", 0, score_delay)
 					tween.tween_property(c, "floating", false, score_delay)
-				tween.tween_interval(1)
+				tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
 				var combo_pos : Vector2
 				for card in result.card_combo:
@@ -357,38 +383,45 @@ func _on_submit_pressed() -> void:
 				#add_child(popup)
 				await tween.finished
 		#score vertically
+
 		for scorer in col_scorers:
-			var results : Array[Scoring.Result]
-			for card in row_cards:
-				if card:
-					var result := scorer.score(card)
-					if result:
-						results.append(result)
+			#var results : Array[Scoring.Result]
+			#var col_results : Array[ColResult]
 			var scored_cards : Array[Card]
-			for result in results:
-				scored_cards.append_array(result.card_combo)
-				print(result.score_name, "\nscore: ", result.score)
-				var combo_pos : Vector2
-				for card in result.card_combo:
-					combo_pos += card.global_position
-				combo_pos /= result.card_combo.size()
-				add_child(TextPopup.new_popup(result.score_name, combo_pos, score_delay))
-			tween = create_tween().set_parallel(true)
-			for c:Card in scored_cards:
-				if c not in last_scored_cards:
-					c.floating = false
-					tween.tween_property(c.front, "position:y", -7, score_delay)
-				last_scored_cards.erase(c)
-				print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-			for c:Card in last_scored_cards:
-				tween.tween_property(c.front, "position:y", 0, score_delay)
-				tween.tween_property(c, "floating", false, score_delay)
-			tween.tween_interval(1)
-			last_scored_cards = scored_cards
-			if tween.is_running():
-				await tween.finished
+			for i in row_cards.size():
+				if row_cards[i]:
+					var result := scorer.score(row_cards[i])
+					if result:
+						#col_results.append(ColResult.new(result, row_cards[i], i))
+						#results.append(result)
+			
+			#for col_result in col_results:
+						scored_cards.append_array(result.card_combo)
+						print(result.score_name, "\nscore: ", result.score)
+				#var combo_pos : Vector2
+				#for card in col_result.result.card_combo:
+					#combo_pos += card.global_position
+				#combo_pos /= result.card_combo.size()
+						add_child(TextPopup.new_popup(result.score_name, row_cards[i].global_position, score_delay))
+						col_scores[i].text = str(result.score + int(col_scores[i].text))
+						col_scores[i].show()
+			if scored_cards:
+				tween = create_tween().set_parallel(true)
+				for c:Card in scored_cards:
+					if c not in last_scored_cards:
+						c.floating = false
+						tween.tween_property(c.front, "position:y", -7, score_delay)
+					last_scored_cards.erase(c)
+					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+				for c:Card in last_scored_cards:
+					tween.tween_property(c.front, "position:y", 0, score_delay)
+					tween.tween_property(c, "floating", false, score_delay)
+				tween.tween_interval(score_delay)
+				last_scored_cards = scored_cards
+				if tween.is_running():
+					await tween.finished
 		#apply effects to scored cards
-		board_cols = get_board_cols()
+		#board_cols = get_board_cols()
 		row_to_score += 1
 	
 	if last_scored_cards:
@@ -396,8 +429,21 @@ func _on_submit_pressed() -> void:
 	for c:Card in last_scored_cards:
 		tween.tween_property(c.front, "position:y", 0, score_delay)
 		tween.tween_property(c, "floating", false, score_delay)
-	if tween.is_running():
+	for label in col_scores:
+		col_total += int(label.text)
+	row_total = 1
+	if tween and tween.is_running():
 		await tween.finished
+		mult_score = row_total * col_total
+		await get_tree().create_timer(1).timeout
+		total_score += mult_score
+	
+	for label in col_scores:
+		label.text = str(0)
+		col_total = 0
+		row_total = 0
+		mult_score = 0
+		label.hide()
 	
 	var discards : Array[Card]
 	for i in board_cols[0].size():
@@ -409,7 +455,9 @@ func _on_submit_pressed() -> void:
 		discard_deck.append(card.data)
 		card.queue_free()
 		card.bot_card.top_card = null
-		
+	
+	
+	
 	#discard board
 		#await score(submitted.top_card)
 		#total_score += last_score

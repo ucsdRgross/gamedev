@@ -4,7 +4,13 @@
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
-[ext_resource type="PackedScene" uid="uid://btv0i5eiwmwu2" path="res://text_popup.tscn" id="5_phaai"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_et201"]
+font_size = 20
+outline_size = 3
+outline_color = Color(0, 0, 0, 1)
+shadow_size = 3
+shadow_color = Color(1, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
@@ -34,6 +40,96 @@ grow_vertical = 2
 texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
+
+[node name="ColScores" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColScore1" type="Label" parent="ColScores"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 155.0
+offset_top = 149.0
+offset_right = 270.0
+offset_bottom = 177.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ColScore1"
+label_settings = SubResource("LabelSettings_et201")
+horizontal_alignment = 2
+
+[node name="ColScore2" type="Label" parent="ColScores"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 276.0
+offset_top = 150.0
+offset_right = 391.0
+offset_bottom = 178.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ColScore2"
+label_settings = SubResource("LabelSettings_et201")
+horizontal_alignment = 2
+
+[node name="ColScore3" type="Label" parent="ColScores"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 397.0
+offset_top = 151.0
+offset_right = 512.0
+offset_bottom = 179.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ColScore3"
+label_settings = SubResource("LabelSettings_et201")
+horizontal_alignment = 2
+
+[node name="ColScore4" type="Label" parent="ColScores"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 520.0
+offset_top = 152.0
+offset_right = 635.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ColScore4"
+label_settings = SubResource("LabelSettings_et201")
+horizontal_alignment = 2
+
+[node name="ColScore5" type="Label" parent="ColScores"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 642.0
+offset_top = 151.0
+offset_right = 757.0
+offset_bottom = 179.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ColScore5"
+label_settings = SubResource("LabelSettings_et201")
+horizontal_alignment = 2
 
 [node name="Input1" parent="." instance=ExtResource("3_8sseo")]
 position = Vector2(231, 90)
@@ -117,6 +213,7 @@ offset_bottom = 321.0
 text = "Reroll"
 
 [node name="ScoreName" type="Label" parent="."]
+visible = false
 layout_mode = 0
 offset_left = 886.0
 offset_top = 341.0
@@ -139,6 +236,7 @@ label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
 [node name="Score" type="Label" parent="."]
+visible = false
 layout_mode = 0
 offset_left = 899.0
 offset_top = 200.0
@@ -153,6 +251,45 @@ offset_left = 149.0
 offset_top = -1.0
 offset_right = 270.0
 offset_bottom = 60.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="MultScore" type="Label" parent="."]
+layout_mode = 0
+offset_left = 944.0
+offset_top = 218.0
+offset_right = 1076.0
+offset_bottom = 275.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Col" type="Label" parent="MultScore"]
+layout_mode = 0
+offset_left = -77.0
+offset_top = 64.0
+offset_right = 44.0
+offset_bottom = 125.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 2
+
+[node name="x" type="Label" parent="MultScore"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 62.0
+offset_right = 124.0
+offset_bottom = 123.0
+text = "x"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Row" type="Label" parent="MultScore"]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 64.0
+offset_right = 204.0
+offset_bottom = 125.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
@@ -193,6 +330,7 @@ text = "100"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Turns" type="Label" parent="."]
+visible = false
 layout_mode = 0
 offset_left = 882.0
 offset_top = 5.0
@@ -266,9 +404,6 @@ offset_bottom = 90.0
 can_move_anim = false
 clickable = false
 stack_limit = 0
-
-[node name="TextPopup" parent="." instance=ExtResource("5_phaai")]
-position = Vector2(485, 296)
 
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
