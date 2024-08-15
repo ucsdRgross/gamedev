@@ -52,7 +52,18 @@ var discard_deck : Array[CardData]
 									#Scoring.Flush.new(),
 									#]
 
-var row_scorers : Array[Scoring.RowCombo] = [Scoring.All.new()]
+var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
+											Scoring.FlushHouse.new(),\
+											Scoring.Quintet.new(),\
+											Scoring.StraightFlush.new(),\
+											Scoring.Quartet.new(),\
+											Scoring.FullHouse.new(),\
+											Scoring.Flush.new(),\
+											Scoring.Straight.new(),\
+											Scoring.Triple.new(),\
+											Scoring.TwoPair.new(),\
+											Scoring.Pair.new(),\
+											Scoring.HighCard.new()]
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 
 var effects : Array[CardModifier] = []
@@ -348,7 +359,7 @@ func _on_submit_pressed() -> void:
 	#last_score = 0
 	var tween : Tween# = create_tween().set_parallel(true)#\
 			#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
-	var score_delay : float = .5
+	var score_delay : float = 1.5
 	var last_scored_cards : Array[Card] = []
 	var row_score_popups : Dictionary
 	while row_to_score < board_cols[0].size():
@@ -380,7 +391,9 @@ func _on_submit_pressed() -> void:
 				var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
 				
 				if not row_to_score in row_score_popups:
-					var score_popup := TextPopup.new_popup(str(result.score), Vector2(($Submit as Control).global_position.x, ($Submit as Control).global_position.y + 100 + 45 * row_to_score))
+					var score_popup := TextPopup.new_popup(str(result.score), \
+							Vector2(($Submit as Control).global_position.x, \
+									($Submit as Control).global_position.y + 100 + 45 * row_to_score))
 					add_child(score_popup)
 					score_popup.label.anchors_preset = Control.PRESET_CENTER_LEFT
 					row_score_popups[row_to_score] = score_popup

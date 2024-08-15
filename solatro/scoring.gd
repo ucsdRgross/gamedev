@@ -6,15 +6,203 @@ class Result:
 	var score : int
 
 class RowCombo:
-	static func score(cards:Array[Card]) -> Result:
-		return Result.new()
+	func score(cards:Array[Card]) -> Result:
+		return null
 
 class ColCombo:
-	static func score(card:Card) -> Result:
-		return Result.new()
+	func score(card:Card) -> Result:
+		return null
+
+class FlushFive extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		if cards.size() == 5\
+				and cards[0].data.rank == cards[1].data.rank\
+				and cards[1].data.rank == cards[2].data.rank\
+				and cards[2].data.rank == cards[3].data.rank\
+				and cards[3].data.rank == cards[4].data.rank\
+				and cards[0].data.suit == cards[1].data.suit\
+				and cards[1].data.suit == cards[2].data.suit\
+				and cards[2].data.suit == cards[3].data.suit\
+				and cards[3].data.suit == cards[4].data.suit:
+			var result := Result.new()
+			result.score_name = "Flush Five"
+			result.score = 30
+			result.card_combo = cards
+			return result
+		return null
+
+class FlushHouse extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		if cards.size() == 5\
+				and cards[0].data.suit == cards[1].data.suit\
+				and cards[1].data.suit == cards[2].data.suit\
+				and cards[2].data.suit == cards[3].data.suit\
+				and cards[3].data.suit == cards[4].data.suit\
+				and ((cards[0].data.rank == cards[1].data.rank\
+				and cards[1].data.rank == cards[2].data.rank\
+				and cards[3].data.rank == cards[4].data.rank)\
+				or (cards[0].data.rank == cards[1].data.rank\
+				and cards[2].data.rank == cards[3].data.rank\
+				and cards[3].data.rank == cards[4].data.rank)):
+			var result := Result.new()
+			result.score_name = "Flush House"
+			result.score = 20
+			result.card_combo = cards
+			return result
+		return null
+
+class Quintet extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		if cards.size() == 5\
+				and cards[0].data.rank == cards[1].data.rank\
+				and cards[1].data.rank == cards[2].data.rank\
+				and cards[2].data.rank == cards[3].data.rank\
+				and cards[3].data.rank == cards[4].data.rank:
+			var result := Result.new()
+			result.score_name = "Quintet"
+			result.score = 20
+			result.card_combo = cards
+			return result
+		return null
+
+class StraightFlush extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		if cards.size() == 5:
+			for i in cards.size() - 1:
+				if not cards[i].data.suit == cards[i+1].data.suit:
+					return null
+			cards.sort_custom(Scoring.rank_sort_desc)
+			for i in cards.size() - 1:
+				if not cards[i].data.rank == cards[i+1].data.rank - 1:
+					return null
+			var result := Result.new()
+			result.score_name = "Straight Flush"
+			result.score = 20
+			result.card_combo = cards
+			return result
+		return null
+
+class Quartet extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		for i in cards.size() - 3:
+			if cards[i].data.rank == cards[i+1].data.rank\
+					and cards[i+1].data.rank == cards[i+2].data.rank\
+					and cards[i+2].data.rank == cards[i+3].data.rank:
+				var result := Result.new()
+				result.score_name = "Quartet"
+				result.score = 12
+				result.card_combo = [cards[i], cards[i+1], cards[i+2], cards[i+3]]
+				return result
+		return null
+
+class FullHouse extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		if cards.size() == 5\
+				and ((cards[0].data.rank == cards[1].data.rank\
+				and cards[1].data.rank == cards[2].data.rank\
+				and cards[3].data.rank == cards[4].data.rank)\
+				or\
+				(cards[0].data.rank == cards[1].data.rank\
+				and cards[2].data.rank == cards[3].data.rank\
+				and cards[3].data.rank == cards[4].data.rank)):
+			var result := Result.new()
+			result.score_name = "Full House"
+			result.score = 10
+			result.card_combo = cards
+			return result
+		return null
+
+class Flush extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		if cards.size() == 5:
+			for i in cards.size() - 1:
+				if not cards[i].data.suit == cards[i+1].data.suit:
+					return null
+			var result := Result.new()
+			result.score_name = "Flush"
+			result.score = 10
+			result.card_combo = cards
+			return result
+		return null
+
+class Straight extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		if cards.size() == 5:
+			for i in cards.size() - 1:
+				if not cards[i].data.rank == cards[i+1].data.rank - 1:
+					return null
+			var result := Result.new()
+			result.score_name = "Straight"
+			result.score = 10
+			result.card_combo = cards
+			return result
+		return null
+
+class Triple extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		for i in cards.size() - 2:
+			if cards[i].data.rank == cards[i+1].data.rank\
+					and cards[i].data.rank == cards[i+2].data.rank:
+				var result := Result.new()
+				result.score_name = "Triple"
+				result.score = 6
+				result.card_combo = [cards[i], cards[i+1], cards[i+2]]
+				return result
+		return null
+
+class TwoPair extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		var pairs : Array[Array]
+		for i in cards.size() - 1:
+			if cards[i].data.rank == cards[i+1].data.rank:
+				pairs.append([cards[i], cards[i+1]])
+				i += 1
+		if pairs.size() == 2:
+			var result := Result.new()
+			result.score_name = "Two Pair"
+			result.score = 4
+			var two_pair : Array[Card]
+			for pair in pairs:
+				for card:Card in pair:
+					two_pair.append(card)
+			result.card_combo = two_pair
+			return result
+		return null
+
+class Pair extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		cards.sort_custom(Scoring.rank_sort_desc)
+		for i in cards.size() - 1:
+			if cards[i].data.rank == cards[i+1].data.rank:
+				var result := Result.new()
+				result.score_name = "Pair"
+				result.score = 2
+				result.card_combo = [cards[i], cards[i+1]]
+				return result
+		return null
+
+class HighCard extends RowCombo:
+	func score(cards:Array[Card]) -> Result:
+		var high_card : Card = cards[0] if cards[0] else null
+		for card : Card in cards.slice(1):
+			if card.data.rank > high_card.data.rank:
+				high_card = card
+		if high_card:
+			var result := Result.new()
+			result.score_name = "High Card"
+			result.score = 1
+			result.card_combo = [high_card]
+			return result
+		return null
 
 class All extends RowCombo:
-	static func score(cards:Array[Card]) -> Result:
+	func score(cards:Array[Card]) -> Result:
 		var result := Result.new()
 		result.score_name = "All"
 		result.score = 5
@@ -22,7 +210,7 @@ class All extends RowCombo:
 		return result
 
 class Run extends ColCombo:
-	static func score(card:Card) -> Result:
+	func score(card:Card) -> Result:
 		var bot_stack : Array[Card] = [card]
 		var x : int = 0
 		var bot_card := card.bot_card
@@ -153,28 +341,28 @@ class Pairs extends Combo:
 		#recur.call(cards, recur)
 		#return results
 
-class Flush extends Combo:
-	static func score(cards:Array[Card]) -> Array[Result]:
-		var results : Array[Result] = []
-		var cur_suit : int = -1
-		var cur_flush : Array[Card] = []
-		var flush_min_size : int = 2
-		var flush_score := func(cur_flush : Array[Card]) -> void:
-			if cur_flush.size() >= flush_min_size:
-				var result := Result.new()
-				var n := cur_flush.size()
-				result.score_name = "Flush " + str(n) 
-				result.score = n
-				result.card_combo = cur_flush
-				results.append(result)
-		for card:Card in cards:
-			if cur_suit == -1 or card.data.suit != cur_suit:
-				flush_score.call(cur_flush)
-				cur_flush = []
-				cur_suit = card.data.suit
-			cur_flush.append(card)
-		flush_score.call(cur_flush)
-		return results
+#class Flush extends Combo:
+	#static func score(cards:Array[Card]) -> Array[Result]:
+		#var results : Array[Result] = []
+		#var cur_suit : int = -1
+		#var cur_flush : Array[Card] = []
+		#var flush_min_size : int = 2
+		#var flush_score := func(cur_flush : Array[Card]) -> void:
+			#if cur_flush.size() >= flush_min_size:
+				#var result := Result.new()
+				#var n := cur_flush.size()
+				#result.score_name = "Flush " + str(n) 
+				#result.score = n
+				#result.card_combo = cur_flush
+				#results.append(result)
+		#for card:Card in cards:
+			#if cur_suit == -1 or card.data.suit != cur_suit:
+				#flush_score.call(cur_flush)
+				#cur_flush = []
+				#cur_suit = card.data.suit
+			#cur_flush.append(card)
+		#flush_score.call(cur_flush)
+		#return results
 
 #class Pair extends Scoring.Combo:
 	#static func score(cards:Array[Card]) -> Result:
@@ -243,6 +431,9 @@ static func sort_results(results:Array[Result], ref:Array[Card]) -> void:
 				#return card_order[a[i]] < card_order[b[i]]
 		#return a.size() < b.size()
 	#combos.sort_custom(result_sort)
+
+static func rank_sort_desc(a:Card, b:Card) -> bool:
+	return a.data.rank > b.data.rank
 
 static func rank_sort(a:Card, b:Card) -> bool:
 	return a.data.rank < b.data.rank
