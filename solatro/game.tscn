@@ -138,7 +138,7 @@ clickable = false
 stack_limit = 1
 
 [node name="Play1" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(235, 277)
+position = Vector2(235, 290)
 is_zone = true
 
 [node name="Input2" parent="." instance=ExtResource("3_8sseo")]
@@ -148,7 +148,7 @@ clickable = false
 stack_limit = 1
 
 [node name="Play2" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(353, 276)
+position = Vector2(353, 290)
 is_zone = true
 
 [node name="Input3" parent="." instance=ExtResource("3_8sseo")]
@@ -158,7 +158,7 @@ clickable = false
 stack_limit = 1
 
 [node name="Play3" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(473, 277)
+position = Vector2(473, 290)
 is_zone = true
 
 [node name="Input4" parent="." instance=ExtResource("3_8sseo")]
@@ -168,7 +168,7 @@ clickable = false
 stack_limit = 1
 
 [node name="Play4" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(594, 277)
+position = Vector2(594, 290)
 is_zone = true
 
 [node name="Input5" parent="." instance=ExtResource("3_8sseo")]
@@ -177,7 +177,7 @@ is_zone = true
 clickable = false
 
 [node name="Play5" parent="." instance=ExtResource("3_8sseo")]
-position = Vector2(718, 276)
+position = Vector2(718, 290)
 is_zone = true
 
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]

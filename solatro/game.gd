@@ -350,7 +350,7 @@ func _on_submit_pressed() -> void:
 			#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
 	var score_delay : float = .5
 	var last_scored_cards : Array[Card] = []
-	
+	var row_score_popups : Dictionary
 	while row_to_score < board_cols[0].size():
 		var row_cards : Array[Card]
 		for i in 5:
@@ -377,17 +377,29 @@ func _on_submit_pressed() -> void:
 				for card in result.card_combo:
 					combo_pos += card.global_position
 				combo_pos /= result.card_combo.size()
-				add_child(TextPopup.new_popup(result.score_name, combo_pos, score_delay))
+				var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
+				
+				if not row_to_score in row_score_popups:
+					var score_popup := TextPopup.new_popup(str(result.score), Vector2(($Submit as Control).global_position.x, ($Submit as Control).global_position.y + 100 + 45 * row_to_score))
+					add_child(score_popup)
+					score_popup.label.anchors_preset = Control.PRESET_CENTER_LEFT
+					row_score_popups[row_to_score] = score_popup
+				else:
+					var score_popup : TextPopup = row_score_popups[row_to_score]
+					score_popup.label.text = str(result.score + int(score_popup.label.text))
+				add_child(score_name_popup)
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
 				#popup.global_position = combo_pos
 				#add_child(popup)
 				await tween.finished
+				score_name_popup.queue_free()
 		#score vertically
 
 		for scorer in col_scorers:
 			#var results : Array[Scoring.Result]
 			#var col_results : Array[ColResult]
 			var scored_cards : Array[Card]
+			var score_name_popups : Array[TextPopup]
 			for i in row_cards.size():
 				if row_cards[i]:
 					var result := scorer.score(row_cards[i])
@@ -402,7 +414,9 @@ func _on_submit_pressed() -> void:
 				#for card in col_result.result.card_combo:
 					#combo_pos += card.global_position
 				#combo_pos /= result.card_combo.size()
-						add_child(TextPopup.new_popup(result.score_name, row_cards[i].global_position, score_delay))
+						var name_popup := TextPopup.new_popup(result.score_name, row_cards[i].global_position)
+						score_name_popups.append(name_popup)
+						add_child(name_popup)
 						col_scores[i].text = str(result.score + int(col_scores[i].text))
 						col_scores[i].show()
 			if scored_cards:
@@ -418,8 +432,9 @@ func _on_submit_pressed() -> void:
 					tween.tween_property(c, "floating", false, score_delay)
 				tween.tween_interval(score_delay)
 				last_scored_cards = scored_cards
-				if tween.is_running():
-					await tween.finished
+				await tween.finished
+				for popup in score_name_popups:
+					popup.queue_free()
 		#apply effects to scored cards
 		#board_cols = get_board_cols()
 		row_to_score += 1
@@ -431,7 +446,8 @@ func _on_submit_pressed() -> void:
 		tween.tween_property(c, "floating", false, score_delay)
 	for label in col_scores:
 		col_total += int(label.text)
-	row_total = 1
+	for i:int in row_score_popups:
+		row_total += int((row_score_popups[i] as TextPopup).label.text)
 	if tween and tween.is_running():
 		await tween.finished
 		mult_score = row_total * col_total
@@ -440,10 +456,13 @@ func _on_submit_pressed() -> void:
 	
 	for label in col_scores:
 		label.text = str(0)
-		col_total = 0
-		row_total = 0
-		mult_score = 0
 		label.hide()
+	for i:int in row_score_popups:
+		(row_score_popups[i] as TextPopup).queue_free()
+		
+	col_total = 0
+	row_total = 0
+	mult_score = 0
 	
 	var discards : Array[Card]
 	for i in board_cols[0].size():
