@@ -189,7 +189,7 @@ class Pair extends RowCombo:
 
 class HighCard extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
-		var high_card : Card = cards[0] if cards[0] else null
+		var high_card : Card = cards[0] if cards else null
 		for card : Card in cards.slice(1):
 			if card.data.rank > high_card.data.rank:
 				high_card = card

@@ -44,4 +44,12 @@ var deck3: Array[CardData] = [
 	CardData.new().with_suit(4).with_rank(1),
 	]
 
-@export var card_datas : Array[CardData] = deck3
+var deck4: Array[CardData] = [
+	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1),
+	]
+
+@export var card_datas : Array[CardData] = deck4

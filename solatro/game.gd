@@ -377,11 +377,11 @@ func _on_submit_pressed() -> void:
 					if c not in last_scored_cards:
 						c.floating = false
 						tween.tween_property(c.front, "position:y", -7, score_delay)
-					last_scored_cards.erase(c)
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
-					tween.tween_property(c.front, "position:y", 0, score_delay)
-					tween.tween_property(c, "floating", false, score_delay)
+					if c not in result.card_combo:
+						tween.tween_property(c.front, "position:y", 0, score_delay)
+						tween.tween_property(c, "floating", false, score_delay)
 				tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
 				var combo_pos : Vector2
@@ -438,11 +438,11 @@ func _on_submit_pressed() -> void:
 					if c not in last_scored_cards:
 						c.floating = false
 						tween.tween_property(c.front, "position:y", -7, score_delay)
-					last_scored_cards.erase(c)
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
-					tween.tween_property(c.front, "position:y", 0, score_delay)
-					tween.tween_property(c, "floating", false, score_delay)
+					if c not in scored_cards:
+						tween.tween_property(c.front, "position:y", 0, score_delay)
+						tween.tween_property(c, "floating", false, score_delay)
 				tween.tween_interval(score_delay)
 				last_scored_cards = scored_cards
 				await tween.finished
