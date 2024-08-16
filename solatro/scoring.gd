@@ -159,10 +159,12 @@ class TwoPair extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		var pairs : Array[Array]
-		for i in cards.size() - 1:
+		var i : int = 0
+		while i < cards.size() - 1:
 			if cards[i].data.rank == cards[i+1].data.rank:
 				pairs.append([cards[i], cards[i+1]])
 				i += 1
+			i += 1
 		if pairs.size() == 2:
 			var result := Result.new()
 			result.score_name = "Two Pair"
@@ -217,17 +219,15 @@ class Run extends ColCombo:
 		if bot_card.is_zone:
 			return null
 		#ascending or descending
-		#if bot_card.data.rank == card.data.rank - 1:
-			#x = -1
-		#elif bot_card.data.rank == card.data.rank + 1:
-			#x = 1
-		#else:
-			#return null
+		if bot_card.data.rank == card.data.rank - 1:
+			x = -1
+		elif bot_card.data.rank == card.data.rank + 1:
+			x = 1
+		else:
+			return null
 		bot_stack.append(bot_card)
-		while not bot_card.bot_card.is_zone:# and \
-				#bot_card.bot_card.data.rank == bot_card.data.rank + x:
-				#bot_card.bot_card.data.rank == bot_card.data.rank + 1\
-				#or bot_card.bot_card.data.rank == bot_card.data.rank - 1:
+		while not bot_card.bot_card.is_zone and \
+				bot_card.bot_card.data.rank == bot_card.data.rank + x:
 			bot_card = bot_card.bot_card
 			bot_stack.append(bot_card)
 		var run_size : int = bot_stack.size()

@@ -52,6 +52,18 @@ var discard_deck : Array[CardData]
 									#Scoring.Flush.new(),
 									#]
 
+var poker_hands : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
+											Scoring.FlushHouse.new(),\
+											Scoring.Quintet.new(),\
+											Scoring.StraightFlush.new(),\
+											Scoring.Quartet.new(),\
+											Scoring.FullHouse.new(),\
+											Scoring.Flush.new(),\
+											Scoring.Straight.new(),\
+											Scoring.Triple.new(),\
+											Scoring.TwoPair.new(),\
+											Scoring.Pair.new(),\
+											Scoring.HighCard.new()] 
 var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
 											Scoring.FlushHouse.new(),\
 											Scoring.Quintet.new(),\
@@ -63,7 +75,7 @@ var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
 											Scoring.Triple.new(),\
 											Scoring.TwoPair.new(),\
 											Scoring.Pair.new(),\
-											Scoring.HighCard.new()]
+											Scoring.HighCard.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 
 var effects : Array[CardModifier] = []
@@ -365,11 +377,14 @@ func _on_submit_pressed() -> void:
 	while row_to_score < board_cols[0].size():
 		var row_cards : Array[Card]
 		for i in 5:
-			if board_cols[i][row_to_score]:
-				row_cards.append(board_cols[i][row_to_score])
+			row_cards.append(board_cols[i][row_to_score])
 		#score horizontally
 		for scorer in row_scorers:
-			var result := scorer.score(row_cards)
+			var cards : Array[Card]
+			for c in row_cards:
+				if c:
+					cards.append(c)
+			var result := scorer.score(cards)
 			if result:
 				print(result.score_name, "\nscore: ", result.score)
 				tween = create_tween().set_parallel(true)
