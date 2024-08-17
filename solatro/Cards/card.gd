@@ -54,6 +54,8 @@ func update_visual() -> void:
 		art.hide()
 
 static var num_cards : int = 0
+enum {IN_PLAY, STATIC}
+var state := IN_PLAY
 var num : int = 0
 var top_card : Card
 var bot_card : Card
@@ -64,6 +66,7 @@ var held : bool = false
 var hover : bool = false
 var floating : bool = true
 var target_pos : Vector2
+
 
 #var reparenting : bool
 

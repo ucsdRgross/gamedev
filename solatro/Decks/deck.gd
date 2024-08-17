@@ -107,4 +107,4 @@ var deck5: Array[CardData] = [
 	CardData.new().with_suit(1).with_rank(1),
 	]
 
-@export var card_datas : Array[CardData] = deck2
+@export var card_datas : Array[CardData] = deck4

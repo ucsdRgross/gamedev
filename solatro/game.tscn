@@ -185,6 +185,11 @@ visible = false
 position = Vector2(733, 276)
 is_zone = true
 
+[node name="Play6" parent="." instance=ExtResource("3_8sseo")]
+position = Vector2(844, 89)
+is_zone = true
+stack_limit = 1
+
 [node name="Next" type="Button" parent="."]
 layout_mode = 0
 offset_left = 45.0
@@ -197,9 +202,9 @@ text = "Next Round
 [node name="Submit" type="Button" parent="."]
 layout_mode = 0
 offset_left = 784.0
-offset_top = 129.0
+offset_top = 170.0
 offset_right = 884.0
-offset_bottom = 191.0
+offset_bottom = 232.0
 text = "Submit
 "
 

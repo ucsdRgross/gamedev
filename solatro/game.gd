@@ -152,7 +152,7 @@ func _on_card_clicked(card : Card) -> void:
 			card.add_card(held_card)
 			drop_held_card()
 	elif not held_card:
-		if not card.is_zone:
+		if not card.is_zone and card.state == Card.IN_PLAY:
 			var next_card := card
 			while next_card.top_card:
 				if not can_pickup_stack(next_card, next_card.top_card):
@@ -328,6 +328,7 @@ func _on_next_pressed() -> void:
 	#var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
 	for i:int in inputs.size():
 		if inputs[i].top_card:
+			inputs[i].top_card.state = Card.IN_PLAY
 			stacks[i].get_last_card().add_card(inputs[i].top_card)
 	for zone : Card in inputs:
 		if draw_deck.size() == 0:
@@ -336,6 +337,7 @@ func _on_next_pressed() -> void:
 			discard_deck.clear()
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()
+			card.state = Card.STATIC
 			var data : CardData = draw_deck.pop_back()
 			card.add_data(data)
 			add_child(card)
@@ -408,7 +410,7 @@ func _on_submit_pressed() -> void:
 				if not row_to_score in row_score_popups:
 					var score_popup := TextPopup.new_popup(str(result.score), \
 							Vector2(($Submit as Control).global_position.x, \
-									($Submit as Control).global_position.y + 100 + 45 * row_to_score))
+									($Submit as Control).global_position.y + 60 + 45 * row_to_score))
 					add_child(score_popup)
 					score_popup.label.anchors_preset = Control.PRESET_CENTER_LEFT
 					row_score_popups[row_to_score] = score_popup

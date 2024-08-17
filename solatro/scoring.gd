@@ -226,8 +226,9 @@ class Run extends ColCombo:
 		else:
 			return null
 		bot_stack.append(bot_card)
-		while not bot_card.bot_card.is_zone and \
-				bot_card.bot_card.data.rank == bot_card.data.rank + x:
+		while not bot_card.bot_card.is_zone \
+				and (bot_card.bot_card.data.rank == bot_card.data.rank + 1\
+				or bot_card.bot_card.data.rank == bot_card.data.rank - 1):
 			bot_card = bot_card.bot_card
 			bot_stack.append(bot_card)
 		var run_size : int = bot_stack.size()
