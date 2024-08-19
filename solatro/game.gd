@@ -77,20 +77,21 @@ var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
 											Scoring.Pair.new(),\
 											Scoring.HighCard.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-
 var effects : Array[CardModifier] = []
 
-@onready var inputs : Array[Card]= [$Input1, $Input2, $Input3, $Input4, $Input5]
-@onready var stacks : Array[Card]= [$Play1, $Play2, $Play3, $Play4, $Play5]
-@onready var col_scores : Array[Label]= [$ColScores/ColScore1, $ColScores/ColScore2, $ColScores/ColScore3, $ColScores/ColScore4, $ColScores/ColScore5]
-
+@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
+@onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
+@onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
+@onready var free_space: Card = %FreeSpace/Zone
+@onready var row_scores: Control = %RowScores
 
 func _ready() -> void:
-	#($Preview as Control).hide()
+	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
+		for zone : Card in zones:
+			_on_child_entered_tree(zone)
 	($Preview/Label as Label).text = ""
 	for label in col_scores:
-		label.text = str(0)
-		label.hide()
+		label.text = ""
 	goal = goal
 	add_deck()
 	for effect in effects:
@@ -409,10 +410,10 @@ func _on_submit_pressed() -> void:
 				
 				if not row_to_score in row_score_popups:
 					var score_popup := TextPopup.new_popup(str(result.score), \
-							Vector2(($Submit as Control).global_position.x, \
-									($Submit as Control).global_position.y + 60 + 45 * row_to_score))
-					add_child(score_popup)
-					score_popup.label.anchors_preset = Control.PRESET_CENTER_LEFT
+							Vector2(row_scores.global_position.x, \
+									row_scores.global_position.y + 45 * row_to_score),\
+									true)
+					row_scores.add_child(score_popup)
 					row_score_popups[row_to_score] = score_popup
 				else:
 					var score_popup : TextPopup = row_score_popups[row_to_score]
@@ -448,7 +449,6 @@ func _on_submit_pressed() -> void:
 						score_name_popups.append(name_popup)
 						add_child(name_popup)
 						col_scores[i].text = str(result.score + int(col_scores[i].text))
-						col_scores[i].show()
 			if scored_cards:
 				tween = create_tween().set_parallel(true)
 				for c:Card in scored_cards:
@@ -485,8 +485,7 @@ func _on_submit_pressed() -> void:
 		total_score += mult_score
 	
 	for label in col_scores:
-		label.text = str(0)
-		label.hide()
+		label.text = ""
 	for i:int in row_score_popups:
 		(row_score_popups[i] as TextPopup).queue_free()
 		

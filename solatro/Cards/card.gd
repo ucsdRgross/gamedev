@@ -1,3 +1,4 @@
+@tool
 extends Node2D
 class_name Card
 
@@ -12,7 +13,7 @@ signal hover_exited(card:Card)
 @export var clickable := true
 @export var stack_limit : int = -1
 @export var flipped := true
-@export var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
+var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
 		basis3d = value
 		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])

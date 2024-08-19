@@ -11,11 +11,16 @@ script = ExtResource("1_pyuft")
 child_offset = Vector2(0, 45)
 
 [node name="Front" type="Sprite2D" parent="."]
+position = Vector2(0, 0.904986)
+rotation = 3.14159
+scale = Vector2(0.999883, -0.985772)
+skew = 0.00261772
 texture = ExtResource("3_mcnwj")
 hframes = 5
-frame = 1
+frame = 3
 
 [node name="Rank" type="Sprite2D" parent="Front"]
+visible = false
 position = Vector2(-12, -17)
 texture = ExtResource("4_qva5r")
 hframes = 14
@@ -23,6 +28,7 @@ vframes = 5
 frame = 1
 
 [node name="Stamp" type="Sprite2D" parent="Front"]
+visible = false
 position = Vector2(0, -17)
 texture = ExtResource("4_qva5r")
 hframes = 14
@@ -30,12 +36,14 @@ vframes = 5
 frame = 56
 
 [node name="Suit" type="Sprite2D" parent="Front"]
+visible = false
 position = Vector2(12, -17)
 texture = ExtResource("4_qva5r")
 hframes = 14
 vframes = 5
 
 [node name="Art" type="Sprite2D" parent="Front"]
+visible = false
 position = Vector2(0, 5)
 texture = ExtResource("4_n51ss")
 hframes = 13
