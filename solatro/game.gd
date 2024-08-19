@@ -98,6 +98,10 @@ func _ready() -> void:
 		if effect:
 			effect.on_game_start()
 
+func _process(delta: float) -> void:
+	var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
+	mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
+	
 func add_deck() -> void:
 	#for attribute:CardData in deck.cards:
 		#var card : Card = CARD.instantiate()
