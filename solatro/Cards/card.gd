@@ -5,6 +5,7 @@ class_name Card
 signal clicked(card:Card)
 signal hover_entered(card:Card)
 signal hover_exited(card:Card)
+signal card_added
 
 @export var data : CardData
 @export var child_offset : Vector2
@@ -167,6 +168,7 @@ func add_card(card : Card) -> void:
 		while card:
 			card.stack_limit = stack_limit
 			card = card.top_card
+	card_added.emit()
 
 func pickup() -> void:
 	var card : Card = self

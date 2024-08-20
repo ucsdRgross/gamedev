@@ -10,6 +10,10 @@ const TEXT_POPUP = preload("res://text_popup.tscn")
 var held_card : Card = null
 var held_card_offset : Vector2
 var processing : bool = false
+var board_size : int 
+var board_home_pos : Vector2
+var board_hovered : bool = false
+var card_hovered : bool = false
 #var turns : int = 20:
 	#set(value):
 		#($Turns/Label as Label).text = str(value)
@@ -84,6 +88,7 @@ var effects : Array[CardModifier] = []
 @onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
 @onready var free_space: Card = %FreeSpace/Zone
 @onready var row_scores: Control = %RowScores
+@onready var game_container: Control = $GameContainer
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -92,6 +97,7 @@ func _ready() -> void:
 	($Preview/Label as Label).text = ""
 	for label in col_scores:
 		label.text = ""
+	board_home_pos = game_container.position
 	goal = goal
 	add_deck()
 	for effect in effects:
@@ -99,8 +105,16 @@ func _ready() -> void:
 			effect.on_game_start()
 
 func _process(delta: float) -> void:
-	var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
-	mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
+	if board_hovered or card_hovered or held_card:
+		var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
+		mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
+		var viewport_height : int = get_viewport_rect().size.y
+		var extra_height : int = clampi(board_size - viewport_height, 0, board_size - viewport_height)
+		if mouse_rel_pos.y < 0.25:
+			game_container.position.y += 2
+		if mouse_rel_pos.y > 0.75:
+			game_container.position.y -= 2
+		game_container.position.y = clampi(game_container.position.y, board_home_pos.y - extra_height, board_home_pos.y)
 	
 func add_deck() -> void:
 	#for attribute:CardData in deck.cards:
@@ -148,6 +162,7 @@ func _on_child_entered_tree(node: Node) -> void:
 		if not card.is_zone:
 			card.hover_entered.connect(_on_card_hover_entered)
 			card.hover_exited.connect(_on_card_hover_exited)
+			card.card_added.connect(_on_game_board_changed)
 
 func _on_card_clicked(card : Card) -> void:
 	if processing:
@@ -171,6 +186,7 @@ func _on_card_clicked(card : Card) -> void:
 			held_card.move_to(get_global_mouse_position() + held_card_offset)
 
 func _on_card_hover_entered(card : Card) -> void:
+	card_hovered = true
 	if held_card:
 		return
 	var preview_card : Card = $Preview/Card
@@ -189,12 +205,23 @@ func _on_card_hover_entered(card : Card) -> void:
 	($Preview as Control).show()
 
 func _on_card_hover_exited(card : Card) -> void:
-	return
+	card_hovered = false
 	#var zone : Card = $Preview/Card
 	#if not zone.top_card.data == card.data:
 		#($Preview as Control).hide()
 	#return
 
+func _on_game_board_changed() -> void:
+	var board_cols : Array[Array] = get_board_cols()
+	var num_cards_in_col : int = board_cols[0].size()
+	#var example_card : Card
+	#for col in board_cols:
+		#if col[0] is Card:
+			#example_card = example_card
+			#break
+	board_size = 300 + 45 * num_cards_in_col
+	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
+	
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.top_card == to_stack and to_stack == held_card:
 		return true
@@ -422,7 +449,7 @@ func _on_submit_pressed() -> void:
 				else:
 					var score_popup : TextPopup = row_score_popups[row_to_score]
 					score_popup.label.text = str(result.score + int(score_popup.label.text))
-				add_child(score_name_popup)
+				game_container.add_child(score_name_popup)
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
 				#popup.global_position = combo_pos
 				#add_child(popup)
@@ -451,7 +478,7 @@ func _on_submit_pressed() -> void:
 				#combo_pos /= result.card_combo.size()
 						var name_popup := TextPopup.new_popup(result.score_name, row_cards[i].global_position)
 						score_name_popups.append(name_popup)
-						add_child(name_popup)
+						game_container.add_child(name_popup)
 						col_scores[i].text = str(result.score + int(col_scores[i].text))
 			if scored_cards:
 				tween = create_tween().set_parallel(true)
@@ -507,7 +534,7 @@ func _on_submit_pressed() -> void:
 		discard_deck.append(card.data)
 		card.queue_free()
 		card.bot_card.top_card = null
-	
+	_on_game_board_changed()
 	
 	
 	#discard board
@@ -535,3 +562,9 @@ func get_board_cols() -> Array[Array]:
 	for col in board:
 		col.resize(max_size)
 	return board
+
+func _on_hover_area_mouse_entered() -> void:
+	board_hovered = true
+
+func _on_hover_area_mouse_exited() -> void:
+	board_hovered = false

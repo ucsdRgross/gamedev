@@ -11,10 +11,10 @@ script = ExtResource("1_pyuft")
 child_offset = Vector2(0, 45)
 
 [node name="Front" type="Sprite2D" parent="."]
-position = Vector2(0, 0.904986)
-rotation = 3.14159
-scale = Vector2(0.999883, -0.985772)
-skew = 0.00261772
+position = Vector2(0, -0.924146)
+rotation = 3.14158
+scale = Vector2(0.986819, -0.998849)
+skew = 0.00787592
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
