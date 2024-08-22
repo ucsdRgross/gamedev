@@ -49,14 +49,6 @@ offset_top = 10.0
 offset_right = 898.0
 offset_bottom = 654.0
 
-[node name="HoverArea" type="Control" parent="GameContainer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
 [node name="HBoxContainer" type="HBoxContainer" parent="GameContainer"]
 layout_mode = 2
 offset_right = 704.0
@@ -247,6 +239,18 @@ horizontal_alignment = 2
 [node name="RowScores" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="HoverArea" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 170.0
+offset_top = 10.0
+offset_right = -254.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Submit" type="Button" parent="."]
 layout_mode = 2
@@ -475,7 +479,7 @@ clickable = false
 stack_limit = 0
 
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
-[connection signal="mouse_entered" from="GameContainer/HoverArea" to="." method="_on_hover_area_mouse_entered"]
-[connection signal="mouse_exited" from="GameContainer/HoverArea" to="." method="_on_hover_area_mouse_exited"]
+[connection signal="mouse_entered" from="HoverArea" to="." method="_on_hover_area_mouse_entered"]
+[connection signal="mouse_exited" from="HoverArea" to="." method="_on_hover_area_mouse_exited"]
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
