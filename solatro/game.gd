@@ -89,6 +89,7 @@ var effects : Array[CardModifier] = []
 @onready var free_space: Card = %FreeSpace/Zone
 @onready var row_scores: Control = %RowScores
 @onready var game_container: Control = $GameContainer
+@onready var hover_area: Control = $HoverArea
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -115,6 +116,28 @@ func _process(delta: float) -> void:
 		if mouse_rel_pos.y > 0.75:
 			game_container.position.y -= 2
 		game_container.position.y = clampi(game_container.position.y, board_home_pos.y - extra_height, board_home_pos.y)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
+			#print("clicked")
+			if held_card:
+				drop_held_card()
+	if event is InputEventMouseMotion:
+		#var mouse_event : InputEventMouseMotion = event 
+		if held_card:
+			held_card.move_to(get_global_mouse_position() + held_card_offset)
+		
+		#board hover
+		var mouse_pos : Vector2 = (event as InputEventMouseMotion).global_position
+		var area_pos : Vector2 = hover_area.global_position
+		var area_corner : Vector2 = area_pos + hover_area.size
+		if mouse_pos.x > area_pos.x and mouse_pos.y > area_pos.y \
+				and mouse_pos.x < area_corner.x and mouse_pos.y < area_corner.y:
+			board_hovered = true
+		else:
+			board_hovered = false
 	
 func add_deck() -> void:
 	#for attribute:CardData in deck.cards:
@@ -142,17 +165,6 @@ func add_deck() -> void:
 	#if held_card:
 		#held_card.move_to(get_global_mouse_position() + held_card_offset)
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event : InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			#print("clicked")
-			if held_card:
-				drop_held_card()
-	if event is InputEventMouseMotion:
-		#var mouse_event : InputEventMouseMotion = event 
-		if held_card:
-			held_card.move_to(get_global_mouse_position() + held_card_offset)
 		
 
 func _on_child_entered_tree(node: Node) -> void:
@@ -562,9 +574,3 @@ func get_board_cols() -> Array[Array]:
 	for col in board:
 		col.resize(max_size)
 	return board
-
-func _on_hover_area_mouse_entered() -> void:
-	board_hovered = true
-
-func _on_hover_area_mouse_exited() -> void:
-	board_hovered = false
