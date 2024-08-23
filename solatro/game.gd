@@ -231,7 +231,7 @@ func _on_game_board_changed() -> void:
 		#if col[0] is Card:
 			#example_card = example_card
 			#break
-	board_size = 300 + 45 * num_cards_in_col
+	board_size = 350 + 45 * num_cards_in_col
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	
 func can_add_card(stack : Card, to_stack : Card) -> bool:
