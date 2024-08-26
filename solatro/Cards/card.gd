@@ -92,7 +92,8 @@ func _ready() -> void:
 	else:
 		front.frame = 0
 		child_offset = Vector2(0,0)
-
+		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
+		
 var rot_delta : float
 var y_delta : float
 func _process(delta: float) -> void:
