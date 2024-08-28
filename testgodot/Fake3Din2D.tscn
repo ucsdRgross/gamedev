@@ -1,7 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://c3eneftadmgxr"]
+[gd_scene load_steps=12 format=3 uid="uid://c3eneftadmgxr"]
 
 [ext_resource type="Script" path="res://Fake3Dtransform.gd" id="1_3y2l8"]
 [ext_resource type="Texture2D" uid="uid://bs2fc5xl3avrj" path="res://icon.svg" id="2_ao3n2"]
+[ext_resource type="Shader" path="res://2DTilt.gdshader" id="2_sdv0a"]
+[ext_resource type="Shader" path="res://perspective.gdshader" id="3_wlvn2"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1vpop"]
+shader = ExtResource("2_sdv0a")
+shader_parameter/squeeze = 3.7063e-05
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ecvqq"]
+size = Vector2(125, 127)
 
 [sub_resource type="Animation" id="Animation_wysf0"]
 resource_name = "3d Rotation"
@@ -65,12 +74,30 @@ _data = {
 "RESET": SubResource("Animation_1bhh8")
 }
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_weptb"]
+shader = ExtResource("3_wlvn2")
+shader_parameter/topleft = Vector2(0.01, 0)
+shader_parameter/topright = Vector2(-0.01, 0)
+shader_parameter/bottomleft = Vector2(-1, 0)
+shader_parameter/bottomright = Vector2(1, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3fgll"]
+shader = ExtResource("2_sdv0a")
+shader_parameter/squeeze = 0.42
+
 [node name="Node2D" type="Node2D"]
 script = ExtResource("1_3y2l8")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_1vpop")
 position = Vector2(178, 133)
 texture = ExtResource("2_ao3n2")
+
+[node name="Area2D" type="Area2D" parent="Sprite2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Sprite2D/Area2D"]
+position = Vector2(0.5, 0.5)
+shape = SubResource("RectangleShape2D_ecvqq")
 
 [node name="Node3D" type="Node3D" parent="."]
 rotation_edit_mode = 2
@@ -84,3 +111,35 @@ libraries = {
 }
 autoplay = "3d Rotation"
 speed_scale = 2.079
+
+[node name="Label" type="Label" parent="."]
+visible = false
+offset_left = 282.0
+offset_top = 106.0
+offset_right = 368.0
+offset_bottom = 175.0
+text = "1.00 0.00
+0.00 1.00"
+
+[node name="Perspective" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_weptb")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -1.0
+offset_right = 1145.0
+offset_bottom = 650.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Icon" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_3fgll")
+position = Vector2(488, 129)
+texture = ExtResource("2_ao3n2")
+
+[connection signal="mouse_entered" from="Sprite2D/Area2D" to="." method="_on_area_2d_mouse_entered"]
+[connection signal="mouse_exited" from="Sprite2D/Area2D" to="." method="_on_area_2d_mouse_exited"]
