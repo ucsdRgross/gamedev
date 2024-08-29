@@ -8,13 +8,13 @@
 [node name="Card" type="Node2D"]
 scale = Vector2(3, 3)
 script = ExtResource("1_pyuft")
-child_offset = Vector2(0, 45)
+child_offset = Vector2(0, 55)
 
 [node name="Front" type="Sprite2D" parent="."]
-position = Vector2(0, -0.924146)
-rotation = 3.14158
-scale = Vector2(0.986819, -0.998849)
-skew = 0.00787592
+position = Vector2(0, -0.867273)
+rotation = -3.14159
+scale = Vector2(0.999999, -0.985651)
+skew = 0.000270844
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3

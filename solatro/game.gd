@@ -226,12 +226,15 @@ func _on_card_hover_exited(card : Card) -> void:
 func _on_game_board_changed() -> void:
 	var board_cols : Array[Array] = get_board_cols()
 	var num_cards_in_col : int = board_cols[0].size()
-	#var example_card : Card
-	#for col in board_cols:
-		#if col[0] is Card:
-			#example_card = example_card
-			#break
-	board_size = 350 + 45 * num_cards_in_col
+	var example_card : Card
+	if num_cards_in_col > 0:
+		for col in board_cols:
+			if col[0] is Card:
+				example_card = col[0]
+				break
+		board_size = 350 + example_card.child_offset.y * num_cards_in_col
+	else:
+		board_size = 350
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	
 func can_add_card(stack : Card, to_stack : Card) -> bool:
@@ -454,7 +457,7 @@ func _on_submit_pressed() -> void:
 				if not row_to_score in row_score_popups:
 					var score_popup := TextPopup.new_popup(str(result.score), \
 							Vector2(row_scores.global_position.x, \
-									row_scores.global_position.y + 45 * row_to_score),\
+									row_scores.global_position.y + cards[0].child_offset.y * row_to_score),\
 									true)
 					row_scores.add_child(score_popup)
 					row_score_popups[row_to_score] = score_popup
