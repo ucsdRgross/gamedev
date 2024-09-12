@@ -1,4 +1,4 @@
-extends Control
+extends Node3D
 class_name Map
 
 signal card_clicked(card:Card)
@@ -8,11 +8,13 @@ var containers : Array
 var index_to_card : Dictionary
 var card_to_index : Dictionary
 var tween_transition : Tween
-@onready var grid_container: GridContainer = $GridContainer
+@onready var grid_container: GridContainer = $TiltedGUI/SubViewport/Map2D/GridContainer
+@onready var preview_card: Card = $CanvasLayer/Preview/Card
+@onready var preview_label: Label = $CanvasLayer/Preview/Label
 
 func _ready() -> void:
 	#($Preview as Control).hide()
-	($Preview/Label as Label).text = ""
+	preview_label.text = ""
 	containers = grid_container.get_children()
 	var cols : int = grid_container.columns
 	var i : int = 0
@@ -74,7 +76,6 @@ func _on_card_clicked(card : Card) -> void:
 	#await tween_transition.finished
 
 func _on_card_hover_entered(card : Card) -> void:
-	var preview_card : Card = $Preview/Card
 	if not card.flipped:
 		preview_card.data = card.data
 	preview_card.flipped = card.flipped
@@ -86,5 +87,5 @@ func _on_card_hover_entered(card : Card) -> void:
 		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
 	if card.data.type:
 		description += card.data.type.name + "\n" + card.data.type.description + "\n"
-	($Preview/Label as Label).text = description
-	($Preview as Control).show()
+	preview_label.text = description
+	#($Preview as Control).show()

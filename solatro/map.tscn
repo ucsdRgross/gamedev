@@ -1,32 +1,50 @@
-[gd_scene load_steps=5 format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=12 format=3 uid="uid://oc6yiar3wsih"]
 
-[ext_resource type="Script" path="res://Map.gd" id="1_1blyn"]
+[ext_resource type="Script" path="res://map.gd" id="1_uwdp5"]
+[ext_resource type="Script" path="res://gui_3d.gd" id="1_wpjh4"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
+
+[sub_resource type="Environment" id="Environment_grdjq"]
+background_mode = 3
 
 [sub_resource type="LabelSettings" id="LabelSettings_rx70n"]
 line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
 
-[node name="Map" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("1_1blyn")
+[sub_resource type="QuadMesh" id="QuadMesh_c5ijj"]
+size = Vector2(3.556, 2)
 
-[node name="TextureRect" type="TextureRect" parent="."]
-layout_mode = 1
+[sub_resource type="ViewportTexture" id="ViewportTexture_tkjxf"]
+viewport_path = NodePath("TiltedGUI/SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_15n1f"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_texture = SubResource("ViewportTexture_tkjxf")
+texture_filter = 0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_d2lex"]
+size = Vector3(3.556, 2, 0.1)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_ciy4y"]
+viewport_path = NodePath("TiltedGUI/SubViewport")
+
+[node name="Map" type="Node3D"]
+script = ExtResource("1_uwdp5")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_grdjq")
+
+[node name="TextureRect" type="TextureRect" parent="WorldEnvironment"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -161.0
+offset_left = -171.02
 offset_top = -7.0
-offset_right = 162.0
+offset_right = 172.02
 offset_bottom = 2.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -34,7 +52,55 @@ texture = ExtResource("2_ylyoy")
 expand_mode = 3
 stretch_mode = 6
 
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025, 0, -0.875, 0.72)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Preview" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 154.0
+offset_top = 309.0
+offset_right = 154.0
+offset_bottom = 309.0
+scale = Vector2(1.5, 1.5)
+
+[node name="Card" parent="CanvasLayer/Preview" instance=ExtResource("2_dofqu")]
+position = Vector2(18.4, -57.6)
+can_move_anim = false
+clickable = false
+stack_limit = 0
+
+[node name="Label" type="Label" parent="CanvasLayer/Preview"]
+layout_mode = 0
+offset_left = -43.0
+offset_top = 22.0
+offset_right = 82.0
+offset_bottom = 227.0
+text = "Skill Text
+Skill Text"
+label_settings = SubResource("LabelSettings_rx70n")
+autowrap_mode = 3
+
+[node name="TiltedGUI" type="Node3D" parent="."]
+script = ExtResource("1_wpjh4")
+
+[node name="SubViewport" type="SubViewport" parent="TiltedGUI"]
+transparent_bg = true
+canvas_item_default_texture_filter = 0
+size = Vector2i(1152, 648)
+
+[node name="Map2D" type="Control" parent="TiltedGUI/SubViewport"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GridContainer" type="GridContainer" parent="TiltedGUI/SubViewport/Map2D"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -53,420 +119,459 @@ theme_override_constants/v_separation = 162
 columns = 7
 metadata/_edit_group_ = true
 
-[node name="Control" type="Control" parent="GridContainer"]
+[node name="Control" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control2" type="Control" parent="GridContainer"]
+[node name="Control2" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control2" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control2" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control3" type="Control" parent="GridContainer"]
+[node name="Control3" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control3" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control3" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control4" type="Control" parent="GridContainer"]
+[node name="Control4" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control4" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control4" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control5" type="Control" parent="GridContainer"]
+[node name="Control5" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control5" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control5" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control6" type="Control" parent="GridContainer"]
+[node name="Control6" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control6" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control6" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control7" type="Control" parent="GridContainer"]
+[node name="Control7" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control7" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control7" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control8" type="Control" parent="GridContainer"]
+[node name="Control8" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control8" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control8" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control9" type="Control" parent="GridContainer"]
+[node name="Control9" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control9" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control9" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control10" type="Control" parent="GridContainer"]
+[node name="Control10" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control10" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control10" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control11" type="Control" parent="GridContainer"]
+[node name="Control11" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control11" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control11" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control12" type="Control" parent="GridContainer"]
+[node name="Control12" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control12" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control12" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control13" type="Control" parent="GridContainer"]
+[node name="Control13" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control13" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control13" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control14" type="Control" parent="GridContainer"]
+[node name="Control14" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control14" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control14" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control15" type="Control" parent="GridContainer"]
+[node name="Control15" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control15" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control15" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control16" type="Control" parent="GridContainer"]
+[node name="Control16" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control16" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control16" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control17" type="Control" parent="GridContainer"]
+[node name="Control17" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control17" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control17" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control18" type="Control" parent="GridContainer"]
+[node name="Control18" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control18" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control18" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control19" type="Control" parent="GridContainer"]
+[node name="Control19" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control19" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control19" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control20" type="Control" parent="GridContainer"]
+[node name="Control20" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control20" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control20" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control21" type="Control" parent="GridContainer"]
+[node name="Control21" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control21" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control21" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control22" type="Control" parent="GridContainer"]
+[node name="Control22" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control22" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control22" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control23" type="Control" parent="GridContainer"]
+[node name="Control23" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control23" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control23" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control24" type="Control" parent="GridContainer"]
+[node name="Control24" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control24" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control24" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control25" type="Control" parent="GridContainer"]
+[node name="Control25" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control25" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control25" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control26" type="Control" parent="GridContainer"]
+[node name="Control26" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control26" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control26" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control27" type="Control" parent="GridContainer"]
+[node name="Control27" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control27" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control27" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control28" type="Control" parent="GridContainer"]
+[node name="Control28" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control28" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control28" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control29" type="Control" parent="GridContainer"]
+[node name="Control29" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control29" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control29" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control30" type="Control" parent="GridContainer"]
+[node name="Control30" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control30" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control30" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control31" type="Control" parent="GridContainer"]
+[node name="Control31" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control31" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control31" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control32" type="Control" parent="GridContainer"]
+[node name="Control32" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control32" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control32" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control33" type="Control" parent="GridContainer"]
+[node name="Control33" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control33" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control33" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control34" type="Control" parent="GridContainer"]
+[node name="Control34" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control34" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control34" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control35" type="Control" parent="GridContainer"]
+[node name="Control35" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control35" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control35" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control36" type="Control" parent="GridContainer"]
+[node name="Control36" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control36" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control36" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control37" type="Control" parent="GridContainer"]
+[node name="Control37" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control37" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control37" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control38" type="Control" parent="GridContainer"]
+[node name="Control38" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control38" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control38" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control39" type="Control" parent="GridContainer"]
+[node name="Control39" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control39" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control39" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control40" type="Control" parent="GridContainer"]
+[node name="Control40" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control40" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control40" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control41" type="Control" parent="GridContainer"]
+[node name="Control41" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control41" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control41" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control42" type="Control" parent="GridContainer"]
+[node name="Control42" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control42" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control42" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control43" type="Control" parent="GridContainer"]
+[node name="Control43" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control43" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control43" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control44" type="Control" parent="GridContainer"]
+[node name="Control44" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control44" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control44" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control45" type="Control" parent="GridContainer"]
+[node name="Control45" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control45" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control45" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control46" type="Control" parent="GridContainer"]
+[node name="Control46" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control46" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control46" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control47" type="Control" parent="GridContainer"]
+[node name="Control47" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control47" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control47" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control48" type="Control" parent="GridContainer"]
+[node name="Control48" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control48" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control48" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Control49" type="Control" parent="GridContainer"]
+[node name="Control49" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Card" parent="GridContainer/Control49" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control49" instance=ExtResource("2_dofqu")]
+child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
-[node name="Preview" type="Control" parent="."]
-layout_mode = 2
-anchors_preset = 0
-offset_left = 154.0
-offset_top = 309.0
-offset_right = 154.0
-offset_bottom = 309.0
-scale = Vector2(1.5, 1.5)
+[node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]
+mesh = SubResource("QuadMesh_c5ijj")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_15n1f")
 
-[node name="Card" parent="Preview" instance=ExtResource("2_dofqu")]
-position = Vector2(18.4, -57.6)
-can_move_anim = false
-clickable = false
-stack_limit = 0
+[node name="Area3D" type="Area3D" parent="TiltedGUI/Quad"]
 
-[node name="Label" type="Label" parent="Preview"]
-layout_mode = 0
-offset_left = -43.0
-offset_top = 22.0
-offset_right = 82.0
-offset_bottom = 227.0
-text = "Skill Text
-Skill Text"
-label_settings = SubResource("LabelSettings_rx70n")
-autowrap_mode = 3
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TiltedGUI/Quad/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+shape = SubResource("BoxShape3D_d2lex")
+
+[node name="Sprite2D" type="Sprite2D" parent="TiltedGUI"]
+visible = false
+texture = SubResource("ViewportTexture_ciy4y")
+centered = false
