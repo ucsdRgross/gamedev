@@ -7,7 +7,7 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1vpop"]
 shader = ExtResource("2_sdv0a")
-shader_parameter/squeeze = 3.7063e-05
+shader_parameter/squeeze = 0.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ecvqq"]
 size = Vector2(125, 127)

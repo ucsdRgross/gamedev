@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://duq5jfb7w6n20"]
+
+[ext_resource type="Script" path="res://custom_iterator.gd" id="1_dxrox"]
+
+[node name="Node" type="Node"]
+script = ExtResource("1_dxrox")
