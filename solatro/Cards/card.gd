@@ -20,7 +20,7 @@ var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
 		front.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
 		show_front = basis3d.z[2] > 0
-			
+#change flipped instead
 var show_front := false :
 	set(value):
 		if value != show_front:

@@ -5,3 +5,7 @@ class ExtraPoint extends CardModifier:
 		name = "Extra Point"
 		description = "Gain 1 Extra Point Per Score"
 		frame = 52
+	
+	func on_score(target:Card) -> void:
+		if target.data == data:
+			card_shake()

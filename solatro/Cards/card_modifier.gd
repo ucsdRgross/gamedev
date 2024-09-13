@@ -66,3 +66,7 @@ func is_card_on_top() -> bool:
 	
 func on_trigger() -> void:
 	pass
+
+func card_shake() -> void:
+	if data.card:
+		await game.shake_card(data.card)

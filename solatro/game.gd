@@ -465,10 +465,18 @@ func _on_submit_pressed() -> void:
 					var score_popup : TextPopup = row_score_popups[row_to_score]
 					score_popup.label.text = str(result.score + int(score_popup.label.text))
 				game_container.add_child(score_name_popup)
+
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
 				#popup.global_position = combo_pos
 				#add_child(popup)
 				await tween.finished
+				var CDI := CardDataIterator.new(self)
+				for card in result.card_combo:
+					for data in CDI:
+						for mod : CardModifier in [data.type, data.stamp, data.skill]:
+							if mod:
+								await mod.on_score(card)
+				await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
 		#score vertically
 
@@ -561,6 +569,16 @@ func _on_submit_pressed() -> void:
 #func get_board_rows() -> Array[Array]:
 	#var cols := []
 
+#func get_card_effects() -> Array[CardModifier]:
+	#var modifiers : Array[CardModifier]
+	#for card in get_board_cols():
+		#pass
+	#return modifiers
+
+func shake_card(card:Card) -> void:
+	print('shake!')
+	card.flipped = !card.flipped
+
 func get_board_cols() -> Array[Array]:
 	var board : Array[Array] = []
 	var max_size := 0
@@ -577,3 +595,36 @@ func get_board_cols() -> Array[Array]:
 	for col in board:
 		col.resize(max_size)
 	return board
+
+class CardDataIterator:
+	var card_count : int
+	var game : Game
+	var board : Array[Array]
+	var next_card_data : CardData
+	
+	func _init(game:Game) -> void:
+		self.game = game
+
+	func should_continue() -> bool:
+		board = game.get_board_cols()
+		if not card_count < board[0].size() * 5:
+			return false
+		var card : Card = board[card_count % 5][card_count / 5]
+		while not card:
+			card_count += 1
+			if not card_count < board[0].size() * 5:
+				return false
+			card = board[card_count % 5][card_count / 5]
+		next_card_data = card.data
+		return true
+
+	func _iter_init(arg:Variant) -> bool:
+		card_count = 0
+		return should_continue()
+
+	func _iter_next(arg:Variant) -> bool:
+		card_count += 1
+		return should_continue()
+
+	func _iter_get(arg:Variant) -> CardData:
+		return next_card_data
