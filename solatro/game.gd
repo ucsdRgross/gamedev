@@ -444,9 +444,9 @@ func _on_submit_pressed() -> void:
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in result.card_combo:
-						var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 						card_tween.tween_property(c.front, "position:y", 0, base_delay)
-						card_tween.parallel().tween_property(c, "floating", true, base_delay)
+						card_tween.tween_property(c, "floating", true, base_delay * .9)
 				
 				#tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
@@ -514,9 +514,9 @@ func _on_submit_pressed() -> void:
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in scored_cards:
-						var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 						card_tween.tween_property(c.front, "position:y", 0, base_delay)
-						card_tween.parallel().tween_property(c, "floating", true, base_delay)
+						card_tween.tween_property(c, "floating", true, base_delay * .9)
 				last_scored_cards = scored_cards
 				await get_tree().create_timer(base_delay).timeout
 				for popup in score_name_popups:
@@ -527,9 +527,9 @@ func _on_submit_pressed() -> void:
 		row_to_score += 1
 	
 	for c:Card in last_scored_cards:
-		var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		card_tween.tween_property(c.front, "position:y", 0, base_delay)
-		card_tween.parallel().tween_property(c, "floating", true, base_delay)
+		card_tween.tween_property(c, "floating", true, base_delay * .9)
 	for label in col_scores:
 		col_total += int(label.text)
 	for i:int in row_score_popups:
@@ -581,10 +581,10 @@ func shake_card(card:Card) -> void:
 	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
 	card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
 	#card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
-	card_tween.tween_property(card.offset, "position:y", -2, base_delay * .2).as_relative()
+	card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
 	card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
 	#card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
-	card_tween.tween_property(card.offset, "position:y", 2, base_delay * .4).as_relative()
+	card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
 	card_tween.tween_interval(base_delay * .2)
 	await card_tween.finished
 

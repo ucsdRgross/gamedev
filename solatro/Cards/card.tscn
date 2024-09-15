@@ -13,10 +13,10 @@ child_offset = Vector2(0, 55)
 [node name="Offset" type="Node2D" parent="."]
 
 [node name="Front" type="Sprite2D" parent="Offset"]
-position = Vector2(0, 0.978144)
+position = Vector2(0, 0.717937)
 rotation = 3.14158
-scale = Vector2(0.998125, -0.987551)
-skew = 0.00976849
+scale = Vector2(0.98639, -0.999272)
+skew = 0.0063622
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
