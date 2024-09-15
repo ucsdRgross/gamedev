@@ -418,9 +418,7 @@ func _on_submit_pressed() -> void:
 	var row_to_score := 0
 	var round_score : int = 0
 	#last_score = 0
-	var tween : Tween# = create_tween().set_parallel(true)#\
-			#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
-	var score_delay : float = 1.5
+	var score_delay : float = 1.0
 	var last_scored_cards : Array[Card] = []
 	var row_score_popups : Dictionary
 	while row_to_score < board_cols[0].size():
@@ -436,17 +434,21 @@ func _on_submit_pressed() -> void:
 			var result := scorer.score(cards)
 			if result:
 				print(result.score_name, "\nscore: ", result.score)
-				tween = create_tween().set_parallel(true)
+				#tween = create_tween().set_parallel(true)
+				#tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
 				for c:Card in result.card_combo:
-					if c not in last_scored_cards:
-						c.floating = false
-						tween.tween_property(c.front, "position:y", -7, score_delay)
+					var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+					c.floating = false
+					card_tween.tween_property(c.front, "position:y", -7 * 1.5, score_delay * .5)
+					card_tween.tween_property(c.front, "position:y", -7, score_delay * .5)
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in result.card_combo:
-						tween.tween_property(c.front, "position:y", 0, score_delay)
-						tween.tween_property(c, "floating", false, score_delay)
-				tween.tween_interval(score_delay)
+						var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						card_tween.tween_property(c.front, "position:y", 0, score_delay)
+						card_tween.parallel().tween_property(c, "floating", true, score_delay)
+				
+				#tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
 				var combo_pos : Vector2
 				for card in result.card_combo:
@@ -469,14 +471,14 @@ func _on_submit_pressed() -> void:
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
 				#popup.global_position = combo_pos
 				#add_child(popup)
-				await tween.finished
+				await get_tree().create_timer(score_delay).timeout
 				var CDI := CardDataIterator.new(self)
 				for card in result.card_combo:
 					for data in CDI:
 						for mod : CardModifier in [data.type, data.stamp, data.skill]:
 							if mod:
 								await mod.on_score(card)
-				await get_tree().create_timer(score_delay).timeout
+				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
 		#score vertically
 
@@ -504,38 +506,37 @@ func _on_submit_pressed() -> void:
 						game_container.add_child(name_popup)
 						col_scores[i].text = str(result.score + int(col_scores[i].text))
 			if scored_cards:
-				tween = create_tween().set_parallel(true)
 				for c:Card in scored_cards:
-					if c not in last_scored_cards:
-						c.floating = false
-						tween.tween_property(c.front, "position:y", -7, score_delay)
+					var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+					c.floating = false
+					card_tween.tween_property(c.front, "position:y", -7 * 1.5, score_delay * .5)
+					card_tween.tween_property(c.front, "position:y", -7, score_delay * .5)
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in scored_cards:
-						tween.tween_property(c.front, "position:y", 0, score_delay)
-						tween.tween_property(c, "floating", false, score_delay)
-				tween.tween_interval(score_delay)
+						var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						card_tween.tween_property(c.front, "position:y", 0, score_delay)
+						card_tween.parallel().tween_property(c, "floating", true, score_delay)
 				last_scored_cards = scored_cards
-				await tween.finished
+				await get_tree().create_timer(score_delay).timeout
 				for popup in score_name_popups:
 					popup.queue_free()
+				
 		#apply effects to scored cards
 		#board_cols = get_board_cols()
 		row_to_score += 1
 	
-	if last_scored_cards:
-		tween = create_tween().set_parallel(true)
 	for c:Card in last_scored_cards:
-		tween.tween_property(c.front, "position:y", 0, score_delay)
-		tween.tween_property(c, "floating", false, score_delay)
+		var card_tween : Tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		card_tween.tween_property(c.front, "position:y", 0, score_delay)
+		card_tween.parallel().tween_property(c, "floating", true, score_delay)
 	for label in col_scores:
 		col_total += int(label.text)
 	for i:int in row_score_popups:
 		row_total += int((row_score_popups[i] as TextPopup).label.text)
-	if tween and tween.is_running():
-		await tween.finished
+	if last_scored_cards:
 		mult_score = row_total * col_total
-		await get_tree().create_timer(1).timeout
+		await get_tree().create_timer(score_delay * 2).timeout
 		total_score += mult_score
 	
 	for label in col_scores:

@@ -128,7 +128,7 @@ func _process(delta: float) -> void:
 		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
 		basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
 		if floating:
-			front.position.y = sin(2 * num + float(Time.get_ticks_msec()) / 2000)
+			front.position.y = lerpf(front.position.y, sin(2 * num + float(Time.get_ticks_msec()) / 2000), 10 * delta)
 			
 func move_to(pos : Vector2) -> void:
 	if move_tween and move_tween.is_running():
