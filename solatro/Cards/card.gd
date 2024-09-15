@@ -69,16 +69,13 @@ var hover : bool = false
 var floating : bool = true
 var target_pos : Vector2
 
-
-#var reparenting : bool
-
-@onready var front: Sprite2D = $Front
-@onready var rank: Sprite2D  = $Front/Rank
-@onready var stamp: Sprite2D = $Front/Stamp
-@onready var suit: Sprite2D  = $Front/Suit
-@onready var art: Sprite2D = $Front/Art
-@onready var area: Control = $Front/Control
-
+@onready var offset: Node2D = $Offset
+@onready var front: Sprite2D = $Offset/Front
+@onready var rank: Sprite2D  = $Offset/Front/Rank
+@onready var stamp: Sprite2D = $Offset/Front/Stamp
+@onready var suit: Sprite2D  = $Offset/Front/Suit
+@onready var art: Sprite2D = $Offset/Front/Art
+@onready var area: Control = $Offset/Front/Control
 
 func _ready() -> void:
 	rank.hide()

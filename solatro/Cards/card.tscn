@@ -10,16 +10,18 @@ scale = Vector2(3, 3)
 script = ExtResource("1_pyuft")
 child_offset = Vector2(0, 55)
 
-[node name="Front" type="Sprite2D" parent="."]
-position = Vector2(0, 0.989016)
+[node name="Offset" type="Node2D" parent="."]
+
+[node name="Front" type="Sprite2D" parent="Offset"]
+position = Vector2(0, 0.978144)
 rotation = 3.14158
-scale = Vector2(0.993795, -0.991907)
-skew = 0.014327
+scale = Vector2(0.998125, -0.987551)
+skew = 0.00976849
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
 
-[node name="Rank" type="Sprite2D" parent="Front"]
+[node name="Rank" type="Sprite2D" parent="Offset/Front"]
 visible = false
 position = Vector2(-12, -17)
 texture = ExtResource("4_qva5r")
@@ -27,7 +29,7 @@ hframes = 14
 vframes = 5
 frame = 1
 
-[node name="Stamp" type="Sprite2D" parent="Front"]
+[node name="Stamp" type="Sprite2D" parent="Offset/Front"]
 visible = false
 position = Vector2(0, -17)
 texture = ExtResource("4_qva5r")
@@ -35,21 +37,21 @@ hframes = 14
 vframes = 5
 frame = 56
 
-[node name="Suit" type="Sprite2D" parent="Front"]
+[node name="Suit" type="Sprite2D" parent="Offset/Front"]
 visible = false
 position = Vector2(12, -17)
 texture = ExtResource("4_qva5r")
 hframes = 14
 vframes = 5
 
-[node name="Art" type="Sprite2D" parent="Front"]
+[node name="Art" type="Sprite2D" parent="Offset/Front"]
 visible = false
 position = Vector2(0, 5)
 texture = ExtResource("4_n51ss")
 hframes = 13
 vframes = 13
 
-[node name="Control" type="Control" parent="Front"]
+[node name="Control" type="Control" parent="Offset/Front"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -62,6 +64,6 @@ grow_horizontal = 2
 grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 
-[connection signal="gui_input" from="Front/Control" to="." method="_on_control_gui_input"]
-[connection signal="mouse_entered" from="Front/Control" to="." method="_on_control_mouse_entered"]
-[connection signal="mouse_exited" from="Front/Control" to="." method="_on_control_mouse_exited"]
+[connection signal="gui_input" from="Offset/Front/Control" to="." method="_on_control_gui_input"]
+[connection signal="mouse_entered" from="Offset/Front/Control" to="." method="_on_control_mouse_entered"]
+[connection signal="mouse_exited" from="Offset/Front/Control" to="." method="_on_control_mouse_exited"]

@@ -8,4 +8,4 @@ class ExtraPoint extends CardModifier:
 	
 	func on_score(target:Card) -> void:
 		if target.data == data:
-			card_shake()
+			await card_shake()
