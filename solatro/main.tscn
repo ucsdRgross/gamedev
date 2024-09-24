@@ -1,6 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://drlnkxh17heyl"]
+[gd_scene load_steps=3 format=3 uid="uid://drlnkxh17heyl"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_s8cx5"]
+[ext_resource type="AudioStream" uid="uid://cta6nayvjuata" path="res://Audio/BIGMAN  The Window.mp3" id="2_1130y"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_s8cx5")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_1130y")
+volume_db = -30.522
+autoplay = true
+bus = &"Music"

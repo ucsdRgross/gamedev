@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cta6nayvjuata"
+path="res://.godot/imported/BIGMAN  The Window.mp3-ef9b32b9822c30182d61a90a1ee4f533.mp3str"
+
+[deps]
+
+source_file="res://Audio/BIGMAN  The Window.mp3"
+dest_files=["res://.godot/imported/BIGMAN  The Window.mp3-ef9b32b9822c30182d61a90a1ee4f533.mp3str"]
+
+[params]
+
+loop=true
+loop_offset=0.0
+bpm=0.0
+beat_count=0
+bar_beats=4

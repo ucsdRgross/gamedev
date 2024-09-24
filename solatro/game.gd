@@ -91,6 +91,8 @@ var effects : Array[CardModifier] = []
 @onready var row_scores: Control = %RowScores
 @onready var game_container: Control = $GameContainer
 @onready var hover_area: Control = $HoverArea
+@onready var audio_card_placing: AudioStreamPlayer = $AudioCardPlacing
+@onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -197,6 +199,7 @@ func _on_card_clicked(card : Card) -> void:
 			if held_card_offset.y < 60:
 				held_card_offset.y = 60
 			held_card.move_to(get_global_mouse_position() + held_card_offset)
+			audio_card_placing.play(.15)
 
 func _on_card_hover_entered(card : Card) -> void:
 	card_hovered = true
@@ -236,6 +239,7 @@ func _on_game_board_changed() -> void:
 		board_size = 350 + example_card.child_offset.y * num_cards_in_col
 	else:
 		board_size = 350
+	audio_card_placing.play(.15)
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	
 func can_add_card(stack : Card, to_stack : Card) -> bool:
@@ -582,6 +586,7 @@ func shake_card(card:Card) -> void:
 	card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
 	#card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
 	card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
+	card_tween.tween_callback(audio_card_shake.play)
 	card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
 	#card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
 	card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()

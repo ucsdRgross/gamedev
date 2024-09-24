@@ -1,10 +1,14 @@
-[gd_scene load_steps=9 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=14 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
 [ext_resource type="Script" path="res://control_with_child_size.gd" id="4_3ijoq"]
+[ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
+[ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
+[ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
+[ext_resource type="AudioStream" uid="uid://b0wriktdhokh4" path="res://Audio/chips-handle-6.ogg" id="9_d2lcc"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_et201"]
 font_size = 20
@@ -20,6 +24,12 @@ font_size = 41
 line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_vwchr"]
+streams_count = 3
+stream_0/stream = ExtResource("6_uknij")
+stream_1/stream = ExtResource("7_6uk7u")
+stream_2/stream = ExtResource("8_67uf7")
 
 [node name="Game" type="Control"]
 layout_mode = 3
@@ -486,6 +496,13 @@ offset_bottom = 90.0
 can_move_anim = false
 clickable = false
 stack_limit = 0
+
+[node name="AudioCardPlacing" type="AudioStreamPlayer" parent="."]
+stream = SubResource("AudioStreamRandomizer_vwchr")
+bus = &"SFX"
+
+[node name="AudioCardShake" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_d2lcc")
 
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
