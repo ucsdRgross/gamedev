@@ -8,7 +8,6 @@ signal hover_exited(card:Card)
 signal card_added
 
 @export var data : CardData
-@export var child_offset : Vector2
 @export var is_zone := false
 @export var can_move_anim := true
 @export var clickable := true
@@ -56,6 +55,7 @@ func update_visual() -> void:
 		art.hide()
 
 static var num_cards : int = 0
+static var child_offset : Vector2 = Vector2(0, 55)
 enum {IN_PLAY, STATIC}
 var state := IN_PLAY
 var num : int = 0
@@ -88,7 +88,7 @@ func _ready() -> void:
 		num = num_cards
 	else:
 		front.frame = 0
-		child_offset = Vector2(0,0)
+		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 		
 var rot_delta : float
@@ -100,7 +100,9 @@ func _process(delta: float) -> void:
 			if held:
 				target = target_pos
 			elif bot_card:
-				target = bot_card.global_position + bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
+				target = bot_card.global_position
+				if not bot_card.is_zone:
+					target += bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
 				y_delta += bot_card.y_delta * 0.5
 				
 			target.y -= y_delta

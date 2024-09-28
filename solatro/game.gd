@@ -83,6 +83,7 @@ var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
 											Scoring.HighCard.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 var effects : Array[CardModifier] = []
+var row_score_popups : Dictionary
 
 @onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
 @onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
@@ -230,13 +231,8 @@ func _on_card_hover_exited(card : Card) -> void:
 func _on_game_board_changed() -> void:
 	var board_cols : Array[Array] = get_board_cols()
 	var num_cards_in_col : int = board_cols[0].size()
-	var example_card : Card
 	if num_cards_in_col > 0:
-		for col in board_cols:
-			if col[0] is Card:
-				example_card = col[0]
-				break
-		board_size = 350 + example_card.child_offset.y * num_cards_in_col
+		board_size = 350 + Card.child_offset.y * num_cards_in_col
 	else:
 		board_size = 350
 	audio_card_placing.play(.15)
@@ -424,7 +420,7 @@ func _on_submit_pressed() -> void:
 	var round_score : int = 0
 	#last_score = 0
 	var last_scored_cards : Array[Card] = []
-	var row_score_popups : Dictionary
+	
 	while row_to_score < board_cols[0].size():
 		var row_cards : Array[Card]
 		for i in 5:
@@ -459,19 +455,9 @@ func _on_submit_pressed() -> void:
 					combo_pos += card.global_position
 				combo_pos /= result.card_combo.size()
 				var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
-				
-				if not row_to_score in row_score_popups:
-					var score_popup := TextPopup.new_popup(str(result.score), \
-							Vector2(row_scores.global_position.x, \
-									row_scores.global_position.y + cards[0].child_offset.y * row_to_score),\
-									true)
-					row_scores.add_child(score_popup)
-					row_score_popups[row_to_score] = score_popup
-				else:
-					var score_popup : TextPopup = row_score_popups[row_to_score]
-					score_popup.label.text = str(result.score + int(score_popup.label.text))
 				game_container.add_child(score_name_popup)
-
+				
+				row_add_score(row_to_score, result.score)
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
 				#popup.global_position = combo_pos
 				#add_child(popup)
@@ -508,7 +494,8 @@ func _on_submit_pressed() -> void:
 						var name_popup := TextPopup.new_popup(result.score_name, row_cards[i].global_position)
 						score_name_popups.append(name_popup)
 						game_container.add_child(name_popup)
-						col_scores[i].text = str(result.score + int(col_scores[i].text))
+						col_add_score(i, result.score)
+						
 			if scored_cards:
 				for c:Card in scored_cards:
 					var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -547,6 +534,7 @@ func _on_submit_pressed() -> void:
 		label.text = ""
 	for i:int in row_score_popups:
 		(row_score_popups[i] as TextPopup).queue_free()
+	row_score_popups.clear()
 		
 	col_total = 0
 	row_total = 0
@@ -571,6 +559,21 @@ func _on_submit_pressed() -> void:
 	
 	processing = false
 
+func row_add_score(row:int, score:int) -> void:
+	if not row in row_score_popups:
+		var score_popup := TextPopup.new_popup(str(score), \
+				Vector2(row_scores.global_position.x, \
+						row_scores.global_position.y + Card.child_offset.y * row),\
+						true)
+		row_scores.add_child(score_popup)
+		row_score_popups[row] = score_popup
+	else:
+		var score_popup : TextPopup = row_score_popups[row]
+		score_popup.label.text = str(score + int(score_popup.label.text))
+
+func col_add_score(col:int, score:int) -> void:
+	col_scores[col].text = str(score + int(col_scores[col].text))
+
 #func get_board_rows() -> Array[Array]:
 	#var cols := []
 
@@ -580,12 +583,13 @@ func _on_submit_pressed() -> void:
 		#pass
 	#return modifiers
 
-func shake_card(card:Card) -> void:
+func shake_card(card:Card, card_effect:Callable) -> void:
 	print('shake!')
 	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
 	card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
 	#card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
 	card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
+	card_effect.call()
 	card_tween.tween_callback(audio_card_shake.play)
 	card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
 	#card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
@@ -609,6 +613,14 @@ func get_board_cols() -> Array[Array]:
 	for col in board:
 		col.resize(max_size)
 	return board
+
+func get_card_grid_pos(card:Card) -> Vector2:
+	var board_cols := get_board_cols()
+	for c:int in board_cols.size():
+		for r:int in board_cols[c].size():
+			if board_cols[c][r] == card:
+				return Vector2(r, c)
+	return Vector2(-1,-1)
 
 class CardDataIterator:
 	var card_count : int

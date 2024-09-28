@@ -95,7 +95,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -107,7 +106,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -119,7 +117,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -131,7 +128,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -143,7 +139,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -200,7 +195,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -210,7 +204,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -220,7 +213,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -230,7 +222,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -240,7 +231,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer"]
@@ -256,7 +246,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-child_offset = Vector2(0, 0)
 is_zone = true
 stack_limit = 1
 
@@ -283,7 +272,6 @@ text = "Submit
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(733, 276)
-child_offset = Vector2(0, 0)
 is_zone = true
 
 [node name="Next" type="Button" parent="."]
