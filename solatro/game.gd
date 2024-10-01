@@ -82,7 +82,7 @@ var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
 											Scoring.Pair.new(),\
 											Scoring.HighCard.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-var effects : Array[CardModifier] = []
+#var effects : Array[CardModifier] = []
 var row_score_popups : Dictionary
 
 @onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
@@ -105,9 +105,9 @@ func _ready() -> void:
 	board_home_pos = game_container.position
 	goal = goal
 	add_deck()
-	for effect in effects:
-		if effect:
-			effect.on_game_start()
+	#for effect in effects:
+		#if effect:
+			#effect.on_game_start()
 
 func _process(delta: float) -> void:
 	if board_hovered or card_hovered or held_card:
@@ -149,14 +149,25 @@ func add_deck() -> void:
 		#card.data = attribute
 		#add_child(card)
 	for card_data : CardData in deck.card_datas:
-		effects.append(card_data.skill)
-		effects.append(card_data.type)
-		effects.append(card_data.stamp)
-	for effect in effects:
-		if effect:
-			effect.with_game(self)
+		add_data(card_data)
+		
+	#for effect in effects:
+		#if effect:
+			#effect.with_game(self)
 	draw_deck = deck.card_datas.duplicate(true)
 	draw_deck.shuffle()
+
+func add_data(data:CardData) -> void:
+	data.skill.with_game(self).mod_triggered.connect(on_mod_triggered)
+	data.type.with_game(self).mod_triggered.connect(on_mod_triggered)
+	data.stamp.with_game(self).mod_triggered.connect(on_mod_triggered)
+
+func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
+	var CDI := CardDataIterator.new(self)
+	for data in CDI:
+		for mod : CardModifier in [data.type, data.stamp, data.skill]:
+			if mod:
+				await mod.on_trigger(triggered_data, triggered_mod)
 
 #func add_card(card_data:CardData) -> void:
 	#effects.append(card_data.skill)
@@ -368,9 +379,9 @@ func _on_next_pressed() -> void:
 		#return
 	
 	#round starts
-	for effect:CardModifier in effects:
-		if effect:
-			effect.on_round_start()
+	#for effect:CardModifier in effects:
+		#if effect:
+			#effect.on_round_start()
 	
 	#var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
 	#var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
