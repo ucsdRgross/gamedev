@@ -158,9 +158,12 @@ func add_deck() -> void:
 	draw_deck.shuffle()
 
 func add_data(data:CardData) -> void:
-	data.skill.with_game(self).mod_triggered.connect(on_mod_triggered)
-	data.type.with_game(self).mod_triggered.connect(on_mod_triggered)
-	data.stamp.with_game(self).mod_triggered.connect(on_mod_triggered)
+	if data.skill:
+		data.skill.with_game(self)
+	if data.type:
+		data.type.with_game(self)
+	if data.stamp:
+		data.stamp.with_game(self)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	var CDI := CardDataIterator.new(self)
@@ -479,6 +482,10 @@ func _on_submit_pressed() -> void:
 						for mod : CardModifier in [data.type, data.stamp, data.skill]:
 							if mod:
 								await mod.on_score(card)
+				for data in CDI:
+					for mod : CardModifier in [data.type, data.stamp, data.skill]:
+						if mod:
+							await mod.after_score()
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
 		#score vertically

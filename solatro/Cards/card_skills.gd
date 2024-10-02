@@ -10,7 +10,7 @@ class ExtraPoint extends CardModifier:
 		if target.data == self.data:
 			var grid_pos := game.get_card_grid_pos(target)
 			await card_shake(add_points.bind(grid_pos.x, grid_pos.y))
-			await mod_triggered.emit(self.data, on_score.bind(target))
+			await game.on_mod_triggered(self.data, on_score.bind(target))
 	
 	func add_points(row:int, col:int) -> void:
 		game.row_add_score(row, 1)
@@ -22,3 +22,13 @@ class EchoingTrigger extends CardModifier:
 		name = "Echoing Trigger"
 		description = "ALL triggers repeat once"
 		frame = 53
+	
+	var triggered : Array[CardData]
+	func on_trigger(data:CardData, mod:Callable) -> void:
+		if data not in triggered and data.skill:
+			triggered.append(data)
+			await mod.call()
+			await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
+			
+	func after_score() -> void:
+		triggered.clear()

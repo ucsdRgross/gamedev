@@ -1,8 +1,6 @@
 class_name CardModifier
 #extends Resource
 
-signal mod_triggered(card_data:CardData, mod:Callable)
-
 #class Skill:
 var name : String
 var description : String
@@ -44,6 +42,8 @@ func score_rule() -> void:
 	pass
 func on_score(target:Card) -> void:
 	pass
+func after_score() -> void:
+	pass
 func on_game_start() -> void:
 	pass
 func on_game_win() -> void:
@@ -63,11 +63,15 @@ func on_draw(target:Card) -> void:
 func on_deck_shuffle() -> void:
 	pass
 	
-func is_card_on_top() -> bool:
-	return true
-	
 func on_trigger(data:CardData, mod:Callable) -> void:
-	pass
+	pass	
+	
+func is_active() -> bool:
+	if data.card and not data.card.top_card:
+		return true
+	return false
+	
+
 
 func card_shake(card_effect:Callable) -> void:
 	if data.card:
