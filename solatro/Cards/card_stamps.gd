@@ -17,7 +17,7 @@ class DoubleTrigger extends CardModifier:
 		if triggers < 1 and data == self.data and self.data.skill:
 			triggers += 1
 			await mod.call()
-			await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
+			#await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
 			
 	func after_score() -> void:
 		triggers = 0

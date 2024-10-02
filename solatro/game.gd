@@ -602,15 +602,33 @@ func col_add_score(col:int, score:int) -> void:
 	#return modifiers
 
 func shake_card(card:Card, card_effect:Callable) -> void:
-	print('shake!')
+	#print('shake!')
+	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
+	#card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
+	##card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
+	#card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
+	#card_tween.tween_callback(card_effect)
+	##card_effect.call()
+	#card_tween.tween_callback(audio_card_shake.play)
+	#card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
+	##card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
+	#card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
+	#card_tween.tween_interval(base_delay * .2)
+	#await card_tween.finished
+	await card_raise(card)
+	await card_effect.call()
+	await card_lower(card)
+
+func card_raise(card:Card) -> void:
 	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
 	card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
-	#card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
 	card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
-	card_effect.call()
-	card_tween.tween_callback(audio_card_shake.play)
-	card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
-	#card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
+	audio_card_shake.play()
+	await card_tween.finished
+
+func card_lower(card:Card) -> void:
+	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
+	card_tween.tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
 	card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
 	card_tween.tween_interval(base_delay * .2)
 	await card_tween.finished

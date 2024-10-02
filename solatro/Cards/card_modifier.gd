@@ -76,3 +76,11 @@ func is_active() -> bool:
 func card_shake(card_effect:Callable) -> void:
 	if data.card:
 		await game.shake_card(data.card, card_effect)
+		
+func card_raise() -> void:
+	if data.card:
+		await game.card_raise(data.card)
+
+func card_lower() -> void:
+	if data.card:
+		await game.card_lower(data.card)

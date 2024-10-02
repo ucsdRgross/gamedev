@@ -27,8 +27,10 @@ class EchoingTrigger extends CardModifier:
 	func on_trigger(data:CardData, mod:Callable) -> void:
 		if data not in triggered and data.skill:
 			triggered.append(data)
+			card_raise()
 			await mod.call()
-			await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
+			card_lower()	
+			#await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
 			
 	func after_score() -> void:
 		triggered.clear()
