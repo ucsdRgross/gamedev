@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://drlnkxh17heyl"]
+[gd_scene load_steps=5 format=3 uid="uid://drlnkxh17heyl"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_s8cx5"]
 [ext_resource type="AudioStream" uid="uid://cta6nayvjuata" path="res://Audio/BIGMAN  The Window.mp3" id="2_1130y"]
+[ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="3_ftvb4"]
+
+[sub_resource type="Environment" id="Environment_djwav"]
+background_mode = 3
 
 [node name="Main" type="Node"]
 script = ExtResource("1_s8cx5")
@@ -11,3 +15,20 @@ stream = ExtResource("2_1130y")
 volume_db = -30.522
 autoplay = true
 bus = &"Music"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_djwav")
+
+[node name="TextureRect" type="TextureRect" parent="WorldEnvironment"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -171.02
+offset_top = -7.0
+offset_right = 172.02
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_ftvb4")
+expand_mode = 3
+stretch_mode = 6

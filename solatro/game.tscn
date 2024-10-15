@@ -41,7 +41,8 @@ grow_vertical = 2
 script = ExtResource("1_uqrrr")
 deck = ExtResource("2_grgi0")
 
-[node name="TextureRect" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
