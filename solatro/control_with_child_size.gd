@@ -6,7 +6,7 @@ var card : Card
 func _ready() -> void:
 	child_order_changed.connect(_on_child_order_changed)
 	_on_child_order_changed()
-	update_minimum_size()
+	#update_minimum_size()
 
 func _get_minimum_size() -> Vector2:
 	if card:
