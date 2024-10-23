@@ -13,6 +13,15 @@ signal card_added
 @export var clickable := true
 @export var stack_limit : int = -1
 @export var flipped := true
+@export var floating : bool = true:
+	set(value):
+		floating = value
+		if not floating:
+			if not is_node_ready():
+				await ready
+			basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if flipped else 1)))
+			front.position.y = 0
+
 var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
 		basis3d = value
@@ -66,7 +75,6 @@ var move_tween : Tween
 var tilt_tween : Tween
 var held : bool = false
 var hover : bool = false
-var floating : bool = true
 var target_pos : Vector2
 
 @onready var offset: Node2D = $Offset
@@ -116,18 +124,19 @@ func _process(delta: float) -> void:
 			var clamp_degree : float = sqrt(abs(rot_delta) as float) * 5
 			rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
 			rotation_degrees = rot_delta
-		
-		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
-		var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
-		
-		if hover:
-			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
-			x += mouse_pos.x/1.5
-			y += mouse_pos.y/1.5
-		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
-		basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
+
 		if floating:
+			var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
+			var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
+			
+			if hover:
+				var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
+				x += mouse_pos.x/1.5
+				y += mouse_pos.y/1.5
+			var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
+			basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
 			front.position.y = lerpf(front.position.y, sin(2 * num + float(Time.get_ticks_msec()) / 2000), 10 * delta)
+			
 			
 func move_to(pos : Vector2) -> void:
 	if move_tween and move_tween.is_running():
