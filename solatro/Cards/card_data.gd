@@ -1,13 +1,13 @@
-extends Resource
 class_name CardData
+extends Resource
 
 signal data_changed
 
-@export_enum("Clubs", "Spades", "Diamonds", "Hearts") var suit: int = 0:
+@export var suit: int = 1:
 	set(value):
 		suit = value
 		data_changed.emit()
-@export var rank: int = 0:
+@export var rank: int = 1:
 	set(value):
 		rank = value
 		data_changed.emit()
@@ -34,13 +34,35 @@ func with_rank(rank:int) -> CardData:
 	return self
 
 func with_skill(skill:CardModifier) -> CardData:
-	self.skill = skill.with_data(self)
+	if skill:
+		self.skill = skill.with_data(self)
+	else:
+		self.skill = null
 	return self
 
 func with_type(type:CardModifier) -> CardData:
-	self.type = type.with_data(self)
+	if type:
+		self.type = type.with_data(self)
+	else:
+		self.type = null
 	return self
 
 func with_stamp(stamp:CardModifier) -> CardData:
-	self.stamp = stamp.with_data(self)
+	if stamp:
+		self.stamp = stamp.with_data(self)
+	else:
+		self.stamp = null
 	return self
+	
+func clone(deep:bool = false) -> CardData:
+	var data := CardData.new()
+	data.suit = self.suit
+	data.rank = self.rank
+	if self.skill:
+		data.with_skill(self.skill.duplicate(deep) as CardModifier)
+	if self.type:
+		data.with_type(self.type.duplicate(deep) as CardModifier)
+	if self.stamp:
+		data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
+	#card
+	return data

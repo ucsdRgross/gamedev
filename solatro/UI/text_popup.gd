@@ -1,7 +1,7 @@
 extends Node2D
 class_name TextPopup
 
-const TEXT_POPUP = preload("res://text_popup.tscn")
+const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @onready var label : Label = $Label
 

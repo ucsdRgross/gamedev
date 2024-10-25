@@ -1,11 +1,14 @@
 class_name CardModifier
-#extends Resource
+extends Resource
 
+enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 #class Skill:
 var name : String
 var description : String
 var frame : int
 var data : CardData
+var rarity : Rarity
+var tags : Dictionary
 var game : Game
 
 func with_data(data:CardData) -> CardModifier:
@@ -70,7 +73,6 @@ func is_active() -> bool:
 	if data.card and not data.card.top_card:
 		return true
 	return false
-	
 
 
 func card_shake(card_effect:Callable) -> void:

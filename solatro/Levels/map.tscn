@@ -1,7 +1,7 @@
 [gd_scene load_steps=12 format=3 uid="uid://oc6yiar3wsih"]
 
-[ext_resource type="Script" path="res://map.gd" id="1_uwdp5"]
-[ext_resource type="Script" path="res://gui_3d.gd" id="1_wpjh4"]
+[ext_resource type="Script" path="res://Levels/map.gd" id="1_uwdp5"]
+[ext_resource type="Script" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
 

@@ -57,6 +57,8 @@ func update_visual() -> void:
 		suit.show()
 		art.show()
 	else:
+		if not is_node_ready():
+			await ready
 		front.frame = 3
 		rank.hide()
 		stamp.hide()
@@ -134,7 +136,7 @@ func _process(delta: float) -> void:
 				x += mouse_pos.x/1.5
 				y += mouse_pos.y/1.5
 			var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if flipped else 1))
-			basis3d = basis3d.slerp(Basis.looking_at(drift), 10 * delta)
+			basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
 			front.position.y = lerpf(front.position.y, sin(2 * num + float(Time.get_ticks_msec()) / 2000), 10 * delta)
 			
 			
@@ -222,8 +224,8 @@ func get_stack_size() -> int:
 func add_data(data:CardData) -> void:
 	self.data = data
 	data.card = self
-	data.connect('data_changed', update_visual)
-
+	data.data_changed.connect(update_visual)
+	
 #func _exit_tree() -> void:
 	#data.card = null
 

@@ -4,7 +4,7 @@ class_name Game
 signal game_ended
 
 const CARD = preload("res://Cards/card.tscn")
-const TEXT_POPUP = preload("res://text_popup.tscn")
+const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
 var held_card : Card = null
@@ -222,7 +222,7 @@ func _on_card_hover_entered(card : Card) -> void:
 		return
 	var preview_card : Card = $Preview/Card
 	if not card.flipped:
-		preview_card.data = card.data
+		preview_card.add_data(card.data)
 	preview_card.update_visual()
 	preview_card.flipped = card.flipped
 	var description : String

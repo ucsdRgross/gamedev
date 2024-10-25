@@ -1,10 +1,10 @@
 [gd_scene load_steps=14 format=3 uid="uid://bjgp86y4k3875"]
 
-[ext_resource type="Script" path="res://game.gd" id="1_uqrrr"]
+[ext_resource type="Script" path="res://Levels/game.gd" id="1_uqrrr"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
-[ext_resource type="Script" path="res://control_with_child_size.gd" id="4_3ijoq"]
+[ext_resource type="Script" path="res://UI/control_with_child_size.gd" id="4_3ijoq"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]

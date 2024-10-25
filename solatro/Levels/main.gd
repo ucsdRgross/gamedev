@@ -1,7 +1,7 @@
 extends Node
 
-var scene_map := preload("res://map.tscn").instantiate()
-var scene_game := preload("res://game.tscn")#.instantiate()
+var scene_map := preload("res://Levels/map.tscn").instantiate()
+var scene_game := preload("res://Levels/game.tscn")#.instantiate()
 var current_scene : Node = null
 
 func _ready() -> void:

@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://c08vq38ntcvyj"]
 
-[ext_resource type="Script" path="res://deck_builder.gd" id="1_q7hmp"]
+[ext_resource type="Script" path="res://UI/deck_builder.gd" id="1_q7hmp"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_y2cql"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_u2vgp"]
@@ -24,7 +24,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-split_offset = 140
+split_offset = 150
+dragger_visibility = 1
 
 [node name="Control" type="Control" parent="HSplitContainer"]
 layout_mode = 2
@@ -34,9 +35,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 3.0
 offset_top = 121.0
-offset_right = 3.0
 offset_bottom = -469.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -45,52 +44,82 @@ text = "Add Card
 
 [node name="RankOption" type="OptionButton" parent="HSplitContainer/Control"]
 layout_mode = 0
-offset_right = 51.0
+offset_right = 73.0
 offset_bottom = 37.0
+text_overrun_behavior = 1
 selected = 0
-item_count = 4
-popup/item_0/text = "K"
-popup/item_1/text = "Q"
-popup/item_1/id = 1
-popup/item_2/text = "J"
-popup/item_2/id = 2
-popup/item_3/text = "10"
-popup/item_3/id = 3
+item_count = 14
+popup/item_0/text = "Random"
+popup/item_1/text = "K"
+popup/item_1/id = 13
+popup/item_2/text = "Q"
+popup/item_2/id = 12
+popup/item_3/text = "J"
+popup/item_3/id = 11
+popup/item_4/text = "10"
+popup/item_4/id = 10
+popup/item_5/text = "9"
+popup/item_5/id = 9
+popup/item_6/text = "8"
+popup/item_6/id = 8
+popup/item_7/text = "7"
+popup/item_7/id = 7
+popup/item_8/text = "6"
+popup/item_8/id = 6
+popup/item_9/text = "5"
+popup/item_9/id = 5
+popup/item_10/text = "4"
+popup/item_10/id = 4
+popup/item_11/text = "3"
+popup/item_11/id = 3
+popup/item_12/text = "2"
+popup/item_12/id = 2
+popup/item_13/text = "1"
+popup/item_13/id = 1
 
 [node name="SuitOption" type="OptionButton" parent="HSplitContainer/Control"]
 layout_mode = 0
-offset_left = 85.0
-offset_right = 136.0
+offset_left = 74.0
+offset_right = 146.0
 offset_bottom = 37.0
+text_overrun_behavior = 1
 selected = 0
-item_count = 4
-popup/item_0/text = "1"
-popup/item_1/text = "2"
+item_count = 5
+popup/item_0/text = "Random"
+popup/item_1/text = "1"
 popup/item_1/id = 1
-popup/item_2/text = "3"
+popup/item_2/text = "2"
 popup/item_2/id = 2
-popup/item_3/text = "4"
+popup/item_3/text = "3"
 popup/item_3/id = 3
+popup/item_4/text = "4"
+popup/item_4/id = 4
 
 [node name="TypeOption" type="OptionButton" parent="HSplitContainer/Control"]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 40.0
-offset_right = 136.0
-offset_bottom = 69.0
+offset_right = 145.0
+offset_bottom = 71.0
+text_overrun_behavior = 1
 selected = 0
-item_count = 1
+item_count = 2
 popup/item_0/text = "Paper"
+popup/item_1/text = "Rand"
+popup/item_1/id = 1
 
 [node name="SkillOption" type="OptionButton" parent="HSplitContainer/Control"]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 74.0
-offset_right = 137.0
-offset_bottom = 102.0
+offset_right = 143.0
+offset_bottom = 105.0
+text_overrun_behavior = 1
 selected = 0
-item_count = 1
+item_count = 2
 popup/item_0/text = "None"
+popup/item_1/text = "Random"
+popup/item_1/id = 1
 
 [node name="Preview" type="Control" parent="HSplitContainer/Control"]
 layout_mode = 3
@@ -104,6 +133,7 @@ offset_bottom = 265.0
 can_move_anim = false
 clickable = false
 stack_limit = 0
+flipped = false
 
 [node name="Label" type="Label" parent="HSplitContainer/Control/Preview"]
 layout_mode = 0
@@ -116,6 +146,10 @@ Skill Text"
 label_settings = SubResource("LabelSettings_u2vgp")
 autowrap_mode = 3
 
+[node name="RandomizerTimer" type="Timer" parent="HSplitContainer/Control"]
+wait_time = 0.2
+one_shot = true
+
 [node name="ScrollContainer" type="ScrollContainer" parent="HSplitContainer"]
 layout_mode = 2
 
@@ -126,3 +160,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [connection signal="pressed" from="HSplitContainer/Control/AddCard" to="." method="_on_add_card_pressed"]
+[connection signal="item_selected" from="HSplitContainer/Control/RankOption" to="." method="_on_rank_option_item_selected"]
+[connection signal="item_selected" from="HSplitContainer/Control/SuitOption" to="." method="_on_suit_option_item_selected"]
+[connection signal="item_selected" from="HSplitContainer/Control/SkillOption" to="." method="_on_skill_option_item_selected"]
+[connection signal="timeout" from="HSplitContainer/Control/RandomizerTimer" to="." method="_on_randomizer_timer_timeout"]
