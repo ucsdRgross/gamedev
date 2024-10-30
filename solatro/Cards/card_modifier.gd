@@ -3,12 +3,12 @@ extends Resource
 
 enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 #class Skill:
-var name : String
-var description : String
-var frame : int
+@export var name : String
+@export var description : String
+@export var frame : int
+@export var rarity : Rarity
+@export var tags : Dictionary
 var data : CardData
-var rarity : Rarity
-var tags : Dictionary
 var game : Game
 
 func with_data(data:CardData) -> CardModifier:

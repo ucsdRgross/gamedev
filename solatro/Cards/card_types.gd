@@ -1,4 +1,5 @@
 class_name CardType
+extends Resource
 
 class Heavy extends CardModifier:
 	func _init() -> void:

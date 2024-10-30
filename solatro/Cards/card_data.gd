@@ -11,15 +11,15 @@ signal data_changed
 	set(value):
 		rank = value
 		data_changed.emit()
-var skill: CardModifier:
+@export var skill: CardModifier:
 	set(value):
 		skill = value
 		data_changed.emit()
-var type: CardModifier:
+@export var type: CardModifier:
 	set(value):
 		type = value
 		data_changed.emit()
-var stamp: CardModifier:
+@export var stamp: CardModifier:
 	set(value):
 		stamp = value
 		data_changed.emit()

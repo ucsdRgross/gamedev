@@ -1,4 +1,5 @@
 class_name CardSkill
+extends Resource
 
 class ExtraPoint extends CardModifier:
 	func _init() -> void:

@@ -1,4 +1,5 @@
 class_name CardStamp
+extends Resource
 
 class Revealing extends CardModifier:
 	func _init() -> void:

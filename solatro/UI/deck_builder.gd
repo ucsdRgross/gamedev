@@ -3,7 +3,6 @@ extends Control
 const CARD = preload("res://Cards/card.tscn")
 const CARD_CONTROL = preload("res://UI/card_control.tscn")
 
-var deck: Array[CardData]
 @onready var preview_card: Card = $HSplitContainer/Control/Preview/Card
 @onready var preview_label: Label = $HSplitContainer/Control/Preview/Label
 @onready var flow_container: FlowContainer = %FlowContainer
@@ -32,17 +31,18 @@ func add_mods() -> void:
 		skill_option.add_item(n)
 
 func _on_add_card_pressed() -> void:
-	var card : Card = CARD.instantiate()
-	card.add_data(preview_card.data.clone(true))
-	print(preview_card.data.skill)
-	print(card.data.skill)
+	var data := preview_card.data.clone(true)
 	if rank_option.get_selected_id() == 0:
-		card.data.with_rank(randi() % 13 + 1)
+		data.with_rank(randi() % 13 + 1)
 	if suit_option.get_selected_id() == 0:
-		card.data.with_suit(randi() % 4 + 1)
+		data.with_suit(randi() % 4 + 1)
 	if skill_option.get_selected_id() == 1:
 		preview_card.data.with_skill(skills.pick_random() as CardModifier)
-					
+	add_card(data)
+
+func add_card(data:CardData) -> void:
+	var card : Card = CARD.instantiate()
+	card.add_data(data)			
 	card.can_move_anim = false
 	card.flipped = false
 	var control : Control = CARD_CONTROL.instantiate()
@@ -79,3 +79,22 @@ func _on_randomizer_timer_timeout() -> void:
 	if skill_option.get_selected_id() == 1:
 		preview_card.data.with_skill(skills.pick_random() as CardModifier)
 		randomizer_timer.start()
+
+
+func _on_save_button_pressed() -> void:
+	var profile : PlayerSave = PlayerSave.new()
+	for card_control : Control in flow_container.get_children():
+		var data := (card_control.get_child(0) as Card).data
+		profile.write_card_data(data)
+	assert(ResourceSaver.save(profile, "user://soltaro_save.tres", ResourceSaver.FLAG_BUNDLE_RESOURCES) == OK)
+	print(ProjectSettings.globalize_path("user://soltaro_save.tres"))
+
+func _on_load_button_pressed() -> void:
+	for child in flow_container.get_children():
+		child.queue_free()
+	if ResourceLoader.exists("user://soltaro_save.tres"):
+		#@warning_ignore("untyped_declaration")
+		var profile : PlayerSave = ResourceLoader.load("user://soltaro_save.tres", "PlayerSave")
+		print(profile)
+		for data : CardData in (profile as PlayerSave).read_card_data():
+			add_card(data)
