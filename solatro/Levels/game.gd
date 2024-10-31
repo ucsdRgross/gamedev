@@ -222,7 +222,8 @@ func _on_card_hover_entered(card : Card) -> void:
 		return
 	var preview_card : Card = $Preview/Card
 	if not card.flipped:
-		preview_card.add_data(card.data)
+		#pass data by reference and doesn't update data to know about this card
+		preview_card.data = card.data
 	preview_card.update_visual()
 	preview_card.flipped = card.flipped
 	var description : String

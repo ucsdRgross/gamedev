@@ -1,6 +1,6 @@
 [gd_scene load_steps=14 format=3 uid="uid://bjgp86y4k3875"]
 
-[ext_resource type="Script" path="res://Levels/game.gd" id="1_uqrrr"]
+[ext_resource type="Script" path="res://Levels/game.gd" id="1_gj2ix"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
@@ -38,7 +38,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_uqrrr")
+script = ExtResource("1_gj2ix")
 deck = ExtResource("2_grgi0")
 
 [node name="Background" type="TextureRect" parent="."]

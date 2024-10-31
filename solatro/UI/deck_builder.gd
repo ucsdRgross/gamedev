@@ -42,7 +42,7 @@ func _on_add_card_pressed() -> void:
 
 func add_card(data:CardData) -> void:
 	var card : Card = CARD.instantiate()
-	card.add_data(data)			
+	card.add_data(data)
 	card.can_move_anim = false
 	card.flipped = false
 	var control : Control = CARD_CONTROL.instantiate()
@@ -86,7 +86,7 @@ func _on_save_button_pressed() -> void:
 	for card_control : Control in flow_container.get_children():
 		var data := (card_control.get_child(0) as Card).data
 		profile.write_card_data(data)
-	assert(ResourceSaver.save(profile, "user://soltaro_save.tres", ResourceSaver.FLAG_BUNDLE_RESOURCES) == OK)
+	assert(ResourceSaver.save(profile, "user://soltaro_save.tres") == OK)
 	print(ProjectSettings.globalize_path("user://soltaro_save.tres"))
 
 func _on_load_button_pressed() -> void:
@@ -95,6 +95,5 @@ func _on_load_button_pressed() -> void:
 	if ResourceLoader.exists("user://soltaro_save.tres"):
 		#@warning_ignore("untyped_declaration")
 		var profile : PlayerSave = ResourceLoader.load("user://soltaro_save.tres", "PlayerSave")
-		print(profile)
 		for data : CardData in (profile as PlayerSave).read_card_data():
 			add_card(data)

@@ -26,20 +26,20 @@ var deck2: Array[CardData] = [
 	]
 
 var deck3: Array[CardData] = [
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.ExtraPoint.new()),
-	CardData.new().with_suit(2).with_rank(2).with_stamp(CardStamp.Revealing.new()),
-	CardData.new().with_suit(3).with_rank(3).with_type(CardType.Heavy.new()),
-	CardData.new().with_suit(4).with_rank(4).with_skill(CardSkill.ExtraPoint.new()).with_stamp(CardStamp.Revealing.new()),
-	CardData.new().with_suit(1).with_rank(4).with_skill(CardSkill.ExtraPoint.new()).with_type(CardType.Heavy.new()),
-	CardData.new().with_suit(2).with_rank(3).with_stamp(CardStamp.Revealing.new()).with_type(CardType.Heavy.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeHeavy.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeHeavy.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeHeavy.new()),
 	CardData.new().with_suit(3).with_rank(2),
 	CardData.new().with_suit(4).with_rank(1),
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.ExtraPoint.new()),
-	CardData.new().with_suit(2).with_rank(2).with_stamp(CardStamp.Revealing.new()),
-	CardData.new().with_suit(3).with_rank(3).with_type(CardType.Heavy.new()),
-	CardData.new().with_suit(4).with_rank(4).with_skill(CardSkill.ExtraPoint.new()).with_stamp(CardStamp.Revealing.new()),
-	CardData.new().with_suit(1).with_rank(4).with_skill(CardSkill.ExtraPoint.new()).with_type(CardType.Heavy.new()),
-	CardData.new().with_suit(2).with_rank(3).with_stamp(CardStamp.Revealing.new()).with_type(CardType.Heavy.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeHeavy.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeHeavy.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeHeavy.new()),
 	CardData.new().with_suit(3).with_rank(2),
 	CardData.new().with_suit(4).with_rank(1),
 	]
@@ -100,10 +100,10 @@ var deck4: Array[CardData] = [
 	]
 
 var deck5: Array[CardData] = [
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.ExtraPoint.new()),
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.ExtraPoint.new()).with_stamp(CardStamp.DoubleTrigger.new()),
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.EchoingTrigger.new()),
-	CardData.new().with_suit(1).with_rank(1).with_skill(CardSkill.EchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
 	CardData.new().with_suit(1).with_rank(1),
 	#CardData.new().with_suit(1).with_rank(1),
 	]
