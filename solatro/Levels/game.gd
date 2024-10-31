@@ -459,9 +459,10 @@ func _on_submit_pressed() -> void:
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in result.card_combo:
-						var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 						card_tween.tween_property(c.front, "position:y", 0, base_delay)
-						card_tween.tween_property(c, "floating", true, base_delay * .9)
+						card_tween.tween_callback(func()->void: c.floating = true)
+						#card_tween.tween_property(c, "floating", true, base_delay * .1)
 				
 				#tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
@@ -524,9 +525,9 @@ func _on_submit_pressed() -> void:
 					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
 				for c:Card in last_scored_cards:
 					if c not in scored_cards:
-						var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 						card_tween.tween_property(c.front, "position:y", 0, base_delay)
-						card_tween.tween_property(c, "floating", true, base_delay * .9)
+						card_tween.tween_callback(func()->void: c.floating = true)
 				last_scored_cards = scored_cards
 				await get_tree().create_timer(base_delay).timeout
 				for popup in score_name_popups:
@@ -537,9 +538,9 @@ func _on_submit_pressed() -> void:
 		row_to_score += 1
 	
 	for c:Card in last_scored_cards:
-		var card_tween : Tween = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		card_tween.tween_property(c.front, "position:y", 0, base_delay)
-		card_tween.tween_property(c, "floating", true, base_delay * .9)
+		card_tween.tween_callback(func()->void: c.floating = true)
 	for label in col_scores:
 		col_total += int(label.text)
 	for i:int in row_score_popups:

@@ -20,7 +20,8 @@ signal card_added
 			if not is_node_ready():
 				await ready
 			basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if flipped else 1)))
-			front.position.y = 0
+			if Engine.is_editor_hint():
+				front.position.y = 0
 
 var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
