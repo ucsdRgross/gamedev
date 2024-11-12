@@ -108,13 +108,15 @@ func _process(delta: float) -> void:
 	if not is_zone:
 		if can_move_anim:
 			var target : Vector2 
-			if held:
+			if held or not bot_card:
 				target = target_pos
-			elif bot_card:
+			#elif bot_card:
+			else:
 				target = bot_card.global_position
 				if not bot_card.is_zone:
 					target += bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
 				y_delta += bot_card.y_delta * 0.5
+				
 				
 			target.y -= y_delta
 			var move : Vector2 = target - global_position

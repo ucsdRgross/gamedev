@@ -32,6 +32,10 @@ gdscript/warnings/unsafe_call_argument=2
 window/size/always_on_top=true
 window/stretch/mode="canvas_items"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
