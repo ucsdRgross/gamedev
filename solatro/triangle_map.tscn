@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3 uid="uid://divgmobncm76x"]
+[gd_scene load_steps=31 format=3 uid="uid://divgmobncm76x"]
 
 [ext_resource type="Script" path="res://triangle_map.gd" id="1_7ass7"]
 [ext_resource type="PackedScene" uid="uid://cdevr7c0t2cag" path="res://UI/card_control.tscn" id="2_mlga5"]
@@ -6,195 +6,142 @@
 [ext_resource type="Script" path="res://Cards/card.gd" id="4_yrcgy"]
 [ext_resource type="Script" path="res://Cards/card_data.gd" id="5_guorj"]
 
-[sub_resource type="Resource" id="Resource_kk1gl"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 9
-
-[sub_resource type="Resource" id="Resource_4kh5p"]
+[sub_resource type="Resource" id="Resource_6ajpr"]
 script = ExtResource("5_guorj")
 suit = 2
-rank = 3
-
-[sub_resource type="Resource" id="Resource_3e6q3"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 11
-
-[sub_resource type="Resource" id="Resource_7sttc"]
-script = ExtResource("5_guorj")
-suit = 1
 rank = 2
 
-[sub_resource type="Resource" id="Resource_m7x0a"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_2gsgb"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 6
-
-[sub_resource type="Resource" id="Resource_oueyv"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_vhgnw"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 1
-
-[sub_resource type="Resource" id="Resource_fbwlb"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 3
-
-[sub_resource type="Resource" id="Resource_11iey"]
+[sub_resource type="Resource" id="Resource_xmjks"]
 script = ExtResource("5_guorj")
 suit = 3
 rank = 2
 
-[sub_resource type="Resource" id="Resource_ne5yp"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 2
-
-[sub_resource type="Resource" id="Resource_pncdb"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 7
-
-[sub_resource type="Resource" id="Resource_81wy7"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 5
-
-[sub_resource type="Resource" id="Resource_855hp"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 6
-
-[sub_resource type="Resource" id="Resource_ln5el"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_xqlpo"]
+[sub_resource type="Resource" id="Resource_skiyy"]
 script = ExtResource("5_guorj")
 suit = 3
-rank = 11
-
-[sub_resource type="Resource" id="Resource_p1ovr"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_k3m4h"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 7
-
-[sub_resource type="Resource" id="Resource_li2sn"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 7
-
-[sub_resource type="Resource" id="Resource_u6ywo"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 10
-
-[sub_resource type="Resource" id="Resource_7my2a"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 8
-
-[sub_resource type="Resource" id="Resource_qdvku"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 9
-
-[sub_resource type="Resource" id="Resource_rwni0"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 11
-
-[sub_resource type="Resource" id="Resource_nucax"]
-script = ExtResource("5_guorj")
-suit = 1
 rank = 13
 
-[sub_resource type="Resource" id="Resource_vojbx"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 10
-
-[sub_resource type="Resource" id="Resource_6qag3"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_85tgn"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_ucyoa"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 6
-
-[sub_resource type="Resource" id="Resource_x0j4s"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 8
-
-[sub_resource type="Resource" id="Resource_2m4ki"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 8
-
-[sub_resource type="Resource" id="Resource_ooa33"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_781gy"]
+[sub_resource type="Resource" id="Resource_wl3pu"]
 script = ExtResource("5_guorj")
 suit = 2
 rank = 9
 
-[sub_resource type="Resource" id="Resource_xrvyk"]
+[sub_resource type="Resource" id="Resource_hcoci"]
 script = ExtResource("5_guorj")
-suit = 2
-rank = 2
+suit = 3
+rank = 7
 
-[sub_resource type="Resource" id="Resource_kl16e"]
+[sub_resource type="Resource" id="Resource_awpdd"]
 script = ExtResource("5_guorj")
 suit = 2
 rank = 5
 
-[sub_resource type="Resource" id="Resource_6xwx3"]
+[sub_resource type="Resource" id="Resource_knrpy"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 10
+
+[sub_resource type="Resource" id="Resource_lo7xh"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 10
+
+[sub_resource type="Resource" id="Resource_hohop"]
 script = ExtResource("5_guorj")
 suit = 2
-rank = 1
+rank = 11
 
-[sub_resource type="Resource" id="Resource_klx2y"]
+[sub_resource type="Resource" id="Resource_nxw2o"]
 script = ExtResource("5_guorj")
 suit = 4
 rank = 5
 
-[node name="TriangleMap" type="Control"]
+[sub_resource type="Resource" id="Resource_45i77"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 9
+
+[sub_resource type="Resource" id="Resource_0xjcl"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 3
+
+[sub_resource type="Resource" id="Resource_x375g"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 10
+
+[sub_resource type="Resource" id="Resource_4emtc"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 10
+
+[sub_resource type="Resource" id="Resource_4obgc"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 12
+
+[sub_resource type="Resource" id="Resource_hrngt"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 7
+
+[sub_resource type="Resource" id="Resource_8r1sb"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 5
+
+[sub_resource type="Resource" id="Resource_5bfpe"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 10
+
+[sub_resource type="Resource" id="Resource_b84ts"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 2
+
+[sub_resource type="Resource" id="Resource_2kkkt"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 8
+
+[sub_resource type="Resource" id="Resource_4w231"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 3
+
+[sub_resource type="Resource" id="Resource_b4lxb"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 11
+
+[sub_resource type="Resource" id="Resource_o101b"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 6
+
+[sub_resource type="Resource" id="Resource_p10xy"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 8
+
+[sub_resource type="Resource" id="Resource_jfnxv"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 6
+
+[node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_7ass7")
-rows = 6
+rows = 5
+cards = [NodePath("Card"), NodePath("@Node2D@81477"), NodePath("@Node2D@81478"), NodePath("@Node2D@81479"), NodePath("@Node2D@81480"), NodePath("@Node2D@81481"), NodePath("@Node2D@81482"), NodePath("@Node2D@81483"), NodePath("@Node2D@81484"), NodePath("@Node2D@81485"), NodePath("@Node2D@81486"), NodePath("@Node2D@81487"), NodePath("@Node2D@81488"), NodePath("@Node2D@81489"), NodePath("@Node2D@81490"), NodePath("@Node2D@81491"), NodePath("@Node2D@81492"), NodePath("@Node2D@81493"), NodePath("@Node2D@81494"), NodePath("@Node2D@81495"), NodePath("@Node2D@81496"), NodePath("@Node2D@81497"), NodePath("@Node2D@81498"), NodePath("@Node2D@81499"), NodePath("@Node2D@81500")]
 
 [node name="CardControl" parent="." instance=ExtResource("2_mlga5")]
 unique_name_in_owner = true
@@ -207,8 +154,10 @@ offset_top = -150.0
 offset_right = 114.0
 grow_horizontal = 1
 grow_vertical = 0
+mouse_filter = 2
 
 [node name="Card" parent="CardControl" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(57, 75)
 can_move_anim = false
 
@@ -225,520 +174,360 @@ offset_top = -304.0
 offset_right = 175.0
 grow_horizontal = 2
 grow_vertical = 0
-columns = 11
+mouse_filter = 2
+columns = 9
 
-[node name="@Control@39896" type="Control" parent="GridContainer"]
+[node name="@Control@79779" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="Card" type="Node2D" parent="GridContainer/@Control@39896" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Control@79780" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@79781" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@79782" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@79783" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@79784" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81415" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81416" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81417" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81418" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81419" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81420" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81421" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81422" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81423" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81432" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81433" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81434" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81435" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81436" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81437" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81438" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81439" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81440" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81441" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81442" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81443" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81444" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81460" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81461" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81462" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81463" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81464" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81465" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81466" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81467" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81468" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81469" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81470" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81471" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81472" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81473" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81474" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81475" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@81476" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(104, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_kk1gl")
+data = SubResource("Resource_6ajpr")
 flipped = false
 
-[node name="@Control@41078" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@41078" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81477" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(222, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_4kh5p")
+data = SubResource("Resource_xmjks")
 flipped = false
 
-[node name="@Control@41079" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@41079" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81478" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(340, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_3e6q3")
+data = SubResource("Resource_skiyy")
 flipped = false
 
-[node name="@Control@41080" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@41080" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81479" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(458, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_7sttc")
+data = SubResource("Resource_wl3pu")
 flipped = false
 
-[node name="@Control@41081" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@41081" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81480" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(576, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_m7x0a")
+data = SubResource("Resource_hcoci")
 flipped = false
 
-[node name="@Control@41082" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@41082" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81481" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(694, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_2gsgb")
+data = SubResource("Resource_awpdd")
 flipped = false
 
-[node name="@Control@42262" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42262" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81482" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(812, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_oueyv")
+data = SubResource("Resource_knrpy")
 flipped = false
 
-[node name="@Control@42263" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42263" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81483" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(930, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_vhgnw")
+data = SubResource("Resource_lo7xh")
 flipped = false
 
-[node name="@Control@42264" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42264" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81484" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(1048, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_fbwlb")
+data = SubResource("Resource_hohop")
 flipped = false
 
-[node name="@Control@42265" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42265" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81485" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(222, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_11iey")
+data = SubResource("Resource_nxw2o")
 flipped = false
 
-[node name="@Control@42266" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42266" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81486" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(340, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ne5yp")
+data = SubResource("Resource_45i77")
 flipped = false
 
-[node name="@Control@42267" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42268" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42268" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81487" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(458, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_pncdb")
+data = SubResource("Resource_0xjcl")
 flipped = false
 
-[node name="@Control@42269" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42269" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81488" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(576, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_81wy7")
+data = SubResource("Resource_x375g")
 flipped = false
 
-[node name="@Control@42270" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42270" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81489" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(694, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_855hp")
+data = SubResource("Resource_4emtc")
 flipped = false
 
-[node name="@Control@42274" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42274" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81490" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(812, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ln5el")
+data = SubResource("Resource_4obgc")
 flipped = false
 
-[node name="@Control@42275" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42275" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81491" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(930, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_xqlpo")
+data = SubResource("Resource_hrngt")
 flipped = false
 
-[node name="@Control@42276" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42276" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81492" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(340, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_p1ovr")
+data = SubResource("Resource_8r1sb")
 flipped = false
 
-[node name="@Control@42277" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42277" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81493" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(458, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_k3m4h")
+data = SubResource("Resource_5bfpe")
 flipped = false
 
-[node name="@Control@42278" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42278" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81494" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(576, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_li2sn")
+data = SubResource("Resource_b84ts")
 flipped = false
 
-[node name="@Control@42279" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42279" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81495" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(694, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_u6ywo")
+data = SubResource("Resource_2kkkt")
 flipped = false
 
-[node name="@Control@42280" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42281" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42282" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42283" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42283" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81496" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(812, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_7my2a")
+data = SubResource("Resource_4w231")
 flipped = false
 
-[node name="@Control@42284" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42284" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81497" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(458, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_qdvku")
+data = SubResource("Resource_b4lxb")
 flipped = false
 
-[node name="@Control@42285" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42285" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81498" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(576, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_rwni0")
+data = SubResource("Resource_o101b")
 flipped = false
 
-[node name="@Control@42286" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42286" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81499" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(694, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_nucax")
+data = SubResource("Resource_p10xy")
 flipped = false
 
-[node name="@Control@42290" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42290" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
+[node name="@Node2D@81500" type="Node2D" parent="." instance=ExtResource("3_pe4wh")]
+position = Vector2(576, 573)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_vojbx")
+data = SubResource("Resource_jfnxv")
 flipped = false
-
-[node name="@Control@42291" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42291" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_6qag3")
-flipped = false
-
-[node name="@Control@42292" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42292" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_85tgn")
-flipped = false
-
-[node name="@Control@42293" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42294" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42295" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42296" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42297" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42298" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42298" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ucyoa")
-flipped = false
-
-[node name="@Control@42299" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42299" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_x0j4s")
-flipped = false
-
-[node name="@Control@42300" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42300" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_2m4ki")
-flipped = false
-
-[node name="@Control@42301" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42301" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ooa33")
-flipped = false
-
-[node name="@Control@42302" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@42302" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_781gy")
-flipped = false
-
-[node name="@Control@42303" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42304" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42305" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@42306" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61271" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61272" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61273" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61274" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@61274" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_xrvyk")
-flipped = false
-
-[node name="@Control@61275" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@61275" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_kl16e")
-flipped = false
-
-[node name="@Control@61276" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@61276" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_6xwx3")
-flipped = false
-
-[node name="@Control@61277" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61278" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61279" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61280" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61281" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61282" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61283" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61284" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61285" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61286" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="Card" type="Node2D" parent="GridContainer/@Control@61286" instance=ExtResource("3_pe4wh")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_klx2y")
-flipped = false
-
-[node name="@Control@61287" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61288" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61289" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61290" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2
-
-[node name="@Control@61291" type="Control" parent="GridContainer"]
-custom_minimum_size = Vector2(114, 150)
-layout_mode = 2

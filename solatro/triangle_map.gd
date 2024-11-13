@@ -3,9 +3,11 @@ extends Control
 
 const CARD = preload("res://Cards/card.tscn")
 
-@export_range(1, 10) var rows : int = 3:
+@export_range(2, 10) var rows : int = 3:
 	set(value):
-		rows = value
+		rows = max(value, 2)
+		if not is_node_ready():
+			await ready
 		grid_container.columns = (rows - 1) * 2 + 1
 		var squares := grid_container.get_child_count()
 		var grids : int = rows * grid_container.columns
@@ -20,46 +22,80 @@ const CARD = preload("res://Cards/card.tscn")
 				grid_container.get_child(-1).free()
 				
 		for card in cards:
-			card.free()
+			if is_instance_valid(card):
+				card.free()
 		cards.clear()
 		
 		for i in rows ** 2:
 			var card : Card = CARD.instantiate()
 			card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
-			#card.can_move_anim = false
 			card.flipped = false
 			cards.append(card)
+			add_child(card)
+			card.owner = self
 		
+		await get_tree().process_frame
 		var i := 0
 		for y in rows:
 			for x in grid_container.columns - y * 2:
 				var control : Control = grid_container.get_child(xyi(x + y, y))
-				control.add_child(cards[i])
-				cards[i].owner = self
-				cards[i].move_to(control.position)
+				cards[i].global_position = control.global_position + control.size / 2
+				cards[i].move_to(control.global_position + control.size / 2)
 				i += 1
+		set_options()
+
+@export var cards : Array[Card]
 
 @onready var grid_container: GridContainer = %GridContainer
 @onready var card_control: Control = %CardControl
 
-var cards : Array[Card]
+func set_options() -> void:
+	#for card : Card in [cards[-2], cards[-3], cards[-4]]:
+	cards[-2].clicked.connect(right)
+	cards[-3].clicked.connect(down)
+	cards[-4].clicked.connect(left)
 
-func _ready() -> void:
-	pass
-
-func _process(delta: float) -> void:
-	for card in cards:
-		var control : Control = card.get_parent()
-		card.move_to(control.global_position + control.size / 2)
-
-func down() -> void:
-	pass
+func down(c:Card) -> void:
+	print('down')
+	var new_cards : Array[Card]
+	for i in grid_container.columns:
+		var card : Card = CARD.instantiate()
+		card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
+		card.flipped = false
+		new_cards.append(card)
+		add_child(card)
+		var control : Control = grid_container.get_child(i)
+		card.global_position = control.global_position + control.size / 2
 	
-func left() -> void:
-	pass
+	for y in rows - 1:
+		for x in grid_container.columns - (y+1) * 2:
+			var i := xyi(x+y+1, y) - y ** 2
+			new_cards.append(cards[i])
+	
+	for card in cards:
+		if card not in new_cards:
+			remove_card(card)
+			
+	cards = new_cards
+	var i := 0
+	for y in rows:
+		for x in grid_container.columns - y * 2:
+			var control : Control = grid_container.get_child(xyi(x + y, y))
+			cards[i].move_to(control.global_position + control.size / 2)
+			i += 1
+	set_options()
+	
+func left(c:Card) -> void:
+	print('left')
 
-func right() -> void:
-	pass
+func right(c:Card) -> void:
+	print('right')
+
+func remove_card(c: Card) -> void:
+	c.z_index = -1
+	var tween := create_tween()
+	tween.tween_property(c, "modulate:a", 0, 0.5)
+	tween.tween_callback(c.queue_free)
 	
 func ixy(i:int) -> Vector2i:
 	var x := i / grid_container.columns

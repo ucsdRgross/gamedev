@@ -1,0 +1,357 @@
+[gd_scene load_steps=22 format=3 uid="uid://divgmobncm76x"]
+
+[ext_resource type="Script" path="res://triangle_map.gd" id="1_7ass7"]
+[ext_resource type="PackedScene" uid="uid://cdevr7c0t2cag" path="res://UI/card_control.tscn" id="2_mlga5"]
+[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_pe4wh"]
+[ext_resource type="Script" path="res://Cards/card.gd" id="4_yrcgy"]
+[ext_resource type="Script" path="res://Cards/card_data.gd" id="5_guorj"]
+
+[sub_resource type="Resource" id="Resource_b6oeb"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 4
+
+[sub_resource type="Resource" id="Resource_jmct0"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 6
+
+[sub_resource type="Resource" id="Resource_3y0jx"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 4
+
+[sub_resource type="Resource" id="Resource_xrviw"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 7
+
+[sub_resource type="Resource" id="Resource_x53nv"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 2
+
+[sub_resource type="Resource" id="Resource_opj6a"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 6
+
+[sub_resource type="Resource" id="Resource_saxdv"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 2
+
+[sub_resource type="Resource" id="Resource_ru8oe"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 9
+
+[sub_resource type="Resource" id="Resource_sxxwv"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 10
+
+[sub_resource type="Resource" id="Resource_ulkqd"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 7
+
+[sub_resource type="Resource" id="Resource_no7og"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 4
+
+[sub_resource type="Resource" id="Resource_rejeq"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 8
+
+[sub_resource type="Resource" id="Resource_30elo"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 1
+
+[sub_resource type="Resource" id="Resource_ta5nv"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 1
+
+[sub_resource type="Resource" id="Resource_6rgqj"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 12
+
+[sub_resource type="Resource" id="Resource_p6iuo"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 5
+
+[node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_7ass7")
+rows = 4
+cards = [NodePath("GridContainer/@Control@45622/Card"), NodePath("GridContainer/@Control@45623/Card"), NodePath("GridContainer/@Control@45624/Card"), NodePath("GridContainer/@Control@45625/Card"), NodePath("GridContainer/@Control@45626/Card"), NodePath("GridContainer/@Control@45627/Card"), NodePath("GridContainer/@Control@45628/Card"), NodePath("GridContainer/@Control@45630/Card"), NodePath("GridContainer/@Control@45631/Card"), NodePath("GridContainer/@Control@45632/Card"), NodePath("GridContainer/@Control@45633/Card"), NodePath("GridContainer/@Control@45634/Card"), NodePath("GridContainer/@Control@45638/Card"), NodePath("GridContainer/@Control@45639/Card"), NodePath("GridContainer/@Control@45640/Card"), NodePath("GridContainer/@Control@45646/Card")]
+
+[node name="CardControl" parent="." instance=ExtResource("2_mlga5")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_right = 0.0
+offset_top = -150.0
+offset_right = 114.0
+grow_horizontal = 1
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Card" parent="CardControl" instance=ExtResource("3_pe4wh")]
+visible = false
+position = Vector2(57, 75)
+can_move_anim = false
+
+[node name="GridContainer" type="GridContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -175.0
+offset_top = -304.0
+offset_right = 175.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+columns = 7
+
+[node name="@Control@45622" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45622" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_b6oeb")
+flipped = false
+
+[node name="@Control@45623" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45623" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_jmct0")
+flipped = false
+
+[node name="@Control@45624" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45624" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_3y0jx")
+flipped = false
+
+[node name="@Control@45625" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45625" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_xrviw")
+flipped = false
+
+[node name="@Control@45626" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45626" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_x53nv")
+flipped = false
+
+[node name="@Control@45627" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45627" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_opj6a")
+flipped = false
+
+[node name="@Control@45628" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45628" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_saxdv")
+flipped = false
+
+[node name="@Control@45629" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45630" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45630" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_ru8oe")
+flipped = false
+
+[node name="@Control@45631" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45631" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_sxxwv")
+flipped = false
+
+[node name="@Control@45632" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45632" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_ulkqd")
+flipped = false
+
+[node name="@Control@45633" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45633" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_no7og")
+flipped = false
+
+[node name="@Control@45634" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45634" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_rejeq")
+flipped = false
+
+[node name="@Control@45635" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45636" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45637" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45638" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45638" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_30elo")
+flipped = false
+
+[node name="@Control@45639" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45639" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_ta5nv")
+flipped = false
+
+[node name="@Control@45640" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45640" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_6rgqj")
+flipped = false
+
+[node name="@Control@45641" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45642" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45643" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45644" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45645" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45646" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="Card" type="Node2D" parent="GridContainer/@Control@45646" instance=ExtResource("3_pe4wh")]
+position = Vector2(57, 75)
+scale = Vector2(3, 3)
+script = ExtResource("4_yrcgy")
+data = SubResource("Resource_p6iuo")
+flipped = false
+
+[node name="@Control@45647" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45648" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
+
+[node name="@Control@45649" type="Control" parent="GridContainer"]
+custom_minimum_size = Vector2(114, 150)
+layout_mode = 2
