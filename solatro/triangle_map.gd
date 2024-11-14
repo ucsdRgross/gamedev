@@ -27,9 +27,7 @@ const CARD = preload("res://Cards/card.tscn")
 		cards.clear()
 		
 		for i in rows ** 2:
-			var card : Card = CARD.instantiate()
-			card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
-			card.flipped = false
+			var card : Card = new_card()
 			cards.append(card)
 			add_child(card)
 			card.owner = self
@@ -51,31 +49,25 @@ const CARD = preload("res://Cards/card.tscn")
 
 func set_options() -> void:
 	#for card : Card in [cards[-2], cards[-3], cards[-4]]:
-	cards[-2].clicked.connect(right)
-	cards[-3].clicked.connect(down)
-	cards[-4].clicked.connect(left)
+	cards[-2].clicked.connect(new_triangle.bind(1))
+	cards[-3].clicked.connect(new_triangle.bind(0))
+	cards[-4].clicked.connect(new_triangle.bind(-1))
 
-func down(c:Card) -> void:
-	print('down')
+func new_triangle(clicked_card:Card, offset:int) -> void:
 	var new_cards : Array[Card]
 	for i in grid_container.columns:
-		var card : Card = CARD.instantiate()
-		card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
-		card.flipped = false
+		var card : Card = new_card()
 		new_cards.append(card)
 		add_child(card)
 		var control : Control = grid_container.get_child(i)
 		card.global_position = control.global_position + control.size / 2
-	
 	for y in rows - 1:
 		for x in grid_container.columns - (y+1) * 2:
-			var i := xyi(x+y+1, y) - y ** 2
+			var i := xyi(x+y+offset+1, y) - y ** 2
 			new_cards.append(cards[i])
-	
 	for card in cards:
 		if card not in new_cards:
 			remove_card(card)
-			
 	cards = new_cards
 	var i := 0
 	for y in rows:
@@ -84,17 +76,24 @@ func down(c:Card) -> void:
 			cards[i].move_to(control.global_position + control.size / 2)
 			i += 1
 	set_options()
-	
-func left(c:Card) -> void:
-	print('left')
 
-func right(c:Card) -> void:
-	print('right')
+func new_card() -> Card:
+	var card : Card = CARD.instantiate()
+	card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
+	card.flipped = false
+	card.can_rot_anim = false
+	
+	var tween := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUART)
+	card.modulate.a = 0
+	tween.tween_property(card, "modulate:a", 1, 0.5)
+	
+	return card
 
 func remove_card(c: Card) -> void:
 	c.z_index = -1
-	var tween := create_tween()
+	var tween := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUART)
 	tween.tween_property(c, "modulate:a", 0, 0.5)
+	tween.parallel().tween_property(c, "scale", Vector2(0.1,0.1), 0.5)
 	tween.tween_callback(c.queue_free)
 	
 func ixy(i:int) -> Vector2i:

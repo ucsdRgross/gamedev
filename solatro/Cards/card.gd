@@ -10,6 +10,7 @@ signal card_added
 @export var data : CardData
 @export var is_zone := false
 @export var can_move_anim := true
+@export var can_rot_anim := true
 @export var clickable := true
 @export var stack_limit : int = -1
 @export var flipped := true
@@ -120,15 +121,16 @@ func _process(delta: float) -> void:
 				
 			target.y -= y_delta
 			var move : Vector2 = target - global_position
-			global_position = global_position.lerp(target, 20 * delta)
+			global_position = global_position.lerp(target, 15 * delta)
 			
-			y_delta = lerpf(y_delta, move.y, 20 * delta)
-			y_delta = clampf(y_delta, -4, 4)
-			
-			rot_delta = lerpf(rot_delta, move.x, 20 * delta)
-			var clamp_degree : float = sqrt(abs(rot_delta) as float) * 5
-			rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
-			rotation_degrees = rot_delta
+			if can_rot_anim:
+				y_delta = lerpf(y_delta, move.y, 15 * delta)
+				y_delta = clampf(y_delta, -4, 4)
+				
+				rot_delta = lerpf(rot_delta, move.x, 15 * delta)
+				var clamp_degree : float = sqrt(abs(rot_delta) as float) * 5
+				rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
+				rotation_degrees = rot_delta
 
 		if floating:
 			var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)

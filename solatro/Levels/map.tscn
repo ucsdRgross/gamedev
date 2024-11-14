@@ -70,6 +70,7 @@ scale = Vector2(1.5, 1.5)
 [node name="Card" parent="CanvasLayer/Preview" instance=ExtResource("2_dofqu")]
 position = Vector2(18.4, -57.6)
 can_move_anim = false
+can_rot_anim = null
 clickable = false
 stack_limit = 0
 
@@ -126,6 +127,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control2" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -134,6 +136,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control2" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control3" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -142,6 +145,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control3" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control4" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -150,6 +154,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control4" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control5" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -158,6 +163,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control5" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control6" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -166,6 +172,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control6" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control7" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -174,6 +181,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control7" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control8" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -182,6 +190,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control8" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control9" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -190,6 +199,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control9" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control10" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -198,6 +208,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control10" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control11" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -206,6 +217,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control11" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control12" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -214,6 +226,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control12" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control13" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -222,6 +235,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control13" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control14" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -230,6 +244,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control14" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control15" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -238,6 +253,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control15" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control16" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -246,6 +262,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control16" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control17" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -254,6 +271,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control17" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control18" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -262,6 +280,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control18" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control19" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -270,6 +289,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control19" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control20" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -278,6 +298,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control20" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control21" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -286,6 +307,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control21" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control22" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -294,6 +316,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control22" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control23" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -302,6 +325,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control23" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control24" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -310,6 +334,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control24" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control25" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -318,6 +343,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control25" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control26" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -326,6 +352,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control26" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control27" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -334,6 +361,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control27" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control28" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -342,6 +370,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control28" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control29" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -350,6 +379,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control29" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control30" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -358,6 +388,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control30" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control31" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -366,6 +397,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control31" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control32" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -374,6 +406,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control32" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control33" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -382,6 +415,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control33" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control34" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -390,6 +424,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control34" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control35" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -398,6 +433,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control35" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control36" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -406,6 +442,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control36" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control37" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -414,6 +451,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control37" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control38" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -422,6 +460,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control38" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control39" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -430,6 +469,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control39" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control40" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -438,6 +478,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control40" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control41" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -446,6 +487,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control41" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control42" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -454,6 +496,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control42" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control43" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -462,6 +505,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control43" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control44" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -470,6 +514,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control44" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control45" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -478,6 +523,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control45" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control46" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -486,6 +532,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control46" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control47" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -494,6 +541,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control47" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control48" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -502,6 +550,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control48" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Control49" type="Control" parent="TiltedGUI/SubViewport/Map2D/GridContainer"]
@@ -510,6 +559,7 @@ mouse_filter = 2
 
 [node name="Card" parent="TiltedGUI/SubViewport/Map2D/GridContainer/Control49" instance=ExtResource("2_dofqu")]
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]

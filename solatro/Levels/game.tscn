@@ -97,6 +97,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 clickable = false
 stack_limit = 1
 
@@ -108,6 +109,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 clickable = false
 stack_limit = 1
 
@@ -119,6 +121,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 clickable = false
 stack_limit = 1
 
@@ -130,6 +133,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 clickable = false
 stack_limit = 1
 
@@ -141,6 +145,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 clickable = false
 stack_limit = 1
 
@@ -197,6 +202,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 
 [node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
 layout_mode = 2
@@ -206,6 +212,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 
 [node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
 layout_mode = 2
@@ -215,6 +222,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 
 [node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
 layout_mode = 2
@@ -224,6 +232,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 
 [node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
 layout_mode = 2
@@ -233,6 +242,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer"]
 layout_mode = 2
@@ -248,6 +258,7 @@ script = ExtResource("4_3ijoq")
 [node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 is_zone = true
+can_rot_anim = null
 stack_limit = 1
 
 [node name="Buffer" type="Label" parent="GameContainer/HBoxContainer/VBoxContainer"]
@@ -274,6 +285,7 @@ text = "Submit
 visible = false
 position = Vector2(733, 276)
 is_zone = true
+can_rot_anim = null
 
 [node name="Next" type="Button" parent="."]
 layout_mode = 0
@@ -460,6 +472,7 @@ scale = Vector2(1.25, 1.25)
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
 can_move_anim = false
+can_rot_anim = null
 clickable = false
 stack_limit = 0
 
@@ -483,6 +496,7 @@ offset_bottom = 90.0
 
 [node name="Card" parent="Deck" instance=ExtResource("3_8sseo")]
 can_move_anim = false
+can_rot_anim = null
 clickable = false
 stack_limit = 0
 
