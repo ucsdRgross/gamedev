@@ -25,10 +25,9 @@ atlas = ExtResource("3")
 region = Rect2(16, 16, 16, 16)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4ksjc"]
-bg_color = Color(1, 1, 1, 1)
+bg_color = Color(1, 1, 1, 0)
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_73fct"]
-blend_mode = 1
 
 [sub_resource type="ImageTexture" id="ImageTexture_5n7td"]
 
@@ -40,6 +39,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_txe3m")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="HSplitContainer" type="HSplitContainer" parent="."]
 layout_mode = 1
@@ -336,10 +343,10 @@ metadata/_edit_use_custom_anchors = true
 
 [node name="PaintControl" type="Control" parent="HSplitContainer/DrawingAreaBG"]
 unique_name_in_owner = true
-layout_mode = 2
-anchors_preset = 0
-offset_right = 790.0
-offset_bottom = 648.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
