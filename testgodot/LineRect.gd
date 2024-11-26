@@ -53,4 +53,3 @@ func _physics_process(delta):
 	input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	y.position += input_dir
 	intersect()
-

@@ -15,4 +15,3 @@ func _process(delta):
 	var s : Vector3 = basis.get_scale()
 	shear.y.z = -1 * 1/s.z * s.y 
 	mesh.basis = basis * shear
-

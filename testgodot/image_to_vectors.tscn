@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://cb0c78mw41mg4"]
+
+[ext_resource type="Script" path="res://image_to_vectors.gd" id="1_wjbui"]
+[ext_resource type="PackedScene" uid="uid://bhjmyer4wlwy2" path="res://painttool/paint_root.tscn" id="2_ben60"]
+
+[node name="Image_to_vectors" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_wjbui")
+
+[node name="PaintRoot" parent="." instance=ExtResource("2_ben60")]
+layout_mode = 1
+size_flags_horizontal = 3
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]
+
+[editable path="PaintRoot"]
