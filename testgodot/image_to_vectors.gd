@@ -89,9 +89,21 @@ func spread(start : Vector2i):
 						dn[0].r -= 1
 					new_image.set_pixelv(pixel, dn[0])
 				else:
-					new_image.set_pixelv(pixel, Color(0.5,0,1,1))
+					if num_horizontal:
+						new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
+					elif num_diagonals:
+						dn.sort_custom(sort_colors)
+						if dn[0].r + sqrt2 < 1:
+							dn[0].r += sqrt2
+							new_image.set_pixelv(pixel, dn[0])
 			else:
-				new_image.set_pixelv(pixel, Color(0.5,0,1,1))
+				if num_horizontal:
+					new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
+				elif num_diagonals:
+					dn.sort_custom(sort_colors)
+					if dn[0].r + sqrt2 < 1:
+						dn[0].r += sqrt2
+						new_image.set_pixelv(pixel, dn[0])
 			
 			if not new_image.get_pixelv(pixel).is_equal_approx(Color.BLACK):
 				for neighbor in neighbors:
@@ -108,7 +120,8 @@ func spread(start : Vector2i):
 		
 		count += 1
 		if count > 0:
-			await get_tree().process_frame
+			#await get_tree().process_frame
+			await get_tree().create_timer(0.1).timeout
 			count = 0
 
 func sort_colors(a:Color,b:Color) -> bool:
