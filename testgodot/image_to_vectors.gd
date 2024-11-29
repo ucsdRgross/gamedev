@@ -17,7 +17,7 @@ func _process(_delta):
 		
 func start(pos):
 	print(img.get_size())
-	var new_size = img.get_size() / 8
+	var new_size = img.get_size() / 2
 	img.resize(new_size.x,new_size.y, 0)
 	print(img.get_size())
 	pos -= drawing_area.global_position 
@@ -90,7 +90,7 @@ func spread(start : Vector2i):
 					new_image.set_pixelv(pixel, dn[0])
 				else:
 					if num_horizontal:
-						new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
+						new_image.set_pixelv(pixel, Color(1.0/3,0,1,1))
 					elif num_diagonals:
 						dn.sort_custom(sort_colors)
 						if dn[0].r + sqrt2 < 1:
@@ -98,7 +98,7 @@ func spread(start : Vector2i):
 							new_image.set_pixelv(pixel, dn[0])
 			else:
 				if num_horizontal:
-					new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
+					new_image.set_pixelv(pixel, Color(1.0/3,0,1,1))
 				elif num_diagonals:
 					dn.sort_custom(sort_colors)
 					if dn[0].r + sqrt2 < 1:
@@ -121,7 +121,7 @@ func spread(start : Vector2i):
 		count += 1
 		if count > 0:
 			#await get_tree().process_frame
-			await get_tree().create_timer(0.1).timeout
+			await get_tree().create_timer(0.01).timeout
 			count = 0
 
 func sort_colors(a:Color,b:Color) -> bool:
