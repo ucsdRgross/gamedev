@@ -17,7 +17,7 @@ func _process(_delta):
 		
 func start(pos):
 	print(img.get_size())
-	var new_size = img.get_size() / 2
+	var new_size = img.get_size() / 1
 	img.resize(new_size.x,new_size.y, 0)
 	print(img.get_size())
 	pos -= drawing_area.global_position 
@@ -72,10 +72,10 @@ func spread(start : Vector2i):
 				if num_horizontal == 1:
 					new_image.set_pixelv(pixel, (dn[0] + hn[0])/2)
 				elif num_horizontal == 2:
-					hn.sort_custom(sort_colors)
+					hn.sort_custom(sort_colors_asc)
 					new_image.set_pixelv(pixel, hn[1])
 				else:
-					dn.sort_custom(sort_colors)
+					dn.sort_custom(sort_colors_asc)
 					if dn[0].r + sqrt2 < 1:
 						dn[0].r += sqrt2
 						new_image.set_pixelv(pixel, dn[0])
@@ -89,21 +89,23 @@ func spread(start : Vector2i):
 						dn[0].r -= 1
 					new_image.set_pixelv(pixel, dn[0])
 				else:
-					if num_horizontal:
-						new_image.set_pixelv(pixel, Color(1.0/3,0,1,1))
-					elif num_diagonals:
-						dn.sort_custom(sort_colors)
-						if dn[0].r + sqrt2 < 1:
-							dn[0].r += sqrt2
-							new_image.set_pixelv(pixel, dn[0])
-			else:
-				if num_horizontal:
-					new_image.set_pixelv(pixel, Color(1.0/3,0,1,1))
-				elif num_diagonals:
-					dn.sort_custom(sort_colors)
-					if dn[0].r + sqrt2 < 1:
+					if num_diagonals:
+						dn.sort_custom(sort_colors_desc)
 						dn[0].r += sqrt2
+						if dn[0].r > 1:
+							dn[0].r -= 1
 						new_image.set_pixelv(pixel, dn[0])
+					else:
+						new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
+			else:
+				if num_diagonals:
+					dn.sort_custom(sort_colors_desc)
+					dn[0].r += sqrt2
+					if dn[0].r > 1:
+						dn[0].r -= 1
+					new_image.set_pixelv(pixel, dn[0])
+				else:
+					new_image.set_pixelv(pixel, Color(sqrt2,0,1,1))
 			
 			if not new_image.get_pixelv(pixel).is_equal_approx(Color.BLACK):
 				for neighbor in neighbors:
@@ -121,8 +123,11 @@ func spread(start : Vector2i):
 		count += 1
 		if count > 0:
 			#await get_tree().process_frame
-			await get_tree().create_timer(0.01).timeout
+			await get_tree().create_timer(0.1).timeout
 			count = 0
 
-func sort_colors(a:Color,b:Color) -> bool:
+func sort_colors_asc(a:Color,b:Color) -> bool:
 	return a.r < b.r
+
+func sort_colors_desc(a:Color,b:Color) -> bool:
+	return a.r > b.r
