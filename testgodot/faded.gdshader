@@ -24,9 +24,9 @@ void fragment() {
 	vec3 ray_origin = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
 	// Calculate sphere hit
 	float ray_hit = sphIntersect(ray_origin,model_ray,vec4(vec3(0.0),0.5));
-	
+
 	if (ray_hit != -1.0){
-		ALBEDO = vec3(mod(UV,vec2(1.0/3.0, 1.0/2.0)) * vec2(3.0, 2.0), 0.0); 
+		ALBEDO = vec3(mod(UV,vec2(1.0/3.0, 1.0/2.0)) * vec2(3.0, 2.0), 0.0);
 	} else {
 		ALPHA = 0.0;
 	}

@@ -20,12 +20,12 @@ uniform sampler2D Texture : source_color, filter_nearest_mipmap;
 // Line is drawn to find colored pixel, below number puts that amount of points along line to check for collision
 // In other words, maximum amount of texture() calls, too many texture() calls will cause lag
 // Lower numbers will not extrude colors correctly, but that's fine if you plan to replace the color
-// Too low and thin sections of image will not be extruded 
+// Too low and thin sections of image will not be extruded
 uniform int texture_calls = 20;
 // Shifts ray intersection checks, can increase thickness at low texture calls
 uniform float ray_bias = 1;
 // Allow hollow regions in texture to extrude forever
-// Turning this on reduces number of texture calls needed for a full extrude significantly 
+// Turning this on reduces number of texture calls needed for a full extrude significantly
 uniform bool infinite_holes = false;
 // Parameters to change if your texture is a spritesheet
 uniform int Hframes = 1;
@@ -175,12 +175,12 @@ void fragment() {
 	vec3 camera_ray = normalize(frag_pos - CAMERA_POSITION_WORLD);
 	// Get transformed camera ray to handle rotation and scaling
 	vec3 model_ray = normalize((inverse(MODEL_MATRIX) * vec4(camera_ray, 0.0)).xyz);
-	
+
 	// Determine which face of the cube we are looking at
 	ivec2 face = ivec2(UV / vec2(1.0/3.0, 1.0/2.0));
 	// Make each face have similar UV
 	vec2 adjusted_UV = mod(UV,vec2(1.0/3.0, 1.0/2.0)) * vec2(3.0, 2.0);
-	
+
 	// Z
 	if (face.x == 0 && face.y == 0) {
 		// No need to extrude if already on colored pixel
@@ -204,10 +204,10 @@ void fragment() {
 				imgPoint second_pixel = imgExtrude(uv_point, -model_ray.xy, false);
 				// If second raycast does not hit same texture on backface, then that pixel is clear
 				if (model_ray.y <= 0.0 && second_pixel.uv.y < first_pixel.uv.y ) ALPHA = 0.0;
-				else if (model_ray.y > 0.0 && second_pixel.uv.y > first_pixel.uv.y ) ALPHA = 0.0;	
+				else if (model_ray.y > 0.0 && second_pixel.uv.y > first_pixel.uv.y ) ALPHA = 0.0;
 			}
 		}
-	} 
+	}
 	// -Z
 	else if (face.x == 2 && face.y == 0) {
 		// Back face has to be flipped in order to line up with front face
@@ -219,7 +219,7 @@ void fragment() {
 			imgPoint first_pixel = imgExtrude(adjusted_UV, vec2(-model_ray.x, model_ray.y), true);
 			ALBEDO = first_pixel.color.rgb;
 			ALPHA = first_pixel.color.w;
-			
+
 			vec3 point = vec3(UVtoXY(vec2(-adjusted_UV.x, adjusted_UV.y)),-2.0);
 			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0,0.0,1.0), point, model_ray);
 			vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(1.0,1.0);
@@ -261,7 +261,7 @@ void fragment() {
 		vec4 img_color = imgExtrude(new_uv, model_ray.xy, false).color;
 		ALBEDO = img_color.rgb;
 		ALPHA = img_color.w;
-		
+
 		vec2 xy = UVtoXY(adjusted_UV);
 		if (model_ray.z > 0.0) point = vec3(-1.0, xy.y, -1.0 + xy.x);
 		else point = vec3(-1.0, xy.y, 1.0 + xy.x);
@@ -282,7 +282,7 @@ void fragment() {
 		vec4 img_color = imgExtrude(new_uv, model_ray.xy, false).color;
 		ALBEDO = img_color.rgb;
 		ALPHA = img_color.w;
-		
+
 		vec2 xy = UVtoXY(vec2(-adjusted_UV.x, adjusted_UV.y));
 		if (model_ray.z > 0.0) point = vec3(xy.x, 1.0, xy.y - 1.0);
 		else point = vec3(xy.x, 1.0, xy.y + 1.0);
@@ -304,7 +304,7 @@ void fragment() {
 		vec4 img_color = imgExtrude(new_uv, model_ray.xy, false).color;
 		ALBEDO = img_color.rgb;
 		ALPHA = img_color.w;
-		
+
 		vec2 xy = UVtoXY(adjusted_UV);
 		if (model_ray.z > 0.0) point = vec3(xy.x, -1.0, xy.y - 1.0);
 		else point = vec3(xy.x, -1.0, xy.y + 1.0);
