@@ -1,11 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://cb0c78mw41mg4"]
+[gd_scene load_steps=3 format=3 uid="uid://cb0c78mw41mg4"]
 
 [ext_resource type="Script" path="res://image_to_vectors.gd" id="1_wjbui"]
 [ext_resource type="PackedScene" uid="uid://bhjmyer4wlwy2" path="res://painttool/paint_root.tscn" id="2_ben60"]
-[ext_resource type="Script" path="res://circle_rect.gd" id="3_5rpno"]
-
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_ggmb5"]
-blend_mode = 1
 
 [node name="Image_to_vectors" type="Control"]
 layout_mode = 3
@@ -19,16 +15,6 @@ script = ExtResource("1_wjbui")
 [node name="PaintRoot" parent="." instance=ExtResource("2_ben60")]
 layout_mode = 1
 size_flags_horizontal = 3
-
-[node name="TextureRect" type="TextureRect" parent="PaintRoot/HSplitContainer/DrawingAreaBG/TextureRect" index="0"]
-material = SubResource("CanvasItemMaterial_ggmb5")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("3_5rpno")
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]
 
