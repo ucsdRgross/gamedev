@@ -131,7 +131,6 @@ offset_bottom = 265.0
 
 [node name="Card" parent="HSplitContainer/Control/Preview" instance=ExtResource("2_y2cql")]
 can_move_anim = false
-can_rot_anim = null
 clickable = false
 stack_limit = 0
 flipped = false

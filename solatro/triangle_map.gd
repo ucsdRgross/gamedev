@@ -1,5 +1,9 @@
 @tool
+class_name TriangleMap
 extends Control
+
+signal card_clicked(card:Card)
+signal card_hovered(card:Card)
 
 const CARD = preload("res://Cards/card.tscn")
 
@@ -54,6 +58,7 @@ func set_options() -> void:
 	cards[-4].clicked.connect(new_triangle.bind(-1))
 
 func new_triangle(clicked_card:Card, offset:int) -> void:
+	card_clicked.emit(clicked_card)
 	var new_cards : Array[Card]
 	for i in grid_container.columns:
 		var card : Card = new_card()
@@ -86,7 +91,7 @@ func new_card() -> Card:
 	var tween := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUART)
 	card.modulate.a = 0
 	tween.tween_property(card, "modulate:a", 1, 0.5)
-	
+	card.hover_entered.connect(card_hovered.emit)
 	return card
 
 func remove_card(c: Card) -> void:
