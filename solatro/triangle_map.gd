@@ -4,6 +4,7 @@ extends Control
 
 signal card_clicked(card:Card)
 signal card_hovered(card:Card)
+signal deck_clicked(card:Card)
 
 const CARD = preload("res://Cards/card.tscn")
 
@@ -24,8 +25,8 @@ const CARD = preload("res://Cards/card.tscn")
 		else:
 			for i:int in squares - grids:
 				grid_container.get_child(-1).free()
-				
-		for card in cards:
+		
+		for card : Node2D in child_cards.get_children():
 			if is_instance_valid(card):
 				card.free()
 		cards.clear()
@@ -33,7 +34,7 @@ const CARD = preload("res://Cards/card.tscn")
 		for i in rows ** 2:
 			var card : Card = new_card()
 			cards.append(card)
-			add_child(card)
+			child_cards.add_child(card)
 			card.owner = self
 		
 		await get_tree().process_frame
@@ -50,6 +51,11 @@ const CARD = preload("res://Cards/card.tscn")
 
 @onready var grid_container: GridContainer = %GridContainer
 @onready var card_control: Control = %CardControl
+@onready var child_cards: Control = $ChildCards
+@onready var deck: Card = $Deck
+
+func _ready() -> void:
+	deck.clicked.connect(func(c:Card)->void:deck_clicked.emit(c))
 
 func set_options() -> void:
 	#for card : Card in [cards[-2], cards[-3], cards[-4]]:
@@ -63,7 +69,7 @@ func new_triangle(clicked_card:Card, offset:int) -> void:
 	for i in grid_container.columns:
 		var card : Card = new_card()
 		new_cards.append(card)
-		add_child(card)
+		child_cards.add_child(card)
 		var control : Control = grid_container.get_child(i)
 		card.global_position = control.global_position + control.size / 2
 	for y in rows - 1:

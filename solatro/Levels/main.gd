@@ -4,6 +4,9 @@ var scene_map := preload("res://Levels/map.tscn").instantiate()
 var scene_game := preload("res://Levels/game.tscn")#.instantiate()
 var current_scene : Node = null
 
+#@onready var level: Node = $Level
+#@onready var level: Control = $CanvasLayer/Level
+
 func _ready() -> void:
 	(scene_map as Map).card_clicked.connect(enter_game)
 	switch_scene(scene_map)

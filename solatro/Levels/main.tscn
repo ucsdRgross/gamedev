@@ -32,3 +32,11 @@ grow_vertical = 2
 texture = ExtResource("3_ftvb4")
 expand_mode = 3
 stretch_mode = 6
+
+[node name="Menu" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 80.0
+offset_right = 1052.0
+offset_bottom = 568.0

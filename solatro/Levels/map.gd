@@ -3,21 +3,26 @@ class_name Map
 
 signal card_clicked(card:Card)
 
+const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const CARD = preload("res://Cards/card.tscn")
+
 var containers : Array 
 var index_to_card : Dictionary
 var card_to_index : Dictionary
 var tween_transition : Tween
 @onready var triangle_map: TriangleMap = $TiltedGUI/SubViewport/TriangleMap
 #@onready var grid_container: GridContainer = $TiltedGUI/SubViewport/Map2D/GridContainer
-@onready var preview_card: Card = $CanvasLayer/Preview/Card
-@onready var preview_label: Label = $CanvasLayer/Preview/Label
+@onready var preview_card: Card = $Preview/Card
+@onready var preview_label: Label = $Preview/Label
+@onready var flow_container: FlowContainer = %FlowContainer
+@onready var deck_viewer: CanvasLayer = $DeckViewer
 
 func _ready() -> void:
 	triangle_map.card_clicked.connect(_on_card_clicked)
 	triangle_map.card_hovered.connect(_on_card_hover_entered)
 	#($Preview as Control).hide()
 	preview_label.text = ""
+	triangle_map.deck_clicked.connect(_on_deck_clicked)
 	#containers = grid_container.get_children()
 	#var cols : int = grid_container.columns
 	#var i : int = 0
@@ -43,18 +48,18 @@ func _ready() -> void:
 		#index_to_card[coord].flipped = false
 
 func _on_card_clicked(card : Card) -> void:
-	if card.flipped or (tween_transition and tween_transition.is_running()):
-		return
-	var surroundings : Array[Vector2i] = [#Vector2(-1,-1),
-										Vector2i(0,-1),
-										#Vector2(1,-1),
-										Vector2i(-1,0),
-										#Vector2(0,0),
-										Vector2i(1,0),
-										#Vector2(-1,1),
-										Vector2i(0,1),
-										#Vector2(1,1)
-										]
+	#if card.flipped or (tween_transition and tween_transition.is_running()):
+		#return
+	#var surroundings : Array[Vector2i] = [#Vector2(-1,-1),
+										#Vector2i(0,-1),
+										##Vector2(1,-1),
+										#Vector2i(-1,0),
+										##Vector2(0,0),
+										#Vector2i(1,0),
+										##Vector2(-1,1),
+										#Vector2i(0,1),
+										##Vector2(1,1)
+										#]
 	card.z_index = card.num_cards
 	tween_transition = create_tween()
 	tween_transition.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
@@ -62,6 +67,7 @@ func _on_card_clicked(card : Card) -> void:
 	#tween_transition.parallel().tween_property(card, 'global_position', (index_to_card[Vector2i(cols/2,cols/2)] as Card).global_position, 1)
 	tween_transition.tween_callback(card.hide)
 	tween_transition.tween_callback(func()->void: card_clicked.emit(card))
+	add_card(card.data)
 	#tween_transition.tween_callback(card.queue_free)
 	
 	#for s : Vector2i in surroundings:
@@ -92,3 +98,21 @@ func _on_card_hover_entered(card : Card) -> void:
 		description += card.data.type.name + "\n" + card.data.type.description + "\n"
 	preview_label.text = description
 	#($Preview as Control).show()
+
+func add_card(data:CardData) -> void:
+	var card : Card = CARD.instantiate()
+	card.add_data(data)
+	card.can_move_anim = false
+	card.flipped = false
+	var control : Control = CARD_CONTROL.instantiate()
+	control.add_child(card)
+	flow_container.add_child(control)
+	
+func _on_deck_clicked(card: Card) -> void:
+	deck_viewer.show()
+
+func _on_margin_container_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			deck_viewer.hide()

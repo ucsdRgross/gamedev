@@ -1,12 +1,10 @@
-[gd_scene load_steps=64 format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=13 format=3 uid="uid://oc6yiar3wsih"]
 
 [ext_resource type="Script" path="res://Levels/map.gd" id="1_uwdp5"]
 [ext_resource type="Script" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
 [ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://triangle_map.tscn" id="5_5sh7s"]
-[ext_resource type="Script" path="res://Cards/card_data.gd" id="6_thoxt"]
-[ext_resource type="Script" path="res://Cards/card.gd" id="7_xet23"]
 
 [sub_resource type="Environment" id="Environment_grdjq"]
 background_mode = 3
@@ -15,251 +13,6 @@ background_mode = 3
 line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
-
-[sub_resource type="Resource" id="Resource_ic782"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 2
-
-[sub_resource type="Resource" id="Resource_skb6u"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 5
-
-[sub_resource type="Resource" id="Resource_3gxqf"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_adv8w"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 9
-
-[sub_resource type="Resource" id="Resource_nypru"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 5
-
-[sub_resource type="Resource" id="Resource_60ka3"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 3
-
-[sub_resource type="Resource" id="Resource_2uj37"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_qbkim"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 11
-
-[sub_resource type="Resource" id="Resource_onebb"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_80vdm"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 3
-
-[sub_resource type="Resource" id="Resource_mchm4"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 1
-
-[sub_resource type="Resource" id="Resource_jrpif"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 11
-
-[sub_resource type="Resource" id="Resource_5hktj"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 13
-
-[sub_resource type="Resource" id="Resource_esaho"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 2
-
-[sub_resource type="Resource" id="Resource_10exe"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 11
-
-[sub_resource type="Resource" id="Resource_8a714"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 4
-
-[sub_resource type="Resource" id="Resource_qrwg6"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 5
-
-[sub_resource type="Resource" id="Resource_rm4w1"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 4
-
-[sub_resource type="Resource" id="Resource_cmg6i"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_4frsf"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_r08mw"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 4
-
-[sub_resource type="Resource" id="Resource_8qfx1"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_77btm"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 1
-
-[sub_resource type="Resource" id="Resource_v0r4h"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_c0iow"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 8
-
-[sub_resource type="Resource" id="Resource_xjt2k"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 7
-
-[sub_resource type="Resource" id="Resource_k7wdq"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_626gh"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 4
-
-[sub_resource type="Resource" id="Resource_o7eqf"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 9
-
-[sub_resource type="Resource" id="Resource_1c8iv"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_hpn5c"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 12
-
-[sub_resource type="Resource" id="Resource_okd18"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 7
-
-[sub_resource type="Resource" id="Resource_vln5e"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 2
-
-[sub_resource type="Resource" id="Resource_b6327"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 3
-
-[sub_resource type="Resource" id="Resource_qk1vc"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_n331x"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_ve7rq"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 13
-
-[sub_resource type="Resource" id="Resource_1fa24"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 1
-
-[sub_resource type="Resource" id="Resource_i78cq"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 1
-
-[sub_resource type="Resource" id="Resource_qhy6r"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_ytpkk"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 3
-
-[sub_resource type="Resource" id="Resource_3bh25"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 1
-
-[sub_resource type="Resource" id="Resource_ae4v1"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 5
-
-[sub_resource type="Resource" id="Resource_sd1g5"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 2
-
-[sub_resource type="Resource" id="Resource_2slqw"]
-script = ExtResource("6_thoxt")
-suit = 2
-rank = 9
-
-[sub_resource type="Resource" id="Resource_3ov5j"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 2
-
-[sub_resource type="Resource" id="Resource_3nkm8"]
-script = ExtResource("6_thoxt")
-suit = 4
-rank = 12
-
-[sub_resource type="Resource" id="Resource_buflg"]
-script = ExtResource("6_thoxt")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_h6ysk"]
-script = ExtResource("6_thoxt")
-suit = 3
-rank = 4
 
 [sub_resource type="QuadMesh" id="QuadMesh_c5ijj"]
 size = Vector2(3.556, 2)
@@ -287,7 +40,6 @@ script = ExtResource("1_uwdp5")
 environment = SubResource("Environment_grdjq")
 
 [node name="TextureRect" type="TextureRect" parent="Background"]
-visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -302,11 +54,9 @@ expand_mode = 3
 stretch_mode = 6
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, -0.49, 0.7)
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, -0.52, 1.185)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="Preview" type="Control" parent="CanvasLayer"]
+[node name="Preview" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
 offset_left = 85.0
@@ -315,13 +65,13 @@ offset_right = 85.0
 offset_bottom = 559.0
 scale = Vector2(1.5, 1.5)
 
-[node name="Card" parent="CanvasLayer/Preview" instance=ExtResource("2_dofqu")]
+[node name="Card" parent="Preview" instance=ExtResource("2_dofqu")]
 position = Vector2(18.4, -57.6)
 can_move_anim = false
 clickable = false
 stack_limit = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/Preview"]
+[node name="Label" type="Label" parent="Preview"]
 layout_mode = 0
 offset_left = -43.0
 offset_top = 22.0
@@ -338,545 +88,10 @@ script = ExtResource("1_wpjh4")
 [node name="SubViewport" type="SubViewport" parent="TiltedGUI"]
 transparent_bg = true
 canvas_item_default_texture_filter = 0
-size = Vector2i(2304, 1296)
+size = Vector2i(1152, 648)
 
 [node name="TriangleMap" parent="TiltedGUI/SubViewport" node_paths=PackedStringArray("cards") instance=ExtResource("5_5sh7s")]
-cards = [NodePath("Card"), NodePath("@Node2D@89169"), NodePath("@Node2D@89170"), NodePath("@Node2D@89171"), NodePath("@Node2D@89172"), NodePath("@Node2D@89173"), NodePath("@Node2D@89174"), NodePath("@Node2D@89175"), NodePath("@Node2D@89176"), NodePath("@Node2D@89177"), NodePath("@Node2D@89178"), NodePath("@Node2D@89179"), NodePath("@Node2D@89180"), NodePath("@Node2D@89181"), NodePath("@Node2D@89182"), NodePath("@Node2D@89183"), NodePath("@Node2D@89184"), NodePath("@Node2D@89185"), NodePath("@Node2D@89186"), NodePath("@Node2D@89187"), NodePath("@Node2D@89188"), NodePath("@Node2D@89189"), NodePath("@Node2D@89190"), NodePath("@Node2D@89191"), NodePath("@Node2D@89192"), NodePath("@Node2D@89193"), NodePath("@Node2D@89194"), NodePath("@Node2D@89195"), NodePath("@Node2D@89196"), NodePath("@Node2D@89197"), NodePath("@Node2D@89198"), NodePath("@Node2D@89199"), NodePath("@Node2D@89200"), NodePath("@Node2D@89201"), NodePath("@Node2D@89202"), NodePath("@Node2D@89203"), NodePath("@Node2D@89204"), NodePath("@Node2D@89205"), NodePath("@Node2D@89206"), NodePath("@Node2D@89207"), NodePath("@Node2D@89208"), NodePath("@Node2D@89209"), NodePath("@Node2D@89210"), NodePath("@Node2D@89211"), NodePath("@Node2D@89212"), NodePath("@Node2D@89213"), NodePath("@Node2D@89214"), NodePath("@Node2D@89215"), NodePath("@Node2D@89216")]
-
-[node name="Card" parent="TiltedGUI/SubViewport/TriangleMap/CardControl" index="0"]
-position = Vector2(0, -1146)
-
-[node name="@Node2D@87177" parent="TiltedGUI/SubViewport/TriangleMap" index="2"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87178" parent="TiltedGUI/SubViewport/TriangleMap" index="3"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87179" parent="TiltedGUI/SubViewport/TriangleMap" index="4"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87180" parent="TiltedGUI/SubViewport/TriangleMap" index="5"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87181" parent="TiltedGUI/SubViewport/TriangleMap" index="6"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87182" parent="TiltedGUI/SubViewport/TriangleMap" index="7"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87183" parent="TiltedGUI/SubViewport/TriangleMap" index="8"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87184" parent="TiltedGUI/SubViewport/TriangleMap" index="9"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87185" parent="TiltedGUI/SubViewport/TriangleMap" index="10"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87186" parent="TiltedGUI/SubViewport/TriangleMap" index="11"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87187" parent="TiltedGUI/SubViewport/TriangleMap" index="12"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87188" parent="TiltedGUI/SubViewport/TriangleMap" index="13"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87189" parent="TiltedGUI/SubViewport/TriangleMap" index="14"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87190" parent="TiltedGUI/SubViewport/TriangleMap" index="15"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87191" parent="TiltedGUI/SubViewport/TriangleMap" index="16"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87192" parent="TiltedGUI/SubViewport/TriangleMap" index="17"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87193" parent="TiltedGUI/SubViewport/TriangleMap" index="18"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87194" parent="TiltedGUI/SubViewport/TriangleMap" index="19"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87195" parent="TiltedGUI/SubViewport/TriangleMap" index="20"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87196" parent="TiltedGUI/SubViewport/TriangleMap" index="21"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87197" parent="TiltedGUI/SubViewport/TriangleMap" index="22"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87198" parent="TiltedGUI/SubViewport/TriangleMap" index="23"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87199" parent="TiltedGUI/SubViewport/TriangleMap" index="24"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87200" parent="TiltedGUI/SubViewport/TriangleMap" index="25"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87201" parent="TiltedGUI/SubViewport/TriangleMap" index="26"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87202" parent="TiltedGUI/SubViewport/TriangleMap" index="27"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87203" parent="TiltedGUI/SubViewport/TriangleMap" index="28"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87204" parent="TiltedGUI/SubViewport/TriangleMap" index="29"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87205" parent="TiltedGUI/SubViewport/TriangleMap" index="30"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87206" parent="TiltedGUI/SubViewport/TriangleMap" index="31"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87207" parent="TiltedGUI/SubViewport/TriangleMap" index="32"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87208" parent="TiltedGUI/SubViewport/TriangleMap" index="33"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87209" parent="TiltedGUI/SubViewport/TriangleMap" index="34"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87210" parent="TiltedGUI/SubViewport/TriangleMap" index="35"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87211" parent="TiltedGUI/SubViewport/TriangleMap" index="36"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87212" parent="TiltedGUI/SubViewport/TriangleMap" index="37"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87213" parent="TiltedGUI/SubViewport/TriangleMap" index="38"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87214" parent="TiltedGUI/SubViewport/TriangleMap" index="39"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87215" parent="TiltedGUI/SubViewport/TriangleMap" index="40"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87216" parent="TiltedGUI/SubViewport/TriangleMap" index="41"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87217" parent="TiltedGUI/SubViewport/TriangleMap" index="42"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87218" parent="TiltedGUI/SubViewport/TriangleMap" index="43"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87219" parent="TiltedGUI/SubViewport/TriangleMap" index="44"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87220" parent="TiltedGUI/SubViewport/TriangleMap" index="45"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87221" parent="TiltedGUI/SubViewport/TriangleMap" index="46"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87222" parent="TiltedGUI/SubViewport/TriangleMap" index="47"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87223" parent="TiltedGUI/SubViewport/TriangleMap" index="48"]
-position = Vector2(0, 0)
-
-[node name="@Node2D@87224" parent="TiltedGUI/SubViewport/TriangleMap" index="49"]
-position = Vector2(0, 0)
-
-[node name="Card" parent="TiltedGUI/SubViewport/TriangleMap" index="50"]
-position = Vector2(444, 297)
-data = SubResource("Resource_ic782")
-
-[node name="@Node2D@89169" parent="TiltedGUI/SubViewport/TriangleMap" index="51"]
-position = Vector2(562, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_skb6u")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89170" parent="TiltedGUI/SubViewport/TriangleMap" index="52"]
-position = Vector2(680, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_3gxqf")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89171" parent="TiltedGUI/SubViewport/TriangleMap" index="53"]
-position = Vector2(798, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_adv8w")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89172" parent="TiltedGUI/SubViewport/TriangleMap" index="54"]
-position = Vector2(916, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_nypru")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89173" parent="TiltedGUI/SubViewport/TriangleMap" index="55"]
-position = Vector2(1034, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_60ka3")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89174" parent="TiltedGUI/SubViewport/TriangleMap" index="56"]
-position = Vector2(1152, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_2uj37")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89175" parent="TiltedGUI/SubViewport/TriangleMap" index="57"]
-position = Vector2(1270, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_qbkim")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89176" parent="TiltedGUI/SubViewport/TriangleMap" index="58"]
-position = Vector2(1388, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_onebb")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89177" parent="TiltedGUI/SubViewport/TriangleMap" index="59"]
-position = Vector2(1506, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_80vdm")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89178" parent="TiltedGUI/SubViewport/TriangleMap" index="60"]
-position = Vector2(1624, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_mchm4")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89179" parent="TiltedGUI/SubViewport/TriangleMap" index="61"]
-position = Vector2(1742, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_jrpif")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89180" parent="TiltedGUI/SubViewport/TriangleMap" index="62"]
-position = Vector2(1860, 297)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_5hktj")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89181" parent="TiltedGUI/SubViewport/TriangleMap" index="63"]
-position = Vector2(562, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_esaho")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89182" parent="TiltedGUI/SubViewport/TriangleMap" index="64"]
-position = Vector2(680, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_10exe")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89183" parent="TiltedGUI/SubViewport/TriangleMap" index="65"]
-position = Vector2(798, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_8a714")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89184" parent="TiltedGUI/SubViewport/TriangleMap" index="66"]
-position = Vector2(916, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_qrwg6")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89185" parent="TiltedGUI/SubViewport/TriangleMap" index="67"]
-position = Vector2(1034, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_rm4w1")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89186" parent="TiltedGUI/SubViewport/TriangleMap" index="68"]
-position = Vector2(1152, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_cmg6i")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89187" parent="TiltedGUI/SubViewport/TriangleMap" index="69"]
-position = Vector2(1270, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_4frsf")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89188" parent="TiltedGUI/SubViewport/TriangleMap" index="70"]
-position = Vector2(1388, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_r08mw")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89189" parent="TiltedGUI/SubViewport/TriangleMap" index="71"]
-position = Vector2(1506, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_8qfx1")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89190" parent="TiltedGUI/SubViewport/TriangleMap" index="72"]
-position = Vector2(1624, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_77btm")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89191" parent="TiltedGUI/SubViewport/TriangleMap" index="73"]
-position = Vector2(1742, 451)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_v0r4h")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89192" parent="TiltedGUI/SubViewport/TriangleMap" index="74"]
-position = Vector2(680, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_c0iow")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89193" parent="TiltedGUI/SubViewport/TriangleMap" index="75"]
-position = Vector2(798, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_xjt2k")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89194" parent="TiltedGUI/SubViewport/TriangleMap" index="76"]
-position = Vector2(916, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_k7wdq")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89195" parent="TiltedGUI/SubViewport/TriangleMap" index="77"]
-position = Vector2(1034, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_626gh")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89196" parent="TiltedGUI/SubViewport/TriangleMap" index="78"]
-position = Vector2(1152, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_o7eqf")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89197" parent="TiltedGUI/SubViewport/TriangleMap" index="79"]
-position = Vector2(1270, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_1c8iv")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89198" parent="TiltedGUI/SubViewport/TriangleMap" index="80"]
-position = Vector2(1388, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_hpn5c")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89199" parent="TiltedGUI/SubViewport/TriangleMap" index="81"]
-position = Vector2(1506, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_okd18")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89200" parent="TiltedGUI/SubViewport/TriangleMap" index="82"]
-position = Vector2(1624, 605)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_vln5e")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89201" parent="TiltedGUI/SubViewport/TriangleMap" index="83"]
-position = Vector2(798, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_b6327")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89202" parent="TiltedGUI/SubViewport/TriangleMap" index="84"]
-position = Vector2(916, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_qk1vc")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89203" parent="TiltedGUI/SubViewport/TriangleMap" index="85"]
-position = Vector2(1034, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_n331x")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89204" parent="TiltedGUI/SubViewport/TriangleMap" index="86"]
-position = Vector2(1152, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_ve7rq")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89205" parent="TiltedGUI/SubViewport/TriangleMap" index="87"]
-position = Vector2(1270, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_1fa24")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89206" parent="TiltedGUI/SubViewport/TriangleMap" index="88"]
-position = Vector2(1388, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_i78cq")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89207" parent="TiltedGUI/SubViewport/TriangleMap" index="89"]
-position = Vector2(1506, 759)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_qhy6r")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89208" parent="TiltedGUI/SubViewport/TriangleMap" index="90"]
-position = Vector2(916, 913)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_ytpkk")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89209" parent="TiltedGUI/SubViewport/TriangleMap" index="91"]
-position = Vector2(1034, 913)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_3bh25")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89210" parent="TiltedGUI/SubViewport/TriangleMap" index="92"]
-position = Vector2(1152, 913)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_ae4v1")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89211" parent="TiltedGUI/SubViewport/TriangleMap" index="93"]
-position = Vector2(1270, 913)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_sd1g5")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89212" parent="TiltedGUI/SubViewport/TriangleMap" index="94"]
-position = Vector2(1388, 913)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_2slqw")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89213" parent="TiltedGUI/SubViewport/TriangleMap" index="95"]
-position = Vector2(1034, 1067)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_3ov5j")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89214" parent="TiltedGUI/SubViewport/TriangleMap" index="96"]
-position = Vector2(1152, 1067)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_3nkm8")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89215" parent="TiltedGUI/SubViewport/TriangleMap" index="97"]
-position = Vector2(1270, 1067)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_buflg")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@89216" parent="TiltedGUI/SubViewport/TriangleMap" index="98"]
-position = Vector2(1152, 1221)
-scale = Vector2(3, 3)
-script = ExtResource("7_xet23")
-data = SubResource("Resource_h6ysk")
-can_rot_anim = false
-flipped = false
+cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@216337"), NodePath("ChildCards/@Node2D@216338"), NodePath("ChildCards/@Node2D@216339"), NodePath("ChildCards/@Node2D@216340"), NodePath("ChildCards/@Node2D@216341"), NodePath("ChildCards/@Node2D@216342"), NodePath("ChildCards/@Node2D@216343"), NodePath("ChildCards/@Node2D@216344"), NodePath("ChildCards/@Node2D@216345"), NodePath("ChildCards/@Node2D@216346"), NodePath("ChildCards/@Node2D@216347"), NodePath("ChildCards/@Node2D@216348"), NodePath("ChildCards/@Node2D@216349"), NodePath("ChildCards/@Node2D@216350"), NodePath("ChildCards/@Node2D@216351"), NodePath("ChildCards/@Node2D@216352"), NodePath("ChildCards/@Node2D@216353"), NodePath("ChildCards/@Node2D@216354"), NodePath("ChildCards/@Node2D@216355"), NodePath("ChildCards/@Node2D@216356"), NodePath("ChildCards/@Node2D@216357"), NodePath("ChildCards/@Node2D@216358"), NodePath("ChildCards/@Node2D@216359"), NodePath("ChildCards/@Node2D@216360"), NodePath("ChildCards/@Node2D@216361"), NodePath("ChildCards/@Node2D@216362"), NodePath("ChildCards/@Node2D@216363"), NodePath("ChildCards/@Node2D@216364"), NodePath("ChildCards/@Node2D@216365"), NodePath("ChildCards/@Node2D@216366"), NodePath("ChildCards/@Node2D@216367"), NodePath("ChildCards/@Node2D@216368"), NodePath("ChildCards/@Node2D@216369"), NodePath("ChildCards/@Node2D@216370"), NodePath("ChildCards/@Node2D@216371"), NodePath("ChildCards/@Node2D@216372"), NodePath("ChildCards/@Node2D@216373"), NodePath("ChildCards/@Node2D@216374"), NodePath("ChildCards/@Node2D@216375"), NodePath("ChildCards/@Node2D@216376"), NodePath("ChildCards/@Node2D@216377"), NodePath("ChildCards/@Node2D@216378"), NodePath("ChildCards/@Node2D@216379"), NodePath("ChildCards/@Node2D@216380"), NodePath("ChildCards/@Node2D@216381"), NodePath("ChildCards/@Node2D@216382"), NodePath("ChildCards/@Node2D@216383"), NodePath("ChildCards/@Node2D@216384")]
 
 [node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]
 mesh = SubResource("QuadMesh_c5ijj")
@@ -894,4 +109,32 @@ visible = false
 texture = SubResource("ViewportTexture_ciy4y")
 centered = false
 
-[editable path="TiltedGUI/SubViewport/TriangleMap"]
+[node name="DeckViewer" type="CanvasLayer" parent="."]
+
+[node name="MarginContainer" type="MarginContainer" parent="DeckViewer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 80
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 80
+
+[node name="ColorRect" type="ColorRect" parent="DeckViewer/MarginContainer"]
+layout_mode = 2
+color = Color(1, 0.384314, 0.498039, 0.141176)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="DeckViewer/MarginContainer"]
+layout_mode = 2
+mouse_filter = 0
+
+[node name="FlowContainer" type="FlowContainer" parent="DeckViewer/MarginContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]
