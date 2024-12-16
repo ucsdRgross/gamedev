@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
-[ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://triangle_map.tscn" id="5_5sh7s"]
+[ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://Levels/triangle_map.tscn" id="5_5sh7s"]
 
 [sub_resource type="Environment" id="Environment_grdjq"]
 background_mode = 3
@@ -91,7 +91,7 @@ canvas_item_default_texture_filter = 0
 size = Vector2i(1152, 648)
 
 [node name="TriangleMap" parent="TiltedGUI/SubViewport" node_paths=PackedStringArray("cards") instance=ExtResource("5_5sh7s")]
-cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@216337"), NodePath("ChildCards/@Node2D@216338"), NodePath("ChildCards/@Node2D@216339"), NodePath("ChildCards/@Node2D@216340"), NodePath("ChildCards/@Node2D@216341"), NodePath("ChildCards/@Node2D@216342"), NodePath("ChildCards/@Node2D@216343"), NodePath("ChildCards/@Node2D@216344"), NodePath("ChildCards/@Node2D@216345"), NodePath("ChildCards/@Node2D@216346"), NodePath("ChildCards/@Node2D@216347"), NodePath("ChildCards/@Node2D@216348"), NodePath("ChildCards/@Node2D@216349"), NodePath("ChildCards/@Node2D@216350"), NodePath("ChildCards/@Node2D@216351"), NodePath("ChildCards/@Node2D@216352"), NodePath("ChildCards/@Node2D@216353"), NodePath("ChildCards/@Node2D@216354"), NodePath("ChildCards/@Node2D@216355"), NodePath("ChildCards/@Node2D@216356"), NodePath("ChildCards/@Node2D@216357"), NodePath("ChildCards/@Node2D@216358"), NodePath("ChildCards/@Node2D@216359"), NodePath("ChildCards/@Node2D@216360"), NodePath("ChildCards/@Node2D@216361"), NodePath("ChildCards/@Node2D@216362"), NodePath("ChildCards/@Node2D@216363"), NodePath("ChildCards/@Node2D@216364"), NodePath("ChildCards/@Node2D@216365"), NodePath("ChildCards/@Node2D@216366"), NodePath("ChildCards/@Node2D@216367"), NodePath("ChildCards/@Node2D@216368"), NodePath("ChildCards/@Node2D@216369"), NodePath("ChildCards/@Node2D@216370"), NodePath("ChildCards/@Node2D@216371"), NodePath("ChildCards/@Node2D@216372"), NodePath("ChildCards/@Node2D@216373"), NodePath("ChildCards/@Node2D@216374"), NodePath("ChildCards/@Node2D@216375"), NodePath("ChildCards/@Node2D@216376"), NodePath("ChildCards/@Node2D@216377"), NodePath("ChildCards/@Node2D@216378"), NodePath("ChildCards/@Node2D@216379"), NodePath("ChildCards/@Node2D@216380"), NodePath("ChildCards/@Node2D@216381"), NodePath("ChildCards/@Node2D@216382"), NodePath("ChildCards/@Node2D@216383"), NodePath("ChildCards/@Node2D@216384")]
+cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@52266"), NodePath("ChildCards/@Node2D@52267"), NodePath("ChildCards/@Node2D@52268"), NodePath("ChildCards/@Node2D@52269"), NodePath("ChildCards/@Node2D@52270"), NodePath("ChildCards/@Node2D@52271"), NodePath("ChildCards/@Node2D@52272"), NodePath("ChildCards/@Node2D@52273"), NodePath("ChildCards/@Node2D@52274"), NodePath("ChildCards/@Node2D@52275"), NodePath("ChildCards/@Node2D@52276"), NodePath("ChildCards/@Node2D@52277"), NodePath("ChildCards/@Node2D@52278"), NodePath("ChildCards/@Node2D@52279"), NodePath("ChildCards/@Node2D@52280"), NodePath("ChildCards/@Node2D@52281"), NodePath("ChildCards/@Node2D@52282"), NodePath("ChildCards/@Node2D@52283"), NodePath("ChildCards/@Node2D@52284"), NodePath("ChildCards/@Node2D@52285"), NodePath("ChildCards/@Node2D@52286"), NodePath("ChildCards/@Node2D@52287"), NodePath("ChildCards/@Node2D@52288"), NodePath("ChildCards/@Node2D@52289"), NodePath("ChildCards/@Node2D@52290"), NodePath("ChildCards/@Node2D@52291"), NodePath("ChildCards/@Node2D@52292"), NodePath("ChildCards/@Node2D@52293"), NodePath("ChildCards/@Node2D@52294"), NodePath("ChildCards/@Node2D@52295"), NodePath("ChildCards/@Node2D@52296"), NodePath("ChildCards/@Node2D@52297"), NodePath("ChildCards/@Node2D@52298"), NodePath("ChildCards/@Node2D@52299"), NodePath("ChildCards/@Node2D@52300"), NodePath("ChildCards/@Node2D@52301"), NodePath("ChildCards/@Node2D@52302"), NodePath("ChildCards/@Node2D@52303"), NodePath("ChildCards/@Node2D@52304"), NodePath("ChildCards/@Node2D@52305"), NodePath("ChildCards/@Node2D@52306"), NodePath("ChildCards/@Node2D@52307"), NodePath("ChildCards/@Node2D@52308"), NodePath("ChildCards/@Node2D@52309"), NodePath("ChildCards/@Node2D@52310"), NodePath("ChildCards/@Node2D@52311"), NodePath("ChildCards/@Node2D@52312")]
 
 [node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]
 mesh = SubResource("QuadMesh_c5ijj")
@@ -109,7 +109,15 @@ visible = false
 texture = SubResource("ViewportTexture_ciy4y")
 centered = false
 
+[node name="Layer" type="Label" parent="."]
+offset_right = 183.0
+offset_bottom = 94.0
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 30
+text = "Layer: 0"
+
 [node name="DeckViewer" type="CanvasLayer" parent="."]
+visible = false
 
 [node name="MarginContainer" type="MarginContainer" parent="DeckViewer"]
 anchors_preset = 15

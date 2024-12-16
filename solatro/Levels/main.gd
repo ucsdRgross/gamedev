@@ -1,23 +1,33 @@
+class_name Main
 extends Node
 
-var scene_map := preload("res://Levels/map.tscn").instantiate()
-var scene_game := preload("res://Levels/game.tscn")#.instantiate()
+const MENU = preload("res://Levels/menu.tscn")
+const MAP = preload("res://Levels/map.tscn")
+const GAME = preload("res://Levels/game.tscn")
+
+var menu_scene : Menu = MENU.instantiate()
+var map_scene : Map = MAP.instantiate()
 var current_scene : Node = null
+static var save_info : PlayerSave = PlayerSave.new()
 
 #@onready var level: Node = $Level
 #@onready var level: Control = $CanvasLayer/Level
 
 func _ready() -> void:
-	(scene_map as Map).card_clicked.connect(enter_game)
-	switch_scene(scene_map)
+	#(scene_map as Map).card_clicked.connect(enter_game)
+	menu_scene.play_pressed.connect(enter_map)
+	switch_scene(menu_scene)
+
+func enter_map() -> void:
+	switch_scene(map_scene)
 
 func enter_game(card:Card) -> void:
-	var new_game : Game = scene_game.instantiate()
+	var new_game : Game = GAME.instantiate()
 	new_game.game_ended.connect(game_ended)
 	switch_scene(new_game)
 
 func game_ended() -> void:
-	switch_scene(scene_map)
+	switch_scene(map_scene)
 
 func switch_scene(new_scene : Node) -> void:
 	if new_scene.is_inside_tree():

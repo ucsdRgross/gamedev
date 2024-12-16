@@ -16,6 +16,7 @@ var tween_transition : Tween
 @onready var preview_label: Label = $Preview/Label
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var deck_viewer: CanvasLayer = $DeckViewer
+@onready var layer: Label = $Layer
 
 func _ready() -> void:
 	triangle_map.card_clicked.connect(_on_card_clicked)
@@ -23,6 +24,7 @@ func _ready() -> void:
 	#($Preview as Control).hide()
 	preview_label.text = ""
 	triangle_map.deck_clicked.connect(_on_deck_clicked)
+	update_layer(0)
 	#containers = grid_container.get_children()
 	#var cols : int = grid_container.columns
 	#var i : int = 0
@@ -48,6 +50,7 @@ func _ready() -> void:
 		#index_to_card[coord].flipped = false
 
 func _on_card_clicked(card : Card) -> void:
+	update_layer(1)
 	#if card.flipped or (tween_transition and tween_transition.is_running()):
 		#return
 	#var surroundings : Array[Vector2i] = [#Vector2(-1,-1),
@@ -60,13 +63,14 @@ func _on_card_clicked(card : Card) -> void:
 										#Vector2i(0,1),
 										##Vector2(1,1)
 										#]
-	card.z_index = card.num_cards
-	tween_transition = create_tween()
-	tween_transition.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
-	#var cols : int = grid_container.columns
-	#tween_transition.parallel().tween_property(card, 'global_position', (index_to_card[Vector2i(cols/2,cols/2)] as Card).global_position, 1)
-	tween_transition.tween_callback(card.hide)
-	tween_transition.tween_callback(func()->void: card_clicked.emit(card))
+	#card.z_index = card.num_cards
+	#tween_transition = create_tween()
+	#tween_transition.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
+	##var cols : int = grid_container.columns
+	##tween_transition.parallel().tween_property(card, 'global_position', (index_to_card[Vector2i(cols/2,cols/2)] as Card).global_position, 1)
+	#tween_transition.tween_callback(card.hide)
+	#tween_transition.tween_callback(func()->void: card_clicked.emit(card))
+	#tween_transition.tween_callback(func()->void: card.queue_free())
 	add_card(card.data)
 	#tween_transition.tween_callback(card.queue_free)
 	
@@ -83,6 +87,10 @@ func _on_card_clicked(card : Card) -> void:
 				#tween_hide.parallel().tween_property(c, "scale", Vector2(0.1,0.1), 0.5)
 				#tween_hide.tween_callback(c.hide)
 	#await tween_transition.finished
+
+func update_layer(i : int) -> void:
+	Main.save_info.layer += i
+	layer.text = "Layer: " + str(Main.save_info.layer)
 
 func _on_card_hover_entered(card : Card) -> void:
 	if not card.flipped:

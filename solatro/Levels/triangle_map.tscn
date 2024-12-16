@@ -1,255 +1,250 @@
-[gd_scene load_steps=55 format=3 uid="uid://divgmobncm76x"]
+[gd_scene load_steps=54 format=3 uid="uid://divgmobncm76x"]
 
-[ext_resource type="Script" path="res://triangle_map.gd" id="1_7ass7"]
+[ext_resource type="Script" path="res://Levels/triangle_map.gd" id="1_7ass7"]
 [ext_resource type="PackedScene" uid="uid://cdevr7c0t2cag" path="res://UI/card_control.tscn" id="2_mlga5"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_pe4wh"]
 [ext_resource type="Script" path="res://Cards/card.gd" id="4_yrcgy"]
 [ext_resource type="Script" path="res://Cards/card_data.gd" id="5_guorj"]
 
-[sub_resource type="Resource" id="Resource_3sj2l"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_mawyt"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 1
-
-[sub_resource type="Resource" id="Resource_n7fa0"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_y7x5k"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 10
-
-[sub_resource type="Resource" id="Resource_ywywd"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 5
-
-[sub_resource type="Resource" id="Resource_b5p0u"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 5
-
-[sub_resource type="Resource" id="Resource_2iu2t"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 5
-
-[sub_resource type="Resource" id="Resource_cv6us"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 4
-
-[sub_resource type="Resource" id="Resource_vgamc"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_dmhs4"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 10
-
-[sub_resource type="Resource" id="Resource_6bwf1"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 5
-
-[sub_resource type="Resource" id="Resource_bayub"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 9
-
-[sub_resource type="Resource" id="Resource_58l8i"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 9
-
-[sub_resource type="Resource" id="Resource_4yvn4"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 5
-
-[sub_resource type="Resource" id="Resource_5gjh5"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 7
-
-[sub_resource type="Resource" id="Resource_vh2nr"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 3
-
-[sub_resource type="Resource" id="Resource_c8rtb"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 7
-
-[sub_resource type="Resource" id="Resource_4wl3y"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 4
-
-[sub_resource type="Resource" id="Resource_605w2"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 4
-
-[sub_resource type="Resource" id="Resource_j8ti6"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 1
-
-[sub_resource type="Resource" id="Resource_dtwxl"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 2
-
-[sub_resource type="Resource" id="Resource_7pnno"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 4
-
-[sub_resource type="Resource" id="Resource_qx88w"]
+[sub_resource type="Resource" id="Resource_go6q7"]
 script = ExtResource("5_guorj")
 suit = 4
 rank = 9
 
-[sub_resource type="Resource" id="Resource_etiyn"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 11
-
-[sub_resource type="Resource" id="Resource_t8b25"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 2
-
-[sub_resource type="Resource" id="Resource_s7nti"]
+[sub_resource type="Resource" id="Resource_m3omt"]
 script = ExtResource("5_guorj")
 suit = 2
-rank = 2
-
-[sub_resource type="Resource" id="Resource_8s26v"]
-script = ExtResource("5_guorj")
-suit = 4
 rank = 8
 
-[sub_resource type="Resource" id="Resource_3lybj"]
+[sub_resource type="Resource" id="Resource_6lahi"]
 script = ExtResource("5_guorj")
-suit = 2
+suit = 1
 rank = 13
 
-[sub_resource type="Resource" id="Resource_ee3to"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 9
-
-[sub_resource type="Resource" id="Resource_4ya7j"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 2
-
-[sub_resource type="Resource" id="Resource_hk8s7"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_drmx6"]
-script = ExtResource("5_guorj")
-suit = 2
-rank = 11
-
-[sub_resource type="Resource" id="Resource_a6sl0"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_w604i"]
+[sub_resource type="Resource" id="Resource_efue3"]
 script = ExtResource("5_guorj")
 suit = 4
-rank = 7
+rank = 11
 
-[sub_resource type="Resource" id="Resource_uh43m"]
+[sub_resource type="Resource" id="Resource_kfk5s"]
 script = ExtResource("5_guorj")
-suit = 3
-rank = 6
+suit = 4
+rank = 1
 
-[sub_resource type="Resource" id="Resource_5ob7q"]
+[sub_resource type="Resource" id="Resource_utg2a"]
 script = ExtResource("5_guorj")
 suit = 1
-rank = 10
+rank = 9
 
-[sub_resource type="Resource" id="Resource_mo746"]
+[sub_resource type="Resource" id="Resource_x4ucd"]
 script = ExtResource("5_guorj")
 suit = 4
 rank = 2
 
-[sub_resource type="Resource" id="Resource_81x62"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_jg7gs"]
-script = ExtResource("5_guorj")
-suit = 4
-rank = 9
-
-[sub_resource type="Resource" id="Resource_bl4jt"]
-script = ExtResource("5_guorj")
-suit = 3
-rank = 7
-
-[sub_resource type="Resource" id="Resource_fcdkh"]
+[sub_resource type="Resource" id="Resource_3bwoh"]
 script = ExtResource("5_guorj")
 suit = 2
-rank = 9
+rank = 7
 
-[sub_resource type="Resource" id="Resource_1ku6m"]
+[sub_resource type="Resource" id="Resource_lu7x1"]
 script = ExtResource("5_guorj")
-suit = 3
+suit = 4
 rank = 13
 
-[sub_resource type="Resource" id="Resource_ea35p"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 11
-
-[sub_resource type="Resource" id="Resource_07kgl"]
-script = ExtResource("5_guorj")
-suit = 1
-rank = 6
-
-[sub_resource type="Resource" id="Resource_wektk"]
+[sub_resource type="Resource" id="Resource_6wfeb"]
 script = ExtResource("5_guorj")
 suit = 4
-rank = 6
+rank = 13
 
-[sub_resource type="Resource" id="Resource_pbq4s"]
+[sub_resource type="Resource" id="Resource_kwo10"]
 script = ExtResource("5_guorj")
-suit = 1
-rank = 6
-
-[sub_resource type="Resource" id="Resource_hsw7a"]
-script = ExtResource("5_guorj")
-suit = 3
+suit = 2
 rank = 2
 
-[sub_resource type="Resource" id="Resource_ajrtu"]
+[sub_resource type="Resource" id="Resource_3elqr"]
 script = ExtResource("5_guorj")
-suit = 4
+suit = 1
+rank = 4
+
+[sub_resource type="Resource" id="Resource_20kh5"]
+script = ExtResource("5_guorj")
+suit = 2
 rank = 12
 
-[sub_resource type="Resource" id="Resource_ky0vg"]
+[sub_resource type="Resource" id="Resource_8lx8u"]
 script = ExtResource("5_guorj")
 suit = 4
-rank = 8
+rank = 9
+
+[sub_resource type="Resource" id="Resource_ky0qy"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 10
+
+[sub_resource type="Resource" id="Resource_5dawy"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 12
+
+[sub_resource type="Resource" id="Resource_xdjn2"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 7
+
+[sub_resource type="Resource" id="Resource_sxfhj"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 1
+
+[sub_resource type="Resource" id="Resource_fqdph"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 5
+
+[sub_resource type="Resource" id="Resource_fdivw"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 3
+
+[sub_resource type="Resource" id="Resource_n0awo"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 13
+
+[sub_resource type="Resource" id="Resource_2vkuw"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 11
+
+[sub_resource type="Resource" id="Resource_c7edx"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 2
+
+[sub_resource type="Resource" id="Resource_sphok"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 13
+
+[sub_resource type="Resource" id="Resource_d0fx3"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 2
+
+[sub_resource type="Resource" id="Resource_5v052"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 9
+
+[sub_resource type="Resource" id="Resource_o2rjy"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 10
+
+[sub_resource type="Resource" id="Resource_tnj2p"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 13
+
+[sub_resource type="Resource" id="Resource_1w56e"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 3
+
+[sub_resource type="Resource" id="Resource_4loa6"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 10
+
+[sub_resource type="Resource" id="Resource_msr6u"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 4
+
+[sub_resource type="Resource" id="Resource_t3xe6"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 2
+
+[sub_resource type="Resource" id="Resource_y3opd"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 9
+
+[sub_resource type="Resource" id="Resource_narn7"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 13
+
+[sub_resource type="Resource" id="Resource_igup8"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 6
+
+[sub_resource type="Resource" id="Resource_or6ci"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 6
+
+[sub_resource type="Resource" id="Resource_ru6h6"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 13
+
+[sub_resource type="Resource" id="Resource_pqnrw"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 4
+
+[sub_resource type="Resource" id="Resource_acdti"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 12
+
+[sub_resource type="Resource" id="Resource_fusck"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 12
+
+[sub_resource type="Resource" id="Resource_vjqsk"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 1
+
+[sub_resource type="Resource" id="Resource_bx8l7"]
+script = ExtResource("5_guorj")
+suit = 4
+rank = 5
+
+[sub_resource type="Resource" id="Resource_60o34"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 9
+
+[sub_resource type="Resource" id="Resource_cxnd0"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 11
+
+[sub_resource type="Resource" id="Resource_e0jxq"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 13
+
+[sub_resource type="Resource" id="Resource_ugibq"]
+script = ExtResource("5_guorj")
+suit = 1
+rank = 2
+
+[sub_resource type="Resource" id="Resource_i3iub"]
+script = ExtResource("5_guorj")
+suit = 3
+rank = 11
+
+[sub_resource type="Resource" id="Resource_jv40g"]
+script = ExtResource("5_guorj")
+suit = 2
+rank = 3
 
 [node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
@@ -261,7 +256,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_7ass7")
 rows = 7
-cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@215278"), NodePath("ChildCards/@Node2D@215279"), NodePath("ChildCards/@Node2D@215280"), NodePath("ChildCards/@Node2D@215281"), NodePath("ChildCards/@Node2D@215282"), NodePath("ChildCards/@Node2D@215283"), NodePath("ChildCards/@Node2D@215284"), NodePath("ChildCards/@Node2D@215285"), NodePath("ChildCards/@Node2D@215286"), NodePath("ChildCards/@Node2D@215287"), NodePath("ChildCards/@Node2D@215288"), NodePath("ChildCards/@Node2D@215289"), NodePath("ChildCards/@Node2D@215290"), NodePath("ChildCards/@Node2D@215291"), NodePath("ChildCards/@Node2D@215292"), NodePath("ChildCards/@Node2D@215293"), NodePath("ChildCards/@Node2D@215294"), NodePath("ChildCards/@Node2D@215295"), NodePath("ChildCards/@Node2D@215296"), NodePath("ChildCards/@Node2D@215297"), NodePath("ChildCards/@Node2D@215298"), NodePath("ChildCards/@Node2D@215299"), NodePath("ChildCards/@Node2D@215300"), NodePath("ChildCards/@Node2D@215301"), NodePath("ChildCards/@Node2D@215302"), NodePath("ChildCards/@Node2D@215303"), NodePath("ChildCards/@Node2D@215304"), NodePath("ChildCards/@Node2D@215305"), NodePath("ChildCards/@Node2D@215306"), NodePath("ChildCards/@Node2D@215307"), NodePath("ChildCards/@Node2D@215308"), NodePath("ChildCards/@Node2D@215309"), NodePath("ChildCards/@Node2D@215310"), NodePath("ChildCards/@Node2D@215311"), NodePath("ChildCards/@Node2D@215312"), NodePath("ChildCards/@Node2D@215313"), NodePath("ChildCards/@Node2D@215314"), NodePath("ChildCards/@Node2D@215315"), NodePath("ChildCards/@Node2D@215316"), NodePath("ChildCards/@Node2D@215317"), NodePath("ChildCards/@Node2D@215318"), NodePath("ChildCards/@Node2D@215319"), NodePath("ChildCards/@Node2D@215320"), NodePath("ChildCards/@Node2D@215321"), NodePath("ChildCards/@Node2D@215322"), NodePath("ChildCards/@Node2D@215323"), NodePath("ChildCards/@Node2D@215324"), NodePath("ChildCards/@Node2D@215325")]
+cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@53307"), NodePath("ChildCards/@Node2D@53308"), NodePath("ChildCards/@Node2D@53309"), NodePath("ChildCards/@Node2D@53310"), NodePath("ChildCards/@Node2D@53311"), NodePath("ChildCards/@Node2D@53312"), NodePath("ChildCards/@Node2D@53313"), NodePath("ChildCards/@Node2D@53314"), NodePath("ChildCards/@Node2D@53315"), NodePath("ChildCards/@Node2D@53316"), NodePath("ChildCards/@Node2D@53317"), NodePath("ChildCards/@Node2D@53318"), NodePath("ChildCards/@Node2D@53319"), NodePath("ChildCards/@Node2D@53320"), NodePath("ChildCards/@Node2D@53321"), NodePath("ChildCards/@Node2D@53322"), NodePath("ChildCards/@Node2D@53323"), NodePath("ChildCards/@Node2D@53324"), NodePath("ChildCards/@Node2D@53325"), NodePath("ChildCards/@Node2D@53326"), NodePath("ChildCards/@Node2D@53327"), NodePath("ChildCards/@Node2D@53328"), NodePath("ChildCards/@Node2D@53329"), NodePath("ChildCards/@Node2D@53330"), NodePath("ChildCards/@Node2D@53331"), NodePath("ChildCards/@Node2D@53332"), NodePath("ChildCards/@Node2D@53333"), NodePath("ChildCards/@Node2D@53334"), NodePath("ChildCards/@Node2D@53335"), NodePath("ChildCards/@Node2D@53336"), NodePath("ChildCards/@Node2D@53337"), NodePath("ChildCards/@Node2D@53338"), NodePath("ChildCards/@Node2D@53339"), NodePath("ChildCards/@Node2D@53340"), NodePath("ChildCards/@Node2D@53341"), NodePath("ChildCards/@Node2D@53342"), NodePath("ChildCards/@Node2D@53343"), NodePath("ChildCards/@Node2D@53344"), NodePath("ChildCards/@Node2D@53345"), NodePath("ChildCards/@Node2D@53346"), NodePath("ChildCards/@Node2D@53347"), NodePath("ChildCards/@Node2D@53348"), NodePath("ChildCards/@Node2D@53349"), NodePath("ChildCards/@Node2D@53350"), NodePath("ChildCards/@Node2D@53351"), NodePath("ChildCards/@Node2D@53352"), NodePath("ChildCards/@Node2D@53353")]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(576, 112)
@@ -565,103 +560,103 @@ layout_mode = 2
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179755" type="Control" parent="GridContainer"]
+[node name="@Control@52035" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179756" type="Control" parent="GridContainer"]
+[node name="@Control@52036" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179757" type="Control" parent="GridContainer"]
+[node name="@Control@52037" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179758" type="Control" parent="GridContainer"]
+[node name="@Control@52038" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179759" type="Control" parent="GridContainer"]
+[node name="@Control@52039" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179760" type="Control" parent="GridContainer"]
+[node name="@Control@52040" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179761" type="Control" parent="GridContainer"]
+[node name="@Control@52041" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179762" type="Control" parent="GridContainer"]
+[node name="@Control@52042" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179763" type="Control" parent="GridContainer"]
+[node name="@Control@52043" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179764" type="Control" parent="GridContainer"]
+[node name="@Control@52044" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179765" type="Control" parent="GridContainer"]
+[node name="@Control@52045" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179766" type="Control" parent="GridContainer"]
+[node name="@Control@52046" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179767" type="Control" parent="GridContainer"]
+[node name="@Control@52047" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179768" type="Control" parent="GridContainer"]
+[node name="@Control@52048" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179769" type="Control" parent="GridContainer"]
+[node name="@Control@52049" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179770" type="Control" parent="GridContainer"]
+[node name="@Control@52050" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179771" type="Control" parent="GridContainer"]
+[node name="@Control@52051" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179772" type="Control" parent="GridContainer"]
+[node name="@Control@52052" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179773" type="Control" parent="GridContainer"]
+[node name="@Control@52053" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179774" type="Control" parent="GridContainer"]
+[node name="@Control@52054" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179775" type="Control" parent="GridContainer"]
+[node name="@Control@52055" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179776" type="Control" parent="GridContainer"]
+[node name="@Control@52056" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179777" type="Control" parent="GridContainer"]
+[node name="@Control@52057" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179778" type="Control" parent="GridContainer"]
+[node name="@Control@52058" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
-[node name="@Control@179779" type="Control" parent="GridContainer"]
+[node name="@Control@52059" type="Control" parent="GridContainer"]
 custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
@@ -671,394 +666,399 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="Card" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_3sj2l")
+data = SubResource("Resource_go6q7")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215278" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53307" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(-14, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_mawyt")
+data = SubResource("Resource_m3omt")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215279" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53308" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(104, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_n7fa0")
+data = SubResource("Resource_6lahi")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215280" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53309" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(222, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_y7x5k")
+data = SubResource("Resource_efue3")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215281" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53310" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(340, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ywywd")
+data = SubResource("Resource_kfk5s")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215282" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53311" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(458, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_b5p0u")
+data = SubResource("Resource_utg2a")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215283" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53312" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(576, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_2iu2t")
+data = SubResource("Resource_x4ucd")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215284" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53313" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(694, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_cv6us")
+data = SubResource("Resource_3bwoh")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215285" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53314" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(812, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_vgamc")
+data = SubResource("Resource_lu7x1")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215286" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53315" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(930, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_dmhs4")
+data = SubResource("Resource_6wfeb")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215287" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53316" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(1048, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_6bwf1")
+data = SubResource("Resource_kwo10")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215288" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53317" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(1166, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_bayub")
+data = SubResource("Resource_3elqr")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215289" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53318" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+visible = false
 position = Vector2(1284, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_58l8i")
+data = SubResource("Resource_20kh5")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215290" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53319" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-14, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_4yvn4")
+data = SubResource("Resource_8lx8u")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215291" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53320" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(104, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_5gjh5")
+data = SubResource("Resource_ky0qy")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215292" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53321" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(222, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_vh2nr")
+data = SubResource("Resource_5dawy")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215293" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53322" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(340, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_c8rtb")
+data = SubResource("Resource_xdjn2")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215294" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53323" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(458, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_4wl3y")
+data = SubResource("Resource_sxfhj")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215295" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53324" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(576, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_605w2")
+data = SubResource("Resource_fqdph")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215296" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53325" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(694, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_j8ti6")
+data = SubResource("Resource_fdivw")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215297" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53326" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(812, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_dtwxl")
+data = SubResource("Resource_n0awo")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215298" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53327" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(930, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_7pnno")
+data = SubResource("Resource_2vkuw")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215299" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53328" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(1048, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_qx88w")
+data = SubResource("Resource_c7edx")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215300" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53329" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(1166, -197)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_etiyn")
+data = SubResource("Resource_sphok")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215301" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53330" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(104, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_t8b25")
+data = SubResource("Resource_d0fx3")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215302" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53331" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(222, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_s7nti")
+data = SubResource("Resource_5v052")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215303" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53332" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(340, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_8s26v")
+data = SubResource("Resource_o2rjy")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215304" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53333" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(458, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_3lybj")
+data = SubResource("Resource_tnj2p")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215305" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53334" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(576, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ee3to")
+data = SubResource("Resource_1w56e")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215306" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53335" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(694, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_4ya7j")
+data = SubResource("Resource_4loa6")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215307" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53336" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(812, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_hk8s7")
+data = SubResource("Resource_msr6u")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215308" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53337" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(930, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_drmx6")
+data = SubResource("Resource_t3xe6")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215309" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53338" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(1048, -43)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_a6sl0")
+data = SubResource("Resource_y3opd")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215310" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53339" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(222, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_w604i")
+data = SubResource("Resource_narn7")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215311" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53340" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(340, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_uh43m")
+data = SubResource("Resource_igup8")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215312" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53341" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(458, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_5ob7q")
+data = SubResource("Resource_or6ci")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215313" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53342" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(576, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_mo746")
+data = SubResource("Resource_ru6h6")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215314" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53343" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(694, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_81x62")
+data = SubResource("Resource_pqnrw")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215315" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53344" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(812, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_jg7gs")
+data = SubResource("Resource_acdti")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215316" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53345" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(930, 111)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_bl4jt")
+data = SubResource("Resource_fusck")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215317" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53346" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(340, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_fcdkh")
+data = SubResource("Resource_vjqsk")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215318" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53347" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(458, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_1ku6m")
+data = SubResource("Resource_bx8l7")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215319" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53348" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(576, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ea35p")
+data = SubResource("Resource_60o34")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215320" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53349" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(694, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_07kgl")
+data = SubResource("Resource_cxnd0")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215321" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53350" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(812, 265)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_wektk")
+data = SubResource("Resource_e0jxq")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215322" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53351" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(458, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_pbq4s")
+data = SubResource("Resource_ugibq")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215323" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53352" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(576, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_hsw7a")
+data = SubResource("Resource_i3iub")
 can_rot_anim = false
 flipped = false
 
-[node name="@Node2D@215324" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@53353" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(694, 419)
 scale = Vector2(3, 3)
 script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ajrtu")
-can_rot_anim = false
-flipped = false
-
-[node name="@Node2D@215325" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
-position = Vector2(576, 573)
-scale = Vector2(3, 3)
-script = ExtResource("4_yrcgy")
-data = SubResource("Resource_ky0vg")
+data = SubResource("Resource_jv40g")
 can_rot_anim = false
 flipped = false
 

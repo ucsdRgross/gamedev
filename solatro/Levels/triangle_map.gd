@@ -31,15 +31,18 @@ const CARD = preload("res://Cards/card.tscn")
 				card.free()
 		cards.clear()
 		
-		for i in rows ** 2:
+		for i in rows ** 2 - 1:
 			var card : Card = new_card()
 			cards.append(card)
 			child_cards.add_child(card)
 			card.owner = self
+			
+		for i in grid_container.columns:
+			cards[i].hide()
 		
 		await get_tree().process_frame
 		var i := 0
-		for y in rows:
+		for y in rows - 1:
 			for x in grid_container.columns - y * 2:
 				var control : Control = grid_container.get_child(xyi(x + y, y))
 				cards[i].global_position = control.global_position + control.size / 2
@@ -59,29 +62,48 @@ func _ready() -> void:
 
 func set_options() -> void:
 	#for card : Card in [cards[-2], cards[-3], cards[-4]]:
-	cards[-2].clicked.connect(new_triangle.bind(1))
-	cards[-3].clicked.connect(new_triangle.bind(0))
-	cards[-4].clicked.connect(new_triangle.bind(-1))
-
+	cards[-1].clicked.connect(new_triangle.bind(1))
+	cards[-2].clicked.connect(new_triangle.bind(0))
+	cards[-3].clicked.connect(new_triangle.bind(-1))
+	
 func new_triangle(clicked_card:Card, offset:int) -> void:
+	cards[-1].clicked.disconnect(new_triangle.bind(1))
+	cards[-2].clicked.disconnect(new_triangle.bind(0))
+	cards[-3].clicked.disconnect(new_triangle.bind(-1))
 	card_clicked.emit(clicked_card)
+	clicked_card.z_index = clicked_card.num_cards
+	var tween_to_deck := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
+	#tween_to_deck.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
+	#var cols : int = grid_container.columns
+	#tween_transition.parallel().tween_property(card, 'global_position', (index_to_card[Vector2i(cols/2,cols/2)] as Card).global_position, 1)
+	#tween_to_deck.tween_callback(card.hide)
+	#tween_to_deck.tween_callback(func()->void: card_clicked.emit(card))
+	#clicked_card.flipped = true
+	clicked_card.floating = false
+	clicked_card.can_move_anim = false
+	tween_to_deck.tween_property(clicked_card, 'basis3d', Basis.looking_at(Vector3(0, 0, 3.5)), 0.25)
+	tween_to_deck.parallel().tween_property(clicked_card, 'global_position', deck.global_position, 0.3)
+	tween_to_deck.tween_callback(func()->void: clicked_card.queue_free())
+	#clicked_card.reparent(self)
 	var new_cards : Array[Card]
 	for i in grid_container.columns:
 		var card : Card = new_card()
 		new_cards.append(card)
+		card.hide()
 		child_cards.add_child(card)
 		var control : Control = grid_container.get_child(i)
 		card.global_position = control.global_position + control.size / 2
-	for y in rows - 1:
+	for y in rows - 2:
 		for x in grid_container.columns - (y+1) * 2:
 			var i := xyi(x+y+offset+1, y) - y ** 2
 			new_cards.append(cards[i])
+			cards[i].show()
 	for card in cards:
-		if card not in new_cards:
+		if card not in new_cards and card != clicked_card:
 			remove_card(card)
 	cards = new_cards
 	var i := 0
-	for y in rows:
+	for y in rows - 1:
 		for x in grid_container.columns - y * 2:
 			var control : Control = grid_container.get_child(xyi(x + y, y))
 			cards[i].move_to(control.global_position + control.size / 2)
@@ -94,9 +116,9 @@ func new_card() -> Card:
 	card.flipped = false
 	card.can_rot_anim = false
 	
-	var tween := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUART)
-	card.modulate.a = 0
-	tween.tween_property(card, "modulate:a", 1, 0.5)
+	#var tween := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUART)
+	#card.modulate.a = 0
+	#tween.tween_property(card, "modulate:a", 1, 0.5)
 	card.hover_entered.connect(card_hovered.emit)
 	return card
 

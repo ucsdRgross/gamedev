@@ -1,4 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://biwsbxlnd1m5f"]
+[gd_scene load_steps=3 format=3 uid="uid://biwsbxlnd1m5f"]
+
+[ext_resource type="Script" path="res://Levels/menu.gd" id="1_wawrh"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_l5hr3"]
 font_size = 156
@@ -10,6 +12,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_wawrh")
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 0
@@ -111,3 +114,5 @@ text = "Challenges"
 layout_mode = 2
 theme_override_font_sizes/font_size = 51
 text = "Deck"
+
+[connection signal="pressed" from="Main/Play" to="." method="_on_play_pressed"]

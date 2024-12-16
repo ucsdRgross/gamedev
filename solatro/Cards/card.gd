@@ -36,7 +36,6 @@ var show_front := false :
 		if value != show_front:
 			show_front = value
 			update_visual()
-			
 
 func update_visual() -> void:
 	if show_front and data:
