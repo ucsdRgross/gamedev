@@ -148,13 +148,14 @@ func add_deck() -> void:
 		#var card : Card = CARD.instantiate()
 		#card.data = attribute
 		#add_child(card)
-	for card_data : CardData in deck.card_datas:
+	var deck := Main.save_info.card_datas
+	for card_data : CardData in deck:
 		add_data(card_data)
 		
 	#for effect in effects:
 		#if effect:
 			#effect.with_game(self)
-	draw_deck = deck.card_datas.duplicate(true)
+	draw_deck = deck.duplicate(true)
 	draw_deck.shuffle()
 
 func add_data(data:CardData) -> void:

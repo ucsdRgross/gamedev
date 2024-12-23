@@ -82,6 +82,13 @@ Skill Text"
 label_settings = SubResource("LabelSettings_rx70n")
 autowrap_mode = 3
 
+[node name="Button" type="Button" parent="."]
+offset_left = 228.0
+offset_top = 483.0
+offset_right = 325.0
+offset_bottom = 537.0
+text = "enter game"
+
 [node name="TiltedGUI" type="Node3D" parent="."]
 script = ExtResource("1_wpjh4")
 
@@ -91,7 +98,7 @@ canvas_item_default_texture_filter = 0
 size = Vector2i(1152, 648)
 
 [node name="TriangleMap" parent="TiltedGUI/SubViewport" node_paths=PackedStringArray("cards") instance=ExtResource("5_5sh7s")]
-cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@52266"), NodePath("ChildCards/@Node2D@52267"), NodePath("ChildCards/@Node2D@52268"), NodePath("ChildCards/@Node2D@52269"), NodePath("ChildCards/@Node2D@52270"), NodePath("ChildCards/@Node2D@52271"), NodePath("ChildCards/@Node2D@52272"), NodePath("ChildCards/@Node2D@52273"), NodePath("ChildCards/@Node2D@52274"), NodePath("ChildCards/@Node2D@52275"), NodePath("ChildCards/@Node2D@52276"), NodePath("ChildCards/@Node2D@52277"), NodePath("ChildCards/@Node2D@52278"), NodePath("ChildCards/@Node2D@52279"), NodePath("ChildCards/@Node2D@52280"), NodePath("ChildCards/@Node2D@52281"), NodePath("ChildCards/@Node2D@52282"), NodePath("ChildCards/@Node2D@52283"), NodePath("ChildCards/@Node2D@52284"), NodePath("ChildCards/@Node2D@52285"), NodePath("ChildCards/@Node2D@52286"), NodePath("ChildCards/@Node2D@52287"), NodePath("ChildCards/@Node2D@52288"), NodePath("ChildCards/@Node2D@52289"), NodePath("ChildCards/@Node2D@52290"), NodePath("ChildCards/@Node2D@52291"), NodePath("ChildCards/@Node2D@52292"), NodePath("ChildCards/@Node2D@52293"), NodePath("ChildCards/@Node2D@52294"), NodePath("ChildCards/@Node2D@52295"), NodePath("ChildCards/@Node2D@52296"), NodePath("ChildCards/@Node2D@52297"), NodePath("ChildCards/@Node2D@52298"), NodePath("ChildCards/@Node2D@52299"), NodePath("ChildCards/@Node2D@52300"), NodePath("ChildCards/@Node2D@52301"), NodePath("ChildCards/@Node2D@52302"), NodePath("ChildCards/@Node2D@52303"), NodePath("ChildCards/@Node2D@52304"), NodePath("ChildCards/@Node2D@52305"), NodePath("ChildCards/@Node2D@52306"), NodePath("ChildCards/@Node2D@52307"), NodePath("ChildCards/@Node2D@52308"), NodePath("ChildCards/@Node2D@52309"), NodePath("ChildCards/@Node2D@52310"), NodePath("ChildCards/@Node2D@52311"), NodePath("ChildCards/@Node2D@52312")]
+cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@44372"), NodePath("ChildCards/@Node2D@44373"), NodePath("ChildCards/@Node2D@44374"), NodePath("ChildCards/@Node2D@44375"), NodePath("ChildCards/@Node2D@44376"), NodePath("ChildCards/@Node2D@44377"), NodePath("ChildCards/@Node2D@44378"), NodePath("ChildCards/@Node2D@44379"), NodePath("ChildCards/@Node2D@44380"), NodePath("ChildCards/@Node2D@44381"), NodePath("ChildCards/@Node2D@44382"), NodePath("ChildCards/@Node2D@44383"), NodePath("ChildCards/@Node2D@44384"), NodePath("ChildCards/@Node2D@44385"), NodePath("ChildCards/@Node2D@44386"), NodePath("ChildCards/@Node2D@44387"), NodePath("ChildCards/@Node2D@44388"), NodePath("ChildCards/@Node2D@44389"), NodePath("ChildCards/@Node2D@44390"), NodePath("ChildCards/@Node2D@44391"), NodePath("ChildCards/@Node2D@44392"), NodePath("ChildCards/@Node2D@44393"), NodePath("ChildCards/@Node2D@44394"), NodePath("ChildCards/@Node2D@44395"), NodePath("ChildCards/@Node2D@44396"), NodePath("ChildCards/@Node2D@44397"), NodePath("ChildCards/@Node2D@44398"), NodePath("ChildCards/@Node2D@44399"), NodePath("ChildCards/@Node2D@44400"), NodePath("ChildCards/@Node2D@44401"), NodePath("ChildCards/@Node2D@44402"), NodePath("ChildCards/@Node2D@44403"), NodePath("ChildCards/@Node2D@44404"), NodePath("ChildCards/@Node2D@44405"), NodePath("ChildCards/@Node2D@44406"), NodePath("ChildCards/@Node2D@44407"), NodePath("ChildCards/@Node2D@44408"), NodePath("ChildCards/@Node2D@44409"), NodePath("ChildCards/@Node2D@44410"), NodePath("ChildCards/@Node2D@44411"), NodePath("ChildCards/@Node2D@44412"), NodePath("ChildCards/@Node2D@44413"), NodePath("ChildCards/@Node2D@44414"), NodePath("ChildCards/@Node2D@44415"), NodePath("ChildCards/@Node2D@44416"), NodePath("ChildCards/@Node2D@44417"), NodePath("ChildCards/@Node2D@44418")]
 
 [node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]
 mesh = SubResource("QuadMesh_c5ijj")
@@ -145,4 +152,5 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
 [connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]

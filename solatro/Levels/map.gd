@@ -1,7 +1,7 @@
 extends Node3D
 class_name Map
 
-signal card_clicked(card:Card)
+signal enter_game
 
 const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const CARD = preload("res://Cards/card.tscn")
@@ -108,6 +108,7 @@ func _on_card_hover_entered(card : Card) -> void:
 	#($Preview as Control).show()
 
 func add_card(data:CardData) -> void:
+	Main.save_info.card_datas.append(data)
 	var card : Card = CARD.instantiate()
 	card.add_data(data)
 	card.can_move_anim = false
@@ -124,3 +125,7 @@ func _on_margin_container_gui_input(event: InputEvent) -> void:
 		var mouse_event : InputEventMouseButton = event
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			deck_viewer.hide()
+
+
+func _on_button_pressed() -> void:
+	enter_game.emit()

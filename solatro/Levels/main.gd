@@ -14,14 +14,14 @@ static var save_info : PlayerSave = PlayerSave.new()
 #@onready var level: Control = $CanvasLayer/Level
 
 func _ready() -> void:
-	#(scene_map as Map).card_clicked.connect(enter_game)
+	map_scene.enter_game.connect(enter_game)
 	menu_scene.play_pressed.connect(enter_map)
 	switch_scene(menu_scene)
 
 func enter_map() -> void:
 	switch_scene(map_scene)
 
-func enter_game(card:Card) -> void:
+func enter_game() -> void:
 	var new_game : Game = GAME.instantiate()
 	new_game.game_ended.connect(game_ended)
 	switch_scene(new_game)
