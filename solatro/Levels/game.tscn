@@ -493,6 +493,32 @@ bus = &"SFX"
 [node name="AudioCardShake" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("9_d2lcc")
 
+[node name="WinScreen" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 226
+text = "You win!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LoseScreen" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 226
+text = "You lose!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]

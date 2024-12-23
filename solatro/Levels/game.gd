@@ -94,6 +94,8 @@ var row_score_popups : Dictionary
 @onready var hover_area: Control = $HoverArea
 @onready var audio_card_placing: AudioStreamPlayer = $AudioCardPlacing
 @onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
+@onready var win_screen: Label = $WinScreen
+@onready var lose_screen: Label = $LoseScreen
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -149,6 +151,8 @@ func add_deck() -> void:
 		#card.data = attribute
 		#add_child(card)
 	var deck := Main.save_info.card_datas
+	if not deck:
+		deck = self.deck.card_datas
 	for card_data : CardData in deck:
 		add_data(card_data)
 		
@@ -551,6 +555,13 @@ func _on_submit_pressed() -> void:
 		await get_tree().create_timer(base_delay * 2).timeout
 		total_score += mult_score
 	
+	if total_score >= goal:
+		win_screen.show()
+		await get_tree().create_timer(3).timeout
+		game_ended.emit()
+	elif total_score <= goal and draw_deck.is_empty():
+		lose_screen.show()
+	
 	for label in col_scores:
 		label.text = ""
 	for i:int in row_score_popups:
@@ -572,7 +583,6 @@ func _on_submit_pressed() -> void:
 		card.queue_free()
 		card.bot_card.top_card = null
 	_on_game_board_changed()
-	
 	
 	#discard board
 		#await score(submitted.top_card)
