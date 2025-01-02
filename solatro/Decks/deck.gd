@@ -105,6 +105,16 @@ var deck5: Array[CardData] = [
 	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
 	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
 	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1),
 	#CardData.new().with_suit(1).with_rank(1),
 	]
 

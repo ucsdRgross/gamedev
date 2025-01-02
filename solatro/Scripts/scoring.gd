@@ -13,6 +13,26 @@ class ColCombo:
 	func score(card:Card) -> Result:
 		return null
 
+class PokerHands extends RowCombo:
+	var hands : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
+											Scoring.FlushHouse.new(),\
+											Scoring.Quintet.new(),\
+											Scoring.StraightFlush.new(),\
+											Scoring.Quartet.new(),\
+											Scoring.FullHouse.new(),\
+											Scoring.Flush.new(),\
+											Scoring.Straight.new(),\
+											Scoring.Triple.new(),\
+											Scoring.TwoPair.new(),\
+											Scoring.Pair.new(),\
+											Scoring.HighCard.new()]
+	func score(cards:Array[Card]) -> Result:
+		for hand in hands:
+			var result := hand.score(cards)
+			if result:
+				return result
+		return null
+
 class FlushFive extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		if cards.size() == 5\

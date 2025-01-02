@@ -49,6 +49,9 @@ const CARD = preload("res://Cards/card.tscn")
 				cards[i].move_to(control.global_position + control.size / 2)
 				i += 1
 		set_options()
+		if Main.save_info:
+			for j in grid_container.columns - 2:
+				cards[j + grid_container.columns].modulate = Color.RED
 
 @export var cards : Array[Card]
 
@@ -59,6 +62,8 @@ const CARD = preload("res://Cards/card.tscn")
 
 func _ready() -> void:
 	deck.clicked.connect(func(c:Card)->void:deck_clicked.emit(c))
+
+			
 
 func set_options() -> void:
 	#for card : Card in [cards[-2], cards[-3], cards[-4]]:
@@ -112,7 +117,12 @@ func new_triangle(clicked_card:Card, offset:int) -> void:
 
 func new_card() -> Card:
 	var card : Card = CARD.instantiate()
-	card.add_data(CardData.new().with_rank(randi() % 13 + 1).with_suit(randi() % 4 + 1))
+	card.add_data(CardData.new()
+					.with_rank(randi() % 13 + 1)
+					.with_suit(randi() % 4 + 1))
+	var random_skill : CardModifier = ([null] + (ModsList.skills)).pick_random()
+	if random_skill:
+		card.data.with_skill(random_skill.duplicate() as CardModifier)
 	card.flipped = false
 	card.can_rot_anim = false
 	
@@ -120,6 +130,8 @@ func new_card() -> Card:
 	#card.modulate.a = 0
 	#tween.tween_property(card, "modulate:a", 1, 0.5)
 	card.hover_entered.connect(card_hovered.emit)
+	if Main.save_info and (Main.save_info.layer + 1) % 5 == 0:# and Main.save_info.layer != 0:
+		card.modulate = Color.RED
 	return card
 
 func remove_card(c: Card) -> void:

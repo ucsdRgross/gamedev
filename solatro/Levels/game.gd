@@ -57,30 +57,7 @@ var discard_deck : Array[CardData]
 									#Scoring.Flush.new(),
 									#]
 
-var poker_hands : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
-											Scoring.FlushHouse.new(),\
-											Scoring.Quintet.new(),\
-											Scoring.StraightFlush.new(),\
-											Scoring.Quartet.new(),\
-											Scoring.FullHouse.new(),\
-											Scoring.Flush.new(),\
-											Scoring.Straight.new(),\
-											Scoring.Triple.new(),\
-											Scoring.TwoPair.new(),\
-											Scoring.Pair.new(),\
-											Scoring.HighCard.new()] 
-var row_scorers : Array[Scoring.RowCombo] = [Scoring.FlushFive.new(),\
-											Scoring.FlushHouse.new(),\
-											Scoring.Quintet.new(),\
-											Scoring.StraightFlush.new(),\
-											Scoring.Quartet.new(),\
-											Scoring.FullHouse.new(),\
-											Scoring.Flush.new(),\
-											Scoring.Straight.new(),\
-											Scoring.Triple.new(),\
-											Scoring.TwoPair.new(),\
-											Scoring.Pair.new(),\
-											Scoring.HighCard.new()] 
+var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 #var effects : Array[CardModifier] = []
 var row_score_popups : Dictionary
@@ -105,7 +82,7 @@ func _ready() -> void:
 	for label in col_scores:
 		label.text = ""
 	board_home_pos = game_container.position
-	goal = goal
+	goal = goal * (1.1 ** Main.save_info.layer)
 	add_deck()
 	#for effect in effects:
 		#if effect:
@@ -445,6 +422,7 @@ func _on_submit_pressed() -> void:
 		var row_cards : Array[Card]
 		for i in 5:
 			row_cards.append(board_cols[i][row_to_score])
+			
 		#score horizontally
 		for scorer in row_scorers:
 			var cards : Array[Card]
@@ -495,8 +473,8 @@ func _on_submit_pressed() -> void:
 							await mod.after_score()
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
+				
 		#score vertically
-
 		for scorer in col_scorers:
 			#var results : Array[Scoring.Result]
 			#var col_results : Array[ColResult]
@@ -560,7 +538,15 @@ func _on_submit_pressed() -> void:
 		await get_tree().create_timer(3).timeout
 		game_ended.emit()
 	elif total_score <= goal and draw_deck.is_empty():
-		lose_screen.show()
+		var zones_have_cards := false
+		for zone in inputs:
+			if zone.top_card:
+				zones_have_cards = true
+				break 
+		if not zones_have_cards:
+			lose_screen.show()
+			await get_tree().create_timer(3).timeout
+			game_ended.emit()
 	
 	for label in col_scores:
 		label.text = ""
@@ -580,6 +566,7 @@ func _on_submit_pressed() -> void:
 	discards.reverse()
 	for card in discards:
 		discard_deck.append(card.data)
+		card.data.card = null
 		card.queue_free()
 		card.bot_card.top_card = null
 	_on_game_board_changed()
@@ -676,24 +663,63 @@ class CardDataIterator:
 	var game : Game
 	var board : Array[Array]
 	var next_card_data : CardData
+	enum {DECK, INPUTS, BOARD, DISCARD}
+	var phase := DECK
 	
 	func _init(game:Game) -> void:
 		self.game = game
 
 	func should_continue() -> bool:
-		board = game.get_board_cols()
-		if not card_count < board[0].size() * 5:
-			return false
-		var card : Card = board[card_count % 5][card_count / 5]
-		while not card:
-			card_count += 1
-			if not card_count < board[0].size() * 5:
-				return false
-			card = board[card_count % 5][card_count / 5]
-		next_card_data = card.data
-		return true
+		match phase:
+			DECK:
+				if card_count < game.draw_deck.size():
+					next_card_data = game.draw_deck[card_count]
+					return true
+				else:
+					phase = INPUTS
+					card_count = 0
+					return should_continue()
+			INPUTS:
+				if not card_count < game.inputs.size():
+					phase = BOARD
+					card_count = 0
+					return should_continue()
+				var card := game.inputs[card_count].top_card
+				while not card:
+					card_count += 1
+					if not card_count < game.inputs.size():
+						phase = BOARD
+						card_count = 0
+						return should_continue()
+					card = game.inputs[card_count].top_card
+				next_card_data = card.data
+				return true
+			BOARD:
+				board = game.get_board_cols()
+				if not card_count < board[0].size() * 5:
+					phase = DISCARD
+					card_count = 0
+					return should_continue()
+				var card : Card = board[card_count % 5][card_count / 5]
+				while not card:
+					card_count += 1
+					if not card_count < board[0].size() * 5:
+						phase = DISCARD
+						card_count = 0
+						return should_continue()
+					card = board[card_count % 5][card_count / 5]
+				next_card_data = card.data
+				return true
+			DISCARD:
+				if card_count < game.discard_deck.size():
+					next_card_data = game.discard_deck[card_count]
+					return true
+				else:
+					return false
+		return false
 
 	func _iter_init(arg:Variant) -> bool:
+		phase = DECK
 		card_count = 0
 		return should_continue()
 
