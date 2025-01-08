@@ -4,6 +4,7 @@ class_name Game
 signal game_ended
 
 const CARD = preload("res://Cards/card.tscn")
+const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
@@ -73,6 +74,8 @@ var row_score_popups : Dictionary
 @onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
 @onready var win_screen: Label = $WinScreen
 @onready var lose_screen: Label = $LoseScreen
+@onready var deck_viewer: CanvasLayer = $DeckViewer
+@onready var flow_container: FlowContainer = %FlowContainer
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -384,7 +387,7 @@ func _on_next_pressed() -> void:
 			var card : Card = CARD.instantiate()
 			card.state = Card.STATIC
 			var data : CardData = draw_deck.pop_back()
-			card.add_data(data)
+			card.add_data(data, true)
 			add_child(card)
 			zone.add_card(card)
 			card.flipped = false
@@ -729,3 +732,41 @@ class CardDataIterator:
 
 	func _iter_get(arg:Variant) -> CardData:
 		return next_card_data
+
+func _on_deck_clicked(deck_card: Card) -> void:
+	var randomized_deck : Array[CardData] = draw_deck.duplicate()
+	randomized_deck.shuffle()
+	for data in randomized_deck:
+		var card : Card = CARD.instantiate()
+		card.add_data(data, true)
+		card.can_move_anim = false
+		card.flipped = false
+		var control : Control = CARD_CONTROL.instantiate()
+		control.add_child(card)
+		card.hover_entered.connect(_on_card_hover_entered)
+		card.hover_exited.connect(_on_card_hover_exited)
+		flow_container.add_child(control)
+	deck_viewer.show()
+
+func _on_margin_container_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			deck_viewer.hide()
+			for card_control : CardControl in flow_container.get_children():
+				card_control.card.data.card = null
+				card_control.queue_free()
+
+
+func _on_discard_clicked(deck_card: Card) -> void:
+	for data in discard_deck:
+		var card : Card = CARD.instantiate()
+		card.add_data(data, true)
+		card.can_move_anim = false
+		card.flipped = false
+		var control : Control = CARD_CONTROL.instantiate()
+		control.add_child(card)
+		card.hover_entered.connect(_on_card_hover_entered)
+		card.hover_exited.connect(_on_card_hover_exited)
+		flow_container.add_child(control)
+	deck_viewer.show()

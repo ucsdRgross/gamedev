@@ -225,9 +225,10 @@ func get_stack_size() -> int:
 		size += 1
 	return size
 
-func add_data(data:CardData) -> void:
+func add_data(data:CardData, is_linked:bool=false) -> void:
 	self.data = data
-	data.card = self
+	if is_linked:
+		data.card = self
 	data.data_changed.connect(update_visual)
 	
 #func _exit_tree() -> void:

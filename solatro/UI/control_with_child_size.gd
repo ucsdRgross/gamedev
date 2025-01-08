@@ -1,4 +1,5 @@
 @tool
+class_name CardControl
 extends Control
 
 var card : Card

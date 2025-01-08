@@ -38,6 +38,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_gj2ix")
 deck = ExtResource("2_grgi0")
 
@@ -456,6 +457,7 @@ offset_top = 391.0
 offset_right = 65.0
 offset_bottom = 391.0
 scale = Vector2(1.25, 1.25)
+mouse_filter = 2
 
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
@@ -480,11 +482,52 @@ offset_left = 94.0
 offset_top = 90.0
 offset_right = 94.0
 offset_bottom = 90.0
+mouse_filter = 2
 
-[node name="Card" parent="Deck" instance=ExtResource("3_8sseo")]
+[node name="Deck" parent="Deck" instance=ExtResource("3_8sseo")]
 can_move_anim = false
-clickable = false
 stack_limit = 0
+
+[node name="Discard" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 1013.0
+offset_top = 543.0
+offset_right = 1013.0
+offset_bottom = 543.0
+mouse_filter = 2
+
+[node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
+can_move_anim = false
+stack_limit = 0
+
+[node name="DeckViewer" type="CanvasLayer" parent="."]
+visible = false
+
+[node name="MarginContainer" type="MarginContainer" parent="DeckViewer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 80
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 80
+
+[node name="ColorRect" type="ColorRect" parent="DeckViewer/MarginContainer"]
+layout_mode = 2
+color = Color(1, 0.384314, 0.498039, 0.141176)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="DeckViewer/MarginContainer"]
+layout_mode = 2
+mouse_filter = 0
+
+[node name="FlowContainer" type="FlowContainer" parent="DeckViewer/MarginContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="AudioCardPlacing" type="AudioStreamPlayer" parent="."]
 stream = SubResource("AudioStreamRandomizer_vwchr")
@@ -522,3 +565,6 @@ vertical_alignment = 1
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
+[connection signal="clicked" from="Deck/Deck" to="." method="_on_deck_clicked"]
+[connection signal="clicked" from="Discard/Discard" to="." method="_on_discard_clicked"]
+[connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]
