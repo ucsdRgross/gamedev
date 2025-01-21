@@ -68,7 +68,10 @@ func on_deck_shuffle() -> void:
 	
 func on_trigger(data:CardData, mod:Callable) -> void:
 	pass	
-	
+
+func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
+	pass
+
 func is_active() -> bool:
 	if data.card and not data.card.top_card:
 		return true
@@ -86,3 +89,7 @@ func card_raise() -> void:
 func card_lower() -> void:
 	if data.card:
 		await game.card_lower(data.card)
+
+func card_shrink() -> void:
+	if data.card:
+		await game.card_shrink(data.card)

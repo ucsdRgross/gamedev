@@ -376,8 +376,17 @@ func _on_next_pressed() -> void:
 	#var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
 	for i:int in inputs.size():
 		if inputs[i].top_card:
-			inputs[i].top_card.state = Card.IN_PLAY
-			stacks[i].get_last_card().add_card(inputs[i].top_card)
+			var dropping_card := inputs[i].top_card
+			dropping_card.state = Card.IN_PLAY
+			var bottom_card := stacks[i].get_last_card()
+			bottom_card.add_card(inputs[i].top_card)
+			var dropping_card_data := dropping_card.data
+			var bottom_card_data := bottom_card.data
+			var CDI := CardDataIterator.new(self)
+			for data in CDI:
+				for mod : CardModifier in [data.type, data.stamp, data.skill]:
+					if mod:
+						await mod.on_card_dropped_on(bottom_card_data, dropping_card_data)
 	for zone : Card in inputs:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
@@ -474,6 +483,8 @@ func _on_submit_pressed() -> void:
 					for mod : CardModifier in [data.type, data.stamp, data.skill]:
 						if mod:
 							await mod.after_score()
+							
+				
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
 				
@@ -634,6 +645,11 @@ func card_lower(card:Card) -> void:
 	card_tween.tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
 	card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
 	card_tween.tween_interval(base_delay * .2)
+	await card_tween.finished
+
+func card_shrink(card:Card) -> void:
+	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING)
+	card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
 	await card_tween.finished
 
 func get_board_cols() -> Array[Array]:
