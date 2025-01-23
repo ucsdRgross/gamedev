@@ -151,11 +151,7 @@ func add_data(data:CardData) -> void:
 		data.stamp.with_game(self)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	var CDI := CardDataIterator.new(self)
-	for data in CDI:
-		for mod : CardModifier in [data.type, data.stamp, data.skill]:
-			if mod:
-				await mod.on_trigger(triggered_data, triggered_mod)
+	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
 
 #func add_card(card_data:CardData) -> void:
 	#effects.append(card_data.skill)
@@ -382,11 +378,7 @@ func _on_next_pressed() -> void:
 			bottom_card.add_card(inputs[i].top_card)
 			var dropping_card_data := dropping_card.data
 			var bottom_card_data := bottom_card.data
-			var CDI := CardDataIterator.new(self)
-			for data in CDI:
-				for mod : CardModifier in [data.type, data.stamp, data.skill]:
-					if mod:
-						await mod.on_card_dropped_on(bottom_card_data, dropping_card_data)
+			await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
 	for zone : Card in inputs:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
@@ -473,17 +465,9 @@ func _on_submit_pressed() -> void:
 				#popup.global_position = combo_pos
 				#add_child(popup)
 				await get_tree().create_timer(base_delay).timeout
-				var CDI := CardDataIterator.new(self)
 				for card in result.card_combo:
-					for data in CDI:
-						for mod : CardModifier in [data.type, data.stamp, data.skill]:
-							if mod:
-								await mod.on_score(card)
-				for data in CDI:
-					for mod : CardModifier in [data.type, data.stamp, data.skill]:
-						if mod:
-							await mod.after_score()
-							
+					await run_all_mods(&"on_score", [card])
+				await run_all_mods(&"after_score", [])						
 				
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
@@ -677,6 +661,12 @@ func get_card_grid_pos(card:Card) -> Vector2:
 				return Vector2(r, c)
 	return Vector2(-1,-1)
 
+func run_all_mods(function: StringName, params:Array) -> void:
+	for data in CardDataIterator.new(self):
+		for mod : CardModifier in [data.type, data.stamp, data.skill]:
+			if mod:
+				await Callable(mod, function).callv(params)
+	
 class CardDataIterator:
 	var card_count : int
 	var game : Game
