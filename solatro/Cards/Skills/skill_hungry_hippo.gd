@@ -20,3 +20,8 @@ func eat_card(ate_data:CardData) -> void:
 	self.data.card.top_card = null
 	ate_data.card.queue_free()
 	self.data.rank += ate_data.rank
+	game.total_score += ate_data.rank
+
+func on_game_end() -> void:
+	game.draw_deck.append_array(consumed_cards)
+	consumed_cards.clear()

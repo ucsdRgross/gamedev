@@ -133,22 +133,23 @@ func add_deck() -> void:
 	var deck := Main.save_info.card_datas
 	if not deck:
 		deck = self.deck.card_datas
-	for card_data : CardData in deck:
-		add_data(card_data)
+	
 		
 	#for effect in effects:
 		#if effect:
 			#effect.with_game(self)
 	draw_deck = deck.duplicate(true)
+	set_datas_game(draw_deck, self)
 	draw_deck.shuffle()
 
-func add_data(data:CardData) -> void:
-	if data.skill:
-		data.skill.with_game(self)
-	if data.type:
-		data.type.with_game(self)
-	if data.stamp:
-		data.stamp.with_game(self)
+func set_datas_game(deck:Array[CardData], game:Game) -> void:
+	for data : CardData in deck:
+		if data.skill:
+			data.skill.with_game(game)
+		if data.type:
+			data.type.with_game(game)
+		if data.stamp:
+			data.stamp.with_game(game)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
@@ -329,6 +330,7 @@ func _on_next_pressed() -> void:
 		return
 	if held_card:
 		return
+	processing = true
 	#var submitted : Card = $Submission
 	#
 	#if submitted.top_card:
@@ -399,6 +401,7 @@ func _on_next_pressed() -> void:
 		#add_child(card)
 		#zone.add_card(card)
 		#card.flipped = false
+	processing = false
 	
 	#turns -= 1
 
@@ -534,7 +537,7 @@ func _on_submit_pressed() -> void:
 	if total_score >= goal:
 		win_screen.show()
 		await get_tree().create_timer(3).timeout
-		game_ended.emit()
+		return_to_map()
 	elif total_score <= goal and draw_deck.is_empty():
 		var zones_have_cards := false
 		for zone in inputs:
@@ -544,7 +547,7 @@ func _on_submit_pressed() -> void:
 		if not zones_have_cards:
 			lose_screen.show()
 			await get_tree().create_timer(3).timeout
-			game_ended.emit()
+			return_to_map()
 	
 	for label in col_scores:
 		label.text = ""
@@ -563,6 +566,7 @@ func _on_submit_pressed() -> void:
 				discards.append(board_cols[j][i])
 	discards.reverse()
 	for card in discards:
+		run_all_mods(&"on_discard", [card])
 		discard_deck.append(card.data)
 		card.data.card = null
 		card.queue_free()
@@ -574,6 +578,13 @@ func _on_submit_pressed() -> void:
 		#total_score += last_score
 	
 	processing = false
+
+func return_to_map() -> void:
+	run_all_mods(&"on_game_end", [])
+	draw_deck.append_array(discard_deck)
+	Main.save_info.card_datas = draw_deck
+	set_datas_game(draw_deck, null)
+	game_ended.emit()
 
 func row_add_score(row:int, score:int) -> void:
 	if not row in row_score_popups:
