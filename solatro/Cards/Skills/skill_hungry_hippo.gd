@@ -23,5 +23,7 @@ func eat_card(ate_data:CardData) -> void:
 	game.total_score += ate_data.rank
 
 func on_game_end() -> void:
-	game.draw_deck.append_array(consumed_cards)
+	for card in consumed_cards:
+		self.data.rank -= card.rank
+		game.draw_deck.append(card)
 	consumed_cards.clear()

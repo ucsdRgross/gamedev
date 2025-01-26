@@ -8,6 +8,7 @@ const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
+
 var held_card : Card = null
 var held_card_offset : Vector2
 var processing : bool = false
@@ -16,10 +17,7 @@ var board_home_pos : Vector2
 var board_hovered : bool = false
 var card_hovered : bool = false
 var base_delay : float = 1
-#var turns : int = 20:
-	#set(value):
-		#($Turns/Label as Label).text = str(value)
-		#turns = value
+
 var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
@@ -28,14 +26,6 @@ var total_score : int = 0:
 	set(value):
 		($Total/Label as Label).text = str(value)
 		total_score = value
-#var last_score : int = 0:
-	#set(value):
-		#($Score/Label as Label).text = str(value)
-		#last_score = value
-#var rerolls : int = 0:
-	#set(value):
-		#($Rerolls/Label as Label).text = str(value)
-		#rerolls = value
 var mult_score : int = 0:
 	set(value):
 		($MultScore as Label).text = str(value)
@@ -48,19 +38,11 @@ var row_total : int = 0:
 	set(value):
 		($MultScore/Row as Label).text = str(value)
 		row_total = value
+
 var draw_deck : Array[CardData]
 var discard_deck : Array[CardData]
-
-#var scorers : Array[Scoring.Combo] = [Scoring.Jack.new(), 
-									#Scoring.Fifteen.new(), 
-									#Scoring.Pairs.new(),
-									#Scoring.Run.new(),
-									#Scoring.Flush.new(),
-									#]
-
 var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-#var effects : Array[CardModifier] = []
 var row_score_popups : Dictionary
 
 @onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
@@ -126,24 +108,15 @@ func _input(event: InputEvent) -> void:
 			board_hovered = false
 	
 func add_deck() -> void:
-	#for attribute:CardData in deck.cards:
-		#var card : Card = CARD.instantiate()
-		#card.data = attribute
-		#add_child(card)
-	var deck := Main.save_info.card_datas
-	if not deck:
-		deck = self.deck.card_datas
-	
-		
-	#for effect in effects:
-		#if effect:
-			#effect.with_game(self)
-	draw_deck = deck.duplicate(true)
+	var saved_deck := Main.save_info.card_datas
+	if not saved_deck:
+		saved_deck = self.deck.card_datas
+	draw_deck = saved_deck.duplicate(true)
 	set_datas_game(draw_deck, self)
 	draw_deck.shuffle()
 
-func set_datas_game(deck:Array[CardData], game:Game) -> void:
-	for data : CardData in deck:
+func set_datas_game(datas:Array[CardData], game:Game) -> void:
+	for data : CardData in datas:
 		if data.skill:
 			data.skill.with_game(game)
 		if data.type:
@@ -151,179 +124,7 @@ func set_datas_game(deck:Array[CardData], game:Game) -> void:
 		if data.stamp:
 			data.stamp.with_game(game)
 
-func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
 
-#func add_card(card_data:CardData) -> void:
-	#effects.append(card_data.skill)
-#
-#func remove_card(card_data:CardData) -> void:
-	#effects.erase(card_data.skill)
-
-#func _process(delta: float) -> void:
-	#pass
-	#if held_card:
-		#held_card.move_to(get_global_mouse_position() + held_card_offset)
-
-		
-
-func _on_child_entered_tree(node: Node) -> void:
-	if node is Card:
-		var card := node as Card
-		card.clicked.connect(_on_card_clicked)
-		if not card.is_zone:
-			card.hover_entered.connect(_on_card_hover_entered)
-			card.hover_exited.connect(_on_card_hover_exited)
-			card.card_added.connect(_on_game_board_changed)
-
-func _on_card_clicked(card : Card) -> void:
-	if processing:
-		return
-	if held_card:
-		if can_add_card(card, held_card):
-			card.add_card(held_card)
-			drop_held_card()
-	elif not held_card:
-		if not card.is_zone and card.state == Card.IN_PLAY:
-			var next_card := card
-			while next_card.top_card:
-				if not can_pickup_stack(next_card, next_card.top_card):
-					return
-				next_card = next_card.top_card
-			card.pickup()
-			held_card = card
-			held_card_offset = held_card.global_position - get_global_mouse_position()
-			if held_card_offset.y < 60:
-				held_card_offset.y = 60
-			held_card.move_to(get_global_mouse_position() + held_card_offset)
-			audio_card_placing.play(.15)
-
-func _on_card_hover_entered(card : Card) -> void:
-	card_hovered = true
-	if held_card:
-		return
-	var preview_card : Card = $Preview/Card
-	if not card.flipped:
-		#pass data by reference and doesn't update data to know about this card
-		preview_card.data = card.data
-	preview_card.update_visual()
-	preview_card.flipped = card.flipped
-	var description : String
-	if card.data.skill:
-		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
-	if card.data.stamp:
-		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
-	if card.data.type:
-		description += card.data.type.name + "\n" + card.data.type.description + "\n"
-	($Preview/Label as Label).text = description
-	($Preview as Control).show()
-
-func _on_card_hover_exited(card : Card) -> void:
-	card_hovered = false
-	#var zone : Card = $Preview/Card
-	#if not zone.top_card.data == card.data:
-		#($Preview as Control).hide()
-	#return
-
-func _on_game_board_changed() -> void:
-	var board_cols : Array[Array] = get_board_cols()
-	var num_cards_in_col : int = board_cols[0].size()
-	if num_cards_in_col > 0:
-		board_size = 350 + Card.child_offset.y * num_cards_in_col
-	else:
-		board_size = 350
-	audio_card_placing.play(.15)
-	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
-	
-func can_add_card(stack : Card, to_stack : Card) -> bool:
-	if stack.top_card == to_stack and to_stack == held_card:
-		return true
-	if not stack.top_card:
-		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
-			if stack.is_zone:
-				return true
-			if stack.data.suit != to_stack.data.suit:
-				if to_stack.data.rank == stack.data.rank - 1:
-					return true
-				if to_stack.data.rank == stack.data.rank + 1:
-					return true
-	return false
-
-func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
-	#return true
-	if stack.is_zone:
-		return true
-	if stack.data.suit != to_stack.data.suit:
-		if to_stack.data.rank == stack.data.rank - 1:
-			return true
-		if to_stack.data.rank == stack.data.rank + 1:
-			return true
-	return false
-
-func drop_held_card() -> void:
-	held_card.drop()
-	held_card = null
-
-#func score(card : Card) -> void:
-	#processing = true
-	#var stack : Array[Card] = []
-	#while card:
-		#stack.append(card)
-		#card = card.top_card
-	#print('stack')
-	#for c:Card in stack:
-		#print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-	#
-	#var all_results : Array[Scoring.Result]
-	#for scorer:Scoring.Combo in scorers:
-		#var results : Array[Scoring.Result] = scorer.score(stack)
-		#all_results.append_array(results)
-	#Scoring.sort_results(all_results, stack)
-	#
-	#var round_score : int = 0
-	#last_score = 0
-	#var tween := create_tween().set_parallel(true)\
-	#.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)\
-	#if all_results else null
-	#var score_delay : float = .5
-	#var last_scored_cards : Array[Card] = []
-	#for result : Scoring.Result in all_results:
-		#print(result.score_name, "\nscore: ", result.score)
-		#
-		#for c:Card in result.card_combo:
-			#if c not in last_scored_cards:
-				#tween.tween_property(c.front, "position:x", 50, score_delay)
-			#last_scored_cards.erase(c)
-			#print('suit: ', c.data.suit, ' rank: ', c.data.rank)
-			#
-		#for c:Card in last_scored_cards:
-			#tween.tween_property(c.front, "position:x", 0, score_delay)
-		#last_scored_cards = result.card_combo
-		#
-		##total_score += result.score
-		##round_score += result.score
-		#
-		#tween.tween_callback(func()->void:
-			#($ScoreName as Label).text = result.score_name
-			#($ScoreName/Label as Label).text = str(result.score)
-		#)
-		#tween.tween_method(func(s:float)->void: 
-			#($ScoreName as Label).scale = Vector2.ONE * s
-			#, 0.9, 1.1, score_delay
-		#)
-		#tween.tween_property(self, "last_score", result.score, score_delay).as_relative()
-		#tween.tween_property(self, "total_score", result.score, score_delay).as_relative()
-		#tween.tween_interval(1.5)
-		#tween.chain()
-		#tween.tween_callback(func()->void: ($ScoreName as Label).scale = Vector2.ONE)
-#
-	#for c:Card in last_scored_cards:
-		#tween.tween_property(c.front, "position:x", 0, score_delay)
-		#
-	#print(round_score)
-	#if tween:
-		#await tween.finished
-	#processing = false
 		
 func _on_next_pressed() -> void:
 	if processing:
@@ -331,47 +132,11 @@ func _on_next_pressed() -> void:
 	if held_card:
 		return
 	processing = true
-	#var submitted : Card = $Submission
-	#
-	#if submitted.top_card:
-		#var next_submit : Card = submitted.top_card
-		#
-		##cards submitted
-		#while next_submit:
-			#for effect:CardModifier in effects:
-				#if effect:
-					#effect.on_submit(next_submit)
-			#next_submit = next_submit.top_card
-			#
-		#await score(submitted.top_card)
-		##total_score += last_score
-		#var next_card : Card = submitted.top_card
-		#while next_card:
-			#discard_deck.append(next_card.data)
-			#next_card = next_card.top_card
-		#submitted.top_card.queue_free()
-		#submitted.top_card = null
-	#
-	##round ends
-	#for effect:CardModifier in effects:
-		#if effect:
-			#effect.on_round_end()
-	#
-	#if total_score >= goal:
-		#game_ended.emit()
-		#return
-		#
-	#if turns <= 0:
-		#print('you lose!')
-		#return
-	
-	#round starts
-	#for effect:CardModifier in effects:
-		#if effect:
-			#effect.on_round_start()
-	
-	#var input : Array[Card] = [$Input1, $Input2, $Input3, $Input4, $Input5]
-	#var stack : Array[Card] = [$Play1, $Play2, $Play3, $Play4, $Play5]
+	drop_cards_down()
+	replenish_input_cards()
+	processing = false
+
+func drop_cards_down() -> void:
 	for i:int in inputs.size():
 		if inputs[i].top_card:
 			var dropping_card := inputs[i].top_card
@@ -381,6 +146,8 @@ func _on_next_pressed() -> void:
 			var dropping_card_data := dropping_card.data
 			var bottom_card_data := bottom_card.data
 			await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+
+func replenish_input_cards() -> void:
 	for zone : Card in inputs:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
@@ -394,35 +161,13 @@ func _on_next_pressed() -> void:
 			add_child(card)
 			zone.add_card(card)
 			card.flipped = false
-		#var card : Card = CARD.instantiate()
-		#card.data = CardData.new()\
-						#.with_suit(randi() % 4 + 1)\
-						#.with_rank(randi() % 13 + 1)
-		#add_child(card)
-		#zone.add_card(card)
-		#card.flipped = false
-	processing = false
-	
-	#turns -= 1
-
-#class ColResult:
-	#func _init(result : Scoring.Result, start_card : Card, col : int) -> void:
-		#self.result = result
-		#self.start_card = start_card
-		#self.col = col
-	#var result : Scoring.Result
-	#var start_card : Card
-	#var col : int
 
 func _on_submit_pressed() -> void:
 	if processing:
 		return
 	processing = true
-	var cols : Array[Card] = stacks
 	var board_cols : Array[Array] = get_board_cols()
 	var row_to_score := 0
-	var round_score : int = 0
-	#last_score = 0
 	var last_scored_cards : Array[Card] = []
 	
 	while row_to_score < board_cols[0].size():
@@ -456,7 +201,7 @@ func _on_submit_pressed() -> void:
 				
 				#tween.tween_interval(score_delay)
 				last_scored_cards = result.card_combo
-				var combo_pos : Vector2
+				var combo_pos : Vector2 = Vector2.ZERO
 				for card in result.card_combo:
 					combo_pos += card.global_position
 				combo_pos /= result.card_combo.size()
@@ -601,29 +346,7 @@ func row_add_score(row:int, score:int) -> void:
 func col_add_score(col:int, score:int) -> void:
 	col_scores[col].text = str(score + int(col_scores[col].text))
 
-#func get_board_rows() -> Array[Array]:
-	#var cols := []
-
-#func get_card_effects() -> Array[CardModifier]:
-	#var modifiers : Array[CardModifier]
-	#for card in get_board_cols():
-		#pass
-	#return modifiers
-
 func shake_card(card:Card, card_effect:Callable) -> void:
-	#print('shake!')
-	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
-	#card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
-	##card_tween.tween_property(card.offset, "rotation_degrees", -5, base_delay * .2)
-	#card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
-	#card_tween.tween_callback(card_effect)
-	##card_effect.call()
-	#card_tween.tween_callback(audio_card_shake.play)
-	#card_tween.chain().tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
-	##card_tween.tween_property(card.offset, "rotation_degrees", 0, base_delay * .4)
-	#card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
-	#card_tween.tween_interval(base_delay * .2)
-	#await card_tween.finished
 	await card_raise(card)
 	await card_effect.call()
 	await card_lower(card)
@@ -677,78 +400,106 @@ func run_all_mods(function: StringName, params:Array) -> void:
 		for mod : CardModifier in [data.type, data.stamp, data.skill]:
 			if mod:
 				await Callable(mod, function).callv(params)
+
+func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
+	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
+
+func _on_child_entered_tree(node: Node) -> void:
+	if node is Card:
+		var card := node as Card
+		card.clicked.connect(_on_card_clicked)
+		if not card.is_zone:
+			card.hover_entered.connect(_on_card_hover_entered)
+			card.hover_exited.connect(_on_card_hover_exited)
+			card.card_added.connect(_on_game_board_changed)
+
+func _on_card_hover_entered(card : Card) -> void:
+	card_hovered = true
+	if held_card:
+		return
+	var preview_card : Card = $Preview/Card
+	if not card.flipped:
+		#pass data by reference and doesn't update data to know about this card
+		preview_card.data = card.data
+	preview_card.update_visual()
+	preview_card.flipped = card.flipped
+	var description : String = ""
+	if card.data.skill:
+		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
+	if card.data.stamp:
+		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
+	if card.data.type:
+		description += card.data.type.name + "\n" + card.data.type.description + "\n"
+	($Preview/Label as Label).text = description
+	($Preview as Control).show()
+
+func _on_card_hover_exited(card : Card) -> void:
+	card_hovered = false
+	#var zone : Card = $Preview/Card
+	#if not zone.top_card.data == card.data:
+		#($Preview as Control).hide()
+	#return
+
+func _on_game_board_changed() -> void:
+	var board_cols : Array[Array] = get_board_cols()
+	var num_cards_in_col : int = board_cols[0].size()
+	if num_cards_in_col > 0:
+		board_size = 350 + Card.child_offset.y * num_cards_in_col
+	else:
+		board_size = 350
+	audio_card_placing.play(.15)
+	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	
-class CardDataIterator:
-	var card_count : int
-	var game : Game
-	var board : Array[Array]
-	var next_card_data : CardData
-	enum {DECK, INPUTS, BOARD, DISCARD}
-	var phase := DECK
-	
-	func _init(game:Game) -> void:
-		self.game = game
+func _on_card_clicked(card : Card) -> void:
+	if processing:
+		return
+	if held_card:
+		if can_add_card(card, held_card):
+			card.add_card(held_card)
+			drop_held_card()
+	elif not held_card:
+		if not card.is_zone and card.state == Card.IN_PLAY:
+			var next_card := card
+			while next_card.top_card:
+				if not can_pickup_stack(next_card, next_card.top_card):
+					return
+				next_card = next_card.top_card
+			card.pickup()
+			held_card = card
+			held_card_offset = held_card.global_position - get_global_mouse_position()
+			if held_card_offset.y < 60:
+				held_card_offset.y = 60
+			held_card.move_to(get_global_mouse_position() + held_card_offset)
+			audio_card_placing.play(.15)
 
-	func should_continue() -> bool:
-		match phase:
-			DECK:
-				if card_count < game.draw_deck.size():
-					next_card_data = game.draw_deck[card_count]
-					return true
-				else:
-					phase = INPUTS
-					card_count = 0
-					return should_continue()
-			INPUTS:
-				if not card_count < game.inputs.size():
-					phase = BOARD
-					card_count = 0
-					return should_continue()
-				var card := game.inputs[card_count].top_card
-				while not card:
-					card_count += 1
-					if not card_count < game.inputs.size():
-						phase = BOARD
-						card_count = 0
-						return should_continue()
-					card = game.inputs[card_count].top_card
-				next_card_data = card.data
+func can_add_card(stack : Card, to_stack : Card) -> bool:
+	if stack.top_card == to_stack and to_stack == held_card:
+		return true
+	if not stack.top_card:
+		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
+			if stack.is_zone:
 				return true
-			BOARD:
-				board = game.get_board_cols()
-				if not card_count < board[0].size() * 5:
-					phase = DISCARD
-					card_count = 0
-					return should_continue()
-				var card : Card = board[card_count % 5][card_count / 5]
-				while not card:
-					card_count += 1
-					if not card_count < board[0].size() * 5:
-						phase = DISCARD
-						card_count = 0
-						return should_continue()
-					card = board[card_count % 5][card_count / 5]
-				next_card_data = card.data
-				return true
-			DISCARD:
-				if card_count < game.discard_deck.size():
-					next_card_data = game.discard_deck[card_count]
+			if stack.data.suit != to_stack.data.suit:
+				if to_stack.data.rank == stack.data.rank - 1:
 					return true
-				else:
-					return false
-		return false
+				if to_stack.data.rank == stack.data.rank + 1:
+					return true
+	return false
 
-	func _iter_init(arg:Variant) -> bool:
-		phase = DECK
-		card_count = 0
-		return should_continue()
+func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
+	#return true
+	if stack.is_zone:
+		return true
+	if stack.data.suit != to_stack.data.suit:
+		if to_stack.data.rank == stack.data.rank - 1:
+			return true
+		if to_stack.data.rank == stack.data.rank + 1:
+			return true
+	return false
 
-	func _iter_next(arg:Variant) -> bool:
-		card_count += 1
-		return should_continue()
-
-	func _iter_get(arg:Variant) -> CardData:
-		return next_card_data
+func drop_held_card() -> void:
+	held_card.drop()
+	held_card = null
 
 func _on_deck_clicked(deck_card: Card) -> void:
 	var randomized_deck : Array[CardData] = draw_deck.duplicate()
@@ -773,7 +524,6 @@ func _on_margin_container_gui_input(event: InputEvent) -> void:
 			for card_control : CardControl in flow_container.get_children():
 				card_control.card.data.card = null
 				card_control.queue_free()
-
 
 func _on_discard_clicked(deck_card: Card) -> void:
 	for data in discard_deck:
