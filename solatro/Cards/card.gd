@@ -234,6 +234,11 @@ func add_data(data:CardData, is_linked:bool=false) -> void:
 #func _exit_tree() -> void:
 	#data.card = null
 
+func leave_stack() -> void:
+	if bot_card and top_card:
+		bot_card.top_card = top_card
+		top_card.bot_card = bot_card
+
 func _on_control_mouse_entered() -> void:
 	hover = true
 	hover_entered.emit(self)
@@ -241,3 +246,9 @@ func _on_control_mouse_entered() -> void:
 func _on_control_mouse_exited() -> void:
 	hover = false
 	hover_exited.emit(self)
+
+func _on_tree_exiting() -> void:
+	if data:
+		if data.card == self:
+			data.card = null
+	leave_stack()

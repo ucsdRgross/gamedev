@@ -215,7 +215,7 @@ func _on_submit_pressed() -> void:
 				await get_tree().create_timer(base_delay).timeout
 				for card in result.card_combo:
 					await run_all_mods(&"on_score", [card])
-				await run_all_mods(&"after_score", [])						
+				await run_all_mods(&"after_score")
 				
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
@@ -313,9 +313,7 @@ func _on_submit_pressed() -> void:
 	for card in discards:
 		run_all_mods(&"on_discard", [card])
 		discard_deck.append(card.data)
-		card.data.card = null
 		card.queue_free()
-		card.bot_card.top_card = null
 	_on_game_board_changed()
 	
 	#discard board
@@ -325,7 +323,7 @@ func _on_submit_pressed() -> void:
 	processing = false
 
 func return_to_map() -> void:
-	run_all_mods(&"on_game_end", [])
+	run_all_mods(&"on_game_end")
 	draw_deck.append_array(discard_deck)
 	Main.save_info.card_datas = draw_deck
 	set_datas_game(draw_deck, null)
@@ -395,7 +393,7 @@ func get_card_grid_pos(card:Card) -> Vector2:
 				return Vector2(r, c)
 	return Vector2(-1,-1)
 
-func run_all_mods(function: StringName, params:Array) -> void:
+func run_all_mods(function: StringName, params:Array=[]) -> void:
 	for data in CardDataIterator.new(self):
 		for mod : CardModifier in [data.type, data.stamp, data.skill]:
 			if mod:
