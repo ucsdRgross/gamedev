@@ -6,245 +6,245 @@
 [ext_resource type="Script" path="res://Cards/card.gd" id="4_8j6hc"]
 [ext_resource type="Script" path="res://Cards/card_data.gd" id="5_8jmv4"]
 
-[sub_resource type="Resource" id="Resource_j2ikq"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 4
-
-[sub_resource type="Resource" id="Resource_qxt72"]
+[sub_resource type="Resource" id="Resource_le4rj"]
 script = ExtResource("5_8jmv4")
 suit = 2
 rank = 9
 
-[sub_resource type="Resource" id="Resource_430e5"]
-script = ExtResource("5_8jmv4")
-suit = 3
-rank = 13
-
-[sub_resource type="Resource" id="Resource_pnjvt"]
-script = ExtResource("5_8jmv4")
-suit = 3
-rank = 12
-
-[sub_resource type="Resource" id="Resource_klg6d"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_n2185"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 6
-
-[sub_resource type="Resource" id="Resource_a6ys6"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 7
-
-[sub_resource type="Resource" id="Resource_rhswq"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 8
-
-[sub_resource type="Resource" id="Resource_lmve5"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 9
-
-[sub_resource type="Resource" id="Resource_y5gp3"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 6
-
-[sub_resource type="Resource" id="Resource_h46rs"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 9
-
-[sub_resource type="Resource" id="Resource_nml7c"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 10
-
-[sub_resource type="Resource" id="Resource_htu0q"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 7
-
-[sub_resource type="Resource" id="Resource_x5hov"]
-script = ExtResource("5_8jmv4")
-suit = 3
-rank = 8
-
-[sub_resource type="Resource" id="Resource_u63nk"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 4
-
-[sub_resource type="Resource" id="Resource_fix2a"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 12
-
-[sub_resource type="Resource" id="Resource_pix6g"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 12
-
-[sub_resource type="Resource" id="Resource_1q4tf"]
+[sub_resource type="Resource" id="Resource_75gce"]
 script = ExtResource("5_8jmv4")
 suit = 1
 rank = 2
 
-[sub_resource type="Resource" id="Resource_yk55r"]
+[sub_resource type="Resource" id="Resource_5xurb"]
 script = ExtResource("5_8jmv4")
-suit = 3
+suit = 2
+rank = 9
+
+[sub_resource type="Resource" id="Resource_jyl2i"]
+script = ExtResource("5_8jmv4")
+suit = 4
 rank = 7
 
-[sub_resource type="Resource" id="Resource_io6ao"]
+[sub_resource type="Resource" id="Resource_sr4a8"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 2
+
+[sub_resource type="Resource" id="Resource_xyhpu"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 8
+
+[sub_resource type="Resource" id="Resource_dp0c6"]
 script = ExtResource("5_8jmv4")
 suit = 3
 rank = 3
 
-[sub_resource type="Resource" id="Resource_rojir"]
+[sub_resource type="Resource" id="Resource_fc4fj"]
 script = ExtResource("5_8jmv4")
-suit = 3
-rank = 1
+suit = 2
+rank = 6
 
-[sub_resource type="Resource" id="Resource_qm52y"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 9
-
-[sub_resource type="Resource" id="Resource_r440a"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 8
-
-[sub_resource type="Resource" id="Resource_k1hk5"]
+[sub_resource type="Resource" id="Resource_2r48j"]
 script = ExtResource("5_8jmv4")
 suit = 4
 rank = 4
 
-[sub_resource type="Resource" id="Resource_7ji7l"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 10
-
-[sub_resource type="Resource" id="Resource_ht412"]
-script = ExtResource("5_8jmv4")
-suit = 3
-rank = 12
-
-[sub_resource type="Resource" id="Resource_xjd7v"]
-script = ExtResource("5_8jmv4")
-suit = 3
-rank = 2
-
-[sub_resource type="Resource" id="Resource_ghcl6"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_t12ps"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 4
-
-[sub_resource type="Resource" id="Resource_2wc0l"]
+[sub_resource type="Resource" id="Resource_xgkcc"]
 script = ExtResource("5_8jmv4")
 suit = 1
 rank = 13
 
-[sub_resource type="Resource" id="Resource_6yjvw"]
+[sub_resource type="Resource" id="Resource_p8qe2"]
 script = ExtResource("5_8jmv4")
 suit = 2
+rank = 6
+
+[sub_resource type="Resource" id="Resource_m84u6"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 11
+
+[sub_resource type="Resource" id="Resource_k2tlq"]
+script = ExtResource("5_8jmv4")
+suit = 4
 rank = 7
 
-[sub_resource type="Resource" id="Resource_imjyf"]
-script = ExtResource("5_8jmv4")
-suit = 4
-rank = 10
-
-[sub_resource type="Resource" id="Resource_mj1yq"]
+[sub_resource type="Resource" id="Resource_jejux"]
 script = ExtResource("5_8jmv4")
 suit = 2
-rank = 8
-
-[sub_resource type="Resource" id="Resource_3jyi3"]
-script = ExtResource("5_8jmv4")
-suit = 4
 rank = 13
 
-[sub_resource type="Resource" id="Resource_5hnic"]
+[sub_resource type="Resource" id="Resource_5cg7q"]
 script = ExtResource("5_8jmv4")
 suit = 3
-rank = 4
+rank = 9
 
-[sub_resource type="Resource" id="Resource_jcek5"]
+[sub_resource type="Resource" id="Resource_yvuk7"]
 script = ExtResource("5_8jmv4")
 suit = 1
-rank = 1
-
-[sub_resource type="Resource" id="Resource_h2ye1"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 4
-
-[sub_resource type="Resource" id="Resource_1ljfx"]
-script = ExtResource("5_8jmv4")
-suit = 2
 rank = 5
 
-[sub_resource type="Resource" id="Resource_arolj"]
+[sub_resource type="Resource" id="Resource_0x4tx"]
 script = ExtResource("5_8jmv4")
 suit = 3
-rank = 7
+rank = 6
 
-[sub_resource type="Resource" id="Resource_p8s76"]
+[sub_resource type="Resource" id="Resource_803iq"]
 script = ExtResource("5_8jmv4")
-suit = 4
+suit = 3
+rank = 13
+
+[sub_resource type="Resource" id="Resource_xw8u1"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 10
+
+[sub_resource type="Resource" id="Resource_i6vh1"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 2
+
+[sub_resource type="Resource" id="Resource_s7ki3"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 11
+
+[sub_resource type="Resource" id="Resource_xw5xl"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 2
+
+[sub_resource type="Resource" id="Resource_xl6be"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 4
+
+[sub_resource type="Resource" id="Resource_ield7"]
+script = ExtResource("5_8jmv4")
+suit = 2
 rank = 1
 
-[sub_resource type="Resource" id="Resource_ssohy"]
+[sub_resource type="Resource" id="Resource_kon8w"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 5
+
+[sub_resource type="Resource" id="Resource_ydu7x"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 3
+
+[sub_resource type="Resource" id="Resource_it6gj"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 8
+
+[sub_resource type="Resource" id="Resource_0gbfr"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 9
+
+[sub_resource type="Resource" id="Resource_fjg6b"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 8
+
+[sub_resource type="Resource" id="Resource_sqgl3"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 6
+
+[sub_resource type="Resource" id="Resource_udtlq"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 9
+
+[sub_resource type="Resource" id="Resource_nrd3n"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 1
+
+[sub_resource type="Resource" id="Resource_wngg2"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 3
+
+[sub_resource type="Resource" id="Resource_u7vyf"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 4
+
+[sub_resource type="Resource" id="Resource_0at2i"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 2
+
+[sub_resource type="Resource" id="Resource_xrq5j"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 2
+
+[sub_resource type="Resource" id="Resource_da8dy"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 11
+
+[sub_resource type="Resource" id="Resource_1fxvs"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 1
+
+[sub_resource type="Resource" id="Resource_5fa4w"]
+script = ExtResource("5_8jmv4")
+suit = 4
+rank = 13
+
+[sub_resource type="Resource" id="Resource_hwnah"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 7
+
+[sub_resource type="Resource" id="Resource_uc0s0"]
+script = ExtResource("5_8jmv4")
+suit = 2
+rank = 12
+
+[sub_resource type="Resource" id="Resource_t4yjb"]
+script = ExtResource("5_8jmv4")
+suit = 3
+rank = 1
+
+[sub_resource type="Resource" id="Resource_k75ul"]
+script = ExtResource("5_8jmv4")
+suit = 1
+rank = 1
+
+[sub_resource type="Resource" id="Resource_5kl7c"]
 script = ExtResource("5_8jmv4")
 suit = 4
 rank = 2
 
-[sub_resource type="Resource" id="Resource_muexn"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 1
-
-[sub_resource type="Resource" id="Resource_ywpb4"]
-script = ExtResource("5_8jmv4")
-suit = 1
-rank = 8
-
-[sub_resource type="Resource" id="Resource_bo44f"]
+[sub_resource type="Resource" id="Resource_7e34p"]
 script = ExtResource("5_8jmv4")
 suit = 4
-rank = 6
+rank = 4
 
-[sub_resource type="Resource" id="Resource_7nfnr"]
+[sub_resource type="Resource" id="Resource_txjwh"]
 script = ExtResource("5_8jmv4")
-suit = 1
+suit = 3
 rank = 8
 
-[sub_resource type="Resource" id="Resource_7p4d4"]
+[sub_resource type="Resource" id="Resource_7jr1g"]
 script = ExtResource("5_8jmv4")
 suit = 1
 rank = 13
 
-[sub_resource type="Resource" id="Resource_xp2gn"]
-script = ExtResource("5_8jmv4")
-suit = 2
-rank = 8
-
-[sub_resource type="Resource" id="Resource_of7n0"]
+[sub_resource type="Resource" id="Resource_5x2lm"]
 script = ExtResource("5_8jmv4")
 suit = 4
-rank = 3
+rank = 11
 
 [node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
@@ -670,7 +670,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_j2ikq")
+data = SubResource("Resource_le4rj")
 can_rot_anim = false
 flipped = false
 
@@ -679,7 +679,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_qxt72")
+data = SubResource("Resource_75gce")
 can_rot_anim = false
 flipped = false
 
@@ -688,7 +688,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_430e5")
+data = SubResource("Resource_5xurb")
 can_rot_anim = false
 flipped = false
 
@@ -697,7 +697,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_pnjvt")
+data = SubResource("Resource_jyl2i")
 can_rot_anim = false
 flipped = false
 
@@ -706,7 +706,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_klg6d")
+data = SubResource("Resource_sr4a8")
 can_rot_anim = false
 flipped = false
 
@@ -715,7 +715,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_n2185")
+data = SubResource("Resource_xyhpu")
 can_rot_anim = false
 flipped = false
 
@@ -724,7 +724,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_a6ys6")
+data = SubResource("Resource_dp0c6")
 can_rot_anim = false
 flipped = false
 
@@ -733,7 +733,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_rhswq")
+data = SubResource("Resource_fc4fj")
 can_rot_anim = false
 flipped = false
 
@@ -742,7 +742,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_lmve5")
+data = SubResource("Resource_2r48j")
 can_rot_anim = false
 flipped = false
 
@@ -751,7 +751,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_y5gp3")
+data = SubResource("Resource_xgkcc")
 can_rot_anim = false
 flipped = false
 
@@ -760,7 +760,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_h46rs")
+data = SubResource("Resource_p8qe2")
 can_rot_anim = false
 flipped = false
 
@@ -769,7 +769,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_nml7c")
+data = SubResource("Resource_m84u6")
 can_rot_anim = false
 flipped = false
 
@@ -778,7 +778,7 @@ visible = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_htu0q")
+data = SubResource("Resource_k2tlq")
 can_rot_anim = false
 flipped = false
 
@@ -786,7 +786,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_x5hov")
+data = SubResource("Resource_jejux")
 can_rot_anim = false
 flipped = false
 
@@ -794,7 +794,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_u63nk")
+data = SubResource("Resource_5cg7q")
 can_rot_anim = false
 flipped = false
 
@@ -802,7 +802,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_fix2a")
+data = SubResource("Resource_yvuk7")
 can_rot_anim = false
 flipped = false
 
@@ -810,7 +810,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_pix6g")
+data = SubResource("Resource_0x4tx")
 can_rot_anim = false
 flipped = false
 
@@ -818,7 +818,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_1q4tf")
+data = SubResource("Resource_803iq")
 can_rot_anim = false
 flipped = false
 
@@ -826,7 +826,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_yk55r")
+data = SubResource("Resource_xw8u1")
 can_rot_anim = false
 flipped = false
 
@@ -834,7 +834,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_io6ao")
+data = SubResource("Resource_i6vh1")
 can_rot_anim = false
 flipped = false
 
@@ -842,7 +842,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_rojir")
+data = SubResource("Resource_s7ki3")
 can_rot_anim = false
 flipped = false
 
@@ -850,7 +850,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_qm52y")
+data = SubResource("Resource_xw5xl")
 can_rot_anim = false
 flipped = false
 
@@ -858,7 +858,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_r440a")
+data = SubResource("Resource_xl6be")
 can_rot_anim = false
 flipped = false
 
@@ -866,7 +866,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_k1hk5")
+data = SubResource("Resource_ield7")
 can_rot_anim = false
 flipped = false
 
@@ -874,7 +874,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_7ji7l")
+data = SubResource("Resource_kon8w")
 can_rot_anim = false
 flipped = false
 
@@ -882,7 +882,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_ht412")
+data = SubResource("Resource_ydu7x")
 can_rot_anim = false
 flipped = false
 
@@ -890,7 +890,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_xjd7v")
+data = SubResource("Resource_it6gj")
 can_rot_anim = false
 flipped = false
 
@@ -898,7 +898,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_ghcl6")
+data = SubResource("Resource_0gbfr")
 can_rot_anim = false
 flipped = false
 
@@ -906,7 +906,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_t12ps")
+data = SubResource("Resource_fjg6b")
 can_rot_anim = false
 flipped = false
 
@@ -914,7 +914,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_2wc0l")
+data = SubResource("Resource_sqgl3")
 can_rot_anim = false
 flipped = false
 
@@ -922,7 +922,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_6yjvw")
+data = SubResource("Resource_udtlq")
 can_rot_anim = false
 flipped = false
 
@@ -930,7 +930,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_imjyf")
+data = SubResource("Resource_nrd3n")
 can_rot_anim = false
 flipped = false
 
@@ -938,7 +938,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_mj1yq")
+data = SubResource("Resource_wngg2")
 can_rot_anim = false
 flipped = false
 
@@ -946,7 +946,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_3jyi3")
+data = SubResource("Resource_u7vyf")
 can_rot_anim = false
 flipped = false
 
@@ -954,7 +954,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_5hnic")
+data = SubResource("Resource_0at2i")
 can_rot_anim = false
 flipped = false
 
@@ -962,7 +962,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_jcek5")
+data = SubResource("Resource_xrq5j")
 can_rot_anim = false
 flipped = false
 
@@ -970,7 +970,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_h2ye1")
+data = SubResource("Resource_da8dy")
 can_rot_anim = false
 flipped = false
 
@@ -978,7 +978,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_1ljfx")
+data = SubResource("Resource_1fxvs")
 can_rot_anim = false
 flipped = false
 
@@ -986,7 +986,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_arolj")
+data = SubResource("Resource_5fa4w")
 can_rot_anim = false
 flipped = false
 
@@ -994,7 +994,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_p8s76")
+data = SubResource("Resource_hwnah")
 can_rot_anim = false
 flipped = false
 
@@ -1002,7 +1002,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_ssohy")
+data = SubResource("Resource_uc0s0")
 can_rot_anim = false
 flipped = false
 
@@ -1010,7 +1010,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_muexn")
+data = SubResource("Resource_t4yjb")
 can_rot_anim = false
 flipped = false
 
@@ -1018,7 +1018,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_ywpb4")
+data = SubResource("Resource_k75ul")
 can_rot_anim = false
 flipped = false
 
@@ -1026,7 +1026,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_bo44f")
+data = SubResource("Resource_5kl7c")
 can_rot_anim = false
 flipped = false
 
@@ -1034,7 +1034,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_7nfnr")
+data = SubResource("Resource_7e34p")
 can_rot_anim = false
 flipped = false
 
@@ -1042,7 +1042,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_7p4d4")
+data = SubResource("Resource_txjwh")
 can_rot_anim = false
 flipped = false
 
@@ -1050,7 +1050,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_xp2gn")
+data = SubResource("Resource_7jr1g")
 can_rot_anim = false
 flipped = false
 
@@ -1058,7 +1058,7 @@ flipped = false
 position = Vector2(-132, -351)
 scale = Vector2(3, 3)
 script = ExtResource("4_8j6hc")
-data = SubResource("Resource_of7n0")
+data = SubResource("Resource_5x2lm")
 can_rot_anim = false
 flipped = false
 
@@ -1067,5 +1067,53 @@ position = Vector2(1007, 368)
 can_move_anim = false
 stack_limit = 0
 
+[connection signal="tree_exiting" from="ChildCards/Card" to="ChildCards/Card" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17475" to="ChildCards/@Node2D@17475" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17476" to="ChildCards/@Node2D@17476" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17477" to="ChildCards/@Node2D@17477" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17478" to="ChildCards/@Node2D@17478" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17479" to="ChildCards/@Node2D@17479" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17480" to="ChildCards/@Node2D@17480" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17481" to="ChildCards/@Node2D@17481" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17482" to="ChildCards/@Node2D@17482" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17483" to="ChildCards/@Node2D@17483" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17484" to="ChildCards/@Node2D@17484" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17485" to="ChildCards/@Node2D@17485" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17486" to="ChildCards/@Node2D@17486" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17487" to="ChildCards/@Node2D@17487" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17488" to="ChildCards/@Node2D@17488" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17489" to="ChildCards/@Node2D@17489" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17490" to="ChildCards/@Node2D@17490" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17491" to="ChildCards/@Node2D@17491" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17492" to="ChildCards/@Node2D@17492" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17493" to="ChildCards/@Node2D@17493" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17494" to="ChildCards/@Node2D@17494" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17495" to="ChildCards/@Node2D@17495" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17496" to="ChildCards/@Node2D@17496" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17497" to="ChildCards/@Node2D@17497" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17498" to="ChildCards/@Node2D@17498" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17499" to="ChildCards/@Node2D@17499" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17500" to="ChildCards/@Node2D@17500" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17501" to="ChildCards/@Node2D@17501" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17502" to="ChildCards/@Node2D@17502" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17503" to="ChildCards/@Node2D@17503" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17504" to="ChildCards/@Node2D@17504" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17505" to="ChildCards/@Node2D@17505" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17506" to="ChildCards/@Node2D@17506" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17507" to="ChildCards/@Node2D@17507" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17508" to="ChildCards/@Node2D@17508" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17509" to="ChildCards/@Node2D@17509" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17510" to="ChildCards/@Node2D@17510" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17511" to="ChildCards/@Node2D@17511" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17512" to="ChildCards/@Node2D@17512" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17513" to="ChildCards/@Node2D@17513" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17514" to="ChildCards/@Node2D@17514" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17515" to="ChildCards/@Node2D@17515" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17516" to="ChildCards/@Node2D@17516" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17517" to="ChildCards/@Node2D@17517" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17518" to="ChildCards/@Node2D@17518" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17519" to="ChildCards/@Node2D@17519" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17520" to="ChildCards/@Node2D@17520" method="_on_tree_exiting"]
+[connection signal="tree_exiting" from="ChildCards/@Node2D@17521" to="ChildCards/@Node2D@17521" method="_on_tree_exiting"]
 [connection signal="clicked" from="Deck" to="." method="_on_deck_clicked"]
 [connection signal="hover_entered" from="Deck" to="." method="_on_deck_hover_entered"]

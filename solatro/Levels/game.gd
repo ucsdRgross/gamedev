@@ -123,8 +123,6 @@ func set_datas_game(datas:Array[CardData], game:Game) -> void:
 			data.type.with_game(game)
 		if data.stamp:
 			data.stamp.with_game(game)
-
-
 		
 func _on_next_pressed() -> void:
 	if processing:
@@ -132,7 +130,7 @@ func _on_next_pressed() -> void:
 	if held_card:
 		return
 	processing = true
-	drop_cards_down()
+	await drop_cards_down()
 	replenish_input_cards()
 	processing = false
 
@@ -520,7 +518,7 @@ func _on_margin_container_gui_input(event: InputEvent) -> void:
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			deck_viewer.hide()
 			for card_control : CardControl in flow_container.get_children():
-				card_control.card.data.card = null
+				#card_control.card.data.card = null
 				card_control.queue_free()
 
 func _on_discard_clicked(deck_card: Card) -> void:

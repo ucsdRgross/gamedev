@@ -137,4 +137,37 @@ var deck6: Array[CardData] = [
 	CardData.new().with_suit(4).with_rank(10).with_skill(SkillHungryHippo.new()),
 	]
 
-@export var card_datas : Array[CardData] = deck6
+var deck7: Array[CardData] = [
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(1),
+	]
+
+@export var card_datas : Array[CardData] = deck7

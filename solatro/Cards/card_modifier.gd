@@ -73,8 +73,11 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 	pass
 
 func is_active() -> bool:
-	if data.card and not data.card.top_card:
-		return true
+	if data.card:
+		if not data.card.top_card:
+			return true
+		if data.stamp is StampRevealing:
+			return true
 	return false
 
 

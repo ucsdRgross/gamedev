@@ -7,6 +7,7 @@ func _init() -> void:
 	frame = 52
 
 func on_score(target:Card) -> void:
+	if not is_active(): return
 	if target.data == self.data:
 		var grid_pos := game.get_card_grid_pos(target)
 		await card_shake(add_points.bind(grid_pos.x, grid_pos.y))
