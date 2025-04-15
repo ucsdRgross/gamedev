@@ -24,6 +24,8 @@ signal data_changed
 		stamp = value
 		data_changed.emit()
 var card: Card
+enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
+var stage := Stage.SPACE
 
 func with_suit(suit:int) -> CardData:
 	self.suit = suit

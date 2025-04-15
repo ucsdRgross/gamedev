@@ -73,13 +73,14 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 	pass
 
 func is_active() -> bool:
-	if data.card:
+	if data.stamp is StampGlobal:
+		return true
+	elif data.card:
 		if not data.card.top_card:
 			return true
 		if data.stamp is StampRevealing:
 			return true
 	return false
-
 
 func card_shake(card_effect:Callable) -> void:
 	if data.card:
@@ -88,10 +89,20 @@ func card_shake(card_effect:Callable) -> void:
 func card_raise() -> void:
 	if data.card:
 		await game.card_raise(data.card)
+	else:
+		if data.stage == CardData.Stage.DRAW:
+			pass
+		if data.stage == CardData.Stage.DISCARD:
+			pass
 
 func card_lower() -> void:
 	if data.card:
 		await game.card_lower(data.card)
+	else:
+		if data.stage == CardData.Stage.DRAW:
+			pass
+		if data.stage == CardData.Stage.DISCARD:
+			pass
 
 func card_shrink() -> void:
 	if data.card:

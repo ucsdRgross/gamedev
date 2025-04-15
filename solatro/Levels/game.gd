@@ -113,6 +113,8 @@ func add_deck() -> void:
 		saved_deck = self.deck.card_datas
 	draw_deck = saved_deck.duplicate(true)
 	set_datas_game(draw_deck, self)
+	for data in draw_deck:
+		data.stage = CardData.Stage.DRAW
 	draw_deck.shuffle()
 
 func set_datas_game(datas:Array[CardData], game:Game) -> void:
@@ -139,6 +141,7 @@ func drop_cards_down() -> void:
 		if inputs[i].top_card:
 			var dropping_card := inputs[i].top_card
 			dropping_card.state = Card.IN_PLAY
+			dropping_card.data.stage = CardData.Stage.PLAY
 			var bottom_card := stacks[i].get_last_card()
 			bottom_card.add_card(inputs[i].top_card)
 			var dropping_card_data := dropping_card.data
@@ -154,6 +157,7 @@ func replenish_input_cards() -> void:
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()
 			card.state = Card.STATIC
+			card.data.stage = CardData.Stage.INPUT
 			var data : CardData = draw_deck.pop_back()
 			card.add_data(data, true)
 			add_child(card)
@@ -309,9 +313,7 @@ func _on_submit_pressed() -> void:
 				discards.append(board_cols[j][i])
 	discards.reverse()
 	for card in discards:
-		run_all_mods(&"on_discard", [card])
-		discard_deck.append(card.data)
-		card.queue_free()
+		discard_card(card)
 	_on_game_board_changed()
 	
 	#discard board
@@ -320,9 +322,17 @@ func _on_submit_pressed() -> void:
 	
 	processing = false
 
+func discard_card(card: Card) -> void:
+	run_all_mods(&"on_discard", [card])
+	discard_deck.append(card.data)
+	card.data.stage = CardData.Stage.DISCARD
+	card.queue_free()
+
 func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
 	draw_deck.append_array(discard_deck)
+	for data in draw_deck:
+		data.stage = CardData.Stage.SPACE
 	Main.save_info.card_datas = draw_deck
 	set_datas_game(draw_deck, null)
 	game_ended.emit()
