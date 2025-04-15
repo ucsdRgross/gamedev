@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://c08vq38ntcvyj"]
 
-[ext_resource type="Script" path="res://UI/deck_builder.gd" id="1_q7hmp"]
+[ext_resource type="Script" uid="uid://cjsalpcsbh3oe" path="res://UI/deck_builder.gd" id="1_q7hmp"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_y2cql"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_u2vgp"]
@@ -51,6 +51,7 @@ text_overrun_behavior = 1
 selected = 0
 item_count = 14
 popup/item_0/text = "Random"
+popup/item_0/id = 0
 popup/item_1/text = "K"
 popup/item_1/id = 13
 popup/item_2/text = "Q"
@@ -87,6 +88,7 @@ text_overrun_behavior = 1
 selected = 0
 item_count = 5
 popup/item_0/text = "Random"
+popup/item_0/id = 0
 popup/item_1/text = "1"
 popup/item_1/id = 1
 popup/item_2/text = "2"
@@ -106,6 +108,7 @@ text_overrun_behavior = 1
 selected = 0
 item_count = 2
 popup/item_0/text = "Paper"
+popup/item_0/id = 0
 popup/item_1/text = "Rand"
 popup/item_1/id = 1
 
@@ -119,6 +122,7 @@ text_overrun_behavior = 1
 selected = 0
 item_count = 2
 popup/item_0/text = "None"
+popup/item_0/id = 0
 popup/item_1/text = "Random"
 popup/item_1/id = 1
 

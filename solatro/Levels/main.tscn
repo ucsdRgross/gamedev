@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://drlnkxh17heyl"]
 
-[ext_resource type="Script" path="res://Levels/main.gd" id="1_s8cx5"]
+[ext_resource type="Script" uid="uid://dmqxtwuygeuyp" path="res://Levels/main.gd" id="1_s8cx5"]
 [ext_resource type="AudioStream" uid="uid://cta6nayvjuata" path="res://Audio/BIGMAN  The Window.mp3" id="2_1130y"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="3_ftvb4"]
 

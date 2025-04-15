@@ -1,7 +1,7 @@
 [gd_scene load_steps=13 format=3 uid="uid://oc6yiar3wsih"]
 
-[ext_resource type="Script" path="res://Levels/map.gd" id="1_uwdp5"]
-[ext_resource type="Script" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
+[ext_resource type="Script" uid="uid://0udjriminoud" path="res://Levels/map.gd" id="1_uwdp5"]
+[ext_resource type="Script" uid="uid://cnls1uy13mmj7" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
 [ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://Levels/triangle_map.tscn" id="5_5sh7s"]
@@ -98,7 +98,7 @@ canvas_item_default_texture_filter = 0
 size = Vector2i(1152, 648)
 
 [node name="TriangleMap" parent="TiltedGUI/SubViewport" node_paths=PackedStringArray("cards") instance=ExtResource("5_5sh7s")]
-cards = [NodePath("ChildCards/Card"), NodePath("ChildCards/@Node2D@17407"), NodePath("ChildCards/@Node2D@17408"), NodePath("ChildCards/@Node2D@17409"), NodePath("ChildCards/@Node2D@17410"), NodePath("ChildCards/@Node2D@17411"), NodePath("ChildCards/@Node2D@17412"), NodePath("ChildCards/@Node2D@17413"), NodePath("ChildCards/@Node2D@17414"), NodePath("ChildCards/@Node2D@17415"), NodePath("ChildCards/@Node2D@17416"), NodePath("ChildCards/@Node2D@17417"), NodePath("ChildCards/@Node2D@17418"), NodePath("ChildCards/@Node2D@17419"), NodePath("ChildCards/@Node2D@17420"), NodePath("ChildCards/@Node2D@17421"), NodePath("ChildCards/@Node2D@17422"), NodePath("ChildCards/@Node2D@17423"), NodePath("ChildCards/@Node2D@17424"), NodePath("ChildCards/@Node2D@17425"), NodePath("ChildCards/@Node2D@17426"), NodePath("ChildCards/@Node2D@17427"), NodePath("ChildCards/@Node2D@17428"), NodePath("ChildCards/@Node2D@17429"), NodePath("ChildCards/@Node2D@17430"), NodePath("ChildCards/@Node2D@17431"), NodePath("ChildCards/@Node2D@17432"), NodePath("ChildCards/@Node2D@17433"), NodePath("ChildCards/@Node2D@17434"), NodePath("ChildCards/@Node2D@17435"), NodePath("ChildCards/@Node2D@17436"), NodePath("ChildCards/@Node2D@17437"), NodePath("ChildCards/@Node2D@17438"), NodePath("ChildCards/@Node2D@17439"), NodePath("ChildCards/@Node2D@17440"), NodePath("ChildCards/@Node2D@17441"), NodePath("ChildCards/@Node2D@17442"), NodePath("ChildCards/@Node2D@17443"), NodePath("ChildCards/@Node2D@17444"), NodePath("ChildCards/@Node2D@17445"), NodePath("ChildCards/@Node2D@17446"), NodePath("ChildCards/@Node2D@17447"), NodePath("ChildCards/@Node2D@17448"), NodePath("ChildCards/@Node2D@17449"), NodePath("ChildCards/@Node2D@17450"), NodePath("ChildCards/@Node2D@17451"), NodePath("ChildCards/@Node2D@17452"), NodePath("ChildCards/@Node2D@17453")]
+cards = [null]
 
 [node name="Quad" type="MeshInstance3D" parent="TiltedGUI"]
 mesh = SubResource("QuadMesh_c5ijj")
