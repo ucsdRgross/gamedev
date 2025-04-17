@@ -7,7 +7,14 @@ extends Node2D
 		#arr.resize(arr.size() - 1)
 
 func _ready() -> void:
-	var a = {1:null}
-	var b = a.duplicate()
-	b.erase(1)
-	print(a)
+	print(not Object.new())
+	print(Object.new())
+	print(! Object.new())
+	print(Object.new())
+	print(!Object.new())
+	print(Object.new())
+	print( (func():return Object.new()).call() )
+	#var a = {1:null}
+	#var b = a.duplicate()
+	#b.erase(1)
+	#print(a)
