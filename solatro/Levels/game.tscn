@@ -488,6 +488,10 @@ mouse_filter = 2
 can_move_anim = false
 stack_limit = 0
 
+[node name="DeckPopup" parent="Deck" instance=ExtResource("3_8sseo")]
+can_move_anim = false
+stack_limit = 0
+
 [node name="Discard" type="Control" parent="."]
 anchors_preset = 0
 offset_left = 1013.0
@@ -497,6 +501,10 @@ offset_bottom = 543.0
 mouse_filter = 2
 
 [node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
+can_move_anim = false
+stack_limit = 0
+
+[node name="DiscardPopup" parent="Discard" instance=ExtResource("3_8sseo")]
 can_move_anim = false
 stack_limit = 0
 
@@ -566,5 +574,7 @@ vertical_alignment = 1
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
 [connection signal="clicked" from="Deck/Deck" to="." method="_on_deck_clicked"]
+[connection signal="clicked" from="Deck/DeckPopup" to="." method="_on_deck_clicked"]
 [connection signal="clicked" from="Discard/Discard" to="." method="_on_discard_clicked"]
+[connection signal="clicked" from="Discard/DiscardPopup" to="." method="_on_discard_clicked"]
 [connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]

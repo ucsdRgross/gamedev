@@ -170,4 +170,37 @@ var deck7: Array[CardData] = [
 	CardData.new().with_suit(1).with_rank(1),
 	]
 
-@export var card_datas : Array[CardData] = deck7
+var deck8: Array[CardData] = [
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampDoubleTrigger.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()),
+	CardData.new().with_suit(1).with_rank(1),
+	]
+
+@export var card_datas : Array[CardData] = deck8

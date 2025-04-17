@@ -58,6 +58,8 @@ var row_score_popups : Dictionary
 @onready var lose_screen: Label = $LoseScreen
 @onready var deck_viewer: CanvasLayer = $DeckViewer
 @onready var flow_container: FlowContainer = %FlowContainer
+@onready var deck_popup: Card = $Deck/DeckPopup
+@onready var discard_popup: Card = $Discard/DiscardPopup
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
@@ -157,9 +159,9 @@ func replenish_input_cards() -> void:
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()
 			card.state = Card.STATIC
-			card.data.stage = CardData.Stage.INPUT
 			var data : CardData = draw_deck.pop_back()
 			card.add_data(data, true)
+			card.data.stage = CardData.Stage.INPUT
 			add_child(card)
 			zone.add_card(card)
 			card.flipped = false
@@ -352,10 +354,10 @@ func row_add_score(row:int, score:int) -> void:
 func col_add_score(col:int, score:int) -> void:
 	col_scores[col].text = str(score + int(col_scores[col].text))
 
-func shake_card(card:Card, card_effect:Callable) -> void:
-	await card_raise(card)
-	await card_effect.call()
-	await card_lower(card)
+#func shake_card(card:Card, card_effect:Callable) -> void:
+	#await card_raise(card)
+	#await card_effect.call()
+	#await card_lower(card)
 
 func card_raise(card:Card) -> void:
 	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()

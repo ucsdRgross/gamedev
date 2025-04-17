@@ -83,27 +83,39 @@ func is_active() -> bool:
 	return false
 
 func card_shake(card_effect:Callable) -> void:
-	if data.card:
-		await game.shake_card(data.card, card_effect)
+	await card_raise()
+	await card_effect.call()
+	await card_lower()
 		
 func card_raise() -> void:
-	if data.card:
-		await game.card_raise(data.card)
-	else:
-		if data.stage == CardData.Stage.DRAW:
-			pass
-		if data.stage == CardData.Stage.DISCARD:
-			pass
+	await _do_popup(&"card_raise")
 
 func card_lower() -> void:
-	if data.card:
-		await game.card_lower(data.card)
-	else:
-		if data.stage == CardData.Stage.DRAW:
-			pass
-		if data.stage == CardData.Stage.DISCARD:
-			pass
+	await _do_popup(&"card_lower")
 
 func card_shrink() -> void:
+	await _do_popup(&"card_shrink")
+
+func _do_popup(method:StringName) -> void:
+	var popup_card : Card
+	var clear_data := false
 	if data.card:
-		await game.card_shrink(data.card)
+		popup_card = data.card
+	else:
+		match data.stage:
+			data.Stage.DRAW:
+				popup_card = game.deck_popup
+			data.Stage.DISCARD:
+				popup_card = game.discard_popup
+		if not popup_card:
+			return
+		popup_card.data = data
+		clear_data = true
+		
+	if method == &"card_raise":
+		popup_card.show()
+	await Callable(game, method).call(popup_card)
+	if method == &"card_lower":
+		popup_card.hide()
+		if clear_data:
+			popup_card.data = null
