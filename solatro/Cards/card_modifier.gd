@@ -98,10 +98,10 @@ func card_shrink() -> void:
 
 func _do_popup(method:StringName) -> void:
 	var popup_card : Card
-	var clear_data := false
+	var temp_card := false
 	if data.card:
 		popup_card = data.card
-	else:
+	elif method == &"card_raise":
 		match data.stage:
 			data.Stage.DRAW:
 				popup_card = game.deck_popup
@@ -109,13 +109,17 @@ func _do_popup(method:StringName) -> void:
 				popup_card = game.discard_popup
 		if not popup_card:
 			return
+		var new_popup_card := popup_card.duplicate(8)
+		popup_card.get_parent().add_child(new_popup_card)
+		popup_card = new_popup_card
 		popup_card.data = data
-		clear_data = true
-		
-	if method == &"card_raise":
+		temp_card = true
+		popup_card.flipped = !popup_card.flipped
 		popup_card.show()
+	else:
+		return
 	await Callable(game, method).call(popup_card)
-	if method == &"card_lower":
-		popup_card.hide()
-		if clear_data:
-			popup_card.data = null
+	if temp_card:
+		await Callable(game, &"card_lower").call(popup_card)
+		popup_card.queue_free()
+			

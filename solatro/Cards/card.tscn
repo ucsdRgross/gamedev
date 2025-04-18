@@ -12,10 +12,10 @@ script = ExtResource("1_pyuft")
 [node name="Offset" type="Node2D" parent="."]
 
 [node name="Front" type="Sprite2D" parent="Offset"]
-position = Vector2(0, -0.0464102)
-rotation = 3.14159
-scale = Vector2(0.998643, -0.987029)
-skew = 0.00848317
+position = Vector2(0, 0.992019)
+rotation = -3.14157
+scale = Vector2(0.987574, -0.998145)
+skew = -0.00970471
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
@@ -63,7 +63,6 @@ grow_horizontal = 2
 grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 
-[connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]
 [connection signal="gui_input" from="Offset/Front/Control" to="." method="_on_control_gui_input"]
 [connection signal="mouse_entered" from="Offset/Front/Control" to="." method="_on_control_mouse_entered"]
 [connection signal="mouse_exited" from="Offset/Front/Control" to="." method="_on_control_mouse_exited"]

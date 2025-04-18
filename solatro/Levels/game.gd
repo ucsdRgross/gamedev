@@ -58,8 +58,8 @@ var row_score_popups : Dictionary
 @onready var lose_screen: Label = $LoseScreen
 @onready var deck_viewer: CanvasLayer = $DeckViewer
 @onready var flow_container: FlowContainer = %FlowContainer
-@onready var deck_popup: Card = $Deck/DeckPopup
-@onready var discard_popup: Card = $Discard/DiscardPopup
+@onready var deck_popup: Card = $Deck/Deck
+@onready var discard_popup: Card = $Discard/Discard
 
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
