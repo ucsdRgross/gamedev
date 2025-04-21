@@ -8,243 +8,243 @@
 
 [sub_resource type="Resource" id="Resource_r8s5l"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 11
+suit = 2
+rank = 3
 
 [sub_resource type="Resource" id="Resource_6n4m0"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 4
+rank = 7
 
 [sub_resource type="Resource" id="Resource_tyjmd"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 6
+suit = 1
+rank = 13
 
 [sub_resource type="Resource" id="Resource_llyq8"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 13
-
-[sub_resource type="Resource" id="Resource_c5vus"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 13
-
-[sub_resource type="Resource" id="Resource_8up2j"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_27qhp"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_haf8g"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 12
-
-[sub_resource type="Resource" id="Resource_3nwcu"]
-script = ExtResource("5_6n4m0")
-suit = 2
-rank = 4
-
-[sub_resource type="Resource" id="Resource_2rrpb"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 5
-
-[sub_resource type="Resource" id="Resource_guvbb"]
-script = ExtResource("5_6n4m0")
-suit = 2
-rank = 13
-
-[sub_resource type="Resource" id="Resource_ikrvv"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 3
-
-[sub_resource type="Resource" id="Resource_y7hk1"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 12
-
-[sub_resource type="Resource" id="Resource_7lwli"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 9
-
-[sub_resource type="Resource" id="Resource_vy1ib"]
 script = ExtResource("5_6n4m0")
 suit = 2
 rank = 11
 
-[sub_resource type="Resource" id="Resource_1ubwu"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 13
-
-[sub_resource type="Resource" id="Resource_gfrc8"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 8
-
-[sub_resource type="Resource" id="Resource_joolv"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 6
-
-[sub_resource type="Resource" id="Resource_qwmu4"]
-script = ExtResource("5_6n4m0")
-suit = 2
-rank = 1
-
-[sub_resource type="Resource" id="Resource_aurl1"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_rrhdf"]
+[sub_resource type="Resource" id="Resource_c5vus"]
 script = ExtResource("5_6n4m0")
 suit = 4
 rank = 4
 
-[sub_resource type="Resource" id="Resource_j5fi0"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 5
-
-[sub_resource type="Resource" id="Resource_k8lhe"]
+[sub_resource type="Resource" id="Resource_8up2j"]
 script = ExtResource("5_6n4m0")
 suit = 1
 rank = 7
 
-[sub_resource type="Resource" id="Resource_4alb5"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 12
-
-[sub_resource type="Resource" id="Resource_vfdit"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 9
-
-[sub_resource type="Resource" id="Resource_n4io0"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 2
-
-[sub_resource type="Resource" id="Resource_enhj3"]
+[sub_resource type="Resource" id="Resource_27qhp"]
 script = ExtResource("5_6n4m0")
 suit = 4
 rank = 11
 
-[sub_resource type="Resource" id="Resource_yq801"]
+[sub_resource type="Resource" id="Resource_haf8g"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 13
-
-[sub_resource type="Resource" id="Resource_rhngq"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 3
-
-[sub_resource type="Resource" id="Resource_yu3h1"]
-script = ExtResource("5_6n4m0")
-suit = 2
-rank = 12
-
-[sub_resource type="Resource" id="Resource_b0igj"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 3
-
-[sub_resource type="Resource" id="Resource_fquh1"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 9
-
-[sub_resource type="Resource" id="Resource_5hu2v"]
-script = ExtResource("5_6n4m0")
-suit = 2
-rank = 10
-
-[sub_resource type="Resource" id="Resource_yjitc"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 10
-
-[sub_resource type="Resource" id="Resource_xb5l0"]
-script = ExtResource("5_6n4m0")
-suit = 3
-rank = 12
-
-[sub_resource type="Resource" id="Resource_0pp5y"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 5
-
-[sub_resource type="Resource" id="Resource_2bnq7"]
-script = ExtResource("5_6n4m0")
-suit = 2
 rank = 11
 
-[sub_resource type="Resource" id="Resource_40rio"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 2
-
-[sub_resource type="Resource" id="Resource_ayo6x"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 2
-
-[sub_resource type="Resource" id="Resource_wt1bq"]
+[sub_resource type="Resource" id="Resource_3nwcu"]
 script = ExtResource("5_6n4m0")
 suit = 3
+rank = 3
+
+[sub_resource type="Resource" id="Resource_2rrpb"]
+script = ExtResource("5_6n4m0")
+suit = 2
 rank = 12
 
-[sub_resource type="Resource" id="Resource_ekfym"]
+[sub_resource type="Resource" id="Resource_guvbb"]
+script = ExtResource("5_6n4m0")
+suit = 2
+rank = 9
+
+[sub_resource type="Resource" id="Resource_ikrvv"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 8
+
+[sub_resource type="Resource" id="Resource_y7hk1"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 7
+
+[sub_resource type="Resource" id="Resource_7lwli"]
+script = ExtResource("5_6n4m0")
+suit = 2
+rank = 8
+
+[sub_resource type="Resource" id="Resource_vy1ib"]
 script = ExtResource("5_6n4m0")
 suit = 4
 rank = 6
 
-[sub_resource type="Resource" id="Resource_41b3f"]
+[sub_resource type="Resource" id="Resource_1ubwu"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 3
+suit = 3
+rank = 8
 
-[sub_resource type="Resource" id="Resource_3ofxb"]
+[sub_resource type="Resource" id="Resource_gfrc8"]
+script = ExtResource("5_6n4m0")
+suit = 3
+rank = 12
+
+[sub_resource type="Resource" id="Resource_joolv"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 12
+
+[sub_resource type="Resource" id="Resource_qwmu4"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 10
+
+[sub_resource type="Resource" id="Resource_aurl1"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 7
+
+[sub_resource type="Resource" id="Resource_rrhdf"]
 script = ExtResource("5_6n4m0")
 suit = 1
 rank = 3
 
-[sub_resource type="Resource" id="Resource_mvs40"]
+[sub_resource type="Resource" id="Resource_j5fi0"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 2
+
+[sub_resource type="Resource" id="Resource_k8lhe"]
+script = ExtResource("5_6n4m0")
+suit = 2
+rank = 7
+
+[sub_resource type="Resource" id="Resource_4alb5"]
 script = ExtResource("5_6n4m0")
 suit = 3
+rank = 9
+
+[sub_resource type="Resource" id="Resource_vfdit"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 6
+
+[sub_resource type="Resource" id="Resource_n4io0"]
+script = ExtResource("5_6n4m0")
+suit = 2
+rank = 3
+
+[sub_resource type="Resource" id="Resource_enhj3"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 3
+
+[sub_resource type="Resource" id="Resource_yq801"]
+script = ExtResource("5_6n4m0")
+suit = 3
+rank = 6
+
+[sub_resource type="Resource" id="Resource_rhngq"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 12
+
+[sub_resource type="Resource" id="Resource_yu3h1"]
+script = ExtResource("5_6n4m0")
+suit = 3
+rank = 12
+
+[sub_resource type="Resource" id="Resource_b0igj"]
+script = ExtResource("5_6n4m0")
+suit = 4
 rank = 4
+
+[sub_resource type="Resource" id="Resource_fquh1"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 4
+
+[sub_resource type="Resource" id="Resource_5hu2v"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 7
+
+[sub_resource type="Resource" id="Resource_yjitc"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 10
+
+[sub_resource type="Resource" id="Resource_xb5l0"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 10
+
+[sub_resource type="Resource" id="Resource_0pp5y"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 3
+
+[sub_resource type="Resource" id="Resource_2bnq7"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 7
+
+[sub_resource type="Resource" id="Resource_40rio"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 12
+
+[sub_resource type="Resource" id="Resource_ayo6x"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 11
+
+[sub_resource type="Resource" id="Resource_wt1bq"]
+script = ExtResource("5_6n4m0")
+suit = 3
+rank = 10
+
+[sub_resource type="Resource" id="Resource_ekfym"]
+script = ExtResource("5_6n4m0")
+suit = 1
+rank = 4
+
+[sub_resource type="Resource" id="Resource_41b3f"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 12
+
+[sub_resource type="Resource" id="Resource_3ofxb"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 6
+
+[sub_resource type="Resource" id="Resource_mvs40"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 11
 
 [sub_resource type="Resource" id="Resource_tb7jc"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 12
+rank = 6
 
 [sub_resource type="Resource" id="Resource_v1avm"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 2
+suit = 2
+rank = 12
 
 [sub_resource type="Resource" id="Resource_3kk0n"]
 script = ExtResource("5_6n4m0")
 suit = 3
-rank = 11
+rank = 10
 
 [sub_resource type="Resource" id="Resource_8fb0e"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 11
+suit = 1
+rank = 9
 
 [node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
@@ -1067,53 +1067,5 @@ position = Vector2(1007, 368)
 can_move_anim = false
 stack_limit = 0
 
-[connection signal="tree_exiting" from="ChildCards/Card" to="ChildCards/Card" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21990" to="ChildCards/@Node2D@21990" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21991" to="ChildCards/@Node2D@21991" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21992" to="ChildCards/@Node2D@21992" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21993" to="ChildCards/@Node2D@21993" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21994" to="ChildCards/@Node2D@21994" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21995" to="ChildCards/@Node2D@21995" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21996" to="ChildCards/@Node2D@21996" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21997" to="ChildCards/@Node2D@21997" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21998" to="ChildCards/@Node2D@21998" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@21999" to="ChildCards/@Node2D@21999" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22000" to="ChildCards/@Node2D@22000" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22001" to="ChildCards/@Node2D@22001" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22002" to="ChildCards/@Node2D@22002" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22003" to="ChildCards/@Node2D@22003" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22004" to="ChildCards/@Node2D@22004" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22005" to="ChildCards/@Node2D@22005" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22006" to="ChildCards/@Node2D@22006" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22007" to="ChildCards/@Node2D@22007" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22008" to="ChildCards/@Node2D@22008" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22009" to="ChildCards/@Node2D@22009" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22010" to="ChildCards/@Node2D@22010" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22011" to="ChildCards/@Node2D@22011" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22012" to="ChildCards/@Node2D@22012" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22013" to="ChildCards/@Node2D@22013" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22014" to="ChildCards/@Node2D@22014" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22015" to="ChildCards/@Node2D@22015" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22016" to="ChildCards/@Node2D@22016" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22017" to="ChildCards/@Node2D@22017" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22018" to="ChildCards/@Node2D@22018" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22019" to="ChildCards/@Node2D@22019" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22020" to="ChildCards/@Node2D@22020" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22021" to="ChildCards/@Node2D@22021" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22022" to="ChildCards/@Node2D@22022" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22023" to="ChildCards/@Node2D@22023" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22024" to="ChildCards/@Node2D@22024" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22025" to="ChildCards/@Node2D@22025" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22026" to="ChildCards/@Node2D@22026" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22027" to="ChildCards/@Node2D@22027" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22028" to="ChildCards/@Node2D@22028" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22029" to="ChildCards/@Node2D@22029" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22030" to="ChildCards/@Node2D@22030" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22031" to="ChildCards/@Node2D@22031" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22032" to="ChildCards/@Node2D@22032" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22033" to="ChildCards/@Node2D@22033" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22034" to="ChildCards/@Node2D@22034" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22035" to="ChildCards/@Node2D@22035" method="_on_tree_exiting"]
-[connection signal="tree_exiting" from="ChildCards/@Node2D@22036" to="ChildCards/@Node2D@22036" method="_on_tree_exiting"]
 [connection signal="clicked" from="Deck" to="." method="_on_deck_clicked"]
 [connection signal="hover_entered" from="Deck" to="." method="_on_deck_hover_entered"]

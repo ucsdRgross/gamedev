@@ -203,4 +203,39 @@ var deck8: Array[CardData] = [
 	CardData.new().with_suit(1).with_rank(1),
 	]
 
-@export var card_datas : Array[CardData] = deck8
+var deck9: Array[CardData] = [
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeStone.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(3).with_rank(2),
+	CardData.new().with_suit(4).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeStone.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(3).with_rank(2),
+	CardData.new().with_suit(4).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeStone.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(3).with_rank(2),
+	CardData.new().with_suit(4).with_rank(1),
+	CardData.new().with_suit(1).with_rank(1).with_skill(SkillExtraPoint.new()),
+	CardData.new().with_suit(2).with_rank(2).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(3).with_rank(3).with_type(TypeStone.new()),
+	CardData.new().with_suit(4).with_rank(4).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()),
+	CardData.new().with_suit(1).with_rank(4).with_skill(SkillExtraPoint.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(2).with_rank(3).with_stamp(StampRevealing.new()).with_type(TypeStone.new()),
+	CardData.new().with_suit(3).with_rank(2),
+	CardData.new().with_suit(4).with_rank(1),
+	]
+
+@export var card_datas : Array[CardData] = deck9

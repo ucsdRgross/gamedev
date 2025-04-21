@@ -6,6 +6,7 @@ signal clicked(card:Card)
 signal hover_entered(card:Card)
 signal hover_exited(card:Card)
 signal card_added
+signal card_stacked(card:Card)
 
 @export var data : CardData
 @export var is_zone := false
@@ -166,7 +167,7 @@ func _on_control_gui_input(event: InputEvent) -> void:
 			if clickable:
 				clicked.emit(self)
 
-func add_card(card : Card) -> void:
+func add_card(card : Card, trigger_mods: bool = true) -> void:
 	if top_card == card:
 		return
 	var parent := card.get_parent()
@@ -175,15 +176,17 @@ func add_card(card : Card) -> void:
 	card.reparent(self)
 	top_card = card
 	card.bot_card = self
+	var i_card := card
 	if stack_limit > -1:
-		while card:
-			card.stack_limit = stack_limit - 1
-			card = card.top_card
+		while i_card:
+			i_card.stack_limit = stack_limit - 1
+			i_card = i_card.top_card
 	else:
-		while card:
-			card.stack_limit = stack_limit
-			card = card.top_card
+		while i_card:
+			i_card.stack_limit = stack_limit
+			i_card = i_card.top_card
 	card_added.emit()
+	if trigger_mods: card_stacked.emit(card)
 
 func pickup() -> void:
 	var card : Card = self

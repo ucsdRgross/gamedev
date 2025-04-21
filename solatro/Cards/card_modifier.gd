@@ -29,7 +29,7 @@ func on_round_end() -> void:
 	#pass
 func stack_rule(target:Card) -> bool:
 	return false
-func on_stack(target:Card) -> void:
+func on_stack_card(target:Card) -> void:
 	pass
 func pickup_rule(target:Card) -> bool:
 	return true

@@ -145,10 +145,11 @@ func drop_cards_down() -> void:
 			dropping_card.state = Card.IN_PLAY
 			dropping_card.data.stage = CardData.Stage.PLAY
 			var bottom_card := stacks[i].get_last_card()
-			bottom_card.add_card(inputs[i].top_card)
+			bottom_card.add_card(dropping_card, false)
 			var dropping_card_data := dropping_card.data
 			var bottom_card_data := bottom_card.data
 			await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+			await run_all_mods(&"on_stack_card", [dropping_card])
 
 func replenish_input_cards() -> void:
 	for zone : Card in inputs:
@@ -163,7 +164,7 @@ func replenish_input_cards() -> void:
 			card.add_data(data, true)
 			card.data.stage = CardData.Stage.INPUT
 			add_child(card)
-			zone.add_card(card)
+			zone.add_card(card, false)
 			card.flipped = false
 
 func _on_submit_pressed() -> void:
@@ -412,6 +413,10 @@ func run_all_mods(function: StringName, params:Array=[]) -> void:
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
 
+func _on_card_stacked(card: Card) -> void:
+	print('stack signal')
+	await run_all_mods(&"on_stack_card", [card])
+
 func _on_child_entered_tree(node: Node) -> void:
 	if node is Card:
 		var card := node as Card
@@ -420,6 +425,7 @@ func _on_child_entered_tree(node: Node) -> void:
 			card.hover_entered.connect(_on_card_hover_entered)
 			card.hover_exited.connect(_on_card_hover_exited)
 			card.card_added.connect(_on_game_board_changed)
+			card.card_stacked.connect(_on_card_stacked)
 
 func _on_card_hover_entered(card : Card) -> void:
 	card_hovered = true
@@ -455,7 +461,7 @@ func _on_game_board_changed() -> void:
 		board_size = 350 + Card.child_offset.y * num_cards_in_col
 	else:
 		board_size = 350
-	audio_card_placing.play(.15)
+	#audio_card_placing.play(.15)
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	
 func _on_card_clicked(card : Card) -> void:
