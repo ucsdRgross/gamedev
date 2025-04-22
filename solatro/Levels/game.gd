@@ -414,7 +414,6 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
 
 func _on_card_stacked(card: Card) -> void:
-	print('stack signal')
 	await run_all_mods(&"on_stack_card", [card])
 
 func _on_child_entered_tree(node: Node) -> void:

@@ -170,12 +170,23 @@ func _on_control_gui_input(event: InputEvent) -> void:
 func add_card(card : Card, trigger_mods: bool = true) -> void:
 	if top_card == card:
 		return
+	#update old bot card
 	var parent := card.get_parent()
 	if parent is Card:
-		(parent as Card).top_card = null
+		(parent as Card).top_card = card.top_card
+		if card.top_card and card.bot_card:
+			card.top_card.reparent(card.bot_card)
 	card.reparent(self)
+	#update top card to add card on bottom
+	#TODO update to handle if card has children
+	if top_card:
+		top_card.reparent(card)
+		top_card.bot_card = card
+		card.top_card = top_card
+	#add card on top of self
 	top_card = card
 	card.bot_card = self
+	#update stack limit on all cards
 	var i_card := card
 	if stack_limit > -1:
 		while i_card:
@@ -185,6 +196,7 @@ func add_card(card : Card, trigger_mods: bool = true) -> void:
 		while i_card:
 			i_card.stack_limit = stack_limit
 			i_card = i_card.top_card
+			
 	card_added.emit()
 	if trigger_mods: card_stacked.emit(card)
 

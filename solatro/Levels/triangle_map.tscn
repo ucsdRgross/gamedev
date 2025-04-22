@@ -8,93 +8,93 @@
 
 [sub_resource type="Resource" id="Resource_r8s5l"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 3
+suit = 4
+rank = 4
 
 [sub_resource type="Resource" id="Resource_6n4m0"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 7
+suit = 3
+rank = 13
 
 [sub_resource type="Resource" id="Resource_tyjmd"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 13
+suit = 3
+rank = 6
 
 [sub_resource type="Resource" id="Resource_llyq8"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 11
+rank = 8
 
 [sub_resource type="Resource" id="Resource_c5vus"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 4
+suit = 2
+rank = 13
 
 [sub_resource type="Resource" id="Resource_8up2j"]
-script = ExtResource("5_6n4m0")
-suit = 1
-rank = 7
-
-[sub_resource type="Resource" id="Resource_27qhp"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 11
-
-[sub_resource type="Resource" id="Resource_haf8g"]
-script = ExtResource("5_6n4m0")
-suit = 4
-rank = 11
-
-[sub_resource type="Resource" id="Resource_3nwcu"]
 script = ExtResource("5_6n4m0")
 suit = 3
 rank = 3
 
-[sub_resource type="Resource" id="Resource_2rrpb"]
+[sub_resource type="Resource" id="Resource_27qhp"]
 script = ExtResource("5_6n4m0")
 suit = 2
+rank = 3
+
+[sub_resource type="Resource" id="Resource_haf8g"]
+script = ExtResource("5_6n4m0")
+suit = 2
+rank = 7
+
+[sub_resource type="Resource" id="Resource_3nwcu"]
+script = ExtResource("5_6n4m0")
+suit = 4
 rank = 12
+
+[sub_resource type="Resource" id="Resource_2rrpb"]
+script = ExtResource("5_6n4m0")
+suit = 4
+rank = 3
 
 [sub_resource type="Resource" id="Resource_guvbb"]
 script = ExtResource("5_6n4m0")
-suit = 2
+suit = 1
 rank = 9
 
 [sub_resource type="Resource" id="Resource_ikrvv"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 8
+suit = 1
+rank = 4
 
 [sub_resource type="Resource" id="Resource_y7hk1"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 7
+suit = 3
+rank = 13
 
 [sub_resource type="Resource" id="Resource_7lwli"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 8
+rank = 3
 
 [sub_resource type="Resource" id="Resource_vy1ib"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 6
+rank = 5
 
 [sub_resource type="Resource" id="Resource_1ubwu"]
 script = ExtResource("5_6n4m0")
 suit = 3
-rank = 8
+rank = 7
 
 [sub_resource type="Resource" id="Resource_gfrc8"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 12
+suit = 2
+rank = 5
 
 [sub_resource type="Resource" id="Resource_joolv"]
 script = ExtResource("5_6n4m0")
 suit = 1
-rank = 12
+rank = 9
 
 [sub_resource type="Resource" id="Resource_qwmu4"]
 script = ExtResource("5_6n4m0")
@@ -104,7 +104,7 @@ rank = 10
 [sub_resource type="Resource" id="Resource_aurl1"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 7
+rank = 12
 
 [sub_resource type="Resource" id="Resource_rrhdf"]
 script = ExtResource("5_6n4m0")
@@ -113,138 +113,138 @@ rank = 3
 
 [sub_resource type="Resource" id="Resource_j5fi0"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 2
+suit = 1
+rank = 1
 
 [sub_resource type="Resource" id="Resource_k8lhe"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 7
+suit = 3
+rank = 1
 
 [sub_resource type="Resource" id="Resource_4alb5"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 9
+suit = 1
+rank = 3
 
 [sub_resource type="Resource" id="Resource_vfdit"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 6
+suit = 2
+rank = 4
 
 [sub_resource type="Resource" id="Resource_n4io0"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 3
+suit = 4
+rank = 7
 
 [sub_resource type="Resource" id="Resource_enhj3"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 3
+suit = 2
+rank = 1
 
 [sub_resource type="Resource" id="Resource_yq801"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 6
+suit = 1
+rank = 9
 
 [sub_resource type="Resource" id="Resource_rhngq"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 12
+rank = 7
 
 [sub_resource type="Resource" id="Resource_yu3h1"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 12
+suit = 4
+rank = 7
 
 [sub_resource type="Resource" id="Resource_b0igj"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 4
+suit = 3
+rank = 5
 
 [sub_resource type="Resource" id="Resource_fquh1"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 4
+suit = 2
+rank = 7
 
 [sub_resource type="Resource" id="Resource_5hu2v"]
 script = ExtResource("5_6n4m0")
 suit = 1
-rank = 7
+rank = 3
 
 [sub_resource type="Resource" id="Resource_yjitc"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 10
+suit = 3
+rank = 13
 
 [sub_resource type="Resource" id="Resource_xb5l0"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 10
+suit = 1
+rank = 6
 
 [sub_resource type="Resource" id="Resource_0pp5y"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 3
+suit = 3
+rank = 5
 
 [sub_resource type="Resource" id="Resource_2bnq7"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 7
+suit = 1
+rank = 10
 
 [sub_resource type="Resource" id="Resource_40rio"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 12
+suit = 3
+rank = 4
 
 [sub_resource type="Resource" id="Resource_ayo6x"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 11
+suit = 2
+rank = 4
 
 [sub_resource type="Resource" id="Resource_wt1bq"]
 script = ExtResource("5_6n4m0")
 suit = 3
-rank = 10
+rank = 12
 
 [sub_resource type="Resource" id="Resource_ekfym"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 4
+suit = 2
+rank = 6
 
 [sub_resource type="Resource" id="Resource_41b3f"]
 script = ExtResource("5_6n4m0")
-suit = 4
+suit = 3
 rank = 12
 
 [sub_resource type="Resource" id="Resource_3ofxb"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 6
+rank = 4
 
 [sub_resource type="Resource" id="Resource_mvs40"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 11
+suit = 3
+rank = 1
 
 [sub_resource type="Resource" id="Resource_tb7jc"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 6
+suit = 4
+rank = 1
 
 [sub_resource type="Resource" id="Resource_v1avm"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 12
+rank = 9
 
 [sub_resource type="Resource" id="Resource_3kk0n"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 10
+suit = 4
+rank = 2
 
 [sub_resource type="Resource" id="Resource_8fb0e"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 9
+suit = 2
+rank = 5
 
 [node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
