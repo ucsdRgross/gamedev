@@ -63,7 +63,7 @@ func on_delete(target:Card) -> void:
 	pass
 func on_draw(target:Card) -> void:
 	pass
-func on_deck_shuffle() -> void:
+func on_append(deck:Array[CardData], data:CardData) -> void:
 	pass
 	
 func on_trigger(data:CardData, mod:Callable) -> void:

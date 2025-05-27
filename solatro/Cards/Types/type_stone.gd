@@ -11,6 +11,9 @@ func on_stack_card(target: Card) -> void:
 		var bot_card := get_bottom_card(target)
 		bot_card.add_card(target)
 
+func on_append(deck:Array[CardData], data:CardData) -> void:
+	pass
+
 func get_bottom_card(card: Card) -> Card:
 	while not is_on_bottom(card):
 		card = card.bot_card

@@ -119,6 +119,14 @@ func add_deck() -> void:
 		data.stage = CardData.Stage.DRAW
 	draw_deck.shuffle()
 
+func shuffle_deck(datas:Array[CardData]) -> void:
+	var new_deck : Array[CardData] = []
+	datas.shuffle()
+	for data in datas:
+		new_deck.append(data)
+		await run_all_mods(&"on_append", [new_deck, data])
+	datas = new_deck
+
 func set_datas_game(datas:Array[CardData], game:Game) -> void:
 	for data : CardData in datas:
 		if data.skill:
