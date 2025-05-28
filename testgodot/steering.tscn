@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://bdlo04wntx17c"]
 
-[ext_resource type="Script" path="res://Steering.gd" id="1_1j511"]
-[ext_resource type="Script" path="res://point.gd" id="2_mn8sy"]
-[ext_resource type="Script" path="res://pointer.gd" id="2_r03f6"]
+[ext_resource type="Script" uid="uid://casgg4i7iv2nf" path="res://Steering.gd" id="1_1j511"]
+[ext_resource type="Script" uid="uid://csx1t32ooopko" path="res://point.gd" id="2_mn8sy"]
+[ext_resource type="Script" uid="uid://1xhmvkx5vkcj" path="res://pointer.gd" id="2_r03f6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_w0mfe"]
 radius = 205.76

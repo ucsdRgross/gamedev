@@ -1,9 +1,9 @@
 [gd_scene load_steps=12 format=3 uid="uid://c3eneftadmgxr"]
 
-[ext_resource type="Script" path="res://Fake3Dtransform.gd" id="1_3y2l8"]
+[ext_resource type="Script" uid="uid://b5ciu4kfkvaqm" path="res://Fake3Dtransform.gd" id="1_3y2l8"]
 [ext_resource type="Texture2D" uid="uid://bs2fc5xl3avrj" path="res://icon.svg" id="2_ao3n2"]
-[ext_resource type="Shader" path="res://2DTilt.gdshader" id="2_sdv0a"]
-[ext_resource type="Shader" path="res://perspective.gdshader" id="3_wlvn2"]
+[ext_resource type="Shader" uid="uid://040nn55m1q7k" path="res://2DTilt.gdshader" id="2_sdv0a"]
+[ext_resource type="Shader" uid="uid://bg8wyy5c0i572" path="res://perspective.gdshader" id="3_wlvn2"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1vpop"]
 shader = ExtResource("2_sdv0a")
@@ -70,8 +70,8 @@ tracks/0/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_sd1hl"]
 _data = {
-"3d Rotation": SubResource("Animation_wysf0"),
-"RESET": SubResource("Animation_1bhh8")
+&"3d Rotation": SubResource("Animation_wysf0"),
+&"RESET": SubResource("Animation_1bhh8")
 }
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_weptb"]
@@ -107,7 +107,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.205, 0, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
-"": SubResource("AnimationLibrary_sd1hl")
+&"": SubResource("AnimationLibrary_sd1hl")
 }
 autoplay = "3d Rotation"
 speed_scale = 2.079

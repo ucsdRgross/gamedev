@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://cb0c78mw41mg4"]
 
-[ext_resource type="Script" path="res://image_to_vectors.gd" id="1_wjbui"]
+[ext_resource type="Script" uid="uid://cv3vrsqwowxiy" path="res://image_to_vectors.gd" id="1_wjbui"]
 [ext_resource type="PackedScene" uid="uid://bhjmyer4wlwy2" path="res://painttool/paint_root.tscn" id="2_ben60"]
-[ext_resource type="Script" path="res://circle_rect.gd" id="3_5rpno"]
+[ext_resource type="Script" uid="uid://b1bx51d7juo7v" path="res://circle_rect.gd" id="3_5rpno"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_ggmb5"]
 blend_mode = 1

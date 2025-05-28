@@ -1,15 +1,15 @@
 [gd_scene load_steps=80 format=3 uid="uid://5ppluykhrj4s"]
 
-[ext_resource type="Script" path="res://node_3d.gd" id="1_tnlai"]
+[ext_resource type="Script" uid="uid://ehfrln1jsapi" path="res://node_3d.gd" id="1_tnlai"]
 [ext_resource type="Texture2D" uid="uid://b1yrne2jugttl" path="res://character_robot_idle.png" id="2_7r4yo"]
 [ext_resource type="PackedScene" uid="uid://2oxdgu03lnbk" path="res://addons/character-controller/example/main/player.tscn" id="2_iko5y"]
-[ext_resource type="Script" path="res://Sprite3D.gd" id="2_rmp6t"]
-[ext_resource type="Shader" path="res://node_3d.gdshader" id="4_o7wd5"]
-[ext_resource type="Shader" path="res://extrude.gdshader" id="5_18qgr"]
+[ext_resource type="Script" uid="uid://dgxup7657og5o" path="res://Sprite3D.gd" id="2_rmp6t"]
+[ext_resource type="Shader" uid="uid://g4eb2nfwalx8" path="res://node_3d.gdshader" id="4_o7wd5"]
+[ext_resource type="Shader" uid="uid://clxvv2rodtf2d" path="res://extrude.gdshader" id="5_18qgr"]
 [ext_resource type="PackedScene" uid="uid://dkob6qmyey6ca" path="res://shear.tscn" id="5_nfpwu"]
-[ext_resource type="Shader" path="res://faded.gdshader" id="6_04pl3"]
+[ext_resource type="Shader" uid="uid://d12epqsassgx4" path="res://faded.gdshader" id="6_04pl3"]
 [ext_resource type="Texture2D" uid="uid://cv1dkxhmcucnt" path="res://character_robot_sheetHD.png" id="6_5yjax"]
-[ext_resource type="Shader" path="res://rainbow.gdshader" id="6_lb58q"]
+[ext_resource type="Shader" uid="uid://bjw73ijfvhlqa" path="res://rainbow.gdshader" id="6_lb58q"]
 [ext_resource type="Texture2D" uid="uid://ch4upb8v70urm" path="res://mess.png" id="7_6p3dg"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_tfvkg"]
@@ -26,15 +26,15 @@ shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
+shader_parameter/color_mix = Color(0.172549, 0, 0.0588235, 1)
 shader_parameter/mix_strength = 0.0
+shader_parameter/Texture = ExtResource("6_5yjax")
 shader_parameter/texture_calls = 10
 shader_parameter/ray_bias = 2.0
 shader_parameter/infinite_holes = false
 shader_parameter/Hframes = 5
 shader_parameter/Vframes = 5
 shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("6_5yjax")
 
 [sub_resource type="BoxMesh" id="BoxMesh_vuv0a"]
 
@@ -301,8 +301,8 @@ tracks/12/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_4og5f"]
 _data = {
-"RESET": SubResource("Animation_qsk0d"),
-"new_animation": SubResource("Animation_oum66")
+&"RESET": SubResource("Animation_qsk0d"),
+&"new_animation": SubResource("Animation_oum66")
 }
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_iydqb"]
@@ -639,13 +639,13 @@ shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0.001)
 shader_parameter/color_mix = Color(0.172549, 0, 0.0588235, 1)
 shader_parameter/mix_strength = 0.51
+shader_parameter/Texture = ExtResource("2_7r4yo")
 shader_parameter/texture_calls = 20
 shader_parameter/ray_bias = 1.0
 shader_parameter/infinite_holes = false
 shader_parameter/Hframes = 1
 shader_parameter/Vframes = 1
 shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("2_7r4yo")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tlb6p"]
 render_priority = 0
@@ -784,8 +784,8 @@ tracks/4/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_oebql"]
 _data = {
-"RESET": SubResource("Animation_ijhdm"),
-"slide": SubResource("Animation_aja6m")
+&"RESET": SubResource("Animation_ijhdm"),
+&"slide": SubResource("Animation_aja6m")
 }
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hjt65"]
@@ -820,15 +820,15 @@ shader_parameter/opaque_extrude = true
 shader_parameter/keep_image = true
 shader_parameter/image_alpha_cull = 1.0
 shader_parameter/offset = Vector2(0, 0)
-shader_parameter/color_mix = null
+shader_parameter/color_mix = Color(0, 0, 0, 1)
 shader_parameter/mix_strength = 1.0
+shader_parameter/Texture = ExtResource("2_7r4yo")
 shader_parameter/texture_calls = 10
 shader_parameter/ray_bias = 2.0
 shader_parameter/infinite_holes = false
 shader_parameter/Hframes = 1
 shader_parameter/Vframes = 1
 shader_parameter/frame = 0
-shader_parameter/Texture = ExtResource("2_7r4yo")
 
 [sub_resource type="SphereMesh" id="SphereMesh_jy3cx"]
 material = SubResource("ShaderMaterial_cxd8h")
@@ -862,7 +862,7 @@ mesh = SubResource("BoxMesh_vuv0a")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="MeshInstance3D12"]
 root_node = NodePath("../SubViewport/AnimatedSprite2D")
 libraries = {
-"": SubResource("AnimationLibrary_4og5f")
+&"": SubResource("AnimationLibrary_4og5f")
 }
 autoplay = "new_animation"
 
@@ -889,7 +889,7 @@ skeleton = NodePath("../..")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="ShearChildren/MeshInstance3D2"]
 root_node = NodePath("../SubViewport/AnimatedSprite2D")
 libraries = {
-"": SubResource("AnimationLibrary_4og5f")
+&"": SubResource("AnimationLibrary_4og5f")
 }
 autoplay = "new_animation"
 
@@ -921,7 +921,7 @@ mesh = SubResource("BoxMesh_vuv0a")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="MeshInstance3D9"]
 libraries = {
-"": SubResource("AnimationLibrary_oebql")
+&"": SubResource("AnimationLibrary_oebql")
 }
 autoplay = "slide"
 
@@ -971,6 +971,6 @@ mesh = SubResource("BoxMesh_vuv0a")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="sorute"]
 libraries = {
-"": SubResource("AnimationLibrary_4og5f")
+&"": SubResource("AnimationLibrary_4og5f")
 }
 autoplay = "RESET"
