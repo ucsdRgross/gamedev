@@ -117,7 +117,7 @@ func add_deck() -> void:
 	set_datas_game(draw_deck, self)
 	for data in draw_deck:
 		data.stage = CardData.Stage.DRAW
-	draw_deck.shuffle()
+	shuffle_deck(draw_deck)
 
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
@@ -125,7 +125,7 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 	for data in datas:
 		new_deck.append(data)
 		await run_all_mods(&"on_append", [new_deck, data])
-	datas = new_deck
+	datas.assign(new_deck)
 
 func set_datas_game(datas:Array[CardData], game:Game) -> void:
 	for data : CardData in datas:
@@ -163,7 +163,7 @@ func replenish_input_cards() -> void:
 	for zone : Card in inputs:
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
-			draw_deck.shuffle()
+			shuffle_deck(draw_deck)
 			discard_deck.clear()
 		if draw_deck.size() > 0:
 			var card : Card = CARD.instantiate()

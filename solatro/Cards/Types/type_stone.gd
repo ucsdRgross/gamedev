@@ -12,7 +12,12 @@ func on_stack_card(target: Card) -> void:
 		bot_card.add_card(target)
 
 func on_append(deck:Array[CardData], data:CardData) -> void:
-	pass
+	if data == self.data:
+		deck.erase(data)
+		var i : int = 0
+		while i < deck.size() and deck[i].type and deck[i].type is TypeStone:
+			i += 1
+		deck.insert(i, data)
 
 func get_bottom_card(card: Card) -> Card:
 	while not is_on_bottom(card):
