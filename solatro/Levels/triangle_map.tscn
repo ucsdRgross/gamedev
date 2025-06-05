@@ -8,243 +8,291 @@
 
 [sub_resource type="Resource" id="Resource_r8s5l"]
 script = ExtResource("5_6n4m0")
-suit = 4
+suit = 2
 rank = 8
+stage = 4
 
 [sub_resource type="Resource" id="Resource_6n4m0"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 6
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_tyjmd"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 7
+suit = 3
+rank = 3
+stage = 4
 
 [sub_resource type="Resource" id="Resource_llyq8"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 8
+suit = 3
+rank = 3
+stage = 4
 
 [sub_resource type="Resource" id="Resource_c5vus"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 11
+suit = 2
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_8up2j"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 6
+suit = 2
+rank = 12
+stage = 4
 
 [sub_resource type="Resource" id="Resource_27qhp"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 5
+rank = 3
+stage = 4
 
 [sub_resource type="Resource" id="Resource_haf8g"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 13
+suit = 4
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_3nwcu"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 13
+suit = 1
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_2rrpb"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 3
+suit = 3
+rank = 6
+stage = 4
 
 [sub_resource type="Resource" id="Resource_guvbb"]
 script = ExtResource("5_6n4m0")
 suit = 3
-rank = 2
+rank = 11
+stage = 4
 
 [sub_resource type="Resource" id="Resource_ikrvv"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 1
+suit = 3
+rank = 8
+stage = 4
 
 [sub_resource type="Resource" id="Resource_y7hk1"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 8
+suit = 2
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_7lwli"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 13
+suit = 1
+rank = 8
+stage = 4
 
 [sub_resource type="Resource" id="Resource_vy1ib"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 13
+suit = 1
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_1ubwu"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 4
+suit = 2
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_gfrc8"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 4
+suit = 1
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_joolv"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 7
+suit = 4
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_qwmu4"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 5
+suit = 1
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_aurl1"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 12
+suit = 1
+rank = 11
+stage = 4
 
 [sub_resource type="Resource" id="Resource_rrhdf"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 7
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_j5fi0"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 1
+suit = 2
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_k8lhe"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 6
+suit = 3
+rank = 5
+stage = 4
 
 [sub_resource type="Resource" id="Resource_4alb5"]
 script = ExtResource("5_6n4m0")
 suit = 1
-rank = 2
+rank = 5
+stage = 4
 
 [sub_resource type="Resource" id="Resource_vfdit"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 7
+rank = 4
+stage = 4
 
 [sub_resource type="Resource" id="Resource_n4io0"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 3
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_enhj3"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 2
+suit = 1
+rank = 3
+stage = 4
 
 [sub_resource type="Resource" id="Resource_yq801"]
 script = ExtResource("5_6n4m0")
-suit = 4
+suit = 3
 rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_rhngq"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 8
+suit = 4
+rank = 4
+stage = 4
 
 [sub_resource type="Resource" id="Resource_yu3h1"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 13
+suit = 2
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_b0igj"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 9
+suit = 3
+rank = 6
+stage = 4
 
 [sub_resource type="Resource" id="Resource_fquh1"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 2
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_5hu2v"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 4
+suit = 1
+rank = 13
+stage = 4
 
 [sub_resource type="Resource" id="Resource_yjitc"]
 script = ExtResource("5_6n4m0")
 suit = 3
 rank = 8
+stage = 4
 
 [sub_resource type="Resource" id="Resource_xb5l0"]
 script = ExtResource("5_6n4m0")
 suit = 1
-rank = 4
+rank = 7
+stage = 4
 
 [sub_resource type="Resource" id="Resource_0pp5y"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 2
+suit = 3
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_2bnq7"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 6
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_40rio"]
 script = ExtResource("5_6n4m0")
-suit = 3
+suit = 4
 rank = 12
+stage = 4
 
 [sub_resource type="Resource" id="Resource_ayo6x"]
 script = ExtResource("5_6n4m0")
 suit = 4
-rank = 13
+rank = 9
+stage = 4
 
 [sub_resource type="Resource" id="Resource_wt1bq"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 10
+suit = 2
+rank = 7
+stage = 4
 
 [sub_resource type="Resource" id="Resource_ekfym"]
 script = ExtResource("5_6n4m0")
-suit = 2
-rank = 12
+suit = 3
+rank = 11
+stage = 4
 
 [sub_resource type="Resource" id="Resource_41b3f"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 12
+suit = 2
+rank = 2
+stage = 4
 
 [sub_resource type="Resource" id="Resource_3ofxb"]
 script = ExtResource("5_6n4m0")
 suit = 3
 rank = 8
+stage = 4
 
 [sub_resource type="Resource" id="Resource_mvs40"]
 script = ExtResource("5_6n4m0")
-suit = 4
-rank = 7
+suit = 2
+rank = 4
+stage = 4
 
 [sub_resource type="Resource" id="Resource_tb7jc"]
 script = ExtResource("5_6n4m0")
-suit = 1
-rank = 10
+suit = 2
+rank = 4
+stage = 4
 
 [sub_resource type="Resource" id="Resource_v1avm"]
 script = ExtResource("5_6n4m0")
 suit = 2
-rank = 12
+rank = 1
+stage = 4
 
 [sub_resource type="Resource" id="Resource_3kk0n"]
 script = ExtResource("5_6n4m0")
-suit = 3
+suit = 1
 rank = 3
+stage = 4
 
 [sub_resource type="Resource" id="Resource_8fb0e"]
 script = ExtResource("5_6n4m0")
-suit = 3
-rank = 13
+suit = 4
+rank = 11
+stage = 4
 
 [node name="TriangleMap" type="Control" node_paths=PackedStringArray("cards")]
 layout_mode = 3
@@ -279,6 +327,7 @@ unique_name_in_owner = true
 visible = false
 position = Vector2(-2.8026e-45, -498)
 can_rot_anim = false
+num = 105
 
 [node name="GridContainer" type="GridContainer" parent="."]
 unique_name_in_owner = true
@@ -673,6 +722,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_r8s5l")
 can_rot_anim = false
 flipped = false
+num = 155
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21990" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -682,6 +733,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_6n4m0")
 can_rot_anim = false
 flipped = false
+num = 156
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21991" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -691,6 +744,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_tyjmd")
 can_rot_anim = false
 flipped = false
+num = 157
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21992" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -700,6 +755,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_llyq8")
 can_rot_anim = false
 flipped = false
+num = 158
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21993" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -709,6 +766,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_c5vus")
 can_rot_anim = false
 flipped = false
+num = 159
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21994" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -718,6 +777,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_8up2j")
 can_rot_anim = false
 flipped = false
+num = 160
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21995" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -727,6 +788,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_27qhp")
 can_rot_anim = false
 flipped = false
+num = 161
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21996" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -736,6 +799,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_haf8g")
 can_rot_anim = false
 flipped = false
+num = 162
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21997" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -745,6 +810,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_3nwcu")
 can_rot_anim = false
 flipped = false
+num = 163
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21998" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -754,6 +821,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_2rrpb")
 can_rot_anim = false
 flipped = false
+num = 164
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@21999" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -763,6 +832,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_guvbb")
 can_rot_anim = false
 flipped = false
+num = 165
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22000" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -772,6 +843,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_ikrvv")
 can_rot_anim = false
 flipped = false
+num = 166
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22001" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 visible = false
@@ -781,6 +854,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_y7hk1")
 can_rot_anim = false
 flipped = false
+num = 167
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22002" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -789,6 +864,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_7lwli")
 can_rot_anim = false
 flipped = false
+num = 168
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22003" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -797,6 +874,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_vy1ib")
 can_rot_anim = false
 flipped = false
+num = 169
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22004" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -805,6 +884,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_1ubwu")
 can_rot_anim = false
 flipped = false
+num = 170
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22005" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -813,6 +894,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_gfrc8")
 can_rot_anim = false
 flipped = false
+num = 171
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22006" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -821,6 +904,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_joolv")
 can_rot_anim = false
 flipped = false
+num = 172
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22007" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -829,6 +914,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_qwmu4")
 can_rot_anim = false
 flipped = false
+num = 173
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22008" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -837,6 +924,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_aurl1")
 can_rot_anim = false
 flipped = false
+num = 174
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22009" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -845,6 +934,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_rrhdf")
 can_rot_anim = false
 flipped = false
+num = 175
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22010" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -853,6 +944,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_j5fi0")
 can_rot_anim = false
 flipped = false
+num = 176
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22011" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -861,6 +954,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_k8lhe")
 can_rot_anim = false
 flipped = false
+num = 177
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22012" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -869,6 +964,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_4alb5")
 can_rot_anim = false
 flipped = false
+num = 178
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22013" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -877,6 +974,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_vfdit")
 can_rot_anim = false
 flipped = false
+num = 179
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22014" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -885,6 +984,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_n4io0")
 can_rot_anim = false
 flipped = false
+num = 180
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22015" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -893,6 +994,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_enhj3")
 can_rot_anim = false
 flipped = false
+num = 181
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22016" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -901,6 +1004,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_yq801")
 can_rot_anim = false
 flipped = false
+num = 182
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22017" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -909,6 +1014,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_rhngq")
 can_rot_anim = false
 flipped = false
+num = 183
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22018" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -917,6 +1024,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_yu3h1")
 can_rot_anim = false
 flipped = false
+num = 184
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22019" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -925,6 +1034,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_b0igj")
 can_rot_anim = false
 flipped = false
+num = 185
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22020" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -933,6 +1044,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_fquh1")
 can_rot_anim = false
 flipped = false
+num = 186
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22021" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -941,6 +1054,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_5hu2v")
 can_rot_anim = false
 flipped = false
+num = 187
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22022" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -949,6 +1064,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_yjitc")
 can_rot_anim = false
 flipped = false
+num = 188
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22023" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -957,6 +1074,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_xb5l0")
 can_rot_anim = false
 flipped = false
+num = 189
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22024" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -965,6 +1084,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_0pp5y")
 can_rot_anim = false
 flipped = false
+num = 190
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22025" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -973,6 +1094,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_2bnq7")
 can_rot_anim = false
 flipped = false
+num = 191
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22026" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -981,6 +1104,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_40rio")
 can_rot_anim = false
 flipped = false
+num = 192
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22027" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -989,6 +1114,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_ayo6x")
 can_rot_anim = false
 flipped = false
+num = 193
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22028" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -997,6 +1124,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_wt1bq")
 can_rot_anim = false
 flipped = false
+num = 194
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22029" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1005,6 +1134,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_ekfym")
 can_rot_anim = false
 flipped = false
+num = 195
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22030" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1013,6 +1144,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_41b3f")
 can_rot_anim = false
 flipped = false
+num = 196
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22031" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1021,6 +1154,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_3ofxb")
 can_rot_anim = false
 flipped = false
+num = 197
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22032" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1029,6 +1164,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_mvs40")
 can_rot_anim = false
 flipped = false
+num = 198
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22033" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1037,6 +1174,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_tb7jc")
 can_rot_anim = false
 flipped = false
+num = 199
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22034" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1045,6 +1184,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_v1avm")
 can_rot_anim = false
 flipped = false
+num = 200
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22035" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1053,6 +1194,8 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_3kk0n")
 can_rot_anim = false
 flipped = false
+num = 201
+target_pos = Vector2(-132, -351)
 
 [node name="@Node2D@22036" type="Node2D" parent="ChildCards" instance=ExtResource("3_pe4wh")]
 position = Vector2(-132, -351)
@@ -1061,11 +1204,14 @@ script = ExtResource("4_r8s5l")
 data = SubResource("Resource_8fb0e")
 can_rot_anim = false
 flipped = false
+num = 202
+target_pos = Vector2(-132, -351)
 
 [node name="Deck" parent="." instance=ExtResource("3_pe4wh")]
 position = Vector2(1007, 368)
 can_move_anim = false
 stack_limit = 0
+num = 154
 
 [connection signal="clicked" from="Deck" to="." method="_on_deck_clicked"]
 [connection signal="hover_entered" from="Deck" to="." method="_on_deck_hover_entered"]

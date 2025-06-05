@@ -12,44 +12,59 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 var held_card : Card = null
 var held_card_offset : Vector2
 var processing : bool = false
-var board_size : int 
-var board_home_pos : Vector2
+@export_storage var board_size : int 
+@export_storage var board_home_pos : Vector2
 var board_hovered : bool = false
 var card_hovered : bool = false
 var base_delay : float = 1
 
-var goal : int = 100:
+@export var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
-var total_score : int = 0:
+@export_storage var total_score : int = 0:
 	set(value):
 		($Total/Label as Label).text = str(value)
 		total_score = value
-var mult_score : int = 0:
+@export_storage var mult_score : int = 0:
 	set(value):
 		($MultScore as Label).text = str(value)
 		mult_score = value
-var col_total : int = 0:
+@export_storage var col_total : int = 0:
 	set(value):
 		($MultScore/Col as Label).text = str(value)
 		col_total = value
-var row_total : int = 0:
+@export_storage var row_total : int = 0:
 	set(value):
 		($MultScore/Row as Label).text = str(value)
 		row_total = value
 
-var draw_deck : Array[CardData]
-var discard_deck : Array[CardData]
+@export_storage var draw_deck : Array[CardData]
+@export_storage var discard_deck : Array[CardData]
 var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-var row_score_popups : Dictionary
+@export_storage var row_score_popups : Dictionary
 
-@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
-@onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
-@onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
-@onready var free_space: Card = %FreeSpace/Zone
-@onready var row_scores: Control = %RowScores
+@onready var inputs : Array[Card]= [
+	$GameContainer/HBoxContainer/Control/Inputs/Input1/Zone, 
+	$GameContainer/HBoxContainer/Control/Inputs/Input2/Zone, 
+	$GameContainer/HBoxContainer/Control/Inputs/Input3/Zone, 
+	$GameContainer/HBoxContainer/Control/Inputs/Input4/Zone, 
+	$GameContainer/HBoxContainer/Control/Inputs/Input5/Zone]
+@onready var stacks : Array[Card]= [
+	$GameContainer/HBoxContainer/Control/Plays/Play1/Zone, 
+	$GameContainer/HBoxContainer/Control/Plays/Play2/Zone, 
+	$GameContainer/HBoxContainer/Control/Plays/Play3/Zone, 
+	$GameContainer/HBoxContainer/Control/Plays/Play4/Zone, 
+	$GameContainer/HBoxContainer/Control/Plays/Play5/Zone]
+@onready var col_scores : Array[Label]= [
+	$GameContainer/HBoxContainer/Control/ColScores/ColScore1,
+	$GameContainer/HBoxContainer/Control/ColScores/ColScore2, 
+	$GameContainer/HBoxContainer/Control/ColScores/ColScore3,
+	$GameContainer/HBoxContainer/Control/ColScores/ColScore4, 
+	$GameContainer/HBoxContainer/Control/ColScores/ColScore5]
+@onready var free_space: Card = $Game/GameContainer/HBoxContainer/VBoxContainer/FreeSpace/Zone
+@onready var row_scores: Control = $GameContainer/HBoxContainer/VBoxContainer/RowScores
 @onready var game_container: Control = $GameContainer
 @onready var hover_area: Control = $HoverArea
 @onready var audio_card_placing: AudioStreamPlayer = $AudioCardPlacing
@@ -57,7 +72,7 @@ var row_score_popups : Dictionary
 @onready var win_screen: Label = $WinScreen
 @onready var lose_screen: Label = $LoseScreen
 @onready var deck_viewer: CanvasLayer = $DeckViewer
-@onready var flow_container: FlowContainer = %FlowContainer
+@onready var flow_container: FlowContainer = $DeckViewer/MarginContainer/ScrollContainer/FlowContainer
 @onready var deck_popup: Card = $Deck/Deck
 @onready var discard_popup: Card = $Discard/Discard
 
@@ -172,6 +187,8 @@ func replenish_input_cards() -> void:
 			card.add_data(data, true)
 			card.data.stage = CardData.Stage.INPUT
 			add_child(card)
+			card.set_owner(self)
+			print(card.owner)
 			zone.add_card(card, false)
 			card.flipped = false
 
@@ -219,7 +236,6 @@ func _on_submit_pressed() -> void:
 					combo_pos += card.global_position
 				combo_pos /= result.card_combo.size()
 				var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
-				game_container.add_child(score_name_popup)
 				
 				row_add_score(row_to_score, result.score)
 				#var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)

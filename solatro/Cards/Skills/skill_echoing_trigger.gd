@@ -6,7 +6,7 @@ func _init() -> void:
 	description = "ALL triggers repeat once"
 	frame = 53
 
-var triggered : Array[CardData]
+@export_storage var triggered : Array[CardData]
 func on_trigger(data:CardData, mod:Callable) -> void:
 	if not is_active(): return
 	if data not in triggered and data.skill:

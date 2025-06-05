@@ -6,7 +6,7 @@ func _init() -> void:
 	description = "Will consume cards clicked over it and add its rank to itself, up until total value would be higher than 13"
 	frame = 54
 
-var consumed_cards : Array[CardData]
+@export_storage var consumed_cards : Array[CardData]
 func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 	if self.data.card:
 		if self.data == bot_card and bot_card.card and bot_card.card.top_card \

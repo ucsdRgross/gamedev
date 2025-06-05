@@ -8,7 +8,18 @@ signal hover_exited(card:Card)
 signal card_added
 signal card_stacked(card:Card)
 
-@export var data : CardData
+@export var data : CardData:
+	get:
+		if Main.duplicating and data:
+			print(data)
+			return data.duplicate() as CardData
+		return data
+	set(value):
+		data = value
+		if Main.duplicating and value:
+			print(value)
+			value.card = self
+			value.data_changed.connect(update_visual)
 @export var is_zone := false
 @export var can_move_anim := true
 @export var can_rot_anim := true
@@ -39,6 +50,8 @@ var show_front := false :
 			update_visual()
 
 func update_visual() -> void:
+	if not is_node_ready():
+		await ready
 	if show_front and data:
 		rank.frame = 14 * (data.suit - 1) + data.rank
 		suit.frame = 14 * (data.suit - 1)
@@ -59,8 +72,6 @@ func update_visual() -> void:
 		suit.show()
 		art.show()
 	else:
-		if not is_node_ready():
-			await ready
 		front.frame = 3
 		rank.hide()
 		stamp.hide()
@@ -70,16 +81,16 @@ func update_visual() -> void:
 static var num_cards : int = 0
 static var child_offset : Vector2 = Vector2(0, 55)
 enum {IN_PLAY, STATIC}
-var state := IN_PLAY
-var num : int = 0
-var top_card : Card
-var bot_card : Card
-var stack_size : int
+@export_storage var state := IN_PLAY
+@export_storage var num : int = 0
+@export_storage var top_card : Card
+@export_storage var bot_card : Card
+@export_storage var stack_size : int
+@export_storage var held : bool = false
+@export_storage var hover : bool = false
+@export_storage var target_pos : Vector2
 var move_tween : Tween
 var tilt_tween : Tween
-var held : bool = false
-var hover : bool = false
-var target_pos : Vector2
 
 @onready var offset: Node2D = $Offset
 @onready var front: Sprite2D = $Offset/Front

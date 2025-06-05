@@ -9,6 +9,7 @@ var menu_scene : Menu = MENU.instantiate()
 var map_scene : Map = MAP.instantiate()
 var current_scene : Node = null
 static var save_info : PlayerSave = PlayerSave.new()
+static var duplicating := false
 
 #@onready var level: Node = $Level
 #@onready var level: Control = $CanvasLayer/Level
@@ -24,7 +25,14 @@ func enter_map() -> void:
 func enter_game() -> void:
 	var new_game : Game = GAME.instantiate()
 	new_game.game_ended.connect(game_ended)
+	(new_game.find_child("Button") as Button).pressed.connect(duplicate_game)
 	switch_scene(new_game)
+
+func duplicate_game() -> void:
+	duplicating = true
+	var save_scene := current_scene.duplicate(7)
+	duplicating = false
+	add_child(save_scene)
 
 func game_ended() -> void:
 	switch_scene(map_scene)
@@ -41,3 +49,5 @@ func switch_scene(new_scene : Node) -> void:
 	else:
 		add_child(new_scene)
 	current_scene = new_scene
+	
+var nodes : Array = []
