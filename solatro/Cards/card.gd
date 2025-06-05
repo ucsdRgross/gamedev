@@ -12,7 +12,7 @@ signal card_stacked(card:Card)
 	get:
 		if Main.duplicating and data:
 			print(data)
-			return data.duplicate() as CardData
+			return data.duplicate(true) as CardData
 		return data
 	set(value):
 		data = value

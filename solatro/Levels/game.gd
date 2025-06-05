@@ -188,7 +188,6 @@ func replenish_input_cards() -> void:
 			card.data.stage = CardData.Stage.INPUT
 			add_child(card)
 			card.set_owner(self)
-			print(card.owner)
 			zone.add_card(card, false)
 			card.flipped = false
 
