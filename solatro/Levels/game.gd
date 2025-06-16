@@ -8,6 +8,7 @@ const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
+@export var game_board : CardBoard
 
 var held_card : Card = null
 var held_card_offset : Vector2

@@ -37,7 +37,7 @@ unique_name_in_owner = true
 visible = false
 position = Vector2(-2.8026e-45, -498)
 can_rot_anim = false
-num = 57
+num = 9
 
 [node name="GridContainer" type="GridContainer" parent="."]
 unique_name_in_owner = true
@@ -428,7 +428,7 @@ offset_bottom = 40.0
 position = Vector2(1007, 368)
 can_move_anim = false
 stack_limit = 0
-num = 106
+num = 10
 
 [connection signal="clicked" from="Deck" to="." method="_on_deck_clicked"]
 [connection signal="hover_entered" from="Deck" to="." method="_on_deck_hover_entered"]
