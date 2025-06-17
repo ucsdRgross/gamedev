@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene load_steps=14 format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" uid="uid://b6lwr20eougmt" path="res://Levels/game.gd" id="1_gj2ix"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
@@ -9,86 +9,6 @@
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
 [ext_resource type="AudioStream" uid="uid://b0wriktdhokh4" path="res://Audio/chips-handle-6.ogg" id="9_d2lcc"]
-
-[sub_resource type="GDScript" id="GDScript_qe8hq"]
-script/source = "class_name CardData
-extends Resource
-
-signal data_changed
-
-@export var suit: int = 1:
-	set(value):
-		suit = value
-		data_changed.emit()
-@export var rank: int = 1:
-	set(value):
-		rank = value
-		data_changed.emit()
-@export var skill: CardModifier:
-	set(value):
-		skill = value
-		data_changed.emit()
-@export var type: CardModifier:
-	set(value):
-		type = value
-		data_changed.emit()
-@export var stamp: CardModifier:
-	set(value):
-		stamp = value
-		data_changed.emit()
-var card: Card
-enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
-@export_storage var stage := Stage.SPACE
-
-func with_suit(suit:int) -> CardData:
-	self.suit = suit
-	return self
-	
-func with_rank(rank:int) -> CardData:
-	self.rank = rank
-	return self
-
-func with_skill(skill:CardModifier) -> CardData:
-	if skill:
-		self.skill = skill.with_data(self)
-	else:
-		self.skill = null
-	return self
-
-func with_type(type:CardModifier) -> CardData:
-	if type:
-		self.type = type.with_data(self)
-	else:
-		self.type = null
-	return self
-
-func with_stamp(stamp:CardModifier) -> CardData:
-	if stamp:
-		self.stamp = stamp.with_data(self)
-	else:
-		self.stamp = null
-	return self
-	
-func clone(deep:bool = false) -> CardData:
-	var data := CardData.new()
-	data.suit = self.suit
-	data.rank = self.rank
-	if self.skill:
-		data.with_skill(self.skill.duplicate(deep) as CardModifier)
-	if self.type:
-		data.with_type(self.type.duplicate(deep) as CardModifier)
-	if self.stamp:
-		data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
-	#card
-	return data
-"
-
-[sub_resource type="Resource" id="Resource_e33e4"]
-script = SubResource("GDScript_qe8hq")
-suit = 1
-rank = 1
-stage = 4
-metadata/_custom_type_script = "uid://b0nr8s0uyec23"
 
 [sub_resource type="LabelSettings" id="LabelSettings_et201"]
 font_size = 20
@@ -176,7 +96,6 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
-data = SubResource("Resource_e33e4")
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -535,7 +454,7 @@ position = Vector2(19.2, -57.6)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 14
+num = 11
 
 [node name="Label" type="Label" parent="Preview"]
 layout_mode = 0
@@ -559,7 +478,7 @@ mouse_filter = 2
 [node name="Deck" parent="Deck" instance=ExtResource("3_8sseo")]
 can_move_anim = false
 stack_limit = 0
-num = 15
+num = 12
 
 [node name="Discard" type="Control" parent="."]
 anchors_preset = 0
@@ -572,7 +491,7 @@ mouse_filter = 2
 [node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
 can_move_anim = false
 stack_limit = 0
-num = 16
+num = 13
 
 [node name="DeckViewer" type="CanvasLayer" parent="."]
 visible = false

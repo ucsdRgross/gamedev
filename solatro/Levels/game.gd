@@ -8,7 +8,7 @@ const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
-@export var game_board : CardBoard
+@export var game_board : GameBoard
 
 var held_card : Card = null
 var held_card_offset : Vector2
@@ -81,6 +81,11 @@ func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
 		for zone : Card in zones:
 			_on_child_entered_tree(zone)
+	game_board.setup_columns(inputs.size())
+	for i in inputs.size():
+		game_board.input_row[i].cards.append(inputs[i])
+		game_board.card_board[i].cards.append(stacks[i])
+		
 	($Preview/Label as Label).text = ""
 	for label in col_scores:
 		label.text = ""
@@ -164,19 +169,23 @@ func _on_next_pressed() -> void:
 
 func drop_cards_down() -> void:
 	for i:int in inputs.size():
+		var input_col := game_board.input_row[i].cards
 		if inputs[i].top_card:
-			var dropping_card := inputs[i].top_card
+			#var dropping_card := inputs[i].top_card
+			var dropping_card := input_col[1]
 			dropping_card.state = Card.IN_PLAY
 			dropping_card.data.stage = CardData.Stage.PLAY
-			var bottom_card := stacks[i].get_last_card()
-			bottom_card.add_card(dropping_card, false)
+			#var bottom_card := stacks[i].get_last_card()
+			var bottom_card := game_board.card_board[i].cards[-1]
+			#bottom_card.add_card(dropping_card, false)
+			game_board.drop_input_cards_down(i)
 			var dropping_card_data := dropping_card.data
 			var bottom_card_data := bottom_card.data
 			await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
 			await run_all_mods(&"on_stack_card", [dropping_card])
 
 func replenish_input_cards() -> void:
-	for zone : Card in inputs:
+	for i in inputs.size():
 		if draw_deck.size() == 0:
 			draw_deck.assign(discard_deck)
 			shuffle_deck(draw_deck)
@@ -189,7 +198,8 @@ func replenish_input_cards() -> void:
 			card.data.stage = CardData.Stage.INPUT
 			add_child(card)
 			card.set_owner(self)
-			zone.add_card(card, false)
+			game_board.add_card_to_col(i, card)
+			#zone.add_card(card, false)
 			card.flipped = false
 
 func _on_submit_pressed() -> void:
@@ -492,7 +502,8 @@ func _on_card_clicked(card : Card) -> void:
 		return
 	if held_card:
 		if can_add_card(card, held_card):
-			card.add_card(held_card)
+			game_board.move_card_onto_card(held_card, card)
+			#card.add_card(held_card)
 			drop_held_card()
 	elif not held_card:
 		if not card.is_zone and card.state == Card.IN_PLAY:
