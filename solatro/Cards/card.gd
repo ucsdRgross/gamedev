@@ -83,12 +83,11 @@ static var child_offset : Vector2 = Vector2(0, 55)
 enum {IN_PLAY, STATIC}
 @export_storage var state := IN_PLAY
 @export_storage var num : int = 0
-@export_storage var top_card : Card
-@export_storage var bot_card : Card
 @export_storage var stack_size : int
 @export_storage var held : bool = false
 @export_storage var hover : bool = false
 @export_storage var target_pos : Vector2
+@export_storage var game : Game
 var move_tween : Tween
 var tilt_tween : Tween
 
@@ -120,10 +119,12 @@ func _process(delta: float) -> void:
 	if not is_zone:
 		if can_move_anim:
 			var target : Vector2 
-			if held or not bot_card:
+			var parent := get_parent()
+			if held or not parent is Card:
 				target = target_pos
 			#elif bot_card:
 			else:
+				var bot_card := parent as Card
 				target = bot_card.global_position
 				if not bot_card.is_zone:
 					target += bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
@@ -179,77 +180,82 @@ func _on_control_gui_input(event: InputEvent) -> void:
 				clicked.emit(self)
 
 func add_card(card : Card, trigger_mods: bool = true) -> void:
-	if top_card == card:
-		return
+	if game.game_board.move_stack_onto_card(card, self):
+		card_added.emit()
+		if trigger_mods: card_stacked.emit(card)
+	#var self_index := game.game_board.get_card_index(card)
+	#var col := self_index.x
+	#var row := self_index.y
+	#if game.game_board.card_board[col].cards.size() - 1 > row \
+			#and game.game_board.card_board[col].cards[row + 1] == card:
+		#return
+	#if top_card == card:
+		#return
 	#update old bot card
-	var parent := card.get_parent()
-	if parent is Card:
-		(parent as Card).top_card = card.top_card
-		if card.top_card and card.bot_card:
-			card.top_card.reparent(card.bot_card)
-	card.reparent(self)
-	#update top card to add card on bottom
-	#TODO update to handle if card has children
-	if top_card:
-		top_card.reparent(card)
-		top_card.bot_card = card
-		card.top_card = top_card
-	#add card on top of self
-	top_card = card
-	card.bot_card = self
-	#update stack limit on all cards
-	var i_card := card
-	if stack_limit > -1:
-		while i_card:
-			i_card.stack_limit = stack_limit - 1
-			i_card = i_card.top_card
-	else:
-		while i_card:
-			i_card.stack_limit = stack_limit
-			i_card = i_card.top_card
+	#var parent := card.get_parent()
+	#if parent is Card:
+		#(parent as Card).top_card = card.top_card
+		#if card.top_card and card.bot_card:
+			#card.top_card.reparent(card.bot_card)
+	#card.reparent(self)
+	##update top card to add card on bottom
+	##TODO update to handle if card has children
+	#if top_card:
+		#top_card.reparent(card)
+		#top_card.bot_card = card
+		#card.top_card = top_card
+	##add card on top of self
+	#top_card = card
+	#card.bot_card = self
+	##update stack limit on all cards
+	#var i_card := card
+	#if stack_limit > -1:
+		#while i_card:
+			#i_card.stack_limit = stack_limit - 1
+			#i_card = i_card.top_card
+	#else:
+		#while i_card:
+			#i_card.stack_limit = stack_limit
+			#i_card = i_card.top_card
 			
-	card_added.emit()
-	if trigger_mods: card_stacked.emit(card)
+
 
 func pickup() -> void:
-	var card : Card = self
 	held = true
-	while card:
+	var stack := game.game_board.get_card_stack(self)
+	for card in stack:
 		card.area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card = card.top_card
 	z_index = num_cards	
 	var tween := create_tween()
 	tween.tween_property(self, 'scale', Vector2(1.15,1.15), 0.1)
 	#tween.tween_property(self, 'scale', Vector2(1.15,1.15), 0.01)
 	#scale = Vector2(1.15,1.15)
-	stack_size = get_stack_size()
+	stack_size = stack.size()#get_stack_size()
 	
 func drop() -> void:
-	var card : Card = self
 	held = false
 	z_index = 1
 	var tween := create_tween()
 	tween.tween_property(self, 'scale', Vector2(1,1), 0.1)
 	await tween.finished
-	while card:
+	for card in game.game_board.get_card_stack(self):
 		card.area.mouse_filter = Control.MOUSE_FILTER_STOP
-		card = card.top_card
 	#tween.tween_property(self, 'scale', Vector2(1,1), 0.01)
 	#scale = Vector2(1,1)
 
-func get_last_card() -> Card:
-	var last_card := self
-	while last_card.top_card:
-		last_card = last_card.top_card
-	return last_card
+#func get_last_card() -> Card:
+	#var last_card := self
+	#while last_card.top_card:
+		#last_card = last_card.top_card
+	#return last_card
 
-func get_stack_size() -> int:
-	var size : int = 1
-	var last_card := self
-	while last_card.top_card:
-		last_card = last_card.top_card
-		size += 1
-	return size
+#func get_stack_size() -> int:
+	#var size : int = 1
+	#var last_card := self
+	#while last_card.top_card:
+		#last_card = last_card.top_card
+		#size += 1
+	#return size
 
 func add_data(data:CardData, is_linked:bool=false) -> void:
 	self.data = data
@@ -266,6 +272,7 @@ func _notification(what: int) -> void:
 			leave_stack()
 
 func leave_stack() -> void:
+	game.game_board.
 	if is_instance_valid(bot_card) and is_instance_valid(top_card):
 		bot_card.add_card(top_card)
 		#bot_card.top_card = top_card

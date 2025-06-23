@@ -35,7 +35,7 @@ func drop_input_cards_down(col:int) -> void:
 		board_col.append_array(input)
 		input[0].reparent(last_card_in_stack)
 
-func move_stack_onto_card(stack_parent:Card, onto:Card) -> void:
+func move_stack_onto_card(stack_parent:Card, onto:Card) -> bool:
 	var stack_index := get_card_index(stack_parent)
 	var onto_index := get_card_index(onto)
 	var stack : Array[Card] = card_board[stack_index.x].cards
@@ -54,7 +54,7 @@ func move_stack_onto_card(stack_parent:Card, onto:Card) -> void:
 		stack_parent.reparent(onto)
 		bottom_slice[0].reparent(slice[-1])
 		
-func move_card_onto_card(moving_card:Card, onto:Card) -> void:
+func move_card_onto_card(moving_card:Card, onto:Card) -> bool:
 	var mover_index := get_card_index(moving_card)
 	var onto_index := get_card_index(onto)
 	var source_stack := card_board[mover_index.x].cards
@@ -67,6 +67,13 @@ func move_card_onto_card(moving_card:Card, onto:Card) -> void:
 	if onto_index.y + 1 < target_stack.size() - 1:
 		target_stack[onto_index.y + 2].reparent(moving_card)
 		
+func get_card_stack(card:Card) -> Array[Card]:
+	var card_index := get_card_index(card)
+	return card_board[card_index.x].cards.slice(card_index.y)
+
+func delete_card(card:Card):
+	
+
 func get_card_index(card:Card) -> Vector2i:
 	for col in card_board.size():
 		var index : int = card_board[col].cards.find(card, 1)

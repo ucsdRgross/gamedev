@@ -451,10 +451,10 @@ mouse_filter = 2
 
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
+num = 11
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 11
 
 [node name="Label" type="Label" parent="Preview"]
 layout_mode = 0
@@ -476,9 +476,9 @@ offset_bottom = 90.0
 mouse_filter = 2
 
 [node name="Deck" parent="Deck" instance=ExtResource("3_8sseo")]
+num = 12
 can_move_anim = false
 stack_limit = 0
-num = 12
 
 [node name="Discard" type="Control" parent="."]
 anchors_preset = 0
@@ -489,9 +489,9 @@ offset_bottom = 543.0
 mouse_filter = 2
 
 [node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
+num = 13
 can_move_anim = false
 stack_limit = 0
-num = 13
 
 [node name="DeckViewer" type="CanvasLayer" parent="."]
 visible = false
@@ -569,6 +569,4 @@ text = "Copy"
 [connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
 [connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
-[connection signal="clicked" from="Deck/Deck" to="." method="_on_deck_clicked"]
-[connection signal="clicked" from="Discard/Discard" to="." method="_on_discard_clicked"]
 [connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]

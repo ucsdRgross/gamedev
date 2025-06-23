@@ -453,6 +453,7 @@ func _on_card_stacked(card: Card) -> void:
 func _on_child_entered_tree(node: Node) -> void:
 	if node is Card:
 		var card := node as Card
+		card.game = self
 		card.clicked.connect(_on_card_clicked)
 		if not card.is_zone:
 			card.hover_entered.connect(_on_card_hover_entered)
