@@ -8,6 +8,8 @@ var game : Game
 
 class CardColumn:
 	var cards : Array[Card]
+	func has_row(index:int) -> bool:
+		return index < cards.size() - 1
 	
 func setup_columns(cols : int) -> void:
 	input_row.resize(cols)
@@ -36,6 +38,8 @@ func drop_input_cards_down(col:int) -> void:
 		input[0].reparent(last_card_in_stack)
 
 func move_stack_onto_card(stack_parent:Card, onto:Card) -> bool:
+	if stack_parent.get_parent() == onto:
+		return false
 	var stack_index := get_card_index(stack_parent)
 	var onto_index := get_card_index(onto)
 	var stack : Array[Card] = card_board[stack_index.x].cards
@@ -53,8 +57,11 @@ func move_stack_onto_card(stack_parent:Card, onto:Card) -> bool:
 		target_stack.append_array(bottom_slice)
 		stack_parent.reparent(onto)
 		bottom_slice[0].reparent(slice[-1])
-		
+	return true
+	
 func move_card_onto_card(moving_card:Card, onto:Card) -> bool:
+	if moving_card.get_parent() == onto:
+		return false
 	var mover_index := get_card_index(moving_card)
 	var onto_index := get_card_index(onto)
 	var source_stack := card_board[mover_index.x].cards
@@ -66,17 +73,28 @@ func move_card_onto_card(moving_card:Card, onto:Card) -> bool:
 	moving_card.reparent(onto)
 	if onto_index.y + 1 < target_stack.size() - 1:
 		target_stack[onto_index.y + 2].reparent(moving_card)
+	return true
 		
 func get_card_stack(card:Card) -> Array[Card]:
 	var card_index := get_card_index(card)
 	return card_board[card_index.x].cards.slice(card_index.y)
 
-func delete_card(card:Card):
-	
+func remove_card(card:Card) -> void:
+	var card_index := get_card_index(card)
+	var col := card_board[card_index.x]
+	col.cards.erase(card)
+	if col.has_row(card_index.y):
+		col.cards[card_index.y].reparent(col.cards[card_index.y - 1])
 
+func get_card_col(card:Card) -> CardColumn:
+	var index := get_card_index(card)
+	if index.x < INF:
+		return card_board[index.x]
+	return null
+	
 func get_card_index(card:Card) -> Vector2i:
 	for col in card_board.size():
 		var index : int = card_board[col].cards.find(card, 1)
 		if index != -1:
 			return Vector2i(col, index)
-	return Vector2i.ZERO
+	return Vector2i.MAX

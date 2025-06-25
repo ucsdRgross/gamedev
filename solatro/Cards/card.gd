@@ -272,9 +272,9 @@ func _notification(what: int) -> void:
 			leave_stack()
 
 func leave_stack() -> void:
-	game.game_board.
-	if is_instance_valid(bot_card) and is_instance_valid(top_card):
-		bot_card.add_card(top_card)
+	game.game_board.remove_card(self)
+	#if is_instance_valid(bot_card) and is_instance_valid(top_card):
+		#bot_card.add_card(top_card)
 		#bot_card.top_card = top_card
 		#top_card.bot_card = bot_card
 

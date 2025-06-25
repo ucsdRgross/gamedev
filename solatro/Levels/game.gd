@@ -170,7 +170,7 @@ func _on_next_pressed() -> void:
 func drop_cards_down() -> void:
 	for i:int in inputs.size():
 		var input_col := game_board.input_row[i].cards
-		if inputs[i].top_card:
+		if input_col.size() > 1:
 			#var dropping_card := inputs[i].top_card
 			var dropping_card := input_col[1]
 			dropping_card.state = Card.IN_PLAY
@@ -324,10 +324,10 @@ func _on_submit_pressed() -> void:
 		return_to_map()
 	elif total_score <= goal and draw_deck.is_empty():
 		var zones_have_cards := false
-		for zone in inputs:
-			if zone.top_card:
+		for col in game_board.input_row:
+			if col.cards.size() > 1:
 				zones_have_cards = true
-				break 
+				break
 		if not zones_have_cards:
 			lose_screen.show()
 			await get_tree().create_timer(3).timeout
