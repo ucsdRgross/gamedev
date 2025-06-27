@@ -206,14 +206,14 @@ func _on_submit_pressed() -> void:
 	if processing:
 		return
 	processing = true
-	var board_cols : Array[Array] = get_board_cols()
+	var board_cols : Array[GameBoard.CardColumn] = game_board.get_square_board()
 	var row_to_score := 0
 	var last_scored_cards : Array[Card] = []
 	
-	while row_to_score < board_cols[0].size():
+	while row_to_score < board_cols[0].cards.size():
 		var row_cards : Array[Card]
 		for i in 5:
-			row_cards.append(board_cols[i][row_to_score])
+			row_cards.append(board_cols[i].cards[row_to_score])
 			
 		#score horizontally
 		for scorer in row_scorers:
@@ -344,10 +344,10 @@ func _on_submit_pressed() -> void:
 	mult_score = 0
 	
 	var discards : Array[Card]
-	for i in board_cols[0].size():
+	for i in board_cols[0].cards.size():
 		for j in 5:
-			if board_cols[j][i]:
-				discards.append(board_cols[j][i])
+			if board_cols[j].cards[i]:
+				discards.append(board_cols[j].cards[i])
 	discards.reverse()
 	for card in discards:
 		discard_card(card)
@@ -413,31 +413,6 @@ func card_shrink(card:Card) -> void:
 	card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
 	await card_tween.finished
 
-func get_board_cols() -> Array[Array]:
-	var board : Array[Array] = []
-	var max_size := 0
-	for col in stacks:
-		var c := []
-		var col_size := 0
-		while col.top_card:
-			c.append(col.top_card)
-			col = col.top_card
-			col_size += 1
-		board.append(c)
-		if col_size > max_size:
-			max_size = col_size
-	for col in board:
-		col.resize(max_size)
-	return board
-
-func get_card_grid_pos(card:Card) -> Vector2:
-	var board_cols := get_board_cols()
-	for c:int in board_cols.size():
-		for r:int in board_cols[c].size():
-			if board_cols[c][r] == card:
-				return Vector2(r, c)
-	return Vector2(-1,-1)
-
 func run_all_mods(function: StringName, params:Array=[]) -> void:
 	for data in CardDataIterator.new(self):
 		for mod : CardModifier in [data.type, data.stamp, data.skill]:
@@ -489,8 +464,7 @@ func _on_card_hover_exited(card : Card) -> void:
 	#return
 
 func _on_game_board_changed() -> void:
-	var board_cols : Array[Array] = get_board_cols()
-	var num_cards_in_col : int = board_cols[0].size()
+	var num_cards_in_col : int = game_board.get_largest_col_size()
 	if num_cards_in_col > 0:
 		board_size = 350 + Card.child_offset.y * num_cards_in_col
 	else:

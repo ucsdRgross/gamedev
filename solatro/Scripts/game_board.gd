@@ -91,6 +91,16 @@ func get_card_col(card:Card) -> CardColumn:
 	if index.x < INF:
 		return card_board[index.x]
 	return null
+
+func get_square_board() -> Array[CardColumn]:
+	var x := get_largest_col_size()
+	var board : Array[CardColumn] = []
+	for col in card_board:
+		var new_col : CardColumn = CardColumn.new()
+		new_col.cards = col.cards.duplicate()
+		new_col.cards.resize(x)
+		board.append(new_col)
+	return board
 	
 func get_card_index(card:Card) -> Vector2i:
 	for col in card_board.size():
@@ -98,3 +108,11 @@ func get_card_index(card:Card) -> Vector2i:
 		if index != -1:
 			return Vector2i(col, index)
 	return Vector2i.MAX
+
+func get_largest_col_size() -> int:
+	var largest_size : int = 0
+	for col in card_board:
+		var size := col.cards.size()
+		if size > largest_size:
+			largest_size = size
+	return largest_size
