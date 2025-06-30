@@ -57,6 +57,15 @@ func move_stack_onto_card(stack_parent:Card, onto:Card) -> bool:
 		target_stack.append_array(bottom_slice)
 		stack_parent.reparent(onto)
 		bottom_slice[0].reparent(slice[-1])
+	# update stack limit
+	var stack_limit := onto.stack_limit
+	if stack_limit > -1:
+		for card:Card in target_stack.slice(onto_index.y):
+			stack_limit -= 1
+			card.stack_limit = stack_limit
+	else:
+		for card:Card in target_stack.slice(onto_index.y):
+			card.stack_limit = stack_limit
 	return true
 	
 func move_card_onto_card(moving_card:Card, onto:Card) -> bool:
@@ -73,6 +82,25 @@ func move_card_onto_card(moving_card:Card, onto:Card) -> bool:
 	moving_card.reparent(onto)
 	if onto_index.y + 1 < target_stack.size() - 1:
 		target_stack[onto_index.y + 2].reparent(moving_card)
+	# update target stack limit
+	var target_stack_limit := onto.stack_limit
+	if target_stack_limit > -1:
+		for card:Card in target_stack.slice(onto_index.y):
+			target_stack_limit -= 1
+			card.stack_limit = target_stack_limit
+	else:
+		for card:Card in target_stack.slice(onto_index.y):
+			card.stack_limit = target_stack_limit
+	# update source stack limit
+	var moving_card_parent := source_stack[mover_index.y - 1]
+	var source_stack_limit := moving_card_parent.stack_limit
+	if source_stack_limit > -1:
+		for card:Card in source_stack.slice(mover_index.y):
+			source_stack_limit -= 1
+			card.stack_limit = source_stack_limit
+	else:
+		for card:Card in source_stack.slice(mover_index.y):
+			card.stack_limit = source_stack_limit
 	return true
 		
 func get_card_stack(card:Card) -> Array[Card]:
@@ -108,6 +136,18 @@ func get_card_index(card:Card) -> Vector2i:
 		if index != -1:
 			return Vector2i(col, index)
 	return Vector2i.MAX
+
+func get_top_card(card:Card) -> Card:
+	var index := get_card_index(card)
+	if index.x < card_board.size() and index.y + 1 < card_board[index.x].cards.size():
+		return card_board[index.x].cards[index.y + 1]
+	return null
+
+func get_bot_card(card:Card) -> Card:
+	var index := get_card_index(card)
+	if index.x < card_board.size() and index.y - 1 < card_board[index.x].cards.size() and index.y - 1 >= 0:
+		return card_board[index.x].cards[index.y - 1]
+	return null
 
 func get_largest_col_size() -> int:
 	var largest_size : int = 0

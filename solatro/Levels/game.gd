@@ -482,11 +482,12 @@ func _on_card_clicked(card : Card) -> void:
 			drop_held_card()
 	elif not held_card:
 		if not card.is_zone and card.state == Card.IN_PLAY:
-			var next_card := card
-			while next_card.top_card:
-				if not can_pickup_stack(next_card, next_card.top_card):
-					return
-				next_card = next_card.top_card
+			var prev_card : Card = null
+			for c in game_board.get_card_stack(card):
+				if prev_card:
+					if not can_pickup_stack(prev_card, c):
+						return
+				prev_card = c
 			card.pickup()
 			held_card = card
 			held_card_offset = held_card.global_position - get_global_mouse_position()
@@ -496,10 +497,11 @@ func _on_card_clicked(card : Card) -> void:
 			audio_card_placing.play(.15)
 
 func can_add_card(stack : Card, to_stack : Card) -> bool:
-	if stack.top_card == to_stack and to_stack == held_card:
+	var stack_top_card := game_board.get_top_card(stack)
+	if stack_top_card == to_stack and to_stack == held_card:
 		return true
-	if not stack.top_card:
-		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
+	if not stack_top_card:
+		if stack.stack_limit < 0 or (stack.stack_limit >= game_board.get_card_stack(to_stack).size()):
 			if stack.is_zone:
 				return true
 			if stack.data.suit != to_stack.data.suit:

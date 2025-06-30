@@ -76,7 +76,7 @@ func is_active() -> bool:
 	if data.stamp is StampGlobal:
 		return true
 	elif data.card:
-		if not data.card.top_card:
+		if not game.game_board.get_top_card(data.card):
 			return true
 		if data.stamp is StampRevealing:
 			return true
