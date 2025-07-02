@@ -97,6 +97,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -108,6 +109,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -119,6 +121,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -130,6 +133,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -141,6 +145,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
@@ -197,6 +202,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 
 [node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -206,6 +212,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 
 [node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -215,6 +222,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 
 [node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -224,6 +232,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 
 [node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
@@ -233,6 +242,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer"]
@@ -248,6 +258,7 @@ script = ExtResource("4_3ijoq")
 
 [node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
+scale = Vector2(3, 3)
 is_zone = true
 stack_limit = 1
 
@@ -269,6 +280,17 @@ offset_top = 380.0
 offset_right = 1077.0
 offset_bottom = 411.0
 text = "Submit
+"
+
+[node name="Undo" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_bottom = 60.0
+grow_horizontal = 0
+text = "Undo
 "
 
 [node name="Submission" parent="." instance=ExtResource("3_8sseo")]
@@ -461,9 +483,11 @@ mouse_filter = 2
 
 [node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
+scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
+num = 404
 
 [node name="Label" type="Label" parent="Preview"]
 layout_mode = 0
@@ -485,8 +509,10 @@ offset_bottom = 90.0
 mouse_filter = 2
 
 [node name="Deck" parent="Deck" instance=ExtResource("3_8sseo")]
+scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
+num = 405
 
 [node name="Discard" type="Control" parent="."]
 anchors_preset = 0
@@ -497,8 +523,10 @@ offset_bottom = 543.0
 mouse_filter = 2
 
 [node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
+scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
+num = 406
 
 [node name="DeckViewer" type="CanvasLayer" parent="."]
 visible = false

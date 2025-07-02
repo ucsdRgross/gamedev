@@ -33,6 +33,7 @@ const CARD = preload("res://Cards/card.tscn")
 		
 		for i in rows ** 2 - 1:
 			var card : Card = new_card()
+			card.scale *= 3
 			cards.append(card)
 			child_cards.add_child(card)
 			card.owner = self
@@ -96,6 +97,7 @@ func new_triangle(clicked_card:Card, offset:int) -> void:
 		new_cards.append(card)
 		card.hide()
 		child_cards.add_child(card)
+		card.scale *= 3
 		var control : Control = grid_container.get_child(i)
 		card.global_position = control.global_position + control.size / 2
 	for y in rows - 2:

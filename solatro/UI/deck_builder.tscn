@@ -135,10 +135,12 @@ offset_right = 73.0
 offset_bottom = 265.0
 
 [node name="Card" parent="HSplitContainer/Control/Preview" instance=ExtResource("2_y2cql")]
+scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
 flipped = false
+num = 403
 
 [node name="Label" type="Label" parent="HSplitContainer/Control/Preview"]
 layout_mode = 0

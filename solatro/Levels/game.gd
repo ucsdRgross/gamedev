@@ -9,41 +9,43 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
 
-var held_card : Card = null
-var held_card_offset : Vector2
-var processing : bool = false
-var board_size : int 
-var board_home_pos : Vector2
-var board_hovered : bool = false
-var card_hovered : bool = false
-var base_delay : float = 1
+@export_storage var held_card : Card = null
+@export_storage var held_card_offset : Vector2
+@export_storage var processing : bool = false
+@export_storage var board_size : int 
+@export_storage var board_home_pos : Vector2
+@export_storage var board_hovered : bool = false
+@export_storage var card_hovered : bool = false
+@export_storage var base_delay : float = 1
+@export_storage var duplicating : bool = false
 
-var goal : int = 100:
+@export_storage var goal : int = 100:
 	set(value):
 		($Goal/Label as Label).text = str(value)
 		goal = value
-var total_score : int = 0:
+@export_storage var total_score : int = 0:
 	set(value):
 		($Total/Label as Label).text = str(value)
 		total_score = value
-var mult_score : int = 0:
+@export_storage var mult_score : int = 0:
 	set(value):
 		($MultScore as Label).text = str(value)
 		mult_score = value
-var col_total : int = 0:
+@export_storage var col_total : int = 0:
 	set(value):
 		($MultScore/Col as Label).text = str(value)
 		col_total = value
-var row_total : int = 0:
+@export_storage var row_total : int = 0:
 	set(value):
 		($MultScore/Row as Label).text = str(value)
 		row_total = value
 
-var draw_deck : Array[CardData]
-var discard_deck : Array[CardData]
-var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
-var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-var row_score_popups : Dictionary
+@export_storage var draw_deck : Array[CardData]
+@export_storage var discard_deck : Array[CardData]
+@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
+@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
+@export_storage var row_score_popups : Dictionary
+#var setup_data : NewGameData
 
 @onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
 @onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
@@ -60,17 +62,31 @@ var row_score_popups : Dictionary
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var deck_popup: Card = $Deck/Deck
 @onready var discard_popup: Card = $Discard/Discard
+@onready var undo_button: Button = $Undo
 
 func _ready() -> void:
-	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
-		for zone : Card in zones:
-			_on_child_entered_tree(zone)
-	($Preview/Label as Label).text = ""
-	for label in col_scores:
-		label.text = ""
-	board_home_pos = game_container.position
-	goal = goal * (1.1 ** Main.save_info.layer)
-	add_deck()
+	if not duplicating:
+		for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
+			for zone : Card in zones:
+				_on_child_entered_tree(zone)
+		($Preview/Label as Label).text = ""
+		for label in col_scores:
+			if label: label.text = ""
+		board_home_pos = game_container.position
+		goal = goal * (1.1 ** Main.save_info.layer)
+		add_deck()
+		duplicating = true
+	else:
+		for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
+			for zone : Card in zones:
+				var bot_card : Card = zone
+				while bot_card.get_child_count() > 1:
+					var top_card : Card = bot_card.get_child(1)
+					top_card.add_data(top_card.data.clone(self, true),true)
+					bot_card.top_card = top_card
+					top_card.bot_card = bot_card
+					bot_card = top_card
+
 	#for effect in effects:
 		#if effect:
 			#effect.on_game_start()
@@ -171,22 +187,23 @@ func replenish_input_cards() -> void:
 			var data : CardData = draw_deck.pop_back()
 			card.add_data(data, true)
 			card.data.stage = CardData.Stage.INPUT
-			add_child(card)
+			zone.add_child(card)
 			zone.add_card(card, false)
 			card.flipped = false
+			card.owner = self
 
 func _on_submit_pressed() -> void:
 	if processing:
 		return
 	processing = true
-	var board_cols : Array[Array] = get_board_cols()
+	var board_cols : Array[CardArray] = get_board_cols()
 	var row_to_score := 0
 	var last_scored_cards : Array[Card] = []
 	
-	while row_to_score < board_cols[0].size():
+	while row_to_score < board_cols[0].cards.size():
 		var row_cards : Array[Card]
 		for i in 5:
-			row_cards.append(board_cols[i][row_to_score])
+			row_cards.append(board_cols[i].cards[row_to_score])
 			
 		#score horizontally
 		for scorer in row_scorers:
@@ -318,10 +335,10 @@ func _on_submit_pressed() -> void:
 	mult_score = 0
 	
 	var discards : Array[Card]
-	for i in board_cols[0].size():
+	for i in board_cols[0].cards.size():
 		for j in 5:
-			if board_cols[j][i]:
-				discards.append(board_cols[j][i])
+			if board_cols[j].cards[i]:
+				discards.append(board_cols[j].cards[i])
 	discards.reverse()
 	for card in discards:
 		discard_card(card)
@@ -387,28 +404,28 @@ func card_shrink(card:Card) -> void:
 	card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
 	await card_tween.finished
 
-func get_board_cols() -> Array[Array]:
-	var board : Array[Array] = []
+func get_board_cols() -> Array[CardArray]:
+	var board : Array[CardArray] = []
 	var max_size := 0
 	for col in stacks:
-		var c := []
+		var c : CardArray = CardArray.new()
 		var col_size := 0
 		while col.top_card:
-			c.append(col.top_card)
+			c.cards.append(col.top_card)
 			col = col.top_card
 			col_size += 1
 		board.append(c)
 		if col_size > max_size:
 			max_size = col_size
 	for col in board:
-		col.resize(max_size)
+		col.cards.resize(max_size)
 	return board
 
 func get_card_grid_pos(card:Card) -> Vector2:
 	var board_cols := get_board_cols()
 	for c:int in board_cols.size():
-		for r:int in board_cols[c].size():
-			if board_cols[c][r] == card:
+		for r:int in board_cols[c].cards.size():
+			if board_cols[c].cards[r] == card:
 				return Vector2(r, c)
 	return Vector2(-1,-1)
 
@@ -462,8 +479,8 @@ func _on_card_hover_exited(card : Card) -> void:
 	#return
 
 func _on_game_board_changed() -> void:
-	var board_cols : Array[Array] = get_board_cols()
-	var num_cards_in_col : int = board_cols[0].size()
+	var board_cols : Array[CardArray] = get_board_cols()
+	var num_cards_in_col : int = 0 if not board_cols else board_cols[0].cards.size()
 	if num_cards_in_col > 0:
 		board_size = 350 + Card.child_offset.y * num_cards_in_col
 	else:
@@ -558,3 +575,15 @@ func _on_discard_clicked(deck_card: Card) -> void:
 		card.hover_exited.connect(_on_card_hover_exited)
 		flow_container.add_child(control)
 	deck_viewer.show()
+
+class CardArray:
+	var cards : Array[Card]
+	#func clone() -> CardArray:
+		#var deep_copy := func(c:Card) -> Card:
+			#if not c: return c
+			#return c.clone()
+		#var new_card_array := CardArray.new()
+		#var array_card : Array[Card]
+		#array_card.assign(cards.map(deep_copy))
+		#new_card_array.cards = array_card
+		#return new_card_array

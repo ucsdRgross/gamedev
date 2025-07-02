@@ -70,16 +70,16 @@ func update_visual() -> void:
 static var num_cards : int = 0
 static var child_offset : Vector2 = Vector2(0, 55)
 enum {IN_PLAY, STATIC}
-var state := IN_PLAY
-var num : int = 0
-var top_card : Card
-var bot_card : Card
-var stack_size : int
-var move_tween : Tween
-var tilt_tween : Tween
-var held : bool = false
-var hover : bool = false
-var target_pos : Vector2
+@export_storage var state := IN_PLAY
+@export_storage var num : int = 0
+@export_storage var top_card : Card
+@export_storage var bot_card : Card
+@export_storage var stack_size : int
+@export_storage var move_tween : Tween
+@export_storage var tilt_tween : Tween
+@export_storage var held : bool = false
+@export_storage var hover : bool = false
+@export_storage var target_pos : Vector2
 
 @onready var offset: Node2D = $Offset
 @onready var front: Sprite2D = $Offset/Front
@@ -103,8 +103,8 @@ func _ready() -> void:
 		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 		
-var rot_delta : float
-var y_delta : float
+@export_storage var rot_delta : float
+@export_storage var y_delta : float
 func _process(delta: float) -> void:
 	if not is_zone:
 		if can_move_anim:
@@ -245,7 +245,22 @@ func add_data(data:CardData, is_linked:bool=false) -> void:
 	if is_linked:
 		data.card = self
 	data.data_changed.connect(update_visual)
-	
+
+#func clone() -> Card:
+	#var cloned : Card
+	#if top_card:
+		#remove_child(top_card)
+		#cloned = self.duplicate()
+		#add_child(top_card)
+	#else:
+		#cloned = self.duplicate()
+	#if self.data:
+		#if self.data.card == self:
+			#cloned.add_data(self.data.clone(true), true)
+		#else:
+			#cloned.add_data(self.data.clone(true), false)
+	#return self.duplicate()
+
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_PREDELETE:

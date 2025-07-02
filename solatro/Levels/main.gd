@@ -23,11 +23,21 @@ func enter_map() -> void:
 
 func enter_game() -> void:
 	var new_game : Game = GAME.instantiate()
-	new_game.game_ended.connect(game_ended)
 	switch_scene(new_game)
+	new_game.game_ended.connect(game_ended)
+	new_game.undo_button.pressed.connect(clone_game)
+	
 
 func game_ended() -> void:
 	switch_scene(map_scene)
+
+func clone_game() -> void:
+	var scn : PackedScene = PackedScene.new()
+	var current_game : Game = current_scene
+	scn.pack(current_scene)
+	#ResourceSaver.save(scn, "user://current_game_state.tscn")
+	#add_child((load("user://current_game_state.tscn") as PackedScene).instantiate())
+	add_child(scn.instantiate())
 
 func switch_scene(new_scene : Node) -> void:
 	if new_scene.is_inside_tree():

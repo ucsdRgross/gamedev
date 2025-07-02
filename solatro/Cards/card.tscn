@@ -6,16 +6,16 @@
 [ext_resource type="Texture2D" uid="uid://c5y0yi0ffmlyw" path="res://Assets/suits.png" id="4_qva5r"]
 
 [node name="Card" type="Node2D"]
-scale = Vector2(3, 3)
 script = ExtResource("1_pyuft")
+num = 202
 
 [node name="Offset" type="Node2D" parent="."]
 
 [node name="Front" type="Sprite2D" parent="Offset"]
-position = Vector2(0, 0.973586)
-rotation = 3.14156
-scale = Vector2(0.990986, -0.994755)
-skew = 0.0139003
+position = Vector2(0, 0.654795)
+rotation = 3.14158
+scale = Vector2(0.985862, -0.999837)
+skew = 0.00307107
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
