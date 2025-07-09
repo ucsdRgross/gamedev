@@ -82,7 +82,7 @@ func _ready() -> void:
 				var bot_card : Card = zone
 				while bot_card.get_child_count() > 1:
 					var top_card : Card = bot_card.get_child(1)
-					top_card.add_data(top_card.data.clone(self, true),true)
+					#top_card.add_data(top_card.data.clone(self, true),true)
 					bot_card.top_card = top_card
 					top_card.bot_card = bot_card
 					bot_card = top_card

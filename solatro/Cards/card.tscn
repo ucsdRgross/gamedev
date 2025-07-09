@@ -7,7 +7,7 @@
 
 [node name="Card" type="Node2D"]
 script = ExtResource("1_pyuft")
-num = 202
+num = 104
 
 [node name="Offset" type="Node2D" parent="."]
 

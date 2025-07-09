@@ -487,7 +487,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 404
+num = 1
 
 [node name="Label" type="Label" parent="Preview"]
 layout_mode = 0
@@ -512,7 +512,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 405
+num = 2
 
 [node name="Discard" type="Control" parent="."]
 anchors_preset = 0
@@ -526,7 +526,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 406
+num = 3
 
 [node name="DeckViewer" type="CanvasLayer" parent="."]
 visible = false

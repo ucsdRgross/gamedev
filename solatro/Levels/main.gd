@@ -37,7 +37,10 @@ func clone_game() -> void:
 	scn.pack(current_scene)
 	#ResourceSaver.save(scn, "user://current_game_state.tscn")
 	#add_child((load("user://current_game_state.tscn") as PackedScene).instantiate())
-	add_child(scn.instantiate())
+	var game_copy : Game = scn.instantiate()
+	add_child(game_copy)
+	Duplicator.deep_copy_game(current_game, game_copy)
+	
 
 func switch_scene(new_scene : Node) -> void:
 	if new_scene.is_inside_tree():
