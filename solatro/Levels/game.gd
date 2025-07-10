@@ -145,12 +145,7 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 
 func set_datas_game(datas:Array[CardData], game:Game) -> void:
 	for data : CardData in datas:
-		if data.skill:
-			data.skill.with_game(game)
-		if data.type:
-			data.type.with_game(game)
-		if data.stamp:
-			data.stamp.with_game(game)
+		data.game = game
 		
 func _on_next_pressed() -> void:
 	if processing:

@@ -9,14 +9,9 @@ enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 @export var rarity : Rarity
 @export var tags : Dictionary
 var data : CardData
-var game : Game
 
 func with_data(data:CardData) -> CardModifier:
 	self.data = data
-	return self
-
-func with_game(game:Game) -> CardModifier:
-	self.game = game
 	return self
 
 func on_round_start() -> void:
@@ -104,9 +99,9 @@ func _do_popup(method:StringName) -> void:
 	elif method == &"card_raise":
 		match data.stage:
 			data.Stage.DRAW:
-				popup_card = game.deck_popup
+				popup_card = data.game.deck_popup
 			data.Stage.DISCARD:
-				popup_card = game.discard_popup
+				popup_card = data.game.discard_popup
 		if not popup_card:
 			return
 		var new_popup_card := popup_card.duplicate(8)
@@ -118,8 +113,8 @@ func _do_popup(method:StringName) -> void:
 		popup_card.show()
 	else:
 		return
-	await Callable(game, method).call(popup_card)
+	await Callable(data.game, method).call(popup_card)
 	if temp_card:
-		await Callable(game, &"card_lower").call(popup_card)
+		await Callable(data.game, &"card_lower").call(popup_card)
 		popup_card.queue_free()
 			

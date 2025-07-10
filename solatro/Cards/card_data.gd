@@ -24,6 +24,7 @@ signal data_changed
 		stamp = value
 		data_changed.emit()
 var card: Card
+var game: Game
 enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
 var stage := Stage.SPACE
 
@@ -56,18 +57,15 @@ func with_stamp(stamp:CardModifier) -> CardData:
 		self.stamp = null
 	return self
 	
-func clone(game:Game, deep:bool = false) -> CardData:
+func clone(deep:bool = false) -> CardData:
 	var data := CardData.new()
 	data.suit = self.suit
 	data.rank = self.rank
 	if self.skill:
 		data.with_skill(self.skill.duplicate(deep) as CardModifier)
-		data.skill.with_game(game)
 	if self.type:
 		data.with_type(self.type.duplicate(deep) as CardModifier)
-		data.type.with_game(game)
 	if self.stamp:
 		data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
-		data.stamp.with_game(game)
 	#card
 	return data

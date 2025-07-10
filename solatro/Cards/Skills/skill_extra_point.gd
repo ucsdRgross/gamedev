@@ -9,11 +9,11 @@ func _init() -> void:
 func on_score(target:Card) -> void:
 	if not is_active(): return
 	if target.data == self.data:
-		var grid_pos := game.get_card_grid_pos(target)
+		var grid_pos := data.game.get_card_grid_pos(target)
 		await card_shake(add_points.bind(grid_pos.x, grid_pos.y))
-		await game.on_mod_triggered(self.data, on_score.bind(target))
+		await data.game.on_mod_triggered(self.data, on_score.bind(target))
 
 func add_points(row:int, col:int) -> void:
-	game.row_add_score(row, 1)
-	game.col_add_score(col, 1)
-	game.total_score += 10
+	data.game.row_add_score(row, 1)
+	data.game.col_add_score(col, 1)
+	data.game.total_score += 10
