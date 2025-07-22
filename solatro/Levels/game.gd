@@ -1,6 +1,7 @@
 extends Control
 class_name Game
 
+signal save_state
 signal game_ended
 
 const CARD = preload("res://Cards/card.tscn")
@@ -76,6 +77,7 @@ func _ready() -> void:
 		goal = goal * (1.1 ** Main.save_info.layer)
 		add_deck()
 		duplicating = true
+		save_state.emit()
 	else:
 		for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
 			for zone : Card in zones:
@@ -155,6 +157,7 @@ func _on_next_pressed() -> void:
 	processing = true
 	await drop_cards_down()
 	replenish_input_cards()
+	save_state.emit()
 	processing = false
 
 func drop_cards_down() -> void:
@@ -185,7 +188,6 @@ func replenish_input_cards() -> void:
 			zone.add_child(card)
 			zone.add_card(card, false)
 			card.flipped = false
-			card.owner = self
 
 func _on_submit_pressed() -> void:
 	if processing:
@@ -490,6 +492,7 @@ func _on_card_clicked(card : Card) -> void:
 		if can_add_card(card, held_card):
 			card.add_card(held_card)
 			drop_held_card()
+			save_state.emit()
 	elif not held_card:
 		if not card.is_zone and card.state == Card.IN_PLAY:
 			var next_card := card
