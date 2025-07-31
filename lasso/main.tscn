@@ -1,0 +1,84 @@
+[gd_scene load_steps=11 format=3 uid="uid://cky54tv2ok57h"]
+
+[ext_resource type="Script" uid="uid://dtbweei3oyq2f" path="res://player.gd" id="1_0xm2m"]
+[ext_resource type="Script" uid="uid://1eunvl3yily6" path="res://main.gd" id="1_1bvp3"]
+[ext_resource type="Texture2D" uid="uid://cddbc2ce0on48" path="res://icon.svg" id="2_h2yge"]
+[ext_resource type="Script" uid="uid://dmde5dd4jmcdp" path="res://lasso.gd" id="3_h2yge"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1bvp3"]
+radius = 64.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1bvp3"]
+radius = 64.0
+height = 208.0
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_h2yge"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1bvp3"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_lquwl"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_7mycd"]
+normal = Vector2(-1, 0)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_1bvp3")
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(498, 211)
+
+[node name="Body" type="RigidBody2D" parent="Player"]
+mass = 50.0
+lock_rotation = true
+script = ExtResource("1_0xm2m")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/Body"]
+shape = SubResource("CircleShape2D_1bvp3")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player/Body"]
+texture = ExtResource("2_h2yge")
+
+[node name="Lasso" type="RigidBody2D" parent="Player"]
+position = Vector2(61, 102)
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("3_h2yge")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/Lasso"]
+shape = SubResource("CapsuleShape2D_1bvp3")
+
+[node name="Node2D" type="Node2D" parent="Player/Lasso"]
+position = Vector2(0, -103.13)
+
+[node name="Sprite2D" type="Sprite2D" parent="Player/Lasso/Node2D"]
+position = Vector2(0, 68.015)
+texture = ExtResource("2_h2yge")
+
+[node name="PinJoint2D" type="PinJoint2D" parent="Player"]
+position = Vector2(60, 1)
+node_a = NodePath("../Body")
+node_b = NodePath("../Lasso")
+
+[node name="WallUp" type="StaticBody2D" parent="."]
+rotation = 3.14159
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallUp"]
+shape = SubResource("WorldBoundaryShape2D_h2yge")
+
+[node name="WallDown" type="StaticBody2D" parent="."]
+position = Vector2(0, 641)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallDown"]
+shape = SubResource("WorldBoundaryShape2D_1bvp3")
+
+[node name="WallLeft" type="StaticBody2D" parent="."]
+rotation = 1.5708
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("WorldBoundaryShape2D_lquwl")
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(1148, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("WorldBoundaryShape2D_7mycd")
