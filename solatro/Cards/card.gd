@@ -69,8 +69,6 @@ func update_visual() -> void:
 
 static var num_cards : int = 0
 static var child_offset : Vector2 = Vector2(0, 55)
-enum {IN_PLAY, STATIC}
-@export_storage var state := IN_PLAY
 @export_storage var num : int = 0
 @export_storage var top_card : Card
 @export_storage var bot_card : Card

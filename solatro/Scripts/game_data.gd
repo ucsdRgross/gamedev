@@ -1,10 +1,12 @@
 class_name GameData
 extends Resource
 
+const CARD = preload("res://Cards/card.tscn")
+
 @export_storage var deck : Array[CardData] = []
 @export_storage var discard : Array[CardData] = []
-@export_storage var input : Array[CardStack] = []
-@export_storage var board : Array[CardStack] = []
+@export_storage var inputs : Array[CardStack] = []
+@export_storage var stacks : Array[CardStack] = []
 
 class CardStack:
 	@export_storage var array : Array[CardData] = []
@@ -13,8 +15,8 @@ static func create_save_state(game:Game) -> GameData:
 	var game_data : GameData = GameData.new()
 	game_data.deck = game.draw_deck
 	game_data.discard = game.discard_deck
-	game_data.input = card_stack_to_data(game.inputs)
-	game_data.board = card_stack_to_data(game.stacks)
+	game_data.inputs = card_stack_to_data(game.inputs)
+	game_data.stacks = card_stack_to_data(game.stacks)
 	var duplicated_resources : Dictionary[Resource, Resource] = {}
 	var nested_resources : Array[Resource] = [game_data]
 	var duplicate_helper : Callable = func(to_copy : Object) -> void:
@@ -73,6 +75,27 @@ static func create_save_state(game:Game) -> GameData:
 static func load_save_state(game:Game, save_data:GameData) -> void:
 	
 	pass
+
+func load_game(game:Game) -> void:
+	game.draw_deck = deck
+	game.discard_deck = discard
+	load_stack(game.inputs, inputs)
+	load_stack(game.stacks, stacks)
+	
+static func load_stack(cards:Array[Card], save_datas:Array[CardStack]) -> void:
+	for i in cards.size():
+		var zone : Card = cards[i]
+		var old_stack := zone.top_card
+		zone.remove_child(old_stack)
+		old_stack.queue_free()
+		var next_card := zone
+		for data in save_datas[i].array:
+			var card : Card = CARD.instantiate()
+			card.add_data(data, true)
+			next_card.add_child(card)
+			next_card.add_card(card, false)
+			card.flipped = false
+			next_card = card
 
 static func card_stack_to_data(cols:Array[Card]) -> Array[CardStack]:
 	var datas : Array[CardStack] = []

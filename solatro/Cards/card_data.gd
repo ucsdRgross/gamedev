@@ -26,7 +26,9 @@ signal data_changed
 var card: Card
 var game: Game
 enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
-var stage := Stage.SPACE
+@export_storage var stage := Stage.SPACE
+enum {IN_PLAY, STATIC}
+@export_storage var state := IN_PLAY
 
 func with_suit(suit:int) -> CardData:
 	self.suit = suit
