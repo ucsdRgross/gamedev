@@ -26,9 +26,16 @@ static func create_save_state(game:Game) -> GameData:
 				continue
 			elif to_copy[prop_name] is Resource and duplicated_resources.has(to_copy[prop_name]):
 				to_copy[prop_name] = duplicated_resources[to_copy[prop_name]]
-			elif to_copy[prop_name] is CardData or to_copy[prop_name] is CardModifier:
+			elif to_copy[prop_name] is CardData:
 				var prop_og : CardData = to_copy[prop_name]
 				var prop_copy : CardData = prop_og.duplicate(true)
+				nested_resources.append(prop_copy)
+				duplicated_resources[prop_og] = prop_copy
+				duplicated_resources[prop_copy] = prop_copy
+				to_copy[prop_name] = prop_copy
+			elif to_copy[prop_name] is CardModifier:
+				var prop_og : CardModifier = to_copy[prop_name]
+				var prop_copy : CardModifier = prop_og.duplicate(true)
 				nested_resources.append(prop_copy)
 				duplicated_resources[prop_og] = prop_copy
 				duplicated_resources[prop_copy] = prop_copy
@@ -79,20 +86,21 @@ static func load_save_state(game:Game, save_data:GameData) -> void:
 func load_game(game:Game) -> void:
 	game.draw_deck = deck
 	game.discard_deck = discard
-	load_stack(game.inputs, inputs)
-	load_stack(game.stacks, stacks)
+	load_stack(game.inputs, inputs, game)
+	load_stack(game.stacks, stacks, game)
 	
-static func load_stack(cards:Array[Card], save_datas:Array[CardStack]) -> void:
+static func load_stack(cards:Array[Card], save_datas:Array[CardStack], game:Game) -> void:
 	for i in cards.size():
-		var zone : Card = cards[i]
+		var zone : Card = cards[i]		
 		var old_stack := zone.top_card
-		zone.remove_child(old_stack)
-		old_stack.queue_free()
+		if old_stack:
+			zone.remove_child(old_stack)
+			old_stack.queue_free()
 		var next_card := zone
 		for data in save_datas[i].array:
 			var card : Card = CARD.instantiate()
 			card.add_data(data, true)
-			next_card.add_child(card)
+			zone.add_child(card)
 			next_card.add_card(card, false)
 			card.flipped = false
 			next_card = card
@@ -103,7 +111,7 @@ static func card_stack_to_data(cols:Array[Card]) -> Array[CardStack]:
 		var stack : CardStack = CardStack.new()
 		var next_card : Card = zone.top_card
 		while next_card:
-			stack.array.append(next_card)
+			stack.array.append(next_card.data)
 			next_card = next_card.top_card
 		datas.append(stack)
 	return datas

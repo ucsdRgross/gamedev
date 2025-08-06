@@ -9,7 +9,7 @@ var menu_scene : Menu = MENU.instantiate()
 var map_scene : Map = MAP.instantiate()
 var current_scene : Node = null
 static var save_info : PlayerSave = PlayerSave.new()
-var save_history : Array[PackedScene] = []
+var save_history : Array[GameData] = []
 
 #@onready var level: Node = $Level
 #@onready var level: Control = $CanvasLayer/Level
@@ -33,7 +33,10 @@ func game_ended() -> void:
 	switch_scene(map_scene)
 
 func clone_game() -> void:
-	pass
+	var current_game : Game = current_scene
+	var current_game_data : GameData = GameData.new().create_save_state(current_game)
+	save_history.append(current_game_data)
+	
 	#await get_tree().process_frame
 	#var scn : PackedScene = PackedScene.new()
 	#var current_game : Game = current_scene
@@ -51,13 +54,16 @@ func clone_game() -> void:
 func undo_pressed() -> void:
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will current scene
-		var game_copy : Game = save_history[-1].instantiate()
+		var prev_game_data : GameData = save_history[-1]
 		var current_game : Game = current_scene
-		switch_scene(game_copy)
+		prev_game_data.load_game(current_game)
+		#var game_copy : Game = save_history[-1].instantiate()
+		#var current_game : Game = current_scene
+		#switch_scene(game_copy)
 		#Duplicator.deep_copy_game(current_game, game_copy)
-		game_copy.game_ended.connect(game_ended)
-		game_copy.save_state.connect(clone_game)
-		game_copy.undo_button.pressed.connect(undo_pressed)
+		#game_copy.game_ended.connect(game_ended)
+		#game_copy.save_state.connect(clone_game)
+		#game_copy.undo_button.pressed.connect(undo_pressed)
 		#current_game.queue_free()
 
 func switch_scene(new_scene : Node) -> void:
