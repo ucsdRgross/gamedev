@@ -67,7 +67,7 @@ static func create_save_state(game:Game) -> GameData:
 							duplicated_resources[card_data] = data_copy
 							duplicated_resources[data_copy] = data_copy
 							card_stack_copy.array.append(data_copy)
-						stack_array_copy.append(card_stack_copy)
+					stack_array_copy.append(card_stack_copy)
 				to_copy[prop_name] = stack_array_copy
 			elif to_copy[prop_name] is Card:
 				print("Card reference cannot be duplicated ", prop_name, to_copy[prop_name])
@@ -91,19 +91,27 @@ func load_game(game:Game) -> void:
 	
 static func load_stack(cards:Array[Card], save_datas:Array[CardStack], game:Game) -> void:
 	for i in cards.size():
-		var zone : Card = cards[i]		
+		var zone : Card = cards[i]
 		var old_stack := zone.top_card
 		if old_stack:
-			zone.remove_child(old_stack)
+			zone.top_card = null
+			var next_card := old_stack
+			while next_card:
+				var this_card := next_card
+				next_card = next_card.top_card
+				this_card.bot_card = null
+				this_card.top_card = null
+				#this_card.queue_free()
 			old_stack.queue_free()
 		var next_card := zone
-		for data in save_datas[i].array:
-			var card : Card = CARD.instantiate()
-			card.add_data(data, true)
-			zone.add_child(card)
-			next_card.add_card(card, false)
-			card.flipped = false
-			next_card = card
+		if save_datas:
+			for data in save_datas[i].array:
+				var card : Card = CARD.instantiate()
+				card.add_data(data, true)
+				zone.add_child(card)
+				next_card.add_card(card, false)
+				card.flipped = false
+				next_card = card
 
 static func card_stack_to_data(cols:Array[Card]) -> Array[CardStack]:
 	var datas : Array[CardStack] = []

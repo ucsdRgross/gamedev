@@ -169,9 +169,9 @@ func add_card(card : Card, trigger_mods: bool = true) -> void:
 	if top_card == card:
 		return
 	#update old bot card
-	var parent := card.get_parent()
-	if parent is Card:
-		(parent as Card).top_card = card.top_card
+	var parent := card.bot_card
+	if parent:
+		parent.top_card = card.top_card
 		if card.top_card and card.bot_card:
 			card.top_card.reparent(card.bot_card)
 	card.reparent(self)
