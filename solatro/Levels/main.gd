@@ -33,15 +33,9 @@ func game_ended() -> void:
 	switch_scene(map_scene)
 
 func clone_game() -> void:
-	print('save_history 0')
-	for i in save_history.size():
-		print(i, save_history[i].deck)
 	var current_game : Game = current_scene
 	var current_game_data : GameData = GameData.new().create_save_state(current_game)
 	save_history.append(current_game_data)
-	print('save_history 1')
-	for i in save_history.size():
-		print(i, save_history[i].deck)
 	
 	#await get_tree().process_frame
 	#var scn : PackedScene = PackedScene.new()
@@ -63,10 +57,6 @@ func undo_pressed() -> void:
 		var prev_game_data : GameData = save_history[-1]
 		var current_game : Game = current_scene
 		prev_game_data.load_game(current_game)
-		
-		print('undo')
-		for i in save_history.size():
-			print(i, save_history[i].deck)
 		#var game_copy : Game = save_history[-1].instantiate()
 		#var current_game : Game = current_scene
 		#switch_scene(game_copy)

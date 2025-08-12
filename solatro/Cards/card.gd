@@ -38,6 +38,10 @@ var show_front := false :
 			show_front = value
 			update_visual()
 
+func set_flipped_instant(flip:bool) -> void:
+	flipped = flip
+	basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if flip else 1)))
+
 func update_visual() -> void:
 	if show_front and data:
 		rank.frame = 14 * (data.suit - 1) + data.rank
