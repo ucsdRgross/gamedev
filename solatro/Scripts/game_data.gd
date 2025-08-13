@@ -39,14 +39,12 @@ static func duplicate_game_data(og_game_data:GameData) -> GameData:
 				var prop_copy : CardData = prop_og.duplicate(true)
 				nested_resources.append(prop_og)
 				duplicated_resources[prop_og] = prop_copy
-				#duplicated_resources[prop_copy] = prop_copy
 				duplicated_resources[to_copy][prop_name] = prop_copy
 			elif to_copy[prop_name] is CardModifier:
 				var prop_og : CardModifier = to_copy[prop_name]
 				var prop_copy : CardModifier = prop_og.duplicate(true)
 				nested_resources.append(prop_og)
 				duplicated_resources[prop_og] = prop_copy
-				#duplicated_resources[prop_copy] = prop_copy
 				duplicated_resources[to_copy][prop_name] = prop_copy
 			elif to_copy[prop_name] is Array[CardData]:
 				var prop_og : Array[CardData] = to_copy[prop_name]
@@ -58,7 +56,6 @@ static func duplicate_game_data(og_game_data:GameData) -> GameData:
 						var data_copy : CardData = data.duplicate(true)
 						nested_resources.append(data)
 						duplicated_resources[data] = data_copy
-						#duplicated_resources[data_copy] = data_copy
 						array_copy.append(data_copy)
 				if duplicated_resources.has(to_copy):
 					duplicated_resources[to_copy][prop_name] = array_copy
@@ -76,7 +73,6 @@ static func duplicate_game_data(og_game_data:GameData) -> GameData:
 							var data_copy : CardData = card_data.duplicate(true)
 							nested_resources.append(card_data)
 							duplicated_resources[card_data] = data_copy
-							#duplicated_resources[data_copy] = data_copy
 							card_stack_copy.array.append(data_copy)
 					stack_array_copy.append(card_stack_copy)
 				if duplicated_resources.has(to_copy):
@@ -124,6 +120,7 @@ static func load_stack(cards:Array[Card], save_datas:Array[CardStack], game:Game
 				data.game = game
 				var card : Card = CARD.instantiate()
 				card.add_data(data, true)
+				game._on_child_entered_tree(card)
 				next_card.add_child(card)
 				next_card.add_card(card, false)
 				if next_card != zone: card.position += card.child_offset / zone.scale.x

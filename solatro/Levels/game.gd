@@ -18,7 +18,6 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @export_storage var board_hovered : bool = false
 @export_storage var card_hovered : bool = false
 @export_storage var base_delay : float = 1
-@export_storage var duplicating : bool = false
 
 @export_storage var goal : int = 100:
 	set(value):
@@ -66,28 +65,16 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var undo_button: Button = $Undo
 
 func _ready() -> void:
-	if not duplicating:
-		for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
-			for zone : Card in zones:
-				_on_child_entered_tree(zone)
-		($Preview/Label as Label).text = ""
-		for label in col_scores:
-			if label: label.text = ""
-		board_home_pos = game_container.position
-		goal = goal * (1.1 ** Main.save_info.layer)
-		add_deck()
-		duplicating = true
-		save_state.emit()
-	else:
-		for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
-			for zone : Card in zones:
-				var bot_card : Card = zone
-				while bot_card.get_child_count() > 1:
-					var top_card : Card = bot_card.get_child(1)
-					#top_card.add_data(top_card.data.clone(self, true),true)
-					bot_card.top_card = top_card
-					top_card.bot_card = bot_card
-					bot_card = top_card
+	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
+		for zone : Card in zones:
+			_on_child_entered_tree(zone)
+	($Preview/Label as Label).text = ""
+	for label in col_scores:
+		if label: label.text = ""
+	board_home_pos = game_container.position
+	goal = goal * (1.1 ** Main.save_info.layer)
+	add_deck()
+	save_state.emit()
 
 	#for effect in effects:
 		#if effect:
@@ -186,6 +173,7 @@ func replenish_input_cards() -> void:
 			card.data.state = CardData.STATIC
 			card.data.stage = CardData.Stage.INPUT
 			zone.add_child(card)
+			_on_child_entered_tree(card)
 			zone.add_card(card, false)
 			card.flipped = false
 
@@ -439,9 +427,11 @@ func _on_card_stacked(card: Card) -> void:
 	await run_all_mods(&"on_stack_card", [card])
 
 func _on_child_entered_tree(node: Node) -> void:
+	print('entered tree', node)
 	if node is Card:
 		var card := node as Card
 		card.clicked.connect(_on_card_clicked)
+		print(card, ' connected')
 		if not card.is_zone:
 			card.hover_entered.connect(_on_card_hover_entered)
 			card.hover_exited.connect(_on_card_hover_exited)
