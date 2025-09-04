@@ -427,11 +427,9 @@ func _on_card_stacked(card: Card) -> void:
 	await run_all_mods(&"on_stack_card", [card])
 
 func _on_child_entered_tree(node: Node) -> void:
-	print('entered tree', node)
 	if node is Card:
 		var card := node as Card
 		card.clicked.connect(_on_card_clicked)
-		print(card, ' connected')
 		if not card.is_zone:
 			card.hover_entered.connect(_on_card_hover_entered)
 			card.hover_exited.connect(_on_card_hover_exited)
@@ -480,8 +478,9 @@ func _on_card_clicked(card : Card) -> void:
 		return
 	if held_card:
 		if can_add_card(card, held_card):
-			card.add_card(held_card)
+			var card_to_add := held_card
 			drop_held_card()
+			card.add_card(card_to_add)
 			save_state.emit()
 	elif not held_card:
 		if not card.is_zone and card.data.state == CardData.IN_PLAY:
@@ -501,8 +500,8 @@ func _on_card_clicked(card : Card) -> void:
 func can_add_card(stack : Card, to_stack : Card) -> bool:
 	if stack.top_card == to_stack and to_stack == held_card:
 		return true
-	if not stack.top_card:
-		if stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
+	if true: #not stack.top_card:
+		if true:#stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
 			if stack.is_zone:
 				return true
 			if stack.data.suit != to_stack.data.suit:
