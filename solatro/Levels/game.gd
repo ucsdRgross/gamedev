@@ -479,8 +479,8 @@ func _on_card_clicked(card : Card) -> void:
 	if held_card:
 		if can_add_card(card, held_card):
 			var card_to_add := held_card
-			drop_held_card()
-			card.add_card(card_to_add)
+			await drop_held_card()
+			card.add_card(card_to_add, true, 1)
 			save_state.emit()
 	elif not held_card:
 		if not card.is_zone and card.data.state == CardData.IN_PLAY:
@@ -523,7 +523,7 @@ func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
 	return false
 
 func drop_held_card() -> void:
-	held_card.drop()
+	await held_card.drop()
 	held_card = null
 
 func _on_deck_clicked(deck_card: Card) -> void:

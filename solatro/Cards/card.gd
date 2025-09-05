@@ -173,11 +173,19 @@ func add_card(card : Card, trigger_mods: bool = true, move_stack: int = 0) -> vo
 	if top_card == card:
 		return
 	# 1. move left behind card child down
-	var old_card_bot_card := card.bot_card
-	if card.top_card and card.bot_card:
-		card.top_card.reparent(card.bot_card)
-	if card.bot_card: card.bot_card.top_card = card.top_card
-	if card.top_card: card.top_card.bot_card = card.bot_card
+	var card_stack_top_card := card
+	if move_stack < 0:
+		while card_stack_top_card:
+			card_stack_top_card = card_stack_top_card.top_card
+	else:
+		var cards_in_stack := move_stack
+		while cards_in_stack > 0 and card_stack_top_card.top_card:
+			card_stack_top_card = card_stack_top_card.top_card
+			cards_in_stack -= 1
+	if card_stack_top_card.top_card and card.bot_card:
+		card_stack_top_card.top_card.reparent(card.bot_card)
+	if card.bot_card: card.bot_card.top_card = card_stack_top_card.top_card
+	if card_stack_top_card.top_card: card_stack_top_card.top_card.bot_card = card.bot_card
 	
 	# 2. move card stack to self
 	card.reparent(self)
@@ -187,9 +195,9 @@ func add_card(card : Card, trigger_mods: bool = true, move_stack: int = 0) -> vo
 	
 	# 3. move old top card to top
 	if old_self_top_card:
-		old_self_top_card.reparent(card)
-		old_self_top_card.bot_card = card
-	card.top_card = old_self_top_card
+		old_self_top_card.reparent(card_stack_top_card)
+		old_self_top_card.bot_card = card_stack_top_card
+	card_stack_top_card.top_card = old_self_top_card
 	
 	##update old bot card
 	#var parent := card.bot_card
@@ -239,14 +247,14 @@ func pickup() -> void:
 	
 func drop() -> void:
 	var card : Card = self
-	held = false
-	z_index = 1
 	var tween := create_tween()
 	tween.tween_property(self, 'scale', Vector2(1,1), 0.1)
-	await tween.finished
 	while card:
 		card.area.mouse_filter = Control.MOUSE_FILTER_STOP
 		card = card.top_card
+	await tween.finished
+	held = false
+	z_index = 1
 	#tween.tween_property(self, 'scale', Vector2(1,1), 0.01)
 	#scale = Vector2(1,1)
 
