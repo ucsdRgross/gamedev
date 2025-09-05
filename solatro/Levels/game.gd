@@ -480,7 +480,7 @@ func _on_card_clicked(card : Card) -> void:
 		if can_add_card(card, held_card):
 			var card_to_add := held_card
 			await drop_held_card()
-			card.add_card(card_to_add, true, 1)
+			card.add_card(card_to_add, true, -1)
 			save_state.emit()
 	elif not held_card:
 		if not card.is_zone and card.data.state == CardData.IN_PLAY:

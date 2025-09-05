@@ -175,7 +175,7 @@ func add_card(card : Card, trigger_mods: bool = true, move_stack: int = 0) -> vo
 	# 1. move left behind card child down
 	var card_stack_top_card := card
 	if move_stack < 0:
-		while card_stack_top_card:
+		while card_stack_top_card.top_card:
 			card_stack_top_card = card_stack_top_card.top_card
 	else:
 		var cards_in_stack := move_stack
