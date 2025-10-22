@@ -12,10 +12,10 @@ num = 104
 [node name="Offset" type="Node2D" parent="."]
 
 [node name="Front" type="Sprite2D" parent="Offset"]
-position = Vector2(0, -0.0345493)
-rotation = -3.14157
-scale = Vector2(0.99856, -0.987156)
-skew = -0.00869405
+position = Vector2(0, -0.96649563)
+rotation = 3.14158
+scale = Vector2(0.9858341, -0.999865)
+skew = 0.0027940273
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
