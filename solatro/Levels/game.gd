@@ -64,6 +64,15 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var discard_popup: Card = $Discard/Discard
 @onready var undo_button: Button = $Undo
 
+static var CURRENT : Game = null
+
+func _enter_tree() -> void:
+	CURRENT = self
+
+func _exit_tree() -> void:
+	if CURRENT == self:
+		CURRENT = null
+
 func _ready() -> void:
 	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
 		for zone : Card in zones:
@@ -119,7 +128,6 @@ func add_deck() -> void:
 	if not saved_deck:
 		saved_deck = self.deck.card_datas
 	draw_deck = saved_deck.duplicate(true)
-	set_datas_game(draw_deck, self)
 	for data in draw_deck:
 		data.stage = CardData.Stage.DRAW
 	shuffle_deck(draw_deck)
@@ -131,10 +139,6 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 		new_deck.append(data)
 		await run_all_mods(&"on_append", [new_deck, data])
 	datas.assign(new_deck)
-
-func set_datas_game(datas:Array[CardData], game:Game) -> void:
-	for data : CardData in datas:
-		data.game = game
 		
 func _on_next_pressed() -> void:
 	if processing:
@@ -347,7 +351,6 @@ func return_to_map() -> void:
 	for data in draw_deck:
 		data.stage = CardData.Stage.SPACE
 	Main.save_info.card_datas = draw_deck
-	set_datas_game(draw_deck, null)
 	game_ended.emit()
 
 func row_add_score(row:int, score:int) -> void:

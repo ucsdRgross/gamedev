@@ -1,26 +1,26 @@
-[gd_scene load_steps=5 format=3 uid="uid://cmvmqwfqk50mf"]
+[gd_scene format=3 uid="uid://cmvmqwfqk50mf"]
 
 [ext_resource type="Script" uid="uid://dwk7tiv0i5slq" path="res://Cards/card.gd" id="1_pyuft"]
 [ext_resource type="Texture2D" uid="uid://dkx7bu5038lt1" path="res://Assets/card_template.png" id="3_mcnwj"]
 [ext_resource type="Texture2D" uid="uid://b7ekacb1d5q6o" path="res://Assets/card_art.png" id="4_n51ss"]
 [ext_resource type="Texture2D" uid="uid://c5y0yi0ffmlyw" path="res://Assets/suits.png" id="4_qva5r"]
 
-[node name="Card" type="Node2D"]
+[node name="Card" type="Node2D" unique_id=758458623]
 script = ExtResource("1_pyuft")
 num = 104
 
-[node name="Offset" type="Node2D" parent="."]
+[node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
-[node name="Front" type="Sprite2D" parent="Offset"]
-position = Vector2(0, -0.96649563)
-rotation = 3.14158
-scale = Vector2(0.9858341, -0.999865)
-skew = 0.0027940273
+[node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
+position = Vector2(0, 0.8214131)
+rotation = 3.141559
+scale = Vector2(0.99522924, -0.990515)
+skew = 0.013599396
 texture = ExtResource("3_mcnwj")
 hframes = 5
 frame = 3
 
-[node name="Rank" type="Sprite2D" parent="Offset/Front"]
+[node name="Rank" type="Sprite2D" parent="Offset/Front" unique_id=1534860529]
 visible = false
 position = Vector2(-12, -17)
 texture = ExtResource("4_qva5r")
@@ -28,7 +28,7 @@ hframes = 14
 vframes = 5
 frame = 1
 
-[node name="Stamp" type="Sprite2D" parent="Offset/Front"]
+[node name="Stamp" type="Sprite2D" parent="Offset/Front" unique_id=13185951]
 visible = false
 position = Vector2(0, -17)
 texture = ExtResource("4_qva5r")
@@ -36,21 +36,21 @@ hframes = 14
 vframes = 5
 frame = 56
 
-[node name="Suit" type="Sprite2D" parent="Offset/Front"]
+[node name="Suit" type="Sprite2D" parent="Offset/Front" unique_id=1154635612]
 visible = false
 position = Vector2(12, -17)
 texture = ExtResource("4_qva5r")
 hframes = 14
 vframes = 5
 
-[node name="Art" type="Sprite2D" parent="Offset/Front"]
+[node name="Art" type="Sprite2D" parent="Offset/Front" unique_id=873481106]
 visible = false
 position = Vector2(0, 5)
 texture = ExtResource("4_n51ss")
 hframes = 13
 vframes = 13
 
-[node name="Control" type="Control" parent="Offset/Front"]
+[node name="Control" type="Control" parent="Offset/Front" unique_id=825379047]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

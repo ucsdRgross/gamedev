@@ -117,7 +117,6 @@ static func load_stack(cards:Array[Card], save_datas:Array[CardStack], game:Game
 		var next_card := zone
 		if save_datas:
 			for data in save_datas[i].array:
-				data.game = game
 				var card : Card = CARD.instantiate()
 				card.add_data(data, true)
 				game._on_child_entered_tree(card)

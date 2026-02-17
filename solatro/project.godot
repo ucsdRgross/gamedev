@@ -8,20 +8,20 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="Solatro"
 run/main_scene="res://Levels/main.tscn"
-config/features=PackedStringArray("4.5", "GL Compatibility")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [audio]
 
 buses/default_bus_layout="res://Audio/default_bus_layout.tres"
-
-[autoload]
-
-SignalLens="*res://addons/signal_lens/autoload/signal_lens_autoload.gd"
 
 [debug]
 
@@ -38,7 +38,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/script-ide/plugin.cfg", "res://addons/signal_lens/plugin.cfg")
+enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
 
 [physics]
 

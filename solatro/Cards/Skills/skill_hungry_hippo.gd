@@ -16,14 +16,14 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 
 func eat_card(ate_data:CardData) -> void:
 	consumed_cards.append(ate_data)
-	await data.game.card_shrink(ate_data.card)
+	if Game.CURRENT: await Game.CURRENT.card_shrink(ate_data.card)
 	self.data.card.top_card = null
 	ate_data.card.queue_free()
 	self.data.rank += ate_data.rank
-	data.game.total_score += ate_data.rank
+	if Game.CURRENT: Game.CURRENT.total_score += ate_data.rank
 
 func on_game_end() -> void:
 	for card in consumed_cards:
 		self.data.rank -= card.rank
-		data.game.draw_deck.append(card)
+		if Game.CURRENT: Game.CURRENT.draw_deck.append(card)
 	consumed_cards.clear()

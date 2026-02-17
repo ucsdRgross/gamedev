@@ -24,7 +24,6 @@ signal data_changed
 		stamp = value
 		data_changed.emit()
 var card: Card
-var game: Game
 enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
 @export_storage var stage := Stage.SPACE
 enum {IN_PLAY, STATIC}

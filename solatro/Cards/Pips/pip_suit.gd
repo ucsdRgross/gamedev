@@ -4,6 +4,7 @@ extends Resource
 @abstract func set_material(sprite:Sprite2D) -> void
 
 class Standard extends PipSuit:
+	const texture2D : Texture2D = preload("res://Assets/suits.png")
 	var original_value : int
 	var value : int
 	func set_material(sprite:Sprite2D) -> void:

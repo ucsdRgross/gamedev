@@ -99,9 +99,9 @@ func _do_popup(method:StringName) -> void:
 	elif method == &"card_raise":
 		match data.stage:
 			data.Stage.DRAW:
-				popup_card = data.game.deck_popup
+				popup_card = Game.CURRENT.deck_popup
 			data.Stage.DISCARD:
-				popup_card = data.game.discard_popup
+				popup_card = Game.CURRENT.discard_popup
 		if not popup_card:
 			return
 		var new_popup_card := popup_card.duplicate(8)
@@ -113,8 +113,8 @@ func _do_popup(method:StringName) -> void:
 		popup_card.show()
 	else:
 		return
-	await Callable(data.game, method).call(popup_card)
+	await Callable(Game.CURRENT, method).call(popup_card)
 	if temp_card:
-		await Callable(data.game, &"card_lower").call(popup_card)
+		await Callable(Game.CURRENT, &"card_lower").call(popup_card)
 		popup_card.queue_free()
 			

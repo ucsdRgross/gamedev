@@ -53,7 +53,7 @@ func clone_game() -> void:
 
 func undo_pressed() -> void:
 	if save_history.size() > 1:
-		save_history.resize(save_history.size() - 1) # latest saved state will current scene
+		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
 		var current_game : Game = current_scene
 		prev_game_data.load_game(current_game)

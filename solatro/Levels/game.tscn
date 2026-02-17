@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://bjgp86y4k3875"]
+[gd_scene format=3 uid="uid://bjgp86y4k3875"]
 
 [ext_resource type="Script" uid="uid://b6lwr20eougmt" path="res://Levels/game.gd" id="1_gj2ix"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
@@ -31,7 +31,7 @@ stream_0/stream = ExtResource("6_uknij")
 stream_1/stream = ExtResource("7_6uk7u")
 stream_2/stream = ExtResource("8_67uf7")
 
-[node name="Game" type="Control"]
+[node name="Game" type="Control" unique_id=583630954]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -42,7 +42,7 @@ mouse_filter = 2
 script = ExtResource("1_gj2ix")
 deck = ExtResource("2_grgi0")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=795905631]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -54,7 +54,7 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[node name="HoverArea" type="Control" parent="."]
+[node name="HoverArea" type="Control" parent="." unique_id=1790454585]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -66,7 +66,7 @@ offset_bottom = 6.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GameContainer" type="Control" parent="."]
+[node name="GameContainer" type="Control" parent="." unique_id=2008466871]
 anchors_preset = 0
 offset_left = 170.0
 offset_top = 10.0
@@ -74,206 +74,206 @@ offset_right = 898.0
 offset_bottom = 654.0
 mouse_filter = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="GameContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="GameContainer" unique_id=902916204]
 layout_mode = 0
 offset_right = 704.0
 offset_bottom = 336.0
 mouse_filter = 2
 theme_override_constants/separation = 20
 
-[node name="Control" type="VBoxContainer" parent="GameContainer/HBoxContainer"]
+[node name="Control" type="VBoxContainer" parent="GameContainer/HBoxContainer" unique_id=745349741]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Inputs" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control"]
+[node name="Inputs" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=1074443091]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Input1" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs"]
+[node name="Input1" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=655709873]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" unique_id=1825734441 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Input2" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs"]
+[node name="Input2" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=1254031535]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" unique_id=447053528 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Input3" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs"]
+[node name="Input3" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=2064087117]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" unique_id=478362211 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Input4" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs"]
+[node name="Input4" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=389785834]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" unique_id=1726946562 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="Input5" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs"]
+[node name="Input5" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=1115800664]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" unique_id=227952865 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 clickable = false
 stack_limit = 1
 
-[node name="ColScores" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control"]
+[node name="ColScores" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=454571986]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="ColScore1" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores"]
+[node name="ColScore1" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=1125210158]
 layout_mode = 2
 size_flags_horizontal = 11
 text = "ColScore1"
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="ColScore2" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores"]
+[node name="ColScore2" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=1456521249]
 layout_mode = 2
 size_flags_horizontal = 11
 text = "ColScore2"
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="ColScore3" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores"]
+[node name="ColScore3" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=2118444427]
 layout_mode = 2
 size_flags_horizontal = 11
 text = "ColScore3"
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="ColScore4" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores"]
+[node name="ColScore4" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=250790675]
 layout_mode = 2
 size_flags_horizontal = 11
 text = "ColScore4"
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="ColScore5" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores"]
+[node name="ColScore5" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=14669916]
 layout_mode = 2
 size_flags_horizontal = 11
 text = "ColScore5"
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="Plays" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control"]
+[node name="Plays" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=1884628307]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Play1" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
+[node name="Play1" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=1336559241]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" unique_id=314601263 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 
-[node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
+[node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=1683883357]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" unique_id=1193519197 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 
-[node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
+[node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=979277119]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" unique_id=193183644 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 
-[node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
+[node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=351378541]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" unique_id=773699424 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 
-[node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays"]
+[node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=554825353]
 layout_mode = 2
 size_flags_horizontal = 11
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" unique_id=1753022506 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer" unique_id=867057729]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="FreeSpace" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer"]
+[node name="FreeSpace" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=620182714]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 11
 mouse_filter = 2
 script = ExtResource("4_3ijoq")
 
-[node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" instance=ExtResource("3_8sseo")]
+[node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" unique_id=1459802394 instance=ExtResource("3_8sseo")]
 position = Vector2(57, 75)
 scale = Vector2(3, 3)
 is_zone = true
 stack_limit = 1
 
-[node name="Buffer" type="Label" parent="GameContainer/HBoxContainer/VBoxContainer"]
+[node name="Buffer" type="Label" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=1926569646]
 layout_mode = 2
 size_flags_horizontal = 11
 label_settings = SubResource("LabelSettings_et201")
 horizontal_alignment = 2
 
-[node name="RowScores" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer"]
+[node name="RowScores" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=719527188]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Submit" type="Button" parent="."]
+[node name="Submit" type="Button" parent="." unique_id=993658546]
 layout_mode = 0
 offset_left = 963.0
 offset_top = 380.0
@@ -282,7 +282,7 @@ offset_bottom = 411.0
 text = "Submit
 "
 
-[node name="Undo" type="Button" parent="."]
+[node name="Undo" type="Button" parent="." unique_id=2132019677]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -293,12 +293,12 @@ grow_horizontal = 0
 text = "Undo
 "
 
-[node name="Submission" parent="." instance=ExtResource("3_8sseo")]
+[node name="Submission" parent="." unique_id=44412769 instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(733, 276)
 is_zone = true
 
-[node name="Next" type="Button" parent="."]
+[node name="Next" type="Button" parent="." unique_id=1568570378]
 layout_mode = 0
 offset_left = 45.0
 offset_top = 164.0
@@ -307,7 +307,7 @@ offset_bottom = 226.0
 text = "Next Round
 "
 
-[node name="Reroll" type="Button" parent="."]
+[node name="Reroll" type="Button" parent="." unique_id=1422499503]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -316,7 +316,7 @@ offset_right = 979.0
 offset_bottom = 321.0
 text = "Reroll"
 
-[node name="ScoreName" type="Label" parent="."]
+[node name="ScoreName" type="Label" parent="." unique_id=849455850]
 visible = false
 layout_mode = 0
 offset_left = 886.0
@@ -328,7 +328,7 @@ text = "ScoreNames
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="ScoreName"]
+[node name="Label" type="Label" parent="ScoreName" unique_id=1090872358]
 layout_mode = 0
 offset_left = 6.0
 offset_top = 57.0
@@ -339,7 +339,7 @@ text = "123456789
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Score" type="Label" parent="."]
+[node name="Score" type="Label" parent="." unique_id=511769994]
 visible = false
 layout_mode = 0
 offset_left = 899.0
@@ -349,7 +349,7 @@ offset_bottom = 261.0
 text = "Score:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Score"]
+[node name="Label" type="Label" parent="Score" unique_id=255908271]
 layout_mode = 0
 offset_left = 149.0
 offset_top = -1.0
@@ -358,7 +358,7 @@ offset_bottom = 60.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="MultScore" type="Label" parent="."]
+[node name="MultScore" type="Label" parent="." unique_id=667586955]
 layout_mode = 0
 offset_left = 944.0
 offset_top = 218.0
@@ -368,7 +368,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Col" type="Label" parent="MultScore"]
+[node name="Col" type="Label" parent="MultScore" unique_id=1145623912]
 layout_mode = 0
 offset_left = -77.0
 offset_top = 64.0
@@ -378,7 +378,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 2
 
-[node name="x" type="Label" parent="MultScore"]
+[node name="x" type="Label" parent="MultScore" unique_id=962669997]
 layout_mode = 0
 offset_left = 3.0
 offset_top = 62.0
@@ -388,7 +388,7 @@ text = "x"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Row" type="Label" parent="MultScore"]
+[node name="Row" type="Label" parent="MultScore" unique_id=1059105681]
 layout_mode = 0
 offset_left = 83.0
 offset_top = 64.0
@@ -397,7 +397,7 @@ offset_bottom = 125.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Total" type="Label" parent="."]
+[node name="Total" type="Label" parent="." unique_id=2093482457]
 layout_mode = 0
 offset_left = 909.0
 offset_top = 131.0
@@ -406,7 +406,7 @@ offset_bottom = 192.0
 text = "Total: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Total"]
+[node name="Label" type="Label" parent="Total" unique_id=1851888534]
 layout_mode = 0
 offset_left = 131.0
 offset_top = 2.0
@@ -415,7 +415,7 @@ offset_bottom = 63.0
 text = " 0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Goal" type="Label" parent="."]
+[node name="Goal" type="Label" parent="." unique_id=611565422]
 layout_mode = 0
 offset_left = 906.0
 offset_top = 67.0
@@ -424,7 +424,7 @@ offset_bottom = 128.0
 text = "Goal: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Goal"]
+[node name="Label" type="Label" parent="Goal" unique_id=1523385777]
 layout_mode = 0
 offset_left = 140.0
 offset_top = 2.0
@@ -433,7 +433,7 @@ offset_bottom = 63.0
 text = "100"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Turns" type="Label" parent="."]
+[node name="Turns" type="Label" parent="." unique_id=1342373880]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -443,7 +443,7 @@ offset_bottom = 66.0
 text = "Turns:  "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Turns"]
+[node name="Label" type="Label" parent="Turns" unique_id=1706329412]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -452,7 +452,7 @@ offset_bottom = 62.0
 text = "5"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Rerolls" type="Label" parent="."]
+[node name="Rerolls" type="Label" parent="." unique_id=1178213295]
 visible = false
 layout_mode = 0
 offset_left = 975.0
@@ -462,7 +462,7 @@ offset_bottom = 328.0
 text = "Rerolls:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Rerolls"]
+[node name="Label" type="Label" parent="Rerolls" unique_id=2094044039]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -472,7 +472,7 @@ text = "5
 "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Preview" type="Control" parent="."]
+[node name="Preview" type="Control" parent="." unique_id=1945480925]
 anchors_preset = 0
 offset_left = 65.0
 offset_top = 391.0
@@ -481,7 +481,7 @@ offset_bottom = 391.0
 scale = Vector2(1.25, 1.25)
 mouse_filter = 2
 
-[node name="Card" parent="Preview" instance=ExtResource("3_8sseo")]
+[node name="Card" parent="Preview" unique_id=152969337 instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
 scale = Vector2(3, 3)
 can_move_anim = false
@@ -489,7 +489,7 @@ clickable = false
 stack_limit = 0
 num = 1
 
-[node name="Label" type="Label" parent="Preview"]
+[node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
 offset_left = -43.0
 offset_top = 22.0
@@ -500,7 +500,7 @@ Skill Text"
 label_settings = SubResource("LabelSettings_voryx")
 autowrap_mode = 3
 
-[node name="Deck" type="Control" parent="."]
+[node name="Deck" type="Control" parent="." unique_id=1200484648]
 anchors_preset = 0
 offset_left = 94.0
 offset_top = 90.0
@@ -508,13 +508,13 @@ offset_right = 94.0
 offset_bottom = 90.0
 mouse_filter = 2
 
-[node name="Deck" parent="Deck" instance=ExtResource("3_8sseo")]
+[node name="Deck" parent="Deck" unique_id=1376384872 instance=ExtResource("3_8sseo")]
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
 num = 2
 
-[node name="Discard" type="Control" parent="."]
+[node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
 offset_left = 1013.0
 offset_top = 543.0
@@ -522,16 +522,16 @@ offset_right = 1013.0
 offset_bottom = 543.0
 mouse_filter = 2
 
-[node name="Discard" parent="Discard" instance=ExtResource("3_8sseo")]
+[node name="Discard" parent="Discard" unique_id=1019947613 instance=ExtResource("3_8sseo")]
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
 num = 3
 
-[node name="DeckViewer" type="CanvasLayer" parent="."]
+[node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
 visible = false
 
-[node name="MarginContainer" type="MarginContainer" parent="DeckViewer"]
+[node name="MarginContainer" type="MarginContainer" parent="DeckViewer" unique_id=977742933]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -543,28 +543,28 @@ theme_override_constants/margin_top = 80
 theme_override_constants/margin_right = 100
 theme_override_constants/margin_bottom = 80
 
-[node name="ColorRect" type="ColorRect" parent="DeckViewer/MarginContainer"]
+[node name="ColorRect" type="ColorRect" parent="DeckViewer/MarginContainer" unique_id=1388320655]
 layout_mode = 2
 color = Color(1, 0.384314, 0.498039, 0.141176)
 
-[node name="ScrollContainer" type="ScrollContainer" parent="DeckViewer/MarginContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="DeckViewer/MarginContainer" unique_id=47420507]
 layout_mode = 2
 mouse_filter = 0
 
-[node name="FlowContainer" type="FlowContainer" parent="DeckViewer/MarginContainer/ScrollContainer"]
+[node name="FlowContainer" type="FlowContainer" parent="DeckViewer/MarginContainer/ScrollContainer" unique_id=780616053]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="AudioCardPlacing" type="AudioStreamPlayer" parent="."]
+[node name="AudioCardPlacing" type="AudioStreamPlayer" parent="." unique_id=1655869054]
 stream = SubResource("AudioStreamRandomizer_vwchr")
 bus = &"SFX"
 
-[node name="AudioCardShake" type="AudioStreamPlayer" parent="."]
+[node name="AudioCardShake" type="AudioStreamPlayer" parent="." unique_id=1632520484]
 stream = ExtResource("9_d2lcc")
 
-[node name="WinScreen" type="Label" parent="."]
+[node name="WinScreen" type="Label" parent="." unique_id=1777614660]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -577,7 +577,7 @@ text = "You win!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LoseScreen" type="Label" parent="."]
+[node name="LoseScreen" type="Label" parent="." unique_id=2125621518]
 visible = false
 layout_mode = 1
 anchors_preset = 15
