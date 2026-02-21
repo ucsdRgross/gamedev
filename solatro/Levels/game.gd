@@ -210,7 +210,7 @@ func _on_submit_pressed() -> void:
 					c.floating = false
 					card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
 					card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
-					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+					print('suit: ', c.data.suit.name, c.data.suit.value, ' rank: ', c.data.rank.name, c.data.rank.value)
 				for c:Card in last_scored_cards:
 					if c not in result.card_combo:
 						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -270,7 +270,7 @@ func _on_submit_pressed() -> void:
 					c.floating = false
 					card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
 					card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
-					print('suit: ', c.data.suit, ' rank: ', c.data.rank)
+					print('suit: ', c.data.suit.name, c.data.suit.value, ' rank: ', c.data.rank.name, c.data.rank.value)
 				for c:Card in last_scored_cards:
 					if c not in scored_cards:
 						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -418,7 +418,7 @@ func get_card_grid_pos(card:Card) -> Vector2:
 	return Vector2(-1,-1)
 
 func run_all_mods(function: StringName, params:Array=[]) -> void:
-	for data in CardDataIterator.new(self):
+	for data in CardDataIterator.new():
 		for mod : CardModifier in [data.type, data.stamp, data.skill]:
 			if mod:
 				await Callable(mod, function).callv(params)
@@ -507,8 +507,8 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 		if true:#stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
 			if stack.is_zone:
 				return true
-			if stack.data.suit != to_stack.data.suit:
-				if to_stack.data.rank == stack.data.rank - 1:
+			if stack.data.suit.value != to_stack.data.suit.value:
+				if to_stack.data.rank.value == stack.data.rank - 1:
 					return true
 				if to_stack.data.rank == stack.data.rank + 1:
 					return true

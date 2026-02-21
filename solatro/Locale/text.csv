@@ -1,0 +1,157 @@
+key
+New Code Region
+Linear
+Pick a color from the screen.
+Pick a color from the application window.
+Alpha
+Intensity
+Expr
+Hex
+"Enter a hex code (""#ff0000"") or named color (""red"")."
+Load Color Palette
+Save Color Palette
+The changes to this palette have not been saved to a file.
+Save
+Save the current color palette to reuse later.
+Save As
+Save the current color palette as a new to reuse later.
+Load
+Load existing color palette.
+Clear
+Clear the currently loaded color palettes in the picker.
+Pick
+Select a picker shape.
+Select a picker mode.
+Colorized Sliders
+Hexadecimal Values
+Hex code or named color
+Swatches
+Show all options available.
+Recent Colors
+Add current color as a preset.
+Screen Recording permission missing!
+"Screen Recording permission is required to pick colors from the other application windows.
+Click here to request access..."
+"Color: %s
+LMB: Apply color"
+"Color: %s
+LMB: Apply color
+RMB: Remove preset"
+Color: %s
+HSV Rectangle
+OK HS Rectangle
+OK HL Rectangle
+HSV Wheel
+VHS Circle
+OKHSL Circle
+Cancel
+OK
+Alert!
+Please Confirm...
+Network
+"File ""%s"" already exists.
+Do you want to overwrite it?"
+Open
+Select Current Folder
+Select This Folder
+Copy Path
+Delete
+New Folder...
+Refresh
+Open in File Manager
+Show in File Manager
+Show Package Contents
+You don't have permission to access contents of this folder.
+All Recognized
+All Files
+Open a File
+Open File(s)
+Open a Directory
+Open a File or Directory
+Save a File
+Go to previous folder.
+Go to next folder.
+Go to parent folder.
+Path:
+Drive
+Refresh files.
+(Un)favorite current folder.
+Create a new folder.
+Favorites:
+Recent:
+Directories & Files:
+Toggle the visibility of hidden files.
+View items as a grid of thumbnails.
+View items as a list.
+Toggle the visibility of the filter for file names.
+Sort files
+Sort by Name (Ascending)
+Sort by Name (Descending)
+Sort by Type (Ascending)
+Sort by Type (Descending)
+Sort by Modified Time (Newest First)
+Sort by Modified Time (Oldest First)
+Filter:
+Filename Filter:
+File:
+"Delete the selected file?
+Depending on your filesystem configuration, the files will either be moved to the system trash or deleted permanently."
+Create Folder
+Name:
+Could not create folder.
+"Invalid extension, or empty filename."
+connection to %s (%s) port %d
+connection from %s (%s) port %d
+Zoom Out
+Zoom Reset
+Zoom In
+Toggle the visual grid.
+Toggle snapping to the grid.
+Change the snapping distance.
+Toggle the graph minimap.
+Automatically arrange selected nodes.
+graph node %s (%s)
+slot %d of %d
+"input port, type: %s"
+"input port, type: %d"
+no connections
+"output port, type: %s"
+"output port, type: %d"
+currently selecting target port
+has %d slots
+Edit Input Port Connection
+Edit Output Port Connection
+Follow Input Port Connection
+Follow Output Port Connection
+", in slot %d of graph node %s (%s)"
+Same as Layout Direction
+Auto-Detect Direction
+Left-to-Right
+Right-to-Left
+Left-to-Right Mark (LRM)
+Right-to-Left Mark (RLM)
+Start of Left-to-Right Embedding (LRE)
+Start of Right-to-Left Embedding (RLE)
+Start of Left-to-Right Override (LRO)
+Start of Right-to-Left Override (RLO)
+Pop Direction Formatting (PDF)
+Arabic Letter Mark (ALM)
+Left-to-Right Isolate (LRI)
+Right-to-Left Isolate (RLI)
+First Strong Isolate (FSI)
+Pop Direction Isolate (PDI)
+Zero-Width Joiner (ZWJ)
+Zero-Width Non-Joiner (ZWNJ)
+Word Joiner (WJ)
+Soft Hyphen (SHY)
+Emoji & Symbols
+Cut
+Copy
+Paste
+Select All
+Undo
+Redo
+Text Writing Direction
+Display Control Characters
+Insert Control Character
+Solatro

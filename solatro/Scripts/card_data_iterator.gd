@@ -1,42 +1,38 @@
 class_name CardDataIterator
 
 var card_count : int
-var game : Game
 var board : Array[Game.CardArray]
 var next_card_data : CardData
 enum {DECK, INPUTS, BOARD, DISCARD}
 var phase := DECK
 
-func _init(game:Game) -> void:
-	self.game = game
-
 func should_continue() -> bool:
 	match phase:
 		DECK:
-			if card_count < game.draw_deck.size():
-				next_card_data = game.draw_deck[card_count]
+			if card_count < Game.CURRENT.draw_deck.size():
+				next_card_data = Game.CURRENT.draw_deck[card_count]
 				return true
 			else:
 				phase = INPUTS
 				card_count = 0
 				return should_continue()
 		INPUTS:
-			if not card_count < game.inputs.size():
+			if not card_count < Game.CURRENT.inputs.size():
 				phase = BOARD
 				card_count = 0
 				return should_continue()
-			var card := game.inputs[card_count].top_card
+			var card := Game.CURRENT.inputs[card_count].top_card
 			while not card:
 				card_count += 1
-				if not card_count < game.inputs.size():
+				if not card_count < Game.CURRENT.inputs.size():
 					phase = BOARD
 					card_count = 0
 					return should_continue()
-				card = game.inputs[card_count].top_card
+				card = Game.CURRENT.inputs[card_count].top_card
 			next_card_data = card.data
 			return true
 		BOARD:
-			board = game.get_board_cols()
+			board = Game.CURRENT.get_board_cols()
 			if not board or not card_count < board[0].cards.size() * 5:
 				phase = DISCARD
 				card_count = 0
@@ -52,8 +48,8 @@ func should_continue() -> bool:
 			next_card_data = card.data
 			return true
 		DISCARD:
-			if card_count < game.discard_deck.size():
-				next_card_data = game.discard_deck[card_count]
+			if card_count < Game.CURRENT.discard_deck.size():
+				next_card_data = Game.CURRENT.discard_deck[card_count]
 				return true
 			else:
 				return false

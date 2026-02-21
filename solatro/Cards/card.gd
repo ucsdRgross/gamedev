@@ -44,8 +44,10 @@ func set_flipped_instant(flip:bool) -> void:
 
 func update_visual() -> void:
 	if show_front and data:
-		rank.frame = 14 * (data.suit - 1) + data.rank
-		suit.frame = 14 * (data.suit - 1)
+		data.suit.set_texture(suit)
+		data.rank.set_texture(rank)
+		data.suit.set_material(suit)
+		data.suit.set_material(rank)
 		if data.type:
 			front.frame = data.type.frame
 		else:
@@ -58,7 +60,8 @@ func update_visual() -> void:
 		if data.skill:
 			art.frame = data.skill.frame
 		else:
-			art.frame = 13 * (data.suit - 1) + (data.rank - 1)
+			data.suit.set_art_texture(art, data.rank)
+			data.suit.set_material(art)
 		rank.show()
 		suit.show()
 		art.show()

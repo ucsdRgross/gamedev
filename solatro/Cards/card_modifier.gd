@@ -3,8 +3,8 @@ extends Resource
 
 enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 #class Skill:
-@export var name : String
-@export var description : String
+@export var name : StringName
+@export var description : StringName
 @export var frame : int
 @export var rarity : Rarity
 @export var tags : Dictionary

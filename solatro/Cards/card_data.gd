@@ -3,13 +3,19 @@ extends Resource
 
 signal data_changed
 
-@export var suit: int = 1:
+@export var suit: PipSuit:
 	set(value):
+		if suit.data_changed.is_connected(_on_child_data_changed):
+			suit.data_changed.disconnect(_on_child_data_changed)
 		suit = value
+		suit.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
-@export var rank: int = 1:
+@export var rank: PipRank:
 	set(value):
+		if rank.data_changed.is_connected(_on_child_data_changed):
+			rank.data_changed.disconnect(_on_child_data_changed)
 		rank = value
+		rank.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
 @export var skill: CardModifier:
 	set(value):
@@ -29,11 +35,11 @@ enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
 enum {IN_PLAY, STATIC}
 @export_storage var state := IN_PLAY
 
-func with_suit(suit:int) -> CardData:
+func with_suit(suit:PipSuit) -> CardData:
 	self.suit = suit
 	return self
 	
-func with_rank(rank:int) -> CardData:
+func with_rank(rank:PipRank) -> CardData:
 	self.rank = rank
 	return self
 
@@ -57,6 +63,9 @@ func with_stamp(stamp:CardModifier) -> CardData:
 	else:
 		self.stamp = null
 	return self
+
+func _on_child_data_changed() -> void:
+	data_changed.emit()
 	
 func clone(deep:bool = false) -> CardData:
 	var data := CardData.new()

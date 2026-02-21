@@ -23,6 +23,10 @@ config/icon="res://icon.svg"
 
 buses/default_bus_layout="res://Audio/default_bus_layout.tres"
 
+[autoload]
+
+PseudoLocalisationCycler="*uid://cgwqytqq2t8ih"
+
 [debug]
 
 gdscript/warnings/untyped_declaration=2
@@ -39,6 +43,10 @@ window/stretch/mode="canvas_items"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
+
+[internationalization]
+
+locale/translation_add_builtin_strings_to_pot=true
 
 [physics]
 
