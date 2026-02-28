@@ -13,8 +13,8 @@ var value : int:
 @abstract func set_art_texture(sprite:Sprite2D, rank:PipRank) -> void
 
 func with_value(i:int) -> PipSuit:
-		value = i
-		return self
+	value = i
+	return self
 		
 func set_material(sprite:Sprite2D) -> void: sprite.material = null
 
@@ -39,5 +39,5 @@ class Standard extends PipSuit:
 		else:
 			sprite.texture = null
 		set_material(sprite)
-	func with_random() -> void:
+	func with_random() -> PipSuit:
 		return with_value(randi_range(1,4))

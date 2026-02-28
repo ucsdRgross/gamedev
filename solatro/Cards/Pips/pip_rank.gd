@@ -12,8 +12,8 @@ var value : int:
 @abstract func set_texture(sprite:Sprite2D) -> void
 
 func with_value(i:int) -> PipRank:
-		value = i
-		return self
+	value = i
+	return self
 
 class Numeral extends PipRank:
 	const texture2D : Texture2D = preload("res://Assets/suits.png")
@@ -26,6 +26,6 @@ class Numeral extends PipRank:
 		sprite.vframes = 5
 		sprite.frame = value
 	
-	func with_random() -> void:
+	func with_random() -> PipRank:
 		return with_value(randi_range(1,13))
 	

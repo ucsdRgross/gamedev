@@ -120,8 +120,8 @@ func new_triangle(clicked_card:Card, offset:int) -> void:
 func new_card() -> Card:
 	var card : Card = CARD.instantiate()
 	card.add_data(CardData.new()
-					.with_rank(randi() % 13 + 1)
-					.with_suit(randi() % 4 + 1))
+					.with_rank(PipRank.Numeral.new().with_random())
+					.with_suit(PipSuit.Standard.new().with_random()))
 	var random_skill : CardModifier = ([null] + (ModsList.skills)).pick_random()
 	if random_skill:
 		card.data.with_skill(random_skill.duplicate() as CardModifier)

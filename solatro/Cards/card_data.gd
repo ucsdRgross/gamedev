@@ -5,14 +5,14 @@ signal data_changed
 
 @export var suit: PipSuit:
 	set(value):
-		if suit.data_changed.is_connected(_on_child_data_changed):
+		if suit and suit.data_changed.is_connected(_on_child_data_changed):
 			suit.data_changed.disconnect(_on_child_data_changed)
 		suit = value
 		suit.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
 @export var rank: PipRank:
 	set(value):
-		if rank.data_changed.is_connected(_on_child_data_changed):
+		if rank and rank.data_changed.is_connected(_on_child_data_changed):
 			rank.data_changed.disconnect(_on_child_data_changed)
 		rank = value
 		rank.data_changed.connect(_on_child_data_changed)

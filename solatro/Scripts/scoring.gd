@@ -36,10 +36,10 @@ class PokerHands extends RowCombo:
 class FlushFive extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		if cards.size() == 5\
-				and cards[0].data.rank == cards[1].data.rank\
-				and cards[1].data.rank == cards[2].data.rank\
-				and cards[2].data.rank == cards[3].data.rank\
-				and cards[3].data.rank == cards[4].data.rank\
+				and cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[1].data.rank.value == cards[2].data.rank.value\
+				and cards[2].data.rank.value == cards[3].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value\
 				and cards[0].data.suit == cards[1].data.suit\
 				and cards[1].data.suit == cards[2].data.suit\
 				and cards[2].data.suit == cards[3].data.suit\
@@ -59,12 +59,12 @@ class FlushHouse extends RowCombo:
 				and cards[1].data.suit == cards[2].data.suit\
 				and cards[2].data.suit == cards[3].data.suit\
 				and cards[3].data.suit == cards[4].data.suit\
-				and ((cards[0].data.rank == cards[1].data.rank\
-				and cards[1].data.rank == cards[2].data.rank\
-				and cards[3].data.rank == cards[4].data.rank)\
-				or (cards[0].data.rank == cards[1].data.rank\
-				and cards[2].data.rank == cards[3].data.rank\
-				and cards[3].data.rank == cards[4].data.rank)):
+				and ((cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[1].data.rank.value == cards[2].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value)\
+				or (cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[2].data.rank.value == cards[3].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value)):
 			var result := Result.new()
 			result.score_name = "Flush House"
 			result.score = 20
@@ -75,10 +75,10 @@ class FlushHouse extends RowCombo:
 class Quintet extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		if cards.size() == 5\
-				and cards[0].data.rank == cards[1].data.rank\
-				and cards[1].data.rank == cards[2].data.rank\
-				and cards[2].data.rank == cards[3].data.rank\
-				and cards[3].data.rank == cards[4].data.rank:
+				and cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[1].data.rank.value == cards[2].data.rank.value\
+				and cards[2].data.rank.value == cards[3].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value:
 			var result := Result.new()
 			result.score_name = "Quintet"
 			result.score = 20
@@ -94,7 +94,7 @@ class StraightFlush extends RowCombo:
 					return null
 			cards.sort_custom(Scoring.rank_sort_desc)
 			for i in cards.size() - 1:
-				if not cards[i].data.rank == cards[i+1].data.rank - 1:
+				if not cards[i].data.rank.value == cards[i+1].data.rank.value - 1:
 					return null
 			var result := Result.new()
 			result.score_name = "Straight Flush"
@@ -107,9 +107,9 @@ class Quartet extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		for i in cards.size() - 3:
-			if cards[i].data.rank == cards[i+1].data.rank\
-					and cards[i+1].data.rank == cards[i+2].data.rank\
-					and cards[i+2].data.rank == cards[i+3].data.rank:
+			if cards[i].data.rank.value == cards[i+1].data.rank.value\
+					and cards[i+1].data.rank.value == cards[i+2].data.rank.value\
+					and cards[i+2].data.rank.value == cards[i+3].data.rank.value:
 				var result := Result.new()
 				result.score_name = "Quartet"
 				result.score = 12
@@ -121,13 +121,13 @@ class FullHouse extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		if cards.size() == 5\
-				and ((cards[0].data.rank == cards[1].data.rank\
-				and cards[1].data.rank == cards[2].data.rank\
-				and cards[3].data.rank == cards[4].data.rank)\
+				and ((cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[1].data.rank.value == cards[2].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value)\
 				or\
-				(cards[0].data.rank == cards[1].data.rank\
-				and cards[2].data.rank == cards[3].data.rank\
-				and cards[3].data.rank == cards[4].data.rank)):
+				(cards[0].data.rank.value == cards[1].data.rank.value\
+				and cards[2].data.rank.value == cards[3].data.rank.value\
+				and cards[3].data.rank.value == cards[4].data.rank.value)):
 			var result := Result.new()
 			result.score_name = "Full House"
 			result.score = 10
@@ -153,7 +153,7 @@ class Straight extends RowCombo:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		if cards.size() == 5:
 			for i in cards.size() - 1:
-				if not cards[i].data.rank == cards[i+1].data.rank - 1:
+				if not cards[i].data.rank.value == cards[i+1].data.rank.value - 1:
 					return null
 			var result := Result.new()
 			result.score_name = "Straight"
@@ -166,8 +166,8 @@ class Triple extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		for i in cards.size() - 2:
-			if cards[i].data.rank == cards[i+1].data.rank\
-					and cards[i].data.rank == cards[i+2].data.rank:
+			if cards[i].data.rank.value == cards[i+1].data.rank.value\
+					and cards[i].data.rank.value == cards[i+2].data.rank.value:
 				var result := Result.new()
 				result.score_name = "Triple"
 				result.score = 6
@@ -181,7 +181,7 @@ class TwoPair extends RowCombo:
 		var pairs : Array[Array]
 		var i : int = 0
 		while i < cards.size() - 1:
-			if cards[i].data.rank == cards[i+1].data.rank:
+			if cards[i].data.rank.value == cards[i+1].data.rank.value:
 				pairs.append([cards[i], cards[i+1]])
 				i += 1
 			i += 1
@@ -201,7 +201,7 @@ class Pair extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		cards.sort_custom(Scoring.rank_sort_desc)
 		for i in cards.size() - 1:
-			if cards[i].data.rank == cards[i+1].data.rank:
+			if cards[i].data.rank.value == cards[i+1].data.rank.value:
 				var result := Result.new()
 				result.score_name = "Pair"
 				result.score = 2
@@ -213,7 +213,7 @@ class HighCard extends RowCombo:
 	func score(cards:Array[Card]) -> Result:
 		var high_card : Card = cards[0] if cards else null
 		for card : Card in cards.slice(1):
-			if card.data.rank > high_card.data.rank:
+			if card.data.rank.value > high_card.data.rank.value:
 				high_card = card
 		if high_card:
 			var result := Result.new()
@@ -239,16 +239,16 @@ class Run extends ColCombo:
 		if bot_card.is_zone:
 			return null
 		#ascending or descending
-		if bot_card.data.rank == card.data.rank - 1:
+		if bot_card.data.rank.value == card.data.rank.value - 1:
 			x = -1
-		elif bot_card.data.rank == card.data.rank + 1:
+		elif bot_card.data.rank.value == card.data.rank.value + 1:
 			x = 1
 		else:
 			return null
 		bot_stack.append(bot_card)
 		while not bot_card.bot_card.is_zone \
-				and (bot_card.bot_card.data.rank == bot_card.data.rank + 1\
-				or bot_card.bot_card.data.rank == bot_card.data.rank - 1):
+				and (bot_card.bot_card.data.rank.value == bot_card.data.rank.value + 1\
+				or bot_card.bot_card.data.rank.value == bot_card.data.rank.value - 1):
 			bot_card = bot_card.bot_card
 			bot_stack.append(bot_card)
 		var run_size : int = bot_stack.size()
@@ -269,7 +269,7 @@ class Combo:
 
 class Jack extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
-		if cards.size() > 0 and cards[0].data.rank == 11:
+		if cards.size() > 0 and cards[0].data.rank.value == 11:
 			var result := Result.new()
 			result.score_name = "Jack"
 			result.score = 2
@@ -297,7 +297,7 @@ class Pairs extends Combo:
 	static func score(cards:Array[Card]) -> Array[Result]:
 		var ranks := {}
 		for card:Card in cards:
-			var rank : int = card.data.rank
+			var rank : int = card.data.rank.value
 			if rank in ranks:
 				(ranks[rank] as Array[Card]).append(card)
 			else:
@@ -342,7 +342,7 @@ class Pairs extends Combo:
 					#slice.sort_custom(Scoring.rank_sort)
 					#var is_straight := true
 					#for j:int in slice.size()-1:
-						#if slice[j].data.rank != slice[j+1].data.rank - 1:
+						#if slice[j].data.rank.value != slice[j+1].data.rank.value - 1:
 							#is_straight = false
 							#break
 					#if is_straight:
@@ -454,15 +454,15 @@ static func sort_results(results:Array[Result], ref:Array[Card]) -> void:
 	#combos.sort_custom(result_sort)
 
 static func rank_sort_desc(a:Card, b:Card) -> bool:
-	return a.data.rank > b.data.rank
+	return a.data.rank.value > b.data.rank.value
 
 static func rank_sort(a:Card, b:Card) -> bool:
-	return a.data.rank < b.data.rank
+	return a.data.rank.value < b.data.rank.value
 	
 static func copies(cards:Array[Card], n:int) -> Array[Array]:
 	var ranks := {}
 	for card:Card in cards:
-		var rank : int = card.data.rank
+		var rank : int = card.data.rank.value
 		if rank in ranks:
 			(ranks[rank] as Array[Card]).append(card)
 		else:
@@ -484,7 +484,7 @@ static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 	var last_index := {0: [-1]}
 	for i:int in cards.size():
 		for s:int in last_index.keys():
-			var new_s : int = s + cards[i].data.rank
+			var new_s : int = s + cards[i].data.rank.value
 			if 0 < (new_s - target) * target_sign:
 				pass
 			elif new_s in last_index:
@@ -503,7 +503,7 @@ static func subset_sum_iter(cards:Array[Card], target:int) -> Array[Array]:
 			elif max_i <= i:
 				break
 			else:
-				for answer:Array in recur.call(new_target - cards[i].data.rank, i, recur):
+				for answer:Array in recur.call(new_target - cards[i].data.rank.value, i, recur):
 					answer.append(cards[i])
 					output.append(answer)
 		return output

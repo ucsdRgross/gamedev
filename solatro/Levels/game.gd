@@ -508,9 +508,9 @@ func can_add_card(stack : Card, to_stack : Card) -> bool:
 			if stack.is_zone:
 				return true
 			if stack.data.suit.value != to_stack.data.suit.value:
-				if to_stack.data.rank.value == stack.data.rank - 1:
+				if to_stack.data.rank.value == stack.data.rank.value - 1:
 					return true
-				if to_stack.data.rank == stack.data.rank + 1:
+				if to_stack.data.rank.value == stack.data.rank.value + 1:
 					return true
 	return false
 
@@ -519,9 +519,9 @@ func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
 	if stack.is_zone:
 		return true
 	if stack.data.suit != to_stack.data.suit:
-		if to_stack.data.rank == stack.data.rank - 1:
+		if to_stack.data.rank.value == stack.data.rank.value - 1:
 			return true
-		if to_stack.data.rank == stack.data.rank + 1:
+		if to_stack.data.rank.value == stack.data.rank.value + 1:
 			return true
 	return false
 
