@@ -58,7 +58,8 @@ func update_visual() -> void:
 		else:
 			stamp.hide()
 		if data.skill:
-			art.frame = data.skill.frame
+			data.skill.set_texture(art)
+			data.skill.set_material(art)
 		else:
 			data.suit.set_art_texture(art, data.rank)
 			data.suit.set_material(art)

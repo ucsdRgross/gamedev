@@ -3,6 +3,7 @@ extends Resource
 
 enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 #class Skill:
+const skill_texture : Texture2D = preload("res://Assets/skill_art.png")
 @export var name : StringName
 @export var description : StringName
 @export var frame : int
@@ -13,6 +14,14 @@ var data : CardData
 func with_data(data:CardData) -> CardModifier:
 	self.data = data
 	return self
+
+func set_texture(sprite:Sprite2D) -> void:
+	sprite.texture = skill_texture
+	sprite.hframes = 16
+	sprite.vframes = 16
+	sprite.frame = frame
+
+func set_material(sprite:Sprite2D) -> void: sprite.material = null
 
 func on_round_start() -> void:
 	pass

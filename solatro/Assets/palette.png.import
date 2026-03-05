@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b7ekacb1d5q6o"
-path="res://.godot/imported/card_art.png-54ba8757902dcc4adcb0e4ea7859d163.ctex"
+uid="uid://b20y7immwbvbm"
+path="res://.godot/imported/palette.png-a9489b31af284cee4564710167596713.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/card_art.png"
-dest_files=["res://.godot/imported/card_art.png-54ba8757902dcc4adcb0e4ea7859d163.ctex"]
+source_file="res://Assets/palette.png"
+dest_files=["res://.godot/imported/palette.png-a9489b31af284cee4564710167596713.ctex"]
 
 [params]
 
@@ -21,7 +21,7 @@ compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=1
 compress/channel_pack=0
 mipmaps/generate=false
 mipmaps/limit=-1

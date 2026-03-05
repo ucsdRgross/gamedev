@@ -4,7 +4,7 @@ extends CardModifier
 func _init() -> void:
 	name = "Echoing Trigger"
 	description = "ALL triggers repeat once"
-	frame = 53
+	frame = 1
 
 var triggered : Array[CardData]
 func on_trigger(data:CardData, mod:Callable) -> void:

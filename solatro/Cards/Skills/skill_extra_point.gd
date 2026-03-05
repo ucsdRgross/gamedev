@@ -4,7 +4,7 @@ extends CardModifier
 func _init() -> void:
 	name = "Extra Point"
 	description = "Gain 1 Extra Point Per Score"
-	frame = 52
+	frame = 0
 
 func on_score(target:Card) -> void:
 	if not is_active(): return

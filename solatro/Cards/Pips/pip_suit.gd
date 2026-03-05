@@ -19,16 +19,24 @@ func with_value(i:int) -> PipSuit:
 func set_material(sprite:Sprite2D) -> void: sprite.material = null
 
 class Standard extends PipSuit:
-	const suit_texture : Texture2D = preload("res://Assets/suits.png")
-	const art_texture : Texture2D = preload("res://Assets/card_art.png")
+	const suit_texture : Texture2D = preload("res://Assets/suit_pips.png")
+	const art_texture : Texture2D = preload("res://Assets/suit_art.png")
+	const color_picker_shader = preload("res://Assets/color_picker.tres")
+	const pallete_colors : Array[int] = [8,11,14,2]
 	func _init() -> void:
 		name = "Standard Suit"
 	func set_texture(sprite:Sprite2D) -> void:
 		sprite.texture = suit_texture
-		sprite.hframes = 14
-		sprite.vframes = 5
-		sprite.frame = 14 * (value - 1)
+		sprite.hframes = 8
+		sprite.vframes = 8
+		sprite.frame = value - 1
 		set_material(sprite)
+	func set_material(sprite:Sprite2D) -> void:
+		var material := ShaderMaterial.new()
+		material.shader = color_picker_shader
+		material.set_shader_parameter("color_x", pallete_colors[value-1])
+		sprite.material = material
+
 	func set_art_texture(sprite:Sprite2D, rank:PipRank) -> void:
 		if rank is PipRank.Numeral:
 			sprite.texture = art_texture
