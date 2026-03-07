@@ -44,25 +44,31 @@ func set_flipped_instant(flip:bool) -> void:
 
 func update_visual() -> void:
 	if show_front and data:
-		data.suit.set_texture(suit)
-		data.rank.set_texture(rank)
-		data.suit.set_material(suit)
-		data.suit.set_material(rank)
+		if data.rank:
+			data.rank.set_texture(rank)
+		if data.suit:
+			data.suit.set_texture(suit)
+			data.suit.set_material(suit)
+			data.suit.set_material(rank)
+			
 		if data.type:
-			front.frame = data.type.frame
+			front.frame = data.type.get_frame()
 		else:
 			front.frame = 2
+			
 		if data.stamp:
-			stamp.frame = data.stamp.frame
+			stamp.frame = data.stamp.get_frame()
 			stamp.show()
 		else:
 			stamp.hide()
+			
 		if data.skill:
 			data.skill.set_texture(art)
 			data.skill.set_material(art)
-		else:
+		elif data.suit:
 			data.suit.set_art_texture(art, data.rank)
 			data.suit.set_material(art)
+			
 		rank.show()
 		suit.show()
 		art.show()
@@ -300,9 +306,8 @@ func add_data(data:CardData, is_linked:bool=false) -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_PREDELETE:
-			if data:
-				if data.card == self:
-					data.card = null
+			if data and data.card and data.card == self:
+				data.card = null
 			leave_stack()
 
 func leave_stack() -> void:

@@ -1,10 +1,9 @@
 class_name TypeStone
 extends CardModifier
 	
-func _init() -> void:
-	name = "Stone Card"
-	description = "Sinks to bottom of every stack"
-	frame = 4
+func get_str() -> String: return "Stone Card"
+func get_description() -> String: return "Sinks to bottom of every stack"
+func get_frame() -> int: return 4
 
 func on_stack_card(target: Card) -> void:
 	if is_instance_valid(target) and data == target.data and not is_on_bottom(target):

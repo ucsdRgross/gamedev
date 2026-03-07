@@ -1,10 +1,9 @@
 class_name StampDoubleTrigger 
 extends CardModifier
 
-func _init() -> void:
-	name = "Double Trigger"
-	description = "This card's effects triggers twice"
-	frame = 57
+func get_str() -> String: return "Double Trigger"
+func get_description() -> String: return "This card's effects triggers twice"
+func get_frame() -> int: return 57
 
 var triggers : int = 0
 func on_trigger(data:CardData, mod:Callable) -> void:

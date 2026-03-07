@@ -210,7 +210,7 @@ func _on_submit_pressed() -> void:
 					c.floating = false
 					card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
 					card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
-					print('suit: ', c.data.suit.name, c.data.suit.value, ' rank: ', c.data.rank.name, c.data.rank.value)
+					print('suit: ', c.data.suit.get_str(), c.data.suit.value, ' rank: ', c.data.rank.get_str(), c.data.rank.value)
 				for c:Card in last_scored_cards:
 					if c not in result.card_combo:
 						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -270,7 +270,7 @@ func _on_submit_pressed() -> void:
 					c.floating = false
 					card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
 					card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
-					print('suit: ', c.data.suit.name, c.data.suit.value, ' rank: ', c.data.rank.name, c.data.rank.value)
+					print('suit: ', c.data.suit.get_str(), c.data.suit.value, ' rank: ', c.data.rank.get_str(), c.data.rank.value)
 				for c:Card in last_scored_cards:
 					if c not in scored_cards:
 						var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -420,7 +420,7 @@ func get_card_grid_pos(card:Card) -> Vector2:
 func run_all_mods(function: StringName, params:Array=[]) -> void:
 	for data in CardDataIterator.new():
 		for mod : CardModifier in [data.type, data.stamp, data.skill]:
-			if mod:
+			if mod and mod.has_method(function):
 				await Callable(mod, function).callv(params)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
@@ -451,11 +451,11 @@ func _on_card_hover_entered(card : Card) -> void:
 	preview_card.flipped = card.flipped
 	var description : String = ""
 	if card.data.skill:
-		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
+		description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
 	if card.data.stamp:
-		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
+		description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
 	if card.data.type:
-		description += card.data.type.name + "\n" + card.data.type.description + "\n"
+		description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
 	($Preview/Label as Label).text = description
 	($Preview as Control).show()
 

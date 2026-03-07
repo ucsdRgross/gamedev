@@ -3,14 +3,15 @@ extends Resource
 
 signal data_changed
 
-var name : StringName
 var value : int:
 	set(_value):
 		value = _value
 		data_changed.emit()
-
+		
+@abstract func get_str() -> String
 @abstract func set_texture(sprite:Sprite2D) -> void
 @abstract func set_art_texture(sprite:Sprite2D, rank:PipRank) -> void
+@abstract func with_random() -> PipSuit
 
 func with_value(i:int) -> PipSuit:
 	value = i
@@ -23,8 +24,7 @@ class Standard extends PipSuit:
 	const art_texture : Texture2D = preload("res://Assets/suit_art.png")
 	const color_picker_shader = preload("res://Assets/color_picker.tres")
 	const pallete_colors : Array[int] = [8,11,14,2]
-	func _init() -> void:
-		name = "Standard Suit"
+	func get_str() -> String: return "Standard Suit"
 	func set_texture(sprite:Sprite2D) -> void:
 		sprite.texture = suit_texture
 		sprite.hframes = 8

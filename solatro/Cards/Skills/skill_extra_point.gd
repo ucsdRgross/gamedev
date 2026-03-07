@@ -1,10 +1,9 @@
 class_name SkillExtraPoint
 extends CardModifier
 
-func _init() -> void:
-	name = "Extra Point"
-	description = "Gain 1 Extra Point Per Score"
-	frame = 0
+func get_str() -> String: return "Extra Point"
+func get_description() -> String: return "Gain 1 Extra Point Per Score"
+func get_frame() -> int: return 0
 
 func on_score(target:Card) -> void:
 	if not is_active(): return

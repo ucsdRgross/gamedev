@@ -1,15 +1,21 @@
-class_name CardModifier
+@abstract class_name CardModifier
 extends Resource
 
 enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
 #class Skill:
 const skill_texture : Texture2D = preload("res://Assets/skill_art.png")
-@export var name : StringName
-@export var description : StringName
-@export var frame : int
-@export var rarity : Rarity
-@export var tags : Dictionary
+
+#export makes no sense here, should be abstract methods
+#@export var name : StringName
+#@export var description : StringName
+#@export var frame : int
+#@export var rarity : Rarity
+#@export var tags : Dictionary
 var data : CardData
+
+@abstract func get_str() -> String
+@abstract func get_description() -> String
+@abstract func get_frame() -> int
 
 func with_data(data:CardData) -> CardModifier:
 	self.data = data
@@ -19,7 +25,7 @@ func set_texture(sprite:Sprite2D) -> void:
 	sprite.texture = skill_texture
 	sprite.hframes = 16
 	sprite.vframes = 16
-	sprite.frame = frame
+	sprite.frame = get_frame()
 
 func set_material(sprite:Sprite2D) -> void: sprite.material = null
 

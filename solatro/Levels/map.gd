@@ -99,11 +99,11 @@ func _on_card_hover_entered(card : Card) -> void:
 	preview_card.update_visual()
 	var description : String
 	if card.data.skill:
-		description += card.data.skill.name + "\n" + card.data.skill.description + "\n"
+		description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
 	if card.data.stamp:
-		description += card.data.stamp.name + "\n" + card.data.stamp.description + "\n"
+		description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
 	if card.data.type:
-		description += card.data.type.name + "\n" + card.data.type.description + "\n"
+		description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
 	preview_label.text = description
 	#($Preview as Control).show()
 

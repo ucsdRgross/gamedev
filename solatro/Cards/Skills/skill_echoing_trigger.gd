@@ -1,10 +1,9 @@
 class_name SkillEchoingTrigger
 extends CardModifier
 
-func _init() -> void:
-	name = "Echoing Trigger"
-	description = "ALL triggers repeat once"
-	frame = 1
+func get_str() -> String: return "Echoing Trigger"
+func get_description() -> String: return "ALL triggers repeat once"
+func get_frame() -> int: return 1
 
 var triggered : Array[CardData]
 func on_trigger(data:CardData, mod:Callable) -> void:

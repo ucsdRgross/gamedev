@@ -67,15 +67,15 @@ func with_stamp(stamp:CardModifier) -> CardData:
 func _on_child_data_changed() -> void:
 	data_changed.emit()
 	
-func clone(deep:bool = false) -> CardData:
-	var data := CardData.new()
-	data.suit = self.suit
-	data.rank = self.rank
-	if self.skill:
-		data.with_skill(self.skill.duplicate(deep) as CardModifier)
-	if self.type:
-		data.with_type(self.type.duplicate(deep) as CardModifier)
-	if self.stamp:
-		data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
-	#card
-	return data
+#func clone(deep:bool = false) -> CardData:
+	#var data := CardData.new()
+	#data.suit = self.suit
+	#data.rank = self.rank
+	#if self.skill:
+		#data.with_skill(self.skill.duplicate(deep) as CardModifier)
+	#if self.type:
+		#data.with_type(self.type.duplicate(deep) as CardModifier)
+	#if self.stamp:
+		#data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
+	##card
+	#return data

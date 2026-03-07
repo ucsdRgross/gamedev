@@ -1,10 +1,9 @@
 class_name SkillHungryHippo
 extends CardModifier
 
-func _init() -> void:
-	name = "Hungry Hippo"
-	description = "Will consume cards clicked over it and add its rank to itself, up until total value would be higher than 13"
-	frame = 2
+func get_str() -> String: return "Hungry Hippo"
+func get_description() -> String: return "Will consume cards clicked over it and add its rank to itself, up until total value would be higher than 13"
+func get_frame() -> int: return 2
 
 var consumed_cards : Array[CardData]
 func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:

@@ -1,7 +1,6 @@
 class_name TypeHeavy
 extends CardModifier
 	
-func _init() -> void:
-	name = "Heavy Card"
-	description = "Sinks to bottom of deck after shuffling"
-	frame = 4
+func get_str() -> String: return "Heavy Card"
+func get_description() -> String: return "Sinks to bottom of deck after shuffling"
+func get_frame() -> int: return 4
