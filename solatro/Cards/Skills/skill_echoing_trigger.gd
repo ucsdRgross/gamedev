@@ -1,5 +1,5 @@
 class_name SkillEchoingTrigger
-extends CardModifier
+extends CardModifierSkill
 
 func get_str() -> String: return "Echoing Trigger"
 func get_description() -> String: return "ALL triggers repeat once"
@@ -15,5 +15,5 @@ func on_trigger(data:CardData, mod:Callable) -> void:
 		card_lower()	
 		#await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
 		
-func after_score() -> void:
+func on_after_score() -> void:
 	triggered.clear()

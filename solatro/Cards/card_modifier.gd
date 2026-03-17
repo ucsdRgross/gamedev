@@ -1,9 +1,7 @@
 @abstract class_name CardModifier
 extends Resource
 
-enum Rarity {COMMON, UNCOMMON, RARE, LEGENDARY}
-#class Skill:
-const skill_texture : Texture2D = preload("res://Assets/skill_art.png")
+enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 
 #export makes no sense here, should be abstract methods
 #@export var name : StringName
@@ -16,19 +14,25 @@ var data : CardData
 @abstract func get_str() -> String
 @abstract func get_description() -> String
 @abstract func get_frame() -> int
+@abstract func set_texture(sprite:Sprite2D) -> void
 
 func with_data(data:CardData) -> CardModifier:
 	self.data = data
 	return self
 
-func set_texture(sprite:Sprite2D) -> void:
-	sprite.texture = skill_texture
-	sprite.hframes = 16
-	sprite.vframes = 16
-	sprite.frame = get_frame()
-
 func set_material(sprite:Sprite2D) -> void: sprite.material = null
 
+# Implementable conditions. Kept as comments here for reference so has_method works as tagging
+#func on_active() -> void
+#func on_deactive() -> void
+#func on_stack_card(target: Card) -> void
+#func on_append(deck:Array[CardData], data:CardData) -> void
+#func on_trigger(data:CardData, mod:Callable) -> void
+#func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void
+#func on_game_end() -> void
+#func on_score(target:Card) -> void
+#func on_after_score() -> void
+	
 func on_round_start() -> void:
 	pass
 func on_round_end() -> void:
@@ -55,7 +59,7 @@ func score_rule() -> void:
 	pass
 func on_score(target:Card) -> void:
 	pass
-func after_score() -> void:
+func on_after_score() -> void:
 	pass
 func on_game_start() -> void:
 	pass
@@ -83,6 +87,8 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 	pass
 
 func is_active() -> bool:
+	if data in Game.CURRENT.rules_deck:
+		return true
 	if data.stamp is StampGlobal:
 		return true
 	elif data.card:

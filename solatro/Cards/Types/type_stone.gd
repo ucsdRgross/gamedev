@@ -1,5 +1,5 @@
 class_name TypeStone
-extends CardModifier
+extends CardModifierType
 	
 func get_str() -> String: return "Stone Card"
 func get_description() -> String: return "Sinks to bottom of every stack"

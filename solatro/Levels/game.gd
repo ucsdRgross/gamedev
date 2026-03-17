@@ -236,7 +236,7 @@ func _on_submit_pressed() -> void:
 				await get_tree().create_timer(base_delay).timeout
 				for card in result.card_combo:
 					await run_all_mods(&"on_score", [card])
-				await run_all_mods(&"after_score")
+				await run_all_mods(&"on_after_score")
 				
 				#await get_tree().create_timer(score_delay).timeout
 				score_name_popup.queue_free()
@@ -421,9 +421,28 @@ func get_card_grid_pos(card:Card) -> Vector2:
 
 func run_all_mods(function: StringName, params:Array=[]) -> void:
 	for data in CardDataIterator.new():
-		for mod : CardModifier in [data.type, data.stamp, data.skill]:
+		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
 				await Callable(mod, function).callv(params)
+				await skill_active_check()
+		var skill : CardModifierSkill = data.skill
+		if skill and skill.has_method(function) and skill.active:
+			await Callable(skill, function).callv(params)
+			await skill_active_check()
+	var passive_effects := &"on_anything"
+	if function != passive_effects:
+		await run_all_mods(passive_effects)
+
+func skill_active_check() -> void:
+	for data in CardDataIterator.new():
+		var skill : CardModifierSkill = data.skill
+		if skill:
+			if not skill.active and skill.is_active():
+				skill.active = true
+				await run_all_mods(&"on_active")
+			elif skill.active and not skill.is_active():
+				skill.active = false
+				await run_all_mods(&"on_deactive")
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])

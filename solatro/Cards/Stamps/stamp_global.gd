@@ -1,5 +1,5 @@
 class_name StampGlobal
-extends CardModifier
+extends CardModifierStamp
 
 func get_str() -> String: return "Global"
 func get_description() -> String: return "Skill can trigger from ANYWHERE"

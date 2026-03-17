@@ -1,9 +1,11 @@
 [gd_scene format=3 uid="uid://cmvmqwfqk50mf"]
 
 [ext_resource type="Script" uid="uid://dwk7tiv0i5slq" path="res://Cards/card.gd" id="1_pyuft"]
-[ext_resource type="Texture2D" uid="uid://dkx7bu5038lt1" path="res://Assets/card_template.png" id="3_mcnwj"]
-[ext_resource type="Texture2D" uid="uid://b7ekacb1d5q6o" path="res://Assets/card_art.png" id="4_n51ss"]
-[ext_resource type="Texture2D" uid="uid://c5y0yi0ffmlyw" path="res://Assets/suits.png" id="4_qva5r"]
+[ext_resource type="Texture2D" uid="uid://kn4i2neigyf3" path="res://Assets/card_types.png" id="2_7bc8n"]
+[ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="3_w0fdq"]
+[ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="4_p0ugb"]
+[ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="5_p0ugb"]
+[ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="6_p0ugb"]
 
 [node name="Card" type="Node2D" unique_id=758458623]
 script = ExtResource("1_pyuft")
@@ -12,41 +14,40 @@ num = 104
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
-position = Vector2(0, -0.45591632)
-rotation = 3.1415892
-scale = Vector2(0.9997927, -0.985907)
-skew = 0.003459096
-texture = ExtResource("3_mcnwj")
-hframes = 5
+position = Vector2(0, 0.86841667)
+rotation = 3.1415565
+scale = Vector2(0.9940007, -0.99174714)
+skew = 0.014224768
+texture = ExtResource("2_7bc8n")
+hframes = 8
+vframes = 8
 frame = 3
 
 [node name="Rank" type="Sprite2D" parent="Offset/Front" unique_id=1534860529]
 visible = false
 position = Vector2(-12, -17)
-texture = ExtResource("4_qva5r")
-hframes = 14
+texture = ExtResource("3_w0fdq")
+hframes = 13
 vframes = 5
-frame = 1
 
 [node name="Stamp" type="Sprite2D" parent="Offset/Front" unique_id=13185951]
 visible = false
 position = Vector2(0, -17)
-texture = ExtResource("4_qva5r")
-hframes = 14
-vframes = 5
-frame = 56
+texture = ExtResource("4_p0ugb")
+hframes = 8
+vframes = 8
 
 [node name="Suit" type="Sprite2D" parent="Offset/Front" unique_id=1154635612]
 visible = false
 position = Vector2(12, -17)
-texture = ExtResource("4_qva5r")
-hframes = 14
-vframes = 5
+texture = ExtResource("5_p0ugb")
+hframes = 8
+vframes = 8
 
 [node name="Art" type="Sprite2D" parent="Offset/Front" unique_id=873481106]
 visible = false
 position = Vector2(0, 5)
-texture = ExtResource("4_n51ss")
+texture = ExtResource("6_p0ugb")
 hframes = 13
 vframes = 13
 

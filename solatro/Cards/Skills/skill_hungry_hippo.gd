@@ -1,5 +1,5 @@
 class_name SkillHungryHippo
-extends CardModifier
+extends CardModifierSkill
 
 func get_str() -> String: return "Hungry Hippo"
 func get_description() -> String: return "Will consume cards clicked over it and add its rank to itself, up until total value would be higher than 13"

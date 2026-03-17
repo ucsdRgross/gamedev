@@ -17,15 +17,15 @@ signal data_changed
 		rank = value
 		rank.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
-@export var skill: CardModifier:
+@export var skill: CardModifierSkill:
 	set(value):
 		skill = value
 		data_changed.emit()
-@export var type: CardModifier:
+@export var type: CardModifierType:
 	set(value):
 		type = value
 		data_changed.emit()
-@export var stamp: CardModifier:
+@export var stamp: CardModifierStamp:
 	set(value):
 		stamp = value
 		data_changed.emit()

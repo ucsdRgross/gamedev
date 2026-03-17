@@ -1,5 +1,5 @@
 class_name SkillExtraPoint
-extends CardModifier
+extends CardModifierSkill
 
 func get_str() -> String: return "Extra Point"
 func get_description() -> String: return "Gain 1 Extra Point Per Score"

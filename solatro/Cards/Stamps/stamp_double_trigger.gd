@@ -1,5 +1,5 @@
 class_name StampDoubleTrigger 
-extends CardModifier
+extends CardModifierStamp
 
 func get_str() -> String: return "Double Trigger"
 func get_description() -> String: return "This card's effects triggers twice"
@@ -13,5 +13,5 @@ func on_trigger(data:CardData, mod:Callable) -> void:
 		await mod.call()
 		#await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
 		
-func after_score() -> void:
+func on_after_score() -> void:
 	triggers = 0

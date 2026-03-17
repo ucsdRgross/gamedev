@@ -1,5 +1,5 @@
 class_name StampRevealing 
-extends CardModifier
+extends CardModifierStamp
 
 func get_str() -> String: return "Revealing"
 func get_description() -> String: return "Trigger effects even when covered"

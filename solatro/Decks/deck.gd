@@ -1,7 +1,10 @@
 extends Resource
 class_name Deck
 
+var rule_deck_1: Array[CardData] = [
+	CardData.new().with_suit(PipSuit.Standard.new().with_value(1)).with_rank(PipRank.Numeral.new().with_value(4)).with_skill(SkillExtraPoint.new()).with_type(TypeStone.new()),
 
+]
 
 var deck1: Array[CardData] = [
 	CardData.new().with_suit(PipSuit.Standard.new().with_value(1)).with_rank(PipRank.Numeral.new().with_value(1)),
