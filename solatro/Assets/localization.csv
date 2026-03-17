@@ -1,0 +1,17 @@
+key,en,?context
+UI,,
+GAME_LAWS_UI,"Game Laws:
+1. There is a Draw Deck, a Discard Deck, and a Rules Deck
+2. There is an Upper Game Zone and a Lower Game Zone",
+NEXT_UI,Next,
+,,
+,,
+,,
+CARDS,,
+INPUT_ZONE_ADDER_CARD,Input Zone Adder,
+INPUT_ZONE_ADDER_CARD_DESCRIPTION,Game Start: Add 1 Input Zone Card to the Upper Zone,
+INPUT_ZONE_CARD,Input Zone,
+INPUT_ZONE_CARD_DESCRIPTION,"The beginning of a Stack.
+Next: If in Upper Zone, drop card to open space in Lower Zone. Then Draw a Card.",
+INPUT_ZONE_CARD_DESCRIPTION,"The beginning of a Stack. Cannot be moved. Allows Cards to be placed on top of itself.
+Next: If in Upper Zone, drop card to open space in Lower Zone. Then Draw a Card.",revealed

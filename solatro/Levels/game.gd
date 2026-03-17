@@ -42,6 +42,7 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
+@export_storage var rules_deck : Array[CardData]
 @export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 @export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 @export_storage var row_score_popups : Dictionary
@@ -62,6 +63,7 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var deck_popup: Card = $Deck/Deck
 @onready var discard_popup: Card = $Discard/Discard
+@onready var rules_popup: Card = $Rules/Rules
 @onready var undo_button: Button = $Undo
 
 static var CURRENT : Game = null
@@ -566,14 +568,15 @@ func _on_discard_clicked(deck_card: Card) -> void:
 		flow_container.add_child(control)
 	deck_viewer.show()
 
-class CardArray:
-	var cards : Array[Card]
-	#func clone() -> CardArray:
-		#var deep_copy := func(c:Card) -> Card:
-			#if not c: return c
-			#return c.clone()
-		#var new_card_array := CardArray.new()
-		#var array_card : Array[Card]
-		#array_card.assign(cards.map(deep_copy))
-		#new_card_array.cards = array_card
-		#return new_card_array
+func _on_rules_clicked(deck_card: Card) -> void:
+	for data in rules_deck:
+		var card : Card = CARD.instantiate()
+		card.add_data(data, true)
+		card.can_move_anim = false
+		card.flipped = false
+		var control : Control = CARD_CONTROL.instantiate()
+		control.add_child(card)
+		card.hover_entered.connect(_on_card_hover_entered)
+		card.hover_exited.connect(_on_card_hover_exited)
+		flow_container.add_child(control)
+	deck_viewer.show()

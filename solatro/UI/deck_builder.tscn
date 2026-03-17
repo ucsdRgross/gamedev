@@ -113,7 +113,7 @@ can_move_anim = false
 clickable = false
 stack_limit = 0
 flipped = false
-num = 105
+num = 103
 
 [node name="Label" type="Label" parent="HSplitContainer/Control/Preview" unique_id=1208949033]
 layout_mode = 0

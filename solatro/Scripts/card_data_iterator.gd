@@ -1,9 +1,9 @@
 class_name CardDataIterator
 
 var card_count : int
-var board : Array[Game.CardArray]
+var board : Array[CardArray]
 var next_card_data : CardData
-enum {DECK, INPUTS, BOARD, DISCARD}
+enum {DECK, INPUTS, BOARD, DISCARD, RULES}
 var phase := DECK
 
 func should_continue() -> bool:
@@ -50,6 +50,14 @@ func should_continue() -> bool:
 		DISCARD:
 			if card_count < Game.CURRENT.discard_deck.size():
 				next_card_data = Game.CURRENT.discard_deck[card_count]
+				return true
+			else:
+				phase = RULES
+				card_count = 0
+				return should_continue()
+		RULES:
+			if card_count < Game.CURRENT.rules_deck.size():
+				next_card_data = Game.CURRENT.rules_deck[card_count]
 				return true
 			else:
 				return false

@@ -531,10 +531,10 @@ num = 3
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
-offset_left = 1132.0
-offset_top = 548.0
-offset_right = 1132.0
-offset_bottom = 548.0
+offset_left = 1013.0
+offset_top = 543.0
+offset_right = 1013.0
+offset_bottom = 543.0
 mouse_filter = 2
 
 [node name="Rules" parent="Rules" unique_id=758458623 instance=ExtResource("3_8sseo")]

@@ -29,6 +29,7 @@ signal data_changed
 	set(value):
 		stamp = value
 		data_changed.emit()
+@export var statuses: Dictionary[String,int]
 var card: Card
 enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
 @export_storage var stage := Stage.SPACE
