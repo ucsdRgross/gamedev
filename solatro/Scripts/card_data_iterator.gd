@@ -1,7 +1,7 @@
 class_name CardDataIterator
 
 var card_count : int
-var board : Array[CardArray]
+var board : Array[ArrayCard]
 var next_card_data : CardData
 enum {DECK, INPUTS, BOARD, DISCARD, RULES}
 var phase := DECK

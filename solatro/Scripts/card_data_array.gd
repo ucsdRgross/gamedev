@@ -1,7 +1,7 @@
 extends Resource
-class_name ArrayCard
+class_name ArrayCardData
 
-var cards : Array[Card]
+var datas : Array[CardData]
 
 #func clone() -> ArrayCard:
 		#var deep_copy := func(c:Card) -> Card:

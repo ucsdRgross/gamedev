@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://cdevr7c0t2cag"]
+[gd_scene format=3 uid="uid://cdevr7c0t2cag"]
 
 [ext_resource type="Script" uid="uid://cts6vf26wf37a" path="res://UI/control_with_child_size.gd" id="1_fxxpt"]
 
-[node name="CardControl" type="Control"]
+[node name="CardControl" type="Control" unique_id=1420564216]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

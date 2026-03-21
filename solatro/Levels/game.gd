@@ -66,6 +66,11 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var rules_popup: Card = $Rules/Rules
 @onready var undo_button: Button = $Undo
 
+var upper_zone_type : Array[CardData] = []
+var upper_zone : Array[ArrayCardData] = []
+var lower_zone_type : Array[CardData] = []
+var lower_zone : Array[ArrayCardData] = []
+
 static var CURRENT : Game = null
 
 func _enter_tree() -> void:
@@ -183,11 +188,28 @@ func replenish_input_cards() -> void:
 			zone.add_card(card, false)
 			card.flipped = false
 
+# destination Vector3( 0:1 for upper:lower, row, col)
+static func move_data_to_coord(moving:CardData, dest:Vector3i, move_stack: int = 0, trigger_mods: bool = true) -> void:
+	#check if conditions match dropping card
+	#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+	#await run_all_mods(&"on_stack_card", [dropping_card])
+	pass
+
+static func move_data_to_data(moving:CardData, dest:CardData, move_stack: int = 0, trigger_mods: bool = true) -> void:
+	#check if conditions match dropping card
+	#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+	#await run_all_mods(&"on_stack_card", [dropping_card])
+	pass
+
+static func draw_card() -> CardData:
+	#spawns new CARD where deck is
+	return 
+
 func _on_submit_pressed() -> void:
 	if processing:
 		return
 	processing = true
-	var board_cols : Array[CardArray] = get_board_cols()
+	var board_cols : Array[ArrayCard] = get_board_cols()
 	var row_to_score := 0
 	var last_scored_cards : Array[Card] = []
 	
@@ -394,11 +416,11 @@ func card_shrink(card:Card) -> void:
 	card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
 	await card_tween.finished
 
-func get_board_cols() -> Array[CardArray]:
-	var board : Array[CardArray] = []
+func get_board_cols() -> Array[ArrayCard]:
+	var board : Array[ArrayCard] = []
 	var max_size := 0
 	for col in stacks:
-		var c : CardArray = CardArray.new()
+		var c : ArrayCard = ArrayCard.new()
 		var col_size := 0
 		while col.top_card:
 			c.cards.append(col.top_card)
@@ -419,7 +441,7 @@ func get_card_grid_pos(card:Card) -> Vector2:
 				return Vector2(r, c)
 	return Vector2(-1,-1)
 
-func run_all_mods(function: StringName, params:Array=[]) -> void:
+static func run_all_mods(function: StringName, params:Array=[]) -> void:
 	for data in CardDataIterator.new():
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
@@ -433,7 +455,7 @@ func run_all_mods(function: StringName, params:Array=[]) -> void:
 	if function != passive_effects:
 		await run_all_mods(passive_effects)
 
-func skill_active_check() -> void:
+static func skill_active_check() -> void:
 	for data in CardDataIterator.new():
 		var skill : CardModifierSkill = data.skill
 		if skill:
@@ -488,7 +510,7 @@ func _on_card_hover_exited(card : Card) -> void:
 	#return
 
 func _on_game_board_changed() -> void:
-	var board_cols : Array[CardArray] = get_board_cols()
+	var board_cols : Array[ArrayCard] = get_board_cols()
 	var num_cards_in_col : int = 0 if not board_cols else board_cols[0].cards.size()
 	if num_cards_in_col > 0:
 		board_size = 350 + Card.child_offset.y * num_cards_in_col

@@ -32,7 +32,10 @@ func set_material(sprite:Sprite2D) -> void: sprite.material = null
 #func on_game_end() -> void
 #func on_score(target:Card) -> void
 #func on_after_score() -> void
-	
+#func on_can_stack(stack : CardData, to_stack : CardData) -> bool
+#func on_cannot_stack(stack : CardData, to_stack : CardData) -> bool
+#func on_next() -> void
+
 func on_round_start() -> void:
 	pass
 func on_round_end() -> void:

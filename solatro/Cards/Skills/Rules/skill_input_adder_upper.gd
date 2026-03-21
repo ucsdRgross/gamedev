@@ -6,7 +6,12 @@ func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_UPPER_ADDE
 func get_frame() -> int: return 0
 
 func on_active() -> void:
-	pass
+	Game.CURRENT.upper_zone_type.append(CardData.new().with_type(TypeInput.new()))
+	Game.CURRENT.upper_zone.append(ArrayCardData.new())
 	
 func on_deactive() -> void:
-	pass
+	Game.CURRENT.upper_zone_type.pop_back()
+	var datas : ArrayCardData = Game.CURRENT.upper_zone.pop_back()
+	for data in datas:
+		pass
+		# await discard
