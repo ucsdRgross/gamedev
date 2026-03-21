@@ -153,9 +153,10 @@ func _on_next_pressed() -> void:
 	if held_card:
 		return
 	processing = true
-	await drop_cards_down()
-	replenish_input_cards()
-	save_state.emit()
+	await run_all_mods(&"on_next")
+	#await drop_cards_down()
+	#replenish_input_cards()
+	#save_state.emit()
 	processing = false
 
 func drop_cards_down() -> void:
@@ -189,21 +190,70 @@ func replenish_input_cards() -> void:
 			card.flipped = false
 
 # destination Vector3( 0:1 for upper:lower, row, col)
-static func move_data_to_coord(moving:CardData, dest:Vector3i, move_stack: int = 0, trigger_mods: bool = true) -> void:
-	#check if conditions match dropping card
-	#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
-	#await run_all_mods(&"on_stack_card", [dropping_card])
-	pass
+func move_data_to_coord(moving:CardData, dest:Vector3i, add_stacked_cards: int = 0, trigger_mods: bool = true) -> void:
+	var dest_zone := upper_zone if dest.x == 0 else lower_zone
+	if not ((dest.x == 0 or dest.x == 1) and \
+		dest.y < dest_zone.size() and dest.z <= dest_zone[dest.y].datas.size()): 
+		print("[WARN] move_data_to_coord destination out of bounds. Given:  ", dest, " But actual is") 
+		print("upper: ", upper_zone)
+		print("lower: ", lower_zone)
+	#find location of moving card and extract
+	var moving_vec3 : Vector3i = find_data_vec3(moving)
+	if moving_vec3.x < 0: return
+	var moving_zone := upper_zone if moving_vec3.x == 0 else lower_zone
+	var end : int = moving_vec3.z + add_stacked_cards + 1 if add_stacked_cards > -1 else 2147483647
+	var moving_stack : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(moving_vec3.z, end)
+	var moving_stack_cutoff : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(end)
+	moving_zone[moving_vec3.y].datas.resize(moving_vec3.z)
+	moving_zone[moving_vec3.y].datas.append_array(moving_stack_cutoff)
+	
+	#find location of destination and insert
+	if dest.z == -1:
+		dest_zone[dest.y].datas.append_array(moving_stack)
+	else:
+		var dest_stack_cutoff : Array[CardData] = dest_zone[dest.y].datas.slice(dest.z)
+		dest_zone[dest.y].datas.resize(dest.z)
+		dest_zone[dest.y].datas.append_array(moving_stack)
+		dest_zone[dest.y].datas.append_array(dest_stack_cutoff)
+	
+	if trigger_mods:
+		#check if conditions match dropping card
+		if moving_vec3.x == 0 and dest.x == 1:
+			pass
+			#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+		#await run_all_mods(&"on_stack_card", [dropping_card])
 
-static func move_data_to_data(moving:CardData, dest:CardData, move_stack: int = 0, trigger_mods: bool = true) -> void:
-	#check if conditions match dropping card
-	#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
-	#await run_all_mods(&"on_stack_card", [dropping_card])
-	pass
+func move_data_to_data(moving:CardData, dest:CardData, add_stacked_cards: int = 0, trigger_mods: bool = true) -> void:
+	move_data_to_coord(moving, find_data_vec3(dest), add_stacked_cards, trigger_mods)
 
-static func draw_card() -> CardData:
-	#spawns new CARD where deck is
-	return 
+func find_data_vec3(data:CardData) -> Vector3i:
+	var vec3 : Vector3i = Vector3i.MIN
+	for col : int in upper_zone.size():
+		var row := upper_zone[col].datas.find(data)
+		if row > -1:
+			vec3 = Vector3(0,col,row)
+			break
+	if vec3.x != 0:
+		for col : int in lower_zone.size():
+			var row := lower_zone[col].datas.find(data)
+			if row > -1:
+				vec3 = Vector3(1,col,row)
+				break
+	return vec3
+
+#spawns new CARD where deck is
+func draw_card() -> CardData:
+	if draw_deck.size() > 0:
+		var data : CardData = draw_deck.pop_back()
+		create_card(data, deck_popup.global_position)
+		return data
+	return null
+
+func create_card(data:CardData, spawn_vec2:Vector2) -> void:
+	var card : Card = CARD.instantiate()
+	card.add_data(data, true)
+	_on_child_entered_tree(card)
+	card.global_position = spawn_vec2
 
 func _on_submit_pressed() -> void:
 	if processing:

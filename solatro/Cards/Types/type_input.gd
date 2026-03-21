@@ -22,11 +22,11 @@ func drop_card() -> void:
 	var col : int = Game.CURRENT.upper_zone_type.find(self)
 	if col > 0 and Game.CURRENT.upper_zone[col].datas.size() >= 0:
 		var upper_cards := Game.CURRENT.upper_zone[col].datas
-		await Game.move_data_to_coord(upper_cards[0], Vector3i(1,col,-1), -1)
+		await Game.CURRENT.move_data_to_coord(upper_cards[0], Vector3i(1,col,-1), -1)
 
 func draw_card() -> void:
 	var col : int = Game.CURRENT.upper_zone_type.find(self)
 	if col > 0:
-		var drawn_card := Game.draw_card()
+		var drawn_card := Game.CURRENT.draw_card()
 		if drawn_card:
 			Game.CURRENT.upper_zone[col].datas.append(drawn_card)
