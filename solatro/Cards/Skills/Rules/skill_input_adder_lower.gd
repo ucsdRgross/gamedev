@@ -11,7 +11,6 @@ func on_active() -> void:
 	
 func on_deactive() -> void:
 	Game.CURRENT.lower_zone_type.pop_back()
-	var datas : ArrayCardData = Game.CURRENT.lower_zone.pop_back()
-	for data in datas:
-		pass
-		# await discard
+	var datas : Array[CardData] = Game.CURRENT.lower_zone.pop_back().datas
+	for d : CardData in datas:
+		await Game.CURRENT.discard_data(d)

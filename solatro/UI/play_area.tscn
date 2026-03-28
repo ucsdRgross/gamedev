@@ -1,0 +1,94 @@
+[gd_scene format=3 uid="uid://qrkoeclfyd48"]
+
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="1_07a3p"]
+[ext_resource type="Script" uid="uid://4b6ha7k1yee2" path="res://UI/play_area.gd" id="1_34k5y"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="2_34k5y"]
+
+[sub_resource type="Resource" id="Resource_frxyd"]
+script = ExtResource("2_34k5y")
+
+[sub_resource type="Resource" id="Resource_1opyf"]
+script = ExtResource("2_34k5y")
+
+[node name="PlayArea" type="Control" unique_id=543982517]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_34k5y")
+
+[node name="SmoothScrollContainer" type="ScrollContainer" parent="." unique_id=860459358]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+draw_focus_border = true
+script = ExtResource("1_07a3p")
+wheel_scroll_damper = SubResource("Resource_frxyd")
+dragging_scroll_damper = SubResource("Resource_1opyf")
+metadata/_custom_type_script = "uid://bgqglerkcylxx"
+
+[node name="TopLevelVBox" type="VBoxContainer" parent="SmoothScrollContainer" unique_id=962024411]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+dragging_enabled = false
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=878004856]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="MiddleZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=689665879]
+unique_name_in_owner = true
+layout_mode = 2
+split_offsets = PackedInt32Array(38)
+dragging_enabled = false
+split_offset = 38
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="MiddleZoneLeft" type="Control" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=737216612]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="MiddleZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=128433223]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="LowerZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1408330160]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offsets = PackedInt32Array(1266)
+dragging_enabled = false
+split_offset = 1266
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="LowerZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=566986388]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="LowerZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=803627596]
+unique_name_in_owner = true
+layout_mode = 2
+metadata/_smooth_scroll_default_mouse_filter_set = true

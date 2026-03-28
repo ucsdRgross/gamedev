@@ -70,6 +70,9 @@ var upper_zone_type : Array[CardData] = []
 var upper_zone : Array[ArrayCardData] = []
 var lower_zone_type : Array[CardData] = []
 var lower_zone : Array[ArrayCardData] = []
+var scores_row_upper : Array[BigNumber] = []
+var scores_row_lower : Array[BigNumber] = []
+var scores_col : Array[BigNumber] = []
 
 static var CURRENT : Game = null
 
@@ -414,10 +417,22 @@ func _on_submit_pressed() -> void:
 	processing = false
 
 func discard_card(card: Card) -> void:
-	run_all_mods(&"on_discard", [card])
+	await run_all_mods(&"on_discard", [card])
 	discard_deck.append(card.data)
 	card.data.stage = CardData.Stage.DISCARD
 	card.queue_free()
+
+func discard_data(data: CardData) -> void:
+	await run_all_mods(&"on_discard", [data])
+	var vec3 := find_data_vec3(data)
+	get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
+	discard_deck.append(data)
+	if data.card: data.card.queue_free()
+
+func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
+	if vec3.x == 0: return upper_zone 
+	if vec3.x == 1: return lower_zone 
+	return [ArrayCardData.new()]
 
 func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
