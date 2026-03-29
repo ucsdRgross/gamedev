@@ -39,6 +39,7 @@ gdscript/warnings/unsafe_call_argument=2
 
 window/size/always_on_top=true
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [editor_plugins]
 
