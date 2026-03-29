@@ -1,6 +1,8 @@
 extends Control
 class_name PlayArea
 
+const CARD_VISUAL = preload("uid://bynh2btoahe5i")
+
 signal data_selected(data : CardData)
 
 var focused_control : Control = null
@@ -18,6 +20,7 @@ var seperation : int = 4:
 
 var ui_data : Dictionary[Control, CardData]
 var data_ui : Dictionary[CardData, Control]
+var data_card : Dictionary[CardData, CardVisual]
 
 @onready var containers : Array[Control] = [%TopLevelVBox, %UpperZone, %UpperZoneLeft, 
 								%UpperZoneRight, %MiddleZone, %MiddleZoneRight, 
@@ -77,16 +80,24 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 		# setup card min sizes and dictionary
 		ui_data.clear()
 		data_ui.clear()
+		var new_data_card : Dictionary[CardData,CardVisual]
 		var c : Control = vbox.get_child(0)
 		c.custom_minimum_size = Vector2(card_min_size.x, 0)
-		ui_data[c] = type[i]
-		data_ui[type[i]] = c
+		var connected_data : CardData = type[i]
+		ui_data[c] = connected_data
+		data_ui[connected_data] = c
+		if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
+		else: new_data_card[connected_data] = create_card_visual()
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
-			ui_data[c] = datas[i].datas[j-1]
-			data_ui[datas[i].datas[j-1]] = c
+			connected_data = datas[i].datas[j-1]
+			ui_data[c] = connected_data
+			data_ui[connected_data] = c
+			if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
+			else: new_data_card[connected_data] = create_card_visual()
 		(vbox.get_child(-1) as Control).custom_minimum_size = card_min_size
+		data_card = new_data_card
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -94,6 +105,10 @@ func create_card_control() -> Control:
 	new_control.focus_entered.connect(func()->void:on_control_focus_entered(new_control))
 	new_control.mouse_entered.connect(func()->void:new_control.grab_focus())
 	return new_control
+
+func create_card_visual() -> CardVisual:
+	var card : CardVisual = CARD_VISUAL.instantiate()
+	return card
 
 func on_control_focus_entered(control:Control) -> void:
 	var row_index := control.get_index()
@@ -157,4 +172,9 @@ func get_control_from_data(data : CardData) -> Control:
 func get_data_from_control(control : Control) -> CardData:
 	if control in ui_data:
 		return ui_data[control]
+	return null
+
+func get_card_from_data(data : CardData) -> CardVisual:
+	if data in data_card:
+		return data_card[data]
 	return null

@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://bynh2btoahe5i"]
+
+[ext_resource type="Script" uid="uid://dxgfoyhqn5vje" path="res://UI/card_visual.gd" id="1_s3n6f"]
+[ext_resource type="Texture2D" uid="uid://kn4i2neigyf3" path="res://Assets/card_types.png" id="2_y74k2"]
+[ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="3_rbggy"]
+[ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="4_62pur"]
+[ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="5_uqrsc"]
+[ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="6_2gib3"]
+
+[node name="Card" type="Node2D" unique_id=758458623]
+script = ExtResource("1_s3n6f")
+
+[node name="Offset" type="Node2D" parent="." unique_id=1932524186]
+
+[node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
+position = Vector2(0, 0.8926847)
+rotation = 3.141568
+scale = Vector2(0.9868343, -0.99887735)
+skew = 0.0077718496
+texture = ExtResource("2_y74k2")
+hframes = 8
+vframes = 8
+frame = 3
+
+[node name="Rank" type="Sprite2D" parent="Offset/Front" unique_id=1534860529]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("3_rbggy")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="Offset/Front" unique_id=13185951]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("4_62pur")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="Offset/Front" unique_id=1154635612]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("5_uqrsc")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="Offset/Front" unique_id=873481106]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("6_2gib3")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="Offset/Front" unique_id=825379047]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[connection signal="gui_input" from="Offset/Front/Control" to="." method="_on_control_gui_input"]
+[connection signal="mouse_entered" from="Offset/Front/Control" to="." method="_on_control_mouse_entered"]
+[connection signal="mouse_exited" from="Offset/Front/Control" to="." method="_on_control_mouse_exited"]
