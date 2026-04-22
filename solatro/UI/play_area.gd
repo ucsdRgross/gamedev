@@ -87,7 +87,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
 		if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
-		else: new_data_card[connected_data] = create_card_visual()
+		else: new_data_card[connected_data] = create_card_visual(connected_data)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
@@ -95,7 +95,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			ui_data[c] = connected_data
 			data_ui[connected_data] = c
 			if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
-			else: new_data_card[connected_data] = create_card_visual()
+			else: new_data_card[connected_data] = create_card_visual(connected_data)
 		(vbox.get_child(-1) as Control).custom_minimum_size = card_min_size
 		data_card = new_data_card
 
@@ -106,8 +106,8 @@ func create_card_control() -> Control:
 	new_control.mouse_entered.connect(func()->void:new_control.grab_focus())
 	return new_control
 
-func create_card_visual() -> CardVisual:
-	var card : CardVisual = CARD_VISUAL.instantiate()
+func create_card_visual(connected_data:CardData) -> CardVisual:
+	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
 	return card
 
 func on_control_focus_entered(control:Control) -> void:

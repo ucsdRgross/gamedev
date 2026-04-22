@@ -31,10 +31,13 @@ signal data_changed
 		data_changed.emit()
 @export var statuses: Dictionary[String,int]
 var card: Card
-enum Stage {DRAW, INPUT, PLAY, DISCARD, SPACE}
-@export_storage var stage := Stage.SPACE
-enum {IN_PLAY, STATIC}
-@export_storage var state := IN_PLAY
+enum Stage {DRAW, INPUT, PLAY, DISCARD, CONTROL, SPACE}
+@export_storage var stage : Stage = Stage.SPACE:
+	set(value):
+		previous_stage = stage
+		stage = value
+var previous_stage : Stage = Stage.SPACE
+var control_origin : Control 
 
 func with_suit(suit:PipSuit) -> CardData:
 	self.suit = suit

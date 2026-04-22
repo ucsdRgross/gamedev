@@ -166,7 +166,6 @@ func drop_cards_down() -> void:
 	for i:int in inputs.size():
 		if inputs[i].top_card:
 			var dropping_card := inputs[i].top_card
-			dropping_card.data.state = CardData.IN_PLAY
 			dropping_card.data.stage = CardData.Stage.PLAY
 			var bottom_card := stacks[i].get_last_card()
 			bottom_card.add_card(dropping_card, false)
@@ -185,7 +184,6 @@ func replenish_input_cards() -> void:
 			var card : Card = CARD.instantiate()
 			var data : CardData = draw_deck.pop_back()
 			card.add_data(data, true)
-			card.data.state = CardData.STATIC
 			card.data.stage = CardData.Stage.INPUT
 			zone.add_child(card)
 			_on_child_entered_tree(card)
@@ -594,7 +592,7 @@ func _on_card_clicked(card : Card) -> void:
 			card.add_card(card_to_add, true, -1)
 			save_state.emit()
 	elif not held_card:
-		if not card.is_zone and card.data.state == CardData.IN_PLAY:
+		if not card.is_zone:
 			var next_card := card
 			while next_card.top_card:
 				if not can_pickup_stack(next_card, next_card.top_card):

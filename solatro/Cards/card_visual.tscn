@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bynh2btoahe5i"]
 
-[ext_resource type="Script" uid="uid://dxgfoyhqn5vje" path="res://UI/card_visual.gd" id="1_s3n6f"]
+[ext_resource type="Script" uid="uid://dxgfoyhqn5vje" path="res://Cards/card_visual.gd" id="1_s3n6f"]
 [ext_resource type="Texture2D" uid="uid://kn4i2neigyf3" path="res://Assets/card_types.png" id="2_y74k2"]
 [ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="3_rbggy"]
 [ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="4_62pur"]
@@ -9,14 +9,15 @@
 
 [node name="Card" type="Node2D" unique_id=758458623]
 script = ExtResource("1_s3n6f")
+num = 1
 
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
-position = Vector2(0, 0.8926847)
-rotation = 3.141568
-scale = Vector2(0.9868343, -0.99887735)
-skew = 0.0077718496
+position = Vector2(0, -0.24795017)
+rotation = -3.141555
+scale = Vector2(0.9928975, -0.9928519)
+skew = -0.0144046545
 texture = ExtResource("2_y74k2")
 hframes = 8
 vframes = 8
