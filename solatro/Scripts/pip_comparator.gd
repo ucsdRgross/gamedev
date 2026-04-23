@@ -34,11 +34,11 @@ class_name PipComparator
 
 # use Game.CURRENT.run_all_mods
 #
-#func run_all_mods(function: StringName, params:Array=[]) -> void:
+#func run_all_mods(function: StringName, ...params:Array) -> void:
 	#for data in CardDataIterator.new():
 		#for mod : CardModifier in [data.type, data.stamp, data.skill]:
 			#if mod:
 				#await Callable(mod, function).callv(params)
 #
 #func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	#await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
+	#await run_all_mods(&"on_trigger", triggered_data, triggered_mod)

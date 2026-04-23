@@ -4,19 +4,17 @@ class_name Game
 signal save_state
 signal game_ended
 
-const CARD = preload("res://Cards/card.tscn")
-const CARD_CONTROL = preload("res://UI/card_control.tscn")
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 @export var deck : Deck
 
-@export_storage var held_card : Card = null
-@export_storage var held_card_offset : Vector2
+@export_storage var held_cards : Array[CardData] = []
+#@export_storage var held_card_offset : Vector2
 @export_storage var processing : bool = false
-@export_storage var board_size : int 
-@export_storage var board_home_pos : Vector2
-@export_storage var board_hovered : bool = false
-@export_storage var card_hovered : bool = false
+#@export_storage var board_size : int 
+#@export_storage var board_home_pos : Vector2
+#@export_storage var board_hovered : bool = false
+#@export_storage var card_hovered : bool = false
 @export_storage var base_delay : float = 1
 
 @export_storage var goal : int = 100:
@@ -43,33 +41,52 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
-@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
-@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-@export_storage var row_score_popups : Dictionary
+#@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
+#@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
+#@export_storage var row_score_popups : Dictionary
 #var setup_data : NewGameData
 
-@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
-@onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
-@onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
-@onready var free_space: Card = %FreeSpace/Zone
-@onready var row_scores: Control = %RowScores
-@onready var game_container: Control = $GameContainer
-@onready var hover_area: Control = $HoverArea
+@onready var hover_area: Control = $PlayContainer
+@onready var play_area: PlayArea = %PlayArea
+#@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
+#@onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
+#@onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
+#@onready var free_space: Card = %FreeSpace/Zone
+#@onready var row_scores: Control = %RowScores
+#@onready var game_container: Control = $GameContainer
 @onready var audio_card_placing: AudioStreamPlayer = $AudioCardPlacing
 @onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
 @onready var win_screen: Label = $WinScreen
 @onready var lose_screen: Label = $LoseScreen
 @onready var deck_viewer: CanvasLayer = $DeckViewer
 @onready var flow_container: FlowContainer = %FlowContainer
-@onready var deck_popup: Card = $Deck/Deck
-@onready var discard_popup: Card = $Discard/Discard
-@onready var rules_popup: Card = $Rules/Rules
+@onready var deck_popup: Control = $Deck/Deck
+@onready var discard_popup: Control = $Discard/Discard
+@onready var rules_popup: Control = $Rules/Rules
 @onready var undo_button: Button = $Undo
 
-var upper_zone_type : Array[CardData] = []
-var upper_zone : Array[ArrayCardData] = []
-var lower_zone_type : Array[CardData] = []
-var lower_zone : Array[ArrayCardData] = []
+var upper_zone_type : Array[CardData] = []:
+	set(value):
+		upper_zone_type = value
+		board_changed()
+var upper_zone : Array[ArrayCardData] = []:
+	set(value):
+		upper_zone = value
+		for col in upper_zone:
+			if not col.data_changed.is_connected(board_changed):
+				col.data_changed.connect(board_changed)
+		board_changed()
+var lower_zone_type : Array[CardData] = []:
+	set(value):
+		lower_zone_type = value
+		board_changed()
+var lower_zone : Array[ArrayCardData] = []:
+	set(value):
+		lower_zone = value
+		for col in lower_zone:
+			if not col.data_changed.is_connected(board_changed):
+				col.data_changed.connect(board_changed)
+		board_changed()
 var scores_row_upper : Array[BigNumber] = []
 var scores_row_lower : Array[BigNumber] = []
 var scores_col : Array[BigNumber] = []
@@ -84,13 +101,13 @@ func _exit_tree() -> void:
 		CURRENT = null
 
 func _ready() -> void:
-	for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
-		for zone : Card in zones:
-			_on_child_entered_tree(zone)
-	($Preview/Label as Label).text = ""
-	for label in col_scores:
-		if label: label.text = ""
-	board_home_pos = game_container.position
+	#for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
+		#for zone : Card in zones:
+			#_on_child_entered_tree(zone)
+	#($Preview/Label as Label).text = ""
+	#for label in col_scores:
+		#if label: label.text = ""
+	#board_home_pos = game_container.position
 	goal = goal * (1.1 ** Main.save_info.layer)
 	add_deck()
 	save_state.emit()
@@ -99,40 +116,43 @@ func _ready() -> void:
 		#if effect:
 			#effect.on_game_start()
 
-func _process(delta: float) -> void:
-	if board_hovered or card_hovered or held_card:
-		var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
-		mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
-		var viewport_height : int = get_viewport_rect().size.y
-		var extra_height : int = clampi(board_size - viewport_height, 0, board_size - viewport_height)
-		if mouse_rel_pos.y < 0.25:
-			game_container.position.y += 2
-		if mouse_rel_pos.y > 0.75:
-			game_container.position.y -= 2
-		game_container.position.y = clampi(game_container.position.y, board_home_pos.y - extra_height, board_home_pos.y)
+#func _process(delta: float) -> void:
+	#if board_hovered or card_hovered or held_card:
+		#var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
+		#mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
+		#var viewport_height : int = get_viewport_rect().size.y
+		#var extra_height : int = clampi(board_size - viewport_height, 0, board_size - viewport_height)
+		#if mouse_rel_pos.y < 0.25:
+			#game_container.position.y += 2
+		#if mouse_rel_pos.y > 0.75:
+			#game_container.position.y -= 2
+		#game_container.position.y = clampi(game_container.position.y, board_home_pos.y - extra_height, board_home_pos.y)
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event : InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			#print("clicked")
-			if held_card:
-				drop_held_card()
-	if event is InputEventMouseMotion:
-		#var mouse_event : InputEventMouseMotion = event 
-		if held_card:
-			held_card.move_to(get_global_mouse_position() + held_card_offset)
-		
-		#board hover
-		var mouse_pos : Vector2 = (event as InputEventMouseMotion).global_position
-		var area_pos : Vector2 = hover_area.global_position
-		var area_corner : Vector2 = area_pos + hover_area.size
-		if mouse_pos.x > area_pos.x and mouse_pos.y > area_pos.y \
-				and mouse_pos.x < area_corner.x and mouse_pos.y < area_corner.y:
-			board_hovered = true
-		else:
-			board_hovered = false
-	
+#func _input(event: InputEvent) -> void:
+	#if event is InputEventMouseButton:
+		#var mouse_event : InputEventMouseButton = event
+		#if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
+			##print("clicked")
+			#if held_card:
+				#drop_held_card()
+	#if event is InputEventMouseMotion:
+		##var mouse_event : InputEventMouseMotion = event 
+		#if held_card:
+			#held_card.move_to(get_global_mouse_position() + held_card_offset)
+		#
+		##board hover
+		#var mouse_pos : Vector2 = (event as InputEventMouseMotion).global_position
+		#var area_pos : Vector2 = hover_area.global_position
+		#var area_corner : Vector2 = area_pos + hover_area.size
+		#if mouse_pos.x > area_pos.x and mouse_pos.y > area_pos.y \
+				#and mouse_pos.x < area_corner.x and mouse_pos.y < area_corner.y:
+			#board_hovered = true
+		#else:
+			#board_hovered = false
+			
+func board_changed() -> void:
+	play_area.update_play_area()
+
 func add_deck() -> void:
 	var saved_deck := Main.save_info.card_datas
 	if not saved_deck:
@@ -147,13 +167,13 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 	datas.shuffle()
 	for data in datas:
 		new_deck.append(data)
-		await run_all_mods(&"on_append", [new_deck, data])
+		await run_all_mods(&"on_append", new_deck, data)
 	datas.assign(new_deck)
 		
 func _on_next_pressed() -> void:
 	if processing:
 		return
-	if held_card:
+	if held_cards:
 		return
 	processing = true
 	await run_all_mods(&"on_next")
@@ -162,54 +182,65 @@ func _on_next_pressed() -> void:
 	#save_state.emit()
 	processing = false
 
-func drop_cards_down() -> void:
-	for i:int in inputs.size():
-		if inputs[i].top_card:
-			var dropping_card := inputs[i].top_card
-			dropping_card.data.stage = CardData.Stage.PLAY
-			var bottom_card := stacks[i].get_last_card()
-			bottom_card.add_card(dropping_card, false)
-			var dropping_card_data := dropping_card.data
-			var bottom_card_data := bottom_card.data
-			await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
-			await run_all_mods(&"on_stack_card", [dropping_card])
-
-func replenish_input_cards() -> void:
-	for zone : Card in inputs:
-		if draw_deck.size() == 0:
-			draw_deck.assign(discard_deck)
-			shuffle_deck(draw_deck)
-			discard_deck.clear()
-		if draw_deck.size() > 0:
-			var card : Card = CARD.instantiate()
-			var data : CardData = draw_deck.pop_back()
-			card.add_data(data, true)
-			card.data.stage = CardData.Stage.INPUT
-			zone.add_child(card)
-			_on_child_entered_tree(card)
-			zone.add_card(card, false)
-			card.flipped = false
+#func drop_cards_down() -> void:
+	#for i:int in inputs.size():
+		#if inputs[i].top_card:
+			#var dropping_card := inputs[i].top_card
+			#dropping_card.data.stage = CardData.Stage.PLAY
+			#var bottom_card := stacks[i].get_last_card()
+			#bottom_card.add_card(dropping_card, false)
+			#var dropping_card_data := dropping_card.data
+			#var bottom_card_data := bottom_card.data
+			#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
+			#await run_all_mods(&"on_stack_card", [dropping_card])
+#
+#func replenish_input_cards() -> void:
+	#for zone : Card in inputs:
+		#if draw_deck.size() == 0:
+			#draw_deck.assign(discard_deck)
+			#shuffle_deck(draw_deck)
+			#discard_deck.clear()
+		#if draw_deck.size() > 0:
+			#var card : Card = CARD.instantiate()
+			#var data : CardData = draw_deck.pop_back()
+			#card.add_data(data, true)
+			#card.data.stage = CardData.Stage.INPUT
+			#zone.add_child(card)
+			#_on_child_entered_tree(card)
+			#zone.add_card(card, false)
+			#card.flipped = false
 
 # destination Vector3( 0:1 for upper:lower, row, col)
-func move_data_to_coord(moving:CardData, dest:Vector3i, add_stacked_cards: int = 0, trigger_mods: bool = true) -> void:
-	var dest_zone := upper_zone if dest.x == 0 else lower_zone
-	if not ((dest.x == 0 or dest.x == 1) and \
-		dest.y < dest_zone.size() and dest.z <= dest_zone[dest.y].datas.size()): 
+func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
+	var dest_zone := get_zone_from_vec3(dest)
+	if not (dest.y < dest_zone.size() and dest.z <= dest_zone[dest.y].datas.size()): 
 		print("[WARN] move_data_to_coord destination out of bounds. Given:  ", dest, " But actual is") 
 		print("upper: ", upper_zone)
 		print("lower: ", lower_zone)
+		assert(false, "This probably shouldn't happen!")
+		return
 	#find location of moving card and extract
 	var moving_vec3 : Vector3i = find_data_vec3(moving)
-	if moving_vec3.x < 0: return
-	var moving_zone := upper_zone if moving_vec3.x == 0 else lower_zone
-	var end : int = moving_vec3.z + add_stacked_cards + 1 if add_stacked_cards > -1 else 2147483647
+	#ideally player cannot ever trigger self stacking or useless move via moving stack by hand
+	#but if modifiers allow destination within moving stack, then cap stacked cards to before dest card
+	var onto_card := find_vec3_data(dest - Vector3i(0,0,1))
+	var z_dist : int = -1
+	if moving_vec3.x == dest.x and moving_vec3.y == dest.y:
+		z_dist = dest.z - moving_vec3.z
+	if z_dist > 0 and (z_dist < cards_in_stack or cards_in_stack < 0):
+		cards_in_stack = z_dist - 1
+	var moving_zone := get_zone_from_vec3(moving_vec3)
+	var end : int = moving_vec3.z + cards_in_stack if cards_in_stack > -1 else 2147483647
 	var moving_stack : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(moving_vec3.z, end)
 	var moving_stack_cutoff : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(end)
 	moving_zone[moving_vec3.y].datas.resize(moving_vec3.z)
 	moving_zone[moving_vec3.y].datas.append_array(moving_stack_cutoff)
+	#need to address destination changing due moving zone changing positions of its column
+	if moving_vec3.x == dest.x and moving_vec3.y == dest.y and z_dist > -1: 
+		dest.z -= cards_in_stack
 	
 	#find location of destination and insert
-	if dest.z == -1:
+	if dest.z < 0:
 		dest_zone[dest.y].datas.append_array(moving_stack)
 	else:
 		var dest_stack_cutoff : Array[CardData] = dest_zone[dest.y].datas.slice(dest.z)
@@ -220,12 +251,14 @@ func move_data_to_coord(moving:CardData, dest:Vector3i, add_stacked_cards: int =
 	if trigger_mods:
 		#check if conditions match dropping card
 		if moving_vec3.x == 0 and dest.x == 1:
-			pass
-			#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
-		#await run_all_mods(&"on_stack_card", [dropping_card])
+			await run_all_mods(&"on_card_dropped_on", onto_card, moving_stack)
+		await run_all_mods(&"on_stack_cards", moving_stack)
 
-func move_data_to_data(moving:CardData, dest:CardData, add_stacked_cards: int = 0, trigger_mods: bool = true) -> void:
-	move_data_to_coord(moving, find_data_vec3(dest), add_stacked_cards, trigger_mods)
+func move_data_to_data_coords(moving:CardData, dest:CardData, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
+	move_data_to_coord(moving, find_data_vec3(dest), cards_in_stack, trigger_mods)
+
+func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
+	move_data_to_coord(moving, find_data_vec3(dest) + Vector3i(0,0,1), cards_in_stack, trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
 	var vec3 : Vector3i = Vector3i.MIN
@@ -241,6 +274,13 @@ func find_data_vec3(data:CardData) -> Vector3i:
 				vec3 = Vector3(1,col,row)
 				break
 	return vec3
+
+func find_vec3_data(vec3:Vector3i) -> CardData:
+	var zone := get_zone_from_vec3(vec3)
+	var col : ArrayCardData = zone.get(vec3.y)
+	if not col: return null
+	if vec3.z > -1: return col.datas.get(vec3.z)
+	return null
 
 #spawns new CARD where deck is
 func draw_card() -> CardData:
@@ -308,7 +348,7 @@ func _on_submit_pressed() -> void:
 				#add_child(popup)
 				await get_tree().create_timer(base_delay).timeout
 				for card in result.card_combo:
-					await run_all_mods(&"on_score", [card])
+					await run_all_mods(&"on_score", card)
 				await run_all_mods(&"on_after_score")
 				
 				#await get_tree().create_timer(score_delay).timeout
@@ -415,13 +455,13 @@ func _on_submit_pressed() -> void:
 	processing = false
 
 func discard_card(card: Card) -> void:
-	await run_all_mods(&"on_discard", [card])
+	await run_all_mods(&"on_discard", card)
 	discard_deck.append(card.data)
 	card.data.stage = CardData.Stage.DISCARD
 	card.queue_free()
 
 func discard_data(data: CardData) -> void:
-	await run_all_mods(&"on_discard", [data])
+	await run_all_mods(&"on_discard", data)
 	var vec3 := find_data_vec3(data)
 	get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
 	discard_deck.append(data)
@@ -429,8 +469,7 @@ func discard_data(data: CardData) -> void:
 
 func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
 	if vec3.x == 0: return upper_zone 
-	if vec3.x == 1: return lower_zone 
-	return [ArrayCardData.new()]
+	return lower_zone 
 
 func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
@@ -504,7 +543,7 @@ func get_card_grid_pos(card:Card) -> Vector2:
 				return Vector2(r, c)
 	return Vector2(-1,-1)
 
-static func run_all_mods(function: StringName, params:Array=[]) -> void:
+static func run_all_mods(function: StringName, ...params:Array) -> void:
 	for data in CardDataIterator.new():
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
@@ -530,43 +569,40 @@ static func skill_active_check() -> void:
 				await run_all_mods(&"on_deactive")
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
+	await run_all_mods(&"on_trigger", triggered_data, triggered_mod)
 
-func _on_card_stacked(card: Card) -> void:
-	await run_all_mods(&"on_stack_card", [card])
+#func _on_child_entered_tree(node: Node) -> void:
+	#if node is Card:
+		#var card := node as Card
+		#card.clicked.connect(_on_card_clicked)
+		#if not card.is_zone:
+			#card.hover_entered.connect(_on_card_hover_entered)
+			#card.hover_exited.connect(_on_card_hover_exited)
+			#card.card_added.connect(_on_game_board_changed)
+			#card.card_stacked.connect(_on_card_stacked)
 
-func _on_child_entered_tree(node: Node) -> void:
-	if node is Card:
-		var card := node as Card
-		card.clicked.connect(_on_card_clicked)
-		if not card.is_zone:
-			card.hover_entered.connect(_on_card_hover_entered)
-			card.hover_exited.connect(_on_card_hover_exited)
-			card.card_added.connect(_on_game_board_changed)
-			card.card_stacked.connect(_on_card_stacked)
+#func _on_card_hover_entered(card : Card) -> void:
+	#card_hovered = true
+	#if held_card:
+		#return
+	#var preview_card : Card = $Preview/Card
+	#if not card.flipped:
+		##pass data by reference and doesn't update data to know about this card
+		#preview_card.data = card.data
+	#preview_card.update_visual()
+	#preview_card.flipped = card.flipped
+	#var description : String = ""
+	#if card.data.skill:
+		#description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
+	#if card.data.stamp:
+		#description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
+	#if card.data.type:
+		#description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
+	#($Preview/Label as Label).text = description
+	#($Preview as Control).show()
 
-func _on_card_hover_entered(card : Card) -> void:
-	card_hovered = true
-	if held_card:
-		return
-	var preview_card : Card = $Preview/Card
-	if not card.flipped:
-		#pass data by reference and doesn't update data to know about this card
-		preview_card.data = card.data
-	preview_card.update_visual()
-	preview_card.flipped = card.flipped
-	var description : String = ""
-	if card.data.skill:
-		description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
-	if card.data.stamp:
-		description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
-	if card.data.type:
-		description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
-	($Preview/Label as Label).text = description
-	($Preview as Control).show()
-
-func _on_card_hover_exited(card : Card) -> void:
-	card_hovered = false
+#func _on_card_hover_exited(card : Card) -> void:
+	#card_hovered = false
 	#var zone : Card = $Preview/Card
 	#if not zone.top_card.data == card.data:
 		#($Preview as Control).hide()
@@ -581,6 +617,7 @@ func _on_game_board_changed() -> void:
 		board_size = 350
 	#audio_card_placing.play(.15)
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
+	play_area.update_play_area()
 	
 func _on_card_clicked(card : Card) -> void:
 	if processing:
