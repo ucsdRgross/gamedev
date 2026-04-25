@@ -55,13 +55,17 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[node name="PlayArea" parent="." unique_id=1510098967 instance=ExtResource("4_fiyor")]
-unique_name_in_owner = true
-layout_mode = 1
+[node name="PlayContainer" type="AspectRatioContainer" parent="." unique_id=1401770089]
+layout_mode = 0
 offset_left = 423.0
 offset_top = 3.0
-offset_right = -10.0
-offset_bottom = -9.0
+offset_right = 1142.0
+offset_bottom = 639.0
+
+[node name="PlayArea" parent="PlayContainer" unique_id=1510098967 instance=ExtResource("4_fiyor")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 1
 
 [node name="GameContainer" type="Control" parent="." unique_id=2008466871]
 visible = false
@@ -487,7 +491,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 18
+num = 22
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -512,7 +516,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 19
+num = 23
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -527,7 +531,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 20
+num = 24
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -542,7 +546,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 21
+num = 25
 
 [node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
 visible = false

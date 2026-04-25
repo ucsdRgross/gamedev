@@ -21,6 +21,7 @@ var seperation : int = 4:
 var ui_data : Dictionary[Control, CardData]
 var data_ui : Dictionary[CardData, Control]
 var data_card : Dictionary[CardData, CardVisual]
+var new_data_card : Dictionary[CardData, CardVisual]
 
 @onready var containers : Array[Control] = [%TopLevelVBox, %UpperZone, %UpperZoneLeft, 
 								%UpperZoneRight, %MiddleZone, %MiddleZoneRight, 
@@ -47,6 +48,8 @@ func set_seperation() -> void:
 			vbox.add_theme_constant_override("Seperation", seperation)
 
 func update_play_area() -> void:
+	ui_data.clear()
+	data_ui.clear()
 	# Set correct amount of controls, equal to card array size + 1 for zone
 	# controls need correct focus mode
 	set_card_zone(upper_zone_right, Game.CURRENT.upper_zone_type, Game.CURRENT.upper_zone)
@@ -54,6 +57,8 @@ func update_play_area() -> void:
 	focused_control = null
 	# Do same for score rows and columns, and buffers
 	update_score_controls()
+	data_card = new_data_card
+	new_data_card = {}
 	
 func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[ArrayCardData]) -> void:
 	var card_columns := type.size()
@@ -66,7 +71,9 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			hbox.add_child(new_vbox)
 	elif column_diff < 0:
 		for i in absi(column_diff):
-			hbox.remove_child(hbox.get_child(-1))
+			var child : Control = hbox.get_child(-1)
+			hbox.remove_child(child)
+			child.queue_free()
 	# second setup correct amount of rows per column
 	for i in type.size():
 		var card_rows := datas[i].datas.size() + 1 # +1 for zone/type
@@ -78,17 +85,17 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 				vbox.add_child(new_control)
 		elif row_diff < 0:
 			for j in absi(row_diff):
-				vbox.remove_child(hbox.get_child(-1))
+				var child : Control = vbox.get_child(-1)
+				vbox.remove_child(child)
+				child.queue_free()
 		# setup card min sizes and dictionary
-		ui_data.clear()
-		data_ui.clear()
-		var new_data_card : Dictionary[CardData,CardVisual]
 		var c : Control = vbox.get_child(0)
 		c.custom_minimum_size = Vector2(card_min_size.x, 0)
 		var connected_data : CardData = type[i]
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
-		if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
+		if connected_data in data_card: 
+			new_data_card[connected_data] = data_card[connected_data]
 		else: new_data_card[connected_data] = create_card_visual(connected_data)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
@@ -96,10 +103,10 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			connected_data = datas[i].datas[j-1]
 			ui_data[c] = connected_data
 			data_ui[connected_data] = c
-			if connected_data in data_card: new_data_card[connected_data] = data_card[connected_data]
+			if connected_data in data_card: 
+				new_data_card[connected_data] = data_card[connected_data]
 			else: new_data_card[connected_data] = create_card_visual(connected_data)
 		(vbox.get_child(-1) as Control).custom_minimum_size = card_min_size
-		data_card = new_data_card
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -110,6 +117,7 @@ func create_card_control() -> Control:
 
 func create_card_visual(connected_data:CardData) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
+	add_child(card)
 	return card
 
 func on_control_focus_entered(control:Control) -> void:
@@ -151,7 +159,9 @@ func set_score_zone_row(zone:VBoxContainer, scores:int) -> void:
 			zone.add_child(Control.new())
 	elif row_diff < 0:
 		for i in absi(row_diff):
-			zone.remove_child(zone.get_child(-1))
+			var child : Control = zone.get_child(-1)
+			zone.remove_child(child)
+			child.queue_free()
 	for control : Control in zone.get_children():
 		control.custom_minimum_size = Vector2(buffer_min_size.x, card_stacked_seperation)
 
@@ -162,7 +172,9 @@ func set_score_zone_col(zone:HBoxContainer, scores:int) -> void:
 			zone.add_child(Control.new())
 	elif col_diff < 0:
 		for i in absi(col_diff):
-			zone.remove_child(zone.get_child(-1))
+			var child : Control = zone.get_child(-1)
+			zone.remove_child(child)
+			child.queue_free()
 	for control : Control in zone.get_children():
 		control.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
 
