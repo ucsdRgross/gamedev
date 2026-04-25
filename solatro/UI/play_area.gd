@@ -38,6 +38,9 @@ func _ready() -> void:
 	set_seperation()
 
 func _process(delta: float) -> void:
+	#since we cannot directly detect if array contents have changed
+	#getting rid of process would require adding update to every function
+	#where we modify the data arrays in some way
 	update_play_area()
 
 func set_seperation() -> void:

@@ -491,7 +491,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 22
+num = 26
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -516,7 +516,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 23
+num = 27
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -531,7 +531,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 24
+num = 28
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -546,7 +546,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 25
+num = 29
 
 [node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
 visible = false
