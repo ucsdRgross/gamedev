@@ -43,7 +43,6 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
 dragging_enabled = false
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
@@ -55,11 +54,14 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 0
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="MiddleZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=689665879]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
 split_offsets = PackedInt32Array(38)
 dragging_enabled = false
 split_offset = 38
@@ -79,7 +81,6 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="LowerZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1408330160]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
 split_offsets = PackedInt32Array(1266)
 dragging_enabled = false
 split_offset = 1266
@@ -88,6 +89,7 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="LowerZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=566986388]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 0
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="LowerZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=803627596]

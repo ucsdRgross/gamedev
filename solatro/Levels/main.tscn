@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://drlnkxh17heyl"]
+[gd_scene format=3 uid="uid://drlnkxh17heyl"]
 
 [ext_resource type="Script" uid="uid://dmqxtwuygeuyp" path="res://Levels/main.gd" id="1_s8cx5"]
 [ext_resource type="AudioStream" uid="uid://cta6nayvjuata" path="res://Audio/BIGMAN  The Window.mp3" id="2_1130y"]
@@ -7,18 +7,18 @@
 [sub_resource type="Environment" id="Environment_djwav"]
 background_mode = 3
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=342548850]
 script = ExtResource("1_s8cx5")
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=244460102]
 stream = ExtResource("2_1130y")
 volume_db = -30.522
 bus = &"Music"
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1280767295]
 environment = SubResource("Environment_djwav")
 
-[node name="TextureRect" type="TextureRect" parent="WorldEnvironment"]
+[node name="TextureRect" type="TextureRect" parent="WorldEnvironment" unique_id=1997770136]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -32,7 +32,7 @@ texture = ExtResource("3_ftvb4")
 expand_mode = 3
 stretch_mode = 6
 
-[node name="Menu" type="Control" parent="."]
+[node name="Menu" type="Control" parent="." unique_id=1114685978]
 layout_mode = 3
 anchors_preset = 0
 offset_left = 100.0

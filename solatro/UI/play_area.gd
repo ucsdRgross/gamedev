@@ -35,6 +35,8 @@ var data_card : Dictionary[CardData, CardVisual]
 func _ready() -> void:
 	self.custom_minimum_size = card_min_size * 10
 	set_seperation()
+
+func _process(delta: float) -> void:
 	update_play_area()
 
 func set_seperation() -> void:

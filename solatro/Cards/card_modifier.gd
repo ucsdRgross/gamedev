@@ -101,44 +101,44 @@ func is_active() -> bool:
 			return true
 	return false
 
-func card_shake(card_effect:Callable) -> void:
-	await card_raise()
-	await card_effect.call()
-	await card_lower()
-		
-func card_raise() -> void:
-	await _do_popup(&"card_raise")
-
-func card_lower() -> void:
-	await _do_popup(&"card_lower")
-
-func card_shrink() -> void:
-	await _do_popup(&"card_shrink")
-
-func _do_popup(method:StringName) -> void:
-	var popup_card : Card
-	var temp_card := false
-	if data.card:
-		popup_card = data.card
-	elif method == &"card_raise":
-		match data.stage:
-			data.Stage.DRAW:
-				popup_card = Game.CURRENT.deck_popup
-			data.Stage.DISCARD:
-				popup_card = Game.CURRENT.discard_popup
-		if not popup_card:
-			return
-		var new_popup_card := popup_card.duplicate(8)
-		popup_card.get_parent().add_child(new_popup_card)
-		popup_card = new_popup_card
-		popup_card.data = data
-		temp_card = true
-		popup_card.flipped = !popup_card.flipped
-		popup_card.show()
-	else:
-		return
-	await Callable(Game.CURRENT, method).call(popup_card)
-	if temp_card:
-		await Callable(Game.CURRENT, &"card_lower").call(popup_card)
-		popup_card.queue_free()
+#func card_shake(card_effect:Callable) -> void:
+	#await card_raise()
+	#await card_effect.call()
+	#await card_lower()
+		#
+#func card_raise() -> void:
+	#await _do_popup(&"card_raise")
+#
+#func card_lower() -> void:
+	#await _do_popup(&"card_lower")
+#
+#func card_shrink() -> void:
+	#await _do_popup(&"card_shrink")
+#
+#func _do_popup(method:StringName) -> void:
+	#var popup_card : CardVisual
+	#var temp_card := false
+	##if data.card:
+		##popup_card = data.card
+	#if method == &"card_raise":
+		#match data.stage:
+			#data.Stage.DRAW:
+				#popup_card = Game.CURRENT.deck_popup
+			#data.Stage.DISCARD:
+				#popup_card = Game.CURRENT.discard_popup
+		#if not popup_card:
+			#return
+		#var new_popup_card := popup_card.duplicate(8)
+		#popup_card.get_parent().add_child(new_popup_card)
+		#popup_card = new_popup_card
+		#popup_card.data = data
+		#temp_card = true
+		#popup_card.flipped = !popup_card.flipped
+		#popup_card.show()
+	#else:
+		#return
+	#await Callable(Game.CURRENT, method).call(popup_card)
+	#if temp_card:
+		#await Callable(Game.CURRENT, &"card_lower").call(popup_card)
+		#popup_card.queue_free()
 			

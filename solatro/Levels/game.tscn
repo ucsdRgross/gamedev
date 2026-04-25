@@ -5,7 +5,7 @@
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
 [ext_resource type="Script" uid="uid://cts6vf26wf37a" path="res://UI/control_with_child_size.gd" id="4_3ijoq"]
-[ext_resource type="Script" uid="uid://4b6ha7k1yee2" path="res://UI/play_area.gd" id="4_fiyor"]
+[ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
@@ -42,22 +42,6 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_gj2ix")
 deck = ExtResource("2_grgi0")
-held_card_offset = null
-processing = null
-board_size = null
-board_home_pos = null
-board_hovered = null
-card_hovered = null
-base_delay = null
-goal = null
-total_score = null
-mult_score = null
-col_total = null
-row_total = null
-draw_deck = null
-discard_deck = null
-rules_deck = null
-row_score_popups = null
 
 [node name="Background" type="TextureRect" parent="." unique_id=795905631]
 visible = false
@@ -71,28 +55,13 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[node name="PlayContainer" type="Control" parent="." unique_id=1790454585]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 423.0
-offset_top = 3.0
-offset_right = -1.0
-offset_bottom = -1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PlayArea" type="Control" parent="PlayContainer" unique_id=1633396175]
+[node name="PlayArea" parent="." unique_id=1510098967 instance=ExtResource("4_fiyor")]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("4_fiyor")
-metadata/_custom_type_script = "uid://4b6ha7k1yee2"
+offset_left = 423.0
+offset_top = 3.0
+offset_right = -10.0
+offset_bottom = -9.0
 
 [node name="GameContainer" type="Control" parent="." unique_id=2008466871]
 visible = false
@@ -518,7 +487,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 2
+num = 18
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -543,7 +512,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 3
+num = 19
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -558,7 +527,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 4
+num = 20
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -573,7 +542,7 @@ position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 5
+num = 21
 
 [node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
 visible = false

@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="Deck" load_steps=2 format=3 uid="uid://3uwspwqrud5"]
+[gd_resource type="Resource" script_class="Deck" format=3 uid="uid://3uwspwqrud5"]
 
 [ext_resource type="Script" uid="uid://bfpga2o5l7lqh" path="res://Decks/deck.gd" id="1_24rvu"]
 
 [resource]
 script = ExtResource("1_24rvu")
 card_datas = null
+rule_datas = null

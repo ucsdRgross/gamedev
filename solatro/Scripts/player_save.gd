@@ -3,6 +3,7 @@ extends Resource
 
 #Only variables with @export are saved
 @export var card_datas : Array[CardData]
+@export var rule_datas : Array[CardData]
 @export var layer : int = 0
 
 func write_card_data(data: CardData) -> void:

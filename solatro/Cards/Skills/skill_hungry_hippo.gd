@@ -12,7 +12,8 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 				and bot_card.card.top_card.data == top_card:
 			if bot_card.rank is PipRank.Numeral and top_card.rank is PipRank.Numeral:
 				if bot_card.rank.value + top_card.rank.value <= 13:
-					await card_shake(eat_card.bind(top_card))
+					pass
+					#await card_shake(eat_card.bind(top_card))
 
 func eat_card(ate_data:CardData) -> void:
 	consumed_cards.append(ate_data)

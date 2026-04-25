@@ -10,9 +10,9 @@ func on_trigger(data:CardData, mod:Callable) -> void:
 	if not is_active(): return
 	if data not in triggered and data.skill:
 		triggered.append(data)
-		card_raise()
+		#card_raise()
 		await mod.call()
-		card_lower()	
+		#card_lower()	
 		#await game.on_mod_triggered(self.data, on_trigger.bind(data, mod))
 		
 func on_after_score() -> void:
