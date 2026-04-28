@@ -16,6 +16,8 @@ var focused_control : Control = null
 			c.scale = Vector2.ONE * card_scale
 		for c : Control in get_tree().get_nodes_in_group("CardVisualControl"):
 			c.custom_minimum_size = card_min_size * card_scale
+		set_seperation()
+		middle_zone_left.custom_minimum_size = Vector2(card_stacked_seperation,card_stacked_seperation)
 var card_min_size : Vector2 = Vector2(38,50):
 	get():
 		return card_min_size * card_scale
@@ -25,11 +27,15 @@ var card_stacked_seperation : int = 14:
 		update_play_area()
 	get():
 		return card_stacked_seperation * card_scale
-var buffer_min_size := Vector2(14,14)
+var buffer_min_size := Vector2(14,14):
+	get():
+		return buffer_min_size * card_scale
 var seperation : int = 4: 
 	set(value):
 		seperation = value
 		set_seperation()
+	get():
+		return seperation * card_scale
 
 var ui_data : Dictionary[Control, CardData]
 var data_ui : Dictionary[CardData, Control]
@@ -129,6 +135,7 @@ func create_card_control() -> Control:
 	var new_control := Control.new()
 	new_control.add_to_group("CardVisualControl")
 	new_control.focus_mode = Control.FOCUS_ALL
+	new_control.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_ENABLED
 	new_control.focus_entered.connect(func()->void:on_control_focus_entered(new_control))
 	new_control.mouse_entered.connect(func()->void:new_control.grab_focus())
 	return new_control
@@ -143,6 +150,8 @@ func create_card_visual(connected_data:CardData) -> CardVisual:
 func on_control_focus_entered(control:Control) -> void:
 	var row_index := control.get_index()
 	var column_node : Control = control.get_parent()
+	print(control)
+	if ui_data.has(control): print(ui_data[control])
 	#var column_index := column_node.get_index()
 	#var zone_level : Control = column_node.get_parent()
 	#if zone_level == upper_zone_right:

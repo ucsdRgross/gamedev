@@ -164,7 +164,7 @@ func _on_next_pressed() -> void:
 	await run_all_mods(&"on_next")
 	#save_state.emit()
 	processing = false
-	print_board()
+	#print_board()
 
 func print_board() -> void:
 	var s : String = "Upper Type,"

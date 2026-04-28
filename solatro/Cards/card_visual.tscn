@@ -14,10 +14,10 @@ script = ExtResource("1_s3n6f")
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
-position = Vector2(0, -0.63483465)
-rotation = -1.5802654e-05
-scale = Vector2(0.98598987, 0.999711)
-skew = 0.0040671825
+position = Vector2(0, -0.36595127)
+rotation = -1.1166108e-05
+scale = Vector2(0.985788, 0.9999089)
+skew = 0.0022969246
 texture = ExtResource("2_y74k2")
 hframes = 8
 vframes = 8
@@ -50,20 +50,3 @@ position = Vector2(0, 5)
 texture = ExtResource("6_2gib3")
 hframes = 13
 vframes = 13
-
-[node name="Control" type="Control" parent="Offset/Front" unique_id=825379047]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -19.0
-offset_top = -25.0
-offset_right = -19.0
-offset_bottom = -25.0
-grow_horizontal = 2
-grow_vertical = 2
-metadata/_edit_use_anchors_ = true
-
-[connection signal="gui_input" from="Offset/Front/Control" to="." method="_on_control_gui_input"]
-[connection signal="mouse_entered" from="Offset/Front/Control" to="." method="_on_control_mouse_entered"]
-[connection signal="mouse_exited" from="Offset/Front/Control" to="." method="_on_control_mouse_exited"]

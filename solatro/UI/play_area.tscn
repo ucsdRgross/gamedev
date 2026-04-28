@@ -19,7 +19,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 0
 script = ExtResource("1_34k5y")
-card_scale = 3.45
+card_scale = 3.0
 
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="." unique_id=860459358]
 layout_mode = 1
@@ -39,6 +39,7 @@ metadata/_custom_type_script = "uid://bgqglerkcylxx"
 [node name="TopLevelVBox" type="VBoxContainer" parent="SmoothScrollContainer" unique_id=962024411]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
@@ -50,12 +51,14 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="UpperZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=878004856]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="MiddleZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=689665879]
@@ -77,6 +80,7 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 [node name="MiddleZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=128433223]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="LowerZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1408330160]
@@ -91,9 +95,11 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="LowerZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=803627596]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
