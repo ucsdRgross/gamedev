@@ -7,11 +7,24 @@ signal data_selected(data : CardData)
 
 var focused_control : Control = null
 
-var card_min_size := Vector2(38,50)
+@export var card_scale : float = 1:
+	set(value):
+		card_scale = value
+		if not is_node_ready():
+			await ready
+		for c : CardVisual in get_tree().get_nodes_in_group("CardVisual"):
+			c.scale = Vector2.ONE * card_scale
+		for c : Control in get_tree().get_nodes_in_group("CardVisualControl"):
+			c.custom_minimum_size = card_min_size * card_scale
+var card_min_size : Vector2 = Vector2(38,50):
+	get():
+		return card_min_size * card_scale
 var card_stacked_seperation : int = 14:
 	set(value):
 		card_stacked_seperation = value
 		update_play_area()
+	get():
+		return card_stacked_seperation * card_scale
 var buffer_min_size := Vector2(14,14)
 var seperation : int = 4: 
 	set(value):
@@ -34,10 +47,11 @@ var new_data_card : Dictionary[CardData, CardVisual]
 @onready var middle_zone_right: HBoxContainer = %MiddleZoneRight
 
 func _ready() -> void:
-	self.custom_minimum_size = card_min_size * 10
+	#self.custom_minimum_size = card_min_size * 10
 	set_seperation()
+	update_play_area()
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	#since we cannot directly detect if array contents have changed
 	#getting rid of process would require adding update to every function
 	#where we modify the data arrays in some way
@@ -113,6 +127,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
+	new_control.add_to_group("CardVisualControl")
 	new_control.focus_mode = Control.FOCUS_ALL
 	new_control.focus_entered.connect(func()->void:on_control_focus_entered(new_control))
 	new_control.mouse_entered.connect(func()->void:new_control.grab_focus())
@@ -120,7 +135,9 @@ func create_card_control() -> Control:
 
 func create_card_visual(connected_data:CardData) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
-	add_child(card)
+	card.scale = Vector2.ONE * card_scale
+	#wait for play area containers to update control positions at next frame
+	call_deferred("add_child", card)
 	return card
 
 func on_control_focus_entered(control:Control) -> void:
@@ -181,17 +198,17 @@ func set_score_zone_col(zone:HBoxContainer, scores:int) -> void:
 	for control : Control in zone.get_children():
 		control.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
 
-func get_control_from_data(data : CardData) -> Control:
-	if data in data_ui:
-		return data_ui[data]
-	return null
-
+#func get_control_from_data(data : CardData) -> Control:
+	#if data in data_ui:
+		#return data_ui[data]
+	#return null
+#
 func get_data_from_control(control : Control) -> CardData:
 	if control in ui_data:
 		return ui_data[control]
 	return null
 
-func get_card_from_data(data : CardData) -> CardVisual:
-	if data in data_card:
-		return data_card[data]
-	return null
+#func get_card_from_data(data : CardData) -> CardVisual:
+	#if data in data_card:
+		#return data_card[data]
+	#return null

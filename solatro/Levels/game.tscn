@@ -55,8 +55,8 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[node name="PlayContainer" type="AspectRatioContainer" parent="." unique_id=1401770089]
-layout_mode = 0
+[node name="PlayContainer" type="Control" parent="." unique_id=293911350]
+anchors_preset = 0
 offset_left = 423.0
 offset_top = 3.0
 offset_right = 1142.0
@@ -64,7 +64,7 @@ offset_bottom = 639.0
 
 [node name="PlayArea" parent="PlayContainer" unique_id=1510098967 instance=ExtResource("4_fiyor")]
 unique_name_in_owner = true
-layout_mode = 2
+layout_mode = 1
 size_flags_horizontal = 1
 
 [node name="GameContainer" type="Control" parent="." unique_id=2008466871]
@@ -286,14 +286,10 @@ text = "Submit
 
 [node name="Undo" type="Button" parent="." unique_id=2132019677]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -962.0
-offset_top = 13.0
-offset_right = -742.0
-offset_bottom = 73.0
-grow_horizontal = 0
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 388.0
+offset_bottom = 78.0
 text = "Undo
 "
 
@@ -491,7 +487,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 26
+num = 35
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -516,7 +512,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 27
+num = 36
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -527,11 +523,10 @@ offset_bottom = 556.0
 mouse_filter = 2
 
 [node name="Discard" parent="Discard" unique_id=1019947613 instance=ExtResource("3_8sseo")]
-position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 28
+num = 37
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -542,11 +537,10 @@ offset_bottom = 561.0
 mouse_filter = 2
 
 [node name="Rules" parent="Rules" unique_id=758458623 instance=ExtResource("3_8sseo")]
-position = Vector2(-48, 13)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 29
+num = 38
 
 [node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
 visible = false

@@ -90,15 +90,14 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 	pass
 
 func is_active() -> bool:
-	if data in Game.CURRENT.rules_deck:
+	if Game.CURRENT and data in Game.CURRENT.rules_deck:
 		return true
 	if data.stamp is StampGlobal:
 		return true
-	elif data.card:
-		if not data.card.top_card:
-			return true
-		if data.stamp is StampRevealing:
-			return true
+	if data.stamp is StampRevealing:
+		return true
+	elif Game.CURRENT and data in Game.CURRENT.topmost_datas:
+		return true
 	return false
 
 #func card_shake(card_effect:Callable) -> void:

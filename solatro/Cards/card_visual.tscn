@@ -7,17 +7,17 @@
 [ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="5_uqrsc"]
 [ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="6_2gib3"]
 
-[node name="Card" type="Node2D" unique_id=758458623]
+[node name="CardVisual" type="Node2D" unique_id=758458623 groups=["CardVisual"]]
+scale = Vector2(3, 3)
 script = ExtResource("1_s3n6f")
-num = 1
 
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
-position = Vector2(0, -0.24795017)
-rotation = -3.141555
-scale = Vector2(0.9928975, -0.9928519)
-skew = -0.0144046545
+position = Vector2(0, -0.63483465)
+rotation = -1.5802654e-05
+scale = Vector2(0.98598987, 0.999711)
+skew = 0.0040671825
 texture = ExtResource("2_y74k2")
 hframes = 8
 vframes = 8

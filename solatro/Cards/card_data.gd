@@ -2,6 +2,7 @@ class_name CardData
 extends Resource
 
 signal data_changed
+signal stage_changed
 
 @export var suit: PipSuit:
 	set(value):
@@ -30,14 +31,15 @@ signal data_changed
 		stamp = value
 		data_changed.emit()
 @export var statuses: Dictionary[String,int]
-var card: Card
-enum Stage {DRAW, INPUT, PLAY, DISCARD, CONTROL, SPACE}
-@export_storage var stage : Stage = Stage.SPACE:
+@export var flipped := false
+enum Stage {PLAY, DRAW, DISCARD, RULES, ZONE, DATA}
+@export_storage var stage : Stage = Stage.PLAY:
 	set(value):
 		previous_stage = stage
 		stage = value
-var previous_stage : Stage = Stage.SPACE
-var control_origin : Control 
+		stage_changed.emit()
+var previous_stage : Stage = Stage.PLAY
+#var origin_data : CardData 
 
 func with_suit(suit:PipSuit) -> CardData:
 	self.suit = suit
@@ -70,7 +72,18 @@ func with_stamp(stamp:CardModifier) -> CardData:
 
 func _on_child_data_changed() -> void:
 	data_changed.emit()
-	
+
+func _to_string() -> String:
+	var s : String
+	if suit: s += suit.get_str()
+	if rank: s += " " + rank.get_str()
+	if skill: s += " " + skill.get_str()
+	if type: s += " " + type.get_str()
+	if stamp: s += " " + stamp.get_str()
+	if s: s += " "
+	s += Stage.find_key(stage) + " " + Stage.find_key(previous_stage)
+	return s
+
 #func clone(deep:bool = false) -> CardData:
 	#var data := CardData.new()
 	#data.suit = self.suit

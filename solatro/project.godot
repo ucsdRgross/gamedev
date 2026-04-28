@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Solatro"
-run/main_scene="res://Levels/main.tscn"
+run/main_scene="uid://bjgp86y4k3875"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -44,6 +44,10 @@ window/stretch/aspect="expand"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/script-ide/plugin.cfg")
+
+[global_group]
+
+CardVisual=""
 
 [internationalization]
 

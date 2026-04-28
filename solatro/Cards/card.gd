@@ -284,8 +284,8 @@ func get_stack_size() -> int:
 
 func add_data(data:CardData, is_linked:bool=false) -> void:
 	self.data = data
-	if is_linked:
-		data.card = self
+	#if is_linked:
+		#data.card = self
 	data.data_changed.connect(update_visual)
 
 #func clone() -> Card:
@@ -303,12 +303,12 @@ func add_data(data:CardData, is_linked:bool=false) -> void:
 			#cloned.add_data(self.data.clone(true), false)
 	#return self.duplicate()
 
-func _notification(what: int) -> void:
-	match what:
-		NOTIFICATION_PREDELETE:
-			if data and data.card and data.card == self:
-				data.card = null
-			leave_stack()
+#func _notification(what: int) -> void:
+	#match what:
+		#NOTIFICATION_PREDELETE:
+			#if data and data.card and data.card == self:
+				#data.card = null
+			#leave_stack()
 
 func leave_stack() -> void:
 	if is_instance_valid(bot_card) and is_instance_valid(top_card):

@@ -6,7 +6,9 @@ func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_LOWER_ADDE
 func get_frame() -> int: return 0
 
 func on_active() -> void:
-	Game.CURRENT.lower_zone_type.append(CardData.new().with_type(TypeInput.new()))
+	var new_data := CardData.new().with_type(TypeInput.new())
+	new_data.stage = CardData.Stage.ZONE
+	Game.CURRENT.lower_zone_type.append(new_data)
 	Game.CURRENT.lower_zone.append(ArrayCardData.new())
 	
 func on_deactive() -> void:

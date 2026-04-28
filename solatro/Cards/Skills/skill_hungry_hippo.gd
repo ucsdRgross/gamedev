@@ -7,19 +7,20 @@ func get_frame() -> int: return 2
 
 var consumed_cards : Array[CardData]
 func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
-	if self.data.card:
-		if self.data == bot_card and bot_card.card and bot_card.card.top_card \
-				and bot_card.card.top_card.data == top_card:
-			if bot_card.rank is PipRank.Numeral and top_card.rank is PipRank.Numeral:
-				if bot_card.rank.value + top_card.rank.value <= 13:
-					pass
-					#await card_shake(eat_card.bind(top_card))
+	pass
+	#if self.data.card:
+		#if self.data == bot_card and bot_card.card and bot_card.card.top_card \
+				#and bot_card.card.top_card.data == top_card:
+			#if bot_card.rank is PipRank.Numeral and top_card.rank is PipRank.Numeral:
+				#if bot_card.rank.value + top_card.rank.value <= 13:
+					#pass
+					##await card_shake(eat_card.bind(top_card))
 
 func eat_card(ate_data:CardData) -> void:
 	consumed_cards.append(ate_data)
-	if Game.CURRENT: await Game.CURRENT.card_shrink(ate_data.card)
-	self.data.card.top_card = null
-	ate_data.card.queue_free()
+	#if Game.CURRENT: await Game.CURRENT.card_shrink(ate_data.card)
+	#self.data.card.top_card = null
+	#ate_data.card.queue_free()
 	self.data.rank.value += ate_data.rank.value
 	if Game.CURRENT: Game.CURRENT.total_score += ate_data.rank.value
 

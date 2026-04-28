@@ -59,15 +59,16 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var lose_screen: Label = $LoseScreen
 @onready var deck_viewer: CanvasLayer = $DeckViewer
 @onready var flow_container: FlowContainer = %FlowContainer
-#@onready var deck_popup: Control = $Deck/Deck
-#@onready var discard_popup: Control = $Discard/Discard
-#@onready var rules_popup: Control = $Rules/Rules
+@onready var deck_ui: Control = $Deck
+@onready var discard_ui: Control = $Discard
+@onready var rules_ui: Control = $Rules
 @onready var undo_button: Button = $Undo
 
 var upper_zone_type : Array[CardData] = []
 var upper_zone : Array[ArrayCardData] = []
 var lower_zone_type : Array[CardData] = []
 var lower_zone : Array[ArrayCardData] = []
+var topmost_datas : Array[CardData] = []
 var scores_row_upper : Array[BigNumber] = []
 var scores_row_lower : Array[BigNumber] = []
 var scores_col : Array[BigNumber] = []
@@ -92,7 +93,7 @@ func _ready() -> void:
 	goal = goal * (1.1 ** Main.save_info.layer)
 	add_deck()
 	save_state.emit()
-
+	print_board()
 	#for effect in effects:
 		#if effect:
 			#effect.on_game_start()
@@ -139,6 +140,8 @@ func add_deck() -> void:
 	if not saved_deck: saved_deck = self.deck.card_datas
 	
 	rules_deck = saved_rules.duplicate(true)
+	for data in rules_deck:
+		data.stage = CardData.Stage.RULES
 	draw_deck = saved_deck.duplicate(true)
 	for data in draw_deck:
 		data.stage = CardData.Stage.DRAW
@@ -159,39 +162,37 @@ func _on_next_pressed() -> void:
 		return
 	processing = true
 	await run_all_mods(&"on_next")
-	#await drop_cards_down()
-	#replenish_input_cards()
 	#save_state.emit()
 	processing = false
+	print_board()
 
-#func drop_cards_down() -> void:
-	#for i:int in inputs.size():
-		#if inputs[i].top_card:
-			#var dropping_card := inputs[i].top_card
-			#dropping_card.data.stage = CardData.Stage.PLAY
-			#var bottom_card := stacks[i].get_last_card()
-			#bottom_card.add_card(dropping_card, false)
-			#var dropping_card_data := dropping_card.data
-			#var bottom_card_data := bottom_card.data
-			#await run_all_mods(&"on_card_dropped_on", [bottom_card_data, dropping_card_data])
-			#await run_all_mods(&"on_stack_card", [dropping_card])
-#
-#func replenish_input_cards() -> void:
-	#for zone : Card in inputs:
-		#if draw_deck.size() == 0:
-			#draw_deck.assign(discard_deck)
-			#shuffle_deck(draw_deck)
-			#discard_deck.clear()
-		#if draw_deck.size() > 0:
-			#var card : Card = CARD.instantiate()
-			#var data : CardData = draw_deck.pop_back()
-			#card.add_data(data, true)
-			#card.data.stage = CardData.Stage.INPUT
-			#zone.add_child(card)
-			#_on_child_entered_tree(card)
-			#zone.add_card(card, false)
-			#card.flipped = false
-
+func print_board() -> void:
+	var s : String = "Upper Type,"
+	for c in upper_zone_type:
+		s += c.to_string() + ","
+	s += "\n"
+	var rows : int = upper_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
+	for r in rows:
+		s += str(r) + ","
+		for col in upper_zone:
+			if r < col.datas.size():
+				s += col.datas[r].to_string()
+			s += ","
+		s += "\n"
+	s += "Lower Type,"
+	for c in lower_zone_type:
+		s += c.to_string() + ","
+	s += "\n"
+	rows = lower_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
+	for r in rows:
+		s += str(r) + ","
+		for col in lower_zone:
+			if r < col.datas.size():
+				s += col.datas[r].to_string()
+			s += ","
+		s += "\n"
+	print(s)
+	
 # destination Vector3( 0:1 for upper:lower, row, col)
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
 	var dest_zone := get_zone_from_vec3(dest)
@@ -268,6 +269,7 @@ func find_vec3_data(vec3:Vector3i) -> CardData:
 func draw_card() -> CardData:
 	if draw_deck.size() > 0:
 		var data : CardData = draw_deck.pop_back()
+		data.stage = CardData.Stage.PLAY
 		return data
 	return null
 
@@ -429,18 +431,12 @@ func _on_submit_pressed() -> void:
 	
 	processing = false
 
-func discard_card(card: Card) -> void:
-	await run_all_mods(&"on_discard", card)
-	discard_deck.append(card.data)
-	card.data.stage = CardData.Stage.DISCARD
-	card.queue_free()
-
 func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
 	var vec3 := find_data_vec3(data)
 	get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
 	discard_deck.append(data)
-	if data.card: data.card.queue_free()
+	data.stage = CardData.Stage.DISCARD
 
 func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
 	if vec3.x == 0: return upper_zone 
@@ -450,7 +446,7 @@ func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
 	draw_deck.append_array(discard_deck)
 	for data in draw_deck:
-		data.stage = CardData.Stage.SPACE
+		data.stage = CardData.Stage.DRAW
 	Main.save_info.card_datas = draw_deck
 	game_ended.emit()
 
@@ -634,7 +630,7 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 		#card.flipped = false
 		#var control : Control = CARD_CONTROL.instantiate()
 		#control.add_child(card)
-		#card.hover_entered.connect(_on_card_hover_entered)
+		#card.hover_entered.connect(_on_card_hover_entered)f
 		#card.hover_exited.connect(_on_card_hover_exited)
 		#flow_container.add_child(control)
 	#deck_viewer.show()
