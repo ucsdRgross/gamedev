@@ -4,6 +4,11 @@ class_name CardVisual
 
 const card_size := Vector2(38,50)
 
+var focused : bool = false:
+	set(value):
+		focused = value
+		if focused: modulate = Color(1.825, 1.825, 1.825)
+		else: modulate = Color(1.0, 1.0, 1.0)
 var data : CardData:
 	set(value):
 		data = value

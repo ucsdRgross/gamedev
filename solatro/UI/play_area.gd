@@ -77,7 +77,6 @@ func update_play_area() -> void:
 	# controls need correct focus mode
 	set_card_zone(upper_zone_right, Game.CURRENT.upper_zone_type, Game.CURRENT.upper_zone)
 	set_card_zone(lower_zone_right, Game.CURRENT.lower_zone_type, Game.CURRENT.lower_zone)
-	focused_control = null
 	# Do same for score rows and columns, and buffers
 	update_score_controls()
 	data_card = new_data_card
@@ -113,7 +112,12 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 				child.queue_free()
 		# setup card min sizes and dictionary
 		var c : Control = vbox.get_child(0)
-		c.custom_minimum_size = Vector2(card_min_size.x, 0)
+		if c == focused_control:
+			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/1.5)
+		elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
+			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/2.5)
+		else:
+			c.custom_minimum_size = Vector2(card_min_size.x, 0)
 		var connected_data : CardData = type[i]
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
@@ -147,11 +151,15 @@ func create_card_visual(connected_data:CardData) -> CardVisual:
 	call_deferred("add_child", card)
 	return card
 
+var focused_visual : CardVisual
 func on_control_focus_entered(control:Control) -> void:
 	var row_index := control.get_index()
 	var column_node : Control = control.get_parent()
-	print(control)
-	if ui_data.has(control): print(ui_data[control])
+	if focused_visual: focused_visual.focused = false
+	if ui_data.has(control) and data_card.has(ui_data[control]):
+		focused_visual = data_card[ui_data[control]]
+		focused_visual.focused = true
+	
 	#var column_index := column_node.get_index()
 	#var zone_level : Control = column_node.get_parent()
 	#if zone_level == upper_zone_right:
@@ -168,8 +176,11 @@ func on_control_focus_entered(control:Control) -> void:
 	if focused_control and focused_control.get_index() == 0:
 		focused_control.custom_minimum_size = Vector2(card_min_size.x, 0)
 		(focused_control.get_parent().get_child(-1) as Control).custom_minimum_size = card_min_size
-	if row_index <= 1:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
+	if row_index == 0:
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/1.5)
+		(column_node.get_child(-1) as Control).custom_minimum_size = card_min_size
+	elif row_index == 1:
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/2.5)
 		(column_node.get_child(-1) as Control).custom_minimum_size = card_min_size
 	focused_control = control
 	data_selected.emit(get_data_from_control(control))
