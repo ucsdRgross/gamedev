@@ -6,6 +6,8 @@ const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 signal data_selected(data : CardData)
 
 var focused_control : Control = null
+var moused_hovered_control : Control = null
+var selected_cards : Array[CardData] = []
 
 @export var card_scale : float = 1:
 	set(value):
@@ -56,6 +58,22 @@ func _ready() -> void:
 	#self.custom_minimum_size = card_min_size * 10
 	set_seperation()
 	update_play_area()
+
+func _on_gui_input(event: InputEvent) -> void:
+	# Mouse
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		# left click
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			if focused_control == moused_hovered_control and focused_control in ui_data:
+				data_selected.emit(ui_data[focused_control])
+		# right click / cancel
+		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
+			selected_cards = []
+	# Controller
+	if event.is_action_pressed("ui_accept"):
+		if focused_control in ui_data:
+			data_selected.emit(ui_data[focused_control])
 
 func _physics_process(delta: float) -> void:
 	#since we cannot directly detect if array contents have changed
@@ -134,6 +152,12 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 				new_data_card[connected_data] = data_card[connected_data]
 			else: new_data_card[connected_data] = create_card_visual(connected_data)
 		(vbox.get_child(-1) as Control).custom_minimum_size = card_min_size
+	#set correct focus neighbors for hidden zone cards
+	for i in type.size() - 1:
+		var left : Control = hbox.get_child(i).get_child(0)
+		var right : Control = hbox.get_child(i+1).get_child(0)
+		left.focus_neighbor_right = right.get_path()
+		right.focus_neighbor_left = left.get_path()
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -141,7 +165,11 @@ func create_card_control() -> Control:
 	new_control.focus_mode = Control.FOCUS_ALL
 	new_control.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_ENABLED
 	new_control.focus_entered.connect(func()->void:on_control_focus_entered(new_control))
-	new_control.mouse_entered.connect(func()->void:new_control.grab_focus())
+	new_control.mouse_entered.connect(func()->void:
+			new_control.grab_focus()
+			moused_hovered_control = new_control)
+	new_control.mouse_exited.connect(func()->void:
+			if moused_hovered_control == new_control: moused_hovered_control = null)
 	return new_control
 
 func create_card_visual(connected_data:CardData) -> CardVisual:

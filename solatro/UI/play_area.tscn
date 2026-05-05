@@ -103,3 +103,5 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]

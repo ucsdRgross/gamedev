@@ -503,6 +503,16 @@ static func run_all_mods(function: StringName, ...params:Array) -> void:
 	if function != passive_effects:
 		await run_all_mods(passive_effects)
 
+static func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
+	for data in CardDataIterator.new():
+		for mod : CardModifier in [data.type, data.stamp]:
+			if mod and mod.has_method(function):
+				return await Callable(mod, function).callv(params)
+		var skill : CardModifierSkill = data.skill
+		if skill and skill.has_method(function) and skill.active:
+			return await Callable(skill, function).callv(params)
+	return NAN
+
 static func skill_active_check() -> void:
 	for data in CardDataIterator.new():
 		var skill : CardModifierSkill = data.skill

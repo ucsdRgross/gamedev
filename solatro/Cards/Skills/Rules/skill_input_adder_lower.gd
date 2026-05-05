@@ -1,9 +1,9 @@
-class_name InputAdderLower
+class_name SkillInputAdderLower
 extends ZoneCardAdder
 
 func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_LOWER_ADDER_CARD')
 func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_LOWER_ADDER_CARD_DESCRIPTION')
-func get_frame() -> int: return 0
+func get_frame() -> int: return 4
 
 func card_data_to_add() -> CardData:
 	return CardData.new().with_type(TypeInput.new())

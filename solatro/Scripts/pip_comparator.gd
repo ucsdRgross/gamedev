@@ -1,6 +1,22 @@
 class_name PipComparator
 # Checks card pips against each other 
 
+static func compare_suits(s1:PipSuit, s2:PipSuit) -> float:
+	var mod_result := await Game.return_first_compare_mod_result(&"on_compare_suits", s1, s2)
+	if not is_nan(mod_result): return mod_result
+	match [s1, s2]:
+		[var a, var b] when a is PipSuit.Standard and b is PipSuit.Standard:
+			return a.value - b.value
+	return NAN
+
+static func compare_ranks(r1:PipRank, r2:PipRank) -> float:
+	var mod_result := await Game.return_first_compare_mod_result(&"on_compare_ranks", r1, r2)
+	if not is_nan(mod_result): return mod_result
+	match [r1, r2]:
+		[var a, var b] when a is PipRank.Numeral and b is PipRank.Numeral:
+			return a.value - b.value
+	return NAN
+
 # 1. Before running default comparisons, checks all card effects first
 # 2. Checks all cards for if comparison is blacklisted by an effect effect first
 # 3. Then checks all cards again for if comparison is whitelisted
