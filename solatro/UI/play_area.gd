@@ -65,15 +65,29 @@ func _on_gui_input(event: InputEvent) -> void:
 		var mouse_event : InputEventMouseButton = event
 		# left click
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			if focused_control == moused_hovered_control and focused_control in ui_data:
+			if (focused_control == moused_hovered_control 
+					and focused_control in ui_data
+					and not focused_control.is_in_group("CardVisualZoneControl")):
 				data_selected.emit(ui_data[focused_control])
 		# right click / cancel
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			selected_cards = []
+			ungrab_cards()
 	# Controller
 	if event.is_action_pressed("ui_accept"):
 		if focused_control in ui_data:
 			data_selected.emit(ui_data[focused_control])
+			
+func grab_cards(datas:Array[CardData]) -> void:
+	ungrab_cards()
+	selected_cards = datas
+	for index in selected_cards.size():
+		var data := selected_cards[index]
+		if data in data_card: data_card[data].held = index + 1
+
+func ungrab_cards() -> void:
+	for data in selected_cards:
+		if data in data_card: data_card[data].held = 0
+	selected_cards = []
 
 func _physics_process(delta: float) -> void:
 	#since we cannot directly detect if array contents have changed
@@ -130,6 +144,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 				child.queue_free()
 		# setup card min sizes and dictionary
 		var c : Control = vbox.get_child(0)
+		c.add_to_group("CardVisualZoneControl")
 		if c == focused_control:
 			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/1.5)
 		elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
@@ -211,7 +226,6 @@ func on_control_focus_entered(control:Control) -> void:
 		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/2.5)
 		(column_node.get_child(-1) as Control).custom_minimum_size = card_min_size
 	focused_control = control
-	data_selected.emit(get_data_from_control(control))
 
 func update_score_controls() -> void:
 	middle_zone_left.custom_minimum_size = buffer_min_size

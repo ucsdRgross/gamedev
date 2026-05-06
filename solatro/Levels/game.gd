@@ -83,6 +83,7 @@ func _exit_tree() -> void:
 		CURRENT = null
 
 func _ready() -> void:
+	play_area.data_selected.connect(on_data_selected)
 	#for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
 		#for zone : Card in zones:
 			#_on_child_entered_tree(zone)
@@ -97,6 +98,10 @@ func _ready() -> void:
 	#for effect in effects:
 		#if effect:
 			#effect.on_game_start()
+
+func on_data_selected(data:CardData) -> void:
+	var grabbed := await return_first_grab_mod_result(&"on_can_grab_stack", data)
+	play_area.grab_cards(grabbed)
 
 #func _process(delta: float) -> void:
 	#if board_hovered or card_hovered or held_card:
@@ -244,19 +249,15 @@ func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 
 	move_data_to_coord(moving, find_data_vec3(dest) + Vector3i(0,0,1), cards_in_stack, trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
-	var vec3 : Vector3i = Vector3i.MIN
 	for col : int in upper_zone.size():
 		var row := upper_zone[col].datas.find(data)
 		if row > -1:
-			vec3 = Vector3(0,col,row)
-			break
-	if vec3.x != 0:
-		for col : int in lower_zone.size():
-			var row := lower_zone[col].datas.find(data)
-			if row > -1:
-				vec3 = Vector3(1,col,row)
-				break
-	return vec3
+			return Vector3(0,col,row)
+	for col : int in lower_zone.size():
+		var row := lower_zone[col].datas.find(data)
+		if row > -1:
+			return Vector3(1,col,row)
+	return Vector3i.MIN
 
 func find_vec3_data(vec3:Vector3i) -> CardData:
 	var zone := get_zone_from_vec3(vec3)
@@ -505,13 +506,23 @@ static func run_all_mods(function: StringName, ...params:Array) -> void:
 
 static func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
 	for data in CardDataIterator.new():
-		for mod : CardModifier in [data.type, data.stamp]:
-			if mod and mod.has_method(function):
-				return await Callable(mod, function).callv(params)
+		#for mod : CardModifier in [data.type, data.stamp]:
+			#if mod and mod.has_method(function):
+				#return await Callable(mod, function).callv(params)
 		var skill : CardModifierSkill = data.skill
 		if skill and skill.has_method(function) and skill.active:
 			return await Callable(skill, function).callv(params)
 	return NAN
+
+static func return_first_grab_mod_result(function: StringName, ...params:Array) -> Array[CardData]:
+	for data in CardDataIterator.new():
+		#for mod : CardModifier in [data.type, data.stamp]:
+			#if mod and mod.has_method(function):
+				#return await Callable(mod, function).callv(params)
+		var skill : CardModifierSkill = data.skill
+		if skill and skill.has_method(function) and skill.active:
+			return await Callable(skill, function).callv(params)
+	return []
 
 static func skill_active_check() -> void:
 	for data in CardDataIterator.new():

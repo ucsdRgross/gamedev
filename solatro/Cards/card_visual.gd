@@ -106,7 +106,7 @@ static var child_offset : Vector2 = Vector2(0, 55)
 var num : int = 0
 var move_tween : Tween
 var tilt_tween : Tween
-var held : bool = false
+var held : int = 0
 var hover : bool = false
 
 @onready var offset: Node2D = $Offset

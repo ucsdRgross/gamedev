@@ -34,6 +34,7 @@ draw_focus_border = true
 script = ExtResource("1_07a3p")
 wheel_scroll_damper = SubResource("Resource_frxyd")
 dragging_scroll_damper = SubResource("Resource_1opyf")
+handle_input = false
 metadata/_custom_type_script = "uid://bgqglerkcylxx"
 
 [node name="TopLevelVBox" type="VBoxContainer" parent="SmoothScrollContainer" unique_id=962024411]

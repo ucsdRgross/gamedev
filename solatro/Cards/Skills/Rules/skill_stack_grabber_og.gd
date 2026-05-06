@@ -9,6 +9,7 @@ func get_frame() -> int: return 5
 
 func on_can_grab_stack(target : CardData) -> Array[CardData]:
 	var vec3 := Game.CURRENT.find_data_vec3(target)
+	if vec3 == Vector3i.MIN: return []
 	var zone := Game.CURRENT.get_zone_from_vec3(vec3)
 	var stack: Array[CardData] = zone[vec3.y].datas.slice(vec3.z)
 	for i in stack.size() - 1:
