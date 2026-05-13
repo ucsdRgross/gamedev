@@ -168,8 +168,13 @@ var rot_delta : float
 var y_delta : float
 func _process(delta: float) -> void:
 	if (not (move_tween and move_tween.is_running())
-			and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):
+			and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):		
 		var target : Vector2 = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
+		if held:
+			#where card orients itself relative to mouse
+			var offset : int =  Game.CURRENT.play_area.card_min_size.y/2 - Game.CURRENT.play_area.card_stacked_seperation/2
+			offset += (held - 1) * Game.CURRENT.play_area.card_stacked_seperation
+			target = get_global_mouse_position() + Vector2(0, offset)
 		#if held or not bot_card:
 			#target = target_pos
 		#else:

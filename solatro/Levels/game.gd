@@ -100,8 +100,25 @@ func _ready() -> void:
 			#effect.on_game_start()
 
 func on_data_selected(data:CardData) -> void:
-	var grabbed := await return_first_grab_mod_result(&"on_can_grab_stack", data)
-	play_area.grab_cards(grabbed)
+	#if already holding cards
+	if play_area.selected_cards:
+		#do nothing if position unchanged
+		if (data == play_area.selected_cards[0]
+				or find_data_vec3(data) == find_data_vec3(play_area.selected_cards[0]) - Vector3i(0,0,1)):
+			play_area.ungrab_cards()
+		#dont place within own stack
+		if data not in play_area.selected_cards:
+			#attempt placing cards, do nothing if no result
+			var stacked := await return_first_data_array_result(&"on_can_place_stack", play_area.selected_cards, data)
+			if stacked:
+				var onto_data := data
+				for moving_data in stacked:
+					move_data_ontop_data(moving_data, onto_data, 1, false)
+					onto_data = moving_data
+				play_area.ungrab_cards()
+	else:
+		var grabbed := await return_first_data_array_result(&"on_can_grab_stack", data)
+		play_area.grab_cards(grabbed)
 
 #func _process(delta: float) -> void:
 	#if board_hovered or card_hovered or held_card:
@@ -514,7 +531,7 @@ static func return_first_compare_mod_result(function: StringName, ...params:Arra
 			return await Callable(skill, function).callv(params)
 	return NAN
 
-static func return_first_grab_mod_result(function: StringName, ...params:Array) -> Array[CardData]:
+static func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
 	for data in CardDataIterator.new():
 		#for mod : CardModifier in [data.type, data.stamp]:
 			#if mod and mod.has_method(function):

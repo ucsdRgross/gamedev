@@ -66,30 +66,47 @@ func _on_gui_input(event: InputEvent) -> void:
 		# left click
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			if (focused_control == moused_hovered_control 
-					and focused_control in ui_data
-					and not focused_control.is_in_group("CardVisualZoneControl")):
+					and focused_control in ui_data):
+					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				data_selected.emit(ui_data[focused_control])
-		# right click / cancel
-		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			ungrab_cards()
 	# Controller
 	if event.is_action_pressed("ui_accept"):
 		if focused_control in ui_data:
 			data_selected.emit(ui_data[focused_control])
+	if event.is_action_pressed("ui_cancel"):
+		ungrab_cards()
+
+# since clicks outside of play area can happen
+func _input(event: InputEvent) -> void:
+	# Mouse
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		# right click / cancel
+		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
+			ungrab_cards()
 			
 func grab_cards(datas:Array[CardData]) -> void:
 	ungrab_cards()
 	selected_cards = datas
 	for index in selected_cards.size():
 		var data := selected_cards[index]
-		if data in data_card: data_card[data].held = index + 1
+		if data in data_card: 
+			var card_visual := data_card[data]
+			card_visual.held = index + 1
+			card_visual.z_index = get_tree().get_nodes_in_group("CardVisualControl").size() + index + 1
+			var card_control := data_ui[data]
+			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func ungrab_cards() -> void:
 	for data in selected_cards:
-		if data in data_card: data_card[data].held = 0
+		if data in data_card: 
+			var card_visual := data_card[data]
+			card_visual.held = 0
+			var card_control := data_ui[data]
+			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
 	#since we cannot directly detect if array contents have changed
 	#getting rid of process would require adding update to every function
 	#where we modify the data arrays in some way
@@ -128,6 +145,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			var child : Control = hbox.get_child(-1)
 			hbox.remove_child(child)
 			child.queue_free()
+	var card_count : int = 0
 	# second setup correct amount of rows per column
 	for i in type.size():
 		var card_rows := datas[i].datas.size() + 1 # +1 for zone/type
@@ -145,18 +163,25 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 		# setup card min sizes and dictionary
 		var c : Control = vbox.get_child(0)
 		c.add_to_group("CardVisualZoneControl")
-		if c == focused_control:
-			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/1.5)
-		elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
-			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/2.5)
-		else:
-			c.custom_minimum_size = Vector2(card_min_size.x, 0)
+		c.custom_minimum_size = Vector2(card_min_size.x, 0)
+		c.focus_mode = Control.FOCUS_ALL
+		if selected_cards:
+			if c == focused_control:
+				c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
+			elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
+				c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation/2.5)
+		elif vbox.get_child_count() != 1:
+			c.focus_mode = Control.FOCUS_NONE
 		var connected_data : CardData = type[i]
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
 		if connected_data in data_card: 
 			new_data_card[connected_data] = data_card[connected_data]
 		else: new_data_card[connected_data] = create_card_visual(connected_data)
+		card_count += 1
+		var card_visual := new_data_card[connected_data]
+		if connected_data not in selected_cards:
+			card_visual.z_index = card_count
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
@@ -166,6 +191,10 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			if connected_data in data_card: 
 				new_data_card[connected_data] = data_card[connected_data]
 			else: new_data_card[connected_data] = create_card_visual(connected_data)
+			card_count += 1
+			card_visual = new_data_card[connected_data]
+			if connected_data not in selected_cards:
+				card_visual.z_index = card_count
 		(vbox.get_child(-1) as Control).custom_minimum_size = card_min_size
 	#set correct focus neighbors for hidden zone cards
 	for i in type.size() - 1:
@@ -173,6 +202,17 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 		var right : Control = hbox.get_child(i+1).get_child(0)
 		left.focus_neighbor_right = right.get_path()
 		right.focus_neighbor_left = left.get_path()
+	#when picking up stack, previous parent card needs its zone expanded
+	if selected_cards and selected_cards[0] in data_ui:
+		var selected_control := data_ui[selected_cards[0]]
+		var control_index := selected_control.get_index()
+		if selected_control.get_index() > 0:
+			var vbox : Control = selected_control.get_parent()
+			(vbox.get_child(control_index - 1) as Control).custom_minimum_size = card_min_size
+			if selected_control.get_index() == 1:
+				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(card_min_size.x, 0)
+			else:
+				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(card_min_size.x, card_stacked_seperation)
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
