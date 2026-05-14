@@ -16,19 +16,13 @@ var state : GameData = GameData.new():
 
 var save_history : Array[GameData] = []
 
-#@export_storage var held_card_offset : Vector2
 var processing : bool = false
-#@export_storage var board_size : int 
-#@export_storage var board_home_pos : Vector2
-#@export_storage var board_hovered : bool = false
-#@export_storage var card_hovered : bool = false
 #this setting should be in settings file
 @export_storage var base_delay : float = 1
 
 #@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 #@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 #@export_storage var row_score_popups : Dictionary
-#var setup_data : NewGameData
 
 @onready var play_area: PlayArea = %PlayArea
 #@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
@@ -60,13 +54,6 @@ func _exit_tree() -> void:
 func _ready() -> void:
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
-	#for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
-		#for zone : Card in zones:
-			#_on_child_entered_tree(zone)
-	#($Preview/Label as Label).text = ""
-	#for label in col_scores:
-		#if label: label.text = ""
-	#board_home_pos = game_container.position
 	state.goal = state.goal * (1.1 ** Main.save_info.layer)
 	add_deck()
 	save_state()
@@ -103,40 +90,6 @@ func _on_state_changed() -> void:
 	($MultScore as Label).text = str(state.mult_score)
 	($MultScore/Col as Label).text = str(state.col_total)
 	($MultScore/Row as Label).text = str(state.row_total)
-
-#func _process(delta: float) -> void:
-	#if board_hovered or card_hovered or held_card:
-		#var mouse_rel_pos : Vector2 = get_viewport().get_mouse_position() / get_viewport_rect().size
-		#mouse_rel_pos = mouse_rel_pos.clampf(0, 1)
-		#var viewport_height : int = get_viewport_rect().size.y
-		#var extra_height : int = clampi(board_size - viewport_height, 0, board_size - viewport_height)
-		#if mouse_rel_pos.y < 0.25:
-			#game_container.position.y += 2
-		#if mouse_rel_pos.y > 0.75:
-			#game_container.position.y -= 2
-		#game_container.position.y = clampi(game_container.position.y, board_home_pos.y - extra_height, board_home_pos.y)
-
-#func _input(event: InputEvent) -> void:
-	#if event is InputEventMouseButton:
-		#var mouse_event : InputEventMouseButton = event
-		#if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			##print("clicked")
-			#if held_card:
-				#drop_held_card()
-	#if event is InputEventMouseMotion:
-		##var mouse_event : InputEventMouseMotion = event 
-		#if held_card:
-			#held_card.move_to(get_global_mouse_position() + held_card_offset)
-		#
-		##board hover
-		#var mouse_pos : Vector2 = (event as InputEventMouseMotion).global_position
-		#var area_pos : Vector2 = hover_area.global_position
-		#var area_corner : Vector2 = area_pos + hover_area.size
-		#if mouse_pos.x > area_pos.x and mouse_pos.y > area_pos.y \
-				#and mouse_pos.x < area_corner.x and mouse_pos.y < area_corner.y:
-			#board_hovered = true
-		#else:
-			#board_hovered = false
 
 func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
@@ -180,7 +133,6 @@ func undo_pressed() -> void:
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = prev_game_data.duplicate(true)
-		play_area.reset_play_area()
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
@@ -524,16 +476,6 @@ static func skill_active_check() -> void:
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	await run_all_mods(&"on_trigger", triggered_data, triggered_mod)
 
-#func _on_child_entered_tree(node: Node) -> void:
-	#if node is Card:
-		#var card := node as Card
-		#card.clicked.connect(_on_card_clicked)
-		#if not card.is_zone:
-			#card.hover_entered.connect(_on_card_hover_entered)
-			#card.hover_exited.connect(_on_card_hover_exited)
-			#card.card_added.connect(_on_game_board_changed)
-			#card.card_stacked.connect(_on_card_stacked)
-
 #func _on_card_hover_entered(card : Card) -> void:
 	#card_hovered = true
 	#if held_card:
@@ -572,29 +514,6 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
 	#play_area.update_play_area()
 	
-#func _on_card_clicked(card : Card) -> void:
-	#if processing:
-		#return
-	#if held_card:
-		#if can_add_card(card, held_card):
-			#var card_to_add := held_card
-			#await drop_held_card()
-			#card.add_card(card_to_add, true, -1)
-			#save_state.emit()
-	#elif not held_card:
-		#if not card.is_zone:
-			#var next_card := card
-			#while next_card.top_card:
-				#if not can_pickup_stack(next_card, next_card.top_card):
-					#return
-				#next_card = next_card.top_card
-			#card.pickup()
-			#held_card = card
-			#held_card_offset = held_card.global_position - get_global_mouse_position()
-			#if held_card_offset.y < 60:
-				#held_card_offset.y = 60
-			#held_card.move_to(get_global_mouse_position() + held_card_offset)
-			#audio_card_placing.play(.15)
 #
 #func can_add_card(stack : Card, to_stack : Card) -> bool:
 	#if stack.top_card == to_stack and to_stack == held_card:

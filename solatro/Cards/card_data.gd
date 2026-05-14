@@ -40,8 +40,7 @@ enum Stage {PLAY, DRAW, DISCARD, RULES, ZONE, DATA}
 		previous_stage = stage
 		stage = value
 		stage_changed.emit()
-var previous_stage : Stage = Stage.PLAY
-#var origin_data : CardData 
+@export_storage var previous_stage : Stage = Stage.PLAY
 
 func with_suit(suit:PipSuit) -> CardData:
 	self.suit = suit
@@ -85,16 +84,3 @@ func _to_string() -> String:
 	if s: s += " "
 	s += Stage.find_key(stage) + " " + Stage.find_key(previous_stage)
 	return s
-
-#func clone(deep:bool = false) -> CardData:
-	#var data := CardData.new()
-	#data.suit = self.suit
-	#data.rank = self.rank
-	#if self.skill:
-		#data.with_skill(self.skill.duplicate(deep) as CardModifier)
-	#if self.type:
-		#data.with_type(self.type.duplicate(deep) as CardModifier)
-	#if self.stamp:
-		#data.with_stamp(self.stamp.duplicate(deep) as CardModifier)
-	##card
-	#return data

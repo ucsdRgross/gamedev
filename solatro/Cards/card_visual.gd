@@ -167,7 +167,9 @@ func create_move_tween(target_pos:Vector2) -> Tween:
 var rot_delta : float
 var y_delta : float
 func _process(delta: float) -> void:
-	if (not (move_tween and move_tween.is_running())
+	# Needs state check, if discard then discard animation first before free
+	if Game.CURRENT and data not in Game.CURRENT.play_area.data_ui: queue_free()
+	elif (not (move_tween and move_tween.is_running())
 			and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):		
 		var target : Vector2 = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
 		if held:
