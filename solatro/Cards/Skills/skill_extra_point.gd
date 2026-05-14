@@ -16,4 +16,4 @@ func add_points(row:int, col:int) -> void:
 	if not Game.CURRENT: return
 	#Game.CURRENT.row_add_score(row, 1)
 	#Game.CURRENT.col_add_score(col, 1)
-	Game.CURRENT.total_score += 10
+	Game.CURRENT.state.total_score += 10

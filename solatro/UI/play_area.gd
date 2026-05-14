@@ -124,13 +124,14 @@ func update_play_area() -> void:
 	data_ui.clear()
 	# Set correct amount of controls, equal to card array size + 1 for zone
 	# controls need correct focus mode
-	set_card_zone(upper_zone_right, Game.CURRENT.upper_zone_type, Game.CURRENT.upper_zone)
-	set_card_zone(lower_zone_right, Game.CURRENT.lower_zone_type, Game.CURRENT.lower_zone)
+	var game_state := Game.CURRENT.state
+	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
 	# Do same for score rows and columns, and buffers
 	update_score_controls()
 	data_card = new_data_card
 	new_data_card = {}
-	
+
 func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[ArrayCardData]) -> void:
 	var card_columns := type.size()
 	var column_diff : int = card_columns - hbox.get_child_count()
@@ -269,9 +270,10 @@ func on_control_focus_entered(control:Control) -> void:
 
 func update_score_controls() -> void:
 	middle_zone_left.custom_minimum_size = buffer_min_size
-	set_score_zone_row(upper_zone_left, Game.CURRENT.scores_row_upper.size())
-	set_score_zone_row(lower_zone_left, Game.CURRENT.scores_row_lower.size())
-	set_score_zone_col(middle_zone_right, Game.CURRENT.scores_col.size())
+	var game_state := Game.CURRENT.state
+	set_score_zone_row(upper_zone_left, game_state.scores_row_upper.size())
+	set_score_zone_row(lower_zone_left, game_state.scores_row_lower.size())
+	set_score_zone_col(middle_zone_right, game_state.scores_col.size())
 	
 func set_score_zone_row(zone:VBoxContainer, scores:int) -> void:
 	if scores == 0: scores += 1 # there should always be at least 1 control as buffer

@@ -9,7 +9,7 @@ enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 #@export var frame : int
 #@export var rarity : Rarity
 #@export var tags : Dictionary
-var data : CardData
+@export_storage var data : CardData
 
 @abstract func get_str() -> String
 @abstract func get_description() -> String
@@ -90,14 +90,15 @@ func set_material(sprite:Sprite2D) -> void: sprite.material = null
 	#pass
 
 func is_active() -> bool:
-	if Game.CURRENT and data in Game.CURRENT.rules_deck:
+	if Game.CURRENT and data in Game.CURRENT.state.rules_deck:
 		return true
 	if data.stamp is StampGlobal:
 		return true
 	if data.stamp is StampRevealing:
 		return true
-	elif Game.CURRENT and data in Game.CURRENT.topmost_datas:
-		return true
+	#if data has nothing stacked on top
+	#elif Game.CURRENT and data in Game.CURRENT.topmost_datas:
+		#return true
 	return false
 
 #func card_shake(card_effect:Callable) -> void:

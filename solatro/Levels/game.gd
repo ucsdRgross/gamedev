@@ -1,46 +1,30 @@
 extends Control
 class_name Game
 
-signal save_state
 signal game_ended
 
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
+#placeholder
 @export var deck : Deck
 
-@export_storage var held_cards : Array[CardData] = []
+var state : GameData = GameData.new():
+	set(value):
+		state = value
+		state.state_changed.connect(_on_state_changed)
+		_on_state_changed()
+
+var save_history : Array[GameData] = []
+
 #@export_storage var held_card_offset : Vector2
-@export_storage var processing : bool = false
+var processing : bool = false
 #@export_storage var board_size : int 
 #@export_storage var board_home_pos : Vector2
 #@export_storage var board_hovered : bool = false
 #@export_storage var card_hovered : bool = false
+#this setting should be in settings file
 @export_storage var base_delay : float = 1
 
-@export_storage var goal : int = 100:
-	set(value):
-		($Goal/Label as Label).text = str(value)
-		goal = value
-@export_storage var total_score : int = 0:
-	set(value):
-		($Total/Label as Label).text = str(value)
-		total_score = value
-@export_storage var mult_score : int = 0:
-	set(value):
-		($MultScore as Label).text = str(value)
-		mult_score = value
-@export_storage var col_total : int = 0:
-	set(value):
-		($MultScore/Col as Label).text = str(value)
-		col_total = value
-@export_storage var row_total : int = 0:
-	set(value):
-		($MultScore/Row as Label).text = str(value)
-		row_total = value
-
-@export_storage var draw_deck : Array[CardData]
-@export_storage var discard_deck : Array[CardData]
-@export_storage var rules_deck : Array[CardData]
 #@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 #@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
 #@export_storage var row_score_popups : Dictionary
@@ -64,15 +48,6 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 @onready var rules_ui: Control = $Rules
 @onready var undo_button: Button = $Undo
 
-var upper_zone_type : Array[CardData] = []
-var upper_zone : Array[ArrayCardData] = []
-var lower_zone_type : Array[CardData] = []
-var lower_zone : Array[ArrayCardData] = []
-var topmost_datas : Array[CardData] = []
-var scores_row_upper : Array[BigNumber] = []
-var scores_row_lower : Array[BigNumber] = []
-var scores_col : Array[BigNumber] = []
-
 static var CURRENT : Game = null
 
 func _enter_tree() -> void:
@@ -83,6 +58,7 @@ func _exit_tree() -> void:
 		CURRENT = null
 
 func _ready() -> void:
+	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
 	#for zones : Array[Card] in [inputs, stacks, [free_space] as Array[Card]]:
 		#for zone : Card in zones:
@@ -91,10 +67,10 @@ func _ready() -> void:
 	#for label in col_scores:
 		#if label: label.text = ""
 	#board_home_pos = game_container.position
-	goal = goal * (1.1 ** Main.save_info.layer)
+	state.goal = state.goal * (1.1 ** Main.save_info.layer)
 	add_deck()
-	save_state.emit()
-	print_board()
+	save_state()
+	state.print_board()
 	#for effect in effects:
 		#if effect:
 			#effect.on_game_start()
@@ -116,9 +92,17 @@ func on_data_selected(data:CardData) -> void:
 					move_data_ontop_data(moving_data, onto_data, 1, false)
 					onto_data = moving_data
 				play_area.ungrab_cards()
+				save_state()
 	else:
 		var grabbed := await return_first_data_array_result(&"on_can_grab_stack", data)
 		play_area.grab_cards(grabbed)
+
+func _on_state_changed() -> void:
+	($Goal/Label as Label).text = str(state.goal)
+	($Total/Label as Label).text = str(state.total_score)
+	($MultScore as Label).text = str(state.mult_score)
+	($MultScore/Col as Label).text = str(state.col_total)
+	($MultScore/Row as Label).text = str(state.row_total)
 
 #func _process(delta: float) -> void:
 	#if board_hovered or card_hovered or held_card:
@@ -161,13 +145,13 @@ func add_deck() -> void:
 	if not saved_rules: saved_rules = self.deck.rule_datas
 	if not saved_deck: saved_deck = self.deck.card_datas
 	
-	rules_deck = saved_rules.duplicate(true)
-	for data in rules_deck:
+	state.rules_deck = saved_rules.duplicate(true)
+	for data in state.rules_deck:
 		data.stage = CardData.Stage.RULES
-	draw_deck = saved_deck.duplicate(true)
-	for data in draw_deck:
+	state.draw_deck = saved_deck.duplicate(true)
+	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
-	shuffle_deck(draw_deck)
+	shuffle_deck(state.draw_deck)
 
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
@@ -180,48 +164,31 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 func _on_next_pressed() -> void:
 	if processing:
 		return
-	if held_cards:
-		return
 	processing = true
 	await run_all_mods(&"on_next")
-	#save_state.emit()
+	save_state()
 	processing = false
 	#print_board()
+	
+func save_state() -> void:
+	var duplicated_state : GameData = state.duplicate(true)
+	save_history.append(duplicated_state)
 
-func print_board() -> void:
-	var s : String = "Upper Type,"
-	for c in upper_zone_type:
-		s += c.to_string() + ","
-	s += "\n"
-	var rows : int = upper_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
-	for r in rows:
-		s += str(r) + ","
-		for col in upper_zone:
-			if r < col.datas.size():
-				s += col.datas[r].to_string()
-			s += ","
-		s += "\n"
-	s += "Lower Type,"
-	for c in lower_zone_type:
-		s += c.to_string() + ","
-	s += "\n"
-	rows = lower_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
-	for r in rows:
-		s += str(r) + ","
-		for col in lower_zone:
-			if r < col.datas.size():
-				s += col.datas[r].to_string()
-			s += ","
-		s += "\n"
-	print(s)
+func undo_pressed() -> void:
+	if save_history.size() > 1:
+		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
+		var prev_game_data : GameData = save_history[-1]
+		#we need to duplicate here to prevent changing history if we undo to same state in the future
+		state = prev_game_data.duplicate(true)
+		play_area.reset_play_area()
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
 	var dest_zone := get_zone_from_vec3(dest)
 	if not (dest.y < dest_zone.size() and dest.z <= dest_zone[dest.y].datas.size()): 
 		print("[WARN] move_data_to_coord destination out of bounds. Given:  ", dest, " But actual is") 
-		print("upper: ", upper_zone)
-		print("lower: ", lower_zone)
+		print("upper: ", state.upper_zone)
+		print("lower: ", state.lower_zone)
 		assert(false, "This probably shouldn't happen!")
 		return
 	#find location of moving card and extract
@@ -266,12 +233,12 @@ func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 
 	move_data_to_coord(moving, find_data_vec3(dest) + Vector3i(0,0,1), cards_in_stack, trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
-	for col : int in upper_zone.size():
-		var row := upper_zone[col].datas.find(data)
+	for col : int in state.upper_zone.size():
+		var row := state.upper_zone[col].datas.find(data)
 		if row > -1:
 			return Vector3(0,col,row)
-	for col : int in lower_zone.size():
-		var row := lower_zone[col].datas.find(data)
+	for col : int in state.lower_zone.size():
+		var row := state.lower_zone[col].datas.find(data)
 		if row > -1:
 			return Vector3(1,col,row)
 	return Vector3i.MIN
@@ -285,8 +252,8 @@ func find_vec3_data(vec3:Vector3i) -> CardData:
 
 #spawns new CARD where deck is
 func draw_card() -> CardData:
-	if draw_deck.size() > 0:
-		var data : CardData = draw_deck.pop_back()
+	if state.draw_deck.size() > 0:
+		var data : CardData = state.draw_deck.pop_back()
 		data.stage = CardData.Stage.PLAY
 		return data
 	return null
@@ -453,19 +420,19 @@ func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
 	var vec3 := find_data_vec3(data)
 	get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
-	discard_deck.append(data)
+	state.discard_deck.append(data)
 	data.stage = CardData.Stage.DISCARD
 
 func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
-	if vec3.x == 0: return upper_zone 
-	return lower_zone 
+	if vec3.x == 0: return state.upper_zone 
+	return state.lower_zone 
 
 func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
-	draw_deck.append_array(discard_deck)
-	for data in draw_deck:
+	state.draw_deck.append_array(state.discard_deck)
+	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
-	Main.save_info.card_datas = draw_deck
+	Main.save_info.card_datas = state.draw_deck
 	game_ended.emit()
 
 #func row_add_score(row:int, score:int) -> void:

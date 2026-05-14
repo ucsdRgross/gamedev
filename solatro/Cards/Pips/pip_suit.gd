@@ -3,7 +3,7 @@ extends Resource
 
 signal data_changed
 
-var value : int:
+@export_storage var value : int:
 	set(_value):
 		value = _value
 		data_changed.emit()

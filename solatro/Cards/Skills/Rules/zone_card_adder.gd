@@ -6,7 +6,7 @@ extends CardModifierSkill
 #func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_LOWER_ADDER_CARD_DESCRIPTION')
 #func get_frame() -> int: return 0
 
-var card_data : CardData
+@export_storage var card_data : CardData
 
 @abstract
 func card_data_to_add() -> CardData

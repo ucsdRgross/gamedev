@@ -2,7 +2,7 @@
 extends CardModifier
 
 const skill_texture : Texture2D = preload("res://Assets/skill_art.png")
-@export var active := false
+@export_storage var active := false
 
 func set_texture(sprite:Sprite2D) -> void:
 	sprite.texture = skill_texture

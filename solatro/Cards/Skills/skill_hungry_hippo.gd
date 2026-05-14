@@ -22,11 +22,11 @@ func eat_card(ate_data:CardData) -> void:
 	#self.data.card.top_card = null
 	#ate_data.card.queue_free()
 	self.data.rank.value += ate_data.rank.value
-	if Game.CURRENT: Game.CURRENT.total_score += ate_data.rank.value
+	if Game.CURRENT: Game.CURRENT.state.total_score += ate_data.rank.value
 
 # Oh boy this needs to handle all PipRank Types
 func on_game_end() -> void:
 	for card in consumed_cards:
 		self.data.rank.value -= card.rank.value
-		if Game.CURRENT: Game.CURRENT.draw_deck.append(card)
+		if Game.CURRENT: Game.CURRENT.state.draw_deck.append(card)
 	consumed_cards.clear()

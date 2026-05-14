@@ -10,22 +10,23 @@ var current_col : int = 0
 var is_row_empty := true
 
 func should_continue() -> bool:
+	var game_state := Game.CURRENT.state
 	match phase:
 		DECK:
-			return iterate_array(Game.CURRENT.draw_deck, UPPER)
+			return iterate_array(game_state.draw_deck, UPPER)
 		UPPER:
-			return iterate_2d_array(Game.CURRENT.upper_zone, LOWER)
+			return iterate_2d_array(game_state.upper_zone, LOWER)
 		LOWER:
-			return iterate_2d_array(Game.CURRENT.lower_zone, DISCARD)
+			return iterate_2d_array(game_state.lower_zone, DISCARD)
 		DISCARD:
-			return iterate_array(Game.CURRENT.discard_deck, UPPER_RULES)
+			return iterate_array(game_state.discard_deck, UPPER_RULES)
 		UPPER_RULES:
-			return iterate_array(Game.CURRENT.upper_zone_type, LOWER_RULES)
+			return iterate_array(game_state.upper_zone_type, LOWER_RULES)
 		LOWER_RULES:
-			return iterate_array(Game.CURRENT.lower_zone_type, RULES)
+			return iterate_array(game_state.lower_zone_type, RULES)
 		RULES:
-			if current_col < Game.CURRENT.rules_deck.size():
-				next_card_data = Game.CURRENT.rules_deck[current_col]
+			if current_col < game_state.rules_deck.size():
+				next_card_data = game_state.rules_deck[current_col]
 				current_col += 1
 				return true
 			else:

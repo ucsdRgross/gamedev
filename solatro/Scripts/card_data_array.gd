@@ -1,12 +1,12 @@
 extends Resource
 class_name ArrayCardData
 
-signal data_changed
+#signal data_changed
 
-var datas : Array[CardData]:
-	set(value):
-		datas = value
-		data_changed.emit()
+@export_storage var datas : Array[CardData]#:
+	#set(value):
+		#datas = value
+		#data_changed.emit()
 
 #func clone() -> ArrayCard:
 		#var deep_copy := func(c:Card) -> Card:
