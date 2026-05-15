@@ -1,5 +1,5 @@
 @abstract
-class_name ZoneCardAdder
+class_name ZoneAdder
 extends CardModifierSkill
 
 #func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_LOWER_ADDER_CARD')

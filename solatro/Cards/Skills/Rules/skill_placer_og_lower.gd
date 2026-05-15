@@ -1,4 +1,4 @@
-class_name SkillStackPlacerOgLower
+class_name SkillPlacerOgLower
 extends CardModifierSkill
 
 func get_str() -> String:

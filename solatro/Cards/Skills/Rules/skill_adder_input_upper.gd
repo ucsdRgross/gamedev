@@ -1,5 +1,5 @@
-class_name SkillInputAdderUpper
-extends ZoneCardAdder
+class_name SkillAdderInputUpper
+extends ZoneAdder
 
 func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_UPPER_ADDER_CARD')
 func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_UPPER_ADDER_CARD_DESCRIPTION')

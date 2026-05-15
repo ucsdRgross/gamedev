@@ -2,20 +2,20 @@ extends Resource
 class_name Deck
 
 var rules1: Array[CardData] = [
-	CardData.new().with_skill(SkillInputAdderUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputUpper.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 
-	CardData.new().with_skill(SkillInputAdderLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillInputAdderLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 	
-	CardData.new().with_skill(SkillStackGrabberOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
-	CardData.new().with_skill(SkillStackPlacerOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillGrabberOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillPlacerOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 ]
 
 var deck1: Array[CardData] = [
