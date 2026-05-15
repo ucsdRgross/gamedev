@@ -5,15 +5,11 @@ func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_CARD')
 func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_CARD_DESCRIPTION')
 func get_frame() -> int: return 0
 
-func on_can_stack(stack : CardData, to_stack : CardData) -> bool:
+func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+	if target != data: return []
 	var game_state := Game.CURRENT.state
-	if stack == data:
-		# get column of zone
-		var col : int = game_state.lower_zone_type.find(data)
-		# if column of board is empty, return true
-		if col > 0 and game_state.lower_zone[col].datas.size() == 0:
-			return true
-	return false
+	if Game.CURRENT.is_data_topmost(target): return stack
+	return []
 
 func on_next() -> void:
 	await drop_card()

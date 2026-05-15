@@ -3,7 +3,7 @@ extends CardModifierStamp
 
 func get_str() -> String: return "Double Trigger"
 func get_description() -> String: return "This card's effects triggers twice"
-func get_frame() -> int: return 57
+func get_frame() -> int: return 1
 
 @export_storage var triggers : int = 0
 func on_trigger(data:CardData, mod:Callable) -> void:

@@ -163,7 +163,7 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 				child.queue_free()
 		# setup card min sizes and dictionary
 		var c : Control = vbox.get_child(0)
-		c.add_to_group("CardVisualZoneControl")
+		#c.add_to_group("CardVisualZoneControl")
 		c.custom_minimum_size = Vector2(card_min_size.x, 0)
 		c.focus_mode = Control.FOCUS_ALL
 		if selected_cards:

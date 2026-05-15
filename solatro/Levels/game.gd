@@ -70,7 +70,7 @@ func on_data_selected(data:CardData) -> void:
 				or find_data_vec3(data) == find_data_vec3(play_area.selected_cards[0]) - Vector3i(0,0,1)):
 			play_area.ungrab_cards()
 		#dont place within own stack
-		if data not in play_area.selected_cards:
+		elif data not in play_area.selected_cards:
 			#attempt placing cards, do nothing if no result
 			var stacked := await return_first_data_array_result(&"on_can_place_stack", play_area.selected_cards, data)
 			if stacked:
@@ -172,6 +172,8 @@ func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1,
 		dest_zone[dest.y].datas.append_array(moving_stack)
 		dest_zone[dest.y].datas.append_array(dest_stack_cutoff)
 	
+	for data in moving_stack:
+		data.stage = CardData.Stage.PLAY
 	if trigger_mods:
 		#check if conditions match dropping card
 		if moving_vec3.x == 0 and dest.x == 1:
@@ -185,7 +187,11 @@ func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 
 	move_data_to_coord(moving, find_data_vec3(dest) + Vector3i(0,0,1), cards_in_stack, trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
-	for col : int in state.upper_zone.size():
+	var upper_type_index :=  state.upper_zone_type.find(data)
+	if upper_type_index > -1: return Vector3(0,upper_type_index,-1)
+	var lower_type_index :=  state.lower_zone_type.find(data)
+	if lower_type_index > -1: return Vector3(1,lower_type_index,-1)
+	for col : int in state.upper_zone_type.size():
 		var row := state.upper_zone[col].datas.find(data)
 		if row > -1:
 			return Vector3(0,col,row)
@@ -201,6 +207,24 @@ func find_vec3_data(vec3:Vector3i) -> CardData:
 	if not col: return null
 	if vec3.z > -1: return col.datas.get(vec3.z)
 	return null
+
+func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
+	if vec3.x == 0: return state.upper_zone 
+	return state.lower_zone 
+	
+func is_data_topmost(data:CardData) -> bool:
+	# check if is type
+	var col : int = state.lower_zone_type.find(data)
+	# if datas is empty the input card must be topmost
+	if col >= 0 and state.lower_zone[col].datas.size() == 0:
+		return true
+	var vec3 := find_data_vec3(data)
+	if vec3 == Vector3i.MIN: return false
+	var zone := get_zone_from_vec3(vec3)
+	var zone_col : ArrayCardData = zone.get(vec3.y)
+	if not zone_col: return false
+	if data == zone_col.datas[-1]: return true
+	return false
 
 #spawns new CARD where deck is
 func draw_card() -> CardData:
@@ -375,10 +399,6 @@ func discard_data(data: CardData) -> void:
 	state.discard_deck.append(data)
 	data.stage = CardData.Stage.DISCARD
 
-func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
-	if vec3.x == 0: return state.upper_zone 
-	return state.lower_zone 
-
 func return_to_map() -> void:
 	run_all_mods(&"on_game_end")
 	state.draw_deck.append_array(state.discard_deck)
@@ -442,9 +462,9 @@ static func run_all_mods(function: StringName, ...params:Array) -> void:
 
 static func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
 	for data in CardDataIterator.new():
-		#for mod : CardModifier in [data.type, data.stamp]:
-			#if mod and mod.has_method(function):
-				#return await Callable(mod, function).callv(params)
+		for mod : CardModifier in [data.type, data.stamp]:
+			if mod and mod.has_method(function):
+				return await Callable(mod, function).callv(params)
 		var skill : CardModifierSkill = data.skill
 		if skill and skill.has_method(function) and skill.active:
 			return await Callable(skill, function).callv(params)
@@ -452,12 +472,14 @@ static func return_first_compare_mod_result(function: StringName, ...params:Arra
 
 static func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
 	for data in CardDataIterator.new():
-		#for mod : CardModifier in [data.type, data.stamp]:
-			#if mod and mod.has_method(function):
-				#return await Callable(mod, function).callv(params)
+		for mod : CardModifier in [data.type, data.stamp]:
+			if mod and mod.has_method(function):
+				var result : Array[CardData] = await Callable(mod, function).callv(params)
+				if result: return result
 		var skill : CardModifierSkill = data.skill
 		if skill and skill.has_method(function) and skill.active:
-			return await Callable(skill, function).callv(params)
+			var result : Array[CardData] = await Callable(skill, function).callv(params)
+			if result: return result
 	return []
 
 static func skill_active_check() -> void:

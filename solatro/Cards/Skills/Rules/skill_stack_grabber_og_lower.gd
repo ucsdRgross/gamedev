@@ -1,15 +1,15 @@
-class_name SkillStackGrabberOg
+class_name SkillStackGrabberOgLower
 extends CardModifierSkill
 
 func get_str() -> String:
 	return "Grabber Classic"
 func get_description() -> String:
-	return "Pickup stack if cards ascend or descend in value and do not repeat suits"
+	return "Pickup stack in lower zone if cards ascend or descend in value and do not repeat suits"
 func get_frame() -> int: return 5
 
 func on_can_grab_stack(target : CardData) -> Array[CardData]:
 	var vec3 := Game.CURRENT.find_data_vec3(target)
-	if vec3 == Vector3i.MIN: return []
+	if vec3 == Vector3i.MIN or vec3.x == 0: return []
 	var zone := Game.CURRENT.get_zone_from_vec3(vec3)
 	var stack: Array[CardData] = zone[vec3.y].datas.slice(vec3.z)
 	for i in stack.size() - 1:

@@ -131,6 +131,7 @@ func _ready() -> void:
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 
 func on_stage_changed() -> void:
+	if data.stage == data.previous_stage: return
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
 			var target_pos := get_card_control_center(Game.CURRENT.play_area.data_ui[data])

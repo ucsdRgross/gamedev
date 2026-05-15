@@ -19,7 +19,7 @@ func with_value(i:int) -> PipRank:
 class Numeral extends PipRank:
 	const texture2D : Texture2D = preload("res://Assets/rank_pips.png")
 	@export_storage var original_value : int
-	func get_str() -> String: return "Numeral Rank"
+	func get_str() -> String: return "NumeralRank" + str(value)
 	func set_texture(sprite:Sprite2D) -> void:
 		sprite.texture = texture2D
 		sprite.hframes = 13

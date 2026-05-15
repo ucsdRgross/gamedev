@@ -24,7 +24,7 @@ class Standard extends PipSuit:
 	const art_texture : Texture2D = preload("res://Assets/suit_art.png")
 	const color_picker_shader = preload("res://Assets/color_picker.tres")
 	const pallete_colors : Array[int] = [8,11,14,2]
-	func get_str() -> String: return "Standard Suit"
+	func get_str() -> String: return "StandardSuit" + str(value)
 	func set_texture(sprite:Sprite2D) -> void:
 		sprite.texture = suit_texture
 		sprite.hframes = 8
