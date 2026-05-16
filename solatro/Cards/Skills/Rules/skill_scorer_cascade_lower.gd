@@ -8,12 +8,29 @@ func get_description() -> String:
 func get_frame() -> int: return 7
 
 func on_run_scorer() -> void:
-	pass
-	
-#var board_cols : Array[ArrayCard] = get_board_cols()
-	#var row_to_score := 0
-	#var last_scored_cards : Array[Card] = []
-	#
+	#var board_cols : Array[ArrayCard] = get_board_cols()
+	var zone := Game.CURRENT.state.lower_zone
+	var current_row : int = 0
+	var current_col : int = 0
+	#var last_scored_cards : Array[CardData] = []
+	while true:
+		#Check row scores
+		var is_row_empty := true
+		for col in zone:
+			if col.datas.size() > current_row:
+				is_row_empty = false
+				await Game.CURRENT.run_all_mods(&"on_score_row", current_row)
+				break
+		if is_row_empty: break
+		#Check col scores
+		while current_col > zone.size():
+			var col : Array[CardData] = zone[current_col].datas
+			if current_row < col.size():
+				await Game.CURRENT.run_all_mods(&"on_score_col", current_row, current_col)
+			current_col += 1
+		current_row += 1
+		current_col = 0
+		
 	#while row_to_score < board_cols[0].cards.size():
 		#var row_cards : Array[Card]
 		#for i in 5:
