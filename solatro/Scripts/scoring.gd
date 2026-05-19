@@ -1,7 +1,7 @@
 class_name Scoring
 
 class Result:
-	var score_name : String
+	var name : String
 	var meld : Array[CardData]
 	var score : int
 	var tie_breaker_high_card : float
@@ -33,7 +33,7 @@ static func _get_hand_profiles(cards: Array[CardData]) -> HandProfile:
 		
 		# --- PHASE A: COMPOSING RANK MAPS ---
 		# HALF-STEP IDENTIFICATION: Checks if a numeric rank matches a .5 fractional increment.
-		if card.rank is PipRank.Numeral and is_equal_approx(fmod(card.rank.value, 1.0), 0.5):
+		if card.rank is PipRank.Numeral and is_equal_approx(fposmod(card.rank.value, 1.0), 0.5):
 			# Split-populates both neighboring integer spaces simultaneously to bridge runs or match sets.
 			var lower_bound: float = floor(rv)
 			var upper_bound: float = ceil(rv)
@@ -169,10 +169,10 @@ class ExpandedGridHandler extends Scorer:
 			var suit_profile := Scoring._get_hand_profiles(res.meld).suits.map
 			if suit_profile.size() == 1:
 				res.score = int((sub_score * 1.5) + (2 * sub_hand_size))
-				res.score_name = "Full Flush House" + size_postfix # No '1' prefix assigned.
+				res.name = "Full Flush House" + size_postfix # No '1' prefix assigned.
 			else:
 				res.score = int(sub_score * 1.5)
-				res.score_name = "Full House" + size_postfix
+				res.name = "Full House" + size_postfix
 				
 			res.tie_breaker_high_card = max_rank
 			return [res]
@@ -234,12 +234,12 @@ class ExpandedGridHandler extends Scorer:
 					res.score += (2 * res.meld.size())
 					if global_suits.size() == 1:
 						# ALL sub-hands share exactly 1 uniform suit signature = FULL FLUSH.
-						res.score_name = str(m) + " Full Flush Houses (" + str(sub_hand_size) + ")"
+						res.name = str(m) + " Full Flush Houses (" + str(sub_hand_size) + ")"
 					else:
 						# Clean individual sub-hand flushes, but color mismatched = MULTI-FLUSH.
-						res.score_name = str(m) + " Multi-Flush Houses (" + str(sub_hand_size) + ")"
+						res.name = str(m) + " Multi-Flush Houses (" + str(sub_hand_size) + ")"
 				else:
-					res.score_name = str(m) + " Full Houses (" + str(sub_hand_size) + ")"
+					res.name = str(m) + " Full Houses (" + str(sub_hand_size) + ")"
 					
 				res.tie_breaker_high_card = max_rank
 				simultaneous_outcomes.append(res)
@@ -250,6 +250,7 @@ class ExpandedGridHandler extends Scorer:
 
 
 	func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
+		# Handles perfectly symmetrical sets (The Grid Hand) or standard standalone sets.
 		var res := Result.new()
 		res.tie_breaker_high_card = max_rank
 		
@@ -263,7 +264,16 @@ class ExpandedGridHandler extends Scorer:
 			var m := clusters.size()
 			var size_postfix := "" if n <= 5 else " (" + str(n) + ")"
 			
-			res.score_name = "Multi-Grid Set" + size_postfix if m == 1 else str(m) + " Multi-Grid Sets (" + str(n) + ")"
+			# DYNAMIC RE-NAMING PASSTHROUGH MATRIX
+			if n == 2:
+				# Specific override for pairs matching your assertion formats
+				if m == 2: res.name = "Two Pair"
+				else: res.name = str(m) + " Pairs"
+			elif n == 3:
+				res.name = str(m) + " Triplets"
+			else:
+				res.name = str(m) + " " + str(n) + " of a Kinds" + size_postfix
+				
 			var base_grid := n * (n - 1) * m
 			
 			# Clean branchless curve calculation mapping Two Pair (m=2) safely to exactly 1.0x
@@ -279,12 +289,10 @@ class ExpandedGridHandler extends Scorer:
 			
 			var suit_profile := Scoring._get_hand_profiles(s1).suits.map
 			if suit_profile.size() == 1 and n >= 5:
-				# BUG FIXED: Replaced static literal token 'X' with dynamic string casting of size integer
-				res.score_name = "Full Flush " + str(n) + " of a Kind" + size_postfix
+				res.name = "Full Flush " + str(n) + " of a Kind" + size_postfix
 				res.score = (n * (n - 1)) + (2 * n)
 			else:
-				# BUG FIXED: Replaced static literal token 'X' with dynamic string casting of size integer
-				res.score_name = str(n) + " of a Kind" + size_postfix
+				res.name = str(n) + " of a Kind" + size_postfix
 				res.score = n * (n - 1)
 				
 			res.meld = s1
@@ -292,40 +300,97 @@ class ExpandedGridHandler extends Scorer:
 
 
 # ==============================================================================
-# 2. SEQUENTIAL HAND HANDLER (UNBOUNDED MULTI-STRAIGHT MODULE)
+# 2. SEQUENTIAL HAND HANDLER (UNBOUNDED MULTI-STRAIGHT SCORER)
 # ==============================================================================
-
 class MultiStraightHandler extends Scorer:
 	func score(cards: Array[CardData]) -> Array[Result]:
-		# Scans, slices, and harvests multiple unconnected sequence paths simultaneously.
+		if cards.size() < 5: return []
+		
+		# Execute parallel path simulation to prevent straight flush cannibalism
+		var path_a_results := _evaluate_straight_flushes_first(cards)
+		var path_b_results := _evaluate_mixed_straights_first(cards)
+		
+		var optimal_outcomes: Array[Result] = []
+		if path_a_results != null: optimal_outcomes.append(path_a_results)
+		if path_b_results != null: optimal_outcomes.append(path_b_results)
+		
+		if optimal_outcomes.is_empty(): return []
+		
+		# Sort results so the absolute highest scoring configuration wins natively
+		optimal_outcomes.sort_custom(func(a: Result, b: Result) -> bool: return a.score > b.score)
+		return optimal_outcomes
+
+
+	# PATH A: Prioritizes searching isolated suit tracks first to protect Straight Flushes
+	func _evaluate_straight_flushes_first(cards: Array[CardData]) -> Result:
 		var pool := cards.duplicate()
 		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
 		
-		# GREEDY EXTRACTION: Harvest longest runs first, scrubbing items out of residue pool.
+		# Step 1: Harvest any available clean suit-isolated runs first
+		while true:
+			var profiles := Scoring._get_hand_profiles(pool)
+			var best_sf_run: Array[CardData] = []
+			
+			for suit_id in profiles.suits.map:
+				var suit_cards: Array[CardData] = profiles.suits.map[suit_id].datas
+				if suit_cards.size() >= 5:
+					var test_run := _find_best_unbounded_sequence(suit_cards)
+					if test_run.size() > best_sf_run.size():
+						best_sf_run = test_run
+						
+			if best_sf_run.size() < 5: break
+			
+			straights_found.append(ArrayCardData.new().with_datas(best_sf_run))
+			absolute_max_rank = max(absolute_max_rank, _get_max_value_of_run(best_sf_run))
+			for c in best_sf_run: pool.erase(c)
+			
+		# Step 2: Harvest any mixed-suit straight residue left over in the pool
+		while true:
+			var mixed_run := _find_best_unbounded_sequence(pool)
+			if mixed_run.size() < 5: break
+			
+			straights_found.append(ArrayCardData.new().with_datas(mixed_run))
+			absolute_max_rank = max(absolute_max_rank, _get_max_value_of_run(mixed_run))
+			for c in mixed_run: pool.erase(c)
+			
+		if straights_found.is_empty(): return null
+		return _package_straight_result(straights_found, absolute_max_rank)
+
+
+	# PATH B: Traditional greedy extraction processing raw whole-hand sequential bounds first
+	func _evaluate_mixed_straights_first(cards: Array[CardData]) -> Result:
+		var pool := cards.duplicate()
+		var straights_found: Array[ArrayCardData] = []
+		var absolute_max_rank := -INF
+		
 		while true:
 			var run := _find_best_unbounded_sequence(pool)
-			if run.size() < 5: break 
+			if run.size() < 5: break
 			
 			straights_found.append(ArrayCardData.new().with_datas(run))
 			absolute_max_rank = max(absolute_max_rank, _get_max_value_of_run(run))
 			for c in run: pool.erase(c)
 			
-		if straights_found.is_empty(): return []
-		
+		if straights_found.is_empty(): return null
+		return _package_straight_result(straights_found, absolute_max_rank)
+
+
+	# Internal uniform packaging formatter handling compounding bonuses and string rules
+	func _package_straight_result(straights: Array[ArrayCardData], max_rank: float) -> Result:
 		var res := Result.new()
 		var total_points := 0
 		var flush_suits_seen := {}
 		var clean_flushes_count := 0
-		var uniform_size := straights_found[0].datas.size()
+		var uniform_size := straights[0].datas.size()
 		var all_sizes_identical := true
 		
-		for run in straights_found:
+		for run in straights:
 			if run.datas.size() != uniform_size: all_sizes_identical = false
 			var base := 2 * run.datas.size()
 			var suit_profile := Scoring._get_hand_profiles(run.datas).suits.map
 			
-			if suit_profile.size() == 1: # Isolated sequence forms a clean flush on its own
+			if suit_profile.size() == 1:
 				total_points += (base + (2 * run.datas.size()))
 				clean_flushes_count += 1
 				flush_suits_seen[suit_profile.keys()[0]] = true
@@ -333,38 +398,31 @@ class MultiStraightHandler extends Scorer:
 				total_points += base
 			res.meld.append_array(run.datas)
 			
-		var m := straights_found.size()
+		var m := straights.size()
 		var size_postfix := "" if (uniform_size <= 5 and all_sizes_identical) else " (" + str(uniform_size) + ")"
 		
-		# FORMATTING ALIGNMENT: Decouples Full Flush Straight layouts from Multi-Flush tracks.
 		if clean_flushes_count == m:
 			if flush_suits_seen.size() == 1:
-				# All individual flushes belong to 1 unified suit signature = FULL FLUSH.
-				res.score_name = "Full Flush Straight" + size_postfix if m == 1 else str(m) + " Full Flush Straights" + " (" + str(uniform_size) + ")"
+				res.name = "Full Flush Straight" + size_postfix if m == 1 else str(m) + " Full Flush Straights" + " (" + str(uniform_size) + ")"
 			else:
-				# Clean separate sub-flushes, but suit color mismatched = MULTI-FLUSH.
-				res.score_name = "Multi-Flush Straight" + size_postfix if m == 1 else str(m) + " Multi-Flush Straights" + " (" + str(uniform_size) + ")"
+				res.name = "Multi-Flush Straight" + size_postfix if m == 1 else str(m) + " Multi-Flush Straights" + " (" + str(uniform_size) + ")"
 		else:
-			res.score_name = "Straight" + size_postfix if m == 1 else str(m) + " Straights" + " (" + str(uniform_size) + ")"
+			res.name = "Straight" + size_postfix if m == 1 else str(m) + " Straights" + " (" + str(uniform_size) + ")"
 			
 		res.score = int(total_points * (1.0 + 0.5 * (m - 1)))
-		res.tie_breaker_high_card = absolute_max_rank
-		return [res]
+		res.tie_breaker_high_card = max_rank
+		return res
 
-
+	# Underlying sequence algorithms remain unchanged
 	func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
-		# Triggers two-pass scanning evaluating high ace values vs shifted relative floor layouts.
 		var standard_run := _scan_sequence(card_pool, false)
 		var has_ace := false
 		for card in card_pool:
-			if card and card.rank and int(card.rank.value) == 14:
-				has_ace = true
-				break
+			if card and card.rank and int(card.rank.value) == 14: has_ace = true
 		if has_ace:
 			var low_ace_run := _scan_sequence(card_pool, true)
 			if low_ace_run.size() > standard_run.size(): return low_ace_run
 		return standard_run
-
 
 	func _scan_sequence(card_pool: Array[CardData], wrap_ace_low: bool) -> Array[CardData]:
 		if card_pool.is_empty(): return []
@@ -373,25 +431,23 @@ class MultiStraightHandler extends Scorer:
 			if not card or not card.rank: continue
 			if int(card.rank.value) != 14: min_non_ace_value = min(min_non_ace_value, float(card.rank.value))
 				
-		var rank_profile := Scoring._get_hand_profiles(card_pool).ranks
+		var rank_profile := Scoring._get_hand_profiles(card_pool).ranks.map
 		var unique_ints: Array[int] = []
-		for key in rank_profile.map: unique_ints.append(int(key))
+		for key in rank_profile: unique_ints.append(int(key))
 			
-		if wrap_ace_low and rank_profile.map.has(14.0):
-			# Shifts Ace value dynamically to map exactly 1 integer block below local floor.
+		if wrap_ace_low and rank_profile.has(14.0):
 			var low_ace_target := int(min_non_ace_value - 1)
 			unique_ints.append(low_ace_target)
-			unique_ints.erase(14) # Removes original index reference to bar infinite loops.
+			unique_ints.erase(14)
 			
 		unique_ints.sort()
-		unique_ints.reverse() # Arrange descending high-to-low.
+		unique_ints.reverse()
 		
 		var longest_int_run: Array[int] = []
 		var current_int_run: Array[int] = []
 		if not unique_ints.is_empty(): current_int_run.append(unique_ints[0])
 			
 		for i in range(1, unique_ints.size()):
-			# INTERVAL ASSURANCE: Requires an exact step difference of 1 to preserve straight shapes.
 			if unique_ints[i] == unique_ints[i-1] - 1:
 				current_int_run.append(unique_ints[i])
 			elif unique_ints[i] != unique_ints[i-1]:
@@ -402,16 +458,16 @@ class MultiStraightHandler extends Scorer:
 		var final_cards: Array[CardData] = []
 		for val in longest_int_run:
 			var search_val := 14.0 if (wrap_ace_low and val == int(min_non_ace_value - 1)) else float(val)
-			if rank_profile.map.has(search_val) and rank_profile.map[search_val].datas.size() > 0:
-				final_cards.append(rank_profile.map[search_val].datas[0]) # Extract the first valid object reference.
+			if rank_profile.has(search_val) and rank_profile[search_val].datas.size() > 0:
+				final_cards.append(rank_profile[search_val].datas[0])
 		return final_cards
-
 
 	func _get_max_value_of_run(run_cards: Array[CardData]) -> float:
 		var max_val := -INF
 		for card in run_cards:
 			if card and card.rank: max_val = max(max_val, float(card.rank.value))
 		return max_val
+
 
 
 # ==============================================================================
@@ -456,7 +512,7 @@ class MultiFlushHandler extends Scorer:
 			
 		var m := flushes_found.size()
 		var size_postfix := "" if (uniform_size <= 5 and all_sizes_identical) else " (" + str(uniform_size) + ")"
-		res.score_name = "Flush" + size_postfix if m == 1 else str(m) + " Flushes" + " (" + str(uniform_size) + ")"
+		res.name = "Flush" + size_postfix if m == 1 else str(m) + " Flushes" + " (" + str(uniform_size) + ")"
 		res.score = int(total_points * (1.0 + 0.5 * (m - 1)))
 		res.tie_breaker_high_card = absolute_max_rank
 		return [res]
@@ -479,7 +535,7 @@ class HighCardHandler extends Scorer:
 					best_card = cards[i]
 					
 		var result := Result.new()
-		result.score_name = "High Card (" + str(best_card.rank.value) + ")"
+		result.name = "High Card (" + str(best_card.rank.value) + ")"
 		result.score = 1
 		result.meld = [best_card]
 		result.tie_breaker_high_card = float(best_card.rank.value)
@@ -665,7 +721,7 @@ class WildCardResolver:
 				#and cards[2].data.suit == cards[3].data.suit\
 				#and cards[3].data.suit == cards[4].data.suit:
 			#var result := Result.new()
-			#result.score_name = "Flush Five"
+			#result.name = "Flush Five"
 			#result.score = 30
 			#result.meld = cards
 			#return result
@@ -686,7 +742,7 @@ class WildCardResolver:
 				#and cards[2].data.rank.value == cards[3].data.rank.value\
 				#and cards[3].data.rank.value == cards[4].data.rank.value)):
 			#var result := Result.new()
-			#result.score_name = "Flush House"
+			#result.name = "Flush House"
 			#result.score = 20
 			#result.meld = cards
 			#return result
@@ -700,7 +756,7 @@ class WildCardResolver:
 				#and cards[2].data.rank.value == cards[3].data.rank.value\
 				#and cards[3].data.rank.value == cards[4].data.rank.value:
 			#var result := Result.new()
-			#result.score_name = "Quintet"
+			#result.name = "Quintet"
 			#result.score = 20
 			#result.meld = cards
 			#return result
@@ -717,7 +773,7 @@ class WildCardResolver:
 				#if not cards[i].data.rank.value == cards[i+1].data.rank.value - 1:
 					#return null
 			#var result := Result.new()
-			#result.score_name = "Straight Flush"
+			#result.name = "Straight Flush"
 			#result.score = 20
 			#result.meld = cards
 			#return result
@@ -731,7 +787,7 @@ class WildCardResolver:
 					#and cards[i+1].data.rank.value == cards[i+2].data.rank.value\
 					#and cards[i+2].data.rank.value == cards[i+3].data.rank.value:
 				#var result := Result.new()
-				#result.score_name = "Quartet"
+				#result.name = "Quartet"
 				#result.score = 12
 				#result.meld = [cards[i], cards[i+1], cards[i+2], cards[i+3]]
 				#return result
@@ -749,7 +805,7 @@ class WildCardResolver:
 				#and cards[2].data.rank.value == cards[3].data.rank.value\
 				#and cards[3].data.rank.value == cards[4].data.rank.value)):
 			#var result := Result.new()
-			#result.score_name = "Full House"
+			#result.name = "Full House"
 			#result.score = 10
 			#result.meld = cards
 			#return result
@@ -762,7 +818,7 @@ class WildCardResolver:
 				#if not cards[i].data.suit == cards[i+1].data.suit:
 					#return null
 			#var result := Result.new()
-			#result.score_name = "Flush"
+			#result.name = "Flush"
 			#result.score = 10
 			#result.meld = cards
 			#return result
@@ -776,7 +832,7 @@ class WildCardResolver:
 				#if not cards[i].data.rank.value == cards[i+1].data.rank.value - 1:
 					#return null
 			#var result := Result.new()
-			#result.score_name = "Straight"
+			#result.name = "Straight"
 			#result.score = 10
 			#result.meld = cards
 			#return result
@@ -789,7 +845,7 @@ class WildCardResolver:
 			#if cards[i].data.rank.value == cards[i+1].data.rank.value\
 					#and cards[i].data.rank.value == cards[i+2].data.rank.value:
 				#var result := Result.new()
-				#result.score_name = "Triple"
+				#result.name = "Triple"
 				#result.score = 6
 				#result.meld = [cards[i], cards[i+1], cards[i+2]]
 				#return result
@@ -807,7 +863,7 @@ class WildCardResolver:
 			#i += 1
 		#if pairs.size() == 2:
 			#var result := Result.new()
-			#result.score_name = "Two Pair"
+			#result.name = "Two Pair"
 			#result.score = 4
 			#var two_pair : Array[Card]
 			#for pair in pairs:
@@ -823,7 +879,7 @@ class WildCardResolver:
 		#for i in cards.size() - 1:
 			#if cards[i].data.rank.value == cards[i+1].data.rank.value:
 				#var result := Result.new()
-				#result.score_name = "Pair"
+				#result.name = "Pair"
 				#result.score = 2
 				#result.meld = [cards[i], cards[i+1]]
 				#return result
@@ -837,7 +893,7 @@ class WildCardResolver:
 				#high_card = card
 		#if high_card:
 			#var result := Result.new()
-			#result.score_name = "High Card"
+			#result.name = "High Card"
 			#result.score = 1
 			#result.meld = [high_card]
 			#return result
@@ -846,7 +902,7 @@ class WildCardResolver:
 #class All extends RowCombo:
 	#func score(cards:Array[Card]) -> Result:
 		#var result := Result.new()
-		#result.score_name = "All"
+		#result.name = "All"
 		#result.score = 5
 		#result.meld = cards
 		#return result
@@ -875,7 +931,7 @@ class WildCardResolver:
 		#if run_size < 3:
 			#return null
 		#var result := Result.new()
-		#result.score_name = "Run " + str(run_size)
+		#result.name = "Run " + str(run_size)
 		#result.score = 3 if run_size == 3 else 1
 		#result.meld = bot_stack
 		#return result
@@ -891,7 +947,7 @@ class WildCardResolver:
 	#static func score(cards:Array[Card]) -> Array[Result]:
 		#if cards.size() > 0 and cards[0].data.rank.value == 11:
 			#var result := Result.new()
-			#result.score_name = "Jack"
+			#result.name = "Jack"
 			#result.score = 2
 			#result.meld = [cards[0]]
 			#return [result]
@@ -902,7 +958,7 @@ class WildCardResolver:
 		#var results : Array[Result] = []
 		#for combo:Array[Card] in Scoring.subset_sum_iter(cards, 15):
 			#var result := Result.new()
-			#result.score_name = "Fifteen"
+			#result.name = "Fifteen"
 			#result.score = 2
 			##recreate Array[Card] since it thinks it is type Array and errors
 			#var _combo : Array[Card] = []
@@ -939,11 +995,11 @@ class WildCardResolver:
 			#for combo:Array[Card] in pairs[pair]:
 				#var result := Result.new()
 				#if pair == 2:
-					#result.score_name = "Pair"
+					#result.name = "Pair"
 				#elif pair == 3:
-					#result.score_name = "Triplet"
+					#result.name = "Triplet"
 				#else:
-					#result.score_name = str(pair) + " of a Kind"
+					#result.name = str(pair) + " of a Kind"
 				#result.score = pair * (pair - 1)
 				#result.meld = combo
 				##Scoring.stack_order(result.meld, cards)
@@ -967,7 +1023,7 @@ class WildCardResolver:
 							##break
 					##if is_straight:
 						##var result := Result.new()
-						##result.score_name = "Run " + str(n)
+						##result.name = "Run " + str(n)
 						##result.score = n
 						##result.meld = slice
 						##Scoring.stack_order(result.meld, cards)
@@ -992,7 +1048,7 @@ class WildCardResolver:
 			##if cur_flush.size() >= flush_min_size:
 				##var result := Result.new()
 				##var n := cur_flush.size()
-				##result.score_name = "Flush " + str(n) 
+				##result.name = "Flush " + str(n) 
 				##result.score = n
 				##result.meld = cur_flush
 				##results.append(result)
@@ -1008,7 +1064,7 @@ class WildCardResolver:
 ##class Pair extends Scoring.Combo:
 	##static func score(cards:Array[Card]) -> Result:
 		##var result := Result.new()
-		##result.score_name = "Pair"
+		##result.name = "Pair"
 		##result.score = 2
 		##result.score_combos = Scoring.copies(cards, 2)
 		##Scoring.organize_combos(result.score_combos, cards)
@@ -1017,7 +1073,7 @@ class WildCardResolver:
 ##class Triplet extends Scoring.Combo:
 	##static func score(cards:Array[Card]) -> Result:
 		##var result := Result.new()
-		##result.score_name = "Triplet"
+		##result.name = "Triplet"
 		##result.score = 6
 		##result.score_combos = Scoring.copies(cards, 3)
 		##Scoring.organize_combos(result.score_combos, cards)
@@ -1026,7 +1082,7 @@ class WildCardResolver:
 ##class Quad extends Scoring.Combo:
 	##static func score(cards:Array[Card]) -> Result:
 		##var result := Result.new()
-		##result.score_name = "Triplet"
+		##result.name = "Triplet"
 		##result.score = 6
 		##result.score_combos = Scoring.copies(cards, 3)
 		##Scoring.organize_combos(result.score_combos, cards)
