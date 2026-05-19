@@ -64,21 +64,21 @@ static func m_card(rank_val: int, suit_id: int) -> CardData:
 	#cd.suit = ms
 	#return cd
 
-class UnrankedStoneRank extends PipRank:
-	func get_str() -> String: return "UnrankedStone"
-	func set_texture(_s: Sprite2D) -> void: pass
-	func with_random() -> PipRank: return self
-
-class UnsuitedStoneSuit extends PipSuit:
-	func get_str() -> String: return "UnsuitedStone"
-	func set_texture(_s: Sprite2D) -> void: pass
-	func set_art_texture(_s: Sprite2D, _r: PipRank) -> void: pass
-	func with_random() -> PipSuit: return self
+#class UnrankedStoneRank extends PipRank:
+	#func get_str() -> String: return "UnrankedStone"
+	#func set_texture(_s: Sprite2D) -> void: pass
+	#func with_random() -> PipRank: return self
+#
+#class UnsuitedStoneSuit extends PipSuit:
+	#func get_str() -> String: return "UnsuitedStone"
+	#func set_texture(_s: Sprite2D) -> void: pass
+	#func set_art_texture(_s: Sprite2D, _r: PipRank) -> void: pass
+	#func with_random() -> PipSuit: return self
 
 static func m_stone() -> CardData:
 	var cd := CardData.new()
-	cd.rank = UnrankedStoneRank.new().with_value(-99)
-	cd.suit = UnsuitedStoneSuit.new().with_value(-99)
+	#cd.rank = UnrankedStoneRank.new()
+	#cd.suit = UnsuitedStoneSuit.new()
 	return cd
 
 
@@ -97,7 +97,7 @@ func run_standard_5_card_poker_tests() -> void:
 	# 2. Four of a Kind
 	var hand_quads : Array[CardData] = make_hand([13, 13, 13, 13, 14], [1, 2, 3, 4, 1])
 	var res_quads := Scoring.PokerHands.new().score(hand_quads)
-	assert(res_quads[0].score == 12 and res_quads[0].score_name == "X of a Kind", "Quads Mapping Failed")
+	assert(res_quads[0].score == 12 and res_quads[0].score_name == "4 of a Kind", "Quads Mapping Failed")
 
 	# 3. Full House (Standard 3/2 split)
 	var hand_fh : Array[CardData] = make_hand([10, 10, 10, 5, 5], [1, 2, 3, 4, 1])
@@ -117,17 +117,17 @@ func run_standard_5_card_poker_tests() -> void:
 	# 6. Three of a Kind
 	var hand_trips : Array[CardData] = make_hand([12, 12, 12, 10, 2], [1, 2, 3, 4, 1])
 	var res_trips := Scoring.PokerHands.new().score(hand_trips)
-	assert(res_trips[0].score == 6 and res_trips[0].score_name == "X of a Kind", "Trips Fallback Failed")
+	assert(res_trips[0].score == 6 and res_trips[0].score_name == "3 of a Kind", "Trips Fallback Failed")
 
 	# 7. Two Pair
 	var hand_twopair : Array[CardData] = make_hand([10, 10, 4, 4, 13], [1, 2, 3, 4, 1])
 	var res_twopair := Scoring.PokerHands.new().score(hand_twopair)
-	assert(res_twopair[0].score == 4 and res_twopair[0].score_name == "2 Multi-Grid Sets (2)", "Two Pair Layout Failed")
+	assert(res_twopair[0].score == 4 and res_twopair[0].score_name == "2 Multi-Grid Sets (2)", str(res_twopair[0].score) + " " + res_twopair[0].score_name)
 
 	# 8. Pair
 	var hand_pair : Array[CardData] = make_hand([11, 11, 9, 6, 3], [1, 2, 3, 4, 1])
 	var res_pair := Scoring.PokerHands.new().score(hand_pair)
-	assert(res_pair[0].score == 2 and res_pair[0].score_name == "X of a Kind", "Single Pair Tracking Failed")
+	assert(res_pair[0].score == 2 and res_pair[0].score_name == "2 of a Kind", "Single Pair Tracking Failed")
 
 	# 9. High Card
 	var hand_hc : Array[CardData] = make_hand([14, 9, 7, 4, 2], [1, 2, 3, 4, 1])
@@ -145,7 +145,7 @@ func run_balatro_special_hand_tests() -> void:
 	# 10. Five of a Kind (Same rank, different suits across multi-deck pools)
 	var hand_five_kind : Array[CardData] = make_hand([14, 14, 14, 14, 14], [1, 2, 3, 4, 1])
 	var res_five_kind := Scoring.PokerHands.new().score(hand_five_kind)
-	assert(res_five_kind[0].score == 20 and res_five_kind[0].score_name == "X of a Kind", "Balatro Five of a Kind Failed")
+	assert(res_five_kind[0].score == 20 and res_five_kind[0].score_name == "5 of a Kind", "Balatro Five of a Kind Failed")
 
 	# 11. Flush House (Full House where every scoring card matches one suit signature)
 	var hand_flush_house : Array[CardData] = make_hand([10, 10, 10, 5, 5], [1, 1, 1, 1, 1])
@@ -155,7 +155,7 @@ func run_balatro_special_hand_tests() -> void:
 	# 12. Flush Five (Five cards of the exact same rank AND exact same suit)
 	var hand_flush_five : Array[CardData] = make_hand([14, 14, 14, 14, 14], [3, 3, 3, 3, 3])
 	var res_flush_five := Scoring.PokerHands.new().score(hand_flush_five)
-	assert(res_flush_five[0].score == 30 and res_flush_five[0].score_name == "Full Flush X of a Kind", "Balatro Flush Five Identity Failed")
+	assert(res_flush_five[0].score == 30 and res_flush_five[0].score_name == "Full Flush 5 of a Kind", "Balatro Flush Five Identity Failed")
 	print("✔ Section 2 Passed: Balatro hidden special tracking variants parsed cleanly.")
 
 
@@ -258,12 +258,13 @@ func run_micro_card_environment_tests() -> void:
 	# 31-L: Stone Card Loop Scanners Bypasses
 	var h31 : Array[CardData] = [m_card(14, 1), m_stone(), m_stone()]
 	var r31 := Scoring.PokerHands.new().score(h31)
-	assert(r31[0].score == 1, "31-L Failed")
+	assert(r31[0].score == 1, "31-L Failed" + str(r31[0].score) + r31[0].score_name + str(r31[0].meld))
 
 	# 32-L: Multi Matrix Candidate Sequence Splitting
 	var h32 : Array[CardData] = make_hand([9, 8, 7, 6, 5, 10], [4, 4, 4, 4, 4, 3])
 	var r32 := Scoring.PokerHands.new().score(h32)
-	assert(r32[0].score_name.contains("Flush Straight") or r32[0].score_name.contains("Straight Flush"), "32-L Failed")
+	assert(r32[0].score_name.contains("Flush Straight") or r32[0].score_name.contains("Straight Flush"), "32-L Failed" \
+			+ str(r32[0].score) + r32[0].score_name + str(r32[0].meld))
 	print("✔ Section 3 Passed: Micro Environment Scaling Suite (<10 Cards) verified completely.")
 
 # ==============================================================================

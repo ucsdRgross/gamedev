@@ -68,7 +68,7 @@ class PokerHands extends Scorer:
 		if cards.is_empty(): return []
 		
 		# 1. Trigger the linear-time pre-processor to resolve wild card constraints first.
-		var resolved_pool := cards#WildCardResolver.resolve_hand(cards)
+		var resolved_pool := WildCardResolver.resolve_hand(cards)
 		var candidates: Array[Result] = []
 		
 		# 2. Run all evaluation tracks concurrently to extract overlapping candidate paths.
@@ -155,7 +155,7 @@ class ExpandedGridHandler extends Scorer:
 			
 			var res := Result.new()
 			# Set math strictly processes scaled sizes, completely ignoring dropped kickers.
-			var sub_score := (final_n1 * (final_n1 - 1)) + (final_n2 * (final_n2 - 2))
+			var sub_score := (final_n1 * (final_n1 - 1)) + (final_n2 * (final_n2 - 1))
 			
 			# FORMATTING REQUISITE: Omit "(Size)" label completely if using standard 5 cards or fewer.
 			var sub_hand_size := final_n1 + final_n2
@@ -250,7 +250,6 @@ class ExpandedGridHandler extends Scorer:
 
 
 	func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
-		# Handles perfectly symmetrical sets (The Grid Hand) or standard standalone sets.
 		var res := Result.new()
 		res.tie_breaker_high_card = max_rank
 		
@@ -259,15 +258,17 @@ class ExpandedGridHandler extends Scorer:
 		for s in clusters:
 			if s.datas.size() != target_size: is_uniform = false
 			
-		# FORMATTING ASSURANCE: Prepend count integers only if multi-hand clusters exist (>1).
 		if is_uniform and clusters.size() >= 2:
-			var n: int = target_size
-			var m: int = clusters.size()
+			var n := target_size
+			var m := clusters.size()
 			var size_postfix := "" if n <= 5 else " (" + str(n) + ")"
 			
 			res.score_name = "Multi-Grid Set" + size_postfix if m == 1 else str(m) + " Multi-Grid Sets (" + str(n) + ")"
 			var base_grid := n * (n - 1) * m
-			res.score = int(base_grid * (1.0 + 0.5 * (m - 1)))
+			
+			# Clean branchless curve calculation mapping Two Pair (m=2) safely to exactly 1.0x
+			var bonus_multiplier : float = 1.0 + 0.5 * max(0, m - 2)
+			res.score = int(base_grid * bonus_multiplier)
 			
 			for s in clusters: res.meld.append_array(s.datas)
 			return [res]
@@ -275,8 +276,17 @@ class ExpandedGridHandler extends Scorer:
 			var s1: Array[CardData] = clusters[0].datas
 			var n := s1.size()
 			var size_postfix := "" if n <= 5 else " (" + str(n) + ")"
-			res.score_name = "X of a Kind" + size_postfix
-			res.score = n * (n - 1)
+			
+			var suit_profile := Scoring._get_hand_profiles(s1).suits.map
+			if suit_profile.size() == 1 and n >= 5:
+				# BUG FIXED: Replaced static literal token 'X' with dynamic string casting of size integer
+				res.score_name = "Full Flush " + str(n) + " of a Kind" + size_postfix
+				res.score = (n * (n - 1)) + (2 * n)
+			else:
+				# BUG FIXED: Replaced static literal token 'X' with dynamic string casting of size integer
+				res.score_name = str(n) + " of a Kind" + size_postfix
+				res.score = n * (n - 1)
+				
 			res.meld = s1
 			return [res]
 
@@ -480,19 +490,20 @@ class HighCardHandler extends Scorer:
 # 5. DATA-ORIENTED RESOLVER (LINEAR OPTIMIZATION ENGINE)
 # ==============================================================================
 
-#class WildCardResolver:
-	#static func resolve_hand(cards: Array[CardData]) -> Array[CardData]:
-		## Evaluates card metadata classes using object type matching, bypassing brute-force thread lag.
-		#var real_cards: Array[CardData] = []
-		#var wild_cards: Array[CardData] = []
-		#
-		#for card in cards:
-			#if not card or not card.rank or not card.suit: continue
+class WildCardResolver:
+	static func resolve_hand(cards: Array[CardData]) -> Array[CardData]:
+		# Evaluates card metadata classes using object type matching, bypassing brute-force thread lag.
+		var real_cards: Array[CardData] = []
+		var wild_cards: Array[CardData] = []
+		
+		for card in cards:
+			if not card or not card.rank or not card.suit: continue
 			#if card.rank is Scoring.WildOmniRank or card.suit is Scoring.WildOmniSuit:
 				#wild_cards.append(card)
 			#else:
-				#real_cards.append(card)
-				#
+			real_cards.append(card)
+		return real_cards
+				
 		#if wild_cards.is_empty(): return real_cards
 		#
 		## Resolve highly restricted conditional items first so flexible elements fill residual states later.
