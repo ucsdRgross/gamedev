@@ -12,6 +12,8 @@ func with_datas(d : Array[CardData]) -> ArrayCardData:
 	datas = d
 	return self
 
+func size() -> int: return datas.size()
+
 #func clone() -> ArrayCard:
 		#var deep_copy := func(c:Card) -> Card:
 			#if not c: return c
