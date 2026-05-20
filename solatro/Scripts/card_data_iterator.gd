@@ -10,6 +10,7 @@ var current_col : int = 0
 var is_row_empty := true
 
 func should_continue() -> bool:
+	if not Game.CURRENT: return false
 	var game_state := Game.CURRENT.state
 	match phase:
 		DECK:
