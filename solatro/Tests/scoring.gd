@@ -32,35 +32,35 @@ static func m_card(rank_val: float, suit_id: float) -> CardData:
 	return cd
 
 #static func m_half(rank_val: float, suit_id: int) -> CardData:
-	#var cd := CardData.new()
-	#cd.rank = Scoring.HalfStepRank.new()
+	#var cd := CardData
+	#cd.rank = Scoring.HalfStepRank
 	#cd.rank.value = int(rank_val)
-	#cd.suit = PipSuit.Standard.new().with_value(suit_id)
+	#cd.suit = PipSuit.Standard.with_value(suit_id)
 	#return cd
 
 #static func m_omni(rank_cond: int, oob: bool, suit_cond: int) -> CardData:
-	#var cd := CardData.new()
-	#var wr := Scoring.WildOmniRank.new()
+	#var cd := CardData
+	#var wr := Scoring.WildOmniRank
 	#wr.condition = rank_cond as Scoring.WildOmniRank.Condition
 	#wr.out_of_bounds = oob
-	#var ws := Scoring.WildOmniSuit.new()
+	#var ws := Scoring.WildOmniSuit
 	#ws.condition = suit_cond as Scoring.WildOmniSuit.Condition
 	#cd.rank = wr
 	#cd.suit = ws
 	#return cd
 
 #static func m_fixed(fixed_val: int, suit_id: int) -> CardData:
-	#var cd := CardData.new()
-	#cd.rank = PipRank.Numeral.new().with_value(fixed_val)
-	#cd.suit = Scoring.WildOmniSuit.new()
+	#var cd := CardData
+	#cd.rank = PipRank.Numeral.with_value(fixed_val)
+	#cd.suit = Scoring.WildOmniSuit
 	#return cd
 
 #static func m_msuit(rank_val: int, suit_ids: Array[int]) -> CardData:
-	#var cd := CardData.new()
-	#cd.rank = PipRank.Numeral.new().with_value(rank_val)
-	#var ms := Scoring.MultiSuit.new()
+	#var cd := CardData
+	#cd.rank = PipRank.Numeral.with_value(rank_val)
+	#var ms := Scoring.MultiSuit
 	#for id in suit_ids:
-		#ms.allowed_suits.append(PipSuit.Standard.new().with_value(id))
+		#ms.allowed_suits.append(PipSuit.Standard.with_value(id))
 	#cd.suit = ms
 	#return cd
 
@@ -77,8 +77,8 @@ static func m_card(rank_val: float, suit_id: float) -> CardData:
 
 static func m_stone() -> CardData:
 	var cd := CardData.new()
-	#cd.rank = UnrankedStoneRank.new()
-	#cd.suit = UnsuitedStoneSuit.new()
+	#cd.rank = UnrankedStoneRank
+	#cd.suit = UnsuitedStoneSuit
 	return cd
 
 
@@ -90,48 +90,48 @@ func run_standard_5_card_poker_tests() -> void:
 
 	# 1. Royal Flush / Straight Flush
 	var hand_sf : Array[CardData] = make_hand([14, 13, 12, 11, 10], [1, 1, 1, 1, 1])
-	var res_sf := await Scoring.PokerHands.new().score(hand_sf)
+	var res_sf := await Scoring.PokerHands.score(hand_sf)
 	assert(not res_sf.is_empty(), "SF returned empty array")
 	assert(res_sf[0].score == 20 and res_sf[0].name.contains("Flush Straight"), "SF Math Match Failed")
 
 	# 2. Four of a Kind
 	var hand_quads : Array[CardData] = make_hand([13, 13, 13, 13, 14], [1, 2, 3, 4, 1])
-	var res_quads := await Scoring.PokerHands.new().score(hand_quads)
+	var res_quads := await Scoring.PokerHands.score(hand_quads)
 	assert(res_quads[0].score == 12 and res_quads[0].name == "4 of a Kind", "Quads Mapping Failed")
 
 	# 3. Full House (Standard 3/2 split)
 	var hand_fh : Array[CardData] = make_hand([10, 10, 10, 5, 5], [1, 2, 3, 4, 1])
-	var res_fh := await Scoring.PokerHands.new().score(hand_fh)
+	var res_fh := await Scoring.PokerHands.score(hand_fh)
 	assert(res_fh[0].score == 12 and res_fh[0].name == "Full House", str(res_fh[0].score) + res_fh[0].name)
 
 	# 4. Flush (Non-consecutive)
 	var hand_flush : Array[CardData] = make_hand([14, 11, 8, 4, 2], [2, 2, 2, 2, 2])
-	var res_flush := await Scoring.PokerHands.new().score(hand_flush)
+	var res_flush := await Scoring.PokerHands.score(hand_flush)
 	assert(res_flush[0].score == 10 and res_flush[0].name == "Flush", "Flush Vector Length Failed")
 
 	# 5. Straight (Mixed suit)
 	var hand_straight : Array[CardData] = make_hand([8, 7, 6, 5, 4], [1, 2, 3, 4, 1])
-	var res_straight := await Scoring.PokerHands.new().score(hand_straight)
+	var res_straight := await Scoring.PokerHands.score(hand_straight)
 	assert(res_straight[0].score == 10 and res_straight[0].name == "Straight", "Straight Vector Length Failed")
 
 	# 6. Three of a Kind
 	var hand_trips : Array[CardData] = make_hand([12, 12, 12, 10, 2], [1, 2, 3, 4, 1])
-	var res_trips := await Scoring.PokerHands.new().score(hand_trips)
+	var res_trips := await Scoring.PokerHands.score(hand_trips)
 	assert(res_trips[0].score == 6 and res_trips[0].name == "3 of a Kind", "Trips Fallback Failed")
 
 	# 7. Two Pair
 	var hand_twopair : Array[CardData] = make_hand([10, 10, 4, 4, 13], [1, 2, 3, 4, 1])
-	var res_twopair := await Scoring.PokerHands.new().score(hand_twopair)
+	var res_twopair := await Scoring.PokerHands.score(hand_twopair)
 	assert(res_twopair[0].score == 4 and res_twopair[0].name == "Two Pair", str(res_twopair[0].score) + " " + res_twopair[0].name)
 
 	# 8. Pair
 	var hand_pair : Array[CardData] = make_hand([11, 11, 9, 6, 3], [1, 2, 3, 4, 1])
-	var res_pair := await Scoring.PokerHands.new().score(hand_pair)
+	var res_pair := await Scoring.PokerHands.score(hand_pair)
 	assert(res_pair[0].score == 2 and res_pair[0].name == "2 of a Kind", "Single Pair Tracking Failed")
 
 	# 9. High Card
 	var hand_hc : Array[CardData] = make_hand([14, 9, 7, 4, 2], [1, 2, 3, 4, 1])
-	var res_hc := await Scoring.PokerHands.new().score(hand_hc)
+	var res_hc := await Scoring.PokerHands.score(hand_hc)
 	assert(res_hc[0].score == 1 and res_hc[0].tie_breaker_high_card == 14, "High Card Isolation Failed")
 	print("✔ Section 1 Passed: Core 5-Card standard poker hand profiles conform perfectly.")
 
@@ -144,17 +144,17 @@ func run_balatro_special_hand_tests() -> void:
 
 	# 10. Five of a Kind (Same rank, different suits across multi-deck pools)
 	var hand_five_kind : Array[CardData] = make_hand([14, 14, 14, 14, 14], [1, 2, 3, 4, 1])
-	var res_five_kind := await Scoring.PokerHands.new().score(hand_five_kind)
+	var res_five_kind := await Scoring.PokerHands.score(hand_five_kind)
 	assert(res_five_kind[0].score == 20 and res_five_kind[0].name == "5 of a Kind", "Balatro Five of a Kind Failed")
 
 	# 11. Flush House (Full House where every scoring card matches one suit signature)
 	var hand_flush_house : Array[CardData] = make_hand([10, 10, 10, 5, 5], [1, 1, 1, 1, 1])
-	var res_flush_house := await Scoring.PokerHands.new().score(hand_flush_house)
+	var res_flush_house := await Scoring.PokerHands.score(hand_flush_house)
 	assert(res_flush_house[0].score == 22 and res_flush_house[0].name == "Full Flush House", "Balatro Flush House Variant Failed")
 
 	# 12. Flush Five (Five cards of the exact same rank AND exact same suit)
 	var hand_flush_five : Array[CardData] = make_hand([14, 14, 14, 14, 14], [3, 3, 3, 3, 3])
-	var res_flush_five := await Scoring.PokerHands.new().score(hand_flush_five)
+	var res_flush_five := await Scoring.PokerHands.score(hand_flush_five)
 	assert(res_flush_five[0].score == 30 and res_flush_five[0].name == "Full Flush 5 of a Kind", "Balatro Flush Five Identity Failed")
 	print("✔ Section 2 Passed: Balatro hidden special tracking variants parsed cleanly.")
 
@@ -167,102 +167,102 @@ func run_micro_card_environment_tests() -> void:
 	
 	# 13-L: Base High Card Baseline
 	var h13 : Array[CardData] = make_hand([12, 8, 5], [1, 2, 3])
-	var r13 := await Scoring.PokerHands.new().score(h13)
+	var r13 := await Scoring.PokerHands.score(h13)
 	assert(r13[0].score == 1 and r13[0].tie_breaker_high_card == 12, "13-L Failed")
 
 	# 14-L: Standalone Set Multiplier Curve
 	var h14 : Array[CardData] = make_hand([13, 13, 13, 13], [1, 2, 3, 4])
-	var r14 := await Scoring.PokerHands.new().score(h14)
+	var r14 := await Scoring.PokerHands.score(h14)
 	assert(r14[0].score == 12, "14-L Failed")
 
 	# 15-L: Proportional Full House 3/2 Factorial Truncation Drop Rule
 	var h15 : Array[CardData] = make_hand([10, 10, 10, 10, 5, 5], [1, 2, 3, 4, 1, 2])
-	var r15 := await Scoring.PokerHands.new().score(h15)
+	var r15 := await Scoring.PokerHands.score(h15)
 	assert(r15[0].score == 12 and r15[0].meld.size() == 5, "15-L Failed")
 
 	# 16-L: Symmetrical Grid Routing Isolation
 	var h16 : Array[CardData] = make_hand([9, 9, 8, 8], [1, 2, 3, 4])
-	var r16 := await Scoring.PokerHands.new().score(h16)
+	var r16 := await Scoring.PokerHands.score(h16)
 	assert(r16[0].score == 4 and r16[0].name.contains("Two Pair"), "16-L Failed")
 
 	# 17-L: Length Scaling Straights Run
 	var h17 : Array[CardData] = make_hand([9, 8, 7, 6, 5], [1, 2, 3, 4, 1])
-	var r17 := await Scoring.PokerHands.new().score(h17)
+	var r17 := await Scoring.PokerHands.score(h17)
 	assert(r17[0].score == 10, "17-L Failed")
 
 	# 18-L: Sub-Zero Rank Straights Bridge
 	var h18 : Array[CardData] = make_hand([2, 1, 0, -1, -2], [1, 2, 3, 4, 1])
-	var r18 := await Scoring.PokerHands.new().score(h18)
+	var r18 := await Scoring.PokerHands.score(h18)
 	assert(r18[0].score == 10 and r18[0].tie_breaker_high_card == 2, "18-L Failed")
 
 	## 19-L: Half-Step Float Sequence Connector
 	#var h19 : Array[CardData] = [m_card(5, 1), m_card(4, 2), m_half(3.5, 3), m_card(2, 4), m_card(1, 1)]
-	#var r19 := await Scoring.PokerHands.new().score(h19)
+	#var r19 := await Scoring.PokerHands.score(h19)
 	#assert(r19[0].score == 10, "19-L Failed")
 
 	# 20-L: Symmetrical Individual Flush Extraction
 	var h20 : Array[CardData] = make_hand([13, 11, 9, 7, 5], [1, 1, 1, 1, 1])
-	var r20 := await Scoring.PokerHands.new().score(h20)
+	var r20 := await Scoring.PokerHands.score(h20)
 	assert(r20[0].score == 10, "20-L Failed")
 
 	# 21-L: Protection Array Sanitization Filtering
 	var h21 : Array[CardData] = [null, CardData.new(), m_card(14, 1), null]
-	var r21 := await Scoring.PokerHands.new().score(h21)
+	var r21 := await Scoring.PokerHands.score(h21)
 	assert(r21[0].score == 1, "21-L Failed")
 
 	## 22-L: Wild Card Straight Gap Resolution
 	#var h22 : Array[CardData] = [m_card(8, 4), m_card(7, 4), m_card(5, 4), m_card(4, 4), m_omni(0, false, 0)]
-	#var r22 := await Scoring.PokerHands.new().score(h22)
+	#var r22 := await Scoring.PokerHands.score(h22)
 	#assert(r22[0].score == 20, "22-L Failed")
 
 	## 23-L: Wild Card Exponential Set Scaling
 	#var h23 : Array[CardData] = [m_card(13, 1), m_card(13, 2), m_card(13, 3), m_omni(0, false, 0)]
-	#var r23 := await Scoring.PokerHands.new().score(h23)
+	#var r23 := await Scoring.PokerHands.score(h23)
 	#assert(r23[0].score == 12, "23-L Failed")
 
 	# 24-L: Symmetrical Evens Filter Constraints
 	#var h24 : Array[CardData] = [m_card(7, 1), m_card(7, 2), m_card(7, 3), m_card(6, 4), m_card(6, 1), m_omni(1, false, 0)]
-	#var r24 := await Scoring.PokerHands.new().score(h24)
+	#var r24 := await Scoring.PokerHands.score(h24)
 	#assert(r24[0].score == 12, "24-L Failed")
 
 	# 25-L: Out of Bounds Neg Wild Straights
 	#var h25 : Array[CardData] = [m_card(-3, 4), m_card(-4, 4), m_card(-5, 4), m_card(-6, 4), m_omni(0, true, 0)]
-	#var r25 := await Scoring.PokerHands.new().score(h25)
+	#var r25 := await Scoring.PokerHands.score(h25)
 	#assert(r25[0].score == 20, "25-L Failed")
 
 	## 26-L: Red-Only Color Suit Lock Exclusion
 	#var h26 : Array[CardData] = [m_card(13, 1), m_card(11, 1), m_card(9, 1), m_card(7, 1), m_card(12, 3), m_card(10, 3), m_omni(0, false, 1)]
-	#var r26 := await Scoring.PokerHands.new().score(h26)
+	#var r26 := await Scoring.PokerHands.score(h26)
 	#assert(not r26[0].name.contains("Flush"), "26-L Failed")
 
 	## 27-L: Multi Suit Profile Mapping Check
 	#var h27 : Array[CardData] = [m_msuit(5, [1, 2]), m_card(4, 1), m_card(3, 1), m_card(2, 1), m_card(1, 1)]
-	#var r27 := await Scoring.PokerHands.new().score(h27)
+	#var r27 := await Scoring.PokerHands.score(h27)
 	#assert(not r27.is_empty(), "27-L Failed")
 
 	## 28-L: Enforced Dependency Weight Cascades
 	#var h28 : Array[CardData] = [m_card(10, 1), m_card(10, 2), m_omni(0, false, 0), m_fixed(10, 3)]
-	#var r28 := await Scoring.PokerHands.new().score(h28)
+	#var r28 := await Scoring.PokerHands.score(h28)
 	#assert(r28[0].score == 12, "28-L Failed")
 
 	## 29-L: Pure Wild Circular Deadlock Safety Fallbacks
 	#var h29 : Array[CardData] = [m_omni(0, false, 0), m_omni(0, false, 0)]
-	#var r29 := await Scoring.PokerHands.new().score(h29)
+	#var r29 := await Scoring.PokerHands.score(h29)
 	#assert(not r29.is_empty(), "29-L Failed")
 
 	## 30-L: Multi Suit Local Cross Profile Execution
 	#var h30 : Array[CardData] = [m_card(2, 1), m_card(4, 1), m_card(3, 2), m_card(5, 2), m_msuit(10, [1, 2])]
-	#var r30 := await Scoring.PokerHands.new().score(h30)
+	#var r30 := await Scoring.PokerHands.score(h30)
 	#assert(not r30.is_empty(), "30-L Failed")
 
 	# 31-L: Stone Card Loop Scanners Bypasses
 	var h31 : Array[CardData] = [m_card(14, 1), m_stone(), m_stone()]
-	var r31 := await Scoring.PokerHands.new().score(h31)
+	var r31 := await Scoring.PokerHands.score(h31)
 	assert(r31[0].score == 1, "31-L Failed" + str(r31[0].score) + r31[0].name + str(r31[0].meld))
 
 	# 32-L: Multi Matrix Candidate Sequence Splitting
 	var h32 : Array[CardData] = make_hand([9, 8, 7, 6, 5, 10], [4, 4, 4, 4, 4, 3])
-	var r32 := await Scoring.PokerHands.new().score(h32)
+	var r32 := await Scoring.PokerHands.score(h32)
 	assert(r32[0].name.contains("Flush Straight") or r32[0].name.contains("Straight Flush"), "32-L Failed" \
 			+ str(r32[0].score) + r32[0].name + str(r32[0].meld))
 	print("✔ Section 3 Passed: Micro Environment Scaling Suite (<10 Cards) verified completely.")
@@ -285,7 +285,7 @@ func run_macro_card_environment_tests() -> void:
 		
 	c33.append(m_card(14, 1)) # The clear highest target element (Ace)
 	
-	var r33 := await Scoring.PokerHands.new().score(c33)
+	var r33 := await Scoring.PokerHands.score(c33)
 	assert(not r33.is_empty(), "33-H Failed: Candidate array came back empty.")
 	
 	# The unlinked cards will force a fallback to High Card, selecting the Ace (14)
@@ -297,33 +297,33 @@ func run_macro_card_environment_tests() -> void:
 	# 34-H: Unbounded Massive Multi Deck X-Of-A-Kind Clusters
 	var c34: Array[CardData] = []
 	for i in range(30): c34.append(m_card(10, (i % 4) + 1))
-	var r34 := await Scoring.PokerHands.new().score(c34)
+	var r34 := await Scoring.PokerHands.score(c34)
 	assert(r34[0].score == (30 * 29), "34-H Failed")
 
 	# 35-H: Macro Proportional Deconstruction Slicing (Factorial Search)
 	var c35: Array[CardData] = []
 	for i in range(20): c35.append(m_card(13, 1))
 	for i in range(10): c35.append(m_card(4, 2))
-	var r35 := await Scoring.PokerHands.new().score(c35)
+	var r35 := await Scoring.PokerHands.score(c35)
 	assert(r35[0].name.contains("Full House (25)"), "35-H Failed" + str(r35[0].name + str(r35[0].meld.size())))
 
 	# 36-H: Macro Symmetrical Grid Clusters Packaging Loops
 	var c36: Array[CardData] = []
 	for rank in range(2, 7):
 		for i in range(6): c36.append(m_card(rank, (i % 4) + 1))
-	var r36 := await Scoring.PokerHands.new().score(c36)
+	var r36 := await Scoring.PokerHands.score(c36)
 	assert(r36[0].name.contains("6 Multi-Flush Straights (5)"), "36-H Failed" + str(r36[0].name))
 
 	# 37-H: Extended Length Continuous Straights
 	var c37: Array[CardData] = []
 	for i in range(30): c37.append(m_card(i - 10, (i * 4) + 1))
-	var r37 := await Scoring.PokerHands.new().score(c37)
+	var r37 := await Scoring.PokerHands.score(c37)
 	assert(r37[0].score == 60, "37-H Failed" + str(r37[0].name) + str(r37[0].score) + str(r37[0].meld))
 
 	# 38-H: Boundless Sub-Zero Deep Sequencing Flush Chains
 	var c38: Array[CardData] = []
 	for i in range(35): c38.append(m_card(-i, 1))
-	var r38 := await Scoring.PokerHands.new().score(c38)
+	var r38 := await Scoring.PokerHands.score(c38)
 	assert(r38[0].score == 140, "38-H Failed")
 
 	## 39-H: Parallel Floats Sorting Profile Load Validation
@@ -331,14 +331,14 @@ func run_macro_card_environment_tests() -> void:
 	#for i in range(15):
 		#c39.append(m_card(i + 1, 1))
 		#c39.append(m_half(float(i + 1) + 0.5, 2))
-	#var r39 := await Scoring.PokerHands.new().score(c39)
+	#var r39 := await Scoring.PokerHands.score(c39)
 	#assert(not r39.is_empty(), "39-H Failed")
 
 	# 40-H: Parallel Flushes Greedy Extraction Tracks
 	var c40: Array[CardData] = []
 	for i in range(15): c40.append(m_card((i * -2) - 2, 1))
 	for i in range(20): c40.append(m_card((i * 2) + 2, 2))
-	var r40 := await Scoring.PokerHands.new().score(c40)
+	var r40 := await Scoring.PokerHands.score(c40)
 	assert(r40[0].name.contains("2 Flushes"), "40-H Failed" + str(r40[0].name) + str(r40[0].score) + str(r40[0].meld))
 
 	# 41-H: Memory Clutter Heap Null Sanitizer Defense Pass
@@ -346,7 +346,7 @@ func run_macro_card_environment_tests() -> void:
 	for i in range(50): c41.append(null)
 	for i in range(10): c41.append(CardData.new())
 	c41.append(m_card(14, 4))
-	var r41 := await Scoring.PokerHands.new().score(c41)
+	var r41 := await Scoring.PokerHands.score(c41)
 	assert(r41[0].score == 1, "41-H Failed")
 
 	## 42-H: Large Array Chain Sequence Gap Wild Repairs
@@ -354,41 +354,41 @@ func run_macro_card_environment_tests() -> void:
 	#for i in range(29): c42.append(m_card(i + 2, 4))
 	#c42.remove_at(15)
 	#c42.append(m_omni(0, false, 0))
-	#var r42 := await Scoring.PokerHands.new().score(c42)
+	#var r42 := await Scoring.PokerHands.score(c42)
 	#assert(not r42.is_empty(), "42-H Failed")
 
 	## 43-H: Boundless Mass Cluster Stack Wild Augmentations
 	#var c43: Array[CardData] = []
 	#for i in range(30): c43.append(m_card(5, (i % 4) + 1))
 	#c43.append(m_omni(0, false, 0))
-	#var r43 := await Scoring.PokerHands.new().score(c43)
+	#var r43 := await Scoring.PokerHands.score(c43)
 	#assert(r43[0].score == (31 * 30), "43-H Failed")
 
 	## 44-H: Mixed Symmetrical Parity Limits Filters Checks
 	#var c44: Array[CardData] = []
 	#for i in range(30): c44.append(m_card(9, (i % 4) + 1))
 	#c44.append(m_omni(1, false, 0))
-	#var r44 := await Scoring.PokerHands.new().score(c44)
+	#var r44 := await Scoring.PokerHands.score(c44)
 	#assert(r44[0].score == (30 * 29), "44-H Failed")
 
 	## 45-H: Extreme Bounds Multi Deck Wild Conversions
 	#var c45: Array[CardData] = []
 	#for i in range(30): c45.append(m_card(15, (i % 4) + 1))
 	#c45.append(m_omni(0, true, 0))
-	#var r45 := await Scoring.PokerHands.new().score(c45)
+	#var r45 := await Scoring.PokerHands.score(c45)
 	#assert(r45[0].score == (31 * 30), "45-H Failed")
 
 	## 46-H: Color Locking Suit Allocation Checks
 	#var c46: Array[CardData] = []
 	#for i in range(25): c46.append(m_card((i % 13) + 2, 1))
 	#c46.append(m_omni(0, false, 1))
-	#var r46 := await Scoring.PokerHands.new().score(c46)
+	#var r46 := await Scoring.PokerHands.score(c46)
 	#assert(r46[0].score == 50, "46-H Failed")
 
 	## 47-H: Multi Suit Dynamic Profiling Allocation Matrices
 	#var c47: Array[CardData] = []
 	#for i in range(30): c47.append(m_msuit((i % 13) + 2, [1, 2]))
-	#var r47 := await Scoring.PokerHands.new().score(c47)
+	#var r47 := await Scoring.PokerHands.score(c47)
 	#assert(not r47.is_empty(), "47-H Failed")
 
 	## 48-H: Interlocking Dependency Weights Cascading Metrics
@@ -396,14 +396,14 @@ func run_macro_card_environment_tests() -> void:
 	#for i in range(30): c48.append(m_card(12, (i % 4) + 1))
 	#for i in range(5): c48.append(m_omni(0, false, 0))
 	#for i in range(5): c48.append(m_fixed(12, 1))
-	#var r48 := await Scoring.PokerHands.new().score(c48)
+	#var r48 := await Scoring.PokerHands.score(c48)
 	#assert(r48[0].score == (40 * 39), "48-H Failed")
 
 	## 49-H: Pure Interlinked Wild Cascading Microsecond Performance Benchmarks
 	#var c49: Array[CardData] = []
 	#for i in range(30): c49.append(m_omni(0, false, 0))
 	#var start_time := Time.get_ticks_usec()
-	#var r49 := await Scoring.PokerHands.new().score(c49)
+	#var r49 := await Scoring.PokerHands.score(c49)
 	#var duration := Time.get_ticks_usec() - start_time
 	#assert(not r49.is_empty(), "49-H Failed")
 	#assert(duration < 2500, "49-H Performance Crash! Benchmark breach: " + str(duration) + "us")

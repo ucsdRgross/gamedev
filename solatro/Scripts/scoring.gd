@@ -7,12 +7,7 @@ class Result:
 	var tie_breaker_high_card : float
 
 @abstract class Scorer:
-	@abstract func score(cards:Array[CardData]) -> Array[Result]
-
-static func rank_sort_desc(a: CardData, b: CardData) -> bool:
-	# Global sorter utility mapping card arrays descending based on their raw rank values.
-	if not a or not a.rank or not b or not b.rank: return false
-	return a.rank.value > b.rank.value
+	static func score(cards:Array[CardData]) -> Array[Result]: return []
 
 class HandProfile:
 	var ranks : RankMap = RankMap.new()
@@ -32,7 +27,6 @@ static func rank_sort_desc_async(a: CardData, b: CardData) -> bool:
 	var delta: float = await PipComparator.compare_ranks(a.rank, b.rank)
 	if is_nan(delta): return false
 	return delta > 0.0
-
 
 ## Processes a raw card array into abstract comparative mapping blocks
 static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
@@ -60,28 +54,30 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 			
 	return profile
 
-
-
 # ==============================================================================
 # CENTRAL STRATEGY ROUTER PARALLEL ENGINE
 # ==============================================================================
 class PokerHands extends Scorer:
-	func score(cards: Array[CardData]) -> Array[Result]:
+	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.is_empty(): return []
 		
-		var resolved_pool := WildCardResolver.resolve_hand(cards)
+		var real_cards: Array[CardData] = []
+		for card in cards:
+			if not card: continue #or not card.rank or not card.suit: continue
+			real_cards.append(card)
+			
 		var candidates: Array[Result] = []
 		
-		var grid_res := await ExpandedGridHandler.new().score(resolved_pool)
+		var grid_res := await ExpandedGridHandler.new().score(real_cards)
 		if not grid_res.is_empty(): candidates.append_array(grid_res)
 		
-		var straight_res := await MultiStraightHandler.new().score(resolved_pool)
+		var straight_res := await MultiStraightHandler.new().score(real_cards)
 		if not straight_res.is_empty(): candidates.append_array(straight_res)
 		
-		var flush_res := await MultiFlushHandler.new().score(resolved_pool)
+		var flush_res := await MultiFlushHandler.new().score(real_cards)
 		if not flush_res.is_empty(): candidates.append_array(flush_res)
 		
-		var high_res := await HighCardHandler.new().score(resolved_pool)
+		var high_res := await HighCardHandler.new().score(real_cards)
 		if not high_res.is_empty(): candidates.append_array(high_res)
 		
 		if candidates.is_empty(): return []
@@ -97,7 +93,7 @@ class PokerHands extends Scorer:
 # 1. EXPANDED GRID HANDLER (PROPORTIONAL HOUSES & SETS SCORER)
 # ==============================================================================
 class ExpandedGridHandler extends Scorer:
-	func score(cards: Array[CardData]) -> Array[Result]:
+	static func score(cards: Array[CardData]) -> Array[Result]:
 		var profiles := await Scoring._get_hand_profiles_async(cards)
 		var raw_clusters: Array[ArrayCardData] = []
 		
@@ -133,7 +129,7 @@ class ExpandedGridHandler extends Scorer:
 		return possible_outcomes
 
 
-	func _evaluate_proportional_full_house(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
+	static func _evaluate_proportional_full_house(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
 		var pool_1: Array[CardData] = clusters[0].datas.duplicate()
 		var pool_2: Array[CardData] = clusters[1].datas.duplicate()
 		var n1 := pool_1.size()
@@ -176,7 +172,7 @@ class ExpandedGridHandler extends Scorer:
 		return []
 
 
-	func _evaluate_simultaneous_identical_houses(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
+	static func _evaluate_simultaneous_identical_houses(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
 		var pool_1: Array[CardData] = clusters[0].datas.duplicate()
 		var pool_2: Array[CardData] = clusters[1].datas.duplicate()
 		var n1 := pool_1.size()
@@ -252,7 +248,7 @@ class ExpandedGridHandler extends Scorer:
 		return simultaneous_outcomes
 
 
-	func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
+	static func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
 		var res := Result.new()
 		res.tie_breaker_high_card = max_rank
 		
@@ -312,7 +308,7 @@ class ExpandedGridHandler extends Scorer:
 # 2. SEQUENTIAL HAND HANDLER (UNBOUNDED MULTI-STRAIGHT SCORER)
 # ==============================================================================
 class MultiStraightHandler extends Scorer:
-	func score(cards: Array[CardData]) -> Array[Result]:
+	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.size() < 5: return []
 		
 		var path_a_results := await _evaluate_straight_flushes_first(cards)
@@ -327,7 +323,7 @@ class MultiStraightHandler extends Scorer:
 		return optimal_outcomes
 
 
-	func _evaluate_straight_flushes_first(cards: Array[CardData]) -> Result:
+	static func _evaluate_straight_flushes_first(cards: Array[CardData]) -> Result:
 		var pool := cards.duplicate()
 		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
@@ -361,7 +357,7 @@ class MultiStraightHandler extends Scorer:
 		return await _package_straight_result(straights_found, absolute_max_rank)
 
 
-	func _evaluate_mixed_straights_first(cards: Array[CardData]) -> Result:
+	static func _evaluate_mixed_straights_first(cards: Array[CardData]) -> Result:
 		var pool := cards.duplicate()
 		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
@@ -378,7 +374,7 @@ class MultiStraightHandler extends Scorer:
 		return await _package_straight_result(straights_found, absolute_max_rank)
 
 
-	func _package_straight_result(straights: Array[ArrayCardData], max_rank: float) -> Result:
+	static func _package_straight_result(straights: Array[ArrayCardData], max_rank: float) -> Result:
 		var res := Result.new()
 		var total_points := 0
 		var flush_suits_seen: Array[PipSuit] = []
@@ -433,7 +429,7 @@ class MultiStraightHandler extends Scorer:
 		return res
 
 
-	func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
+	static func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
 		var standard_run := await _scan_sequence(card_pool, false)
 		var has_ace := false
 		for card in card_pool:
@@ -449,7 +445,7 @@ class MultiStraightHandler extends Scorer:
 
 
 
-	func _scan_sequence(card_pool: Array[CardData], wrap_ace_low: bool) -> Array[CardData]:
+	static func _scan_sequence(card_pool: Array[CardData], wrap_ace_low: bool) -> Array[CardData]:
 		if card_pool.is_empty(): return []
 		var min_non_ace_value := 9999.0
 		
@@ -496,7 +492,7 @@ class MultiStraightHandler extends Scorer:
 
 
 
-	func _get_max_value_of_run_async(run_cards: Array[CardData], original_pool: Array[CardData]) -> float:
+	static func _get_max_value_of_run_async(run_cards: Array[CardData], original_pool: Array[CardData]) -> float:
 		var max_val := -INF
 		for card in run_cards:
 			if card and card.rank:
@@ -509,7 +505,7 @@ class MultiStraightHandler extends Scorer:
 # 3. STANDALONE SUIT HANDLER (MULTI-FLUSH MODULE SCORER)
 # ==============================================================================
 class MultiFlushHandler extends Scorer:
-	func score(cards: Array[CardData]) -> Array[Result]:
+	static func score(cards: Array[CardData]) -> Array[Result]:
 		var pool := cards.duplicate()
 		var flushes_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
@@ -567,7 +563,7 @@ class MultiFlushHandler extends Scorer:
 # 4. DEFAULT HIGH CARD FALLBACK HANDLER (FIRST OCCURRENCE SELECTOR)
 # ==============================================================================
 class HighCardHandler extends Scorer:
-	func score(cards: Array[CardData]) -> Array[Result]:
+	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.is_empty(): return []
 		
 		# FIXED: Access index 0 to initialize the baseline card safely
@@ -585,18 +581,6 @@ class HighCardHandler extends Scorer:
 		result.meld = [best_card]
 		result.tie_breaker_high_card = score_val
 		return [result]
-
-
-# ==============================================================================
-# 5. DATA-ORIENTED RESOLVER PASSTHROUGH CORE
-# ==============================================================================
-class WildCardResolver:
-	static func resolve_hand(cards: Array[CardData]) -> Array[CardData]:
-		var real_cards: Array[CardData] = []
-		for card in cards:
-			if not card or not card.rank or not card.suit: continue
-			real_cards.append(card)
-		return real_cards
 
 ##region scoring v1
 #
