@@ -17,6 +17,7 @@ func _ready() -> void:
 	run_micro_card_environment_tests()
 	run_macro_card_environment_tests()
 	print("============ SUCCESS: ALL 49 PARITY SCALING TEST CASES PASSED! ============")
+	run_15_card_rarity_matrix()
 
 
 static func make_hand(ranks: Array[int], suits: Array[int]) -> Array[CardData]:
@@ -127,7 +128,7 @@ func run_standard_5_card_poker_tests() -> void:
 	# 8. Pair
 	var hand_pair : Array[CardData] = make_hand([11, 11, 9, 6, 3], [1, 2, 3, 4, 1])
 	var res_pair := await Scoring.PokerHands.score(hand_pair)
-	assert(res_pair[0].score == 2 and res_pair[0].name == "2 of a Kind", "Single Pair Tracking Failed")
+	assert(res_pair[0].score == 2 and res_pair[0].name == "Pair", "Single Pair Tracking Failed")
 
 	# 9. High Card
 	var hand_hc : Array[CardData] = make_hand([14, 9, 7, 4, 2], [1, 2, 3, 4, 1])
@@ -408,3 +409,196 @@ func run_macro_card_environment_tests() -> void:
 	#assert(not r49.is_empty(), "49-H Failed")
 	#assert(duration < 2500, "49-H Performance Crash! Benchmark breach: " + str(duration) + "us")
 	#print("✔ Section 4 Passed: Macro Environment Performance Suite (30+ Cards) complete.")
+	
+# ==============================================================================
+# SECTION 5: 15-CARD RARITY & BALANCE LEADERBOARD
+# Generates the "Best Possible Version" of every hand type using exactly 15 cards.
+# Prints a sorted grid to verify that score density matches mathematical rarity.
+# ==============================================================================
+func run_15_card_rarity_matrix() -> void:
+	print("\n=== 15-CARD ARCHETYPE BALANCE LEADERBOARD ===")
+	print("| SCORE       | HAND NAME                                    | CONFIGURATION NOTES")
+	print("|:------------|:---------------------------------------------|:-------------------")
+	
+	var archetypes: Array[Dictionary] = []
+
+	# 1. HIGH CARD (15 Cards: All unlinked, spaced out, unique suits)
+	var h_high: Array[CardData] = []
+	for i in range(15): 
+		h_high.append(m_card(10 + (i * 5), i + 1)) # Unique suits via int overflow or custom class
+		# Note: If using standard 4 suits, you can't have 15 cards without a flush/pair unless you force unique suits.
+		# For this test to be pure, we assume the engine handles 4 suits. 
+		# 15 cards with 4 suits GUARANTEES a Flush (Pigeonhole Principle).
+		# So "Pure High Card" is impossible with 15 cards and 4 suits. 
+		# We will simulate "High Card" by using the PipSuit.Standard from earlier if avail, or just accept it might flush.
+		# Let's use the PipSuit.Standard to force a pure High Card fallback for the baseline.
+		h_high[i].suit = PipSuit.Standard.new().with_value(i)
+	archetypes.append(await _quick_score(h_high, "Baseline: Pure High Card"))
+
+	# 2. PAIR (1 Pair + 13 Junk)
+	var h_pair: Array[CardData] = []
+	h_pair.append(m_card(100, 1)); h_pair.append(m_card(100, 2))
+	for i in range(13): 
+		var cd := m_card(10 + (i * 5), 3) # Same suit to avoid random flush logic? No, might flush.
+		cd.suit = PipSuit.Standard.new().with_value(i) # Safety
+		h_pair.append(cd)
+	archetypes.append(await _quick_score(h_pair, "1 Pair + 13 Junk"))
+
+	# 3. MASSIVE GRID: 7 PAIRS (14 cards + 1 junk)
+	var h_7pair: Array[CardData] = []
+	for i in range(7):
+		h_7pair.append(m_card(10 + (i*10), 1))
+		h_7pair.append(m_card(10 + (i*10), 2))
+	h_7pair.append(m_card(999, 3))
+	archetypes.append(await _quick_score(h_7pair, "Grid: 7 Distinct Pairs"))
+
+	# 4. TRIPLETS (1 Set of 3 + 12 Junk)
+	var h_trips: Array[CardData] = []
+	for i in range(3): h_trips.append(m_card(100, i+1))
+	for i in range(12): 
+		var cd := m_card(10 + (i*5), 4)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_trips.append(cd)
+	archetypes.append(await _quick_score(h_trips, "1 Triplet + 12 Junk"))
+
+	# 5. MASSIVE GRID: 5 TRIPLETS (15 Cards)
+	var h_5trips: Array[CardData] = []
+	for i in range(5):
+		for x in range(3): h_5trips.append(m_card(10 + (i*10), x+1))
+	archetypes.append(await _quick_score(h_5trips, "Grid: 5 Distinct Triplets"))
+
+	# 6. STRAIGHT (Min: 5 Cards + 10 Junk)
+	var h_str5: Array[CardData] = []
+	for i in range(5): h_str5.append(m_card(10 + i, (i%4)+1))
+	for i in range(10): 
+		var cd := m_card(100 + (i*5), 4)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_str5.append(cd)
+	archetypes.append(await _quick_score(h_str5, "Straight (5 Cards)"))
+
+	# 7. STRAIGHT (Max: 15 Card Run)
+	var h_str15: Array[CardData] = []
+	for i in range(15): h_str15.append(m_card(10 + i, (i%4)+1))
+	archetypes.append(await _quick_score(h_str15, "Straight (15 Cards)"))
+
+	# 8. FLUSH (Min: 5 Cards + 10 Junk)
+	var h_fl5: Array[CardData] = []
+	for i in range(5): h_fl5.append(m_card(10 + (i*5), 1))
+	for i in range(10): 
+		var cd := m_card(200 + (i*5), 2) # Different suit
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_fl5.append(cd)
+	archetypes.append(await _quick_score(h_fl5, "Flush (5 Cards)"))
+
+	# 9. FLUSH (Max: 15 Cards Same Suit)
+	var h_fl15: Array[CardData] = []
+	for i in range(15): h_fl15.append(m_card(10 + (i*5), 1))
+	archetypes.append(await _quick_score(h_fl15, "Flush (15 Cards)"))
+
+	# 10. FULL HOUSE (Standard 3/2 + 10 Junk)
+	var h_fh: Array[CardData] = []
+	for i in range(3): h_fh.append(m_card(100, i+1))
+	for i in range(2): h_fh.append(m_card(50, i+1))
+	for i in range(10): 
+		var cd := m_card(200 + (i*5), 3)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_fh.append(cd)
+	archetypes.append(await _quick_score(h_fh, "Full House (5 Cards)"))
+
+	# 11. FULL HOUSE (Macro Proportional 9/6 = 15 Cards)
+	var h_fh_macro: Array[CardData] = []
+	for i in range(9): h_fh_macro.append(m_card(100, (i%4)+1))
+	for i in range(6): h_fh_macro.append(m_card(50, (i%4)+1))
+	archetypes.append(await _quick_score(h_fh_macro, "Full House (Proportional 9/6)"))
+
+	# 12. FULL HOUSE (Simultaneous: 3 sets of Full Houses)
+	var h_fh_simul: Array[CardData] = []
+	for i in range(3): # 3 distinct houses
+		for x in range(3): h_fh_simul.append(m_card(10 + (i*10), (x%4)+1))
+		for y in range(2): h_fh_simul.append(m_card(15 + (i*10), (y%4)+1))
+	archetypes.append(await _quick_score(h_fh_simul, "3 Simultaneous Full Houses"))
+
+	# 13. 4 OF A KIND (4 + 11 Junk)
+	var h_4k: Array[CardData] = []
+	for i in range(4): h_4k.append(m_card(100, i+1))
+	for i in range(11): 
+		var cd := m_card(10 + (i*5), 1)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_4k.append(cd)
+	archetypes.append(await _quick_score(h_4k, "4 of a Kind + 11 Junk"))
+
+	# 14. MASSIVE GRID: 3 QUADS (12 Cards + 3 Junk)
+	var h_3quads: Array[CardData] = []
+	for i in range(3):
+		for x in range(4): h_3quads.append(m_card(10 + (i*10), x+1))
+	for i in range(3): h_3quads.append(m_card(500 + i, 1))
+	archetypes.append(await _quick_score(h_3quads, "Grid: 3 Distinct Quads"))
+
+	# 15. 5 OF A KIND (5 + 10 Junk)
+	var h_5k: Array[CardData] = []
+	for i in range(5): h_5k.append(m_card(100, (i%4)+1))
+	for i in range(10): 
+		var cd := m_card(10 + (i*5), 1)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_5k.append(cd)
+	archetypes.append(await _quick_score(h_5k, "5 of a Kind + 10 Junk"))
+	
+	# 16. MASSIVE GRID: 3 QUINTS (15 Cards)
+	var h_3quints: Array[CardData] = []
+	for i in range(3):
+		for x in range(5): h_3quints.append(m_card(10 + (i*10), (x%4)+1))
+	archetypes.append(await _quick_score(h_3quints, "Grid: 3 Distinct 5-of-a-Kinds"))
+
+	# 17. STRAIGHT FLUSH (Min: 5 Cards)
+	var h_sf5: Array[CardData] = []
+	for i in range(5): h_sf5.append(m_card(10 + i, 1))
+	for i in range(10):
+		var cd := m_card(100 + (i*5), 2)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_sf5.append(cd)
+	archetypes.append(await _quick_score(h_sf5, "Straight Flush (5 Cards)"))
+
+	# 18. STRAIGHT FLUSH (Max: 15 Cards)
+	var h_sf15: Array[CardData] = []
+	for i in range(15): h_sf15.append(m_card(10 + i, 1))
+	archetypes.append(await _quick_score(h_sf15, "Straight Flush (15 Cards)"))
+
+	# 19. FLUSH HOUSE (Standard 3/2 same suit)
+	var h_flh: Array[CardData] = []
+	for i in range(3): h_flh.append(m_card(100, 1))
+	for i in range(2): h_flh.append(m_card(50, 1))
+	for i in range(10): 
+		var cd := m_card(200 + (i*5), 2)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_flh.append(cd)
+	archetypes.append(await _quick_score(h_flh, "Flush House (5 Cards)"))
+	
+	# 20. FLUSH FIVE (5 Same Rank Same Suit)
+	var h_fl5k: Array[CardData] = []
+	for i in range(5): h_fl5k.append(m_card(100, 1))
+	for i in range(10):
+		var cd := m_card(10 + (i*5), 2)
+		cd.suit = PipSuit.Standard.new().with_value(i)
+		h_fl5k.append(cd)
+	archetypes.append(await _quick_score(h_fl5k, "Flush Five"))
+
+	# Sort and Print
+	archetypes.sort_custom(func(a:Dictionary, b:Dictionary)->bool: return a.score > b.score)
+	
+	for entry in archetypes:
+		var s_score := str(entry.score).pad_decimals(0).rpad(11)
+		var s_name := (entry.name as String).rpad(44)
+		var s_note := entry.note as String
+		print("| " + s_score + " | " + s_name + " | " + s_note)
+
+
+# Helper to construct the data row for the table
+func _quick_score(cards: Array[CardData], note: String) -> Dictionary:
+	var results := await Scoring.PokerHands.new().score(cards)
+	if results.is_empty(): return {"score": 0, "name": "FAIL", "note": note}
+	var best := results[0]
+	return {
+		"score": best.score,
+		"name": best.name,
+		"note": note
+	}

@@ -13,9 +13,13 @@ var rules1: Array[CardData] = [
 	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillAdderInputLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 	
 	CardData.new().with_skill(SkillGrabberOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
 	CardData.new().with_skill(SkillPlacerOgLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillScorerCascadeLower.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+	CardData.new().with_skill(SkillEvalPokerBest.new()).with_suit(PipSuit.Standard.new().with_random()).with_rank(PipRank.Numeral.new().with_random()),
+
 ]
 
 var deck1: Array[CardData] = [

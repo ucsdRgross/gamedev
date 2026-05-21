@@ -17,9 +17,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 0
 script = ExtResource("1_34k5y")
-card_scale = 3.0
+card_scale = 2.5
 
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="." unique_id=860459358]
 layout_mode = 1

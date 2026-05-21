@@ -5,6 +5,8 @@ class Result:
 	var meld : Array[CardData]
 	var score : int
 	var tie_breaker_high_card : float
+	func _to_string() -> String:
+		return name #+ " " + str(meld)
 
 @abstract class Scorer:
 	static func score(cards:Array[CardData]) -> Array[Result]: return []
@@ -92,6 +94,9 @@ class PokerHands extends Scorer:
 # ==============================================================================
 # 1. EXPANDED GRID HANDLER (PROPORTIONAL HOUSES & SETS SCORER)
 # ==============================================================================
+# ==============================================================================
+# 1. EXPANDED GRID HANDLER (PROPORTIONAL HOUSES & SETS SCORER)
+# ==============================================================================
 class ExpandedGridHandler extends Scorer:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		var profiles := await Scoring._get_hand_profiles_async(cards)
@@ -108,18 +113,24 @@ class ExpandedGridHandler extends Scorer:
 		var absolute_max_rank := -INF
 		for cluster in raw_clusters:
 			if not cluster.datas.is_empty():
-				# FIXED: Access index 0 to get the rank of the first card in the cluster
+				# FIXED: Access index 0 safely to evaluate the rank of the cluster representative
 				var local_val : float = await PipComparator.get_scorable_value(cluster.datas[0].rank, cards, false)
 				absolute_max_rank = max(absolute_max_rank, local_val)
 
 		var possible_outcomes: Array[Result] = []
 
 		if raw_clusters.size() >= 2:
+			# 1. Macro: One giant house (e.g. 9 Kings / 6 Queens)
 			var res_macro := await _evaluate_proportional_full_house(raw_clusters, absolute_max_rank)
 			if not res_macro.is_empty(): possible_outcomes.append_array(res_macro)
 
+			# 2. Simul: Identical copies (e.g. 3 houses of KKK/QQ)
 			var res_simul := await _evaluate_simultaneous_identical_houses(raw_clusters, absolute_max_rank)
 			if not res_simul.is_empty(): possible_outcomes.append_array(res_simul)
+			
+			# 3. Combinatorial: Distinct houses (e.g. KKK/22 + QQQ/33)
+			var res_distinct := await _evaluate_distinct_combinatorial_houses(raw_clusters, absolute_max_rank)
+			if not res_distinct.is_empty(): possible_outcomes.append_array(res_distinct)
 			
 		var res_fallback := await _evaluate_fallback_sets(raw_clusters, absolute_max_rank)
 		if not res_fallback.is_empty(): possible_outcomes.append_array(res_fallback)
@@ -248,12 +259,107 @@ class ExpandedGridHandler extends Scorer:
 		return simultaneous_outcomes
 
 
+	static func _evaluate_distinct_combinatorial_houses(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
+		# Tracks available counts locally so we don't modify the actual card objects in previous handlers
+		var remaining_counts: Array[int] = []
+		for c in clusters: remaining_counts.append(c.datas.size())
+		
+		var formed_houses_data: Array[Dictionary] = []
+		var total_hand_card_count := 0
+		
+		while true:
+			var trip_idx := -1
+			var pair_idx := -1
+			
+			# 1. Greedy Head: Find largest available Triplet to anchor the house
+			for i in range(clusters.size()):
+				if remaining_counts[i] >= 3:
+					trip_idx = i
+					break
+			
+			if trip_idx == -1: break 
+			
+			# 2. Smart Tail: Find best Pair
+			# Priority A: Exact Pairs (Size 2) to prevent cannibalizing potential triplets
+			for i in range(clusters.size()):
+				if i != trip_idx and remaining_counts[i] == 2:
+					pair_idx = i
+					break
+			
+			# Priority B: Largest available set (Proportional Scaling Mode fallback)
+			if pair_idx == -1:
+				for i in range(clusters.size()):
+					if i != trip_idx and remaining_counts[i] >= 2:
+						pair_idx = i
+						break
+			
+			if trip_idx != -1 and pair_idx != -1:
+				# DYNAMIC SCALING: Calculate the max proportional size for THIS specific pair
+				var n1 := remaining_counts[trip_idx]
+				var n2 := remaining_counts[pair_idx]
+				
+				var scale :int= min(floor(n1 / 3.0), floor(n2 / 2.0))
+				if scale < 1: scale = 1
+				
+				var use_n1 := scale * 3
+				var use_n2 := scale * 2
+				
+				var house_cards: Array[CardData] = []
+				var t_src := clusters[trip_idx].datas
+				var p_src := clusters[pair_idx].datas
+				
+				# Consume from the end (virtual stack pop based on counts)
+				var t_start := t_src.size() - remaining_counts[trip_idx]
+				for k in range(use_n1): house_cards.append(t_src[t_start + k])
+				
+				var p_start := p_src.size() - remaining_counts[pair_idx]
+				for k in range(use_n2): house_cards.append(p_src[p_start + k])
+				
+				# Calculate score for this specific house size (Exponential density)
+				var sub_score_float : float = float(use_n1 * (use_n1 - 1)) + float(use_n2 * (use_n2 - 1))
+				var scaled_house_score := int(sub_score_float * 1.5)
+				
+				formed_houses_data.append({
+					"cards": house_cards,
+					"score": scaled_house_score
+				})
+				
+				total_hand_card_count += (use_n1 + use_n2)
+				remaining_counts[trip_idx] -= use_n1
+				remaining_counts[pair_idx] -= use_n2
+			else:
+				break
+		
+		# Only return if we formed MULTIPLE distinct houses (Single house logic handled by Macro)
+		if formed_houses_data.size() < 2: return []
+		
+		var res := Result.new()
+		var m := formed_houses_data.size()
+		var total_base_points := 0
+		
+		for data in formed_houses_data:
+			res.meld.append_array(data.cards as Array[CardData])
+			total_base_points += data.score
+			
+		var bonus_mult : float = 1.0 + 0.5 * max(0, m - 1)
+		res.score = int(total_base_points * bonus_mult)
+		
+		if m > 0:
+			var avg_size : int = total_hand_card_count / m
+			res.name = str(m) + " Distinct Full Houses (" + str(avg_size) + ")"
+		else:
+			res.name = "Distinct Full Houses"
+			
+		res.tie_breaker_high_card = max_rank
+		return [res]
+
+
 	static func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
 		var res := Result.new()
 		res.tie_breaker_high_card = max_rank
 		
 		var is_uniform := true
-		# FIXED: Access index 0 of the clusters array to evaluate baseline sizes safely
+		# FIXED: Access index 0 to determine baseline uniform size safely
 		var target_size := clusters[0].datas.size()
 		for s in clusters:
 			if s.datas.size() != target_size: is_uniform = false
@@ -284,7 +390,7 @@ class ExpandedGridHandler extends Scorer:
 			
 			var is_all_same_suit := true
 			if not s1.is_empty():
-				# FIXED: Access index 0 to get the comparative suit reference
+				# FIXED: Access index 0 to get the comparator suit
 				var match_suit: PipSuit = s1[0].suit
 				for i in range(1, s1.size()):
 					if not await PipComparator.is_suit_same(match_suit, s1[i].suit):
@@ -297,11 +403,24 @@ class ExpandedGridHandler extends Scorer:
 				res.name = "Full Flush " + str(n) + " of a Kind" + size_postfix
 				res.score = (n * (n - 1)) + (2 * n)
 			else:
-				res.name = str(n) + " of a Kind" + size_postfix
+				# FIXED: Clean dictionary naming map for standard single sets
+				var traditional_names := {
+					2: "Pair",
+					3: "3 of a Kind",
+					4: "4 of a Kind"
+				}
+				
+				if traditional_names.has(n):
+					res.name = traditional_names[n] + size_postfix
+				else:
+					res.name = str(n) + " of a Kind" + size_postfix
+					
 				res.score = n * (n - 1)
 				
 			res.meld = s1
 			return [res]
+
+
 
 
 # ==============================================================================
