@@ -151,16 +151,31 @@ static func is_rank_next_to(r1: PipRank, r2: PipRank) -> bool:
 	return false
 
 
-## Extracts numeric value contexts, shifting wrapping elements (like Aces) dynamically.
-static func get_scorable_value(r: PipRank, context_pool: Array[CardData], wrap_ace_low: bool = false) -> float:
+# pip_comparator.gd
+
+## Returns true if this rank is the "Ace" (Rank 1).
+static func is_ace(r: PipRank) -> bool:
+	return "value" in r and int(r.value) == 1
+
+## Returns the physical value on the card (1.0).
+static func get_ace_base_value() -> float:
+	return 1.0
+
+## Returns the virtual high value for straights (14.0).
+static func get_ace_alt_value() -> float:
+	return 14.0
+
+## Calculates the scoring value. 
+## If wrap_ace_high is true, Ace (1) counts as 14.
+static func get_scorable_value(r: PipRank, context_pool: Array[CardData] = [], wrap_ace_high: bool = false) -> float:
 	if not r: return -INF
-	if wrap_ace_low and "value" in r and int(r.value) == 14:
-		var local_floor := 9999.0
-		for card in context_pool:
-			if not card or not card.rank or not ("value" in card.rank) or int(card.rank.value) == 14: continue
-			local_floor = min(local_floor, float(card.rank.value))
-		return local_floor - 1.0
+	
+	# DECOUPLED: Check via method, not hardcoded 1 or 14
+	if wrap_ace_high and is_ace(r):
+		return get_ace_alt_value() # Returns 14.0
+		
 	return float(r.value) if "value" in r else -INF
+
 
 
 static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:

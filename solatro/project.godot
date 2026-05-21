@@ -51,6 +51,7 @@ CardVisual=""
 
 [internationalization]
 
+locale/translations=PackedStringArray("res://Assets/localization.en.translation")
 locale/translation_add_builtin_strings_to_pot=true
 
 [physics]
