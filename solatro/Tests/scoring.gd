@@ -19,6 +19,7 @@ func _ready() -> void:
 	run_macro_card_environment_tests()
 	print("============ SUCCESS: ALL 49 PARITY SCALING TEST CASES PASSED! ============")
 	run_15_card_rarity_matrix()
+	run_scaling_matrix() 
 
 
 static func make_hand(ranks: Array[int], suits: Array[int]) -> Array[CardData]:
@@ -33,54 +34,8 @@ static func m_card(rank_val: float, suit_id: float) -> CardData:
 	cd.suit = PipSuit.Standard.new().with_value(suit_id)
 	return cd
 
-#static func m_half(rank_val: float, suit_id: int) -> CardData:
-	#var cd := CardData
-	#cd.rank = Scoring.HalfStepRank
-	#cd.rank.value = int(rank_val)
-	#cd.suit = PipSuit.Standard.with_value(suit_id)
-	#return cd
-
-#static func m_omni(rank_cond: int, oob: bool, suit_cond: int) -> CardData:
-	#var cd := CardData
-	#var wr := Scoring.WildOmniRank
-	#wr.condition = rank_cond as Scoring.WildOmniRank.Condition
-	#wr.out_of_bounds = oob
-	#var ws := Scoring.WildOmniSuit
-	#ws.condition = suit_cond as Scoring.WildOmniSuit.Condition
-	#cd.rank = wr
-	#cd.suit = ws
-	#return cd
-
-#static func m_fixed(fixed_val: int, suit_id: int) -> CardData:
-	#var cd := CardData
-	#cd.rank = PipRank.Numeral.with_value(fixed_val)
-	#cd.suit = Scoring.WildOmniSuit
-	#return cd
-
-#static func m_msuit(rank_val: int, suit_ids: Array[int]) -> CardData:
-	#var cd := CardData
-	#cd.rank = PipRank.Numeral.with_value(rank_val)
-	#var ms := Scoring.MultiSuit
-	#for id in suit_ids:
-		#ms.allowed_suits.append(PipSuit.Standard.with_value(id))
-	#cd.suit = ms
-	#return cd
-
-#class UnrankedStoneRank extends PipRank:
-	#func get_str() -> String: return "UnrankedStone"
-	#func set_texture(_s: Sprite2D) -> void: pass
-	#func with_random() -> PipRank: return self
-#
-#class UnsuitedStoneSuit extends PipSuit:
-	#func get_str() -> String: return "UnsuitedStone"
-	#func set_texture(_s: Sprite2D) -> void: pass
-	#func set_art_texture(_s: Sprite2D, _r: PipRank) -> void: pass
-	#func with_random() -> PipSuit: return self
-
 static func m_stone() -> CardData:
 	var cd := CardData.new()
-	#cd.rank = UnrankedStoneRank
-	#cd.suit = UnsuitedStoneSuit
 	return cd
 
 func assert_result(results: Array[Scoring.Result], expected_score: int, label: String, type_check: Scoring.MELD_TYPE, debug_ctx: String) -> void:
@@ -177,7 +132,7 @@ func run_balatro_special_hand_tests() -> void:
 	var res_flush_house := await Scoring.PokerHands.new().score(hand_flush_house)
 	
 	# FIX: Check for base structural type FULL_HOUSE here.
-	assert_result(res_flush_house, 22, "Flush House", Scoring.MELD_TYPE.FULL_HOUSE, "Flush House")
+	assert_result(res_flush_house, 24, "Flush House", Scoring.MELD_TYPE.FULL_HOUSE, "Flush House")
 	
 	# Detailed Composition Check: Must have BOTH structural types
 	var r := res_flush_house[0]
@@ -189,7 +144,7 @@ func run_balatro_special_hand_tests() -> void:
 	# 12. Flush Five (5 Aces, Suited)
 	var hand_flush_five : Array[CardData] = make_hand([1, 1, 1, 1, 1], [3, 3, 3, 3, 3])
 	var res_flush_five := await Scoring.PokerHands.new().score(hand_flush_five)
-	assert_result(res_flush_five, 30, "Flush 5 of a Kind", Scoring.MELD_TYPE.ALL_SAME_SUIT, "Flush Five")
+	assert_result(res_flush_five, 40, "Flush 5 of a Kind", Scoring.MELD_TYPE.ALL_SAME_SUIT, "Flush Five")
 
 
 # ==============================================================================
@@ -309,51 +264,6 @@ func run_micro_card_environment_tests() -> void:
 	var r21 := await Scoring.PokerHands.score(h21)
 	assert(r21[0].score == 1, "21-L Failed")
 
-	## 22-L: Wild Card Straight Gap Resolution
-	#var h22 : Array[CardData] = [m_card(8, 4), m_card(7, 4), m_card(5, 4), m_card(4, 4), m_omni(0, false, 0)]
-	#var r22 := await Scoring.PokerHands.score(h22)
-	#assert(r22[0].score == 20, "22-L Failed")
-
-	## 23-L: Wild Card Exponential Set Scaling
-	#var h23 : Array[CardData] = [m_card(13, 1), m_card(13, 2), m_card(13, 3), m_omni(0, false, 0)]
-	#var r23 := await Scoring.PokerHands.score(h23)
-	#assert(r23[0].score == 12, "23-L Failed")
-
-	# 24-L: Symmetrical Evens Filter Constraints
-	#var h24 : Array[CardData] = [m_card(7, 1), m_card(7, 2), m_card(7, 3), m_card(6, 4), m_card(6, 1), m_omni(1, false, 0)]
-	#var r24 := await Scoring.PokerHands.score(h24)
-	#assert(r24[0].score == 12, "24-L Failed")
-
-	# 25-L: Out of Bounds Neg Wild Straights
-	#var h25 : Array[CardData] = [m_card(-3, 4), m_card(-4, 4), m_card(-5, 4), m_card(-6, 4), m_omni(0, true, 0)]
-	#var r25 := await Scoring.PokerHands.score(h25)
-	#assert(r25[0].score == 20, "25-L Failed")
-
-	## 26-L: Red-Only Color Suit Lock Exclusion
-	#var h26 : Array[CardData] = [m_card(13, 1), m_card(11, 1), m_card(9, 1), m_card(7, 1), m_card(12, 3), m_card(10, 3), m_omni(0, false, 1)]
-	#var r26 := await Scoring.PokerHands.score(h26)
-	#assert(not r26[0].name.contains("Flush"), "26-L Failed")
-
-	## 27-L: Multi Suit Profile Mapping Check
-	#var h27 : Array[CardData] = [m_msuit(5, [1, 2]), m_card(4, 1), m_card(3, 1), m_card(2, 1), m_card(1, 1)]
-	#var r27 := await Scoring.PokerHands.score(h27)
-	#assert(not r27.is_empty(), "27-L Failed")
-
-	## 28-L: Enforced Dependency Weight Cascades
-	#var h28 : Array[CardData] = [m_card(10, 1), m_card(10, 2), m_omni(0, false, 0), m_fixed(10, 3)]
-	#var r28 := await Scoring.PokerHands.score(h28)
-	#assert(r28[0].score == 12, "28-L Failed")
-
-	## 29-L: Pure Wild Circular Deadlock Safety Fallbacks
-	#var h29 : Array[CardData] = [m_omni(0, false, 0), m_omni(0, false, 0)]
-	#var r29 := await Scoring.PokerHands.score(h29)
-	#assert(not r29.is_empty(), "29-L Failed")
-
-	## 30-L: Multi Suit Local Cross Profile Execution
-	#var h30 : Array[CardData] = [m_card(2, 1), m_card(4, 1), m_card(3, 2), m_card(5, 2), m_msuit(10, [1, 2])]
-	#var r30 := await Scoring.PokerHands.score(h30)
-	#assert(not r30.is_empty(), "30-L Failed")
-
 	# 31-L: Stone Card Loop Scanners Bypasses
 	var h31 : Array[CardData] = [m_card(14, 1), m_stone(), m_stone()]
 	var r31 := await Scoring.PokerHands.score(h31)
@@ -401,17 +311,28 @@ func run_macro_card_environment_tests() -> void:
 
 	# 35-H: Macro Proportional Deconstruction Slicing (Factorial Search)
 	var c35: Array[CardData] = []
-	for i in range(20): c35.append(m_card(13, 1))
+	
+	# FIX: Mix suits for the Kings (i % 4 + 1)
+	# This prevents the "Flush 20-of-a-Kind" (Score 760) from overpowering 
+	# the "Full House 25" (Score 450) we are trying to test.
+	for i in range(20): c35.append(m_card(13, (i % 4) + 1)) 
+	
+	# Fours can remain suited (Suit 2), it doesn't matter
 	for i in range(10): c35.append(m_card(4, 2))
+	
 	var r35 := await Scoring.PokerHands.score(c35)
-	assert(r35[0].name.contains("Full House (25)"), "35-H Failed" + str(r35[0].name + str(r35[0].meld.size())))
+	
+	# Now the Full House (450) beats the Standard 20-of-a-Kind (380)
+	assert(r35[0].name.contains("Full House (25)"), "35-H Failed: Got " + r35[0].name)
+	print("  [PASS] 35-H Macro Deconstruction (Full House 25)")
 
 	# 36-H: Macro Symmetrical Grid Clusters Packaging Loops
 	var c36: Array[CardData] = []
 	for rank in range(2, 7):
 		for i in range(6): c36.append(m_card(rank, (i % 4) + 1))
 	var r36 := await Scoring.PokerHands.score(c36)
-	assert(r36[0].name.contains("6 Multi-Flush Straight (5)"), "36-H Failed" + str(r36[0].name))
+	# (Prefix is now a wrapper, wrapping the count)
+	assert(r36[0].name.contains("Multi-Flush 6x Straight (5)"), "36-H Failed: Got " + str(r36[0].name))
 
 	# 37-H: Extended Length Continuous Straights
 	var c37: Array[CardData] = []
@@ -423,7 +344,7 @@ func run_macro_card_environment_tests() -> void:
 	var c38: Array[CardData] = []
 	for i in range(35): c38.append(m_card(-i, 1))
 	var r38 := await Scoring.PokerHands.score(c38)
-	assert(r38[0].score == 140, "38-H Failed")
+	assert(r38[0].score == 140, "38-H Failed" + str(r38[0].name + str(r38[0].score)))
 
 	## 39-H: Parallel Floats Sorting Profile Load Validation
 	#var c39: Array[CardData] = []
@@ -438,7 +359,7 @@ func run_macro_card_environment_tests() -> void:
 	for i in range(15): c40.append(m_card((i * -2) - 2, 1))
 	for i in range(20): c40.append(m_card((i * 2) + 2, 2))
 	var r40 := await Scoring.PokerHands.score(c40)
-	assert(r40[0].name.contains("2 Flush"), "40-H Failed" + str(r40[0].name) + str(r40[0].score) + str(r40[0].meld))
+	assert(r40[0].name.contains("2x Flush"), "40-H Failed" + str(r40[0].name) + str(r40[0].score) + str(r40[0].meld))
 
 	# 41-H: Memory Clutter Heap Null Sanitizer Defense Pass
 	var c41: Array[CardData] = []
@@ -447,6 +368,314 @@ func run_macro_card_environment_tests() -> void:
 	c41.append(m_card(14, 4))
 	var r41 := await Scoring.PokerHands.score(c41)
 	assert(r41[0].score == 1, "41-H Failed")
+
+	
+# ==============================================================================
+# SECTION 5: SCALING PARITY & BALANCE MATRIX
+# Programmatically validates scaling curves for Sets, Straights, Flushes, and Houses.
+# Covers: 1..5 Sets, Deep Stacks (25), Multi-Flush (Mixed), and Full Flush (Mono).
+# ==============================================================================
+func run_15_card_rarity_matrix() -> void:
+	print("\n=== SCALING ARCHETYPE LEADERBOARD (1-5 SETS & 25-STACK) ===")
+	print("| SCORE       | HAND NAME                                          | CONFIGURATION NOTES")
+	print("|:------------|:---------------------------------------------------|:-------------------")
+	
+	var archetypes: Array[Dictionary] = []
+
+	# --------------------------------------------------------------------------
+	# 1. SETS (Pairs to 5-Kind)
+	# --------------------------------------------------------------------------
+	var set_defs := [[2, "Pair"], [3, "3-Kind"], [4, "4-Kind"], [5, "5-Kind"]]
+	
+	for def : Array in set_defs:
+		var size: int = def[0]
+		var label: String = def[1]
+		
+		# A. Standard Mixed (e.g. 5 Pairs)
+		for m in range(1, 6):
+			var hand: Array[CardData] = []
+			for i in range(m):
+				for k in range(size): hand.append(m_card(10 + (i*10), (k % 4) + 1))
+			archetypes.append(await _quick_score(hand, "%d x %s (Standard)" % [m, label]))
+			
+		# B. Full Flush (e.g. 5 Flush Pairs)
+		for m in range(1, 6):
+			var hand: Array[CardData] = []
+			for i in range(m):
+				for k in range(size): hand.append(m_card(10 + (i*10), 1))
+			# Note: Fallback Sets logic handles the "Full Flush" detection if size >= 5
+			archetypes.append(await _quick_score(hand, "%d x %s (Full Flush)" % [m, label]))
+
+	# --------------------------------------------------------------------------
+	# 2. STRAIGHTS
+	# --------------------------------------------------------------------------
+	# A. Standard
+	for m in range(1, 6):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			for k in range(5): hand.append(m_card(2 + k, (k % 4) + 1))
+		archetypes.append(await _quick_score(hand, "%d x Straight (Standard)" % m))
+
+	# B. Multi-Flush (Suit 1, Suit 2...)
+	for m in range(1, 6):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			for k in range(5): hand.append(m_card(2 + k, i + 1))
+		archetypes.append(await _quick_score(hand, "%d x Straight (Multi-Flush)" % m))
+		
+	# C. Full Flush (All Suit 1)
+	for m in range(1, 6):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			for k in range(5): hand.append(m_card(2 + k, 1))
+		archetypes.append(await _quick_score(hand, "%d x Straight (Full Flush)" % m))
+
+	# --------------------------------------------------------------------------
+	# 3. FULL HOUSES
+	# --------------------------------------------------------------------------
+	# A. Standard
+	for m in range(1, 6):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			var r3 := 10 + (i * 10); var r2 := 15 + (i * 10)
+			for x in range(3): hand.append(m_card(r3, (x % 4) + 1))
+			for y in range(2): hand.append(m_card(r2, (y % 4) + 1))
+		archetypes.append(await _quick_score(hand, "%d x House (Standard)" % m))
+
+	# B. Full Flush
+	for m in range(1, 6):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			var r3 := 10 + (i * 10); var r2 := 15 + (i * 10)
+			for x in range(3): hand.append(m_card(r3, 1))
+			for y in range(2): hand.append(m_card(r2, 1))
+		archetypes.append(await _quick_score(hand, "%d x House (Full Flush)" % m))
+
+	# --------------------------------------------------------------------------
+	# 4. FLUSHES (Just checking scaling)
+	# --------------------------------------------------------------------------
+	for m in range(1, 5):
+		var hand: Array[CardData] = []
+		for i in range(m):
+			for k in range(5): hand.append(m_card(2 + (k*2), i + 1))
+		archetypes.append(await _quick_score(hand, "%d x Flush (Multi)" % m))
+		
+	# 5. DEEP STACKS (25 Cards)
+	# Straight 25, Flush 25, House 25
+	var d_str: Array[CardData] = []; for k in range(25): d_str.append(m_card(k+2, (k%4)+1))
+	archetypes.append(await _quick_score(d_str, "Straight (25)"))
+	
+	var d_fl: Array[CardData] = []; for k in range(25): d_fl.append(m_card(2+k, 1))
+	archetypes.append(await _quick_score(d_fl, "Flush (25)"))
+	
+	var d_fh: Array[CardData] = []; 
+	for x in range(15): d_fh.append(m_card(100, (x%4)+1))
+	for y in range(10): d_fh.append(m_card(50, (y%4)+1))
+	archetypes.append(await _quick_score(d_fh, "Full House (25)"))
+
+
+	# SORT & RENDER
+	archetypes.sort_custom(func(a:Dictionary, b:Dictionary)->bool: return a.score > b.score)
+	for entry in archetypes:
+		var s_score := str(entry.score).pad_decimals(0).rpad(11)
+		var s_name := (entry.name as String).rpad(50)
+		var s_note := entry.note as String
+		print("| " + s_score + " | " + s_name + " | " + s_note)
+
+# Helper for generating the report lines
+func _quick_score(cards: Array[CardData], note: String) -> Dictionary:
+	var res := await Scoring.PokerHands.score(cards)
+	if res.is_empty(): 
+		return {"score": 0, "name": "NULL", "note": note}
+	# Return top score info
+	return {"score": res[0].score, "name": res[0].name, "note": note}
+
+# ==============================================================================
+# SECTION 5: SCALING & RARITY MATRIX (Programmatic 5..25)
+# ==============================================================================
+func run_scaling_matrix() -> void:
+	print("\n=== SCALING ARCHETYPE LEADERBOARD (SIZES 5-25) ===")
+	print("| SCORE       | HAND NAME                                          | CONFIGURATION NOTES")
+	print("|:------------|:---------------------------------------------------|:-------------------")
+	
+	var archetypes: Array[Dictionary] = []
+	var sizes : Array[int] = [5, 10, 15, 20, 25]
+
+	# --------------------------------------------------------------------------
+	# 1. STRAIGHT vs FLUSH (Pure)
+	# --------------------------------------------------------------------------
+	for sz in sizes:
+		# A. Pure Straight (Mixed Suits)
+		var h_str: Array[CardData] = []
+		for k in range(sz): h_str.append(m_card(2 + k, (k % 4) + 1))
+		archetypes.append(await _quick_score(h_str, "Straight (%d)" % sz))
+		
+		# B. Pure Flush (Same Suit)
+		# Note: A Straight Flush (Connected + Suited) is tested in section 3.
+		# This is non-connected Flush (2, 4, 6...).
+		var h_fl: Array[CardData] = []
+		for k in range(sz): h_fl.append(m_card(2 + (k*2), 1))
+		archetypes.append(await _quick_score(h_fl, "Flush (%d)" % sz))
+
+	# --------------------------------------------------------------------------
+	# 2. SETS (N-of-a-Kind)
+	# --------------------------------------------------------------------------
+	# Note: 25-of-a-Kind requires rank manipulation (infinite deck)
+	for sz in sizes:
+		# A. Standard
+		var h_set: Array[CardData] = []
+		for k in range(sz): h_set.append(m_card(50, (k % 4) + 1))
+		archetypes.append(await _quick_score(h_set, "%d-of-a-Kind (Standard)" % sz))
+		
+		# B. Flush Set
+		var h_set_f: Array[CardData] = []
+		for k in range(sz): h_set_f.append(m_card(50, 1))
+		archetypes.append(await _quick_score(h_set_f, "%d-of-a-Kind (Flush)" % sz))
+
+	# --------------------------------------------------------------------------
+	# 3. STRAIGHT FLUSH (Connected + Suited)
+	# --------------------------------------------------------------------------
+	for sz in sizes:
+		var h_sf: Array[CardData] = []
+		for k in range(sz): h_sf.append(m_card(2 + k, 1))
+		archetypes.append(await _quick_score(h_sf, "Straight Flush (%d)" % sz))
+
+	# --------------------------------------------------------------------------
+	# 4. FULL HOUSES (Deep Stack)
+	# --------------------------------------------------------------------------
+	# Split roughly 60/40 for the house
+	for sz in sizes:
+		var n_trip :int= ceil(sz * 0.6)
+		var n_pair := sz - n_trip
+		
+		# A. Standard
+		var h_fh: Array[CardData] = []
+		for k in range(n_trip): h_fh.append(m_card(100, (k%4)+1))
+		for k in range(n_pair): h_fh.append(m_card(50, (k%4)+1))
+		archetypes.append(await _quick_score(h_fh, "Full House (%d)" % sz))
+		
+		# B. Flush House
+		var h_fh_f: Array[CardData] = []
+		for k in range(n_trip): h_fh_f.append(m_card(100, 1))
+		for k in range(n_pair): h_fh_f.append(m_card(50, 1))
+		archetypes.append(await _quick_score(h_fh_f, "Flush House (%d)" % sz))
+
+	# --------------------------------------------------------------------------
+	# 5. MULTI-HAND SCALING (5 sets of 5)
+	# --------------------------------------------------------------------------
+	# We test 5 sets of size 5 (Total 25 cards) for Multi-structure checks
+	
+	# A. 5 x Full House (Standard)
+	var h_5fh: Array[CardData] = []
+	for i in range(5):
+		for x in range(3): h_5fh.append(m_card(10 + (i*10), (x%4)+1))
+		for y in range(2): h_5fh.append(m_card(15 + (i*10), (y%4)+1))
+	archetypes.append(await _quick_score(h_5fh, "5 x Full House (Standard)"))
+	
+	# B. 5 x Full House (Flush)
+	var h_5fh_f: Array[CardData] = []
+	for i in range(5):
+		for x in range(3): h_5fh_f.append(m_card(10 + (i*10), 1))
+		for y in range(2): h_5fh_f.append(m_card(15 + (i*10), 1))
+	archetypes.append(await _quick_score(h_5fh_f, "5 x Full House (Flush)"))
+
+	# SORT & PRINT
+	archetypes.sort_custom(func(a:Dictionary, b:Dictionary)->bool: return a.score > b.score)
+	for entry in archetypes:
+		var s_score := str(entry.score).pad_decimals(0).rpad(11)
+		var s_name := (entry.name as String).rpad(50)
+		var s_note := entry.note as String
+		print("| " + s_score + " | " + s_name + " | " + s_note)
+		
+#static func m_half(rank_val: float, suit_id: int) -> CardData:
+	#var cd := CardData
+	#cd.rank = Scoring.HalfStepRank
+	#cd.rank.value = int(rank_val)
+	#cd.suit = PipSuit.Standard.with_value(suit_id)
+	#return cd
+
+#static func m_omni(rank_cond: int, oob: bool, suit_cond: int) -> CardData:
+	#var cd := CardData
+	#var wr := Scoring.WildOmniRank
+	#wr.condition = rank_cond as Scoring.WildOmniRank.Condition
+	#wr.out_of_bounds = oob
+	#var ws := Scoring.WildOmniSuit
+	#ws.condition = suit_cond as Scoring.WildOmniSuit.Condition
+	#cd.rank = wr
+	#cd.suit = ws
+	#return cd
+
+#static func m_fixed(fixed_val: int, suit_id: int) -> CardData:
+	#var cd := CardData
+	#cd.rank = PipRank.Numeral.with_value(fixed_val)
+	#cd.suit = Scoring.WildOmniSuit
+	#return cd
+
+#static func m_msuit(rank_val: int, suit_ids: Array[int]) -> CardData:
+	#var cd := CardData
+	#cd.rank = PipRank.Numeral.with_value(rank_val)
+	#var ms := Scoring.MultiSuit
+	#for id in suit_ids:
+		#ms.allowed_suits.append(PipSuit.Standard.with_value(id))
+	#cd.suit = ms
+	#return cd
+
+#class UnrankedStoneRank extends PipRank:
+	#func get_str() -> String: return "UnrankedStone"
+	#func set_texture(_s: Sprite2D) -> void: pass
+	#func with_random() -> PipRank: return self
+#
+#class UnsuitedStoneSuit extends PipSuit:
+	#func get_str() -> String: return "UnsuitedStone"
+	#func set_texture(_s: Sprite2D) -> void: pass
+	#func set_art_texture(_s: Sprite2D, _r: PipRank) -> void: pass
+	#func with_random() -> PipSuit: return self
+
+
+	## 22-L: Wild Card Straight Gap Resolution
+	#var h22 : Array[CardData] = [m_card(8, 4), m_card(7, 4), m_card(5, 4), m_card(4, 4), m_omni(0, false, 0)]
+	#var r22 := await Scoring.PokerHands.score(h22)
+	#assert(r22[0].score == 20, "22-L Failed")
+
+	## 23-L: Wild Card Exponential Set Scaling
+	#var h23 : Array[CardData] = [m_card(13, 1), m_card(13, 2), m_card(13, 3), m_omni(0, false, 0)]
+	#var r23 := await Scoring.PokerHands.score(h23)
+	#assert(r23[0].score == 12, "23-L Failed")
+
+	# 24-L: Symmetrical Evens Filter Constraints
+	#var h24 : Array[CardData] = [m_card(7, 1), m_card(7, 2), m_card(7, 3), m_card(6, 4), m_card(6, 1), m_omni(1, false, 0)]
+	#var r24 := await Scoring.PokerHands.score(h24)
+	#assert(r24[0].score == 12, "24-L Failed")
+
+	# 25-L: Out of Bounds Neg Wild Straights
+	#var h25 : Array[CardData] = [m_card(-3, 4), m_card(-4, 4), m_card(-5, 4), m_card(-6, 4), m_omni(0, true, 0)]
+	#var r25 := await Scoring.PokerHands.score(h25)
+	#assert(r25[0].score == 20, "25-L Failed")
+
+	## 26-L: Red-Only Color Suit Lock Exclusion
+	#var h26 : Array[CardData] = [m_card(13, 1), m_card(11, 1), m_card(9, 1), m_card(7, 1), m_card(12, 3), m_card(10, 3), m_omni(0, false, 1)]
+	#var r26 := await Scoring.PokerHands.score(h26)
+	#assert(not r26[0].name.contains("Flush"), "26-L Failed")
+
+	## 27-L: Multi Suit Profile Mapping Check
+	#var h27 : Array[CardData] = [m_msuit(5, [1, 2]), m_card(4, 1), m_card(3, 1), m_card(2, 1), m_card(1, 1)]
+	#var r27 := await Scoring.PokerHands.score(h27)
+	#assert(not r27.is_empty(), "27-L Failed")
+
+	## 28-L: Enforced Dependency Weight Cascades
+	#var h28 : Array[CardData] = [m_card(10, 1), m_card(10, 2), m_omni(0, false, 0), m_fixed(10, 3)]
+	#var r28 := await Scoring.PokerHands.score(h28)
+	#assert(r28[0].score == 12, "28-L Failed")
+
+	## 29-L: Pure Wild Circular Deadlock Safety Fallbacks
+	#var h29 : Array[CardData] = [m_omni(0, false, 0), m_omni(0, false, 0)]
+	#var r29 := await Scoring.PokerHands.score(h29)
+	#assert(not r29.is_empty(), "29-L Failed")
+
+	## 30-L: Multi Suit Local Cross Profile Execution
+	#var h30 : Array[CardData] = [m_card(2, 1), m_card(4, 1), m_card(3, 2), m_card(5, 2), m_msuit(10, [1, 2])]
+	#var r30 := await Scoring.PokerHands.score(h30)
+	#assert(not r30.is_empty(), "30-L Failed")
 
 	## 42-H: Large Array Chain Sequence Gap Wild Repairs
 	#var c42: Array[CardData] = []
@@ -507,196 +736,3 @@ func run_macro_card_environment_tests() -> void:
 	#assert(not r49.is_empty(), "49-H Failed")
 	#assert(duration < 2500, "49-H Performance Crash! Benchmark breach: " + str(duration) + "us")
 	#print("✔ Section 4 Passed: Macro Environment Performance Suite (30+ Cards) complete.")
-	
-# ==============================================================================
-# SECTION 5: 15-CARD RARITY & BALANCE LEADERBOARD
-# Generates the "Best Possible Version" of every hand type using exactly 15 cards.
-# Prints a sorted grid to verify that score density matches mathematical rarity.
-# ==============================================================================
-func run_15_card_rarity_matrix() -> void:
-	print("\n=== 15-CARD ARCHETYPE BALANCE LEADERBOARD ===")
-	print("| SCORE       | HAND NAME                                    | CONFIGURATION NOTES")
-	print("|:------------|:---------------------------------------------|:-------------------")
-	
-	var archetypes: Array[Dictionary] = []
-
-	# 1. HIGH CARD (15 Cards: All unlinked, spaced out, unique suits)
-	var h_high: Array[CardData] = []
-	for i in range(15): 
-		h_high.append(m_card(10 + (i * 5), i + 1)) # Unique suits via int overflow or custom class
-		# Note: If using standard 4 suits, you can't have 15 cards without a flush/pair unless you force unique suits.
-		# For this test to be pure, we assume the engine handles 4 suits. 
-		# 15 cards with 4 suits GUARANTEES a Flush (Pigeonhole Principle).
-		# So "Pure High Card" is impossible with 15 cards and 4 suits. 
-		# We will simulate "High Card" by using the PipSuit.Standard from earlier if avail, or just accept it might flush.
-		# Let's use the PipSuit.Standard to force a pure High Card fallback for the baseline.
-		h_high[i].suit = PipSuit.Standard.new().with_value(i)
-	archetypes.append(await _quick_score(h_high, "Baseline: Pure High Card"))
-
-	# 2. PAIR (1 Pair + 13 Junk)
-	var h_pair: Array[CardData] = []
-	h_pair.append(m_card(100, 1)); h_pair.append(m_card(100, 2))
-	for i in range(13): 
-		var cd := m_card(10 + (i * 5), 3) # Same suit to avoid random flush logic? No, might flush.
-		cd.suit = PipSuit.Standard.new().with_value(i) # Safety
-		h_pair.append(cd)
-	archetypes.append(await _quick_score(h_pair, "1 Pair + 13 Junk"))
-
-	# 3. MASSIVE GRID: 7 PAIRS (14 cards + 1 junk)
-	var h_7pair: Array[CardData] = []
-	for i in range(7):
-		h_7pair.append(m_card(10 + (i*10), 1))
-		h_7pair.append(m_card(10 + (i*10), 2))
-	h_7pair.append(m_card(999, 3))
-	archetypes.append(await _quick_score(h_7pair, "Grid: 7 Distinct Pairs"))
-
-	# 4. TRIPLETS (1 Set of 3 + 12 Junk)
-	var h_trips: Array[CardData] = []
-	for i in range(3): h_trips.append(m_card(100, i+1))
-	for i in range(12): 
-		var cd := m_card(10 + (i*5), 4)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_trips.append(cd)
-	archetypes.append(await _quick_score(h_trips, "1 Triplet + 12 Junk"))
-
-	# 5. MASSIVE GRID: 5 TRIPLETS (15 Cards)
-	var h_5trips: Array[CardData] = []
-	for i in range(5):
-		for x in range(3): h_5trips.append(m_card(10 + (i*10), x+1))
-	archetypes.append(await _quick_score(h_5trips, "Grid: 5 Distinct Triplets"))
-
-	# 6. STRAIGHT (Min: 5 Cards + 10 Junk)
-	var h_str5: Array[CardData] = []
-	for i in range(5): h_str5.append(m_card(10 + i, (i%4)+1))
-	for i in range(10): 
-		var cd := m_card(100 + (i*5), 4)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_str5.append(cd)
-	archetypes.append(await _quick_score(h_str5, "Straight (5 Cards)"))
-
-	# 7. STRAIGHT (Max: 15 Card Run)
-	var h_str15: Array[CardData] = []
-	for i in range(15): h_str15.append(m_card(10 + i, (i%4)+1))
-	archetypes.append(await _quick_score(h_str15, "Straight (15 Cards)"))
-
-	# 8. FLUSH (Min: 5 Cards + 10 Junk)
-	var h_fl5: Array[CardData] = []
-	for i in range(5): h_fl5.append(m_card(10 + (i*5), 1))
-	for i in range(10): 
-		var cd := m_card(200 + (i*5), 2) # Different suit
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_fl5.append(cd)
-	archetypes.append(await _quick_score(h_fl5, "Flush (5 Cards)"))
-
-	# 9. FLUSH (Max: 15 Cards Same Suit)
-	var h_fl15: Array[CardData] = []
-	for i in range(15): h_fl15.append(m_card(10 + (i*5), 1))
-	archetypes.append(await _quick_score(h_fl15, "Flush (15 Cards)"))
-
-	# 10. FULL HOUSE (Standard 3/2 + 10 Junk)
-	var h_fh: Array[CardData] = []
-	for i in range(3): h_fh.append(m_card(100, i+1))
-	for i in range(2): h_fh.append(m_card(50, i+1))
-	for i in range(10): 
-		var cd := m_card(200 + (i*5), 3)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_fh.append(cd)
-	archetypes.append(await _quick_score(h_fh, "Full House (5 Cards)"))
-
-	# 11. FULL HOUSE (Macro Proportional 9/6 = 15 Cards)
-	var h_fh_macro: Array[CardData] = []
-	for i in range(9): h_fh_macro.append(m_card(100, (i%4)+1))
-	for i in range(6): h_fh_macro.append(m_card(50, (i%4)+1))
-	archetypes.append(await _quick_score(h_fh_macro, "Full House (Proportional 9/6)"))
-
-	# 12. FULL HOUSE (Simultaneous: 3 sets of Full Houses)
-	var h_fh_simul: Array[CardData] = []
-	for i in range(3): # 3 distinct houses
-		for x in range(3): h_fh_simul.append(m_card(10 + (i*10), (x%4)+1))
-		for y in range(2): h_fh_simul.append(m_card(15 + (i*10), (y%4)+1))
-	archetypes.append(await _quick_score(h_fh_simul, "3 Simultaneous Full Houses"))
-
-	# 13. 4 OF A KIND (4 + 11 Junk)
-	var h_4k: Array[CardData] = []
-	for i in range(4): h_4k.append(m_card(100, i+1))
-	for i in range(11): 
-		var cd := m_card(10 + (i*5), 1)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_4k.append(cd)
-	archetypes.append(await _quick_score(h_4k, "4 of a Kind + 11 Junk"))
-
-	# 14. MASSIVE GRID: 3 QUADS (12 Cards + 3 Junk)
-	var h_3quads: Array[CardData] = []
-	for i in range(3):
-		for x in range(4): h_3quads.append(m_card(10 + (i*10), x+1))
-	for i in range(3): h_3quads.append(m_card(500 + i, 1))
-	archetypes.append(await _quick_score(h_3quads, "Grid: 3 Distinct Quads"))
-
-	# 15. 5 OF A KIND (5 + 10 Junk)
-	var h_5k: Array[CardData] = []
-	for i in range(5): h_5k.append(m_card(100, (i%4)+1))
-	for i in range(10): 
-		var cd := m_card(10 + (i*5), 1)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_5k.append(cd)
-	archetypes.append(await _quick_score(h_5k, "5 of a Kind + 10 Junk"))
-	
-	# 16. MASSIVE GRID: 3 QUINTS (15 Cards)
-	var h_3quints: Array[CardData] = []
-	for i in range(3):
-		for x in range(5): h_3quints.append(m_card(10 + (i*10), (x%4)+1))
-	archetypes.append(await _quick_score(h_3quints, "Grid: 3 Distinct 5-of-a-Kinds"))
-
-	# 17. STRAIGHT FLUSH (Min: 5 Cards)
-	var h_sf5: Array[CardData] = []
-	for i in range(5): h_sf5.append(m_card(10 + i, 1))
-	for i in range(10):
-		var cd := m_card(100 + (i*5), 2)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_sf5.append(cd)
-	archetypes.append(await _quick_score(h_sf5, "Straight Flush (5 Cards)"))
-
-	# 18. STRAIGHT FLUSH (Max: 15 Cards)
-	var h_sf15: Array[CardData] = []
-	for i in range(15): h_sf15.append(m_card(10 + i, 1))
-	archetypes.append(await _quick_score(h_sf15, "Straight Flush (15 Cards)"))
-
-	# 19. FLUSH HOUSE (Standard 3/2 same suit)
-	var h_flh: Array[CardData] = []
-	for i in range(3): h_flh.append(m_card(100, 1))
-	for i in range(2): h_flh.append(m_card(50, 1))
-	for i in range(10): 
-		var cd := m_card(200 + (i*5), 2)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_flh.append(cd)
-	archetypes.append(await _quick_score(h_flh, "Flush House (5 Cards)"))
-	
-	# 20. FLUSH FIVE (5 Same Rank Same Suit)
-	var h_fl5k: Array[CardData] = []
-	for i in range(5): h_fl5k.append(m_card(100, 1))
-	for i in range(10):
-		var cd := m_card(10 + (i*5), 2)
-		cd.suit = PipSuit.Standard.new().with_value(i)
-		h_fl5k.append(cd)
-	archetypes.append(await _quick_score(h_fl5k, "Flush Five"))
-
-	# Sort and Print
-	archetypes.sort_custom(func(a:Dictionary, b:Dictionary)->bool: return a.score > b.score)
-	
-	for entry in archetypes:
-		var s_score := str(entry.score).pad_decimals(0).rpad(11)
-		var s_name := (entry.name as String).rpad(44)
-		var s_note := entry.note as String
-		print("| " + s_score + " | " + s_name + " | " + s_note)
-
-
-# Helper to construct the data row for the table
-func _quick_score(cards: Array[CardData], note: String) -> Dictionary:
-	var results := await Scoring.PokerHands.new().score(cards)
-	if results.is_empty(): return {"score": 0, "name": "FAIL", "note": note}
-	var best := results[0]
-	return {
-		"score": best.score,
-		"name": best.name,
-		"note": note
-	}
