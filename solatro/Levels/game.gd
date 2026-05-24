@@ -18,7 +18,6 @@ var save_history : Array[GameData] = []
 
 var processing : bool = false
 #this setting should be in settings file
-@export_storage var base_delay : float = 1
 
 #@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
 #@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
@@ -310,29 +309,51 @@ func return_to_map() -> void:
 #func col_add_score(col:int, score:int) -> void:
 	#col_scores[col].text = str(score + int(col_scores[col].text))
 
+func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
+	if score_zone.size() < size: score_zone.resize(size)
+	for i in score_zone.size():
+		if not score_zone[i]: score_zone[i] = BigNumber.new()
+
+func get_delay() -> float:
+	return SettingsManager.settings.base_delay
+
+func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
+	var score_zone : Array[BigNumber] = state.scores_row_lower
+	if zone == state.upper_zone:
+		score_zone = state.scores_row_lower
+	resize_score_zone(score_zone, row + 1)
+	await play_area.popup_meld(result)
+	score_zone[row].plus_equals(result.score)
+	await play_area.popup_score(result)
+	#await play trigger score effects
+	play_area.reset_meld(result)
+
+func score_col(result : Scoring.Result, col : int) -> void:
+	pass
+
 #func shake_card(card:Card, card_effect:Callable) -> void:
 	#await card_raise(card)
 	#await card_effect.call()
 	#await card_lower(card)
+#
+#func card_raise(card:Card) -> void:
+	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
+	#card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
+	#card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
+	#audio_card_shake.play()
+	#await card_tween.finished
+#
+#func card_lower(card:Card) -> void:
+	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
+	#card_tween.tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
+	#card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
+	#card_tween.tween_interval(base_delay * .2)
+	#await card_tween.finished
 
-func card_raise(card:Card) -> void:
-	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
-	card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
-	card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
-	audio_card_shake.play()
-	await card_tween.finished
-
-func card_lower(card:Card) -> void:
-	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
-	card_tween.tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
-	card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
-	card_tween.tween_interval(base_delay * .2)
-	await card_tween.finished
-
-func card_shrink(card:Card) -> void:
-	var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING)
-	card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
-	await card_tween.finished
+#func card_shrink(card:Card) -> void:
+	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING)
+	#card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
+	#await card_tween.finished
 
 static func run_all_mods(function: StringName, ...params:Array) -> void:
 	for data in CardDataIterator.new():

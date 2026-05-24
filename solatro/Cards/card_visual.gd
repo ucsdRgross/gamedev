@@ -101,8 +101,8 @@ func update_visual() -> void:
 		suit.hide()
 		art.hide()
 
-static var num_cards : int = 0
-static var child_offset : Vector2 = Vector2(0, 55)
+#static var num_cards : int = 0
+#static var child_offset : Vector2 = Vector2(0, 55)
 var num : int = 0
 var move_tween : Tween
 var tilt_tween : Tween
@@ -123,8 +123,8 @@ func _ready() -> void:
 	art.hide()
 	if not (data and data.stage == CardData.Stage.ZONE):
 		front.frame = 3
-		num_cards += 1
-		num = num_cards
+		#num_cards += 1
+		#num = num_cards
 	else:
 		front.frame = 0
 		#child_offset = Vector2(0,0)
@@ -151,19 +151,6 @@ func get_card_control_center(control:Control) -> Vector2:
 
 func get_control_center(control:Control) -> Vector2:
 	return control.global_position + control.size/2
-
-func create_move_tween(target_pos:Vector2) -> Tween:
-	if move_tween and move_tween.is_running():
-		move_tween.kill()
-	move_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
-	move_tween.tween_property(self, "global_position", target_pos, 0.3)
-	if target_pos.x - global_position.x > 10:
-		move_tween.parallel().tween_property(self, "rotation_degrees", 10, 0.2)
-	elif global_position.x - target_pos.x > 10:
-		move_tween.parallel().tween_property(self, "rotation_degrees", -10, 0.2)
-	#tween.set_ease(Tween.EASE_OUT)
-	move_tween.tween_property(self, "rotation_degrees", 0, 0.1)
-	return move_tween
 
 var rot_delta : float
 var y_delta : float
@@ -226,3 +213,75 @@ func with_data(data:CardData) -> CardVisual:
 	data.data_changed.connect(update_visual)
 	data.stage_changed.connect(on_stage_changed)
 	return self
+
+func reset_tween(tween:Tween) -> void:
+	if tween and tween.is_running():
+		tween.custom_step(INF)
+
+func create_move_tween(target_pos:Vector2) -> Tween:
+	reset_tween(move_tween)
+	var delay := Game.CURRENT.get_delay()
+	move_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
+	move_tween.tween_property(self, "global_position", target_pos, delay*0.3)
+	if target_pos.x - global_position.x > 10:
+		move_tween.parallel().tween_property(self, "rotation_degrees", 10, delay*0.2)
+	elif global_position.x - target_pos.x > 10:
+		move_tween.parallel().tween_property(self, "rotation_degrees", -10, delay*0.2)
+	#tween.set_ease(Tween.EASE_OUT)
+	move_tween.tween_property(self, "rotation_degrees", 0, delay*0.1)
+	return move_tween
+
+func anim_jump() -> float:
+	reset_tween(move_tween)
+	var delay := Game.CURRENT.get_delay()
+	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	move_tween.tween_callback(func()->void: floating = false)
+	move_tween.tween_property(offset, "position:y", -card_size.y / 5.0, delay * .4)
+	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
+	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
+	return delay #* .4
+
+func anim_reset() -> void:
+	reset_tween(move_tween)
+	var delay := Game.CURRENT.get_delay()
+	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	move_tween.tween_property(offset, "position:y", 0, delay * .4)
+	move_tween.tween_callback(func()->void: floating = true)
+
+#print(result.score_name, "\nscore: ", result.score)
+				##tween = create_tween().set_parallel(true)
+				##tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
+				#for c:Card in result.card_combo:
+					#var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+					#c.floating = false
+					#card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
+					#card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
+					#print('suit: ', c.data.suit.get_str(), c.data.suit.value, ' rank: ', c.data.rank.get_str(), c.data.rank.value)
+				#for c:Card in last_scored_cards:
+					#if c not in result.card_combo:
+						#var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+						#card_tween.tween_property(c.front, "position:y", 0, base_delay)
+						#card_tween.tween_callback(func()->void: c.floating = true)
+						##card_tween.tween_property(c, "floating", true, base_delay * .1)
+				#
+				##tween.tween_interval(score_delay)
+				#last_scored_cards = result.card_combo
+				#var combo_pos : Vector2 = Vector2.ZERO
+				#for card in result.card_combo:
+					#combo_pos += card.global_position
+				#combo_pos /= result.card_combo.size()
+				#var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
+				#game_container.add_child(score_name_popup)
+				#
+				#row_add_score(row_to_score, result.score)
+				##var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
+				##popup.global_position = combo_pos
+				##add_child(popup)
+				#await get_tree().create_timer(base_delay).timeout
+				#for card in result.card_combo:
+					#await run_all_mods(&"on_score", card)
+				#await run_all_mods(&"on_after_score")
+				#
+				##await get_tree().create_timer(score_delay).timeout
+				#score_name_popup.queue_free()
+				#

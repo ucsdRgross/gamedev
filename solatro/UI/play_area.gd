@@ -316,3 +316,19 @@ func get_data_from_control(control : Control) -> CardData:
 	#if data in data_card:
 		#return data_card[data]
 	#return null
+	
+func popup_meld(result : Scoring.Result) -> void:
+	var wait_time : float = 0
+	for data in result.meld:
+		if data in data_card:
+			var anim_time := data_card[data].anim_jump()
+			wait_time = anim_time if anim_time > wait_time else wait_time
+	await get_tree().create_timer(wait_time).timeout
+	
+func reset_meld(result : Scoring.Result) -> void:
+	for data in result.meld:
+		if data in data_card:
+			data_card[data].anim_reset()
+
+func popup_score(result : Scoring.Result) -> void:
+	pass

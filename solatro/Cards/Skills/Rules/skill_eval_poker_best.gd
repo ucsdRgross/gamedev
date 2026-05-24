@@ -13,4 +13,5 @@ func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
 		if row < a.size(): row_cards.append(a.datas[row])
 	var results : Array[Scoring.Result] = await Scoring.PokerHands.score(row_cards)
 	var best_hand : Scoring.Result = results[0] if results else null
-	if best_hand: print(best_hand)
+	if best_hand: 
+		await Game.CURRENT.score_row(best_hand, zone, row)
