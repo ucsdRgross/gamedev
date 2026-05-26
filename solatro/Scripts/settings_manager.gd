@@ -3,7 +3,7 @@ extends Node
 
 const SAVE_PATH := "user://settings.tres"
 
-var settings: PlayerSettings
+@export var settings: PlayerSettings
 
 func _ready() -> void:
 	if ResourceLoader.exists(SAVE_PATH):
@@ -18,6 +18,3 @@ func _ready() -> void:
 
 func save_settings() -> void:
 	ResourceSaver.save(settings, SAVE_PATH)
-
-class PlayerSettings extends Resource:
-	@export var base_delay : float = 1
