@@ -58,6 +58,7 @@ func _ready() -> void:
 	#self.custom_minimum_size = card_min_size * 10
 	set_seperation()
 	update_play_area()
+	update_score_controls()
 
 func _on_gui_input(event: InputEvent) -> void:
 	# Mouse
@@ -128,7 +129,7 @@ func update_play_area() -> void:
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
 	# Do same for score rows and columns, and buffers
-	update_score_controls()
+	# update_score_controls()
 	data_card = new_data_card
 	new_data_card = {}
 
@@ -271,13 +272,13 @@ func on_control_focus_entered(control:Control) -> void:
 func update_score_controls() -> void:
 	middle_zone_left.custom_minimum_size = buffer_min_size
 	var game_state := Game.CURRENT.state
-	set_score_zone_row(upper_zone_left, game_state.scores_row_upper)
-	set_score_zone_row(lower_zone_left, game_state.scores_row_lower)
-	set_score_zone_col(middle_zone_right, game_state.scores_col)
+	set_score_zone(true, upper_zone_left, game_state.scores_row_upper)
+	set_score_zone(true, lower_zone_left, game_state.scores_row_lower)
+	set_score_zone(false, middle_zone_right, game_state.scores_col)
 	
-func set_score_zone_row(zone:VBoxContainer, scores:Array[BigNumber]) -> void:
+func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> void:
 	var scores_size := scores.size()
-	if scores_size == 0: scores_size += 1 # there should always be at least 1 control as buffer
+	if is_row and scores_size == 0: scores_size += 1 # there should always be at least 1 control as buffer
 	var row_diff : int = scores_size - zone.get_child_count()
 	if row_diff > 0:
 		for i in row_diff:
@@ -289,23 +290,10 @@ func set_score_zone_row(zone:VBoxContainer, scores:Array[BigNumber]) -> void:
 			child.queue_free()
 	for i in zone.get_child_count():
 		var label : BigNumberLabel = zone.get_child(i)
-		label.custom_minimum_size = Vector2(buffer_min_size.x, card_stacked_seperation)
-		if i < scores.size():
-			label.current_num = scores[i]
-
-func set_score_zone_col(zone:HBoxContainer, scores:Array[BigNumber]) -> void:
-	var col_diff : int = scores.size() - zone.get_child_count()
-	if col_diff > 0:
-		for i in col_diff:
-			zone.add_child(BigNumberLabel.new())
-	elif col_diff < 0:
-		for i in absi(col_diff):
-			var child : BigNumberLabel = zone.get_child(-1)
-			zone.remove_child(child)
-			child.queue_free()
-	for i in zone.get_child_count():
-		var label : BigNumberLabel = zone.get_child(i)
-		label.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
+		if is_row:
+			label.custom_minimum_size = Vector2(buffer_min_size.x, card_stacked_seperation)
+		else:
+			label.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
 		if i < scores.size():
 			label.current_num = scores[i]
 
