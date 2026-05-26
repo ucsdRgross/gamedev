@@ -123,7 +123,7 @@ func _on_next_pressed() -> void:
 	#print_board()
 	
 func save_state() -> void:
-	var duplicated_state : GameData = state.duplicate(true)
+	var duplicated_state : GameData = state.duplicate_state()
 	save_history.append(duplicated_state)
 
 func undo_pressed() -> void:
@@ -132,7 +132,7 @@ func undo_pressed() -> void:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
-		state = prev_game_data.duplicate(true)
+		state = prev_game_data.duplicate_state()
 		play_area._ready()
 	
 # destination Vector3( 0:1 for upper:lower, row, col)

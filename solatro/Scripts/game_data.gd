@@ -35,6 +35,22 @@ signal state_changed
 @export_storage var scores_row_lower : Array[BigNumber]
 @export_storage var scores_col : Array[BigNumber]
 
+func duplicate_state() -> GameData:
+	var copy : GameData = self.duplicate(true)
+	copy.scores_row_upper = duplicate_big_number_array(scores_row_upper)
+	copy.scores_row_lower = duplicate_big_number_array(scores_row_lower)
+	copy.scores_col = duplicate_big_number_array(scores_col)
+	return copy
+
+func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:
+	var new_a : Array[BigNumber] = []
+	new_a.resize(a.size())
+	for i in a.size():
+		new_a[i] = BigNumber.new()
+		new_a[i].mantissa = a[i].mantissa
+		new_a[i].exponent = a[i].exponent
+	return new_a
+
 func print_board() -> void:
 	var s : String = "Upper Type,"
 	for c in upper_zone_type:
