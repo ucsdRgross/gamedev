@@ -127,11 +127,13 @@ func save_state() -> void:
 	save_history.append(duplicated_state)
 
 func undo_pressed() -> void:
+	if processing: return
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = prev_game_data.duplicate(true)
+		play_area._ready()
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
@@ -277,6 +279,7 @@ func _on_submit_pressed() -> void:
 	#discard board
 		#await score(submitted.top_card)
 		#total_score += last_score
+	save_state()
 	processing = false
 
 func discard_data(data: CardData) -> void:

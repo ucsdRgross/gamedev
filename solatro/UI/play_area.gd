@@ -296,6 +296,7 @@ func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> 
 			label.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
 		if i < scores.size():
 			label.current_num = scores[i]
+		else: label.text = ""
 
 func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:	
 	# syncs to game data
