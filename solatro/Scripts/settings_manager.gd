@@ -1,3 +1,4 @@
+class_name SettingsManagerClass
 extends Node
 
 const SAVE_PATH := "user://settings.tres"

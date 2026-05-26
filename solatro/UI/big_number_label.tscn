@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://ducbut8cqnxox"]
+
+[ext_resource type="Script" uid="uid://p2l43judabm" path="res://UI/big_number_label.gd" id="1_ou6q8"]
+
+[node name="BigNumberLabel" type="Label" unique_id=1569497634]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ou6q8")

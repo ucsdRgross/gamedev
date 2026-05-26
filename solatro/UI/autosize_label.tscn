@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://bofhd3hfkgrg0"]
+
+[ext_resource type="Script" uid="uid://43tn66msfxa" path="res://UI/autosize_label.gd" id="1_w7jj2"]
+
+[node name="AutosizeLabel" type="Label" unique_id=1264602388]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_w7jj2")

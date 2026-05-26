@@ -271,37 +271,56 @@ func on_control_focus_entered(control:Control) -> void:
 func update_score_controls() -> void:
 	middle_zone_left.custom_minimum_size = buffer_min_size
 	var game_state := Game.CURRENT.state
-	set_score_zone_row(upper_zone_left, game_state.scores_row_upper.size())
-	set_score_zone_row(lower_zone_left, game_state.scores_row_lower.size())
-	set_score_zone_col(middle_zone_right, game_state.scores_col.size())
+	set_score_zone_row(upper_zone_left, game_state.scores_row_upper)
+	set_score_zone_row(lower_zone_left, game_state.scores_row_lower)
+	set_score_zone_col(middle_zone_right, game_state.scores_col)
 	
-func set_score_zone_row(zone:VBoxContainer, scores:int) -> void:
-	if scores == 0: scores += 1 # there should always be at least 1 control as buffer
-	var row_diff : int = scores - zone.get_child_count()
+func set_score_zone_row(zone:VBoxContainer, scores:Array[BigNumber]) -> void:
+	var scores_size := scores.size()
+	if scores_size == 0: scores_size += 1 # there should always be at least 1 control as buffer
+	var row_diff : int = scores_size - zone.get_child_count()
 	if row_diff > 0:
 		for i in row_diff:
-			zone.add_child(Control.new())
+			zone.add_child(BigNumberLabel.new())
 	elif row_diff < 0:
 		for i in absi(row_diff):
-			var child : Control = zone.get_child(-1)
+			var child : BigNumberLabel = zone.get_child(-1)
 			zone.remove_child(child)
 			child.queue_free()
-	for control : Control in zone.get_children():
-		control.custom_minimum_size = Vector2(buffer_min_size.x, card_stacked_seperation)
+	for i in zone.get_child_count():
+		var label : BigNumberLabel = zone.get_child(i)
+		label.custom_minimum_size = Vector2(buffer_min_size.x, card_stacked_seperation)
+		if i < scores.size():
+			label.current_num = scores[i]
 
-func set_score_zone_col(zone:HBoxContainer, scores:int) -> void:
-	var col_diff : int = scores - zone.get_child_count()
+func set_score_zone_col(zone:HBoxContainer, scores:Array[BigNumber]) -> void:
+	var col_diff : int = scores.size() - zone.get_child_count()
 	if col_diff > 0:
 		for i in col_diff:
-			zone.add_child(Control.new())
+			zone.add_child(BigNumberLabel.new())
 	elif col_diff < 0:
 		for i in absi(col_diff):
-			var child : Control = zone.get_child(-1)
+			var child : BigNumberLabel = zone.get_child(-1)
 			zone.remove_child(child)
 			child.queue_free()
-	for control : Control in zone.get_children():
-		control.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
+	for i in zone.get_child_count():
+		var label : BigNumberLabel = zone.get_child(i)
+		label.custom_minimum_size = Vector2(card_min_size.x, buffer_min_size.y)
+		if i < scores.size():
+			label.current_num = scores[i]
 
+func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:	
+	# syncs to game data
+	update_score_controls()
+	var label : BigNumberLabel
+	if zone == Game.CURRENT.state.scores_row_lower:
+		label = lower_zone_left.get_child(index)
+	elif zone == Game.CURRENT.state.scores_col:
+		label = middle_zone_right.get_child(index)
+	elif zone == Game.CURRENT.state.scores_row_upper:
+		label = upper_zone_left.get_child(index)
+	if label: label.update_score_anim(score)
+		
 #func get_control_from_data(data : CardData) -> Control:
 	#if data in data_ui:
 		#return data_ui[data]
@@ -331,4 +350,16 @@ func reset_meld(result : Scoring.Result) -> void:
 			data_card[data].anim_reset()
 
 func popup_score(result : Scoring.Result) -> void:
-	pass
+	if not result.meld: return
+	var combo_pos : Vector2 = Vector2.ZERO
+	var meld_size : int = 0
+	for card in result.meld:
+		if card in data_card:
+			meld_size += 1
+			combo_pos += data_card[card].global_position
+	combo_pos /= meld_size
+	combo_pos.y -= CardVisual.card_size.y * 1.5
+	var score_name_popup := TextPopup.new_popup(result.name + "\n" + str(result.score), combo_pos)
+	add_child(score_name_popup)
+	await get_tree().create_timer(Game.CURRENT.get_delay()*.3).timeout
+	score_name_popup.queue_free()

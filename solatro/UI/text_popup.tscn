@@ -1,19 +1,21 @@
-[gd_scene load_steps=3 format=3 uid="uid://btv0i5eiwmwu2"]
+[gd_scene format=3 uid="uid://btv0i5eiwmwu2"]
 
 [ext_resource type="Script" uid="uid://cwq7t04frqsxi" path="res://UI/text_popup.gd" id="1_yxjeg"]
+[ext_resource type="Script" uid="uid://43tn66msfxa" path="res://UI/autosize_label.gd" id="2_pn5o1"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_j6pf4"]
-font_size = 20
-outline_size = 3
+line_spacing = 0.0
+font_size = 30
+outline_size = 5
 outline_color = Color(0, 0, 0, 1)
-shadow_size = 3
+shadow_size = 5
 shadow_color = Color(1, 0, 0, 1)
 
-[node name="TextPopup" type="Node2D"]
+[node name="TextPopup" type="Node2D" unique_id=1008306545]
 z_index = 100
 script = ExtResource("1_yxjeg")
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Label" parent="." unique_id=1107266559]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -29,3 +31,5 @@ size_flags_horizontal = 0
 size_flags_vertical = 8
 text = "Placeholder"
 label_settings = SubResource("LabelSettings_j6pf4")
+horizontal_alignment = 1
+script = ExtResource("2_pn5o1")

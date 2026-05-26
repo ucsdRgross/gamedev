@@ -312,7 +312,9 @@ func return_to_map() -> void:
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 	if score_zone.size() < size: score_zone.resize(size)
 	for i in score_zone.size():
-		if not score_zone[i]: score_zone[i] = BigNumber.new()
+		if not score_zone[i]: 
+			score_zone[i] = BigNumber.new()
+			score_zone[i].mantissa = 0
 
 func get_delay() -> float:
 	return SettingsManager.settings.base_delay
@@ -323,13 +325,15 @@ func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 		score_zone = state.scores_row_lower
 	resize_score_zone(score_zone, row + 1)
 	await play_area.popup_meld(result)
-	score_zone[row].plus_equals(result.score)
+	play_area.update_score(score_zone, row, score_zone[row].plus_equals(result.score))
 	await play_area.popup_score(result)
 	#await play trigger score effects
 	play_area.reset_meld(result)
 
 func score_col(result : Scoring.Result, col : int) -> void:
 	pass
+
+
 
 #func shake_card(card:Card, card_effect:Callable) -> void:
 	#await card_raise(card)

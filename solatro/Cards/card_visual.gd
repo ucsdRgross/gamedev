@@ -239,7 +239,7 @@ func anim_jump() -> float:
 	move_tween.tween_property(offset, "position:y", -card_size.y / 5.0, delay * .4)
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
 	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
-	return delay #* .4
+	return delay * .4
 
 func anim_reset() -> void:
 	reset_tween(move_tween)
