@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dbmfhito00wc"]
+
+[ext_resource type="Script" uid="uid://bb3hs73klrk6q" path="res://UI/control_card.gd" id="1_qvyxt"]
+
+[node name="ControlCard" type="Control" unique_id=413026627]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_qvyxt")

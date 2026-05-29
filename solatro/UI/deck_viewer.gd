@@ -5,7 +5,13 @@ extends CanvasLayer
 
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
+enum SORTING_TYPE {RANK,SUIT,EFFECT}
+enum SORTING_ORDER {ASCENDING,DESCENDING}
+
 var deck : Array[CardData]
+var randomized : bool = false
+var sorting_type : SORTING_TYPE = SORTING_TYPE.RANK
+var sorting_order : SORTING_ORDER = SORTING_ORDER.ASCENDING
 
 func with_deck(new_deck:Array[CardData]) -> DeckViewer:
 	deck = new_deck
@@ -14,10 +20,16 @@ func with_deck(new_deck:Array[CardData]) -> DeckViewer:
 
 func update_viewer() -> void:
 	for data in deck:
-		var visual : CardVisual = CARD_VISUAL.instantiate()
+		var control_card := ControlCard.add_child_control_card(flow_container, data)
+		control_card.set_sizes(2.0)
 
-func create_card_visual(connected_data:CardData) -> CardVisual:
-	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
-	#wait for play area containers to update control positions at next frame
-	call_deferred("add_child", card)
-	return card
+func _on_flow_container_hidden() -> void:
+	if flow_container:
+		for child in flow_container.get_children():
+			child.queue_free()
+
+func _on_margin_container_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_event : InputEventMouseButton = event
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			hide()

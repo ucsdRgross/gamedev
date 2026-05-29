@@ -31,9 +31,12 @@ color = Color(1, 0.384314, 0.498039, 0.141176)
 
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="MarginContainer" unique_id=1191871683]
 layout_mode = 2
+follow_focus = true
+draw_focus_border = true
 script = ExtResource("1_8qp33")
 wheel_scroll_damper = SubResource("Resource_of658")
 dragging_scroll_damper = SubResource("Resource_7ie13")
+handle_input = false
 metadata/_custom_type_script = "uid://bgqglerkcylxx"
 
 [node name="FlowContainer" type="FlowContainer" parent="MarginContainer/SmoothScrollContainer" unique_id=129136481]
@@ -42,3 +45,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[connection signal="gui_input" from="MarginContainer" to="." method="_on_margin_container_gui_input"]
+[connection signal="hidden" from="MarginContainer/SmoothScrollContainer/FlowContainer" to="." method="_on_flow_container_hidden"]

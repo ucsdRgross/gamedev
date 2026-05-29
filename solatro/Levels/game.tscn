@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
 [ext_resource type="Script" uid="uid://cts6vf26wf37a" path="res://UI/control_with_child_size.gd" id="4_3ijoq"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
+[ext_resource type="PackedScene" uid="uid://dnvpthmsneqjl" path="res://UI/deck_viewer.tscn" id="6_e33e4"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
@@ -481,7 +482,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 35
+num = 55
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -506,7 +507,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 36
+num = 56
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -520,7 +521,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 37
+num = 57
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -534,36 +535,10 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 38
+num = 58
 
-[node name="DeckViewer" type="CanvasLayer" parent="." unique_id=1710892191]
+[node name="DeckViewer" parent="." unique_id=1479490178 instance=ExtResource("6_e33e4")]
 visible = false
-
-[node name="MarginContainer" type="MarginContainer" parent="DeckViewer" unique_id=977742933]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 0
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 80
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 80
-
-[node name="ColorRect" type="ColorRect" parent="DeckViewer/MarginContainer" unique_id=1388320655]
-layout_mode = 2
-color = Color(1, 0.384314, 0.498039, 0.141176)
-
-[node name="ScrollContainer" type="ScrollContainer" parent="DeckViewer/MarginContainer" unique_id=47420507]
-layout_mode = 2
-mouse_filter = 0
-
-[node name="FlowContainer" type="FlowContainer" parent="DeckViewer/MarginContainer/ScrollContainer" unique_id=780616053]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 
 [node name="AudioCardPlacing" type="AudioStreamPlayer" parent="." unique_id=1655869054]
 stream = SubResource("AudioStreamRandomizer_vwchr")
@@ -616,4 +591,3 @@ stretch_mode = 6
 [connection signal="clicked" from="Deck/Deck" to="." method="_on_deck_clicked"]
 [connection signal="clicked" from="Discard/Discard" to="." method="_on_discard_clicked"]
 [connection signal="clicked" from="Rules/Rules" to="." method="_on_rules_clicked"]
-[connection signal="gui_input" from="DeckViewer/MarginContainer" to="." method="_on_margin_container_gui_input"]

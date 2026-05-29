@@ -4,9 +4,11 @@ class_name CardVisual
 
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
-static var card_size := Vector2(38,50):
+const CARD_SIZE := Vector2(38,50)
+
+static var card_size_custom : Vector2:
 	get():
-		return card_size * SettingsManager.settings.card_scale
+		return CARD_SIZE * SettingsManager.settings.card_scale
 		
 static var card_seperation : int = 14:
 	get():
@@ -15,7 +17,6 @@ static var card_seperation : int = 14:
 static var card_seperation_custom : int:
 	get():
 		return card_seperation * SettingsManager.settings.card_seperation_scale
-
 
 var focused : bool = false:
 	set(value):
@@ -26,6 +27,7 @@ var data : CardData:
 	set(value):
 		data = value
 		update_visual()
+		if control_overrides: return
 		if not is_node_ready():
 			await ready
 		match data.previous_stage:
@@ -121,6 +123,7 @@ var move_tween : Tween
 var tilt_tween : Tween
 var held : int = 0
 var hover : bool = false
+var control_overrides : bool = false
 
 @onready var offset: Node2D = $Offset
 @onready var front: Sprite2D = $Offset/Front
@@ -128,9 +131,9 @@ var hover : bool = false
 @onready var stamp: Sprite2D = $Offset/Front/Stamp
 @onready var suit: Sprite2D  = $Offset/Front/Suit
 @onready var art: Sprite2D = $Offset/Front/Art
-
-static func add_child_card_visual(parent:Node,connected_data:CardData) -> CardVisual:
-	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
+	
+static func add_child_card_visual(parent:Node,connected_data:CardData, control_overrides:bool = false) -> CardVisual:
+	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data,control_overrides)
 	#wait for play area containers to update control positions at next frame
 	parent.call_deferred("add_child", card)
 	return card
@@ -148,10 +151,11 @@ func _ready() -> void:
 		front.frame = 0
 		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
-	SettingsManager.settings.settings_changed.connect(on_settings_updated)
+	SettingsManager.settings_changed.connect(on_settings_updated)
 	on_settings_updated()
 
 func on_settings_updated() -> void:
+	if control_overrides: return
 	scale = Vector2.ONE * SettingsManager.settings.card_scale
 
 func on_stage_changed() -> void:
@@ -171,14 +175,16 @@ func on_stage_changed() -> void:
 			create_move_tween(target_pos).tween_callback(queue_free)
 
 func get_card_control_center(control:Control) -> Vector2:
-	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
+	return control.global_position + Vector2(control.size.x/2, card_size_custom.y / 2)
 
 func get_control_center(control:Control) -> Vector2:
 	return control.global_position + control.size/2
 
-var rot_delta : float
-var y_delta : float
 func _process(delta: float) -> void:
+	if not control_overrides: delta_self_moving_logic(delta)
+	if floating: delta_floating_anim(delta)
+
+func delta_self_moving_logic(delta:float) -> void:
 	# Needs state check, if discard then discard animation first before free
 	if Game.CURRENT and data not in Game.CURRENT.play_area.data_ui: queue_free()
 	elif (not (move_tween and move_tween.is_running())
@@ -186,7 +192,7 @@ func _process(delta: float) -> void:
 		var target : Vector2 = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
 		if held:
 			#where card orients itself relative to mouse
-			var offset : int =  card_size.y/2 - card_seperation/2
+			var offset : int =  card_size_custom.y/2 - card_seperation/2
 			offset += (held - 1) * card_seperation_custom
 			target = get_global_mouse_position() + Vector2(0, offset)
 		#if held or not bot_card:
@@ -215,27 +221,30 @@ func _process(delta: float) -> void:
 			rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
 			rotation_degrees = rot_delta
 
-	if floating:
-		var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
-		var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
-		
-		if hover:
-			var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
-			x += mouse_pos.x/1.5
-			y += mouse_pos.y/1.5
-		var bobbing := sin(2 * num + float(Time.get_ticks_msec()) / 2000)
-		if data and data.stage == data.Stage.ZONE:
-			x = 0
-			y = 0
-			bobbing = 0
-		var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if data and data.flipped else 1))
-		basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
-		front.position.y = lerpf(front.position.y, bobbing, 10 * delta)
+var rot_delta : float
+var y_delta : float
+func delta_floating_anim(delta:float) -> void:
+	var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
+	var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
+	
+	if hover:
+		var mouse_pos : Vector2 = -get_local_mouse_position().normalized()
+		x += mouse_pos.x/1.5
+		y += mouse_pos.y/1.5
+	var bobbing := sin(2 * num + float(Time.get_ticks_msec()) / 2000)
+	if data and data.stage == data.Stage.ZONE:
+		x = 0
+		y = 0
+		bobbing = 0
+	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if data and data.flipped else 1))
+	basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
+	front.position.y = lerpf(front.position.y, bobbing, 10 * delta)
 
-func with_data(data:CardData) -> CardVisual:
+func with_data(data:CardData, is_control_overriding: bool = false) -> CardVisual:
+	control_overrides = is_control_overriding
 	self.data = data
 	data.data_changed.connect(update_visual)
-	data.stage_changed.connect(on_stage_changed)
+	if not control_overrides: data.stage_changed.connect(on_stage_changed)
 	return self
 
 func reset_tween(tween:Tween) -> void:
@@ -260,7 +269,7 @@ func anim_jump() -> float:
 	var delay := Game.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_callback(func()->void: floating = false)
-	move_tween.tween_property(offset, "position:y", -card_size.y / 5.0, delay * .4)
+	move_tween.tween_property(offset, "position:y", -card_size_custom.y / 5.0, delay * .4)
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
 	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
 	return delay * .4

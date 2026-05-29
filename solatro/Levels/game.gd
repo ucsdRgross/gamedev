@@ -34,8 +34,7 @@ var processing : bool = false
 @onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
 @onready var win_screen: Label = $WinScreen
 @onready var lose_screen: Label = $LoseScreen
-@onready var deck_viewer: CanvasLayer = $DeckViewer
-@onready var flow_container: FlowContainer = %FlowContainer
+@onready var deck_viewer: DeckViewer = $DeckViewer
 @onready var deck_ui: Control = $Deck
 @onready var discard_ui: Control = $Discard
 @onready var rules_ui: Control = $Rules
@@ -51,6 +50,7 @@ func _exit_tree() -> void:
 		CURRENT = null
 
 func _ready() -> void:
+	deck_viewer.hide()
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
 	state.goal = state.goal * (1.1 ** Main.save_info.layer)
@@ -133,7 +133,7 @@ func undo_pressed() -> void:
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = prev_game_data.duplicate_state()
-		play_area._ready()
+		play_area.setup_gui()
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
@@ -482,7 +482,9 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#await held_card.drop()
 	#held_card = null
 
-#func _on_deck_clicked(deck_card: Card) -> void:
+func _on_deck_clicked(deck_card: Card) -> void:
+	deck_viewer.with_deck(state.draw_deck)
+	deck_viewer.show()
 	#var randomized_deck : Array[CardData] = draw_deck.duplicate()
 	#randomized_deck.shuffle()
 	#for data in randomized_deck:
@@ -497,16 +499,10 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 		#flow_container.add_child(control)
 	#deck_viewer.show()
 
-func _on_margin_container_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event : InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			deck_viewer.hide()
-			for card_control : CardControl in flow_container.get_children():
-				#card_control.card.data.card = null
-				card_control.queue_free()
 
-#func _on_discard_clicked(deck_card: Card) -> void:
+func _on_discard_clicked(deck_card: Card) -> void:
+	deck_viewer.with_deck(state.discard_deck)
+	deck_viewer.show()
 	#for data in discard_deck:
 		#var card : Card = CARD.instantiate()
 		#card.add_data(data, true)
@@ -519,15 +515,6 @@ func _on_margin_container_gui_input(event: InputEvent) -> void:
 		#flow_container.add_child(control)
 	#deck_viewer.show()
 
-#func _on_rules_clicked(deck_card: Card) -> void:
-	#for data in rules_deck:
-		#var card : Card = CARD.instantiate()
-		#card.add_data(data, true)
-		#card.can_move_anim = false
-		#card.flipped = false
-		#var control : Control = CARD_CONTROL.instantiate()
-		#control.add_child(card)
-		#card.hover_entered.connect(_on_card_hover_entered)
-		#card.hover_exited.connect(_on_card_hover_exited)
-		#flow_container.add_child(control)
-	#deck_viewer.show()
+func _on_rules_clicked(deck_card: Card) -> void:
+	deck_viewer.with_deck(state.rules_deck)
+	deck_viewer.show()

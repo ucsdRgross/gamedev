@@ -30,7 +30,10 @@ var new_data_card : Dictionary[CardData, CardVisual]
 @onready var middle_zone_right: HBoxContainer = %MiddleZoneRight
 
 func _ready() -> void:
-	SettingsManager.settings.settings_changed.connect(update_gui)
+	SettingsManager.settings_changed.connect(update_gui)
+	setup_gui()
+
+func setup_gui() -> void:
 	set_seperation()
 	set_card_zones()
 	update_score_controls()
@@ -180,14 +183,14 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		
 		# 1. Visual settings for Zone/Type Card (Index 0)
 		var c: Control = vbox.get_child(0)
-		c.custom_minimum_size = Vector2(CardVisual.card_size.x, 0)
+		c.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, 0)
 		c.focus_mode = Control.FOCUS_ALL
 		
 		if selected_cards:
 			if c == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom)
+				c.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom)
 			elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom / 2.5)
+				c.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom / 2.5)
 		elif vbox.get_child_count() != 1:
 			c.focus_mode = Control.FOCUS_NONE
 			
@@ -202,7 +205,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		# 2. Visual settings for Row Cards (Index 1 onwards)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
-			c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom)
+			c.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom)
 			
 			connected_data = datas[i].datas[j-1]
 			card_count += 1
@@ -211,7 +214,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 			if connected_data not in selected_cards:
 				card_visual.z_index = card_count
 				
-		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size
+		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_custom
 
 	# 3. Focus neighborhood linking
 	for i in type.size() - 1:
@@ -226,11 +229,11 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		var control_index := selected_control.get_index()
 		if selected_control.get_index() > 0:
 			var vbox: Control = selected_control.get_parent()
-			(vbox.get_child(control_index - 1) as Control).custom_minimum_size = CardVisual.card_size
+			(vbox.get_child(control_index - 1) as Control).custom_minimum_size = CardVisual.card_size_custom
 			if selected_control.get_index() == 1:
-				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size.x, 0)
+				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_custom.x, 0)
 			else:
-				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom)
+				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom)
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -268,14 +271,14 @@ func on_control_focus_entered(control:Control) -> void:
 			#data_selected.emit(Game.CURRENT.lower_zone[column_index].datas[row_index - 1])
 	# resize zone control so it is possible to place card behind first card
 	if focused_control and focused_control.get_index() == 0:
-		focused_control.custom_minimum_size = Vector2(CardVisual.card_size.x, 0)
-		(focused_control.get_parent().get_child(-1) as Control).custom_minimum_size = CardVisual.card_size
+		focused_control.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, 0)
+		(focused_control.get_parent().get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_custom
 	if row_index == 0:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom/1.5)
-		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom/1.5)
+		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_custom
 	elif row_index == 1:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom/2.5)
-		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation_custom/2.5)
+		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_custom
 	focused_control = control
 
 func update_score_controls() -> void:
@@ -301,7 +304,7 @@ func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> 
 		if is_row:
 			label.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation
 		else:
-			label.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation)
+			label.custom_minimum_size = Vector2(CardVisual.card_size_custom.x, CardVisual.card_seperation)
 		if i < scores.size():
 			label.current_num = scores[i]
 		else: label.text = ""
@@ -355,7 +358,7 @@ func popup_score(result : Scoring.Result) -> void:
 			meld_size += 1
 			combo_pos += data_card[card].global_position
 	combo_pos /= meld_size
-	combo_pos.y -= CardVisual.card_size.y * 1.5
+	combo_pos.y -= CardVisual.card_size_custom.y * 1.5
 	var score_name_popup := TextPopup.new_popup(result.name + "\n" + str(result.score), combo_pos)
 	add_child(score_name_popup)
 	await get_tree().create_timer(Game.CURRENT.get_delay()*.3).timeout
