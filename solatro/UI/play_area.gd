@@ -7,26 +7,6 @@ var focused_control : Control = null
 var moused_hovered_control : Control = null
 var selected_cards : Array[CardData] = []
 
-#@export var card_scale : float = 1:
-	#set(value):
-		#card_scale = value
-		#if not is_node_ready():
-			#await ready
-		#for c : CardVisual in get_tree().get_nodes_in_group("CardVisual"):
-			#c.scale = Vector2.ONE * card_scale
-		#for c : Control in get_tree().get_nodes_in_group("CardVisualControl"):
-			#c.custom_minimum_size = card_min_size * card_scale
-		#set_seperation()
-		#middle_zone_left.custom_minimum_size = Vector2(card_stacked_seperation,card_stacked_seperation)
-#var card_min_size : Vector2 = Vector2(38,50):
-	#get():
-		#return card_min_size * card_scale
-#var card_stacked_seperation : int = 14:
-	#set(value):
-		#card_stacked_seperation = value
-		#update_play_area()
-	#get():
-		#return card_stacked_seperation * card_scale
 var seperation : int = 4: 
 	set(value):
 		seperation = value
@@ -51,12 +31,14 @@ var new_data_card : Dictionary[CardData, CardVisual]
 
 func _ready() -> void:
 	SettingsManager.settings.settings_changed.connect(update_gui)
-	update_gui()
-	update_play_area()
+	set_seperation()
+	set_card_zones()
+	update_score_controls()
+	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation
 
 func update_gui() -> void:
 	set_seperation()
-	#update_play_area()
+	set_card_zones_visuals()
 	update_score_controls()
 	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation
 
@@ -107,37 +89,38 @@ func ungrab_cards() -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	#since we cannot directly detect if array contents have changed
 	#getting rid of process would require adding update to every function
 	#where we modify the data arrays in some way
-	update_play_area()
+	set_card_zones()
 
 func set_seperation() -> void:
 	for container : Control in containers:
 		container.add_theme_constant_override("Seperation", seperation)
-	for container : HBoxContainer in [upper_zone_right, lower_zone_right]:
-		for vbox : Control in container.get_children():
-			vbox.add_theme_constant_override("Seperation", seperation)
 
-# need to seperate node creation from cosmetic size updates
-func update_play_area() -> void:
+func set_card_zones() -> void:
 	ui_data.clear()
 	data_ui.clear()
-	# Set correct amount of controls, equal to card array size + 1 for zone
-	# controls need correct focus mode
 	var game_state := Game.CURRENT.state
+	# Handles structural validation, instantiations, and dictionary mapping
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
-	# Do same for score rows and columns, and buffers
-	# update_score_controls()
 	data_card = new_data_card
 	new_data_card = {}
+	set_card_zones_visuals()
 
-func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[ArrayCardData]) -> void:
+func set_card_zones_visuals() -> void:
+	var game_state := Game.CURRENT.state
+	# Handles sizing, Z-indexing, style overrides, and focus logic safely
+	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	update_card_zone_visuals(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
+
+func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	var card_columns := type.size()
-	var column_diff : int = card_columns - hbox.get_child_count()
-	# first setup correct amount of columns
+	var column_diff: int = card_columns - hbox.get_child_count()
+	
+	# Structure layout columns
 	if column_diff > 0:
 		for i in column_diff:
 			var new_vbox := VBoxContainer.new()
@@ -145,72 +128,104 @@ func set_card_zone(hbox:HBoxContainer, type: Array[CardData], datas : Array[Arra
 			hbox.add_child(new_vbox)
 	elif column_diff < 0:
 		for i in absi(column_diff):
-			var child : Control = hbox.get_child(-1)
+			var child: Control = hbox.get_child(-1)
 			hbox.remove_child(child)
 			child.queue_free()
-	var card_count : int = 0
-	# second setup correct amount of rows per column
+
+	# Structure rows per column and register data mappings
 	for i in type.size():
 		var card_rows := datas[i].datas.size() + 1 # +1 for zone/type
-		var vbox : VBoxContainer = hbox.get_child(i)
-		var row_diff : int = card_rows - vbox.get_child_count()
+		var vbox: VBoxContainer = hbox.get_child(i)
+		var row_diff: int = card_rows - vbox.get_child_count()
+		
 		if row_diff > 0:
 			for j in row_diff:
 				var new_control := create_card_control()
 				vbox.add_child(new_control)
 		elif row_diff < 0:
 			for j in absi(row_diff):
-				var child : Control = vbox.get_child(-1)
+				var child: Control = vbox.get_child(-1)
 				vbox.remove_child(child)
 				child.queue_free()
-		# setup card min sizes and dictionary
-		var c : Control = vbox.get_child(0)
-		#c.add_to_group("CardVisualZoneControl")
+				
+		# Map the main Zone/Type Control (Index 0)
+		var c: Control = vbox.get_child(0)
+		var connected_data: CardData = type[i]
+		ui_data[c] = connected_data
+		data_ui[connected_data] = c
+		
+		if connected_data in data_card:
+			new_data_card[connected_data] = data_card[connected_data]
+		else:
+			new_data_card[connected_data] = CardVisual.add_child_card_visual(self, connected_data)
+			
+		# Map the individual Row Cards (Index 1 onwards)
+		for j in range(1, vbox.get_child_count()):
+			c = vbox.get_child(j)
+			connected_data = datas[i].datas[j-1]
+			ui_data[c] = connected_data
+			data_ui[connected_data] = c
+			
+			if connected_data in data_card:
+				new_data_card[connected_data] = data_card[connected_data]
+			else:
+				new_data_card[connected_data] = CardVisual.add_child_card_visual(self, connected_data)
+
+func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
+	var card_count: int = 0
+	
+	for i in type.size():
+		var vbox: VBoxContainer = hbox.get_child(i)
+		vbox.add_theme_constant_override("Seperation", seperation)
+		
+		# 1. Visual settings for Zone/Type Card (Index 0)
+		var c: Control = vbox.get_child(0)
 		c.custom_minimum_size = Vector2(CardVisual.card_size.x, 0)
 		c.focus_mode = Control.FOCUS_ALL
+		
 		if selected_cards:
 			if c == focused_control:
 				c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom)
 			elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom/2.5)
+				c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom / 2.5)
 		elif vbox.get_child_count() != 1:
 			c.focus_mode = Control.FOCUS_NONE
-		var connected_data : CardData = type[i]
-		ui_data[c] = connected_data
-		data_ui[connected_data] = c
-		if connected_data in data_card: 
-			new_data_card[connected_data] = data_card[connected_data]
-		else: new_data_card[connected_data] = CardVisual.add_child_card_visual(self,connected_data)
+			
+		var connected_data: CardData = type[i]
 		card_count += 1
-		var card_visual := new_data_card[connected_data]
+		
+		# Safe: Reads from the active finalized visual tracker registry
+		var card_visual: CardVisual = data_card[connected_data]
 		if connected_data not in selected_cards:
 			card_visual.z_index = card_count
+			
+		# 2. Visual settings for Row Cards (Index 1 onwards)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(CardVisual.card_size.x, CardVisual.card_seperation_custom)
+			
 			connected_data = datas[i].datas[j-1]
-			ui_data[c] = connected_data
-			data_ui[connected_data] = c
-			if connected_data in data_card: 
-				new_data_card[connected_data] = data_card[connected_data]
-			else: new_data_card[connected_data] = CardVisual.add_child_card_visual(self,connected_data)
 			card_count += 1
-			card_visual = new_data_card[connected_data]
+			
+			card_visual = data_card[connected_data]
 			if connected_data not in selected_cards:
 				card_visual.z_index = card_count
+				
 		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size
-	#set correct focus neighbors for hidden zone cards
+
+	# 3. Focus neighborhood linking
 	for i in type.size() - 1:
-		var left : Control = hbox.get_child(i).get_child(0)
-		var right : Control = hbox.get_child(i+1).get_child(0)
+		var left: Control = hbox.get_child(i).get_child(0)
+		var right: Control = hbox.get_child(i+1).get_child(0)
 		left.focus_neighbor_right = right.get_path()
 		right.focus_neighbor_left = left.get_path()
-	#when picking up stack, previous parent card needs its zone expanded
+
+	# 4. Held stack expansion logic
 	if selected_cards and selected_cards[0] in data_ui:
 		var selected_control := data_ui[selected_cards[0]]
 		var control_index := selected_control.get_index()
 		if selected_control.get_index() > 0:
-			var vbox : Control = selected_control.get_parent()
+			var vbox: Control = selected_control.get_parent()
 			(vbox.get_child(control_index - 1) as Control).custom_minimum_size = CardVisual.card_size
 			if selected_control.get_index() == 1:
 				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size.x, 0)
