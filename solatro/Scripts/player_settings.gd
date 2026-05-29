@@ -1,4 +1,18 @@
 class_name PlayerSettings
 extends Resource
 
-@export var base_delay : float = 1
+signal settings_changed
+
+@export var base_delay : float = 1:
+	set(value):
+		base_delay = value
+		settings_changed.emit()
+@export var card_scale : float = 2.5:
+	set(value):
+		card_scale = value
+		settings_changed.emit()
+@export var card_seperation_scale : float = 1:
+	set(value):
+		card_seperation_scale = value
+		settings_changed.emit()
+		

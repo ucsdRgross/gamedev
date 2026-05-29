@@ -26,7 +26,7 @@ buses/default_bus_layout="res://Audio/default_bus_layout.tres"
 [autoload]
 
 PseudoLocalisationCycler="*uid://cgwqytqq2t8ih"
-SettingsManager="*uid://chs4e01saplhs"
+SettingsManager="*uid://0icgb7ix0tbx"
 
 [debug]
 

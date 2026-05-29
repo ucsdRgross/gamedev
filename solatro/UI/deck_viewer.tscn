@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://dnvpthmsneqjl"]
+
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="1_8qp33"]
+[ext_resource type="Script" uid="uid://c63y5wogepgjx" path="res://UI/deck_viewer.gd" id="1_mjxbo"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="2_mjxbo"]
+
+[sub_resource type="Resource" id="Resource_of658"]
+script = ExtResource("2_mjxbo")
+
+[sub_resource type="Resource" id="Resource_7ie13"]
+script = ExtResource("2_mjxbo")
+
+[node name="DeckViewer" type="CanvasLayer" unique_id=1479490178]
+script = ExtResource("1_mjxbo")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1645155077]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 80
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 80
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer" unique_id=384025132]
+layout_mode = 2
+color = Color(1, 0.384314, 0.498039, 0.141176)
+
+[node name="SmoothScrollContainer" type="ScrollContainer" parent="MarginContainer" unique_id=1191871683]
+layout_mode = 2
+script = ExtResource("1_8qp33")
+wheel_scroll_damper = SubResource("Resource_of658")
+dragging_scroll_damper = SubResource("Resource_7ie13")
+metadata/_custom_type_script = "uid://bgqglerkcylxx"
+
+[node name="FlowContainer" type="FlowContainer" parent="MarginContainer/SmoothScrollContainer" unique_id=129136481]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_smooth_scroll_default_mouse_filter_set = true

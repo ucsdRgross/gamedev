@@ -2,7 +2,20 @@
 extends Node2D
 class_name CardVisual
 
-const card_size := Vector2(38,50)
+const CARD_VISUAL = preload("uid://bynh2btoahe5i")
+
+static var card_size := Vector2(38,50):
+	get():
+		return card_size * SettingsManager.settings.card_scale
+		
+static var card_seperation : int = 14:
+	get():
+		return card_seperation * SettingsManager.settings.card_scale
+
+static var card_seperation_custom : int:
+	get():
+		return card_seperation * SettingsManager.settings.card_seperation_scale
+
 
 var focused : bool = false:
 	set(value):
@@ -116,6 +129,12 @@ var hover : bool = false
 @onready var suit: Sprite2D  = $Offset/Front/Suit
 @onready var art: Sprite2D = $Offset/Front/Art
 
+static func add_child_card_visual(parent:Node,connected_data:CardData) -> CardVisual:
+	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
+	#wait for play area containers to update control positions at next frame
+	parent.call_deferred("add_child", card)
+	return card
+
 func _ready() -> void:
 	rank.hide()
 	stamp.hide()
@@ -129,6 +148,11 @@ func _ready() -> void:
 		front.frame = 0
 		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
+	SettingsManager.settings.settings_changed.connect(on_settings_updated)
+	on_settings_updated()
+
+func on_settings_updated() -> void:
+	scale = Vector2.ONE * SettingsManager.settings.card_scale
 
 func on_stage_changed() -> void:
 	if data.stage == data.previous_stage: return
@@ -147,7 +171,7 @@ func on_stage_changed() -> void:
 			create_move_tween(target_pos).tween_callback(queue_free)
 
 func get_card_control_center(control:Control) -> Vector2:
-	return control.global_position + Vector2(control.size.x/2, card_size.y * scale.y / 2)
+	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
 
 func get_control_center(control:Control) -> Vector2:
 	return control.global_position + control.size/2
@@ -162,8 +186,8 @@ func _process(delta: float) -> void:
 		var target : Vector2 = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
 		if held:
 			#where card orients itself relative to mouse
-			var offset : int =  Game.CURRENT.play_area.card_min_size.y/2 - Game.CURRENT.play_area.card_stacked_seperation/2
-			offset += (held - 1) * Game.CURRENT.play_area.card_stacked_seperation
+			var offset : int =  card_size.y/2 - card_seperation/2
+			offset += (held - 1) * card_seperation_custom
 			target = get_global_mouse_position() + Vector2(0, offset)
 		#if held or not bot_card:
 			#target = target_pos
