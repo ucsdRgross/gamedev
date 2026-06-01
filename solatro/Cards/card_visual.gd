@@ -5,18 +5,25 @@ class_name CardVisual
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
 const CARD_SIZE := Vector2(38,50)
+const CARD_SEPERATION : int = 14
 
-static var card_size_custom : Vector2:
+enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
+var current_context: DisplayContext = DisplayContext.PLAY_AREA
+var control_anchor: Control = null
+
+var card_size : Vector2
+var card_separation: int
+var card_separation_custom: int
+
+static var card_size_play : Vector2:
 	get():
 		return CARD_SIZE * SettingsManager.settings.card_scale
-		
-static var card_seperation : int = 14:
+static var card_seperation_play : int:
 	get():
-		return card_seperation * SettingsManager.settings.card_scale
-
-static var card_seperation_custom : int:
+		return CARD_SEPERATION * SettingsManager.settings.card_scale
+static var card_seperation_play_custom : int:
 	get():
-		return card_seperation * SettingsManager.settings.card_seperation_scale
+		return card_seperation_play * SettingsManager.settings.card_seperation_scale
 
 var focused : bool = false:
 	set(value):
@@ -27,13 +34,13 @@ var data : CardData:
 	set(value):
 		data = value
 		update_visual()
-		if control_overrides: return
+		if current_context != DisplayContext.PLAY_AREA: return
 		if not is_node_ready():
 			await ready
 		match data.previous_stage:
 			data.Stage.PLAY, data.Stage.ZONE:
 				if Game.CURRENT:
-					global_position = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
+					global_position = get_card_control_center(control_anchor)
 			data.Stage.DRAW:
 				if Game.CURRENT:
 					global_position = get_control_center(Game.CURRENT.deck_ui)
@@ -123,7 +130,6 @@ var move_tween : Tween
 var tilt_tween : Tween
 var held : int = 0
 var hover : bool = false
-var control_overrides : bool = false
 
 @onready var offset: Node2D = $Offset
 @onready var front: Sprite2D = $Offset/Front
@@ -132,8 +138,11 @@ var control_overrides : bool = false
 @onready var suit: Sprite2D  = $Offset/Front/Suit
 @onready var art: Sprite2D = $Offset/Front/Art
 	
-static func add_child_card_visual(parent:Node,connected_data:CardData, control_overrides:bool = false) -> CardVisual:
-	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data,control_overrides)
+static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
+	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
+	card.current_context = context
+	card.control_anchor = target_control if target_control else (parent as Control)
+	card.recalculate_size()
 	#wait for play area containers to update control positions at next frame
 	parent.call_deferred("add_child", card)
 	return card
@@ -151,18 +160,33 @@ func _ready() -> void:
 		front.frame = 0
 		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
-	SettingsManager.settings_changed.connect(on_settings_updated)
-	on_settings_updated()
+	SettingsManager.settings_changed.connect(recalculate_size)
+	recalculate_size()
 
-func on_settings_updated() -> void:
-	if control_overrides: return
-	scale = Vector2.ONE * SettingsManager.settings.card_scale
+func recalculate_size() -> void:
+	match current_context:
+		DisplayContext.DECK_VIEWER:
+			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
+			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
+			scale = Vector2.ONE * 2
+		DisplayContext.PLAY_AREA:
+			card_size = CARD_SIZE * SettingsManager.settings.card_scale
+			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
+			scale = Vector2.ONE * SettingsManager.settings.card_scale
+		_:
+			card_size = CARD_SIZE * SettingsManager.settings.card_scale
+			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
+			scale = Vector2.ONE * SettingsManager.settings.card_scale
 
 func on_stage_changed() -> void:
+	if current_context != DisplayContext.PLAY_AREA: return
 	if data.stage == data.previous_stage: return
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
-			var target_pos := get_card_control_center(Game.CURRENT.play_area.data_ui[data])
+			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
 		data.Stage.DRAW:
 			var target_pos := get_control_center(Game.CURRENT.discard_ui)
@@ -175,25 +199,29 @@ func on_stage_changed() -> void:
 			create_move_tween(target_pos).tween_callback(queue_free)
 
 func get_card_control_center(control:Control) -> Vector2:
-	return control.global_position + Vector2(control.size.x/2, card_size_custom.y / 2)
+	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
 
 func get_control_center(control:Control) -> Vector2:
 	return control.global_position + control.size/2
 
 func _process(delta: float) -> void:
-	if not control_overrides: delta_self_moving_logic(delta)
+	delta_self_moving_logic(delta)
 	if floating: delta_floating_anim(delta)
 
 func delta_self_moving_logic(delta:float) -> void:
 	# Needs state check, if discard then discard animation first before free
-	if Game.CURRENT and data not in Game.CURRENT.play_area.data_ui: queue_free()
-	elif (not (move_tween and move_tween.is_running())
-			and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):		
-		var target : Vector2 = get_card_control_center(Game.CURRENT.play_area.data_ui[data])
+	match current_context:
+		DisplayContext.PLAY_AREA:
+			if Game.CURRENT and data not in Game.CURRENT.play_area.data_ui: queue_free()
+		_:
+			if not Engine.is_editor_hint() and (not control_anchor or not is_instance_valid(control_anchor)): queue_free()
+	if (not (move_tween and move_tween.is_running())) and control_anchor:
+			#and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):		
+		var target : Vector2 = get_card_control_center(control_anchor)
 		if held:
 			#where card orients itself relative to mouse
-			var offset : int =  card_size_custom.y/2 - card_seperation/2
-			offset += (held - 1) * card_seperation_custom
+			var offset : int =  card_size.y/2 - card_separation/2
+			offset += (held - 1) * card_separation_custom
 			target = get_global_mouse_position() + Vector2(0, offset)
 		#if held or not bot_card:
 			#target = target_pos
@@ -212,7 +240,7 @@ func delta_self_moving_logic(delta:float) -> void:
 		# global_position = global_position.lerp(target, .2)
 		global_position = target + (global_position - target) * exp(-5 * delta)
 		
-		if data.stage != data.Stage.ZONE:
+		if data and data.stage != data.Stage.ZONE:
 			y_delta = lerpf(y_delta, move.y, 15 * delta)
 			y_delta = clampf(y_delta, -4, 4)
 			
@@ -240,11 +268,10 @@ func delta_floating_anim(delta:float) -> void:
 	basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
 	front.position.y = lerpf(front.position.y, bobbing, 10 * delta)
 
-func with_data(data:CardData, is_control_overriding: bool = false) -> CardVisual:
-	control_overrides = is_control_overriding
+func with_data(data:CardData) -> CardVisual:
 	self.data = data
 	data.data_changed.connect(update_visual)
-	if not control_overrides: data.stage_changed.connect(on_stage_changed)
+	data.stage_changed.connect(on_stage_changed)
 	return self
 
 func reset_tween(tween:Tween) -> void:
@@ -269,7 +296,7 @@ func anim_jump() -> float:
 	var delay := Game.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_callback(func()->void: floating = false)
-	move_tween.tween_property(offset, "position:y", -card_size_custom.y / 5.0, delay * .4)
+	move_tween.tween_property(offset, "position:y", -card_size.y / 5.0, delay * .4)
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
 	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
 	return delay * .4

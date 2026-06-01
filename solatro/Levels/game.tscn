@@ -482,7 +482,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 55
+num = 277
 
 [node name="Label" type="Label" parent="Preview" unique_id=521265543]
 layout_mode = 0
@@ -507,7 +507,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 56
+num = 278
 
 [node name="Discard" type="Control" parent="." unique_id=1749321217]
 anchors_preset = 0
@@ -521,7 +521,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 57
+num = 279
 
 [node name="Rules" type="Control" parent="." unique_id=1348264598]
 anchors_preset = 0
@@ -535,7 +535,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 58
+num = 280
 
 [node name="DeckViewer" parent="." unique_id=1479490178 instance=ExtResource("6_e33e4")]
 visible = false

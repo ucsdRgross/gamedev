@@ -128,6 +128,7 @@ func save_state() -> void:
 
 func undo_pressed() -> void:
 	if processing: return
+	if play_area.selected_cards: return
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
@@ -483,8 +484,8 @@ func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#held_card = null
 
 func _on_deck_clicked(deck_card: Card) -> void:
-	deck_viewer.with_deck(state.draw_deck)
-	deck_viewer.show()
+	deck_viewer.show_with_deck(state.draw_deck)
+	
 	#var randomized_deck : Array[CardData] = draw_deck.duplicate()
 	#randomized_deck.shuffle()
 	#for data in randomized_deck:
@@ -501,8 +502,7 @@ func _on_deck_clicked(deck_card: Card) -> void:
 
 
 func _on_discard_clicked(deck_card: Card) -> void:
-	deck_viewer.with_deck(state.discard_deck)
-	deck_viewer.show()
+	deck_viewer.show_with_deck(state.discard_deck)
 	#for data in discard_deck:
 		#var card : Card = CARD.instantiate()
 		#card.add_data(data, true)
@@ -516,5 +516,4 @@ func _on_discard_clicked(deck_card: Card) -> void:
 	#deck_viewer.show()
 
 func _on_rules_clicked(deck_card: Card) -> void:
-	deck_viewer.with_deck(state.rules_deck)
-	deck_viewer.show()
+	deck_viewer.show_with_deck(state.rules_deck)
