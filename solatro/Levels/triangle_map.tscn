@@ -3,21 +3,17 @@
 [ext_resource type="Script" uid="uid://xf84s8pcuq3o" path="res://Levels/triangle_map.gd" id="1_7ass7"]
 [ext_resource type="PackedScene" uid="uid://cdevr7c0t2cag" path="res://UI/card_control.tscn" id="2_mlga5"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_pe4wh"]
-[ext_resource type="Script" uid="uid://dwk7tiv0i5slq" path="res://Cards/card.gd" id="4_r8s5l"]
 [ext_resource type="Script" uid="uid://b0nr8s0uyec23" path="res://Cards/card_data.gd" id="5_6n4m0"]
 
 [sub_resource type="GDScript" id="GDScript_r8s5l"]
 
 [sub_resource type="Resource" id="Resource_r8s5l"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 11.0
 
 [sub_resource type="GDScript" id="GDScript_tyjmd"]
 
 [sub_resource type="Resource" id="Resource_6n4m0"]
 script = SubResource("GDScript_tyjmd")
-value = 1
 
 [sub_resource type="Resource" id="Resource_tyjmd"]
 script = ExtResource("5_6n4m0")
@@ -26,12 +22,9 @@ rank = SubResource("Resource_r8s5l")
 
 [sub_resource type="Resource" id="Resource_llyq8"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 5.0
 
 [sub_resource type="Resource" id="Resource_c5vus"]
 script = SubResource("GDScript_tyjmd")
-value = 1
 
 [sub_resource type="Resource" id="Resource_8up2j"]
 script = ExtResource("5_6n4m0")
@@ -40,12 +33,9 @@ rank = SubResource("Resource_llyq8")
 
 [sub_resource type="Resource" id="Resource_27qhp"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 6.0
 
 [sub_resource type="Resource" id="Resource_haf8g"]
 script = SubResource("GDScript_tyjmd")
-value = 4
 
 [sub_resource type="Resource" id="Resource_3nwcu"]
 script = ExtResource("5_6n4m0")
@@ -54,12 +44,9 @@ rank = SubResource("Resource_27qhp")
 
 [sub_resource type="Resource" id="Resource_2rrpb"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 3.0
 
 [sub_resource type="Resource" id="Resource_guvbb"]
 script = SubResource("GDScript_tyjmd")
-value = 1
 
 [sub_resource type="Resource" id="Resource_ikrvv"]
 script = ExtResource("5_6n4m0")
@@ -68,12 +55,9 @@ rank = SubResource("Resource_2rrpb")
 
 [sub_resource type="Resource" id="Resource_y7hk1"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 5.0
 
 [sub_resource type="Resource" id="Resource_7lwli"]
 script = SubResource("GDScript_tyjmd")
-value = 3
 
 [sub_resource type="Resource" id="Resource_vy1ib"]
 script = ExtResource("5_6n4m0")
@@ -82,12 +66,9 @@ rank = SubResource("Resource_y7hk1")
 
 [sub_resource type="Resource" id="Resource_1ubwu"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 11.0
 
 [sub_resource type="Resource" id="Resource_gfrc8"]
 script = SubResource("GDScript_tyjmd")
-value = 2
 
 [sub_resource type="Resource" id="Resource_joolv"]
 script = ExtResource("5_6n4m0")
@@ -96,12 +77,9 @@ rank = SubResource("Resource_1ubwu")
 
 [sub_resource type="Resource" id="Resource_qwmu4"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 12.0
 
 [sub_resource type="Resource" id="Resource_aurl1"]
 script = SubResource("GDScript_tyjmd")
-value = 2
 
 [sub_resource type="Resource" id="Resource_rrhdf"]
 script = ExtResource("5_6n4m0")
@@ -110,20 +88,16 @@ rank = SubResource("Resource_qwmu4")
 
 [sub_resource type="Resource" id="Resource_j5fi0"]
 script = SubResource("GDScript_r8s5l")
-original_value = 0.0
-value = 8.0
 
 [sub_resource type="Resource" id="Resource_k8lhe"]
 script = SubResource("GDScript_tyjmd")
-value = 3
 
 [sub_resource type="Resource" id="Resource_4alb5"]
 script = ExtResource("5_6n4m0")
 suit = SubResource("Resource_k8lhe")
 rank = SubResource("Resource_j5fi0")
 
-[node name="TriangleMap" type="Control" unique_id=1041097602]
-layout_mode = 3
+[node name="TriangleMap" type="Container" unique_id=1148244353]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -138,14 +112,7 @@ zoom = Vector2(0.83, 0.83)
 
 [node name="CardControl" parent="." unique_id=2032363151 instance=ExtResource("2_mlga5")]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_right = 0.0
-offset_top = -150.0
-offset_right = 114.0
-grow_horizontal = 1
-grow_vertical = 0
+layout_mode = 2
 mouse_filter = 2
 
 [node name="Card" parent="CardControl" unique_id=881049206 instance=ExtResource("3_pe4wh")]
@@ -157,17 +124,7 @@ num = 7
 
 [node name="GridContainer" type="GridContainer" parent="." unique_id=767794290]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -175.0
-offset_top = -304.0
-offset_right = 175.0
-grow_horizontal = 2
-grow_vertical = 0
+layout_mode = 2
 mouse_filter = 2
 columns = 5
 
@@ -232,93 +189,82 @@ custom_minimum_size = Vector2(114, 150)
 layout_mode = 2
 
 [node name="ChildCards" type="Control" parent="." unique_id=1155994537]
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 2
 
-[node name="Card" type="Node2D" parent="ChildCards" unique_id=758458623 instance=ExtResource("3_pe4wh")]
+[node name="Card" parent="ChildCards" unique_id=758458623 instance=ExtResource("3_pe4wh")]
 visible = false
 position = Vector2(340, 265)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_tyjmd")
 can_rot_anim = false
 flipped = false
-num = 261
+num = 8
 target_pos = Vector2(340, 265)
 
-[node name="@Node2D@40800" type="Node2D" parent="ChildCards" unique_id=870063342 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40800" parent="ChildCards" unique_id=870063342 instance=ExtResource("3_pe4wh")]
 visible = false
 position = Vector2(458, 265)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_8up2j")
 can_rot_anim = false
 flipped = false
-num = 262
+num = 9
 target_pos = Vector2(458, 265)
 
-[node name="@Node2D@40801" type="Node2D" parent="ChildCards" unique_id=88466807 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40801" parent="ChildCards" unique_id=88466807 instance=ExtResource("3_pe4wh")]
 visible = false
 position = Vector2(576, 265)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_3nwcu")
 can_rot_anim = false
 flipped = false
-num = 263
 target_pos = Vector2(576, 265)
 
-[node name="@Node2D@40802" type="Node2D" parent="ChildCards" unique_id=1556381258 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40802" parent="ChildCards" unique_id=1556381258 instance=ExtResource("3_pe4wh")]
 visible = false
 position = Vector2(694, 265)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_ikrvv")
 can_rot_anim = false
 flipped = false
-num = 264
+num = 11
 target_pos = Vector2(694, 265)
 
-[node name="@Node2D@40803" type="Node2D" parent="ChildCards" unique_id=878894718 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40803" parent="ChildCards" unique_id=878894718 instance=ExtResource("3_pe4wh")]
 visible = false
 position = Vector2(812, 265)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_vy1ib")
 can_rot_anim = false
 flipped = false
-num = 265
+num = 12
 target_pos = Vector2(812, 265)
 
-[node name="@Node2D@40804" type="Node2D" parent="ChildCards" unique_id=1944123659 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40804" parent="ChildCards" unique_id=1944123659 instance=ExtResource("3_pe4wh")]
 position = Vector2(458, 419)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_joolv")
 can_rot_anim = false
 flipped = false
-num = 266
+num = 13
 target_pos = Vector2(458, 419)
 
-[node name="@Node2D@40805" type="Node2D" parent="ChildCards" unique_id=143765425 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40805" parent="ChildCards" unique_id=143765425 instance=ExtResource("3_pe4wh")]
 position = Vector2(576, 419)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_rrhdf")
 can_rot_anim = false
 flipped = false
-num = 267
+num = 14
 target_pos = Vector2(576, 419)
 
-[node name="@Node2D@40806" type="Node2D" parent="ChildCards" unique_id=320720263 instance=ExtResource("3_pe4wh")]
+[node name="@Node2D@40806" parent="ChildCards" unique_id=320720263 instance=ExtResource("3_pe4wh")]
 position = Vector2(694, 419)
 scale = Vector2(3, 3)
-script = ExtResource("4_r8s5l")
 data = SubResource("Resource_4alb5")
 can_rot_anim = false
 flipped = false
-num = 268
+num = 15
 target_pos = Vector2(694, 419)
 
 [node name="Deck" parent="." unique_id=83111460 instance=ExtResource("3_pe4wh")]
@@ -326,7 +272,7 @@ position = Vector2(1007, 368)
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 56
+num = 16
 
 [connection signal="clicked" from="Deck" to="." method="_on_deck_clicked"]
 [connection signal="hover_entered" from="Deck" to="." method="_on_deck_hover_entered"]

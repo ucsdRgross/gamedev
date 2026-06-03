@@ -3,129 +3,130 @@ class_name Map
 
 signal enter_game
 
-const CARD_CONTROL = preload("res://UI/card_control.tscn")
-const CARD = preload("res://Cards/card.tscn")
-
-var containers : Array 
-var index_to_card : Dictionary
-var card_to_index : Dictionary
-var tween_transition : Tween
 @onready var triangle_map: TriangleMap = $TiltedGUI/SubViewport/TriangleMap
-#@onready var grid_container: GridContainer = $TiltedGUI/SubViewport/Map2D/GridContainer
-@onready var preview_card: Card = $Preview/Card
 @onready var preview_label: Label = $Preview/Label
 @onready var flow_container: FlowContainer = %FlowContainer
-@onready var deck_viewer: CanvasLayer = $DeckViewer
-@onready var layer: Label = $Layer
+@onready var deck_viewer: DeckViewer = $DeckViewer
+@onready var layer_label: Label = $Layer
 
 func _ready() -> void:
+	# Force show/hide on startup to sync FlowContainer caches and drop initialization race conditions
+	deck_viewer.show()
+	deck_viewer.hide()
+	
 	triangle_map.card_clicked.connect(_on_card_clicked)
 	triangle_map.card_hovered.connect(_on_card_hover_entered)
-	#($Preview as Control).hide()
+	
 	preview_label.text = ""
-	triangle_map.deck_clicked.connect(_on_deck_clicked)
 	update_layer(0)
-	#containers = grid_container.get_children()
-	#var cols : int = grid_container.columns
-	#var i : int = 0
-	#for c:Control in containers:
-		#var card : Card = CARD.instantiate()
-		#card.data = CardData.new()\
-						#.with_suit(randi() % 4 + 1)\
-						#.with_rank(randi() % 13 + 1)
-		#card.can_move_anim = false
-		#card.clicked.connect(_on_card_clicked)
-		#card.hover_entered.connect(_on_card_hover_entered)
-		#var zone : Card = c.get_child(0)
-		#zone.front.self_modulate.a = 0
-		#c.add_child(card)
-		#zone.add_card(card)
-		#var row := i / cols
-		#var col := i % cols
-		#card_to_index[card] = Vector2i(row,col)
-		#index_to_card[Vector2i(row,col)] = card
-		#i+=1
-	#
-	#for coord:Vector2i in [Vector2i(0,0),Vector2i(0,cols-1),Vector2i(cols-1,0),Vector2i(cols-1,cols-1)]:
-		#index_to_card[coord].flipped = false
+	
+	#_sync_flow_container_with_saved_deck()
+	_initialize_triangle_map_data()
 
-func _on_card_clicked(card : Card) -> void:
+func _on_card_clicked(card_data: CardData) -> void:
+	if not card_data: 
+		return
+		
 	update_layer(1)
-	#if card.flipped or (tween_transition and tween_transition.is_running()):
-		#return
-	#var surroundings : Array[Vector2i] = [#Vector2(-1,-1),
-										#Vector2i(0,-1),
-										##Vector2(1,-1),
-										#Vector2i(-1,0),
-										##Vector2(0,0),
-										#Vector2i(1,0),
-										##Vector2(-1,1),
-										#Vector2i(0,1),
-										##Vector2(1,1)
-										#]
-	#card.z_index = card.num_cards
-	#tween_transition = create_tween()
-	#tween_transition.tween_property(card, 'scale', Vector2(2,2), 1).as_relative()
-	##var cols : int = grid_container.columns
-	##tween_transition.parallel().tween_property(card, 'global_position', (index_to_card[Vector2i(cols/2,cols/2)] as Card).global_position, 1)
-	#tween_transition.tween_callback(card.hide)
-	#tween_transition.tween_callback(func()->void: card_clicked.emit(card))
-	#tween_transition.tween_callback(func()->void: card.queue_free())
-	add_card(card.data)
-	#tween_transition.tween_callback(card.queue_free)
-	
-	#for s : Vector2i in surroundings:
-		#var index : Vector2i = card_to_index[card] + s
-		#if index in index_to_card:
-			#var c : Card = index_to_card[index]
-			#if c.flipped:
-				#c.flipped = false
-			#else:
-				#c.flipped = true
-				#var tween_hide := create_tween()
-				#tween_hide.tween_property(c, 'rotation', (1 if randi() % 2 == 0 else -1) * TAU, 0.5).as_relative()
-				#tween_hide.parallel().tween_property(c, "scale", Vector2(0.1,0.1), 0.5)
-				#tween_hide.tween_callback(c.hide)
-	#await tween_transition.finished
+	add_card_data_to_deck(card_data)
 
-func update_layer(i : int) -> void:
-	Main.save_info.layer += i
-	layer.text = "Layer: " + str(Main.save_info.layer)
+func update_layer(i: int) -> void:
+	if Main.save_info:
+		Main.save_info.layer += i
+		layer_label.text = "Layer: " + str(Main.save_info.layer)
 
-func _on_card_hover_entered(card : Card) -> void:
-	if not card.flipped:
-		preview_card.data = card.data
-	preview_card.flipped = card.flipped
-	preview_card.update_visual()
-	var description : String
-	if card.data.skill:
-		description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
-	if card.data.stamp:
-		description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
-	if card.data.type:
-		description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
+func _on_card_hover_entered(card_data: CardData) -> void:
+	if not card_data: 
+		return
+		
+	var description: String = ""
+	if card_data.skill:
+		description += card_data.skill.get_str() + "\n" + card_data.skill.get_description() + "\n"
+	if card_data.stamp:
+		description += card_data.stamp.get_str() + "\n" + card_data.stamp.get_description() + "\n"
+	if card_data.type:
+		description += card_data.type.get_str() + "\n" + card_data.type.get_description() + "\n"
+		
 	preview_label.text = description
-	#($Preview as Control).show()
 
-func add_card(data:CardData) -> void:
+func add_card_data_to_deck(data: CardData) -> void:
+	if not Main.save_info: 
+		return
+		
 	Main.save_info.card_datas.append(data)
-	var card : Card = CARD.instantiate()
-	card.add_data(data)
-	card.can_move_anim = false
+	#
+	#var control_slot: Control = CARD_CONTROL.instantiate() as Control
+	#flow_container.add_child(control_slot)
+	#
+	#var card_visual: CardVisual = CardVisual.add_child_card_visual(
+		#control_slot, 
+		#data, 
+		#CardVisual.DisplayContext.PREVIEW, 
+		#control_slot
+	#)
+	#card_visual.can_move_anim = false
+	#card_visual.floating = false
+	#card_visual.show_front = true
+
+#func _sync_flow_container_with_saved_deck() -> void:
+	#if not Main.save_info or not "card_datas" in Main.save_info: 
+		#return
+		#
+	#for child: Node in flow_container.get_children():
+		#flow_container.remove_child(child)
+		#child.queue_free()
+		#
+	#for data: CardData in Main.save_info.card_datas:
+		#var control_slot: Control = CARD_CONTROL.instantiate() as Control
+		#flow_container.add_child(control_slot)
+		#
+		#var card_visual: CardVisual = CardVisual.add_child_card_visual(
+			#control_slot, 
+			#data, 
+			#CardVisual.DisplayContext.PREVIEW, 
+			#control_slot
+		#)
+		#card_visual.can_move_anim = false
+		#card_visual.floating = false
+		#card_visual.show_front = true
+
+# ==========================================
+# 📐 TRIANGLE DATA INITIALIZATION SEED
+# ==========================================
+
+func _initialize_triangle_map_data() -> void:
+	# Keep row iteration simple and uniform: processes cleanly from Top to Bottom
+	for current_row_idx: int in range(triangle_map.height_rows):
+		var row_capacity: int = triangle_map.choices_width + ((triangle_map.height_rows - 1 - current_row_idx) * 2)
+		var generated_row_data: Array[CardData] = []
+		
+		for slot_idx: int in range(row_capacity):
+			var card_data: CardData = _generate_random_map_card()
+			generated_row_data.append(card_data)
+			
+		triangle_map.push_row_data(generated_row_data)
+		
+	# Finalize data mapping and load layout configurations once
+	triangle_map.finalize_map_generation()
+
+func _generate_random_map_card() -> CardData:
+	var card: CardData = CardData.new()
+	card.with_rank(PipRank.Numeral.new().with_random())
+	card.with_suit(PipSuit.Standard.new().with_random())
+	#card.stage = CardData.Stage.ZONE
 	card.flipped = false
-	var control : Control = CARD_CONTROL.instantiate()
-	control.add_child(card)
-	flow_container.add_child(control)
-	
-func _on_deck_clicked(card: Card) -> void:
-	deck_viewer.show()
+	return card
+
+func _on_deck_clicked(card_data: CardData) -> void:
+	var data_array: Array[CardData] = []
+	if Main.save_info and "card_datas" in Main.save_info:
+		data_array = Main.save_info.card_datas
+	deck_viewer.show_with_deck(data_array)
 
 func _on_margin_container_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event : InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			deck_viewer.hide()
-
+	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+	if mouse_event and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+		deck_viewer.hide()
 
 func _on_button_pressed() -> void:
 	enter_game.emit()

@@ -10,7 +10,7 @@ const SAVE_PATH := "user://settings.tres"
 		settings = value
 		settings.settings_changed.connect(on_settings_changed)
 
-func _ready() -> void:
+func _init() -> void:
 	if ResourceLoader.exists(SAVE_PATH):
 		settings = ResourceLoader.load(SAVE_PATH)
 	

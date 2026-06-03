@@ -208,6 +208,8 @@ func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
 	if floating: delta_floating_anim(delta)
 
+var rot_delta : float
+var y_delta : float
 func delta_self_moving_logic(delta:float) -> void:
 	# Needs state check, if discard then discard animation first before free
 	match current_context:
@@ -240,7 +242,7 @@ func delta_self_moving_logic(delta:float) -> void:
 		# global_position = global_position.lerp(target, .2)
 		global_position = target + (global_position - target) * exp(-5 * delta)
 		
-		if data and data.stage != data.Stage.ZONE:
+		if can_rot_anim and data and data.stage != data.Stage.ZONE:
 			y_delta = lerpf(y_delta, move.y, 15 * delta)
 			y_delta = clampf(y_delta, -4, 4)
 			
@@ -249,8 +251,6 @@ func delta_self_moving_logic(delta:float) -> void:
 			rot_delta = clampf(rot_delta, -clamp_degree, clamp_degree)
 			rotation_degrees = rot_delta
 
-var rot_delta : float
-var y_delta : float
 func delta_floating_anim(delta:float) -> void:
 	var x : float = sin(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
 	var y : float = cos(num + float(Time.get_ticks_msec()) / 2000) * (0.3 if hover else 0.6)
