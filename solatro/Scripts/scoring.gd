@@ -16,6 +16,16 @@ class Result:
 	var score : int
 	var tie_breaker_high_card : float
 	var types: Array[MELD_TYPE] = []
+	
+	static func create(p_name: String, p_meld: Array[CardData], p_score: int, p_tie: float, p_types: Array[MELD_TYPE]) -> Result:
+		var res := Result.new()
+		res.name = p_name
+		res.meld = p_meld
+		res.score = p_score
+		res.tie_breaker_high_card = p_tie
+		res.types = p_types
+		return res
+		
 	func _to_string() -> String:
 		return name #+ " " + str(meld)
 
@@ -111,6 +121,14 @@ static func get_loc_name(types: Array[MELD_TYPE], m: int = 1, n: int = 0, distin
 
 	return base_name
 
+static func is_flush(meld: Array[CardData]) -> bool:
+	if meld.is_empty(): return false
+	var first_suit: PipSuit = meld[0].suit
+	for i in range(1, meld.size()):
+		if not await PipComparator.is_suit_same(first_suit, meld[i].suit):
+			return false
+	return true
+
 ## Asynchronously handles descending rank sort profiles via the centralized comparator
 static func rank_sort_desc_async(a: CardData, b: CardData) -> bool:
 	if not a or not a.rank or not b or not b.rank: return false
@@ -128,7 +146,7 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 		
 		# --- PHASE A: DECOUPLED RANK PROFILING BUCKETS ---
 		# Ask the comparator which structural numeric keys this rank represents
-		var placement_keys: Array[float] = await PipComparator.get_rank_profile(card.rank)
+		var placement_keys: Array[float] = PipComparator.get_rank_profile(card.rank)
 		for scalar_key in placement_keys:
 			if not profile.ranks.map.has(scalar_key): 
 				profile.ranks.map[scalar_key] = ArrayCardData.new()
@@ -136,7 +154,7 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 			
 		# --- PHASE B: DECOUPLED SUIT PROFILING BUCKETS ---
 		# Ask the comparator which suit key strings this card satisfies simultaneously
-		var suit_keys: Array[String] = await PipComparator.get_suit_profile(card.suit)
+		var suit_keys: Array[String] = PipComparator.get_suit_profile(card.suit)
 		for st in suit_keys:
 			if not profile.suits.map.has(st): 
 				profile.suits.map[st] = ArrayCardData.new()
@@ -187,53 +205,6 @@ class PokerHands extends Scorer:
 # 1. EXPANDED GRID HANDLER
 # ==============================================================================
 class ExpandedGridHandler extends Scorer:
-	static func score(cards: Array[CardData]) -> Array[Result]:
-		var profiles := await Scoring._get_hand_profiles_async(cards)
-		var raw_clusters: Array[ArrayCardData] = []
-		
-		for rank_val in profiles.ranks.map:
-			var cluster: ArrayCardData = profiles.ranks.map[rank_val]
-			if cluster.datas.size() >= 2:
-				raw_clusters.append(cluster)
-				
-		if raw_clusters.is_empty(): return []
-		
-		# Sort Size Descending
-		raw_clusters.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool: return a.datas.size() > b.datas.size())
-		
-		var absolute_max_rank := -INF
-		for cluster in raw_clusters:
-			if not cluster.datas.is_empty():
-				var local_val : float = await PipComparator.get_scorable_value(cluster.datas[0].rank, cards, false)
-				absolute_max_rank = max(absolute_max_rank, local_val)
-
-		var possible_outcomes: Array[Result] = []
-
-		if raw_clusters.size() >= 2:
-			# 1. Macro: Single Proportional House
-			var res_macro := await _evaluate_proportional_full_house(raw_clusters, absolute_max_rank)
-			if not res_macro.is_empty(): possible_outcomes.append_array(res_macro)
-
-			# 2. Simul: Identical House Copies
-			var res_simul := await _evaluate_simultaneous_identical_houses(raw_clusters, absolute_max_rank)
-			if not res_simul.is_empty(): possible_outcomes.append_array(res_simul)
-			
-			# 3. Distinct: Combinatorial Houses
-			var res_distinct := await _evaluate_distinct_combinatorial_houses(raw_clusters, absolute_max_rank)
-			if not res_distinct.is_empty(): possible_outcomes.append_array(res_distinct)
-			
-		# 4. Fallback Sets
-		var res_fallback := await _evaluate_fallback_sets(raw_clusters, absolute_max_rank)
-		if not res_fallback.is_empty(): possible_outcomes.append_array(res_fallback)
-
-		if possible_outcomes.is_empty(): return []
-		
-		# Sort logic: Higher score wins. If tie, First Found (Priority) wins.
-		possible_outcomes.sort_custom(func(a: Result, b: Result) -> bool: 
-			return a.score > b.score
-		)
-		return possible_outcomes
-
 	# --- A. MACRO HOUSE (Single) ---
 	static func _evaluate_proportional_full_house(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
 		var trip_group: ArrayCardData = null
@@ -254,213 +225,129 @@ class ExpandedGridHandler extends Scorer:
 		var use_n1 := scale * 3
 		var use_n2 := scale * 2
 		
-		var res := Result.new()
-		res.types.append(MELD_TYPE.FULL_HOUSE)
-		res.meld.append_array(trip_group.datas.slice(0, use_n1))
-		res.meld.append_array(pair_group.datas.slice(0, use_n2))
+		var meld: Array[CardData] = []
+		meld.append_array(trip_group.datas.slice(0, use_n1))
+		meld.append_array(pair_group.datas.slice(0, use_n2))
 		
-		# Base Score
 		var sub_score_float : float = float(use_n1 * (use_n1 - 1)) + float(use_n2 * (use_n2 - 1))
-		res.score = int(sub_score_float * 1.5)
+		var score := int(sub_score_float * 1.5)
+		var types: Array[MELD_TYPE] = [MELD_TYPE.FULL_HOUSE]
 		
-		# FLUSH CHECK: x2 MULTIPLIER
-		var global_suit_match := true
-		if not res.meld.is_empty():
-			var first_suit: PipSuit = res.meld[0].suit
-			for i in range(1, res.meld.size()):
-				if not await PipComparator.is_suit_same(first_suit, res.meld[i].suit):
-					global_suit_match = false; break
-		else: global_suit_match = false
+		if await Scoring.is_flush(meld):
+			types.append(MELD_TYPE.FLUSH)
+			types.append(MELD_TYPE.ALL_SAME_SUIT)
+			score *= 2
 			
-		if global_suit_match:
-			res.types.append(MELD_TYPE.FLUSH)
-			res.types.append(MELD_TYPE.ALL_SAME_SUIT)
-			res.score *= 2 # FIX: x2 Multiplier (12 -> 24)
-			
-		res.name = Scoring.get_loc_name(res.types, 1, use_n1 + use_n2)
-		res.tie_breaker_high_card = max_rank
-		return [res]
+		var final_name := Scoring.get_loc_name(types, 1, use_n1 + use_n2)
+		return [Result.create(final_name, meld, score, max_rank, types)]
 
-	# --- B. SIMULTANEOUS HOUSES ---
-	static func _evaluate_simultaneous_identical_houses(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
-		var pool_1: Array[CardData] = clusters[0].datas.duplicate()
-		var pool_2: Array[CardData] = clusters[1].datas.duplicate()
-		var n1 := pool_1.size()
-		var n2 := pool_2.size()
-		var max_factor : int = min(floor(n1 / 3.0), floor(n2 / 2.0))
+	static func score(cards: Array[CardData]) -> Array[Result]:
+		var profiles := await Scoring._get_hand_profiles_async(cards)
+		var clusters: Array[ArrayCardData] = []
 		
-		if max_factor < 2: return []
-
-		var outcomes: Array[Result] = []
-		for f in range(max_factor, 1, -1):
-			var m := f
-			var target_n1 := 3
-			var target_n2 := 2
-			
-			var res := Result.new()
-			res.types.append(MELD_TYPE.FULL_HOUSE)
-			res.types.append(MELD_TYPE.MULTI)
-			
-			var base := (target_n1 * (target_n1 - 1)) + (target_n2 * (target_n2 - 1))
-			var scaled := int(base * 1.5)
-			res.score = int(scaled * m * (1.0 + 0.5 * (m - 1)))
-			
-			for i in range(m * target_n1): res.meld.append(pool_1[i])
-			for i in range(m * target_n2): res.meld.append(pool_2[i])
-			
-			var global_suit_match := true
-			if not res.meld.is_empty():
-				var first_suit: PipSuit = res.meld[0].suit
-				for i in range(1, res.meld.size()):
-					if not await PipComparator.is_suit_same(first_suit, res.meld[i].suit):
-						global_suit_match = false; break
-			else: global_suit_match = false
-			
-			if global_suit_match:
-				res.types.append(MELD_TYPE.FLUSH)
-				res.types.append(MELD_TYPE.ALL_SAME_SUIT)
-				res.score *= 2 # FIX: x2 Multiplier
+		for rank_val in profiles.ranks.map:
+			var cluster: ArrayCardData = profiles.ranks.map[rank_val]
+			if cluster.datas.size() >= 2: clusters.append(cluster)
 				
-			res.name = Scoring.get_loc_name(res.types, m, target_n1 + target_n2)
-			res.tie_breaker_high_card = max_rank
-			outcomes.append(res)
-		return outcomes
-
-	# --- C. DISTINCT HOUSES ---
-	static func _evaluate_distinct_combinatorial_houses(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
-		var remaining_counts: Array[int] = []
-		for c in clusters: remaining_counts.append(c.datas.size())
-		var formed_data: Array[Dictionary] = []
-		var total_cards := 0
+		if clusters.is_empty(): return []
 		
+		var val_map := {}
+		for c in clusters: val_map[c] = await PipComparator.get_scorable_value(c.datas[0].rank, cards, false)
+		
+		clusters.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool:
+			if a.datas.size() != b.datas.size(): return a.datas.size() > b.datas.size()
+			return val_map[a] > val_map[b]
+		)
+		
+		var absolute_max_rank: float = val_map[clusters[0]]
+		var possible_outcomes: Array[Result] = []
+		
+		# 1. MACRO HOUSE EVALUATION (For Case 35-H parity)
+		if clusters.size() >= 2:
+			possible_outcomes.append_array(await _evaluate_proportional_full_house(clusters, absolute_max_rank))
+		
+		# 2. GREEDY MULTI-HOUSE/SET EVALUATION
+		var pool : Array[ArrayCardData] = []
+		for c in clusters: 
+			var copy := ArrayCardData.new()
+			copy.datas = c.datas.duplicate()
+			pool.append(copy)
+			
+		var formed_melds: Array[Dictionary] = []
+		
+		# 1. GREEDY FULL HOUSE EXTRACTION
 		while true:
 			var trip_idx := -1
 			var pair_idx := -1
-			for i in range(clusters.size()):
-				if remaining_counts[i] >= 3: trip_idx = i; break
-			if trip_idx == -1: break 
-			for i in range(clusters.size()):
-				if i != trip_idx and remaining_counts[i] == 2: pair_idx = i; break
-			if pair_idx == -1:
-				for i in range(clusters.size()):
-					if i != trip_idx and remaining_counts[i] >= 2: pair_idx = i; break
 			
-			if trip_idx != -1 and pair_idx != -1:
-				var n1 := remaining_counts[trip_idx]
-				var n2 := remaining_counts[pair_idx]
-				var scale : int = min(floor(n1 / 3.0), floor(n2 / 2.0))
-				if scale < 1: scale = 1
-				var u1 := scale * 3
-				var u2 := scale * 2
-				var h_cards: Array[CardData] = []
-				
-				var t_src : Array[CardData] = clusters[trip_idx].datas
-				var p_src : Array[CardData] = clusters[pair_idx].datas
-				var t_start := t_src.size() - remaining_counts[trip_idx]
-				for k in range(u1): h_cards.append(t_src[t_start + k])
-				var p_start := p_src.size() - remaining_counts[pair_idx]
-				for k in range(u2): h_cards.append(p_src[p_start + k])
-				
-				var sub_float : float = float(u1 * (u1 - 1)) + float(u2 * (u2 - 1))
-				formed_data.append({ "cards": h_cards, "score": int(sub_float * 1.5) })
-				total_cards += (u1 + u2)
-				remaining_counts[trip_idx] -= u1
-				remaining_counts[pair_idx] -= u2
-			else: break
-		
-		if formed_data.size() < 2: return []
-		
-		var res := Result.new()
-		res.types.append(MELD_TYPE.FULL_HOUSE)
-		res.types.append(MELD_TYPE.MULTI)
-		
-		var m := formed_data.size()
-		var base_pts := 0
-		for data in formed_data:
-			res.meld.append_array(data.cards as Array[CardData])
-			base_pts += data.score as int
+			for i in range(pool.size()):
+				if pool[i].datas.size() >= 3: trip_idx = i; break
+			if trip_idx == -1: break
 			
-		res.score = base_pts * (1.0 + 0.5 * max(0, m - 1))
-		
-		# FLUSH CHECK: x2 MULTIPLIER
-		var global_suit_match := true
-		if not res.meld.is_empty():
-			var first_suit: PipSuit = res.meld[0].suit
-			for i in range(1, res.meld.size()):
-				if not await PipComparator.is_suit_same(first_suit, res.meld[i].suit):
-					global_suit_match = false; break
-		else: global_suit_match = false
+			for i in range(pool.size()):
+				if i != trip_idx and pool[i].datas.size() >= 2: pair_idx = i; break
+			if pair_idx == -1: break
 			
-		if global_suit_match:
-			res.types.append(MELD_TYPE.FLUSH)
-			res.types.append(MELD_TYPE.ALL_SAME_SUIT)
-			res.score *= 2 # FIX: x2 Multiplier
-		
-		var avg_size : int = int(total_cards / m) if m > 0 else 5
-		res.name = Scoring.get_loc_name(res.types, m, avg_size, false)
-		res.tie_breaker_high_card = max_rank
-		return [res]
+			var trip_group := pool[trip_idx]
+			var pair_group := pool[pair_idx]
+			
+			var meld: Array[CardData] = []
+			meld.append_array(trip_group.datas.slice(0, 3))
+			meld.append_array(pair_group.datas.slice(0, 2))
+			
+			trip_group.datas = trip_group.datas.slice(3)
+			pair_group.datas = pair_group.datas.slice(2)
+			
+			formed_melds.append({"meld": meld, "types": [MELD_TYPE.FULL_HOUSE], "score": 12, "size": 5})
+			
+			if pair_group.datas.size() < 2: pool.remove_at(max(trip_idx, pair_idx) as int); pool.remove_at(min(trip_idx, pair_idx) as int)
+			elif trip_group.datas.size() < 2: pool.remove_at(trip_idx)
+			
+		# 2. GREEDY SET EXTRACTION
+		for cluster in pool:
+			while cluster.datas.size() >= 2:
+				var n := cluster.datas.size()
+				var meld: Array[CardData] = cluster.datas.duplicate()
+				cluster.datas.clear()
+				formed_melds.append({"meld": meld, "types": [MELD_TYPE.X_OF_KIND], "score": n * (n - 1), "size": n})
 
-	# --- D. FALLBACK SETS ---
-	static func _evaluate_fallback_sets(clusters: Array[ArrayCardData], max_rank: float) -> Array[Result]:
-		var res := Result.new()
-		res.tie_breaker_high_card = max_rank
-		
-		var is_uniform := true
-		if clusters.is_empty(): is_uniform = false
-		else:
-			var target_size := clusters[0].datas.size()
-			for s in clusters:
-				if s.datas.size() != target_size: is_uniform = false
-		
-		if is_uniform and clusters.size() >= 2:
-			var n := clusters[0].datas.size()
-			var m := clusters.size()
-			res.types.append(MELD_TYPE.X_OF_KIND)
-			res.types.append(MELD_TYPE.MULTI)
+		if not formed_melds.is_empty():
+			var res_meld : Array[CardData] = []
+			var res_types : Array[MELD_TYPE] = []
+			var res_score : float = 0
+			var res_size_sum : int = 0
 			
-			var global_suit_match := true
-			var first_suit: PipSuit = clusters[0].datas[0].suit
-			for s in clusters:
-				res.meld.append_array(s.datas)
-				for card in s.datas:
-					if not await PipComparator.is_suit_same(first_suit, card.suit):
-						global_suit_match = false
-			
-			var base := n * (n - 1) * m
-			res.score = base * (1.0 + 0.5 * max(0, m - 2))
-			
-			if global_suit_match and res.meld.size() >= 5:
-				res.types.append(MELD_TYPE.FLUSH)
-				res.types.append(MELD_TYPE.ALL_SAME_SUIT)
-				res.score *= 2 # FIX: x2 Multiplier
-			
-			res.name = Scoring.get_loc_name(res.types, m, n)
-			return [res]
-		else:
-			# Single Set or Non-Uniform Garbage
-			if clusters.is_empty(): return []
-			var s1: Array[CardData] = clusters[0].datas
-			var n := s1.size()
-			res.types.append(MELD_TYPE.X_OF_KIND)
-			res.score = n * (n - 1)
-			
-			var is_all_same_suit := true
-			if not s1.is_empty():
-				var match_suit: PipSuit = s1[0].suit
-				for i in range(1, s1.size()):
-					if not await PipComparator.is_suit_same(match_suit, s1[i].suit):
-						is_all_same_suit = false; break
-			else: is_all_same_suit = false
+			for m_data : Dictionary in formed_melds:
+				res_meld.append_array(m_data.meld as Array[CardData])
+				res_score += m_data.score
+				res_size_sum += m_data.size
+				for t :MELD_TYPE in m_data.types: if not res_types.has(t): res_types.append(t)
 					
-			if is_all_same_suit and n >= 5:
-				res.types.append(MELD_TYPE.FLUSH)
-				res.types.append(MELD_TYPE.ALL_SAME_SUIT)
-				res.score *= 2 # FIX: x2 Multiplier
+			var m := formed_melds.size()
+			if m > 1:
+				res_types.append(MELD_TYPE.MULTI)
+				var has_house := false
+				for md in formed_melds:
+					if MELD_TYPE.FULL_HOUSE in md.types:
+						has_house = true; break
+				var offset := 1 if has_house else 2
+				res_score *= (1.0 + 0.5 * max(0, m - offset))
 				
-			res.meld = s1
-			res.name = Scoring.get_loc_name(res.types, 1, n)
-			return [res]
+			if await Scoring.is_flush(res_meld) and res_meld.size() >= 5:
+				res_types.append(MELD_TYPE.FLUSH)
+				res_types.append(MELD_TYPE.ALL_SAME_SUIT)
+				res_score *= 2
+				
+			var avg_size := int(res_size_sum / m)
+			var final_name := Scoring.get_loc_name(res_types, m, avg_size)
+			possible_outcomes.append(Result.create(final_name, res_meld, int(res_score), absolute_max_rank, res_types))
+
+		if possible_outcomes.is_empty(): return []
+		possible_outcomes.sort_custom(func(a: Result, b: Result) -> bool: 
+			if a.score != b.score: return a.score > b.score
+			return a.tie_breaker_high_card > b.tie_breaker_high_card
+		)
+		return possible_outcomes
 
 
 # ==============================================================================
@@ -539,19 +426,13 @@ class MultiStraightHandler extends Scorer:
 			base_points += (2 * run.datas.size())
 			res.meld.append_array(run.datas)
 			
-			# Track Flush Status
-			var is_run_flush := true
-			if not run.datas.is_empty():
+			if await Scoring.is_flush(run.datas):
+				clean_flush_count += 1
 				var run_suit: PipSuit = run.datas[0].suit
-				for i in range(1, run.datas.size()):
-					if not await PipComparator.is_suit_same(run_suit, run.datas[i].suit):
-						is_run_flush = false; break
-				if is_run_flush:
-					clean_flush_count += 1
-					var reg := false
-					for s in flush_suits_seen:
-						if await PipComparator.is_suit_same(s, run_suit): reg = true; break
-					if not reg: flush_suits_seen.append(run_suit)
+				var reg := false
+				for s in flush_suits_seen:
+					if await PipComparator.is_suit_same(s, run_suit): reg = true; break
+				if not reg: flush_suits_seen.append(run_suit)
 		
 		var m := straights.size()
 		var multi_mult := 1.0 + 0.5 * (m - 1)
@@ -575,8 +456,7 @@ class MultiStraightHandler extends Scorer:
 				# A "Full Flush Straight" is just a very long Straight Flush.
 				
 		res.name = Scoring.get_loc_name(res.types, m, uniform_size)
-		res.tie_breaker_high_card = max_rank
-		return res
+		return Result.create(res.name, res.meld, res.score, max_rank, res.types)
 
 	static func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
 		var std := await _scan_sequence(card_pool, false)
@@ -665,28 +545,20 @@ class MultiFlushHandler extends Scorer:
 					
 			if best_flush.size() < 5: break
 			
-			# STANDARD SORT: Ace (1) is Low. King (13) is High.
-			var sorted_flush: Array[CardData] = []
-			while not best_flush.is_empty():
-				var peak_card : CardData = best_flush[0]
-				var peak_val := await PipComparator.get_scorable_value(peak_card.rank, cards, false)
-				
-				for idx in range(1, best_flush.size()):
-					var comp_card := best_flush[idx]
-					var comp_val := await PipComparator.get_scorable_value(comp_card.rank, cards, false)
-					
-					if comp_val > peak_val:
-						peak_card = comp_card
-						peak_val = comp_val
-						
-				sorted_flush.append(peak_card)
-				best_flush.erase(peak_card)
-				
+			# Pre-calculate scorable values to avoid awaits during sort
+			var val_map := {}
+			for c in best_flush:
+				val_map[c] = await PipComparator.get_scorable_value(c.rank, cards, false)
+			
+			best_flush.sort_custom(func(a: CardData, b: CardData) -> bool:
+				return val_map[a] > val_map[b]
+			)
+			
+			var sorted_flush : Array[CardData] = best_flush.duplicate()
 			flushes_found.append(ArrayCardData.new().with_datas(sorted_flush))
 			
 			if not sorted_flush.is_empty():
-				var local_val := await PipComparator.get_scorable_value(sorted_flush[0].rank, cards, false)
-				absolute_max_rank = max(absolute_max_rank, local_val)
+				absolute_max_rank = max(absolute_max_rank, val_map[sorted_flush[0]])
 			for c in sorted_flush: pool.erase(c)
 			
 		if flushes_found.is_empty(): return []
@@ -717,8 +589,7 @@ class MultiFlushHandler extends Scorer:
 		
 		# LOCALIZATION HOOK
 		res.name = Scoring.get_loc_name(res.types, m, uniform_size)
-		res.tie_breaker_high_card = absolute_max_rank
-		return [res]
+		return [Result.create(res.name, res.meld, res.score, absolute_max_rank, res.types)]
 
 
 # ==============================================================================
@@ -736,17 +607,6 @@ class HighCardHandler extends Scorer:
 				if not is_nan(delta) and delta > 0.0:
 					best_card = cards[i]
 					
-		var result := Result.new()
-		# Note: We pass 'false' for high wrap here because High Card rules usually strictly respect rank.
-		# If you want Ace (1) to beat King (13) in a High Card comparison, change this to 'true'.
+		var result_name := Scoring.get_loc_name([MELD_TYPE.HIGH_CARD])
 		var score_val := await PipComparator.get_scorable_value(best_card.rank, cards, false)
-		
-		result.types.append(MELD_TYPE.HIGH_CARD)
-		result.score = 1
-		result.meld = [best_card]
-		result.tie_breaker_high_card = score_val
-		
-		# LOCALIZATION HOOK: Just "High Card" (or localized equivalent)
-		result.name = Scoring.get_loc_name(result.types)
-		
-		return [result]
+		return [Result.create(result_name, [best_card], 1, score_val, [MELD_TYPE.HIGH_CARD])]

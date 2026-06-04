@@ -237,7 +237,7 @@ func run_micro_card_environment_tests() -> void:
 	# 16-L: Symmetrical Grid Routing Isolation
 	var h16 : Array[CardData] = make_hand([9, 9, 8, 8], [1, 2, 3, 4])
 	var r16 := await Scoring.PokerHands.score(h16)
-	assert(r16[0].score == 4 and r16[0].name.contains("Two Pair"), "16-L Failed")
+	assert(r16[0].score == 4 and r16[0].name.contains("Two Pair"), "16-L Failed" + str(r16[0])+str(r16[0].score))
 
 	# 17-L: Length Scaling Straights Run
 	var h17 : Array[CardData] = make_hand([9, 8, 7, 6, 5], [1, 2, 3, 4, 1])
