@@ -41,6 +41,7 @@ script = ExtResource("1_uwdp5")
 environment = SubResource("Environment_grdjq")
 
 [node name="TextureRect" type="TextureRect" parent="Background" unique_id=1480971404]
+visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -72,7 +73,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 61
+num = 5
 
 [node name="Label" type="Label" parent="Preview" unique_id=1126721272]
 layout_mode = 0
