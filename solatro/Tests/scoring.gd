@@ -17,7 +17,8 @@ func _ready() -> void:
 	run_architecture_edge_cases()
 	run_micro_card_environment_tests()
 	run_macro_card_environment_tests()
-	print("============ SUCCESS: ALL 49 PARITY SCALING TEST CASES PASSED! ============")
+	await run_advanced_connectivity_tests()
+	print("============ SUCCESS: ALL 54 PARITY SCALING TEST CASES PASSED! ============")
 	run_15_card_rarity_matrix()
 	run_scaling_matrix() 
 
@@ -736,3 +737,45 @@ func run_scaling_matrix() -> void:
 	#assert(not r49.is_empty(), "49-H Failed")
 	#assert(duration < 2500, "49-H Performance Crash! Benchmark breach: " + str(duration) + "us")
 	#print("✔ Section 4 Passed: Macro Environment Performance Suite (30+ Cards) complete.")
+
+# ==============================================================================
+# SECTION 6: ADVANCED CONNECTIVITY & TIE-BREAKERS
+# ==============================================================================
+func run_advanced_connectivity_tests() -> void:
+	print("\n--- SECTION 6: ADVANCED CONNECTIVITY & TIE-BREAKERS ---")
+
+	# 50. Steel Wheel (Suited A-2-3-4-5)
+	var h50 : Array[CardData] = make_hand([5, 4, 3, 2, 1], [1, 1, 1, 1, 1])
+	var r50 := await Scoring.PokerHands.score(h50)
+	assert_result(r50, 20, "Straight Flush", Scoring.MELD_TYPE.FLUSH, "Steel Wheel (Ace-Low SF)")
+
+	# 51. Complex House Deconstruction (3-3-2-2-2)
+	# Logic: Take 10s Full of 9s (House), then fallback to 8s, 7s, 6s as 3x Pairs.
+	var h51 : Array[CardData] = make_hand([10,10,10, 9,9,9, 8,8, 7,7, 6,6], [1,2,3, 1,2,3, 1,2, 1,2, 1,2])
+	var r51 := await Scoring.PokerHands.score(h51)
+	# Base House (12) + 3x Pair (4+4+4=12) = 24. 
+	# Multiplier for 4 components (m=4): 1.0 + 0.5*(4-1) = 2.5x.
+	# Total Score: 24 * 2.5 = 60.
+	assert_result(r51, 60, "4x Full House", Scoring.MELD_TYPE.MULTI, "Complex House + Mixed Pairs")
+
+	# 52. Noisy Straights (Duplicates in Sequence)
+	# Sequence: 10, 9, 8, 7, 6. Extra 10, 8, 6 should be ignored by the run builder.
+	var h52 : Array[CardData] = make_hand([10, 10, 9, 8, 8, 7, 6, 6], [1, 2, 3, 4, 1, 2, 3, 4])
+	var r52 := await Scoring.PokerHands.score(h52)
+	assert_result(r52, 10, "Straight", Scoring.MELD_TYPE.STRAIGHT, "Noisy Straight (Duplicates)")
+
+	# 53. Wrap-Around Straights (K-A-2-3-4)
+	# Verifies that the engine supports "Looping" sequences (13-1-2-3-4)
+	var h53 : Array[CardData] = make_hand([13, 1, 2, 3, 4], [1, 2, 3, 4, 1])
+	var r53 := await Scoring.PokerHands.score(h53)
+	assert_result(r53, 10, "Straight", Scoring.MELD_TYPE.STRAIGHT, "Wrap-Around Straight (K-A-2)")
+
+	# 54. Tie-Breaker Priority (Identical Types, Different Ranks)
+	# Hand contains: Trips(10s) and Trips(2s).
+	var h54 : Array[CardData] = make_hand([10, 10, 10, 2, 2, 2], [1, 2, 3, 1, 2, 3])
+	var r54 := await Scoring.PokerHands.score(h54)
+	# Expectation: Candidate array should have the highest scorable hand first.
+	# Both are 3-of-a-Kind (score 6), but 10s should win tie-break.
+	assert(r54[0].tie_breaker_high_card == 10.0, "Tie-Breaker failed: 10s should be priority.")
+	
+	print("✔ Section 6 Passed: Advanced Connectivity verified.")

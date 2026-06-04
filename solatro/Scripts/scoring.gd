@@ -481,9 +481,18 @@ class MultiStraightHandler extends Scorer:
 		var ace_base := int(PipComparator.get_ace_base_value())
 		var ace_alt := int(PipComparator.get_ace_alt_value())
 		
-		# Map 1 -> 14 just for the integer sequence sort
+		# --- CIRCULAR EXPANSION (Wrap-Around Support) ---
+		# We duplicate standard ranks (1-13) with a +13 offset so the linear scan
+		# can detect sequences like 12-13-14-15-16 (Q-K-A-2-3).
+		var expanded_unique := unique.duplicate()
+		for val in unique:
+			if val >= 1 and val <= 13:
+				expanded_unique.append(val + 13)
+		unique = expanded_unique
+		
+		# Standard Ace-High mapping if requested (Legacy Support)
 		if wrap_ace_high and profiles.ranks.map.has(float(ace_base)):
-			unique.append(ace_alt)
+			if not unique.has(ace_alt): unique.append(ace_alt)
 			unique.erase(ace_base)
 		
 		unique.sort()
@@ -505,16 +514,18 @@ class MultiStraightHandler extends Scorer:
 		if curr_run.size() > best_run.size(): best_run = curr_run
 		
 		var final: Array[CardData] = []
+		var seen_targets := {}
 		for val in best_run:
-			var target: float
-			# Map 14 back to 1 to fetch the actual card data
-			if wrap_ace_high and val == ace_alt:
-				target = float(ace_base)
-			else:
-				target = float(val)
+			var target: float = float(val)
+			# Map virtual ranks back to standard 1-13 if they aren't naturally in the pool
+			if val > 13 and not profiles.ranks.map.has(target):
+				target = float((val - 1) % 13 + 1)
+				
+			if seen_targets.has(target): continue
 				
 			if profiles.ranks.map.has(target) and not profiles.ranks.map[target].datas.is_empty():
 				final.append(profiles.ranks.map[target].datas[0])
+				seen_targets[target] = true
 		return final
 
 	static func _get_max_value_of_run_async(run_cards: Array[CardData], original_pool: Array[CardData]) -> float:
