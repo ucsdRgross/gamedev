@@ -1,0 +1,106 @@
+Solatro is built on a "State-Visual-Logic" triarchy. The architecture separates the raw data (CardData/GameData) from the physical representation (CardVisual) and the orchestration (Game/PlayArea). Every rule in the game is modular and can be overridden by the cards themselves through a "Modifier-First" approach.
+
+Core Loop: Player Input → PlayArea → Game (Singleton) → Modifier Polling (via CardDataIterator) → GameData Mutation → PlayArea Visual Sync.
+
+--- CENTRAL ORCHESTRATION ---
+
+Levels/game.gd (class_name Game)
+Purpose: The authoritative singleton and state manager. It routes all data mutations, manages the undo history, and handles global modifier triggers.
+Key Variables:
+- static CURRENT: Game - Global reference to the active session.
+- state: GameData - The current source of truth for decks, scores, and board layout.
+- save_history: Array[GameData] - History stack used for the undo system.
+- processing: bool - Flag to prevent input during animations or modifier loops.
+Key Methods:
+- on_data_selected(data: CardData): Entry point for card interactions (grab/place) from the UI.
+- move_data_to_coord(moving, dest_vec3, stack_count): The core logic for moving cards between zones/stacks.
+- run_all_mods(function, params): Iterates all cards and calls the specified function on every valid modifier.
+- skill_active_check(): Global pass to toggle 'active' status on all CardModifierSkills.
+- save_state() / undo_pressed(): Snapshot management for the chronomancy/undo feature.
+- find_data_vec3(data): Helper to locate any card in the 2D grid/decks as a Vector3i(zone, col, row).
+
+UI/play_area.gd (class_name PlayArea)
+Purpose: Manages the tactile interface. It dynamically builds the card grid and maps abstract data to physical nodes.
+Key Variables:
+- ui_data: Dictionary[Control, CardData] - Maps UI nodes back to their data for input handling.
+- data_ui: Dictionary[CardData, Control] - Maps data to UI nodes for visual positioning.
+- data_card: Dictionary[CardData, CardVisual] - Registry of active card actors on screen.
+- selected_cards: Array[CardData] - The cards currently "held" by the player.
+- focused_control: Control - The currently highlighted slot (mouse or controller).
+Key Methods:
+- setup_gui(): Initializes the grid structure and connects scaling signals.
+- set_card_zones(): Rebuilds the VBox/HBox grid based on GameData.upper_zone and lower_zone.
+- grab_cards(datas) / ungrab_cards(): Logic for picking up and releasing stacks.
+- update_score(zone, index, score): Animates score labels when a row or column is processed.
+- popup_meld(result) / popup_score(result): Visual "juice" methods for scoring feedback.
+
+--- CORE DATA CLASSES ---
+
+Cards/card_data.gd (class_name CardData)
+Purpose: The primary data resource representing a single card.
+Key Variables:
+- suit: PipSuit / rank: PipRank - The basic identity of the card.
+- skill, type, stamp: CardModifier - The modular logic components.
+- stage: Stage (Enum) - Location of the card (PLAY, DRAW, DISCARD, RULES, ZONE).
+- statuses: Dictionary[String, int] - Generic storage for card-specific state (e.g., "frozen", "buffed").
+Key Methods:
+- with_suit/rank/skill/etc(): Builder pattern methods for card generation.
+- _to_string(): Generates a debug string of the card's full identity.
+
+Cards/card_visual.gd (class_name CardVisual)
+Purpose: The Node2D responsible for rendering a card and animating its movement.
+Key Variables:
+- data: CardData - The data source for this visual.
+- basis3d: Basis - Used for 2D-skewing to simulate 3D rotation and flipping.
+- held: int - Index in a grabbed stack; affects Z-index and following behavior.
+- floating: bool - Toggle for the idle "hover" animation.
+Key Methods:
+- add_child_card_visual(parent, data, context): Static factory for creating card actors.
+- update_visual(): Updates sprites and materials based on the underlying CardData.
+- create_move_tween(target_pos): Smoothly slides the card to a new anchor.
+- anim_jump() / anim_reset(): Vertical "pop" animation used during melds.
+
+--- THE MODIFIER SYSTEM ---
+
+Cards/card_modifier.gd (class_name CardModifier)
+Purpose: Abstract base for all card effects. Modifiers are "Logic Hooks" that the game polls during events.
+Key Methods:
+- get_str() / get_description(): Metadata for tooltips.
+- set_texture(sprite): Applied to CardVisual to change its appearance.
+- is_active(): Logic to determine if the effect should currently apply.
+- (Hooks): on_stack_card, on_score, on_trigger, etc. (Invoked via Game.run_all_mods).
+
+Cards/card_modifier_skill.gd (class_name CardModifierSkill)
+Key Variables: active (bool) - Tracks if the skill's conditions are currently met.
+
+Cards/card_modifier_stamp.gd / type.gd
+Purpose: Specialized modifiers for card "Stamps" (pip overlays) and "Types" (card frames).
+
+--- PIPS (IDENTITY) ---
+
+Cards/Pips/pip_rank.gd (class_name PipRank)
+Key Variables: value (float).
+Key Methods: set_texture(sprite), with_value(i).
+Note: Numeral class handles standard 1-13 ranks.
+
+Cards/Pips/pip_suit.gd (class_name PipSuit)
+Key Variables: value (int).
+Key Methods: set_material(sprite), set_art_texture(sprite, rank).
+Note: Standard class handles color-picking shaders and rank-based art (face cards).
+
+--- UTILITIES & LOGIC ---
+
+Scripts/card_data_array.gd (class_name ArrayCardData)
+Purpose: Simple wrapper for Array[CardData] used to create 2D zones (columns) in GameData.
+
+Scripts/card_data_iterator.gd (class_name CardDataIterator)
+Purpose: A custom iterator that visits every card in the Draw, Discard, Rules, and Play Zones.
+Interactions: The engine room of Game.run_all_mods().
+
+Scripts/game_data.gd (class_name GameData)
+Purpose: A flat data resource representing the entire board state.
+Key Variables: goal, total_score, draw_deck, discard_deck, upper_zone, lower_zone, scores_col, etc.
+
+Scripts/pip_comparator.gd (class_name PipComparator)
+Purpose: Static library for math comparisons (is rank next to, is suit same).
+Interactions: Crucially, it redirects to Game.return_first_compare_mod_result() to allow modifiers to override default math.
