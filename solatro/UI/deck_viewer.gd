@@ -3,8 +3,6 @@ extends CanvasLayer
 
 @onready var flow_container: FlowContainer = %FlowContainer
 
-const CARD_VISUAL = preload("uid://bynh2btoahe5i")
-
 enum SORTING_TYPE {RANK,SUIT,EFFECT}
 enum SORTING_ORDER {ASCENDING,DESCENDING}
 
