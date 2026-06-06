@@ -24,14 +24,12 @@ func on_run_scorer() -> void:
 				await game.run_all_mods(&"on_score_row", zone, current_row)
 				break
 		if is_row_empty: break
-		#Check col scores
-		while current_col > zone.size():
-			var col : Array[CardData] = zone[current_col].datas
-			if current_row < col.size():
-				await game.run_all_mods(&"on_score_col", zone, current_row, current_col)
-			current_col += 1
 		current_row += 1
-		current_col = 0
+	while current_col < zone.size():
+		#Check col scores
+		var col : Array[CardData] = zone[current_col].datas
+		await game.run_all_mods(&"on_score_col", zone, current_col)
+		current_col += 1
 		
 	#while row_to_score < board_cols[0].cards.size():
 		#var row_cards : Array[Card]

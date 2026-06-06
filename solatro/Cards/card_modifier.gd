@@ -37,7 +37,7 @@ func set_material(sprite:Sprite2D) -> void: sprite.material = null
 #func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]
 #func on_run_scorer() -> void
 #func on_score_row(zone : Array[ArrayCardData], row : int) -> void
-#func on_score_col(zone : Array[ArrayCardData], row : int, col : int) -> void
+#func on_score_col(zone : Array[ArrayCardData], col : int) -> void
 
 
 #func on_cannot_stack(stack : CardData, to_stack : CardData) -> bool

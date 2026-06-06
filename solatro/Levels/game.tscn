@@ -322,7 +322,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 27
+num = 16
 
 [node name="Offset2" type="Node2D" parent="SceneRoot/Preview/Card" unique_id=579530933]
 
@@ -401,7 +401,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 28
+num = 17
 
 [node name="Offset2" type="Node2D" parent="SceneRoot/Deck/Deck" unique_id=1964732984]
 
@@ -469,7 +469,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 29
+num = 18
 
 [node name="Offset2" type="Node2D" parent="SceneRoot/Discard/Discard" unique_id=1707313634]
 
@@ -537,7 +537,7 @@ mouse_filter = 2
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 30
+num = 19
 
 [node name="Offset2" type="Node2D" parent="SceneRoot/Rules/Rules" unique_id=937047771]
 

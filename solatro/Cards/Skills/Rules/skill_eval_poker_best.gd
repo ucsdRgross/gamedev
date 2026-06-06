@@ -17,3 +17,13 @@ func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
 	var best_hand : Scoring.Result = results[0] if results else null
 	if best_hand: 
 		await game.score_row(best_hand, zone, row)
+
+func on_score_col(zone : Array[ArrayCardData], col : int) -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	if col >= zone.size(): return
+	var col_cards : Array[CardData] = zone[col].datas
+	var results : Array[Scoring.Result] = await Scoring.PokerHands.score(col_cards)
+	var best_hand : Scoring.Result = results[0] if results else null
+	if best_hand: 
+		await game.score_col(best_hand, col)

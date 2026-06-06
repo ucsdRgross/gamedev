@@ -268,7 +268,13 @@ func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 	play_area.reset_meld(result)
 
 func score_col(result : Scoring.Result, col : int) -> void:
-	pass
+	var score_zone : Array[BigNumber] = state.scores_col
+	resize_score_zone(score_zone, col + 1)
+	await play_area.popup_meld(result)
+	play_area.update_score(score_zone, col, score_zone[col].plus_equals(result.score))
+	await play_area.popup_score(result)
+	#await play trigger score effects
+	play_area.reset_meld(result)
 
 func _on_deck_clicked(deck_card: Card) -> void:
 	deck_viewer.show_with_deck(state.draw_deck)
