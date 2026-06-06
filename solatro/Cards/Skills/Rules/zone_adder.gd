@@ -16,6 +16,8 @@ func get_zone() -> Array[ArrayCardData]
 func get_zone_type() -> Array[CardData]
 
 func on_active() -> void:
+	var game : Game = CardEnvironment.CURRENT if CardEnvironment.CURRENT is Game else null
+	if not game: return
 	if not card_data:
 		card_data = card_data_to_add()
 	card_data.stage = CardData.Stage.ZONE
@@ -23,10 +25,12 @@ func on_active() -> void:
 	get_zone().append(ArrayCardData.new())
 	
 func on_deactive() -> void:
+	var game : Game = CardEnvironment.CURRENT if CardEnvironment.CURRENT is Game else null
+	if not game: return
 	var index := get_zone_type().find(card_data)
 	get_zone_type().remove_at(index)
 	var datas : Array[CardData] = get_zone().pop_at(index).datas
 	for d : CardData in datas:
-		await Game.CURRENT.discard_data(d)
+		await game.discard_data(d)
 	card_data = null
 		

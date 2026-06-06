@@ -8,6 +8,10 @@ func get_frame() -> int: return 3
 func card_data_to_add() -> CardData:
 	return CardData.new().with_type(TypeInput.new())
 func get_zone() -> Array[ArrayCardData]:
-	return Game.CURRENT.state.upper_zone
+	var game : Game = CardEnvironment.get_current_game()
+	if not game: return [] 
+	return game.state.upper_zone
 func get_zone_type() -> Array[CardData]:
-	return Game.CURRENT.state.upper_zone_type
+	var game : Game = CardEnvironment.get_current_game()
+	if not game: return [] 
+	return game.state.upper_zone_type

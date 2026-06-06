@@ -39,17 +39,17 @@ var data : CardData:
 			await ready
 		match data.previous_stage:
 			data.Stage.PLAY, data.Stage.ZONE:
-				if Game.CURRENT:
+				if CardEnvironment.CURRENT:
 					global_position = get_card_control_center(control_anchor)
 			data.Stage.DRAW:
-				if Game.CURRENT:
-					global_position = get_control_center(Game.CURRENT.deck_ui)
+				if CardEnvironment.get_current_game():
+					global_position = get_control_center(CardEnvironment.get_current_game().deck_ui)
 			data.Stage.DISCARD:
-				if Game.CURRENT:
-					global_position = get_control_center(Game.CURRENT.discard_ui)
+				if CardEnvironment.get_current_game():
+					global_position = get_control_center(CardEnvironment.get_current_game().discard_ui)
 			data.Stage.RULES:
-				if Game.CURRENT:
-					global_position = get_control_center(Game.CURRENT.rules_ui)
+				if CardEnvironment.get_current_game():
+					global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
 		on_stage_changed()
 var can_move_anim := true
 var can_rot_anim := true
@@ -161,9 +161,10 @@ func _ready() -> void:
 		#child_offset = Vector2(0,0)
 		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 	SettingsManager.settings_changed.connect(recalculate_size)
-	recalculate_size()
+	recalculate_size()	
 
 func recalculate_size() -> void:
+	print("recalculating size", SettingsManager.settings.card_seperation_scale)
 	match current_context:
 		DisplayContext.DECK_VIEWER:
 			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
@@ -189,14 +190,17 @@ func on_stage_changed() -> void:
 			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
 		data.Stage.DRAW:
-			var target_pos := get_control_center(Game.CURRENT.discard_ui)
-			create_move_tween(target_pos).tween_callback(queue_free)
+			if CardEnvironment.get_current_game():
+				var target_pos := get_control_center(CardEnvironment.get_current_game().discard_ui)
+				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.DISCARD:
-			var target_pos := get_control_center(Game.CURRENT.discard_ui)
-			create_move_tween(target_pos).tween_callback(queue_free)
+			if CardEnvironment.get_current_game():
+				var target_pos := get_control_center(CardEnvironment.get_current_game().discard_ui)
+				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.RULES:
-			var target_pos := get_control_center(Game.CURRENT.rules_ui)
-			create_move_tween(target_pos).tween_callback(queue_free)
+			if CardEnvironment.get_current_game():
+				var target_pos := get_control_center(CardEnvironment.get_current_game().rules_ui)
+				create_move_tween(target_pos).tween_callback(queue_free)
 
 func get_card_control_center(control:Control) -> Vector2:
 	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
@@ -214,7 +218,7 @@ func delta_self_moving_logic(delta:float) -> void:
 	# Needs state check, if discard then discard animation first before free
 	match current_context:
 		DisplayContext.PLAY_AREA:
-			if Game.CURRENT and data not in Game.CURRENT.play_area.data_ui: queue_free()
+			if CardEnvironment.get_current_game() and data not in CardEnvironment.get_current_game().play_area.data_ui: queue_free()
 		_:
 			if not Engine.is_editor_hint() and (not control_anchor or not is_instance_valid(control_anchor)): queue_free()
 	if (not (move_tween and move_tween.is_running())) and control_anchor:
@@ -280,7 +284,7 @@ func reset_tween(tween:Tween) -> void:
 
 func create_move_tween(target_pos:Vector2) -> Tween:
 	reset_tween(move_tween)
-	var delay := Game.CURRENT.get_delay()
+	var delay := CardEnvironment.CURRENT.get_delay()
 	move_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
 	move_tween.tween_property(self, "global_position", target_pos, delay*0.3)
 	if target_pos.x - global_position.x > 10:
@@ -293,17 +297,17 @@ func create_move_tween(target_pos:Vector2) -> Tween:
 
 func anim_jump() -> float:
 	reset_tween(move_tween)
-	var delay := Game.CURRENT.get_delay()
+	var delay := CardEnvironment.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_callback(func()->void: floating = false)
-	move_tween.tween_property(offset, "position:y", -card_size.y / 5.0, delay * .4)
+	move_tween.tween_property(offset, "position:y", -CARD_SIZE.y / 5.0, delay * .4)
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
 	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
 	return delay * .4
 
 func anim_reset() -> void:
 	reset_tween(move_tween)
-	var delay := Game.CURRENT.get_delay()
+	var delay := CardEnvironment.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_property(offset, "position:y", 0, delay * .4)
 	move_tween.tween_callback(func()->void: floating = true)

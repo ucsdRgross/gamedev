@@ -103,9 +103,11 @@ func set_seperation() -> void:
 		container.add_theme_constant_override("Seperation", seperation)
 
 func set_card_zones() -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
 	ui_data.clear()
 	data_ui.clear()
-	var game_state := Game.CURRENT.state
+	var game_state := game.state
 	# Handles structural validation, instantiations, and dictionary mapping
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
@@ -114,7 +116,9 @@ func set_card_zones() -> void:
 	set_card_zones_visuals()
 
 func set_card_zones_visuals() -> void:
-	var game_state := Game.CURRENT.state
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var game_state := game.state
 	# Handles sizing, Z-indexing, style overrides, and focus logic safely
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_card_zone_visuals(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
@@ -264,14 +268,14 @@ func on_control_focus_entered(control:Control) -> void:
 	#var zone_level : Control = column_node.get_parent()
 	#if zone_level == upper_zone_right:
 		#if row_index == 0:
-			#data_selected.emit(Game.CURRENT.upper_zone_type[column_index])
+			#data_selected.emit(CardEnvironment.CURRENT.upper_zone_type[column_index])
 		#else:
-			#data_selected.emit(Game.CURRENT.upper_zone[column_index].datas[row_index - 1])
+			#data_selected.emit(CardEnvironment.CURRENT.upper_zone[column_index].datas[row_index - 1])
 	#elif zone_level == lower_zone_right:
 		#if row_index == 0:
-			#data_selected.emit(Game.CURRENT.lower_zone_type[column_index])
+			#data_selected.emit(CardEnvironment.CURRENT.lower_zone_type[column_index])
 		#else:
-			#data_selected.emit(Game.CURRENT.lower_zone[column_index].datas[row_index - 1])
+			#data_selected.emit(CardEnvironment.CURRENT.lower_zone[column_index].datas[row_index - 1])
 	# resize zone control so it is possible to place card behind first card
 	if focused_control and focused_control.get_index() == 0:
 		focused_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
@@ -285,7 +289,9 @@ func on_control_focus_entered(control:Control) -> void:
 	focused_control = control
 
 func update_score_controls() -> void:
-	var game_state := Game.CURRENT.state
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var game_state := game.state
 	set_score_zone(true, upper_zone_left, game_state.scores_row_upper)
 	set_score_zone(true, lower_zone_left, game_state.scores_row_lower)
 	set_score_zone(false, middle_zone_right, game_state.scores_col)
@@ -305,22 +311,24 @@ func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> 
 	for i in zone.get_child_count():
 		var label : BigNumberLabel = zone.get_child(i)
 		if is_row:
-			label.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation_play
+			label.custom_minimum_size = Vector2(CardVisual.card_seperation_play, CardVisual.card_seperation_play_custom)
 		else:
 			label.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play)
 		if i < scores.size():
 			label.current_num = scores[i]
 		else: label.text = ""
 
-func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:	
+func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
 	# syncs to game data
 	update_score_controls()
 	var label : BigNumberLabel
-	if zone == Game.CURRENT.state.scores_row_lower:
+	if zone == game.state.scores_row_lower:
 		label = lower_zone_left.get_child(index)
-	elif zone == Game.CURRENT.state.scores_col:
+	elif zone == game.state.scores_col:
 		label = middle_zone_right.get_child(index)
-	elif zone == Game.CURRENT.state.scores_row_upper:
+	elif zone == game.state.scores_row_upper:
 		label = upper_zone_left.get_child(index)
 	if label: label.update_score_anim(score)
 		
@@ -361,8 +369,8 @@ func popup_score(result : Scoring.Result) -> void:
 			meld_size += 1
 			combo_pos += data_card[card].global_position
 	combo_pos /= meld_size
-	combo_pos.y -= CardVisual.card_size_play.y * 1.5
+	combo_pos.y -= CardVisual.card_size_play.y * 0.5
 	var score_name_popup := TextPopup.new_popup(result.name + "\n" + str(result.score), combo_pos)
 	add_child(score_name_popup)
-	await get_tree().create_timer(Game.CURRENT.get_delay()*.3).timeout
+	await get_tree().create_timer(CardEnvironment.CURRENT.get_delay()*.3).timeout
 	score_name_popup.queue_free()

@@ -8,9 +8,11 @@ func get_description() -> String:
 func get_frame() -> int: return 5
 
 func on_can_grab_stack(target : CardData) -> Array[CardData]:
-	var vec3 := Game.CURRENT.find_data_vec3(target)
+	var game := CardEnvironment.get_current_game()
+	if not game: return []
+	var vec3 := game.find_data_vec3(target)
 	if vec3 == Vector3i.MIN or vec3.x == 0: return []
-	var zone := Game.CURRENT.get_zone_from_vec3(vec3)
+	var zone := game.get_zone_from_vec3(vec3)
 	var stack: Array[CardData] = zone[vec3.y].datas.slice(vec3.z)
 	for i in stack.size() - 1:
 		if not (await PipComparator.compare_suits(stack[i].suit,stack[i+1].suit) != 0

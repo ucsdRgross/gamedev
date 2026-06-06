@@ -94,15 +94,12 @@ func set_material(sprite:Sprite2D) -> void: sprite.material = null
 	#pass
 
 func is_active() -> bool:
-	if Game.CURRENT and data in Game.CURRENT.state.rules_deck:
+	if CardEnvironment.CURRENT and CardEnvironment.CURRENT.is_data_in_rules(data):
 		return true
 	if data.stamp is StampGlobal:
 		return true
 	if data.stamp is StampRevealing:
 		return true
-	#if data has nothing stacked on top
-	#elif Game.CURRENT and data in Game.CURRENT.topmost_datas:
-		#return true
 	return false
 
 #func card_shake(card_effect:Callable) -> void:
@@ -127,9 +124,9 @@ func is_active() -> bool:
 	#if method == &"card_raise":
 		#match data.stage:
 			#data.Stage.DRAW:
-				#popup_card = Game.CURRENT.deck_popup
+				#popup_card = CardEnvironment.CURRENT.deck_popup
 			#data.Stage.DISCARD:
-				#popup_card = Game.CURRENT.discard_popup
+				#popup_card = CardEnvironment.CURRENT.discard_popup
 		#if not popup_card:
 			#return
 		#var new_popup_card := popup_card.duplicate(8)
@@ -141,8 +138,8 @@ func is_active() -> bool:
 		#popup_card.show()
 	#else:
 		#return
-	#await Callable(Game.CURRENT, method).call(popup_card)
+	#await Callable(CardEnvironment.CURRENT, method).call(popup_card)
 	#if temp_card:
-		#await Callable(Game.CURRENT, &"card_lower").call(popup_card)
+		#await Callable(CardEnvironment.CURRENT, &"card_lower").call(popup_card)
 		#popup_card.queue_free()
 			

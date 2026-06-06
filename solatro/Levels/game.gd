@@ -1,4 +1,4 @@
-extends Control
+extends CardEnvironment
 class_name Game
 
 signal game_ended
@@ -17,37 +17,31 @@ var state : GameData = GameData.new():
 var save_history : Array[GameData] = []
 
 var processing : bool = false
-#this setting should be in settings file
-
-#@export_storage var row_scorers : Array[Scoring.RowCombo] = [Scoring.PokerHands.new()] 
-#@export_storage var col_scorers : Array[Scoring.ColCombo] = [Scoring.Run.new()]
-#@export_storage var row_score_popups : Dictionary
 
 @onready var play_area: PlayArea = %PlayArea
-#@onready var inputs : Array[Card]= [%Inputs/Input1/Zone, %Inputs/Input2/Zone, %Inputs/Input3/Zone, %Inputs/Input4/Zone, %Inputs/Input5/Zone]
-#@onready var stacks : Array[Card]= [%Plays/Play1/Zone, %Plays/Play2/Zone, %Plays/Play3/Zone, %Plays/Play4/Zone, %Plays/Play5/Zone]
-#@onready var col_scores : Array[Label]= [%ColScores/ColScore1, %ColScores/ColScore2, %ColScores/ColScore3, %ColScores/ColScore4, %ColScores/ColScore5]
-#@onready var free_space: Card = %FreeSpace/Zone
-#@onready var row_scores: Control = %RowScores
-#@onready var game_container: Control = $GameContainer
-@onready var audio_card_placing: AudioStreamPlayer = $AudioCardPlacing
-@onready var audio_card_shake: AudioStreamPlayer = $AudioCardShake
-@onready var win_screen: Label = $WinScreen
-@onready var lose_screen: Label = $LoseScreen
-@onready var deck_viewer: DeckViewer = $DeckViewer
-@onready var deck_ui: Control = $Deck
-@onready var discard_ui: Control = $Discard
-@onready var rules_ui: Control = $Rules
-@onready var undo_button: Button = $Undo
+@onready var deck_ui: Control = %Deck
+@onready var discard_ui: Control = %Discard
+@onready var rules_ui: Control = %Rules
+@onready var audio_card_placing: AudioStreamPlayer = %AudioCardPlacing
+@onready var audio_card_shake: AudioStreamPlayer = %AudioCardShake
+@onready var win_screen: Label = %WinScreen
+@onready var lose_screen: Label = %LoseScreen
+@onready var deck_viewer: DeckViewer = %DeckViewer
+@onready var undo_button: Button = %Undo
 
-static var CURRENT : Game = null
+func get_card_collections() -> Array:
+	return [
+		state.draw_deck,
+		state.upper_zone,
+		state.lower_zone,
+		state.discard_deck,
+		state.upper_zone_type,
+		state.lower_zone_type,
+		state.rules_deck
+	]
 
-func _enter_tree() -> void:
-	CURRENT = self
-
-func _exit_tree() -> void:
-	if CURRENT == self:
-		CURRENT = null
+func get_rules_collections() -> Array[CardData]:
+	return state.rules_deck
 
 func _ready() -> void:
 	deck_viewer.hide()
@@ -57,9 +51,6 @@ func _ready() -> void:
 	add_deck()
 	save_state()
 	state.print_board()
-	#for effect in effects:
-		#if effect:
-			#effect.on_game_start()
 
 func on_data_selected(data:CardData) -> void:
 	#if already holding cards
@@ -84,11 +75,11 @@ func on_data_selected(data:CardData) -> void:
 		play_area.grab_cards(grabbed)
 
 func _on_state_changed() -> void:
-	($Goal/Label as Label).text = str(state.goal)
-	($Total/Label as Label).text = str(state.total_score)
-	($MultScore as Label).text = str(state.mult_score)
-	($MultScore/Col as Label).text = str(state.col_total)
-	($MultScore/Row as Label).text = str(state.row_total)
+	(%Goal/Label as Label).text = str(state.goal)
+	(%Total/Label as Label).text = str(state.total_score)
+	(%MultScore as Label).text = str(state.mult_score)
+	(%MultScore/Col as Label).text = str(state.col_total)
+	(%MultScore/Row as Label).text = str(state.row_total)
 
 func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
@@ -120,7 +111,6 @@ func _on_next_pressed() -> void:
 	await run_all_mods(&"on_next")
 	save_state()
 	processing = false
-	#print_board()
 	
 func save_state() -> void:
 	var duplicated_state : GameData = state.duplicate_state()
@@ -241,45 +231,6 @@ func _on_submit_pressed() -> void:
 		return
 	processing = true
 	await run_all_mods(&"on_run_scorer")
-	#
-	#if total_score >= goal:
-		#win_screen.show()
-		#await get_tree().create_timer(3).timeout
-		#return_to_map()
-	#elif total_score <= goal and draw_deck.is_empty():
-		#var zones_have_cards := false
-		#for zone in inputs:
-			#if zone.top_card:
-				#zones_have_cards = true
-				#break 
-		#if not zones_have_cards:
-			#lose_screen.show()
-			#await get_tree().create_timer(3).timeout
-			#return_to_map()
-	#
-	#for label in col_scores:
-		#label.text = ""
-	#for i:int in row_score_popups:
-		#(row_score_popups[i] as TextPopup).queue_free()
-	#row_score_popups.clear()
-		#
-	#col_total = 0
-	#row_total = 0
-	#mult_score = 0
-	#
-	#var discards : Array[Card]
-	#for i in board_cols[0].cards.size():
-		#for j in 5:
-			#if board_cols[j].cards[i]:
-				#discards.append(board_cols[j].cards[i])
-	#discards.reverse()
-	#for card in discards:
-		#discard_card(card)
-	#_on_game_board_changed()
-	#
-	#discard board
-		#await score(submitted.top_card)
-		#total_score += last_score
 	save_state()
 	processing = false
 
@@ -298,30 +249,12 @@ func return_to_map() -> void:
 	Main.save_info.card_datas = state.draw_deck
 	game_ended.emit()
 
-#func row_add_score(row:int, score:int) -> void:
-	#if not row in row_score_popups:
-		#var score_popup := TextPopup.new_popup(str(score), \
-				#Vector2(row_scores.global_position.x, \
-						#row_scores.global_position.y + Card.child_offset.y * row),\
-						#true)
-		#row_scores.add_child(score_popup)
-		#row_score_popups[row] = score_popup
-	#else:
-		#var score_popup : TextPopup = row_score_popups[row]
-		#score_popup.label.text = str(score + int(score_popup.label.text))
-
-#func col_add_score(col:int, score:int) -> void:
-	#col_scores[col].text = str(score + int(col_scores[col].text))
-
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 	if score_zone.size() < size: score_zone.resize(size)
 	for i in score_zone.size():
 		if not score_zone[i]: 
 			score_zone[i] = BigNumber.new()
 			score_zone[i].mantissa = 0
-
-func get_delay() -> float:
-	return SettingsManager.settings.base_delay
 
 func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 	var score_zone : Array[BigNumber] = state.scores_row_lower
@@ -337,183 +270,11 @@ func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 func score_col(result : Scoring.Result, col : int) -> void:
 	pass
 
-
-
-#func shake_card(card:Card, card_effect:Callable) -> void:
-	#await card_raise(card)
-	#await card_effect.call()
-	#await card_lower(card)
-#
-#func card_raise(card:Card) -> void:
-	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
-	#card_tween.set_ease(Tween.EASE_OUT).tween_property(card.offset, "scale", Vector2(1.15,1.15), base_delay * .2)
-	#card_tween.tween_property(card.offset, "position:y", -3, base_delay * .2).as_relative()
-	#audio_card_shake.play()
-	#await card_tween.finished
-#
-#func card_lower(card:Card) -> void:
-	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING).set_parallel()
-	#card_tween.tween_property(card.offset, "scale", Vector2(1,1), base_delay * .4)
-	#card_tween.tween_property(card.offset, "position:y", 3, base_delay * .4).as_relative()
-	#card_tween.tween_interval(base_delay * .2)
-	#await card_tween.finished
-
-#func card_shrink(card:Card) -> void:
-	#var card_tween : Tween = create_tween().set_trans(Tween.TRANS_SPRING)
-	#card_tween.tween_property(card.offset, "scale", Vector2(0.1,0.1), base_delay * .4)
-	#await card_tween.finished
-
-static func run_all_mods(function: StringName, ...params:Array) -> void:
-	for data in CardDataIterator.new():
-		for mod : CardModifier in [data.type, data.stamp]:
-			if mod and mod.has_method(function):
-				await Callable(mod, function).callv(params)
-				await skill_active_check()
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
-			await Callable(skill, function).callv(params)
-			await skill_active_check()
-	var passive_effects := &"on_anything"
-	if function != passive_effects:
-		await run_all_mods(passive_effects)
-
-static func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
-	for data in CardDataIterator.new():
-		for mod : CardModifier in [data.type, data.stamp]:
-			if mod and mod.has_method(function):
-				return await Callable(mod, function).callv(params)
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
-			return await Callable(skill, function).callv(params)
-	return NAN
-
-static func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
-	for data in CardDataIterator.new():
-		for mod : CardModifier in [data.type, data.stamp]:
-			if mod and mod.has_method(function):
-				var result : Array[CardData] = await Callable(mod, function).callv(params)
-				if result: return result
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
-			var result : Array[CardData] = await Callable(skill, function).callv(params)
-			if result: return result
-	return []
-
-static func skill_active_check() -> void:
-	for data in CardDataIterator.new():
-		var skill : CardModifierSkill = data.skill
-		if skill:
-			if not skill.active and skill.is_active():
-				skill.active = true
-				if skill.has_method(&"on_active"):
-					await Callable(skill, &"on_active").call()
-			elif skill.active and not skill.is_active():
-				skill.active = false
-				if skill.has_method(&"on_deactive"):
-					await Callable(skill, &"on_deactive").call()
-
-func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	await run_all_mods(&"on_trigger", triggered_data, triggered_mod)
-
-#func _on_card_hover_entered(card : Card) -> void:
-	#card_hovered = true
-	#if held_card:
-		#return
-	#var preview_card : Card = $Preview/Card
-	#if not card.flipped:
-		##pass data by reference and doesn't update data to know about this card
-		#preview_card.data = card.data
-	#preview_card.update_visual()
-	#preview_card.flipped = card.flipped
-	#var description : String = ""
-	#if card.data.skill:
-		#description += card.data.skill.get_str() + "\n" + card.data.skill.get_description() + "\n"
-	#if card.data.stamp:
-		#description += card.data.stamp.get_str() + "\n" + card.data.stamp.get_description() + "\n"
-	#if card.data.type:
-		#description += card.data.type.get_str() + "\n" + card.data.type.get_description() + "\n"
-	#($Preview/Label as Label).text = description
-	#($Preview as Control).show()
-
-#func _on_card_hover_exited(card : Card) -> void:
-	#card_hovered = false
-	#var zone : Card = $Preview/Card
-	#if not zone.top_card.data == card.data:
-		#($Preview as Control).hide()
-	#return
-
-#func _on_game_board_changed() -> void:
-	#var board_cols : Array[ArrayCard] = get_board_cols()
-	#var num_cards_in_col : int = 0 if not board_cols else board_cols[0].cards.size()
-	#if num_cards_in_col > 0:
-		#board_size = 350 + Card.child_offset.y * num_cards_in_col
-	#else:
-		#board_size = 350
-	#audio_card_placing.play(.15)
-	#board_size = (example_card.area.size.y * example_card.scale.y) + example_card.child_offset.y * num_cards_in_col
-	#play_area.update_play_area()
-	
-#
-#func can_add_card(stack : Card, to_stack : Card) -> bool:
-	#if stack.top_card == to_stack and to_stack == held_card:
-		#return true
-	#if true: #not stack.top_card:
-		#if true:#stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
-			#if stack.is_zone:
-				#return true
-			#if stack.data.suit.value != to_stack.data.suit.value:
-				#if to_stack.data.rank.value == stack.data.rank.value - 1:
-					#return true
-				#if to_stack.data.rank.value == stack.data.rank.value + 1:
-					#return true
-	#return false
-#
-#func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
-	##return true
-	#if stack.is_zone:
-		#return true
-	#if stack.data.suit != to_stack.data.suit:
-		#if to_stack.data.rank.value == stack.data.rank.value - 1:
-			#return true
-		#if to_stack.data.rank.value == stack.data.rank.value + 1:
-			#return true
-	#return false
-#
-#func drop_held_card() -> void:
-	#await held_card.drop()
-	#held_card = null
-
 func _on_deck_clicked(deck_card: Card) -> void:
 	deck_viewer.show_with_deck(state.draw_deck)
-	
-	#var randomized_deck : Array[CardData] = draw_deck.duplicate()
-	#randomized_deck.shuffle()
-	#for data in randomized_deck:
-		#var card : Card = CARD.instantiate()
-		#card.add_data(data, true)
-		#card.can_move_anim = false
-		#card.flipped = false
-		#var control : Control = CARD_CONTROL.instantiate()
-		#control.add_child(card)
-		#card.hover_entered.connect(_on_card_hover_entered)f
-		#card.hover_exited.connect(_on_card_hover_exited)
-		#flow_container.add_child(control)
-	#deck_viewer.show()
-
 
 func _on_discard_clicked(deck_card: Card) -> void:
 	deck_viewer.show_with_deck(state.discard_deck)
-	#for data in discard_deck:
-		#var card : Card = CARD.instantiate()
-		#card.add_data(data, true)
-		#card.can_move_anim = false
-		#card.flipped = false
-		#var control : Control = CARD_CONTROL.instantiate()
-		#control.add_child(card)
-		#card.hover_entered.connect(_on_card_hover_entered)
-		#card.hover_exited.connect(_on_card_hover_exited)
-		#flow_container.add_child(control)
-	#deck_viewer.show()
 
 func _on_rules_clicked(deck_card: Card) -> void:
 	deck_viewer.show_with_deck(state.rules_deck)

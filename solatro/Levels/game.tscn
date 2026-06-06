@@ -4,20 +4,19 @@
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
-[ext_resource type="Script" uid="uid://cts6vf26wf37a" path="res://UI/control_with_child_size.gd" id="4_3ijoq"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="4_rqgtj"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="5_ppwbv"]
 [ext_resource type="PackedScene" uid="uid://dnvpthmsneqjl" path="res://UI/deck_viewer.tscn" id="6_e33e4"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
+[ext_resource type="Texture2D" uid="uid://kn4i2neigyf3" path="res://Assets/card_types.png" id="8_urf7w"]
 [ext_resource type="AudioStream" uid="uid://b0wriktdhokh4" path="res://Audio/chips-handle-6.ogg" id="9_d2lcc"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_et201"]
-font_size = 20
-outline_size = 3
-outline_color = Color(0, 0, 0, 1)
-shadow_size = 3
-shadow_color = Color(1, 0, 0, 1)
+[ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="9_nscg4"]
+[ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="10_bnxca"]
+[ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="11_s4k8q"]
+[ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="12_3rge6"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
@@ -27,250 +26,39 @@ line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
 
+[sub_resource type="Resource" id="Resource_of658"]
+script = ExtResource("5_ppwbv")
+
+[sub_resource type="Resource" id="Resource_7ie13"]
+script = ExtResource("5_ppwbv")
+
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_vwchr"]
 streams_count = 3
 stream_0/stream = ExtResource("6_uknij")
 stream_1/stream = ExtResource("7_6uk7u")
 stream_2/stream = ExtResource("8_67uf7")
 
-[node name="Game" type="Control" unique_id=583630954]
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -576.0
-offset_top = -324.0
-offset_right = -576.0
-offset_bottom = -324.0
-grow_horizontal = 2
-grow_vertical = 2
-pivot_offset_ratio = Vector2(0.5, 0.5)
-mouse_filter = 2
+[node name="Game" type="Node" unique_id=2080402851]
 script = ExtResource("1_gj2ix")
 deck = ExtResource("2_grgi0")
 
-[node name="PlayContainer" type="Control" parent="." unique_id=293911350]
+[node name="SceneRoot" type="Control" parent="." unique_id=334352069]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+
+[node name="PlayContainer" type="Control" parent="SceneRoot" unique_id=293911350]
 anchors_preset = 0
 offset_left = 423.0
 offset_top = 3.0
 offset_right = 1142.0
 offset_bottom = 639.0
 
-[node name="PlayArea" parent="PlayContainer" unique_id=1510098967 instance=ExtResource("4_fiyor")]
+[node name="PlayArea" parent="SceneRoot/PlayContainer" unique_id=1510098967 instance=ExtResource("4_fiyor")]
 unique_name_in_owner = true
 layout_mode = 1
 
-[node name="GameContainer" type="Control" parent="." unique_id=2008466871]
-visible = false
-anchors_preset = 0
-offset_left = 430.0
-offset_top = 2.0
-offset_right = 1158.0
-offset_bottom = 646.0
-mouse_filter = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="GameContainer" unique_id=902916204]
-layout_mode = 0
-offset_right = 704.0
-offset_bottom = 336.0
-mouse_filter = 2
-theme_override_constants/separation = 20
-
-[node name="Control" type="VBoxContainer" parent="GameContainer/HBoxContainer" unique_id=745349741]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Inputs" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=1074443091]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Input1" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=655709873]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input1" unique_id=1825734441 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-clickable = false
-stack_limit = 1
-
-[node name="Input2" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=1254031535]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input2" unique_id=447053528 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-clickable = false
-stack_limit = 1
-
-[node name="Input3" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=2064087117]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input3" unique_id=478362211 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-clickable = false
-stack_limit = 1
-
-[node name="Input4" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=389785834]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input4" unique_id=1726946562 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-clickable = false
-stack_limit = 1
-
-[node name="Input5" type="Control" parent="GameContainer/HBoxContainer/Control/Inputs" unique_id=1115800664]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Inputs/Input5" unique_id=227952865 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-clickable = false
-stack_limit = 1
-
-[node name="ColScores" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=454571986]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ColScore1" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=1125210158]
-layout_mode = 2
-size_flags_horizontal = 11
-text = "ColScore1"
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="ColScore2" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=1456521249]
-layout_mode = 2
-size_flags_horizontal = 11
-text = "ColScore2"
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="ColScore3" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=2118444427]
-layout_mode = 2
-size_flags_horizontal = 11
-text = "ColScore3"
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="ColScore4" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=250790675]
-layout_mode = 2
-size_flags_horizontal = 11
-text = "ColScore4"
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="ColScore5" type="Label" parent="GameContainer/HBoxContainer/Control/ColScores" unique_id=14669916]
-layout_mode = 2
-size_flags_horizontal = 11
-text = "ColScore5"
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="Plays" type="HBoxContainer" parent="GameContainer/HBoxContainer/Control" unique_id=1884628307]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Play1" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=1336559241]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play1" unique_id=314601263 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-
-[node name="Play2" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=1683883357]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play2" unique_id=1193519197 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-
-[node name="Play3" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=979277119]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play3" unique_id=193183644 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-
-[node name="Play4" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=351378541]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play4" unique_id=773699424 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-
-[node name="Play5" type="Control" parent="GameContainer/HBoxContainer/Control/Plays" unique_id=554825353]
-layout_mode = 2
-size_flags_horizontal = 11
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/Control/Plays/Play5" unique_id=1753022506 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-
-[node name="VBoxContainer" type="VBoxContainer" parent="GameContainer/HBoxContainer" unique_id=867057729]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="FreeSpace" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=620182714]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 11
-mouse_filter = 2
-script = ExtResource("4_3ijoq")
-
-[node name="Zone" parent="GameContainer/HBoxContainer/VBoxContainer/FreeSpace" unique_id=1459802394 instance=ExtResource("3_8sseo")]
-position = Vector2(57, 75)
-scale = Vector2(3, 3)
-is_zone = true
-stack_limit = 1
-
-[node name="Buffer" type="Label" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=1926569646]
-layout_mode = 2
-size_flags_horizontal = 11
-label_settings = SubResource("LabelSettings_et201")
-horizontal_alignment = 2
-
-[node name="RowScores" type="Control" parent="GameContainer/HBoxContainer/VBoxContainer" unique_id=719527188]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Submit" type="Button" parent="." unique_id=993658546]
+[node name="Submit" type="Button" parent="SceneRoot" unique_id=993658546]
 layout_mode = 0
 offset_left = 221.0
 offset_top = 393.0
@@ -279,7 +67,8 @@ offset_bottom = 424.0
 text = "Submit
 "
 
-[node name="Undo" type="Button" parent="." unique_id=2132019677]
+[node name="Undo" type="Button" parent="SceneRoot" unique_id=2132019677]
+unique_name_in_owner = true
 layout_mode = 1
 offset_left = 168.0
 offset_top = 18.0
@@ -288,12 +77,63 @@ offset_bottom = 78.0
 text = "Undo
 "
 
-[node name="Submission" parent="." unique_id=44412769 instance=ExtResource("3_8sseo")]
+[node name="Submission" parent="SceneRoot" unique_id=44412769 instance=ExtResource("3_8sseo")]
 visible = false
 position = Vector2(733, 276)
 is_zone = true
 
-[node name="Next" type="Button" parent="." unique_id=1568570378]
+[node name="Offset2" type="Node2D" parent="SceneRoot/Submission" unique_id=1727437607]
+
+[node name="Front" type="Sprite2D" parent="SceneRoot/Submission/Offset2" unique_id=432792283]
+position = Vector2(0, -0.6536781)
+rotation = 3.1415927
+scale = Vector2(1, -1)
+texture = ExtResource("8_urf7w")
+hframes = 8
+vframes = 8
+
+[node name="Rank" type="Sprite2D" parent="SceneRoot/Submission/Offset2/Front" unique_id=1115453154]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("9_nscg4")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="SceneRoot/Submission/Offset2/Front" unique_id=268450630]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("10_bnxca")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="SceneRoot/Submission/Offset2/Front" unique_id=1587632477]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("11_s4k8q")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="SceneRoot/Submission/Offset2/Front" unique_id=1627183268]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("12_3rge6")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="SceneRoot/Submission/Offset2/Front" unique_id=792418078]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Next" type="Button" parent="SceneRoot" unique_id=1568570378]
 layout_mode = 0
 offset_left = 45.0
 offset_top = 164.0
@@ -302,7 +142,7 @@ offset_bottom = 226.0
 text = "Next Round
 "
 
-[node name="Reroll" type="Button" parent="." unique_id=1422499503]
+[node name="Reroll" type="Button" parent="SceneRoot" unique_id=1422499503]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -311,7 +151,7 @@ offset_right = 979.0
 offset_bottom = 321.0
 text = "Reroll"
 
-[node name="ScoreName" type="Label" parent="." unique_id=849455850]
+[node name="ScoreName" type="Label" parent="SceneRoot" unique_id=849455850]
 visible = false
 layout_mode = 0
 offset_left = 886.0
@@ -323,7 +163,7 @@ text = "ScoreNames
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="ScoreName" unique_id=1090872358]
+[node name="Label" type="Label" parent="SceneRoot/ScoreName" unique_id=1090872358]
 layout_mode = 0
 offset_left = 6.0
 offset_top = 57.0
@@ -334,7 +174,7 @@ text = "123456789
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Score" type="Label" parent="." unique_id=511769994]
+[node name="Score" type="Label" parent="SceneRoot" unique_id=511769994]
 visible = false
 layout_mode = 0
 offset_left = 899.0
@@ -344,7 +184,7 @@ offset_bottom = 261.0
 text = "Score:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Score" unique_id=255908271]
+[node name="Label" type="Label" parent="SceneRoot/Score" unique_id=255908271]
 layout_mode = 0
 offset_left = 149.0
 offset_top = -1.0
@@ -353,7 +193,7 @@ offset_bottom = 60.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="MultScore" type="Label" parent="." unique_id=667586955]
+[node name="MultScore" type="Label" parent="SceneRoot" unique_id=667586955]
 layout_mode = 0
 offset_left = 202.0
 offset_top = 231.0
@@ -363,7 +203,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Col" type="Label" parent="MultScore" unique_id=1145623912]
+[node name="Col" type="Label" parent="SceneRoot/MultScore" unique_id=1145623912]
 layout_mode = 0
 offset_left = -77.0
 offset_top = 64.0
@@ -373,7 +213,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 2
 
-[node name="x" type="Label" parent="MultScore" unique_id=962669997]
+[node name="x" type="Label" parent="SceneRoot/MultScore" unique_id=962669997]
 layout_mode = 0
 offset_left = 3.0
 offset_top = 62.0
@@ -383,7 +223,7 @@ text = "x"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Row" type="Label" parent="MultScore" unique_id=1059105681]
+[node name="Row" type="Label" parent="SceneRoot/MultScore" unique_id=1059105681]
 layout_mode = 0
 offset_left = 83.0
 offset_top = 64.0
@@ -392,7 +232,7 @@ offset_bottom = 125.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Total" type="Label" parent="." unique_id=2093482457]
+[node name="Total" type="Label" parent="SceneRoot" unique_id=2093482457]
 layout_mode = 0
 offset_left = 167.0
 offset_top = 144.0
@@ -401,7 +241,7 @@ offset_bottom = 205.0
 text = "Total: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Total" unique_id=1851888534]
+[node name="Label" type="Label" parent="SceneRoot/Total" unique_id=1851888534]
 layout_mode = 0
 offset_left = 131.0
 offset_top = 2.0
@@ -410,7 +250,7 @@ offset_bottom = 63.0
 text = " 0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Goal" type="Label" parent="." unique_id=611565422]
+[node name="Goal" type="Label" parent="SceneRoot" unique_id=611565422]
 layout_mode = 0
 offset_left = 164.0
 offset_top = 80.0
@@ -419,7 +259,7 @@ offset_bottom = 141.0
 text = "Goal: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Goal" unique_id=1523385777]
+[node name="Label" type="Label" parent="SceneRoot/Goal" unique_id=1523385777]
 layout_mode = 0
 offset_left = 140.0
 offset_top = 2.0
@@ -428,7 +268,7 @@ offset_bottom = 63.0
 text = "100"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Turns" type="Label" parent="." unique_id=1342373880]
+[node name="Turns" type="Label" parent="SceneRoot" unique_id=1342373880]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -438,7 +278,7 @@ offset_bottom = 66.0
 text = "Turns:  "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Turns" unique_id=1706329412]
+[node name="Label" type="Label" parent="SceneRoot/Turns" unique_id=1706329412]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -447,7 +287,7 @@ offset_bottom = 62.0
 text = "5"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Rerolls" type="Label" parent="." unique_id=1178213295]
+[node name="Rerolls" type="Label" parent="SceneRoot" unique_id=1178213295]
 visible = false
 layout_mode = 0
 offset_left = 975.0
@@ -457,7 +297,7 @@ offset_bottom = 328.0
 text = "Rerolls:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="Rerolls" unique_id=2094044039]
+[node name="Label" type="Label" parent="SceneRoot/Rerolls" unique_id=2094044039]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -467,7 +307,7 @@ text = "5
 "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Preview" type="Control" parent="." unique_id=1945480925]
+[node name="Preview" type="Control" parent="SceneRoot" unique_id=1945480925]
 anchors_preset = 0
 offset_left = 65.0
 offset_top = 391.0
@@ -476,15 +316,68 @@ offset_bottom = 391.0
 scale = Vector2(1.25, 1.25)
 mouse_filter = 2
 
-[node name="Card" parent="Preview" unique_id=152969337 instance=ExtResource("3_8sseo")]
+[node name="Card" parent="SceneRoot/Preview" unique_id=152969337 instance=ExtResource("3_8sseo")]
 position = Vector2(19.2, -57.6)
 scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 277
+num = 27
 
-[node name="Label" type="Label" parent="Preview" unique_id=521265543]
+[node name="Offset2" type="Node2D" parent="SceneRoot/Preview/Card" unique_id=579530933]
+
+[node name="Front" type="Sprite2D" parent="SceneRoot/Preview/Card/Offset2" unique_id=98229437]
+position = Vector2(0, -0.55789196)
+rotation = 3.1410897
+scale = Vector2(0.988001, -0.99937487)
+skew = 0.005529523
+texture = ExtResource("8_urf7w")
+hframes = 8
+vframes = 8
+frame = 3
+
+[node name="Rank" type="Sprite2D" parent="SceneRoot/Preview/Card/Offset2/Front" unique_id=1308354071]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("9_nscg4")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="SceneRoot/Preview/Card/Offset2/Front" unique_id=544011767]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("10_bnxca")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="SceneRoot/Preview/Card/Offset2/Front" unique_id=918247127]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("11_s4k8q")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="SceneRoot/Preview/Card/Offset2/Front" unique_id=999340722]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("12_3rge6")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="SceneRoot/Preview/Card/Offset2/Front" unique_id=1645358564]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="SceneRoot/Preview" unique_id=521265543]
 layout_mode = 0
 offset_left = -43.0
 offset_top = 22.0
@@ -495,7 +388,8 @@ Skill Text"
 label_settings = SubResource("LabelSettings_voryx")
 autowrap_mode = 3
 
-[node name="Deck" type="Control" parent="." unique_id=1200484648]
+[node name="Deck" type="Control" parent="SceneRoot" unique_id=1200484648]
+unique_name_in_owner = true
 anchors_preset = 0
 offset_left = 94.0
 offset_top = 90.0
@@ -503,13 +397,67 @@ offset_right = 94.0
 offset_bottom = 90.0
 mouse_filter = 2
 
-[node name="Deck" parent="Deck" unique_id=1376384872 instance=ExtResource("3_8sseo")]
+[node name="Deck" parent="SceneRoot/Deck" unique_id=1376384872 instance=ExtResource("3_8sseo")]
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 278
+num = 28
 
-[node name="Discard" type="Control" parent="." unique_id=1749321217]
+[node name="Offset2" type="Node2D" parent="SceneRoot/Deck/Deck" unique_id=1964732984]
+
+[node name="Front" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2" unique_id=73678283]
+position = Vector2(0, 0.9496561)
+rotation = -3.1407208
+scale = Vector2(0.9934824, -0.99393964)
+skew = -0.012689233
+texture = ExtResource("8_urf7w")
+hframes = 8
+vframes = 8
+frame = 3
+
+[node name="Rank" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1827222848]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("9_nscg4")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1143117694]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("10_bnxca")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1889267757]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("11_s4k8q")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=653962146]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("12_3rge6")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=882271460]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Discard" type="Control" parent="SceneRoot" unique_id=1749321217]
+unique_name_in_owner = true
 anchors_preset = 0
 offset_left = 271.0
 offset_top = 556.0
@@ -517,13 +465,67 @@ offset_right = 271.0
 offset_bottom = 556.0
 mouse_filter = 2
 
-[node name="Discard" parent="Discard" unique_id=1019947613 instance=ExtResource("3_8sseo")]
+[node name="Discard" parent="SceneRoot/Discard" unique_id=1019947613 instance=ExtResource("3_8sseo")]
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 279
+num = 29
 
-[node name="Rules" type="Control" parent="." unique_id=1348264598]
+[node name="Offset2" type="Node2D" parent="SceneRoot/Discard/Discard" unique_id=1707313634]
+
+[node name="Front" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2" unique_id=338176757]
+position = Vector2(0, -0.23250087)
+rotation = 3.1413696
+scale = Vector2(0.9994848, -0.98792934)
+skew = 0.0050354004
+texture = ExtResource("8_urf7w")
+hframes = 8
+vframes = 8
+frame = 3
+
+[node name="Rank" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1949067219]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("9_nscg4")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=782184470]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("10_bnxca")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=397774577]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("11_s4k8q")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1836987943]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("12_3rge6")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1024471177]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Rules" type="Control" parent="SceneRoot" unique_id=1348264598]
+unique_name_in_owner = true
 anchors_preset = 0
 offset_left = 390.0
 offset_top = 561.0
@@ -531,23 +533,116 @@ offset_right = 390.0
 offset_bottom = 561.0
 mouse_filter = 2
 
-[node name="Rules" parent="Rules" unique_id=758458623 instance=ExtResource("3_8sseo")]
+[node name="Rules" parent="SceneRoot/Rules" unique_id=758458623 instance=ExtResource("3_8sseo")]
 scale = Vector2(3, 3)
 can_move_anim = false
 stack_limit = 0
-num = 280
+num = 30
 
-[node name="DeckViewer" parent="." unique_id=1479490178 instance=ExtResource("6_e33e4")]
+[node name="Offset2" type="Node2D" parent="SceneRoot/Rules/Rules" unique_id=937047771]
+
+[node name="Front" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2" unique_id=872442552]
+position = Vector2(0, -0.75614715)
+rotation = 3.140906
+scale = Vector2(0.98899275, -0.99839747)
+skew = 0.008479953
+texture = ExtResource("8_urf7w")
+hframes = 8
+vframes = 8
+frame = 3
+
+[node name="Rank" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=415593959]
+visible = false
+position = Vector2(-12, -17)
+texture = ExtResource("9_nscg4")
+hframes = 13
+vframes = 5
+
+[node name="Stamp" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=930972706]
+visible = false
+position = Vector2(0, -17)
+texture = ExtResource("10_bnxca")
+hframes = 8
+vframes = 8
+
+[node name="Suit" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=1321406787]
+visible = false
+position = Vector2(12, -17)
+texture = ExtResource("11_s4k8q")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=55652834]
+visible = false
+position = Vector2(0, 5)
+texture = ExtResource("12_3rge6")
+hframes = 13
+vframes = 13
+
+[node name="Control" type="Control" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=1499166832]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -25.0
+offset_right = -19.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="DeckViewer" parent="SceneRoot" unique_id=1479490178 instance=ExtResource("6_e33e4")]
+unique_name_in_owner = true
 visible = false
 
-[node name="AudioCardPlacing" type="AudioStreamPlayer" parent="." unique_id=1655869054]
+[node name="MarginContainer2" type="MarginContainer" parent="SceneRoot/DeckViewer" unique_id=1645155077]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 80
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 80
+
+[node name="ColorRect" type="ColorRect" parent="SceneRoot/DeckViewer/MarginContainer2" unique_id=384025132]
+layout_mode = 2
+color = Color(1, 0.384314, 0.498039, 0.141176)
+
+[node name="SmoothScrollContainer" type="ScrollContainer" parent="SceneRoot/DeckViewer/MarginContainer2" unique_id=1191871683]
+layout_mode = 2
+follow_focus = true
+draw_focus_border = true
+script = ExtResource("4_rqgtj")
+wheel_scroll_damper = SubResource("Resource_of658")
+dragging_scroll_damper = SubResource("Resource_7ie13")
+handle_input = false
+metadata/_custom_type_script = "uid://bgqglerkcylxx"
+
+[node name="FlowContainer" type="FlowContainer" parent="SceneRoot/DeckViewer/MarginContainer2/SmoothScrollContainer" unique_id=129136481]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="@Timer@20047" type="Timer" parent="SceneRoot/DeckViewer/MarginContainer2/SmoothScrollContainer" unique_id=758798767]
+one_shot = true
+
+[node name="AudioCardPlacing" type="AudioStreamPlayer" parent="SceneRoot" unique_id=1655869054]
+unique_name_in_owner = true
 stream = SubResource("AudioStreamRandomizer_vwchr")
 bus = &"SFX"
 
-[node name="AudioCardShake" type="AudioStreamPlayer" parent="." unique_id=1632520484]
+[node name="AudioCardShake" type="AudioStreamPlayer" parent="SceneRoot" unique_id=1632520484]
+unique_name_in_owner = true
 stream = ExtResource("9_d2lcc")
 
-[node name="WinScreen" type="Label" parent="." unique_id=1777614660]
+[node name="WinScreen" type="Label" parent="SceneRoot" unique_id=1777614660]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -560,7 +655,8 @@ text = "You win!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LoseScreen" type="Label" parent="." unique_id=2125621518]
+[node name="LoseScreen" type="Label" parent="SceneRoot" unique_id=2125621518]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -573,7 +669,7 @@ text = "You lose!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Background" type="TextureRect" parent="." unique_id=795905631]
+[node name="Background" type="TextureRect" parent="SceneRoot" unique_id=795905631]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -585,9 +681,8 @@ texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
 
-[connection signal="child_entered_tree" from="." to="." method="_on_child_entered_tree"]
-[connection signal="pressed" from="Submit" to="." method="_on_submit_pressed"]
-[connection signal="pressed" from="Next" to="." method="_on_next_pressed"]
-[connection signal="clicked" from="Deck/Deck" to="." method="_on_deck_clicked"]
-[connection signal="clicked" from="Discard/Discard" to="." method="_on_discard_clicked"]
-[connection signal="clicked" from="Rules/Rules" to="." method="_on_rules_clicked"]
+[connection signal="pressed" from="SceneRoot/Submit" to="." method="_on_submit_pressed"]
+[connection signal="pressed" from="SceneRoot/Next" to="." method="_on_next_pressed"]
+[connection signal="clicked" from="SceneRoot/Deck/Deck" to="." method="_on_deck_clicked"]
+[connection signal="clicked" from="SceneRoot/Discard/Discard" to="." method="_on_discard_clicked"]
+[connection signal="clicked" from="SceneRoot/Rules/Rules" to="." method="_on_rules_clicked"]

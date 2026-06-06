@@ -1,13 +1,22 @@
-extends Node3D
+extends CardEnvironment
 class_name Map
 
 signal enter_game
 
-@onready var triangle_map: TriangleMap = $TiltedGUI/SubViewport/TriangleMap
-@onready var preview_label: Label = $Preview/Label
+@onready var triangle_map: TriangleMap = %TriangleMap
+@onready var preview_label: Label = %PreviewLabel
 @onready var flow_container: FlowContainer = %FlowContainer
-@onready var deck_viewer: DeckViewer = $DeckViewer
-@onready var layer_label: Label = $Layer
+@onready var deck_viewer: DeckViewer = %DeckViewer
+@onready var layer_label: Label = %LayerLabel
+
+func get_card_collections() -> Array:
+	return [
+		Main.save_info.card_datas,
+		Main.save_info.rule_datas
+	]
+
+func get_rules_collections() -> Array:
+	return [Main.save_info.rule_datas]
 
 func _ready() -> void:
 	# Force show/hide on startup to sync FlowContainer caches and drop initialization race conditions
@@ -20,7 +29,6 @@ func _ready() -> void:
 	preview_label.text = ""
 	update_layer(0)
 	
-	#_sync_flow_container_with_saved_deck()
 	_initialize_triangle_map_data()
 
 func _on_card_clicked(card_data: CardData) -> void:
@@ -54,41 +62,6 @@ func add_card_data_to_deck(data: CardData) -> void:
 		return
 		
 	Main.save_info.card_datas.append(data)
-	#
-	#var control_slot: Control = CARD_CONTROL.instantiate() as Control
-	#flow_container.add_child(control_slot)
-	#
-	#var card_visual: CardVisual = CardVisual.add_child_card_visual(
-		#control_slot, 
-		#data, 
-		#CardVisual.DisplayContext.PREVIEW, 
-		#control_slot
-	#)
-	#card_visual.can_move_anim = false
-	#card_visual.floating = false
-	#card_visual.show_front = true
-
-#func _sync_flow_container_with_saved_deck() -> void:
-	#if not Main.save_info or not "card_datas" in Main.save_info: 
-		#return
-		#
-	#for child: Node in flow_container.get_children():
-		#flow_container.remove_child(child)
-		#child.queue_free()
-		#
-	#for data: CardData in Main.save_info.card_datas:
-		#var control_slot: Control = CARD_CONTROL.instantiate() as Control
-		#flow_container.add_child(control_slot)
-		#
-		#var card_visual: CardVisual = CardVisual.add_child_card_visual(
-			#control_slot, 
-			#data, 
-			#CardVisual.DisplayContext.PREVIEW, 
-			#control_slot
-		#)
-		#card_visual.can_move_anim = false
-		#card_visual.floating = false
-		#card_visual.show_front = true
 
 # ==========================================
 # 📐 TRIANGLE DATA INITIALIZATION SEED
@@ -113,7 +86,6 @@ func _generate_random_map_card() -> CardData:
 	var card: CardData = CardData.new()
 	card.with_rank(PipRank.Numeral.new().with_random())
 	card.with_suit(PipSuit.Standard.new().with_random())
-	#card.stage = CardData.Stage.ZONE
 	card.flipped = false
 	return card
 

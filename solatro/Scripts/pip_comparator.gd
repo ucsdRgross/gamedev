@@ -58,7 +58,7 @@ static func is_scorable(card: CardData) -> bool:
 ## Computes index sorting differences between two custom suit objects.
 static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 	if not s1 or not s2: return NAN
-	var mod_result := await Game.return_first_compare_mod_result(&"on_compare_suits", s1, s2)
+	var mod_result := await CardEnvironment.return_first_compare_mod_result(&"on_compare_suits", [s1, s2])
 	if not is_nan(mod_result): return mod_result
 	
 	match [s1, s2]:
@@ -92,7 +92,7 @@ static func is_suit_same(s1: PipSuit, s2: PipSuit) -> bool:
 ## Computes the exact delta index distance between two card ranks.
 static func compare_ranks(r1: PipRank, r2: PipRank) -> float:
 	if not r1 or not r2: return NAN
-	var mod_result := await Game.return_first_compare_mod_result(&"on_compare_ranks", r1, r2)
+	var mod_result := await CardEnvironment.return_first_compare_mod_result(&"on_compare_ranks", [r1, r2])
 	if not is_nan(mod_result): return mod_result
 	
 	match [r1, r2]:
@@ -246,7 +246,7 @@ static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:
 			#return true
 	#return false
 
-# use Game.CURRENT.run_all_mods
+# use CardEnvironment.CURRENT.run_all_mods
 #
 #func run_all_mods(function: StringName, ...params:Array) -> void:
 	#for data in CardDataIterator.new():

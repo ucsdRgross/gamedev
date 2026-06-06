@@ -1,72 +1,20 @@
 class_name CardDataIterator
-# Currently does not support nested loops and don't there will be reason to
-# Below class variables would need to be moved into _arg as dict to do so
 
 var next_card_data : CardData
-enum {DECK, UPPER, LOWER, DISCARD, UPPER_RULES, LOWER_RULES, RULES}
-var phase : int = DECK
+var collections : Array[Variant] = []
+var collection_index : int = 0
 var current_row : int = 0
 var current_col : int = 0
 var is_row_empty := true
 
-func should_continue() -> bool:
-	if not Game.CURRENT: return false
-	var game_state := Game.CURRENT.state
-	match phase:
-		DECK:
-			return iterate_array(game_state.draw_deck, UPPER)
-		UPPER:
-			return iterate_2d_array(game_state.upper_zone, LOWER)
-		LOWER:
-			return iterate_2d_array(game_state.lower_zone, DISCARD)
-		DISCARD:
-			return iterate_array(game_state.discard_deck, UPPER_RULES)
-		UPPER_RULES:
-			return iterate_array(game_state.upper_zone_type, LOWER_RULES)
-		LOWER_RULES:
-			return iterate_array(game_state.lower_zone_type, RULES)
-		RULES:
-			if current_col < game_state.rules_deck.size():
-				next_card_data = game_state.rules_deck[current_col]
-				current_col += 1
-				return true
-			else:
-				return false
-	return false
-
-func iterate_array(deck:Array[CardData], next_stage:int) -> bool:
-	if current_col < deck.size():
-		next_card_data = deck[current_col]
-		current_col += 1
-		return true
-	else:
-		phase = next_stage
-		current_col = 0
-		return should_continue()
-
-func iterate_2d_array(zone:Array[ArrayCardData], next_stage:int) -> bool:
-	while true:
-		if current_col < zone.size():
-			var col : Array[CardData] = zone[current_col].datas
-			if current_row < col.size():
-				next_card_data = col[current_row]
-				current_col += 1
-				is_row_empty = false
-				return true
-			else:
-				current_col += 1
-		else:
-			if is_row_empty: 
-				break
-			current_row += 1
-			current_col = 0
-			is_row_empty = true
-	phase = next_stage
+func _iter_init(_arg:Variant) -> bool:
+	if not CardEnvironment.CURRENT:
+		return false
+	collections = CardEnvironment.CURRENT.get_card_collections()
+	collection_index = 0
 	current_row = 0
 	current_col = 0
-	return should_continue()
-
-func _iter_init(_arg:Variant) -> bool:
+	is_row_empty = true
 	return should_continue()
 
 func _iter_next(_arg:Variant) -> bool:
@@ -74,3 +22,55 @@ func _iter_next(_arg:Variant) -> bool:
 
 func _iter_get(_arg:Variant) -> CardData:
 	return next_card_data
+
+func should_continue() -> bool:
+	if collection_index >= collections.size():
+		return false
+	
+	var current_coll : Variant = collections[collection_index]
+	
+	# Handle null/empty collections
+	if not current_coll:
+		collection_index += 1
+		return should_continue()
+
+	# Handle 2D Arrays (Array[ArrayCardData])
+	if current_coll is Array[ArrayCardData] and (current_coll as Array).size() > 0:
+		while true:
+			if current_col < (current_coll as Array).size():
+				var col : Array[CardData] = current_coll[current_col].datas
+				if current_row < col.size():
+					next_card_data = col[current_row]
+					current_col += 1
+					is_row_empty = false
+					return true
+				else:
+					current_col += 1
+			else:
+				if is_row_empty: 
+					break
+				current_row += 1
+				current_col = 0
+				is_row_empty = true
+		
+		# Move to next collection
+		collection_index += 1
+		current_row = 0
+		current_col = 0
+		is_row_empty = true
+		return should_continue()
+	
+	# Handle 1D Arrays (Array[CardData])
+	elif current_coll is Array[CardData]:
+		if current_col < (current_coll as Array).size():
+			next_card_data = current_coll[current_col]
+			current_col += 1
+			return true
+		else:
+			collection_index += 1
+			current_col = 0
+			return should_continue()
+
+	# Skip unrecognized types
+	collection_index += 1
+	return should_continue()
