@@ -6,6 +6,8 @@ extends Resource
 @export var rule_datas : Array[CardData]
 @export var layer : int = 0
 
+var current_choices : ChoiceViewer.Data
+
 func write_card_data(data: CardData) -> void:
 	card_datas.append(data)
 	

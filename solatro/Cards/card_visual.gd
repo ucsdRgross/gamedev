@@ -164,7 +164,6 @@ func _ready() -> void:
 	recalculate_size()	
 
 func recalculate_size() -> void:
-	print("recalculating size", SettingsManager.settings.card_seperation_scale)
 	match current_context:
 		DisplayContext.DECK_VIEWER:
 			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
