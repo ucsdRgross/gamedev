@@ -6,7 +6,6 @@ signal enter_game
 @onready var triangle_map: TriangleMap = %TriangleMap
 @onready var preview_label: Label = %PreviewLabel
 @onready var flow_container: FlowContainer = %FlowContainer
-@onready var deck_viewer: DeckViewer = %DeckViewer
 @onready var layer_label: Label = %LayerLabel
 
 func get_card_collections() -> Array:
@@ -20,8 +19,6 @@ func get_rules_collections() -> Array:
 
 func _ready() -> void:
 	# Force show/hide on startup to sync FlowContainer caches and drop initialization race conditions
-	deck_viewer.show()
-	deck_viewer.hide()
 	
 	triangle_map.card_clicked.connect(_on_card_clicked)
 	triangle_map.card_hovered.connect(_on_card_hover_entered)
@@ -93,12 +90,12 @@ func _on_deck_clicked(card_data: CardData) -> void:
 	var data_array: Array[CardData] = []
 	if Main.save_info and "card_datas" in Main.save_info:
 		data_array = Main.save_info.card_datas
-	deck_viewer.show_with_deck(data_array)
+	DeckViewer.show_deck(self, data_array)
 
-func _on_margin_container_gui_input(event: InputEvent) -> void:
-	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
-	if mouse_event and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-		deck_viewer.hide()
+#func _on_margin_container_gui_input(event: InputEvent) -> void:
+	#var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+	#if mouse_event and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+		#deck_viewer.hide()
 
 func _on_button_pressed() -> void:
 	enter_game.emit()

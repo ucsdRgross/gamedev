@@ -40,4 +40,25 @@ func create_one_choice() -> CardData:
 	return data
 
 func view_choices() -> void:
-	pass
+	var possible_ranks : Array[PipRank] = get_possible_ranks()
+	CardEnvironment.run_all_mods(&"on_get_possible_ranks", possible_ranks)
+	var possible_suits : Array[PipSuit] = get_possible_suits()
+	CardEnvironment.run_all_mods(&"on_get_possible_suits", possible_suits)
+	var possible_stamps : Array[CardModifierStamp] = get_possible_stamps()
+	CardEnvironment.run_all_mods(&"on_get_possible_stamps", possible_stamps)
+	var possible_skills : Array[CardModifierSkill] = get_possible_skills()
+	CardEnvironment.run_all_mods(&"on_get_possible_skills", possible_skills)
+	var possible_types : Array[CardModifierType] = get_possible_types()
+	CardEnvironment.run_all_mods(&"on_get_possible_types", possible_types)
+	var card_datas : Array[CardData] = []
+	for type in possible_types:
+		card_datas.append(CardData.new().with_type(type))
+	for stamp in possible_stamps:
+		card_datas.append(CardData.new().with_stamp(stamp))
+	for skill in possible_skills:
+		card_datas.append(CardData.new().with_skill(skill))
+	for suit in possible_suits:
+		card_datas.append(CardData.new().with_suit(suit))
+	for rank in possible_ranks:
+		card_datas.append(CardData.new().with_rank(rank))
+	DeckViewer.show_deck(CardEnvironment.CURRENT, card_datas)

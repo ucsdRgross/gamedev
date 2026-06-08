@@ -5,9 +5,6 @@
 [ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="3_8sseo"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
-[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="4_rqgtj"]
-[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="5_ppwbv"]
-[ext_resource type="PackedScene" uid="uid://dnvpthmsneqjl" path="res://UI/deck_viewer.tscn" id="6_e33e4"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
 [ext_resource type="AudioStream" uid="uid://chf871fubcbnw" path="res://Audio/die-throw-4.ogg" id="8_67uf7"]
@@ -25,12 +22,6 @@ font_size = 41
 line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
-
-[sub_resource type="Resource" id="Resource_of658"]
-script = ExtResource("5_ppwbv")
-
-[sub_resource type="Resource" id="Resource_7ie13"]
-script = ExtResource("5_ppwbv")
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_vwchr"]
 streams_count = 3
@@ -390,247 +381,62 @@ autowrap_mode = 3
 
 [node name="Deck" type="Control" parent="SceneRoot" unique_id=1200484648]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
-offset_left = 94.0
-offset_top = 90.0
-offset_right = 94.0
-offset_bottom = 90.0
+offset_left = 34.0
+offset_top = 28.0
+offset_right = 134.0
+offset_bottom = 128.0
 mouse_filter = 2
 
-[node name="Deck" parent="SceneRoot/Deck" unique_id=1376384872 instance=ExtResource("3_8sseo")]
-scale = Vector2(3, 3)
-can_move_anim = false
-stack_limit = 0
-num = 17
-
-[node name="Offset2" type="Node2D" parent="SceneRoot/Deck/Deck" unique_id=1964732984]
-
-[node name="Front" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2" unique_id=73678283]
-position = Vector2(0, 0.9496561)
-rotation = -3.1407208
-scale = Vector2(0.9934824, -0.99393964)
-skew = -0.012689233
-texture = ExtResource("8_urf7w")
-hframes = 8
-vframes = 8
-frame = 3
-
-[node name="Rank" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1827222848]
-visible = false
-position = Vector2(-12, -17)
-texture = ExtResource("9_nscg4")
-hframes = 13
-vframes = 5
-
-[node name="Stamp" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1143117694]
-visible = false
-position = Vector2(0, -17)
-texture = ExtResource("10_bnxca")
-hframes = 8
-vframes = 8
-
-[node name="Suit" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=1889267757]
-visible = false
-position = Vector2(12, -17)
-texture = ExtResource("11_s4k8q")
-hframes = 8
-vframes = 8
-
-[node name="Art" type="Sprite2D" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=653962146]
-visible = false
-position = Vector2(0, 5)
-texture = ExtResource("12_3rge6")
-hframes = 13
-vframes = 13
-
-[node name="Control" type="Control" parent="SceneRoot/Deck/Deck/Offset2/Front" unique_id=882271460]
-layout_mode = 3
+[node name="Button" type="Button" parent="SceneRoot/Deck" unique_id=2005385669]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -19.0
-offset_top = -25.0
-offset_right = -19.0
-offset_bottom = -25.0
 grow_horizontal = 2
 grow_vertical = 2
-metadata/_edit_use_anchors_ = true
+text = "Deck"
 
 [node name="Discard" type="Control" parent="SceneRoot" unique_id=1749321217]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
-offset_left = 271.0
-offset_top = 556.0
-offset_right = 271.0
-offset_bottom = 556.0
+offset_left = 191.0
+offset_top = 486.0
+offset_right = 291.0
+offset_bottom = 586.0
 mouse_filter = 2
 
-[node name="Discard" parent="SceneRoot/Discard" unique_id=1019947613 instance=ExtResource("3_8sseo")]
-scale = Vector2(3, 3)
-can_move_anim = false
-stack_limit = 0
-num = 18
-
-[node name="Offset2" type="Node2D" parent="SceneRoot/Discard/Discard" unique_id=1707313634]
-
-[node name="Front" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2" unique_id=338176757]
-position = Vector2(0, -0.23250087)
-rotation = 3.1413696
-scale = Vector2(0.9994848, -0.98792934)
-skew = 0.0050354004
-texture = ExtResource("8_urf7w")
-hframes = 8
-vframes = 8
-frame = 3
-
-[node name="Rank" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1949067219]
-visible = false
-position = Vector2(-12, -17)
-texture = ExtResource("9_nscg4")
-hframes = 13
-vframes = 5
-
-[node name="Stamp" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=782184470]
-visible = false
-position = Vector2(0, -17)
-texture = ExtResource("10_bnxca")
-hframes = 8
-vframes = 8
-
-[node name="Suit" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=397774577]
-visible = false
-position = Vector2(12, -17)
-texture = ExtResource("11_s4k8q")
-hframes = 8
-vframes = 8
-
-[node name="Art" type="Sprite2D" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1836987943]
-visible = false
-position = Vector2(0, 5)
-texture = ExtResource("12_3rge6")
-hframes = 13
-vframes = 13
-
-[node name="Control" type="Control" parent="SceneRoot/Discard/Discard/Offset2/Front" unique_id=1024471177]
-layout_mode = 3
+[node name="Button" type="Button" parent="SceneRoot/Discard" unique_id=539382394]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -19.0
-offset_top = -25.0
-offset_right = -19.0
-offset_bottom = -25.0
 grow_horizontal = 2
 grow_vertical = 2
-metadata/_edit_use_anchors_ = true
+text = "Discard
+"
 
 [node name="Rules" type="Control" parent="SceneRoot" unique_id=1348264598]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
-offset_left = 390.0
-offset_top = 561.0
-offset_right = 390.0
-offset_bottom = 561.0
+offset_left = 302.0
+offset_top = 485.0
+offset_right = 402.0
+offset_bottom = 585.0
 mouse_filter = 2
 
-[node name="Rules" parent="SceneRoot/Rules" unique_id=758458623 instance=ExtResource("3_8sseo")]
-scale = Vector2(3, 3)
-can_move_anim = false
-stack_limit = 0
-num = 19
-
-[node name="Offset2" type="Node2D" parent="SceneRoot/Rules/Rules" unique_id=937047771]
-
-[node name="Front" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2" unique_id=872442552]
-position = Vector2(0, -0.75614715)
-rotation = 3.140906
-scale = Vector2(0.98899275, -0.99839747)
-skew = 0.008479953
-texture = ExtResource("8_urf7w")
-hframes = 8
-vframes = 8
-frame = 3
-
-[node name="Rank" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=415593959]
-visible = false
-position = Vector2(-12, -17)
-texture = ExtResource("9_nscg4")
-hframes = 13
-vframes = 5
-
-[node name="Stamp" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=930972706]
-visible = false
-position = Vector2(0, -17)
-texture = ExtResource("10_bnxca")
-hframes = 8
-vframes = 8
-
-[node name="Suit" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=1321406787]
-visible = false
-position = Vector2(12, -17)
-texture = ExtResource("11_s4k8q")
-hframes = 8
-vframes = 8
-
-[node name="Art" type="Sprite2D" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=55652834]
-visible = false
-position = Vector2(0, 5)
-texture = ExtResource("12_3rge6")
-hframes = 13
-vframes = 13
-
-[node name="Control" type="Control" parent="SceneRoot/Rules/Rules/Offset2/Front" unique_id=1499166832]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -19.0
-offset_top = -25.0
-offset_right = -19.0
-offset_bottom = -25.0
-grow_horizontal = 2
-grow_vertical = 2
-metadata/_edit_use_anchors_ = true
-
-[node name="DeckViewer" parent="SceneRoot" unique_id=1479490178 instance=ExtResource("6_e33e4")]
-unique_name_in_owner = true
-visible = false
-
-[node name="MarginContainer2" type="MarginContainer" parent="SceneRoot/DeckViewer" unique_id=1645155077]
+[node name="Button" type="Button" parent="SceneRoot/Rules" unique_id=1079037709]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 80
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 80
-
-[node name="ColorRect" type="ColorRect" parent="SceneRoot/DeckViewer/MarginContainer2" unique_id=384025132]
-layout_mode = 2
-color = Color(1, 0.384314, 0.498039, 0.141176)
-
-[node name="SmoothScrollContainer" type="ScrollContainer" parent="SceneRoot/DeckViewer/MarginContainer2" unique_id=1191871683]
-layout_mode = 2
-follow_focus = true
-draw_focus_border = true
-script = ExtResource("4_rqgtj")
-wheel_scroll_damper = SubResource("Resource_of658")
-dragging_scroll_damper = SubResource("Resource_7ie13")
-handle_input = false
-metadata/_custom_type_script = "uid://bgqglerkcylxx"
-
-[node name="FlowContainer" type="FlowContainer" parent="SceneRoot/DeckViewer/MarginContainer2/SmoothScrollContainer" unique_id=129136481]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="@Timer@20047" type="Timer" parent="SceneRoot/DeckViewer/MarginContainer2/SmoothScrollContainer" unique_id=758798767]
-one_shot = true
+text = "Rules
+"
 
 [node name="AudioCardPlacing" type="AudioStreamPlayer" parent="SceneRoot" unique_id=1655869054]
 unique_name_in_owner = true
@@ -683,6 +489,6 @@ stretch_mode = 6
 
 [connection signal="pressed" from="SceneRoot/Submit" to="." method="_on_submit_pressed"]
 [connection signal="pressed" from="SceneRoot/Next" to="." method="_on_next_pressed"]
-[connection signal="clicked" from="SceneRoot/Deck/Deck" to="." method="_on_deck_clicked"]
-[connection signal="clicked" from="SceneRoot/Discard/Discard" to="." method="_on_discard_clicked"]
-[connection signal="clicked" from="SceneRoot/Rules/Rules" to="." method="_on_rules_clicked"]
+[connection signal="pressed" from="SceneRoot/Deck/Button" to="." method="_on_deck_clicked"]
+[connection signal="pressed" from="SceneRoot/Discard/Button" to="." method="_on_discard_clicked"]
+[connection signal="pressed" from="SceneRoot/Rules/Button" to="." method="_on_rules_clicked"]

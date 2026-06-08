@@ -5,7 +5,6 @@
 [ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
 [ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://Levels/triangle_map.tscn" id="5_5sh7s"]
-[ext_resource type="PackedScene" uid="uid://dnvpthmsneqjl" path="res://UI/deck_viewer.tscn" id="6_vw7rh"]
 
 [sub_resource type="Environment" id="Environment_grdjq"]
 background_mode = 3
@@ -76,7 +75,7 @@ scale = Vector2(3, 3)
 can_move_anim = false
 clickable = false
 stack_limit = 0
-num = 16
+num = 20
 
 [node name="PreviewLabel" type="Label" parent="SceneRoot/Preview" unique_id=1126721272]
 unique_name_in_owner = true
@@ -132,37 +131,4 @@ theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 30
 text = "Layer: 0"
 
-[node name="DeckViewer" parent="SceneRoot" unique_id=1479490178 instance=ExtResource("6_vw7rh")]
-unique_name_in_owner = true
-
-[node name="DeckViewer2" type="CanvasLayer" parent="SceneRoot" unique_id=43036414]
-visible = false
-
-[node name="MarginContainer" type="MarginContainer" parent="SceneRoot/DeckViewer2" unique_id=1805909589]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 0
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 80
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 80
-
-[node name="ColorRect" type="ColorRect" parent="SceneRoot/DeckViewer2/MarginContainer" unique_id=1937997291]
-layout_mode = 2
-color = Color(1, 0.384314, 0.498039, 0.141176)
-
-[node name="ScrollContainer" type="ScrollContainer" parent="SceneRoot/DeckViewer2/MarginContainer" unique_id=251987305]
-layout_mode = 2
-mouse_filter = 0
-
-[node name="FlowContainer" type="FlowContainer" parent="SceneRoot/DeckViewer2/MarginContainer/ScrollContainer" unique_id=134667679]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
 [connection signal="pressed" from="SceneRoot/Button" to="." method="_on_button_pressed"]
-[connection signal="gui_input" from="SceneRoot/DeckViewer2/MarginContainer" to="." method="_on_margin_container_gui_input"]

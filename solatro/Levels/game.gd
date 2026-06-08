@@ -26,7 +26,6 @@ var processing : bool = false
 @onready var audio_card_shake: AudioStreamPlayer = %AudioCardShake
 @onready var win_screen: Label = %WinScreen
 @onready var lose_screen: Label = %LoseScreen
-@onready var deck_viewer: DeckViewer = %DeckViewer
 @onready var undo_button: Button = %Undo
 
 func get_card_collections() -> Array:
@@ -44,7 +43,6 @@ func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck
 
 func _ready() -> void:
-	deck_viewer.hide()
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
 	state.goal = state.goal * (1.1 ** Main.save_info.layer)
@@ -276,11 +274,11 @@ func score_col(result : Scoring.Result, col : int) -> void:
 	#await play trigger score effects
 	play_area.reset_meld(result)
 
-func _on_deck_clicked(deck_card: Card) -> void:
-	deck_viewer.show_with_deck(state.draw_deck)
+func _on_deck_clicked() -> void:
+	DeckViewer.show_deck(self, state.draw_deck)
 
-func _on_discard_clicked(deck_card: Card) -> void:
-	deck_viewer.show_with_deck(state.discard_deck)
+func _on_discard_clicked() -> void:
+	DeckViewer.show_deck(self, state.discard_deck)
 
-func _on_rules_clicked(deck_card: Card) -> void:
-	deck_viewer.show_with_deck(state.rules_deck)
+func _on_rules_clicked() -> void:
+	DeckViewer.show_deck(self, state.rules_deck)

@@ -5,14 +5,9 @@ const CONTROL_CARD := preload("uid://dbmfhito00wc")
 
 var child : CardVisual
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(set_min_size)
 	set_min_size()
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:	
-	pass
 
 func set_min_size() -> void:
 	if child:

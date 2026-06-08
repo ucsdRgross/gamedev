@@ -22,5 +22,5 @@ func get_possible_stamps() -> Array[CardModifierStamp]:
 func get_possible_skills() -> Array[CardModifierSkill]:
 	return []
 func get_possible_types() -> Array[CardModifierType]:
-	return []
+	return [TypePaper.new()]
 	

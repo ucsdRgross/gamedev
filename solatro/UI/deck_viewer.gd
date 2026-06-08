@@ -1,6 +1,8 @@
 class_name DeckViewer
 extends CanvasLayer
 
+const DECK_VIEWER = preload("uid://dnvpthmsneqjl")
+
 @onready var flow_container: FlowContainer = %FlowContainer
 
 enum SORTING_TYPE {RANK,SUIT,EFFECT}
@@ -11,11 +13,12 @@ var randomized : bool = false
 var sorting_type : SORTING_TYPE = SORTING_TYPE.RANK
 var sorting_order : SORTING_ORDER = SORTING_ORDER.ASCENDING
 
-func show_with_deck(new_deck:Array[CardData]) -> DeckViewer:
-	show()
-	deck = new_deck
-	update_viewer()
-	return self
+static func show_deck(parent:Node, new_deck:Array[CardData]) -> DeckViewer:
+	var viewer :DeckViewer= DECK_VIEWER.instantiate()
+	viewer.deck = new_deck
+	parent.add_child(viewer)
+	viewer.update_viewer()
+	return viewer
 
 func update_viewer() -> void:
 	for data in deck:
@@ -32,4 +35,4 @@ func _on_margin_container_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			hide()
+			queue_free()
