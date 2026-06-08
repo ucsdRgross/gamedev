@@ -13,39 +13,54 @@ script = ExtResource("1_s3n6f")
 
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
-[node name="Front" type="Sprite2D" parent="Offset" unique_id=1415667123]
-position = Vector2(0, 0.017318904)
-scale = Vector2(0.99999845, 0.9856999)
-skew = -0.000284791
+[node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
+position = Vector2(0, 0.7251077)
+rotation = -3.3889388e-05
+scale = Vector2(0.9927735, 0.9929683)
+skew = 0.014410973
+
+[node name="Type" type="Sprite2D" parent="Offset/Visual" unique_id=1920471250]
 texture = ExtResource("2_y74k2")
 hframes = 8
 vframes = 8
 frame = 3
 
-[node name="Rank" type="Sprite2D" parent="Offset/Front" unique_id=1534860529]
+[node name="Rank" type="Sprite2D" parent="Offset/Visual" unique_id=1534860529]
 visible = false
-position = Vector2(-12, -17)
+position = Vector2(-12.22972, -17.494808)
+rotation = 2.1618047e-05
+scale = Vector2(1.0112312, 0.98890865)
+skew = -0.005216956
 texture = ExtResource("3_rbggy")
 hframes = 13
 vframes = 5
 
-[node name="Stamp" type="Sprite2D" parent="Offset/Front" unique_id=13185951]
+[node name="Suit" type="Sprite2D" parent="Offset/Visual" unique_id=1154635612]
 visible = false
-position = Vector2(0, -17)
-texture = ExtResource("4_62pur")
-hframes = 8
-vframes = 8
-
-[node name="Suit" type="Sprite2D" parent="Offset/Front" unique_id=1154635612]
-visible = false
-position = Vector2(12, -17)
+position = Vector2(12.039827, -17.494286)
+rotation = 2.161805e-05
+scale = Vector2(1.0112311, 0.9889086)
+skew = -0.005216956
 texture = ExtResource("5_uqrsc")
 hframes = 8
 vframes = 8
 
-[node name="Art" type="Sprite2D" parent="Offset/Front" unique_id=873481106]
+[node name="Stamp" type="Sprite2D" parent="Offset/Visual" unique_id=13185951]
 visible = false
-position = Vector2(0, 5)
+position = Vector2(-0.09494555, -17.494545)
+rotation = 2.1618047e-05
+scale = Vector2(1.0112312, 0.98890865)
+skew = -0.005216956
+texture = ExtResource("4_62pur")
+hframes = 8
+vframes = 8
+
+[node name="Art" type="Sprite2D" parent="Offset/Visual" unique_id=873481106]
+visible = false
+position = Vector2(0.018083785, 4.261152)
+rotation = 2.1618047e-05
+scale = Vector2(1.0112312, 0.98890865)
+skew = -0.005216956
 texture = ExtResource("6_2gib3")
 hframes = 13
 vframes = 13

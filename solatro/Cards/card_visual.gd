@@ -61,13 +61,13 @@ var floating : bool = true:
 				await ready
 			basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data and data.flipped else 1)))
 			if Engine.is_editor_hint():
-				front.position.y = 0
+				visual.position.y = 0
 
 var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
 		basis3d = value
-		front.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
-		front.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
+		visual.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
+		visual.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
 		show_front = basis3d.z[2] > 0
 #change flipped instead
 var show_front := false :
@@ -94,9 +94,10 @@ func update_visual() -> void:
 		else: suit.hide()
 			
 		if data.type:
-			front.frame = data.type.get_frame()
+			type.frame = data.type.get_frame()
+			type.show()
 		else:
-			front.frame = 2
+			type.hide()
 			
 		if data.stamp:
 			stamp.frame = data.stamp.get_frame()
@@ -117,7 +118,8 @@ func update_visual() -> void:
 	else:
 		if not is_node_ready():
 			await ready
-		front.frame = 3
+		type.frame = 3
+		type.show()
 		rank.hide()
 		stamp.hide()
 		suit.hide()
@@ -132,11 +134,12 @@ var held : int = 0
 var hover : bool = false
 
 @onready var offset: Node2D = $Offset
-@onready var front: Sprite2D = $Offset/Front
-@onready var rank: Sprite2D  = $Offset/Front/Rank
-@onready var stamp: Sprite2D = $Offset/Front/Stamp
-@onready var suit: Sprite2D  = $Offset/Front/Suit
-@onready var art: Sprite2D = $Offset/Front/Art
+@onready var visual: Node2D = $Offset/Visual
+@onready var type: Sprite2D = $Offset/Visual/Type
+@onready var rank: Sprite2D  = $Offset/Visual/Rank
+@onready var stamp: Sprite2D = $Offset/Visual/Stamp
+@onready var suit: Sprite2D  = $Offset/Visual/Suit
+@onready var art: Sprite2D = $Offset/Visual/Art
 	
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
@@ -148,18 +151,19 @@ static func add_child_card_visual(parent:Node,connected_data:CardData, context:D
 	return card
 
 func _ready() -> void:
+	type.hide()
 	rank.hide()
 	stamp.hide()
 	suit.hide()
 	art.hide()
-	if not (data and data.stage == CardData.Stage.ZONE):
-		front.frame = 3
-		#num_cards += 1
-		#num = num_cards
-	else:
-		front.frame = 0
-		#child_offset = Vector2(0,0)
-		basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
+	#if not (data and data.stage == CardData.Stage.ZONE):
+		#front.frame = 3
+		##num_cards += 1
+		##num = num_cards
+	#else:
+		#front.frame = 0
+		##child_offset = Vector2(0,0)
+		#basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 	SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()	
 
@@ -269,7 +273,7 @@ func delta_floating_anim(delta:float) -> void:
 		bobbing = 0
 	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if data and data.flipped else 1))
 	basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
-	front.position.y = lerpf(front.position.y, bobbing, 10 * delta)
+	visual.position.y = lerpf(visual.position.y, bobbing, 10 * delta)
 
 func with_data(data:CardData) -> CardVisual:
 	self.data = data
