@@ -161,7 +161,7 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
 		
-		if connected_data in data_card:
+		if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 			new_data_card[connected_data] = data_card[connected_data]
 			new_data_card[connected_data].control_anchor = c
 		else:
@@ -174,7 +174,7 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 			ui_data[c] = connected_data
 			data_ui[connected_data] = c
 			
-			if connected_data in data_card:
+			if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 				new_data_card[connected_data] = data_card[connected_data]
 				new_data_card[connected_data].control_anchor = c
 			else:

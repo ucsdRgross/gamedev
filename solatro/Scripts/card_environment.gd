@@ -28,7 +28,9 @@ func is_data_in_rules(data: CardData) -> bool:
 	return data in get_rules_collections()
 
 static func run_all_mods(function: StringName, ...params:Array) -> void:
+	#print(function)
 	for data in CardDataIterator.new():
+		#print(data)
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
 				await Callable(mod, function).callv(params)

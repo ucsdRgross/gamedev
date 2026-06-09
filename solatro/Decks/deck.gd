@@ -1,11 +1,8 @@
 extends Resource
 class_name Deck
 
-@export var card_datas : Array[CardData] = deck9
-@export var rule_datas : Array[CardData] = rules1
-
 func get_deck() -> Array[CardData]:
-	return card_datas
+	return deck9
 
 func get_rules() -> Array[CardData]:
 	return rules1

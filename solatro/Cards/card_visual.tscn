@@ -169,7 +169,7 @@ tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
 tracks/1/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_TopLeft:position")
-tracks/1/interp = 1
+tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.3, 0.6),
@@ -181,7 +181,7 @@ tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
 tracks/2/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top:position")
-tracks/2/interp = 1
+tracks/2/interp = 2
 tracks/2/loop_wrap = true
 tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.6),
@@ -193,7 +193,7 @@ tracks/3/type = "value"
 tracks/3/imported = false
 tracks/3/enabled = true
 tracks/3/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_TopRight:position")
-tracks/3/interp = 1
+tracks/3/interp = 2
 tracks/3/loop_wrap = true
 tracks/3/keys = {
 "times": PackedFloat32Array(0, 0.6),
@@ -205,7 +205,7 @@ tracks/4/type = "value"
 tracks/4/imported = false
 tracks/4/enabled = true
 tracks/4/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right:position")
-tracks/4/interp = 1
+tracks/4/interp = 2
 tracks/4/loop_wrap = true
 tracks/4/keys = {
 "times": PackedFloat32Array(0, 0.3, 0.6),
@@ -217,7 +217,7 @@ tracks/5/type = "value"
 tracks/5/imported = false
 tracks/5/enabled = true
 tracks/5/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_BottomRight:position")
-tracks/5/interp = 1
+tracks/5/interp = 2
 tracks/5/loop_wrap = true
 tracks/5/keys = {
 "times": PackedFloat32Array(0, 0.3, 0.6),
@@ -229,7 +229,7 @@ tracks/6/type = "value"
 tracks/6/imported = false
 tracks/6/enabled = true
 tracks/6/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom:position")
-tracks/6/interp = 1
+tracks/6/interp = 2
 tracks/6/loop_wrap = true
 tracks/6/keys = {
 "times": PackedFloat32Array(0, 0.6),
@@ -241,7 +241,7 @@ tracks/7/type = "value"
 tracks/7/imported = false
 tracks/7/enabled = true
 tracks/7/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_BottomLeft:position")
-tracks/7/interp = 1
+tracks/7/interp = 2
 tracks/7/loop_wrap = true
 tracks/7/keys = {
 "times": PackedFloat32Array(0, 0.6),
@@ -253,7 +253,7 @@ tracks/8/type = "value"
 tracks/8/imported = false
 tracks/8/enabled = true
 tracks/8/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left:position")
-tracks/8/interp = 1
+tracks/8/interp = 2
 tracks/8/loop_wrap = true
 tracks/8/keys = {
 "times": PackedFloat32Array(0, 0.3, 0.6),
@@ -290,15 +290,14 @@ data = SubResource("Resource_wmxs8")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1741178505]
 libraries/ = SubResource("AnimationLibrary_018h0")
-autoplay = &"new_animation_2"
 
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
-position = Vector2(0, 0.72245926)
-rotation = -3.6818306e-05
-scale = Vector2(0.992845, 0.9929027)
-skew = 0.014406204
+position = Vector2(0, 0.90624356)
+rotation = 2.3321272e-05
+scale = Vector2(0.9878987, 0.9978247)
+skew = -0.010372162
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
 texture = ExtResource("2_y74k2")
@@ -353,6 +352,7 @@ bones = ["Bone_Center", PackedFloat32Array(0.12820783, 0.12820783, 0.028734094, 
 internal_vertex_count = 9
 
 [node name="Skeleton2D" type="Skeleton2D" parent="Offset/Visual" unique_id=1670137835]
+visible = false
 
 [node name="Bone_Center" type="Bone2D" parent="Offset/Visual/Skeleton2D" unique_id=1021668462]
 rest = Transform2D(1, 0, 0, 1, 0, 0)

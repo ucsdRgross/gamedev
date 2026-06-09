@@ -36,23 +36,11 @@ var focused : bool = false:
 	set(value):
 		data = value
 		update_visual()
-		if current_context != DisplayContext.PLAY_AREA: return
+		if data != value or current_context != DisplayContext.PLAY_AREA: return
 		if not is_node_ready():
 			await ready
-		match data.previous_stage:
-			data.Stage.PLAY, data.Stage.ZONE:
-				if CardEnvironment.CURRENT:
-					global_position = get_card_control_center(control_anchor)
-			data.Stage.DRAW:
-				if CardEnvironment.get_current_game():
-					global_position = get_control_center(CardEnvironment.get_current_game().deck_ui)
-			data.Stage.DISCARD:
-				if CardEnvironment.get_current_game():
-					global_position = get_control_center(CardEnvironment.get_current_game().discard_ui)
-			data.Stage.RULES:
-				if CardEnvironment.get_current_game():
-					global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
-		on_stage_changed()
+		if data:
+			on_stage_changed()
 var can_move_anim := true
 var can_rot_anim := true
 var floating : bool = true:
@@ -130,7 +118,6 @@ func update_visual() -> void:
 			CardModifierType.V_FRAMES,
 			1)
 		type.show()
-		
 
 #static var num_cards : int = 0
 #static var child_offset : Vector2 = Vector2(0, 55)
@@ -196,11 +183,26 @@ func recalculate_size() -> void:
 
 func on_stage_changed() -> void:
 	if current_context != DisplayContext.PLAY_AREA: return
+	if not data: return
 	if data.stage == data.previous_stage: return
+	match data.previous_stage:
+		data.Stage.PLAY, data.Stage.ZONE:
+			if CardEnvironment.CURRENT:
+				global_position = get_card_control_center(control_anchor)
+		data.Stage.DRAW:
+			if CardEnvironment.get_current_game():
+				global_position = get_control_center(CardEnvironment.get_current_game().deck_ui)
+		data.Stage.DISCARD:
+			if CardEnvironment.get_current_game():
+				global_position = get_control_center(CardEnvironment.get_current_game().discard_ui)
+		data.Stage.RULES:
+			if CardEnvironment.get_current_game():
+				global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
 			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
+			await move_tween.finished
 		data.Stage.DRAW:
 			if CardEnvironment.get_current_game():
 				var target_pos := get_control_center(CardEnvironment.get_current_game().discard_ui)

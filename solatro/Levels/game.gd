@@ -47,6 +47,8 @@ func _ready() -> void:
 	play_area.data_selected.connect(on_data_selected)
 	state.goal = state.goal * (1.1 ** Main.save_info.layer)
 	add_deck()
+	await run_all_mods(&"on_game_start")
+	skill_active_check()
 	save_state()
 	state.print_board()
 
