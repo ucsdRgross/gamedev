@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://0udjriminoud" path="res://Levels/map.gd" id="1_uwdp5"]
 [ext_resource type="Script" uid="uid://cnls1uy13mmj7" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
-[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_dofqu"]
 [ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
 [ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://Levels/triangle_map.tscn" id="5_5sh7s"]
 
@@ -68,14 +67,6 @@ offset_top = 559.0
 offset_right = 85.0
 offset_bottom = 559.0
 scale = Vector2(1.5, 1.5)
-
-[node name="Card" parent="SceneRoot/Preview" unique_id=1989553554 instance=ExtResource("2_dofqu")]
-position = Vector2(18.4, -57.6)
-scale = Vector2(3, 3)
-can_move_anim = false
-clickable = false
-stack_limit = 0
-num = 20
 
 [node name="PreviewLabel" type="Label" parent="SceneRoot/Preview" unique_id=1126721272]
 unique_name_in_owner = true

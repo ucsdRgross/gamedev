@@ -7,8 +7,10 @@ const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 const CARD_SIZE := Vector2(38,50)
 const CARD_SEPERATION : int = 14
 
+@export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
+
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
-var current_context: DisplayContext = DisplayContext.PLAY_AREA
+@export var current_context: DisplayContext = DisplayContext.PLAY_AREA
 var control_anchor: Control = null
 
 var card_size : Vector2
@@ -30,7 +32,7 @@ var focused : bool = false:
 		focused = value
 		if focused: modulate = Color(1.825, 1.825, 1.825)
 		else: modulate = Color(1.0, 1.0, 1.0)
-var data : CardData:
+@export var data : CardData:
 	set(value):
 		data = value
 		update_visual()
@@ -94,16 +96,14 @@ func update_visual() -> void:
 		else: suit.hide()
 			
 		if data.type:
-			type.frame = data.type.get_frame()
+			data.type.set_texture(type)
 			type.show()
-		else:
-			type.hide()
+		else: type.hide()
 			
 		if data.stamp:
-			stamp.frame = data.stamp.get_frame()
+			data.stamp.set_texture(stamp)
 			stamp.show()
-		else:
-			stamp.hide()
+		else: stamp.hide()
 			
 		if data.skill:
 			data.skill.set_texture(art)
@@ -118,12 +118,19 @@ func update_visual() -> void:
 	else:
 		if not is_node_ready():
 			await ready
-		type.frame = 3
-		type.show()
 		rank.hide()
 		stamp.hide()
 		suit.hide()
 		art.hide()
+		
+		#placeholder
+		CardModifier.update_polygon_uv_frame(
+			type,CardModifierType.TYPE_TEXTURE, 
+			CardModifierType.H_FRAMES,
+			CardModifierType.V_FRAMES,
+			0)
+		type.show()
+		
 
 #static var num_cards : int = 0
 #static var child_offset : Vector2 = Vector2(0, 55)
@@ -135,11 +142,23 @@ var hover : bool = false
 
 @onready var offset: Node2D = $Offset
 @onready var visual: Node2D = $Offset/Visual
-@onready var type: Sprite2D = $Offset/Visual/Type
-@onready var rank: Sprite2D  = $Offset/Visual/Rank
-@onready var stamp: Sprite2D = $Offset/Visual/Stamp
-@onready var suit: Sprite2D  = $Offset/Visual/Suit
-@onready var art: Sprite2D = $Offset/Visual/Art
+@onready var type: Polygon2D = $Offset/Visual/Type
+@onready var rank: Polygon2D  = $Offset/Visual/Rank
+@onready var stamp: Polygon2D = $Offset/Visual/Stamp
+@onready var suit: Polygon2D  = $Offset/Visual/Suit
+@onready var art: Polygon2D = $Offset/Visual/Art
+	
+	
+@export_group("Mesh Generation Configuration")
+## Drag and drop the targeted layer child node here (e.g. Type, Art, Rank)
+@export var target_polygon_node: Polygon2D
+## Reference texture sheet layout to sample dimensions from
+@export var bake_sample_texture: Texture2D
+@export var bake_h_frames: int = 8
+@export var bake_v_frames: int = 8
+@export var subdivisions_x: int = 1
+@export var subdivisions_y: int = 3
+	
 	
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
@@ -151,6 +170,7 @@ static func add_child_card_visual(parent:Node,connected_data:CardData, context:D
 	return card
 
 func _ready() -> void:
+	#if not Engine.is_editor_hint(): data = null
 	type.hide()
 	rank.hide()
 	stamp.hide()
@@ -352,3 +372,220 @@ func anim_reset() -> void:
 				##await get_tree().create_timer(score_delay).timeout
 				#score_name_popup.queue_free()
 				#
+
+
+@export_tool_button("Bake Selected Mesh & UVs") 
+var editor_bake_mesh : Callable = func() -> void:
+	if not target_polygon_node or not bake_sample_texture:
+		printerr("CardVisual Tool: Please assign a target node and sample texture inside the inspector group!")
+		return
+	generate_editor_mesh(target_polygon_node, bake_sample_texture, bake_h_frames, bake_v_frames, subdivisions_x, subdivisions_y)
+	print("CardVisual Tool: Successfully baked ", target_polygon_node.name, " mesh data structure!")
+
+## Bakes an optimized, X-subdivided geometric grid with centralized diamond triangulation
+func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, subdiv_x: int, subdiv_y: int) -> void:
+	poly.texture = tex
+	
+	var sheet_size := tex.get_size()
+	var frame_w := sheet_size.x / h_f
+	var frame_h := sheet_size.y / v_f
+	
+	var vertices := PackedVector2Array()
+	var triangles: Array[PackedInt32Array] = []
+	
+	var x_segments := subdiv_x + 1
+	var y_segments := subdiv_y + 1
+	
+	# --- STEP 1: GENERATE CORNER GRID VERTICES ---
+	# We store where the main grid corners sit so we can map them cleanly
+	var grid_width_vertices := x_segments + 1
+	
+	for y in range(y_segments + 1):
+		var t_y := float(y) / y_segments 
+		var pos_y :float= lerp(-frame_h / 2.0, frame_h / 2.0, t_y)
+		for x in range(grid_width_vertices):
+			var t_x := float(x) / x_segments
+			var pos_x :float= lerp(-frame_w / 2.0, frame_w / 2.0, t_x)
+			vertices.append(Vector2(pos_x, pos_y))
+			
+	# --- STEP 2: GENERATE CELL CENTERS AND TRIANGULATE "X" ---
+	# We append center vertices to the END of the array to keep index tracking simple
+	var center_start_index := vertices.size()
+	var center_counter := 0
+	
+	for y in range(y_segments):
+		for x in range(x_segments):
+			# Calculate indices for the 4 outer corners of this specific cell
+			var tl := y * grid_width_vertices + x
+			var tr := tl + 1
+			var bl := (y + 1) * grid_width_vertices + x
+			var br := bl + 1
+			
+			# Find the physical midpoint position for the center vertex
+			var center_pos := (vertices[tl] + vertices[tr] + vertices[bl] + vertices[br]) / 4.0
+			vertices.append(center_pos)
+			
+			# Determine the index of our newly created center point
+			var cc := center_start_index + center_counter
+			center_counter += 1
+			
+			# Construct 4 triangles meeting at the center to form the "X" shape
+			triangles.append(PackedInt32Array([tl, tr, cc])) # Top Triangle
+			triangles.append(PackedInt32Array([tr, br, cc])) # Right Triangle
+			triangles.append(PackedInt32Array([br, bl, cc])) # Bottom Triangle
+			triangles.append(PackedInt32Array([bl, tl, cc])) # Left Triangle
+			
+	# Update the Godot Polygon2D node structures
+	poly.polygon = vertices
+	poly.polygons = triangles
+	poly.internal_vertex_count = vertices.size() - 4
+	
+	# --- STEP 3: GENERATE CORRESPONDING UV COORDINATES (FRAME 0 BASELINE) ---
+	var initial_uvs := PackedVector2Array()
+	initial_uvs.resize(vertices.size())
+	
+	for i in range(vertices.size()):
+		var p := vertices[i]
+		# Map the (-w/2, w/2) range back to a normalized (0.0 to 1.0) space
+		var norm_x := (p.x / frame_w) + 0.5
+		var norm_y := (p.y / frame_h) + 0.5
+		initial_uvs[i] = Vector2(norm_x * frame_w, norm_y * frame_h)
+		
+	poly.uv = initial_uvs
+	
+	# Commit properties to the editor engine interface
+	poly.notify_property_list_changed()
+
+# --- SKELETON SETUP AND BINDING UTILITIES ---
+@export_group("Skeleton Automation Configuration")
+## The number of deformation bone segments to build up the middle of the card mesh bounds
+@export var bone_segments: int = 5
+
+@export_tool_button("Generate Skeleton & Bind Layers")
+var editor_setup_skeleton : Callable = func() -> void:
+	# 1. Gather all active Polygon2D nodes from your visual layer tree
+	var visual_container := get_node_or_null("Offset/Visual")
+	if not visual_container:
+		printerr("CardVisual Tool: Could not find 'Offset/Visual' node pathway!")
+		return
+		
+	var polygon_layers: Array[Polygon2D] = []
+	for child in visual_container.get_children():
+		if child is Polygon2D:
+			polygon_layers.append(child)
+			
+	if polygon_layers.is_empty():
+		printerr("CardVisual Tool: No Polygon2D layers detected inside Offset/Visual!")
+		return
+
+	# 2. Dynamically scan all vertices to locate the top-most and bottom-most points in local space
+	var highest_y: float = INF
+	var lowest_y: float = -INF
+	
+	for poly in polygon_layers:
+		for vertex in poly.polygon:
+			# Convert the local vertex position to CardVisual's local coordinate space
+			var card_local_pos := to_local(poly.to_global(vertex))
+			if card_local_pos.y < highest_y:
+				highest_y = card_local_pos.y # Top-most vertex (smallest Y)
+			if card_local_pos.y > lowest_y:
+				lowest_y = card_local_pos.y # Bottom-most vertex (largest Y)
+
+	# Fallback safety check if meshes are completely invalid
+	if highest_y == INF or lowest_y == -INF:
+		printerr("CardVisual Tool: Could not calculate mesh bounds. Are the layer polygons empty?")
+		return
+
+	# Determine the real, total height of the combined geometry
+	var absolute_height := lowest_y - highest_y
+	var segment_height := absolute_height / float(bone_segments)
+
+	# 3. Setup or clean the Skeleton2D container
+	var skeleton: Skeleton2D = get_node_or_null("Skeleton2D")
+	if skeleton:
+		for child in skeleton.get_children():
+			child.queue_free()
+	else:
+		skeleton = Skeleton2D.new()
+		skeleton.name = "Skeleton2D"
+		add_child(skeleton)
+		skeleton.owner = get_tree().edited_scene_root
+
+	# 4. Generate the vertical Bone2D chain from BOTTOM to TOP based on real vertices
+	var bones: Array[Bone2D] = []
+	var previous_bone: Node = skeleton
+	
+	for i in range(bone_segments):
+		var bone := Bone2D.new()
+		bone.name = "Bone_" + str(i)
+		
+		# Root bone is placed exactly at the lowest (bottom-most) vertex position
+		if i == 0:
+			bone.position = Vector2(0, lowest_y)
+		else:
+			# Successive children climb straight up the card (-Y axis in Godot)
+			bone.position = Vector2(0, -segment_height)
+			
+		# Rotate the root bone -90 degrees so the chain visually aims straight up the spine
+		bone.rotation = -PI/2.0 if i == 0 else 0.0
+		
+		previous_bone.add_child(bone)
+		bone.owner = get_tree().edited_scene_root
+		
+		# Lock the current position as the neutral rest pose to prevent mesh warping on bind
+		bone.rest = bone.transform
+		bones.append(bone)
+		previous_bone = bone
+
+	# 5. Bind every discovered layer layer-by-layer to this new custom-fit skeleton
+	for poly in polygon_layers:
+		_bind_layer_to_bones(poly, skeleton, bones)
+		
+	print("CardVisual Tool: Symmetrically built bone chain from Y:", lowest_y, " to Y:", highest_y, " across ", bone_segments, " segments!")
+
+
+## Internal weight-painting logic mapping vertices safely using dynamic vertical proximity
+func _bind_layer_to_bones(poly: Polygon2D, skeleton: Skeleton2D, bones: Array[Bone2D]) -> void:
+	poly.skeleton = poly.get_path_to(skeleton)
+	poly.clear_bones()
+	
+	# Register each bone path track inside the Polygon engine profile
+	for bone in bones:
+		poly.add_bone(poly.get_path_to(bone), PackedFloat32Array())
+		
+	var vertices := poly.polygon
+	if vertices.is_empty():
+		return
+		
+	# Pre-allocate weight sheets for each bone
+	var bone_weight_matrices: Array[PackedFloat32Array] = []
+	for b in bones:
+		var weight_sheet := PackedFloat32Array()
+		weight_sheet.resize(vertices.size())
+		weight_sheet.fill(0.0)
+		bone_weight_matrices.append(weight_sheet)
+		
+	# Loop through vertices and assign 100% rigid weight to the closest vertical bone split
+	for v_idx in range(vertices.size()):
+		var vertex_pos := vertices[v_idx]
+		
+		var closest_bone_idx := 0
+		var shortest_vertical_distance := INF
+		
+		for b_idx in range(bones.size()):
+			# Evaluate the bone position directly inside this specific polygon node's space
+			var bone_local_pos := poly.to_local(bones[b_idx].global_position)
+			var v_dist :float= abs(vertex_pos.y - bone_local_pos.y)
+			
+			if v_dist < shortest_vertical_distance:
+				shortest_vertical_distance = v_dist
+				closest_bone_idx = b_idx
+				
+		# Map full influence to the closest calculated segment point
+		bone_weight_matrices[closest_bone_idx][v_idx] = 1.0
+
+	# Apply weight allocations directly to the engine properties
+	for b_idx in range(bones.size()):
+		poly.set_bone_weights(b_idx, bone_weight_matrices[b_idx])
+		
+	poly.notify_property_list_changed()

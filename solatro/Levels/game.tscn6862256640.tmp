@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b6lwr20eougmt" path="res://Levels/game.gd" id="1_gj2ix"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
+[ext_resource type="Resource" uid="uid://3uwspwqrud5" path="res://Decks/default_deck.tres" id="2_grgi0"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
 [ext_resource type="AudioStream" uid="uid://832pt8ypxpnt" path="res://Audio/die-throw-1.ogg" id="6_uknij"]
 [ext_resource type="AudioStream" uid="uid://cmddd13e1cu8t" path="res://Audio/die-throw-3.ogg" id="7_6uk7u"]
@@ -24,6 +25,7 @@ stream_2/stream = ExtResource("8_67uf7")
 
 [node name="Game" type="Node" unique_id=2080402851]
 script = ExtResource("1_gj2ix")
+deck = ExtResource("2_grgi0")
 
 [node name="SceneRoot" type="Control" parent="." unique_id=334352069]
 unique_name_in_owner = true

@@ -4,7 +4,7 @@ extends Resource
 signal data_changed
 signal stage_changed
 
-@export_storage var suit: PipSuit:
+@export var suit: PipSuit:
 	set(value):
 		if suit and suit.data_changed.is_connected(_on_child_data_changed):
 			suit.data_changed.disconnect(_on_child_data_changed)
@@ -12,7 +12,7 @@ signal stage_changed
 		if suit:
 			suit.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
-@export_storage var rank: PipRank:
+@export var rank: PipRank:
 	set(value):
 		if rank and rank.data_changed.is_connected(_on_child_data_changed):
 			rank.data_changed.disconnect(_on_child_data_changed)
@@ -20,22 +20,22 @@ signal stage_changed
 		if rank:
 			rank.data_changed.connect(_on_child_data_changed)
 		data_changed.emit()
-@export_storage var skill: CardModifierSkill:
+@export var skill: CardModifierSkill:
 	set(value):
 		skill = value
 		data_changed.emit()
-@export_storage var type: CardModifierType:
+@export var type: CardModifierType:
 	set(value):
 		type = value
 		data_changed.emit()
-@export_storage var stamp: CardModifierStamp:
+@export var stamp: CardModifierStamp:
 	set(value):
 		stamp = value
 		data_changed.emit()
-@export_storage var statuses: Dictionary[String,int]
-@export_storage var flipped := false
+@export var statuses: Dictionary[String,int]
+@export var flipped := false
 enum Stage {PLAY, DRAW, DISCARD, RULES, ZONE, DATA}
-@export_storage var stage : Stage = Stage.PLAY:
+@export var stage : Stage = Stage.PLAY:
 	set(value):
 		previous_stage = stage
 		stage = value

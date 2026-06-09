@@ -61,12 +61,12 @@ func _ready() -> void:
 
 func new_PipSuit(name:StringName) -> PipSuit:
 	match name: 
-		STANDARD: return PipSuit.Standard.new()
+		STANDARD: return PipSuitStandard.new()
 	return null
 
 func new_PipRank(name:StringName) -> PipRank:
 	match name: 
-		NUMERAL: return PipRank.Numeral.new()
+		NUMERAL: return PipRankNumeral.new()
 	return null
 
 func add_mods() -> void:

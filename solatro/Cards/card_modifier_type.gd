@@ -1,10 +1,9 @@
 @abstract class_name CardModifierType
 extends CardModifier
 
-const type_texture : Texture2D = preload("res://Assets/card_types.png")
+const TYPE_TEXTURE : Texture2D = preload("res://Assets/card_types.png")
+const H_FRAMES: int = 8
+const V_FRAMES: int = 8
 
-func set_texture(sprite:Sprite2D) -> void:
-	sprite.texture = type_texture
-	sprite.hframes = 8
-	sprite.vframes = 8
-	sprite.frame = get_frame()
+func set_texture(polygon2d: Polygon2D) -> void:
+	update_polygon_uv_frame(polygon2d, TYPE_TEXTURE, H_FRAMES, V_FRAMES, get_frame())

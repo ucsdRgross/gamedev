@@ -56,7 +56,8 @@ func print_board() -> void:
 	for c in upper_zone_type:
 		s += c.to_string() + ","
 	s += "\n"
-	var rows : int = upper_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
+	var upper_col_sizes : Array = upper_zone.map(func(a:ArrayCardData)->int:return a.datas.size())
+	var rows : int = upper_col_sizes.max() if upper_col_sizes else 0
 	for r in rows:
 		s += str(r) + ","
 		for col in upper_zone:
@@ -68,7 +69,8 @@ func print_board() -> void:
 	for c in lower_zone_type:
 		s += c.to_string() + ","
 	s += "\n"
-	rows = lower_zone.map(func(a:ArrayCardData)->int:return a.datas.size()).max()
+	var lower_col_sizes : Array = lower_zone.map(func(a:ArrayCardData)->int:return a.datas.size())
+	rows = lower_col_sizes.max() if lower_col_sizes else 0
 	for r in rows:
 		s += str(r) + ","
 		for col in lower_zone:

@@ -503,8 +503,8 @@ class MultiStraightHandler extends Scorer:
 		if not unique.is_empty(): curr_run.append(unique[0])
 		
 		for i in range(1, unique.size()):
-			var r1 := PipRank.Numeral.new().with_value(unique[i-1])
-			var r2 := PipRank.Numeral.new().with_value(unique[i])
+			var r1 := PipRankNumeral.new().with_value(unique[i-1])
+			var r2 := PipRankNumeral.new().with_value(unique[i])
 			
 			if await PipComparator.is_rank_next_to(r1, r2):
 				curr_run.append(unique[i])

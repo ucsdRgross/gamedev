@@ -1,10 +1,9 @@
 @abstract class_name CardModifierStamp
 extends CardModifier
 
-const stamp_texture : Texture2D = preload("res://Assets/stamp_pips.png")
+const STAMP_TEXTURE : Texture2D = preload("res://Assets/stamp_pips.png")
+const H_FRAMES: int = 8
+const V_FRAMES: int = 8
 
-func set_texture(sprite:Sprite2D) -> void:
-	sprite.texture = stamp_texture
-	sprite.hframes = 8
-	sprite.vframes = 8
-	sprite.frame = get_frame()
+func set_texture(polygon2d: Polygon2D) -> void:
+	update_polygon_uv_frame(polygon2d, STAMP_TEXTURE, H_FRAMES, V_FRAMES, get_frame())

@@ -62,7 +62,7 @@ static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 	if not is_nan(mod_result): return mod_result
 	
 	match [s1, s2]:
-		[var a, var b] when a is PipSuit.Standard and b is PipSuit.Standard:
+		[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
 			return a.value - b.value
 	return NAN
 
@@ -73,7 +73,7 @@ static func is_suit_same(s1: PipSuit, s2: PipSuit) -> bool:
 	if s1 == s2: return true
 	
 	match [s1, s2]:
-		[var a, var b] when a is PipSuit.Standard and b is PipSuit.Standard:
+		[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
 			return a.value == b.value
 		#[var a, var b] when a is Scoring.MultiSuit or b is Scoring.MultiSuit:
 			#var suits_a := _get_suit_objects(a)
@@ -96,7 +96,7 @@ static func compare_ranks(r1: PipRank, r2: PipRank) -> float:
 	if not is_nan(mod_result): return mod_result
 	
 	match [r1, r2]:
-		[var a, var b] when a is PipRank.Numeral and b is PipRank.Numeral:
+		[var a, var b] when a is PipRankNumeral and b is PipRankNumeral:
 			return a.value - b.value
 		[var a, var b] when "value" in a and "value" in b:
 			return a.value - b.value
@@ -197,7 +197,7 @@ static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:
 	#var mod_result := await Game.return_first_compare_mod_result(&"on_compare_suits", s1, s2)
 	#if not is_nan(mod_result): return mod_result
 	#match [s1, s2]:
-		#[var a, var b] when a is PipSuit.Standard and b is PipSuit.Standard:
+		#[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
 			#return a.value - b.value
 	#return NAN
 #
@@ -205,7 +205,7 @@ static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:
 	#var mod_result := await Game.return_first_compare_mod_result(&"on_compare_ranks", r1, r2)
 	#if not is_nan(mod_result): return mod_result
 	#match [r1, r2]:
-		#[var a, var b] when a is PipRank.Numeral and b is PipRank.Numeral:
+		#[var a, var b] when a is PipRankNumeral and b is PipRankNumeral:
 			#return a.value - b.value
 	#return NAN
 	

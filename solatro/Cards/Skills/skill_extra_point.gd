@@ -1,3 +1,4 @@
+@tool
 class_name SkillExtraPoint
 extends CardModifierSkill
 
@@ -5,9 +6,9 @@ func get_str() -> String: return "Extra Point"
 func get_description() -> String: return "Gain 1 Extra Point Per Score"
 func get_frame() -> int: return 0
 
-func on_score(target:Card) -> void:
+func on_score(target:CardData) -> void:
 	if not is_active(): return
-	if target.data == self.data and CardEnvironment.CURRENT:
+	if data == self.data and CardEnvironment.CURRENT:
 		#var grid_pos := CardEnvironment.CURRENT.get_card_grid_pos(target)
 		#await card_shake(add_points.bind(grid_pos.x, grid_pos.y))
 		await CardEnvironment.CURRENT.on_mod_triggered(self.data, on_score.bind(target))

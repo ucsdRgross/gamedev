@@ -81,8 +81,8 @@ func _initialize_triangle_map_data() -> void:
 
 func _generate_random_map_card() -> CardData:
 	var card: CardData = CardData.new()
-	card.with_rank(PipRank.Numeral.new().with_random())
-	card.with_suit(PipSuit.Standard.new().with_random())
+	card.with_rank(PipRankNumeral.new().with_random())
+	card.with_suit(PipSuitStandard.new().with_random())
 	card.flipped = false
 	return card
 

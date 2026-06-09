@@ -14,13 +14,69 @@ enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 @abstract func get_str() -> String
 @abstract func get_description() -> String
 @abstract func get_frame() -> int
-@abstract func set_texture(sprite:Sprite2D) -> void
+@abstract func set_texture(polygon2d:Polygon2D) -> void
 
 func with_data(data:CardData) -> CardModifier:
 	self.data = data
 	return self
 
-func set_material(sprite:Sprite2D) -> void: sprite.material = null
+func set_material(polygon2d:Polygon2D) -> void: polygon2d.material = null
+
+## Robust runtime UV framing method that automatically adapts to ANY texture size
+static func update_polygon_uv_frame(polygon2d: Polygon2D, source_sheet: Texture2D, h_frame: int, v_frame: int, target_frame: int) -> void:
+	if not polygon2d or polygon2d.polygon.is_empty():
+		return
+		
+	if polygon2d.texture != source_sheet:
+		polygon2d.texture = source_sheet
+		
+	# 1. Dynamically read the incoming texture sizing
+	var sheet_size := source_sheet.get_size()
+	var frame_w := sheet_size.x / h_frame
+	var frame_h := sheet_size.y / v_frame
+	
+	# 2. Find row, column, and pixel offset positions for the new layout
+	var col := target_frame % h_frame
+	var row := target_frame / h_frame
+	var u_left := col * frame_w
+	var v_top := row * frame_h
+	
+	var base_points := polygon2d.polygon
+	var shifted_uvs := PackedVector2Array()
+	shifted_uvs.resize(base_points.size())
+	
+	# 3. Dynamically find the min/max bounds of the physical mesh shape
+	var min_p := base_points[0]
+	var max_p := base_points[0]
+	for idx in range(1, base_points.size()):
+		var pt := base_points[idx]
+		min_p.x = min(min_p.x, pt.x)
+		min_p.y = min(min_p.y, pt.y)
+		max_p.x = max(max_p.x, pt.x)
+		max_p.y = max(max_p.y, pt.y)
+		
+	var poly_w := max_p.x - min_p.x
+	var poly_h := max_p.y - min_p.y
+	
+	if poly_w == 0.0: poly_w = 1.0
+	if poly_h == 0.0: poly_h = 1.0
+	
+	# 4. Map the physical vertices directly to the newly calculated texture coordinates
+	for i in range(base_points.size()):
+		var p := base_points[i]
+		
+		# Normalize the physical coordinate space to a clean 0.0 - 1.0 range
+		var norm_x := (p.x - min_p.x) / poly_w
+		var norm_y := (p.y - min_p.y) / poly_h
+		
+		# Translate normalized space into the exact pixel window of the new frame
+		var uv_x := u_left + (norm_x * frame_w)
+		var uv_y := v_top + (norm_y * frame_h)
+		
+		shifted_uvs[i] = Vector2(uv_x, uv_y)
+		
+	polygon2d.uv = shifted_uvs
+
 
 # Implementable conditions. Kept as comments here for reference so has_method works as tagging
 #func on_active() -> void

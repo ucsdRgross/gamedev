@@ -6,7 +6,7 @@ signal game_ended
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 #placeholder
-@export var deck : Deck
+@export var deck : Deck = Deck.new()
 
 var state : GameData = GameData.new():
 	set(value):
@@ -83,8 +83,8 @@ func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
 	var saved_deck := Main.save_info.card_datas
 	# for testing if data is blank/no saves
-	if not saved_rules: saved_rules = self.deck.rule_datas
-	if not saved_deck: saved_deck = self.deck.card_datas
+	if not saved_rules: saved_rules = self.deck.get_rules()
+	if not saved_deck: saved_deck = self.deck.get_deck()
 	
 	state.rules_deck = saved_rules.duplicate(true)
 	for data in state.rules_deck:

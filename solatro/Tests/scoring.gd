@@ -31,8 +31,8 @@ static func make_hand(ranks: Array[int], suits: Array[int]) -> Array[CardData]:
 
 static func m_card(rank_val: float, suit_id: float) -> CardData:
 	var cd := CardData.new()
-	cd.rank = PipRank.Numeral.new().with_value(rank_val)
-	cd.suit = PipSuit.Standard.new().with_value(suit_id)
+	cd.rank = PipRankNumeral.new().with_value(rank_val)
+	cd.suit = PipSuitStandard.new().with_value(suit_id)
 	return cd
 
 static func m_stone() -> CardData:
@@ -592,7 +592,7 @@ func run_scaling_matrix() -> void:
 	#var cd := CardData
 	#cd.rank = Scoring.HalfStepRank
 	#cd.rank.value = int(rank_val)
-	#cd.suit = PipSuit.Standard.with_value(suit_id)
+	#cd.suit = PipSuitStandard.with_value(suit_id)
 	#return cd
 
 #static func m_omni(rank_cond: int, oob: bool, suit_cond: int) -> CardData:
@@ -608,16 +608,16 @@ func run_scaling_matrix() -> void:
 
 #static func m_fixed(fixed_val: int, suit_id: int) -> CardData:
 	#var cd := CardData
-	#cd.rank = PipRank.Numeral.with_value(fixed_val)
+	#cd.rank = PipRankNumeral.with_value(fixed_val)
 	#cd.suit = Scoring.WildOmniSuit
 	#return cd
 
 #static func m_msuit(rank_val: int, suit_ids: Array[int]) -> CardData:
 	#var cd := CardData
-	#cd.rank = PipRank.Numeral.with_value(rank_val)
+	#cd.rank = PipRankNumeral.with_value(rank_val)
 	#var ms := Scoring.MultiSuit
 	#for id in suit_ids:
-		#ms.allowed_suits.append(PipSuit.Standard.with_value(id))
+		#ms.allowed_suits.append(PipSuitStandard.with_value(id))
 	#cd.suit = ms
 	#return cd
 
