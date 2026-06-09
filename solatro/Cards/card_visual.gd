@@ -481,6 +481,8 @@ func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, s
 @export_group("Skeleton Automation Configuration")
 ## Number of progressive bone nodes dividing each directional arm of the star (1 = 8 bones, 2 = 16 bones)
 @export var arm_segments: int = 1
+## Changes how many structural arms the star splits into based on edge segments (1 = 8 arms, 2 = 12 arms, 3 = 16 arms)
+@export var edge_subdivisions: int = 1
 
 @export_tool_button("Generate Star Skeleton & Bind")
 var editor_setup_skeleton : Callable = func() -> void:
@@ -511,16 +513,11 @@ var editor_setup_skeleton : Callable = func() -> void:
 	var radius_vertical := half_height
 	var radius_horizontal := max_x
 	
-	# Establish absolute corner and edge target points in card local space
-	var tl_corner := Vector2(-radius_horizontal, highest_y)
-	var tr_corner := Vector2(radius_horizontal, highest_y)
-	var br_corner := Vector2(radius_horizontal, lowest_y)
-	var bl_corner := Vector2(-radius_horizontal, lowest_y)
-	
-	var t_mid := Vector2(0, highest_y)
-	var r_mid := Vector2(radius_horizontal, center_pos.y)
-	var b_mid := Vector2(0, lowest_y)
-	var l_mid := Vector2(-radius_horizontal, center_pos.y)
+	# Define the four absolute corner poles of our bounding frame box
+	var tl := Vector2(-radius_horizontal, highest_y)
+	var tr := Vector2(radius_horizontal, highest_y)
+	var br := Vector2(radius_horizontal, lowest_y)
+	var bl := Vector2(-radius_horizontal, lowest_y)
 
 	# 2. Reset and build the clean Skeleton2D node layer
 	var skeleton: Skeleton2D = get_node_or_null("Skeleton2D")
@@ -541,25 +538,62 @@ var editor_setup_skeleton : Callable = func() -> void:
 	center_bone.owner = get_tree().edited_scene_root
 	center_bone.rest = center_bone.transform
 
-	# 4. DEFINE ALL 8 RADIAL TARGET DIRECTIONAL PATHS FROM CENTER OUTWARD
-	var directions: Array[Vector2] = [
-		tl_corner - center_pos, # Top-Left
-		tr_corner - center_pos, # Top-Right
-		br_corner - center_pos, # Bottom-Right
-		bl_corner - center_pos, # Bottom-Left
-		t_mid - center_pos,     # Straight Top
-		r_mid - center_pos,     # Straight Right
-		b_mid - center_pos,     # Straight Bottom
-		l_mid - center_pos      # Straight Left
-	]
-
-	var arm_names: Array[String] = ["TopLeft", "TopRight", "BottomRight", "BottomLeft", "Top", "Right", "Bottom", "Left"]
+	# 4. GENERATE DIRECTIONAL TARGET PATHS BY SUBDIVIDING RECTANGLE EDGES
+	var directions: Array[Vector2] = []
+	var arm_names: Array[String] = []
 	
-	# Setup arrays to properly bind node pathways with formatting strings
+	# Total steps per border edge wall
+	var wall_steps := edge_subdivisions + 1
+	
+	# Edge A: Top Wall (Left to Right)
+	for i in range(wall_steps):
+		var target := tl.lerp(tr, float(i) / wall_steps)
+		directions.append(target - center_pos)
+		if i == 0:
+			arm_names.append("TopLeft")
+		elif edge_subdivisions == 1:
+			arm_names.append("Top")
+		else:
+			arm_names.append("Top_" + str(i))
+		
+	# Edge B: Right Wall (Top to Bottom)
+	for i in range(wall_steps):
+		var target := tr.lerp(br, float(i) / wall_steps)
+		directions.append(target - center_pos)
+		if i == 0:
+			arm_names.append("TopRight")
+		elif edge_subdivisions == 1:
+			arm_names.append("Right")
+		else:
+			arm_names.append("Right_" + str(i))
+		
+	# Edge C: Bottom Wall (Right to Left)
+	for i in range(wall_steps):
+		var target := br.lerp(bl, float(i) / wall_steps)
+		directions.append(target - center_pos)
+		if i == 0:
+			arm_names.append("BottomRight")
+		elif edge_subdivisions == 1:
+			arm_names.append("Bottom")
+		else:
+			arm_names.append("Bottom_" + str(i))
+		
+	# Edge D: Left Wall (Bottom to Top)
+	for i in range(wall_steps):
+		var target := bl.lerp(tl, float(i) / wall_steps)
+		directions.append(target - center_pos)
+		if i == 0:
+			arm_names.append("BottomLeft")
+		elif edge_subdivisions == 1:
+			arm_names.append("Left")
+		else:
+			arm_names.append("Left_" + str(i))
+
+	# Setup explicit tracking array sets for structural weight calculations
 	var bone_paths: Array[String] = ["Bone_Center"]
 	var bone_nodes: Array[Bone2D] = [center_bone]
 
-	# 5. GENERATE THE STAR ARMS AS NESTED HIERARCHIES
+	# 5. GENERATE THE DYNAMIC STAR ARMS AS NESTED HIERARCHIES
 	for arm_idx in range(directions.size()):
 		var dir_vector := directions[arm_idx]
 		var total_arm_length := dir_vector.length()
@@ -610,24 +644,22 @@ var editor_setup_skeleton : Callable = func() -> void:
 			weights_by_bone.append(w_arr)
 			
 		for v_idx in range(vertices.size()):
-			# Translate local vertex to global coordinates to neutralize position offsets
 			var v_glob := poly.to_global(vertices[v_idx])
 			
 			var distance_factors := PackedFloat32Array()
 			distance_factors.resize(bone_paths.size())
 			var running_weight_denominator := 0.0
 			
-			# Step 6A: Sample absolute distances to ALL bones, including Bone_Center
+			# Sample absolute spatial proximity lengths across all created joints
 			for b_idx in range(bone_paths.size()):
 				var dist := v_glob.distance_to(bone_nodes[b_idx].global_position)
-				if dist < 0.1: dist = 0.1 # Keep division calculations safe
+				if dist < 0.1: dist = 0.1
 				
-				# Inverse distance squared creates smooth, organic falloff blending
 				var falloff_factor := 1.0 / (dist * dist)
 				distance_factors[b_idx] = falloff_factor
 				running_weight_denominator += falloff_factor
 				
-			# Step 6B: Normalize the proportional slice so total weights sum up to 1.0
+			# Normalize ratios to sum up to 1.0 per vertex point
 			for b_idx in range(bone_paths.size()):
 				weights_by_bone[b_idx][v_idx] = distance_factors[b_idx] / running_weight_denominator
 
@@ -636,4 +668,4 @@ var editor_setup_skeleton : Callable = func() -> void:
 			poly.add_bone(NodePath(bone_paths[b_idx]), weights_by_bone[b_idx])
 			
 		poly.notify_property_list_changed()
-	print("CardVisual Tool: Pure distance-based weight maps generated successfully for all polygon layers!")
+	print("CardVisual Tool: Custom ", directions.size(), "-Way Star rig generated with optimized naming schemes!")
