@@ -258,7 +258,7 @@ func delta_self_moving_logic(delta:float) -> void:
 		# still need something to keep card attached to control though
 		# probably some sort of flag to trigger on next move instead of attach
 		# global_position = global_position.lerp(target, .2)
-		global_position = target + (global_position - target) * exp(-5 * delta)
+		global_position = target + (global_position - target) * exp(-10 * delta)
 		
 		if can_rot_anim and data and data.stage != data.Stage.ZONE:
 			y_delta = lerpf(y_delta, move.y, 15 * delta)

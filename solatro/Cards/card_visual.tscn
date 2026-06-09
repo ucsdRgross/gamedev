@@ -37,6 +37,7 @@ suit = SubResource("Resource_cksyn")
 rank = SubResource("Resource_v4ikb")
 type = SubResource("Resource_0xvu6")
 stamp = SubResource("Resource_dmau8")
+stage = 4
 metadata/_custom_type_script = "uid://b0nr8s0uyec23"
 
 [sub_resource type="Animation" id="Animation_dmau8"]
@@ -68,7 +69,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top:position")
+tracks/2/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_2:position")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -92,7 +93,7 @@ tracks/3/keys = {
 tracks/4/type = "value"
 tracks/4/imported = false
 tracks/4/enabled = true
-tracks/4/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right:position")
+tracks/4/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_2:position")
 tracks/4/interp = 1
 tracks/4/loop_wrap = true
 tracks/4/keys = {
@@ -116,7 +117,7 @@ tracks/5/keys = {
 tracks/6/type = "value"
 tracks/6/imported = false
 tracks/6/enabled = true
-tracks/6/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom:position")
+tracks/6/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_2:position")
 tracks/6/interp = 1
 tracks/6/loop_wrap = true
 tracks/6/keys = {
@@ -140,7 +141,7 @@ tracks/7/keys = {
 tracks/8/type = "value"
 tracks/8/imported = false
 tracks/8/enabled = true
-tracks/8/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left:position")
+tracks/8/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_2:position")
 tracks/8/interp = 1
 tracks/8/loop_wrap = true
 tracks/8/keys = {
@@ -148,6 +149,102 @@ tracks/8/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 0,
 "values": [Vector2(-19, 0)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_3:position")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-19, -12.5)]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_1:position")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-9.5, -25)]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_3:position")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(9.5, -25)]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_1:position")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(19, -12.5)]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_3:position")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(19, 12.5)]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_1:position")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(9.5, 25)]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_3:position")
+tracks/15/interp = 1
+tracks/15/loop_wrap = true
+tracks/15/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-9.5, 25)]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_1:position")
+tracks/16/interp = 1
+tracks/16/loop_wrap = true
+tracks/16/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-19, 12.5)]
 }
 
 [sub_resource type="Animation" id="Animation_cksyn"]
@@ -180,7 +277,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top:position")
+tracks/2/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_2:position")
 tracks/2/interp = 2
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -204,7 +301,7 @@ tracks/3/keys = {
 tracks/4/type = "value"
 tracks/4/imported = false
 tracks/4/enabled = true
-tracks/4/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right:position")
+tracks/4/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_2:position")
 tracks/4/interp = 2
 tracks/4/loop_wrap = true
 tracks/4/keys = {
@@ -228,7 +325,7 @@ tracks/5/keys = {
 tracks/6/type = "value"
 tracks/6/imported = false
 tracks/6/enabled = true
-tracks/6/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom:position")
+tracks/6/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_2:position")
 tracks/6/interp = 2
 tracks/6/loop_wrap = true
 tracks/6/keys = {
@@ -252,7 +349,7 @@ tracks/7/keys = {
 tracks/8/type = "value"
 tracks/8/imported = false
 tracks/8/enabled = true
-tracks/8/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left:position")
+tracks/8/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_2:position")
 tracks/8/interp = 2
 tracks/8/loop_wrap = true
 tracks/8/keys = {
@@ -260,6 +357,102 @@ tracks/8/keys = {
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Vector2(-19, 0), Vector2(-16.000002, -4e-44), Vector2(-21.333334, 0)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_3:position")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-19, -12.5)]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_1:position")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-9.5, -25)]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Top_3:position")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(9.5, -25)]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_1:position")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(19, -12.5)]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Right_3:position")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(19, 12.5)]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_1:position")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(9.5, 25)]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Bottom_3:position")
+tracks/15/interp = 1
+tracks/15/loop_wrap = true
+tracks/15/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-9.5, 25)]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("Offset/Visual/Skeleton2D/Bone_Center/Arm_Left_1:position")
+tracks/16/interp = 1
+tracks/16/loop_wrap = true
+tracks/16/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-19, 12.5)]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_018h0"]
@@ -287,26 +480,26 @@ shader_parameter/num_colors = 20
 scale = Vector2(3, 3)
 script = ExtResource("1_s3n6f")
 data = SubResource("Resource_wmxs8")
+subdivisions_x = 3
+subdivisions_y = 3
+edge_subdivisions = 3
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1741178505]
 libraries/ = SubResource("AnimationLibrary_018h0")
+autoplay = &"new_animation_2"
 
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
-position = Vector2(0, -0.7886165)
-rotation = 3.400036e-05
-scale = Vector2(0.9906426, 0.995101)
-skew = -0.013687611
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
 texture = ExtResource("2_y74k2")
 skeleton = NodePath("../Skeleton2D")
-polygon = PackedVector2Array(-19, -25, 19, -25, 19, 25, -19, 25, 0, -25, -19, 0, 0, 0, 19, 0, 0, 25, -9.5, -12.5, 9.5, -12.5, -9.5, 12.5, 9.5, 12.5)
-uv = PackedVector2Array(76, 0, 114, 0, 114, 50, 76, 50, 95, 0, 76, 25, 95, 25, 114, 25, 95, 50, 85.5, 12.5, 104.5, 12.5, 85.5, 37.5, 104.5, 37.5)
-polygons = [PackedInt32Array(0, 4, 9), PackedInt32Array(4, 6, 9), PackedInt32Array(6, 5, 9), PackedInt32Array(5, 0, 9), PackedInt32Array(4, 1, 10), PackedInt32Array(1, 7, 10), PackedInt32Array(7, 6, 10), PackedInt32Array(6, 4, 10), PackedInt32Array(5, 6, 11), PackedInt32Array(6, 8, 11), PackedInt32Array(8, 3, 11), PackedInt32Array(3, 5, 11), PackedInt32Array(6, 7, 12), PackedInt32Array(7, 2, 12), PackedInt32Array(2, 8, 12), PackedInt32Array(8, 6, 12)]
-bones = ["Bone_Center", PackedFloat32Array(1.126878e-06, 1.126878e-06, 1.126878e-06, 1.126878e-06, 1.7777575e-06, 3.077837e-06, 0.99998575, 3.077837e-06, 1.7777575e-06, 0.2020373, 0.2020373, 0.2020373, 0.2020373), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.9999916, 7.6946105e-07, 2.817195e-07, 4.444407e-07, 3.077835e-06, 1.7777587e-06, 1.1268714e-06, 5.370223e-07, 3.8836018e-07, 0.2020373, 0.05142199, 0.033279117, 0.022448588), "Bone_Center/Arm_Top", PackedFloat32Array(3.0778442e-06, 3.0778442e-06, 3.8836134e-07, 3.8836134e-07, 0.9999886, 1.1268754e-06, 1.7777526e-06, 1.1268754e-06, 4.4443937e-07, 0.2020373, 0.2020373, 0.033279117, 0.033279117), "Bone_Center/Arm_TopRight", PackedFloat32Array(7.6946105e-07, 0.9999916, 4.444407e-07, 2.817195e-07, 3.077835e-06, 5.370223e-07, 1.1268714e-06, 1.7777587e-06, 3.8836018e-07, 0.05142199, 0.2020373, 0.022448588, 0.033279117), "Bone_Center/Arm_Right", PackedFloat32Array(5.3702354e-07, 1.7777628e-06, 1.7777628e-06, 5.3702354e-07, 1.1268746e-06, 7.6945923e-07, 3.0778262e-06, 0.9999893, 1.1268746e-06, 0.05142199, 0.2020373, 0.05142199, 0.2020373), "Bone_Center/Arm_BottomRight", PackedFloat32Array(2.817195e-07, 4.444407e-07, 0.9999916, 7.6946105e-07, 3.8836018e-07, 5.370223e-07, 1.1268714e-06, 1.7777587e-06, 3.077835e-06, 0.022448588, 0.033279117, 0.05142199, 0.2020373), "Bone_Center/Arm_Bottom", PackedFloat32Array(3.8836134e-07, 3.8836134e-07, 3.0778442e-06, 3.0778442e-06, 4.4443937e-07, 1.1268754e-06, 1.7777526e-06, 1.1268754e-06, 0.9999886, 0.033279117, 0.033279117, 0.2020373, 0.2020373), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(4.444407e-07, 2.817195e-07, 7.6946105e-07, 0.9999916, 3.8836018e-07, 1.7777587e-06, 1.1268714e-06, 5.370223e-07, 3.077835e-06, 0.033279117, 0.022448588, 0.2020373, 0.05142199), "Bone_Center/Arm_Left", PackedFloat32Array(1.7777628e-06, 5.3702354e-07, 5.3702354e-07, 1.7777628e-06, 1.1268746e-06, 0.9999893, 3.0778262e-06, 7.6945923e-07, 1.1268746e-06, 0.2020373, 0.05142199, 0.2020373, 0.05142199)]
-internal_vertex_count = 9
+polygon = PackedVector2Array(-19, -25, 19, -25, 19, 25, -19, 25, -9.5, -25, 0, -25, 9.5, -25, -19, -12.5, -9.5, -12.5, 0, -12.5, 9.5, -12.5, 19, -12.5, -19, 0, -9.5, 0, 0, 0, 9.5, 0, 19, 0, -19, 12.5, -9.5, 12.5, 0, 12.5, 9.5, 12.5, 19, 12.5, -9.5, 25, 0, 25, 9.5, 25, -14.25, -18.75, -4.75, -18.75, 4.75, -18.75, 14.25, -18.75, -14.25, -6.25, -4.75, -6.25, 4.75, -6.25, 14.25, -6.25, -14.25, 6.25, -4.75, 6.25, 4.75, 6.25, 14.25, 6.25, -14.25, 18.75, -4.75, 18.75, 4.75, 18.75, 14.25, 18.75)
+uv = PackedVector2Array(76, 0, 114, 0, 114, 50, 76, 50, 85.5, 0, 95, 0, 104.5, 0, 76, 12.5, 85.5, 12.5, 95, 12.5, 104.5, 12.5, 114, 12.5, 76, 25, 85.5, 25, 95, 25, 104.5, 25, 114, 25, 76, 37.5, 85.5, 37.5, 95, 37.5, 104.5, 37.5, 114, 37.5, 85.5, 50, 95, 50, 104.5, 50, 80.75, 6.25, 90.25, 6.25, 99.75, 6.25, 109.25, 6.25, 80.75, 18.75, 90.25, 18.75, 99.75, 18.75, 109.25, 18.75, 80.75, 31.25, 90.25, 31.25, 99.75, 31.25, 109.25, 31.25, 80.75, 43.75, 90.25, 43.75, 99.75, 43.75, 109.25, 43.75)
+polygons = [PackedInt32Array(0, 4, 25), PackedInt32Array(4, 8, 25), PackedInt32Array(8, 7, 25), PackedInt32Array(7, 0, 25), PackedInt32Array(4, 5, 26), PackedInt32Array(5, 9, 26), PackedInt32Array(9, 8, 26), PackedInt32Array(8, 4, 26), PackedInt32Array(5, 6, 27), PackedInt32Array(6, 10, 27), PackedInt32Array(10, 9, 27), PackedInt32Array(9, 5, 27), PackedInt32Array(6, 1, 28), PackedInt32Array(1, 11, 28), PackedInt32Array(11, 10, 28), PackedInt32Array(10, 6, 28), PackedInt32Array(7, 8, 29), PackedInt32Array(8, 13, 29), PackedInt32Array(13, 12, 29), PackedInt32Array(12, 7, 29), PackedInt32Array(8, 9, 30), PackedInt32Array(9, 14, 30), PackedInt32Array(14, 13, 30), PackedInt32Array(13, 8, 30), PackedInt32Array(9, 10, 31), PackedInt32Array(10, 15, 31), PackedInt32Array(15, 14, 31), PackedInt32Array(14, 9, 31), PackedInt32Array(10, 11, 32), PackedInt32Array(11, 16, 32), PackedInt32Array(16, 15, 32), PackedInt32Array(15, 10, 32), PackedInt32Array(12, 13, 33), PackedInt32Array(13, 18, 33), PackedInt32Array(18, 17, 33), PackedInt32Array(17, 12, 33), PackedInt32Array(13, 14, 34), PackedInt32Array(14, 19, 34), PackedInt32Array(19, 18, 34), PackedInt32Array(18, 13, 34), PackedInt32Array(14, 15, 35), PackedInt32Array(15, 20, 35), PackedInt32Array(20, 19, 35), PackedInt32Array(19, 14, 35), PackedInt32Array(15, 16, 36), PackedInt32Array(16, 21, 36), PackedInt32Array(21, 20, 36), PackedInt32Array(20, 15, 36), PackedInt32Array(17, 18, 37), PackedInt32Array(18, 22, 37), PackedInt32Array(22, 3, 37), PackedInt32Array(3, 17, 37), PackedInt32Array(18, 19, 38), PackedInt32Array(19, 23, 38), PackedInt32Array(23, 22, 38), PackedInt32Array(22, 18, 38), PackedInt32Array(19, 20, 39), PackedInt32Array(20, 24, 39), PackedInt32Array(24, 23, 39), PackedInt32Array(23, 19, 39), PackedInt32Array(20, 21, 40), PackedInt32Array(21, 2, 40), PackedInt32Array(2, 24, 40), PackedInt32Array(24, 20, 40)]
+bones = ["Bone_Center", PackedFloat32Array(1.1268517e-06, 1.1268517e-06, 1.1268517e-06, 1.1268517e-06, 1.5533934e-06, 1.7777023e-06, 1.5533934e-06, 2.1480441e-06, 0.09200111, 0.16245872, 0.09200111, 2.1480441e-06, 3.0777746e-06, 0.2420193, 0.999971, 0.2420193, 3.0777746e-06, 2.1480441e-06, 0.09200111, 0.16245872, 0.09200111, 2.1480441e-06, 1.5533934e-06, 1.7777023e-06, 1.5533934e-06, 0.027696121, 0.04639931, 0.04639931, 0.027696121, 0.075646915, 0.35989302, 0.35989302, 0.075646915, 0.075646915, 0.35989302, 0.35989302, 0.075646915, 0.027696121, 0.04639931, 0.04639931, 0.027696121), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.9999682, 7.6944303e-07, 2.8171291e-07, 4.444303e-07, 1.2310965e-05, 3.0777394e-06, 1.367885e-06, 7.1108857e-06, 0.09200111, 0.049075253, 0.023415875, 6.943139e-07, 1.7777227e-06, 0.030537913, 1.1268548e-06, 0.015197246, 5.3701143e-07, 7.900984e-07, 0.01515421, 0.014363658, 0.010222346, 3.8981702e-07, 4.2894104e-07, 3.8834813e-07, 3.3544103e-07, 0.2492651, 0.071694955, 0.028781995, 0.013420084, 0.048956927, 0.03998811, 0.024222154, 0.012569964, 0.018332051, 0.018801237, 0.014395722, 0.008796785, 0.007931821, 0.008199393, 0.007004949, 0.0050870427), "Bone_Center/Arm_Top_1", PackedFloat32Array(1.23110885e-05, 1.3678988e-06, 3.354444e-07, 4.2894533e-07, 0.99995816, 1.2310958e-05, 3.0777412e-06, 4.507407e-06, 0.14514096, 0.10297839, 0.043843932, 1.1472131e-06, 1.5534102e-06, 0.03494759, 1.5534133e-06, 0.022152375, 7.7305737e-07, 7.424497e-07, 0.016126772, 0.016962362, 0.012832521, 5.00823e-07, 4.4442584e-07, 4.2894078e-07, 3.8834835e-07, 0.2492651, 0.2816899, 0.071694955, 0.025468953, 0.048956927, 0.059280746, 0.03998811, 0.020003835, 0.018332051, 0.022197833, 0.018801237, 0.0118886875, 0.007931821, 0.008963605, 0.008199393, 0.0061986223), "Bone_Center/Arm_Top_2", PackedFloat32Array(3.0777721e-06, 3.0777721e-06, 3.8835225e-07, 3.8835225e-07, 1.2310965e-05, 0.99995756, 1.2310965e-05, 2.1480441e-06, 0.09200111, 0.16245872, 0.09200111, 2.1480441e-06, 1.1268526e-06, 0.030537913, 1.7777262e-06, 0.030537913, 1.1268526e-06, 6.287033e-07, 0.01515421, 0.018050969, 0.01515421, 6.287033e-07, 4.2894104e-07, 4.4442558e-07, 4.2894104e-07, 0.06344228, 0.2816899, 0.2816899, 0.06344228, 0.03302413, 0.059280746, 0.059280746, 0.03302413, 0.0155269755, 0.022197833, 0.022197833, 0.0155269755, 0.007255576, 0.008963605, 0.008963605, 0.007255576), "Bone_Center/Arm_Top_3", PackedFloat32Array(1.3678988e-06, 1.23110885e-05, 4.2894533e-07, 3.354444e-07, 3.0777412e-06, 1.2310958e-05, 0.99995816, 1.1472131e-06, 0.043843932, 0.10297839, 0.14514096, 4.507407e-06, 7.7305737e-07, 0.022152375, 1.5534133e-06, 0.03494759, 1.5534102e-06, 5.00823e-07, 0.012832521, 0.016962362, 0.016126772, 7.424497e-07, 3.8834835e-07, 4.2894078e-07, 4.4442584e-07, 0.025468953, 0.071694955, 0.2816899, 0.2492651, 0.020003835, 0.03998811, 0.059280746, 0.048956927, 0.0118886875, 0.018801237, 0.022197833, 0.018332051, 0.0061986223, 0.008199393, 0.008963605, 0.007931821), "Bone_Center/Arm_TopRight", PackedFloat32Array(7.6944303e-07, 0.9999682, 4.444303e-07, 2.8171291e-07, 1.367885e-06, 3.0777394e-06, 1.2310965e-05, 6.943139e-07, 0.023415875, 0.049075253, 0.09200111, 7.1108857e-06, 5.3701143e-07, 0.015197246, 1.1268548e-06, 0.030537913, 1.7777227e-06, 3.8981702e-07, 0.010222346, 0.014363658, 0.01515421, 7.900984e-07, 3.3544103e-07, 3.8834813e-07, 4.2894104e-07, 0.013420084, 0.028781995, 0.071694955, 0.2492651, 0.012569964, 0.024222154, 0.03998811, 0.048956927, 0.008796785, 0.014395722, 0.018801237, 0.018332051, 0.0050870427, 0.007004949, 0.008199393, 0.007931821), "Bone_Center/Arm_Right_1", PackedFloat32Array(6.943138e-07, 7.110885e-06, 7.900983e-07, 3.8981696e-07, 1.1472015e-06, 2.1480212e-06, 4.507361e-06, 7.6944315e-07, 0.027920315, 0.07031627, 0.2512828, 0.9999683, 6.943144e-07, 0.02255265, 2.1480498e-06, 0.0886095, 7.1108907e-06, 5.3701103e-07, 0.015778936, 0.025744598, 0.03170678, 1.7777214e-06, 5.008179e-07, 6.286965e-07, 7.424421e-07, 0.013420084, 0.028781995, 0.071694955, 0.2492651, 0.016001757, 0.03677249, 0.091599, 0.2972172, 0.012569964, 0.024222154, 0.03998811, 0.048956927, 0.0073775398, 0.011267597, 0.014715813, 0.0153744165), "Bone_Center/Arm_Right_2", PackedFloat32Array(5.37011e-07, 1.7777212e-06, 1.7777212e-06, 5.37011e-07, 7.7304895e-07, 1.1268397e-06, 1.5533934e-06, 6.943139e-07, 0.023415875, 0.049075253, 0.09200111, 7.1108857e-06, 7.6944366e-07, 0.026891034, 3.0777808e-06, 0.2420193, 0.999969, 6.943139e-07, 0.023415875, 0.049075253, 0.09200111, 7.1108857e-06, 7.7304895e-07, 1.1268397e-06, 1.5533934e-06, 0.010541966, 0.01895879, 0.031298876, 0.04105837, 0.016001757, 0.03677249, 0.091599, 0.2972172, 0.016001757, 0.03677249, 0.091599, 0.2972172, 0.010541966, 0.01895879, 0.031298876, 0.04105837), "Bone_Center/Arm_Right_3", PackedFloat32Array(3.8981696e-07, 7.900983e-07, 7.110885e-06, 6.943138e-07, 5.008179e-07, 6.286965e-07, 7.424421e-07, 5.3701103e-07, 0.015778936, 0.025744598, 0.03170678, 1.7777214e-06, 6.943144e-07, 0.02255265, 2.1480498e-06, 0.0886095, 7.1108907e-06, 7.6944315e-07, 0.027920315, 0.07031627, 0.2512828, 0.9999683, 1.1472015e-06, 2.1480212e-06, 4.507361e-06, 0.0073775398, 0.011267597, 0.014715813, 0.0153744165, 0.012569964, 0.024222154, 0.03998811, 0.048956927, 0.016001757, 0.03677249, 0.091599, 0.2972172, 0.013420084, 0.028781995, 0.071694955, 0.2492651), "Bone_Center/Arm_BottomRight", PackedFloat32Array(2.8171291e-07, 4.444303e-07, 0.9999682, 7.6944303e-07, 3.3544103e-07, 3.8834813e-07, 4.2894104e-07, 3.8981702e-07, 0.010222346, 0.014363658, 0.01515421, 7.900984e-07, 5.3701143e-07, 0.015197246, 1.1268548e-06, 0.030537913, 1.7777227e-06, 6.943139e-07, 0.023415875, 0.049075253, 0.09200111, 7.1108857e-06, 1.367885e-06, 3.0777394e-06, 1.2310965e-05, 0.0050870427, 0.007004949, 0.008199393, 0.007931821, 0.008796785, 0.014395722, 0.018801237, 0.018332051, 0.012569964, 0.024222154, 0.03998811, 0.048956927, 0.013420084, 0.028781995, 0.071694955, 0.2492651), "Bone_Center/Arm_Bottom_1", PackedFloat32Array(3.354444e-07, 4.2894533e-07, 1.23110885e-05, 1.3678988e-06, 3.8834835e-07, 4.2894078e-07, 4.4442584e-07, 5.00823e-07, 0.012832521, 0.016962362, 0.016126772, 7.424497e-07, 7.7305737e-07, 0.022152375, 1.5534133e-06, 0.03494759, 1.5534102e-06, 1.1472131e-06, 0.043843932, 0.10297839, 0.14514096, 4.507407e-06, 3.0777412e-06, 1.2310958e-05, 0.99995816, 0.0061986223, 0.008199393, 0.008963605, 0.007931821, 0.0118886875, 0.018801237, 0.022197833, 0.018332051, 0.020003835, 0.03998811, 0.059280746, 0.048956927, 0.025468953, 0.071694955, 0.2816899, 0.2492651), "Bone_Center/Arm_Bottom_2", PackedFloat32Array(3.8835225e-07, 3.8835225e-07, 3.0777721e-06, 3.0777721e-06, 4.2894104e-07, 4.4442558e-07, 4.2894104e-07, 6.287033e-07, 0.01515421, 0.018050969, 0.01515421, 6.287033e-07, 1.1268526e-06, 0.030537913, 1.7777262e-06, 0.030537913, 1.1268526e-06, 2.1480441e-06, 0.09200111, 0.16245872, 0.09200111, 2.1480441e-06, 1.2310965e-05, 0.99995756, 1.2310965e-05, 0.007255576, 0.008963605, 0.008963605, 0.007255576, 0.0155269755, 0.022197833, 0.022197833, 0.0155269755, 0.03302413, 0.059280746, 0.059280746, 0.03302413, 0.06344228, 0.2816899, 0.2816899, 0.06344228), "Bone_Center/Arm_Bottom_3", PackedFloat32Array(4.2894533e-07, 3.354444e-07, 1.3678988e-06, 1.23110885e-05, 4.4442584e-07, 4.2894078e-07, 3.8834835e-07, 7.424497e-07, 0.016126772, 0.016962362, 0.012832521, 5.00823e-07, 1.5534102e-06, 0.03494759, 1.5534133e-06, 0.022152375, 7.7305737e-07, 4.507407e-06, 0.14514096, 0.10297839, 0.043843932, 1.1472131e-06, 0.99995816, 1.2310958e-05, 3.0777412e-06, 0.007931821, 0.008963605, 0.008199393, 0.0061986223, 0.018332051, 0.022197833, 0.018801237, 0.0118886875, 0.048956927, 0.059280746, 0.03998811, 0.020003835, 0.2492651, 0.2816899, 0.071694955, 0.025468953), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(4.444303e-07, 2.8171291e-07, 7.6944303e-07, 0.9999682, 4.2894104e-07, 3.8834813e-07, 3.3544103e-07, 7.900984e-07, 0.01515421, 0.014363658, 0.010222346, 3.8981702e-07, 1.7777227e-06, 0.030537913, 1.1268548e-06, 0.015197246, 5.3701143e-07, 7.1108857e-06, 0.09200111, 0.049075253, 0.023415875, 6.943139e-07, 1.2310965e-05, 3.0777394e-06, 1.367885e-06, 0.007931821, 0.008199393, 0.007004949, 0.0050870427, 0.018332051, 0.018801237, 0.014395722, 0.008796785, 0.048956927, 0.03998811, 0.024222154, 0.012569964, 0.2492651, 0.071694955, 0.028781995, 0.013420084), "Bone_Center/Arm_Left_1", PackedFloat32Array(7.900983e-07, 3.8981696e-07, 6.943138e-07, 7.110885e-06, 7.424421e-07, 6.286965e-07, 5.008179e-07, 1.7777214e-06, 0.03170678, 0.025744598, 0.015778936, 5.3701103e-07, 7.1108907e-06, 0.0886095, 2.1480498e-06, 0.02255265, 6.943144e-07, 0.9999683, 0.2512828, 0.07031627, 0.027920315, 7.6944315e-07, 4.507361e-06, 2.1480212e-06, 1.1472015e-06, 0.0153744165, 0.014715813, 0.011267597, 0.0073775398, 0.048956927, 0.03998811, 0.024222154, 0.012569964, 0.2972172, 0.091599, 0.03677249, 0.016001757, 0.2492651, 0.071694955, 0.028781995, 0.013420084), "Bone_Center/Arm_Left_2", PackedFloat32Array(1.7777212e-06, 5.37011e-07, 5.37011e-07, 1.7777212e-06, 1.5533934e-06, 1.1268397e-06, 7.7304895e-07, 7.1108857e-06, 0.09200111, 0.049075253, 0.023415875, 6.943139e-07, 0.999969, 0.2420193, 3.0777808e-06, 0.026891034, 7.6944366e-07, 7.1108857e-06, 0.09200111, 0.049075253, 0.023415875, 6.943139e-07, 1.5533934e-06, 1.1268397e-06, 7.7304895e-07, 0.04105837, 0.031298876, 0.01895879, 0.010541966, 0.2972172, 0.091599, 0.03677249, 0.016001757, 0.2972172, 0.091599, 0.03677249, 0.016001757, 0.04105837, 0.031298876, 0.01895879, 0.010541966), "Bone_Center/Arm_Left_3", PackedFloat32Array(7.110885e-06, 6.943138e-07, 3.8981696e-07, 7.900983e-07, 4.507361e-06, 2.1480212e-06, 1.1472015e-06, 0.9999683, 0.2512828, 0.07031627, 0.027920315, 7.6944315e-07, 7.1108907e-06, 0.0886095, 2.1480498e-06, 0.02255265, 6.943144e-07, 1.7777214e-06, 0.03170678, 0.025744598, 0.015778936, 5.3701103e-07, 7.424421e-07, 6.286965e-07, 5.008179e-07, 0.2492651, 0.071694955, 0.028781995, 0.013420084, 0.2972172, 0.091599, 0.03677249, 0.016001757, 0.048956927, 0.03998811, 0.024222154, 0.012569964, 0.0153744165, 0.014715813, 0.011267597, 0.0073775398)]
+internal_vertex_count = 37
 
 [node name="Rank" type="Polygon2D" parent="Offset/Visual" unique_id=1514090271]
 material = SubResource("ShaderMaterial_0xvu6")
@@ -316,7 +509,7 @@ skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4, 0, 0)
 uv = PackedVector2Array(8, 0, 16, 0, 16, 8, 8, 8, 12, 4)
 polygons = [PackedInt32Array(0, 1, 4), PackedInt32Array(1, 2, 4), PackedInt32Array(2, 3, 4), PackedInt32Array(3, 0, 4)]
-bones = ["Bone_Center", PackedFloat32Array(0.028734094, 0.073305234, 0.21097657, 0.117027834, 0.10429527), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.8011065, 0.27021274, 0.18550014, 0.3250773, 0.3996447), "Bone_Center/Arm_Top", PackedFloat32Array(0.07363111, 0.46273938, 0.2363343, 0.124342084, 0.21711467), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.016138326, 0.049690135, 0.05630875, 0.036330774, 0.04405839), "Bone_Center/Arm_Right", PackedFloat32Array(0.012021406, 0.0316403, 0.054741126, 0.03567922, 0.036127884), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.0059945113, 0.013012003, 0.022621967, 0.018635007, 0.016572423), "Bone_Center/Arm_Bottom", PackedFloat32Array(0.008443366, 0.01698126, 0.032597836, 0.029256959, 0.023668686), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.009424782, 0.016548568, 0.031410564, 0.034230437, 0.024908911), "Bone_Center/Arm_Left", PackedFloat32Array(0.044505917, 0.06587037, 0.16950874, 0.27942038, 0.13360904)]
+bones = ["Bone_Center", PackedFloat32Array(0.01711818, 0.02116435, 0.10145136, 0.016944854, 0.04095804), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.47725487, 0.07801458, 0.08920062, 0.047069035, 0.1569454), "Bone_Center/Arm_Top_1", PackedFloat32Array(0.20483042, 0.58564377, 0.16162848, 0.03866611, 0.25245312), "Bone_Center/Arm_Top_2", PackedFloat32Array(0.043865334, 0.13359998, 0.11364501, 0.018003909, 0.08526361), "Bone_Center/Arm_Top_3", PackedFloat32Array(0.01790825, 0.03316679, 0.05250009, 0.009067123, 0.03370039), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.0096143205, 0.014346307, 0.027076937, 0.0052604554, 0.017302273), "Bone_Center/Arm_Right_1", PackedFloat32Array(0.009197434, 0.013339154, 0.03241435, 0.0058776275, 0.018073713), "Bone_Center/Arm_Right_2", PackedFloat32Array(0.007161687, 0.009135041, 0.02632312, 0.0051661143, 0.014187866), "Bone_Center/Arm_Right_3", PackedFloat32Array(0.005083128, 0.0057733958, 0.01713842, 0.0038403212, 0.009684551), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.0035711976, 0.0037567655, 0.010878124, 0.0026982254, 0.006508195), "Bone_Center/Arm_Bottom_1", PackedFloat32Array(0.0043131933, 0.004412426, 0.013505594, 0.0034387314, 0.007966236), "Bone_Center/Arm_Bottom_2", PackedFloat32Array(0.0050300895, 0.0049027517, 0.015675176, 0.0042362134, 0.009294986), "Bone_Center/Arm_Bottom_3", PackedFloat32Array(0.005528262, 0.005045674, 0.016344452, 0.0048454585, 0.010018265), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.005614763, 0.0047778264, 0.0151042575, 0.0049563404, 0.009782037), "Bone_Center/Arm_Left_1", PackedFloat32Array(0.010547068, 0.008596822, 0.03064916, 0.010923872, 0.01929272), "Bone_Center/Arm_Left_2", PackedFloat32Array(0.02651416, 0.01901779, 0.08151091, 0.040458214, 0.05246992), "Bone_Center/Arm_Left_3", PackedFloat32Array(0.14684764, 0.05530659, 0.19495393, 0.7785474, 0.25609866)]
 internal_vertex_count = 1
 
 [node name="Suit" type="Polygon2D" parent="Offset/Visual" unique_id=655054366]
@@ -327,7 +520,7 @@ skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4, 0, 0)
 uv = PackedVector2Array(0, 0, 8, 0, 8, 8, 0, 8, 4, 4)
 polygons = [PackedInt32Array(0, 1, 4), PackedInt32Array(1, 2, 4), PackedInt32Array(2, 3, 4), PackedInt32Array(3, 0, 4)]
-bones = ["Bone_Center", PackedFloat32Array(0.073305234, 0.028734094, 0.117027834, 0.21097657, 0.10429527), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.049690135, 0.016138326, 0.036330774, 0.05630875, 0.04405839), "Bone_Center/Arm_Top", PackedFloat32Array(0.46273938, 0.07363111, 0.124342084, 0.2363343, 0.21711467), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.27021274, 0.8011065, 0.3250773, 0.18550014, 0.3996447), "Bone_Center/Arm_Right", PackedFloat32Array(0.06587037, 0.044505917, 0.27942038, 0.16950874, 0.13360904), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.016548568, 0.009424782, 0.034230437, 0.031410564, 0.024908911), "Bone_Center/Arm_Bottom", PackedFloat32Array(0.01698126, 0.008443366, 0.029256959, 0.032597836, 0.023668686), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.013012003, 0.0059945113, 0.018635007, 0.022621967, 0.016572423), "Bone_Center/Arm_Left", PackedFloat32Array(0.0316403, 0.012021406, 0.03567922, 0.054741126, 0.036127884)]
+bones = ["Bone_Center", PackedFloat32Array(0.02116435, 0.01711818, 0.016944854, 0.10145136, 0.04095804), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.014346307, 0.0096143205, 0.0052604554, 0.027076937, 0.017302273), "Bone_Center/Arm_Top_1", PackedFloat32Array(0.03316679, 0.01790825, 0.009067123, 0.05250009, 0.03370039), "Bone_Center/Arm_Top_2", PackedFloat32Array(0.13359998, 0.043865334, 0.018003909, 0.11364501, 0.08526361), "Bone_Center/Arm_Top_3", PackedFloat32Array(0.58564377, 0.20483042, 0.03866611, 0.16162848, 0.25245312), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.07801458, 0.47725487, 0.047069035, 0.08920062, 0.1569454), "Bone_Center/Arm_Right_1", PackedFloat32Array(0.05530659, 0.14684764, 0.7785474, 0.19495393, 0.25609866), "Bone_Center/Arm_Right_2", PackedFloat32Array(0.01901779, 0.02651416, 0.040458214, 0.08151091, 0.05246992), "Bone_Center/Arm_Right_3", PackedFloat32Array(0.008596822, 0.010547068, 0.010923872, 0.03064916, 0.01929272), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.0047778264, 0.005614763, 0.0049563404, 0.0151042575, 0.009782037), "Bone_Center/Arm_Bottom_1", PackedFloat32Array(0.005045674, 0.005528262, 0.0048454585, 0.016344452, 0.010018265), "Bone_Center/Arm_Bottom_2", PackedFloat32Array(0.0049027517, 0.0050300895, 0.0042362134, 0.015675176, 0.009294986), "Bone_Center/Arm_Bottom_3", PackedFloat32Array(0.004412426, 0.0043131933, 0.0034387314, 0.013505594, 0.007966236), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.0037567655, 0.0035711976, 0.0026982254, 0.010878124, 0.006508195), "Bone_Center/Arm_Left_1", PackedFloat32Array(0.0057733958, 0.005083128, 0.0038403212, 0.01713842, 0.009684551), "Bone_Center/Arm_Left_2", PackedFloat32Array(0.009135041, 0.007161687, 0.0051661143, 0.02632312, 0.014187866), "Bone_Center/Arm_Left_3", PackedFloat32Array(0.013339154, 0.009197434, 0.0058776275, 0.03241435, 0.018073713)]
 internal_vertex_count = 1
 
 [node name="Stamp" type="Polygon2D" parent="Offset/Visual" unique_id=1921553756]
@@ -337,7 +530,7 @@ skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4, 0, 0)
 uv = PackedVector2Array(16, 0, 24, 0, 24, 8, 16, 8, 20, 4)
 polygons = [PackedInt32Array(0, 1, 4), PackedInt32Array(1, 2, 4), PackedInt32Array(2, 3, 4), PackedInt32Array(3, 0, 4)]
-bones = ["Bone_Center", PackedFloat32Array(0.05061826, 0.05061826, 0.25009984, 0.25009984, 0.121940985), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.09598566, 0.042445038, 0.0687496, 0.12538883, 0.08291987), "Bone_Center/Arm_Top", PackedFloat32Array(0.7228921, 0.7228921, 0.289178, 0.289178, 0.55063975), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.042445038, 0.09598566, 0.12538883, 0.0687496, 0.08291987), "Bone_Center/Arm_Right", PackedFloat32Array(0.023847984, 0.03473355, 0.11743268, 0.066287205, 0.054216843), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.008745763, 0.009881481, 0.027722273, 0.023450825, 0.016583974), "Bone_Center/Arm_Bottom", PackedFloat32Array(0.010850162, 0.010850162, 0.03169074, 0.03169074, 0.019977862), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.009881481, 0.008745763, 0.023450825, 0.027722273, 0.016583974), "Bone_Center/Arm_Left", PackedFloat32Array(0.03473355, 0.023847984, 0.066287205, 0.11743268, 0.054216843)]
+bones = ["Bone_Center", PackedFloat32Array(0.028354941, 0.028354941, 0.13503475, 0.13503475, 0.0701997), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.053768493, 0.023776527, 0.037119515, 0.06770036, 0.047735795), "Bone_Center/Arm_Top_1", PackedFloat32Array(0.28017744, 0.06536296, 0.07657144, 0.14336547, 0.13152488), "Bone_Center/Arm_Top_2", PackedFloat32Array(0.40494403, 0.40494403, 0.15613396, 0.15613396, 0.31699553), "Bone_Center/Arm_Top_3", PackedFloat32Array(0.06536296, 0.28017744, 0.14336547, 0.07657144, 0.13152488), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.023776527, 0.053768493, 0.06770036, 0.037119515, 0.047735795), "Bone_Center/Arm_Right_1", PackedFloat32Array(0.021552114, 0.043593634, 0.11090536, 0.04720157, 0.053213675), "Bone_Center/Arm_Right_2", PackedFloat32Array(0.013358977, 0.019456767, 0.06340465, 0.035790015, 0.03121187), "Bone_Center/Arm_Right_3", PackedFloat32Array(0.007847515, 0.009618265, 0.028542053, 0.02118417, 0.01647733), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.004899133, 0.00553533, 0.0149679035, 0.01266165, 0.009547159), "Bone_Center/Arm_Bottom_1", PackedFloat32Array(0.005638293, 0.0060376045, 0.016945181, 0.015361372, 0.010941195), "Bone_Center/Arm_Bottom_2", PackedFloat32Array(0.006077959, 0.006077959, 0.017110571, 0.017110571, 0.011500972), "Bone_Center/Arm_Bottom_3", PackedFloat32Array(0.0060376045, 0.005638293, 0.015361372, 0.016945181, 0.010941195), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.00553533, 0.004899133, 0.01266165, 0.0149679035, 0.009547159), "Bone_Center/Arm_Left_1", PackedFloat32Array(0.009618265, 0.007847515, 0.02118417, 0.028542053, 0.01647733), "Bone_Center/Arm_Left_2", PackedFloat32Array(0.019456767, 0.013358977, 0.035790015, 0.06340465, 0.03121187), "Bone_Center/Arm_Left_3", PackedFloat32Array(0.043593634, 0.021552114, 0.04720157, 0.11090536, 0.053213675)]
 internal_vertex_count = 1
 
 [node name="Art" type="Polygon2D" parent="Offset/Visual" unique_id=738299753]
@@ -348,75 +541,138 @@ skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16, 0, -16, -16, 0, 0, 0, 16, 0, 0, 16, -8, -8, 8, -8, -8, 8, 8, 8)
 uv = PackedVector2Array(32, 0, 64, 0, 64, 32, 32, 32, 48, 0, 32, 16, 48, 16, 64, 16, 48, 32, 40, 8, 56, 8, 40, 24, 56, 24)
 polygons = [PackedInt32Array(0, 4, 9), PackedInt32Array(4, 6, 9), PackedInt32Array(6, 5, 9), PackedInt32Array(5, 0, 9), PackedInt32Array(4, 1, 10), PackedInt32Array(1, 7, 10), PackedInt32Array(7, 6, 10), PackedInt32Array(6, 4, 10), PackedInt32Array(5, 6, 11), PackedInt32Array(6, 8, 11), PackedInt32Array(8, 3, 11), PackedInt32Array(3, 5, 11), PackedInt32Array(6, 7, 12), PackedInt32Array(7, 2, 12), PackedInt32Array(2, 8, 12), PackedInt32Array(8, 6, 12)]
-bones = ["Bone_Center", PackedFloat32Array(0.12820783, 0.12820783, 0.028734094, 0.028734094, 0.3579991, 0.087242745, 0.7546227, 0.087242745, 0.030706627, 0.45672423, 0.45672423, 0.21097657, 0.21097657), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.23577732, 0.03401432, 0.0059945113, 0.009424782, 0.077769995, 0.026969431, 0.014960799, 0.011536571, 0.005466944, 0.055108868, 0.027486287, 0.031410564, 0.022621967), "Bone_Center/Arm_Top", PackedFloat32Array(0.1069344, 0.1069344, 0.008443366, 0.008443366, 0.22100964, 0.021206932, 0.020961741, 0.021206932, 0.0063996324, 0.060840994, 0.060840994, 0.032597836, 0.032597836), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.03401432, 0.23577732, 0.009424782, 0.0059945113, 0.077769995, 0.011536571, 0.014960799, 0.026969431, 0.005466944, 0.027486287, 0.055108868, 0.022621967, 0.031410564), "Bone_Center/Arm_Right", PackedFloat32Array(0.03590962, 0.37180275, 0.044505917, 0.012021406, 0.08987114, 0.01961217, 0.048874527, 0.7210357, 0.016884815, 0.045177326, 0.25646824, 0.054741126, 0.16950874), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.01917269, 0.03703782, 0.8011065, 0.016138326, 0.026142359, 0.015086285, 0.024790497, 0.059939396, 0.035919424, 0.022036266, 0.036840737, 0.05630875, 0.18550014), "Bone_Center/Arm_Bottom", PackedFloat32Array(0.031143267, 0.031143267, 0.07363111, 0.07363111, 0.033424295, 0.03737075, 0.04716392, 0.03737075, 0.8463514, 0.03931706, 0.03931706, 0.2363343, 0.2363343), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.03703782, 0.01917269, 0.016138326, 0.8011065, 0.026142359, 0.059939396, 0.024790497, 0.015086285, 0.035919424, 0.036840737, 0.022036266, 0.18550014, 0.05630875), "Bone_Center/Arm_Left", PackedFloat32Array(0.37180275, 0.03590962, 0.012021406, 0.044505917, 0.08987114, 0.7210357, 0.048874527, 0.01961217, 0.016884815, 0.25646824, 0.045177326, 0.16950874, 0.054741126)]
+bones = ["Bone_Center", PackedFloat32Array(0.022219624, 0.022219624, 0.01711818, 0.01711818, 0.21077101, 0.054214075, 0.5979383, 0.054214075, 0.022780275, 0.30267513, 0.30267513, 0.10145136, 0.10145136), "Bone_Center/Arm_TopLeft", PackedFloat32Array(0.040862426, 0.005895002, 0.0035711976, 0.005614763, 0.04578688, 0.016759247, 0.011854447, 0.007169015, 0.004055753, 0.03652113, 0.018215403, 0.0151042575, 0.010878124), "Bone_Center/Arm_Top_1", PackedFloat32Array(0.0351597, 0.009898728, 0.0043131933, 0.005528262, 0.089094475, 0.01616785, 0.015095639, 0.009826903, 0.004553474, 0.04544018, 0.027959863, 0.016344452, 0.013505594), "Bone_Center/Arm_Top_2", PackedFloat32Array(0.018532736, 0.018532736, 0.0050300895, 0.0050300895, 0.13011885, 0.0131783355, 0.016609397, 0.0131783355, 0.004747685, 0.040319856, 0.040319856, 0.015675176, 0.015675176), "Bone_Center/Arm_Top_3", PackedFloat32Array(0.009898728, 0.0351597, 0.005528262, 0.0043131933, 0.089094475, 0.009826903, 0.015095639, 0.01616785, 0.004553474, 0.027959863, 0.04544018, 0.013505594, 0.016344452), "Bone_Center/Arm_TopRight", PackedFloat32Array(0.005895002, 0.040862426, 0.005614763, 0.0035711976, 0.04578688, 0.007169015, 0.011854447, 0.016759247, 0.004055753, 0.018215403, 0.03652113, 0.010878124, 0.0151042575), "Bone_Center/Arm_Right_1", PackedFloat32Array(0.006825666, 0.7446043, 0.010547068, 0.005083128, 0.07020865, 0.009948836, 0.022403086, 0.04832405, 0.0067730327, 0.026970137, 0.10459306, 0.01713842, 0.03064916), "Bone_Center/Arm_Right_2", PackedFloat32Array(0.0062234746, 0.06443691, 0.02651416, 0.007161687, 0.052911397, 0.012187325, 0.038726576, 0.44806346, 0.01252631, 0.029939407, 0.16996373, 0.02632312, 0.08151091), "Bone_Center/Arm_Right_3", PackedFloat32Array(0.004713348, 0.014925254, 0.14684764, 0.009197434, 0.027925862, 0.011890073, 0.035826143, 0.23347364, 0.02318777, 0.02279627, 0.061163418, 0.03241435, 0.19495393), "Bone_Center/Arm_BottomRight", PackedFloat32Array(0.0033228076, 0.006419002, 0.47725487, 0.0096143205, 0.0153912455, 0.009374865, 0.019643178, 0.037247326, 0.026647484, 0.014603625, 0.024414677, 0.027076937, 0.08920062), "Bone_Center/Arm_Bottom_1", PackedFloat32Array(0.004304071, 0.0062595163, 0.20483042, 0.01790825, 0.018397326, 0.014505268, 0.030491503, 0.034446932, 0.09455154, 0.020266255, 0.02810211, 0.05250009, 0.16162848), "Bone_Center/Arm_Bottom_2", PackedFloat32Array(0.005397421, 0.005397421, 0.043865334, 0.043865334, 0.019678466, 0.023222798, 0.037371144, 0.023222798, 0.62788135, 0.026055759, 0.026055759, 0.11364501, 0.11364501), "Bone_Center/Arm_Bottom_3", PackedFloat32Array(0.0062595163, 0.004304071, 0.01790825, 0.20483042, 0.018397326, 0.034446932, 0.030491503, 0.014505268, 0.09455154, 0.02810211, 0.020266255, 0.16162848, 0.05250009), "Bone_Center/Arm_BottomLeft", PackedFloat32Array(0.006419002, 0.0033228076, 0.0096143205, 0.47725487, 0.0153912455, 0.037247326, 0.019643178, 0.009374865, 0.026647484, 0.024414677, 0.014603625, 0.08920062, 0.027076937), "Bone_Center/Arm_Left_1", PackedFloat32Array(0.014925254, 0.004713348, 0.009197434, 0.14684764, 0.027925862, 0.23347364, 0.035826143, 0.011890073, 0.02318777, 0.061163418, 0.02279627, 0.19495393, 0.03241435), "Bone_Center/Arm_Left_2", PackedFloat32Array(0.06443691, 0.0062234746, 0.007161687, 0.02651416, 0.052911397, 0.44806346, 0.038726576, 0.012187325, 0.01252631, 0.16996373, 0.029939407, 0.08151091, 0.02632312), "Bone_Center/Arm_Left_3", PackedFloat32Array(0.7446043, 0.006825666, 0.005083128, 0.010547068, 0.07020865, 0.04832405, 0.022403086, 0.009948836, 0.0067730327, 0.10459306, 0.026970137, 0.03064916, 0.01713842)]
 internal_vertex_count = 9
 
-[node name="Skeleton2D" type="Skeleton2D" parent="Offset/Visual" unique_id=1670137835]
+[node name="Skeleton2D" type="Skeleton2D" parent="Offset/Visual" unique_id=1447525977]
 
-[node name="Bone_Center" type="Bone2D" parent="Offset/Visual/Skeleton2D" unique_id=1021668462]
-visible = false
+[node name="Bone_Center" type="Bone2D" parent="Offset/Visual/Skeleton2D" unique_id=1506072812]
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 
-[node name="Arm_TopLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1878325580]
+[node name="Arm_TopLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=915961500]
 position = Vector2(-19, -25)
 rest = Transform2D(1, 0, 0, 1, -19, -25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 31.400637
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_Top" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=542893984]
+[node name="Arm_Top_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=625667946]
+position = Vector2(-9.5, -25)
+rest = Transform2D(1, 0, 0, 1, -9.5, -25)
+auto_calculate_length_and_angle = false
+length = 26.744158
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_Top_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1367259965]
 position = Vector2(0, -25)
 rest = Transform2D(1, 0, 0, 1, 0, -25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 25.0
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_TopRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1942097825]
+[node name="Arm_Top_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=906155728]
+position = Vector2(9.5, -25)
+rest = Transform2D(1, 0, 0, 1, 9.5, -25)
+auto_calculate_length_and_angle = false
+length = 26.744158
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_TopRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1612155337]
 position = Vector2(19, -25)
 rest = Transform2D(1, 0, 0, 1, 19, -25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 31.400637
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_Right" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=926206458]
+[node name="Arm_Right_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1423940340]
+position = Vector2(19, -12.5)
+rest = Transform2D(1, 0, 0, 1, 19, -12.5)
+auto_calculate_length_and_angle = false
+length = 22.743132
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_Right_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1381500251]
 position = Vector2(19, 0)
 rest = Transform2D(1, 0, 0, 1, 19, 0)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 19.0
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_BottomRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1444809499]
+[node name="Arm_Right_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1922157030]
+position = Vector2(19, 12.5)
+rest = Transform2D(1, 0, 0, 1, 19, 12.5)
+auto_calculate_length_and_angle = false
+length = 22.743132
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_BottomRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=2127134488]
 position = Vector2(19, 25)
 rest = Transform2D(1, 0, 0, 1, 19, 25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 31.400637
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_Bottom" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1581873572]
+[node name="Arm_Bottom_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=567254998]
+position = Vector2(9.5, 25)
+rest = Transform2D(1, 0, 0, 1, 9.5, 25)
+auto_calculate_length_and_angle = false
+length = 26.744158
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_Bottom_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=181661137]
 position = Vector2(0, 25)
 rest = Transform2D(1, 0, 0, 1, 0, 25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 25.0
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_BottomLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=61446481]
+[node name="Arm_Bottom_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=2009992785]
+position = Vector2(-9.5, 25)
+rest = Transform2D(1, 0, 0, 1, -9.5, 25)
+auto_calculate_length_and_angle = false
+length = 26.744158
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_BottomLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=263866576]
 position = Vector2(-19, 25)
 rest = Transform2D(1, 0, 0, 1, -19, 25)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 31.400637
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
-[node name="Arm_Left" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1161824804]
+[node name="Arm_Left_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=393703652]
+position = Vector2(-19, 12.5)
+rest = Transform2D(1, 0, 0, 1, -19, 12.5)
+auto_calculate_length_and_angle = false
+length = 22.743132
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_Left_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=2081098432]
 position = Vector2(-19, 0)
 rest = Transform2D(1, 0, 0, 1, -19, 0)
 auto_calculate_length_and_angle = false
-length = 16.0
+length = 19.0
+bone_angle = 0.0
+editor_settings/show_bone_gizmo = false
+
+[node name="Arm_Left_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=37309951]
+position = Vector2(-19, -12.5)
+rest = Transform2D(1, 0, 0, 1, -19, -12.5)
+auto_calculate_length_and_angle = false
+length = 22.743132
 bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
