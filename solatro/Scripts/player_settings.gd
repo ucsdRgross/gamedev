@@ -11,8 +11,8 @@ signal settings_changed
 	set(value):
 		card_scale = value
 		settings_changed.emit()
-@export var card_seperation_scale : float = 1:
+@export var card_separation_scale : float = 1:
 	set(value):
-		card_seperation_scale = value
+		card_separation_scale = value
 		settings_changed.emit()
 		

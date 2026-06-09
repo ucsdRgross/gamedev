@@ -5,7 +5,7 @@ class_name CardVisual
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
 const CARD_SIZE := Vector2(38,50)
-const CARD_SEPERATION : int = 14
+const CARD_SEPARATION : int = 14
 
 @export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
 
@@ -20,12 +20,12 @@ var card_separation_custom: int
 static var card_size_play : Vector2:
 	get():
 		return CARD_SIZE * SettingsManager.settings.card_scale
-static var card_seperation_play : int:
+static var card_separation_play : int:
 	get():
-		return CARD_SEPERATION * SettingsManager.settings.card_scale
-static var card_seperation_play_custom : int:
+		return CARD_SEPARATION * SettingsManager.settings.card_scale
+static var card_separation_play_custom : int:
 	get():
-		return card_seperation_play * SettingsManager.settings.card_seperation_scale
+		return card_separation_play * SettingsManager.settings.card_separation_scale
 
 var focused : bool = false:
 	set(value):
@@ -36,10 +36,9 @@ var focused : bool = false:
 	set(value):
 		data = value
 		update_visual()
-		if data != value or current_context != DisplayContext.PLAY_AREA: return
-		if not is_node_ready():
-			await ready
-		if data:
+		if data == value: return
+		if current_context != DisplayContext.PLAY_AREA: return
+		if is_node_ready and data:
 			on_stage_changed()
 var can_move_anim := true
 var can_rot_anim := true
@@ -161,30 +160,7 @@ func _ready() -> void:
 		##child_offset = Vector2(0,0)
 		#basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 	SettingsManager.settings_changed.connect(recalculate_size)
-	recalculate_size()	
-
-func recalculate_size() -> void:
-	match current_context:
-		DisplayContext.DECK_VIEWER:
-			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
-			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
-			scale = Vector2.ONE * 2
-		DisplayContext.PLAY_AREA:
-			card_size = CARD_SIZE * SettingsManager.settings.card_scale
-			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
-			scale = Vector2.ONE * SettingsManager.settings.card_scale
-		_:
-			card_size = CARD_SIZE * SettingsManager.settings.card_scale
-			card_separation = CARD_SEPERATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_seperation_scale
-			scale = Vector2.ONE * SettingsManager.settings.card_scale
-
-func on_stage_changed() -> void:
-	if current_context != DisplayContext.PLAY_AREA: return
-	if not data: return
-	if data.stage == data.previous_stage: return
+	recalculate_size()
 	match data.previous_stage:
 		data.Stage.PLAY, data.Stage.ZONE:
 			if CardEnvironment.CURRENT:
@@ -198,6 +174,30 @@ func on_stage_changed() -> void:
 		data.Stage.RULES:
 			if CardEnvironment.get_current_game():
 				global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
+	on_stage_changed()
+
+func recalculate_size() -> void:
+	match current_context:
+		DisplayContext.DECK_VIEWER:
+			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
+			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
+			scale = Vector2.ONE * 2
+		DisplayContext.PLAY_AREA:
+			card_size = CARD_SIZE * SettingsManager.settings.card_scale
+			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
+			scale = Vector2.ONE * SettingsManager.settings.card_scale
+		_:
+			card_size = CARD_SIZE * SettingsManager.settings.card_scale
+			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
+			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
+			scale = Vector2.ONE * SettingsManager.settings.card_scale
+
+func on_stage_changed() -> void:
+	if current_context != DisplayContext.PLAY_AREA: return
+	if not data: return
+	if data.stage == data.previous_stage: return
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
 			var target_pos := get_card_control_center(control_anchor)

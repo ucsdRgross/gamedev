@@ -121,6 +121,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="MultScore" type="Label" parent="SceneRoot" unique_id=667586955]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 202.0
 offset_top = 231.0
@@ -160,6 +161,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Total" type="Label" parent="SceneRoot" unique_id=2093482457]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 167.0
 offset_top = 144.0
@@ -178,6 +180,7 @@ text = " 0"
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Goal" type="Label" parent="SceneRoot" unique_id=611565422]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 164.0
 offset_top = 80.0

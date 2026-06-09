@@ -7,12 +7,12 @@ var focused_control : Control = null
 var moused_hovered_control : Control = null
 var selected_cards : Array[CardData] = []
 
-var seperation : int = 4: 
+var separation : int = 4: 
 	set(value):
-		seperation = value
-		set_seperation()
+		separation = value
+		set_separation()
 	get():
-		return seperation * SettingsManager.settings.card_scale
+		return separation * SettingsManager.settings.card_scale
 
 var ui_data : Dictionary[Control, CardData]
 var data_ui : Dictionary[CardData, Control]
@@ -34,16 +34,16 @@ func _ready() -> void:
 	setup_gui()
 
 func setup_gui() -> void:
-	set_seperation()
+	set_separation()
 	set_card_zones()
 	update_score_controls()
-	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation_play
+	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
 
 func update_gui() -> void:
-	set_seperation()
+	set_separation()
 	set_card_zones_visuals()
 	update_score_controls()
-	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_seperation_play
+	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
 
 func _on_gui_input(event: InputEvent) -> void:
 	# Mouse
@@ -98,9 +98,9 @@ func _physics_process(delta: float) -> void:
 	#where we modify the data arrays in some way
 	set_card_zones()
 
-func set_seperation() -> void:
+func set_separation() -> void:
 	for container : Control in containers:
-		container.add_theme_constant_override("Seperation", seperation)
+		container.add_theme_constant_override("separation", separation)
 
 func set_card_zones() -> void:
 	var game := CardEnvironment.get_current_game()
@@ -131,7 +131,7 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 	if column_diff > 0:
 		for i in column_diff:
 			var new_vbox := VBoxContainer.new()
-			new_vbox.add_theme_constant_override("Seperation", seperation)
+			new_vbox.add_theme_constant_override("separation", separation)
 			hbox.add_child(new_vbox)
 	elif column_diff < 0:
 		for i in absi(column_diff):
@@ -186,7 +186,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 	
 	for i in type.size():
 		var vbox: VBoxContainer = hbox.get_child(i)
-		vbox.add_theme_constant_override("Seperation", seperation)
+		vbox.add_theme_constant_override("separation", separation)
 		
 		# 1. Visual settings for Zone/Type Card (Index 0)
 		var c: Control = vbox.get_child(0)
@@ -195,9 +195,9 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		
 		if selected_cards:
 			if c == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom)
+				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
 			elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom / 2.5)
+				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom / 2.5)
 		elif vbox.get_child_count() != 1:
 			c.focus_mode = Control.FOCUS_NONE
 			
@@ -212,7 +212,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		# 2. Visual settings for Row Cards (Index 1 onwards)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
-			c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom)
+			c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
 			
 			connected_data = datas[i].datas[j-1]
 			card_count += 1
@@ -240,7 +240,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 			if selected_control.get_index() == 1:
 				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
 			else:
-				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom)
+				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -281,10 +281,10 @@ func on_control_focus_entered(control:Control) -> void:
 		focused_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
 		(focused_control.get_parent().get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 	if row_index == 0:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom/1.5)
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom/1.5)
 		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 	elif row_index == 1:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play_custom/2.5)
+		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom/2.5)
 		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 	focused_control = control
 
@@ -311,9 +311,9 @@ func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> 
 	for i in zone.get_child_count():
 		var label : BigNumberLabel = zone.get_child(i)
 		if is_row:
-			label.custom_minimum_size = Vector2(CardVisual.card_seperation_play, CardVisual.card_seperation_play_custom)
+			label.custom_minimum_size = Vector2(CardVisual.card_separation_play, CardVisual.card_separation_play_custom)
 		else:
-			label.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_seperation_play)
+			label.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play)
 		if i < scores.size():
 			label.current_num = scores[i]
 		else: label.text = ""

@@ -294,10 +294,10 @@ libraries/ = SubResource("AnimationLibrary_018h0")
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
-position = Vector2(0, 0.90624356)
-rotation = 2.3321272e-05
-scale = Vector2(0.9878987, 0.9978247)
-skew = -0.010372162
+position = Vector2(0, -0.7886165)
+rotation = 3.400036e-05
+scale = Vector2(0.9906426, 0.995101)
+skew = -0.013687611
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
 texture = ExtResource("2_y74k2")
@@ -352,47 +352,71 @@ bones = ["Bone_Center", PackedFloat32Array(0.12820783, 0.12820783, 0.028734094, 
 internal_vertex_count = 9
 
 [node name="Skeleton2D" type="Skeleton2D" parent="Offset/Visual" unique_id=1670137835]
-visible = false
 
 [node name="Bone_Center" type="Bone2D" parent="Offset/Visual/Skeleton2D" unique_id=1021668462]
+visible = false
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 
 [node name="Arm_TopLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1878325580]
 position = Vector2(-19, -25)
 rest = Transform2D(1, 0, 0, 1, -19, -25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_Top" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=542893984]
 position = Vector2(0, -25)
 rest = Transform2D(1, 0, 0, 1, 0, -25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_TopRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1942097825]
 position = Vector2(19, -25)
 rest = Transform2D(1, 0, 0, 1, 19, -25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_Right" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=926206458]
 position = Vector2(19, 0)
 rest = Transform2D(1, 0, 0, 1, 19, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_BottomRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1444809499]
 position = Vector2(19, 25)
 rest = Transform2D(1, 0, 0, 1, 19, 25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_Bottom" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1581873572]
 position = Vector2(0, 25)
 rest = Transform2D(1, 0, 0, 1, 0, 25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_BottomLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=61446481]
 position = Vector2(-19, 25)
 rest = Transform2D(1, 0, 0, 1, -19, 25)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
 
 [node name="Arm_Left" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1161824804]
 position = Vector2(-19, 0)
 rest = Transform2D(1, 0, 0, 1, -19, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 editor_settings/show_bone_gizmo = false
