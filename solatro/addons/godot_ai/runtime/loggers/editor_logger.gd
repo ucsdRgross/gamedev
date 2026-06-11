@@ -1,4 +1,5 @@
 @tool
+@warning_ignore_start("unsafe_method_access", "unsafe_cast", "untyped_declaration", "unsafe_call_argument")
 extends Logger
 
 ## Editor-process Logger subclass.
