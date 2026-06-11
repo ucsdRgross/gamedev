@@ -4,7 +4,6 @@ extends Resource
 
 @export_group("Map Layout")
 @export var map_width: int = 768
-@export_group("Map Layout")
 @export var map_height: int = 768
 @export var path_steps: int = 15
 
@@ -31,7 +30,7 @@ extends Resource
 
 @export_group("Pathfinding Penalties")
 @export var mountain_penalty: float = 200.0
-@export var water_penalty: float = 500.0
+@export var water_penalty: float = 9000.0 # Bumps penalty to avoid crossing water entirely
 
 @export_group("Civilization")
 @export var min_city_dist: float = 24.0

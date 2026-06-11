@@ -6,7 +6,7 @@
 
 [sub_resource type="Resource" id="Resource_h2yge"]
 script = ExtResource("3")
-main_seed = 12345
+main_seed = 12356
 metadata/_custom_type_script = "uid://mbt2djybuun1"
 
 [node name="Main" type="Node2D" unique_id=149338564]

@@ -1,4 +1,4 @@
-# world_viewer.gd
+# world_viewer.gd (FIRST HALF)
 extends Node2D
 
 @onready var generator: WorldGenerator = $WorldGenerator
@@ -65,15 +65,15 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 			var color := Color.BLACK
 			var val: float = h_map.get(orig_pos, 0.0)
 			
-			# HIGH-CONTRAST RIVERS VISUAL SNAPSHOT STEP: Clears out mapping artifacts to track river networks cleanly
-			if step == "Rivers_Highlight":
+			# HIGH-CONTRAST RIVERS VISUAL STEP: Isolates water networks on a pitch substrate
+			if step == "Rivers_Only":
 				var is_river_pixel = false
 				for rx in range(-1, 2):
 					for ry in range(-1, 2):
 						if rivers.has(orig_pos + Vector2i(rx, ry)):
 							is_river_pixel = true
 							break
-				color = Color.html("#00ffff") if (is_river_pixel and val >= generator.settings.ocean_threshold) else Color.html("#1a365d")
+				color = Color.html("#38bdf8") if (is_river_pixel and val >= generator.settings.ocean_threshold) else Color.html("#0f172a")
 				img.set_pixelv(target_pos, color)
 				continue
 			
@@ -94,15 +94,18 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 				if b_map.has(orig_pos):
 					match b_map[orig_pos]:
 						"Ocean": color = Color.html("#1a365d")
-						"Arctic": color = Color.html("#f7fafc")
-						"Tundra": color = Color.html("#edf2f7")
-						"Plains": color = Color.html("#9ae6b4")
-						"Forest": color = Color.html("#2f855a")
-						"Desert": color = Color.html("#feebc8")
-						"Rainforest": color = Color.html("#22543d")
-						"Mountain":
-							if val > 0.82: color = Color.html("#ffffff")
-							else: color = Color.html("#4a5568")
+						"Glacial Peak": color = Color.html("#e2e8f0")
+						"Volcanic Crag": color = Color.html("#991b1b")
+						"Barren Ridges": color = Color.html("#4b5563")
+						"Cryo Frostwastes": color = Color.html("#38bdf8")
+						"Tectonic Fissures": color = Color.html("#7c2d12")
+						"Ashen Tundra": color = Color.html("#9ca3af")
+						"Salt Flats": color = Color.html("#f9fafb")
+						"Tornado Prairie": color = Color.html("#65a30d")
+						"Toxic Swamps": color = Color.html("#047857")
+						"Shattered Savannah": color = Color.html("#b45309")
+						"Seismic Plains": color = Color.html("#15803d")
+						"Acidic Jungle": color = Color.html("#065f46")
 						_: color = Color.BLACK
 			
 			var thick_river = false
@@ -113,17 +116,17 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 						break
 						
 			if step in ["Climate", "Cities", "Graph"] and thick_river and val >= generator.settings.ocean_threshold:
-				color = Color.html("#3182ce")
+				color = Color.html("#2563eb")
 				
 			img.set_pixelv(target_pos, color)
 
 func _render_all_steps_grid(w: int, h: int) -> void:
 	var comp_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	var pipelines = ["Landmass", "Tectonics", "PeaksAndValleys", "Rivers_Highlight", "Climate", "Graph"]
+	var pipelines = ["Landmass", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
 	
-	# CLEAN THREE-COLUMN NO-PADDING TILING
+	# BALANCED 3x3 MATRIX LAYOUT
 	var sub_w = int(w / 3)
-	var sub_h = int(h / 2)
+	var sub_h = int(h / 3)
 	var scale = 1.0 / 3.0
 	
 	for idx in range(pipelines.size()):
@@ -135,15 +138,16 @@ func _render_all_steps_grid(w: int, h: int) -> void:
 		
 	cached_texture = ImageTexture.create_from_image(comp_img)
 	queue_redraw()
+# world_viewer.gd (SECOND HALF)
 
 func _download_grid_to_disk() -> void:
 	var w = generator.settings.map_width
 	var h = generator.settings.map_height
 	var out_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	
-	var pipelines = ["Landmass", "Tectonics", "PeaksAndValleys", "Rivers_Highlight", "Climate", "Graph"]
+	var pipelines = ["Landmass", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
 	var sub_w = int(w / 3)
-	var sub_h = int(h / 2)
+	var sub_h = int(h / 3)
 	var scale = 1.0 / 3.0
 	
 	for idx in range(pipelines.size()):
@@ -152,13 +156,13 @@ func _download_grid_to_disk() -> void:
 			var offset = Vector2i((idx % 3) * sub_w, (idx / 3) * sub_h)
 			_fill_image_with_step_pixels(out_img, generator.snapshots[step], step, offset, w, h, scale)
 			
-	# EXPORT INTEGRATION VECTOR RASTERIZER: Burns your nodes and pathway vectors directly onto the output .png image
-	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Climate"], Vector2(sub_w, sub_h), scale)
-	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Graph"], Vector2(sub_w * 2, sub_h), scale)
+	# Rasterize vectors directly onto the appropriate exported quadrant slots
+	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Cities"], Vector2(0, sub_h * 2), scale)
+	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Graph"], Vector2(sub_w, sub_h * 2), scale)
 	
 	var export_path = "res://procedural_generation_snapshot.png"
 	out_img.save_png(export_path)
-	print("SUCCESS: Full high-resolution snapshot exported with active node tracks directly to: ", export_path)
+	print("SUCCESS: Full high-resolution 3x3 layout matrix saved directly to: ", export_path)
 
 func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
 	var cities: Array = data["city_nodes"]
@@ -170,31 +174,30 @@ func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Ve
 		for child in graph[parent]:
 			var p1 = parent * scale + offset
 			var p2 = child * scale + offset
-			# Draw simple line segments on pixel buffer tracks
 			var steps = int(p1.distance_to(p2))
 			for s in range(steps):
-				var plot_p = Vector2i(p1.lerp(p2, float(s) / steps))
+				var plot_p = Vector2i(p1.lerp(p2, float(s) / maxf(1.0, float(steps))))
 				if plot_p.x >= 0 and plot_p.x < img.get_width() and plot_p.y >= 0 and plot_p.y < img.get_height():
 					img.set_pixelv(plot_p, Color.WHITE)
 					
 	for city in cities:
 		var plot_c = Vector2i(city * scale + offset)
-		for ox in range(-2, 3):
-			for oy in range(-2, 3):
+		for ox in range(-1, 2):
+			for oy in range(-1, 2):
 				var target_p = plot_c + Vector2i(ox, oy)
 				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
 					img.set_pixelv(target_p, Color.html("#ecc94b"))
 					
 	if start != Vector2.ZERO:
 		var plot_s = Vector2i(start * scale + offset)
-		for ox in range(-4, 5):
-			for oy in range(-4, 5):
+		for ox in range(-3, 4):
+			for oy in range(-3, 4):
 				img.set_pixelv(plot_s + Vector2i(ox, oy), Color.GREEN)
 				
 	if end != Vector2.ZERO:
 		var plot_e = Vector2i(end * scale + offset)
-		for ox in range(-4, 5):
-			for oy in range(-4, 5):
+		for ox in range(-3, 4):
+			for oy in range(-3, 4):
 				img.set_pixelv(plot_e + Vector2i(ox, oy), Color.RED)
 
 func _draw() -> void:
@@ -215,17 +218,19 @@ func _draw_grid_vector_overlays() -> void:
 	var w = generator.settings.map_width
 	var h = generator.settings.map_height
 	var sub_w = int(w / 3)
-	var sub_h = int(h / 2)
+	var sub_h = int(h / 3)
 	var scale = 1.0 / 3.0
 	
-	if generator.snapshots.has("Climate"):
-		_draw_vector_layer(generator.snapshots["Climate"], "Climate", Vector2(1 * sub_w, 1 * sub_h), scale)
+	if generator.snapshots.has("Cities"):
+		_draw_vector_layer(generator.snapshots["Cities"], "Cities", Vector2(0, 2 * sub_h), scale)
 	if generator.snapshots.has("Graph"):
-		_draw_vector_layer(generator.snapshots["Graph"], "Graph", Vector2(2 * sub_w, 1 * sub_h), scale)
+		_draw_vector_layer(generator.snapshots["Graph"], "Graph", Vector2(sub_w, 2 * sub_h), scale)
 		
+	# Draw lines dividing the 3x3 layout sections
 	draw_line(Vector2(sub_w, 0), Vector2(sub_w, h), Color.BLACK, 2.0)
 	draw_line(Vector2(sub_w * 2, 0), Vector2(sub_w * 2, h), Color.BLACK, 2.0)
 	draw_line(Vector2(0, sub_h), Vector2(w, sub_h), Color.BLACK, 2.0)
+	draw_line(Vector2(0, sub_h * 2), Vector2(w, sub_h * 2), Color.BLACK, 2.0)
 
 func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: float) -> void:
 	var cities: Array = data["city_nodes"]
@@ -234,7 +239,7 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 	var end: Vector2 = data["end_node"]
 	var h_map: Dictionary = data["height_map"]
 	
-	if step in ["Climate", "Cities", "Graph", "Rivers_Highlight"]:
+	if step in ["Climate", "Cities", "Graph", "Rivers_Highlight", "Rivers_Only"]:
 		for parent_node in graph.keys():
 			for child_node in graph[parent_node]:
 				var p1 = (parent_node * scale) + offset
@@ -265,10 +270,8 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 		for city in cities:
 			draw_circle((city * scale) + offset, 4.5 * scale, Color.html("#ecc94b"))
 			
-		if start != Vector2.ZERO: 
-			draw_circle((start * scale) + offset, 9.0 * scale, Color.GREEN)
-		if end != Vector2.ZERO: 
-			draw_circle((end * scale) + offset, 9.0 * scale, Color.RED)
+		if start != Vector2.ZERO: draw_circle((start * scale) + offset, 9.0 * scale, Color.GREEN)
+		if end != Vector2.ZERO: draw_circle((end * scale) + offset, 9.0 * scale, Color.RED)
 
 func _draw_ui_legend(step: String) -> void:
 	var items = []
@@ -281,19 +284,19 @@ func _draw_ui_legend(step: String) -> void:
 			{"c": Color.html("#718096"), "n": "Rocky Canyons"},
 			{"c": Color.html("#ffffff"), "n": "Snow Peaks"}
 		]
-	elif step == "Rivers_Highlight":
+	elif step == "Rivers_Only":
 		items = [
-			{"c": Color.html("#00ffff"), "n": "Neon Water Networks"},
-			{"c": Color.html("#1a365d"), "n": "Ocean Abyss"}
+			{"c": Color.html("#38bdf8"), "n": "Pure River Network"},
+			{"c": Color.html("#0f172a"), "n": "Substrate Floor"}
 		]
 	else:
 		items = [
-			{"c": Color.html("#3182ce"), "n": "Rivers/Lakes"},
-			{"c": Color.html("#9ae6b4"), "n": "Plains"},
-			{"c": Color.html("#2f855a"), "n": "Forest"},
-			{"c": Color.html("#feebc8"), "n": "Desert Sand"},
-			{"c": Color.html("#4a5568"), "n": "Mountains"},
-			{"c": Color.html("#ecc94b"), "n": "Standard Node"}
+			{"c": Color.html("#2563eb"), "n": "Rivers/Lakes"},
+			{"c": Color.html("#991b1b"), "n": "Volcanic Crag"},
+			{"c": Color.html("#047857"), "n": "Toxic Swamp"},
+			{"c": Color.html("#7c2d12"), "n": "Fissures"},
+			{"c": Color.html("#38bdf8"), "n": "Frostwastes"},
+			{"c": Color.html("#ecc94b"), "n": "City Node"}
 		]
 	
 	var font = ThemeDB.get_fallback_font()
