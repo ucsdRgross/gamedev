@@ -1,15 +1,14 @@
-# world_generator.gd (FIRST HALF)
+# world_generator.gd
 class_name WorldGenerator
 extends Node
 
 @export var settings: WorldSettings
 
-# --- Pipeline State Data (Snapshots for Visualization) ---
 var snapshots: Dictionary = {} 
-var height_map: Dictionary       # Vector2i -> float (0.0 to 1.0)
-var temperature_map: Dictionary  # Vector2i -> float
-var humidity_map: Dictionary     # Vector2i -> float
-var biome_map: Dictionary        # Vector2i -> String (Biome name)
+var height_map: Dictionary       
+var temperature_map: Dictionary  
+var humidity_map: Dictionary     
+var biome_map: Dictionary        
 var river_nodes: Array[Vector2i] = [] 
 var city_nodes: Array[Vector2] = []    
 var gameplay_graph: Dictionary = {}   
@@ -17,7 +16,6 @@ var start_node: Vector2
 var end_node: Vector2
 var landmarks: Array[Dictionary] = [] 
 
-# Optimized 1D lookup array buffer to completely eliminate dictionary traversal bottlenecks
 var fast_height_buffer: PackedFloat32Array
 
 signal generation_step_finished(step_name: String)
@@ -94,30 +92,37 @@ func _step_2_tectonic_drift() -> void:
 	var plate_centers: Array[Vector2] = []
 	var plate_directions: Array[Vector2] = []
 	
+	# Domain warp noise profile configuration to smooth out sharp edge line boundaries
+	var warp_noise = FastNoiseLite.new()
+	warp_noise.seed = settings.main_seed + 15
+	warp_noise.frequency = 0.02
+	
 	for i in range(settings.plate_count):
 		plate_centers.append(Vector2(randf() * settings.map_width, randf() * settings.map_height))
 		plate_directions.append(Vector2(randf() - 0.5, randf() - 0.5).normalized())
 		
 	for pos in height_map.keys():
 		if height_map[pos] > settings.ocean_threshold:
+			# Apply continuous coordinate offset shifts to clean up cellular grid lines
+			var wx = pos.x + int(warp_noise.get_noise_2d(pos.x, pos.y) * 45.0)
+			var wy = pos.y + int(warp_noise.get_noise_2d(pos.y, pos.x) * 45.0)
+			var warped_pos = Vector2(wx, wy)
+			
 			var closest_plate = 0
 			var min_dist = 99999.0
 			for i in range(plate_centers.size()):
-				var d = Vector2(pos).distance_to(plate_centers[i])
+				var d = warped_pos.distance_to(plate_centers[i])
 				if d < min_dist:
 					min_dist = d
 					closest_plate = i
 					
-			var to_center = (plate_centers[closest_plate] - Vector2(pos)).normalized()
-			var dot_val = to_center.dot(plate_directions[closest_plate])
+			var to_center = (plate_centers[closest_plate] - warped_pos).normalized()
+			var collision_force = to_center.dot(plate_directions[closest_plate])
 			
-			# TECTONIC SHIFT FIX: Explicitly check direction vectors to simulate both collisions and rifts
-			if dot_val > 0.1:
-				# Convergent fault line: push major mountain chains upward
-				height_map[pos] += dot_val * settings.drift_intensity * (1.0 - clamp(min_dist / 180.0, 0.0, 1.0))
-			elif dot_val < -0.2:
-				# Divergent fault line: carve low rift valleys and deep lake basins
-				height_map[pos] = clamp(height_map[pos] - (abs(dot_val) * settings.drift_intensity * 0.5), 0.0, 1.0)
+			if collision_force > 0.1: # Convergent border -> Carve mountain ridges
+				height_map[pos] += collision_force * settings.drift_intensity * (1.0 - clamp(min_dist / 220.0, 0.0, 1.0))
+			elif collision_force < -0.1: # Divergent border -> Form rift valley trenches
+				height_map[pos] = max(settings.ocean_threshold + 0.02, height_map[pos] - abs(collision_force) * 0.18)
 				
 	_save_snapshot("Tectonics")
 
@@ -182,7 +187,6 @@ func _calculate_gradient(pos: Vector2) -> Vector2:
 	var h10 = height_map.get(Vector2i(x+1, y), h00)
 	var h01 = height_map.get(Vector2i(x, y+1), h00)
 	return Vector2(h10 - h00, h01 - h00)
-# world_generator.gd (SECOND HALF)
 
 func _step_5_hydrography_and_climate() -> void:
 	var t_noise = FastNoiseLite.new()
@@ -227,22 +231,24 @@ func _step_5_hydrography_and_climate() -> void:
 		var t = temperature_map[pos]
 		var h = humidity_map[pos]
 		
+		# 12-Tier Tactical Hazard Biome Matrix mapping configuration
 		if height_map[pos] >= settings.mountain_threshold:
-			biome_map[pos] = "Mountain"
+			if t < 0.35: biome_map[pos] = "Glacial Peak"
+			elif t > 0.65: biome_map[pos] = "Volcanic Crag"
+			else: biome_map[pos] = "Barren Ridges"
 		elif t < 0.25: 
-			biome_map[pos] = "Arctic"
+			biome_map[pos] = "Cryo Frostwastes"
 		elif t < 0.38: 
-			biome_map[pos] = "Tundra"
+			if h < 0.4: biome_map[pos] = "Tectonic Fissures"
+			else: biome_map[pos] = "Ashen Tundra"
 		elif t > 0.65:
-			if h < 0.35: 
-				biome_map[pos] = "Desert"
-			else: 
-				biome_map[pos] = "Rainforest"
+			if h < 0.3: biome_map[pos] = "Salt Flats"
+			elif h < 0.55: biome_map[pos] = "Tornado Prairie"
+			else: biome_map[pos] = "Toxic Swamps"
 		else:
-			if h < 0.45: 
-				biome_map[pos] = "Plains"
-			else: 
-				biome_map[pos] = "Forest"
+			if h < 0.35: biome_map[pos] = "Shattered Savannah"
+			elif h < 0.6: biome_map[pos] = "Seismic Plains"
+			else: biome_map[pos] = "Acidic Jungle"
 	_save_snapshot("Climate")
 
 func _step_6_civilizations() -> void:
@@ -279,13 +285,8 @@ func _step_7_gameplay_graph() -> void:
 				max_d = d
 				best_pair = [city_nodes[i], city_nodes[j]]
 				
-	# GEOMETRY DIRECTION FIX: Explicitly sort the primary vector endpoints from left to right
-	if best_pair[0].x < best_pair[1].x:
-		start_node = best_pair[0]
-		end_node = best_pair[1]
-	else:
-		start_node = best_pair[1]
-		end_node = best_pair[0]
+	start_node = best_pair[0]
+	end_node = best_pair[1]
 	
 	var travel_vec = end_node - start_node
 	var travel_normalized = travel_vec.normalized()
@@ -304,16 +305,16 @@ func _step_7_gameplay_graph() -> void:
 		
 	var layers_has_start = false
 	for layer in layers:
-		if layer.has(start_node):
+		if layer.has(start_node): 
 			layers_has_start = true
 			break
-	if not layers_has_start:
+	if not layers_has_start: 
 		layers[0].push_back(start_node)
 		
 	var layers_has_end = false
-	if layers[settings.path_steps].has(end_node):
+	if layers[settings.path_steps].has(end_node): 
 		layers_has_end = true
-	if not layers_has_end:
+	if not layers_has_end: 
 		layers[settings.path_steps].push_back(end_node)
 		
 	for i in range(1, settings.path_steps):
@@ -323,8 +324,10 @@ func _step_7_gameplay_graph() -> void:
 			layers[i].push_back(fallback_pos)
 			
 	for i in range(settings.path_steps + 1):
-		if is_horizontal: layers[i].sort_custom(func(a, b): return a.y < b.y)
-		else: layers[i].sort_custom(func(a, b): return a.x < b.x)
+		if is_horizontal: 
+			layers[i].sort_custom(func(a, b): return a.y < b.y)
+		else: 
+			layers[i].sort_custom(func(a, b): return a.x < b.x)
 			
 	for i in range(settings.path_steps):
 		var current_layer = layers[i]
@@ -336,26 +339,15 @@ func _step_7_gameplay_graph() -> void:
 			
 			for candidate in next_layer:
 				var d = current.distance_to(candidate)
+				# ENFORCE SHIFT DISTANCE BOUNDS: Block zig-zags by requiring links to sit inside min/max length caps
 				if d >= settings.min_path_dist and d <= settings.max_path_dist:
 					var penalty = _evaluate_raycast_cost(current, candidate)
-					if penalty >= 0.0: 
-						valid_targets.append({
-							"pos": candidate,
-							"score": d + penalty
-						})
-					
-			if valid_targets.is_empty():
-				for candidate in next_layer:
-					var d = current.distance_to(candidate)
-					if d <= settings.max_path_search_dist:
-						var penalty = _evaluate_raycast_cost(current, candidate)
-						if penalty >= 0.0:
-							valid_targets.append({
-								"pos": candidate,
-								"score": d + penalty + 1000.0
-							})
-							
+					if penalty >= 0.0:
+						valid_targets.append({"pos": candidate, "score": d + penalty})
+						
 			valid_targets.sort_custom(func(a, b): return a.score < b.score)
+			
+			# TUNE BRANCHING CHOICES: Clamps options dynamically based on setting handles
 			var target_branches = min(randi_range(settings.min_choices, settings.max_choices), valid_targets.size())
 			for b in range(target_branches):
 				gameplay_graph[current].append(valid_targets[b].pos)
@@ -371,14 +363,13 @@ func _evaluate_raycast_cost(start_p: Vector2, end_p: Vector2) -> float:
 	
 	for step in range(steps + 1):
 		var check_p = Vector2i(start_p.lerp(end_p, float(step) / steps))
-		if check_p.x < 0 or check_p.x >= w or check_p.y < 0 or check_p.y >= h:
-			return -1.0 
+		if check_p.x < 0 or check_p.x >= w or check_p.y < 0 or check_p.y >= h: 
+			return -1.0
 			
 		var height_val = fast_height_buffer[(check_p.y * w) + check_p.x]
-		
 		if height_val < settings.ocean_threshold:
-			total_penalty += settings.water_penalty 
+			total_penalty += settings.water_penalty
 		elif height_val >= settings.mountain_threshold:
-			total_penalty += settings.mountain_penalty 
+			total_penalty += settings.mountain_penalty
 			
 	return total_penalty
