@@ -23,7 +23,6 @@ func _draw_grid_vector_overlays() -> void:
 	var sub_h = int(h / 3)
 	var scale = 1.0 / 3.0
 	
-	# GRID ALIGNMENT FILTER CORRECTION: Locks vectors precisely to the updated 3x3 blueprint sequence order
 	if generator.snapshots.has("Tectonics_Debug"):
 		var tect_data: Dictionary = generator.snapshots["Tectonics_Debug"]
 		_draw_vector_layer(tect_data, "Tectonics_Debug", Vector2(sub_w, 0), scale)
@@ -40,7 +39,6 @@ func _draw_grid_vector_overlays() -> void:
 		var graph_data: Dictionary = generator.snapshots["Graph"]
 		_draw_vector_layer(graph_data, "Draw_Vectors", Vector2(sub_w * 2, sub_h * 2), scale)
 		
-	# Bounding matrix dividing lines
 	draw_line(Vector2(sub_w, 0), Vector2(sub_w, h), Color.BLACK, 2.0)
 	draw_line(Vector2(sub_w * 2, 0), Vector2(sub_w * 2, h), Color.BLACK, 2.0)
 	draw_line(Vector2(0, sub_h), Vector2(w, sub_h), Color.BLACK, 2.0)

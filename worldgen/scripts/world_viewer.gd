@@ -80,7 +80,8 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 				img.set_pixelv(target_pos, color)
 				continue
 			
-			if step in ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion", "Cities", "Graph"]:
+			# FIX: Restores biome layouts under the civilization and traversal network slots (8 and 9)
+			if step in ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion"]:
 				if val < generator.settings.ocean_threshold:
 					color = Color.html("#1a365d")
 				elif val < generator.settings.ocean_threshold + 0.04:
@@ -157,7 +158,7 @@ func _download_grid_to_disk() -> void:
 			var offset = Vector2i((idx % 3) * sub_w, (idx / 3) * sub_h)
 			_fill_image_with_step_pixels(out_img, generator.snapshots[step], step, offset, w, h, scale)
 			
-	# EXPORT BUFFER BINDINGS FIX: Maps vector calculations precisely onto output cells
+	# FIX: Re-maps coordinates to pass direct source arrays to the offline image rasterizers
 	if generator.snapshots.has("Tectonics_Debug"):
 		_rasterize_tectonics_to_disk_buffer(out_img, generator.snapshots["Tectonics_Debug"], Vector2(sub_w, 0), scale)
 	if generator.snapshots.has("Cities"):
@@ -171,6 +172,16 @@ func _download_grid_to_disk() -> void:
 
 func _rasterize_tectonics_to_disk_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
 	var landmarks: Array = data["landmarks"]
+	
+	# FIX: Burn cell fault lines directly onto the exported PNG matrix quadrant slot
+	for y in range(0, int(generator.settings.map_height * scale)):
+		for x in range(0, int(generator.settings.map_width * scale)):
+			var orig_p = Vector2i(int(x / scale), int(y / scale))
+			if _is_fault_line_boundary_offline(orig_p, landmarks):
+				var target_p = Vector2i(x, y) + Vector2i(offset)
+				if target_p.x < img.get_width() and target_p.y < img.get_height():
+					img.set_pixelv(target_p, Color.html("#a855f7"))
+					
 	for plate in landmarks:
 		var plot_c = Vector2i((plate.pos * scale) + offset)
 		var p_dir = plate.dir
@@ -184,11 +195,32 @@ func _rasterize_tectonics_to_disk_buffer(img: Image, data: Dictionary, offset: V
 			if plot_l.x >= 0 and plot_l.x < img.get_width() and plot_l.y >= 0 and plot_l.y < img.get_height():
 				img.set_pixelv(plot_l, Color.WHITE)
 
+func _is_fault_line_boundary_offline(pos: Vector2i, landmarks_list: Array) -> bool:
+	var check_offsets = [Vector2i(3, 0), Vector2i(0, 3)]
+	var primary_plate = _get_closest_plate_id_offline(Vector2(pos), landmarks_list)
+	for o in check_offsets:
+		var neighbor = pos + o
+		if neighbor.x < generator.settings.map_width and neighbor.y < generator.settings.map_height:
+			if _get_closest_plate_id_offline(Vector2(neighbor), landmarks_list) != primary_plate:
+				return true
+	return false
+
+func _get_closest_plate_id_offline(pos: Vector2, landmarks_list: Array) -> int:
+	var closest = 0
+	var min_d = 99999.0
+	for i in range(landmarks_list.size()):
+		var d = pos.distance_to(landmarks_list[i].pos)
+		if d < min_d:
+			min_d = d
+			closest = i
+	return closest
+	
 func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
 	var cities: Array = data["city_nodes"]
 	var graph: Dictionary = data["gameplay_graph"]
 	var start: Vector2 = data["start_node"]
 	var end: Vector2 = data["end_node"]
+	var h_map: Dictionary = data["height_map"]
 	
 	for parent in graph.keys():
 		for child in graph[parent]:
