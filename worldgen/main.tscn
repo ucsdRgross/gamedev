@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://pgsorh464ay0"]
 
-[ext_resource type="Script" uid="uid://66xbpjrv8fl5" path="res://scripts/world_viewer.gd" id="1"]
+[ext_resource type="Script" uid="uid://csnfgvnac7noq" path="res://scripts/world_viewer_renderer.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://bnnm36f7v6xuq" path="res://scripts/world_generator.gd" id="2"]
 [ext_resource type="Script" uid="uid://mbt2djybuun1" path="res://scripts/world_settings.gd" id="3"]
 
@@ -10,7 +10,7 @@ main_seed = 12356
 metadata/_custom_type_script = "uid://mbt2djybuun1"
 
 [node name="Main" type="Node2D" unique_id=149338564]
-script = ExtResource("1")
+script = ExtResource("1_h2yge")
 
 [node name="WorldGenerator" type="Node" parent="." unique_id=2040982681]
 script = ExtResource("2")

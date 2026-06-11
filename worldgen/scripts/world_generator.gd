@@ -38,7 +38,6 @@ func generate_world_map() -> void:
 	fast_height_buffer.resize(settings.map_width * settings.map_height)
 	seed(settings.main_seed)
 	
-	# MODULAR SEQUENCE WITH INJECTED STEP CLASSES
 	Step1Landmass.new().execute(self, settings)
 	Step2Tectonics.new().execute(self, settings)
 	Step3PeaksAndValleys.new().execute(self, settings)

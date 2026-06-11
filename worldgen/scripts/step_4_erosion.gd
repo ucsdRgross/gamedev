@@ -32,7 +32,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			else:
 				var amount = min((capacity - sediment) * erode_speed, -h_diff)
 				sediment += amount
-				gen.height_map[pos_i] -= amount
+				gen.height_map[gen.height_map.keys()[0] if pos_i not in gen.height_map else pos_i] -= amount
 			pos = new_pos
 			
 	gen._sync_fast_buffer() 

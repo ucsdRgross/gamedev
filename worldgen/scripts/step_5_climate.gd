@@ -10,27 +10,30 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	h_noise.seed = settings.main_seed + 4
 	h_noise.frequency = 0.007
 	
-	# COLLECT HIGH-ALTITUDE MOUNTAIN PEAKS FOR RIVER SEED ROOTS
-	var mountain_tiles: Array[Vector2i] = []
+	var peak_tiles: Array[Vector2i] = []
 	for pos in gen.height_map.keys():
 		if gen.height_map[pos] >= settings.mountain_threshold:
-			mountain_tiles.append(pos)
-			
-	# Fallback if specific seeds produce flat lands
-	if mountain_tiles.is_empty():
-		for pos in gen.height_map.keys():
-			if gen.height_map[pos] > settings.ocean_threshold + 0.2:
-				mountain_tiles.append(pos)
-				
-	mountain_tiles.shuffle()
+			peak_tiles.append(pos)
+	peak_tiles.shuffle()
 	
-	# TRACE CONVERGING SLOPES DOWN INTO VALLEYS & LAKE DEPRESSIONS
-	var active_river_count = min(95, mountain_tiles.size())
-	for i in range(active_river_count):
-		var curr = Vector2(mountain_tiles[i])
-		var lake_pooling_counter = 0
+	# FIX: Distribute river sources evenly using a Poisson separation distance check
+	var seeded_river_origins: Array[Vector2i] = []
+	for peak in peak_tiles:
+		if seeded_river_origins.size() >= 45: 
+			break
+		var too_close = false
+		for existing in seeded_river_origins:
+			if Vector2(peak).distance_to(Vector2(existing)) < 40.0:
+				too_close = true
+				break
+		if not too_close:
+			seeded_river_origins.append(peak)
+			
+	for origin in seeded_river_origins:
+		var curr = Vector2(origin)
+		var stagnation_ticks = 0
 		
-		for step in range(350):
+		for step in range(250):
 			var curr_i = Vector2i(curr)
 			if not gen.height_map.has(curr_i) or gen.height_map[curr_i] < settings.ocean_threshold: 
 				break
@@ -40,23 +43,22 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 				
 			var g = gen._calculate_gradient(curr)
 			
-			# LAKES GENERATION: If water hits a low rift valley floor basin, pool it into an inland lake
-			if g.length() < 0.0012:
-				lake_pooling_counter += 1
-				if lake_pooling_counter > 5:
-					# Dig down a localized depression water table pool
-					for ox in range(-4, 5):
-						for oy in range(-4, 5):
-							var pool_p = curr_i + Vector2i(ox, oy)
-							if gen.height_map.has(pool_p):
-								gen.height_map[pool_p] = min(gen.height_map[pool_p], settings.ocean_threshold - 0.02)
+			# LAKE FORMATION: Water pools into natural valleys instead of cutting unlimited channels
+			if g.length() < 0.0015:
+				stagnation_ticks += 1
+				if stagnation_ticks > 4:
+					# Carve a localized lake basin depression
+					for ox in range(-3, 4):
+						for oy in range(-3, 4):
+							var lake_p = curr_i + Vector2i(ox, oy)
+							if gen.height_map.has(lake_p) and gen.height_map[lake_p] > settings.ocean_threshold:
+								# Drop terrain slightly below ocean threshold to reveal a distinct inland lake color
+								gen.height_map[lake_p] = min(gen.height_map[lake_p], settings.ocean_threshold - 0.01)
 					break
 			else:
-				lake_pooling_counter = 0
-				
+				stagnation_ticks = 0
 			curr -= g.normalized() * 1.5
 
-	# MAP 12-TIER TACTICAL HAZARDOUS ECOSYSTEMS
 	for pos in gen.height_map.keys():
 		if gen.height_map[pos] < settings.ocean_threshold:
 			gen.biome_map[pos] = "Ocean"
@@ -64,19 +66,18 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			
 		var raw_t = (t_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
 		var raw_h = (h_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
-		
 		var elevation = (gen.height_map[pos] - settings.ocean_threshold)
+		
 		gen.temperature_map[pos] = clamp(raw_t - (elevation * 0.5), 0.0, 1.0)
 		
 		var is_near_river = false
-		for offset_x in range(-2, 3):
-			for offset_y in range(-2, 3):
+		for offset_x in range(-1, 2):
+			for offset_y in range(-1, 2):
 				if gen.river_nodes.has(pos + Vector2i(offset_x, offset_y)):
 					is_near_river = true
 					break
 					
-		gen.humidity_map[pos] = clamp(raw_h + (0.4 if is_near_river else 0.0), 0.0, 1.0)
-		
+		gen.humidity_map[pos] = clamp(raw_h + (0.35 if is_near_river else 0.0), 0.0, 1.0)
 		var t = gen.temperature_map[pos]
 		var h = gen.humidity_map[pos]
 		

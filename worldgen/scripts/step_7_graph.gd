@@ -7,25 +7,13 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var best_pair: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO]
 	var max_d = 0.0
 	
-	# FILTER ENDPOINTS TO THE CONTINUOUS CENTER LANDMASS
-	var main_land_cities: Array[Vector2] = []
-	for city in gen.city_nodes:
-		var c_i = Vector2i(city)
-		var h_val = gen.fast_height_buffer[(c_i.y * settings.map_width) + c_i.x]
-		if h_val >= 0.45: 
-			main_land_cities.append(city)
-			
-	if main_land_cities.size() < 2:
-		main_land_cities = gen.city_nodes
-		
-	for i in range(main_land_cities.size()):
-		for j in range(i + 1, main_land_cities.size()):
-			var d = main_land_cities[i].distance_to(main_land_cities[j])
+	for i in range(gen.city_nodes.size()):
+		for j in range(i + 1, gen.city_nodes.size()):
+			var d = gen.city_nodes[i].distance_to(gen.city_nodes[j])
 			if d > max_d:
 				max_d = d
-				best_pair = [main_land_cities[i], main_land_cities[j]]
+				best_pair = [gen.city_nodes[i], gen.city_nodes[j]]
 				
-	# LOCK ORIENTATION VECTOR (Always progress Left to Right)
 	if best_pair[0].x <= best_pair[1].x:
 		gen.start_node = best_pair[0]
 		gen.end_node = best_pair[1]
@@ -69,10 +57,11 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			layers[i].push_back(fallback_pos)
 			
 	for i in range(settings.path_steps + 1):
-		if is_horizontal: layers[i].sort_custom(func(a, b): return a.y < b.y)
-		else: layers[i].sort_custom(func(a, b): return a.x < b.x)
+		if is_horizontal: 
+			layers[i].sort_custom(func(a, b): return a.y < b.y)
+		else: 
+			layers[i].sort_custom(func(a, b): return a.x < b.x)
 			
-	# LINK LAYER CHANNELS
 	for i in range(settings.path_steps):
 		var current_layer = layers[i]
 		var next_layer = layers[i+1]
@@ -94,7 +83,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 					if d <= settings.max_path_search_dist:
 						var penalty = gen._evaluate_raycast_cost(current, candidate)
 						if penalty >= 0.0:
-							valid_targets.append({"pos": candidate, "score": d + penalty + 800.0})
+							valid_targets.append({"pos": candidate, "score": d + penalty + 1500.0})
 							
 			valid_targets.sort_custom(func(a, b): return a.score < b.score)
 			var target_branches = min(randi_range(settings.min_choices, settings.max_choices), valid_targets.size())
@@ -103,8 +92,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 				
 	gen.gameplay_graph[gen.end_node] = []
 	
-	# --- DEPTH FIRST SEARCH PRUNING SWEEP ---
-	# Recursively clears out dead ends, loops, or isolated water paths
+	# DFS PROGRESSION CLEANUP SWEEP
 	var dynamic_valid_nodes := {}
 	_map_valid_routes_dfs(gen.start_node, 0, dynamic_valid_nodes, gen.gameplay_graph, gen.end_node, settings.path_steps)
 	
@@ -119,7 +107,6 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	gen.gameplay_graph = pruned_graph
 	gen.gameplay_graph[gen.end_node] = []
 	
-	# Sync the final valid cities map to clear broken references
 	var validated_cities: Array[Vector2] = []
 	for city in gen.city_nodes:
 		if dynamic_valid_nodes.has(city) or city == gen.end_node:
@@ -129,19 +116,16 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	gen._save_snapshot("Graph")
 
 func _map_valid_routes_dfs(node: Vector2, depth: int, valid_map: Dictionary, graph: Dictionary, end_n: Vector2, max_steps: int) -> bool:
-	if node == end_n:
+	if node == end_n: 
 		return depth == max_steps
-	if depth >= max_steps or not graph.has(node):
+	if depth >= max_steps or not graph.has(node): 
 		return false
-		
 	var path_leads_to_valid_end = false
 	for next_node in graph[node]:
 		var valid_branch = _map_valid_routes_dfs(next_node, depth + 1, valid_map, graph, end_n, max_steps)
 		if valid_branch:
 			path_leads_to_valid_end = true
 			valid_map[next_node] = true
-			
-	if path_leads_to_valid_end:
+	if path_leads_to_valid_end: 
 		valid_map[node] = true
-		
 	return path_leads_to_valid_end
