@@ -2,18 +2,18 @@ class_name Step4Erosion
 extends GenerationStep
 
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
-	var inertia = 0.05
-	var sediment_capacity_factor = 5.0
-	var min_sediment_capacity = 0.02
-	var erode_speed = 0.5 
-	var deposit_speed = 0.5
+	var inertia = 0.08
+	var sediment_capacity_factor = 6.0
+	var min_sediment_capacity = 0.01
+	var erode_speed = 0.75 # Amplified variables to carve visible valleys
+	var deposit_speed = 0.75
 	
-	for i in range(12000): 
+	for i in range(16000): # Increased pass loop count
 		var pos = Vector2(randf() * settings.map_width, randf() * settings.map_height)
 		var vel = Vector2.ZERO
 		var sediment = 0.0
 		
-		for _step in range(30):
+		for _step in range(35):
 			var pos_i = Vector2i(pos)
 			if not gen.height_map.has(pos_i): break
 			
@@ -32,7 +32,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			else:
 				var amount = min((capacity - sediment) * erode_speed, -h_diff)
 				sediment += amount
-				gen.height_map[gen.height_map.keys()[0] if pos_i not in gen.height_map else pos_i] -= amount
+				gen.height_map[pos_i] -= amount
 			pos = new_pos
 			
 	gen._sync_fast_buffer() 

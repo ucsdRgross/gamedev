@@ -10,54 +10,66 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	h_noise.seed = settings.main_seed + 4
 	h_noise.frequency = 0.007
 	
-	var peak_tiles: Array[Vector2i] = []
+	var mountain_tiles: Array[Vector2i] = []
 	for pos in gen.height_map.keys():
 		if gen.height_map[pos] >= settings.mountain_threshold:
-			peak_tiles.append(pos)
-	peak_tiles.shuffle()
-	
-	# FIX: Distribute river sources evenly using a Poisson separation distance check
-	var seeded_river_origins: Array[Vector2i] = []
-	for peak in peak_tiles:
-		if seeded_river_origins.size() >= 45: 
-			break
+			mountain_tiles.append(pos)
+			
+	if mountain_tiles.is_empty():
+		for pos in gen.height_map.keys():
+			if gen.height_map[pos] > settings.ocean_threshold + 0.2:
+				mountain_tiles.append(pos)
+				
+	var spaced_roots: Array[Vector2i] = []
+	mountain_tiles.shuffle()
+	for tile in mountain_tiles:
 		var too_close = false
-		for existing in seeded_river_origins:
-			if Vector2(peak).distance_to(Vector2(existing)) < 40.0:
+		for root in spaced_roots:
+			if Vector2(tile).distance_to(Vector2(root)) < 32.0:
 				too_close = true
 				break
 		if not too_close:
-			seeded_river_origins.append(peak)
-			
-	for origin in seeded_river_origins:
-		var curr = Vector2(origin)
-		var stagnation_ticks = 0
+			spaced_roots.append(tile)
+			if spaced_roots.size() >= 45: break
+
+	for root in spaced_roots:
+		var curr = Vector2(root)
+		var visited_path: Array[Vector2i] = []
 		
-		for step in range(250):
+		for step in range(400):
 			var curr_i = Vector2i(curr)
 			if not gen.height_map.has(curr_i) or gen.height_map[curr_i] < settings.ocean_threshold: 
 				break
 				
 			if not gen.river_nodes.has(curr_i): 
 				gen.river_nodes.append(curr_i)
-				
+			visited_path.append(curr_i)
+			
 			var g = gen._calculate_gradient(curr)
 			
-			# LAKE FORMATION: Water pools into natural valleys instead of cutting unlimited channels
 			if g.length() < 0.0015:
-				stagnation_ticks += 1
-				if stagnation_ticks > 4:
-					# Carve a localized lake basin depression
-					for ox in range(-3, 4):
-						for oy in range(-3, 4):
-							var lake_p = curr_i + Vector2i(ox, oy)
-							if gen.height_map.has(lake_p) and gen.height_map[lake_p] > settings.ocean_threshold:
-								# Drop terrain slightly below ocean threshold to reveal a distinct inland lake color
-								gen.height_map[lake_p] = min(gen.height_map[lake_p], settings.ocean_threshold - 0.01)
+				var lowest_neighbor = curr_i
+				var min_h = gen.height_map[curr_i]
+				
+				for ox in [-1, 0, 1]:
+					for oy in [-1, 0, 1]:
+						var n_pos = curr_i + Vector2i(ox, oy)
+						if gen.height_map.has(n_pos) and not visited_path.has(n_pos):
+							if gen.height_map[n_pos] < min_h:
+								min_h = gen.height_map[n_pos]
+								lowest_neighbor = n_pos
+								
+				if lowest_neighbor == curr_i:
+					for ox in range(-5, 6):
+						for oy in range(-5, 6):
+							var pool_p = curr_i + Vector2i(ox, oy)
+							if gen.height_map.has(pool_p) and Vector2(ox,oy).length() <= 5.0:
+								gen.height_map[pool_p] = min(gen.height_map[pool_p], settings.ocean_threshold - 0.03)
 					break
+				else:
+					curr = Vector2(lowest_neighbor)
 			else:
-				stagnation_ticks = 0
-			curr -= g.normalized() * 1.5
+				curr -= g.normalized() * 1.5
 
 	for pos in gen.height_map.keys():
 		if gen.height_map[pos] < settings.ocean_threshold:
@@ -66,18 +78,18 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			
 		var raw_t = (t_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
 		var raw_h = (h_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
-		var elevation = (gen.height_map[pos] - settings.ocean_threshold)
 		
+		var elevation = (gen.height_map[pos] - settings.ocean_threshold)
 		gen.temperature_map[pos] = clamp(raw_t - (elevation * 0.5), 0.0, 1.0)
 		
 		var is_near_river = false
-		for offset_x in range(-1, 2):
-			for offset_y in range(-1, 2):
+		for offset_x in range(-2, 3):
+			for offset_y in range(-2, 3):
 				if gen.river_nodes.has(pos + Vector2i(offset_x, offset_y)):
 					is_near_river = true
 					break
 					
-		gen.humidity_map[pos] = clamp(raw_h + (0.35 if is_near_river else 0.0), 0.0, 1.0)
+		gen.humidity_map[pos] = clamp(raw_h + (0.4 if is_near_river else 0.0), 0.0, 1.0)
 		var t = gen.temperature_map[pos]
 		var h = gen.humidity_map[pos]
 		
@@ -101,6 +113,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			
 	gen._sync_fast_buffer()
 	
+	# SYNCHRONOUS SNAPSHOT HOOKS FIXED: Registers in chronological sequential order
 	gen.snapshots["Rivers_Only"] = {
 		"height_map": gen.height_map.duplicate(),
 		"biome_map": gen.biome_map.duplicate(),

@@ -18,6 +18,9 @@ func _ready() -> void:
 		_display_snapshot(step_names[current_step_index])
 
 func _on_generation_step_finished(step_name: String) -> void:
+	if step_name == "Landmass":
+		step_names.clear()
+		
 	if not step_names.has(step_name):
 		step_names.append(step_name)
 		
@@ -76,13 +79,8 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 				color = Color.html("#38bdf8") if (is_river_pixel and val >= generator.settings.ocean_threshold) else Color.html("#0f172a")
 				img.set_pixelv(target_pos, color)
 				continue
-				
-			if step == "Tectonics_Debug":
-				color = Color.html("#0f172a") if val < generator.settings.ocean_threshold else Color.html("#1e293b")
-				img.set_pixelv(target_pos, color)
-				continue
 			
-			if step in ["Landmass", "Tectonics", "PeaksAndValleys", "Erosion"]:
+			if step in ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion", "Cities", "Graph"]:
 				if val < generator.settings.ocean_threshold:
 					color = Color.html("#1a365d")
 				elif val < generator.settings.ocean_threshold + 0.04:
@@ -127,7 +125,7 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 
 func _render_all_steps_grid(w: int, h: int) -> void:
 	var comp_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	var pipelines = ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
+	var pipelines = ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
 	
 	var sub_w = int(w / 3)
 	var sub_h = int(h / 3)
@@ -148,7 +146,7 @@ func _download_grid_to_disk() -> void:
 	var h = generator.settings.map_height
 	var out_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	
-	var pipelines = ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
+	var pipelines = ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
 	var sub_w = int(w / 3)
 	var sub_h = int(h / 3)
 	var scale = 1.0 / 3.0
@@ -159,12 +157,32 @@ func _download_grid_to_disk() -> void:
 			var offset = Vector2i((idx % 3) * sub_w, (idx / 3) * sub_h)
 			_fill_image_with_step_pixels(out_img, generator.snapshots[step], step, offset, w, h, scale)
 			
-	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Cities"], Vector2(sub_w, sub_h * 2), scale)
-	_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Graph"], Vector2(sub_w * 2, sub_h * 2), scale)
+	# EXPORT BUFFER BINDINGS FIX: Maps vector calculations precisely onto output cells
+	if generator.snapshots.has("Tectonics_Debug"):
+		_rasterize_tectonics_to_disk_buffer(out_img, generator.snapshots["Tectonics_Debug"], Vector2(sub_w, 0), scale)
+	if generator.snapshots.has("Cities"):
+		_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Cities"], Vector2(sub_w, sub_h * 2), scale)
+	if generator.snapshots.has("Graph"):
+		_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Graph"], Vector2(sub_w * 2, sub_h * 2), scale)
 	
 	var export_path = "res://procedural_generation_snapshot.png"
 	out_img.save_png(export_path)
-	print("SUCCESS: Full high-resolution 3x3 layout matrix saved directly to: ", export_path)
+	print("SUCCESS: High-resolution 3x3 array matrix matrix serialized cleanly back to: ", export_path)
+
+func _rasterize_tectonics_to_disk_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
+	var landmarks: Array = data["landmarks"]
+	for plate in landmarks:
+		var plot_c = Vector2i((plate.pos * scale) + offset)
+		var p_dir = plate.dir
+		for ox in range(-2, 3):
+			for oy in range(-2, 3):
+				var target_p = plot_c + Vector2i(ox, oy)
+				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
+					img.set_pixelv(target_p, Color.MAGENTA if not plate.ocean else Color.CYAN)
+		for s in range(25):
+			var plot_l = Vector2i(Vector2(plot_c) + (p_dir * float(s)))
+			if plot_l.x >= 0 and plot_l.x < img.get_width() and plot_l.y >= 0 and plot_l.y < img.get_height():
+				img.set_pixelv(plot_l, Color.WHITE)
 
 func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
 	var cities: Array = data["city_nodes"]
@@ -194,10 +212,14 @@ func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Ve
 		var plot_s = Vector2i(start * scale + offset)
 		for ox in range(-3, 4):
 			for oy in range(-3, 4):
-				img.set_pixelv(plot_s + Vector2i(ox, oy), Color.GREEN)
+				var target_p = plot_s + Vector2i(ox, oy)
+				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
+					img.set_pixelv(target_p, Color.GREEN)
 				
 	if end != Vector2.ZERO:
 		var plot_e = Vector2i(end * scale + offset)
 		for ox in range(-3, 4):
 			for oy in range(-3, 4):
-				img.set_pixelv(plot_e + Vector2i(ox, oy), Color.RED)
+				var target_p = plot_e + Vector2i(ox, oy)
+				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
+					img.set_pixelv(target_p, Color.RED)

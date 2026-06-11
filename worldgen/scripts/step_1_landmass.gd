@@ -13,11 +13,9 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			
 			var center = Vector2(settings.map_width / 2.0, settings.map_height / 2.0)
 			var d = Vector2(x, y).distance_to(center)
-			
-			# FIX: Expanded the baseline mask radius significantly from 0.44 to 0.65
 			var max_d = min(settings.map_width, settings.map_height) * 0.65
 			var mask = clamp(1.0 - (d / max_d), 0.0, 1.0)
-			mask = pow(mask, 0.5) # Softer falloff profile lets land expand outward further
+			mask = pow(mask, 0.5) 
 			
 			gen.height_map[pos] = h * mask
 	gen._save_snapshot("Landmass")

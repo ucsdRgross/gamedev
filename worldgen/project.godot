@@ -21,7 +21,7 @@ _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 
-window/size/viewport_height=1152
+window/size/viewport_height=1000
 
 [editor_plugins]
 

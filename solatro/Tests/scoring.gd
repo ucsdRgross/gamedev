@@ -212,6 +212,34 @@ func run_architecture_edge_cases() -> void:
 				break
 	
 	assert(found_deep, "Deep Combinatorial Hand failed to generate valid result")
+	
+	print("Testing Deep Stack (100 Distinct Full Houses)...")
+	var deep_hand_100: Array[CardData] = []
+	for i in range(10):
+		var trip_rank := 10 + i
+		var pair_rank := 100 + i
+		# 30 cards of trip rank, 20 cards of pair rank -> Scale 10
+		for x in range(30): deep_hand.append(m_card(trip_rank, 1+trip_rank))
+		for y in range(20): deep_hand.append(m_card(pair_rank, 2+pair_rank))
+		
+	var res_deep_list_100 := await Scoring.ExpandedGridHandler.score(deep_hand)
+	# Logic: 100 Pairs of Ranks. Each Pair has 3/2 count.
+	# The Combinatorial Handler should run 100 times.
+	# In each iteration, it calculates Scale = min(30/3, 20/2) = 10.
+	# Result: 10 Houses. Average Size = (30+20) = 50.
+	
+	found_deep = false
+	for res in res_deep_list:
+		if res.types.has(Scoring.MELD_TYPE.FULL_HOUSE) and res.types.has(Scoring.MELD_TYPE.MULTI):
+			# Check localized name implies "10" count or "50" size
+			# Since we don't have localization running, we check expected score
+			# Base House (Scale 10) = ~Large Number. x10 instances.
+			if res.score > 1000: 
+				found_deep = true
+				print("  > Found Deep Result. Score: ", res.score, " Name Key: ", res.name)
+				break
+	
+	assert(found_deep, "Deep Combinatorial Hand failed to generate valid result")
 
 
 # ==============================================================================

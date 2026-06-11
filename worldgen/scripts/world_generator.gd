@@ -19,11 +19,12 @@ var fast_height_buffer: PackedFloat32Array
 signal generation_step_finished(step_name: String)
 
 func _ready() -> void:
-	settings = WorldSettings.new() 
+	if not settings:
+		settings = WorldSettings.new()
 	generate_world_map()
 
 func generate_world_map() -> void:
-	print("Orchestrating Modular Pipeline. Runtime Seed: ", settings.main_seed)
+	print("Executing Strict Chronological Pipeline... Seed: ", settings.main_seed)
 	
 	snapshots.clear()
 	height_map.clear()
@@ -38,27 +39,78 @@ func generate_world_map() -> void:
 	fast_height_buffer.resize(settings.map_width * settings.map_height)
 	seed(settings.main_seed)
 	
+	# SLOT 1 [ROW 0, COL 0] -> Base Landmass Shape Template
 	Step1Landmass.new().execute(self, settings)
-	Step2Tectonics.new().execute(self, settings)
-	Step3PeaksAndValleys.new().execute(self, settings)
-	Step4Erosion.new().execute(self, settings)
-	Step5Climate.new().execute(self, settings)
-	Step6Civilizations.new().execute(self, settings)
-	Step7Graph.new().execute(self, settings)
+	_save_snapshot("Landmass")
 	
+	# =================================================================
+	# CORRECTED TECTONICS SEQUENCE MARSHALING
+	# Intercepts the process *inside* Step 2 to split the initial 
+	# fault-line arrows out BEFORE terrain ranges deform.
+	# =================================================================
+	var tectonics_instance = Step2Tectonics.new()
+	
+	# 1. Trigger the vector setup sub-routines to discover plate cells globally
+	tectonics_instance.execute(self, settings)
+	# NOTE: Your modified Step2Tectonics now records "Tectonics_Debug" natively 
+	# midway through its block before it initiates height transformation logic loops.
+	
+	# SLOT 4 [ROW 1, COL 0] -> Fine Noise Ridges, Peaks, and Valleys
+	Step3PeaksAndValleys.new().execute(self, settings)
+	_save_snapshot("PeaksAndValleys")
+	
+	# SLOT 5 [ROW 1, COL 1] -> High-Contrast Hydraulic Erosion Pass Softening Ranges
+	Step4Erosion.new().execute(self, settings)
+	_save_snapshot("Erosion")
+	
+	# SLOT 6 [ROW 1, COL 2] -> Long Continuous Drainage Flow Networks & Deep Basin Lakes
+	Step5Climate.new().execute(self, settings)
+	# NOTE: Your modified Step5Climate registers "Rivers_Only" natively midway 
+	# through its block before computing the Whittaker climate equations.
+	
+	# Clamp island boundaries cleanly inside ocean limits before civilizations populate
+	_clamp_island_boundaries()
+	
+	# SLOT 8 [ROW 2, COL 1] -> Multi-Continent Poisson Disc Node Distribution
+	Step6Civilizations.new().execute(self, settings)
+	_save_snapshot("Cities")
+	
+	# SLOT 9 [ROW 2, COL 2] -> DFS Pruned Forward Left-to-Right Graph Pathways
+	Step7Graph.new().execute(self, settings)
+	_save_snapshot("Graph")
+	
+	# Master overview grid map overview composition matrix slot allocation frame
 	_save_snapshot("All_Steps_Grid")
-	print("Modular Generation Passes Complete!")
+	print("Modular Synchronous Signal Generation Pass Complete!")
+
+func _clamp_island_boundaries() -> void:
+	var cx = settings.map_width / 2.0
+	var cy = settings.map_height / 2.0
+	var max_radius = min(settings.map_width, settings.map_height) * 0.44
+	
+	for pos in height_map.keys():
+		var d = Vector2(pos.x, pos.y).distance_to(Vector2(cx, cy))
+		if d > max_radius:
+			var fade = clamp(1.0 - ((d - max_radius) / 45.0), 0.0, 1.0)
+			height_map[pos] *= fade
+			if fade <= 0.0:
+				height_map[pos] = min(height_map[pos], settings.ocean_threshold - 0.05)
+	_sync_fast_buffer()
 
 func _save_snapshot(step_name: String) -> void:
+	var captured_landmarks: Array[Dictionary] = []
+	if step_name == "Tectonics_Debug":
+		captured_landmarks = landmarks.duplicate()
+		
 	snapshots[step_name] = {
 		"height_map": height_map.duplicate(),
 		"biome_map": biome_map.duplicate(),
-		"river_nodes": river_nodes.duplicate(),
-		"city_nodes": city_nodes.duplicate(),
-		"gameplay_graph": gameplay_graph.duplicate(),
-		"start_node": start_node,
-		"end_node": end_node,
-		"landmarks": landmarks.duplicate()
+		"river_nodes": river_nodes.duplicate() if step_name != "Tectonics_Debug" else [],
+		"city_nodes": city_nodes.duplicate() if step_name in ["Cities", "Graph", "All_Steps_Grid"] else [],
+		"gameplay_graph": gameplay_graph.duplicate() if step_name in ["Graph", "All_Steps_Grid"] else {},
+		"start_node": start_node if step_name in ["Graph", "All_Steps_Grid"] else Vector2.ZERO,
+		"end_node": end_node if step_name in ["Graph", "All_Steps_Grid"] else Vector2.ZERO,
+		"landmarks": captured_landmarks
 	}
 	generation_step_finished.emit(step_name)
 

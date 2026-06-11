@@ -10,24 +10,59 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	warp_noise.seed = settings.main_seed + 15
 	warp_noise.frequency = 0.02
 	
-	for i in range(settings.plate_count):
-		plate_centers.append(Vector2(randf() * settings.map_width, randf() * settings.map_height))
-		plate_directions.append(Vector2(randf() - 0.5, randf() - 0.5).normalized())
-		plate_is_ocean.append(randf() < 0.3)
-		
-	# Store vector data in landmarks so the viewer script can access and render the debug overlay
+	var grid_cols: int = int(ceil(sqrt(settings.plate_count)))
+	var grid_rows: int = int(ceil(float(settings.plate_count) / grid_cols))
+	var cell_w: float = float(settings.map_width) / grid_cols
+	var cell_h: float = float(settings.map_height) / grid_rows
+	
+	var assigned_count: int = 0
+	for r in range(grid_rows):
+		for c in range(grid_cols):
+			if assigned_count >= settings.plate_count: 
+				break
+			var base_x = (c * cell_w) + (cell_w * 0.5)
+			var base_y = (r * cell_h) + (cell_h * 0.5)
+			var final_center = Vector2(
+				base_x + (randf() - 0.5) * (cell_w * 0.4), 
+				base_y + (randf() - 0.5) * (cell_h * 0.4)
+			)
+			
+			plate_centers.append(final_center)
+			plate_directions.append(Vector2(randf() - 0.5, randf() - 0.5).normalized())
+			
+			var h_val = gen.height_map.get(Vector2i(final_center), 0.0)
+			plate_is_ocean.append(h_val < settings.ocean_threshold)
+			assigned_count += 1
+
 	gen.landmarks.clear()
 	for i in range(plate_centers.size()):
 		gen.landmarks.append({
-			"pos": plate_centers[i],
-			"dir": plate_directions[i],
+			"pos": plate_centers[i], 
+			"dir": plate_directions[i], 
 			"ocean": plate_is_ocean[i]
 		})
 
-	# FIX: Process tectonics globally across all tiles to generate continuous mountain ridges
+	# =================================================================
+	# FIX: CAPTURE INITIAL TECTONICS VECTOR DEBUG OVERLAY HERE
+	# This saves the un-deformed base heightmap template first, showing
+	# exactly where plates intend to strike.
+	# =================================================================
+	gen.snapshots["Tectonics_Debug"] = {
+		"height_map": gen.height_map.duplicate(),
+		"biome_map": gen.biome_map.duplicate(),
+		"river_nodes": [], 
+		"city_nodes": [], 
+		"gameplay_graph": {},
+		"start_node": Vector2.ZERO, 
+		"end_node": Vector2.ZERO, 
+		"landmarks": gen.landmarks.duplicate()
+	}
+	gen.generation_step_finished.emit("Tectonics_Debug")
+
+	# Now perform the height field modification loop pass
 	for pos in gen.height_map.keys():
-		var wx = pos.x + int(warp_noise.get_noise_2d(pos.x, pos.y) * 35.0)
-		var wy = pos.y + int(warp_noise.get_noise_2d(pos.y, pos.x) * 35.0)
+		var wx = pos.x + int(warp_noise.get_noise_2d(pos.x, pos.y) * 45.0)
+		var wy = pos.y + int(warp_noise.get_noise_2d(pos.y, pos.x) * 45.0)
 		var warped_pos = Vector2(wx, wy)
 		
 		var closest_plate = 0
@@ -42,22 +77,9 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 		var collision_force = to_center.dot(plate_directions[closest_plate])
 		
 		if collision_force > 0.08:
-			# Collision: push up mountain ranges along fault lines
-			gen.height_map[pos] += collision_force * settings.drift_intensity * 1.4 * (1.0 - clamp(min_dist / 260.0, 0.0, 1.0))
+			gen.height_map[pos] += collision_force * settings.drift_intensity * 1.5 * (1.0 - clamp(min_dist / 260.0, 0.0, 1.0))
 		elif collision_force < -0.12 and not plate_is_ocean[closest_plate] and gen.height_map[pos] > settings.ocean_threshold:
-			# Separation: carve valleys only when slicing through land tiles
-			gen.height_map[pos] = clamp(gen.height_map[pos] - (abs(collision_force) * settings.drift_intensity * 0.4), 0.0, 1.0)
+			gen.height_map[pos] = clamp(gen.height_map[pos] - (abs(collision_force) * settings.drift_intensity * 0.45), 0.0, 1.0)
 			
-	# Save an explicit diagnostic snapshot step showing plate boundaries
-	gen.snapshots["Tectonics_Debug"] = {
-		"height_map": gen.height_map.duplicate(),
-		"biome_map": gen.biome_map.duplicate(),
-		"river_nodes": [],
-		"city_nodes": [],
-		"gameplay_graph": {},
-		"start_node": Vector2.ZERO,
-		"end_node": Vector2.ZERO,
-		"landmarks": gen.landmarks.duplicate()
-	}
-	gen.generation_step_finished.emit("Tectonics_Debug")
+	# Save the modified, final deformed result as the "Tectonics" step map footprint
 	gen._save_snapshot("Tectonics")
