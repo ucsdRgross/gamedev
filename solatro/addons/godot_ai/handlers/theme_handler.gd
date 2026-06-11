@@ -28,7 +28,7 @@ func create_theme(params: Dictionary) -> Dictionary:
 	var path: String = params.get("path", "")
 	var overwrite: bool = params.get("overwrite", false)
 
-	var err := _validate_res_path(path, ".tres", "path")
+	var err := _validate_res_path(path, ".tres", "path", true)
 	if err != null:
 		return err
 
@@ -430,7 +430,7 @@ func apply_theme(params: Dictionary) -> Dictionary:
 
 func _load_theme_from_params(params: Dictionary) -> Dictionary:
 	var theme_path: String = params.get("theme_path", "")
-	var err := _validate_res_path(theme_path, ".tres")
+	var err := _validate_res_path(theme_path, ".tres", "theme_path", true)
 	if err != null:
 		return err
 	if not ResourceLoader.exists(theme_path):
@@ -441,14 +441,12 @@ func _load_theme_from_params(params: Dictionary) -> Dictionary:
 	return {"theme": theme, "path": theme_path}
 
 
-static func _validate_res_path(path: String, required_suffix: String, param_name: String = "theme_path") -> Variant:
+static func _validate_res_path(path: String, required_suffix: String, param_name: String = "theme_path", for_write: bool = false) -> Variant:
 	if path.is_empty():
 		return ErrorCodes.make(ErrorCodes.MISSING_REQUIRED_PARAM, "Missing required param: %s" % param_name)
-	if not path.begins_with("res://"):
-		return ErrorCodes.make(
-			ErrorCodes.VALUE_OUT_OF_RANGE,
-			"%s must start with res:// (got %s)" % [param_name, path]
-		)
+	var path_err := McpPathValidator.validate_resource_path(path, for_write)
+	if not path_err.is_empty():
+		return ErrorCodes.make(ErrorCodes.VALUE_OUT_OF_RANGE, "%s: %s" % [param_name, path_err])
 	if not path.ends_with(required_suffix):
 		return ErrorCodes.make(
 			ErrorCodes.VALUE_OUT_OF_RANGE,

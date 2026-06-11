@@ -51,7 +51,6 @@ static func build(path: String) -> GDScript:
 	## game_helper.gd::_handle_eval compiles from source the same way and also
 	## omits resource_path. The script still resolves its absolute preloads /
 	## class_names fine without a path.
-
 	if script.reload() != OK:
 		return null
 	return script
