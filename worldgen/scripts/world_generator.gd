@@ -1,128 +1,166 @@
-# world_generator.gd
+# world_generator.gd (FIRST HALF)
 class_name WorldGenerator
 extends Node
 
-## A data-driven procedural world generator for an FTL-style map.
-## Generates landmasses, biomes, cities, and a traversal graph.
-
 @export var settings: WorldSettings
 
-# --- Pipeline State Data ---
+# --- Pipeline State Data (Snapshots for Visualization) ---
+var snapshots: Dictionary = {} 
 var height_map: Dictionary       # Vector2i -> float (0.0 to 1.0)
 var temperature_map: Dictionary  # Vector2i -> float
 var humidity_map: Dictionary     # Vector2i -> float
 var biome_map: Dictionary        # Vector2i -> String (Biome name)
-var river_nodes: Array[Vector2i] # Points that are part of rivers
-var city_nodes: Array[Vector2]    # Poisson disc sampled points
-var gameplay_graph: Dictionary   # Vector2 -> Array[Vector2] (Node connections)
+var river_nodes: Array[Vector2i] = [] 
+var city_nodes: Array[Vector2] = []    
+var gameplay_graph: Dictionary = {}   
 var start_node: Vector2
 var end_node: Vector2
+var landmarks: Array[Dictionary] = [] 
 
-# Signals for visualization
+# Optimized 1D lookup array buffer to completely eliminate dictionary traversal bottlenecks
+var fast_height_buffer: PackedFloat32Array
+
 signal generation_step_finished(step_name: String)
 
 func _ready() -> void:
-	if not settings:
-		settings = WorldSettings.new()
-	# generate_world_map() # Called by WorldViewer after signal connection
+	settings = WorldSettings.new() 
+	generate_world_map()
 
-# ==========================================
-# MAIN GENERATION PIPELINE
-# ==========================================
 func generate_world_map() -> void:
-	print("Starting World Generation...")
+	print("Executing World Pipeline. Active Runtime Seed: ", settings.main_seed)
+	
+	snapshots.clear()
+	height_map.clear()
+	temperature_map.clear()
+	humidity_map.clear()
+	biome_map.clear()
+	river_nodes.clear()
+	city_nodes.clear()
+	gameplay_graph.clear()
+	landmarks.clear()
+	
+	fast_height_buffer.resize(settings.map_width * settings.map_height)
 	seed(settings.main_seed)
 	
 	_step_1_generate_land()
-	_step_2_tectonics_and_erosion()
-	_step_3_hydrography_and_climate()
-	_step_4_civilizations_and_territory()
-	_step_5_gameplay_graph()
+	_step_2_tectonic_drift()
+	_step_3_peaks_and_valleys()
+	_step_4_hydraulic_erosion()
+	_step_5_hydrography_and_climate()
+	_step_6_civilizations()
+	_step_7_gameplay_graph()
 	
+	_save_snapshot("All_Steps_Grid")
 	print("World Generation Complete!")
 
-# ==========================================
-# STEP 1: LANDMASS & COASTLINES (STALBERG / NOISE)
-# ==========================================
+func _save_snapshot(step_name: String) -> void:
+	snapshots[step_name] = {
+		"height_map": height_map.duplicate(),
+		"biome_map": biome_map.duplicate(),
+		"river_nodes": river_nodes.duplicate(),
+		"city_nodes": city_nodes.duplicate(),
+		"gameplay_graph": gameplay_graph.duplicate(),
+		"start_node": start_node,
+		"end_node": end_node,
+		"landmarks": landmarks.duplicate()
+	}
+	generation_step_finished.emit(step_name)
+
+func _sync_fast_buffer() -> void:
+	var w = settings.map_width
+	for pos in height_map.keys():
+		fast_height_buffer[(pos.y * w) + pos.x] = height_map[pos]
+
 func _step_1_generate_land() -> void:
-	print("Step 1: Generating Landmass...")
 	var continent_noise = FastNoiseLite.new()
 	continent_noise.seed = settings.main_seed
 	continent_noise.frequency = settings.continent_frequency
 	
-	var detail_noise = FastNoiseLite.new()
-	detail_noise.seed = settings.main_seed + 1
-	detail_noise.frequency = settings.detail_frequency
-	
 	for y in range(settings.map_height):
 		for x in range(settings.map_width):
 			var pos = Vector2i(x, y)
-			
-			# Base Continent Shape
 			var h = (continent_noise.get_noise_2d(x, y) + 1.0) / 2.0
-			h += (detail_noise.get_noise_2d(x, y) * 0.1)
 			
-			# Stalberg Grid / Radial Mask
 			var center = Vector2(settings.map_width/2.0, settings.map_height/2.0)
 			var d = Vector2(x, y).distance_to(center)
-			var max_d = min(settings.map_width, settings.map_height) * 0.45
+			var max_d = min(settings.map_width, settings.map_height) * 0.44
 			var mask = clamp(1.0 - (d / max_d), 0.0, 1.0)
-			mask = pow(mask, 0.5) 
+			mask = pow(mask, 0.7) 
 			
 			height_map[pos] = h * mask
-	
-	generation_step_finished.emit("Landmass")
+	_save_snapshot("Landmass")
 
-# ==========================================
-# STEP 2: TECTONICS & EROSION
-# ==========================================
-func _step_2_tectonics_and_erosion() -> void:
-	print("Step 2: Simulating Tectonics & Erosion...")
+func _step_2_tectonic_drift() -> void:
+	var plate_centers: Array[Vector2] = []
+	var plate_directions: Array[Vector2] = []
 	
-	# simplified "continental drift" ridges
+	for i in range(settings.plate_count):
+		plate_centers.append(Vector2(randf() * settings.map_width, randf() * settings.map_height))
+		plate_directions.append(Vector2(randf() - 0.5, randf() - 0.5).normalized())
+		
+	for pos in height_map.keys():
+		if height_map[pos] > settings.ocean_threshold:
+			var closest_plate = 0
+			var min_dist = 99999.0
+			for i in range(plate_centers.size()):
+				var d = Vector2(pos).distance_to(plate_centers[i])
+				if d < min_dist:
+					min_dist = d
+					closest_plate = i
+					
+			var to_center = (plate_centers[closest_plate] - Vector2(pos)).normalized()
+			var dot_val = to_center.dot(plate_directions[closest_plate])
+			
+			# TECTONIC SHIFT FIX: Explicitly check direction vectors to simulate both collisions and rifts
+			if dot_val > 0.1:
+				# Convergent fault line: push major mountain chains upward
+				height_map[pos] += dot_val * settings.drift_intensity * (1.0 - clamp(min_dist / 180.0, 0.0, 1.0))
+			elif dot_val < -0.2:
+				# Divergent fault line: carve low rift valleys and deep lake basins
+				height_map[pos] = clamp(height_map[pos] - (abs(dot_val) * settings.drift_intensity * 0.5), 0.0, 1.0)
+				
+	_save_snapshot("Tectonics")
+
+func _step_3_peaks_and_valleys() -> void:
 	var ridge_noise = FastNoiseLite.new()
 	ridge_noise.noise_type = FastNoiseLite.TYPE_CELLULAR
-	ridge_noise.frequency = 0.01
+	ridge_noise.frequency = 0.015
 	ridge_noise.seed = settings.main_seed + 2
+	
+	var detail_noise = FastNoiseLite.new()
+	detail_noise.seed = settings.main_seed + 5
+	detail_noise.frequency = settings.detail_frequency
 	
 	for pos in height_map.keys():
 		if height_map[pos] > settings.ocean_threshold:
-			var ridge = abs(ridge_noise.get_noise_2d(pos.x, pos.y))
-			height_map[pos] += ridge * 0.15
-			
-	# Simple Hydraulic Erosion
-	_apply_erosion(5000)
-	
-	generation_step_finished.emit("Erosion")
+			var ridge = 1.0 - abs(ridge_noise.get_noise_2d(pos.x, pos.y))
+			var detail = detail_noise.get_noise_2d(pos.x, pos.y) * 0.12
+			height_map[pos] = clamp(height_map[pos] + (pow(ridge, 3.0) * 0.45) + detail, 0.0, 1.2)
+	_save_snapshot("PeaksAndValleys")
 
-func _apply_erosion(iterations: int) -> void:
+func _step_4_hydraulic_erosion() -> void:
 	var inertia = 0.05
-	var sediment_capacity_factor = 4.0
-	var min_sediment_capacity = 0.01
-	var erode_speed = 0.3
-	var deposit_speed = 0.3
-	var evaporate_speed = 0.01
-	var gravity = 4.0
+	var sediment_capacity_factor = 5.0
+	var min_sediment_capacity = 0.02
+	var erode_speed = 0.5 
+	var deposit_speed = 0.5
 	
-	for i in range(iterations):
+	for i in range(12000): 
 		var pos = Vector2(randf() * settings.map_width, randf() * settings.map_height)
 		var vel = Vector2.ZERO
-		var water = 1.0
 		var sediment = 0.0
 		
-		for step in range(30):
+		for _step in range(30):
 			var pos_i = Vector2i(pos)
 			if not height_map.has(pos_i): break
 			
-			# Calculate gradient
 			var g = _calculate_gradient(pos)
 			vel = vel * inertia - g * (1.0 - inertia)
 			var new_pos = pos + vel
-			
 			if not height_map.has(Vector2i(new_pos)): break
 			
 			var h_diff = height_map[Vector2i(new_pos)] - height_map[pos_i]
-			var capacity = max(-h_diff * vel.length() * water * sediment_capacity_factor, min_sediment_capacity)
+			var capacity = max(-h_diff * vel.length() * sediment_capacity_factor, min_sediment_capacity)
 			
 			if sediment > capacity or h_diff > 0:
 				var amount = (sediment - capacity) * deposit_speed if h_diff < 0 else min(h_diff, sediment)
@@ -132,10 +170,10 @@ func _apply_erosion(iterations: int) -> void:
 				var amount = min((capacity - sediment) * erode_speed, -h_diff)
 				sediment += amount
 				height_map[pos_i] -= amount
-				
-			vel = vel.normalized() * sqrt(vel.length_squared() + h_diff * gravity)
-			water *= (1.0 - evaporate_speed)
 			pos = new_pos
+			
+	_sync_fast_buffer() 
+	_save_snapshot("Erosion")
 
 func _calculate_gradient(pos: Vector2) -> Vector2:
 	var x = int(pos.x)
@@ -144,49 +182,81 @@ func _calculate_gradient(pos: Vector2) -> Vector2:
 	var h10 = height_map.get(Vector2i(x+1, y), h00)
 	var h01 = height_map.get(Vector2i(x, y+1), h00)
 	return Vector2(h10 - h00, h01 - h00)
+# world_generator.gd (SECOND HALF)
 
-# ==========================================
-# STEP 3: HYDROGRAPHY & CLIMATE
-# ==========================================
-func _step_3_hydrography_and_climate() -> void:
-	print("Step 3: Generating Climate...")
+func _step_5_hydrography_and_climate() -> void:
+	var t_noise = FastNoiseLite.new()
+	t_noise.seed = settings.main_seed + 3
+	t_noise.frequency = 0.006
 	
+	var h_noise = FastNoiseLite.new()
+	h_noise.seed = settings.main_seed + 4
+	h_noise.frequency = 0.007
+	
+	for i in range(85): 
+		var curr = Vector2(randf() * settings.map_width, randf() * settings.map_height)
+		if height_map.get(Vector2i(curr), 0.0) > 0.55:
+			for step in range(300):
+				var curr_i = Vector2i(curr)
+				if not height_map.has(curr_i) or height_map[curr_i] < settings.ocean_threshold: break
+				if not river_nodes.has(curr_i): river_nodes.append(curr_i)
+				var g = _calculate_gradient(curr)
+				if g.length() < 0.001: break
+				curr -= g.normalized() * 1.5
+
 	for pos in height_map.keys():
-		var lat_temp = 1.0 - abs(float(pos.y) / settings.map_height - 0.5) * 2.0
-		temperature_map[pos] = lat_temp - (height_map[pos] * 0.4)
-		
-		# Humidity: Proximity to "ocean" (< 0.3)
-		var hum = 0.4
-		if height_map[pos] < settings.ocean_threshold + 0.1: hum += 0.4
-		humidity_map[pos] = clamp(hum, 0.0, 1.0)
-		
 		if height_map[pos] < settings.ocean_threshold:
 			biome_map[pos] = "Ocean"
+			continue
+			
+		var raw_t = (t_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
+		var raw_h = (h_noise.get_noise_2d(pos.x, pos.y) + 1.0) / 2.0
+		
+		var elevation = (height_map[pos] - settings.ocean_threshold)
+		temperature_map[pos] = clamp(raw_t - (elevation * 0.5), 0.0, 1.0)
+		
+		var is_near_river = false
+		for offset_x in range(-2, 3):
+			for offset_y in range(-2, 3):
+				if river_nodes.has(pos + Vector2i(offset_x, offset_y)):
+					is_near_river = true
+					break
+					
+		humidity_map[pos] = clamp(raw_h + (0.4 if is_near_river else 0.0), 0.0, 1.0)
+		
+		var t = temperature_map[pos]
+		var h = humidity_map[pos]
+		
+		if height_map[pos] >= settings.mountain_threshold:
+			biome_map[pos] = "Mountain"
+		elif t < 0.25: 
+			biome_map[pos] = "Arctic"
+		elif t < 0.38: 
+			biome_map[pos] = "Tundra"
+		elif t > 0.65:
+			if h < 0.35: 
+				biome_map[pos] = "Desert"
+			else: 
+				biome_map[pos] = "Rainforest"
 		else:
-			var t = temperature_map[pos]
-			var h = humidity_map[pos]
-			if t < 0.2: biome_map[pos] = "Arctic"
-			elif t < 0.4: biome_map[pos] = "Tundra"
-			elif t > 0.7:
-				if h < 0.4: biome_map[pos] = "Desert"
-				else: biome_map[pos] = "Rainforest"
-			else:
-				if h < 0.5: biome_map[pos] = "Savanna"
-				else: biome_map[pos] = "Forest"
+			if h < 0.45: 
+				biome_map[pos] = "Plains"
+			else: 
+				biome_map[pos] = "Forest"
+	_save_snapshot("Climate")
 
-	generation_step_finished.emit("Climate")
-
-# ==========================================
-# STEP 4: CIVILIZATIONS
-# ==========================================
-func _step_4_civilizations_and_territory() -> void:
-	print("Step 4: Distributing Cities...")
+func _step_6_civilizations() -> void:
 	var attempts = 0
-	while city_nodes.size() < settings.max_city_count and attempts < 2000:
+	while city_nodes.size() < settings.max_city_count and attempts < 6000:
 		var candidate = Vector2(randf() * settings.map_width, randf() * settings.map_height)
 		var pos_i = Vector2i(candidate)
+		var h_val = height_map.get(pos_i, 0.0)
 		
-		if height_map.get(pos_i, 0.0) > settings.ocean_threshold + 0.1:
+		var valid_placement = false
+		if h_val > (settings.ocean_threshold + 0.04) and h_val < settings.mountain_threshold:
+			valid_placement = true
+			
+		if valid_placement:
 			var too_close = false
 			for city in city_nodes:
 				if city.distance_to(candidate) < settings.min_city_dist:
@@ -195,18 +265,12 @@ func _step_4_civilizations_and_territory() -> void:
 			if not too_close:
 				city_nodes.append(candidate)
 		attempts += 1
-		
-	generation_step_finished.emit("Cities")
+	_save_snapshot("Cities")
 
-# ==========================================
-# STEP 5: GAMEPLAY PATH
-# ==========================================
-func _step_5_gameplay_graph() -> void:
-	print("Step 5: Building Gameplay Graph...")
+func _step_7_gameplay_graph() -> void:
 	if city_nodes.size() < 2: return
 	
-	# Select Start and End
-	var best_pair = [city_nodes[0], city_nodes[1]]
+	var best_pair: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO]
 	var max_d = 0.0
 	for i in range(city_nodes.size()):
 		for j in range(i + 1, city_nodes.size()):
@@ -214,35 +278,107 @@ func _step_5_gameplay_graph() -> void:
 			if d > max_d:
 				max_d = d
 				best_pair = [city_nodes[i], city_nodes[j]]
-	
-	start_node = best_pair[0]
-	end_node = best_pair[1]
+				
+	# GEOMETRY DIRECTION FIX: Explicitly sort the primary vector endpoints from left to right
+	if best_pair[0].x < best_pair[1].x:
+		start_node = best_pair[0]
+		end_node = best_pair[1]
+	else:
+		start_node = best_pair[1]
+		end_node = best_pair[0]
 	
 	var travel_vec = end_node - start_node
 	var travel_normalized = travel_vec.normalized()
 	var step_size = travel_vec.length() / settings.path_steps
+	var is_horizontal: bool = abs(travel_normalized.x) > abs(travel_normalized.y)
 	
-	var layers: Array[Array] = []
+	var layers: Array = []
 	for i in range(settings.path_steps + 1):
-		layers.append([])
-	
+		var typed_inner: Array[Vector2] = []
+		layers.append(typed_inner)
+		
 	for city in city_nodes:
 		var projection = (city - start_node).dot(travel_normalized)
 		var idx = clampi(int(projection / step_size), 0, settings.path_steps)
-		layers[idx].append(city)
-	
-	if not start_node in layers[0]: layers[0].append(start_node)
-	if not end_node in layers[settings.path_steps]: layers[settings.path_steps].append(end_node)
-	
-	for i in range(settings.path_steps):
-		for current in layers[i]:
-			gameplay_graph[current] = []
-			var next_options = layers[i+1]
-			if next_options.is_empty() and i+2 <= settings.path_steps:
-				next_options = layers[i+2]
+		layers[idx].push_back(city)
+		
+	var layers_has_start = false
+	for layer in layers:
+		if layer.has(start_node):
+			layers_has_start = true
+			break
+	if not layers_has_start:
+		layers[0].push_back(start_node)
+		
+	var layers_has_end = false
+	if layers[settings.path_steps].has(end_node):
+		layers_has_end = true
+	if not layers_has_end:
+		layers[settings.path_steps].push_back(end_node)
+		
+	for i in range(1, settings.path_steps):
+		if layers[i].is_empty():
+			var fallback_pos = start_node + (travel_normalized * (step_size * i))
+			city_nodes.append(fallback_pos)
+			layers[i].push_back(fallback_pos)
 			
-			next_options.sort_custom(func(a, b): return current.distance_to(a) < current.distance_to(b))
-			for j in range(min(3, next_options.size())):
-				gameplay_graph[current].append(next_options[j])
+	for i in range(settings.path_steps + 1):
+		if is_horizontal: layers[i].sort_custom(func(a, b): return a.y < b.y)
+		else: layers[i].sort_custom(func(a, b): return a.x < b.x)
+			
+	for i in range(settings.path_steps):
+		var current_layer = layers[i]
+		var next_layer = layers[i+1]
+		
+		for current in current_layer:
+			gameplay_graph[current] = []
+			var valid_targets = []
+			
+			for candidate in next_layer:
+				var d = current.distance_to(candidate)
+				if d >= settings.min_path_dist and d <= settings.max_path_dist:
+					var penalty = _evaluate_raycast_cost(current, candidate)
+					if penalty >= 0.0: 
+						valid_targets.append({
+							"pos": candidate,
+							"score": d + penalty
+						})
+					
+			if valid_targets.is_empty():
+				for candidate in next_layer:
+					var d = current.distance_to(candidate)
+					if d <= settings.max_path_search_dist:
+						var penalty = _evaluate_raycast_cost(current, candidate)
+						if penalty >= 0.0:
+							valid_targets.append({
+								"pos": candidate,
+								"score": d + penalty + 1000.0
+							})
+							
+			valid_targets.sort_custom(func(a, b): return a.score < b.score)
+			var target_branches = min(randi_range(settings.min_choices, settings.max_choices), valid_targets.size())
+			for b in range(target_branches):
+				gameplay_graph[current].append(valid_targets[b].pos)
 				
-	generation_step_finished.emit("Graph")
+	gameplay_graph[end_node] = []
+	_save_snapshot("Graph")
+
+func _evaluate_raycast_cost(start_p: Vector2, end_p: Vector2) -> float:
+	var total_penalty = 0.0
+	var steps = 15
+	var w = settings.map_width
+	var h = settings.map_height
+	
+	for step in range(steps + 1):
+		var check_p = Vector2i(start_p.lerp(end_p, float(step) / steps))
+		if check_p.x < 0 or check_p.x >= w or check_p.y < 0 or check_p.y >= h:
+			return -1.0 
+			
+		var height_val = fast_height_buffer[(check_p.y * w) + check_p.x]
+		
+		if height_val < settings.ocean_threshold:
+			total_penalty += settings.water_penalty 
+		elif height_val >= settings.mountain_threshold:
+			total_penalty += settings.mountain_penalty 
+			
+	return total_penalty
