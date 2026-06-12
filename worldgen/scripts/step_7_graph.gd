@@ -99,7 +99,8 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			validated_cities.push_back(city)
 	gen.city_nodes = validated_cities
 	
-	gen._save_snapshot("Graph")
+	# FIX: Points to the unified snapshot bridge configuration function
+	gen._save_snapshot_bridge("Graph")
 
 func _map_valid_routes_dfs(node: Vector2, depth: int, valid_map: Dictionary, graph: Dictionary, end_n: Vector2, max_steps: int) -> bool:
 	var node_key = Vector2i(node.snapped(Vector2(0.01, 0.01)))

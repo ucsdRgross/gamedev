@@ -2,16 +2,20 @@
 class_name WorldViewer
 extends Node2D
 
-@onready var generator: WorldGenerator = $WorldGenerator
-@onready var label: Label = $CanvasLayer/Label
+var generator: WorldGenerator
+var label: Label
 
 var step_names: Array[String] = []
 var current_step_index: int = -1
 var cached_texture: ImageTexture
 
 func _ready() -> void:
-	generator.generation_step_finished.connect(_on_generation_step_finished)
-	generator.generate_world_map()
+	label = get_node_or_null("CanvasLayer/Label")
+	
+	if not generator:
+		generator = $WorldGenerator
+		generator.generation_step_finished.connect(_on_generation_step_finished)
+		generator.generate_world_map()
 	
 	if not step_names.is_empty():
 		current_step_index = step_names.size() - 1
@@ -25,7 +29,7 @@ func _on_generation_step_finished(step_name: String) -> void:
 		step_names.append(step_name)
 		
 	if step_name == "All_Steps_Grid":
-		_download_grid_to_disk()
+		_download_grid_to_disk_direct_pixel_method()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if step_names.is_empty(): return
@@ -38,7 +42,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_display_snapshot(step_names[current_step_index])
 
 func _display_snapshot(step_name: String) -> void:
-	label.text = "Step: " + step_name + " (Arrow Keys to Cycle)"
+	if label:
+		label.text = "Step: " + step_name + " (Arrow Keys to Cycle)"
 	
 	var w: int = generator.settings.map_width
 	var h: int = generator.settings.map_height
@@ -80,7 +85,6 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 				img.set_pixelv(target_pos, color)
 				continue
 			
-			# FIX: Restores biome layouts under the civilization and traversal network slots (8 and 9)
 			if step in ["Landmass", "Tectonics", "Tectonics_Debug", "PeaksAndValleys", "Erosion"]:
 				if val < generator.settings.ocean_threshold:
 					color = Color.html("#1a365d")
@@ -127,131 +131,127 @@ func _fill_image_with_step_pixels(img: Image, data: Dictionary, step: String, of
 func _render_all_steps_grid(w: int, h: int) -> void:
 	var comp_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var pipelines = ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
-	
+	var scale = 1.0 / 3.0
 	var sub_w = int(w / 3)
 	var sub_h = int(h / 3)
-	var scale = 1.0 / 3.0
 	
 	for idx in range(pipelines.size()):
 		var step = pipelines[idx]
 		if not generator.snapshots.has(step): continue
-		
 		var offset = Vector2i((idx % 3) * sub_w, (idx / 3) * sub_h)
 		_fill_image_with_step_pixels(comp_img, generator.snapshots[step], step, offset, w, h, scale)
 		
 	cached_texture = ImageTexture.create_from_image(comp_img)
 	queue_redraw()
 
-func _download_grid_to_disk() -> void:
+# =================================================================
+# THE SAFE DIRECT DIRECT-PIXEL MASTER RASTERIZER (Bypasses viewports entirely)
+# =================================================================
+func _download_grid_to_disk_direct_pixel_method() -> void:
 	var w = generator.settings.map_width
 	var h = generator.settings.map_height
 	var out_img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	
 	var pipelines = ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys", "Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
+	var scale = 1.0 / 3.0
 	var sub_w = int(w / 3)
 	var sub_h = int(h / 3)
-	var scale = 1.0 / 3.0
 	
+	# 1. Base Landscape Pass Layer
 	for idx in range(pipelines.size()):
 		var step = pipelines[idx]
 		if generator.snapshots.has(step):
 			var offset = Vector2i((idx % 3) * sub_w, (idx / 3) * sub_h)
 			_fill_image_with_step_pixels(out_img, generator.snapshots[step], step, offset, w, h, scale)
 			
-	# FIX: Re-maps coordinates to pass direct source arrays to the offline image rasterizers
+	# 2. Burn Tectonic fault line boundaries onto Slot 2 (Row 0, Col 1)
 	if generator.snapshots.has("Tectonics_Debug"):
-		_rasterize_tectonics_to_disk_buffer(out_img, generator.snapshots["Tectonics_Debug"], Vector2(sub_w, 0), scale)
+		var data = generator.snapshots["Tectonics_Debug"]
+		var plate_ids: PackedInt32Array = data.get("plate_id_buffer", PackedInt32Array())
+		var landmarks: Array = data.get("landmarks", [])
+		var offset = Vector2i(sub_w, 0)
+		var mw = generator.settings.map_width
+		
+		if not plate_ids.is_empty():
+			for y in range(sub_h):
+				for x in range(sub_w):
+					var ox = int(x / scale)
+					var oy = int(y / scale)
+					var idx = (oy * mw) + ox
+					var right_idx = (oy * mw) + (ox + 3) if ox + 3 < mw else idx
+					var down_idx = ((oy + 3) * mw) + ox if oy + 3 < generator.settings.map_height else idx
+					
+					if plate_ids[idx] != plate_ids[right_idx] or plate_ids[idx] != plate_ids[down_idx]:
+						out_img.set_pixelv(Vector2i(x, y) + offset, Color.html("#a855f7"))
+						
+		for plate in landmarks:
+			var plot_c = Vector2i((plate.pos * scale)) + offset
+			var p_dir = plate.dir
+			var p_color = Color.html("#f43f5e") if not plate.ocean else Color.html("#0ea5e9")
+			
+			for ox in range(-2, 3):
+				for oy in range(-2, 3):
+					var tp = plot_c + Vector2i(ox, oy)
+					if tp.x >= 0 and tp.x < w and tp.y >= 0 and tp.y < h: out_img.set_pixelv(tp, p_color)
+			for s in range(int(55 * scale)):
+				var tl = Vector2i(Vector2(plot_c) + (p_dir * float(s)))
+				if tl.x >= 0 and tl.x < w and tl.y >= 0 and tl.y < h: out_img.set_pixelv(tl, p_color)
+
+	# 3. Burn Poisson Disc Nodes onto Slot 8 (Row 2, Col 1)
 	if generator.snapshots.has("Cities"):
-		_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Cities"], Vector2(sub_w, sub_h * 2), scale)
+		_rasterize_graph_primitives_direct(out_img, generator.snapshots["Cities"], Vector2i(sub_w, sub_h * 2), scale)
+		
+	# 4. Burn Path Tracks onto Slot 9 (Row 2, Col 2)
 	if generator.snapshots.has("Graph"):
-		_rasterize_vectors_to_image_buffer(out_img, generator.snapshots["Graph"], Vector2(sub_w * 2, sub_h * 2), scale)
-	
+		_rasterize_graph_primitives_direct(out_img, generator.snapshots["Graph"], Vector2i(sub_w * 2, sub_h * 2), scale)
+		
+	# 5. Burn Black Grid Borders Framework Lines
+	for y in range(h):
+		out_img.set_pixel(sub_w, y, Color.BLACK)
+		out_img.set_pixel(sub_w * 2, y, Color.BLACK)
+	for x in range(w):
+		out_img.set_pixel(x, sub_h, Color.BLACK)
+		out_img.set_pixel(x, sub_h * 2, Color.BLACK)
+		
 	var export_path = "res://procedural_generation_snapshot.png"
 	out_img.save_png(export_path)
-	print("SUCCESS: High-resolution 3x3 array matrix matrix serialized cleanly back to: ", export_path)
+	print("SUCCESS: High-resolution direct 3x3 layout matrix written cleanly to disk: ", export_path)
 
-func _rasterize_tectonics_to_disk_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
-	var landmarks: Array = data["landmarks"]
+func _rasterize_graph_primitives_direct(img: Image, data: Dictionary, offset: Vector2i, scale: float) -> void:
+	var cities: Array = data.get("city_nodes", [])
+	var graph: Dictionary = data.get("gameplay_graph", {})
+	var start: Vector2 = data.get("start_node", Vector2.ZERO)
+	var end: Vector2 = data.get("end_node", Vector2.ZERO)
 	
-	# FIX: Burn cell fault lines directly onto the exported PNG matrix quadrant slot
-	for y in range(0, int(generator.settings.map_height * scale)):
-		for x in range(0, int(generator.settings.map_width * scale)):
-			var orig_p = Vector2i(int(x / scale), int(y / scale))
-			if _is_fault_line_boundary_offline(orig_p, landmarks):
-				var target_p = Vector2i(x, y) + Vector2i(offset)
-				if target_p.x < img.get_width() and target_p.y < img.get_height():
-					img.set_pixelv(target_p, Color.html("#a855f7"))
-					
-	for plate in landmarks:
-		var plot_c = Vector2i((plate.pos * scale) + offset)
-		var p_dir = plate.dir
-		for ox in range(-2, 3):
-			for oy in range(-2, 3):
-				var target_p = plot_c + Vector2i(ox, oy)
-				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
-					img.set_pixelv(target_p, Color.MAGENTA if not plate.ocean else Color.CYAN)
-		for s in range(25):
-			var plot_l = Vector2i(Vector2(plot_c) + (p_dir * float(s)))
-			if plot_l.x >= 0 and plot_l.x < img.get_width() and plot_l.y >= 0 and plot_l.y < img.get_height():
-				img.set_pixelv(plot_l, Color.WHITE)
-
-func _is_fault_line_boundary_offline(pos: Vector2i, landmarks_list: Array) -> bool:
-	var check_offsets = [Vector2i(3, 0), Vector2i(0, 3)]
-	var primary_plate = _get_closest_plate_id_offline(Vector2(pos), landmarks_list)
-	for o in check_offsets:
-		var neighbor = pos + o
-		if neighbor.x < generator.settings.map_width and neighbor.y < generator.settings.map_height:
-			if _get_closest_plate_id_offline(Vector2(neighbor), landmarks_list) != primary_plate:
-				return true
-	return false
-
-func _get_closest_plate_id_offline(pos: Vector2, landmarks_list: Array) -> int:
-	var closest = 0
-	var min_d = 99999.0
-	for i in range(landmarks_list.size()):
-		var d = pos.distance_to(landmarks_list[i].pos)
-		if d < min_d:
-			min_d = d
-			closest = i
-	return closest
-	
-func _rasterize_vectors_to_image_buffer(img: Image, data: Dictionary, offset: Vector2, scale: float) -> void:
-	var cities: Array = data["city_nodes"]
-	var graph: Dictionary = data["gameplay_graph"]
-	var start: Vector2 = data["start_node"]
-	var end: Vector2 = data["end_node"]
-	var h_map: Dictionary = data["height_map"]
-	
+	# Draw lines link connections
 	for parent in graph.keys():
 		for child in graph[parent]:
-			var p1 = parent * scale + offset
-			var p2 = child * scale + offset
-			var steps = int(p1.distance_to(p2))
-			for s in range(steps):
-				var plot_p = Vector2i(p1.lerp(p2, float(s) / maxf(1.0, float(steps))))
-				if plot_p.x >= 0 and plot_p.x < img.get_width() and plot_p.y >= 0 and plot_p.y < img.get_height():
-					img.set_pixelv(plot_p, Color.WHITE)
+			var p1 = parent * scale + Vector2(offset)
+			var p2 = child * scale + Vector2(offset)
+			var length = int(p1.distance_to(p2))
+			for s in range(length):
+				var pt = Vector2i(p1.lerp(p2, float(s) / maxf(1.0, float(length))))
+				if pt.x >= 0 and pt.x < img.get_width() and pt.y >= 0 and pt.y < img.get_height():
+					img.set_pixelv(pt, Color.WHITE)
 					
+	# Draw node dot entries
 	for city in cities:
-		var plot_c = Vector2i(city * scale + offset)
+		var plot_c = Vector2i(city * scale) + offset
 		for ox in range(-1, 2):
 			for oy in range(-1, 2):
-				var target_p = plot_c + Vector2i(ox, oy)
-				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
-					img.set_pixelv(target_p, Color.html("#ecc94b"))
+				var tp = plot_c + Vector2i(ox, oy)
+				if tp.x >= 0 and tp.x < img.get_width() and tp.y >= 0 and tp.y < img.get_height():
+					img.set_pixelv(tp, Color.html("#ecc94b"))
 					
+	# Draw start / end markers
 	if start != Vector2.ZERO:
-		var plot_s = Vector2i(start * scale + offset)
-		for ox in range(-3, 4):
-			for oy in range(-3, 4):
-				var target_p = plot_s + Vector2i(ox, oy)
-				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
-					img.set_pixelv(target_p, Color.GREEN)
-				
+		var ps = Vector2i(start * scale) + offset
+		for ox in range(-2, 3):
+			for oy in range(-2, 3):
+				if ps.x+ox >= 0 and ps.x+ox < img.get_width() and ps.y+oy >= 0 and ps.y+oy < img.get_height():
+					img.set_pixelv(ps + Vector2i(ox, oy), Color.GREEN)
 	if end != Vector2.ZERO:
-		var plot_e = Vector2i(end * scale + offset)
-		for ox in range(-3, 4):
-			for oy in range(-3, 4):
-				var target_p = plot_e + Vector2i(ox, oy)
-				if target_p.x >= 0 and target_p.x < img.get_width() and target_p.y >= 0 and target_p.y < img.get_height():
-					img.set_pixelv(target_p, Color.RED)
+		var pe = Vector2i(end * scale) + offset
+		for ox in range(-2, 3):
+			for oy in range(-2, 3):
+				if pe.x+ox >= 0 and pe.x+ox < img.get_width() and pe.y+oy >= 0 and pe.y+oy < img.get_height():img.set_pixelv(pe + Vector2i(ox, oy), Color.RED)

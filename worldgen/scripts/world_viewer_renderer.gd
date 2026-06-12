@@ -39,6 +39,7 @@ func _draw_grid_vector_overlays() -> void:
 		var graph_data: Dictionary = generator.snapshots["Graph"]
 		_draw_vector_layer(graph_data, "Draw_Vectors", Vector2(sub_w * 2, sub_h * 2), scale)
 		
+	# Draw lines dividing the 3x3 sectors
 	draw_line(Vector2(sub_w, 0), Vector2(sub_w, h), Color.BLACK, 2.0)
 	draw_line(Vector2(sub_w * 2, 0), Vector2(sub_w * 2, h), Color.BLACK, 2.0)
 	draw_line(Vector2(0, sub_h), Vector2(w, sub_h), Color.BLACK, 2.0)
@@ -53,6 +54,9 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 	var landmarks: Array = data.get("landmarks", [])
 	
 	if step == "Tectonics_Debug":
+		var plate_ids: PackedInt32Array = data.get("plate_id_buffer", PackedInt32Array())
+		var mw = generator.settings.map_width
+		
 		for plate in landmarks:
 			var p_center = (plate.pos * scale) + offset
 			var p_dir = plate.dir
@@ -67,11 +71,17 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 			var wing_r = arrow_tip - (p_dir * 12.0 * scale) - (perp * 8.0 * scale)
 			draw_colored_polygon([arrow_tip, wing_l, wing_r], p_color)
 			
-		for y in range(0, int(generator.settings.map_height * scale), int(maxf(1.0, 4.0 * scale))):
-			for x in range(0, int(generator.settings.map_width * scale), int(maxf(1.0, 4.0 * scale))):
-				var orig_p = Vector2i(int(x / scale), int(y / scale))
-				if _is_fault_line_boundary(orig_p, landmarks):
-					draw_rect(Rect2(Vector2(x, y) + offset, Vector2(1.5, 1.5)), Color.html("#a855f7"), true)
+		if not plate_ids.is_empty():
+			for y in range(0, int(generator.settings.map_height * scale)):
+				for x in range(0, int(mw * scale)):
+					var ox = int(x / scale)
+					var oy = int(y / scale)
+					var idx = (oy * mw) + ox
+					var right_idx = (oy * mw) + (ox + 3) if ox + 3 < mw else idx
+					var down_idx = ((oy + 3) * mw) + ox if oy + 3 < generator.settings.map_height else idx
+					
+					if plate_ids[idx] != plate_ids[right_idx] or plate_ids[idx] != plate_ids[down_idx]:
+						draw_rect(Rect2(Vector2(x, y) + offset, Vector2(1.5, 1.5)), Color.html("#a855f7"), true)
 		return
 
 	if step in ["Cities", "Graph", "Climate", "Draw_Vectors"]:
@@ -80,14 +90,7 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 				var p1 = (parent_node * scale) + offset
 				var p2 = (child_node * scale) + offset
 				
-				var is_sea_route = false
-				var trace_steps = 10
-				for s in range(trace_steps + 1):
-					var sample_pos = Vector2i(parent_node.lerp(child_node, float(s) / trace_steps))
-					if h_map.get(sample_pos, 0.5) < generator.settings.ocean_threshold:
-						is_sea_route = true
-						break
-						
+				var is_sea_route = h_map.get(Vector2i(parent_node), 0.5) < generator.settings.ocean_threshold
 				var line_color = Color.html("#ffffff") if not is_sea_route else Color.html("#38bdf8")
 				draw_line(p1, p2, line_color, 2.0 * scale, true)
 				
@@ -107,37 +110,13 @@ func _draw_vector_layer(data: Dictionary, step: String, offset: Vector2, scale: 
 		if start != Vector2.ZERO: draw_circle((start * scale) + offset, 9.0 * scale, Color.GREEN)
 		if end != Vector2.ZERO: draw_circle((end * scale) + offset, 9.0 * scale, Color.RED)
 
-func _is_fault_line_boundary(pos: Vector2i, landmarks_list: Array) -> bool:
-	var check_offsets = [Vector2i(3, 0), Vector2i(0, 3)]
-	var primary_plate = _get_closest_plate_id(Vector2(pos), landmarks_list)
-	
-	for o in check_offsets:
-		var neighbor = pos + o
-		if neighbor.x < generator.settings.map_width and neighbor.y < generator.settings.map_height:
-			if _get_closest_plate_id(Vector2(neighbor), landmarks_list) != primary_plate:
-				return true
-	return false
-
-func _get_closest_plate_id(pos: Vector2, landmarks_list: Array) -> int:
-	var closest = 0
-	var min_d = 99999.0
-	for i in range(landmarks_list.size()):
-		var d = pos.distance_to(landmarks_list[i].pos)
-		if d < min_d:
-			min_d = d
-			closest = i
-	return closest
-
 func _draw_ui_legend(step: String) -> void:
 	var items = []
 	if step in ["Landmass", "Tectonics", "PeaksAndValleys", "Erosion"]:
 		items = [
-			{"c": Color.html("#1a365d"), "n": "Ocean Abyss"},
-			{"c": Color.html("#2b6cb0"), "n": "Shallow Water"},
-			{"c": Color.html("#2f855a"), "n": "Green Plains"},
-			{"c": Color.html("#ecc94b"), "n": "Hills/Foothills"},
-			{"c": Color.html("#718096"), "n": "Rocky Canyons"},
-			{"c": Color.html("#ffffff"), "n": "Snow Peaks"}
+			{"c": Color.html("#1a365d"), "n": "Ocean Abyss"}, {"c": Color.html("#2b6cb0"), "n": "Shallow Water"},
+			{"c": Color.html("#2f855a"), "n": "Green Plains"}, {"c": Color.html("#ecc94b"), "n": "Hills/Foothills"},
+			{"c": Color.html("#718096"), "n": "Rocky Canyons"}, {"c": Color.html("#ffffff"), "n": "Snow Peaks"}
 		]
 	elif step == "Tectonics_Debug":
 		items = [
@@ -147,17 +126,13 @@ func _draw_ui_legend(step: String) -> void:
 		]
 	elif step == "Rivers_Only":
 		items = [
-			{"c": Color.html("#38bdf8"), "n": "Pure River Network"},
-			{"c": Color.html("#0f172a"), "n": "Substrate Floor"}
+			{"c": Color.html("#38bdf8"), "n": "Pure River Network"}, {"c": Color.html("#0f172a"), "n": "Substrate Floor"}
 		]
 	else:
 		items = [
-			{"c": Color.html("#2563eb"), "n": "Rivers/Lakes"},
-			{"c": Color.html("#991b1b"), "n": "Volcanic Crag"},
-			{"c": Color.html("#047857"), "n": "Toxic Swamp"},
-			{"c": Color.html("#7c2d12"), "n": "Fissures"},
-			{"c": Color.html("#38bdf8"), "n": "Frostwastes"},
-			{"c": Color.html("#ecc94b"), "n": "City Node"}
+			{"c": Color.html("#2563eb"), "n": "Rivers/Lakes"}, {"c": Color.html("#991b1b"), "n": "Volcanic Crag"},
+			{"c": Color.html("#047857"), "n": "Toxic Swamp"}, {"c": Color.html("#7c2d12"), "n": "Fissures"},
+			{"c": Color.html("#38bdf8"), "n": "Frostwastes"}, {"c": Color.html("#ecc94b"), "n": "City Node"}
 		]
 	
 	var font = ThemeDB.get_fallback_font()

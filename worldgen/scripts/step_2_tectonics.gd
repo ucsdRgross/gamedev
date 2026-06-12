@@ -1,3 +1,4 @@
+# step_2_tectonics.gd
 class_name Step2Tectonics
 extends GenerationStep
 
@@ -18,68 +19,40 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var assigned_count: int = 0
 	for r in range(grid_rows):
 		for c in range(grid_cols):
-			if assigned_count >= settings.plate_count: 
-				break
-			var base_x = (c * cell_w) + (cell_w * 0.5)
-			var base_y = (r * cell_h) + (cell_h * 0.5)
-			var final_center = Vector2(
-				base_x + (randf() - 0.5) * (cell_w * 0.4), 
-				base_y + (randf() - 0.5) * (cell_h * 0.4)
-			)
-			
+			if assigned_count >= settings.plate_count: break
+			var final_center = Vector2((c * cell_w) + (cell_w * 0.5) + (randf()-0.5)*(cell_w*0.4), (r * cell_h) + (cell_h * 0.5) + (randf()-0.5)*(cell_h*0.4))
 			plate_centers.append(final_center)
 			plate_directions.append(Vector2(randf() - 0.5, randf() - 0.5).normalized())
-			
-			var h_val = gen.height_map.get(Vector2i(final_center), 0.0)
-			plate_is_ocean.append(h_val < settings.ocean_threshold)
+			plate_is_ocean.append(randf() < 0.3)
 			assigned_count += 1
 
 	gen.landmarks.clear()
 	for i in range(plate_centers.size()):
-		gen.landmarks.append({
-			"pos": plate_centers[i], 
-			"dir": plate_directions[i], 
-			"ocean": plate_is_ocean[i]
-		})
+		gen.landmarks.append({"pos": plate_centers[i], "dir": plate_directions[i], "ocean": plate_is_ocean[i]})
 
-	# =================================================================
-	# FIX: CAPTURE INITIAL TECTONICS VECTOR DEBUG OVERLAY HERE
-	# This saves the un-deformed base heightmap template first, showing
-	# exactly where plates intend to strike.
-	# =================================================================
-	gen.snapshots["Tectonics_Debug"] = {
-		"height_map": gen.height_map.duplicate(),
-		"biome_map": gen.biome_map.duplicate(),
-		"river_nodes": [], 
-		"city_nodes": [], 
-		"gameplay_graph": {},
-		"start_node": Vector2.ZERO, 
-		"end_node": Vector2.ZERO, 
-		"landmarks": gen.landmarks.duplicate()
-	}
-	gen.generation_step_finished.emit("Tectonics_Debug")
-
-	# Now perform the height field modification loop pass
-	for pos in gen.height_map.keys():
-		var wx = pos.x + int(warp_noise.get_noise_2d(pos.x, pos.y) * 45.0)
-		var wy = pos.y + int(warp_noise.get_noise_2d(pos.y, pos.x) * 45.0)
-		var warped_pos = Vector2(wx, wy)
-		
-		var closest_plate = 0
-		var min_dist = 99999.0
-		for i in range(plate_centers.size()):
-			var d = warped_pos.distance_to(plate_centers[i])
-			if d < min_dist:
-				min_dist = d
-				closest_plate = i
-				
-		var to_center = (plate_centers[closest_plate] - warped_pos).normalized()
-		var collision_force = to_center.dot(plate_directions[closest_plate])
-		
-		if collision_force > 0.08:
-			gen.height_map[pos] += collision_force * settings.drift_intensity * 1.5 * (1.0 - clamp(min_dist / 260.0, 0.0, 1.0))
-		elif collision_force < -0.12 and not plate_is_ocean[closest_plate] and gen.height_map[pos] > settings.ocean_threshold:
-			gen.height_map[pos] = clamp(gen.height_map[pos] - (abs(collision_force) * settings.drift_intensity * 0.45), 0.0, 1.0)
+	var w = settings.map_width
+	for y in range(settings.map_height):
+		for x in range(w):
+			var idx = (y * w) + x
+			var wx = x + int(warp_noise.get_noise_2d(x, y) * 45.0)
+			var wy = y + int(warp_noise.get_noise_2d(y, x) * 45.0)
+			var warped_pos = Vector2(wx, wy)
 			
-	# Save the modified, final deformed result as the "Tectonics" step map footprint
-	gen._save_snapshot("Tectonics")
+			var closest_plate = 0
+			var min_dist = 99999.0
+			for i in range(plate_centers.size()):
+				var d = warped_pos.distance_to(plate_centers[i])
+				if d < min_dist:
+					min_dist = d
+					closest_plate = i
+					
+			# PRECOMPUTE ZONE POINTER ID INDICES FOR FAST BOUNDARY LOOKUPS
+			gen.plate_id_buffer[idx] = closest_plate
+			
+			var to_center = (plate_centers[closest_plate] - warped_pos).normalized()
+			var collision_force = to_center.dot(plate_directions[closest_plate])
+			
+			if collision_force > 0.08:
+				gen.height_buffer[idx] += collision_force * settings.drift_intensity * 1.5 * (1.0 - clamp(min_dist / 260.0, 0.0, 1.0))
+			elif collision_force < -0.12 and not plate_is_ocean[closest_plate] and gen.height_buffer[idx] > settings.ocean_threshold:
+				gen.height_buffer[idx] = clamp(gen.height_buffer[idx] - (abs(collision_force) * settings.drift_intensity * 0.45), 0.0, 1.0)

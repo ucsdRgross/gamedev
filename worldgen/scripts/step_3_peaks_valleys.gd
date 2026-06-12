@@ -11,9 +11,11 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	detail_noise.seed = settings.main_seed + 5
 	detail_noise.frequency = settings.detail_frequency
 	
-	for pos in gen.height_map.keys():
-		if gen.height_map[pos] > settings.ocean_threshold:
-			var ridge = 1.0 - abs(ridge_noise.get_noise_2d(pos.x, pos.y))
-			var detail = detail_noise.get_noise_2d(pos.x, pos.y) * 0.12
-			gen.height_map[pos] = clamp(gen.height_map[pos] + (pow(ridge, 3.0) * 0.45) + detail, 0.0, 1.2)
-	gen._save_snapshot("PeaksAndValleys")
+	var w = settings.map_width
+	for y in range(settings.map_height):
+		for x in range(w):
+			var idx = (y * w) + x
+			if gen.height_buffer[idx] > settings.ocean_threshold:
+				var ridge = 1.0 - abs(ridge_noise.get_noise_2d(x, y))
+				var detail = detail_noise.get_noise_2d(x, y) * 0.12
+				gen.height_buffer[idx] = clamp(gen.height_buffer[idx] + (pow(ridge, 3.0) * 0.45) + detail, 0.0, 1.2)
