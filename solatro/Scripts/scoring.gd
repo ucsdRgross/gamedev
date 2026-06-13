@@ -152,12 +152,12 @@ static func house_base(s: int) -> int:
 ##                  -> additive sum of (copy_base x2), NO escalation.
 ## copies: Array of Array[CardData]; base_per_copy: score of one copy at size n;
 ## set_escalation true uses (1+0.5*(m-2)), false uses (1+0.5*(m-1)).
-static func build_multi(copies: Array, base_per_copy: int, n: int, base_types: Array[MELD_TYPE], set_escalation: bool, max_rank: float) -> Result:
+static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int, base_types: Array[MELD_TYPE], set_escalation: bool, max_rank: float) -> Result:
 	var m := copies.size()
 	if m == 0: return null
 
 	var all_cards: Array[CardData] = []
-	for c in copies: all_cards.append_array(c as Array[CardData])
+	for c : ArrayCardData in copies: all_cards.append_array(c.datas)
 	var total := all_cards.size()
 
 	var esc := 1.0
@@ -182,7 +182,7 @@ static func build_multi(copies: Array, base_per_copy: int, n: int, base_types: A
 		var mf_ok := true
 		var suits_seen: Array[PipSuit] = []
 		for c in copies:
-			var cc := c as Array[CardData]
+			var cc := c.datas
 			if cc.is_empty() or not await Scoring.is_flush(cc): mf_ok = false; break
 			var s: PipSuit = cc[0].suit
 			var seen := false
@@ -276,6 +276,11 @@ class PokerHands extends Scorer:
 		if a.meld.size() != b.meld.size(): return a.meld.size() > b.meld.size()
 		if a.tie_breaker_high_card != b.tie_breaker_high_card:
 			return a.tie_breaker_high_card > b.tie_breaker_high_card
+		# Prefer one unified structure over many separate copies on a tie
+		# (a single long Straight beats N short copies worth the same).
+		var a_multi := a.types.has(MELD_TYPE.MULTI)
+		var b_multi := b.types.has(MELD_TYPE.MULTI)
+		if a_multi != b_multi: return not a_multi
 		var a_flush := a.types.has(MELD_TYPE.FLUSH)
 		var b_flush := b.types.has(MELD_TYPE.FLUSH)
 		if a_flush != b_flush: return a_flush
@@ -310,7 +315,7 @@ class ExpandedGridHandler extends Scorer:
 		# --- 1. SINGLE BEST SET (largest cluster) ---
 		var big := clusters[0].datas
 		var bn := big.size()
-		possible_outcomes.append(await Scoring.build_multi([big], bn * (bn - 1), bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], true, absolute_max_rank))
+		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn * (bn - 1), bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], true, absolute_max_rank))
 
 		# --- 2. UNIFORM MULTI-SET (m copies of the same size) ---
 		var sizes: Array[int] = []
@@ -319,9 +324,9 @@ class ExpandedGridHandler extends Scorer:
 			if not sizes.has(sz): sizes.append(sz)
 		var best_set: Result = null
 		for cand in sizes:
-			var copies: Array = []
+			var copies: Array[ArrayCardData] = []
 			for c in clusters:
-				if c.datas.size() >= cand: copies.append(c.datas.slice(0, cand))
+				if c.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(c.datas.slice(0, cand)))
 			if copies.size() < 2: continue
 			var r := await Scoring.build_multi(copies, cand * (cand - 1), cand, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], true, absolute_max_rank)
 			if best_set == null or r.score > best_set.score: best_set = r
@@ -343,15 +348,15 @@ class ExpandedGridHandler extends Scorer:
 	## Greedily forms as many equal-size Full Houses (3s + 2s) as possible at scale s.
 	## Trip side = cluster with the most remaining units; pair side = SMALLEST viable
 	## different cluster (preserves large clusters for trips). Returns Array of Array[CardData].
-	static func _form_houses_at_scale(clusters: Array[ArrayCardData], s: int) -> Array:
+	static func _form_houses_at_scale(clusters: Array[ArrayCardData], s: int) -> Array[ArrayCardData]:
 		var trip_n := 3 * s
 		var pair_n := 2 * s
 		# Working copies: [remaining_count, source_datas, consumed_offset]
-		var work: Array = []
+		var work: Array[Dictionary] = []
 		for c in clusters:
 			work.append({"rem": c.datas.size(), "src": c.datas, "off": 0})
 
-		var houses: Array = []
+		var houses: Array[ArrayCardData] = []
 		while true:
 			# Trip: most remaining, >= trip_n.
 			var trip_idx := -1
@@ -373,7 +378,7 @@ class ExpandedGridHandler extends Scorer:
 			var p : Dictionary = work[pair_idx]
 			for k in range(pair_n): house.append(p.src[p.off + k])
 			p.off += pair_n; p.rem -= pair_n
-			houses.append(house)
+			houses.append(ArrayCardData.new().with_datas(house))
 		return houses
 
 
@@ -451,9 +456,9 @@ class MultiStraightHandler extends Scorer:
 			var cand := straights[j].datas.size()
 			if cand < 5 or seen_sizes.has(cand): continue
 			seen_sizes[cand] = true
-			var copies: Array = []
+			var copies: Array[ArrayCardData] = []
 			for run in straights:
-				if run.datas.size() >= cand: copies.append(run.datas.slice(0, cand))
+				if run.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(run.datas.slice(0, cand)))
 			var r := await Scoring.build_multi(copies, 2 * cand, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], false, max_rank)
 			if best == null or r.score > best.score or (r.score == best.score and r.meld.size() > best.meld.size()):
 				best = r
