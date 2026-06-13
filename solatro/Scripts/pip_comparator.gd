@@ -165,6 +165,12 @@ static func get_ace_base_value() -> float:
 static func get_ace_alt_value() -> float:
 	return 14.0
 
+## Returns the top of the wrap-around cycle (default King = 13.0).
+## Straights connect this value back down to the ace base (W -> A).
+## Decoupled so mods / run config can extend the cycle past King later.
+static func get_wrap_top_value() -> float:
+	return 13.0
+
 ## Calculates the scoring value. 
 ## If wrap_ace_high is true, Ace (1) counts as 14.
 static func get_scorable_value(r: PipRank, context_pool: Array[CardData] = [], wrap_ace_high: bool = false) -> float:

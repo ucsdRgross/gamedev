@@ -356,12 +356,14 @@ func run_macro_card_environment_tests() -> void:
 	print("  [PASS] 35-H Macro Deconstruction (Full House 25)")
 
 	# 36-H: Macro Symmetrical Grid Clusters Packaging Loops
+	# 5 ranks x 6 copies each. The set read (5x 6-of-a-Kind) now beats the straight
+	# reads: 6-of-a-Kind base 6*5=30, m=5, set escalation (1+0.5*3)=2.5 => 30*5*2.5=375.
+	# (6x Straight(5) plain = 10*6*3.5 = 210; Multi-Flush additive = 6*10*2 = 120.)
 	var c36: Array[CardData] = []
 	for rank in range(2, 7):
 		for i in range(6): c36.append(m_card(rank, (i % 4) + 1))
 	var r36 := await Scoring.PokerHands.score(c36)
-	# (Prefix is now a wrapper, wrapping the count)
-	assert(r36[0].name.contains("Multi-Flush 6x Straight (5)"), "36-H Failed: Got " + str(r36[0].name))
+	assert(r36[0].score == 375 and r36[0].name.contains("6 of a Kind"), "36-H Failed: Got " + str(r36[0].name) + " " + str(r36[0].score))
 
 	# 37-H: Extended Length Continuous Straights
 	var c37: Array[CardData] = []
@@ -777,14 +779,14 @@ func run_advanced_connectivity_tests() -> void:
 	var r50 := await Scoring.PokerHands.score(h50)
 	assert_result(r50, 20, "Straight Flush", Scoring.MELD_TYPE.FLUSH, "Steel Wheel (Ace-Low SF)")
 
-	# 51. Complex House Deconstruction (3-3-2-2-2)
-	# Logic: Take 10s Full of 9s (House), then fallback to 8s, 7s, 6s as 3x Pairs.
+	# 51. Complex Deconstruction (3-3-2-2-2 across suits 1/2/3)
+	# The strongest read is NOT a mixed house+pairs pile (copies must be identical).
+	# Ranks 6-7-8-9-10 each appear in suits 1 and 2, forming TWO 5-card straight
+	# flushes (suit 1 and suit 2) => Multi-Flush 2x Straight (5).
+	# Additive: 2 copies * (base 2*5) * 2 (flush) = 40.
 	var h51 : Array[CardData] = make_hand([10,10,10, 9,9,9, 8,8, 7,7, 6,6], [1,2,3, 1,2,3, 1,2, 1,2, 1,2])
 	var r51 := await Scoring.PokerHands.score(h51)
-	# Base House (12) + 3x Pair (4+4+4=12) = 24. 
-	# Multiplier for 4 components (m=4): 1.0 + 0.5*(4-1) = 2.5x.
-	# Total Score: 24 * 2.5 = 60.
-	assert_result(r51, 60, "4x Full House", Scoring.MELD_TYPE.MULTI, "Complex House + Mixed Pairs")
+	assert_result(r51, 40, "Multi-Flush 2x Straight", Scoring.MELD_TYPE.MULTI, "Complex Multi-Flush Straight")
 
 	# 52. Noisy Straights (Duplicates in Sequence)
 	# Sequence: 10, 9, 8, 7, 6. Extra 10, 8, 6 should be ignored by the run builder.
