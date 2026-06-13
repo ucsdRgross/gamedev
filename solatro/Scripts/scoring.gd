@@ -459,7 +459,14 @@ class MultiStraightHandler extends Scorer:
 			var copies: Array[ArrayCardData] = []
 			for run in straights:
 				if run.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(run.datas.slice(0, cand)))
-			var r := await Scoring.build_multi(copies, 2 * cand, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], false, max_rank)
+			# Length escalation (in units of the wrap span W): a single long straight
+			# escalates so it is never beaten by splitting the same cards into copies.
+			# cand <= W -> esc 1.0 (small straights unchanged). Straight(26) ties
+			# 2x Straight(13) and wins on the non-multi tie-break.
+			var w := PipComparator.get_wrap_top_value()
+			var len_esc : float = 1.0 + 0.5 * max(0.0, (float(cand) / w) - 1.0)
+			var base := int(2 * cand * len_esc)
+			var r := await Scoring.build_multi(copies, base, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], false, max_rank)
 			if best == null or r.score > best.score or (r.score == best.score and r.meld.size() > best.meld.size()):
 				best = r
 		return best
