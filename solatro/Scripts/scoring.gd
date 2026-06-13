@@ -10,6 +10,73 @@ enum MELD_TYPE {
 	MULTI           # Count > 1
 }
 
+# ==============================================================================
+# SCORE MODEL — THE SINGLE SOURCE OF TRUTH FOR EVERY NUMBER THAT AFFECTS SCORE
+# ------------------------------------------------------------------------------
+# All multipliers and scoring formulas live here. Every scorer routes its numbers
+# through this class; nothing else multiplies or escalates a score. Reusable from
+# outside this file via Scoring.ScoreModel.final_score(types, m, n).
+#
+#   types : the structural MELD_TYPEs of the hand (a core type — X_OF_KIND /
+#           STRAIGHT / FULL_HOUSE / FLUSH / HIGH_CARD — plus any of the modifiers
+#           FLUSH, ALL_SAME_SUIT, MULTI).
+#   m     : copy count (how many equal sub-hands; 1 = a single hand).
+#   n     : sub-hand size (cards per copy). Total scored cards = m * n.
+# ==============================================================================
+class ScoreModel:
+	# --- Tunable constants ---------------------------------------------------
+	const HIGH_CARD_SCORE := 1          # a lone high card
+	const STRAIGHT_PER_CARD := 2        # straight base = 2 * n (before length escalation)
+	const FLUSH_PER_CARD := 2           # pure-flush base = 2 * n
+	const FULL_FLUSH_MULT := 2          # a structure entirely in one suit doubles
+	const MULTI_FLUSH_COPY_MULT := 2    # each suited copy in a multi-flush is worth base * 2
+	const HOUSE_MULT := 1.5             # full-house base scaling
+	const ESC_STEP := 0.5               # +50% per extra copy
+	const MIN_FLUSH_CARDS := 5          # flush bonuses require >= this many cards
+
+	## Final hand score from structural types, copy count m, and sub-hand size n.
+	static func final_score(types: Array[MELD_TYPE], m: int, n: int) -> int:
+		var base := base_per_copy(types, n)
+		var has_struct := types.has(MELD_TYPE.X_OF_KIND) \
+				or types.has(MELD_TYPE.STRAIGHT) or types.has(MELD_TYPE.FULL_HOUSE)
+		# Pure flush: base (= 2n) already IS the flush value; multi-flush is additive.
+		if types.has(MELD_TYPE.FLUSH) and not has_struct:
+			return m * base
+		var plain := int(base * m * copy_escalation(types, m))
+		# Full Flush: a structure entirely in one suit -> double the escalated total.
+		if types.has(MELD_TYPE.ALL_SAME_SUIT):
+			return plain * FULL_FLUSH_MULT
+		# Multi-Flush of structural copies: additive base*MULT per copy (NOT escalated).
+		if types.has(MELD_TYPE.FLUSH) and types.has(MELD_TYPE.MULTI):
+			return max(plain, m * base * MULTI_FLUSH_COPY_MULT)
+		return plain
+
+	## Structural base score of ONE sub-hand of size n (suits/copies ignored).
+	static func base_per_copy(types: Array[MELD_TYPE], n: int) -> int:
+		if types.has(MELD_TYPE.FULL_HOUSE): return house_base(int(n / 5.0))
+		if types.has(MELD_TYPE.STRAIGHT):   return int(STRAIGHT_PER_CARD * n * straight_len_esc(n))
+		if types.has(MELD_TYPE.X_OF_KIND):  return n * (n - 1)
+		if types.has(MELD_TYPE.FLUSH):      return FLUSH_PER_CARD * n   # pure flush
+		return HIGH_CARD_SCORE
+
+	## Full House base for scale s (3s of one rank + 2s of another). s=1 -> 12, s=5 -> 450.
+	static func house_base(s: int) -> int:
+		var t := 3 * s
+		var p := 2 * s
+		return int((float(t * (t - 1)) + float(p * (p - 1))) * HOUSE_MULT)
+
+	## Straight length escalation, in units of the wrap span W: n <= W -> 1.0, so small
+	## straights are unchanged; longer runs ramp so they beat being split into copies.
+	static func straight_len_esc(n: int) -> float:
+		var w := PipComparator.get_wrap_top_value()
+		return 1.0 + ESC_STEP * max(0.0, (float(n) / w) - 1.0)
+
+	## Copy-count escalation. Sets ramp from the 3rd copy; everything else from the 2nd.
+	static func copy_escalation(types: Array[MELD_TYPE], m: int) -> float:
+		if m <= 1: return 1.0
+		if types.has(MELD_TYPE.X_OF_KIND): return 1.0 + ESC_STEP * max(0, m - 2)
+		return 1.0 + ESC_STEP * (m - 1)
+
 class Result:
 	var name : String
 	var meld : Array[CardData]
@@ -145,22 +212,14 @@ static func is_flush(meld: Array[CardData]) -> bool:
 			return false
 	return true
 
-## Base score of a single Full House of "scale" s (= 3s of one rank + 2s of another).
-## s=1 -> 12, s=2 (House 10) -> 63, s=5 (House 25) -> 450.
-static func house_base(s: int) -> int:
-	var t := 3 * s
-	var p := 2 * s
-	return int((float(t * (t - 1)) + float(p * (p - 1))) * 1.5)
-
-## Shared packager for any "multiple" archetype (Sets, Straights, Houses).
-## Computes the best of three competing flush interpretations and returns one Result:
+## Shared packager for any "multiple" archetype (Sets, Straights, Houses). Detects the
+## flush interpretation from the actual cards, builds the matching MELD_TYPEs, and gets
+## every score number from ScoreModel (the single scoring authority). Picks the best of:
 ##   - Plain:       escalated total, suits ignored.
-##   - Full Flush:  entire meld one suit AND total >= 5 -> escalated total x2 (final multiplier).
-##   - Multi-Flush: m>=2, every copy internally single-suit, >=2 distinct suits, copy size n>=5
-##                  -> additive sum of (copy_base x2), NO escalation.
-## copies: Array of Array[CardData]; base_per_copy: score of one copy at size n;
-## set_escalation true uses (1+0.5*(m-2)), false uses (1+0.5*(m-1)).
-static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int, base_types: Array[MELD_TYPE], set_escalation: bool, max_rank: float) -> Result:
+##   - Full Flush:  entire meld one suit AND total >= MIN_FLUSH_CARDS.
+##   - Multi-Flush: m>=2, every copy single-suit, >=2 distinct suits, copy size n>=MIN_FLUSH_CARDS.
+## copies: Array of Array[CardData]; base_types: the structural core, e.g. [X_OF_KIND].
+static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[MELD_TYPE], max_rank: float) -> Result:
 	var m := copies.size()
 	if m == 0: return null
 
@@ -168,25 +227,24 @@ static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int
 	for c : ArrayCardData in copies: all_cards.append_array(c.datas)
 	var total := all_cards.size()
 
-	var esc := 1.0
-	if m > 1:
-		esc = (1.0 + 0.5 * max(0, m - 2)) if set_escalation else (1.0 + 0.5 * (m - 1))
-	var plain_score := int(base_per_copy * m * esc)
-
-	var best_score := plain_score
+	# Plain (suits ignored) is the baseline.
 	var best_types: Array[MELD_TYPE] = base_types.duplicate()
 	if m > 1: best_types.append(MELD_TYPE.MULTI)
+	var best_score := ScoreModel.final_score(best_types, m, n)
 
-	# Full Flush: whole meld one suit, >= 5 cards -> x2 on the escalated total.
-	if total >= 5 and await Scoring.is_flush(all_cards):
-		best_score = plain_score * 2
-		best_types = base_types.duplicate()
-		if m > 1: best_types.append(MELD_TYPE.MULTI)
-		best_types.append(MELD_TYPE.FLUSH)
-		best_types.append(MELD_TYPE.ALL_SAME_SUIT)
+	# Full Flush: whole meld one suit, >= MIN_FLUSH_CARDS.
+	if total >= ScoreModel.MIN_FLUSH_CARDS and await Scoring.is_flush(all_cards):
+		var ff_types: Array[MELD_TYPE] = base_types.duplicate()
+		if m > 1: ff_types.append(MELD_TYPE.MULTI)
+		ff_types.append(MELD_TYPE.FLUSH)
+		ff_types.append(MELD_TYPE.ALL_SAME_SUIT)
+		var ff_score := ScoreModel.final_score(ff_types, m, n)
+		if ff_score >= best_score:
+			best_score = ff_score
+			best_types = ff_types
 
-	# Multi-Flush: each copy internally one suit, copies span >= 2 distinct suits, copy size >= 5.
-	if m >= 2 and n >= 5:
+	# Multi-Flush: each copy internally one suit, copies span >= 2 distinct suits, n >= 5.
+	if m >= 2 and n >= ScoreModel.MIN_FLUSH_CARDS:
 		var mf_ok := true
 		var suits_seen: Array[PipSuit] = []
 		for c in copies:
@@ -198,12 +256,13 @@ static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int
 				if await PipComparator.is_suit_same(x, s): seen = true; break
 			if not seen: suits_seen.append(s)
 		if mf_ok and suits_seen.size() >= 2:
-			var mf_score := m * base_per_copy * 2
+			var mf_types: Array[MELD_TYPE] = base_types.duplicate()
+			mf_types.append(MELD_TYPE.MULTI)
+			mf_types.append(MELD_TYPE.FLUSH)
+			var mf_score := ScoreModel.final_score(mf_types, m, n)
 			if mf_score > best_score:
 				best_score = mf_score
-				best_types = base_types.duplicate()
-				best_types.append(MELD_TYPE.MULTI)
-				best_types.append(MELD_TYPE.FLUSH)
+				best_types = mf_types
 
 	var final_name := Scoring.get_loc_name(best_types, m, n)
 	var res := Result.create(final_name, all_cards, best_score, max_rank, best_types)
@@ -212,9 +271,10 @@ static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int
 	# One Result per copy, sharing the same CardData instances (no copies of cards).
 	if m > 1:
 		var sub_name := Scoring.get_loc_name(base_types, 1, n)
+		var per_copy := ScoreModel.final_score(base_types, 1, n)
 		var sub_list: Array[Result] = []
 		for c : ArrayCardData in copies:
-			sub_list.append(Result.create(sub_name, c.datas, base_per_copy, max_rank, base_types.duplicate()))
+			sub_list.append(Result.create(sub_name, c.datas, per_copy, max_rank, base_types.duplicate()))
 		res.sub_melds = sub_list
 	return res
 
@@ -333,7 +393,7 @@ class ExpandedGridHandler extends Scorer:
 		# --- 1. SINGLE BEST SET (largest cluster) ---
 		var big := clusters[0].datas
 		var bn := big.size()
-		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn * (bn - 1), bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], true, absolute_max_rank))
+		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank))
 
 		# --- 2. UNIFORM MULTI-SET (m copies of the same size) ---
 		var sizes: Array[int] = []
@@ -346,7 +406,7 @@ class ExpandedGridHandler extends Scorer:
 			for c in clusters:
 				if c.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(c.datas.slice(0, cand)))
 			if copies.size() < 2: continue
-			var r := await Scoring.build_multi(copies, cand * (cand - 1), cand, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], true, absolute_max_rank)
+			var r := await Scoring.build_multi(copies, cand, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank)
 			if best_set == null or r.score > best_set.score: best_set = r
 		if best_set != null: possible_outcomes.append(best_set)
 
@@ -356,7 +416,7 @@ class ExpandedGridHandler extends Scorer:
 		for s in range(1, int(max_cluster / 3) + 1):
 			var house_copies := _form_houses_at_scale(clusters, s)
 			if house_copies.is_empty(): continue
-			var r := await Scoring.build_multi(house_copies, Scoring.house_base(s), 5 * s, [MELD_TYPE.FULL_HOUSE] as Array[MELD_TYPE], false, absolute_max_rank)
+			var r := await Scoring.build_multi(house_copies, 5 * s, [MELD_TYPE.FULL_HOUSE] as Array[MELD_TYPE], absolute_max_rank)
 			if best_house == null or r.score > best_house.score: best_house = r
 		if best_house != null: possible_outcomes.append(best_house)
 
@@ -477,14 +537,10 @@ class MultiStraightHandler extends Scorer:
 			var copies: Array[ArrayCardData] = []
 			for run in straights:
 				if run.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(run.datas.slice(0, cand)))
-			# Length escalation (in units of the wrap span W): a single long straight
-			# escalates so it is never beaten by splitting the same cards into copies.
-			# cand <= W -> esc 1.0 (small straights unchanged). Straight(26) ties
-			# 2x Straight(13) and wins on the non-multi tie-break.
-			var w := PipComparator.get_wrap_top_value()
-			var len_esc : float = 1.0 + 0.5 * max(0.0, (float(cand) / w) - 1.0)
-			var base := int(2 * cand * len_esc)
-			var r := await Scoring.build_multi(copies, base, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], false, max_rank)
+			# Length escalation lives in ScoreModel.straight_len_esc: a single long straight
+			# escalates so it is never beaten by splitting the same cards into copies, and
+			# Straight(26) ties 2x Straight(13) (winning on the non-multi tie-break).
+			var r := await Scoring.build_multi(copies, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], max_rank)
 			if best == null or r.score > best.score or (r.score == best.score and r.meld.size() > best.meld.size()):
 				best = r
 		return best
@@ -613,13 +669,13 @@ class MultiFlushHandler extends Scorer:
 		var candidates: Array[Result] = []
 
 		# --- A. SINGLE BEST FLUSH (largest group, full size) ---
-		# A flush IS the suit bonus, so its base is just 2n with no extra x2.
 		var biggest: Array[CardData] = flushes_found[0].datas
 		for f in flushes_found:
 			if f.datas.size() > biggest.size(): biggest = f.datas
 		var single_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.ALL_SAME_SUIT]
 		var single_name := Scoring.get_loc_name(single_types, 1, biggest.size())
-		candidates.append(Result.create(single_name, biggest, 2 * biggest.size(), absolute_max_rank, single_types))
+		candidates.append(Result.create(single_name, biggest, \
+				ScoreModel.final_score(single_types, 1, biggest.size()), absolute_max_rank, single_types))
 
 		# --- B. MULTI-FLUSH (m groups of a uniform size; additive, no escalation) ---
 		# Distinct groups are different suits, so this is always "Multi-Flush".
@@ -640,12 +696,13 @@ class MultiFlushHandler extends Scorer:
 						# Sub-meld shares the same CardData instances as the parent meld.
 						mf_subs.append(Result.create(
 								Scoring.get_loc_name(sub_flush_types, 1, cand),
-								slice, 2 * cand, absolute_max_rank, sub_flush_types.duplicate()))
+								slice, ScoreModel.final_score(sub_flush_types, 1, cand), \
+								absolute_max_rank, sub_flush_types.duplicate()))
 						m += 1
 				if m < 2: continue
 				var mf_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.MULTI]
 				var mf_name := Scoring.get_loc_name(mf_types, m, cand)
-				var r := Result.create(mf_name, meld, m * 2 * cand, absolute_max_rank, mf_types)
+				var r := Result.create(mf_name, meld, ScoreModel.final_score(mf_types, m, cand), absolute_max_rank, mf_types)
 				r.copies_count = m
 				r.copy_size = cand
 				r.sub_melds = mf_subs
@@ -676,6 +733,7 @@ class HighCardHandler extends Scorer:
 			if not is_nan(delta) and delta > 0.0:
 				best_card = card
 
-		var result_name := Scoring.get_loc_name([MELD_TYPE.HIGH_CARD] as Array[MELD_TYPE])
+		var hc_types: Array[MELD_TYPE] = [MELD_TYPE.HIGH_CARD]
+		var result_name := Scoring.get_loc_name(hc_types)
 		var score_val := await PipComparator.get_scorable_value(best_card.rank, cards, false)
-		return [Result.create(result_name, [best_card], 1, score_val, [MELD_TYPE.HIGH_CARD])]
+		return [Result.create(result_name, [best_card], ScoreModel.final_score(hc_types, 1, 1), score_val, hc_types)]
