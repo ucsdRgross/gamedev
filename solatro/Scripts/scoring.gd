@@ -16,7 +16,14 @@ class Result:
 	var score : int
 	var tie_breaker_high_card : float
 	var types: Array[MELD_TYPE] = []
-	
+	# Sub-hand structure: meld is m=copies_count contiguous blocks, each copy_size cards.
+	# sub_melds holds one Result per copy (so each can be inspected/re-scored on its own);
+	# their cards are the SAME CardData instances as in this result's meld (by reference).
+	# Empty for atomic results (a single, non-multi meld is its own whole).
+	var copies_count : int = 1
+	var copy_size : int = 0
+	var sub_melds : Array[Result] = []
+
 	static func create(p_name: String, p_meld: Array[CardData], p_score: int, p_tie: float, p_types: Array[MELD_TYPE]) -> Result:
 		var res := Result.new()
 		res.name = p_name
@@ -24,6 +31,7 @@ class Result:
 		res.score = p_score
 		res.tie_breaker_high_card = p_tie
 		res.types = p_types
+		res.copy_size = p_meld.size()  # default: single block (overridden for multi)
 		return res
 		
 	func _to_string() -> String:
@@ -198,7 +206,17 @@ static func build_multi(copies: Array[ArrayCardData], base_per_copy: int, n: int
 				best_types.append(MELD_TYPE.FLUSH)
 
 	var final_name := Scoring.get_loc_name(best_types, m, n)
-	return Result.create(final_name, all_cards, best_score, max_rank, best_types)
+	var res := Result.create(final_name, all_cards, best_score, max_rank, best_types)
+	res.copies_count = m
+	res.copy_size = n
+	# One Result per copy, sharing the same CardData instances (no copies of cards).
+	if m > 1:
+		var sub_name := Scoring.get_loc_name(base_types, 1, n)
+		var sub_list: Array[Result] = []
+		for c : ArrayCardData in copies:
+			sub_list.append(Result.create(sub_name, c.datas, base_per_copy, max_rank, base_types.duplicate()))
+		res.sub_melds = sub_list
+	return res
 
 ## Asynchronously handles descending rank sort profiles via the centralized comparator
 static func rank_sort_desc_async(a: CardData, b: CardData) -> bool:
@@ -610,17 +628,27 @@ class MultiFlushHandler extends Scorer:
 			for f in flushes_found:
 				if not sizes.has(f.datas.size()): sizes.append(f.datas.size())
 			var best_mf: Result = null
+			var sub_flush_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.ALL_SAME_SUIT]
 			for cand in sizes:
 				var meld: Array[CardData] = []
+				var mf_subs: Array[Scoring.Result] = []
 				var m := 0
 				for f in flushes_found:
 					if f.datas.size() >= cand:
-						meld.append_array(f.datas.slice(0, cand))
+						var slice: Array[CardData] = f.datas.slice(0, cand)
+						meld.append_array(slice)
+						# Sub-meld shares the same CardData instances as the parent meld.
+						mf_subs.append(Result.create(
+								Scoring.get_loc_name(sub_flush_types, 1, cand),
+								slice, 2 * cand, absolute_max_rank, sub_flush_types.duplicate()))
 						m += 1
 				if m < 2: continue
 				var mf_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.MULTI]
 				var mf_name := Scoring.get_loc_name(mf_types, m, cand)
 				var r := Result.create(mf_name, meld, m * 2 * cand, absolute_max_rank, mf_types)
+				r.copies_count = m
+				r.copy_size = cand
+				r.sub_melds = mf_subs
 				if best_mf == null or r.score > best_mf.score or (r.score == best_mf.score and r.meld.size() > best_mf.meld.size()):
 					best_mf = r
 			if best_mf != null: candidates.append(best_mf)

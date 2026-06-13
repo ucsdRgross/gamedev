@@ -30,6 +30,8 @@ func _ready() -> void:
 	await run_advanced_connectivity_tests()
 	await run_overlap_meld_tests()
 	await run_chaos_tests()
+	await run_subhand_structure_tests()
+	await run_meld_integrity_tests()
 	_print_summary()
 	await run_leaderboard()
 
@@ -571,6 +573,248 @@ func bench(melds: Array[Dictionary], noise_count: int, ctx: String) -> void:
 			and meld_ranks(top) == want_ranks
 	check(ok, ctx, "got '%s' %d meld %s | want '%s' %d meld %s" \
 			% [top.name, top.score, str(meld_ranks(top)), winner.name, winner.score, str(want_ranks)])
+
+
+# ==============================================================================
+# SECTION 10: SUB-HAND STRUCTURE OF Nx MELDS
+# Multi-copy melds expose copies_count (m) and copy_size (n); the flat meld is m
+# contiguous blocks of n cards (build_multi appends copy-by-copy). These tests split
+# the meld back into its sub-hands and verify EACH one is the exact same type and
+# size -- e.g. a straight(9) + straight(10) must form 2x Straight(9), and no sub-hand
+# may be a straight(10) (the spare card is dropped to keep copies uniform).
+# ==============================================================================
+
+## The card blocks of a result's sub-hands (each sub_melds entry's meld, by reference).
+func subhands(r: Scoring.Result) -> Array[Array]:
+	var out: Array[Array] = []
+	for sm: Scoring.Result in r.sub_melds:
+		out.append(sm.meld)
+	return out
+
+## Sorted rank values of a single sub-hand block.
+func block_ranks(block: Array) -> Array[float]:
+	var out: Array[float] = []
+	for c: CardData in block:
+		if c and c.rank and "value" in c.rank: out.append(float(c.rank.value))
+	out.sort()
+	return out
+
+## True if the block's ranks are strictly consecutive (a straight of its own length).
+func block_is_run(block: Array) -> bool:
+	var rs := block_ranks(block)
+	if rs.size() < 2: return false
+	for i in range(1, rs.size()):
+		if rs[i] - rs[i - 1] != 1.0: return false
+	return true
+
+## True if every card in the block shares suit value == suit_val.
+func block_all_suit(block: Array, suit_val: float) -> bool:
+	for c: CardData in block:
+		if not c or not c.suit or not ("value" in c.suit): return false
+		if float(c.suit.value) != suit_val: return false
+	return true
+
+func run_subhand_structure_tests() -> void:
+	print("\n--- SECTION 10: Nx SUB-HAND STRUCTURE ---")
+
+	# S1. straight(9) + straight(10), disjoint ranks/suits -> 2x Straight(9). Each
+	# sub-hand is a 9-long run; the spare 10th card is dropped (no Straight(10)).
+	var s1: Array[CardData] = []
+	for v in range(100, 109): s1.append(uc(v))   # 9-run
+	for v in range(200, 210): s1.append(uc(v))   # 10-run
+	s1.shuffle()
+	var r1 := (await Scoring.PokerHands.score(s1))[0]
+	var subs1 := subhands(r1)
+	var s1_ok := r1.name.contains("Straight") and r1.copies_count == 2 and r1.copy_size == 9 \
+			and r1.meld.size() == 18 and subs1.size() == 2
+	for b in subs1:
+		if b.size() != 9 or not block_is_run(b): s1_ok = false
+	check(s1_ok, "S1 straight(9)+straight(10) -> 2x Straight(9); each sub-hand is a 9-run", \
+			"%s  m=%d n=%d  subs=%s" % [r1.name, r1.copies_count, r1.copy_size, str(subs1.map(block_ranks))])
+
+	# S2. Three different-suit flushes of size 5/6/7 -> 3x Flush(5). Each sub-hand is
+	# 5 cards of one suit, and the three sub-hands carry three distinct suits.
+	var s2: Array[CardData] = []
+	for k in range(5): s2.append(m_card(1000 + k * 2, 30))
+	for k in range(6): s2.append(m_card(2000 + k * 2, 31))
+	for k in range(7): s2.append(m_card(3000 + k * 2, 32))
+	s2.shuffle()
+	var r2 := (await Scoring.PokerHands.score(s2))[0]
+	var subs2 := subhands(r2)
+	var s2_ok := r2.name.contains("Flush") and r2.copies_count == 3 and r2.copy_size == 5 \
+			and r2.meld.size() == 15 and subs2.size() == 3
+	var suits_seen: Array[float] = []
+	for b in subs2:
+		if b.size() != 5: s2_ok = false; continue
+		var sv: float = b[0].suit.value if (b[0] and b[0].suit) else -1.0
+		if not block_all_suit(b, sv): s2_ok = false
+		if suits_seen.has(sv): s2_ok = false
+		else: suits_seen.append(sv)
+	check(s2_ok, "S2 flush 5/6/7 -> 3x Flush(5); each sub-hand 5 same-suit, 3 distinct suits", \
+			"%s  m=%d n=%d  suits=%s" % [r2.name, r2.copies_count, r2.copy_size, str(suits_seen)])
+
+	# S3. 3-of-a-kind + 4-of-a-kind, distinct ranks -> 2x 3 of a Kind. Each sub-hand is
+	# 3 cards of one rank; the two sub-hands carry distinct ranks; the spare 4th drops.
+	var s3: Array[CardData] = [uc(50), uc(50), uc(50), uc(60), uc(60), uc(60), uc(60)]
+	s3.shuffle()
+	var r3 := (await Scoring.PokerHands.score(s3))[0]
+	var subs3 := subhands(r3)
+	var s3_ok := r3.name.contains("3 of a Kind") and r3.copies_count == 2 and r3.copy_size == 3 \
+			and r3.meld.size() == 6 and subs3.size() == 2
+	var ranks_seen: Array[float] = []
+	for b in subs3:
+		var br := block_ranks(b)
+		if br.size() != 3 or br[0] != br[2]: s3_ok = false; continue   # all 3 equal
+		if ranks_seen.has(br[0]): s3_ok = false
+		else: ranks_seen.append(br[0])
+	check(s3_ok, "S3 trips+quad -> 2x 3 of a Kind; each sub-hand 3 of one rank, distinct ranks", \
+			"%s  m=%d n=%d  ranks=%s" % [r3.name, r3.copies_count, r3.copy_size, str(ranks_seen)])
+
+	# S4. Two full houses (distinct ranks) -> 2x Full House(5). Each sub-hand is 5 cards
+	# forming a 3+2 split.
+	var s4: Array[CardData] = [uc(70), uc(70), uc(70), uc(71), uc(71),
+							   uc(72), uc(72), uc(72), uc(73), uc(73)]
+	s4.shuffle()
+	var r4 := (await Scoring.PokerHands.score(s4))[0]
+	var subs4 := subhands(r4)
+	var s4_ok := r4.name.contains("Full House") and r4.copies_count == 2 and r4.copy_size == 5 \
+			and r4.meld.size() == 10 and subs4.size() == 2
+	for b in subs4:
+		# A 3+2 split: 5 cards, exactly two distinct ranks, counts {3,2}.
+		var counts: Dictionary[float, int] = {}
+		for c: CardData in b:
+			var v := float(c.rank.value)
+			counts[v] = counts.get(v, 0) + 1
+		var cvals := counts.values()
+		cvals.sort()
+		if b.size() != 5 or cvals != [2, 3]: s4_ok = false
+	check(s4_ok, "S4 two houses -> 2x Full House(5); each sub-hand a 3+2 split", \
+			"%s  m=%d n=%d" % [r4.name, r4.copies_count, r4.copy_size])
+
+	# S5. For every Nx meld above: (a) no physical card is shared between sub-hands (same
+	# CardData instance), and (b) each sub-hand Result re-scores standalone as its own
+	# meld of the expected type/size. Iterates Result.sub_melds (Array[Result]) directly.
+	var s5_cases: Array[Dictionary] = [
+			{"r": r1, "type": "Straight", "n": 9},
+			{"r": r2, "type": "Flush", "n": 5},
+			{"r": r3, "type": "3 of a Kind", "n": 3},
+			{"r": r4, "type": "Full House", "n": 5},
+		]
+	for entry: Dictionary in s5_cases:
+		var rr: Scoring.Result = entry.r
+		var want_type: String = entry.type
+		var want_n: int = entry.n
+		# (a) disjoint cards across sub-hands (object identity)
+		var seen_cards: Array[CardData] = []
+		var disjoint := true
+		for sub: Scoring.Result in rr.sub_melds:
+			for c: CardData in sub.meld:
+				if seen_cards.has(c): disjoint = false
+				else: seen_cards.append(c)
+		check(disjoint, "S5 %s: no card reused across sub-hands" % want_type, \
+				"%d unique cards across %d sub-hands" % [seen_cards.size(), rr.sub_melds.size()])
+		# (b) each sub-hand Result re-scores standalone as the expected type & size
+		var all_rescored := true
+		for sub: Scoring.Result in rr.sub_melds:
+			var sr := await Scoring.PokerHands.score(sub.meld)
+			if sr.is_empty() or not sr[0].name.contains(want_type) or sr[0].meld.size() != want_n:
+				all_rescored = false
+		check(all_rescored, "S5 %s: each sub-hand re-scores standalone as %s(%d)" \
+				% [want_type, want_type, want_n], "")
+
+
+# ==============================================================================
+# SECTION 11: MELD INTEGRITY, REFERENCE LINKAGE & DEGENERATE INPUTS
+# Guards three contracts the other sections assume but never check directly:
+#   - no single CardData instance is counted twice inside one meld;
+#   - sub_melds cards ARE the same instances present in the parent meld (by reference);
+#   - atomic (non-multi) results expose no sub_melds.
+# Plus Ace single-use in wraps, stone/null robustness, and tiny/empty inputs.
+# ==============================================================================
+
+## True if any CardData instance appears more than once in the array (object identity).
+func has_dup_instances(cards: Array) -> bool:
+	var seen: Array[CardData] = []
+	for c: CardData in cards:
+		if seen.has(c): return true
+		seen.append(c)
+	return false
+
+func run_meld_integrity_tests() -> void:
+	print("\n--- SECTION 11: MELD INTEGRITY & EDGE INPUTS ---")
+
+	# T1. Ace single-use across a wrap: 10-J-Q-K-A-2-3-4-5 with exactly ONE ace ->
+	# a 9-card wrap straight that consumes the lone Ace once (no instance reuse).
+	var ace := uc(1)
+	var t1: Array[CardData] = [uc(10), uc(11), uc(12), uc(13), ace, uc(2), uc(3), uc(4), uc(5)]
+	t1.shuffle()
+	var rt1 := (await Scoring.PokerHands.score(t1))[0]
+	var ace_count := 0
+	for c: CardData in rt1.meld:
+		if c == ace: ace_count += 1
+	check(rt1.name.contains("Straight") and not has_dup_instances(rt1.meld) and ace_count == 1, \
+			"T1 wrap straight uses the lone Ace exactly once (no instance reuse)", \
+			"%s meld=%d aces=%d dup=%s" % [rt1.name, rt1.meld.size(), ace_count, str(has_dup_instances(rt1.meld))])
+
+	# T2. Sub-meld cards are the SAME instances as the parent meld (by reference), and no
+	# instance is duplicated within the parent meld. Uses a 2x straight (9-run + 10-run).
+	var t2: Array[CardData] = []
+	for v in range(100, 109): t2.append(uc(v))
+	for v in range(200, 210): t2.append(uc(v))
+	t2.shuffle()
+	var rt2 := (await Scoring.PokerHands.score(t2))[0]
+	var all_linked := rt2.sub_melds.size() > 0 and not has_dup_instances(rt2.meld)
+	for sub: Scoring.Result in rt2.sub_melds:
+		for c: CardData in sub.meld:
+			if not (c in rt2.meld): all_linked = false
+	check(all_linked, "T2 every sub-meld card is the same instance present in parent meld", \
+			"subs=%d parent_meld=%d" % [rt2.sub_melds.size(), rt2.meld.size()])
+
+	# T3. Atomic (non-multi) results expose no sub_melds and copies_count == 1.
+	var t3a := (await Scoring.PokerHands.score([uc(5), uc(6), uc(7), uc(8), uc(9)]))[0]      # plain straight
+	var t3b := (await Scoring.PokerHands.score([m_card(2, 9), m_card(5, 9), m_card(8, 9), m_card(11, 9), m_card(13, 9)]))[0]  # plain flush
+	var t3c := (await Scoring.PokerHands.score([uc(7000)]))[0]                                # high card
+	check(t3a.sub_melds.is_empty() and t3a.copies_count == 1 \
+			and t3b.sub_melds.is_empty() and t3b.copies_count == 1 \
+			and t3c.sub_melds.is_empty() and t3c.copies_count == 1, \
+			"T3 atomic results carry no sub_melds (copies_count == 1)", \
+			"straight=%d flush=%d high=%d" % [t3a.sub_melds.size(), t3b.sub_melds.size(), t3c.sub_melds.size()])
+
+	# T4. Stones/nulls interleaved in a flush pool are ignored: meld is the 5 real cards,
+	# no stone leaks into the meld, no duplicate instances.
+	var t4: Array[CardData] = [m_card(2, 12), m_stone(), m_card(5, 12), m_stone(),
+							   m_card(8, 12), m_card(11, 12), m_stone(), m_card(13, 12)]
+	t4.shuffle()
+	var rt4 := (await Scoring.PokerHands.score(t4))[0]
+	var no_stones := true
+	for c: CardData in rt4.meld:
+		if not c or not c.rank: no_stones = false
+	check(rt4.name.contains("Flush") and rt4.meld.size() == 5 and no_stones and not has_dup_instances(rt4.meld), \
+			"T4 stones ignored; flush meld is the 5 real cards", \
+			"%s meld=%d clean=%s" % [rt4.name, rt4.meld.size(), str(no_stones)])
+
+	# T5. Degenerate inputs don't crash and behave sanely.
+	var empty_res := await Scoring.PokerHands.score([] as Array[CardData])
+	check(empty_res.is_empty(), "T5a empty hand -> no results", str(empty_res.size()))
+	var one_res := await Scoring.PokerHands.score([uc(8)] as Array[CardData])
+	check(not one_res.is_empty() and one_res[0].name.contains("High Card") and one_res[0].meld.size() == 1, \
+			"T5b single card -> High Card (meld 1)", "" if one_res.is_empty() else one_res[0].name)
+	var two_res := await Scoring.PokerHands.score([uc(8), uc(8)] as Array[CardData])
+	check(not two_res.is_empty() and two_res[0].name.contains("Pair") and two_res[0].meld.size() == 2 \
+			and not has_dup_instances(two_res[0].meld), \
+			"T5c two equal cards -> Pair (meld 2, distinct instances)", \
+			"" if two_res.is_empty() else two_res[0].name)
+
+	# T6. Broad no-reuse net: a heavily-overlapping hand (full house + straight + flush
+	# sharing the pool) must never return a meld with a duplicated card instance.
+	var t6: Array[CardData] = [uc(60), uc(60), uc(60), uc(61), uc(61)]   # house
+	for v in range(70, 75): t6.append(uc(v))                            # straight
+	for k in range(6): t6.append(m_card(800 + k * 2, 13))               # flush(6)
+	add_noise(t6, 15)
+	t6.shuffle()
+	var rt6 := (await Scoring.PokerHands.score(t6))[0]
+	check(not has_dup_instances(rt6.meld), "T6 overlapping multi-meld hand returns no duplicated card instance", \
+			"%s meld=%d" % [rt6.name, rt6.meld.size()])
 
 
 # ==============================================================================
