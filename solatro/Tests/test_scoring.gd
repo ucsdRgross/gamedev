@@ -1,5 +1,5 @@
 extends Node
-
+# res://Tests/test_scoring.gd
 # ==============================================================================
 # MASTER 49-CASE DATA-ORIENTED POKER SCORING ENGINE TESTER
 # ==============================================================================
@@ -261,7 +261,7 @@ func run_micro_card_environment_tests() -> void:
 	# 15-L: Proportional Full House 3/2 Factorial Truncation Drop Rule
 	var h15 : Array[CardData] = make_hand([10, 10, 10, 10, 5, 5], [1, 2, 3, 4, 1, 2])
 	var r15 := await Scoring.PokerHands.score(h15)
-	assert(r15[0].score == 12 and r15[0].meld.size() == 5, "15-L Failed")
+	assert(r15[0].score == 12 and r15[0].meld.size() == 5, "15-L Failed " + str(r15[0].score) + str(r15[0].name))
 
 	# 16-L: Symmetrical Grid Routing Isolation
 	var h16 : Array[CardData] = make_hand([9, 9, 8, 8], [1, 2, 3, 4])
