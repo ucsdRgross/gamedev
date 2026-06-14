@@ -32,7 +32,7 @@ func _init() -> void:
 	super._init(MAX_LINES)
 
 
-func append(level: String, text: String, path: String = "", line: int = 0, function: String = "") -> void:
+func append(level: String, text: String, path: String = "", line: int = 0, function: String = "", details: Dictionary = {}) -> void:
 	var entry := {
 		"source": "editor",
 		"level": _coerce_level(level),
@@ -41,6 +41,8 @@ func append(level: String, text: String, path: String = "", line: int = 0, funct
 		"line": line,
 		"function": function,
 	}
+	if not details.is_empty():
+		entry["details"] = details.duplicate(true)
 	_mutex.lock()
 	_append_entry(entry)
 	_mutex.unlock()
@@ -64,6 +66,15 @@ func get_recent(count: int) -> Array[Dictionary]:
 	return out
 
 
+func get_since(since_seq: int, limit: int = -1) -> Dictionary:
+	## Single-lock so the cursor snapshot and slice copy can't race against a
+	## Logger-thread append.
+	_mutex.lock()
+	var out := _get_since_unlocked(since_seq, limit)
+	_mutex.unlock()
+	return out
+
+
 func total_count() -> int:
 	_mutex.lock()
 	var n := _total_count_unlocked()
@@ -74,6 +85,13 @@ func total_count() -> int:
 func dropped_count() -> int:
 	_mutex.lock()
 	var n := _dropped_count_unlocked()
+	_mutex.unlock()
+	return n
+
+
+func appended_total() -> int:
+	_mutex.lock()
+	var n := _appended_total_unlocked()
 	_mutex.unlock()
 	return n
 
