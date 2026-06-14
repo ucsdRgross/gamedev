@@ -1,41 +1,58 @@
 shader_type canvas_item;
 
+// Tectonic blueprint: domain-warped Voronoi over the plate seed points.
+// Outputs per pixel:
+//   R,G = winning plate's drift vector (encoded 0..1)
+//   B   = plate id / 15
+//   A   = distance to nearest plate centre (normalized)
 uniform int seed = 57;
 uniform int plate_count = 5;
-uniform vec4 plates[15]; // Array storage packing pos.xy and normalized drift dir.zw vectors
+uniform sampler2D plate_tex; // texel i = (centre.x, centre.y, drift.x, drift.y)
+uniform float warp_strength = 90.0; // pixels of organic edge distortion
+uniform float warp_frequency = 5.0;
 
-float hash2d(vec2 p) {
-    return fract(sin(dot(p, vec2(15.3, 94.2))) * 43758.5453);
+vec2 grad_hash(vec2 p) {
+	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+	return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
 }
 
-float noise2d(vec2 p) {
-    vec2 i = floor(p); vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash2d(i), hash2d(i+vec2(1.0,0.0)), f.x), mix(hash2d(i+vec2(0.0,1.0)), hash2d(i+vec2(1.0,1.0)), f.x), f.y);
+float gnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float a = dot(grad_hash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
+	float b = dot(grad_hash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
+	float c = dot(grad_hash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
+	float d = dot(grad_hash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
+	return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 void fragment() {
-    // Inject continuous domain warping noise to organically distort and jag fault line cell margins
-    vec2 warp_coord = UV * 15.0 + vec2(float(seed));
-    vec2 warp = vec2(noise2d(warp_coord), noise2d(warp_coord + vec2(5.2))) * 0.04;
-    vec2 warped_pixel_pos = (UV + warp) * 768.0;
-    
-    int closest_plate_idx = 0;
-	float min_dist = 99999.0;
-	
-	// Scan plate seed allocations simultaneously via GPU pipeline cores
+	vec2 off = vec2(mod(float(seed), 256.0), mod(float(seed) * 1.37, 256.0));
+	// Three-octave warp so plate edges are jagged/noisy, not smooth bisectors.
+	vec2 wc = UV * warp_frequency + off;
+	vec2 warp = vec2(gnoise(wc), gnoise(wc + vec2(31.7))) * warp_strength;
+	warp += vec2(gnoise(wc * 2.3), gnoise(wc * 2.3 + vec2(11.5))) * (warp_strength * 0.5);
+	warp += vec2(gnoise(wc * 5.7), gnoise(wc * 5.7 + vec2(7.3))) * (warp_strength * 0.28);
+	// Clamp so the warp organically distorts edges but never folds coordinate
+	// space (which would let central plates win the whole map).
+	warp = clamp(warp, vec2(-warp_strength), vec2(warp_strength));
+	vec2 px = UV * 768.0 + warp;
+
+	int best = 0;
+	float min_dist = 1.0e9;
 	for (int i = 0; i < plate_count; i++) {
-	    float d = distance(warped_pixel_pos, plates[i].xy);
-	    if (d < min_dist) {
-	        min_dist = d;
-	        closest_plate_idx = i;
-	    }
+		vec2 centre = texelFetch(plate_tex, ivec2(i, 0), 0).xy;
+		float dd = distance(px, centre);
+		if (dd < min_dist) {
+			min_dist = dd;
+			best = i;
+		}
 	}
-	
-	// Extract the kinematically packed direction velocity vectors for the winning plate zone
-	vec2 drift_dir = plates[closest_plate_idx].zw;
-	
-	// Pack parameters cleanly into color tracking arrays:
-	// R, G channels store drift velocity vectors; B stores plate ID; A stores boundary distance metrics
-	COLOR = vec4((drift_dir + 1.0) * 0.5, float(closest_plate_idx) / 15.0, min_dist / 768.0);
+
+	vec2 drift = texelFetch(plate_tex, ivec2(best, 0), 0).zw;
+	// Alpha MUST be 1.0: a fractional alpha makes the viewport alpha-blend the
+	// output over the cleared background, scaling .b by alpha and corrupting the
+	// plate-id readback. (Distance isn't needed downstream — deform recomputes.)
+	COLOR = vec4((drift + 1.0) * 0.5, float(best) / 15.0, 1.0);
 }
