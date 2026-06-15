@@ -16,7 +16,7 @@ func _draw_legend(step: String) -> void:
 	var items: Array = []
 	if step in ["Landmass", "PeaksAndValleys", "Erosion"]:
 		items = [
-			{"c": Color("#1a365d"), "n": "Ocean"}, {"c": Color("#2b6cb0"), "n": "Shallows"},
+			{"c": Color("#1a365d"), "n": "Ocean"}, {"c": Color("#2b6cb0"), "n": "Coast"},
 			{"c": Color("#2f855a"), "n": "Plains"}, {"c": Color("#ecc94b"), "n": "Hills"},
 			{"c": Color("#718096"), "n": "Rock"}, {"c": Color("#ffffff"), "n": "Snow"},
 		]
@@ -28,7 +28,10 @@ func _draw_legend(step: String) -> void:
 	elif step == "ErosionDebug":
 		items = [{"c": RIVER, "n": "Carved (erosion only)"}, {"c": SUBSTRATE, "n": "Untouched"}]
 	elif step == "Rivers_Only":
-		items = [{"c": RIVER, "n": "River Network"}, {"c": SUBSTRATE, "n": "Substrate"}]
+		items = [
+			{"c": RIVER_HI, "n": "Water (high)"}, {"c": RIVER_LO, "n": "Water (low)"},
+			{"c": SUBSTRATE, "n": "Substrate"},
+		]
 	elif step == "Graph":
 		items = [
 			{"c": Color("#ecc94b"), "n": "Node"}, {"c": Color.GREEN, "n": "Start"},

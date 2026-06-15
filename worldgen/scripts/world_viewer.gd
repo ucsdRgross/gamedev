@@ -34,6 +34,9 @@ var _grid_texture: ImageTexture
 const SUBSTRATE := Color("#0f172a")
 const RIVER := Color("#38bdf8")
 const RIVER_OVERLAY := Color("#2563eb")
+const RIVER_HI := Color("#e0f2fe")  # high-elevation end of the river height ramp
+const RIVER_LO := Color("#0c4a6e")  # low-elevation (near sea) end of the ramp
+const LAKE := Color("#1d4ed8")      # depression-fill lake tint
 const FAULT := Color("#a855f7")
 
 static func topo_color(val: float, oth: float, mth: float) -> Color:
@@ -135,6 +138,7 @@ func _paint_step(img: Image, slot: String, offset: Vector2i, scale: float) -> vo
 	var height: PackedFloat32Array = data["height"]
 	var biome: PackedInt32Array = data["biome"]
 	var rset: Dictionary = data["river_set"]
+	var lset: Dictionary = data.get("lake_set", {})
 	# Erosion debug compares post-erosion height against pre-erosion (peaks).
 	var pre_height: PackedFloat32Array = height
 	if mode == "erosion_debug" and generator.snapshots.has("PeaksAndValleys"):
@@ -152,7 +156,13 @@ func _paint_step(img: Image, slot: String, offset: Vector2i, scale: float) -> vo
 
 			match mode:
 				"rivers":
-					col = RIVER if (_near_river(rset, pos) and height[idx] >= oth) else SUBSTRATE
+					# Shade rivers AND lakes by elevation (same ramp) so their water
+					# height is visible; everything else dark.
+					if (lset.has(pos) or _near_river(rset, pos)) and height[idx] >= oth:
+						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
+						col = RIVER_LO.lerp(RIVER_HI, t)
+					else:
+						col = SUBSTRATE
 				"erosion_debug":
 					var carved: float = pre_height[idx] - height[idx]
 					col = SUBSTRATE.lerp(RIVER, clampf(carved * 30.0, 0.0, 1.0))
@@ -160,7 +170,7 @@ func _paint_step(img: Image, slot: String, offset: Vector2i, scale: float) -> vo
 					col = _biome_color(biome[idx])
 				"biome_river", "graph":
 					col = _biome_color(biome[idx])
-					if _near_river(rset, pos) and height[idx] >= oth:
+					if (_near_river(rset, pos) or lset.has(pos)) and height[idx] >= oth:
 						col = RIVER_OVERLAY
 				_:  # topo
 					col = topo_color(height[idx], oth, mth)

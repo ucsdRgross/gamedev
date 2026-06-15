@@ -6,38 +6,10 @@ shader_type canvas_item;
 //   G = near_river flag (0/1)
 //   B = height (passthrough)
 uniform sampler2D state_tex;
-uniform int seed_t = 3;
-uniform int seed_h = 4;
+uniform sampler2D temp_tex;   // CPU-baked temperature noise, 0..1
+uniform sampler2D humid_tex;  // CPU-baked humidity noise, 0..1 (shared with rivers)
 uniform float ocean_threshold = 0.38;
 uniform float mountain_threshold = 0.65;
-uniform float temp_frequency = 0.006;
-uniform float humid_frequency = 0.007;
-
-vec2 grad_hash(vec2 p) {
-	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-	return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
-}
-
-float gnoise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	float a = dot(grad_hash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
-	float b = dot(grad_hash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
-	float c = dot(grad_hash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
-	float d = dot(grad_hash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
-	return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
-// Two-octave climate field in 0..1 with contrast so values span the full range
-// (more biome variety) instead of clustering at mid (one dominant biome).
-float climate_field(vec2 p) {
-	// gnoise has low RMS (~0.2); amplify hard so values span the full 0..1 range
-	// and split evenly across the 3 bands (otherwise everything sits mid-band).
-	float v = gnoise(p) * 0.65 + gnoise(p * 2.4 + vec2(19.3)) * 0.35;
-	v = clamp(v * 3.2 * 0.5 + 0.5, 0.0, 1.0);
-	return v;
-}
 
 void fragment() {
 	vec4 state = texture(state_tex, UV);
@@ -47,10 +19,8 @@ void fragment() {
 	int biome = 0; // Ocean
 
 	if (h >= ocean_threshold) {
-		vec2 off_t = vec2(mod(float(seed_t), 256.0), mod(float(seed_t) * 1.37, 256.0));
-		vec2 off_h = vec2(mod(float(seed_h), 256.0), mod(float(seed_h) * 1.37, 256.0));
-		float raw_t = climate_field(UV * temp_frequency * 768.0 + off_t);
-		float raw_h = climate_field(UV * humid_frequency * 768.0 + off_h);
+		float raw_t = texture(temp_tex, UV).r;
+		float raw_h = texture(humid_tex, UV).r;
 
 		float elevation = h - ocean_threshold;
 		float t = clamp(raw_t - (elevation * 0.5), 0.0, 1.0);

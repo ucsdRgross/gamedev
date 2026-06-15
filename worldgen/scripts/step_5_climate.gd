@@ -10,12 +10,10 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var state := gen.build_state_texture()  # R = height, G = river flag
 	var mat := gen.get_material("climate")
 	mat.set_shader_parameter("state_tex", state)
-	mat.set_shader_parameter("seed_t", settings.main_seed + 3)
-	mat.set_shader_parameter("seed_h", settings.main_seed + 4)
+	mat.set_shader_parameter("temp_tex", gen.noise_tex("temperature"))
+	mat.set_shader_parameter("humid_tex", gen.noise_tex("humidity"))  # shared with rivers
 	mat.set_shader_parameter("ocean_threshold", settings.ocean_threshold)
 	mat.set_shader_parameter("mountain_threshold", settings.mountain_threshold)
-	mat.set_shader_parameter("temp_frequency", settings.temp_frequency)
-	mat.set_shader_parameter("humid_frequency", settings.humid_frequency)
 
 	var img := await gen.flush("climate")
 	gen.read_biomes_from_image(img)

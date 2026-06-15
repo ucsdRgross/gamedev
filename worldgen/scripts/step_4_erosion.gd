@@ -1,15 +1,42 @@
-class_name Step4ErosionAndRivers
+class_name Step4Erosion
 extends GenerationStep
 
-## GPU hydraulic erosion / flow simulation (Step 4 of the design).
-##
-## The previous CPU bucket-flow placeholder has been removed (it was never the
-## simulation the spec asks for). This is now a pass-through stub: the real
-## humidity-seeded ping-pong droplet simulation will be built here per the
-## approved plan. Until then, no carving and no rivers are produced, so the
-## erosion/river slots simply show the un-eroded terrain.
+## Light erosion (Step 4). Carves faint, branching, river-like channels into the
+## heightmap by combining three Perlin (FastNoiseLite) maps:
+##   1. the working heightmap   -> biased toward taller terrain
+##   2. an ancient humidity map -> biased toward wetter terrain
+##   3. a ridged channel map    -> the channel network itself
+## The carve is height -= strength * channel * height_bias * humidity_bias, and
+## it ONLY subtracts. Using FastNoiseLite avoids the diagonal banding the
+## sin-hash shader noise produced at high frequency. Edits height only; the
+## droplet-driven rivers (widening + lakes) are a separate later step.
+## ErosionDebug shows the carve as the diff vs the pre-erosion (PeaksAndValleys).
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
-	gen.river_nodes.clear()
+	var w := settings.map_width
+	var h := settings.map_height
+	var oth := settings.ocean_threshold
+
+	# All three inputs come from the CPU noise baker:
+	#   channel = ridged crests (the branching network), humidity = wet weighting,
+	#   heightmap = the working buffer (tall weighting).
+	var chan_img := gen.noise_img("erosion_channel")
+	var hum_img := gen.noise_img("erosion_humidity")
+
+	# Combine all three per pixel.
+	var inv_sea := 1.0 / maxf(1e-3, 1.0 - oth)
+	for y in range(h):
+		for x in range(w):
+			var idx := (y * w) + x
+			var height := gen.height_buffer[idx]
+			if height <= oth:
+				continue  # never carve the sea
+			var channel := chan_img.get_pixel(x, y).r          # 0..1, crests ~1
+			channel = smoothstep(settings.erosion_channel_threshold, 1.0, channel)  # crest cutoff -> channel width
+			var wet := hum_img.get_pixel(x, y).r               # 0..1
+			var elev := clampf((height - oth) * inv_sea, 0.0, 1.0)
+			var carve := settings.erosion_strength * channel \
+				* pow(elev, settings.erosion_height_bias) \
+				* pow(wet, settings.erosion_humidity_bias)
+			gen.height_buffer[idx] = height - carve
+
 	gen._save_snapshot_bridge("Erosion")
-	gen.snapshots["Rivers_Only"] = gen.snapshots["Erosion"].duplicate()
-	gen.generation_step_finished.emit("Rivers_Only")

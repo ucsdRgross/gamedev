@@ -22,6 +22,7 @@ var biome_palette: Array[String] = [
 ]
 
 var river_nodes: Array[Vector2i] = []
+var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
 var city_nodes: Array[Vector2] = []
 var gameplay_graph: Dictionary = {}
 var start_node: Vector2
@@ -36,6 +37,9 @@ var plate_land_tex: ImageTexture   # texel i.r = is_land (1/0)
 const MAX_PLATES := 15
 
 var _viewports: Dictionary = {}
+# CPU-baked noise maps: name -> { "img": Image, "tex": ImageTexture }. All noise
+# is generated here so shaders only transform it (and the viewer can show it).
+var noise_maps: Dictionary = {}
 
 signal generation_step_finished(step_name: String)
 
@@ -46,6 +50,8 @@ const SHADER_DEFS := {
 	"blueprint": "res://shaders/step_2_tectonic_blueprint.gdshader",
 	"deform": "res://shaders/step_3_tectonic_deformation.gdshader",
 	"peaks": "res://shaders/step_4_peaks_and_valleys.gdshader",
+	# Erosion (step 4) and river generation (D8 flow accumulation) both run on the
+	# CPU now, so neither needs a viewport.
 	"climate": "res://shaders/step_6_biomes_and_climate.gdshader",
 }
 
@@ -86,6 +92,12 @@ func _make_viewport(shader_path: String) -> SubViewport:
 
 func get_material(key: String) -> ShaderMaterial:
 	return _viewports[key].get_child(0).material
+
+func noise_tex(name: String) -> Texture2D:
+	return noise_maps[name]["tex"]
+
+func noise_img(name: String) -> Image:
+	return noise_maps[name]["img"]
 
 func viewport_texture(key: String) -> Texture2D:
 	return _viewports[key].get_texture()
@@ -129,6 +141,17 @@ func read_biomes_from_image(img: Image) -> void:
 		for x in range(w):
 			biome_id_buffer[(y * w) + x] = int(round(img.get_pixel(x, y).r * 255.0))
 
+## Build an RGBAH float texture whose red channel is the current height buffer.
+## Used as the read-only base (H0) reference for the GPU erosion sim.
+func height_texture() -> ImageTexture:
+	var w := settings.map_width
+	var h := settings.map_height
+	var img := Image.create(w, h, false, Image.FORMAT_RGBAH)
+	for y in range(h):
+		for x in range(w):
+			img.set_pixel(x, y, Color(height_buffer[(y * w) + x], 0.0, 0.0, 1.0))
+	return ImageTexture.create_from_image(img)
+
 ## Pack the current CPU state into a float texture for the climate shader:
 ##   R = height, G = river flag (1 if this cell is a river).
 func build_state_texture() -> ImageTexture:
@@ -138,6 +161,8 @@ func build_state_texture() -> ImageTexture:
 	var river_set := {}
 	for r in river_nodes:
 		river_set[r] = true
+	for l in lake_nodes:  # lakes are water too -> count toward the river/water flag
+		river_set[l] = true
 	for y in range(h):
 		for x in range(w):
 			var river_flag := 1.0 if river_set.has(Vector2i(x, y)) else 0.0
@@ -153,6 +178,7 @@ func generate_world_map() -> void:
 
 	snapshots.clear()
 	river_nodes.clear()
+	lake_nodes.clear()
 	city_nodes.clear()
 	gameplay_graph.clear()
 	landmarks.clear()
@@ -165,16 +191,40 @@ func generate_world_map() -> void:
 	plate_id_buffer.resize(total)
 
 	seed(settings.main_seed)
+
+	# Time every step so the breakdown below shows where the budget goes.
+	var timings: Array = []
+	var ts := Time.get_ticks_msec()
+	noise_maps = NoiseBaker.bake(settings)  # all CPU noise, generated once
+	timings.append(["NoiseBake", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
 	_init_plates()
+	timings.append(["Plates", Time.get_ticks_msec() - ts])
 
-	await Step1Landmass.new().execute(self, settings)       # GPU
-	await Step2Tectonics.new().execute(self, settings)      # GPU
-	await Step3PeaksAndValleys.new().execute(self, settings) # GPU
-	Step4ErosionAndRivers.new().execute(self, settings)     # CPU bucket-flow erosion/rivers
-	await Step5Climate.new().execute(self, settings)        # GPU (reads CPU-carved height)
-
+	ts = Time.get_ticks_msec()
+	await Step1Landmass.new().execute(self, settings)        # GPU
+	timings.append(["Landmass", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
+	await Step2Tectonics.new().execute(self, settings)       # GPU
+	timings.append(["Tectonics", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
+	await Step3PeaksAndValleys.new().execute(self, settings)  # GPU
+	timings.append(["Peaks", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
+	await Step4Erosion.new().execute(self, settings)         # CPU light channel carving (combined Perlin maps)
+	timings.append(["Erosion", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
+	await StepRivers.new().execute(self, settings)           # CPU D8 flow-accumulation rivers + lakes
+	timings.append(["Rivers", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
+	await Step5Climate.new().execute(self, settings)         # GPU (reads carved height + river network)
+	timings.append(["Climate", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
 	Step6Civilizations.new().execute(self, settings)
+	timings.append(["Civilizations", Time.get_ticks_msec() - ts])
+	ts = Time.get_ticks_msec()
 	Step7Graph.new().execute(self, settings)
+	timings.append(["Graph", Time.get_ticks_msec() - ts])
 
 	var ordered := ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys",
 		"Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
@@ -184,7 +234,13 @@ func generate_world_map() -> void:
 
 	_save_snapshot_bridge("All_Steps_Grid")
 	generation_step_finished.emit("All_Steps_Grid")
-	print("[WorldGenerator] Completed in ", Time.get_ticks_msec() - start_time, " ms")
+
+	var elapsed := Time.get_ticks_msec() - start_time
+	print("[WorldGenerator] --- Step timing breakdown (total ", elapsed, " ms) ---")
+	for entry in timings:
+		var ms: int = entry[1]
+		var pct := (100.0 * float(ms) / float(maxi(1, elapsed)))
+		print("  %-14s %6d ms  %5.1f%%" % [entry[0], ms, pct])
 
 func _init_plates() -> void:
 	plate_data.resize(MAX_PLATES)
@@ -238,6 +294,9 @@ func _save_snapshot_bridge(step_name: String) -> void:
 	var river_set := {}
 	for r in river_nodes:
 		river_set[r] = true
+	var lake_set := {}
+	for l in lake_nodes:
+		lake_set[l] = true
 
 	snapshots[step_name] = {
 		"height": height_buffer.duplicate(),
@@ -245,6 +304,7 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"plate_ids": plate_id_buffer.duplicate(),
 		"river_nodes": river_nodes.duplicate(),
 		"river_set": river_set,
+		"lake_set": lake_set,
 		"city_nodes": city_nodes.duplicate(),
 		"gameplay_graph": gameplay_graph.duplicate(),
 		"start_node": start_node,
