@@ -1,0 +1,31 @@
+
+[tier: medium]
+  layer_count                [4.0000 .. 17.2000]  best=16
+  min_path_dist              [5.0000 .. 60.0000]  best=60.0
+  max_path_search_dist       [30.0000 .. 140.0000]  best=30.0
+  min_outgoing               [1.0000 .. 4.0000]  best=4
+  max_outgoing               [2.0000 .. 6.0000]  best=6
+  min_outgoing_after_trim    [1.0000 .. 2.1000]  best=1
+  edge_trim_chance           [0.0000 .. 0.7700]  best=0.0
+  min_nodes_between_cities   [0.0000 .. 5.5000]  best=0
+  max_nodes_between_cities   [1.0000 .. 9.8000]  best=1
+  min_cities_visited         [2.0000 .. 6.4000]  best=2
+  max_cities_visited         [42.4000 .. 60.0000]  best=44
+  city_bottleneck_strength   [0.0000 .. 0.8800]  best=0.0
+  min_graph_width            [1.0000 .. 5.4000]  best=1
+  max_landmasses             [1.0000 .. 7.6000]  best=1
+  max_cross_ocean_per_band   [0.0000 .. 3.3000]  best=0
+  max_water_crossing_dist    [40.0000 .. 172.0000]  best=40.0
+  start_end_island_penalty   [5600.0000 .. 10000.0000]  best=6000.0
+  start_end_min_connections  [0.0000 .. 5.5000]  best=0
+  mountain_pass_bias         [0.0000 .. 2.7500]  best=0.0
+  graph_anti_straight        [0.8000 .. 3.0000]  best=3.0
+  path_ortho_length_bonus    [0.7000 .. 4.0000]  best=1.0
+  graph_zigzag_penalty       [156.0000 .. 200.0000]  best=160.0
+  failsafe_max_injected_nodes [0.0000 .. 55.0000]  best=0
+  graph_build_passes         [1.0000 .. 2.1000]  best=1
+  min_city_dist              [8.0000 .. 47.6000]  best=8.0
+  max_city_count             [10.0000 .. 318.0000]  best=10
+  min_travel_dist            [4.0000 .. 8.4000]  best=4.0
+  max_travel_count           [1575.0000 .. 2400.0000]  best=1650
+  city_coast_radius          [0.0000 .. 5.5000]  best=0.0

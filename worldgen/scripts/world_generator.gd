@@ -400,19 +400,3 @@ func _calculate_gradient_fast(x: int, y: int) -> Vector2:
 	var h10 := height_buffer[(y * w) + (x + 1)] if x + 1 < w else h00
 	var h01 := height_buffer[((y + 1) * w) + x] if y + 1 < h else h00
 	return Vector2(h10 - h00, h01 - h00)
-
-func _evaluate_raycast_cost(start_p: Vector2, end_p: Vector2) -> float:
-	var total_penalty := 0.0
-	var steps := 15
-	var w := settings.map_width
-
-	for step in range(steps + 1):
-		var check_p := Vector2i(start_p.lerp(end_p, float(step) / steps))
-		if check_p.x < 0 or check_p.x >= w or check_p.y < 0 or check_p.y >= settings.map_height:
-			return -1.0
-		var height_val := height_buffer[(check_p.y * w) + check_p.x]
-		if height_val < settings.ocean_threshold:
-			total_penalty += settings.water_penalty
-		elif height_val >= settings.mountain_threshold:
-			total_penalty += settings.mountain_penalty
-	return total_penalty

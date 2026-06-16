@@ -1,0 +1,534 @@
+extends Node
+
+## Multithreaded graph-parameter auto-tuning harness (run this scene with F6).
+##
+## For each selected size tier it scatter-samples every enabled graph-shaping
+## parameter, scores each generated graph with GraphMetrics (coverage + hollow
+## subdivision + biome variety - violations), and iteratively narrows each
+## parameter's [min..max] range toward the best values (coordinate descent +
+## range narrowing). Results are written as plain text under res://tuning/.
+##
+## Base maps (GPU pipeline) are generated on the MAIN thread and cached; the V
+## graph variants for a graph-scope param are then built+scored across
+## WorkerThreadPool worker threads (GraphBuilder.build(..., write_to_gen=false)
+## is side-effect-free, so this is safe). Base-scope params regenerate the base
+## and are swept serially.
+##
+## Debug-friendly: every knob below is a scene export, so a bring-up run can be
+## tiny (tiers_to_run=["medium"], V=2, S=1, max_rounds=1).
+
+# --- Scene exports (debug knobs) -------------------------------------------
+@export var tiers_to_run: Array[String] = []   # empty = all tiers
+@export var V: int = 20                         # values sampled per param per round
+@export var S: int = 20                         # seeds each value is scored over
+@export var max_rounds: int = 6
+@export var enable_phase_b: bool = true
+@export var phase_b_configs: int = 40
+@export var rng_seed: int = 1
+# Reward weights (mirror GraphMetrics.RewardConfig)
+@export var w_coverage: float = 1.0
+@export var w_hollow: float = 1.0
+@export_enum("uniform", "target") var hollow_mode: String = "uniform"
+@export var ref_cells_per_hollow: float = 40.0  # uniform-mode scale factor (not a size target)
+@export var hollow_target_cells: float = 40.0   # target-mode only
+@export var hollow_spread: float = 30.0          # target-mode only
+@export var w_biome: float = 0.0  # disabled until biome node-selection is a tunable lever
+@export var w_violation: float = 0.05
+@export var w_spread: float = 0.25
+@export var grid_px: float = 8.0
+
+const OUT_DIR := "res://tuning"
+
+# --- Tiers ------------------------------------------------------------------
+# Each tier sets base map size + node population + layer/cities windows.
+const TIERS := {
+	"mini":    {"px": 256,  "target_cities": 5,  "layer_count": 8,  "max_travel_count": 200},
+	"small":   {"px": 384,  "target_cities": 12, "layer_count": 12, "max_travel_count": 400},
+	"medium":  {"px": 512,  "target_cities": 20, "layer_count": 18, "max_travel_count": 700},
+	"large":   {"px": 768,  "target_cities": 35, "layer_count": 28, "max_travel_count": 1400},
+	"massive": {"px": 1024, "target_cities": 50, "layer_count": 40, "max_travel_count": 2400},
+}
+const TIER_ORDER := ["mini", "small", "medium", "large", "massive"]
+
+# --- Parameter registry -----------------------------------------------------
+# One row per tunable. scope "graph" = threaded (reuses cached base); "base" =
+# serial (regenerates the GPU base). Add/remove a tunable by editing this array.
+# type: "i" int, "f" float.
+const PARAMS := [
+	{"name": "layer_count", "type": "i", "min": 4, "max": 40, "step": 2, "scope": "graph"},
+	{"name": "min_path_dist", "type": "f", "min": 5, "max": 60, "step": 5, "scope": "graph"},
+	{"name": "max_path_search_dist", "type": "f", "min": 30, "max": 220, "step": 10, "scope": "graph"},
+	{"name": "min_outgoing", "type": "i", "min": 1, "max": 4, "step": 1, "scope": "graph"},
+	{"name": "max_outgoing", "type": "i", "min": 2, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "min_outgoing_after_trim", "type": "i", "min": 1, "max": 3, "step": 1, "scope": "graph"},
+	{"name": "edge_trim_chance", "type": "f", "min": 0.0, "max": 0.9, "step": 0.1, "scope": "graph"},
+	{"name": "min_nodes_between_cities", "type": "i", "min": 0, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "max_nodes_between_cities", "type": "i", "min": 1, "max": 10, "step": 1, "scope": "graph"},
+	{"name": "min_cities_visited", "type": "i", "min": 2, "max": 50, "step": 1, "scope": "graph"},
+	{"name": "max_cities_visited", "type": "i", "min": 3, "max": 60, "step": 1, "scope": "graph"},
+	{"name": "city_bottleneck_strength", "type": "f", "min": 0.0, "max": 1.0, "step": 0.1, "scope": "graph"},
+	{"name": "min_graph_width", "type": "i", "min": 1, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "max_landmasses", "type": "i", "min": 1, "max": 8, "step": 1, "scope": "base"},
+	{"name": "max_cross_ocean_per_band", "type": "i", "min": 0, "max": 4, "step": 1, "scope": "graph"},
+	{"name": "max_water_crossing_dist", "type": "f", "min": 40, "max": 300, "step": 20, "scope": "graph"},
+	{"name": "start_end_island_penalty", "type": "f", "min": 0, "max": 10000, "step": 1000, "scope": "graph"},
+	{"name": "start_end_min_connections", "type": "i", "min": 0, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "mountain_pass_bias", "type": "f", "min": 0.0, "max": 5.0, "step": 0.5, "scope": "graph"},
+	{"name": "graph_anti_straight", "type": "f", "min": 0.0, "max": 3.0, "step": 0.25, "scope": "graph"},
+	{"name": "path_ortho_length_bonus", "type": "f", "min": 0.0, "max": 4.0, "step": 0.5, "scope": "graph"},
+	{"name": "graph_zigzag_penalty", "type": "f", "min": 0, "max": 200, "step": 20, "scope": "graph"},
+	{"name": "failsafe_max_injected_nodes", "type": "i", "min": 0, "max": 80, "step": 10, "scope": "graph"},
+	{"name": "graph_build_passes", "type": "i", "min": 1, "max": 4, "step": 1, "scope": "graph"},
+	{"name": "min_city_dist", "type": "f", "min": 8, "max": 60, "step": 4, "scope": "base"},
+	{"name": "max_city_count", "type": "i", "min": 10, "max": 400, "step": 10, "scope": "base"},
+	{"name": "min_travel_dist", "type": "f", "min": 4, "max": 30, "step": 2, "scope": "base"},
+	{"name": "max_travel_count", "type": "i", "min": 50, "max": 2400, "step": 50, "scope": "base"},
+	{"name": "city_coast_radius", "type": "f", "min": 0, "max": 40, "step": 5, "scope": "base"},
+]
+
+# Pairs (lower, upper): when sampling we keep upper >= lower (sampled as a delta).
+const ORDER_PAIRS := [
+	["min_outgoing", "max_outgoing"],
+	["min_outgoing_after_trim", "min_outgoing"],
+	["min_nodes_between_cities", "max_nodes_between_cities"],
+	["min_cities_visited", "max_cities_visited"],
+	["min_path_dist", "max_path_search_dist"],
+]
+
+var _gen: WorldGenerator
+var _rng := RandomNumberGenerator.new()
+# Threaded-eval scratch (set on main thread before fanning out, read by workers):
+var _task_settings: Array = []
+var _task_out: Array = []
+var _task_base: Dictionary = {}
+var _cfg: GraphMetrics.RewardConfig
+
+# ---------------------------------------------------------------------------
+func _ready() -> void:
+	_rng.seed = rng_seed
+	_cfg = _make_cfg()
+	_gen = WorldGenerator.new()
+	add_child(_gen)
+	await get_tree().process_frame
+
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
+	# .gdignore stops the editor importing our plain-text CSVs as resources
+	# (otherwise it spams .import/.translation sidecars next to them).
+	if not FileAccess.file_exists("%s/.gdignore" % OUT_DIR):
+		FileAccess.open("%s/.gdignore" % OUT_DIR, FileAccess.WRITE).close()
+	# Fresh best_ranges.txt per run (tiers append into it during this run).
+	FileAccess.open("%s/best_ranges.txt" % OUT_DIR, FileAccess.WRITE).close()
+	_write_how_to_read()
+
+	var tiers := tiers_to_run if not tiers_to_run.is_empty() else TIER_ORDER
+	for t in tiers:
+		if not TIERS.has(t):
+			push_warning("Unknown tier '%s' -- skipping" % t)
+			continue
+		print("\n========== TIER: %s ==========" % t)
+		await _run_tier(t)
+	print("\n=== Param search complete ===")
+	get_tree().quit()
+
+func _make_cfg() -> GraphMetrics.RewardConfig:
+	var c := GraphMetrics.RewardConfig.new()
+	c.w_coverage = w_coverage
+	c.w_hollow = w_hollow
+	c.hollow_mode = hollow_mode
+	c.ref_cells_per_hollow = ref_cells_per_hollow
+	c.hollow_target_cells = hollow_target_cells
+	c.hollow_spread = hollow_spread
+	c.w_biome = w_biome
+	c.w_violation = w_violation
+	c.w_spread = w_spread
+	c.grid_px = grid_px
+	return c
+
+# ---------------------------------------------------------------------------
+# Per-tier coordinate-descent search.
+# ---------------------------------------------------------------------------
+func _run_tier(tier: String) -> void:
+	var td: Dictionary = TIERS[tier]
+	var baseline := _tier_baseline(td)
+	# Mutable working ranges, seeded from the registry hard bounds.
+	var ranges := {}
+	for p in PARAMS:
+		ranges[p["name"]] = [float(p["min"]), float(p["max"])]
+
+	var csv_path := "%s/%s_samples.csv" % [OUT_DIR, tier]
+	_csv_header(csv_path)
+
+	for round_i in range(max_rounds):
+		print("-- round %d/%d --" % [round_i + 1, max_rounds])
+		# Cache S bases once per round using the current baseline (graph-scope
+		# sweeps reuse these; base-scope sweeps regenerate themselves).
+		var bases := await _cache_seed_bases(baseline)
+		var any_moved := false
+
+		for p in PARAMS:
+			if not p.get("enabled", true):
+				continue
+			var moved := await _sweep_param(p, baseline, ranges, bases, round_i, csv_path)
+			any_moved = any_moved or moved
+
+		if not any_moved:
+			print("   converged (no range moved > 5%%) after round %d" % (round_i + 1))
+			break
+
+	if enable_phase_b:
+		await _phase_b(baseline, ranges, csv_path)
+
+	_write_best(tier, baseline, ranges)
+
+# Worker-thread atom: build+score _task_settings[i] against the shared restored
+# base (_task_base). Reads only; build is side-effect-free (write_to_gen=false).
+func _eval_task(i: int) -> void:
+	var ps: WorldSettings = _task_settings[i]
+	var res := GraphBuilder.new().build(_gen, ps, false)
+	var vio := GraphRules.validate(_gen, res["graph"], res["start"], res["end"], ps, res["meta"])
+	_task_out[i] = GraphMetrics.evaluate(res, _task_base["height"], _task_base["biome"],
+		ps.map_width, ps.map_height, ps.ocean_threshold, _cfg, _distinct_violations(vio))
+
+func _collect(sum_r: Array, min_r: Array, cov: Array, hol: Array, keff: Array, bio: Array, spr: Array, vio: Array) -> void:
+	for i in range(_task_out.size()):
+		var r: Dictionary = _task_out[i]
+		sum_r[i] += r["reward"]; min_r[i] = minf(min_r[i], r["reward"])
+		cov[i] += r["coverage"]; hol[i] += r["hollow"]; keff[i] += r["keff"]
+		bio[i] += r["biome"]; spr[i] += r["spread"]; vio[i] += float(r["violations"])
+
+# ---------------------------------------------------------------------------
+func _tier_baseline(td: Dictionary) -> WorldSettings:
+	var s := WorldSettings.new()
+	s.map_width = td["px"]
+	s.map_height = td["px"]
+	s.layer_count = td["layer_count"]
+	s.max_travel_count = td["max_travel_count"]
+	# Aim cities window at the tier target.
+	s.max_cities_visited = maxi(s.min_cities_visited + 1, int(td["target_cities"]))
+	s.max_city_count = maxi(s.max_city_count, int(td["target_cities"]) * 3)
+	# Scale hollow target with map area (cells), keeping the configured value as a
+	# medium-tier reference (medium = 512px).
+	return s
+
+# Generate + cache S base maps for the seeds 1..S using `baseline` base params.
+func _cache_seed_bases(baseline: WorldSettings) -> Array:
+	var bases: Array = []
+	for s in range(1, S + 1):
+		var bs := baseline.duplicate(true) as WorldSettings
+		bs.main_seed = s
+		_gen.settings = bs
+		await _gen.generate_base_through_civilizations()
+		bases.append(_gen.cache_base_state())
+	return bases
+
+# ---------------------------------------------------------------------------
+# Sweep one parameter: sample V values, score each over S seeds, narrow range,
+# update baseline best. Returns true if the range moved meaningfully.
+# ---------------------------------------------------------------------------
+func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
+		bases: Array, round_i: int, csv_path: String) -> bool:
+	var pname: String = p["name"]
+	var lo: float = ranges[pname][0]
+	var hi: float = ranges[pname][1]
+	var values := _sample_values(lo, hi, p)
+	var nv := values.size()
+	var is_graph :bool= p["scope"] == "graph"
+
+	# Per-value reward accumulators across seeds.
+	var sum_r := []; sum_r.resize(nv); sum_r.fill(0.0)
+	var min_r := []; min_r.resize(nv); min_r.fill(INF)
+	var agg_cov := []; agg_cov.resize(nv); agg_cov.fill(0.0)
+	var agg_hol := []; agg_hol.resize(nv); agg_hol.fill(0.0)
+	var agg_keff := []; agg_keff.resize(nv); agg_keff.fill(0.0)
+	var agg_bio := []; agg_bio.resize(nv); agg_bio.fill(0.0)
+	var agg_spr := []; agg_spr.resize(nv); agg_spr.fill(0.0)
+	var agg_vio := []; agg_vio.resize(nv); agg_vio.fill(0.0)
+	var seed_count := 0
+
+	if is_graph:
+		# THREADED: for each cached base (seed), build+score all V values in
+		# parallel. Every task reads the same restored base buffers (build with
+		# write_to_gen=false is side-effect-free) so concurrent reads are safe.
+		_task_settings.clear()
+		for v in values:
+			var ps := baseline.duplicate(true) as WorldSettings
+			ps.set(pname, _typed(v, p))
+			_enforce_order(ps)
+			_task_settings.append(ps)
+		for base in bases:
+			_gen.restore_base_state(base)          # main thread, once per seed
+			_task_base = base
+			_task_out = []; _task_out.resize(nv)
+			var gid := WorkerThreadPool.add_group_task(_eval_task, nv, -1, false, pname)
+			WorkerThreadPool.wait_for_group_task_completion(gid)
+			_collect(sum_r, min_r, agg_cov, agg_hol, agg_keff, agg_bio, agg_spr, agg_vio)
+			seed_count += 1
+	else:
+		# Base-scope: regenerate the base per (value, seed); serial (GPU). Each
+		# value reuses the same V settings list shape but with the swept value.
+		for vi in range(nv):
+			var ps := baseline.duplicate(true) as WorldSettings
+			ps.set(pname, _typed(values[vi], p))
+			_enforce_order(ps)
+			for si in range(S):
+				ps.main_seed = si + 1
+				_gen.settings = ps
+				await _gen.generate_base_through_civilizations()
+				var base := _gen.cache_base_state()
+				var r := _eval_on_base(ps, base)
+				sum_r[vi] += r["reward"]; min_r[vi] = minf(min_r[vi], r["reward"])
+				agg_cov[vi] += r["coverage"]; agg_hol[vi] += r["hollow"]; agg_keff[vi] += r["keff"]
+				agg_bio[vi] += r["biome"]; agg_spr[vi] += r["spread"]; agg_vio[vi] += float(r["violations"])
+		seed_count = S
+
+	var ns := float(maxi(1, seed_count))
+	var means: Array = []
+	var rows: Array = []
+	for vi in range(nv):
+		var mean :float= sum_r[vi] / ns
+		means.append(mean)
+		rows.append("%d,%s,%s,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % [
+			round_i + 1, pname, str(_typed(values[vi], p)), mean, min_r[vi],
+			agg_cov[vi] / ns, agg_hol[vi] / ns, agg_keff[vi] / ns,
+			agg_bio[vi] / ns, agg_spr[vi] / ns, agg_vio[vi] / ns])
+
+	_csv_append(csv_path, rows)
+
+	# Rank by mean, keep top ~30% span (>=2 values), pad 10%, set baseline best.
+	var order := range(values.size())
+	order.sort_custom(func(a, b): return means[a] > means[b])
+	var keep := maxi(2, int(ceil(0.3 * values.size())))
+	var top := order.slice(0, keep)
+	var new_lo := INF
+	var new_hi := -INF
+	for idx in top:
+		new_lo = minf(new_lo, float(values[idx]))
+		new_hi = maxf(new_hi, float(values[idx]))
+	var pad := (new_hi - new_lo) * 0.1
+	new_lo = clampf(new_lo - pad, float(p["min"]), float(p["max"]))
+	new_hi = clampf(new_hi + pad, float(p["min"]), float(p["max"]))
+	if new_hi <= new_lo:
+		new_hi = minf(float(p["max"]), new_lo + float(p["step"]))
+
+	baseline.set(pname, _typed(values[order[0]], p))
+	var old_w := hi - lo
+	var new_w := new_hi - new_lo
+	var moved := old_w <= 0.0 or absf(new_w - old_w) / maxf(old_w, 1e-6) > 0.05
+	ranges[pname] = [new_lo, new_hi]
+	print("   %-26s best=%s mean=%.3f range=[%.3f..%.3f]" % [pname, str(_typed(values[order[0]], p)), means[order[0]], new_lo, new_hi])
+	return moved
+
+# ---------------------------------------------------------------------------
+# Optional Phase B: joint random search within the narrowed ranges.
+# ---------------------------------------------------------------------------
+func _phase_b(baseline: WorldSettings, ranges: Dictionary, csv_path: String) -> void:
+	print("-- phase B: %d joint random configs --" % phase_b_configs)
+	var bases := await _cache_seed_bases(baseline)
+	var best_reward := -INF
+	var best_cfg: WorldSettings = null
+	var rows: Array = []
+	for n in range(phase_b_configs):
+		var ps := baseline.duplicate(true) as WorldSettings
+		for p in PARAMS:
+			if p["scope"] != "graph":
+				continue  # base-scope held at baseline (regen too costly per config)
+			var r: Array = ranges[p["name"]]
+			ps.set(p["name"], _typed(_rng.randf_range(r[0], r[1]), p))
+		_enforce_order(ps)
+		var rewards: Array = []
+		for b in bases:
+			rewards.append(_eval_on_base(ps, b)["reward"])
+		var mean := _mean(rewards)
+		rows.append("phaseB,joint_%d,-,%.4f,%.4f,-,-,-,-,-,-" % [n, mean, _min(rewards)])
+		if mean > best_reward:
+			best_reward = mean
+			best_cfg = ps
+	_csv_append(csv_path, rows)
+	if best_cfg != null:
+		print("   phase B best mean reward=%.3f" % best_reward)
+		for p in PARAMS:
+			if p["scope"] == "graph":
+				baseline.set(p["name"], best_cfg.get(p["name"]))
+
+# ---------------------------------------------------------------------------
+# Build + score one settings config on one cached base. Pure (write_to_gen=false).
+# ---------------------------------------------------------------------------
+func _eval_on_base(ps: WorldSettings, base: Dictionary) -> Dictionary:
+	_gen.restore_base_state(base)
+	_gen.settings = ps
+	var res := GraphBuilder.new().build(_gen, ps, false)
+	var vio := GraphRules.validate(_gen, res["graph"], res["start"], res["end"], ps, res["meta"])
+	return GraphMetrics.evaluate(res, base["height"], base["biome"],
+		ps.map_width, ps.map_height, ps.ocean_threshold, _cfg, _distinct_violations(vio))
+
+## Count DISTINCT violated rule types, not raw instances. Per-path rules in
+## GraphRules.validate fire once per enumerated path (up to thousands), which would
+## otherwise let a single window mismatch dwarf every other reward term and floor
+## the reward to 0. Distinct-type count is bounded (~0..16) and comparable.
+func _distinct_violations(vio: Array) -> int:
+	var seen := {}
+	for x in vio:
+		seen[x["rule"]] = true
+	return seen.size()
+
+# ---------------------------------------------------------------------------
+# Sampling + typing helpers.
+# ---------------------------------------------------------------------------
+func _sample_values(lo: float, hi: float, p: Dictionary) -> Array:
+	var step := float(p["step"])
+	var vals := {}
+	# Always include the endpoints for coverage of the range extremes.
+	vals[_snap(lo, lo, hi, step)] = true
+	vals[_snap(hi, lo, hi, step)] = true
+	var tries := 0
+	while vals.size() < V and tries < V * 8:
+		tries += 1
+		vals[_snap(_rng.randf_range(lo, hi), lo, hi, step)] = true
+	var out: Array = vals.keys()
+	out.sort()
+	return out
+
+func _snap(v: float, lo: float, hi: float, step: float) -> float:
+	if step <= 0.0:
+		return clampf(v, lo, hi)
+	return clampf(round(v / step) * step, lo, hi)
+
+func _typed(v, p: Dictionary):
+	return int(round(v)) if p["type"] == "i" else float(v)
+
+func _enforce_order(s: WorldSettings) -> void:
+	for pair in ORDER_PAIRS:
+		var lower = s.get(pair[0])
+		var upper = s.get(pair[1])
+		if upper < lower:
+			s.set(pair[1], lower)
+
+func _mean(a: Array) -> float:
+	if a.is_empty():
+		return 0.0
+	var t := 0.0
+	for v in a:
+		t += float(v)
+	return t / float(a.size())
+
+func _min(a: Array) -> float:
+	if a.is_empty():
+		return 0.0
+	var m := INF
+	for v in a:
+		m = minf(m, float(v))
+	return m
+
+# ---------------------------------------------------------------------------
+# Output files.
+# ---------------------------------------------------------------------------
+func _csv_header(path: String) -> void:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_line("round,param,value,seed_mean,seed_min,coverage,hollow,keff,biome,spread,violations")
+	f.close()
+
+func _csv_append(path: String, rows: Array) -> void:
+	var f := FileAccess.open(path, FileAccess.READ_WRITE)
+	f.seek_end()
+	for r in rows:
+		f.store_line(r)
+	f.close()
+
+func _write_best(tier: String, baseline: WorldSettings, ranges: Dictionary) -> void:
+	var txt := FileAccess.open("%s/best_ranges.txt" % OUT_DIR, FileAccess.READ_WRITE if FileAccess.file_exists("%s/best_ranges.txt" % OUT_DIR) else FileAccess.WRITE)
+	txt.seek_end()
+	txt.store_line("\n[tier: %s]" % tier)
+	var jdict := {}
+	for p in PARAMS:
+		var nm: String = p["name"]
+		var r: Array = ranges[nm]
+		var best = baseline.get(nm)
+		txt.store_line("  %-26s [%.4f .. %.4f]  best=%s" % [nm, r[0], r[1], str(best)])
+		jdict[nm] = best
+	txt.close()
+
+	# best_ranges.json: merge per-tier best values keyed by tier.
+	var jpath := "%s/best_ranges.json" % OUT_DIR
+	var root := {}
+	if FileAccess.file_exists(jpath):
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(jpath))
+		if typeof(parsed) == TYPE_DICTIONARY:
+			root = parsed
+	root[tier] = jdict
+	var jf := FileAccess.open(jpath, FileAccess.WRITE)
+	jf.store_string(JSON.stringify(root, "  "))
+	jf.close()
+	print("   wrote best_ranges.txt/.json + %s_samples.csv" % tier)
+
+func _write_how_to_read() -> void:
+	var f := FileAccess.open("%s/HOW_TO_READ.txt" % OUT_DIR, FileAccess.WRITE)
+	f.store_string("""HOW TO READ THE GRAPH PARAMETER SEARCH OUTPUT
+=============================================
+
+Files in this folder (res://tuning/):
+
+  <tier>_samples.csv   one row per (round, parameter value) sampled. The reward
+                       is broken into its component terms so you can see WHY a
+                       value scored well, not just that it did.
+  best_ranges.txt      human-readable summary: per tier, per parameter, the
+                       narrowed [min..max] range and the single best value found.
+                       THIS is the easy-to-find artifact -- start here.
+  best_ranges.json     same best values, machine-readable, keyed by tier; load
+                       these into a WorldSettings to reproduce the best config.
+  HOW_TO_READ.txt      this file.
+
+CSV columns
+-----------
+  round       search round number (1..max_rounds), or "phaseB" for joint search.
+  param       the parameter being swept that row (or "joint_N" in phase B).
+  value       the sampled value applied to that parameter.
+  seed_mean   mean reward across the S seeds (the ranking signal).
+  seed_min    worst-case reward across seeds (low = fragile on some maps).
+  coverage    fraction of LAND cells the graph footprint touches (0..1).
+  hollow      hollow-subdivision score (0..1), depends on hollow_mode (below).
+  keff        raw "effective number of equal-sized hollows" (inverse-Simpson).
+              Many equal hollows -> high; one huge hollow -> ~1; few big + many
+              tiny slivers -> ~1. This is the unnormalized signal behind the
+              uniform-mode hollow score.
+  biome       distinct biomes among graph nodes / distinct biomes on the map.
+  spread      node bounding-box area / land bounding-box area (0..1); low when the
+              graph clusters in one corner, high when it spans the landmass.
+  violations  mean count of GraphRules violations (penalized in the reward).
+
+How reward is composed
+----------------------
+  reward = max(0,  w_coverage*coverage + w_hollow*hollow + w_biome*biome
+                 + w_spread*spread - w_violation*violations)
+  reward = 0 if the graph has no start->end path.
+
+  Weights used for THIS run (scene exports):
+    w_coverage=%s  w_hollow=%s  w_biome=%s  w_spread=%s  w_violation=%s
+    hollow_mode=%s  ref_cells_per_hollow=%s
+    hollow_target_cells=%s  hollow_spread=%s  grid_px=%s
+
+The hollow lever (two modes)
+----------------------------
+  hollow_mode="uniform" (default, honeycomb): rewards MANY EQUAL-sized hollows
+    via keff (the inverse-Simpson effective count), with NO size target. A graph
+    that tiles the land into equal medium/small faces (a web) wins; one big empty
+    or parallel-close slivers lose. keff is normalized by total_land /
+    ref_cells_per_hollow so the score sits ~0..1 and w_hollow is comparable across
+    tiers -- ref_cells_per_hollow is only a scale factor, NOT a per-hollow size
+    target. Subdivision does not run away: more hollows need more edges, which
+    raises coverage, which is capped by the node budget.
+  hollow_mode="target" (legacy): each hollow weighted by a gaussian bump peaking
+    at hollow_target_cells (cells), area-weighted. Raise hollow_target_cells for
+    larger enclosed spaces; lower for finer subdivision.
+
+Range narrowing
+---------------
+  Each round samples V values per parameter across its current range, scores each
+  over S seeds, then resets the range to the span of the top ~30%% of values (plus
+  a 10%% pad) and sets the running baseline to the single best value. Rounds stop
+  early once no range moves more than 5%%. Coordinate descent holds other params
+  at the running baseline; Phase B (if enabled) does a joint random search within
+  the narrowed graph-scope ranges to catch interactions.
+""" % [str(w_coverage), str(w_hollow), str(w_biome), str(w_spread), str(w_violation),
+		str(hollow_mode), str(ref_cells_per_hollow),
+		str(hollow_target_cells), str(hollow_spread), str(grid_px)])
+	f.close()

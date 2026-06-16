@@ -1,0 +1,33 @@
+{
+  "medium": {
+    "city_bottleneck_strength": 0.0,
+    "city_coast_radius": 0.0,
+    "edge_trim_chance": 0.0,
+    "failsafe_max_injected_nodes": 0,
+    "graph_anti_straight": 3.0,
+    "graph_build_passes": 1,
+    "graph_zigzag_penalty": 160.0,
+    "layer_count": 16,
+    "max_cities_visited": 44,
+    "max_city_count": 10,
+    "max_cross_ocean_per_band": 0,
+    "max_landmasses": 1,
+    "max_nodes_between_cities": 1,
+    "max_outgoing": 6,
+    "max_path_search_dist": 30.0,
+    "max_travel_count": 1650,
+    "max_water_crossing_dist": 40.0,
+    "min_cities_visited": 2,
+    "min_city_dist": 8.0,
+    "min_graph_width": 1,
+    "min_nodes_between_cities": 0,
+    "min_outgoing": 4,
+    "min_outgoing_after_trim": 1,
+    "min_path_dist": 60.0,
+    "min_travel_dist": 4.0,
+    "mountain_pass_bias": 0.0,
+    "path_ortho_length_bonus": 1.0,
+    "start_end_island_penalty": 6000.0,
+    "start_end_min_connections": 0
+  }
+}

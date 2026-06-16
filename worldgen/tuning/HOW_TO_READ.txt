@@ -1,0 +1,66 @@
+HOW TO READ THE GRAPH PARAMETER SEARCH OUTPUT
+=============================================
+
+Files in this folder (res://tuning/):
+
+  <tier>_samples.csv   one row per (round, parameter value) sampled. The reward
+                       is broken into its component terms so you can see WHY a
+                       value scored well, not just that it did.
+  best_ranges.txt      human-readable summary: per tier, per parameter, the
+                       narrowed [min..max] range and the single best value found.
+                       THIS is the easy-to-find artifact -- start here.
+  best_ranges.json     same best values, machine-readable, keyed by tier; load
+                       these into a WorldSettings to reproduce the best config.
+  HOW_TO_READ.txt      this file.
+
+CSV columns
+-----------
+  round       search round number (1..max_rounds), or "phaseB" for joint search.
+  param       the parameter being swept that row (or "joint_N" in phase B).
+  value       the sampled value applied to that parameter.
+  seed_mean   mean reward across the S seeds (the ranking signal).
+  seed_min    worst-case reward across seeds (low = fragile on some maps).
+  coverage    fraction of LAND cells the graph footprint touches (0..1).
+  hollow      hollow-subdivision score (0..1), depends on hollow_mode (below).
+  keff        raw "effective number of equal-sized hollows" (inverse-Simpson).
+              Many equal hollows -> high; one huge hollow -> ~1; few big + many
+              tiny slivers -> ~1. This is the unnormalized signal behind the
+              uniform-mode hollow score.
+  biome       distinct biomes among graph nodes / distinct biomes on the map.
+  spread      node bounding-box area / land bounding-box area (0..1); low when the
+              graph clusters in one corner, high when it spans the landmass.
+  violations  mean count of GraphRules violations (penalized in the reward).
+
+How reward is composed
+----------------------
+  reward = max(0,  w_coverage*coverage + w_hollow*hollow + w_biome*biome
+                 + w_spread*spread - w_violation*violations)
+  reward = 0 if the graph has no start->end path.
+
+  Weights used for THIS run (scene exports):
+    w_coverage=1.0  w_hollow=1.0  w_biome=0.0  w_spread=0.25  w_violation=0.05
+    hollow_mode=uniform  ref_cells_per_hollow=40.0
+    hollow_target_cells=40.0  hollow_spread=30.0  grid_px=8.0
+
+The hollow lever (two modes)
+----------------------------
+  hollow_mode="uniform" (default, honeycomb): rewards MANY EQUAL-sized hollows
+    via keff (the inverse-Simpson effective count), with NO size target. A graph
+    that tiles the land into equal medium/small faces (a web) wins; one big empty
+    or parallel-close slivers lose. keff is normalized by total_land /
+    ref_cells_per_hollow so the score sits ~0..1 and w_hollow is comparable across
+    tiers -- ref_cells_per_hollow is only a scale factor, NOT a per-hollow size
+    target. Subdivision does not run away: more hollows need more edges, which
+    raises coverage, which is capped by the node budget.
+  hollow_mode="target" (legacy): each hollow weighted by a gaussian bump peaking
+    at hollow_target_cells (cells), area-weighted. Raise hollow_target_cells for
+    larger enclosed spaces; lower for finer subdivision.
+
+Range narrowing
+---------------
+  Each round samples V values per parameter across its current range, scores each
+  over S seeds, then resets the range to the span of the top ~30% of values (plus
+  a 10% pad) and sets the running baseline to the single best value. Rounds stop
+  early once no range moves more than 5%. Coordinate descent holds other params
+  at the running baseline; Phase B (if enabled) does a joint random search within
+  the narrowed graph-scope ranges to catch interactions.

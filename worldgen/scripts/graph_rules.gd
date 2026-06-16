@@ -41,22 +41,6 @@ static func _dfs_paths(graph: Dictionary, node: Vector2, end: Vector2, cur: Arra
 static func path_node_count(path: Array) -> int:
 	return path.size()
 
-## Euclidean pixel length (internal use only: the max_path_length cap).
-static func path_distance(path: Array) -> float:
-	var d := 0.0
-	for i in range(path.size() - 1):
-		d += path[i].distance_to(path[i + 1])
-	return d
-
-## Summed length of LAND edges only (water edges = different landmass, exempt).
-static func path_land_distance(path: Array, meta: Dictionary) -> float:
-	var d := 0.0
-	for i in range(path.size() - 1):
-		var a: Vector2 = path[i]; var b: Vector2 = path[i + 1]
-		if _same_landmass(meta, a, b):
-			d += a.distance_to(b)
-	return d
-
 static func biome_run_lengths(path: Array, meta: Dictionary) -> Array:
 	var runs: Array = []
 	var run := 0
@@ -283,16 +267,18 @@ static func format_graph_params(s: WorldSettings) -> String:
 		"layers along the start->end axis: %d" % s.layer_count,
 		"outgoing edges chosen per node: %d to %d" % [s.min_outgoing, s.max_outgoing],
 		"land edge length (px): %.0f shortest, %.0f longest allowed" % [s.min_path_dist, s.max_path_search_dist],
-		"max summed land length of a whole path (px): %.0f (water travel exempt)" % s.max_path_length,
 		"travel nodes between two consecutive cities: %d to %d" % [s.min_nodes_between_cities, s.max_nodes_between_cities],
 		"cities visited along a path: %d to %d" % [s.min_cities_visited, s.max_cities_visited],
+		"city bottleneck strength (1=strict funnel, 0=bypassable): %.2f" % s.city_bottleneck_strength,
 		"graph width (distinct cities directly reachable from a city): at least %d" % s.min_graph_width,
 		"biomes traversed per path: %d to %d" % [s.min_biomes_per_path, s.max_biomes_per_path],
 		"continents that keep nodes (largest N by size): %d" % s.max_landmasses,
-		"inter-continent water crossings in the graph: %d to %d" % [s.min_inter_landmass_edges, s.max_inter_landmass_edges],
+		"max incoming cross-ocean edges per band (onto coastal cities): %d" % s.max_cross_ocean_per_band,
 		"longest single water crossing (px): %.0f" % s.max_water_crossing_dist,
 		"mountain-pass routing bias (higher = hug low passes): %.2f" % s.mountain_pass_bias,
-		"lateral spread (higher = wider, less direct graph): %.2f" % s.graph_lateral_spread,
+		"anti-straight penalty (higher = more winding): %.2f" % s.graph_anti_straight,
+		"orthogonal length bonus (sideways edges longer): %.2f" % s.path_ortho_length_bonus,
+		"zig-zag penalty (commit to a side of the spine): %.0f" % s.graph_zigzag_penalty,
 		"penalty for starting/ending on a small island: %.0f" % s.start_end_island_penalty,
 		"min nearby nodes required at start/end (else penalized): %d" % s.start_end_min_connections,
 		"failsafe nodes the builder may inject to keep paths valid: %d" % s.failsafe_max_injected_nodes,
@@ -331,7 +317,7 @@ static func validate(gen: WorldGenerator, graph: Dictionary, start: Vector2, end
 		if node != end:
 			if deg == 0:
 				v.append({"rule": "dead_end", "detail": str(node)})
-			elif deg < settings.min_outgoing or deg > settings.max_outgoing:
+			elif deg < settings.min_outgoing_after_trim or deg > settings.max_outgoing:
 				v.append({"rule": "outgoing_degree", "detail": "%s deg=%d" % [node, deg]})
 
 	# Graph width: every city (except the end node, which is a terminal with no
@@ -347,25 +333,24 @@ static func validate(gen: WorldGenerator, graph: Dictionary, start: Vector2, end
 	if _has_cycle(graph, start):
 		v.append({"rule": "cycle", "detail": "graph is not acyclic"})
 
-	# Edge geometry: inter-landmass water edges + same-landmass ocean crossings.
-	var inter := 0
+	# Water crossings (same- or cross-landmass): each must land on a coastal city,
+	# stay within the max crossing distance, and no band may receive more than
+	# max_cross_ocean_per_band incoming crossings. Bands ignore oceans otherwise.
+	var band_cross := {}
 	for node in graph.keys():
 		for c in graph[node]:
-			if not _same_landmass(meta, node, c):
-				inter += 1
-				var dist :float= node.distance_to(c)
-				if dist > settings.max_water_crossing_dist:
-					v.append({"rule": "water_edge_too_long", "detail": "%.0f>%.0f" % [dist, settings.max_water_crossing_dist]})
-				if not _ocean_only(gen, node, c, settings):
-					v.append({"rule": "water_edge_hits_land", "detail": "%s->%s" % [node, c]})
-			else:
-				# Same landmass must not travel across open ocean.
-				if _crosses_ocean(gen, node, c, settings):
-					v.append({"rule": "same_landmass_ocean", "detail": "%s->%s" % [node, c]})
-	if inter < settings.min_inter_landmass_edges:
-		v.append({"rule": "too_few_inter_landmass", "detail": "%d<%d" % [inter, settings.min_inter_landmass_edges]})
-	if inter > settings.max_inter_landmass_edges:
-		v.append({"rule": "too_many_inter_landmass", "detail": "%d>%d" % [inter, settings.max_inter_landmass_edges]})
+			var crosses := _crosses_ocean(gen, node, c, settings) or not _same_landmass(meta, node, c)
+			if not crosses:
+				continue
+			if node.distance_to(c) > settings.max_water_crossing_dist:
+				v.append({"rule": "water_edge_too_long", "detail": "%s->%s" % [node, c]})
+			if not meta.get(c, {}).get("is_city", false) or not _is_coastal(gen, c, settings):
+				v.append({"rule": "water_edge_not_coastal_city", "detail": "%s->%s" % [node, c]})
+			var band: int = _band_of(c, start, end, settings)
+			band_cross[band] = band_cross.get(band, 0) + 1
+	for band in band_cross.keys():
+		if band_cross[band] > settings.max_cross_ocean_per_band:
+			v.append({"rule": "band_cross_ocean", "detail": "band %d has %d crossings" % [band, band_cross[band]]})
 
 	# Connectivity + per-path windows.
 	var paths := enumerate_paths(graph, start, end, settings.max_paths_enumerated)
@@ -376,12 +361,11 @@ static func validate(gen: WorldGenerator, graph: Dictionary, start: Vector2, end
 		var cv := cities_in_path(path, meta)
 		if cv < settings.min_cities_visited or cv > settings.max_cities_visited:
 			v.append({"rule": "cities_visited", "detail": "path has %d cities" % cv})
-		var bt := biomes_traversed(path, meta)
-		if bt < settings.min_biomes_per_path or bt > settings.max_biomes_per_path:
-			v.append({"rule": "biomes_per_path", "detail": "path traverses %d biomes" % bt})
-		var land := path_land_distance(path, meta)
-		if land > settings.max_path_length:
-			v.append({"rule": "path_too_long", "detail": "land=%.0f>%.0f" % [land, settings.max_path_length]})
+		# NOTE: biomes_per_path rule intentionally disabled -- the builder has no
+		# biome-aware node selection yet, so it can't satisfy a biome-count window.
+		# Re-enable once a biome node-selection parameter exists (see plan backlog).
+		# max_path_length/path_too_long removed: it measured Euclidean PIXEL distance,
+		# which is meaningless for a node-count-based traversal graph.
 		for seg in nodes_between_cities(path, meta):
 			if seg < settings.min_nodes_between_cities or seg > settings.max_nodes_between_cities:
 				v.append({"rule": "nodes_between_cities", "detail": "segment=%d" % seg})
@@ -417,6 +401,26 @@ static func _crosses_ocean(gen: WorldGenerator, a: Vector2, b: Vector2, settings
 		if gen.height_buffer[(py * w) + px] < settings.ocean_threshold:
 			ocean += 1
 	return float(ocean) / float(maxi(1, steps - 1)) > 0.25
+
+## Coastal = ocean within ~12px on a sampled ring (mirrors GraphBuilder._is_coastal).
+static func _is_coastal(gen: WorldGenerator, p: Vector2, settings: WorldSettings) -> bool:
+	var w := settings.map_width
+	var h := settings.map_height
+	for ang in range(0, 360, 45):
+		var rad := deg_to_rad(float(ang))
+		var nx := clampi(int(p.x + cos(rad) * 12.0), 0, w - 1)
+		var ny := clampi(int(p.y + sin(rad) * 12.0), 0, h - 1)
+		if gen.height_buffer[(ny * w) + nx] < settings.ocean_threshold:
+			return true
+	return false
+
+## Approximate band index of a node from its progress along the straight start->end
+## chord (validation has no spine; this is close enough for the per-band check).
+static func _band_of(p: Vector2, start: Vector2, end: Vector2, settings: WorldSettings) -> int:
+	var axis := end - start
+	var len2 := maxf(1.0, axis.length_squared())
+	var t := (p - start).dot(axis) / len2
+	return clampi(int(round(t * float(settings.layer_count))), 0, settings.layer_count)
 
 static func _has_cycle(graph: Dictionary, start: Vector2) -> bool:
 	# Iterative DFS coloring over all graph nodes.

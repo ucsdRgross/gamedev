@@ -5,7 +5,6 @@ extends Resource
 @export_group("Map Layout")
 @export var map_width: int = 512
 @export var map_height: int = 512
-@export var path_steps: int = 15
 
 @export_group("Generation Seeds")
 ## Each noise map gets its own offset from main_seed so all are independently
@@ -82,14 +81,19 @@ extends Resource
 @export var layer_count: int = 14
 @export var min_path_dist: float = 20.0           # shortest allowed edge (px)
 @export var max_path_search_dist: float = 90.0    # candidate search radius / hard cap on land-edge length (px); keep short so paths don't span empty mountain gaps
-@export var min_outgoing: int = 2                 # min forward edges per node
+@export var min_outgoing: int = 2                 # target min forward edges per node when building
 @export var max_outgoing: int = 3                 # max forward edges per node
-@export var max_path_length: float = 1600.0       # cap on summed LAND edge length per path (water exempt)
+@export var min_outgoing_after_trim: int = 1      # variety trim may reduce a node down to this (below min_outgoing)
 ## Cities visited along a path + travel nodes between consecutive cities.
 @export var min_nodes_between_cities: int = 1
 @export var max_nodes_between_cities: int = 4
 @export var min_cities_visited: int = 3
 @export var max_cities_visited: int = 8
+## How strictly city layers act as bottlenecks. 1.0 = every path forced through a
+## city per city-layer (strict; nodes-between-cities/cities-visited hard). 0.0 =
+## cities are ordinary anchors and paths may bypass them via travel nodes (those
+## windows become soft, but routing is much freer/wider).
+@export_range(0.0, 1.0) var city_bottleneck_strength: float = 0.5
 ## "Graph width": min number of other cities a single city must directly reach
 ## (following travel nodes, stopping at the next cities). Branchiness of the
 ## city-to-city graph.
@@ -100,22 +104,20 @@ extends Resource
 ## Inter-landmass (water) travel. Treated as edges between nearest nodes on
 ## different continents; the straight line may touch land only at its endpoints.
 @export var max_landmasses: int = 4               # how many continents keep nodes (top-N by size)
-@export var min_inter_landmass_edges: int = 0
-@export var max_inter_landmass_edges: int = 3
-@export var max_water_crossing_dist: float = 220.0 # longest allowed water edge (prefer closest crossing)
+@export var max_cross_ocean_per_band: int = 1     # max INCOMING cross-ocean edges a band may receive (must land on a coastal city). Replaces the old per-landmass cap; applies to same- AND cross-landmass water crossings
+@export var max_water_crossing_dist: float = 220.0 # longest allowed cross-ocean edge (water travel reach)
 @export var start_end_island_penalty: float = 4000.0 # discourage start/end on small landmasses
 @export var start_end_min_connections: int = 2     # start/end must have >= this many nearby nodes (else heavily penalized -> avoids tiny isolated endpoints)
 @export var mountain_pass_bias: float = 1.5       # >0 routes mountain travel through lower/closer-height passes
-@export var graph_lateral_spread: float = 0.0     # EXPERIMENTAL: >0 pulls edges toward the continent's flanks. NOTE: high values funnel all nodes to the same flank and collapse branching -- leave at 0 unless experimenting
+@export var graph_anti_straight: float = 0.8      # penalty on edges that run straight at the goal (higher = more winding, less beeline)
+@export var path_ortho_length_bonus: float = 1.5  # extra edge-length allowed for sideways edges (e.g. 1.5 => perpendicular edges may be 2.5x the normal cap) -> wider travel space
+@export var graph_zigzag_penalty: float = 40.0    # penalty for crossing back over the spine centerline (commit to a side; rarely rejoin -> bulges instead of zig-zags)
+@export_range(0.0, 1.0) var edge_trim_chance: float = 0.3 # chance to drop a surplus edge (keeps min_outgoing, never orphans) so the graph isn't a perfect NxN lattice
 @export var path_curve_max_px: float = 55.0       # max sideways bow of a cosmetic curved road (limits curvature; beyond this it goes straight)
 @export var path_curve_min_px: float = 6.0        # gentle bow applied to even clear edges so every road curves slightly
 @export var failsafe_max_injected_nodes: int = 40 # nodes the failsafe may create to keep paths valid
 @export var max_paths_enumerated: int = 4000      # cap on start->end paths walked for stats/validation
 @export_range(1, 4) var graph_build_passes: int = 2 # build, diagnose+modify nodes, rebuild (1 = single pass)
-
-@export_group("Pathfinding Penalties")
-@export var mountain_penalty: float = 200.0
-@export var water_penalty: float = 9000.0 # Bumps penalty to avoid crossing water entirely
 
 @export_group("Civilization")
 @export var min_city_dist: float = 24.0

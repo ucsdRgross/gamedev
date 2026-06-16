@@ -57,31 +57,36 @@ func _curve_edge(gen: WorldGenerator, settings: WorldSettings, a: Vector2, b: Ve
 	if straight < 2.0:
 		return PackedVector2Array([a, b])
 	var target := maxf(_height_at(gen, a), _height_at(gen, b)) + 0.03
-	var max_off := minf(settings.path_curve_max_px, straight * 0.6)
-
-	var best_off := 0.0
-	var best_cost := INF
-	for k in range(-8, 9):
-		var off := (float(k) / 8.0) * max_off
-		var cost := _curve_cost(gen, settings, a, b, off, water, target) + absf(off) * 0.08
-		if cost < best_cost:
-			best_cost = cost
-			best_off = off
-
-	# Per-edge sign so adjacent parallel roads bow opposite ways (distinct).
+	# Split into 1-3 sub-segments and bow each with ALTERNATING sign, so the road
+	# reads as an S / chain (straight runs where the bow lands near zero) instead
+	# of one perfect arc. Per-edge jitter keeps parallel roads distinct.
+	var k := clampi(int(straight / 45.0), 1, 3)
+	var seg_max := minf(settings.path_curve_max_px, (straight / float(k)) * 0.7)
 	var jit := 1.0 if (int(a.x + a.y * 3.0 + b.x * 7.0 + b.y * 11.0) % 2) == 0 else -1.0
-	# Aesthetic minimum bow: nudge near-straight roads, but only if it doesn't make
-	# the water/terrain crossing worse than staying straight.
-	if absf(best_off) < settings.path_curve_min_px:
-		var cand := jit * minf(settings.path_curve_min_px, max_off)
-		if _curve_cost(gen, settings, a, b, cand, water, target) <= best_cost + 0.5:
-			best_off = cand
 
-	var ctrl := ((a + b) * 0.5) + (b - a).normalized().orthogonal() * best_off
-	var segs := maxi(3, int(straight / 8.0))
 	var poly := PackedVector2Array()
-	for s in range(segs + 1):
-		poly.append(_qbez(a, ctrl, b, float(s) / float(segs)))
+	poly.append(a)
+	for si in range(k):
+		var pa := a.lerp(b, float(si) / float(k))
+		var pb := a.lerp(b, float(si + 1) / float(k))
+		var side := jit * (1.0 if (si % 2 == 0) else -1.0)  # alternate for the S
+		var best_off := 0.0
+		var best_cost := INF
+		for j in range(-6, 7):
+			var off := (float(j) / 6.0) * seg_max
+			# small reward for bowing to this segment's alternating side
+			var cost := _curve_cost(gen, settings, pa, pb, off, water, target) \
+				+ absf(off) * 0.08 - (off * side) * 0.03
+			if cost < best_cost:
+				best_cost = cost
+				best_off = off
+		# Sample the chosen bezier into a chain of short straight segments. This
+		# follows the SAME path _curve_cost validated (so corners never overshoot
+		# into water like using the control point directly did), at ~4x density.
+		var ctrl := ((pa + pb) * 0.5) + (pb - pa).normalized().orthogonal() * best_off
+		var samples := maxi(4, int(pa.distance_to(pb) / 10.0))
+		for s in range(1, samples + 1):
+			poly.append(_qbez(pa, ctrl, pb, float(s) / float(samples)))
 	return poly
 
 ## Weighted crossing cost of a bezier with the given perpendicular control offset.

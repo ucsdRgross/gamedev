@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://xosthnos1j5h"]
+
+[ext_resource type="Script" uid="uid://1a8ek44hlghf" path="res://tests/graph_param_search.gd" id="1"]
+
+[node name="GraphParamSearch" type="Node" unique_id=596412612]
+script = ExtResource("1")
+tiers_to_run = Array[String](["medium"])
+V = 2
+S = 1
+max_rounds = 1
+enable_phase_b = false

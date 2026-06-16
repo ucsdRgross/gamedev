@@ -22,12 +22,14 @@ extends Node
 # map (Step6 labeling), not the graph rebuild.
 const GRAPH_FIELDS := [
 	"layer_count", "min_path_dist", "max_path_search_dist", "min_outgoing",
-	"max_outgoing", "max_path_length", "min_nodes_between_cities",
+	"max_outgoing", "min_nodes_between_cities",
 	"max_nodes_between_cities", "min_cities_visited", "max_cities_visited",
-	"min_biomes_per_path", "max_biomes_per_path", "min_inter_landmass_edges",
-	"max_inter_landmass_edges", "max_water_crossing_dist",
+	"city_bottleneck_strength",
+	"min_biomes_per_path", "max_biomes_per_path", "max_cross_ocean_per_band",
+	"max_water_crossing_dist", "min_outgoing_after_trim", "edge_trim_chance",
 	"start_end_island_penalty", "start_end_min_connections", "mountain_pass_bias",
-	"graph_lateral_spread", "min_graph_width", "graph_build_passes",
+	"graph_anti_straight", "path_ortho_length_bonus", "graph_zigzag_penalty",
+	"min_graph_width", "graph_build_passes",
 	"failsafe_max_injected_nodes", "max_paths_enumerated",
 ]
 
@@ -78,11 +80,12 @@ func _run() -> void:
 			var stats := GraphRules.collect_stats(res["graph"], res["start"], res["end"], ps, res["meta"])
 			for vio in violations:
 				rule_fail[p][vio["rule"]] = rule_fail[p].get(vio["rule"], 0) + 1
-			if not violations.is_empty():
+			# Only print failing seeds in full; passing seeds get a one-word line.
+			if violations.is_empty():
+				print("s%d passed" % i)
+			else:
 				acc[p]["fail_runs"] += 1
-			# Compact per-run line: stats shorthand + pass/fail reasons w/ samples.
-			var status: String = "OK" if violations.is_empty() else _summarize(violations)
-			print("s%d %s | %s | %s" % [i, _stat_shorthand(stats), _node_shorthand(), status])
+				print("s%d FAIL %s | %s | %s" % [i, _stat_shorthand(stats), _node_shorthand(), _summarize(violations)])
 			_accumulate(acc[p], stats)
 
 	# Final per-preset report.
@@ -112,7 +115,7 @@ const RULE_SHORT := {
 	"graph_width": "gw", "biomes_per_path": "bpp", "nodes_between_cities": "nbc",
 	"cities_visited": "cv", "dead_end": "de", "cycle": "cyc", "no_path": "nopath",
 	"path_too_long": "ptl", "water_edge_too_long": "wetl", "water_edge_hits_land": "wehl",
-	"too_few_inter_landmass": "tfi", "too_many_inter_landmass": "tmi",
+	"water_edge_not_coastal_city": "wnc", "band_cross_ocean": "bxo",
 	"self_edge": "self", "duplicate_edge": "dup",
 }
 

@@ -19,8 +19,9 @@ extends RefCounted
 ## edge cap, connectivity (failsafe). Count windows (nodes-between-cities, biomes,
 ## path length, cities-visited) are shaped softly and verified by GraphRules.
 
-const LAYER_WINDOW := 1  # edges advance one layer at a time (so node-count between
-						 # cities == the layer gap); widened only if a layer is empty
+const LAYER_WINDOW := 2  # edges may reach up to 2 layers ahead, giving the scorer
+						 # real choices (so anti-straight / zig-zag actually bite and
+						 # the graph can explore laterally instead of a rigid 1-step chain)
 
 # Parallel node arrays (index-based for speed); emitted as Vector2-keyed at the end.
 var _pos: Array[Vector2] = []
@@ -31,6 +32,9 @@ var _height: PackedFloat32Array = PackedFloat32Array()
 var _layer: PackedInt32Array = PackedInt32Array()
 var _dead: PackedByteArray = PackedByteArray()  # nodes culled by the repair pass
 var _spine: PackedVector2Array = PackedVector2Array()  # meandering start->end progress curve
+var _band_cross_in: PackedInt32Array = PackedInt32Array()  # cross-ocean incoming edges per band
+var _lat: PackedFloat32Array = PackedFloat32Array()    # signed perpendicular distance from spine
+var _tan: Array[Vector2] = []                          # spine tangent at each node's nearest sample
 var _adj: Dictionary = {}   # int -> Array[int]
 var _injected := 0
 
@@ -41,13 +45,24 @@ var _start_i := -1
 var _end_i := -1
 var _axis_len := 1.0
 var _inter_edges := 0
+var _write_to_gen := true
+# Per-build seeded RNG (not the global randf) so builds are deterministic and
+# safe to run concurrently on worker threads without racing a shared generator.
+var _rng := RandomNumberGenerator.new()
 
-func build(gen: WorldGenerator, settings: WorldSettings) -> Dictionary:
+## write_to_gen=false makes build side-effect-free: it returns the result dict but
+## does NOT write gen.gameplay_graph/start_node/end_node/city_nodes. The param-search
+## harness passes false so many builds can run on worker threads against the same
+## read-only base buffers without racing on shared gen state.
+func build(gen: WorldGenerator, settings: WorldSettings, write_to_gen: bool = true) -> Dictionary:
 	_gen = gen
 	_settings = settings
+	_write_to_gen = write_to_gen
+	_rng.seed = hash([settings.main_seed, settings.layer_count, settings.edge_trim_chance])
 	_gather_nodes()
 	if _pos.size() < 2:
-		gen.gameplay_graph = {}
+		if write_to_gen:
+			gen.gameplay_graph = {}
 		return {"graph": {}, "start": Vector2.ZERO, "end": Vector2.ZERO, "meta": {}, "injected": 0}
 
 	_pick_start_end()
@@ -60,16 +75,41 @@ func build(gen: WorldGenerator, settings: WorldSettings) -> Dictionary:
 	var passes := maxi(1, _settings.graph_build_passes)
 	for pass_i in range(passes):
 		_reset_edges()
-		_build_intra_landmass_edges()
-		_build_water_edges()
-		_ensure_min_water_edges()
+		_build_edges()          # land + cross-ocean edges, unified
 		_failsafe_connect()
 		_prune_unreachable()
 		_failsafe_connect()  # re-guarantee after prune
 		if pass_i < passes - 1:
 			_repair_nodes()
 
+	_trim_edges()           # break the perfect NxN lattice for variety
+	_prune_unreachable()    # drop anything the trim stranded
+	_failsafe_connect()     # guarantee a path still exists
+
 	return _emit()
+
+## Randomly drop surplus edges so fan-in/fan-out isn't a perfect lattice (e.g.
+## 3 nodes -> 3 nodes all-to-all). Never drops below min_outgoing and never
+## removes a child's last incoming edge, so connectivity/degree stay valid.
+func _trim_edges() -> void:
+	if _settings.edge_trim_chance <= 0.0:
+		return
+	var indeg := {}
+	for u in range(_pos.size()):
+		for v in _adj[u]:
+			indeg[v] = indeg.get(v, 0) + 1
+	var floor_deg := maxi(1, _settings.min_outgoing_after_trim)
+	for u in range(_pos.size()):
+		var kept: Array[int] = []
+		for v in _adj[u]:
+			if kept.size() < floor_deg:
+				kept.append(v)
+				continue
+			if indeg.get(v, 0) > 1 and _rng.randf() < _settings.edge_trim_chance:
+				indeg[v] -= 1  # drop this edge
+			else:
+				kept.append(v)
+		_adj[u] = kept
 
 ## Clear all edges/counters so a fresh pass can rebuild from the current (possibly
 ## repaired) node set. Node positions/layers/is_city/dead flags are preserved.
@@ -78,6 +118,9 @@ func _reset_edges() -> void:
 		_adj[i] = []
 	_inter_edges = 0
 	_injected = 0
+	_band_cross_in = PackedInt32Array()
+	_band_cross_in.resize(_settings.layer_count + 1)
+	_band_cross_in.fill(0)
 
 ## Between passes: use the just-built graph to modify nodes, so the next pass is
 ## cleaner. (1) Cull interior nodes the prune left with no outgoing edge (dead
@@ -132,6 +175,8 @@ func _append_node(p: Vector2, is_city: bool, w: int, h: int) -> void:
 	_height.append(_gen.height_buffer[idx])
 	_layer.append(0)
 	_dead.append(0)
+	_lat.append(0.0)
+	_tan.append(_dir)
 
 # ---------------------------------------------------------------------------
 # Start/end via principal spread axis, biased away from small islands
@@ -203,6 +248,14 @@ func _assign_layers() -> void:
 			if dd < bestd:
 				bestd = dd; bi = s
 		_layer[i] = clampi(int(round(float(bi) / float(maxi(1, samples - 1)) * float(lc))), 0, lc)
+		# Spine tangent + signed perpendicular offset (the 2nd grid axis).
+		var sa := _spine[bi]
+		var sb := _spine[mini(bi + 1, samples - 1)]
+		var tang := sb - sa
+		tang = tang.normalized() if tang.length() > 0.001 else _dir
+		_tan[i] = tang
+		var rel := _pos[i] - sa
+		_lat[i] = (rel.x * -tang.y) + (rel.y * tang.x)  # signed cross => side of spine
 	_layer[_start_i] = 0
 	_layer[_end_i] = lc
 
@@ -317,8 +370,11 @@ func _designate_city_layers() -> void:
 		if _is_city[i] == 1 and not keep_city.has(i):
 			_is_city[i] = 0
 
-	# Clear non-city nodes off the city layers (nudge to the previous layer) so a
-	# city layer contains cities only -> a guaranteed bottleneck.
+	# Bottleneck strength: nudge only a FRACTION of non-city nodes off the city
+	# layers. At 1.0 a city layer holds cities only (strict funnel); at 0.0 nothing
+	# is moved (cities are ordinary anchors, paths may bypass them). The fraction is
+	# chosen deterministically per node so the result is stable across passes.
+	var strength: float = clampf(_settings.city_bottleneck_strength, 0.0, 1.0)
 	var clset := {}
 	for cl in city_layers:
 		clset[cl] = true
@@ -326,7 +382,10 @@ func _designate_city_layers() -> void:
 		if i == _start_i or i == _end_i:
 			continue
 		if _is_city[i] == 0 and clset.has(_layer[i]):
-			_layer[i] = maxi(0, _layer[i] - 1)
+			# Deterministic [0,1) keyed on node index; move when below strength.
+			var r: float = fmod(float(i) * 0.61803398875, 1.0)
+			if r < strength:
+				_layer[i] = maxi(0, _layer[i] - 1)
 
 func _nodes_by_layer() -> Array:
 	var lc := _settings.layer_count
@@ -338,9 +397,12 @@ func _nodes_by_layer() -> Array:
 	return buckets
 
 # ---------------------------------------------------------------------------
-# Intra-landmass forward edges (scored), per node
+# Unified forward edges (land + cross-ocean), per node. Bands ignore oceans, so
+# a forward neighbour may sit across water; such cross-ocean edges are allowed
+# ONLY onto a coastal city and capped at max_cross_ocean_per_band INCOMING per
+# band (covers same-landmass bay crossings AND different-landmass crossings).
 # ---------------------------------------------------------------------------
-func _build_intra_landmass_edges() -> void:
+func _build_edges() -> void:
 	var buckets := _nodes_by_layer()
 	var lc := _settings.layer_count
 	for u in range(_pos.size()):
@@ -350,19 +412,26 @@ func _build_intra_landmass_edges() -> void:
 		if cands.is_empty():
 			continue
 		cands.sort_custom(func(a, b): return a["score"] < b["score"])
-		var want := mini(_settings.max_outgoing, cands.size())
-		want = maxi(want, mini(_settings.min_outgoing, cands.size()))
 		var chosen: Array[int] = []
-		for k in range(want):
-			chosen.append(cands[k]["i"])
+		for c in cands:
+			if chosen.size() >= _settings.max_outgoing:
+				break
+			var v: int = c["i"]
+			if c["cross"]:
+				# Cross-ocean edge: only onto a coastal city, and only if this band
+				# still has an incoming-water slot free.
+				if _is_city[v] == 0 or not _is_coastal(v):
+					continue
+				if _band_cross_in[_layer[v]] >= _settings.max_cross_ocean_per_band:
+					continue
+				_band_cross_in[_layer[v]] += 1
+			chosen.append(v)
 		_adj[u] = chosen
 
 func _gather_candidates(u: int, buckets: Array, lc: int) -> Array:
 	var out: Array = []
 	var lu := _layer[u]
 	var window := LAYER_WINDOW
-	# Expand the layer window if nothing close is found (failsafe-ish), so a node
-	# isn't orphaned just because its immediate layers are sparse.
 	while out.is_empty() and lu + 1 <= lc:
 		out = _candidates_in_window(u, buckets, lc, window)
 		if not out.is_empty():
@@ -380,128 +449,41 @@ func _candidates_in_window(u: int, buckets: Array, lc: int, window: int) -> Arra
 		for v in buckets[lv]:
 			if _dead[v] == 1:
 				continue
-			# Intra-landmass only here; water edges handled separately.
-			if _landmass[v] != _landmass[u] or _landmass[u] < 0:
-				continue
-			var d := _pos[u].distance_to(_pos[v])
-			if d < _settings.min_path_dist or d > _settings.max_path_search_dist:
-				continue
-			# Same-landmass travel must stay on land; reject edges that clip a
-			# bay/strait (that is what "water travel" between landmasses is for).
-			if _edge_crosses_ocean(_pos[u], _pos[v]):
+			var edge := _pos[v] - _pos[u]
+			var d := edge.length()
+			var edir := edge / maxf(d, 0.001)
+			var along: float = absf(edir.dot(_tan[u]))
+			# Is this a water crossing? (different landmass, or the straight line
+			# runs mostly over ocean -- a bay/strait on the same landmass).
+			var cross: bool = (_landmass[v] != _landmass[u]) or (_landmass[u] < 0) or _edge_crosses_ocean(_pos[u], _pos[v])
+			# Length cap: cross-ocean edges reach as far as max_water_crossing_dist;
+			# land edges use the orthogonal-lenient cap.
+			var eff_max: float
+			if cross:
+				eff_max = _settings.max_water_crossing_dist
+			else:
+				eff_max = _settings.max_path_search_dist * (1.0 + _settings.path_ortho_length_bonus * (1.0 - along))
+			if d < _settings.min_path_dist or d > eff_max:
 				continue
 			var score := d
-			# Lateral spread: reward candidates far to the SIDE of the start->end
-			# axis (tapered to 0 at both ends so paths still converge on the goal).
-			# This fans the graph across the continent instead of beelining.
-			if _settings.graph_lateral_spread > 0.0:
-				var perp := Vector2(-_dir.y, _dir.x)
-				var lateral: float = absf((_pos[v] - _pos[_start_i]).dot(perp))
-				var taper: float = sin(PI * float(lv) / float(lc))  # 0 at ends, 1 mid
-				score -= _settings.graph_lateral_spread * lateral * taper
-			# Mountain-pass preference: through high terrain, favor lower / closer
-			# height targets so paths thread the passes, not the peaks.
+			# Anti-straight: penalize edges that beeline at the goal.
+			score += _settings.graph_anti_straight * along * d
+			# Zig-zag guard: discourage crossing back over the spine centerline.
+			if signf(_lat[u]) != signf(_lat[v]) and absf(_lat[u]) > 8.0 and absf(_lat[v]) > 8.0:
+				score += _settings.graph_zigzag_penalty
+			# Water travel costs extra so land routes are preferred where they exist.
+			if cross:
+				score += d * 0.5 + 30.0
+			# Mountain-pass preference.
 			if _height[u] >= mt or _height[v] >= mt:
 				score += _settings.mountain_pass_bias * 100.0 * (_height[v] + absf(_height[v] - _height[u]))
-			# Mild nudge toward biome variety (kept small; windows are validated).
+			# Mild biome-variety nudge.
 			if _biome[v] != _biome[u]:
 				score -= _settings.min_path_dist * 0.1
-			out.append({"i": v, "score": score})
+			out.append({"i": v, "score": score, "cross": cross})
 	return out
 
-# ---------------------------------------------------------------------------
-# Inter-landmass (water) edges: connect consecutive landmasses by their cheapest
-# ocean-only crossing. Treats landmasses as super-nodes ordered along the axis.
-# ---------------------------------------------------------------------------
-func _build_water_edges() -> void:
-	if _gen.landmass_sizes.size() < 2:
-		return
-	var order := _landmass_order()
-	for k in range(order.size() - 1):
-		if _inter_edges >= _settings.max_inter_landmass_edges:
-			break
-		_connect_landmasses(order[k], order[k + 1])
-
-func _landmass_order() -> Array:
-	# Order kept landmass ids by centroid projection along the travel axis.
-	var centroids: Dictionary = {}
-	var counts: Dictionary = {}
-	for i in range(_pos.size()):
-		var lm := _landmass[i]
-		if lm < 0:
-			continue
-		centroids[lm] = centroids.get(lm, Vector2.ZERO) + _pos[i]
-		counts[lm] = counts.get(lm, 0) + 1
-	var ids: Array = centroids.keys()
-	var projs: Dictionary = {}
-	for lm in ids:
-		projs[lm] = ((centroids[lm] / float(counts[lm])) - _pos[_start_i]).dot(_dir)
-	ids.sort_custom(func(a, b): return projs[a] < projs[b])
-	return ids
-
-## Add the closest valid water edge between two landmasses (forward in layers,
-## ocean-only straight line, within max_water_crossing_dist). Returns true if added.
-func _connect_landmasses(a: int, b: int) -> bool:
-	var nodes_a: Array = []
-	var nodes_b: Array = []
-	for i in range(_pos.size()):
-		if _dead[i] == 1: continue
-		if _landmass[i] == a: nodes_a.append(i)
-		elif _landmass[i] == b: nodes_b.append(i)
-	# Pick the GLOBALLY closest ocean-only pair (least water crossed). We do NOT
-	# pre-filter on layer order here -- doing so used to reject the true nearest
-	# crossing and instead land deep inside the other continent. Orientation
-	# (for acyclicity) is decided afterwards from the chosen pair.
-	var best := -1.0
-	var bu := -1; var bv := -1
-	for u in nodes_a:
-		for v in nodes_b:
-			var d := _pos[u].distance_to(_pos[v])
-			if d > _settings.max_water_crossing_dist:
-				continue
-			if best >= 0.0 and d >= best:
-				continue
-			if not _ocean_only_between(_pos[u], _pos[v]):
-				continue
-			best = d; bu = u; bv = v
-	if bu < 0:
-		return false
-	# Orient the crossing forward: from the earlier-layer node to the later one
-	# (tie-break on axis projection). Bump the destination layer if needed so the
-	# DAG stays acyclic without distorting which physical nodes are linked. Never
-	# push a layer past the final layer (would overflow the per-layer arrays).
-	var lc := _settings.layer_count
-	if _layer[bv] < _layer[bu] or (_layer[bv] == _layer[bu] \
-			and _pos[bv].dot(_dir) < _pos[bu].dot(_dir)):
-		var t := bu; bu = bv; bv = t
-	if _layer[bv] <= _layer[bu]:
-		if _layer[bu] >= lc:
-			return false  # source already at the final layer: no forward room
-		_layer[bv] = mini(_layer[bu] + 1, lc)
-	if not _adj[bu].has(bv):
-		_adj[bu].append(bv)
-		_inter_edges += 1
-	return true
-
-func _ensure_min_water_edges() -> void:
-	# If below the minimum, try additional crossings between any landmass pair.
-	if _gen.landmass_sizes.size() < 2:
-		return
-	var order := _landmass_order()
-	var guard := 0
-	while _inter_edges < _settings.min_inter_landmass_edges and guard < 50:
-		guard += 1
-		var added := false
-		for k in range(order.size() - 1):
-			if _inter_edges >= _settings.max_inter_landmass_edges:
-				return
-			if _connect_landmasses(order[k], order[k + 1]):
-				added = true
-		if not added:
-			return
-
-## True if more than a quarter of the straight line runs over ocean (matches
-## GraphRules._crosses_ocean, used to keep same-landmass edges on land).
+## True if more than a quarter of the straight line runs over ocean (a bay/strait).
 func _edge_crosses_ocean(a: Vector2, b: Vector2) -> bool:
 	var w := _settings.map_width
 	var h := _settings.map_height
@@ -515,18 +497,18 @@ func _edge_crosses_ocean(a: Vector2, b: Vector2) -> bool:
 			ocean += 1
 	return float(ocean) / float(maxi(1, steps - 1)) > 0.25
 
-## Straight line touches land only at the endpoints (all interior samples ocean).
-func _ocean_only_between(a: Vector2, b: Vector2) -> bool:
+## A node is coastal if ocean sits within ~12px on a sampled ring.
+func _is_coastal(i: int) -> bool:
 	var w := _settings.map_width
 	var h := _settings.map_height
-	var steps := maxi(8, int(a.distance_to(b) / 3.0))
-	for s in range(1, steps):
-		var p := a.lerp(b, float(s) / float(steps))
-		var px := clampi(int(p.x), 0, w - 1)
-		var py := clampi(int(p.y), 0, h - 1)
-		if _gen.height_buffer[(py * w) + px] >= _settings.ocean_threshold:
-			return false
-	return true
+	var p := _pos[i]
+	for ang in range(0, 360, 45):
+		var rad := deg_to_rad(float(ang))
+		var nx := clampi(int(p.x + cos(rad) * 12.0), 0, w - 1)
+		var ny := clampi(int(p.y + sin(rad) * 12.0), 0, h - 1)
+		if _gen.height_buffer[(ny * w) + nx] < _settings.ocean_threshold:
+			return true
+	return false
 
 # ---------------------------------------------------------------------------
 # Reachability prune: keep only nodes on some start->end path. Nodes whose
@@ -677,14 +659,15 @@ func _emit() -> Dictionary:
 
 	var start_pos := _pos[_start_i]
 	var end_pos := _pos[_end_i]
-	_gen.gameplay_graph = graph
-	_gen.start_node = start_pos
-	_gen.end_node = end_pos
 	# Validated city set = cities that survived into the graph (bright in viewer).
 	var cities: Array[Vector2] = []
 	for p in meta.keys():
 		if meta[p]["is_city"]:
 			cities.append(p)
-	_gen.city_nodes = cities
+	if _write_to_gen:
+		_gen.gameplay_graph = graph
+		_gen.start_node = start_pos
+		_gen.end_node = end_pos
+		_gen.city_nodes = cities
 
 	return {"graph": graph, "start": start_pos, "end": end_pos, "meta": meta, "injected": _injected}
