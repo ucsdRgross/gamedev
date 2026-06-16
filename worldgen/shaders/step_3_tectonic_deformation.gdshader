@@ -15,6 +15,7 @@ uniform sampler2D plate_land_tex;  // texel i.r = 1.0 continental, 0.0 oceanic
 uniform sampler2D warp_x_tex;      // same baked warp the blueprint used
 uniform sampler2D warp_y_tex;
 uniform float warp_strength = 90.0;
+uniform float map_px = 768.0;      // map size in px (plate centres live in this space)
 uniform float drift_intensity = 0.25;
 uniform float plate_move = 0.03;   // UV distance plates slide
 uniform float tectonic_band = 55.0; // px width of the boundary relief band
@@ -24,7 +25,7 @@ void fragment() {
 	// Replicate the blueprint's warped coordinate exactly (same baked textures).
 	vec2 warp = (vec2(texture(warp_x_tex, UV).r, texture(warp_y_tex, UV).r) - 0.5) * 2.0 * warp_strength;
 	warp = clamp(warp, vec2(-warp_strength), vec2(warp_strength));
-	vec2 px = UV * 768.0 + warp;
+	vec2 px = UV * map_px + warp;
 
 	// Two nearest plates.
 	int best = 0;

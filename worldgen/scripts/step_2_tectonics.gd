@@ -15,6 +15,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	blue.set_shader_parameter("warp_x_tex", gen.noise_tex("warp_x"))
 	blue.set_shader_parameter("warp_y_tex", gen.noise_tex("warp_y"))
 	blue.set_shader_parameter("warp_strength", settings.warp_strength)
+	blue.set_shader_parameter("map_px", float(settings.map_width))
 
 	var blue_img := await gen.flush("blueprint")
 	gen.read_plate_ids_from_image(blue_img)
@@ -28,6 +29,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	deform.set_shader_parameter("warp_x_tex", gen.noise_tex("warp_x"))
 	deform.set_shader_parameter("warp_y_tex", gen.noise_tex("warp_y"))
 	deform.set_shader_parameter("warp_strength", settings.warp_strength)
+	deform.set_shader_parameter("map_px", float(settings.map_width))
 	deform.set_shader_parameter("drift_intensity", settings.drift_intensity)
 	deform.set_shader_parameter("plate_move", settings.plate_move)
 	deform.set_shader_parameter("tectonic_band", settings.tectonic_band)

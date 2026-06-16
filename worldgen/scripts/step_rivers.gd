@@ -24,7 +24,6 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var lw := w / s
 	var lh := h / s
 	var ln := lw * lh
-	var t0 := Time.get_ticks_msec()
 
 	# Downsample the eroded heightmap to the hydrology grid (point sample).
 	var lbase := PackedFloat32Array()
@@ -34,7 +33,6 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			lbase[(ly * lw) + lx] = gen.height_buffer[((ly * s) * w) + (lx * s)]
 
 	var lfilled := _fill_depressions(lbase, lw, lh, oth)
-	var t_fill := Time.get_ticks_msec()
 
 	# Rainfall map: rivers REUSE the exact climate humidity map (the shared baked
 	# image), so rivers source where the climate is wet.
@@ -160,11 +158,6 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 				gen.height_buffer[fi] = maxf(fullbase[fi] - depth_l[lc], oth + 0.004)
 				gen.river_nodes.append(Vector2i(x, y))
 
-	var t_end := Time.get_ticks_msec()
-	print("[Rivers] res=", lw, "x", lh, " river cells=", gen.river_nodes.size(),
-		" lake cells=", gen.lake_nodes.size(),
-		" | fill=", t_fill - t0, "ms rest=", t_end - t_fill, "ms total=", t_end - t0, "ms")
-
 	gen._save_snapshot_bridge("Rivers_Only")
 
 ## Grow a boolean mask outward by `r` cells (Chebyshev dilation).
@@ -183,12 +176,17 @@ func _dilate(mask: PackedByteArray, w: int, h: int, r: int) -> PackedByteArray:
 					out[(ny * w) + nx] = 1
 	return out
 
-## Priority-Flood (+epsilon) depression filling (Barnes et al. 2014). Returns a
-## surface W >= H where every land cell has a strictly monotonic downhill path to
-## the open boundary (map edge / ocean), so flow never gets trapped in a local
-## minimum. Basins are raised to their spill level plus a tiny epsilon gradient
-## toward the outlet (which also resolves flats). Cells where W rose meaningfully
-## above H are lakes.
+## Priority-Flood (+epsilon) depression filling (Barnes et al. 2014), bucket-queue
+## variant. Returns a surface W >= H where every land cell has a strictly
+## monotonic downhill path to the open boundary (map edge / ocean), so flow never
+## gets trapped in a local minimum; basins are raised to their spill level plus a
+## tiny epsilon gradient toward the outlet (which also resolves flats).
+##
+## Instead of a binary heap (O(n log n) with heavy GDScript per-op overhead), it
+## uses a radix/bucket priority queue keyed on quantized elevation: pops happen in
+## non-decreasing order by advancing a single level cursor, and each bucket is
+## read FIFO so the epsilon gradient grows along the BFS from each outlet. O(n+K).
+const FILL_BUCKETS := 1024
 func _fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> PackedFloat32Array:
 	var n := w * h
 	var W := PackedFloat32Array()
@@ -198,9 +196,23 @@ func _fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> Pac
 	closed.resize(n)
 	closed.fill(0)
 	const EPS := 0.00001
-	# Parallel-array binary min-heap over (priority, cell index).
-	var hp := PackedFloat32Array()  # priorities
-	var hi := PackedInt32Array()    # cell indices
+
+	# Quantization range for bucket indexing.
+	var hmin := INF
+	var hmax := -INF
+	for i in range(n):
+		var v := H[i]
+		if v < hmin: hmin = v
+		if v > hmax: hmax = v
+	var span := maxf(1e-6, hmax - hmin)
+	var scale := float(FILL_BUCKETS - 1) / span
+
+	# One FIFO queue per quantized level. Reference-type Arrays so appends during
+	# processing are visible through the cached reference (PackedArrays would copy).
+	var buckets: Array = []
+	buckets.resize(FILL_BUCKETS)
+	for b in range(FILL_BUCKETS):
+		buckets[b] = []
 
 	# Seed the open boundary: map edges and every ocean cell drain freely.
 	for y in range(h):
@@ -209,41 +221,21 @@ func _fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> Pac
 			if x == 0 or y == 0 or x == w - 1 or y == h - 1 or H[i] < oth:
 				W[i] = H[i]
 				closed[i] = 1
-				hp.append(H[i])
-				hi.append(i)
-				var c := hp.size() - 1
-				while c > 0:
-					var p := (c - 1) >> 1
-					if hp[p] <= hp[c]:
-						break
-					var fp := hp[p]; hp[p] = hp[c]; hp[c] = fp
-					var ip := hi[p]; hi[p] = hi[c]; hi[c] = ip
-					c = p
+				var lv := int((H[i] - hmin) * scale)
+				buckets[lv].append(i)
 
-	while hp.size() > 0:
-		# Pop the lowest cell.
-		var ci := hi[0]
-		var last := hp.size() - 1
-		hp[0] = hp[last]
-		hi[0] = hi[last]
-		hp.resize(last)
-		hi.resize(last)
-		var sz := hp.size()
-		var c := 0
-		while true:
-			var l := (2 * c) + 1
-			var r := (2 * c) + 2
-			var sm := c
-			if l < sz and hp[l] < hp[sm]:
-				sm = l
-			if r < sz and hp[r] < hp[sm]:
-				sm = r
-			if sm == c:
-				break
-			var fc := hp[c]; hp[c] = hp[sm]; hp[sm] = fc
-			var ic := hi[c]; hi[c] = hi[sm]; hi[sm] = ic
-			c = sm
-		# Raise each un-closed neighbour to at least our level + epsilon.
+	# Drain buckets in non-decreasing level order; a cell only ever pushes into its
+	# own or a higher bucket (W never decreases), so the cursor only moves forward.
+	var cur := 0
+	var cursor := 0
+	while cur < FILL_BUCKETS:
+		var b: Array = buckets[cur]
+		if cursor >= b.size():
+			cur += 1
+			cursor = 0
+			continue
+		var ci: int = b[cursor]
+		cursor += 1
 		var cx := ci % w
 		var cy := ci / w
 		for oy in range(-1, 2):
@@ -257,16 +249,9 @@ func _fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> Pac
 				var ni := (ny * w) + nx
 				if closed[ni] == 1:
 					continue
-				W[ni] = maxf(H[ni], W[ci] + EPS)
+				var wn := maxf(H[ni], W[ci] + EPS)
+				W[ni] = wn
 				closed[ni] = 1
-				hp.append(W[ni])
-				hi.append(ni)
-				var c2 := hp.size() - 1
-				while c2 > 0:
-					var p2 := (c2 - 1) >> 1
-					if hp[p2] <= hp[c2]:
-						break
-					var fp2 := hp[p2]; hp[p2] = hp[c2]; hp[c2] = fp2
-					var ip2 := hi[p2]; hi[p2] = hi[c2]; hi[c2] = ip2
-					c2 = p2
+				var lv := mini(int((wn - hmin) * scale), FILL_BUCKETS - 1)
+				buckets[lv].append(ni)
 	return W

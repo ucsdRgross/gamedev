@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://b7graphtestsuite0"]
+
+[ext_resource type="Script" path="res://tests/graph_test_suite.gd" id="1"]
+[ext_resource type="Script" uid="uid://mbt2djybuun1" path="res://scripts/world_settings.gd" id="2"]
+
+[sub_resource type="Resource" id="Resource_base"]
+script = ExtResource("2")
+metadata/_custom_type_script = "uid://mbt2djybuun1"
+
+[node name="GraphTestSuite" type="Node"]
+script = ExtResource("1")
+run_count = 20
+base_settings = SubResource("Resource_base")

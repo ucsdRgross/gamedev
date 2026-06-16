@@ -6,8 +6,11 @@ shader_type canvas_item;
 uniform sampler2D deformed_tex;
 uniform sampler2D ridge_tex;   // CPU-baked ridged noise, 0..1
 uniform sampler2D detail_tex;  // CPU-baked fbm detail noise, 0..1
+uniform sampler2D warp_x_tex;  // shared tectonic warp (x), 0..1 -> jagged edge clamp
+uniform sampler2D warp_y_tex;  // shared tectonic warp (y), 0..1
 uniform float ocean_threshold = 0.38;
 uniform float boundary_radius = 0.46; // hard edge clamp so land never reaches screen edges
+uniform float edge_jag = 0.06;        // UV displacement of the edge clamp (matches landmass)
 uniform float peak_uplift = 0.25;       // ridge uplift amount in highlands
 uniform float highland_range = 0.25;    // height band above sea over which uplift ramps in
 uniform float peak_detail_strength = 0.12; // fine detail-noise amplitude
@@ -25,8 +28,10 @@ void fragment() {
 	}
 
 	// Edge clamp: tectonics/peaks can push land outward, so force a hard fade to
-	// ocean past boundary_radius, guaranteeing land never touches the edges.
-	float edge = distance(UV, vec2(0.5));
+	// ocean past boundary_radius. Warp the cutoff with the same tectonic noise as
+	// the landmass mask so the outer coastline is jagged, not a clean circle.
+	vec2 jag = (vec2(texture(warp_x_tex, UV).r, texture(warp_y_tex, UV).r) - 0.5) * 2.0 * edge_jag;
+	float edge = distance(UV + jag, vec2(0.5));
 	float edge_mask = 1.0 - smoothstep(boundary_radius, boundary_radius + 0.04, edge);
 	height *= edge_mask;
 

@@ -3,8 +3,8 @@ class_name WorldSettings
 extends Resource
 
 @export_group("Map Layout")
-@export var map_width: int = 768
-@export var map_height: int = 768
+@export var map_width: int = 512
+@export var map_height: int = 512
 @export var path_steps: int = 15
 
 @export_group("Generation Seeds")
@@ -12,12 +12,12 @@ extends Resource
 ## tunable. Rivers deliberately reuse the climate humidity map (humidity_seed_offset).
 @export var main_seed: int = 42
 @export var landmass_seed_offset: int = 0
-@export var tectonic_seed_offset: int = 15
+@export var tectonic_seed_offset: int = 1
 @export var peaks_seed_offset: int = 2
-@export var erosion_seed_offset: int = 5            # ridged erosion channel noise
-@export var erosion_humidity_seed_offset: int = 100 # erosion's own humidity map
-@export var temperature_seed_offset: int = 3
-@export var humidity_seed_offset: int = 4           # climate humidity (rivers reuse this map)
+@export var erosion_seed_offset: int = 3            # ridged erosion channel noise
+@export var erosion_humidity_seed_offset: int = 4 # erosion's own humidity map
+@export var temperature_seed_offset: int = 5
+@export var humidity_seed_offset: int = 6           # climate humidity (rivers reuse this map)
 
 @export_group("Terrain Weights")
 @export var continent_frequency: float = 0.004
@@ -28,6 +28,7 @@ extends Resource
 @export var island_radius: float = 0.72   # central mask radius (bigger = more land)
 @export var land_contrast: float = 1.25    # spreads noise away from sea level
 @export var boundary_radius: float = 0.46  # hard edge clamp: no land beyond this (keeps land off screen edges)
+@export var edge_jag: float = 0.06         # warps the island/edge cutoffs (UV) so coastlines are jagged, not circular
 @export var peak_uplift: float = 0.25      # how much ridge noise raises highlands into mountains
 @export var highland_range: float = 0.25   # height band above sea over which uplift ramps in
 @export var peak_detail_strength: float = 0.12  # fine surface-detail noise amplitude
@@ -45,6 +46,12 @@ extends Resource
 @export_group("Climate")
 @export var temp_frequency: float = 0.022   # higher = smaller, more varied biome patches
 @export var humid_frequency: float = 0.026
+## Biome variety lever: land biomes are classified by banding three noise axes.
+## Max possible land biomes = height_bands * temp_bands * humid_bands (default 27,
+## the original 3x3x3 scheme). Set an axis to 1 to drop it (e.g. 2/2/1 -> max 4).
+@export_range(1, 6) var height_bands: int = 3
+@export_range(1, 6) var temp_bands: int = 3
+@export_range(1, 6) var humid_bands: int = 3
 
 @export_group("Erosion (Light Channels)")
 @export var erosion_frequency: float = 0.03         # ridged Perlin channel scale (noisier than peaks)
@@ -69,11 +76,42 @@ extends Resource
 @export_range(0, 6) var lake_width: int = 0           # dilate lakes outward by this many hydrology px
 
 @export_group("Path Choice Rules")
-@export var min_path_dist: float = 20.0
-@export var max_path_dist: float = 140.0
-@export var max_path_search_dist: float = 240.0
-@export var min_choices: int = 2
-@export var max_choices: int = 3
+## Layered DAG over travel_nodes (cities are anchors). Nodes are bucketed into
+## layer_count bands along the start->end spread axis; edges only go forward
+## (no backtracking, no revisits) and pick min..max_outgoing targets by score.
+@export var layer_count: int = 14
+@export var min_path_dist: float = 20.0           # shortest allowed edge (px)
+@export var max_path_search_dist: float = 90.0    # candidate search radius / hard cap on land-edge length (px); keep short so paths don't span empty mountain gaps
+@export var min_outgoing: int = 2                 # min forward edges per node
+@export var max_outgoing: int = 3                 # max forward edges per node
+@export var max_path_length: float = 1600.0       # cap on summed LAND edge length per path (water exempt)
+## Cities visited along a path + travel nodes between consecutive cities.
+@export var min_nodes_between_cities: int = 1
+@export var max_nodes_between_cities: int = 4
+@export var min_cities_visited: int = 3
+@export var max_cities_visited: int = 8
+## "Graph width": min number of other cities a single city must directly reach
+## (following travel nodes, stopping at the next cities). Branchiness of the
+## city-to-city graph.
+@export var min_graph_width: int = 3
+## Biome variety traversed by a path (contiguous same-biome runs).
+@export var min_biomes_per_path: int = 2
+@export var max_biomes_per_path: int = 6
+## Inter-landmass (water) travel. Treated as edges between nearest nodes on
+## different continents; the straight line may touch land only at its endpoints.
+@export var max_landmasses: int = 4               # how many continents keep nodes (top-N by size)
+@export var min_inter_landmass_edges: int = 0
+@export var max_inter_landmass_edges: int = 3
+@export var max_water_crossing_dist: float = 220.0 # longest allowed water edge (prefer closest crossing)
+@export var start_end_island_penalty: float = 4000.0 # discourage start/end on small landmasses
+@export var start_end_min_connections: int = 2     # start/end must have >= this many nearby nodes (else heavily penalized -> avoids tiny isolated endpoints)
+@export var mountain_pass_bias: float = 1.5       # >0 routes mountain travel through lower/closer-height passes
+@export var graph_lateral_spread: float = 0.0     # EXPERIMENTAL: >0 pulls edges toward the continent's flanks. NOTE: high values funnel all nodes to the same flank and collapse branching -- leave at 0 unless experimenting
+@export var path_curve_max_px: float = 55.0       # max sideways bow of a cosmetic curved road (limits curvature; beyond this it goes straight)
+@export var path_curve_min_px: float = 6.0        # gentle bow applied to even clear edges so every road curves slightly
+@export var failsafe_max_injected_nodes: int = 40 # nodes the failsafe may create to keep paths valid
+@export var max_paths_enumerated: int = 4000      # cap on start->end paths walked for stats/validation
+@export_range(1, 4) var graph_build_passes: int = 2 # build, diagnose+modify nodes, rebuild (1 = single pass)
 
 @export_group("Pathfinding Penalties")
 @export var mountain_penalty: float = 200.0
@@ -82,3 +120,6 @@ extends Resource
 @export_group("Civilization")
 @export var min_city_dist: float = 24.0
 @export var max_city_count: int = 150
+@export var min_travel_dist: float = 9.0     # spacing for the dense travel-node set
+@export var max_travel_count: int = 700      # cap on dense travel nodes
+@export var city_coast_radius: float = 10.0  # px ring sampled to score coastalness (cities prefer coasts)

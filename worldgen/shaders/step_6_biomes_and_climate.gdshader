@@ -10,6 +10,10 @@ uniform sampler2D temp_tex;   // CPU-baked temperature noise, 0..1
 uniform sampler2D humid_tex;  // CPU-baked humidity noise, 0..1 (shared with rivers)
 uniform float ocean_threshold = 0.38;
 uniform float mountain_threshold = 0.65;
+// Biome variety lever: number of bands per axis. Max land biomes = product.
+uniform int height_bands = 3;
+uniform int temp_bands = 3;
+uniform int humid_bands = 3;
 
 void fragment() {
 	vec4 state = texture(state_tex, UV);
@@ -26,16 +30,15 @@ void fragment() {
 		float t = clamp(raw_t - (elevation * 0.5), 0.0, 1.0);
 		float humid = clamp(raw_h + (near_river ? 0.35 : 0.0), 0.0, 1.0);
 
-		// Modular 3x3x3 classification: 3 bands each of height, temperature,
-		// humidity -> 27 land biomes (ids 1..27). Ocean stays id 0.
-		int h_band;
-		if (h >= mountain_threshold) h_band = 2;
-		else if (h >= mix(ocean_threshold, mountain_threshold, 0.5)) h_band = 1;
-		else h_band = 0;
-		int t_band = (t < 0.34) ? 0 : (t < 0.67 ? 1 : 2);
-		int hu_band = (humid < 0.34) ? 0 : (humid < 0.67 ? 1 : 2);
+		// Modular classification: height_bands x temp_bands x humid_bands land
+		// biomes (ids 1..product). Ocean stays id 0. Height is banded over the
+		// above-sea range; temp/humid over their full 0..1 range.
+		float hb = clamp((h - ocean_threshold) / max(0.001, 1.0 - ocean_threshold), 0.0, 0.99999);
+		int h_band = int(hb * float(height_bands));
+		int t_band = int(clamp(t, 0.0, 0.99999) * float(temp_bands));
+		int hu_band = int(clamp(humid, 0.0, 0.99999) * float(humid_bands));
 
-		biome = 1 + h_band * 9 + t_band * 3 + hu_band;
+		biome = 1 + h_band * (temp_bands * humid_bands) + t_band * humid_bands + hu_band;
 	}
 
 	COLOR = vec4(float(biome) / 255.0, near_river ? 1.0 : 0.0, h, 1.0);

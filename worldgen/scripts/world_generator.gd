@@ -23,8 +23,20 @@ var biome_palette: Array[String] = [
 
 var river_nodes: Array[Vector2i] = []
 var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
+var travel_nodes: Array[Vector2] = [] # dense evenly-distributed waypoints (vs sparse city_nodes)
 var city_nodes: Array[Vector2] = []
 var gameplay_graph: Dictionary = {}
+# Cosmetic curved polylines (PackedVector2Array, map px) for each graph edge,
+# routed around water / over passes. Used by the colored graph view only.
+var edge_curves: Array = []
+# Full result of the last graph build {graph, start, end, meta, injected}; the
+# test suite reads this to validate/measure the exact graph produced.
+var graph_result: Dictionary = {}
+# Continent labeling from Step6: full-res cell (4px grid) -> continent id (0 =
+# largest). landmass_sizes maps id -> cell count. The graph uses these to treat
+# landmasses as nodes (inter-landmass water travel rules).
+var landmass_labels: Dictionary = {}
+var landmass_sizes: Dictionary = {}
 var start_node: Vector2
 var end_node: Vector2
 var landmarks: Array[Dictionary] = []
@@ -124,14 +136,9 @@ func read_plate_ids_from_image(img: Image) -> void:
 	# Blueprint packs plate index into the blue channel as idx / 15.
 	var w := settings.map_width
 	var h := settings.map_height
-	var seen := {}
 	for y in range(h):
 		for x in range(w):
-			var pid := int(round(img.get_pixel(x, y).b * float(MAX_PLATES)))
-			plate_id_buffer[(y * w) + x] = pid
-			seen[pid] = true
-	print("[WorldGenerator] plate_count=", settings.plate_count,
-		" distinct plate ids in field=", seen.keys())
+			plate_id_buffer[(y * w) + x] = int(round(img.get_pixel(x, y).b * float(MAX_PLATES)))
 
 func read_biomes_from_image(img: Image) -> void:
 	# Climate packs biome id into red as id / 255.
@@ -172,15 +179,19 @@ func build_state_texture() -> ImageTexture:
 # =================================================================
 # DRIVER
 # =================================================================
-func generate_world_map() -> void:
-	print("[WorldGenerator] --- Starting GPU pipeline ---")
-	var start_time := Time.get_ticks_msec()
-
+## Reset all per-run state and (re)size the CPU buffers. Shared by the full
+## driver and the test-suite base generator.
+func _reset_state() -> void:
 	snapshots.clear()
 	river_nodes.clear()
 	lake_nodes.clear()
+	travel_nodes.clear()
 	city_nodes.clear()
 	gameplay_graph.clear()
+	edge_curves.clear()
+	graph_result.clear()
+	landmass_labels.clear()
+	landmass_sizes.clear()
 	landmarks.clear()
 
 	var total := settings.map_width * settings.map_height
@@ -190,18 +201,23 @@ func generate_world_map() -> void:
 	biome_id_buffer.resize(total)
 	plate_id_buffer.resize(total)
 
+func generate_world_map() -> void:
+	_reset_state()
 	seed(settings.main_seed)
 
-	# Time every step so the breakdown below shows where the budget goes.
-	var timings: Array = []
+	# Setup (noise + plates) is timed separately; the generation total is measured
+	# strictly from before Landmass to after Graph (excludes debug sheet + PNG).
+	var setup: Array = []
 	var ts := Time.get_ticks_msec()
 	noise_maps = NoiseBaker.bake(settings)  # all CPU noise, generated once
-	timings.append(["NoiseBake", Time.get_ticks_msec() - ts])
+	setup.append(["NoiseBake", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
 	_init_plates()
-	timings.append(["Plates", Time.get_ticks_msec() - ts])
+	setup.append(["Plates", Time.get_ticks_msec() - ts])
 
-	ts = Time.get_ticks_msec()
+	var timings: Array = []
+	var gen_start := Time.get_ticks_msec()
+	ts = gen_start
 	await Step1Landmass.new().execute(self, settings)        # GPU
 	timings.append(["Landmass", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
@@ -225,22 +241,61 @@ func generate_world_map() -> void:
 	ts = Time.get_ticks_msec()
 	Step7Graph.new().execute(self, settings)
 	timings.append(["Graph", Time.get_ticks_msec() - ts])
+	var gen_total := Time.get_ticks_msec() - gen_start
 
+	# Timing report (generation window only; setup + debug excluded from the %).
+	print("[WorldGenerator] --- Timing (generation Landmass->Graph: ", gen_total, " ms) ---")
+	for entry in setup:
+		print("  %-14s %6d ms  (setup)" % [entry[0], entry[1]])
+	for entry in timings:
+		var ms: int = entry[1]
+		print("  %-14s %6d ms  %5.1f%%" % [entry[0], ms, 100.0 * float(ms) / float(maxi(1, gen_total))])
+
+	# Debug sheet + PNG (not part of the generation budget).
 	var ordered := ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys",
 		"Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
 	for k in ordered:
 		if snapshots.has(k):
 			generation_step_finished.emit(k)
+	_save_snapshot_bridge("All_Steps_Grid")  # this emit triggers the viewer's export
 
-	_save_snapshot_bridge("All_Steps_Grid")
-	generation_step_finished.emit("All_Steps_Grid")
+# =================================================================
+# TEST-SUITE SUPPORT
+# Generate a map *through Civilizations* (no graph), then snapshot/restore the
+# base so many graph presets can be built on the identical base map.
+# =================================================================
+func generate_base_through_civilizations() -> void:
+	_reset_state()
+	seed(settings.main_seed)
+	noise_maps = NoiseBaker.bake(settings)
+	_init_plates()
+	await Step1Landmass.new().execute(self, settings)
+	await Step2Tectonics.new().execute(self, settings)
+	await Step3PeaksAndValleys.new().execute(self, settings)
+	await Step4Erosion.new().execute(self, settings)
+	await StepRivers.new().execute(self, settings)
+	await Step5Climate.new().execute(self, settings)
+	Step6Civilizations.new().execute(self, settings)
 
-	var elapsed := Time.get_ticks_msec() - start_time
-	print("[WorldGenerator] --- Step timing breakdown (total ", elapsed, " ms) ---")
-	for entry in timings:
-		var ms: int = entry[1]
-		var pct := (100.0 * float(ms) / float(maxi(1, elapsed)))
-		print("  %-14s %6d ms  %5.1f%%" % [entry[0], ms, pct])
+func cache_base_state() -> Dictionary:
+	return {
+		"height": height_buffer.duplicate(),
+		"biome": biome_id_buffer.duplicate(),
+		"city_nodes": city_nodes.duplicate(),
+		"travel_nodes": travel_nodes.duplicate(),
+		"landmass_labels": landmass_labels.duplicate(),
+		"landmass_sizes": landmass_sizes.duplicate(),
+	}
+
+func restore_base_state(b: Dictionary) -> void:
+	height_buffer = b["height"].duplicate()
+	biome_id_buffer = b["biome"].duplicate()
+	city_nodes = b["city_nodes"].duplicate()
+	travel_nodes = b["travel_nodes"].duplicate()
+	landmass_labels = b["landmass_labels"].duplicate()
+	landmass_sizes = b["landmass_sizes"].duplicate()
+	gameplay_graph = {}
+	graph_result = {}
 
 func _init_plates() -> void:
 	plate_data.resize(MAX_PLATES)
@@ -250,7 +305,11 @@ func _init_plates() -> void:
 		plate_data[i] = Vector4(-9999.0, -9999.0, 0.0, 0.0)
 
 	# Distribute plate centers evenly over a jittered grid (matches old CPU step)
-	# so plate cells and their drift arrows are spread across the map.
+	# so plate cells and their drift arrows are spread across the map. Driven by a
+	# dedicated RNG keyed on the tectonic seed, so the tectonic seed offset moves
+	# the plates (positions/drift/land) -- not just the warp noise.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = settings.main_seed + settings.tectonic_seed_offset
 	var grid_cols: int = int(ceil(sqrt(float(settings.plate_count))))
 	var grid_rows: int = int(ceil(float(settings.plate_count) / float(grid_cols)))
 	var cell_w: float = float(settings.map_width) / float(grid_cols)
@@ -262,18 +321,17 @@ func _init_plates() -> void:
 			if assigned >= settings.plate_count:
 				break
 			var pos := Vector2(
-				(c * cell_w) + (cell_w * 0.5) + (randf() - 0.5) * (cell_w * 0.4),
-				(r * cell_h) + (cell_h * 0.5) + (randf() - 0.5) * (cell_h * 0.4))
-			var dir := Vector2(randf() - 0.5, randf() - 0.5).normalized()
+				(c * cell_w) + (cell_w * 0.5) + (rng.randf() - 0.5) * (cell_w * 0.4),
+				(r * cell_h) + (cell_h * 0.5) + (rng.randf() - 0.5) * (cell_h * 0.4))
+			var dir := Vector2(rng.randf() - 0.5, rng.randf() - 0.5).normalized()
 			# Seeded land/ocean choice (sampling skews oceanic, so we roll it).
-			var is_land := randf() < settings.land_plate_ratio
+			var is_land := rng.randf() < settings.land_plate_ratio
 			plate_data[assigned] = Vector4(pos.x, pos.y, dir.x, dir.y)
 			plate_is_land[assigned] = 1.0 if is_land else 0.0
 			landmarks.append({"pos": pos, "dir": dir, "ocean": not is_land})
 			assigned += 1
 
 	_build_plate_textures()
-	print("[WorldGenerator] plate_is_land=", plate_is_land.slice(0, settings.plate_count))
 
 ## Encode plate position/drift and land flags into small data textures, sampled
 ## with texelFetch in the shaders (reliable, unlike vec4[] array uniforms).
@@ -306,7 +364,9 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"river_set": river_set,
 		"lake_set": lake_set,
 		"city_nodes": city_nodes.duplicate(),
+		"travel_nodes": travel_nodes.duplicate(),
 		"gameplay_graph": gameplay_graph.duplicate(),
+		"edge_curves": edge_curves.duplicate(),
 		"start_node": start_node,
 		"end_node": end_node,
 		"landmarks": landmarks.duplicate(),

@@ -37,7 +37,7 @@ func _draw_legend(step: String) -> void:
 			{"c": Color("#ecc94b"), "n": "Node"}, {"c": Color.GREEN, "n": "Start"},
 			{"c": Color.RED, "n": "End"}, {"c": Color.WHITE, "n": "Route"},
 		]
-	else:  # Climate / Biomes (27 distinct biomes from temp x humidity x height)
+	else:  # Climate / Biomes (height_bands x temp_bands x humid_bands distinct land biomes)
 		items = [
 			{"c": Color("#1a365d"), "n": "Ocean"},
 			{"c": RIVER_OVERLAY, "n": "River"},
