@@ -40,13 +40,18 @@ extends Node
 const OUT_DIR := "res://tuning"
 
 # --- Tiers ------------------------------------------------------------------
-# Each tier sets base map size + node population + layer/cities windows.
+# Each tier sets the (fixed) map size + travel-node budget + the gameplay goal
+# `target_cities` = how many cities a SINGLE start->end run must pass through.
+# layer_count and the cities_visited window are NOT listed here: they are DERIVED
+# from target_cities and the city spacing (see _apply_structure), because a path
+# can only visit one city per `gap` layers, so the path length is dictated by the
+# goal, not free to choose.
 const TIERS := {
-	"mini":    {"px": 256,  "target_cities": 5,  "layer_count": 8,  "max_travel_count": 200},
-	"small":   {"px": 384,  "target_cities": 12, "layer_count": 12, "max_travel_count": 400},
-	"medium":  {"px": 512,  "target_cities": 20, "layer_count": 18, "max_travel_count": 700},
-	"large":   {"px": 768,  "target_cities": 35, "layer_count": 28, "max_travel_count": 1400},
-	"massive": {"px": 1024, "target_cities": 50, "layer_count": 40, "max_travel_count": 2400},
+	"mini":    {"px": 256,  "target_cities": 5,  "max_travel_count": 200},
+	"small":   {"px": 384,  "target_cities": 12, "max_travel_count": 400},
+	"medium":  {"px": 512,  "target_cities": 20, "max_travel_count": 700},
+	"large":   {"px": 768,  "target_cities": 35, "max_travel_count": 1400},
+	"massive": {"px": 1024, "target_cities": 50, "max_travel_count": 2400},
 }
 const TIER_ORDER := ["mini", "small", "medium", "large", "massive"]
 
@@ -54,8 +59,10 @@ const TIER_ORDER := ["mini", "small", "medium", "large", "massive"]
 # One row per tunable. scope "graph" = threaded (reuses cached base); "base" =
 # serial (regenerates the GPU base). Add/remove a tunable by editing this array.
 # type: "i" int, "f" float.
+# NOTE: layer_count, min_cities_visited, max_cities_visited are intentionally NOT
+# here -- they are DERIVED per-candidate from target_cities + spacing in
+# _apply_structure (searching them would fight the "visit N cities per run" goal).
 const PARAMS := [
-	{"name": "layer_count", "type": "i", "min": 4, "max": 40, "step": 2, "scope": "graph"},
 	{"name": "min_path_dist", "type": "f", "min": 5, "max": 60, "step": 5, "scope": "graph"},
 	{"name": "max_path_search_dist", "type": "f", "min": 30, "max": 220, "step": 10, "scope": "graph"},
 	{"name": "min_outgoing", "type": "i", "min": 1, "max": 4, "step": 1, "scope": "graph"},
@@ -64,8 +71,6 @@ const PARAMS := [
 	{"name": "edge_trim_chance", "type": "f", "min": 0.0, "max": 0.9, "step": 0.1, "scope": "graph"},
 	{"name": "min_nodes_between_cities", "type": "i", "min": 0, "max": 6, "step": 1, "scope": "graph"},
 	{"name": "max_nodes_between_cities", "type": "i", "min": 1, "max": 10, "step": 1, "scope": "graph"},
-	{"name": "min_cities_visited", "type": "i", "min": 2, "max": 50, "step": 1, "scope": "graph"},
-	{"name": "max_cities_visited", "type": "i", "min": 3, "max": 60, "step": 1, "scope": "graph"},
 	{"name": "city_bottleneck_strength", "type": "f", "min": 0.0, "max": 1.0, "step": 0.1, "scope": "graph"},
 	{"name": "min_graph_width", "type": "i", "min": 1, "max": 6, "step": 1, "scope": "graph"},
 	{"name": "max_landmasses", "type": "i", "min": 1, "max": 8, "step": 1, "scope": "base"},
@@ -91,12 +96,12 @@ const ORDER_PAIRS := [
 	["min_outgoing", "max_outgoing"],
 	["min_outgoing_after_trim", "min_outgoing"],
 	["min_nodes_between_cities", "max_nodes_between_cities"],
-	["min_cities_visited", "max_cities_visited"],
 	["min_path_dist", "max_path_search_dist"],
 ]
 
 var _gen: WorldGenerator
 var _rng := RandomNumberGenerator.new()
+var _target_cities := 0  # current tier's per-run city goal (drives _apply_structure)
 # Threaded-eval scratch (set on main thread before fanning out, read by workers):
 var _task_settings: Array = []
 var _task_out: Array = []
@@ -120,6 +125,7 @@ func _ready() -> void:
 	FileAccess.open("%s/best_ranges.txt" % OUT_DIR, FileAccess.WRITE).close()
 	_write_how_to_read()
 
+	var run_start := Time.get_ticks_msec()
 	var tiers := tiers_to_run if not tiers_to_run.is_empty() else TIER_ORDER
 	for t in tiers:
 		if not TIERS.has(t):
@@ -127,8 +133,21 @@ func _ready() -> void:
 			continue
 		print("\n========== TIER: %s ==========" % t)
 		await _run_tier(t)
-	print("\n=== Param search complete ===")
+	var total_s := float(Time.get_ticks_msec() - run_start) / 1000.0
+	print("\n=== Param search complete in %s (%.1f s) ===" % [_fmt_duration(total_s), total_s])
 	get_tree().quit()
+
+## "1h 23m 4s" style for the wall-clock summary.
+func _fmt_duration(s: float) -> String:
+	var t := int(s)
+	var hh := t / 3600
+	var mm := (t % 3600) / 60
+	var ss := t % 60
+	if hh > 0:
+		return "%dh %dm %ds" % [hh, mm, ss]
+	if mm > 0:
+		return "%dm %ds" % [mm, ss]
+	return "%ds" % ss
 
 func _make_cfg() -> GraphMetrics.RewardConfig:
 	var c := GraphMetrics.RewardConfig.new()
@@ -148,7 +167,9 @@ func _make_cfg() -> GraphMetrics.RewardConfig:
 # Per-tier coordinate-descent search.
 # ---------------------------------------------------------------------------
 func _run_tier(tier: String) -> void:
+	var tier_start := Time.get_ticks_msec()
 	var td: Dictionary = TIERS[tier]
+	_target_cities = int(td["target_cities"])
 	var baseline := _tier_baseline(td)
 	# Mutable working ranges, seeded from the registry hard bounds.
 	var ranges := {}
@@ -179,6 +200,9 @@ func _run_tier(tier: String) -> void:
 		await _phase_b(baseline, ranges, csv_path)
 
 	_write_best(tier, baseline, ranges)
+	await _save_best_image(tier, baseline)
+	var tier_s := float(Time.get_ticks_msec() - tier_start) / 1000.0
+	print("   tier '%s' took %s (%.1f s)" % [tier, _fmt_duration(tier_s), tier_s])
 
 # Worker-thread atom: build+score _task_settings[i] against the shared restored
 # base (_task_base). Reads only; build is side-effect-free (write_to_gen=false).
@@ -201,14 +225,27 @@ func _tier_baseline(td: Dictionary) -> WorldSettings:
 	var s := WorldSettings.new()
 	s.map_width = td["px"]
 	s.map_height = td["px"]
-	s.layer_count = td["layer_count"]
 	s.max_travel_count = td["max_travel_count"]
-	# Aim cities window at the tier target.
-	s.max_cities_visited = maxi(s.min_cities_visited + 1, int(td["target_cities"]))
-	s.max_city_count = maxi(s.max_city_count, int(td["target_cities"]) * 3)
-	# Scale hollow target with map area (cells), keeping the configured value as a
-	# medium-tier reference (medium = 512px).
+	# Plenty of total cities so per-run goal is reachable across branches.
+	s.max_city_count = maxi(s.max_city_count, int(td["target_cities"]) * 4)
+	_apply_structure(s)  # derive layer_count + cities_visited from target_cities
 	return s
+
+## Derive the structural params that are dictated by the per-run city goal:
+## a forward path visits one city per `gap` layers, so to require `target_cities`
+## cities on a run we need layer_count = (target_cities+1)*gap, and the
+## cities_visited window pinned to the goal. gap follows the swept spacing
+## (nodes_between_cities), so changing spacing rescales the layer count.
+## Call after every candidate WorldSettings is finalized (post _enforce_order).
+func _apply_structure(s: WorldSettings) -> void:
+	if _target_cities <= 0:
+		return
+	var between := clampi(int(round((s.min_nodes_between_cities + s.max_nodes_between_cities) / 2.0)),
+		s.min_nodes_between_cities, s.max_nodes_between_cities)
+	var gap := maxi(2, between + 1)
+	s.layer_count = (_target_cities + 1) * gap
+	s.min_cities_visited = _target_cities
+	s.max_cities_visited = _target_cities
 
 # Generate + cache S base maps for the seeds 1..S using `baseline` base params.
 func _cache_seed_bases(baseline: WorldSettings) -> Array:
@@ -254,6 +291,7 @@ func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
 			var ps := baseline.duplicate(true) as WorldSettings
 			ps.set(pname, _typed(v, p))
 			_enforce_order(ps)
+			_apply_structure(ps)
 			_task_settings.append(ps)
 		for base in bases:
 			_gen.restore_base_state(base)          # main thread, once per seed
@@ -270,6 +308,7 @@ func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
 			var ps := baseline.duplicate(true) as WorldSettings
 			ps.set(pname, _typed(values[vi], p))
 			_enforce_order(ps)
+			_apply_structure(ps)
 			for si in range(S):
 				ps.main_seed = si + 1
 				_gen.settings = ps
@@ -335,6 +374,7 @@ func _phase_b(baseline: WorldSettings, ranges: Dictionary, csv_path: String) -> 
 			var r: Array = ranges[p["name"]]
 			ps.set(p["name"], _typed(_rng.randf_range(r[0], r[1]), p))
 		_enforce_order(ps)
+		_apply_structure(ps)
 		var rewards: Array = []
 		for b in bases:
 			rewards.append(_eval_on_base(ps, b)["reward"])
@@ -445,6 +485,12 @@ func _write_best(tier: String, baseline: WorldSettings, ranges: Dictionary) -> v
 		var best = baseline.get(nm)
 		txt.store_line("  %-26s [%.4f .. %.4f]  best=%s" % [nm, r[0], r[1], str(best)])
 		jdict[nm] = best
+	# Derived (not searched): dictated by target_cities + spacing.
+	txt.store_line("  -- derived from target_cities=%d --" % _target_cities)
+	for nm in ["layer_count", "min_cities_visited", "max_cities_visited"]:
+		var dv = baseline.get(nm)
+		txt.store_line("  %-26s (derived) = %s" % [nm, str(dv)])
+		jdict[nm] = dv
 	txt.close()
 
 	# best_ranges.json: merge per-tier best values keyed by tier.
@@ -459,6 +505,110 @@ func _write_best(tier: String, baseline: WorldSettings, ranges: Dictionary) -> v
 	jf.store_string(JSON.stringify(root, "  "))
 	jf.close()
 	print("   wrote best_ranges.txt/.json + %s_samples.csv" % tier)
+
+# ---------------------------------------------------------------------------
+# Best-graph image: with the converged baseline, build the graph over a few
+# seeds, keep the highest-reward one, and save a full-res PNG of the graph drawn
+# on the heightmap (graph-only view, heightmap background for the landmasses).
+# ---------------------------------------------------------------------------
+func _save_best_image(tier: String, baseline: WorldSettings) -> void:
+	var best_reward := -INF
+	var best_res := {}
+	var best_height := PackedFloat32Array()
+	var best_w := 0; var best_h := 0; var best_ot := 0.0
+	var seeds := mini(maxi(1, S), 8)  # cap regen cost; best of these seeds
+	for s in range(1, seeds + 1):
+		var bs := baseline.duplicate(true) as WorldSettings
+		bs.main_seed = s
+		_gen.settings = bs
+		await _gen.generate_base_through_civilizations()
+		var base := _gen.cache_base_state()
+		var res := GraphBuilder.new().build(_gen, bs, false)
+		if res["graph"].is_empty():
+			continue
+		var vio := GraphRules.validate(_gen, res["graph"], res["start"], res["end"], bs, res["meta"])
+		var r := GraphMetrics.evaluate(res, base["height"], base["biome"],
+			bs.map_width, bs.map_height, bs.ocean_threshold, _cfg, _distinct_violations(vio))
+		if r["reward"] > best_reward:
+			best_reward = r["reward"]
+			best_res = res
+			best_height = base["height"].duplicate()
+			best_w = bs.map_width; best_h = bs.map_height; best_ot = bs.ocean_threshold
+	if best_res.is_empty():
+		print("   (no buildable graph to image for tier %s)" % tier)
+		return
+	var img := _render_graph_image(best_height, best_w, best_h, best_ot, best_res)
+	var path := "%s/%s_best_graph.png" % [OUT_DIR, tier]
+	img.save_png(path)
+	print("   saved %s_best_graph.png (reward=%.3f)" % [tier, best_reward])
+
+## Heightmap background (ocean dark, land warm-grey by elevation) with the graph
+## drawn over it: white edges + direction arrowheads, yellow cities, blue routed
+## travel nodes, green start, red end. Mirrors world_viewer._burn_graph colors.
+func _render_graph_image(height: PackedFloat32Array, w: int, h: int, ot: float, res: Dictionary) -> Image:
+	var img := Image.create(w, h, false, Image.FORMAT_RGB8)
+	for y in range(h):
+		for x in range(w):
+			var v := height[(y * w) + x]
+			var col: Color
+			if v < ot:
+				col = Color(0.05, 0.08, 0.18)  # deep ocean
+			else:
+				var t := clampf((v - ot) / maxf(0.001, 1.0 - ot), 0.0, 1.0)
+				var g := lerpf(0.30, 0.95, t)
+				col = Color(g * 0.88, g * 0.92, g * 0.80)  # warm grey land by elevation
+			img.set_pixel(x, y, col)
+
+	var graph: Dictionary = res["graph"]
+	for parent in graph.keys():
+		var p1: Vector2 = parent
+		for child in graph[parent]:
+			var p2: Vector2 = child
+			_plot_line(img, p1, p2, Color.WHITE)
+			_plot_arrowhead(img, p1, p1.lerp(p2, 0.55), Color("#fb923c"), 6.0)
+
+	var route := {}
+	for parent in graph.keys():
+		route[parent] = true
+		for child in graph[parent]:
+			route[child] = true
+	var meta: Dictionary = res["meta"]
+	for node in route.keys():
+		var p: Vector2 = node
+		if meta.get(node, {}).get("is_city", false):
+			_plot_disc(img, p, 4.0, Color("#ecc94b"))
+		else:
+			_plot_disc(img, p, 2.5, Color("#60a5fa"))
+	_plot_disc(img, res["start"], 6.0, Color.GREEN)
+	_plot_disc(img, res["end"], 6.0, Color.RED)
+	return img
+
+# --- pixel primitives (mirror world_viewer.gd) -----------------------------
+func _plot_disc(img: Image, c: Vector2, r: float, col: Color) -> void:
+	var ri := int(ceil(r))
+	for ox in range(-ri, ri + 1):
+		for oy in range(-ri, ri + 1):
+			if Vector2(ox, oy).length() <= r:
+				_safe_set(img, int(c.x) + ox, int(c.y) + oy, col)
+
+func _plot_line(img: Image, p1: Vector2, p2: Vector2, col: Color) -> void:
+	var steps := int(maxf(1.0, p1.distance_to(p2)))
+	for s in range(steps + 1):
+		var p := p1.lerp(p2, float(s) / float(steps))
+		_safe_set(img, int(p.x), int(p.y), col)
+
+func _plot_arrowhead(img: Image, from: Vector2, tip: Vector2, col: Color, size: float) -> void:
+	var dir := tip - from
+	if dir.length() < 0.001:
+		return
+	dir = dir.normalized()
+	var perp := Vector2(-dir.y, dir.x)
+	_plot_line(img, tip, tip - dir * size + perp * size * 0.6, col)
+	_plot_line(img, tip, tip - dir * size - perp * size * 0.6, col)
+
+func _safe_set(img: Image, x: int, y: int, col: Color) -> void:
+	if x >= 0 and x < img.get_width() and y >= 0 and y < img.get_height():
+		img.set_pixel(x, y, col)
 
 func _write_how_to_read() -> void:
 	var f := FileAccess.open("%s/HOW_TO_READ.txt" % OUT_DIR, FileAccess.WRITE)
@@ -475,7 +625,13 @@ Files in this folder (res://tuning/):
                        THIS is the easy-to-find artifact -- start here.
   best_ranges.json     same best values, machine-readable, keyed by tier; load
                        these into a WorldSettings to reproduce the best config.
+  <tier>_best_graph.png  full-res picture of the best graph found for the tier,
+                       drawn over the heightmap (ocean dark, land grey by
+                       elevation): white edges + arrowheads, yellow cities, blue
+                       travel nodes, green start, red end.
   HOW_TO_READ.txt      this file.
+
+The console prints per-tier and total wall-clock time at the end of the run.
 
 CSV columns
 -----------
