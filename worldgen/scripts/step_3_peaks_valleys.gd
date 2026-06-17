@@ -7,6 +7,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var mat := gen.get_material("peaks")
 	mat.set_shader_parameter("deformed_tex", gen.viewport_texture("deform"))
 	mat.set_shader_parameter("ridge_tex", gen.noise_tex("peaks_ridge"))
+	mat.set_shader_parameter("billow_tex", gen.noise_tex("peaks_billow"))
 	mat.set_shader_parameter("detail_tex", gen.noise_tex("peaks_detail"))
 	mat.set_shader_parameter("warp_x_tex", gen.noise_tex("warp_x"))
 	mat.set_shader_parameter("warp_y_tex", gen.noise_tex("warp_y"))
@@ -16,6 +17,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("peak_uplift", settings.peak_uplift)
 	mat.set_shader_parameter("highland_range", settings.highland_range)
 	mat.set_shader_parameter("peak_detail_strength", settings.peak_detail_strength)
+	mat.set_shader_parameter("peak_billow_strength", settings.peak_billow_strength)
 
 	var img := await gen.flush("peaks")
 	gen.read_height_from_image(img)

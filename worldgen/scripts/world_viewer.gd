@@ -120,11 +120,12 @@ func _debug_rows() -> Array:
 		[["noise", "landmass", "Landmass Noise"], ["topo", "Landmass", "Landmass"]],
 		# Tectonics: warp noise, then deformed terrain with fault lines + arrows.
 		[["noise", "warp_x", "Tectonic Noise"], ["tectonics", "Tectonics_Debug", "Tectonics"]],
-		# Peaks & valleys: ridge noise, then colored heights.
-		[["noise", "peaks_ridge", "Peaks Noise"], ["topo", "PeaksAndValleys", "Peaks & Valleys"]],
-		# Erosion: incoming height, channel noise, erosion humidity, the combined carve
-		# (channel*humidity*height network, water-colored), then eroded terrain.
-		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_channel", "Erosion Noise"], ["noise", "erosion_humidity", "Erosion Humidity"], ["erosion_water", "Erosion", "Erosion Channels"], ["topo", "Erosion", "Erosion"]],
+		# Peaks & valleys: ridged-multifractal + billow-multifractal noise (altitude
+		# blended in the shader), then colored heights.
+		[["noise", "peaks_ridge", "Ridge Noise"], ["noise", "peaks_billow", "Billow Noise"], ["topo", "PeaksAndValleys", "Peaks & Valleys"]],
+		# Erosion: incoming height, ancient-rainfall map, the flow-carved network
+		# (water-colored), then the eroded+deposited terrain.
+		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_humidity", "Erosion Rainfall (ancient)"], ["erosion_water", "Erosion", "Erosion Channels"], ["topo", "Erosion", "Erosion"]],
 		# Climate: incoming height, temperature, humidity, biome map.
 		[["mono", "Rivers_Only", "Height (pre-climate)"], ["noise", "temperature", "Temperature"], ["noise", "humidity", "Humidity"], ["biome", "Climate", "Biomes"]],
 		# Rivers: incoming height, (shared climate) humidity, river network, rivers on biomes.
@@ -239,7 +240,7 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 					else:
 						col = mono_color((height[idx] - oth) / maxf(0.001, 1.0 - oth))
 				"rivers":
-					if (lset.has(pos) or _near_river(rset, pos)) and height[idx] >= oth:
+					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
 						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
 						col = RIVER_LO.lerp(RIVER_HI, t)
 					else:
@@ -323,7 +324,7 @@ func _paint_step(img: Image, slot: String, offset: Vector2i, scale: float) -> vo
 				"rivers":
 					# Shade rivers AND lakes by elevation (same ramp) so their water
 					# height is visible; everything else dark.
-					if (lset.has(pos) or _near_river(rset, pos)) and height[idx] >= oth:
+					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
 						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
 						col = RIVER_LO.lerp(RIVER_HI, t)
 					else:

@@ -227,7 +227,7 @@ func generate_world_map() -> void:
 	await Step3PeaksAndValleys.new().execute(self, settings)  # GPU
 	timings.append(["Peaks", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
-	await Step4Erosion.new().execute(self, settings)         # CPU light channel carving (combined Perlin maps)
+	await Step4Erosion.new().execute(self, settings)         # CPU hydraulic (flow-accumulation stream-power) erosion
 	timings.append(["Erosion", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
 	await StepRivers.new().execute(self, settings)           # CPU D8 flow-accumulation rivers + lakes

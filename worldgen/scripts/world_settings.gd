@@ -38,6 +38,28 @@ func map_diag() -> float:
 @export var highland_range: float = 0.25   # height band above sea over which uplift ramps in
 @export var peak_detail_strength: float = 0.12  # fine surface-detail noise amplitude
 
+@export_group("Noise Shaping (fBm / Multifractal / Warp)")
+## All maps now use OpenSimplex2 (no Perlin grid artifacts). fBm sums octaves with
+## fixed weights; multifractal modulates each octave by the running lower-octave
+## sum so detail concentrates on high ground (smooth lowlands, detailed peaks).
+## Domain warp perturbs the sample coords by another noise so features meander
+## organically instead of looking like grid noise.
+# Continent (landmass) shaping.
+@export_range(1, 8) var continent_octaves: int = 4
+@export_range(0.0, 1.0) var continent_gain: float = 0.5        # persistence: per-octave amplitude falloff
+@export_range(1.0, 4.0) var continent_lacunarity: float = 2.0  # per-octave frequency growth
+@export var continent_warp_amp: float = 0.0                    # domain-warp px (0 = off)
+@export var continent_warp_freq: float = 0.01
+# Peaks: ridged-multifractal (highlands) + billow-multifractal (foothills).
+@export_range(1, 8) var peaks_octaves: int = 5
+@export_range(0.0, 1.0) var peaks_gain: float = 0.5
+@export_range(1.0, 4.0) var peaks_lacunarity: float = 2.0
+@export_range(0.5, 1.5) var ridge_offset: float = 1.0         # ridged-multifractal fold offset (higher = fatter ridges)
+@export var peaks_warp_amp: float = 30.0                      # domain-warp px applied to ridge+billow (organic ridgelines)
+@export var peaks_warp_freq: float = 0.01
+@export var billow_frequency: float = 0.02                    # rounded-foothill (billow) noise scale
+@export var peak_billow_strength: float = 0.12               # foothill amplitude, peaks at mid elevations
+
 @export_group("Tectonics Simulation")
 @export var plate_count: int = 7
 @export var drift_intensity: float = 0.25   # boundary collision relief strength
@@ -58,14 +80,22 @@ func map_diag() -> float:
 @export_range(1, 6) var temp_bands: int = 3
 @export_range(1, 6) var humid_bands: int = 3
 
-@export_group("Erosion (Light Channels)")
-@export var erosion_frequency: float = 0.03         # ridged Perlin channel scale (noisier than peaks)
-@export_range(1, 8) var erosion_octaves: int = 4    # ridged-noise detail octaves (more = finer channels)
-@export var erosion_strength: float = 0.05          # max height subtracted (light; well under peaks' uplift)
-@export var erosion_humidity_frequency: float = 0.026  # erosion's own humidity map scale
-@export_range(0.0, 1.0) var erosion_channel_threshold: float = 0.5  # crest cutoff: lower = wider/more channels
-@export_range(0.0, 6.0) var erosion_height_bias: float = 2.0   # exponent: carve more in taller terrain
-@export_range(0.0, 6.0) var erosion_humidity_bias: float = 2.0 # exponent: carve more in wetter terrain
+@export_group("Erosion (Hydraulic / Flow)")
+## Flow-accumulation (stream-power) erosion: O(n) whole-map "every cell is a
+## droplet" carving driven by the climate humidity map as ancient rainfall.
+## Runs on its OWN downscaled grid (independent of rivers) BEFORE the river step.
+@export_range(1, 6) var erosion_resolution_divisor: int = 2   # hydrology grid downscale (higher = faster, blockier)
+@export var erosion_humidity_frequency: float = 0.024  # ancient-weather (erosion) humidity scale; distinct from climate humidity
+@export_range(0.0, 8.0) var erosion_rain_humidity_bias: float = 2.0  # exponent: wetter cells supply more runoff
+@export_range(0.0, 8.0) var erosion_rain_elevation_bias: float = 1.0 # exponent: higher cells supply more runoff
+@export_range(0.0, 4.0) var erosion_rain_humidity_weight: float = 1.0 # how much the humidity term ADDS atop the always-on elevation runoff
+@export_range(0.5, 8.0) var erosion_flow_exponent: float = 1.5  # MFD spread: low = diffuse sheet erosion, high = single channels
+@export var erosion_strength: float = 0.06           # stream-power carve scale (max height removed)
+@export_range(0.0, 2.0) var erosion_accum_exponent: float = 0.5  # m: carve grows with flow^m (0.5 = sqrt, gentle widening)
+@export_range(0.0, 4.0) var erosion_slope_exponent: float = 1.0  # n: carve grows with local slope^n
+@export_range(0.0, 1.0) var erosion_deposition: float = 0.5      # fraction of carved sediment re-deposited in flats (valley floors)
+@export_range(0, 4) var erosion_thermal_passes: int = 1          # talus-slump smoothing passes (0 = off)
+@export var erosion_talus: float = 0.012             # max stable neighbor height diff before material slumps
 
 @export_group("River Generation")
 @export_range(1, 6) var river_resolution_divisor: int = 1  # hydrology grid downscale (1=full res/no pixelation, higher=faster but blocky)
@@ -74,6 +104,7 @@ func map_diag() -> float:
 @export var river_accum_threshold: float = 60.0       # min flow accumulation for a river (lower = denser network)
 @export var river_carve_depth: float = 0.02           # max channel depth below land (scaled by river size)
 @export_range(0.0, 6.0) var river_width_gain: float = 2.0  # how strongly large rivers widen (hydrology-px radius)
+@export_range(0.5, 8.0) var river_flow_exponent: float = 4.0  # MFD spread: low = braided/deltas on flats, high = crisp single rivers
 
 @export_group("Lakes")
 @export var lake_min_depth: float = 0.01              # min depression-fill above terrain to count as a lake

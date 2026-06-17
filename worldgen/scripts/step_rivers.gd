@@ -32,70 +32,31 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 		for lx in range(lw):
 			lbase[(ly * lw) + lx] = gen.height_buffer[((ly * s) * w) + (lx * s)]
 
-	var lfilled := _fill_depressions(lbase, lw, lh, oth)
+	var lfilled := fill_depressions(lbase, lw, lh, oth)
 
 	# Rainfall map: rivers REUSE the exact climate humidity map (the shared baked
 	# image), so rivers source where the climate is wet.
 	var hum_img := gen.noise_img("humidity")
 
-	# D8 downstream index + per-cell rainfall (accumulation seed).
+	# Per-cell rainfall (accumulation seed). Rivers source MULTIPLICATIVELY from
+	# wet AND high terrain, so a dry mountain spawns no river (not every mountain
+	# gets one) -- unlike erosion, which sources additively (every mountain erodes).
 	var inv_sea := 1.0 / maxf(1e-3, 1.0 - oth)
-	var down := PackedInt32Array()
-	down.resize(ln)
-	down.fill(-1)
-	var accum := PackedFloat32Array()
-	accum.resize(ln)
+	var seed := PackedFloat32Array()
+	seed.resize(ln)
 	for ly in range(lh):
 		for lx in range(lw):
 			var i := (ly * lw) + lx
 			if lbase[i] < oth:
-				accum[i] = 0.0
-				continue  # ocean is a sink: flow ends here
+				continue  # ocean is a sink
 			var wet := hum_img.get_pixel(mini(lx * s, w - 1), mini(ly * s, h - 1)).r  # 0..1
 			var elev := clampf((lbase[i] - oth) * inv_sea, 0.0, 1.0)
-			accum[i] = pow(wet, settings.river_source_humidity_bias) \
+			seed[i] = pow(wet, settings.river_source_humidity_bias) \
 				* pow(elev, settings.river_source_elevation_bias) + 0.001
-			var best := lfilled[i]
-			var bi := -1
-			for oy in range(-1, 2):
-				for ox in range(-1, 2):
-					if ox == 0 and oy == 0:
-						continue
-					var nx := lx + ox
-					var ny := ly + oy
-					if nx < 0 or ny < 0 or nx >= lw or ny >= lh:
-						continue
-					var ni := (ny * lw) + nx
-					if lfilled[ni] < best:
-						best = lfilled[ni]
-						bi = ni
-			down[i] = bi
 
-	# Accumulate downstream with a topological pass (Kahn) -- O(n), exact, no sort.
-	var indeg := PackedInt32Array()
-	indeg.resize(ln)
-	indeg.fill(0)
-	for i in range(ln):
-		if down[i] >= 0:
-			indeg[down[i]] += 1
-	var queue := PackedInt32Array()
-	queue.resize(ln)
-	var qh := 0
-	var qt := 0
-	for i in range(ln):
-		if indeg[i] == 0:
-			queue[qt] = i
-			qt += 1
-	while qh < qt:
-		var c := queue[qh]
-		qh += 1
-		var d := down[c]
-		if d >= 0:
-			accum[d] += accum[c]
-			indeg[d] -= 1
-			if indeg[d] == 0:
-				queue[qt] = d
-				qt += 1
+	# Multiple-flow-direction accumulation: rivers can FORK on flats / at coasts
+	# (deltas, distributaries) instead of collapsing to one D8 path.
+	var accum := flow_accumulate_mfd(lfilled, seed, lw, lh, oth, settings.river_flow_exponent)
 
 	# Normalise accumulation. Carve DEPTH uses a log scale (huge dynamic range);
 	# WIDTH must instead grow from the source threshold so a river starts as a
@@ -187,83 +148,3 @@ func _dilate(mask: PackedByteArray, w: int, h: int, r: int) -> PackedByteArray:
 						continue
 					out[(ny * w) + nx] = 1
 	return out
-
-## Priority-Flood (+epsilon) depression filling (Barnes et al. 2014), bucket-queue
-## variant. Returns a surface W >= H where every land cell has a strictly
-## monotonic downhill path to the open boundary (map edge / ocean), so flow never
-## gets trapped in a local minimum; basins are raised to their spill level plus a
-## tiny epsilon gradient toward the outlet (which also resolves flats).
-##
-## Instead of a binary heap (O(n log n) with heavy GDScript per-op overhead), it
-## uses a radix/bucket priority queue keyed on quantized elevation: pops happen in
-## non-decreasing order by advancing a single level cursor, and each bucket is
-## read FIFO so the epsilon gradient grows along the BFS from each outlet. O(n+K).
-const FILL_BUCKETS := 1024
-func _fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> PackedFloat32Array:
-	var n := w * h
-	var W := PackedFloat32Array()
-	W.resize(n)
-	W.fill(INF)
-	var closed := PackedByteArray()
-	closed.resize(n)
-	closed.fill(0)
-	const EPS := 0.00001
-
-	# Quantization range for bucket indexing.
-	var hmin := INF
-	var hmax := -INF
-	for i in range(n):
-		var v := H[i]
-		if v < hmin: hmin = v
-		if v > hmax: hmax = v
-	var span := maxf(1e-6, hmax - hmin)
-	var scale := float(FILL_BUCKETS - 1) / span
-
-	# One FIFO queue per quantized level. Reference-type Arrays so appends during
-	# processing are visible through the cached reference (PackedArrays would copy).
-	var buckets: Array = []
-	buckets.resize(FILL_BUCKETS)
-	for b in range(FILL_BUCKETS):
-		buckets[b] = []
-
-	# Seed the open boundary: map edges and every ocean cell drain freely.
-	for y in range(h):
-		for x in range(w):
-			var i := (y * w) + x
-			if x == 0 or y == 0 or x == w - 1 or y == h - 1 or H[i] < oth:
-				W[i] = H[i]
-				closed[i] = 1
-				var lv := int((H[i] - hmin) * scale)
-				buckets[lv].append(i)
-
-	# Drain buckets in non-decreasing level order; a cell only ever pushes into its
-	# own or a higher bucket (W never decreases), so the cursor only moves forward.
-	var cur := 0
-	var cursor := 0
-	while cur < FILL_BUCKETS:
-		var b: Array = buckets[cur]
-		if cursor >= b.size():
-			cur += 1
-			cursor = 0
-			continue
-		var ci: int = b[cursor]
-		cursor += 1
-		var cx := ci % w
-		var cy := ci / w
-		for oy in range(-1, 2):
-			for ox in range(-1, 2):
-				if ox == 0 and oy == 0:
-					continue
-				var nx := cx + ox
-				var ny := cy + oy
-				if nx < 0 or ny < 0 or nx >= w or ny >= h:
-					continue
-				var ni := (ny * w) + nx
-				if closed[ni] == 1:
-					continue
-				var wn := maxf(H[ni], W[ci] + EPS)
-				W[ni] = wn
-				closed[ni] = 1
-				var lv := mini(int((wn - hmin) * scale), FILL_BUCKETS - 1)
-				buckets[lv].append(ni)
-	return W

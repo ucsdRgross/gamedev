@@ -1,10 +1,13 @@
 shader_type canvas_item;
 
-// Peaks & valleys: ridged gradient noise + fine detail layered onto land.
-// Ridged noise (1 - |gnoise|) gives natural mountain ridge lines instead of
-// the concentric "donut" rings the old cellular formula produced.
+// Peaks & valleys: altitude-blended multifractal noise layered onto land.
+// Lowlands stay smooth (fbm detail only), mid elevations get rounded billow
+// foothills, and highlands grow sharp ridged-multifractal crests -- so one
+// terrain transitions plains -> hills -> mountains instead of wearing the same
+// ridged texture everywhere. Both ridge and billow are domain-warped at bake.
 uniform sampler2D deformed_tex;
-uniform sampler2D ridge_tex;   // CPU-baked ridged noise, 0..1
+uniform sampler2D ridge_tex;   // CPU-baked ridged-multifractal noise, 0..1 (highlands)
+uniform sampler2D billow_tex;  // CPU-baked billow-multifractal noise, 0..1 (foothills)
 uniform sampler2D detail_tex;  // CPU-baked fbm detail noise, 0..1
 uniform sampler2D warp_x_tex;  // shared tectonic warp (x), 0..1 -> jagged edge clamp
 uniform sampler2D warp_y_tex;  // shared tectonic warp (y), 0..1
@@ -14,17 +17,24 @@ uniform float edge_jag = 0.06;        // UV displacement of the edge clamp (matc
 uniform float peak_uplift = 0.25;       // ridge uplift amount in highlands
 uniform float highland_range = 0.25;    // height band above sea over which uplift ramps in
 uniform float peak_detail_strength = 0.12; // fine detail-noise amplitude
+uniform float peak_billow_strength = 0.12; // foothill (billow) amplitude, peaks at mid elevation
 
 void fragment() {
 	float height = texture(deformed_tex, UV).r;
 
 	if (height > ocean_threshold) {
 		float ridge = texture(ridge_tex, UV).r;                                 // 0 .. 1
+		float billow = texture(billow_tex, UV).r;                               // 0 .. 1
 		float detail = (texture(detail_tex, UV).r - 0.5) * 2.0 * peak_detail_strength;
-		// Concentrate the ridge uplift in already-high terrain so plains stay
-		// plains and only highlands grow into mountains.
-		float highland = smoothstep(ocean_threshold, ocean_threshold + highland_range, height);
-		height = clamp(height + ridge * peak_uplift * highland + detail, 0.0, 1.2);
+		// t: 0 just above sea -> 1 in the highlands. Ridges dominate high ground;
+		// billow foothills peak at mid elevation (t*(1-t) is max at t=0.5).
+		float t = smoothstep(ocean_threshold, ocean_threshold + highland_range, height);
+		float ridge_w = t;
+		float billow_w = t * (1.0 - t) * 4.0;
+		height = clamp(height
+			+ ridge * peak_uplift * ridge_w
+			+ billow * peak_billow_strength * billow_w
+			+ detail, 0.0, 1.2);
 	}
 
 	// Edge clamp: tectonics/peaks can push land outward, so force a hard fade to
