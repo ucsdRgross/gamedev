@@ -18,7 +18,8 @@ extends Node
 ## tiny (tiers_to_run=["medium"], V=2, S=1, max_rounds=1).
 
 # --- Scene exports (debug knobs) -------------------------------------------
-@export var tiers_to_run: Array[String] = []   # empty = all tiers
+@export var tiers_to_run: Array[String] = []   # empty = all map-size tiers
+@export var city_targets: Array[int] = [5, 10, 15, 20]  # per-run city goals tested on EVERY tier
 @export var V: int = 20                         # values sampled per param per round
 @export var S: int = 20                         # seeds each value is scored over
 @export var max_rounds: int = 6
@@ -47,11 +48,11 @@ const OUT_DIR := "res://tuning"
 # can only visit one city per `gap` layers, so the path length is dictated by the
 # goal, not free to choose.
 const TIERS := {
-	"mini":    {"px": 256,  "target_cities": 5,  "max_travel_count": 200},
-	"small":   {"px": 384,  "target_cities": 12, "max_travel_count": 400},
-	"medium":  {"px": 512,  "target_cities": 20, "max_travel_count": 700},
-	"large":   {"px": 768,  "target_cities": 35, "max_travel_count": 1400},
-	"massive": {"px": 1024, "target_cities": 50, "max_travel_count": 2400},
+	"mini":    {"px": 256},
+	"small":   {"px": 384},
+	"medium":  {"px": 512},
+	"large":   {"px": 768},
+	"massive": {"px": 1024},
 }
 const TIER_ORDER := ["mini", "small", "medium", "large", "massive"]
 
@@ -59,45 +60,39 @@ const TIER_ORDER := ["mini", "small", "medium", "large", "massive"]
 # One row per tunable. scope "graph" = threaded (reuses cached base); "base" =
 # serial (regenerates the GPU base). Add/remove a tunable by editing this array.
 # type: "i" int, "f" float.
-# NOTE: layer_count, min_cities_visited, max_cities_visited are intentionally NOT
-# here -- they are DERIVED per-candidate from target_cities + spacing in
-# _apply_structure (searching them would fight the "visit N cities per run" goal).
+# DERIVED per-candidate in _apply_structure (NOT searched): layer_count,
+# min/max_cities_visited (= target_cities), max_travel_count (= travel_per_city x
+# target), max_city_count (= (target+2) x min_graph_width). Min/max pairs that
+# bound one quantity are collapsed to a single 'target' param here (outgoing,
+# nodes_between_cities) and expanded to min=max in _apply_structure.
 const PARAMS := [
-	{"name": "min_path_dist", "type": "f", "min": 5, "max": 60, "step": 5, "scope": "graph"},
-	{"name": "max_path_search_dist", "type": "f", "min": 30, "max": 220, "step": 10, "scope": "graph"},
-	{"name": "min_outgoing", "type": "i", "min": 1, "max": 4, "step": 1, "scope": "graph"},
-	{"name": "max_outgoing", "type": "i", "min": 2, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "outgoing", "type": "i", "min": 1, "max": 6, "step": 1, "scope": "graph"},
 	{"name": "min_outgoing_after_trim", "type": "i", "min": 1, "max": 3, "step": 1, "scope": "graph"},
 	{"name": "edge_trim_chance", "type": "f", "min": 0.0, "max": 0.9, "step": 0.1, "scope": "graph"},
-	{"name": "min_nodes_between_cities", "type": "i", "min": 0, "max": 6, "step": 1, "scope": "graph"},
-	{"name": "max_nodes_between_cities", "type": "i", "min": 1, "max": 10, "step": 1, "scope": "graph"},
+	{"name": "nodes_between_cities", "type": "i", "min": 0, "max": 8, "step": 1, "scope": "graph"},
 	{"name": "city_bottleneck_strength", "type": "f", "min": 0.0, "max": 1.0, "step": 0.1, "scope": "graph"},
-	{"name": "min_graph_width", "type": "i", "min": 1, "max": 6, "step": 1, "scope": "graph"},
+	{"name": "min_graph_width", "type": "i", "min": 1, "max": 6, "step": 1, "scope": "base"},
 	{"name": "max_landmasses", "type": "i", "min": 1, "max": 8, "step": 1, "scope": "base"},
 	{"name": "max_cross_ocean_per_band", "type": "i", "min": 0, "max": 4, "step": 1, "scope": "graph"},
-	{"name": "max_water_crossing_dist", "type": "f", "min": 40, "max": 300, "step": 20, "scope": "graph"},
+	{"name": "water_crossing_ratio", "type": "f", "min": 0.05, "max": 0.45, "step": 0.025, "scope": "graph"},
 	{"name": "start_end_island_penalty", "type": "f", "min": 0, "max": 10000, "step": 1000, "scope": "graph"},
 	{"name": "start_end_min_connections", "type": "i", "min": 0, "max": 6, "step": 1, "scope": "graph"},
 	{"name": "mountain_pass_bias", "type": "f", "min": 0.0, "max": 5.0, "step": 0.5, "scope": "graph"},
 	{"name": "graph_anti_straight", "type": "f", "min": 0.0, "max": 3.0, "step": 0.25, "scope": "graph"},
-	{"name": "path_ortho_length_bonus", "type": "f", "min": 0.0, "max": 4.0, "step": 0.5, "scope": "graph"},
 	{"name": "graph_zigzag_penalty", "type": "f", "min": 0, "max": 200, "step": 20, "scope": "graph"},
 	{"name": "failsafe_max_injected_nodes", "type": "i", "min": 0, "max": 80, "step": 10, "scope": "graph"},
 	{"name": "graph_build_passes", "type": "i", "min": 1, "max": 4, "step": 1, "scope": "graph"},
-	{"name": "min_city_dist", "type": "f", "min": 8, "max": 60, "step": 4, "scope": "base"},
-	{"name": "max_city_count", "type": "i", "min": 10, "max": 400, "step": 10, "scope": "base"},
-	{"name": "min_travel_dist", "type": "f", "min": 4, "max": 30, "step": 2, "scope": "base"},
-	{"name": "max_travel_count", "type": "i", "min": 50, "max": 2400, "step": 50, "scope": "base"},
-	{"name": "city_coast_radius", "type": "f", "min": 0, "max": 40, "step": 5, "scope": "base"},
+	{"name": "city_dist_ratio", "type": "f", "min": 0.01, "max": 0.09, "step": 0.005, "scope": "base"},
+	{"name": "travel_dist_ratio", "type": "f", "min": 0.005, "max": 0.045, "step": 0.0025, "scope": "base"},
+	{"name": "travel_per_city", "type": "f", "min": 5, "max": 120, "step": 5, "scope": "base"},
+	# coast_radius_ratio + path_curve_*_ratio are cosmetic -> not searched (fixed defaults).
 ]
 
-# Pairs (lower, upper): when sampling we keep upper >= lower (sampled as a delta).
-const ORDER_PAIRS := [
-	["min_outgoing", "max_outgoing"],
-	["min_outgoing_after_trim", "min_outgoing"],
-	["min_nodes_between_cities", "max_nodes_between_cities"],
-	["min_path_dist", "max_path_search_dist"],
-]
+# "Virtual" search params -- not WorldSettings fields. They are stashed as resource
+# metadata on the candidate and expanded into real fields by _apply_structure
+# (outgoing -> min/max_outgoing, nodes_between_cities -> min/max_nbc,
+# travel_per_city -> max_travel_count). Defaults seed the baseline.
+const VIRTUAL := {"outgoing": 3, "nodes_between_cities": 2, "travel_per_city": 30.0}
 
 var _gen: WorldGenerator
 var _rng := RandomNumberGenerator.new()
@@ -127,12 +122,14 @@ func _ready() -> void:
 
 	var run_start := Time.get_ticks_msec()
 	var tiers := tiers_to_run if not tiers_to_run.is_empty() else TIER_ORDER
+	# Matrix: every city target on every map-size tier.
 	for t in tiers:
 		if not TIERS.has(t):
 			push_warning("Unknown tier '%s' -- skipping" % t)
 			continue
-		print("\n========== TIER: %s ==========" % t)
-		await _run_tier(t)
+		for target in city_targets:
+			print("\n========== TIER: %s | target_cities: %d ==========" % [t, target])
+			await _run_combo(t, int(target))
 	var total_s := float(Time.get_ticks_msec() - run_start) / 1000.0
 	print("\n=== Param search complete in %s (%.1f s) ===" % [_fmt_duration(total_s), total_s])
 	get_tree().quit()
@@ -166,17 +163,18 @@ func _make_cfg() -> GraphMetrics.RewardConfig:
 # ---------------------------------------------------------------------------
 # Per-tier coordinate-descent search.
 # ---------------------------------------------------------------------------
-func _run_tier(tier: String) -> void:
+func _run_combo(tier: String, target: int) -> void:
 	var tier_start := Time.get_ticks_msec()
+	var combo := "%s_t%d" % [tier, target]
 	var td: Dictionary = TIERS[tier]
-	_target_cities = int(td["target_cities"])
+	_target_cities = target
 	var baseline := _tier_baseline(td)
 	# Mutable working ranges, seeded from the registry hard bounds.
 	var ranges := {}
 	for p in PARAMS:
 		ranges[p["name"]] = [float(p["min"]), float(p["max"])]
 
-	var csv_path := "%s/%s_samples.csv" % [OUT_DIR, tier]
+	var csv_path := "%s/%s_samples.csv" % [OUT_DIR, combo]
 	_csv_header(csv_path)
 
 	for round_i in range(max_rounds):
@@ -199,10 +197,10 @@ func _run_tier(tier: String) -> void:
 	if enable_phase_b:
 		await _phase_b(baseline, ranges, csv_path)
 
-	_write_best(tier, baseline, ranges)
-	await _save_best_image(tier, baseline)
+	_write_best(combo, baseline, ranges)
+	await _save_best_image(combo, baseline)
 	var tier_s := float(Time.get_ticks_msec() - tier_start) / 1000.0
-	print("   tier '%s' took %s (%.1f s)" % [tier, _fmt_duration(tier_s), tier_s])
+	print("   combo '%s' took %s (%.1f s)" % [combo, _fmt_duration(tier_s), tier_s])
 
 # Worker-thread atom: build+score _task_settings[i] against the shared restored
 # base (_task_base). Reads only; build is side-effect-free (write_to_gen=false).
@@ -225,27 +223,48 @@ func _tier_baseline(td: Dictionary) -> WorldSettings:
 	var s := WorldSettings.new()
 	s.map_width = td["px"]
 	s.map_height = td["px"]
-	s.max_travel_count = td["max_travel_count"]
-	# Plenty of total cities so per-run goal is reachable across branches.
-	s.max_city_count = maxi(s.max_city_count, int(td["target_cities"]) * 4)
-	_apply_structure(s)  # derive layer_count + cities_visited from target_cities
+	for k in VIRTUAL:
+		s.set_meta(k, VIRTUAL[k])  # seed virtual-param defaults
+	_apply_structure(s)
 	return s
 
-## Derive the structural params that are dictated by the per-run city goal:
-## a forward path visits one city per `gap` layers, so to require `target_cities`
-## cities on a run we need layer_count = (target_cities+1)*gap, and the
-## cities_visited window pinned to the goal. gap follows the swept spacing
-## (nodes_between_cities), so changing spacing rescales the layer count.
-## Call after every candidate WorldSettings is finalized (post _enforce_order).
+# --- Virtual param routing (outgoing / nodes_between_cities / travel_per_city are
+# stashed as metadata, everything else is a real WorldSettings field) ---------
+func _set_param(s: WorldSettings, name: String, value) -> void:
+	if VIRTUAL.has(name):
+		s.set_meta(name, value)
+	else:
+		s.set(name, value)
+
+func _get_param(s: WorldSettings, name: String):
+	if VIRTUAL.has(name):
+		return s.get_meta(name, VIRTUAL[name])
+	return s.get(name)
+
+## Expand the virtual params into real fields and derive everything dictated by
+## the per-run city goal. A forward path visits one city per `gap` layers, so to
+## require `target_cities` cities on a run: layer_count = (target_cities+1)*gap and
+## the cities_visited window is pinned to the goal. Travel/city counts scale off
+## the goal too. Call after every candidate WorldSettings is set up.
 func _apply_structure(s: WorldSettings) -> void:
+	# Collapse the single 'target' params into the engine's min/max fields.
+	var outgoing := int(_get_param(s, "outgoing"))
+	s.min_outgoing = outgoing
+	s.max_outgoing = outgoing
+	s.min_outgoing_after_trim = mini(s.min_outgoing_after_trim, outgoing)
+	var nbc := int(_get_param(s, "nodes_between_cities"))
+	s.min_nodes_between_cities = nbc
+	s.max_nodes_between_cities = nbc
 	if _target_cities <= 0:
 		return
-	var between := clampi(int(round((s.min_nodes_between_cities + s.max_nodes_between_cities) / 2.0)),
-		s.min_nodes_between_cities, s.max_nodes_between_cities)
-	var gap := maxi(2, between + 1)
+	var gap := maxi(2, nbc + 1)
 	s.layer_count = (_target_cities + 1) * gap
 	s.min_cities_visited = _target_cities
 	s.max_cities_visited = _target_cities
+	# Travel nodes as a ratio of the per-run city goal; total cities from branching.
+	var ratio := float(_get_param(s, "travel_per_city"))
+	s.max_travel_count = maxi(1, int(round(ratio * float(_target_cities))))
+	s.max_city_count = maxi(s.min_cities_visited + 1, (_target_cities + 2) * maxi(1, s.min_graph_width))
 
 # Generate + cache S base maps for the seeds 1..S using `baseline` base params.
 func _cache_seed_bases(baseline: WorldSettings) -> Array:
@@ -289,8 +308,7 @@ func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
 		_task_settings.clear()
 		for v in values:
 			var ps := baseline.duplicate(true) as WorldSettings
-			ps.set(pname, _typed(v, p))
-			_enforce_order(ps)
+			_set_param(ps, pname, _typed(v, p))
 			_apply_structure(ps)
 			_task_settings.append(ps)
 		for base in bases:
@@ -306,8 +324,7 @@ func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
 		# value reuses the same V settings list shape but with the swept value.
 		for vi in range(nv):
 			var ps := baseline.duplicate(true) as WorldSettings
-			ps.set(pname, _typed(values[vi], p))
-			_enforce_order(ps)
+			_set_param(ps, pname, _typed(values[vi], p))
 			_apply_structure(ps)
 			for si in range(S):
 				ps.main_seed = si + 1
@@ -349,7 +366,8 @@ func _sweep_param(p: Dictionary, baseline: WorldSettings, ranges: Dictionary,
 	if new_hi <= new_lo:
 		new_hi = minf(float(p["max"]), new_lo + float(p["step"]))
 
-	baseline.set(pname, _typed(values[order[0]], p))
+	_set_param(baseline, pname, _typed(values[order[0]], p))
+	_apply_structure(baseline)
 	var old_w := hi - lo
 	var new_w := new_hi - new_lo
 	var moved := old_w <= 0.0 or absf(new_w - old_w) / maxf(old_w, 1e-6) > 0.05
@@ -372,8 +390,7 @@ func _phase_b(baseline: WorldSettings, ranges: Dictionary, csv_path: String) -> 
 			if p["scope"] != "graph":
 				continue  # base-scope held at baseline (regen too costly per config)
 			var r: Array = ranges[p["name"]]
-			ps.set(p["name"], _typed(_rng.randf_range(r[0], r[1]), p))
-		_enforce_order(ps)
+			_set_param(ps, p["name"], _typed(_rng.randf_range(r[0], r[1]), p))
 		_apply_structure(ps)
 		var rewards: Array = []
 		for b in bases:
@@ -388,7 +405,8 @@ func _phase_b(baseline: WorldSettings, ranges: Dictionary, csv_path: String) -> 
 		print("   phase B best mean reward=%.3f" % best_reward)
 		for p in PARAMS:
 			if p["scope"] == "graph":
-				baseline.set(p["name"], best_cfg.get(p["name"]))
+				_set_param(baseline, p["name"], _get_param(best_cfg, p["name"]))
+		_apply_structure(baseline)
 
 # ---------------------------------------------------------------------------
 # Build + score one settings config on one cached base. Pure (write_to_gen=false).
@@ -436,13 +454,6 @@ func _snap(v: float, lo: float, hi: float, step: float) -> float:
 func _typed(v, p: Dictionary):
 	return int(round(v)) if p["type"] == "i" else float(v)
 
-func _enforce_order(s: WorldSettings) -> void:
-	for pair in ORDER_PAIRS:
-		var lower = s.get(pair[0])
-		var upper = s.get(pair[1])
-		if upper < lower:
-			s.set(pair[1], lower)
-
 func _mean(a: Array) -> float:
 	if a.is_empty():
 		return 0.0
@@ -474,44 +485,44 @@ func _csv_append(path: String, rows: Array) -> void:
 		f.store_line(r)
 	f.close()
 
-func _write_best(tier: String, baseline: WorldSettings, ranges: Dictionary) -> void:
+func _write_best(combo: String, baseline: WorldSettings, ranges: Dictionary) -> void:
 	var txt := FileAccess.open("%s/best_ranges.txt" % OUT_DIR, FileAccess.READ_WRITE if FileAccess.file_exists("%s/best_ranges.txt" % OUT_DIR) else FileAccess.WRITE)
 	txt.seek_end()
-	txt.store_line("\n[tier: %s]" % tier)
+	txt.store_line("\n[%s]  (target_cities=%d)" % [combo, _target_cities])
 	var jdict := {}
 	for p in PARAMS:
 		var nm: String = p["name"]
 		var r: Array = ranges[nm]
-		var best = baseline.get(nm)
+		var best = _get_param(baseline, nm)
 		txt.store_line("  %-26s [%.4f .. %.4f]  best=%s" % [nm, r[0], r[1], str(best)])
 		jdict[nm] = best
 	# Derived (not searched): dictated by target_cities + spacing.
 	txt.store_line("  -- derived from target_cities=%d --" % _target_cities)
-	for nm in ["layer_count", "min_cities_visited", "max_cities_visited"]:
+	for nm in ["layer_count", "min_cities_visited", "max_cities_visited", "max_travel_count", "max_city_count"]:
 		var dv = baseline.get(nm)
 		txt.store_line("  %-26s (derived) = %s" % [nm, str(dv)])
 		jdict[nm] = dv
 	txt.close()
 
-	# best_ranges.json: merge per-tier best values keyed by tier.
+	# best_ranges.json: merge keyed by combo (tier_target).
 	var jpath := "%s/best_ranges.json" % OUT_DIR
 	var root := {}
 	if FileAccess.file_exists(jpath):
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(jpath))
 		if typeof(parsed) == TYPE_DICTIONARY:
 			root = parsed
-	root[tier] = jdict
+	root[combo] = jdict
 	var jf := FileAccess.open(jpath, FileAccess.WRITE)
 	jf.store_string(JSON.stringify(root, "  "))
 	jf.close()
-	print("   wrote best_ranges.txt/.json + %s_samples.csv" % tier)
+	print("   wrote best_ranges.txt/.json + %s_samples.csv" % combo)
 
 # ---------------------------------------------------------------------------
 # Best-graph image: with the converged baseline, build the graph over a few
 # seeds, keep the highest-reward one, and save a full-res PNG of the graph drawn
 # on the heightmap (graph-only view, heightmap background for the landmasses).
 # ---------------------------------------------------------------------------
-func _save_best_image(tier: String, baseline: WorldSettings) -> void:
+func _save_best_image(combo: String, baseline: WorldSettings) -> void:
 	var best_reward := -INF
 	var best_res := {}
 	var best_height := PackedFloat32Array()
@@ -535,12 +546,12 @@ func _save_best_image(tier: String, baseline: WorldSettings) -> void:
 			best_height = base["height"].duplicate()
 			best_w = bs.map_width; best_h = bs.map_height; best_ot = bs.ocean_threshold
 	if best_res.is_empty():
-		print("   (no buildable graph to image for tier %s)" % tier)
+		print("   (no buildable graph to image for %s)" % combo)
 		return
 	var img := _render_graph_image(best_height, best_w, best_h, best_ot, best_res)
-	var path := "%s/%s_best_graph.png" % [OUT_DIR, tier]
+	var path := "%s/%s_best_graph.png" % [OUT_DIR, combo]
 	img.save_png(path)
-	print("   saved %s_best_graph.png (reward=%.3f)" % [tier, best_reward])
+	print("   saved %s_best_graph.png (reward=%.3f)" % [combo, best_reward])
 
 ## Heightmap background (ocean dark, land warm-grey by elevation) with the graph
 ## drawn over it: white edges + direction arrowheads, yellow cities, blue routed
@@ -615,23 +626,37 @@ func _write_how_to_read() -> void:
 	f.store_string("""HOW TO READ THE GRAPH PARAMETER SEARCH OUTPUT
 =============================================
 
+A "combo" = one map-size tier x one per-run city target, named <tier>_t<target>
+(e.g. medium_t10 = 512px map, must visit 10 cities on a run). Every city target is
+tested on every tier.
+
 Files in this folder (res://tuning/):
 
-  <tier>_samples.csv   one row per (round, parameter value) sampled. The reward
+  <combo>_samples.csv  one row per (round, parameter value) sampled. The reward
                        is broken into its component terms so you can see WHY a
                        value scored well, not just that it did.
-  best_ranges.txt      human-readable summary: per tier, per parameter, the
-                       narrowed [min..max] range and the single best value found.
-                       THIS is the easy-to-find artifact -- start here.
-  best_ranges.json     same best values, machine-readable, keyed by tier; load
+  best_ranges.txt      human-readable summary: per combo, per parameter, the
+                       narrowed [min..max] range and the single best value found,
+                       plus the DERIVED values. THIS is the artifact -- start here.
+  best_ranges.json     same best values, machine-readable, keyed by combo; load
                        these into a WorldSettings to reproduce the best config.
-  <tier>_best_graph.png  full-res picture of the best graph found for the tier,
+  <combo>_best_graph.png  full-res picture of the best graph found for the combo,
                        drawn over the heightmap (ocean dark, land grey by
                        elevation): white edges + arrowheads, yellow cities, blue
                        travel nodes, green start, red end.
   HOW_TO_READ.txt      this file.
 
-The console prints per-tier and total wall-clock time at the end of the run.
+The console prints per-combo and total wall-clock time at the end of the run.
+
+Derived params (NOT searched -- printed under each combo in best_ranges.txt):
+  layer_count, min/max_cities_visited come from target_cities + spacing (a run
+  visits one city per `gap=nodes_between_cities+1` layers, so
+  layer_count=(target+1)*gap and cities_visited is pinned to the target).
+  max_travel_count = round(travel_per_city * target_cities).
+  max_city_count   = (target_cities+2) * min_graph_width.
+Collapsed targets: `outgoing` sets min=max_outgoing; `nodes_between_cities` sets
+min=max. (min/max_path_dist were removed -- edges now connect to the nearest nodes
+in the next band, scaling with map size instead of a fixed pixel radius.)
 
 CSV columns
 -----------

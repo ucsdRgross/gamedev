@@ -21,14 +21,14 @@ extends Node
 # base_settings). max_landmasses is intentionally excluded: it shapes the base
 # map (Step6 labeling), not the graph rebuild.
 const GRAPH_FIELDS := [
-	"layer_count", "min_path_dist", "max_path_search_dist", "min_outgoing",
+	"layer_count", "min_outgoing",
 	"max_outgoing", "min_nodes_between_cities",
 	"max_nodes_between_cities", "min_cities_visited", "max_cities_visited",
 	"city_bottleneck_strength",
 	"min_biomes_per_path", "max_biomes_per_path", "max_cross_ocean_per_band",
-	"max_water_crossing_dist", "min_outgoing_after_trim", "edge_trim_chance",
+	"water_crossing_ratio", "min_outgoing_after_trim", "edge_trim_chance",
 	"start_end_island_penalty", "start_end_min_connections", "mountain_pass_bias",
-	"graph_anti_straight", "path_ortho_length_bonus", "graph_zigzag_penalty",
+	"graph_anti_straight", "graph_zigzag_penalty",
 	"min_graph_width", "graph_build_passes",
 	"failsafe_max_injected_nodes", "max_paths_enumerated",
 ]

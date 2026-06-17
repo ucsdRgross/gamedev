@@ -1,17 +1,37 @@
 HOW TO READ THE GRAPH PARAMETER SEARCH OUTPUT
 =============================================
 
+A "combo" = one map-size tier x one per-run city target, named <tier>_t<target>
+(e.g. medium_t10 = 512px map, must visit 10 cities on a run). Every city target is
+tested on every tier.
+
 Files in this folder (res://tuning/):
 
-  <tier>_samples.csv   one row per (round, parameter value) sampled. The reward
+  <combo>_samples.csv  one row per (round, parameter value) sampled. The reward
                        is broken into its component terms so you can see WHY a
                        value scored well, not just that it did.
-  best_ranges.txt      human-readable summary: per tier, per parameter, the
-                       narrowed [min..max] range and the single best value found.
-                       THIS is the easy-to-find artifact -- start here.
-  best_ranges.json     same best values, machine-readable, keyed by tier; load
+  best_ranges.txt      human-readable summary: per combo, per parameter, the
+                       narrowed [min..max] range and the single best value found,
+                       plus the DERIVED values. THIS is the artifact -- start here.
+  best_ranges.json     same best values, machine-readable, keyed by combo; load
                        these into a WorldSettings to reproduce the best config.
+  <combo>_best_graph.png  full-res picture of the best graph found for the combo,
+                       drawn over the heightmap (ocean dark, land grey by
+                       elevation): white edges + arrowheads, yellow cities, blue
+                       travel nodes, green start, red end.
   HOW_TO_READ.txt      this file.
+
+The console prints per-combo and total wall-clock time at the end of the run.
+
+Derived params (NOT searched -- printed under each combo in best_ranges.txt):
+  layer_count, min/max_cities_visited come from target_cities + spacing (a run
+  visits one city per `gap=nodes_between_cities+1` layers, so
+  layer_count=(target+1)*gap and cities_visited is pinned to the target).
+  max_travel_count = round(travel_per_city * target_cities).
+  max_city_count   = (target_cities+2) * min_graph_width.
+Collapsed targets: `outgoing` sets min=max_outgoing; `nodes_between_cities` sets
+min=max. (min/max_path_dist were removed -- edges now connect to the nearest nodes
+in the next band, scaling with map size instead of a fixed pixel radius.)
 
 CSV columns
 -----------

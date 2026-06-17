@@ -5,7 +5,8 @@
 [node name="GraphParamSearch" type="Node"]
 script = ExtResource("1")
 tiers_to_run = Array[String](["medium"])
+city_targets = Array[int]([5, 10, 15, 20])
 V = 8
-S = 4
+S = 6
 max_rounds = 2
-enable_phase_b = false
+enable_phase_b = true

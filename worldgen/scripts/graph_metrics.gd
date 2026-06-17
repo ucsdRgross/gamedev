@@ -21,8 +21,8 @@ class RewardConfig extends RefCounted:
 	# gaussian bump peaked at hollow_target_cells.
 	var hollow_mode: String = "uniform"
 	var ref_cells_per_hollow: float = 40.0 # uniform-mode scale factor (NOT a size
-	                                        # target): normalizes k_eff so w_hollow
-	                                        # means the same across tiers
+											# target): normalizes k_eff so w_hollow
+											# means the same across tiers
 	var hollow_target_cells: float = 40.0  # target-mode only: hollow area (cells) that scores best
 	var hollow_spread: float = 30.0        # target-mode only: gaussian falloff width
 	var w_biome: float = 0.0  # disabled: map biome counts aren't yet a tunable lever (see plan backlog)

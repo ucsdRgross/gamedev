@@ -61,7 +61,7 @@ func _curve_edge(gen: WorldGenerator, settings: WorldSettings, a: Vector2, b: Ve
 	# reads as an S / chain (straight runs where the bow lands near zero) instead
 	# of one perfect arc. Per-edge jitter keeps parallel roads distinct.
 	var k := clampi(int(straight / 45.0), 1, 3)
-	var seg_max := minf(settings.path_curve_max_px, (straight / float(k)) * 0.7)
+	var seg_max := minf(settings.path_curve_max_ratio * settings.map_diag(), (straight / float(k)) * 0.7)
 	var jit := 1.0 if (int(a.x + a.y * 3.0 + b.x * 7.0 + b.y * 11.0) % 2) == 0 else -1.0
 
 	var poly := PackedVector2Array()

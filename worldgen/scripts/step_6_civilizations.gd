@@ -32,8 +32,10 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 
 	# Cities: prefer coasts AND spread evenly across biomes (round-robin by biome,
 	# coastal-first within each biome). Travel nodes stay a uniform dense field.
-	_place_cities(gen, settings, gen.city_nodes, city_pool, settings.min_city_dist, city_target, needed_cities)
-	_place_spaced(gen.travel_nodes, travel_pool, settings.min_travel_dist, travel_target, needed_travel)
+	# Spacing ratios are resolution-independent (fractions of the map diagonal).
+	var diag := settings.map_diag()
+	_place_cities(gen, settings, gen.city_nodes, city_pool, settings.city_dist_ratio * diag, city_target, needed_cities)
+	_place_spaced(gen.travel_nodes, travel_pool, settings.travel_dist_ratio * diag, travel_target, needed_travel)
 
 	if gen.city_nodes.size() < needed_cities:
 		push_warning("[Civilizations] only %d/%d cities placed (land too small/sparse)"
@@ -93,17 +95,18 @@ func _place_cities(gen: WorldGenerator, settings: WorldSettings, into: Array, po
 			break
 		s *= 0.6
 
-## Water (ocean OR river/lake) samples on a jittered ring of ~city_coast_radius
-## -> higher = closer to water. The radius jitter + ring sampling means a high
-## score implies water is NEAR the candidate, not directly under it (random
-## offset, so cities sit just back from the bank rather than on it).
+## Water (ocean OR river/lake) samples on a jittered ring of ~coast_radius_ratio
+## of the map diagonal -> higher = closer to water. The radius jitter + ring
+## sampling means a high score implies water is NEAR the candidate, not directly
+## under it (random offset, so cities sit just back from the bank rather than on it).
 func _water_score(gen: WorldGenerator, settings: WorldSettings, c: Vector2, water: Dictionary) -> int:
 	var w := settings.map_width
 	var h := settings.map_height
+	var coast_px := settings.coast_radius_ratio * settings.map_diag()
 	var hits := 0
 	for ang in range(0, 360, 45):
 		var rad := deg_to_rad(float(ang))
-		var rr: float = settings.city_coast_radius * randf_range(0.7, 1.4)
+		var rr: float = coast_px * randf_range(0.7, 1.4)
 		var nx := clampi(int(c.x + cos(rad) * rr), 0, w - 1)
 		var ny := clampi(int(c.y + sin(rad) * rr), 0, h - 1)
 		var idx := (ny * w) + nx

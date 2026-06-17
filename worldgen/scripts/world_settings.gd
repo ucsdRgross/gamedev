@@ -6,6 +6,12 @@ extends Resource
 @export var map_width: int = 512
 @export var map_height: int = 512
 
+## Map diagonal in px -- the scale that pixel-free "ratio" params multiply against
+## so distances are resolution-independent (a ratio tuned on one map size transfers
+## to any other). 512x512 -> ~724 px.
+func map_diag() -> float:
+	return sqrt(float(map_width * map_width + map_height * map_height))
+
 @export_group("Generation Seeds")
 ## Each noise map gets its own offset from main_seed so all are independently
 ## tunable. Rivers deliberately reuse the climate humidity map (humidity_seed_offset).
@@ -79,8 +85,6 @@ extends Resource
 ## layer_count bands along the start->end spread axis; edges only go forward
 ## (no backtracking, no revisits) and pick min..max_outgoing targets by score.
 @export var layer_count: int = 14
-@export var min_path_dist: float = 20.0           # shortest allowed edge (px)
-@export var max_path_search_dist: float = 90.0    # candidate search radius / hard cap on land-edge length (px); keep short so paths don't span empty mountain gaps
 @export var min_outgoing: int = 2                 # target min forward edges per node when building
 @export var max_outgoing: int = 3                 # max forward edges per node
 @export var min_outgoing_after_trim: int = 1      # variety trim may reduce a node down to this (below min_outgoing)
@@ -105,23 +109,22 @@ extends Resource
 ## different continents; the straight line may touch land only at its endpoints.
 @export var max_landmasses: int = 4               # how many continents keep nodes (top-N by size)
 @export var max_cross_ocean_per_band: int = 1     # max INCOMING cross-ocean edges a band may receive (must land on a coastal city). Replaces the old per-landmass cap; applies to same- AND cross-landmass water crossings
-@export var max_water_crossing_dist: float = 220.0 # longest allowed cross-ocean edge (water travel reach)
+@export var water_crossing_ratio: float = 0.30   # longest allowed cross-ocean edge as a fraction of the map diagonal (water travel reach)
 @export var start_end_island_penalty: float = 4000.0 # discourage start/end on small landmasses
 @export var start_end_min_connections: int = 2     # start/end must have >= this many nearby nodes (else heavily penalized -> avoids tiny isolated endpoints)
 @export var mountain_pass_bias: float = 1.5       # >0 routes mountain travel through lower/closer-height passes
 @export var graph_anti_straight: float = 0.8      # penalty on edges that run straight at the goal (higher = more winding, less beeline)
-@export var path_ortho_length_bonus: float = 1.5  # extra edge-length allowed for sideways edges (e.g. 1.5 => perpendicular edges may be 2.5x the normal cap) -> wider travel space
 @export var graph_zigzag_penalty: float = 40.0    # penalty for crossing back over the spine centerline (commit to a side; rarely rejoin -> bulges instead of zig-zags)
 @export_range(0.0, 1.0) var edge_trim_chance: float = 0.3 # chance to drop a surplus edge (keeps min_outgoing, never orphans) so the graph isn't a perfect NxN lattice
-@export var path_curve_max_px: float = 55.0       # max sideways bow of a cosmetic curved road (limits curvature; beyond this it goes straight)
-@export var path_curve_min_px: float = 6.0        # gentle bow applied to even clear edges so every road curves slightly
+@export var path_curve_max_ratio: float = 0.076   # max sideways bow of a cosmetic curved road, as a fraction of the map diagonal (beyond this it goes straight)
+@export var path_curve_min_ratio: float = 0.008   # gentle bow applied to even clear edges so every road curves slightly (fraction of map diagonal)
 @export var failsafe_max_injected_nodes: int = 40 # nodes the failsafe may create to keep paths valid
 @export var max_paths_enumerated: int = 4000      # cap on start->end paths walked for stats/validation
 @export_range(1, 4) var graph_build_passes: int = 2 # build, diagnose+modify nodes, rebuild (1 = single pass)
 
 @export_group("Civilization")
-@export var min_city_dist: float = 24.0
+@export var city_dist_ratio: float = 0.033     # min city spacing as a fraction of the map diagonal
 @export var max_city_count: int = 150
-@export var min_travel_dist: float = 9.0     # spacing for the dense travel-node set
-@export var max_travel_count: int = 700      # cap on dense travel nodes
-@export var city_coast_radius: float = 10.0  # px ring sampled to score coastalness (cities prefer coasts)
+@export var travel_dist_ratio: float = 0.012   # min travel-node spacing as a fraction of the map diagonal
+@export var max_travel_count: int = 700        # cap on dense travel nodes
+@export var coast_radius_ratio: float = 0.014  # ring radius (fraction of map diagonal) sampled to score coastalness (cities prefer coasts)

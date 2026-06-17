@@ -266,7 +266,6 @@ static func format_graph_params(s: WorldSettings) -> String:
 		"world seed: %d" % s.main_seed,
 		"layers along the start->end axis: %d" % s.layer_count,
 		"outgoing edges chosen per node: %d to %d" % [s.min_outgoing, s.max_outgoing],
-		"land edge length (px): %.0f shortest, %.0f longest allowed" % [s.min_path_dist, s.max_path_search_dist],
 		"travel nodes between two consecutive cities: %d to %d" % [s.min_nodes_between_cities, s.max_nodes_between_cities],
 		"cities visited along a path: %d to %d" % [s.min_cities_visited, s.max_cities_visited],
 		"city bottleneck strength (1=strict funnel, 0=bypassable): %.2f" % s.city_bottleneck_strength,
@@ -274,10 +273,9 @@ static func format_graph_params(s: WorldSettings) -> String:
 		"biomes traversed per path: %d to %d" % [s.min_biomes_per_path, s.max_biomes_per_path],
 		"continents that keep nodes (largest N by size): %d" % s.max_landmasses,
 		"max incoming cross-ocean edges per band (onto coastal cities): %d" % s.max_cross_ocean_per_band,
-		"longest single water crossing (px): %.0f" % s.max_water_crossing_dist,
+		"longest single water crossing: %.3f x map diagonal (%.0f px)" % [s.water_crossing_ratio, s.water_crossing_ratio * s.map_diag()],
 		"mountain-pass routing bias (higher = hug low passes): %.2f" % s.mountain_pass_bias,
 		"anti-straight penalty (higher = more winding): %.2f" % s.graph_anti_straight,
-		"orthogonal length bonus (sideways edges longer): %.2f" % s.path_ortho_length_bonus,
 		"zig-zag penalty (commit to a side of the spine): %.0f" % s.graph_zigzag_penalty,
 		"penalty for starting/ending on a small island: %.0f" % s.start_end_island_penalty,
 		"min nearby nodes required at start/end (else penalized): %d" % s.start_end_min_connections,
@@ -342,7 +340,7 @@ static func validate(gen: WorldGenerator, graph: Dictionary, start: Vector2, end
 			var crosses := _crosses_ocean(gen, node, c, settings) or not _same_landmass(meta, node, c)
 			if not crosses:
 				continue
-			if node.distance_to(c) > settings.max_water_crossing_dist:
+			if node.distance_to(c) > settings.water_crossing_ratio * settings.map_diag():
 				v.append({"rule": "water_edge_too_long", "detail": "%s->%s" % [node, c]})
 			if not meta.get(c, {}).get("is_city", false) or not _is_coastal(gen, c, settings):
 				v.append({"rule": "water_edge_not_coastal_city", "detail": "%s->%s" % [node, c]})
@@ -402,14 +400,15 @@ static func _crosses_ocean(gen: WorldGenerator, a: Vector2, b: Vector2, settings
 			ocean += 1
 	return float(ocean) / float(maxi(1, steps - 1)) > 0.25
 
-## Coastal = ocean within ~12px on a sampled ring (mirrors GraphBuilder._is_coastal).
+## Coastal = ocean within the map-relative coastal ring (mirrors GraphBuilder._is_coastal).
 static func _is_coastal(gen: WorldGenerator, p: Vector2, settings: WorldSettings) -> bool:
 	var w := settings.map_width
 	var h := settings.map_height
+	var ring := maxf(6.0, settings.map_diag() * 0.017)
 	for ang in range(0, 360, 45):
 		var rad := deg_to_rad(float(ang))
-		var nx := clampi(int(p.x + cos(rad) * 12.0), 0, w - 1)
-		var ny := clampi(int(p.y + sin(rad) * 12.0), 0, h - 1)
+		var nx := clampi(int(p.x + cos(rad) * ring), 0, w - 1)
+		var ny := clampi(int(p.y + sin(rad) * ring), 0, h - 1)
 		if gen.height_buffer[(ny * w) + nx] < settings.ocean_threshold:
 			return true
 	return false

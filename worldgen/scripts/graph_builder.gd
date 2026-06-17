@@ -49,6 +49,10 @@ var _write_to_gen := true
 # Per-build seeded RNG (not the global randf) so builds are deterministic and
 # safe to run concurrently on worker threads without racing a shared generator.
 var _rng := RandomNumberGenerator.new()
+# Pixel values derived once per build from resolution-independent ratios.
+var _water_cross_px := 0.0
+var _reach_radius := 0.0
+var _coast_px := 0.0
 
 ## write_to_gen=false makes build side-effect-free: it returns the result dict but
 ## does NOT write gen.gameplay_graph/start_node/end_node/city_nodes. The param-search
@@ -59,6 +63,10 @@ func build(gen: WorldGenerator, settings: WorldSettings, write_to_gen: bool = tr
 	_settings = settings
 	_write_to_gen = write_to_gen
 	_rng.seed = hash([settings.main_seed, settings.layer_count, settings.edge_trim_chance])
+	var diag := settings.map_diag()
+	_water_cross_px = settings.water_crossing_ratio * diag
+	_reach_radius = maxf(8.0, settings.travel_dist_ratio * diag * 4.0)
+	_coast_px = maxf(6.0, diag * 0.017)  # coastal-detection ring (~12px at 512)
 	_gather_nodes()
 	if _pos.size() < 2:
 		if write_to_gen:
@@ -456,15 +464,14 @@ func _candidates_in_window(u: int, buckets: Array, lc: int, window: int) -> Arra
 			# Is this a water crossing? (different landmass, or the straight line
 			# runs mostly over ocean -- a bay/strait on the same landmass).
 			var cross: bool = (_landmass[v] != _landmass[u]) or (_landmass[u] < 0) or _edge_crosses_ocean(_pos[u], _pos[v])
-			# Length cap: cross-ocean edges reach as far as max_water_crossing_dist;
-			# land edges use the orthogonal-lenient cap.
-			var eff_max: float
-			if cross:
-				eff_max = _settings.max_water_crossing_dist
-			else:
-				eff_max = _settings.max_path_search_dist * (1.0 + _settings.path_ortho_length_bonus * (1.0 - along))
-			if d < _settings.min_path_dist or d > eff_max:
+			# Candidates are simply the nodes in the next band(s); we do NOT gate land
+			# edges by a hardcoded pixel radius (that didn't scale with map/node
+			# density). The only hard reach limit is for water crossings, which must
+			# stay within the water-crossing reach (else a graph could span an ocean).
+			if cross and d > _water_cross_px:
 				continue
+			# Nearer next-band nodes score better (so each node connects to its closest
+			# forward neighbours), then the usual shape penalties apply.
 			var score := d
 			# Anti-straight: penalize edges that beeline at the goal.
 			score += _settings.graph_anti_straight * along * d
@@ -477,9 +484,10 @@ func _candidates_in_window(u: int, buckets: Array, lc: int, window: int) -> Arra
 			# Mountain-pass preference.
 			if _height[u] >= mt or _height[v] >= mt:
 				score += _settings.mountain_pass_bias * 100.0 * (_height[v] + absf(_height[v] - _height[u]))
-			# Mild biome-variety nudge.
+			# Mild biome-variety nudge (relative to the edge's own length, so it stays
+			# scale-free now that there is no min_path_dist to key off).
 			if _biome[v] != _biome[u]:
-				score -= _settings.min_path_dist * 0.1
+				score -= d * 0.05
 			out.append({"i": v, "score": score, "cross": cross})
 	return out
 
@@ -497,15 +505,16 @@ func _edge_crosses_ocean(a: Vector2, b: Vector2) -> bool:
 			ocean += 1
 	return float(ocean) / float(maxi(1, steps - 1)) > 0.25
 
-## A node is coastal if ocean sits within ~12px on a sampled ring.
+## A node is coastal if ocean sits within the coastal ring (map-relative) on a
+## sampled ring.
 func _is_coastal(i: int) -> bool:
 	var w := _settings.map_width
 	var h := _settings.map_height
 	var p := _pos[i]
 	for ang in range(0, 360, 45):
 		var rad := deg_to_rad(float(ang))
-		var nx := clampi(int(p.x + cos(rad) * 12.0), 0, w - 1)
-		var ny := clampi(int(p.y + sin(rad) * 12.0), 0, h - 1)
+		var nx := clampi(int(p.x + cos(rad) * _coast_px), 0, w - 1)
+		var ny := clampi(int(p.y + sin(rad) * _coast_px), 0, h - 1)
 		if _gen.height_buffer[(ny * w) + nx] < _settings.ocean_threshold:
 			return true
 	return false
@@ -549,12 +558,66 @@ func _prune_unreachable() -> void:
 				kept.append(v)
 		_adj[u] = kept
 
+## Bidirectional join: the layered build can fragment into spatially separate
+## "lanes", so start's forward component may never reach the specific end node even
+## when both touch every layer. Grow the forward set (from start) and the backward
+## set (reaching end); while they're disjoint, add the cheapest forward bridge
+## edge from a forward node to a backward node on a later layer. A handful of
+## bridges merges the components without throwing away the existing graph.
+func _stitch_components() -> void:
+	var n := _pos.size()
+	var lc := _settings.layer_count
+	for _attempt in range(6):
+		var fwd := _reach_set(_start_i, false)   # forward from start
+		if fwd[_end_i] == 1:
+			return                               # connected
+		var back := _reach_set(_end_i, true)     # backward to end (reverse edges)
+		var best_u := -1; var best_v := -1; var best_cost := INF
+		for u in range(n):
+			if _dead[u] == 1 or fwd[u] == 0 or _layer[u] >= lc:
+				continue
+			for v in range(n):
+				if _dead[v] == 1 or back[v] == 0 or _layer[v] <= _layer[u]:
+					continue
+				var cost := _pos[u].distance_to(_pos[v]) + float(_layer[v] - _layer[u]) * 8.0
+				if cost < best_cost:
+					best_cost = cost; best_u = u; best_v = v
+		if best_u < 0:
+			return                               # nothing to bridge with -> caller injects
+		if not _adj[best_u].has(best_v):
+			_adj[best_u].append(best_v)
+
+## Reachable-node bitmask from `src`. reverse=false follows _adj (forward),
+## reverse=true follows incoming edges (who can reach src).
+func _reach_set(src: int, reverse: bool) -> PackedByteArray:
+	var n := _pos.size()
+	var seen := PackedByteArray(); seen.resize(n); seen.fill(0)
+	var rev: Dictionary = {}
+	if reverse:
+		for i in range(n):
+			rev[i] = []
+		for u in range(n):
+			for v in _adj[u]:
+				rev[v].append(u)
+	var stack: Array[int] = [src]; seen[src] = 1
+	while not stack.is_empty():
+		var u: int = stack.pop_back()
+		var nbrs: Array = rev[u] if reverse else _adj[u]
+		for v in nbrs:
+			if seen[v] == 0:
+				seen[v] = 1; stack.push_back(v)
+	return seen
+
 # ---------------------------------------------------------------------------
-# Failsafe: guarantee at least one start->end path exists. If not, inject nodes
-# along the straight start->end line (matching the spec's "create a node in the
-# gap" idea) and chain them, bounded by failsafe_max_injected_nodes.
+# Failsafe: guarantee at least one start->end path exists. First try to STITCH
+# the start-forward component to the end-backward component with minimal bridge
+# edges through existing nodes (bidirectional join -- keeps the rich graph). Only
+# if that can't connect them do we inject a straight chain (last resort).
 # ---------------------------------------------------------------------------
 func _failsafe_connect() -> void:
+	if _reaches_end():
+		return
+	_stitch_components()
 	if _reaches_end():
 		return
 	var lc := _settings.layer_count
@@ -599,14 +662,16 @@ func _nearest_land(p: Vector2) -> Vector2:
 				return Vector2(nx, ny)
 	return p
 
-## How many other live same-landmass nodes sit within max_path_search_dist of
+## How many other live same-landmass nodes sit within a density-relative radius of
 ## node i -- a proxy for how many edges it could form (connectivity / population).
+## Radius scales with the travel-node spacing (travel_dist_ratio x map diagonal)
+## instead of a fixed pixel value, so it adapts to map size / node density.
 func _reach_count(i: int) -> int:
 	var c := 0
 	var lm := _landmass[i]
 	if lm < 0:
 		return 0
-	var r := _settings.max_path_search_dist
+	var r := _reach_radius
 	for j in range(_pos.size()):
 		if j == i or _dead[j] == 1 or _landmass[j] != lm:
 			continue
