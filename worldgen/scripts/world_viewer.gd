@@ -122,8 +122,9 @@ func _debug_rows() -> Array:
 		[["noise", "warp_x", "Tectonic Noise"], ["tectonics", "Tectonics_Debug", "Tectonics"]],
 		# Peaks & valleys: ridge noise, then colored heights.
 		[["noise", "peaks_ridge", "Peaks Noise"], ["topo", "PeaksAndValleys", "Peaks & Valleys"]],
-		# Erosion: incoming height, channel noise, erosion humidity, eroded terrain.
-		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_channel", "Erosion Noise"], ["noise", "erosion_humidity", "Erosion Humidity"], ["topo", "Erosion", "Erosion"]],
+		# Erosion: incoming height, channel noise, erosion humidity, the combined carve
+		# (channel*humidity*height network, water-colored), then eroded terrain.
+		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_channel", "Erosion Noise"], ["noise", "erosion_humidity", "Erosion Humidity"], ["erosion_water", "Erosion", "Erosion Channels"], ["topo", "Erosion", "Erosion"]],
 		# Climate: incoming height, temperature, humidity, biome map.
 		[["mono", "Rivers_Only", "Height (pre-climate)"], ["noise", "temperature", "Temperature"], ["noise", "humidity", "Humidity"], ["biome", "Climate", "Biomes"]],
 		# Rivers: incoming height, (shared climate) humidity, river network, rivers on biomes.
@@ -215,6 +216,11 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 	var lset: Dictionary = data.get("lake_set", {})
 	if kind != "noise" and height.is_empty():
 		return
+	# Erosion channels compare the eroded height against the pre-erosion (peaks)
+	# height, so the combined channel*humidity*height carve is what gets shown.
+	var pre_h: PackedFloat32Array = height
+	if kind == "erosion_water" and generator.snapshots.has("PeaksAndValleys"):
+		pre_h = generator.snapshots["PeaksAndValleys"]["height"]
 
 	for ty in range(cell_px):
 		for tx in range(cell_px):
@@ -236,6 +242,14 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 					if (lset.has(pos) or _near_river(rset, pos)) and height[idx] >= oth:
 						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
 						col = RIVER_LO.lerp(RIVER_HI, t)
+					else:
+						col = SUBSTRATE
+				"erosion_water":
+					# Combined erosion carve, colored exactly like the rivers/lakes
+					# step: carved land cells ramp by elevation, the rest substrate.
+					if pre_h[idx] - height[idx] > 0.0001 and height[idx] >= oth:
+						var te := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
+						col = RIVER_LO.lerp(RIVER_HI, te)
 					else:
 						col = SUBSTRATE
 				"biome":

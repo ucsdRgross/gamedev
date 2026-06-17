@@ -27,7 +27,7 @@ func _draw_legend(step: String) -> void:
 		]
 	elif step == "ErosionDebug":
 		items = [{"c": RIVER, "n": "Carved (erosion only)"}, {"c": SUBSTRATE, "n": "Untouched"}]
-	elif step == "Rivers_Only":
+	elif step in ["Rivers_Only", "Rivers", "Erosion Channels"]:
 		items = [
 			{"c": RIVER_HI, "n": "Water (high)"}, {"c": RIVER_LO, "n": "Water (low)"},
 			{"c": SUBSTRATE, "n": "Substrate"},

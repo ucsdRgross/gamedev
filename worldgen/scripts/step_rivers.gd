@@ -97,13 +97,22 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 				queue[qt] = d
 				qt += 1
 
-	# Normalise accumulation on a log scale (huge dynamic range).
+	# Normalise accumulation. Carve DEPTH uses a log scale (huge dynamic range);
+	# WIDTH must instead grow from the source threshold so a river starts as a
+	# single pixel and widens downstream. Using the log scale for width made every
+	# river the same width (log compresses the range, then int() quantises it to
+	# one or two radii) and made each source a full-radius circular blob (the head
+	# is a lone cell that already sits at a high log value, so it stamps a big
+	# disc). Width here ramps 0->1 from the river threshold to max flow and follows
+	# sqrt(discharge) -- the physical channel-width law -- so heads are ~0 px.
 	var max_accum := 0.0
 	for i in range(ln):
 		max_accum = maxf(max_accum, accum[i])
 	var lmax := log(1.0 + max_accum)
 	if lmax <= 0.0:
 		lmax = 1.0
+	var thr := settings.river_accum_threshold
+	var accum_span := maxf(1e-6, max_accum - thr)
 
 	# Low-res river depth map (>0 = river) with convergence-based widening.
 	var depth_l := PackedFloat32Array()
@@ -111,11 +120,14 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	for ly in range(lh):
 		for lx in range(lw):
 			var i := (ly * lw) + lx
-			if lbase[i] < oth or accum[i] < settings.river_accum_threshold:
+			if lbase[i] < oth or accum[i] < thr:
 				continue
-			var an := log(1.0 + accum[i]) / lmax  # 0..1
+			var an := log(1.0 + accum[i]) / lmax  # 0..1, depth only
 			var carve := settings.river_carve_depth * an
-			var rad := int(settings.river_width_gain * an)
+			# 0 at the source threshold, ->1 at the largest river; sqrt so width
+			# grows like channel width with discharge (tiny head, fat mouth).
+			var wfrac := sqrt(clampf((accum[i] - thr) / accum_span, 0.0, 1.0))
+			var rad := int(settings.river_width_gain * wfrac)
 			for oy in range(-rad, rad + 1):
 				for ox in range(-rad, rad + 1):
 					if (ox * ox) + (oy * oy) > rad * rad:
