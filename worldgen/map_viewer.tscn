@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dd8c5hm83835g"]
+
+[ext_resource type="Script" uid="uid://cytolvix8h072" path="res://map_viewer.gd" id="1_sq1c6"]
+
+[node name="MapViewer" type="Node3D" unique_id=229763543]
+script = ExtResource("1_sq1c6")

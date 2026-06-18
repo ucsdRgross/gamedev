@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://dog1nnckhxf65"]
+
+[ext_resource type="Shader" uid="uid://ctq6mi8h15pqn" path="res://scripts/extrude.gdshader" id="1_66ruo"]
+[ext_resource type="Texture2D" uid="uid://cc46826quq1qh" path="res://character_robot_idle.png" id="2_ygiy5"]
+[ext_resource type="Script" uid="uid://l8krr710gfip" path="res://map_slice.gd" id="3_gl5bt"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ygiy5"]
+render_priority = 0
+shader = ExtResource("1_66ruo")
+shader_parameter/extruded_alpha_cull = 1.0
+shader_parameter/opaque_extrude = true
+shader_parameter/keep_image = true
+shader_parameter/image_alpha_cull = 1.0
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/color_mix = Color(0, 0, 0, 1)
+shader_parameter/mix_strength = 0.0
+shader_parameter/Texture = ExtResource("2_ygiy5")
+shader_parameter/texture_calls = 20
+shader_parameter/ray_bias = 1.0
+shader_parameter/infinite_holes = true
+shader_parameter/Hframes = 1
+shader_parameter/Vframes = 1
+shader_parameter/frame = 0
+
+[sub_resource type="BoxMesh" id="BoxMesh_m7c2o"]
+
+[node name="MapSlice" type="MeshInstance3D" unique_id=334043425]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0)
+material_override = SubResource("ShaderMaterial_ygiy5")
+mesh = SubResource("BoxMesh_m7c2o")
+script = ExtResource("3_gl5bt")
