@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dog1nnckhxf65"]
 
-[ext_resource type="Shader" uid="uid://ctq6mi8h15pqn" path="res://scripts/extrude.gdshader" id="1_66ruo"]
+[ext_resource type="Shader" uid="uid://ctq6mi8h15pqn" path="res://shaders/extrude.gdshader" id="1_66ruo"]
 [ext_resource type="Texture2D" uid="uid://cc46826quq1qh" path="res://character_robot_idle.png" id="2_ygiy5"]
 [ext_resource type="Script" uid="uid://l8krr710gfip" path="res://map_slice.gd" id="3_gl5bt"]
 
@@ -21,6 +21,8 @@ shader_parameter/infinite_holes = true
 shader_parameter/Hframes = 1
 shader_parameter/Vframes = 1
 shader_parameter/frame = 0
+shader_parameter/skew_top_scale = 1.0
+shader_parameter/skew_shear = Vector2(0, 0)
 
 [sub_resource type="BoxMesh" id="BoxMesh_m7c2o"]
 
