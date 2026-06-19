@@ -3,9 +3,9 @@ extends RefCounted
 
 ## Bakes every noise map the pipeline needs, on the CPU, as normalized 0..1
 ## grayscale Images (+ matching ImageTextures). No shader generates noise anymore;
-## shaders sample these. One humidity map is baked once and shared by climate,
-## rivers AND erosion (erosion uses it as "ancient rainfall"). Returns a
-## Dictionary name -> { "img": Image, "tex": ImageTexture }.
+## shaders sample these. One humidity map is baked once and shared by climate and
+## rivers. (Erosion is now a GPU gabor-noise pass that reads the heightmap, so it
+## bakes no noise here.) Returns a Dictionary name -> { "img", "tex" }.
 ##
 ## All maps use OpenSimplex2 (SIMPLEX_SMOOTH) -- no Perlin grid artifacts. Maps:
 ## landmass (fBm+warp), warp_x/warp_y (tectonic domain warp), peaks_ridge
@@ -35,9 +35,6 @@ static func bake(s: WorldSettings) -> Dictionary:
 	# reuse this humidity map.
 	out["temperature"] = _fbm(w, h, s.main_seed + s.temperature_seed_offset, s.temp_frequency, 2, 0.5, 2.0, 0.0, 0.0)
 	out["humidity"] = _fbm(w, h, s.main_seed + s.humidity_seed_offset, s.humid_frequency, 2, 0.5, 2.0, 0.0, 0.0)
-	# Erosion's OWN ancient-rainfall map, independent of the climate humidity above
-	# so erosion patterns need not match where rivers run today.
-	out["erosion_humidity"] = _fbm(w, h, s.main_seed + s.erosion_humidity_seed_offset, s.erosion_humidity_frequency, 2, 0.5, 2.0, 0.0, 0.0)
 	return out
 
 ## Standard fBm (or ridged-fBm) via FastNoiseLite's native, C++-fast get_image.

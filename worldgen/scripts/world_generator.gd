@@ -9,7 +9,14 @@ extends Node
 @export var settings: WorldSettings
 
 var snapshots: Dictionary = {}
+## Sentinel for "no inland water here" in water_surface_buffer.
+const NO_WATER := -1.0
 var height_buffer: PackedFloat32Array = PackedFloat32Array()
+## Top-of-water elevation for inland water (rivers + lakes); NO_WATER where dry.
+## height_buffer stays the pure terrain BED everywhere (incl. lake floors), so 3D
+## can mesh terrain and water separately. Ocean is NOT stored here -- it is the
+## implicit flat plane at settings.ocean_threshold (seabed varies below it).
+var water_surface_buffer: PackedFloat32Array = PackedFloat32Array()
 var temp_buffer: PackedFloat32Array = PackedFloat32Array()
 var humid_buffer: PackedFloat32Array = PackedFloat32Array()
 var biome_id_buffer: PackedInt32Array = PackedInt32Array()
@@ -62,8 +69,8 @@ const SHADER_DEFS := {
 	"blueprint": "res://shaders/step_2_tectonic_blueprint.gdshader",
 	"deform": "res://shaders/step_3_tectonic_deformation.gdshader",
 	"peaks": "res://shaders/step_4_peaks_and_valleys.gdshader",
-	# Erosion (step 4) and river generation (D8 flow accumulation) both run on the
-	# CPU now, so neither needs a viewport.
+	"erosion": "res://shaders/step_4_erosion.gdshader",
+	# River generation (D8 flow accumulation) runs on the CPU, so it needs no viewport.
 	"climate": "res://shaders/step_6_biomes_and_climate.gdshader",
 }
 
@@ -196,6 +203,8 @@ func _reset_state() -> void:
 
 	var total := settings.map_width * settings.map_height
 	height_buffer.resize(total)
+	water_surface_buffer.resize(total)
+	water_surface_buffer.fill(NO_WATER)
 	temp_buffer.resize(total)
 	humid_buffer.resize(total)
 	biome_id_buffer.resize(total)
@@ -227,7 +236,7 @@ func generate_world_map() -> void:
 	await Step3PeaksAndValleys.new().execute(self, settings)  # GPU
 	timings.append(["Peaks", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
-	await Step4Erosion.new().execute(self, settings)         # CPU hydraulic (flow-accumulation stream-power) erosion
+	await Step4Erosion.new().execute(self, settings)         # GPU directional-gabor branching erosion
 	timings.append(["Erosion", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
 	await StepRivers.new().execute(self, settings)           # CPU D8 flow-accumulation rivers + lakes
@@ -358,6 +367,7 @@ func _save_snapshot_bridge(step_name: String) -> void:
 
 	snapshots[step_name] = {
 		"height": height_buffer.duplicate(),
+		"water_surface": water_surface_buffer.duplicate(),
 		"biome": biome_id_buffer.duplicate(),
 		"plate_ids": plate_id_buffer.duplicate(),
 		"river_nodes": river_nodes.duplicate(),

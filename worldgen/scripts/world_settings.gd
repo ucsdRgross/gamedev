@@ -80,22 +80,23 @@ func map_diag() -> float:
 @export_range(1, 6) var temp_bands: int = 3
 @export_range(1, 6) var humid_bands: int = 3
 
-@export_group("Erosion (Hydraulic / Flow)")
-## Flow-accumulation (stream-power) erosion: O(n) whole-map "every cell is a
-## droplet" carving driven by the climate humidity map as ancient rainfall.
-## Runs on its OWN downscaled grid (independent of rivers) BEFORE the river step.
-@export_range(1, 6) var erosion_resolution_divisor: int = 2   # hydrology grid downscale (higher = faster, blockier)
-@export var erosion_humidity_frequency: float = 0.024  # ancient-weather (erosion) humidity scale; distinct from climate humidity
-@export_range(0.0, 8.0) var erosion_rain_humidity_bias: float = 2.0  # exponent: wetter cells supply more runoff
-@export_range(0.0, 8.0) var erosion_rain_elevation_bias: float = 1.0 # exponent: higher cells supply more runoff
-@export_range(0.0, 4.0) var erosion_rain_humidity_weight: float = 1.0 # how much the humidity term ADDS atop the always-on elevation runoff
-@export_range(0.5, 8.0) var erosion_flow_exponent: float = 1.5  # MFD spread: low = diffuse sheet erosion, high = single channels
-@export var erosion_strength: float = 0.06           # stream-power carve scale (max height removed)
-@export_range(0.0, 2.0) var erosion_accum_exponent: float = 0.5  # m: carve grows with flow^m (0.5 = sqrt, gentle widening)
-@export_range(0.0, 4.0) var erosion_slope_exponent: float = 1.0  # n: carve grows with local slope^n
-@export_range(0.0, 1.0) var erosion_deposition: float = 0.5      # fraction of carved sediment re-deposited in flats (valley floors)
-@export_range(0, 4) var erosion_thermal_passes: int = 1          # talus-slump smoothing passes (0 = off)
-@export var erosion_talus: float = 0.012             # max stable neighbor height diff before material slumps
+@export_group("Erosion (Gabor Branching Noise)")
+## Single-pass GPU directional-gabor erosion (step_4_erosion.gdshader): branching
+## gullies/ridges steered by the terrain's own slope. Reads the heightmap, writes
+## height + erosion*amplitude. NOTE: the source technique was authored for a huge
+## world, so the scale knobs need live tuning -- set steepness_scale FIRST (watch
+## the "Erosion Noise" debug cell until branching gullies appear), then amplitude
+## (how much it deforms terrain), then frequency (gully fineness).
+@export_range(1, 8) var erosion_octaves: int = 4
+@export var erosion_amplitude: float = 0.08          # height the erosion field adds (our 0..1 scale)
+@export var erosion_frequency: float = 24.0          # higher = finer gabor cells (voronoi shift = 28 - floor(freq))
+@export_range(0.0, 1.0) var erosion_gain: float = 0.5        # per-octave amplitude falloff
+@export var erosion_lacunarity: float = 1.2          # per-octave frequency growth (ADDED, not multiplied)
+@export var erosion_branch_angle_deg: float = 36.0   # how sharply tributaries fork each octave
+@export_range(0.0, 1.0) var erosion_ridge_rounding: float = 0.1
+@export_range(0.0, 1.0) var erosion_gully_rounding: float = 0.1
+@export var erosion_detail: float = 1.2              # slope-mask sharpening between octaves
+@export var erosion_steepness_scale: float = 100.0   # folds old MAX_HEIGHT*steepness_scale; TUNE FIRST
 
 @export_group("River Generation")
 @export_range(1, 6) var river_resolution_divisor: int = 1  # hydrology grid downscale (1=full res/no pixelation, higher=faster but blocky)
@@ -110,6 +111,16 @@ func map_diag() -> float:
 @export var lake_min_depth: float = 0.01              # min depression-fill above terrain to count as a lake
 @export var lake_carve_depth: float = 0.02            # how far below the spill level the lake surface sits
 @export_range(0, 6) var lake_width: int = 0           # dilate lakes outward by this many hydrology px
+
+@export_group("Graph Spec (Step A: abstract rule-correct DAG)")
+## Topology authored directly (no map). A layered DAG: cities on every
+## (spec_nodes_between_cities+1)-th rank, `spec_graph_width` lanes per interior rank.
+@export var spec_cities: int = 5                 # cities visited per path, incl. start & end
+@export var spec_nodes_between_cities: int = 2   # travel nodes between consecutive cities
+@export var spec_graph_width: int = 3            # min distinct cities a city can reach next
+@export var spec_outgoing: int = 3               # forward edges per node (pre-trim)
+@export var spec_min_outgoing_after_trim: int = 1 # variety trim floor (never orphans)
+@export_range(0.0, 1.0) var spec_edge_trim_chance: float = 0.3 # chance to drop a surplus edge
 
 @export_group("Path Choice Rules")
 ## Layered DAG over travel_nodes (cities are anchors). Nodes are bucketed into

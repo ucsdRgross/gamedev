@@ -101,23 +101,68 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 					if lbase[ni] >= oth:
 						depth_l[ni] = maxf(depth_l[ni], carve)
 
-	# Low-res lake mask + water-surface height (sits lake_carve_depth below spill).
+	# Low-res lake mask: cells the depression-fill raised above the terrain.
 	var is_lake_l := PackedByteArray()
 	is_lake_l.resize(ln)
 	is_lake_l.fill(0)
 	for i in range(ln):
 		if lbase[i] >= oth and lfilled[i] - lbase[i] > settings.lake_min_depth:
 			is_lake_l[i] = 1
-	if settings.lake_width > 0:
-		is_lake_l = _dilate(is_lake_l, lw, lh, settings.lake_width)
+
+	# FLAT lake surfaces: label connected basins and give every cell in a basin one
+	# elevation -- the spill level (the basin's MINIMUM filled height, where water
+	# escapes), minus lake_carve_depth -- instead of the per-cell epsilon-gradient
+	# fill (which made lake surfaces stepped). Computed before dilation so rim cells
+	# can't lower the level.
 	var lake_surf_l := PackedFloat32Array()
 	lake_surf_l.resize(ln)
-	for i in range(ln):
-		if is_lake_l[i] == 1:
-			lake_surf_l[i] = maxf(lfilled[i] - settings.lake_carve_depth, oth + 0.004)
+	var comp := PackedInt32Array()
+	comp.resize(ln)
+	comp.fill(-1)
+	for start in range(ln):
+		if is_lake_l[start] == 0 or comp[start] != -1:
+			continue
+		var members := PackedInt32Array()
+		var stack := PackedInt32Array()
+		stack.append(start)
+		comp[start] = start
+		var spill := lfilled[start]
+		while not stack.is_empty():
+			var c := stack[stack.size() - 1]
+			stack.remove_at(stack.size() - 1)
+			members.append(c)
+			spill = minf(spill, lfilled[c])
+			var cx := c % lw
+			var cy := c / lw
+			for oy in range(-1, 2):
+				for ox in range(-1, 2):
+					if ox == 0 and oy == 0:
+						continue
+					var nx := cx + ox
+					var ny := cy + oy
+					if nx < 0 or ny < 0 or nx >= lw or ny >= lh:
+						continue
+					var ni := (ny * lw) + nx
+					if is_lake_l[ni] == 1 and comp[ni] == -1:
+						comp[ni] = start
+						stack.append(ni)
+		var surf := maxf(spill - settings.lake_carve_depth, oth + 0.004)
+		for m in members:
+			lake_surf_l[m] = surf
+
+	# Dilate the lake outward, propagating each basin's flat surface to new cells.
+	if settings.lake_width > 0:
+		var res := _dilate_lake(is_lake_l, lake_surf_l, lw, lh, settings.lake_width)
+		is_lake_l = res[0]
+		lake_surf_l = res[1]
 
 	# Apply to the full-resolution heightmap and collect the water network.
+	# height_buffer stays the terrain BED everywhere (carved for rivers, untouched
+	# floor for lakes); the WATER TOP goes into water_surface_buffer so 3D can mesh
+	# terrain and water as separate surfaces. Ocean is not recorded here (it is the
+	# implicit flat plane at oth).
 	var fullbase := gen.height_buffer.duplicate()
+	gen.water_surface_buffer.fill(WorldGenerator.NO_WATER)
 	gen.river_nodes.clear()
 	gen.lake_nodes.clear()
 	for y in range(h):
@@ -125,26 +170,43 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			var fi := (y * w) + x
 			var lc := (mini(y / s, lh - 1) * lw) + mini(x / s, lw - 1)
 			if is_lake_l[lc] == 1:
-				gen.height_buffer[fi] = lake_surf_l[lc]
+				# Keep the real lake floor as the bed; water sits at the spill surface.
+				gen.water_surface_buffer[fi] = lake_surf_l[lc]
 				gen.lake_nodes.append(Vector2i(x, y))
 			elif depth_l[lc] > 0.0:
+				# Carve the channel; water fills it back up to (near) original grade.
 				gen.height_buffer[fi] = maxf(fullbase[fi] - depth_l[lc], oth + 0.004)
+				gen.water_surface_buffer[fi] = fullbase[fi]
 				gen.river_nodes.append(Vector2i(x, y))
 
 	gen._save_snapshot_bridge("Rivers_Only")
 
-## Grow a boolean mask outward by `r` cells (Chebyshev dilation).
-func _dilate(mask: PackedByteArray, w: int, h: int, r: int) -> PackedByteArray:
-	var out := mask.duplicate()
-	for y in range(h):
-		for x in range(w):
-			if mask[(y * w) + x] == 0:
-				continue
-			for oy in range(-r, r + 1):
-				for ox in range(-r, r + 1):
-					var nx := x + ox
-					var ny := y + oy
-					if nx < 0 or ny < 0 or nx >= w or ny >= h:
-						continue
-					out[(ny * w) + nx] = 1
-	return out
+## Grow the lake mask outward by `r` rings; each newly added cell inherits the
+## (flat) water surface of an adjacent lake cell so dilated borders stay level.
+## Returns [mask, surface] (PackedArrays pass by value, so both are handed back).
+func _dilate_lake(mask: PackedByteArray, surf: PackedFloat32Array, w: int, h: int, r: int) -> Array:
+	for _it in range(r):
+		var added := PackedInt32Array()
+		for y in range(h):
+			for x in range(w):
+				var i := (y * w) + x
+				if mask[i] == 1:
+					continue
+				var s := -1.0
+				for oy in range(-1, 2):
+					for ox in range(-1, 2):
+						if ox == 0 and oy == 0:
+							continue
+						var nx := x + ox
+						var ny := y + oy
+						if nx < 0 or ny < 0 or nx >= w or ny >= h:
+							continue
+						var ni := (ny * w) + nx
+						if mask[ni] == 1:
+							s = maxf(s, surf[ni])
+				if s >= 0.0:
+					added.append(i)
+					surf[i] = s
+		for i in added:
+			mask[i] = 1
+	return [mask, surf]

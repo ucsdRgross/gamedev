@@ -123,9 +123,9 @@ func _debug_rows() -> Array:
 		# Peaks & valleys: ridged-multifractal + billow-multifractal noise (altitude
 		# blended in the shader), then colored heights.
 		[["noise", "peaks_ridge", "Ridge Noise"], ["noise", "peaks_billow", "Billow Noise"], ["topo", "PeaksAndValleys", "Peaks & Valleys"]],
-		# Erosion: incoming height, ancient-rainfall map, the flow-carved network
-		# (water-colored), then the eroded+deposited terrain.
-		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_humidity", "Erosion Rainfall (ancient)"], ["erosion_water", "Erosion", "Erosion Channels"], ["topo", "Erosion", "Erosion"]],
+		# Erosion: incoming height, the gabor erosion field (driven by that height),
+		# then the eroded terrain.
+		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_field", "Erosion Noise"], ["topo", "Erosion", "Erosion"]],
 		# Climate: incoming height, temperature, humidity, biome map.
 		[["mono", "Rivers_Only", "Height (pre-climate)"], ["noise", "temperature", "Temperature"], ["noise", "humidity", "Humidity"], ["biome", "Climate", "Biomes"]],
 		# Rivers: incoming height, (shared climate) humidity, river network, rivers on biomes.
@@ -164,6 +164,37 @@ func _build_composite_and_export() -> void:
 	comp.save_png("res://procedural_generation_snapshot.png")
 	print("[WorldViewer] Debug sheet exported to res://procedural_generation_snapshot.png")
 	_export_full_res()
+	_export_water_only()
+
+## Water-only sheet: rivers + lakes painted (tinted by water-surface elevation) on
+## a fully TRANSPARENT background, so a 3D pass can drop it straight onto a water
+## mesh/material with no land. Ocean is omitted (it's the flat plane at oth).
+func _export_water_only() -> void:
+	var w := generator.settings.map_width
+	var h := generator.settings.map_height
+	var oth := generator.settings.ocean_threshold
+	var data: Dictionary = generator.snapshots.get("Rivers_Only", {})
+	if data.is_empty():
+		return
+	var height: PackedFloat32Array = data["height"]
+	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
+	var rset: Dictionary = data["river_set"]
+	var lset: Dictionary = data.get("lake_set", {})
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))  # transparent
+	for y in range(h):
+		for x in range(w):
+			var pos := Vector2i(x, y)
+			if not (rset.has(pos) or lset.has(pos)):
+				continue
+			var idx := (y * w) + x
+			if height[idx] < oth:
+				continue
+			var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
+			var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
+			img.set_pixel(x, y, RIVER_LO.lerp(RIVER_HI, t))
+	img.save_png("res://snapshot_water_only.png")
+	print("[WorldViewer] Water-only sheet exported (snapshot_water_only.png, transparent bg)")
 
 ## Save full-resolution (map-sized) PNGs for every colored cell -- i.e. anything
 ## that isn't a pure noise map or a pure (monotone) heightmap, since those read
@@ -215,6 +246,7 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 	var biome: PackedInt32Array = data.get("biome", PackedInt32Array())
 	var rset: Dictionary = data.get("river_set", {})
 	var lset: Dictionary = data.get("lake_set", {})
+	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
 	if kind != "noise" and height.is_empty():
 		return
 	# Erosion channels compare the eroded height against the pre-erosion (peaks)
@@ -241,7 +273,8 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 						col = mono_color((height[idx] - oth) / maxf(0.001, 1.0 - oth))
 				"rivers":
 					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
-						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
+						var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
+						var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
 						col = RIVER_LO.lerp(RIVER_HI, t)
 					else:
 						col = SUBSTRATE
@@ -285,68 +318,6 @@ func _burn_nodes(img: Image, offset: Vector2i, scale: float, cities: bool) -> vo
 	else:
 		for node in data.get("travel_nodes", []):
 			_plot_disc(img, (node * scale) + Vector2(offset), maxf(1.0, 1.6 * scale), Color("#9ca3af"))
-
-# =================================================================
-# PER-SLOT RASTERIZER
-# =================================================================
-func _paint_step(img: Image, slot: String, offset: Vector2i, scale: float) -> void:
-	if not SLOT_DEF.has(slot): return
-	var src_key: String = SLOT_DEF[slot][0]
-	var mode: String = SLOT_DEF[slot][1]
-	if not generator.snapshots.has(src_key): return
-	var data: Dictionary = generator.snapshots[src_key]
-
-	var w := generator.settings.map_width
-	var h := generator.settings.map_height
-	var oth := generator.settings.ocean_threshold
-	var mth := generator.settings.mountain_threshold
-
-	var height: PackedFloat32Array = data["height"]
-	var biome: PackedInt32Array = data["biome"]
-	var rset: Dictionary = data["river_set"]
-	var lset: Dictionary = data.get("lake_set", {})
-	# Erosion debug compares post-erosion height against pre-erosion (peaks).
-	var pre_height: PackedFloat32Array = height
-	if mode == "erosion_debug" and generator.snapshots.has("PeaksAndValleys"):
-		pre_height = generator.snapshots["PeaksAndValleys"]["height"]
-
-	var sw: int = int(w * scale)
-	var sh: int = int(h * scale)
-	for ty in range(sh):
-		for tx in range(sw):
-			var ox: int = int(tx / scale)
-			var oy: int = int(ty / scale)
-			var idx: int = (oy * w) + ox
-			var pos := Vector2i(ox, oy)
-			var col: Color
-
-			match mode:
-				"rivers":
-					# Shade rivers AND lakes by elevation (same ramp) so their water
-					# height is visible; everything else dark.
-					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
-						var t := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-						col = RIVER_LO.lerp(RIVER_HI, t)
-					else:
-						col = SUBSTRATE
-				"erosion_debug":
-					var carved: float = pre_height[idx] - height[idx]
-					col = SUBSTRATE.lerp(RIVER, clampf(carved * 30.0, 0.0, 1.0))
-				"biome":
-					col = _biome_color(biome[idx])
-				"biome_river", "graph":
-					col = _biome_color(biome[idx])
-					if (_near_river(rset, pos) or lset.has(pos)) and height[idx] >= oth:
-						col = RIVER_OVERLAY
-				_:  # topo
-					col = topo_color(height[idx], oth, mth)
-
-			img.set_pixel(offset.x + tx, offset.y + ty, col)
-
-	if slot == "Tectonics_Debug":
-		_burn_tectonics(img, data, offset, scale)
-	elif mode == "graph":
-		_burn_graph(img, offset, scale)
 
 ## Vivid, maximally-separated color for the 3x3x3 biome scheme (id 1..27);
 ## id 0 = ocean. Golden-ratio hue spacing keeps even sequential ids far apart in
