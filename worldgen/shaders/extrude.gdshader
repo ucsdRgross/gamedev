@@ -32,20 +32,32 @@ uniform int Vframes = 1;
 uniform int frame = 0;
 
 // --- 3D skew controls ---------------------------------------------------------
-// These deform the cube mesh in the vertex stage. Because Godot's MODEL_MATRIX
-// does NOT know about in-shader vertex edits, the fragment stage can no longer
-// rely on inverse(MODEL_MATRIX) to recover the model-space camera ray (it would
-// treat the mesh as an un-skewed cube and the extrusion would detach from the
-// slanted faces). Instead the skewed local position is passed down via a varying
-// and the model-space ray is rebuilt from it, so the ray follows the real
-// geometry. Assumes a unit cube whose local extents are -1..1.
-/** Scales the +Y (top) face. 1.0 = no skew, <1 tapers toward the top. */
-uniform float skew_top_scale = 1.0;
-/** Shears the top face along X/Z relative to the bottom face. */
+// These deform the cube mesh in the vertex stage. The whole extrusion in
+// fragment() is hardcoded to a CANONICAL unit cube (planes at z=0/x=+-1/y=+-1,
+// UVtoXY mapping faces to +-1), so the interior raymarch must keep running in
+// that un-skewed space or every plane intersection lands in the wrong place and
+// the image warps. We therefore skew only the rendered geometry and pass the
+// PRE-skew (canonical) vertex down as a varying; the rasterizer interpolates it
+// across the slanted triangle to give each fragment its canonical position, and
+// inverse(MODEL_MATRIX) * camera is already in that same canonical space (the
+// MODEL_MATRIX doesn't know about the in-shader edit). The extruded content then
+// rides along with the deformed mesh for free, with no warping. Assumes a unit
+// cube whose local extents are -1..1.
+/** Frustum: scales the back (-Z) face within its own X/Y plane without moving
+ * it in Z, turning the cube into a frustum. 1.0 = cube, >1 = wider base. */
+uniform float back_scale = 1.0;
+/** Leans the cube: shifts X/Z proportional to height, centered so the cube's
+ * middle stays put (X component leans along X, Y component leans along Z). */
 uniform vec2 skew_shear = vec2(0.0);
+/** Half-extent of the cube mesh in local space. Godot's default BoxMesh has
+ * size 1, i.e. half-extent 0.5. Set this to match your mesh so the skew math
+ * works in normalized [-1, 1] space regardless of the mesh's world size. */
+uniform float cube_half_extent = 0.5;
 
-// Skewed local-space vertex position, handed from vertex() to fragment().
-varying vec3 local_pos;
+// Skewed local-space vertex position, handed to fragment(). The fragment
+// recovers the canonical (pre-skew) position from this single source, so the
+// unskew stays crease-free across the two triangles of each quad face.
+varying vec3 skew_pos;
 
 struct imgPoint {
 	vec4 color;
@@ -99,6 +111,11 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 	// Both branches map into the active spritesheet frame; pick once.
 	pos_on_img = flipped ? flippedFrameUV(pos_on_img) : frameUV(pos_on_img);
 	edge = flipped ? flippedFrameUV(edge) : frameUV(edge);
+	// Shift the whole march into offset space (not just the texture lookup) so the
+	// returned hit position stays consistent with where the colour was sampled.
+	// Otherwise the cap, which keys off that position, culls the offset extrusion.
+	pos_on_img += offset;
+	edge += offset;
 
 	bool extrude = false;
 	vec2 point;
@@ -109,7 +126,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 			// Coarse march from the pixel toward the image edge.
 			float percentage = pow(float(i) / float(texture_calls), ray_bias);
 			point = getPositionAlongTheLine(pos_on_img, edge, percentage);
-			color = texture(Texture, point + offset);
+			color = texture(Texture, point);
 			if (color.w >= extruded_alpha_cull) {
 				extrude = true;
 				// First checked pixel is already image, can't tell where the edge is.
@@ -123,7 +140,7 @@ imgPoint imgExtrude(vec2 pos_on_img, vec2 slope, bool flipped){
 			// Fine tune the edge: halve the step each time, walk back on a miss.
 			log_percentage += log_dir / (float(texture_calls) * float(i * 2));
 			vec2 check_point = getPositionAlongTheLine(pos_on_img, edge, log_percentage);
-			vec4 check_color = texture(Texture, check_point + offset);
+			vec4 check_color = texture(Texture, check_point);
 			bool hit = check_color.w >= extruded_alpha_cull;
 			color = hit ? check_color : color;
 			point = hit ? check_point : point;
@@ -180,32 +197,102 @@ float sideCull(vec2 uv_point, vec2 mray_xy){
 	return sign(imgExtrude(uv_point, -mray_xy, false).color.w);
 }
 
+// Inverse Jacobian of the shear + frustum skew applied to the view ray d. scale
+// is the frustum scale sampled at whatever depth the caller wants (surface for
+// recovery, deeper for the forward march or the cap).
+vec3 unskewRay(vec3 d, float p, float q, float r, float m, float scale){
+	float vy = (d.y - m * d.z) / (scale - m * q);
+	float vz = d.z - q * vy;
+	float vx = (d.x - p * vy - r * vz) / scale;
+	return normalize(vec3(vx, vy, vz));
+}
+
 void vertex() {
-	// Skew the cube in local space. Height runs 0 (bottom) -> 1 (top) on a unit
-	// cube. Default uniforms (scale 1, shear 0) leave VERTEX untouched, so the
-	// shader behaves exactly as before until the skew is dialled in.
-	float h = (VERTEX.y + 1.0) * 0.5;
-	float s = mix(1.0, skew_top_scale, h);
-	VERTEX.x = VERTEX.x * s + skew_shear.x * h;
-	VERTEX.z = VERTEX.z * s + skew_shear.y * h;
-	// Hand the genuinely-skewed local position to the fragment stage.
-	local_pos = VERTEX;
+	// Work in canonical [-1,1] space so the skew is independent of the mesh's
+	// world size. h runs 0 (bottom) -> 1 (top); tz runs 0 (front +Z) -> 1 (back
+	// -Z). The frustum scales X/Y by sf with depth; the shear leans X/Z with
+	// height, centred on (h - 0.5) so the cube stays put. Default uniforms
+	// (back_scale 1, shear 0) leave the cube untouched.
+	vec3 c = VERTEX / cube_half_extent;
+	float h = (c.y + 1.0) * 0.5;
+	float tz = (1.0 - c.z) * 0.5;
+	float sf = mix(1.0, back_scale, tz);
+	c.x = c.x * sf + skew_shear.x * (h - 0.5);
+	c.y = c.y * sf;
+	c.z = c.z + skew_shear.y * (h - 0.5);
+	skew_pos = c;                  // normalized skewed position (canonical units)
+	VERTEX = c * cube_half_extent; // back to world units for rasterisation
 }
 
 void fragment() {
-	// Rebuild the model-space camera ray from the skewed local position instead
-	// of inverse(MODEL_MATRIX) * camera_ray. With identity skew this is
-	// numerically equal to the old computation; with skew it stays glued to the
-	// deformed faces (see the skew uniforms above).
-	vec3 model_camera = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
-	vec3 model_ray = normalize(local_pos - model_camera);
+	// True view ray in model space: from the camera (brought into model space)
+	// to the fragment's actual skewed position. MODEL_MATRIX is unaware of the
+	// in-shader skew, so model space here IS canonical cube space.
+	// Camera in canonical [-1,1] space to match skew_pos (model_ray is a
+	// direction, so the shared 1/cube_half_extent scale cancels under normalize).
+	vec3 model_camera = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz / cube_half_extent;
+	vec3 d = skew_pos - model_camera;
+	// Recover the canonical (pre-skew) position from the single skewed source,
+	// so every term below is a continuous function of one varying. Mixing two
+	// independently-interpolated varyings here would crease along each quad's
+	// triangle diagonal (the frustum is non-affine) and the side faces zig-zag.
+	// Frustum doesn't touch Z and shear doesn't touch Y, so the inversion is
+	// explicit: scale comes straight from Z, then Y, then X.
+	float tz = (1.0 - skew_pos.z) * 0.5;
+	float sf = mix(1.0, back_scale, tz);
+	float cy = skew_pos.y / sf;
+	float cx = (skew_pos.x - skew_shear.x * cy * 0.5) / sf;
+	float cz = skew_pos.z - skew_shear.y * cy * 0.5;
+	// Unskew the view ray via the inverse Jacobian of the shear + frustum skew
+	// (skewed = S(canonical), so d_canonical = J^-1 * d_skewed). At identity
+	// (back_scale 1, shear 0) it reduces to the original ray. J is
+	//   [ sf  p   r ]      sf = frustum scale at this fragment
+	//   [ 0   sf  m ]      p,q = half the shear   r,m = frustum's depth cross-terms
+	//   [ 0   q   1 ]
+	float p = skew_shear.x * 0.5;
+	float q = skew_shear.y * 0.5;
+	float r = -cx * (back_scale - 1.0) * 0.5;
+	float m = -cy * (back_scale - 1.0) * 0.5;
+	// Recovery above must use the surface scale (sf); the rays sample the far
+	// scale to cancel the first-order frustum drift over the extrusion depth.
+	// The forward march always wants the far (back) scale. The back-ray cap heads
+	// toward the face OPPOSITE the camera and wants that face's scale: viewing
+	// from the front (camera +Z) the cap aims at the back face (back_scale),
+	// viewing from behind it aims at the front face (scale 1). model_camera.z
+	// gives that hemisphere directly, with no per-fragment feedback loop.
+	vec3 model_ray = unskewRay(d, p, q, r, m, back_scale);
+	float cap_scale = mix(1.0, back_scale, step(0.0, model_camera.z));
+	vec3 cap_ray   = unskewRay(d, p, q, r, m, cap_scale);
 
 	// Determine which face of the cube we are looking at
 	ivec2 face = ivec2(UV / vec2(1.0 / 3.0, 1.0 / 2.0));
 	// Make each face have similar UV
 	vec2 adjusted_UV = mod(UV, vec2(1.0 / 3.0, 1.0 / 2.0)) * vec2(3.0, 2.0);
 
-	float zf = step(0.0, model_ray.z); // 1 when looking from +Z, else 0
+	// The frustum turns the four SIDE faces into trapezoids, whose interpolated
+	// mesh UV kinks along each quad's triangle diagonal (a non-parallelogram
+	// can't be UV-mapped affinely) -- that crease is the zig-zag. Front/back stay
+	// square, so leave them on the mesh UV. For the side faces, rebuild
+	// adjusted_UV from the crease-free canonical position recovered above. fc is
+	// the value UVtoXY(adjusted_UV) would hold; inverting UVtoXY feeds the
+	// existing per-face math unchanged. The per-face signs reproduce the original
+	// unwrap -- flip a component if a given side face looks mirrored/inverted.
+	// fc is the crease-free value UVtoXY(adjusted_UV) should hold. The axis
+	// pairing (which two canonical axes lie in each face) is geometric; the
+	// per-axis signs match the mesh's authored UV unwrap in the 3x2 atlas and
+	// were pinned by testing. Note the mirror symmetry: +X/-X carry the same
+	// depth-axis (U) orientation, while top/bottom differ by a V flip (they are
+	// reflections of each other across the horizontal plane).
+	if (face.y == 1 || face.x == 1) {
+		vec2 fc;
+		if (face.x == 1 && face.y == 0)      fc = vec2(-cz, cy);   // +X
+		else if (face.x == 0 && face.y == 1) fc = vec2(cz, cy);    // -X
+		else if (face.x == 1 && face.y == 1) fc = vec2(-cx, cz);   // +Y (top)
+		else                                  fc = vec2(cx, cz);   // -Y (bottom)
+		adjusted_UV = vec2((fc.x + 1.0) * 0.5, (1.0 - fc.y) * 0.5);
+	}
+
+	float zf = step(0.0, cap_ray.z); // 1 when looking from +Z, else 0 (cap geometry)
 	vec2 xy = UVtoXY(adjusted_UV);
 
 	// Z
@@ -222,9 +309,9 @@ void fragment() {
 			ALPHA = first_pixel.color.w;
 			// Cap the extrusion using the opposite (back-face) hit.
 			vec3 point = vec3(xy, 2.0);
-			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 			vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0, 1.0);
-			ALPHA *= frontBackCull(uv_point, first_pixel.uv.y, model_ray.xy, model_ray.y);
+			ALPHA *= frontBackCull(uv_point, first_pixel.uv.y, cap_ray.xy, cap_ray.y);
 		}
 	}
 	// -Z
@@ -239,9 +326,9 @@ void fragment() {
 			ALPHA = first_pixel.color.w;
 
 			vec3 point = vec3(UVtoXY(vec2(-adjusted_UV.x, adjusted_UV.y)), -2.0);
-			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+			vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 			vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(1.0, 1.0);
-			ALPHA *= frontBackCull(uv_point, first_pixel.uv.y, model_ray.xy, model_ray.y);
+			ALPHA *= frontBackCull(uv_point, first_pixel.uv.y, cap_ray.xy, cap_ray.y);
 		}
 	}
 	// X
@@ -253,9 +340,9 @@ void fragment() {
 		ALPHA = img_color.w;
 
 		point = vec3(1.0, xy.y, mix(1.0 - xy.x, -1.0 - xy.x, zf));
-		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0, 1.0);
-		ALPHA *= sideCull(uv_point, model_ray.xy);
+		ALPHA *= sideCull(uv_point, cap_ray.xy);
 	}
 	// -X
 	else if (face.x == 0 && face.y == 1) {
@@ -266,9 +353,9 @@ void fragment() {
 		ALPHA = img_color.w;
 
 		point = vec3(-1.0, xy.y, mix(1.0 + xy.x, -1.0 + xy.x, zf));
-		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0, 1.0);
-		ALPHA *= sideCull(uv_point, model_ray.xy);
+		ALPHA *= sideCull(uv_point, cap_ray.xy);
 	}
 	// Y
 	else if (face.x == 1 && face.y == 1) {
@@ -281,9 +368,9 @@ void fragment() {
 
 		vec2 fxy = UVtoXY(vec2(-adjusted_UV.x, adjusted_UV.y));
 		point = vec3(fxy.x, 1.0, mix(fxy.y + 1.0, fxy.y - 1.0, zf));
-		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(1.0, 1.0);
-		ALPHA *= sideCull(uv_point, model_ray.xy);
+		ALPHA *= sideCull(uv_point, cap_ray.xy);
 	}
 	// -Y
 	else if (face.x == 2 && face.y == 1) {
@@ -294,8 +381,8 @@ void fragment() {
 		ALPHA = img_color.w;
 
 		point = vec3(xy.x, -1.0, mix(xy.y + 1.0, xy.y - 1.0, zf));
-		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, model_ray);
+		vec3 ray_intersection = PlaneLineIntersection(vec3(0.0), vec3(0.0, 0.0, 1.0), point, cap_ray);
 		vec2 uv_point = XYtoUV(ray_intersection.xy) + vec2(0.0, 1.0);
-		ALPHA *= sideCull(uv_point, model_ray.xy);
+		ALPHA *= sideCull(uv_point, cap_ray.xy);
 	}
 }
