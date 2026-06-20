@@ -18,6 +18,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("highland_range", settings.highland_range)
 	mat.set_shader_parameter("peak_detail_strength", settings.peak_detail_strength)
 	mat.set_shader_parameter("peak_billow_strength", settings.peak_billow_strength)
+	mat.set_shader_parameter("peak_height_cap", settings.peak_height_cap)
 
 	var img := await gen.flush("peaks")
 	gen.read_height_from_image(img)

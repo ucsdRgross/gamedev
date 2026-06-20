@@ -27,6 +27,8 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("gully_rounding", settings.erosion_gully_rounding)
 	mat.set_shader_parameter("detail", settings.erosion_detail)
 	mat.set_shader_parameter("steepness_scale", settings.erosion_steepness_scale)
+	mat.set_shader_parameter("min_elevation", settings.erosion_min_elevation)
+	mat.set_shader_parameter("elevation_falloff", settings.erosion_elevation_falloff)
 
 	# Pass 0: final eroded heightmap.
 	mat.set_shader_parameter("output_mode", 0)

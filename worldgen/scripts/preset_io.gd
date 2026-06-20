@@ -41,6 +41,7 @@ const DEFAULT_RANGES := {
 	"erosion_lacunarity": [1.0, 2.5], "erosion_branch_angle_deg": [0.0, 90.0],
 	"erosion_detail": [0.5, 2.0], "erosion_steepness_scale": [20.0, 200.0],
 	"river_accum_threshold": [20.0, 120.0], "river_carve_depth": [0.0, 0.06],
+	"erosion_min_elevation": [0.38, 0.6], "erosion_elevation_falloff": [0.02, 0.3],
 }
 
 ## name -> [lo, hi, is_int] for every randomizable WorldSettings parameter.

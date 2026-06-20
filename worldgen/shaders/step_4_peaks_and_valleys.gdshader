@@ -18,6 +18,7 @@ uniform float peak_uplift = 0.25;       // ridge uplift amount in highlands
 uniform float highland_range = 0.25;    // height band above sea over which uplift ramps in
 uniform float peak_detail_strength = 0.12; // fine detail-noise amplitude
 uniform float peak_billow_strength = 0.12; // foothill (billow) amplitude, peaks at mid elevation
+uniform float peak_height_cap = 4.0;       // ceiling so peaks aren't plateaued (high = no flattening)
 
 void fragment() {
 	float height = texture(deformed_tex, UV).r;
@@ -31,10 +32,12 @@ void fragment() {
 		float t = smoothstep(ocean_threshold, ocean_threshold + highland_range, height);
 		float ridge_w = t;
 		float billow_w = t * (1.0 - t) * 4.0;
-		height = clamp(height
+		// Soft ceiling instead of a hard 0..1.2 clamp: peaks keep their dynamic
+		// range (no flat tops) but can't run away past peak_height_cap.
+		height = min(max(height
 			+ ridge * peak_uplift * ridge_w
 			+ billow * peak_billow_strength * billow_w
-			+ detail, 0.0, 1.2);
+			+ detail, 0.0), peak_height_cap);
 	}
 
 	// Edge clamp: tectonics/peaks can push land outward, so force a hard fade to

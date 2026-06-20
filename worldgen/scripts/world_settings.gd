@@ -37,6 +37,7 @@ func map_diag() -> float:
 @export var peak_uplift: float = 0.25      # how much ridge noise raises highlands into mountains
 @export var highland_range: float = 0.25   # height band above sea over which uplift ramps in
 @export var peak_detail_strength: float = 0.12  # fine surface-detail noise amplitude
+@export var peak_height_cap: float = 4.0    # ceiling on peak height (high = no flattening; lower to plateau peaks)
 
 @export_group("Noise Shaping (fBm / Multifractal / Warp)")
 ## All maps now use OpenSimplex2 (no Perlin grid artifacts). fBm sums octaves with
@@ -69,6 +70,7 @@ func map_diag() -> float:
 @export var warp_frequency: float = 5.0
 @export_range(0.0, 1.0) var land_plate_ratio: float = 0.5  # chance each plate is continental (seeded)
 @export var land_rift_damping: float = 0.5  # land-land divergence drops only this fraction of ocean's drop
+@export var tectonic_height_cap: float = 4.0  # ceiling on deformed height (high = boundary mountains not flattened)
 
 @export_group("Climate")
 @export var temp_frequency: float = 0.022   # higher = smaller, more varied biome patches
@@ -97,6 +99,10 @@ func map_diag() -> float:
 @export_range(0.0, 1.0) var erosion_gully_rounding: float = 0.1
 @export var erosion_detail: float = 1.2              # slope-mask sharpening between octaves
 @export var erosion_steepness_scale: float = 100.0   # folds old MAX_HEIGHT*steepness_scale; TUNE FIRST
+## Erosion only carves above min_elevation, ramping in over falloff. Keeps low
+## ground (coasts/plains) flat instead of texturing the whole map.
+@export var erosion_min_elevation: float = 0.42       # height below which erosion is suppressed (sea ~ ocean_threshold)
+@export var erosion_elevation_falloff: float = 0.12   # height band over which erosion ramps to full
 
 @export_group("River Generation")
 @export_range(1, 6) var river_resolution_divisor: int = 1  # hydrology grid downscale (1=full res/no pixelation, higher=faster but blocky)

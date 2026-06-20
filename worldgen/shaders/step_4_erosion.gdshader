@@ -28,6 +28,10 @@ uniform float ridge_rounding = 0.1;
 uniform float gully_rounding = 0.1;
 uniform float detail = 1.2;
 uniform float steepness_scale = 100.0;   // folds the old MAX_HEIGHT * steepness_scale; TUNE FIRST
+// Elevation gate: erosion only carves at/above min_elevation, ramping in over
+// elevation_falloff, so low ground (coasts/plains) stays flat.
+uniform float min_elevation = 0.42;
+uniform float elevation_falloff = 0.12;
 
 #define ROOT_TWO 1.4142135624
 #define TAU 6.28318530717959
@@ -263,6 +267,9 @@ void fragment() {
 	}
 
 	float ero = erosion.x / max_erosion;          // ~ -1..1
+	// Suppress erosion on low ground so coasts/plains stay flat.
+	float gate = smoothstep(min_elevation, min_elevation + max(elevation_falloff, 1e-4), base.x);
+	ero *= gate;
 	float out_h = base.x + ero * amplitude;       // eroded terrain
 	float value = (output_mode == 1) ? (0.5 + 0.5 * ero) : out_h;
 	COLOR = vec4(vec3(value), 1.0);

@@ -34,6 +34,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	deform.set_shader_parameter("plate_move", settings.plate_move)
 	deform.set_shader_parameter("tectonic_band", settings.tectonic_band)
 	deform.set_shader_parameter("land_rift_damping", settings.land_rift_damping)
+	deform.set_shader_parameter("tectonic_height_cap", settings.tectonic_height_cap)
 
 	var def_img := await gen.flush("deform")
 	gen.read_height_from_image(def_img)

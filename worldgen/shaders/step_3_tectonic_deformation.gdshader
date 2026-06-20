@@ -20,6 +20,7 @@ uniform float drift_intensity = 0.25;
 uniform float plate_move = 0.03;   // UV distance plates slide
 uniform float tectonic_band = 55.0; // px width of the boundary relief band
 uniform float land_rift_damping = 0.5; // land-land divergence drops only this fraction of ocean's
+uniform float tectonic_height_cap = 4.0; // ceiling so boundary mountains aren't plateaued
 
 void fragment() {
 	// Replicate the blueprint's warped coordinate exactly (same baked textures).
@@ -66,5 +67,5 @@ void fragment() {
 	}
 	h += relief;
 
-	COLOR = vec4(vec3(clamp(h, 0.0, 1.5)), 1.0);
+	COLOR = vec4(vec3(min(max(h, 0.0), tectonic_height_cap)), 1.0);
 }
