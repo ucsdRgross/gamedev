@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bq8s2x726tm6b"]
+
+[ext_resource type="Script" path="res://tests/graph_placement_test.gd" id="1"]
+
+[node name="GraphPlacementTest" type="Node"]
+script = ExtResource("1")

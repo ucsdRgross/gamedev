@@ -32,6 +32,13 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 		for lx in range(lw):
 			lbase[(ly * lw) + lx] = gen.height_buffer[((ly * s) * w) + (lx * s)]
 
+	# Smooth the HYDROLOGY GRID ONLY (not the final terrain): the gabor erosion
+	# leaves many 1-px pits/bumps that would otherwise each become a speck lake or
+	# river. Carving below uses the untouched fullbase, so the heightmap is unchanged
+	# -- this purely cleans up what the river step detects.
+	if settings.river_smooth_passes > 0:
+		lbase = _box_blur(lbase, lw, lh, settings.river_smooth_passes)
+
 	var lfilled := fill_depressions(lbase, lw, lh, oth)
 
 	# Rainfall map: rivers REUSE the exact climate humidity map (the shared baked
@@ -146,6 +153,12 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 					if is_lake_l[ni] == 1 and comp[ni] == -1:
 						comp[ni] = start
 						stack.append(ni)
+		# Drop tiny basins (the gabor erosion's 1-px pits) below the area floor so
+		# they don't render as speck lakes; keep genuine, larger lakes.
+		if members.size() < settings.lake_min_area:
+			for m in members:
+				is_lake_l[m] = 0
+			continue
 		var surf := maxf(spill - settings.lake_carve_depth, oth + 0.004)
 		for m in members:
 			lake_surf_l[m] = surf
@@ -210,3 +223,24 @@ func _dilate_lake(mask: PackedByteArray, surf: PackedFloat32Array, w: int, h: in
 		for i in added:
 			mask[i] = 1
 	return [mask, surf]
+
+## N-pass 3x3 box blur (edge-clamped). Used to smooth the hydrology grid only.
+func _box_blur(src: PackedFloat32Array, w: int, h: int, passes: int) -> PackedFloat32Array:
+	var a := src
+	for _p in range(passes):
+		var out := a.duplicate()
+		for y in range(h):
+			for x in range(w):
+				var sum := 0.0
+				var n := 0
+				for oy in range(-1, 2):
+					for ox in range(-1, 2):
+						var nx := x + ox
+						var ny := y + oy
+						if nx < 0 or ny < 0 or nx >= w or ny >= h:
+							continue
+						sum += a[(ny * w) + nx]
+						n += 1
+				out[(y * w) + x] = sum / float(n)
+		a = out
+	return a

@@ -106,9 +106,11 @@ func map_diag() -> float:
 @export var river_carve_depth: float = 0.02           # max channel depth below land (scaled by river size)
 @export_range(0.0, 6.0) var river_width_gain: float = 2.0  # how strongly large rivers widen (hydrology-px radius)
 @export_range(0.5, 8.0) var river_flow_exponent: float = 4.0  # MFD spread: low = braided/deltas on flats, high = crisp single rivers
+@export_range(0, 6) var river_smooth_passes: int = 1  # 3x3 blur of the hydrology grid ONLY (kills gabor-erosion speck pits); does NOT touch the final heightmap
 
 @export_group("Lakes")
 @export var lake_min_depth: float = 0.01              # min depression-fill above terrain to count as a lake
+@export var lake_min_area: int = 4                    # min connected hydrology cells for a lake (drops 1-px speck pits)
 @export var lake_carve_depth: float = 0.02            # how far below the spill level the lake surface sits
 @export_range(0, 6) var lake_width: int = 0           # dilate lakes outward by this many hydrology px
 

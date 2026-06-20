@@ -286,6 +286,34 @@ func generate_base_through_civilizations() -> void:
 	await Step5Climate.new().execute(self, settings)
 	Step6Civilizations.new().execute(self, settings)
 
+## Which pipeline step to stop after. Matches the snapshot order; the map viewer
+## uses this so it only pays for the steps it actually shows.
+enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, CLIMATE, CIVILIZATIONS, GRAPH }
+
+## Run the pipeline only up to (and including) `target`. A strict generalization
+## of generate_base_through_civilizations(): same setup preamble, then the step
+## chain with an early-out once the requested step's snapshot is populated.
+func generate_up_to(target: GenStep) -> void:
+	_reset_state()
+	seed(settings.main_seed)
+	noise_maps = NoiseBaker.bake(settings)
+	_init_plates()
+	await Step1Landmass.new().execute(self, settings)
+	if target == GenStep.LANDMASS: return
+	await Step2Tectonics.new().execute(self, settings)
+	if target == GenStep.TECTONICS: return
+	await Step3PeaksAndValleys.new().execute(self, settings)
+	if target == GenStep.PEAKS: return
+	await Step4Erosion.new().execute(self, settings)
+	if target == GenStep.EROSION: return
+	await StepRivers.new().execute(self, settings)
+	if target == GenStep.RIVERS: return
+	await Step5Climate.new().execute(self, settings)
+	if target == GenStep.CLIMATE: return
+	Step6Civilizations.new().execute(self, settings)
+	if target == GenStep.CIVILIZATIONS: return
+	Step7Graph.new().execute(self, settings)
+
 func cache_base_state() -> Dictionary:
 	return {
 		"height": height_buffer.duplicate(),

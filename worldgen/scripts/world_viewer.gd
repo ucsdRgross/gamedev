@@ -169,19 +169,22 @@ func _build_composite_and_export() -> void:
 ## Water-only sheet: rivers + lakes painted (tinted by water-surface elevation) on
 ## a fully TRANSPARENT background, so a 3D pass can drop it straight onto a water
 ## mesh/material with no land. Ocean is omitted (it's the flat plane at oth).
-func _export_water_only() -> void:
+## Build the transparent-background water sheet as an Image (rivers + lakes only,
+## tinted by water-surface elevation). Returned so the 3D viewer can use it as the
+## water colormap; _export_water_only() wraps this to also write the PNG.
+func water_only_image() -> Image:
 	var w := generator.settings.map_width
 	var h := generator.settings.map_height
 	var oth := generator.settings.ocean_threshold
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))  # transparent
 	var data: Dictionary = generator.snapshots.get("Rivers_Only", {})
 	if data.is_empty():
-		return
+		return img
 	var height: PackedFloat32Array = data["height"]
 	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
 	var rset: Dictionary = data["river_set"]
 	var lset: Dictionary = data.get("lake_set", {})
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))  # transparent
 	for y in range(h):
 		for x in range(w):
 			var pos := Vector2i(x, y)
@@ -193,7 +196,12 @@ func _export_water_only() -> void:
 			var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
 			var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
 			img.set_pixel(x, y, RIVER_LO.lerp(RIVER_HI, t))
-	img.save_png("res://snapshot_water_only.png")
+	return img
+
+func _export_water_only() -> void:
+	if generator.snapshots.get("Rivers_Only", {}).is_empty():
+		return
+	water_only_image().save_png("res://snapshot_water_only.png")
 	print("[WorldViewer] Water-only sheet exported (snapshot_water_only.png, transparent bg)")
 
 ## Save full-resolution (map-sized) PNGs for every colored cell -- i.e. anything
