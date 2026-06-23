@@ -19,6 +19,10 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("peak_detail_strength", settings.peak_detail_strength)
 	mat.set_shader_parameter("peak_billow_strength", settings.peak_billow_strength)
 	mat.set_shader_parameter("peak_height_cap", settings.peak_height_cap)
+	mat.set_shader_parameter("detail_min_elevation", settings.peak_detail_min_elevation)
+	mat.set_shader_parameter("detail_falloff", settings.peak_detail_falloff)
+	mat.set_shader_parameter("boundary_falloff", settings.boundary_falloff)
+	mat.set_shader_parameter("lowland_flatten", settings.lowland_flatten)
 
 	var img := await gen.flush("peaks")
 	gen.read_height_from_image(img)

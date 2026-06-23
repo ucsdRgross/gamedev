@@ -14,6 +14,8 @@ uniform float mountain_threshold = 0.65;
 uniform int height_bands = 3;
 uniform int temp_bands = 3;
 uniform int humid_bands = 3;
+uniform float temp_lapse_rate = 0.5;       // temperature drop per unit elevation above sea
+uniform float river_humidity_boost = 0.35; // humidity bonus for cells beside a river
 
 void fragment() {
 	vec4 state = texture(state_tex, UV);
@@ -27,8 +29,8 @@ void fragment() {
 		float raw_h = texture(humid_tex, UV).r;
 
 		float elevation = h - ocean_threshold;
-		float t = clamp(raw_t - (elevation * 0.5), 0.0, 1.0);
-		float humid = clamp(raw_h + (near_river ? 0.35 : 0.0), 0.0, 1.0);
+		float t = clamp(raw_t - (elevation * temp_lapse_rate), 0.0, 1.0);
+		float humid = clamp(raw_h + (near_river ? river_humidity_boost : 0.0), 0.0, 1.0);
 
 		// Modular classification: height_bands x temp_bands x humid_bands land
 		// biomes (ids 1..product). Ocean stays id 0. Height is banded over the

@@ -55,6 +55,28 @@ var terrain_kind: String = "auto":
 ## When true, changing view_step / terrain_kind regenerates automatically at edit-time.
 @export var auto_regenerate: bool = true
 
+# --- water colors (baked into the water colormap; repaint on change) ----------
+## River tint at low (near-sea) elevation; rivers ramp from this to river_color_high.
+@export var river_color_low: Color = Color("#0c4a6e"):
+	set(v):
+		river_color_low = v
+		_request_repaint()
+## River tint at high elevation.
+@export var river_color_high: Color = Color("#e0f2fe"):
+	set(v):
+		river_color_high = v
+		_request_repaint()
+## Flat color for lakes (distinct from rivers).
+@export var lake_color: Color = Color("#1d4ed8"):
+	set(v):
+		lake_color = v
+		_request_repaint()
+## River tint baked onto the terrain colormap for biome/graph views.
+@export var river_overlay_color: Color = Color("#2563eb"):
+	set(v):
+		river_overlay_color = v
+		_request_repaint()
+
 # --- 3D layout ----------------------------------------------------------------
 ## Plane subdivisions = displacement detail (verts per axis).
 @export var resolution: int = 200:
@@ -153,6 +175,10 @@ func _painter_for(gen: WorldGenerator) -> WorldViewer:
 	if _painter == null:
 		_painter = WorldViewer.new()  # never entered into the tree; used only for its painters
 	_painter.generator = gen
+	_painter.river_lo = river_color_low
+	_painter.river_hi = river_color_high
+	_painter.lake_col = lake_color
+	_painter.river_overlay = river_overlay_color
 	return _painter
 
 func _paint_from(gen: WorldGenerator) -> void:
@@ -245,6 +271,7 @@ func _set_disp_params(mat: ShaderMaterial, size: Vector2, sw: int, sd: int) -> v
 	mat.set_shader_parameter("relief_gain", relief_gain)
 	mat.set_shader_parameter("uv_texel", Vector2(1.0 / float(sw + 1), 1.0 / float(sd + 1)))
 	mat.set_shader_parameter("xz_step", size.x / float(sw + 1))
+	mat.set_shader_parameter("tri_scale", 1.0 / maxf(size.x, 0.001))  # world->map UV so triplanar top lines up 1:1
 
 func _update_ocean(size: Vector2) -> void:
 	var ocean := get_node_or_null("Ocean") as MeshInstance3D

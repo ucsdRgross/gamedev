@@ -17,6 +17,8 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("height_bands", settings.height_bands)
 	mat.set_shader_parameter("temp_bands", settings.temp_bands)
 	mat.set_shader_parameter("humid_bands", settings.humid_bands)
+	mat.set_shader_parameter("temp_lapse_rate", settings.temp_lapse_rate)
+	mat.set_shader_parameter("river_humidity_boost", settings.river_humidity_boost)
 
 	var img := await gen.flush("climate")
 	gen.read_biomes_from_image(img)

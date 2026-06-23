@@ -39,6 +39,15 @@ const RIVER_HI := Color("#e0f2fe")  # high-elevation end of the river height ram
 const RIVER_LO := Color("#0c4a6e")  # low-elevation (near sea) end of the ramp
 const LAKE := Color("#1d4ed8")      # depression-fill lake tint
 const FAULT := Color("#a855f7")
+
+# Adjustable water colors (default to the constants above). map_viewer overrides
+# these before painting so river/lake colors are tunable without touching code.
+# Rivers ramp river_lo (near sea) -> river_hi (high); lakes are flat lake_col;
+# river_overlay is the river tint baked onto the biome/graph terrain colormap.
+var river_lo: Color = RIVER_LO
+var river_hi: Color = RIVER_HI
+var lake_col: Color = LAKE
+var river_overlay: Color = RIVER_OVERLAY
 # Monotone (single-hue, not black/white) ramp for noise maps and raw heightmaps.
 const MONO_LO := Color("#10212e")
 const MONO_HI := Color("#a9d6ec")
@@ -193,9 +202,12 @@ func water_only_image() -> Image:
 			var idx := (y * w) + x
 			if height[idx] < oth:
 				continue
-			var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
-			var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-			img.set_pixel(x, y, RIVER_LO.lerp(RIVER_HI, t))
+			if lset.has(pos) and not rset.has(pos):
+				img.set_pixel(x, y, lake_col)  # lakes: flat, distinct from rivers
+			else:
+				var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
+				var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
+				img.set_pixel(x, y, river_lo.lerp(river_hi, t))
 	return img
 
 func _export_water_only() -> void:
@@ -283,7 +295,7 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
 						var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
 						var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-						col = RIVER_LO.lerp(RIVER_HI, t)
+						col = river_lo.lerp(river_hi, t)
 					else:
 						col = SUBSTRATE
 				"erosion_water":
@@ -299,7 +311,7 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 				"biome_river", "graph":
 					col = _biome_color(biome[idx])
 					if (_near_river(rset, pos) or lset.has(pos)) and height[idx] >= oth:
-						col = RIVER_OVERLAY
+						col = river_overlay
 				_:  # topo / tectonics base
 					col = topo_color(height[idx], oth, mth)
 			img.set_pixel(off.x + tx, off.y + ty, col)

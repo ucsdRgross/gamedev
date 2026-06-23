@@ -42,6 +42,10 @@ const DEFAULT_RANGES := {
 	"erosion_detail": [0.5, 2.0], "erosion_steepness_scale": [20.0, 200.0],
 	"river_accum_threshold": [20.0, 120.0], "river_carve_depth": [0.0, 0.06],
 	"erosion_min_elevation": [0.38, 0.6], "erosion_elevation_falloff": [0.02, 0.3],
+	"peak_detail_min_elevation": [0.38, 0.7], "peak_detail_falloff": [0.02, 0.3],
+	"island_falloff": [0.3, 1.6], "boundary_falloff": [0.01, 0.15],
+	"temp_lapse_rate": [0.0, 1.0], "river_humidity_boost": [0.0, 0.6],
+	"lowland_flatten": [1.0, 4.0],
 }
 
 ## name -> [lo, hi, is_int] for every randomizable WorldSettings parameter.
@@ -76,10 +80,27 @@ static func _parse_range_hint(hint: String) -> Array:
 			nums.append(float(t))
 	return nums
 
-## Snapshot the randomizable params (+ main_seed) into a flat dict tagged by step.
+## name -> is_int for EVERY tunable WorldSettings param (all editor int/float minus
+## EXCLUDE), regardless of whether it has a predefined range. This is the canonical
+## "save everything" set, so no finetuned value is silently dropped from a preset.
+static func tunable_params() -> Dictionary:
+	var out := {}
+	for p in WorldSettings.new().get_property_list():
+		if (int(p.usage) & PROPERTY_USAGE_EDITOR) == 0:
+			continue
+		if not (p.type == TYPE_FLOAT or p.type == TYPE_INT):
+			continue
+		var pname: String = p.name
+		if EXCLUDE.has(pname):
+			continue
+		out[pname] = (p.type == TYPE_INT)
+	return out
+
+## Snapshot the FULL tunable param set (+ main_seed for provenance) into a flat dict
+## tagged by step, so range-finding later sees every parameter you touched.
 static func settings_to_dict(settings: WorldSettings, step: String) -> Dictionary:
 	var d := {"_step": step, "main_seed": settings.main_seed}
-	for pname in param_ranges():
+	for pname in tunable_params():
 		d[pname] = settings.get(pname)
 	return d
 
@@ -116,8 +137,8 @@ static func process_step_ranges(step: String) -> Dictionary:
 			continue
 		count += 1
 		for k in parsed:
-			if String(k).begins_with("_"):
-				continue
+			if String(k).begins_with("_") or EXCLUDE.has(k):
+				continue  # skip the _step tag and non-aesthetic params (seeds, map size)
 			var tv := typeof(parsed[k])
 			if tv != TYPE_FLOAT and tv != TYPE_INT:
 				continue
@@ -139,17 +160,23 @@ static func process_step_ranges(step: String) -> Dictionary:
 	print("[PresetIO] processed %d presets for '%s' -> %d params" % [count, step, out.size()])
 	return out
 
-## Effective sampling ranges for a step: export-hint ranges narrowed by ranges.json
-## where present. Returns name -> [lo, hi, is_int].
+## Effective sampling ranges for a step: the predefined export-hint/DEFAULT_RANGES
+## set, overlaid with the data-derived ranges from ranges.json (which can add
+## params that had no predefined range). Returns name -> [lo, hi, is_int].
 static func load_step_ranges(step: String) -> Dictionary:
 	var base := param_ranges()
+	var tp := tunable_params()
 	var path := "%s/%s/ranges.json" % [PRESET_ROOT, step]
 	if FileAccess.file_exists(path):
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
 		if typeof(parsed) == TYPE_DICTIONARY:
 			for k in parsed:
-				if base.has(k) and typeof(parsed[k]) == TYPE_DICTIONARY:
-					var e: Dictionary = parsed[k]
-					base[k] = [float(e.get("min", base[k][0])),
-						float(e.get("max", base[k][1])), base[k][2]]
+				if EXCLUDE.has(k) or not tp.has(k):
+					continue  # only tunable, non-excluded params are sampleable
+				if typeof(parsed[k]) != TYPE_DICTIONARY:
+					continue
+				var e: Dictionary = parsed[k]
+				var lo: float = base[k][0] if base.has(k) else 0.0
+				var hi: float = base[k][1] if base.has(k) else 0.0
+				base[k] = [float(e.get("min", lo)), float(e.get("max", hi)), tp[k]]
 	return base

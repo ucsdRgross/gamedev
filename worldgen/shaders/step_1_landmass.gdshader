@@ -8,6 +8,7 @@ uniform sampler2D warp_y_tex;       // shared tectonic warp (y), 0..1
 uniform float island_radius = 0.72; // smaller = land confined nearer the centre
 uniform float land_contrast = 1.7;  // >1 pushes values away from sea level (more land + peaks)
 uniform float edge_jag = 0.06;      // UV displacement of the island cutoff
+uniform float island_falloff = 0.5; // island-mask edge exponent (>1 = gentler coastal slope)
 
 void fragment() {
 	float n = texture(noise_tex, UV).r;  // 0 .. 1
@@ -20,7 +21,7 @@ void fragment() {
 	vec2 jag = (vec2(texture(warp_x_tex, UV).r, texture(warp_y_tex, UV).r) - 0.5) * 2.0 * edge_jag;
 	float d = distance(UV + jag, vec2(0.5));
 	float mask = clamp(1.0 - (d / island_radius), 0.0, 1.0);
-	mask = pow(mask, 0.5);
+	mask = pow(mask, island_falloff);
 
 	COLOR = vec4(vec3(clamp(n * mask, 0.0, 1.0)), 1.0);
 }

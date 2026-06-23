@@ -410,31 +410,3 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"landmarks": landmarks.duplicate(),
 	}
 	generation_step_finished.emit(step_name)
-
-# =================================================================
-# CPU UTILITIES (used by erosion/civ/graph)
-# =================================================================
-func _clamp_island_boundaries_fast() -> void:
-	var w := settings.map_width
-	var cx := w / 2.0
-	var cy := settings.map_height / 2.0
-	var max_radius :int= min(w, settings.map_height) * 0.44
-
-	for y in range(settings.map_height):
-		for x in range(w):
-			var idx := (y * w) + x
-			var d := Vector2(x, y).distance_to(Vector2(cx, cy))
-			if d > max_radius:
-				var fade := clampf(1.0 - ((d - max_radius) / 45.0), 0.0, 1.0)
-				height_buffer[idx] *= fade
-				if fade <= 0.0:
-					height_buffer[idx] = min(height_buffer[idx], settings.ocean_threshold - 0.05)
-
-func _calculate_gradient_fast(x: int, y: int) -> Vector2:
-	var w := settings.map_width
-	var h := settings.map_height
-	var idx := (y * w) + x
-	var h00 := height_buffer[idx]
-	var h10 := height_buffer[(y * w) + (x + 1)] if x + 1 < w else h00
-	var h01 := height_buffer[((y + 1) * w) + x] if y + 1 < h else h00
-	return Vector2(h10 - h00, h01 - h00)

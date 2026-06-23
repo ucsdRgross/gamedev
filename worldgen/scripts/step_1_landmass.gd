@@ -11,6 +11,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	mat.set_shader_parameter("island_radius", settings.island_radius)
 	mat.set_shader_parameter("land_contrast", settings.land_contrast)
 	mat.set_shader_parameter("edge_jag", settings.edge_jag)
+	mat.set_shader_parameter("island_falloff", settings.island_falloff)
 
 	var img := await gen.flush("landmass")
 	gen.read_height_from_image(img)
