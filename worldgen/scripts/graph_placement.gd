@@ -29,6 +29,7 @@ class MapField extends RefCounted:
 	# islands across water.
 	var label := PackedInt32Array()
 	var sizes := {}                      # landmass id -> cell count
+	var label_seed := {}                 # landmass id -> a representative land cell
 	var main_label := -1
 	var total_land := 0                  # total land cells (all landmasses)
 	var domain_land := 0                 # land cells in the graph's domain
@@ -150,6 +151,7 @@ class MapField extends RefCounted:
 				var cnt := 0
 				var stack: Array[int] = [si]
 				label[si] = cur
+				label_seed[cur] = Vector2(sx, sy)
 				while not stack.is_empty():
 					var idx: int = stack.pop_back()
 					cnt += 1
@@ -223,13 +225,15 @@ class MapField extends RefCounted:
 		grid.resize(gw * gh)
 		grid.fill(-1)
 		var active: Array[int] = []
-		# Seed: a cell inside the domain, near the (domain) centroid.
-		var seed_pt := land_centroid
-		if not in_domain(seed_pt):
-			seed_pt = _find_any_land()
-		if not in_domain(seed_pt):
+		# Seed ONE point per landmass in the domain. Bridson grows only within a
+		# connected reachable region (can't jump open ocean), so a single seed would
+		# sample just one island -- every separate landmass needs its own seed.
+		for lab in label_seed.keys():
+			var seed_pt: Vector2 = label_seed[lab]
+			if in_domain(seed_pt) and _poisson_ok(seed_pt, grid, gw, gh, cell, r):
+				_add_poisson(seed_pt, grid, gw, gh, cell, active)
+		if active.is_empty():                       # no land in domain
 			return
-		_add_poisson(seed_pt, grid, gw, gh, cell, active)
 		while not active.is_empty():
 			var ai := rng.randi_range(0, active.size() - 1)
 			var center: Vector2 = samples[active[ai]]
@@ -277,7 +281,7 @@ class MapField extends RefCounted:
 	## Index of the nearest land sample to p; -1 if none. `skip` marks already-used
 	## sample indices to ignore (collision-free snapping). `target_label` >= 0 limits
 	## to samples on that landmass.
-	func nearest_sample_idx(p: Vector2, skip: Dictionary = {}, target_label: int = -1) -> int:
+	func nearest_sample_idx(p: Vector2, skip: Dictionary = {}, target_label: int = -1, allowed: Dictionary = {}) -> int:
 		if samples.is_empty():
 			return -1
 		var cx := int(p.x / _cs)
@@ -299,6 +303,8 @@ class MapField extends RefCounted:
 						if skip.has(idx):
 							continue
 						if target_label >= 0 and sample_label[idx] != target_label:
+							continue
+						if not allowed.is_empty() and not allowed.has(sample_label[idx]):
 							continue
 						var d: float = p.distance_squared_to(samples[idx])
 						if d < best_d:
@@ -391,21 +397,31 @@ class MapField extends RefCounted:
 			return Vector2(-1, 1)
 		return Vector2(lo, hi)
 
-	## Principal-axis description of the whole land distribution (from the samples):
+	## Principal-axis description of a land distribution (from the samples):
 	## { center, axis, perp, amin, amax, pmin, pmax } in axis/perp coordinates relative
 	## to center. The oval grid is laid along this so depth flows along the land's
 	## longest dimension and the layout is centred on the actual land, not outliers.
-	func land_pca() -> Dictionary:
-		var n := samples.size()
+	## `lab` >= 0 restricts to that landmass's samples (per-landmass oval); else all land.
+	func land_pca(lab: int = -1) -> Dictionary:
+		var pts := PackedVector2Array()
+		if lab < 0:
+			pts = samples
+		else:
+			for i in range(samples.size()):
+				if sample_label[i] == lab:
+					pts.append(samples[i])
+			if pts.is_empty():
+				pts = samples
+		var n := pts.size()
 		if n == 0:
 			return {"center": land_centroid, "axis": Vector2(1, 0), "perp": Vector2(0, 1),
 				"amin": -float(w) * 0.5, "amax": float(w) * 0.5, "pmin": -float(h) * 0.5, "pmax": float(h) * 0.5}
 		var mean := Vector2.ZERO
-		for s in samples:
+		for s in pts:
 			mean += s
 		mean /= n
 		var sxx := 0.0; var sxy := 0.0; var syy := 0.0
-		for s in samples:
+		for s in pts:
 			var d := s - mean
 			sxx += d.x * d.x; sxy += d.x * d.y; syy += d.y * d.y
 		sxx /= n; sxy /= n; syy /= n
@@ -418,7 +434,7 @@ class MapField extends RefCounted:
 			axis = Vector2(1, 0) if sxx >= syy else Vector2(0, 1)
 		var perp := Vector2(-axis.y, axis.x)
 		var amin := INF; var amax := -INF; var pmin := INF; var pmax := -INF
-		for s in samples:
+		for s in pts:
 			var d := s - mean
 			var a := d.dot(axis); var p := d.dot(perp)
 			amin = minf(amin, a); amax = maxf(amax, a)
@@ -650,6 +666,22 @@ static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
 	_assign_positions(ctx, field)
 	var mid_pos := ctx.pos.duplicate()      # = final (assignment is one shot)
 
+	# DIAGNOSTIC (remove later): node-share vs area-share per island (should track).
+	# Area-share is over ONLY the islands that received nodes (excluded land ignored).
+	var _dist := {}
+	for i in range(ctx.n):
+		var l := ctx.node_label[i]
+		_dist[l] = _dist.get(l, 0) + 1
+	var _area_sum := 0
+	for l in _dist.keys():
+		_area_sum += field.sizes.get(l, 0)
+	var _parts := []
+	for l in _dist.keys():
+		var node_pct :float= 100.0 * _dist[l] / maxi(1, ctx.n)
+		var area_pct :float= 100.0 * field.sizes.get(l, 0) / maxi(1, _area_sum)
+		_parts.append("%d:%dn(%.0f%%nodes/%.0f%%area)" % [l, _dist[l], node_pct, area_pct])
+	print("    [JIGSAW] %d islands: %s" % [_dist.size(), str(_parts)])
+
 	# Edge creation -- ONE geography-aware pass on the placed nodes.
 	var edge_stats := _create_edges(ctx, graph, settings)
 
@@ -661,8 +693,9 @@ static func _init_circular(ctx: Ctx) -> void:
 	for i in range(ctx.n):
 		ctx.pos[i] = ctx.layout_target[i]
 
-## Snap each node to the nearest UNUSED land sample to its grid target (ANY island).
-## Geography partitions the graph; node_label is recorded from the final position.
+## Snap each node onto its assigned division's landmass (target_label = node_label),
+## at the nearest UNUSED sample to its local-oval target. Falls back to any island only
+## if that landmass is full. node_label is then re-read from the final position.
 static func _assign_positions(ctx: Ctx, field: MapField) -> void:
 	var used := {}
 	var ids: Array = []
@@ -674,19 +707,24 @@ static func _assign_positions(ctx: Ctx, field: MapField) -> void:
 			return ctx.depth[a] < ctx.depth[b]
 		return ctx.perp_target[a] < ctx.perp_target[b])
 	for id in ids:
-		var idx := field.nearest_sample_idx(ctx.layout_target[id], used)   # nearest land, any island
+		var lab: int = ctx.node_label[id]
+		var idx := field.nearest_sample_idx(ctx.layout_target[id], used, lab)  # assigned landmass
+		if idx < 0:                                                            # landmass full
+			idx = field.nearest_sample_idx(ctx.layout_target[id], used)
 		if idx < 0:
 			idx = field.nearest_sample_idx(ctx.layout_target[id])
 		if idx >= 0:
 			ctx.pos[id] = field.samples[idx]
 			used[idx] = true
-	_force_anchor(ctx, field, ctx.start_id, ctx.start_pos, used)
-	_force_anchor(ctx, field, ctx.end_id, ctx.end_pos, used)
+	_force_anchor(ctx, field, ctx.start_id, ctx.start_pos, used, ctx.node_label[ctx.start_id])
+	_force_anchor(ctx, field, ctx.end_id, ctx.end_pos, used, ctx.node_label[ctx.end_id])
 	for i in range(ctx.n):                          # landmass derived from final position
 		ctx.node_label[i] = field.label_at(ctx.pos[i])
 
-static func _force_anchor(ctx: Ctx, field: MapField, node: int, target: Vector2, used: Dictionary) -> void:
-	var idx := field.nearest_sample_idx(target, used)
+static func _force_anchor(ctx: Ctx, field: MapField, node: int, target: Vector2, used: Dictionary, lab: int = -1) -> void:
+	var idx := field.nearest_sample_idx(target, used, lab)
+	if idx < 0:
+		idx = field.nearest_sample_idx(target, used)
 	if idx < 0:
 		idx = field.nearest_sample_idx(target)
 	if idx >= 0:
@@ -696,30 +734,76 @@ static func _force_anchor(ctx: Ctx, field: MapField, node: int, target: Vector2,
 # ---------------------------------------------------------------------------
 # Edge creation -- ONE geography-aware pass on the settled node positions.
 # ---------------------------------------------------------------------------
-## Build the whole graph: forward depth-adjacent edges chosen by proximity, never
-## crossing water (unless a legal ferry) and never crossing another edge; then ensure
-## every node is covered (>=1 in/out) and start can reach end. Returns stats.
+## Build the whole graph, SLAY-THE-SPIRE style: each node connects forward only to its
+## NEAREST same-landmass next-row nodes (locality-capped so edges never span the island),
+## with ferries only at island boundaries between the nearest coastal nodes. Edges are
+## added shortest-first so local non-crossing links win; then coverage, min_out top-up,
+## and a same-landmass-preferring connectivity repair. Returns stats.
 static func _create_edges(ctx: Ctx, graph: Dictionary, settings: WorldSettings) -> Dictionary:
 	var layers: Array = graph["layers"]
 	var D: int = ctx.max_depth
 	var max_out: int = maxi(1, settings.spec_outgoing)
 	var min_out: int = clampi(settings.spec_min_outgoing, 1, max_out)
+	var loc_ratio := 2.2                        # locality cap (x nearest next-row node); lever later
 	var edges: Array = []                       # [u, v] for crossing tests
 	var indeg := PackedInt32Array(); indeg.resize(ctx.n)
 
-	# 1. Forward proximity connect (each node -> up to max_out nearest next-layer nodes).
-	for d in range(D):
-		for u in layers[d]:
-			var cands: Array = layers[d + 1].duplicate()
-			cands.sort_custom(func(a, b):
+	# Buckets per (landmass, depth) so "next row" means next populated depth on the SAME
+	# island (handles depth gaps within a division).
+	var by_ld := {}
+	for i in range(ctx.n):
+		var lab: int = ctx.node_label[i]
+		var dd: int = ctx.depth[i]
+		if not by_ld.has(lab):
+			by_ld[lab] = {}
+		if not by_ld[lab].has(dd):
+			by_ld[lab][dd] = []
+		by_ld[lab][dd].append(i)
+
+	# 1. Local forward candidates: nearest same-landmass next-row nodes (within a cap
+	#    relative to u's closest such node) OR, at a landmass boundary, legal ferries to
+	#    the nearest coastal node on another island. Added globally shortest-first.
+	var cand: Array = []                        # [dist, u, v]
+	for u in range(ctx.n):
+		if u == ctx.end_id:
+			continue
+		var sl: Array = _same_land_next_row(ctx, u, by_ld)
+		if not sl.is_empty():
+			sl.sort_custom(func(a, b):
 				return ctx.pos[u].distance_squared_to(ctx.pos[a]) < ctx.pos[u].distance_squared_to(ctx.pos[b]))
-			for c in cands:
-				if ctx.adj[u].size() >= max_out:
+			var d0: float = ctx.pos[u].distance_to(ctx.pos[sl[0]])
+			var cap: float = maxf(d0 * loc_ratio, d0 + 1.0)
+			var taken := 0
+			for v in sl:
+				if taken >= max_out:
 					break
-				if _can_connect(ctx, u, c, edges):
-					ctx.adj[u].append(c)
-					edges.append([u, c])
-					indeg[c] += 1
+				var dist: float = ctx.pos[u].distance_to(ctx.pos[v])
+				if dist > cap and taken >= 1:
+					break                       # locality: never span the island
+				cand.append([dist, u, v])
+				taken += 1
+		else:
+			# Landmass boundary: ferry to the nearest legal coastal node ahead in depth.
+			var fcs: Array = []
+			for v in range(ctx.n):
+				if ctx.depth[v] <= ctx.depth[u] or ctx.node_label[v] == ctx.node_label[u]:
+					continue
+				if _legal_ferry(ctx, u, v):
+					fcs.append([ctx.pos[u].distance_to(ctx.pos[v]), u, v])
+			fcs.sort_custom(func(a, b): return a[0] < b[0])
+			for k in range(mini(fcs.size(), max_out)):
+				cand.append(fcs[k])
+	cand.sort_custom(func(a, b): return a[0] < b[0])
+	for c in cand:
+		var u: int = c[1]
+		var v: int = c[2]
+		if ctx.adj[u].size() >= max_out or (v in ctx.adj[u]):
+			continue
+		if ctx.node_label[u] == ctx.node_label[v] and edge_crosses_water(ctx.field, ctx.pos[u], ctx.pos[v]):
+			continue                            # intra-island edge must stay on land
+		if _crosses_any(ctx, u, v, edges):
+			continue
+		ctx.adj[u].append(v); edges.append([u, v]); indeg[v] += 1
 
 	# 2. Coverage: every non-start node needs >=1 incoming; every non-end >=1 outgoing.
 	for d in range(1, D + 1):
@@ -763,6 +847,21 @@ static func _create_edges(ctx: Ctx, graph: Dictionary, settings: WorldSettings) 
 		total += ctx.adj[u].size()
 	return {"edges": total, "reaches_end": reaches_end}
 
+## Same-landmass nodes at the nearest populated depth ahead of u (its local "next row").
+## Empty when u sits at its division's last populated depth (a landmass boundary/exit).
+static func _same_land_next_row(ctx: Ctx, u: int, by_ld: Dictionary) -> Array:
+	var lab: int = ctx.node_label[u]
+	if not by_ld.has(lab):
+		return []
+	var du: int = ctx.depth[u]
+	var nextd := -1
+	for dd in by_ld[lab].keys():
+		if dd > du and (nextd < 0 or dd < nextd):
+			nextd = dd
+	if nextd < 0:
+		return []
+	return (by_ld[lab][nextd] as Array).duplicate()
+
 ## Ensure every node is reachable from start: connect each unreached node from the
 ## nearest reached node on the previous layer (forced -- connectivity over purity).
 static func _repair_forward(ctx: Ctx, layers: Array, D: int, max_out: int) -> void:
@@ -795,9 +894,12 @@ static func _repair_backward(ctx: Ctx, layers: Array, D: int, max_out: int) -> v
 
 ## Nearest node in pool that's in `flag_set`. `as_source` true: pool node is the
 ## source (connect pool->node), prefer outdeg<max_out. Else pool node is the target.
+## Prefers a same-landmass, on-land link (nearest); only falls back to a cross-water /
+## cross-island link when no clean one exists -- so repair stops making random jumps.
 static func _nearest_in(ctx: Ctx, pool: Array, node: int, flag_set: Dictionary, as_source: bool, max_out: int) -> int:
 	var best := -1
 	var best_d := INF
+	var best_pref := false
 	for p in pool:
 		if not flag_set.has(p):
 			continue
@@ -806,9 +908,12 @@ static func _nearest_in(ctx: Ctx, pool: Array, node: int, flag_set: Dictionary, 
 			continue
 		if node in ctx.adj[s] or p in ctx.adj[node]:
 			continue
+		var src :int= p if as_source else node
+		var dst :int= node if as_source else p
+		var pref := ctx.node_label[p] == ctx.node_label[node] and not edge_crosses_water(ctx.field, ctx.pos[src], ctx.pos[dst])
 		var dd: float = ctx.pos[node].distance_squared_to(ctx.pos[p])
-		if dd < best_d:
-			best_d = dd; best = p
+		if (pref and not best_pref) or (pref == best_pref and dd < best_d):
+			best_d = dd; best = p; best_pref = pref
 	return best
 
 static func _reach_from(adj: Array, src: int, n: int) -> Dictionary:
@@ -988,32 +1093,58 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	ctx.repel_dist = diag * 0.04
 	ctx.coast_radius = settings.coast_radius_ratio * diag
 
-	# JIGSAW: lay the whole graph oval over ALL land in (depth-axis, breadth-perp)
-	# coordinates from the land's principal axis (centred on the actual land, oriented
-	# along its longest dimension). Each node's oval position is later snapped to the
-	# nearest land -> every landmass receives the overlapping piece of the oval,
-	# proportional to its footprint (spine splits by depth where ocean interrupts the
-	# axis; lanes split by breadth across side-by-side land).
+	# JIGSAW (divide, then an oval per landmass). TWO steps:
+	#  1) DIVIDE: lay the whole graph as one virtual oval (PCA frame: depth pole->pole
+	#     along the land's principal axis, breadth fanned). Each node's virtual position
+	#     is matched to the nearest LARGE landmass -> that's the node's division. Because
+	#     the match is in depth x breadth space, side-by-side land splits by breadth and
+	#     ocean-interrupted land splits by depth (the cut follows the real coastline).
+	#  2) RE-LAY: each division becomes its OWN oval over its OWN landmass (local PCA
+	#     frame, oriented along the journey). So initial placement shows a distinct oval
+	#     on every landmass; within-division adjacency is preserved and cross-division
+	#     adjacency becomes a ferry.
 	var oval_width: float = opts.get("oval_width", 1.0)
-	var pca := field.land_pca()
-	var center: Vector2 = pca["center"]
-	var dir: Vector2 = pca["axis"]
-	var perp: Vector2 = pca["perp"]
+	var min_frac: float = opts.get("landmass_min_frac", 0.12)
+	var gpca := field.land_pca()
+	var center: Vector2 = gpca["center"]
+	var dir: Vector2 = gpca["axis"]
+	var perp: Vector2 = gpca["perp"]
 	ctx.axis = dir
 	ctx.perp = perp
-	var amin: float = pca["amin"]; var amax: float = pca["amax"]
-	var pmid: float = (pca["pmin"] + pca["pmax"]) * 0.5
-	var pext: float = (pca["pmax"] - pca["pmin"])
+	var amin0: float = gpca["amin"]; var amax0: float = gpca["amax"]
+	var pmid0: float = (gpca["pmin"] + gpca["pmax"]) * 0.5
+	var pext0: float = (gpca["pmax"] - gpca["pmin"])
 
+	# Large landmasses that actually carry samples (candidates for a division).
+	var have_samples := {}
+	for sl in field.sample_label:
+		have_samples[sl] = true
+	var big := 0
+	for sid in field.sizes.keys():
+		big = maxi(big, field.sizes[sid])
+	var large := {}
+	for sid in field.sizes.keys():
+		if field.sizes[sid] >= int(big * min_frac) and have_samples.has(sid):
+			large[sid] = true
+	if large.is_empty() and field.main_label >= 0:
+		large[field.main_label] = true
+
+	ctx.node_label = PackedInt32Array(); ctx.node_label.resize(ctx.n)
+	ctx.layout_target = PackedVector2Array(); ctx.layout_target.resize(ctx.n)
+	ctx.perp_target = PackedFloat32Array(); ctx.perp_target.resize(ctx.n)
+
+	# --- Step 1: divide nodes among landmasses, AREA-PROPORTIONAL. ---
+	# Each node gets a virtual-oval position; we then assign nodes to landmasses by
+	# nearest-first but capped by an area-proportional QUOTA. So a big landmass has a
+	# larger "area of influence": when a small island fills its quota, the nodes nearest
+	# it overflow to the bigger neighbour, keeping the final split proportional to area.
 	var layer_count := {}
 	for nd in nodes:
 		var dd: int = nd.get("depth", nd.get("rank", 0))
 		layer_count[dd] = layer_count.get(dd, 0) + 1
 	var layer_idx := {}
-
-	ctx.node_label = PackedInt32Array(); ctx.node_label.resize(ctx.n)
-	ctx.layout_target = PackedVector2Array(); ctx.layout_target.resize(ctx.n)
-	ctx.perp_target = PackedFloat32Array(); ctx.perp_target.resize(ctx.n)
+	var glob_b := PackedFloat32Array(); glob_b.resize(ctx.n)   # virtual breadth (for ordering)
+	var vpos_of := PackedVector2Array(); vpos_of.resize(ctx.n)
 	for nd in nodes:
 		var id: int = nd["id"]
 		var d: int = nd.get("depth", nd.get("rank", 0))
@@ -1021,19 +1152,91 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 		var cnt: int = layer_count[d]
 		var li: int = layer_idx.get(d, 0)
 		layer_idx[d] = li + 1
-		var b := 0.0 if cnt <= 1 else (float(li) + 0.5) / float(cnt) - 0.5   # breadth -0.5..0.5
-		var ew := sqrt(maxf(0.0, 1.0 - pow(2.0 * t - 1.0, 2.0)))             # lens profile
-		var a_coord := amin + t * (amax - amin)                              # depth along axis
-		var p_coord := pmid + b * pext * ew * oval_width                     # breadth across
-		ctx.perp_target[id] = b
-		ctx.layout_target[id] = center + dir * a_coord + perp * p_coord
+		var b := 0.0 if cnt <= 1 else (float(li) + 0.5) / float(cnt) - 0.5
+		var ew := sqrt(maxf(0.0, 1.0 - pow(2.0 * t - 1.0, 2.0)))
+		glob_b[id] = b
+		vpos_of[id] = center + dir * (amin0 + t * (amax0 - amin0)) + perp * (pmid0 + b * pext0 * ew * oval_width)
 
-	# Start at the axis-min pole, end at the axis-max pole (opposite ends of the land).
-	ctx.start_pos = center + dir * amin
-	ctx.end_pos = center + dir * amax
+	# Size-weighted assignment (deterministic Apollonius cut): each node joins the
+	# landmass minimising distance/area. A bigger landmass reaches proportionally
+	# further, so the divide point between two landmasses sits proportional to their
+	# sizes (size 10 vs 1 -> boundary 10/11 of the way toward the small one). Every node
+	# decides independently from its own distances, so there is NO assignment-order
+	# dependence and no zig-zag. Generalises to any number of landmasses via the minimum.
+	var labs: Array = large.keys()
+	var lab_pts := {}
+	for lab in labs:
+		lab_pts[lab] = PackedVector2Array()
+	for s_i in range(field.samples.size()):
+		var sl := field.sample_label[s_i]
+		if large.has(sl):
+			lab_pts[sl].append(field.samples[s_i])
+	for nd in nodes:
+		var id: int = nd["id"]
+		var vp: Vector2 = vpos_of[id]
+		var best_lab: int = field.main_label
+		var best_score := INF
+		for lab in labs:
+			var pts: PackedVector2Array = lab_pts[lab]
+			var bestd := INF
+			for pt in pts:
+				var dd := vp.distance_squared_to(pt)
+				if dd < bestd:
+					bestd = dd
+			if bestd == INF:
+				continue
+			var score := sqrt(bestd) / maxf(1.0, float(field.sizes[lab]))   # distance / area
+			if score < best_score:
+				best_score = score
+				best_lab = lab
+		ctx.node_label[id] = best_lab
+
+	# groups[label] = { depth -> Array[node_id] } collected per division.
+	var groups := {}
+	for nd in nodes:
+		var id: int = nd["id"]
+		var d: int = nd.get("depth", nd.get("rank", 0))
+		var lab: int = ctx.node_label[id]
+		if not groups.has(lab):
+			groups[lab] = {}
+		if not groups[lab].has(d):
+			groups[lab][d] = []
+		groups[lab][d].append(id)
+
+	# --- Step 2: lay each division as its own oval over its own landmass. ---
+	for lab in groups.keys():
+		var fr := field.land_pca(lab)
+		if (fr["axis"] as Vector2).dot(dir) < 0.0:           # depth flows in journey direction
+			fr["axis"] = -(fr["axis"] as Vector2)
+			fr["perp"] = -(fr["perp"] as Vector2)
+			var na: float = -(fr["amax"] as float); var nx: float = -(fr["amin"] as float)
+			fr["amin"] = na; fr["amax"] = nx
+		var fc: Vector2 = fr["center"]
+		var fa: Vector2 = fr["axis"]; var fp: Vector2 = fr["perp"]
+		var famin: float = fr["amin"]; var famax: float = fr["amax"]
+		var fpmid: float = (fr["pmin"] + fr["pmax"]) * 0.5
+		var fpext: float = (fr["pmax"] - fr["pmin"])
+		var depths: Array = groups[lab].keys()
+		depths.sort()
+		var dmin: int = depths[0]; var dmax: int = depths[depths.size() - 1]
+		for d in depths:
+			var ids_layer: Array = groups[lab][d]
+			ids_layer.sort_custom(func(a, b2): return glob_b[a] < glob_b[b2])  # keep left-right order
+			var lc: int = ids_layer.size()
+			var tl := 0.5 if dmax == dmin else float(d - dmin) / float(dmax - dmin)
+			var ew := sqrt(maxf(0.0, 1.0 - pow(2.0 * tl - 1.0, 2.0)))
+			for k in range(lc):
+				var id: int = ids_layer[k]
+				var lb := 0.0 if lc <= 1 else (float(k) + 0.5) / float(lc) - 0.5
+				var a_coord := famin + tl * (famax - famin)
+				var p_coord := fpmid + lb * fpext * ew * oval_width
+				ctx.perp_target[id] = lb
+				ctx.layout_target[id] = fc + fa * a_coord + fp * p_coord
+
+	# Start/end keep the divisions they were assigned, pinned at their division's poles.
+	ctx.start_pos = ctx.layout_target[ctx.start_id]
+	ctx.end_pos = ctx.layout_target[ctx.end_id]
 	ctx.axis_len = float((ctx.end_pos as Vector2).distance_to(ctx.start_pos))
-	ctx.layout_target[ctx.start_id] = ctx.start_pos
-	ctx.layout_target[ctx.end_id] = ctx.end_pos
 	ctx.pos[ctx.start_id] = ctx.start_pos
 	ctx.pos[ctx.end_id] = ctx.end_pos
 	return ctx
