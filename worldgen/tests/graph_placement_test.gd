@@ -16,13 +16,26 @@ const OUT_DIR := "res://placement_debug/"
 @export var chaos_count: int = 40
 @export var chaos_render: int = 6      # how many chaos cases to also render
 
-# {name, cities, nbc, width, outgoing, after_trim, trim}
+# Placement levers. v2: multi-landmass by breadth, structured init, edges built
+# after settle.
+const PLACE_OPTS := {"landmass_mode": "multi", "oval_width": 1.0}  # oval_width: <1 narrower, >1 rounder
+
+# {name, cities, nbc, width, outgoing, layer_min, layer_max}
 const SPECS := [
-	{"name": "medium", "cities": 5,  "nbc": 2, "w": 3,  "out": 3, "at": 1, "trim": 0.3},
-	{"name": "wide",   "cities": 4,  "nbc": 2, "w": 5,  "out": 3, "at": 2, "trim": 0.2},
-	{"name": "big",    "cities": 8,  "nbc": 3, "w": 6,  "out": 4, "at": 2, "trim": 0.3},
-	{"name": "huge",   "cities": 12, "nbc": 4, "w": 8,  "out": 5, "at": 2, "trim": 0.35},
+	{"name": "medium", "cities": 5,  "nbc": 2, "w": 3,  "out": 3, "lmin": 2, "lmax": 5},
+	{"name": "wide",   "cities": 4,  "nbc": 2, "w": 5,  "out": 3, "lmin": 3, "lmax": 7},
+	{"name": "big",    "cities": 8,  "nbc": 3, "w": 6,  "out": 4, "lmin": 3, "lmax": 8},
+	{"name": "huge",   "cities": 12, "nbc": 4, "w": 8,  "out": 5, "lmin": 4, "lmax": 10},
 ]
+
+# Apply a spec's graph params onto a WorldSettings (edge creation reads these).
+func _apply_spec(bs: WorldSettings, spec: Dictionary) -> void:
+	bs.spec_cities = spec["cities"]
+	bs.spec_nodes_between_cities = spec["nbc"]
+	bs.spec_graph_width = spec["w"]
+	bs.spec_outgoing = spec["out"]
+	bs.spec_layer_min = spec["lmin"]
+	bs.spec_layer_max = spec["lmax"]
 
 var _gen: WorldGenerator
 var _coast_radius: float
@@ -43,9 +56,9 @@ func _ready() -> void:
 		var field := GraphPlacement.MapField.from_generator(_gen)
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
 		for spec in SPECS:
-			var g := GraphSpec.build(spec["cities"], spec["nbc"], spec["w"], spec["out"],
-				spec["at"], spec["trim"], sd)
-			var res := GraphPlacement.place(g, field, bs, sd)
+			_apply_spec(bs, spec)
+			var g := GraphSpec.build_nodes(spec["cities"], spec["nbc"], spec["lmin"], spec["lmax"], sd)
+			var res := GraphPlacement.place(g, field, bs, sd, null, PLACE_OPTS)
 			_report(spec["name"], sd, g, res, field)
 			_render(g, res, field, spec["name"], sd)
 
@@ -72,14 +85,14 @@ func _run_chaos() -> void:
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
 		var cities := rng.randi_range(2, 16)
 		var nbc := rng.randi_range(0, 8)
-		var w := rng.randi_range(1, 12)
-		var out := rng.randi_range(1, 8)
-		var at := rng.randi_range(1, 4)
-		var trim := rng.randf()
-		var g := GraphSpec.build(cities, nbc, w, out, at, trim, sd)
-		var res := GraphPlacement.place(g, field, bs, sd)
+		var lmin := rng.randi_range(1, 5)
+		var lmax := rng.randi_range(lmin, lmin + 6)
+		_apply_spec(bs, {"cities": cities, "nbc": nbc, "w": rng.randi_range(1, 12),
+			"out": rng.randi_range(1, 8), "lmin": lmin, "lmax": lmax})
+		var g := GraphSpec.build_nodes(cities, nbc, lmin, lmax, sd)
+		var res := GraphPlacement.place(g, field, bs, sd, null, PLACE_OPTS)
 		var pos: PackedVector2Array = res["pos"]
-		var label := "ch%d[c%d n%d w%d o%d]" % [ci, cities, nbc, w, out]
+		var label := "ch%d[c%d n%d L%d-%d]" % [ci, cities, nbc, lmin, lmax]
 		_report(label, sd, g, res, field)
 		var on_land := 0
 		for p in pos:
@@ -89,8 +102,8 @@ func _run_chaos() -> void:
 		total_on_land += frac
 		if frac < worst:
 			worst = frac
-			worst_desc = "c=%d nbc=%d w=%d out=%d at=%d trim=%.2f seed=%d (%d nodes)" % [
-				cities, nbc, w, out, at, trim, sd, pos.size()]
+			worst_desc = "c=%d nbc=%d lmin=%d lmax=%d seed=%d (%d nodes)" % [
+				cities, nbc, lmin, lmax, sd, pos.size()]
 		if rendered < chaos_render:
 			_render(g, res, field, "chaos%d" % ci, sd)
 			rendered += 1
@@ -103,25 +116,33 @@ func _report(name: String, sd: int, g: Dictionary, res: Dictionary, field) -> vo
 	for p in pos:
 		if field.is_land(p):
 			on_land += 1
+	var adj: Array = res["ctx"].adj
 	var lo := INF
 	var hi := -INF
 	var sum := 0.0
 	var cnt := 0
-	for u in range(g["nodes"].size()):
-		for v in g["adj"][u]:
+	for u in range(adj.size()):
+		for v in adj[u]:
 			var d: float = pos[u].distance_to(pos[v])
 			lo = minf(lo, d); hi = maxf(hi, d); sum += d; cnt += 1
-	var water_bad: int = GraphPlacement.water_edge_violations(res["ctx"], _coast_radius).size()
-	print("  %-8s seed%d: nodes=%d on_land=%d/%d (%.0f%%) steps=%d edgelen avg=%.0f [%.0f..%.0f] water_viol=%d" % [
+	var water_bad: int = GraphPlacement.water_edge_violations(res["ctx"]).size()
+	var st: Dictionary = res.get("edge_stats", {})
+	print("  %-12s seed%d: nodes=%d on_land=%d/%d (%.0f%%) edges=%d reaches_end=%s water_viol=%d edgelen avg=%.0f [%.0f..%.0f]" % [
 		name, sd, pos.size(), on_land, pos.size(), 100.0 * on_land / pos.size(),
-		res["steps"], sum / maxf(1, cnt), lo, hi, water_bad])
+		st.get("edges", cnt), str(st.get("reaches_end", false)), water_bad,
+		sum / maxf(1, cnt), lo, hi])
 
 # ---------------------------------------------------------------------------
 func _render(g: Dictionary, res: Dictionary, field, name: String, sd: int) -> void:
 	var base := _base_image(field)
-	_draw_graph(base.duplicate(), g, res["init_pos"], "%s%s_s%d_1_init.png" % [OUT_DIR, name, sd])
-	_draw_graph(base.duplicate(), g, res["mid_pos"], "%s%s_s%d_2_mid.png" % [OUT_DIR, name, sd])
-	_draw_graph(base.duplicate(), g, res["pos"], "%s%s_s%d_3_final.png" % [OUT_DIR, name, sd])
+	var adj: Array = res["ctx"].adj      # edges (built only at the final step)
+	var no_edges: Array = []             # init/mid: nodes only (edges don't exist yet)
+	no_edges.resize(g["nodes"].size())
+	for i in range(no_edges.size()):
+		no_edges[i] = []
+	_draw_graph(base.duplicate(), g, no_edges, res["init_pos"], "%s%s_s%d_1_init.png" % [OUT_DIR, name, sd])
+	_draw_graph(base.duplicate(), g, no_edges, res["mid_pos"], "%s%s_s%d_2_mid.png" % [OUT_DIR, name, sd])
+	_draw_graph(base.duplicate(), g, adj, res["pos"], "%s%s_s%d_3_final.png" % [OUT_DIR, name, sd])
 
 func _base_image(field) -> Image:
 	var w: int = field.w
@@ -139,16 +160,18 @@ func _base_image(field) -> Image:
 			img.set_pixel(x, y, col)
 	return img
 
-func _draw_graph(img: Image, g: Dictionary, pos: PackedVector2Array, path: String) -> void:
-	for u in range(g["nodes"].size()):
-		for v in g["adj"][u]:
+func _draw_graph(img: Image, g: Dictionary, adj: Array, pos: PackedVector2Array, path: String) -> void:
+	for u in range(adj.size()):
+		for v in adj[u]:
 			_line(img, pos[u], pos[v], Color(0.9, 0.9, 0.95))
+	var maxd: int = g["ranks"]
 	for nd in g["nodes"]:
 		var p: Vector2 = pos[nd["id"]]
+		var d: int = nd.get("depth", nd.get("rank", 0))
 		var col := Color(1, 0.85, 0.2) if nd["is_city"] else Color(0.9, 0.3, 0.3)
-		if nd["role"] == "start":
+		if d == 0:
 			col = Color(0.2, 1, 0.3)
-		elif nd["role"] == "end":
+		elif d == maxd:
 			col = Color(0.3, 0.6, 1)
 		_disc(img, p, 2.5 if nd["is_city"] else 1.5, col)
 	img.save_png(path)

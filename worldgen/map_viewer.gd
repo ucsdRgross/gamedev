@@ -31,7 +31,12 @@ const STEP_INFO := [
 
 # --- tool buttons -------------------------------------------------------------
 @export_tool_button("Generate view", "Callable") var _btn_generate = generate_view
-@export_tool_button("Randomize + Generate", "Callable") var _btn_randomize = randomize_and_regenerate
+## Roll ONLY the current step's params (seed + earlier/later steps untouched).
+@export_tool_button("Randomize step", "Callable") var _btn_rand_step = randomize_step
+## New base map: reroll the seed and sample every step BEFORE the current one from
+## its learned ranges (current + later steps untouched). Set up a fresh, valid base
+## to tune the current step against.
+@export_tool_button("Randomize base + seed", "Callable") var _btn_rand_base = randomize_base
 @export_tool_button("Save settings", "Callable") var _btn_save = save_current_preset
 @export_tool_button("Process folder -> ranges", "Callable") var _btn_process = process_ranges
 
@@ -54,6 +59,10 @@ var terrain_kind: String = "auto":
 			_apply_to_meshes()
 ## When true, changing view_step / terrain_kind regenerates automatically at edit-time.
 @export var auto_regenerate: bool = true
+## Which step Save / Process target. "Current" = the step you're viewing; pick a
+## specific step to fix an earlier step's preset/ranges without leaving this view.
+@export_enum("Current", "Landmass", "Tectonics", "Peaks", "Erosion", "Rivers", "Climate", "Cities", "Graph")
+var save_target: String = "Current"
 
 # --- water colors (baked into the water colormap; repaint on change) ----------
 ## River tint at low (near-sea) elevation; rivers ramp from this to river_color_high.
@@ -132,7 +141,7 @@ func _ready() -> void:
 	if colored_map == null:
 		if settings == null:
 			settings = WorldSettings.new()
-			_apply_random_settings()
+			_randomize_all_steps()
 		await regenerate()
 	else:
 		_apply_to_meshes()
@@ -143,10 +152,25 @@ func _ready() -> void:
 func generate_view() -> void:
 	await regenerate()
 
-func randomize_and_regenerate() -> void:
+## Roll only the current step's params, then regenerate. Seed and every other
+## step's params stay put, so earlier steps reproduce identically.
+func randomize_step() -> void:
 	if settings == null:
 		settings = WorldSettings.new()
-	_apply_random_settings()
+	_randomize_params(PresetIO.step_params(_step().name), _step().name)
+	await regenerate()
+
+## Fresh base: reroll the seed and sample every step BEFORE the current one from its
+## learned ranges. The current (and later) steps' params are left untouched.
+func randomize_base() -> void:
+	if settings == null:
+		settings = WorldSettings.new()
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	settings.main_seed = rng.randi() % 1000000
+	for i in range(view_step):  # every step strictly before the current one
+		var sname: String = STEP_INFO[i].name
+		_randomize_params(PresetIO.step_params(sname), sname)
 	await regenerate()
 
 ## Run the pipeline up to view_step, paint the 4 images, then push to the meshes.
@@ -290,27 +314,43 @@ func _update_ocean(size: Vector2) -> void:
 # =============================================================================
 # RECORDING (settings presets + ranges)
 # =============================================================================
-func _apply_random_settings() -> void:
-	var ranges := PresetIO.load_step_ranges(_step().name)
+## Sample the named params from step_name's learned (ranges.json) / default ranges;
+## params without any range yet are left at their current value.
+func _randomize_params(names: Array, step_name: String) -> void:
+	var ranges := PresetIO.load_step_ranges(step_name)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	settings.main_seed = rng.randi() % 1000000
-	for pname in ranges:
+	for pname in names:
+		if not ranges.has(pname):
+			continue
 		var r: Array = ranges[pname]
 		var v := rng.randf_range(r[0], r[1])
 		settings.set(pname, int(round(v)) if r[2] else v)
+
+## Full random world (seed + every step's params). Used for standalone runtime launch.
+func _randomize_all_steps() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	settings.main_seed = rng.randi() % 1000000
+	for s in STEP_INFO:
+		_randomize_params(PresetIO.step_params(s.name), s.name)
 
 func save_current_preset() -> void:
 	if settings == null:
 		push_warning("[MapViewer] no settings to save")
 		return
-	var stem := PresetIO.save_preset(settings, _step().name)
+	var step := _target_step()
+	var stem := PresetIO.save_preset(settings, step)
 	if stem != "":
-		print("[MapViewer] saved preset: %s.tres / .json" % stem)
+		print("[MapViewer] saved %s preset: %s.tres / .json" % [step, stem])
 
 func process_ranges() -> void:
-	var env := PresetIO.process_step_ranges(_step().name)
-	print("[MapViewer] ranges for '%s': %s" % [_step().name, env])
+	var step := _target_step()
+	var env := PresetIO.process_step_ranges(step)
+	print("[MapViewer] ranges for '%s': %s" % [step, env])
+
+func _target_step() -> String:
+	return _step().name if save_target == "Current" else save_target
 
 # =============================================================================
 # CAMERA / INPUT (play mode)

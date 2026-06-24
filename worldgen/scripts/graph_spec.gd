@@ -19,6 +19,36 @@ extends RefCounted
 ##     "start": int, "end": int, "ranks": int,
 ##   }
 
+## v2 node-only generation (no edges). Depth layers 0..D: layer 0 = start, layer D =
+## end (both single city nodes); city layers every gap. Each interior layer gets a
+## RANDOM node count in [layer_min, layer_max], independent of the target width (it
+## over-provisions nodes; edge creation later picks which to use). Returns:
+##   { "nodes": [{id, depth, is_city}], "layers": Array[Array[int]], "ranks": D,
+##     "start": int, "end": int, "gap": int }
+static func build_nodes(cities: int, nodes_between_cities: int, layer_min: int,
+		layer_max: int, seed_val: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_val
+	cities = maxi(2, cities)
+	var gap := maxi(1, nodes_between_cities + 1)
+	var ranks := (cities - 1) * gap
+	layer_min = maxi(1, layer_min)
+	layer_max = maxi(layer_min, layer_max)
+
+	var nodes: Array[Dictionary] = []
+	var layers: Array = []
+	layers.resize(ranks + 1)
+	for r in range(ranks + 1):
+		layers[r] = []
+		var is_city := (r % gap == 0)
+		var count := 1 if (r == 0 or r == ranks) else rng.randi_range(layer_min, layer_max)
+		for _i in range(count):
+			var id := nodes.size()
+			nodes.append({"id": id, "depth": r, "is_city": is_city})
+			layers[r].append(id)
+	return {"nodes": nodes, "layers": layers, "ranks": ranks,
+		"start": layers[0][0], "end": layers[ranks][0], "gap": gap}
+
 ## Build from explicit spec values (used directly by unit tests).
 static func build(cities: int, nodes_between_cities: int, width: int, outgoing: int,
 		min_outgoing_after_trim: int, edge_trim_chance: float, seed_val: int) -> Dictionary:

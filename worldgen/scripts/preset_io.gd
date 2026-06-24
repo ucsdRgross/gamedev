@@ -48,6 +48,82 @@ const DEFAULT_RANGES := {
 	"lowland_flatten": [1.0, 4.0],
 }
 
+## Which generation step each tunable parameter belongs to (the step at which you
+## tune + judge it). Keys match map_viewer's STEP_INFO names. Used so saving,
+## range-finding, and randomization can be isolated to a single step -- tuning a
+## later step never touches an earlier step's values. Every tunable param must
+## appear here exactly once (see _coverage_check()).
+const STEP_PARAMS := {
+	"Landmass": [
+		"continent_frequency", "ocean_threshold", "island_radius", "land_contrast",
+		"island_falloff", "edge_jag", "continent_octaves", "continent_gain",
+		"continent_lacunarity", "continent_warp_amp", "continent_warp_freq",
+	],
+	"Tectonics": [
+		"plate_count", "drift_intensity", "plate_move", "tectonic_band",
+		"warp_strength", "warp_frequency", "land_plate_ratio", "land_rift_damping",
+		"tectonic_height_cap",
+	],
+	"Peaks": [
+		"detail_frequency", "ridge_frequency", "mountain_threshold", "lowland_flatten",
+		"boundary_radius", "boundary_falloff", "peak_uplift", "highland_range",
+		"peak_detail_strength", "peak_height_cap", "peak_detail_min_elevation",
+		"peak_detail_falloff", "peaks_octaves", "peaks_gain", "peaks_lacunarity",
+		"ridge_offset", "peaks_warp_amp", "peaks_warp_freq", "billow_frequency",
+		"peak_billow_strength",
+	],
+	"Erosion": [
+		"erosion_octaves", "erosion_amplitude", "erosion_frequency", "erosion_gain",
+		"erosion_lacunarity", "erosion_branch_angle_deg", "erosion_ridge_rounding",
+		"erosion_gully_rounding", "erosion_detail", "erosion_steepness_scale",
+		"erosion_min_elevation", "erosion_elevation_falloff",
+	],
+	"Rivers": [
+		"river_resolution_divisor", "river_source_humidity_bias",
+		"river_source_elevation_bias", "river_accum_threshold", "river_carve_depth",
+		"river_width_gain", "river_flow_exponent", "river_smooth_passes",
+		"lake_min_depth", "lake_min_area", "lake_carve_depth", "lake_width",
+	],
+	"Climate": [
+		"temp_frequency", "humid_frequency", "temp_lapse_rate", "river_humidity_boost",
+		"height_bands", "temp_bands", "humid_bands",
+	],
+	"Cities": [
+		"city_dist_ratio", "max_city_count", "travel_dist_ratio", "max_travel_count",
+		"coast_radius_ratio",
+	],
+	"Graph": [
+		"spec_cities", "spec_nodes_between_cities", "spec_graph_width", "spec_outgoing",
+		"spec_min_outgoing_after_trim", "spec_edge_trim_chance", "layer_count",
+		"min_outgoing", "max_outgoing", "min_outgoing_after_trim",
+		"min_nodes_between_cities", "max_nodes_between_cities", "min_cities_visited",
+		"max_cities_visited", "city_bottleneck_strength", "min_graph_width",
+		"min_biomes_per_path", "max_biomes_per_path", "max_landmasses",
+		"max_cross_ocean_per_band", "water_crossing_ratio", "start_end_island_penalty",
+		"start_end_min_connections", "mountain_pass_bias", "graph_anti_straight",
+		"graph_zigzag_penalty", "edge_trim_chance", "path_curve_max_ratio",
+		"path_curve_min_ratio", "failsafe_max_injected_nodes", "max_paths_enumerated",
+		"graph_build_passes",
+	],
+}
+
+## The tunable params assigned to a step (empty Array if the step is unknown).
+static func step_params(step: String) -> Array:
+	return STEP_PARAMS.get(step, [])
+
+## Debug: any tunable params not assigned to exactly one step. Print at startup if
+## you add a new @export and forget to slot it into STEP_PARAMS.
+static func coverage_gaps() -> Array:
+	var assigned := {}
+	for s in STEP_PARAMS:
+		for p in STEP_PARAMS[s]:
+			assigned[p] = true
+	var missing := []
+	for p in tunable_params():
+		if not assigned.has(p):
+			missing.append(p)
+	return missing
+
 ## name -> [lo, hi, is_int] for every randomizable WorldSettings parameter.
 static func param_ranges() -> Dictionary:
 	var out := {}
@@ -96,11 +172,12 @@ static func tunable_params() -> Dictionary:
 		out[pname] = (p.type == TYPE_INT)
 	return out
 
-## Snapshot the FULL tunable param set (+ main_seed for provenance) into a flat dict
-## tagged by step, so range-finding later sees every parameter you touched.
+## Snapshot ONLY this step's params (+ main_seed for provenance) into a flat dict.
+## Per-step isolation: a Landmass preset holds only Landmass params, so processing
+## the Landmass folder yields Landmass ranges and never disturbs other steps.
 static func settings_to_dict(settings: WorldSettings, step: String) -> Dictionary:
 	var d := {"_step": step, "main_seed": settings.main_seed}
-	for pname in tunable_params():
+	for pname in step_params(step):
 		d[pname] = settings.get(pname)
 	return d
 

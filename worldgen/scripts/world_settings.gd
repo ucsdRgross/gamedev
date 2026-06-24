@@ -223,10 +223,16 @@ func map_diag() -> float:
 @export var spec_graph_width: int = 3
 ## Forward edges per node before trimming.
 @export var spec_outgoing: int = 3
+## Min forward edges per node (edge creation target).
+@export var spec_min_outgoing: int = 2
 ## Variety-trim floor (never orphans a node).
 @export var spec_min_outgoing_after_trim: int = 1
 ## Chance to drop a surplus edge during the spec trim.
 @export_range(0.0, 1.0) var spec_edge_trim_chance: float = 0.3
+## v2 node-only generation: each depth layer gets a random node count in this range
+## (over-provisions nodes; edge creation picks which to use toward the width target).
+@export var spec_layer_min: int = 2
+@export var spec_layer_max: int = 5
 
 @export_group("Path Choice Rules")
 ## Layered DAG over travel_nodes (cities are anchors). Nodes bucket into layer_count
