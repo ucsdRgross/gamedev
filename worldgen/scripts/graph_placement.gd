@@ -1,17 +1,15 @@
 class_name GraphPlacement
 extends RefCounted
 
-## Step B of graph placement: take the fixed, rule-correct graph from GraphSpec and
-## physically lay it onto the real map with force-directed layout. CONNECTIONS NEVER
-## CHANGE here -- only positions. Nodes start as a filled disc around the map centre
-## and the forces redistribute them evenly across the landmass.
-##
-## Design goals honoured:
-##  - Pluggable, comparable integrators: every integrator shares the SAME force set
-##    (`_compute_forces`) so they can be benchmarked head-to-head on identical maps.
-##  - Depth stays monotonic along the start->end spatial axis -> an edge can never
-##    jump backwards across the continent (anti-zigzag, per user requirement).
+## Step B of graph placement: GENERATE the gameplay graph directly on the real map as a
+## LADDER overlaid on the land, then connect it with one forward sweep.
+##  - `_make_ctx` lays D rungs (= spec depth) along the land's principal axis; each rung
+##    is an independent slice divided into width-scaled, jittered sections (one node each).
+##  - `_create_edges` connects each rung to the next by geometry (nearest same-landmass
+##    node forward, ±locality branch), with coverage that guarantees start->end
+##    connectivity by construction (no repair) and ferries across islands.
 ##  - Pure data (PackedArrays / Dictionaries) so it is thread-safe for the harness.
+##  - Step C (GraphDetail) turns the straight edges into terrain-fitting curves.
 
 # ---------------------------------------------------------------------------
 # Map sampling field -- built once from the generator's height buffer. Thread-safe.
@@ -364,39 +362,6 @@ class MapField extends RefCounted:
 		var d := dt_at(p)
 		return d >= 0.0 and d <= radius
 
-	func _cell_in(x: int, y: int, lab: int) -> bool:
-		return label[(y * w) + x] == lab if lab >= 0 else _dom_cell(x, y)
-
-	## Land extreme points along `dir`: [min_projection_point, max_projection_point].
-	## `lab` >= 0 restricts to that landmass; otherwise the whole domain.
-	func axis_extremes(dir: Vector2, lab: int = -1) -> Array:
-		var lo := INF
-		var hi := -INF
-		var lo_pt := land_centroid
-		var hi_pt := land_centroid
-		for y in range(h):
-			for x in range(w):
-				if _cell_in(x, y, lab):
-					var pr := Vector2(x, y).dot(dir)
-					if pr < lo:
-						lo = pr; lo_pt = Vector2(x, y)
-					if pr > hi:
-						hi = pr; hi_pt = Vector2(x, y)
-		return [lo_pt, hi_pt]
-
-	## (min, max) of land projected onto `perp`, measured from `origin`.
-	func perp_range(origin: Vector2, perp: Vector2, lab: int = -1) -> Vector2:
-		var lo := INF
-		var hi := -INF
-		for y in range(h):
-			for x in range(w):
-				if _cell_in(x, y, lab):
-					var pr := (Vector2(x, y) - origin).dot(perp)
-					lo = minf(lo, pr); hi = maxf(hi, pr)
-		if lo == INF:
-			return Vector2(-1, 1)
-		return Vector2(lo, hi)
-
 	## Principal-axis description of a land distribution (from the samples):
 	## { center, axis, perp, amin, amax, pmin, pmax } in axis/perp coordinates relative
 	## to center. The oval grid is laid along this so depth flows along the land's
@@ -442,45 +407,22 @@ class MapField extends RefCounted:
 		return {"center": mean, "axis": axis, "perp": perp,
 			"amin": amin, "amax": amax, "pmin": pmin, "pmax": pmax}
 
-	func centroid_of(lab: int) -> Vector2:
-		var sum := Vector2.ZERO
-		var n := 0
-		for y in range(h):
-			for x in range(w):
-				if label[(y * w) + x] == lab:
-					sum += Vector2(x, y); n += 1
-		return sum / maxi(1, n) if n > 0 else land_centroid
-
-	## Landmass ids with size >= `min_frac` of the largest, ordered along `dir`
-	## (so a journey can flow island-to-island). Capped to `max_count`.
-	func ordered_landmasses(dir: Vector2, min_frac: float, max_count: int) -> Array:
-		var big := 0
-		for id in sizes.keys():
-			big = maxi(big, sizes[id])
-		var chosen: Array = []
-		for id in sizes.keys():
-			if sizes[id] >= int(big * min_frac):
-				chosen.append(id)
-		var cents := {}
-		for id in chosen:
-			cents[id] = centroid_of(id)
-		chosen.sort_custom(func(a, b): return cents[a].dot(dir) < cents[b].dot(dir))
-		if chosen.size() > max_count:
-			# keep the largest max_count, but preserve the along-dir order.
-			var by_size := chosen.duplicate()
-			by_size.sort_custom(func(a, b): return sizes[a] > sizes[b])
-			var keep := {}
-			for i in range(max_count):
-				keep[by_size[i]] = true
-			var out: Array = []
-			for id in chosen:
-				if keep.has(id):
-					out.append(id)
-			return out
-		return chosen
+	## On-land perp coordinates of landmass `lab` along the slice line at axis-coord `a`
+	## (line = origin + axis*a + perp*p, p in [pmin,pmax]). Used to spread a depth row's
+	## nodes evenly across the island's ACTUAL width at that slice (2D grid cross-section).
+	func slice_land_coords(origin: Vector2, axis: Vector2, perp: Vector2, a: float, pmin: float, pmax: float, lab: int, step: float) -> PackedFloat32Array:
+		var out := PackedFloat32Array()
+		var base := origin + axis * a
+		var p := pmin
+		while p <= pmax:
+			var wp := base + perp * p
+			if label_at(wp) == lab:
+				out.append(p)
+			p += step
+		return out
 
 # ---------------------------------------------------------------------------
-# Shared force/layout context (mutated in place during the sim).
+# Shared placement context (positions, depths, lanes, edges).
 # ---------------------------------------------------------------------------
 class Ctx extends RefCounted:
 	var field: MapField
@@ -497,179 +439,35 @@ class Ctx extends RefCounted:
 	var end_pos: Vector2
 	var axis: Vector2                    # start->end direction (normalised)
 	var perp: Vector2                    # axis rotated 90deg (lane spread direction)
-	var axis_len: float
-	var perp_extent: float               # landmass half-size across the axis
-	var perp_target: PackedFloat32Array  # node id -> desired perpendicular offset
-	var layout_target: PackedVector2Array # node id -> structured target position
 	var node_label: PackedInt32Array     # node id -> assigned landmass id
-	# Tunable distances (px), resolved from ratios * map_diag.
-	var ideal_edge: float
-	var repel_dist: float
+	var active: PackedByteArray          # node id -> 1 if kept
+	var lane: PackedInt32Array           # node id -> section index within its rung
 	var coast_radius: float              # a node within this of water counts as coastal
-	# Force weights (will move into WorldSettings in the param overhaul).
-	var w_land := 6.0
-	var w_repel := 1.0
-	var w_spring := 0.35
-	var w_axis := 0.5
-	var w_perp := 0.8
-	var w_structure := 0.5               # pull toward the structured layout target
-	var w_bound := 1.0
-	var w_longedge := 0.8                # steep extra contraction past long_edge_cap
-	var w_edge_water := 1.2             # contraction for edges crossing open water
-	var long_edge_mult := 2.2           # edge is "too long" past this x ideal_edge
-
-# ---------------------------------------------------------------------------
-# Integrators (pluggable). All share _compute_forces so they're comparable.
-# ---------------------------------------------------------------------------
-class Integrator extends RefCounted:
-	var ctx: Ctx
-	func setup(_c: Ctx) -> void: ctx = _c
-	func step() -> float: return 0.0          # returns total movement this step
-	func is_settled() -> bool: return false
-
-## Fruchterman-Reingold: net force per node, displacement capped by a cooling
-## temperature so it settles. The recommended default base.
-class FruchtermanReingold extends Integrator:
-	var temp: float
-	var cool := 0.95
-	var min_move := 0.0
-	var _last_move := INF
-
-	func setup(_c: Ctx) -> void:
-		ctx = _c
-		temp = ctx.field.land_max.distance_to(ctx.field.land_min) * 0.1 + 1.0
-		min_move = ctx.field.w * 0.0005
-
-	func step() -> float:
-		var forces := GraphPlacement._compute_forces(ctx)
-		var moved := 0.0
-		for i in range(ctx.n):
-			if i == ctx.start_id or i == ctx.end_id:
-				continue                       # anchored
-			var f := forces[i]
-			var mag := f.length()
-			if mag > 0.0001:
-				var disp := f / mag * minf(mag, temp)
-				ctx.pos[i] += disp
-				moved += disp.length()
-		temp = maxf(temp * cool, 0.5)
-		_last_move = moved
-		return moved
-
-	func is_settled() -> bool:
-		return _last_move < min_move * ctx.n
-
-# ---------------------------------------------------------------------------
-# Force computation (shared by all integrators).
-# ---------------------------------------------------------------------------
-static func _compute_forces(ctx: Ctx) -> PackedVector2Array:
-	var forces := PackedVector2Array()
-	forces.resize(ctx.n)
-	for i in range(ctx.n):
-		forces[i] = Vector2.ZERO
-
-	# 1. Land attraction: a node over ocean is pulled inland along the distance-
-	#    transform gradient (defined and nonzero even in deep ocean). Falls back to
-	#    the nearest land sample if the gradient is degenerate.
-	for i in range(ctx.n):
-		var p := ctx.pos[i]
-		if not ctx.field.is_land(p):
-			var g := ctx.field.dt_gradient(p)
-			if g.length() > 0.0001:
-				forces[i] += g.normalized() * ctx.w_land * ctx.repel_dist
-			else:
-				var d := ctx.field.nearest_sample(p) - p
-				if d.length() > 0.0001:
-					forces[i] += d.normalized() * ctx.w_land * ctx.repel_dist
-
-	# 2. Node-node repulsion (inverse distance) within range -> even spacing.
-	var rd := ctx.repel_dist
-	for i in range(ctx.n):
-		for j in range(i + 1, ctx.n):
-			var d := ctx.pos[i] - ctx.pos[j]
-			var dist := d.length()
-			if dist < 0.001:
-				d = Vector2(randf() - 0.5, randf() - 0.5); dist = 0.01
-			if dist < rd * 2.0:
-				var f := d / dist * (rd * rd / (dist * dist)) * ctx.w_repel
-				forces[i] += f
-				forces[j] -= f
-
-	# 3. Edge springs (Hooke) toward the ideal edge length, plus:
-	#    5. long-edge penalty (steep extra contraction past a cap), and
-	#    4. illegal-water-crossing repulsion: an edge crossing open water contracts
-	#       hard UNLESS it's a legal ferry (both endpoints coastal). This keeps travel
-	#       local within a landmass while allowing proper coast-to-coast ferries.
-	var cap := ctx.ideal_edge * ctx.long_edge_mult
-	for u in range(ctx.n):
-		for v in ctx.adj[u]:
-			var d: Vector2 = ctx.pos[v] - ctx.pos[u]
-			var dist := d.length()
-			if dist < 0.001:
-				continue
-			var dir := d / dist
-			forces[u] += dir * (dist - ctx.ideal_edge) * ctx.w_spring
-			forces[v] -= dir * (dist - ctx.ideal_edge) * ctx.w_spring
-			if dist > cap:
-				var fl := dir * (dist - cap) * ctx.w_longedge
-				forces[u] += fl
-				forces[v] -= fl
-			if _segment_hits_water(ctx.field, ctx.pos[u], ctx.pos[v]):
-				if not _legal_ferry(ctx, u, v):
-					var fw := dir * dist * ctx.w_edge_water
-					forces[u] += fw
-					forces[v] -= fw
-
-	# 4+5. Structure anchor: pull each node toward its precomputed structured target
-	#      (per-landmass depth-band + Sugiyama lane order). This keeps depth ordered
-	#      in space (anti-zigzag/backtrack) and lanes spread, and works per landmass
-	#      so the graph follows each island instead of a single straight axis.
-	for i in range(ctx.n):
-		if i == ctx.start_id or i == ctx.end_id:
-			continue
-		forces[i] += (ctx.layout_target[i] - ctx.pos[i]) * ctx.w_structure
-
-	# 6. Boundary containment: keep nodes on/near the map's land box.
-	for i in range(ctx.n):
-		var p := ctx.pos[i]
-		if not ctx.field.in_bounds(p):
-			forces[i] += (ctx.field.land_centroid - p).normalized() * ctx.w_bound * ctx.repel_dist
-
-	return forces
+	var lane_tol := 1.8                  # branch locality: extra forward links allowed only
+										 # within this x the nearest one's distance (a ratio,
+										 # so scale-free across map sizes). Tunable via opts.
 
 # ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
-## Place `graph` (a GraphSpec dict) on `field`. Returns a result dict:
-##   { "pos": PackedVector2Array, "ctx": Ctx, "steps": int, "init_pos": PackedVector2Array }
-## `record_mid` (0..1) optionally captures positions at that fraction of the sim.
+## Place `graph` (a GraphSpec dict) on `field`. Returns a result dict with the placed
+## context, the (one-shot) positions, and edge stats. `active` flags kept nodes.
 static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
-		seed_val: int, integrator: Integrator = null, opts: Dictionary = {}) -> Dictionary:
+		seed_val: int, opts: Dictionary = {}) -> Dictionary:
+	# Placement (division + 2D cross-section grid + trimming) happens in _make_ctx;
+	# positions are final and one-shot, so init/mid mirror the final layout.
 	var ctx := _make_ctx(graph, field, settings, seed_val, opts)
-	# Adaptive density: clearly more land samples than nodes so assignment has room.
-	if field.domain_land > 0:
-		var ratio: float = opts.get("sample_spacing_ratio", 0.012)
-		var want_sp := sqrt(float(field.domain_land) / float(maxi(1, ctx.n * 2)))
-		var sp := minf(settings.map_diag() * ratio, want_sp)
-		if absf(sp - field._cs) > 0.5:
-			field.build_land_samples(sp, seed_val, opts.get("poisson", true))
-
-	# Init visual: a structured CIRCULAR layout centred on the land (ordered by depth
-	# & breadth, not random). Nodes don't "settle" -- final positions are assigned
-	# deterministically below, so there is no post-settle jumping.
-	_init_circular(ctx)
 	var init_pos := ctx.pos.duplicate()
+	var mid_pos := ctx.pos.duplicate()
 
-	# Deterministic placement: assign nodes onto land samples ordered by depth (axis)
-	# and breadth (perp), per landmass. Guarantees 100% on land, even spacing, depth
-	# order, and start/end pinned to the main landmass's global axis extremes.
-	_assign_positions(ctx, field)
-	var mid_pos := ctx.pos.duplicate()      # = final (assignment is one shot)
-
-	# DIAGNOSTIC (remove later): node-share vs area-share per island (should track).
-	# Area-share is over ONLY the islands that received nodes (excluded land ignored).
+	# DIAGNOSTIC (remove later): node-share vs area-share per island (should track),
+	# plus how many nodes were trimmed at thin slices.
 	var _dist := {}
+	var _kept := 0
 	for i in range(ctx.n):
+		if ctx.active[i] == 0:
+			continue
+		_kept += 1
 		var l := ctx.node_label[i]
 		_dist[l] = _dist.get(l, 0) + 1
 	var _area_sum := 0
@@ -677,169 +475,93 @@ static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
 		_area_sum += field.sizes.get(l, 0)
 	var _parts := []
 	for l in _dist.keys():
-		var node_pct :float= 100.0 * _dist[l] / maxi(1, ctx.n)
+		var node_pct :float= 100.0 * _dist[l] / maxi(1, _kept)
 		var area_pct :float= 100.0 * field.sizes.get(l, 0) / maxi(1, _area_sum)
 		_parts.append("%d:%dn(%.0f%%nodes/%.0f%%area)" % [l, _dist[l], node_pct, area_pct])
-	print("    [JIGSAW] %d islands: %s" % [_dist.size(), str(_parts)])
+	print("    [JIGSAW] kept %d/%d nodes, %d islands: %s" % [_kept, ctx.n, _dist.size(), str(_parts)])
 
-	# Edge creation -- ONE geography-aware pass on the placed nodes.
+	# Edge creation -- ONE geography-aware forward sweep on the placed nodes.
 	var edge_stats := _create_edges(ctx, graph, settings)
 
 	return {"pos": ctx.pos, "ctx": ctx, "steps": 0, "init_pos": init_pos,
-		"mid_pos": mid_pos, "edge_stats": edge_stats}
-
-## Init visual = the lens grid laid over the map (depth pole->pole, breadth fanned).
-static func _init_circular(ctx: Ctx) -> void:
-	for i in range(ctx.n):
-		ctx.pos[i] = ctx.layout_target[i]
-
-## Snap each node onto its assigned division's landmass (target_label = node_label),
-## at the nearest UNUSED sample to its local-oval target. Falls back to any island only
-## if that landmass is full. node_label is then re-read from the final position.
-static func _assign_positions(ctx: Ctx, field: MapField) -> void:
-	var used := {}
-	var ids: Array = []
-	for i in range(ctx.n):
-		if i != ctx.start_id and i != ctx.end_id:
-			ids.append(i)
-	ids.sort_custom(func(a, b):
-		if ctx.depth[a] != ctx.depth[b]:
-			return ctx.depth[a] < ctx.depth[b]
-		return ctx.perp_target[a] < ctx.perp_target[b])
-	for id in ids:
-		var lab: int = ctx.node_label[id]
-		var idx := field.nearest_sample_idx(ctx.layout_target[id], used, lab)  # assigned landmass
-		if idx < 0:                                                            # landmass full
-			idx = field.nearest_sample_idx(ctx.layout_target[id], used)
-		if idx < 0:
-			idx = field.nearest_sample_idx(ctx.layout_target[id])
-		if idx >= 0:
-			ctx.pos[id] = field.samples[idx]
-			used[idx] = true
-	_force_anchor(ctx, field, ctx.start_id, ctx.start_pos, used, ctx.node_label[ctx.start_id])
-	_force_anchor(ctx, field, ctx.end_id, ctx.end_pos, used, ctx.node_label[ctx.end_id])
-	for i in range(ctx.n):                          # landmass derived from final position
-		ctx.node_label[i] = field.label_at(ctx.pos[i])
-
-static func _force_anchor(ctx: Ctx, field: MapField, node: int, target: Vector2, used: Dictionary, lab: int = -1) -> void:
-	var idx := field.nearest_sample_idx(target, used, lab)
-	if idx < 0:
-		idx = field.nearest_sample_idx(target, used)
-	if idx < 0:
-		idx = field.nearest_sample_idx(target)
-	if idx >= 0:
-		ctx.pos[node] = field.samples[idx]
-		used[idx] = true
+		"mid_pos": mid_pos, "edge_stats": edge_stats, "active": ctx.active}
 
 # ---------------------------------------------------------------------------
-# Edge creation -- ONE geography-aware pass on the settled node positions.
+# Pure-data export for gameplay traversal.
 # ---------------------------------------------------------------------------
-## Build the whole graph, SLAY-THE-SPIRE style: each node connects forward only to its
-## NEAREST same-landmass next-row nodes (locality-capped so edges never span the island),
-## with ferries only at island boundaries between the nearest coastal nodes. Edges are
-## added shortest-first so local non-crossing links win; then coverage, min_out top-up,
-## and a same-landmass-preferring connectivity repair. Returns stats.
+## Export the final graph as plain data the game can walk: compact node ids, per-node
+## properties (position, depth/layer, landmass, height, biome), and forward edges with
+## their routed curve points. `curves` is GraphDetail.compute_curves(...) output (each
+## [u, v, points]); pass [] to use straight segments. `opts.biome_fn` is an optional
+## Callable(Vector2)->int for the biome at a node (else -1).
+## Traversal: from a node, pick any entry in `out` (each advances toward `end`); follow
+## `points` for the 2D path; stop at `end`. `depth` is the layer (0 = start, max = end).
+static func export_graph(ctx: Ctx, field: MapField, curves: Array = [], opts: Dictionary = {}) -> Dictionary:
+	var has_biome: bool = opts.has("biome_fn")
+	var biome_fn: Callable = opts.get("biome_fn", Callable())
+	var pts_of := {}                                    # Vector2i(u,v) -> routed polyline
+	for e in curves:
+		pts_of[Vector2i(e[0], e[1])] = e[2]
+	var id_map := {}                                    # old id -> compact id (drop inactive)
+	var compact := 0
+	for i in range(ctx.n):
+		if ctx.active[i] == 1:
+			id_map[i] = compact; compact += 1
+	var nodes: Array = []
+	for i in range(ctx.n):
+		if ctx.active[i] == 0:
+			continue
+		var outs: Array = []
+		for v in ctx.adj[i]:
+			if ctx.active[v] == 0:
+				continue
+			var ferry := ctx.node_label[i] != ctx.node_label[v] or edge_crosses_water(field, ctx.pos[i], ctx.pos[v])
+			var pts: PackedVector2Array = pts_of.get(Vector2i(i, v), PackedVector2Array([ctx.pos[i], ctx.pos[v]]))
+			outs.append({"to": id_map[v], "ferry": ferry, "points": pts})
+		nodes.append({
+			"id": id_map[i],
+			"pos": ctx.pos[i],
+			"depth": ctx.depth[i],
+			"landmass": ctx.node_label[i],
+			"height": field.height_at(ctx.pos[i]),
+			"biome": (biome_fn.call(ctx.pos[i]) if has_biome else -1),
+			"out": outs,
+		})
+	return {
+		"start": id_map.get(ctx.start_id, 0),
+		"end": id_map.get(ctx.end_id, 0),
+		"max_depth": ctx.max_depth,
+		"nodes": nodes,
+	}
+
+# ---------------------------------------------------------------------------
+# Edge creation -- ONE forward sweep, depth row by depth row (Slay-the-Spire).
+# ---------------------------------------------------------------------------
+## Single forward sweep over the populated depths. Within a step each node connects to its
+## STRAIGHT-AHEAD same-landmass node plus at most one adjacent lane (+-1), so travel goes
+## forward, not sideways. Coverage in the SAME step guarantees every node gets an incoming
+## (reachable from start) and an outgoing (reaches end, since depth D is just `end`), so
+## connectivity holds BY CONSTRUCTION -- no repair pass. Cross-island steps are legal
+## ferries (coastal-to-coastal); a crossing is forced only as a last resort.
 static func _create_edges(ctx: Ctx, graph: Dictionary, settings: WorldSettings) -> Dictionary:
-	var layers: Array = graph["layers"]
 	var D: int = ctx.max_depth
 	var max_out: int = maxi(1, settings.spec_outgoing)
-	var min_out: int = clampi(settings.spec_min_outgoing, 1, max_out)
-	var loc_ratio := 2.2                        # locality cap (x nearest next-row node); lever later
-	var edges: Array = []                       # [u, v] for crossing tests
 	var indeg := PackedInt32Array(); indeg.resize(ctx.n)
-
-	# Buckets per (landmass, depth) so "next row" means next populated depth on the SAME
-	# island (handles depth gaps within a division).
-	var by_ld := {}
+	var edges: Array = []                       # [u, v] for crossing tests
+	# Active nodes grouped by depth; only populated depths take part in the sweep.
+	var by_depth: Array = []
+	by_depth.resize(D + 1)
+	for d in range(D + 1):
+		by_depth[d] = []
 	for i in range(ctx.n):
-		var lab: int = ctx.node_label[i]
-		var dd: int = ctx.depth[i]
-		if not by_ld.has(lab):
-			by_ld[lab] = {}
-		if not by_ld[lab].has(dd):
-			by_ld[lab][dd] = []
-		by_ld[lab][dd].append(i)
-
-	# 1. Local forward candidates: nearest same-landmass next-row nodes (within a cap
-	#    relative to u's closest such node) OR, at a landmass boundary, legal ferries to
-	#    the nearest coastal node on another island. Added globally shortest-first.
-	var cand: Array = []                        # [dist, u, v]
-	for u in range(ctx.n):
-		if u == ctx.end_id:
-			continue
-		var sl: Array = _same_land_next_row(ctx, u, by_ld)
-		if not sl.is_empty():
-			sl.sort_custom(func(a, b):
-				return ctx.pos[u].distance_squared_to(ctx.pos[a]) < ctx.pos[u].distance_squared_to(ctx.pos[b]))
-			var d0: float = ctx.pos[u].distance_to(ctx.pos[sl[0]])
-			var cap: float = maxf(d0 * loc_ratio, d0 + 1.0)
-			var taken := 0
-			for v in sl:
-				if taken >= max_out:
-					break
-				var dist: float = ctx.pos[u].distance_to(ctx.pos[v])
-				if dist > cap and taken >= 1:
-					break                       # locality: never span the island
-				cand.append([dist, u, v])
-				taken += 1
-		else:
-			# Landmass boundary: ferry to the nearest legal coastal node ahead in depth.
-			var fcs: Array = []
-			for v in range(ctx.n):
-				if ctx.depth[v] <= ctx.depth[u] or ctx.node_label[v] == ctx.node_label[u]:
-					continue
-				if _legal_ferry(ctx, u, v):
-					fcs.append([ctx.pos[u].distance_to(ctx.pos[v]), u, v])
-			fcs.sort_custom(func(a, b): return a[0] < b[0])
-			for k in range(mini(fcs.size(), max_out)):
-				cand.append(fcs[k])
-	cand.sort_custom(func(a, b): return a[0] < b[0])
-	for c in cand:
-		var u: int = c[1]
-		var v: int = c[2]
-		if ctx.adj[u].size() >= max_out or (v in ctx.adj[u]):
-			continue
-		if ctx.node_label[u] == ctx.node_label[v] and edge_crosses_water(ctx.field, ctx.pos[u], ctx.pos[v]):
-			continue                            # intra-island edge must stay on land
-		if _crosses_any(ctx, u, v, edges):
-			continue
-		ctx.adj[u].append(v); edges.append([u, v]); indeg[v] += 1
-
-	# 2. Coverage: every non-start node needs >=1 incoming; every non-end >=1 outgoing.
-	for d in range(1, D + 1):
-		for c in layers[d]:
-			if indeg[c] > 0:
-				continue
-			var src := _nearest_connectable(ctx, c, layers[d - 1], edges, max_out, true)
-			if src >= 0:
-				ctx.adj[src].append(c); edges.append([src, c]); indeg[c] += 1
-	for d in range(D):
-		for u in layers[d]:
-			if ctx.adj[u].size() > 0:
-				continue
-			var dstn := _nearest_connectable(ctx, u, layers[d + 1], edges, max_out, false)
-			if dstn >= 0:
-				ctx.adj[u].append(dstn); edges.append([u, dstn]); indeg[dstn] += 1
-
-	# 3. Top up toward min_out where possible (without crossings/water).
-	for d in range(D):
-		for u in layers[d]:
-			if ctx.adj[u].size() >= min_out:
-				continue
-			var cands: Array = layers[d + 1].duplicate()
-			cands.sort_custom(func(a, b):
-				return ctx.pos[u].distance_squared_to(ctx.pos[a]) < ctx.pos[u].distance_squared_to(ctx.pos[b]))
-			for c in cands:
-				if ctx.adj[u].size() >= min_out:
-					break
-				if not (c in ctx.adj[u]) and _can_connect(ctx, u, c, edges):
-					ctx.adj[u].append(c); edges.append([u, c]); indeg[c] += 1
-
-	# 4. Connectivity guarantee: every node reachable from start AND able to reach end
-	#    (so side-landmass routes connect via ferries; no isolated clusters). Repair
-	#    edges may relax the no-cross/no-water rule to keep the graph connected.
-	_repair_forward(ctx, layers, D, max_out)
-	_repair_backward(ctx, layers, D, max_out)
+		if ctx.active[i] == 1:
+			by_depth[ctx.depth[i]].append(i)
+	var pop: Array = []
+	for d in range(D + 1):
+		if not by_depth[d].is_empty():
+			pop.append(d)
+	for pi in range(pop.size() - 1):
+		_connect_rows(ctx, by_depth[pop[pi]], by_depth[pop[pi + 1]], edges, indeg, max_out)
 
 	var reaches_end := _reaches_id(ctx.adj, ctx.start_id, ctx.end_id)
 	var total := 0
@@ -847,110 +569,72 @@ static func _create_edges(ctx: Ctx, graph: Dictionary, settings: WorldSettings) 
 		total += ctx.adj[u].size()
 	return {"edges": total, "reaches_end": reaches_end}
 
-## Same-landmass nodes at the nearest populated depth ahead of u (its local "next row").
-## Empty when u sits at its division's last populated depth (a landmass boundary/exit).
-static func _same_land_next_row(ctx: Ctx, u: int, by_ld: Dictionary) -> Array:
-	var lab: int = ctx.node_label[u]
-	if not by_ld.has(lab):
-		return []
-	var du: int = ctx.depth[u]
-	var nextd := -1
-	for dd in by_ld[lab].keys():
-		if dd > du and (nextd < 0 or dd < nextd):
-			nextd = dd
-	if nextd < 0:
-		return []
-	return (by_ld[lab][nextd] as Array).duplicate()
-
-## Ensure every node is reachable from start: connect each unreached node from the
-## nearest reached node on the previous layer (forced -- connectivity over purity).
-static func _repair_forward(ctx: Ctx, layers: Array, D: int, max_out: int) -> void:
-	var reached := _reach_from(ctx.adj, ctx.start_id, ctx.n)
-	for d in range(1, D + 1):
-		var changed := false
-		for c in layers[d]:
-			if reached.has(c):
+## One forward step: connect row U (depth d) to row V (next populated depth).
+static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: PackedInt32Array, max_out: int) -> void:
+	# 1. Forward to the NEAREST same-landmass node ("0 forward lane" -> short, never
+	#    cross-landmass), plus extra branches within `lane_tol` x that nearest distance.
+	#    If the nearest would cross a (local) same-landmass edge, skip to the next nearest
+	#    that doesn't -- a LOCAL crossing fix (the next candidate is usually the neighbour's
+	#    target, i.e. share the destination). Crossing prevention applies to on-land edges
+	#    only; long ferries are NOT blocked here (they get curved in Step C).
+	for u in U:
+		var same: Array = []
+		for v in V:
+			if ctx.node_label[v] == ctx.node_label[u]:
+				same.append(v)
+		if same.is_empty():
+			continue
+		same.sort_custom(func(a, b):
+			return ctx.pos[u].distance_squared_to(ctx.pos[a]) < ctx.pos[u].distance_squared_to(ctx.pos[b]))
+		var d0: float = ctx.pos[u].distance_to(ctx.pos[same[0]])
+		var cap: float = maxf(d0 * ctx.lane_tol, d0 + 1.0)
+		var taken := 0
+		for v in same:
+			if taken >= max_out:
+				break
+			if taken >= 1 and ctx.pos[u].distance_to(ctx.pos[v]) > cap:
+				break                           # locality: forward, not across the rung
+			if (v in ctx.adj[u]) or edge_crosses_water(ctx.field, ctx.pos[u], ctx.pos[v]):
 				continue
-			var u := _nearest_in(ctx, layers[d - 1], c, reached, true, max_out)
-			if u >= 0:
-				ctx.adj[u].append(c); changed = true
-		if changed:
-			reached = _reach_from(ctx.adj, ctx.start_id, ctx.n)
+			if _crosses_any(ctx, u, v, edges):
+				continue                        # local: pick the next nearest non-crossing
+			ctx.adj[u].append(v); edges.append([u, v]); indeg[v] += 1; taken += 1
+	# 2. Incoming coverage: every V node reachable from start.
+	for v in V:
+		if indeg[v] > 0:
+			continue
+		var su := _pick_link(ctx, U, v, edges, max_out, true)
+		if su >= 0:
+			ctx.adj[su].append(v); edges.append([su, v]); indeg[v] += 1
+	# 3. Outgoing coverage: every U node can advance toward end.
+	for u in U:
+		if ctx.adj[u].size() > 0:
+			continue
+		var dv := _pick_link(ctx, V, u, edges, max_out, false)
+		if dv >= 0:
+			ctx.adj[u].append(dv); edges.append([u, dv]); indeg[dv] += 1
 
-## Ensure every node can reach end: connect each dead-end toward the nearest node on
-## the next layer that can already reach end.
-static func _repair_backward(ctx: Ctx, layers: Array, D: int, max_out: int) -> void:
-	var can_end := _reach_to(ctx.adj, ctx.end_id, ctx.n)
-	for d in range(D - 1, -1, -1):
-		var changed := false
-		for u in layers[d]:
-			if can_end.has(u):
-				continue
-			var c := _nearest_in(ctx, layers[d + 1], u, can_end, false, max_out)
-			if c >= 0:
-				ctx.adj[u].append(c); changed = true
-		if changed:
-			can_end = _reach_to(ctx.adj, ctx.end_id, ctx.n)
-
-## Nearest node in pool that's in `flag_set`. `as_source` true: pool node is the
-## source (connect pool->node), prefer outdeg<max_out. Else pool node is the target.
-## Prefers a same-landmass, on-land link (nearest); only falls back to a cross-water /
-## cross-island link when no clean one exists -- so repair stops making random jumps.
-static func _nearest_in(ctx: Ctx, pool: Array, node: int, flag_set: Dictionary, as_source: bool, max_out: int) -> int:
+## Pick the best node in `pool` to link with `node` for coverage. `pool_is_src` true:
+## pool->node (incoming); else node->pool (outgoing). Tiered cost: an on-land link wins; a
+## legal strait ferry next; a forced water crossing is the LAST resort so connectivity is
+## always preserved (no orphaned landmasses). On-land links must not overlap (local skip).
+static func _pick_link(ctx: Ctx, pool: Array, node: int, edges: Array, max_out: int, pool_is_src: bool) -> int:
 	var best := -1
-	var best_d := INF
-	var best_pref := false
+	var best_key := INF
 	for p in pool:
-		if not flag_set.has(p):
+		var s: int = p if pool_is_src else node
+		var t: int = node if pool_is_src else p
+		if ctx.adj[s].size() >= max_out or (t in ctx.adj[s]):
 			continue
-		var s : int = p if as_source else node
-		if ctx.adj[s].size() >= max_out:
-			continue
-		if node in ctx.adj[s] or p in ctx.adj[node]:
-			continue
-		var src :int= p if as_source else node
-		var dst :int= node if as_source else p
-		var pref := ctx.node_label[p] == ctx.node_label[node] and not edge_crosses_water(ctx.field, ctx.pos[src], ctx.pos[dst])
-		var dd: float = ctx.pos[node].distance_squared_to(ctx.pos[p])
-		if (pref and not best_pref) or (pref == best_pref and dd < best_d):
-			best_d = dd; best = p; best_pref = pref
+		var tier := 0.0
+		if edge_crosses_water(ctx.field, ctx.pos[s], ctx.pos[t]):
+			tier = 1e3 if _legal_ferry(ctx, s, t) else 1e6   # real strait preferred; forced last
+		elif _crosses_any(ctx, s, t, edges):
+			continue                                          # on-land edges must not overlap (local)
+		var key := tier + ctx.pos[node].distance_to(ctx.pos[p])
+		if key < best_key:
+			best_key = key; best = p
 	return best
-
-static func _reach_from(adj: Array, src: int, n: int) -> Dictionary:
-	var seen := {src: true}
-	var stack: Array[int] = [src]
-	while not stack.is_empty():
-		var u: int = stack.pop_back()
-		for v in adj[u]:
-			if not seen.has(v):
-				seen[v] = true; stack.push_back(v)
-	return seen
-
-static func _reach_to(adj: Array, dst: int, n: int) -> Dictionary:
-	var preds: Array = []
-	preds.resize(n)
-	for i in range(n):
-		preds[i] = []
-	for u in range(n):
-		for v in adj[u]:
-			preds[v].append(u)
-	var seen := {dst: true}
-	var stack: Array[int] = [dst]
-	while not stack.is_empty():
-		var u: int = stack.pop_back()
-		for p in preds[u]:
-			if not seen.has(p):
-				seen[p] = true; stack.push_back(p)
-	return seen
-
-## Can we add edge u->c? Not already present, stays on land OR is a legal ferry, and
-## doesn't cross any existing edge.
-static func _can_connect(ctx: Ctx, u: int, c: int, edges: Array) -> bool:
-	if c in ctx.adj[u]:
-		return false
-	if edge_crosses_water(ctx.field, ctx.pos[u], ctx.pos[c]) and not _legal_ferry(ctx, u, c):
-		return false
-	return not _crosses_any(ctx, u, c, edges)
 
 static func _crosses_any(ctx: Ctx, u: int, c: int, edges: Array) -> bool:
 	for e in edges:
@@ -959,28 +643,6 @@ static func _crosses_any(ctx: Ctx, u: int, c: int, edges: Array) -> bool:
 		if _segments_cross(ctx.pos[u], ctx.pos[c], ctx.pos[e[0]], ctx.pos[e[1]]):
 			return true
 	return false
-
-## Nearest node in `pool` we can connect to `node` (respecting max_out on the SOURCE
-## side). `incoming` = pool nodes are the source (edge pool->node); else node->pool.
-static func _nearest_connectable(ctx: Ctx, node: int, pool: Array, edges: Array, max_out: int, incoming: bool) -> int:
-	var sorted: Array[int]
-	sorted.assign(pool.duplicate())
-	sorted.sort_custom(func(a, b):
-		return ctx.pos[node].distance_squared_to(ctx.pos[a]) < ctx.pos[node].distance_squared_to(ctx.pos[b]))
-	for p in sorted:
-		var s := p if incoming else node
-		var t := node if incoming else p
-		if ctx.adj[s].size() >= max_out:
-			continue
-		if _can_connect(ctx, s, t, edges):
-			return p
-	# Fallback: nearest regardless of water/cross (avoid orphaning a node entirely).
-	for p in sorted:
-		var s := p if incoming else node
-		var t := node if incoming else p
-		if not (t in ctx.adj[s]):
-			return p
-	return -1
 
 static func _reaches_id(adj: Array, src: int, dst: int) -> bool:
 	var seen := {src: true}
@@ -1005,41 +667,34 @@ static func _segments_cross(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vector2) 
 static func _orient(a: Vector2, b: Vector2, c: Vector2) -> float:
 	return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 
-## Greedy assign each node to the nearest land sample not already taken.
-static func _snap_to_land(ctx: Ctx) -> void:
-	if ctx.field.samples.is_empty():
-		return
-	var used := {}
-	for i in range(ctx.n):
-		var lab: int = ctx.node_label[i]      # snap onto the node's assigned landmass
-		var idx := ctx.field.nearest_sample_idx(ctx.pos[i], used, lab)
-		if idx < 0:                           # that landmass full -> reuse nearest on it
-			idx = ctx.field.nearest_sample_idx(ctx.pos[i], {}, lab)
-		if idx < 0:                           # last resort -> any land
-			idx = ctx.field.nearest_sample_idx(ctx.pos[i], used)
-		if idx >= 0:
-			ctx.pos[i] = ctx.field.samples[idx]
-			used[idx] = true
-
-## A water crossing is a LEGAL ferry iff: it links two DIFFERENT landmasses, both
-## endpoints are coastal cities (ports), and neither endpoint is start/end. Within a
-## single landmass every water crossing (a bay short-cut) is illegal, and non-city
-## or start/end water edges are always illegal.
+## A water crossing is a LEGAL ferry iff: different landmasses, both endpoints coastal,
+## neither is start/end, AND its straight line is essentially OPEN WATER between the
+## coasts (`_ferry_line_open`) -- it must not cut across a landmass. (City/port requirement
+## dropped while all nodes are one type.)
 static func _legal_ferry(ctx: Ctx, u: int, v: int) -> bool:
 	if u == ctx.start_id or v == ctx.start_id or u == ctx.end_id or v == ctx.end_id:
 		return false
-	if ctx.is_city[u] == 0 and ctx.is_city[v] == 0:   # at least one must be a city
+	if ctx.field.label_at(ctx.pos[u]) == ctx.field.label_at(ctx.pos[v]):
 		return false
 	if not (ctx.field.is_coastal(ctx.pos[u], ctx.coast_radius) and ctx.field.is_coastal(ctx.pos[v], ctx.coast_radius)):
 		return false
-	return ctx.field.label_at(ctx.pos[u]) != ctx.field.label_at(ctx.pos[v])
+	return _ferry_line_open(ctx.field, ctx.pos[u], ctx.pos[v])
 
-## Cheap water test along a segment (fixed sample count) for the per-step force.
-static func _segment_hits_water(field: MapField, a: Vector2, b: Vector2) -> bool:
-	for i in range(1, 7):
-		if not field.is_land(a.lerp(b, i / 7.0)):
-			return true
-	return false
+## Is the straight a->b a clean gap crossing? Its interior (ignoring the coastal ends)
+## must be mostly open water -- a line that cuts across a landmass has lots of interior
+## land and is rejected (so a ferry can't span an island, only the sea between two).
+static func _ferry_line_open(field: MapField, a: Vector2, b: Vector2) -> bool:
+	var steps := maxi(6, int(a.distance_to(b)))
+	var land := 0
+	var inner := 0
+	for i in range(1, steps):
+		var t := float(i) / steps
+		if t < 0.12 or t > 0.88:
+			continue                                  # skip the coastal ends
+		inner += 1
+		if field.is_land(a.lerp(b, t)):
+			land += 1
+	return inner == 0 or float(land) / float(inner) <= 0.2
 
 ## True if the straight segment a->b passes over open water at any interior point.
 static func edge_crosses_water(field: MapField, a: Vector2, b: Vector2) -> bool:
@@ -1062,48 +717,28 @@ static func water_edge_violations(ctx: Ctx, _coast_radius: float = 0.0) -> Array
 	return bad
 
 # ---------------------------------------------------------------------------
+## Snap an axis pole to the nearest large landmass (start/end sit on land, not in ocean).
+static func _pole_pos(field: MapField, large: Dictionary, center: Vector2, dir: Vector2, a: float) -> Vector2:
+	var pole := center + dir * a
+	if large.has(field.label_at(pole)):
+		return pole
+	var si := field.nearest_sample_idx(pole, {}, -1, large)
+	return field.samples[si] if si >= 0 else pole
+
+# ---------------------------------------------------------------------------
+## Build the placement context by overlaying a LADDER on the land (v4). Nodes are
+## GENERATED, not taken from spec node counts: D rungs (= spec depth/journey length) are
+## laid along the principal axis like the oval. Each rung is an INDEPENDENT slice across
+## the land, divided into equal width-sections; the section count scales with that slice's
+## land width between `min_width` (thinnest land) and `max_width` (widest). A node sits at
+## each section centre, jittered. Lanes are per-rung (need not align); all nodes one type.
 static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSettings, seed_val: int, opts: Dictionary = {}) -> Ctx:
 	var ctx := Ctx.new()
 	ctx.field = field
 	ctx.s = settings
-	# Optional force-weight overrides (levers).
-	for k in ["w_land", "w_repel", "w_spring", "w_axis", "w_perp", "w_bound",
-			"w_longedge", "w_edge_water", "long_edge_mult"]:
-		if opts.has(k):
-			ctx.set(k, opts[k])
-	# v2: node-only graph (no edges yet). Supports both "depth" (v2) and "rank" (v1).
-	var nodes: Array = graph["nodes"]
-	ctx.n = nodes.size()
-	ctx.pos = PackedVector2Array(); ctx.pos.resize(ctx.n)
-	ctx.depth = PackedInt32Array(); ctx.depth.resize(ctx.n)
-	ctx.is_city = PackedByteArray(); ctx.is_city.resize(ctx.n)
-	ctx.adj = []
-	ctx.adj.resize(ctx.n)
-	ctx.max_depth = graph["ranks"]
-	for nd in nodes:
-		ctx.depth[nd["id"]] = nd.get("depth", nd.get("rank", 0))
-		ctx.is_city[nd["id"]] = 1 if nd["is_city"] else 0
-	for id in range(ctx.n):
-		ctx.adj[id] = []                      # edges built AFTER settle (edge pass)
-	ctx.start_id = graph["start"]
-	ctx.end_id = graph["end"]
-
 	var diag := settings.map_diag()
-	ctx.ideal_edge = diag * 0.05
-	ctx.repel_dist = diag * 0.04
 	ctx.coast_radius = settings.coast_radius_ratio * diag
-
-	# JIGSAW (divide, then an oval per landmass). TWO steps:
-	#  1) DIVIDE: lay the whole graph as one virtual oval (PCA frame: depth pole->pole
-	#     along the land's principal axis, breadth fanned). Each node's virtual position
-	#     is matched to the nearest LARGE landmass -> that's the node's division. Because
-	#     the match is in depth x breadth space, side-by-side land splits by breadth and
-	#     ocean-interrupted land splits by depth (the cut follows the real coastline).
-	#  2) RE-LAY: each division becomes its OWN oval over its OWN landmass (local PCA
-	#     frame, oriented along the journey). So initial placement shows a distinct oval
-	#     on every landmass; within-division adjacency is preserved and cross-division
-	#     adjacency becomes a ferry.
-	var oval_width: float = opts.get("oval_width", 1.0)
+	ctx.lane_tol = opts.get("lane_tol", 1.8)
 	var min_frac: float = opts.get("landmass_min_frac", 0.12)
 	var gpca := field.land_pca()
 	var center: Vector2 = gpca["center"]
@@ -1112,10 +747,24 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	ctx.axis = dir
 	ctx.perp = perp
 	var amin0: float = gpca["amin"]; var amax0: float = gpca["amax"]
-	var pmid0: float = (gpca["pmin"] + gpca["pmax"]) * 0.5
-	var pext0: float = (gpca["pmax"] - gpca["pmin"])
+	var pmin0: float = gpca["pmin"]; var pmax0: float = gpca["pmax"]
+	var axis_ext: float = amax0 - amin0
 
-	# Large landmasses that actually carry samples (candidates for a division).
+	# LADDER model: rung count (= depth / journey length) comes from the spec, laid along
+	# the principal axis exactly like the oval. Each rung is an independent slice across
+	# the land, divided into equal width-sections; the SECTION COUNT scales with that
+	# slice's land width between `min_width` (thinnest land) and `max_width` (widest land).
+	var D: int = maxi(2, graph["ranks"])
+	ctx.max_depth = D
+	var min_w: int = maxi(1, opts.get("min_width", 1))
+	var max_w: int = maxi(min_w, opts.get("max_width", 5))
+	var scan_step: float = maxf(1.0, field._cs * 0.5)
+	var rung_pitch: float = axis_ext / float(D)
+	var jitter_amt: float = rung_pitch * opts.get("jitter", 0.3)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_val * 100069 + 7
+
+	# Large landmasses that carry samples = the islands the grid may occupy.
 	var have_samples := {}
 	for sl in field.sample_label:
 		have_samples[sl] = true
@@ -1129,252 +778,78 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	if large.is_empty() and field.main_label >= 0:
 		large[field.main_label] = true
 
-	ctx.node_label = PackedInt32Array(); ctx.node_label.resize(ctx.n)
-	ctx.layout_target = PackedVector2Array(); ctx.layout_target.resize(ctx.n)
-	ctx.perp_target = PackedFloat32Array(); ctx.perp_target.resize(ctx.n)
-
-	# --- Step 1: divide nodes among landmasses, AREA-PROPORTIONAL. ---
-	# Each node gets a virtual-oval position; we then assign nodes to landmasses by
-	# nearest-first but capped by an area-proportional QUOTA. So a big landmass has a
-	# larger "area of influence": when a small island fills its quota, the nodes nearest
-	# it overflow to the bigger neighbour, keeping the final split proportional to area.
-	var layer_count := {}
-	for nd in nodes:
-		var dd: int = nd.get("depth", nd.get("rank", 0))
-		layer_count[dd] = layer_count.get(dd, 0) + 1
-	var layer_idx := {}
-	var glob_b := PackedFloat32Array(); glob_b.resize(ctx.n)   # virtual breadth (for ordering)
-	var vpos_of := PackedVector2Array(); vpos_of.resize(ctx.n)
-	for nd in nodes:
-		var id: int = nd["id"]
-		var d: int = nd.get("depth", nd.get("rank", 0))
-		var t := float(d) / float(maxi(1, ctx.max_depth))
-		var cnt: int = layer_count[d]
-		var li: int = layer_idx.get(d, 0)
-		layer_idx[d] = li + 1
-		var b := 0.0 if cnt <= 1 else (float(li) + 0.5) / float(cnt) - 0.5
-		var ew := sqrt(maxf(0.0, 1.0 - pow(2.0 * t - 1.0, 2.0)))
-		glob_b[id] = b
-		vpos_of[id] = center + dir * (amin0 + t * (amax0 - amin0)) + perp * (pmid0 + b * pext0 * ew * oval_width)
-
-	# Size-weighted assignment (deterministic Apollonius cut): each node joins the
-	# landmass minimising distance/area. A bigger landmass reaches proportionally
-	# further, so the divide point between two landmasses sits proportional to their
-	# sizes (size 10 vs 1 -> boundary 10/11 of the way toward the small one). Every node
-	# decides independently from its own distances, so there is NO assignment-order
-	# dependence and no zig-zag. Generalises to any number of landmasses via the minimum.
-	var labs: Array = large.keys()
-	var lab_pts := {}
-	for lab in labs:
-		lab_pts[lab] = PackedVector2Array()
-	for s_i in range(field.samples.size()):
-		var sl := field.sample_label[s_i]
-		if large.has(sl):
-			lab_pts[sl].append(field.samples[s_i])
-	for nd in nodes:
-		var id: int = nd["id"]
-		var vp: Vector2 = vpos_of[id]
-		var best_lab: int = field.main_label
-		var best_score := INF
-		for lab in labs:
-			var pts: PackedVector2Array = lab_pts[lab]
-			var bestd := INF
-			for pt in pts:
-				var dd := vp.distance_squared_to(pt)
-				if dd < bestd:
-					bestd = dd
-			if bestd == INF:
+	# Pass 1: slice each interior rung across every landmass; record on-land coords and the
+	# GLOBAL min/max slice width (so the thinnest land anywhere -> min_width sections, the
+	# widest -> max_width).
+	var slices := {}                                  # d -> { lab -> PackedFloat32Array coords }
+	var gwmin := INF
+	var gwmax := 0.0
+	for d in range(1, D):
+		var a := amin0 + axis_ext * (float(d) / float(D))
+		var by_lab := {}
+		for lab in large.keys():
+			var coords := field.slice_land_coords(center, dir, perp, a, pmin0, pmax0, lab, scan_step)
+			if coords.is_empty():
 				continue
-			var score := sqrt(bestd) / maxf(1.0, float(field.sizes[lab]))   # distance / area
-			if score < best_score:
-				best_score = score
-				best_lab = lab
-		ctx.node_label[id] = best_lab
+			by_lab[lab] = coords
+			var w: float = coords[coords.size() - 1] - coords[0]
+			gwmin = minf(gwmin, w); gwmax = maxf(gwmax, w)
+		slices[d] = by_lab
+	if gwmin == INF: gwmin = 0.0
+	if gwmax <= gwmin: gwmax = gwmin + 1.0
 
-	# groups[label] = { depth -> Array[node_id] } collected per division.
-	var groups := {}
-	for nd in nodes:
-		var id: int = nd["id"]
-		var d: int = nd.get("depth", nd.get("rank", 0))
-		var lab: int = ctx.node_label[id]
-		if not groups.has(lab):
-			groups[lab] = {}
-		if not groups[lab].has(d):
-			groups[lab][d] = []
-		groups[lab][d].append(id)
+	# Pass 2: place. Each rung's landmass slice is divided into `count` equal sections;
+	# count scales with width between min_w and max_w. A node sits at each section centre,
+	# jittered so the lattice isn't obvious. Lanes are PER-RUNG (independent) -> they need
+	# not align across rungs; edges connect by geometry, not lane index.
+	var g_pos := PackedVector2Array()
+	var g_depth := PackedInt32Array()
+	var g_lane := PackedInt32Array()
+	var g_label := PackedInt32Array()
+	var start_id := -1
+	var end_id := -1
+	# Start pole (d=0).
+	var sp := _pole_pos(field, large, center, dir, amin0)
+	start_id = g_pos.size()
+	g_pos.append(sp); g_depth.append(0); g_lane.append(0); g_label.append(field.label_at(sp))
+	for d in range(1, D):
+		var a := amin0 + axis_ext * (float(d) / float(D))
+		var by_lab: Dictionary = slices[d]
+		for lab in by_lab.keys():
+			var coords: PackedFloat32Array = by_lab[lab]
+			var w: float = coords[coords.size() - 1] - coords[0]
+			var gfrac := (w - gwmin) / (gwmax - gwmin)
+			var count := clampi(int(round(min_w + (max_w - min_w) * gfrac)), min_w, max_w)
+			count = mini(count, coords.size())
+			for k in range(count):
+				# Endpoint-INCLUSIVE division: k=0 and k=count-1 land on the slice's coasts,
+				# so each rung spans coast-to-coast (no inland contraction); interior nodes
+				# split the rest evenly.
+				var frac := 0.5 if count <= 1 else float(k) / float(count - 1)
+				var ci := clampi(int(round(frac * (coords.size() - 1))), 0, coords.size() - 1)
+				var base := center + dir * a + perp * coords[ci]
+				var wj := base + dir * ((rng.randf() - 0.5) * jitter_amt) + perp * ((rng.randf() - 0.5) * jitter_amt)
+				if field.label_at(wj) == lab:
+					base = wj                         # keep jitter only if it stays on this island
+				g_pos.append(base); g_depth.append(d); g_lane.append(k); g_label.append(lab)
+	# End pole (d=D).
+	var ep := _pole_pos(field, large, center, dir, amax0)
+	end_id = g_pos.size()
+	g_pos.append(ep); g_depth.append(D); g_lane.append(0); g_label.append(field.label_at(ep))
 
-	# --- Step 2: lay each division as its own oval over its own landmass. ---
-	for lab in groups.keys():
-		var fr := field.land_pca(lab)
-		if (fr["axis"] as Vector2).dot(dir) < 0.0:           # depth flows in journey direction
-			fr["axis"] = -(fr["axis"] as Vector2)
-			fr["perp"] = -(fr["perp"] as Vector2)
-			var na: float = -(fr["amax"] as float); var nx: float = -(fr["amin"] as float)
-			fr["amin"] = na; fr["amax"] = nx
-		var fc: Vector2 = fr["center"]
-		var fa: Vector2 = fr["axis"]; var fp: Vector2 = fr["perp"]
-		var famin: float = fr["amin"]; var famax: float = fr["amax"]
-		var fpmid: float = (fr["pmin"] + fr["pmax"]) * 0.5
-		var fpext: float = (fr["pmax"] - fr["pmin"])
-		var depths: Array = groups[lab].keys()
-		depths.sort()
-		var dmin: int = depths[0]; var dmax: int = depths[depths.size() - 1]
-		for d in depths:
-			var ids_layer: Array = groups[lab][d]
-			ids_layer.sort_custom(func(a, b2): return glob_b[a] < glob_b[b2])  # keep left-right order
-			var lc: int = ids_layer.size()
-			var tl := 0.5 if dmax == dmin else float(d - dmin) / float(dmax - dmin)
-			var ew := sqrt(maxf(0.0, 1.0 - pow(2.0 * tl - 1.0, 2.0)))
-			for k in range(lc):
-				var id: int = ids_layer[k]
-				var lb := 0.0 if lc <= 1 else (float(k) + 0.5) / float(lc) - 0.5
-				var a_coord := famin + tl * (famax - famin)
-				var p_coord := fpmid + lb * fpext * ew * oval_width
-				ctx.perp_target[id] = lb
-				ctx.layout_target[id] = fc + fa * a_coord + fp * p_coord
-
-	# Start/end keep the divisions they were assigned, pinned at their division's poles.
-	ctx.start_pos = ctx.layout_target[ctx.start_id]
-	ctx.end_pos = ctx.layout_target[ctx.end_id]
-	ctx.axis_len = float((ctx.end_pos as Vector2).distance_to(ctx.start_pos))
-	ctx.pos[ctx.start_id] = ctx.start_pos
-	ctx.pos[ctx.end_id] = ctx.end_pos
+	ctx.n = g_pos.size()
+	ctx.pos = g_pos
+	ctx.depth = g_depth
+	ctx.lane = g_lane
+	ctx.node_label = g_label
+	ctx.is_city = PackedByteArray(); ctx.is_city.resize(ctx.n)        # all one type for now
+	ctx.active = PackedByteArray(); ctx.active.resize(ctx.n); ctx.active.fill(1)
+	ctx.adj = []
+	ctx.adj.resize(ctx.n)
+	for i in range(ctx.n):
+		ctx.adj[i] = []
+	ctx.start_id = start_id
+	ctx.end_id = end_id
+	ctx.start_pos = ctx.pos[start_id]
+	ctx.end_pos = ctx.pos[end_id]
 	return ctx
-
-## Sugiyama within-rank ordering: barycenter sweeps (down then up) so a node sits
-## near the average position of its neighbours in the adjacent rank -> fewer edge
-## crossings. Returns order[node_id] = index within its rank. `passes` 0 = off
-## (keeps raw lane order). Written without mutable-capture lambdas (GDScript pitfall).
-static func _sugiyama_order(graph: Dictionary, ctx: Ctx, passes: int) -> PackedInt32Array:
-	var nodes: Array = graph["nodes"]
-	var by_rank: Array = []                 # rank -> Array[int] node ids (ordered)
-	by_rank.resize(ctx.max_depth + 1)
-	for r in range(ctx.max_depth + 1):
-		by_rank[r] = []
-	# Initial order = lane order (nodes are emitted rank-major, lane-minor).
-	var tmp := nodes.duplicate()
-	tmp.sort_custom(func(a, b):
-		return a["rank"] < b["rank"] or (a["rank"] == b["rank"] and a["lane"] < b["lane"]))
-	for nd in tmp:
-		by_rank[nd["rank"]].append(nd["id"])
-
-	var pred: Array = []
-	pred.resize(ctx.n)
-	for i in range(ctx.n):
-		pred[i] = []
-	for u in range(ctx.n):
-		for v in ctx.adj[u]:
-			pred[v].append(u)
-
-	var idx_of := _reindex(by_rank, ctx.n)
-	for _p in range(maxi(0, passes)):
-		for r in range(1, by_rank.size()):          # down sweep: order by parents
-			_order_rank(by_rank[r], pred, idx_of)
-			idx_of = _reindex(by_rank, ctx.n)
-		for r in range(by_rank.size() - 2, -1, -1): # up sweep: order by children
-			_order_rank(by_rank[r], ctx.adj, idx_of)
-			idx_of = _reindex(by_rank, ctx.n)
-	return idx_of
-
-static func _reindex(by_rank: Array, n: int) -> PackedInt32Array:
-	var idx := PackedInt32Array()
-	idx.resize(n)
-	for r in range(by_rank.size()):
-		for i in range(by_rank[r].size()):
-			idx[by_rank[r][i]] = i
-	return idx
-
-## Reorder rank_ids in place by ascending barycenter of each node's neighbours.
-static func _order_rank(rank_ids: Array, neigh_lists: Array, idx_of: PackedInt32Array) -> void:
-	var arr: Array = []
-	for node in rank_ids:
-		var neigh: Array = neigh_lists[node]
-		var b: float
-		if neigh.is_empty():
-			b = float(idx_of[node])
-		else:
-			var s := 0.0
-			for m in neigh:
-				s += idx_of[m]
-			b = s / neigh.size()
-		arr.append([b, node])
-	arr.sort_custom(func(a, b2): return a[0] < b2[0])
-	rank_ids.clear()
-	for e in arr:
-		rank_ids.append(e[1])
-
-## Initial positions. "structured" (default): place each node directly at its
-## layout target (axis = depth fraction, perp = Sugiyama lane order) so it starts
-## already spread in the graph's shape -> forces only fit it to terrain, avoiding the
-## chaos/clumping of a random scatter. "filled_disc": uniform-in-circle scatter.
-static func _init_positions(ctx: Ctx, seed_val: int, strategy: String) -> void:
-	if strategy == "filled_disc":
-		_init_filled_disc(ctx, seed_val)
-		return
-	for i in range(ctx.n):
-		if i == ctx.start_id or i == ctx.end_id:
-			continue
-		ctx.pos[i] = ctx.layout_target[i]
-
-## Lloyd / k-means relaxation: move each node to the centroid of the land samples
-## nearest to it (a centroidal/even distribution -> de-clumps), then reset the
-## along-axis coordinate to the structured depth band so depth ordering is preserved.
-static func _lloyd(ctx: Ctx, iters: int) -> void:
-	if iters <= 0 or ctx.field.samples.is_empty():
-		return
-	for _it in range(iters):
-		var sum := PackedVector2Array(); sum.resize(ctx.n)
-		var cnt := PackedInt32Array(); cnt.resize(ctx.n)
-		for s in ctx.field.samples:
-			var ni := _nearest_node(ctx, s)
-			if ni >= 0:
-				sum[ni] += s
-				cnt[ni] += 1
-		for i in range(ctx.n):
-			if i == ctx.start_id or i == ctx.end_id or cnt[i] == 0:
-				continue
-			var c: Vector2 = sum[i] / cnt[i]
-			var t := float(ctx.depth[i]) / float(maxi(1, ctx.max_depth))
-			var new_perp := (c - ctx.start_pos).dot(ctx.perp)
-			ctx.pos[i] = ctx.start_pos + ctx.axis * (t * ctx.axis_len) + ctx.perp * new_perp
-
-## Nearest city rank to `target` within [lo, hi]; falls back to round(target).
-static func _nearest_city_rank(city_ranks: Array, target: float, lo: int, hi: int) -> int:
-	var best := -1
-	var best_d := INF
-	for r in city_ranks:
-		if r < lo or r > hi:
-			continue
-		var d: float = absf(r - target)
-		if d < best_d:
-			best_d = d; best = r
-	return best if best >= 0 else clampi(int(round(target)), lo, hi)
-
-static func _nearest_node(ctx: Ctx, p: Vector2) -> int:
-	var best := -1
-	var best_d := INF
-	for i in range(ctx.n):
-		var d := p.distance_squared_to(ctx.pos[i])
-		if d < best_d:
-			best_d = d; best = i
-	return best
-
-## Filled-disc init: points spread uniformly WITHIN a circle (not just the ring)
-## around the land centroid, via a sunflower/Fibonacci pattern + jitter. Start and
-## end stay pinned at their anchors.
-static func _init_filled_disc(ctx: Ctx, seed_val: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_val
-	var c := ctx.field.land_centroid
-	var bb := ctx.field.land_max - ctx.field.land_min
-	var radius := maxf(bb.x, bb.y) * 0.4 + 1.0
-	var golden := PI * (3.0 - sqrt(5.0))
-	for i in range(ctx.n):
-		if i == ctx.start_id or i == ctx.end_id:
-			continue
-		# sqrt for uniform area density; golden-angle for even angular spread.
-		var t := (float(i) + 0.5) / float(ctx.n)
-		var r := radius * sqrt(t)
-		var a := golden * i
-		var jitter := Vector2(rng.randf() - 0.5, rng.randf() - 0.5) * (radius * 0.04)
-		ctx.pos[i] = c + Vector2(cos(a), sin(a)) * r + jitter
