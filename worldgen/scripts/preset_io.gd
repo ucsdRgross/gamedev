@@ -209,16 +209,20 @@ static func save_preset(settings: WorldSettings, step: String, verdict: String =
 	return stem + ".json"
 
 ## Build a density model from this batch of good/bad presets, write it to
-## ranges.json, then ARCHIVE the consumed presets so the next batch starts fresh
-## (epoch narrowing -- new results are not mixed with old generations). Per param:
-##   good saves add weight to their value's histogram bin, bad saves subtract.
-## Randomize then samples bins proportional to (clamped) weight, so values you
-## confirmed multiple times dominate and bad pockets are avoided.
+## ranges.json, then ARCHIVE the consumed presets so the next batch starts fresh.
+## Per param the model is two histograms over a FIXED domain:
+##   good[] -- replaced each epoch (this batch only) so narrowing isn't dragged by
+##             old generations.
+##   bad[]  -- ACCUMULATED across all epochs (read back from the previous ranges.json
+##             and added to). Bad is forever -- a value that looked bad always counts.
+## Randomize samples a continuous piecewise-linear curve of (base + good - bad), so
+## picks land anywhere under the line (between bins) and bad pockets stay carved out.
 static func process_step_ranges(step: String) -> Dictionary:
 	var dir := "%s/%s" % [PRESET_ROOT, step]
 	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
 		return {}
-	var good := {}   # param -> Array[float]
+	var prev := load_ranges(step)  # persisted bad histograms + domains
+	var good := {}   # param -> Array[float] (this batch)
 	var bad := {}
 	var move_list := []
 	for fn in DirAccess.get_files_at(dir):
@@ -242,40 +246,53 @@ static func process_step_ranges(step: String) -> Dictionary:
 			bucket[k].append(float(parsed[k]))
 
 	var tp := tunable_params()
+	var defaults := param_ranges()
 	var params := {}
 	for k in good: params[k] = true
 	for k in bad: params[k] = true
+	for k in prev: params[k] = true  # carry forward params we only have bad history for
 	var out := {}
 	for p in params:
-		var gv: Array = good.get(p, [])
-		if gv.is_empty():
-			continue  # only bad seen -> nothing positive to sample; leave to defaults
-		var bv: Array = bad.get(p, [])
-		var lo: float = gv.min()
-		var hi: float = gv.max()
-		for v in bv:  # widen the domain to include nearby bad values so they can carve
-			lo = minf(lo, v); hi = maxf(hi, v)
+		# Fixed domain: reuse the persisted one, else the predefined range, else span.
+		var lo: float
+		var hi: float
+		var n := BINS
+		if prev.has(p) and prev[p] is Dictionary and prev[p].has("lo"):
+			lo = float(prev[p]["lo"]); hi = float(prev[p]["hi"]); n = int(prev[p].get("bins", BINS))
+		elif defaults.has(p):
+			lo = defaults[p][0]; hi = defaults[p][1]
+		else:
+			var span: Array = good.get(p, []) + bad.get(p, [])
+			if span.is_empty():
+				continue
+			lo = span.min(); hi = span.max()
 		if hi <= lo:
 			hi = lo + maxf(absf(lo) * 0.01, 1e-4)
-		var bins := []
-		bins.resize(BINS)
-		bins.fill(0.0)
-		var bstep := (hi - lo) / float(BINS)
-		for v in gv:
-			bins[clampi(int((v - lo) / bstep), 0, BINS - 1)] += 1.0
-		for v in bv:
-			bins[clampi(int((v - lo) / bstep), 0, BINS - 1)] -= 1.0
-		for i in BINS:
-			bins[i] = maxf(bins[i], 0.0)
-		out[p] = {"lo": lo, "hi": hi, "bins": bins, "is_int": tp.get(p, false),
-			"good_n": gv.size(), "bad_n": bv.size()}
+		var bstep := (hi - lo) / float(n)
+		# bad = persisted bad + this batch's bad (accumulate forever).
+		var bad_bins := []
+		bad_bins.resize(n); bad_bins.fill(0.0)
+		if prev.has(p) and prev[p] is Dictionary and prev[p].has("bad"):
+			var pb: Array = prev[p]["bad"]
+			for i in mini(n, pb.size()):
+				bad_bins[i] = float(pb[i])
+		for v in bad.get(p, []):
+			bad_bins[clampi(int((v - lo) / bstep), 0, n - 1)] += 1.0
+		# good = THIS batch only (replace).
+		var good_bins := []
+		good_bins.resize(n); good_bins.fill(0.0)
+		for v in good.get(p, []):
+			good_bins[clampi(int((v - lo) / bstep), 0, n - 1)] += 1.0
+		out[p] = {"lo": lo, "hi": hi, "bins": n, "is_int": tp.get(p, false),
+			"good": good_bins, "bad": bad_bins,
+			"good_n": good.get(p, []).size(), "bad_n": bad.get(p, []).size()}
 
 	var f := FileAccess.open("%s/ranges.json" % dir, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(out, "  "))
 		f.close()
 	_archive_files(dir, move_list)
-	print("[PresetIO] '%s': %d presets -> %d param models, archived batch." % [step, move_list.size(), out.size()])
+	print("[PresetIO] '%s': %d presets -> %d param models (bad accumulates), archived batch." % [step, move_list.size(), out.size()])
 	return out
 
 ## Read the density model (rich entries) written by process_step_ranges.
@@ -286,32 +303,56 @@ static func load_ranges(step: String) -> Dictionary:
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
-## Draw a value from one density entry. Bins with weight < min_conf are ignored
-## (so values confirmed fewer than min_conf times are dropped); if nothing
-## qualifies, fall back to a uniform draw over the whole [lo, hi] band.
-static func sample_entry(entry: Dictionary, rng: RandomNumberGenerator, min_conf: float) -> float:
+## Draw a value from one density entry by inverse-CDF sampling of a CONTINUOUS
+## piecewise-linear curve through the bin-centre weights w[i] = max(base + good - bad, 0).
+## Picks land anywhere under the line (interpolated between bins), weighted by the
+## local area. `base` is a uniform exploration floor: with no good yet (first epoch),
+## the curve is base minus the accumulated bad, so you still explore everything
+## except known-bad pockets. If the whole curve is flat-zero, fall back to uniform.
+static func sample_entry(entry: Dictionary, rng: RandomNumberGenerator, base: float) -> float:
 	var lo: float = float(entry.get("lo", 0.0))
 	var hi: float = float(entry.get("hi", 1.0))
-	var bins: Array = entry.get("bins", [])
-	if bins.is_empty():
+	var good: Array = entry.get("good", [])
+	var bad: Array = entry.get("bad", [])
+	var n := good.size()
+	if n == 0:
 		return rng.randf_range(lo, hi)
+	var bstep := (hi - lo) / float(n)
+	var w := []
+	for i in n:
+		var b: float = float(bad[i]) if i < bad.size() else 0.0
+		w.append(maxf(base + float(good[i]) - b, 0.0))
+	# Trapezoid area of each segment between adjacent bin centres.
+	var areas := []
 	var total := 0.0
-	var elig := []
-	for w in bins:
-		var ww: float = float(w) if float(w) >= min_conf else 0.0
-		elig.append(ww)
-		total += ww
+	for i in range(n - 1):
+		var a := 0.5 * (w[i] + w[i + 1]) * bstep
+		areas.append(a)
+		total += a
 	if total <= 0.0:
 		return rng.randf_range(lo, hi)
-	var pick := rng.randf() * total
-	var idx := elig.size() - 1
-	for i in elig.size():
-		pick -= elig[i]
-		if pick <= 0.0:
-			idx = i
+	var u := rng.randf() * total
+	var seg := n - 2
+	for i in range(n - 1):
+		if u <= areas[i]:
+			seg = i
 			break
-	var bstep := (hi - lo) / float(bins.size())
-	return rng.randf_range(lo + float(idx) * bstep, lo + float(idx + 1) * bstep)
+		u -= areas[i]
+	var t := _trapezoid_t(w[seg], w[seg + 1], bstep, u)
+	var x0 := lo + (float(seg) + 0.5) * bstep
+	return clampf(x0 + t * bstep, lo, hi)
+
+# Solve for t in [0,1] where the partial trapezoid area w0*L*t + 0.5*(w1-w0)*L*t^2 = u.
+# (Inverse CDF within one linear segment; the +sqrt root is correct for both slopes.)
+static func _trapezoid_t(w0: float, w1: float, L: float, u: float) -> float:
+	var lin := w1 - w0
+	if absf(lin) < 1e-9:
+		var denom := w0 * L
+		return clampf(u / denom, 0.0, 1.0) if denom > 1e-12 else 0.5
+	var a := 0.5 * lin * L
+	var b := w0 * L
+	var disc := maxf(b * b + 4.0 * a * u, 0.0)
+	return clampf((-b + sqrt(disc)) / (2.0 * a), 0.0, 1.0)
 
 ## Reset valve: archive every preset for a step and delete its ranges.json so the
 ## step starts from defaults again.

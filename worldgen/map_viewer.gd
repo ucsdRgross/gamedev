@@ -69,10 +69,11 @@ var terrain_kind: String = "auto":
 ## pick a specific step to fix an earlier step's preset/ranges without leaving view.
 @export_enum("Current", "Landmass", "Tectonics", "Peaks", "Erosion", "Rivers", "Climate", "Cities", "Graph")
 var save_target: String = "Current"
-## A histogram bin needs at least this many net good confirmations to be sampled by
-## Randomize. 1 = use everything (weighted by frequency); raise to 2+ to discard
-## values you only marked good once (guards against accidental good-marks).
-@export var min_confirmations: float = 1.0
+## Exploration floor for Randomize: the sampling curve is (exploration_base + good
+## - bad). Higher = explore more of the band even with little data; lower (toward 0)
+## = exploit confirmed-good clusters harder as you converge. Keep > 0 so unexplored
+## regions stay reachable while accumulated-bad pockets remain carved out.
+@export var exploration_base: float = 1.0
 
 # --- water colors (baked into the water colormap; repaint on change) ----------
 ## River tint at low (near-sea) elevation; rivers ramp from this to river_color_high.
@@ -335,7 +336,7 @@ func _randomize_params(names: Array, step_name: String) -> void:
 	for pname in names:
 		if model.has(pname):
 			var e: Dictionary = model[pname]
-			var v := PresetIO.sample_entry(e, rng, min_confirmations)
+			var v := PresetIO.sample_entry(e, rng, exploration_base)
 			settings.set(pname, int(round(v)) if bool(e.get("is_int", false)) else v)
 		elif defaults.has(pname):
 			var r: Array = defaults[pname]
