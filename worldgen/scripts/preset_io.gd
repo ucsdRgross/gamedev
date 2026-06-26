@@ -344,7 +344,7 @@ static func sample_entry(entry: Dictionary, rng: RandomNumberGenerator, base: fl
 	var areas := []
 	var total := 0.0
 	for i in range(n - 1):
-		var a := 0.5 * (w[i] + w[i + 1]) * bstep
+		var a :float= 0.5 * (w[i] + w[i + 1]) * bstep
 		areas.append(a)
 		total += a
 	if total <= 0.0:
