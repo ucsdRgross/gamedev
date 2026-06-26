@@ -482,6 +482,7 @@ static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
 
 	# Edge creation -- ONE geography-aware forward sweep on the placed nodes.
 	var edge_stats := _create_edges(ctx, graph, settings)
+	_diagnose_edges(ctx)
 
 	return {"pos": ctx.pos, "ctx": ctx, "steps": 0, "init_pos": init_pos,
 		"mid_pos": mid_pos, "edge_stats": edge_stats, "active": ctx.active}
@@ -515,7 +516,9 @@ static func export_graph(ctx: Ctx, field: MapField, curves: Array = [], opts: Di
 		for v in ctx.adj[i]:
 			if ctx.active[v] == 0:
 				continue
-			var ferry := ctx.node_label[i] != ctx.node_label[v] or edge_crosses_water(field, ctx.pos[i], ctx.pos[v])
+			# Ferry = OCEAN travel = crossing to ANOTHER landmass. A same-landmass edge whose
+			# straight line clips a bay is LAND travel (Step C curves it along the coast).
+			var ferry := ctx.node_label[i] != ctx.node_label[v]
 			var pts: PackedVector2Array = pts_of.get(Vector2i(i, v), PackedVector2Array([ctx.pos[i], ctx.pos[v]]))
 			outs.append({"to": id_map[v], "ferry": ferry, "points": pts})
 		nodes.append({
@@ -569,6 +572,53 @@ static func _create_edges(ctx: Ctx, graph: Dictionary, settings: WorldSettings) 
 		total += ctx.adj[u].size()
 	return {"edges": total, "reaches_end": reaches_end}
 
+## DIAGNOSTIC: flag the edges the user wants disallowed -- lines that visually SKIP PAST many
+## other nodes, and/or CROSS other edges. For each edge u->v: `passes` = active nodes (other
+## than u/v) whose perpendicular distance to the interior of the segment is < `near` (they sit
+## "under" the line, so the line jumps over them); `crosses` = how many other edges it cuts.
+## Prints any edge with passes >= MIN_PASS or crosses >= 1. Tune MIN_PASS / NEAR_MUL to taste.
+static func _diagnose_edges(ctx: Ctx) -> void:
+	const MIN_PASS := 3
+	const NEAR_MUL := 1.2                          # "under the line" band = NEAR_MUL x node spacing
+	var near: float = maxf(ctx.field._cs * NEAR_MUL, 8.0)
+	var elist: Array = []
+	for u in range(ctx.n):
+		if ctx.active[u] == 0:
+			continue
+		for v in ctx.adj[u]:
+			if ctx.active[v] == 1:
+				elist.append([u, v])
+	var flagged := 0
+	for e in elist:
+		var u: int = e[0]; var v: int = e[1]
+		var a: Vector2 = ctx.pos[u]; var b: Vector2 = ctx.pos[v]
+		var ab := b - a
+		var l2 := ab.length_squared()
+		if l2 < 1.0:
+			continue
+		var passed := 0
+		for w in range(ctx.n):
+			if w == u or w == v or ctx.active[w] == 0:
+				continue
+			var t := clampf((ctx.pos[w] - a).dot(ab) / l2, 0.0, 1.0)
+			if t <= 0.02 or t >= 0.98:
+				continue                           # ignore nodes at the endpoints
+			if ctx.pos[w].distance_to(a + ab * t) < near:
+				passed += 1
+		var crosses := 0
+		for e2 in elist:
+			if e2[0] == u or e2[0] == v or e2[1] == u or e2[1] == v:
+				continue
+			if _segments_cross(a, b, ctx.pos[e2[0]], ctx.pos[e2[1]]):
+				crosses += 1
+		if passed >= MIN_PASS or crosses >= 1:
+			flagged += 1
+			var kind := "ferry" if ctx.node_label[u] != ctx.node_label[v] else ("water" if edge_crosses_water(ctx.field, a, b) else "land")
+			print("    [EDGE?] %d(d%d,lm%d)->%d(d%d,lm%d) len=%.0f passes=%d crosses=%d %s" % [
+				u, ctx.depth[u], ctx.node_label[u], v, ctx.depth[v], ctx.node_label[v],
+				a.distance_to(b), passed, crosses, kind])
+	print("    [EDGE?] flagged %d / %d edges (near=%.1f, min_pass=%d)" % [flagged, elist.size(), near, MIN_PASS])
+
 ## One forward step: connect row U (depth d) to row V (next populated depth).
 static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: PackedInt32Array, max_out: int) -> void:
 	# 1. Forward to the NEAREST same-landmass node ("0 forward lane" -> short, never
@@ -594,8 +644,11 @@ static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: Pac
 				break
 			if taken >= 1 and ctx.pos[u].distance_to(ctx.pos[v]) > cap:
 				break                           # locality: forward, not across the rung
-			if (v in ctx.adj[u]) or edge_crosses_water(ctx.field, ctx.pos[u], ctx.pos[v]):
+			if v in ctx.adj[u]:
 				continue
+			# Same-landmass edges are LAND travel: Step C curves them around any bay the
+			# straight line clips, so a bay must NOT push the path off its landmass. Connect
+			# across bays freely -- commit to the landmass (these are never ferries).
 			if _crosses_any(ctx, u, v, edges):
 				continue                        # local: pick the next nearest non-crossing
 			ctx.adj[u].append(v); edges.append([u, v]); indeg[v] += 1; taken += 1
@@ -615,22 +668,31 @@ static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: Pac
 			ctx.adj[u].append(dv); edges.append([u, dv]); indeg[dv] += 1
 
 ## Pick the best node in `pool` to link with `node` for coverage. `pool_is_src` true:
-## pool->node (incoming); else node->pool (outgoing). Tiered cost: an on-land link wins; a
-## legal strait ferry next; a forced water crossing is the LAST resort so connectivity is
-## always preserved (no orphaned landmasses). On-land links must not overlap (local skip).
+## pool->node (incoming); else node->pool (outgoing). COVERAGE NEVER FAILS: every
+## undesirable property is a PENALTY tier, not a skip, so a link is ALWAYS found whenever
+## the pool has any node not already linked -- connectivity holds by construction (no dead
+## ends, no orphaned landmasses). Preference order (cheapest first): clean on-land link <
+## legal strait ferry < on-land link that overlaps < forced water crossing < over branch-cap.
 static func _pick_link(ctx: Ctx, pool: Array, node: int, edges: Array, max_out: int, pool_is_src: bool) -> int:
 	var best := -1
 	var best_key := INF
 	for p in pool:
 		var s: int = p if pool_is_src else node
 		var t: int = node if pool_is_src else p
-		if ctx.adj[s].size() >= max_out or (t in ctx.adj[s]):
-			continue
+		if t in ctx.adj[s]:
+			continue                                          # no duplicate edge
+		# Cost is by LANDMASS, not by water: staying on your landmass is cheap even when the
+		# straight line clips a bay (Step C curves it along the coast). CROSSING to another
+		# landmass is OCEAN travel and expensive, so a path commits to its landmass and only
+		# ferries when it must. A ferry over OPEN water (a real strait) is far cheaper than one
+		# whose line cuts across land (a wrap-around) -- so wrap-arounds are last-resort only.
 		var tier := 0.0
-		if edge_crosses_water(ctx.field, ctx.pos[s], ctx.pos[t]):
-			tier = 1e3 if _legal_ferry(ctx, s, t) else 1e6   # real strait preferred; forced last
+		if ctx.node_label[s] != ctx.node_label[t]:
+			tier += 1e4 if _legal_ferry(ctx, s, t) else 1e8   # clean strait vs land-crossing wrap
 		elif _crosses_any(ctx, s, t, edges):
-			continue                                          # on-land edges must not overlap (local)
+			tier += 1e2                                       # same-landmass road overlap: mild avoid
+		if ctx.adj[s].size() >= max_out:
+			tier += 1e10                                      # over branch-cap: absolute last resort
 		var key := tier + ctx.pos[node].distance_to(ctx.pos[p])
 		if key < best_key:
 			best_key = key; best = p
@@ -808,8 +870,12 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	var g_label := PackedInt32Array()
 	var start_id := -1
 	var end_id := -1
-	# Start pole (d=0).
+	# Start & end poles (d=0 and d=D). Both positions are computed up front so interior nodes
+	# can keep a SEPARATION margin from them -- the poles get a clearance like the normal
+	# inter-node spacing, so a rung node can't end up sitting right on top of start/end.
 	var sp := _pole_pos(field, large, center, dir, amin0)
+	var ep := _pole_pos(field, large, center, dir, amax0)
+	var pole_sep: float = field._cs * opts.get("pole_sep", 1.5)
 	start_id = g_pos.size()
 	g_pos.append(sp); g_depth.append(0); g_lane.append(0); g_label.append(field.label_at(sp))
 	for d in range(1, D):
@@ -831,9 +897,10 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 				var wj := base + dir * ((rng.randf() - 0.5) * jitter_amt) + perp * ((rng.randf() - 0.5) * jitter_amt)
 				if field.label_at(wj) == lab:
 					base = wj                         # keep jitter only if it stays on this island
+				if base.distance_to(sp) < pole_sep or base.distance_to(ep) < pole_sep:
+					continue                          # keep clearance around the start/end poles
 				g_pos.append(base); g_depth.append(d); g_lane.append(k); g_label.append(lab)
 	# End pole (d=D).
-	var ep := _pole_pos(field, large, center, dir, amax0)
 	end_id = g_pos.size()
 	g_pos.append(ep); g_depth.append(D); g_lane.append(0); g_label.append(field.label_at(ep))
 
