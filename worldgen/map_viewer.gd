@@ -364,7 +364,7 @@ func _save_verdict(verdict: String) -> void:
 	var step := _target_step()
 	var path := PresetIO.save_preset(settings, step, verdict)
 	if path != "":
-		print("[MapViewer] saved %s '%s' preset: %s" % [verdict.to_upper(), step, path])
+		print("[MapViewer] appended %s sample for '%s' -> %s" % [verdict.to_upper(), step, path])
 
 func process_ranges() -> void:
 	var step := _target_step()

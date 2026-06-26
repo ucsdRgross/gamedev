@@ -2,18 +2,19 @@ class_name PresetIO
 extends RefCounted
 
 ## Static helpers for the map_viewer recording workflow. Density-model edition:
-##   - save_preset(step, "good"/"bad") : record a per-step preset tagged good or bad
-##   - process_step_ranges(step)       : build a weighted histogram per param from the
-##                                       current batch (good adds weight, bad subtracts),
-##                                       write ranges.json, then ARCHIVE the batch so the
-##                                       next round narrows fresh (epoch behavior)
-##   - load_ranges(step) / sample_entry(): weighted draw -- values confirmed more often
-##                                       are sampled more; bad pockets are avoided
-##   - clear_step_data(step)           : reset valve (archive presets + drop ranges.json)
+##   - save_preset(step, "good"/"bad") : append one compact JSON line to pending.jsonl
+##   - process_step_ranges(step)       : read pending.jsonl, build per-param density
+##                                       (good = this epoch, bad = accumulated forever)
+##                                       into ranges.json, then fold the batch into the
+##                                       single archive.jsonl and clear pending
+##   - load_ranges(step) / sample_entry(): continuous piecewise-linear draw of
+##                                       (base + good - bad); bad pockets stay carved out
+##   - clear_step_data(step)           : reset valve (drop ranges.json + pending.jsonl)
 ##
-## Per-step isolation: a step's folder holds only that step's params, so tuning a
-## later step never disturbs an earlier one. Persistence is plain JSON via FileAccess
-## (+ a .tres for good presets); neither gets an .import sidecar, so no .gdignore.
+## Storage is three files per step (pending.jsonl, archive.jsonl, ranges.json) -- no
+## file-per-save and no .tres. Per-step isolation: a step's data holds only that
+## step's params, so tuning a later step never disturbs an earlier one. Plain JSON via
+## FileAccess gets no .import sidecar, so no .gdignore is needed.
 
 const PRESET_ROOT := "res://presets"
 
@@ -187,26 +188,40 @@ static func settings_to_dict(settings: WorldSettings, step: String) -> Dictionar
 
 # Histogram resolution for the density model.
 const BINS := 12
+# One growing line-delimited file per step instead of a file (+ .tres) per save:
+#   pending.jsonl = the current epoch's samples (one compact JSON per line)
+#   archive.jsonl = every consumed sample, combined into one file at process time
+const PENDING_FILE := "pending.jsonl"
+const ARCHIVE_FILE := "archive.jsonl"
 
-## Save a GOOD or BAD preset to res://presets/<step>/. Good presets also write a
-## .tres (drag-droppable). verdict is "good" or "bad". Returns the json path or "".
+## Append a GOOD or BAD sample (this step's params + seed + verdict) as one compact
+## JSON line to the step's pending.jsonl. No per-save files, no .tres. Returns the
+## pending path or "".
 static func save_preset(settings: WorldSettings, step: String, verdict: String = "good") -> String:
 	var dir := "%s/%s" % [PRESET_ROOT, step]
 	if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir)) != OK \
 			and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
 		push_error("[PresetIO] could not create %s" % dir)
 		return ""
-	var stamp := "%s_%d_%d" % [verdict, settings.main_seed, int(Time.get_unix_time_from_system())]
-	var stem := "%s/%s" % [dir, stamp]
-	if verdict == "good":
-		ResourceSaver.save(settings, stem + ".tres")
 	var d := settings_to_dict(settings, step)
 	d["_verdict"] = verdict
-	var f := FileAccess.open(stem + ".json", FileAccess.WRITE)
+	var path := "%s/%s" % [dir, PENDING_FILE]
+	_append_line(path, JSON.stringify(d))
+	return path
+
+# Append one line to a file (creating it if absent). FileAccess has no append mode,
+# so open READ_WRITE + seek_end when the file already exists.
+static func _append_line(path: String, line: String) -> void:
+	var f: FileAccess
+	if FileAccess.file_exists(path):
+		f = FileAccess.open(path, FileAccess.READ_WRITE)
+		if f:
+			f.seek_end()
+	else:
+		f = FileAccess.open(path, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(d, "  "))
+		f.store_line(line)
 		f.close()
-	return stem + ".json"
 
 ## Build a density model from this batch of good/bad presets, write it to
 ## ranges.json, then ARCHIVE the consumed presets so the next batch starts fresh.
@@ -224,16 +239,16 @@ static func process_step_ranges(step: String) -> Dictionary:
 	var prev := load_ranges(step)  # persisted bad histograms + domains
 	var good := {}   # param -> Array[float] (this batch)
 	var bad := {}
-	var move_list := []
-	for fn in DirAccess.get_files_at(dir):
-		if fn == "ranges.json":
-			continue
-		move_list.append(fn)  # everything else gets archived after processing
-		if not fn.ends_with(".json"):
-			continue
-		var parsed = JSON.parse_string(FileAccess.get_file_as_string("%s/%s" % [dir, fn]))
+	var pending_path := "%s/%s" % [dir, PENDING_FILE]
+	var lines: PackedStringArray = []
+	if FileAccess.file_exists(pending_path):
+		lines = FileAccess.get_file_as_string(pending_path).split("\n", false)
+	var kept := []  # valid raw lines, consolidated into the archive afterwards
+	for line in lines:
+		var parsed = JSON.parse_string(line)
 		if typeof(parsed) != TYPE_DICTIONARY:
 			continue
+		kept.append(line)
 		var bucket: Dictionary = bad if String(parsed.get("_verdict", "good")) == "bad" else good
 		for k in parsed:
 			if String(k).begins_with("_") or EXCLUDE.has(k):
@@ -291,8 +306,11 @@ static func process_step_ranges(step: String) -> Dictionary:
 	if f:
 		f.store_string(JSON.stringify(out, "  "))
 		f.close()
-	_archive_files(dir, move_list)
-	print("[PresetIO] '%s': %d presets -> %d param models (bad accumulates), archived batch." % [step, move_list.size(), out.size()])
+	# Consolidate the consumed batch into the single archive file, then clear pending.
+	if not kept.is_empty():
+		_append_line("%s/%s" % [dir, ARCHIVE_FILE], "\n".join(kept))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(pending_path))
+	print("[PresetIO] '%s': %d samples -> %d param models (bad accumulates), batch consolidated." % [step, kept.size(), out.size()])
 	return out
 
 ## Read the density model (rich entries) written by process_step_ranges.
@@ -354,28 +372,14 @@ static func _trapezoid_t(w0: float, w1: float, L: float, u: float) -> float:
 	var disc := maxf(b * b + 4.0 * a * u, 0.0)
 	return clampf((-b + sqrt(disc)) / (2.0 * a), 0.0, 1.0)
 
-## Reset valve: archive every preset for a step and delete its ranges.json so the
-## step starts from defaults again.
+## Reset valve: drop the model (ranges.json, incl. accumulated bad) and the current
+## pending batch so the step starts from defaults again. archive.jsonl (raw history)
+## is left intact.
 static func clear_step_data(step: String) -> void:
 	var dir := "%s/%s" % [PRESET_ROOT, step]
 	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
 		return
-	var move_list := []
-	for fn in DirAccess.get_files_at(dir):
-		if fn == "ranges.json":
-			continue
-		move_list.append(fn)
-	_archive_files(dir, move_list)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path("%s/ranges.json" % dir))
-	print("[PresetIO] cleared '%s' (archived %d presets, removed ranges.json)." % [step, move_list.size()])
-
-# Move the listed files from a step dir into a timestamped archive subfolder.
-static func _archive_files(dir: String, files: Array) -> void:
-	if files.is_empty():
-		return
-	var adir := "%s/archive/%d" % [dir, int(Time.get_unix_time_from_system())]
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(adir))
-	for fn in files:
-		DirAccess.rename_absolute(
-			ProjectSettings.globalize_path("%s/%s" % [dir, fn]),
-			ProjectSettings.globalize_path("%s/%s" % [adir, fn]))
+	for fn in [PENDING_FILE, "ranges.json"]:
+		if FileAccess.file_exists("%s/%s" % [dir, fn]):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path("%s/%s" % [dir, fn]))
+	print("[PresetIO] cleared model + pending for '%s' (archive.jsonl kept)." % step)
