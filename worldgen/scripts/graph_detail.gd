@@ -64,6 +64,10 @@ static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: fl
 	var occ_pen: float = opts.get("route_occupancy_penalty", 10.0) # wall cost for a taken cell
 	var corr_w: float = opts.get("route_corridor_penalty", 12.0)  # wall cost beyond the corridor
 	var corridor: float = opts.get("route_corridor_ratio", 0.35) * a.distance_to(b) + ds * 2.0
+	var over_w: float = opts.get("route_overshoot_penalty", 18.0) # wall cost for going PAST an endpoint
+	var ab := b - a                                               # a->b axis; used to detect overshoot
+	var ab_len2: float = maxf(1.0, ab.length_squared())
+	var ab_len: float = sqrt(ab_len2)
 
 	# Search box = bounding rect of a,b grown by a margin (room to detour), clamped to map.
 	var margin: float = a.distance_to(b) * float(opts.get("route_margin", 0.7)) + 16.0
@@ -121,6 +125,12 @@ static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: fl
 				var dseg := _dist_to_seg(world, a, b)
 				if dseg > corridor:                 # imaginary wall: ramp cost outside the corridor
 					base += corr_w * (dseg - corridor) / maxf(1.0, float(ds))
+				# Overshoot wall: punish cells whose projection lands PAST b (t>1) or behind a
+				# (t<0), so the route can't sail beyond its destination and loop back to it.
+				var tproj: float = ab.dot(world - a) / ab_len2
+				if tproj < 0.0 or tproj > 1.0:
+					var over: float = (-tproj if tproj < 0.0 else tproj - 1.0) * ab_len
+					base += over_w * over / maxf(1.0, float(ds))
 				var step := (1.41421356 if dx != 0 and dy != 0 else 1.0) * base
 				var ng: float = gscore[cur] + step
 				if ng < gscore[ni]:

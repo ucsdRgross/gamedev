@@ -446,6 +446,8 @@ class Ctx extends RefCounted:
 	var lane_tol := 1.8                  # branch locality: extra forward links allowed only
 										 # within this x the nearest one's distance (a ratio,
 										 # so scale-free across map sizes). Tunable via opts.
+	var branch_local := 0.0              # max nearest-distance for a node to still emit branches
+	var edge_tag := {}                   # DIAGNOSTIC: Vector2i(u,v) -> which sweep step made it
 
 # ---------------------------------------------------------------------------
 # Public entry point.
@@ -614,19 +616,50 @@ static func _diagnose_edges(ctx: Ctx) -> void:
 		if passed >= MIN_PASS or crosses >= 1:
 			flagged += 1
 			var kind := "ferry" if ctx.node_label[u] != ctx.node_label[v] else ("water" if edge_crosses_water(ctx.field, a, b) else "land")
-			print("    [EDGE?] %d(d%d,lm%d)->%d(d%d,lm%d) len=%.0f passes=%d crosses=%d %s" % [
+			var tag: String = ctx.edge_tag.get(Vector2i(u, v), "?")
+			print("    [EDGE?] %d(d%d,lm%d)->%d(d%d,lm%d) len=%.0f passes=%d crosses=%d %s [%s]" % [
 				u, ctx.depth[u], ctx.node_label[u], v, ctx.depth[v], ctx.node_label[v],
-				a.distance_to(b), passed, crosses, kind])
+				a.distance_to(b), passed, crosses, kind, tag])
+			if passed >= MIN_PASS:
+				_explain_long_edge(ctx, u, v)
 	print("    [EDGE?] flagged %d / %d edges (near=%.1f, min_pass=%d)" % [flagged, elist.size(), near, MIN_PASS])
+
+## DIAGNOSTIC follow-up: for a long skip-past edge u->v, reveal WHY the far node was chosen.
+## Reports v's incoming count, and the NEAREST same-landmass node to v (a) at u's rung and
+## (b) at any rung -- each with distance and adj-size (saturation). If a much-nearer node
+## exists at u's rung => it was skipped (saturation/already-linked), not genuine isolation.
+## If the nearest node is at a DIFFERENT rung => v's true land-neighbour is off-rung (the
+## axis-depth mismatch that geodesic rungs would fix).
+static func _explain_long_edge(ctx: Ctx, u: int, v: int) -> void:
+	var du := ctx.depth[u]
+	var lm := ctx.node_label[v]
+	var ns_rung := -1; var ns_rung_d := INF        # nearest same-lm node to v AT u's depth (excl. u)
+	var ns_any := -1; var ns_any_d := INF          # nearest same-lm node to v at ANY depth
+	for w in range(ctx.n):
+		if w == v or w == u or ctx.active[w] == 0 or ctx.node_label[w] != lm:
+			continue
+		var dd: float = ctx.pos[v].distance_to(ctx.pos[w])
+		if ctx.depth[w] == du and dd < ns_rung_d:
+			ns_rung_d = dd; ns_rung = w
+		if dd < ns_any_d:
+			ns_any_d = dd; ns_any = w
+	var indeg_v := 0
+	for w in range(ctx.n):
+		if ctx.active[w] == 1 and v in ctx.adj[w]:
+			indeg_v += 1
+	var rung_adj :int= ctx.adj[ns_rung].size() if ns_rung >= 0 else -1
+	var any_adj :int= ctx.adj[ns_any].size() if ns_any >= 0 else -1
+	var any_dep := ctx.depth[ns_any] if ns_any >= 0 else -1
+	print("        why: src=%d(adj=%d) v_indeg=%d | nearest@d%d: %s d=%.0f adj=%d | nearest@any: %s d%d d=%.0f adj=%d" % [
+		u, ctx.adj[u].size(), indeg_v, du, str(ns_rung), ns_rung_d, rung_adj, str(ns_any), any_dep, ns_any_d, any_adj])
 
 ## One forward step: connect row U (depth d) to row V (next populated depth).
 static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: PackedInt32Array, max_out: int) -> void:
 	# 1. Forward to the NEAREST same-landmass node ("0 forward lane" -> short, never
 	#    cross-landmass), plus extra branches within `lane_tol` x that nearest distance.
-	#    If the nearest would cross a (local) same-landmass edge, skip to the next nearest
-	#    that doesn't -- a LOCAL crossing fix (the next candidate is usually the neighbour's
-	#    target, i.e. share the destination). Crossing prevention applies to on-land edges
-	#    only; long ferries are NOT blocked here (they get curved in Step C).
+	#    We do NOT dodge edge crossings here: skipping the nearest to avoid a crossing picks a
+	#    FAR node on the rung, and that long edge becomes a worse crosser (the skip-past lines).
+	#    Always take the nearest; nearest connections naturally minimise crossings.
 	for u in U:
 		var same: Array = []
 		for v in V:
@@ -638,19 +671,20 @@ static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: Pac
 			return ctx.pos[u].distance_squared_to(ctx.pos[a]) < ctx.pos[u].distance_squared_to(ctx.pos[b]))
 		var d0: float = ctx.pos[u].distance_to(ctx.pos[same[0]])
 		var cap: float = maxf(d0 * ctx.lane_tol, d0 + 1.0)
+		# An ISOLATED node (its very nearest forward node is already far) emits ONLY its single
+		# required edge -- no branches -- so it can't fling a long redundant branch across the rung.
+		var allow_branch := d0 <= ctx.branch_local
 		var taken := 0
 		for v in same:
 			if taken >= max_out:
 				break
-			if taken >= 1 and ctx.pos[u].distance_to(ctx.pos[v]) > cap:
+			if taken >= 1 and (not allow_branch or ctx.pos[u].distance_to(ctx.pos[v]) > cap):
 				break                           # locality: forward, not across the rung
 			if v in ctx.adj[u]:
 				continue
-			# Same-landmass edges are LAND travel: Step C curves them around any bay the
-			# straight line clips, so a bay must NOT push the path off its landmass. Connect
-			# across bays freely -- commit to the landmass (these are never ferries).
-			if _crosses_any(ctx, u, v, edges):
-				continue                        # local: pick the next nearest non-crossing
+			# Same-landmass edges are LAND travel (Step C curves them around any bay the
+			# straight line clips); connect to the nearest regardless of bay or crossing.
+			ctx.edge_tag[Vector2i(u, v)] = "s1.%d" % taken          # forward branch index (0 = nearest)
 			ctx.adj[u].append(v); edges.append([u, v]); indeg[v] += 1; taken += 1
 	# 2. Incoming coverage: every V node reachable from start.
 	for v in V:
@@ -658,6 +692,7 @@ static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: Pac
 			continue
 		var su := _pick_link(ctx, U, v, edges, max_out, true)
 		if su >= 0:
+			ctx.edge_tag[Vector2i(su, v)] = "s2in" + ("!CAP" if ctx.adj[su].size() >= max_out else "")
 			ctx.adj[su].append(v); edges.append([su, v]); indeg[v] += 1
 	# 3. Outgoing coverage: every U node can advance toward end.
 	for u in U:
@@ -665,15 +700,17 @@ static func _connect_rows(ctx: Ctx, U: Array, V: Array, edges: Array, indeg: Pac
 			continue
 		var dv := _pick_link(ctx, V, u, edges, max_out, false)
 		if dv >= 0:
+			ctx.edge_tag[Vector2i(u, dv)] = "s3out" + ("!CAP" if ctx.adj[u].size() >= max_out else "")
 			ctx.adj[u].append(dv); edges.append([u, dv]); indeg[dv] += 1
 
-## Pick the best node in `pool` to link with `node` for coverage. `pool_is_src` true:
-## pool->node (incoming); else node->pool (outgoing). COVERAGE NEVER FAILS: every
-## undesirable property is a PENALTY tier, not a skip, so a link is ALWAYS found whenever
-## the pool has any node not already linked -- connectivity holds by construction (no dead
-## ends, no orphaned landmasses). Preference order (cheapest first): clean on-land link <
-## legal strait ferry < on-land link that overlaps < forced water crossing < over branch-cap.
-static func _pick_link(ctx: Ctx, pool: Array, node: int, edges: Array, max_out: int, pool_is_src: bool) -> int:
+## Pick the best node in `pool` to link with `node` for coverage/repair. `pool_is_src` true:
+## pool->node (incoming); else node->pool (outgoing). COVERAGE NEVER FAILS: every undesirable
+## property is a PENALTY tier, not a skip, so a link is ALWAYS found whenever the pool has any
+## node not already linked. Same-landmass is pure NEAREST -- crucially NO branch-cap penalty:
+## avoiding a saturated NEAR node only forced the link onto a FAR unsaturated one (the 281px
+## skip-past edge). Repair ignores the cap and takes the nearest; exceeding `spec_outgoing` on a
+## hub is fine. Order: same-landmass nearest < legal strait ferry < land-crossing/forced ferry.
+static func _pick_link(ctx: Ctx, pool: Array, node: int, edges: Array, _max_out: int, pool_is_src: bool) -> int:
 	var best := -1
 	var best_key := INF
 	for p in pool:
@@ -681,30 +718,17 @@ static func _pick_link(ctx: Ctx, pool: Array, node: int, edges: Array, max_out: 
 		var t: int = node if pool_is_src else p
 		if t in ctx.adj[s]:
 			continue                                          # no duplicate edge
-		# Cost is by LANDMASS, not by water: staying on your landmass is cheap even when the
-		# straight line clips a bay (Step C curves it along the coast). CROSSING to another
-		# landmass is OCEAN travel and expensive, so a path commits to its landmass and only
-		# ferries when it must. A ferry over OPEN water (a real strait) is far cheaper than one
-		# whose line cuts across land (a wrap-around) -- so wrap-arounds are last-resort only.
+		# Cost is by LANDMASS, not by water or saturation: staying on your landmass (even across
+		# a bay, even onto an over-cap node) is pure NEAREST. CROSSING to another landmass is
+		# OCEAN travel and expensive; a ferry over OPEN water (a real strait) is far cheaper than
+		# one whose line cuts across land (a wrap-around) -- so wrap-arounds are last-resort.
 		var tier := 0.0
 		if ctx.node_label[s] != ctx.node_label[t]:
 			tier += 1e4 if _legal_ferry(ctx, s, t) else 1e8   # clean strait vs land-crossing wrap
-		elif _crosses_any(ctx, s, t, edges):
-			tier += 1e2                                       # same-landmass road overlap: mild avoid
-		if ctx.adj[s].size() >= max_out:
-			tier += 1e10                                      # over branch-cap: absolute last resort
 		var key := tier + ctx.pos[node].distance_to(ctx.pos[p])
 		if key < best_key:
 			best_key = key; best = p
 	return best
-
-static func _crosses_any(ctx: Ctx, u: int, c: int, edges: Array) -> bool:
-	for e in edges:
-		if e[0] == u or e[0] == c or e[1] == u or e[1] == c:
-			continue
-		if _segments_cross(ctx.pos[u], ctx.pos[c], ctx.pos[e[0]], ctx.pos[e[1]]):
-			return true
-	return false
 
 static func _reaches_id(adj: Array, src: int, dst: int) -> bool:
 	var seen := {src: true}
@@ -823,6 +847,10 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	var scan_step: float = maxf(1.0, field._cs * 0.5)
 	var rung_pitch: float = axis_ext / float(D)
 	var jitter_amt: float = rung_pitch * opts.get("jitter", 0.3)
+	# A node whose NEAREST forward node is farther than this is "isolated" (its nearest is way
+	# past a normal rung step) -- it gets only its single required forward edge, no extra
+	# branches, so isolated nodes don't fling long redundant branches across the rung.
+	ctx.branch_local = rung_pitch * opts.get("branch_local_mul", 2.5)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val * 100069 + 7
 
