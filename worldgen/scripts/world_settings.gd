@@ -1,4 +1,7 @@
 # world_settings.gd
+# Parameters are grouped by the generation STEP that consumes them, matching
+# PresetIO.STEP_PARAMS so the per-step record/randomize workflow lines up with the
+# inspector sections. "Map Layout" and "Generation Seeds" are global (not tuned).
 class_name WorldSettings
 extends Resource
 
@@ -17,7 +20,7 @@ func map_diag() -> float:
 
 @export_group("Generation Seeds")
 ## Master seed. Every noise map derives from this + its own offset below, so one
-## seed fully determines a world. Randomize rolls this each run.
+## seed fully determines a world. Randomize base rolls this.
 @export var main_seed: int = 42
 ## Offset added to main_seed for the base landmass noise.
 @export var landmass_seed_offset: int = 0
@@ -34,56 +37,23 @@ func map_diag() -> float:
 ## Offset for the climate humidity map (rivers deliberately reuse this same map).
 @export var humidity_seed_offset: int = 6
 
-@export_group("Terrain Weights")
+@export_group("Step 1 - Landmass")
 ## Base continent scale (lower = larger, fewer continents). Frequency of the
 ## landmass fBm noise.
 @export var continent_frequency: float = 0.004
-## Fine surface-detail noise scale layered on the continents (higher = busier).
-@export var detail_frequency: float = 0.04
-## Ridged-noise scale used for highland/mountain shaping (higher = tighter ridges).
-@export var ridge_frequency: float = 0.012
 ## Sea level. Height below this is ocean. Also the reference the elevation gates,
 ## biome height bands, and river normalization key off -- nudging it shifts a lot.
 @export var ocean_threshold: float = 0.38
-## Height above which terrain reads as mountain (used by coloring + graph routing).
-@export var mountain_threshold: float = 0.65
 ## Central island-mask radius. Bigger = land reaches further from center (more land).
 @export var island_radius: float = 0.72
 ## Contrast applied around sea level: >1 pushes noise toward lowlands/highlands
 ## (more land + sharper coasts), <1 flattens toward mid. Big lever for coast steepness.
 @export var land_contrast: float = 1.25
-## Lowland flatten curve. 1.0 = off. Higher (2-4) compresses the above-sea height
-## band with a power curve so basins/plains go broad and flat while relief stays
-## concentrated in the highlands. The main "give me flat plains" lever.
-@export var lowland_flatten: float = 1.0
 ## Island-mask falloff exponent. <1 (e.g. 0.5) = fuller island with a quick edge
 ## drop; >1 = land concentrated in the center with a long gentle coastal slope.
 @export var island_falloff: float = 0.5
-## Hard outer cutoff radius: no land past this (keeps land off the screen edges).
-@export var boundary_radius: float = 0.46
-## Width of the soft fade at boundary_radius (smaller = harder map-edge coastline).
-@export var boundary_falloff: float = 0.04
 ## Warps the island/edge cutoffs (UV) so coastlines are jagged, not circular.
 @export var edge_jag: float = 0.06
-## How much ridge noise lifts highlands into mountains (0 = no peaks).
-@export var peak_uplift: float = 0.25
-## Height band above sea over which peak uplift ramps in (smaller = abrupt mountains).
-@export var highland_range: float = 0.25
-## Amplitude of the fine detail noise added on highlands (texture on peaks).
-@export var peak_detail_strength: float = 0.12
-## Ceiling on peak height. High (default) = no flattening; lower it to deliberately
-## plateau peaks. Replaces the old hard 1.2 clamp.
-@export var peak_height_cap: float = 4.0
-## Detail noise is suppressed below this height so coasts/plains stay flat; it ramps
-## in above. Raise to widen the flat lowland band.
-@export var peak_detail_min_elevation: float = 0.5
-## Height band over which the detail noise ramps from off to full.
-@export var peak_detail_falloff: float = 0.12
-
-@export_group("Noise Shaping")
-## All maps use OpenSimplex2. fBm sums octaves with fixed weights; multifractal
-## modulates each octave by the running lower-octave sum so detail concentrates on
-## high ground. Domain warp perturbs sample coords so features meander.
 ## Continent fBm octave count (more = more detail/roughness on land; fewer = flatter).
 @export_range(1, 8) var continent_octaves: int = 4
 ## Continent persistence: per-octave amplitude falloff (lower = smoother land).
@@ -94,24 +64,8 @@ func map_diag() -> float:
 @export var continent_warp_amp: float = 0.0
 ## Domain-warp frequency for the continent warp.
 @export var continent_warp_freq: float = 0.01
-## Peaks (ridged + billow) octave count.
-@export_range(1, 8) var peaks_octaves: int = 5
-## Peaks per-octave amplitude falloff.
-@export_range(0.0, 1.0) var peaks_gain: float = 0.5
-## Peaks per-octave frequency growth.
-@export_range(1.0, 4.0) var peaks_lacunarity: float = 2.0
-## Ridged-multifractal fold offset (higher = fatter, more rounded ridges).
-@export_range(0.5, 1.5) var ridge_offset: float = 1.0
-## Domain-warp strength (px) applied to ridge+billow for organic ridgelines.
-@export var peaks_warp_amp: float = 30.0
-## Domain-warp frequency for the peaks warp.
-@export var peaks_warp_freq: float = 0.01
-## Billow (rounded foothill) noise scale.
-@export var billow_frequency: float = 0.02
-## Foothill (billow) amplitude; peaks at mid elevations.
-@export var peak_billow_strength: float = 0.12
 
-@export_group("Tectonics Simulation")
+@export_group("Step 2 - Tectonics")
 ## Number of tectonic plates.
 @export var plate_count: int = 7
 ## Strength of boundary-collision relief (mountains where plates converge, rifts
@@ -134,25 +88,53 @@ func map_diag() -> float:
 ## height; lower to plateau them. Replaces the old hard 1.5 clamp.
 @export var tectonic_height_cap: float = 4.0
 
-@export_group("Climate")
-## Temperature noise scale (higher = smaller, more varied biome patches).
-@export var temp_frequency: float = 0.022
-## Humidity noise scale.
-@export var humid_frequency: float = 0.026
-## Temperature lapse rate: how much temperature drops per unit elevation above sea
-## (higher = colder mountains). Was hardcoded 0.5.
-@export var temp_lapse_rate: float = 0.5
-## Humidity added to cells next to a river (wetter riverbanks). Was hardcoded 0.35.
-@export var river_humidity_boost: float = 0.35
-## Number of height bands for biome classification. Max land biomes =
-## height_bands * temp_bands * humid_bands (default 27 = a 3x3x3 scheme).
-@export_range(1, 6) var height_bands: int = 3
-## Number of temperature bands.
-@export_range(1, 6) var temp_bands: int = 3
-## Number of humidity bands.
-@export_range(1, 6) var humid_bands: int = 3
+@export_group("Step 3 - Peaks & Valleys")
+## Fine surface-detail noise scale layered on the highlands (higher = busier).
+@export var detail_frequency: float = 0.04
+## Ridged-noise scale used for highland/mountain shaping (higher = tighter ridges).
+@export var ridge_frequency: float = 0.012
+## Height above which terrain reads as mountain (used by coloring + graph routing).
+@export var mountain_threshold: float = 0.65
+## Lowland flatten curve. 1.0 = off. Higher (2-4) compresses the above-sea height
+## band with a power curve so basins/plains go broad and flat while relief stays
+## concentrated in the highlands. The main "give me flat plains" lever.
+@export var lowland_flatten: float = 1.0
+## Hard outer cutoff radius: no land past this (keeps land off the screen edges).
+@export var boundary_radius: float = 0.46
+## Width of the soft fade at boundary_radius (smaller = harder map-edge coastline).
+@export var boundary_falloff: float = 0.04
+## How much ridge noise lifts highlands into mountains (0 = no peaks).
+@export var peak_uplift: float = 0.25
+## Height band above sea over which peak uplift ramps in (smaller = abrupt mountains).
+@export var highland_range: float = 0.25
+## Amplitude of the fine detail noise added on highlands (texture on peaks).
+@export var peak_detail_strength: float = 0.12
+## Ceiling on peak height. High (default) = no flattening; lower it to deliberately
+## plateau peaks. Replaces the old hard 1.2 clamp.
+@export var peak_height_cap: float = 4.0
+## Detail noise is suppressed below this height so coasts/plains stay flat; it ramps
+## in above. Raise to widen the flat lowland band.
+@export var peak_detail_min_elevation: float = 0.5
+## Height band over which the detail noise ramps from off to full.
+@export var peak_detail_falloff: float = 0.12
+## Peaks (ridged + billow) octave count.
+@export_range(1, 8) var peaks_octaves: int = 5
+## Peaks per-octave amplitude falloff.
+@export_range(0.0, 1.0) var peaks_gain: float = 0.5
+## Peaks per-octave frequency growth.
+@export_range(1.0, 4.0) var peaks_lacunarity: float = 2.0
+## Ridged-multifractal fold offset (higher = fatter, more rounded ridges).
+@export_range(0.5, 1.5) var ridge_offset: float = 1.0
+## Domain-warp strength (px) applied to ridge+billow for organic ridgelines.
+@export var peaks_warp_amp: float = 30.0
+## Domain-warp frequency for the peaks warp.
+@export var peaks_warp_freq: float = 0.01
+## Billow (rounded foothill) noise scale.
+@export var billow_frequency: float = 0.02
+## Foothill (billow) amplitude; peaks at mid elevations.
+@export var peak_billow_strength: float = 0.12
 
-@export_group("Erosion (Gabor Branching Noise)")
+@export_group("Step 4 - Erosion")
 ## Single-pass GPU directional-gabor erosion: branching gullies/ridges steered by
 ## the terrain's own slope. The source technique was authored for a huge world, so
 ## set steepness_scale FIRST (watch the Erosion debug cell), then amplitude, then
@@ -183,7 +165,7 @@ func map_diag() -> float:
 ## Height band over which erosion ramps from off to full.
 @export var erosion_elevation_falloff: float = 0.12
 
-@export_group("River Generation")
+@export_group("Step 5 - Rivers & Lakes")
 ## Hydrology grid downscale (1 = full res/no pixelation; higher = faster but blocky).
 @export_range(1, 6) var river_resolution_divisor: int = 1
 ## Exponent: wetter cells source more water (0 = humidity ignored).
@@ -201,8 +183,6 @@ func map_diag() -> float:
 ## 3x3 blur passes on the hydrology grid ONLY (kills erosion speck pits); does NOT
 ## touch the final heightmap.
 @export_range(0, 6) var river_smooth_passes: int = 1
-
-@export_group("Lakes")
 ## Min depression-fill above terrain to count as a lake.
 @export var lake_min_depth: float = 0.01
 ## Min connected hydrology cells for a lake (drops 1-px speck pits).
@@ -212,32 +192,51 @@ func map_diag() -> float:
 ## Dilate lakes outward by this many hydrology px (0 = none).
 @export_range(0, 6) var lake_width: int = 0
 
-@export_group("Graph Spec (Step A: abstract rule-correct DAG)")
-## Topology authored directly (no map). A layered DAG: cities on every
-## (spec_nodes_between_cities+1)-th rank, spec_graph_width lanes per interior rank.
-## Cities visited per path, including start & end.
+@export_group("Step 6 - Climate")
+## Temperature noise scale (higher = smaller, more varied biome patches).
+@export var temp_frequency: float = 0.022
+## Humidity noise scale.
+@export var humid_frequency: float = 0.026
+## Temperature lapse rate: how much temperature drops per unit elevation above sea
+## (higher = colder mountains).
+@export var temp_lapse_rate: float = 0.5
+## Humidity added to cells next to a river (wetter riverbanks).
+@export var river_humidity_boost: float = 0.35
+## Number of height bands for biome classification. Max land biomes =
+## height_bands * temp_bands * humid_bands (default 27 = a 3x3x3 scheme).
+@export_range(1, 6) var height_bands: int = 3
+## Number of temperature bands.
+@export_range(1, 6) var temp_bands: int = 3
+## Number of humidity bands.
+@export_range(1, 6) var humid_bands: int = 3
+
+@export_group("Step 7 - Cities")
+## Min city spacing as a fraction of the map diagonal.
+@export var city_dist_ratio: float = 0.033
+## Hard cap on number of cities.
+@export var max_city_count: int = 150
+## Min travel-node spacing as a fraction of the map diagonal.
+@export var travel_dist_ratio: float = 0.012
+## Cap on dense travel nodes.
+@export var max_travel_count: int = 700
+## Ring radius (fraction of map diagonal) sampled to score coastalness (cities
+## prefer coasts).
+@export var coast_radius_ratio: float = 0.014
+
+@export_group("Step 8 - Graph")
+## Cities visited per path, including start & end (abstract spec).
 @export var spec_cities: int = 5
-## Travel nodes between consecutive cities.
+## Travel nodes between consecutive cities (abstract spec).
 @export var spec_nodes_between_cities: int = 2
-## Min distinct cities a city can reach next (graph width).
+## Min distinct cities a city can reach next (graph width, abstract spec).
 @export var spec_graph_width: int = 3
-## Forward edges per node before trimming.
+## Forward edges per node before trimming (abstract spec).
 @export var spec_outgoing: int = 3
-## Min forward edges per node (edge creation target).
-@export var spec_min_outgoing: int = 2
-## Variety-trim floor (never orphans a node).
+## Variety-trim floor (never orphans a node, abstract spec).
 @export var spec_min_outgoing_after_trim: int = 1
 ## Chance to drop a surplus edge during the spec trim.
 @export_range(0.0, 1.0) var spec_edge_trim_chance: float = 0.3
-## v2 node-only generation: each depth layer gets a random node count in this range
-## (over-provisions nodes; edge creation picks which to use toward the width target).
-@export var spec_layer_min: int = 2
-@export var spec_layer_max: int = 5
-
-@export_group("Path Choice Rules")
-## Layered DAG over travel_nodes (cities are anchors). Nodes bucket into layer_count
-## bands along the start->end axis; edges only go forward.
-## Number of forward layers nodes are bucketed into.
+## Number of forward layers nodes are bucketed into (physical placement).
 @export var layer_count: int = 14
 ## Target min forward edges per node when building.
 @export var min_outgoing: int = 2
@@ -292,16 +291,3 @@ func map_diag() -> float:
 @export var max_paths_enumerated: int = 4000
 ## build, diagnose+modify nodes, rebuild (1 = single pass).
 @export_range(1, 4) var graph_build_passes: int = 2
-
-@export_group("Civilization")
-## Min city spacing as a fraction of the map diagonal.
-@export var city_dist_ratio: float = 0.033
-## Hard cap on number of cities.
-@export var max_city_count: int = 150
-## Min travel-node spacing as a fraction of the map diagonal.
-@export var travel_dist_ratio: float = 0.012
-## Cap on dense travel nodes.
-@export var max_travel_count: int = 700
-## Ring radius (fraction of map diagonal) sampled to score coastalness (cities
-## prefer coasts).
-@export var coast_radius_ratio: float = 0.014

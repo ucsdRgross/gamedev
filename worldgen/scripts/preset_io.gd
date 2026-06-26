@@ -1,15 +1,19 @@
 class_name PresetIO
 extends RefCounted
 
-## Static helpers for the map_viewer recording workflow:
-##   - param_ranges()        : discover per-parameter [lo, hi, is_int] envelopes
-##   - save_preset()         : write a tuned WorldSettings into a per-step folder
-##   - process_step_ranges() : aggregate a folder of saved presets -> min/max/mean
-##   - load_step_ranges()    : ranges.json if present, else the export-hint ranges
+## Static helpers for the map_viewer recording workflow. Density-model edition:
+##   - save_preset(step, "good"/"bad") : record a per-step preset tagged good or bad
+##   - process_step_ranges(step)       : build a weighted histogram per param from the
+##                                       current batch (good adds weight, bad subtracts),
+##                                       write ranges.json, then ARCHIVE the batch so the
+##                                       next round narrows fresh (epoch behavior)
+##   - load_ranges(step) / sample_entry(): weighted draw -- values confirmed more often
+##                                       are sampled more; bad pockets are avoided
+##   - clear_step_data(step)           : reset valve (archive presets + drop ranges.json)
 ##
-## Persistence mirrors the res://tuning convention: plain JSON via FileAccess, plus
-## a canonical .tres per preset (drag-droppable back onto the generator). JSON and
-## .tres do not get .import sidecars, so no .gdignore is needed.
+## Per-step isolation: a step's folder holds only that step's params, so tuning a
+## later step never disturbs an earlier one. Persistence is plain JSON via FileAccess
+## (+ a .tres for good presets); neither gets an .import sidecar, so no .gdignore.
 
 const PRESET_ROOT := "res://presets"
 
@@ -181,79 +185,156 @@ static func settings_to_dict(settings: WorldSettings, step: String) -> Dictionar
 		d[pname] = settings.get(pname)
 	return d
 
-## Save settings to res://presets/<step>/<seed>_<unixtime>.{tres,json}. Returns the
-## stem path (without extension), or "" on failure.
-static func save_preset(settings: WorldSettings, step: String) -> String:
+# Histogram resolution for the density model.
+const BINS := 12
+
+## Save a GOOD or BAD preset to res://presets/<step>/. Good presets also write a
+## .tres (drag-droppable). verdict is "good" or "bad". Returns the json path or "".
+static func save_preset(settings: WorldSettings, step: String, verdict: String = "good") -> String:
 	var dir := "%s/%s" % [PRESET_ROOT, step]
 	if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir)) != OK \
 			and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
 		push_error("[PresetIO] could not create %s" % dir)
 		return ""
-	var stamp := "%d_%d" % [settings.main_seed, int(Time.get_unix_time_from_system())]
+	var stamp := "%s_%d_%d" % [verdict, settings.main_seed, int(Time.get_unix_time_from_system())]
 	var stem := "%s/%s" % [dir, stamp]
-	ResourceSaver.save(settings, stem + ".tres")
+	if verdict == "good":
+		ResourceSaver.save(settings, stem + ".tres")
+	var d := settings_to_dict(settings, step)
+	d["_verdict"] = verdict
 	var f := FileAccess.open(stem + ".json", FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(settings_to_dict(settings, step), "  "))
+		f.store_string(JSON.stringify(d, "  "))
 		f.close()
-	return stem
+	return stem + ".json"
 
-## Aggregate every *.json preset in a step folder into a min/max/mean envelope,
-## written to ranges.json. Returns the envelope dict (empty if no presets).
+## Build a density model from this batch of good/bad presets, write it to
+## ranges.json, then ARCHIVE the consumed presets so the next batch starts fresh
+## (epoch narrowing -- new results are not mixed with old generations). Per param:
+##   good saves add weight to their value's histogram bin, bad saves subtract.
+## Randomize then samples bins proportional to (clamped) weight, so values you
+## confirmed multiple times dominate and bad pockets are avoided.
 static func process_step_ranges(step: String) -> Dictionary:
 	var dir := "%s/%s" % [PRESET_ROOT, step]
 	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
 		return {}
-	var agg := {}
-	var count := 0
+	var good := {}   # param -> Array[float]
+	var bad := {}
+	var move_list := []
 	for fn in DirAccess.get_files_at(dir):
-		if not fn.ends_with(".json") or fn == "ranges.json":
+		if fn == "ranges.json":
+			continue
+		move_list.append(fn)  # everything else gets archived after processing
+		if not fn.ends_with(".json"):
 			continue
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string("%s/%s" % [dir, fn]))
 		if typeof(parsed) != TYPE_DICTIONARY:
 			continue
-		count += 1
+		var bucket: Dictionary = bad if String(parsed.get("_verdict", "good")) == "bad" else good
 		for k in parsed:
 			if String(k).begins_with("_") or EXCLUDE.has(k):
-				continue  # skip the _step tag and non-aesthetic params (seeds, map size)
+				continue
 			var tv := typeof(parsed[k])
 			if tv != TYPE_FLOAT and tv != TYPE_INT:
 				continue
-			var v := float(parsed[k])
-			if not agg.has(k):
-				agg[k] = {"min": v, "max": v, "sum": 0.0, "n": 0}
-			agg[k]["min"] = minf(agg[k]["min"], v)
-			agg[k]["max"] = maxf(agg[k]["max"], v)
-			agg[k]["sum"] += v
-			agg[k]["n"] += 1
+			if not bucket.has(k):
+				bucket[k] = []
+			bucket[k].append(float(parsed[k]))
+
+	var tp := tunable_params()
+	var params := {}
+	for k in good: params[k] = true
+	for k in bad: params[k] = true
 	var out := {}
-	for k in agg:
-		out[k] = {"min": agg[k]["min"], "max": agg[k]["max"],
-			"mean": agg[k]["sum"] / float(maxi(1, agg[k]["n"]))}
+	for p in params:
+		var gv: Array = good.get(p, [])
+		if gv.is_empty():
+			continue  # only bad seen -> nothing positive to sample; leave to defaults
+		var bv: Array = bad.get(p, [])
+		var lo: float = gv.min()
+		var hi: float = gv.max()
+		for v in bv:  # widen the domain to include nearby bad values so they can carve
+			lo = minf(lo, v); hi = maxf(hi, v)
+		if hi <= lo:
+			hi = lo + maxf(absf(lo) * 0.01, 1e-4)
+		var bins := []
+		bins.resize(BINS)
+		bins.fill(0.0)
+		var bstep := (hi - lo) / float(BINS)
+		for v in gv:
+			bins[clampi(int((v - lo) / bstep), 0, BINS - 1)] += 1.0
+		for v in bv:
+			bins[clampi(int((v - lo) / bstep), 0, BINS - 1)] -= 1.0
+		for i in BINS:
+			bins[i] = maxf(bins[i], 0.0)
+		out[p] = {"lo": lo, "hi": hi, "bins": bins, "is_int": tp.get(p, false),
+			"good_n": gv.size(), "bad_n": bv.size()}
+
 	var f := FileAccess.open("%s/ranges.json" % dir, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(out, "  "))
 		f.close()
-	print("[PresetIO] processed %d presets for '%s' -> %d params" % [count, step, out.size()])
+	_archive_files(dir, move_list)
+	print("[PresetIO] '%s': %d presets -> %d param models, archived batch." % [step, move_list.size(), out.size()])
 	return out
 
-## Effective sampling ranges for a step: the predefined export-hint/DEFAULT_RANGES
-## set, overlaid with the data-derived ranges from ranges.json (which can add
-## params that had no predefined range). Returns name -> [lo, hi, is_int].
-static func load_step_ranges(step: String) -> Dictionary:
-	var base := param_ranges()
-	var tp := tunable_params()
+## Read the density model (rich entries) written by process_step_ranges.
+static func load_ranges(step: String) -> Dictionary:
 	var path := "%s/%s/ranges.json" % [PRESET_ROOT, step]
-	if FileAccess.file_exists(path):
-		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if typeof(parsed) == TYPE_DICTIONARY:
-			for k in parsed:
-				if EXCLUDE.has(k) or not tp.has(k):
-					continue  # only tunable, non-excluded params are sampleable
-				if typeof(parsed[k]) != TYPE_DICTIONARY:
-					continue
-				var e: Dictionary = parsed[k]
-				var lo: float = base[k][0] if base.has(k) else 0.0
-				var hi: float = base[k][1] if base.has(k) else 0.0
-				base[k] = [float(e.get("min", lo)), float(e.get("max", hi)), tp[k]]
-	return base
+	if not FileAccess.file_exists(path):
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+## Draw a value from one density entry. Bins with weight < min_conf are ignored
+## (so values confirmed fewer than min_conf times are dropped); if nothing
+## qualifies, fall back to a uniform draw over the whole [lo, hi] band.
+static func sample_entry(entry: Dictionary, rng: RandomNumberGenerator, min_conf: float) -> float:
+	var lo: float = float(entry.get("lo", 0.0))
+	var hi: float = float(entry.get("hi", 1.0))
+	var bins: Array = entry.get("bins", [])
+	if bins.is_empty():
+		return rng.randf_range(lo, hi)
+	var total := 0.0
+	var elig := []
+	for w in bins:
+		var ww: float = float(w) if float(w) >= min_conf else 0.0
+		elig.append(ww)
+		total += ww
+	if total <= 0.0:
+		return rng.randf_range(lo, hi)
+	var pick := rng.randf() * total
+	var idx := elig.size() - 1
+	for i in elig.size():
+		pick -= elig[i]
+		if pick <= 0.0:
+			idx = i
+			break
+	var bstep := (hi - lo) / float(bins.size())
+	return rng.randf_range(lo + float(idx) * bstep, lo + float(idx + 1) * bstep)
+
+## Reset valve: archive every preset for a step and delete its ranges.json so the
+## step starts from defaults again.
+static func clear_step_data(step: String) -> void:
+	var dir := "%s/%s" % [PRESET_ROOT, step]
+	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
+		return
+	var move_list := []
+	for fn in DirAccess.get_files_at(dir):
+		if fn == "ranges.json":
+			continue
+		move_list.append(fn)
+	_archive_files(dir, move_list)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("%s/ranges.json" % dir))
+	print("[PresetIO] cleared '%s' (archived %d presets, removed ranges.json)." % [step, move_list.size()])
+
+# Move the listed files from a step dir into a timestamped archive subfolder.
+static func _archive_files(dir: String, files: Array) -> void:
+	if files.is_empty():
+		return
+	var adir := "%s/archive/%d" % [dir, int(Time.get_unix_time_from_system())]
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(adir))
+	for fn in files:
+		DirAccess.rename_absolute(
+			ProjectSettings.globalize_path("%s/%s" % [dir, fn]),
+			ProjectSettings.globalize_path("%s/%s" % [adir, fn]))

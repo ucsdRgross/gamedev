@@ -37,8 +37,14 @@ const STEP_INFO := [
 ## its learned ranges (current + later steps untouched). Set up a fresh, valid base
 ## to tune the current step against.
 @export_tool_button("Randomize base + seed", "Callable") var _btn_rand_base = randomize_base
-@export_tool_button("Save settings", "Callable") var _btn_save = save_current_preset
+## Record the current settings as a GOOD example for the target step.
+@export_tool_button("Save GOOD", "Callable") var _btn_save_good = save_good
+## Record the current settings as a BAD example (suppresses that value region).
+@export_tool_button("Save BAD", "Callable") var _btn_save_bad = save_bad
+## Build the density model from the saved batch, then archive the batch (epoch).
 @export_tool_button("Process folder -> ranges", "Callable") var _btn_process = process_ranges
+## Reset valve: archive presets + delete ranges.json for the target step.
+@export_tool_button("Clear step data", "Callable") var _btn_clear = clear_step
 
 # --- generation / view config -------------------------------------------------
 @export var settings: WorldSettings
@@ -59,10 +65,14 @@ var terrain_kind: String = "auto":
 			_apply_to_meshes()
 ## When true, changing view_step / terrain_kind regenerates automatically at edit-time.
 @export var auto_regenerate: bool = true
-## Which step Save / Process target. "Current" = the step you're viewing; pick a
-## specific step to fix an earlier step's preset/ranges without leaving this view.
+## Which step Save / Process / Clear target. "Current" = the step you're viewing;
+## pick a specific step to fix an earlier step's preset/ranges without leaving view.
 @export_enum("Current", "Landmass", "Tectonics", "Peaks", "Erosion", "Rivers", "Climate", "Cities", "Graph")
 var save_target: String = "Current"
+## A histogram bin needs at least this many net good confirmations to be sampled by
+## Randomize. 1 = use everything (weighted by frequency); raise to 2+ to discard
+## values you only marked good once (guards against accidental good-marks).
+@export var min_confirmations: float = 1.0
 
 # --- water colors (baked into the water colormap; repaint on change) ----------
 ## River tint at low (near-sea) elevation; rivers ramp from this to river_color_high.
@@ -314,18 +324,23 @@ func _update_ocean(size: Vector2) -> void:
 # =============================================================================
 # RECORDING (settings presets + ranges)
 # =============================================================================
-## Sample the named params from step_name's learned (ranges.json) / default ranges;
-## params without any range yet are left at their current value.
+## Sample the named params from step_name's density model (ranges.json) where it
+## exists, else from the predefined default range. Params with neither are left at
+## their current value.
 func _randomize_params(names: Array, step_name: String) -> void:
-	var ranges := PresetIO.load_step_ranges(step_name)
+	var model := PresetIO.load_ranges(step_name)
+	var defaults := PresetIO.param_ranges()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	for pname in names:
-		if not ranges.has(pname):
-			continue
-		var r: Array = ranges[pname]
-		var v := rng.randf_range(r[0], r[1])
-		settings.set(pname, int(round(v)) if r[2] else v)
+		if model.has(pname):
+			var e: Dictionary = model[pname]
+			var v := PresetIO.sample_entry(e, rng, min_confirmations)
+			settings.set(pname, int(round(v)) if bool(e.get("is_int", false)) else v)
+		elif defaults.has(pname):
+			var r: Array = defaults[pname]
+			var v := rng.randf_range(r[0], r[1])
+			settings.set(pname, int(round(v)) if r[2] else v)
 
 ## Full random world (seed + every step's params). Used for standalone runtime launch.
 func _randomize_all_steps() -> void:
@@ -335,19 +350,28 @@ func _randomize_all_steps() -> void:
 	for s in STEP_INFO:
 		_randomize_params(PresetIO.step_params(s.name), s.name)
 
-func save_current_preset() -> void:
+func save_good() -> void:
+	_save_verdict("good")
+
+func save_bad() -> void:
+	_save_verdict("bad")
+
+func _save_verdict(verdict: String) -> void:
 	if settings == null:
 		push_warning("[MapViewer] no settings to save")
 		return
 	var step := _target_step()
-	var stem := PresetIO.save_preset(settings, step)
-	if stem != "":
-		print("[MapViewer] saved %s preset: %s.tres / .json" % [step, stem])
+	var path := PresetIO.save_preset(settings, step, verdict)
+	if path != "":
+		print("[MapViewer] saved %s '%s' preset: %s" % [verdict.to_upper(), step, path])
 
 func process_ranges() -> void:
 	var step := _target_step()
 	var env := PresetIO.process_step_ranges(step)
-	print("[MapViewer] ranges for '%s': %s" % [step, env])
+	print("[MapViewer] density model for '%s': %d params" % [step, env.size()])
+
+func clear_step() -> void:
+	PresetIO.clear_step_data(_target_step())
 
 func _target_step() -> String:
 	return _step().name if save_target == "Current" else save_target
