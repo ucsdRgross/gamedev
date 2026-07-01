@@ -69,13 +69,15 @@ const STEP_PARAMS := {
 		"warp_strength", "warp_frequency", "land_plate_ratio", "land_rift_damping",
 		"tectonic_height_cap",
 	],
-	"Peaks": [
-		"detail_frequency", "ridge_frequency", "mountain_threshold", "lowland_flatten",
-		"boundary_radius", "boundary_falloff", "peak_uplift", "highland_range",
-		"peak_detail_strength", "peak_height_cap", "peak_detail_min_elevation",
-		"peak_detail_falloff", "peaks_octaves", "peaks_gain", "peaks_lacunarity",
-		"ridge_offset", "peaks_warp_amp", "peaks_warp_freq", "billow_frequency",
-		"peak_billow_strength",
+	"Peaks Ridges": [
+		"ridge_frequency", "ridge_offset", "peaks_octaves", "peaks_gain",
+		"peaks_lacunarity", "peaks_warp_amp", "peaks_warp_freq", "peak_uplift",
+		"highland_range", "peak_height_cap", "mountain_threshold",
+	],
+	"Peaks Detail": [
+		"detail_frequency", "peak_detail_strength", "peak_detail_min_elevation",
+		"peak_detail_falloff", "billow_frequency", "peak_billow_strength",
+		"lowland_flatten", "boundary_radius", "boundary_falloff",
 	],
 	"Erosion": [
 		"erosion_octaves", "erosion_amplitude", "erosion_frequency", "erosion_gain",

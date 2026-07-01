@@ -88,13 +88,49 @@ func map_diag() -> float:
 ## height; lower to plateau them. Replaces the old hard 1.5 clamp.
 @export var tectonic_height_cap: float = 4.0
 
-@export_group("Step 3 - Peaks & Valleys")
-## Fine surface-detail noise scale layered on the highlands (higher = busier).
-@export var detail_frequency: float = 0.04
+@export_group("Step 3a - Peaks Ridges")
+## The ridged mountain system + overall peak profile. Tune this half first (the big
+## structural shape), then Step 3b for fine detail/foothills.
 ## Ridged-noise scale used for highland/mountain shaping (higher = tighter ridges).
 @export var ridge_frequency: float = 0.012
+## Ridged-multifractal fold offset (higher = fatter, more rounded ridges).
+@export_range(0.5, 1.5) var ridge_offset: float = 1.0
+## Peaks (ridged + billow) octave count.
+@export_range(1, 8) var peaks_octaves: int = 5
+## Peaks per-octave amplitude falloff.
+@export_range(0.0, 1.0) var peaks_gain: float = 0.5
+## Peaks per-octave frequency growth.
+@export_range(1.0, 4.0) var peaks_lacunarity: float = 2.0
+## Domain-warp strength (px) applied to ridge+billow for organic ridgelines.
+@export var peaks_warp_amp: float = 30.0
+## Domain-warp frequency for the peaks warp.
+@export var peaks_warp_freq: float = 0.01
+## How much ridge noise lifts highlands into mountains (0 = no peaks).
+@export var peak_uplift: float = 0.25
+## Height band above sea over which peak uplift ramps in (smaller = abrupt mountains).
+@export var highland_range: float = 0.25
+## Ceiling on peak height. High (default) = no flattening; lower it to deliberately
+## plateau peaks. Replaces the old hard 1.2 clamp.
+@export var peak_height_cap: float = 4.0
 ## Height above which terrain reads as mountain (used by coloring + graph routing).
 @export var mountain_threshold: float = 0.65
+
+@export_group("Step 3b - Peaks Detail")
+## Fine detail, billow foothills, lowland flattening and the outer coastline -- the
+## surface texture + lowland shaping, tuned after the Step 3a mountain structure.
+## Fine surface-detail noise scale layered on the highlands (higher = busier).
+@export var detail_frequency: float = 0.04
+## Amplitude of the fine detail noise added on highlands (texture on peaks).
+@export var peak_detail_strength: float = 0.12
+## Detail noise is suppressed below this height so coasts/plains stay flat; it ramps
+## in above. Raise to widen the flat lowland band.
+@export var peak_detail_min_elevation: float = 0.5
+## Height band over which the detail noise ramps from off to full.
+@export var peak_detail_falloff: float = 0.12
+## Billow (rounded foothill) noise scale.
+@export var billow_frequency: float = 0.02
+## Foothill (billow) amplitude; peaks at mid elevations.
+@export var peak_billow_strength: float = 0.12
 ## Lowland flatten curve. 1.0 = off. Higher (2-4) compresses the above-sea height
 ## band with a power curve so basins/plains go broad and flat while relief stays
 ## concentrated in the highlands. The main "give me flat plains" lever.
@@ -103,36 +139,6 @@ func map_diag() -> float:
 @export var boundary_radius: float = 0.46
 ## Width of the soft fade at boundary_radius (smaller = harder map-edge coastline).
 @export var boundary_falloff: float = 0.04
-## How much ridge noise lifts highlands into mountains (0 = no peaks).
-@export var peak_uplift: float = 0.25
-## Height band above sea over which peak uplift ramps in (smaller = abrupt mountains).
-@export var highland_range: float = 0.25
-## Amplitude of the fine detail noise added on highlands (texture on peaks).
-@export var peak_detail_strength: float = 0.12
-## Ceiling on peak height. High (default) = no flattening; lower it to deliberately
-## plateau peaks. Replaces the old hard 1.2 clamp.
-@export var peak_height_cap: float = 4.0
-## Detail noise is suppressed below this height so coasts/plains stay flat; it ramps
-## in above. Raise to widen the flat lowland band.
-@export var peak_detail_min_elevation: float = 0.5
-## Height band over which the detail noise ramps from off to full.
-@export var peak_detail_falloff: float = 0.12
-## Peaks (ridged + billow) octave count.
-@export_range(1, 8) var peaks_octaves: int = 5
-## Peaks per-octave amplitude falloff.
-@export_range(0.0, 1.0) var peaks_gain: float = 0.5
-## Peaks per-octave frequency growth.
-@export_range(1.0, 4.0) var peaks_lacunarity: float = 2.0
-## Ridged-multifractal fold offset (higher = fatter, more rounded ridges).
-@export_range(0.5, 1.5) var ridge_offset: float = 1.0
-## Domain-warp strength (px) applied to ridge+billow for organic ridgelines.
-@export var peaks_warp_amp: float = 30.0
-## Domain-warp frequency for the peaks warp.
-@export var peaks_warp_freq: float = 0.01
-## Billow (rounded foothill) noise scale.
-@export var billow_frequency: float = 0.02
-## Foothill (billow) amplitude; peaks at mid elevations.
-@export var peak_billow_strength: float = 0.12
 
 @export_group("Step 4 - Erosion")
 ## Single-pass GPU directional-gabor erosion: branching gullies/ridges steered by

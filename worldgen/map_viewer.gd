@@ -13,20 +13,25 @@ extends Node3D
 ## runs at play-time with an orbit camera. Self-contained, so Plan 2 can host two of
 ## these (set manage_camera = false and frame both with an external camera).
 
-## Stops after this pipeline step. Ordinals mirror WorldGenerator.GenStep
-## (CITIES == CIVILIZATIONS), so view_step casts straight to it.
-enum ViewStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, CLIMATE, CITIES, GRAPH }
+## Tuning/display steps. NOT 1:1 with generation steps: the single Peaks generation
+## pass is split into two tuning steps (Ridges / Detail) that both render at it, so
+## each half of its params can be narrowed separately. The `gen` field in STEP_INFO
+## holds which WorldGenerator.GenStep to actually run up to.
+enum ViewStep { LANDMASS, TECTONICS, PEAKS_RIDGES, PEAKS_DETAIL, EROSION, RIVERS, CLIMATE, CITIES, GRAPH }
 
-## Per-step folder name + default snapshot/paint kind + water source snapshot.
+## Per tuning step: preset folder name, the generation step to run up to (= ordinal
+## of WorldGenerator.GenStep: Landmass0 Tectonics1 Peaks2 Erosion3 Rivers4 Climate5
+## Civilizations6 Graph7), the display snapshot + paint kind, and the water source.
 const STEP_INFO := [
-	{"name": "Landmass", "snap": "Landmass", "kind": "topo", "water": ""},
-	{"name": "Tectonics", "snap": "Tectonics_Debug", "kind": "tectonics", "water": ""},
-	{"name": "Peaks", "snap": "PeaksAndValleys", "kind": "topo", "water": ""},
-	{"name": "Erosion", "snap": "Erosion", "kind": "topo", "water": ""},
-	{"name": "Rivers", "snap": "Rivers_Only", "kind": "topo", "water": "Rivers_Only"},
-	{"name": "Climate", "snap": "Climate", "kind": "biome", "water": "Rivers_Only"},
-	{"name": "Cities", "snap": "Climate", "kind": "biome", "water": "Rivers_Only"},
-	{"name": "Graph", "snap": "Climate", "kind": "graph", "water": "Rivers_Only"},
+	{"name": "Landmass", "gen": 0, "snap": "Landmass", "kind": "topo", "water": ""},
+	{"name": "Tectonics", "gen": 1, "snap": "Tectonics_Debug", "kind": "tectonics", "water": ""},
+	{"name": "Peaks Ridges", "gen": 2, "snap": "PeaksAndValleys", "kind": "topo", "water": ""},
+	{"name": "Peaks Detail", "gen": 2, "snap": "PeaksAndValleys", "kind": "topo", "water": ""},
+	{"name": "Erosion", "gen": 3, "snap": "Erosion", "kind": "topo", "water": ""},
+	{"name": "Rivers", "gen": 4, "snap": "Rivers_Only", "kind": "topo", "water": "Rivers_Only"},
+	{"name": "Climate", "gen": 5, "snap": "Climate", "kind": "biome", "water": "Rivers_Only"},
+	{"name": "Cities", "gen": 6, "snap": "Climate", "kind": "biome", "water": "Rivers_Only"},
+	{"name": "Graph", "gen": 7, "snap": "Climate", "kind": "graph", "water": "Rivers_Only"},
 ]
 
 # --- tool buttons -------------------------------------------------------------
@@ -67,7 +72,7 @@ var terrain_kind: String = "auto":
 @export var auto_regenerate: bool = true
 ## Which step Save / Process / Clear target. "Current" = the step you're viewing;
 ## pick a specific step to fix an earlier step's preset/ranges without leaving view.
-@export_enum("Current", "Landmass", "Tectonics", "Peaks", "Erosion", "Rivers", "Climate", "Cities", "Graph")
+@export_enum("Current", "Landmass", "Tectonics", "Peaks Ridges", "Peaks Detail", "Erosion", "Rivers", "Climate", "Cities", "Graph")
 var save_target: String = "Current"
 ## Exploration floor for Randomize: the sampling curve is (exploration_base + good
 ## - bad). Higher = explore more of the band even with little data; lower (toward 0)
@@ -130,11 +135,13 @@ var save_target: String = "Current"
 @export var min_zoom: float = 0.6
 @export var max_zoom: float = 6.0
 
-# --- cached images (re-applied instantly without regenerating) -----------------
-@export var heightmap: Image
-@export var colored_map: Image
-@export var water_heightmap: Image
-@export var water_colored_map: Image
+# --- cached images (runtime only; NOT @export, so they are never serialized into
+# the .tscn -- otherwise the generated 512-res images bloat the scene to ~0.5 MB).
+# Regenerated on demand; a reopened scene just needs one Generate.
+var heightmap: Image
+var colored_map: Image
+var water_heightmap: Image
+var water_colored_map: Image
 
 var _gen: WorldGenerator
 var _painter: WorldViewer
@@ -190,7 +197,7 @@ func regenerate() -> void:
 		settings = WorldSettings.new()
 	var gen := _worker()
 	print("[MapViewer] generating up to %s (seed %d)..." % [_step().name, settings.main_seed])
-	await gen.generate_up_to(view_step as int)
+	await gen.generate_up_to(int(_step().gen))
 	print("[MapViewer]   snapshots: ", gen.snapshots.keys())
 	_paint_from(gen)
 	_apply_to_meshes()
