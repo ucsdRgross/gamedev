@@ -16,7 +16,10 @@ Conventions (follow `Tests/test_scoring.gd`'s existing style):
 - Shared factories: reuse `m_card/m_stone/uc/add_noise` from test_scoring.gd — move them
   to `Tests/test_factories.gd` so every suite imports one copy.
 
-### T-ENV. Test harness prerequisite: FakeEnvironment
+### T-ENV. Test harness prerequisite: FakeEnvironment — **DONE 2026-07-01**
+Implemented: `Tests/fake_environment.gd` (add as child to install as CURRENT) and
+`Tests/test_factories.gd` (shared `m_card/m_stone/make_hand/uc/add_noise/col`;
+test_scoring.gd keeps its local copies for now).
 
 A `CardEnvironment` subclass for tests: constructor takes explicit collections;
 `get_card_collections()` / `get_rules_collections()` return them. Unblocks: dispatch
@@ -27,7 +30,19 @@ fake through that instead of the static.
 
 ---
 
-## 1. Board / move logic (`Tests/test_board.gd`) — HIGHEST VALUE
+## 1. Board / move logic (`Tests/test_board.gd`) — HIGHEST VALUE — **FIRST CUT DONE 2026-07-02**
+Implemented against the CURRENT `move_data_to_coord` using a bare `Game.new()` (never in
+tree) + `GameData.validate()` after every action (run `Tests/test_board.tscn`). Covers
+1.1/1.2 locate+topmost, the 1.3 matrix (cross-column, same-column, degenerate), 1.4 events
+via spy mod, 1.5 draw/discard, 1.6 duplicate_state/B11. Pinned current policies: dest
+inside moving stack silently caps; count 0 / same-col count -1 are no-ops. FIXED while
+writing: same-column `z_dist == 0` adjustment bug — dropping a card onto its own position
+swapped it with the card beneath.
+UPDATE 2026-07-02: the §5 anchor rewrite landed (`Scripts/board.gd`); the suite now
+asserts the NEW policies — dest inside stack rejected, all error paths (off-board card,
+header move, OOB column, off-board anchor, null anchor) leave the board bit-identical,
+and ColumnEnd drops report the real landing card to `on_card_dropped_on`. Still todo:
+shuffle tests (1.5) and undo-after-ZoneAdder (1.6 tail).
 
 Precondition: review §5 `Board` class + `Board.validate()` (invariants I1–I5). Every test
 below ends with `check(board.validate())` — that's half the coverage for free.
@@ -111,7 +126,9 @@ Degenerate:
 - [ ] double-undo to same state, then redo-by-replay → no shared mutable objects between
       history entries (mutate current, assert history entry unchanged).
 
-## 2. CardDataIterator (`Tests/test_iterator.gd`) (review B10, E9)
+## 2. CardDataIterator (`Tests/test_iterator.gd`) (review B10, E9) — **DONE 2026-07-01**
+Implemented (run `Tests/test_iterator.tscn`). B10 pinned as live-mutation-by-design:
+removing an upcoming card mid-iteration skips it, rest still visited.
 
 Oracle: naive flatten (loop collections, loop columns, ROW-major for 2D) — every test
 compares iterator output list to oracle.
@@ -125,7 +142,13 @@ compares iterator output list to oracle.
       the next card during iteration; assert the chosen contract (after the snapshot fix:
       iteration sees the pre-mutation snapshot, exactly once each).
 
-## 3. Dispatch / CardEnvironment (`Tests/test_dispatch.gd`) (review B10, E1, D1)
+## 3. Dispatch / CardEnvironment (`Tests/test_dispatch.gd`) (review B10, E1, D1) — **FIRST CUT DONE 2026-07-02**
+Implemented (run `Tests/test_dispatch.tscn`): dispatch order, unimplemented-hook safety,
+inactive-skill gating, on_anything single-fire + non-recursion, skill_active_check
+activation/deactivation edges (exactly-once), return_first_* semantics (pinned: compare
+dispatch returns the first mod's NAN verbatim — fall-through lives in PipComparator),
+CURRENT lifecycle (pinned: exit nulls, no restore stack — review D4). Still todo below:
+B10 mutation-during-dispatch, statuses (once implemented).
 
 Uses T-ENV FakeEnvironment + spy modifiers that record `(hook, args, call_order)`.
 - [ ] `run_all_mods("on_x")` calls type, stamp, then skill per card, in iterator order.
@@ -149,7 +172,13 @@ Uses T-ENV FakeEnvironment + spy modifiers that record `(hook, args, call_order)
       (pins the deck-viewer-vs-game fight noted in review D4; currently exit sets null,
       not previous — pin whichever policy you choose).
 
-## 4. PipComparator (`Tests/test_comparator.gd`) (review B7, S-items; SCORING_AUDIT G1/G2)
+## 4. PipComparator (`Tests/test_comparator.gd`) (review B7, S-items; SCORING_AUDIT G1/G2) — **DONE 2026-07-01**
+Implemented (run `Tests/test_comparator.tscn`). Also FIXED while writing it: hook
+arg-passing bug — `pip_comparator.gd` and `on_mod_triggered` wrapped args in an Array,
+which the `...params` vararg would deliver as ONE Array argument to hooks expecting two
+(`on_compare_ranks(r1, r2)`, `on_trigger(data, mod)` would crash on first dispatch).
+Now passed as loose varargs like every other call site. Pinned: NAN from a mod falls
+through to default compare; null pips short-circuit before mods; first mod wins.
 
 No environment (NAN fallbacks) AND with FakeEnvironment (mod overrides) — run both.
 - [ ] `compare_ranks/suits`: standard vs standard → numeric diff; either null → NAN;
@@ -217,7 +246,12 @@ Existing suite is strong — add only the SCORING_AUDIT gaps:
 All seeded + iteration-counted; every failure prints seed + action log (keep a ring
 buffer of the last 50 actions, dump on failure).
 
-### F1. Random-walk board fuzz (the big one — needs Board + validate())
+### F1. Random-walk board fuzz (the big one — needs Board + validate()) — **DONE 2026-07-02**
+Implemented as `Tests/test_fuzz.gd` (run `Tests/test_fuzz.tscn`): seeded random walk over
+Board.move_stack (incl. deliberately illegal moving cards/anchors), draw, discard, zone
+add/remove — validate() + card-count conservation after every action, board-hash-identical
+after every rejected move, seed + action tail printed on failure. Defaults 500 iterations;
+crank `iterations` in the inspector when hunting.
 Loop N times: pick a random legal-ish action —
   move random card → random anchor (incl. deliberately illegal: off-board cards, anchors
   inside stack, empty columns), draw, discard random board card, zone add/remove,
@@ -264,9 +298,10 @@ Random rank/suit values (incl. NAN-producing null/mixed-class pairs):
 
 ## 9. Rollout order
 
-1. **T-ENV FakeEnvironment + shared factories** (unblocks everything).
-2. **Suite 4 (comparator) + Suite 2 (iterator)** — pure logic, no refactor needed, catch
-   B7 immediately.
+1. [x] **T-ENV FakeEnvironment + shared factories** (unblocks everything).
+2. [x] **Suite 4 (comparator) + Suite 2 (iterator)** — pure logic, no refactor needed, catch
+   B7 immediately. (Done 2026-07-01; also `GameData.validate()` + debug hook in
+   `move_data_to_coord`/undo landed as the first §5 step — F1's precondition.)
 3. **Board extraction (review §5) with Suite 1 written AGAINST the new API** — write the
    1.3 matrix first, make old code pass through the adapter, then port.
 4. **F1 + F4 fuzz** — F1 the day validate() exists; F4 immediately (needs nothing).

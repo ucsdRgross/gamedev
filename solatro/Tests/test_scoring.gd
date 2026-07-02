@@ -283,15 +283,15 @@ func run_micro_card_environment_tests() -> void:
 func run_macro_card_environment_tests() -> void:
 	print("\n--- SECTION 5: MACRO SCALING (30+ CARDS) ---")
 
-	# 33-H: clutter -> high card isolates the Ace, meld is exactly that one card.
+	# 33-H: clutter -> high card isolates the lone rank-14 card (an off-scale rank, NOT an ace).
 	var c33: Array[CardData] = []
 	for i in range(30): c33.append(m_card((i * 2) - 92, (i * 4) + 1))
 	c33.append(m_card(14, 1))
 	var r33 := await Scoring.PokerHands.score(c33)
 	check(not r33.is_empty(), "33-H returned a result")
 	check(r33[0].name.contains("High Card"), "33-H is High Card", r33[0].name)
-	check(r33[0].tie_breaker_high_card == 14, "33-H isolates Ace (14)", str(r33[0].tie_breaker_high_card))
-	check(r33[0].meld.size() == 1 and meld_ranks(r33[0]) == [14.0], "33-H meld is exactly the Ace", str(meld_ranks(r33[0])))
+	check(r33[0].tie_breaker_high_card == 14, "33-H isolates rank 14 (not an Ace: is_ace is value==1)", str(r33[0].tie_breaker_high_card))
+	check(r33[0].meld.size() == 1 and meld_ranks(r33[0]) == [14.0], "33-H meld is exactly the rank-14 card", str(meld_ranks(r33[0])))
 
 	# 34-H: 30 of a kind
 	var c34: Array[CardData] = []

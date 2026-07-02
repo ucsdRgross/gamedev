@@ -131,58 +131,45 @@ func undo_pressed() -> void:
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = prev_game_data.duplicate_state()
 		play_area.setup_gui()
+		debug_validate("undo")
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
+# Legacy Vector3i entry point — thin adapter over Board.move_stack (review §5).
+# Prefer move_data_ontop_data / move_stack for new call sites.
 func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
-	var dest_zone := get_zone_from_vec3(dest)
-	if not (dest.y < dest_zone.size() and dest.z <= dest_zone[dest.y].datas.size()): 
-		print("[WARN] move_data_to_coord destination out of bounds. Given:  ", dest, " But actual is") 
-		print("upper: ", state.upper_zone)
-		print("lower: ", state.lower_zone)
-		assert(false, "This probably shouldn't happen!")
+	await move_stack(moving, cards_in_stack, Board.anchor_from_coord(state, dest), trigger_mods)
+
+# Anchor-based move (§5.2): Board mutates (or rejects, leaving the board untouched),
+# Game fires the mod events afterwards, when the board is already consistent.
+func move_stack(moving:CardData, count:int, dest:Board.Anchor, trigger_mods: bool = true) -> void:
+	var result := Board.move_stack(state, moving, count, dest)
+	if result.code == Board.OK_NOOP:
 		return
-	#find location of moving card and extract
-	var moving_vec3 : Vector3i = find_data_vec3(moving)
-	#ideally player cannot ever trigger self stacking or useless move via moving stack by hand
-	#but if modifiers allow destination within moving stack, then cap stacked cards to before dest card
-	var onto_card := find_vec3_data(dest - Vector3i(0,0,1))
-	var z_dist : int = -1
-	if moving_vec3.x == dest.x and moving_vec3.y == dest.y:
-		z_dist = dest.z - moving_vec3.z
-	if z_dist > 0 and (z_dist < cards_in_stack or cards_in_stack < 0):
-		cards_in_stack = z_dist - 1
-	var moving_zone := get_zone_from_vec3(moving_vec3)
-	var end : int = moving_vec3.z + cards_in_stack if cards_in_stack > -1 else 2147483647
-	var moving_stack : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(moving_vec3.z, end)
-	var moving_stack_cutoff : Array[CardData] = moving_zone[moving_vec3.y].datas.slice(end)
-	moving_zone[moving_vec3.y].datas.resize(moving_vec3.z)
-	moving_zone[moving_vec3.y].datas.append_array(moving_stack_cutoff)
-	#need to address destination changing due moving zone changing positions of its column
-	if moving_vec3.x == dest.x and moving_vec3.y == dest.y and z_dist > -1: 
-		dest.z -= cards_in_stack
-	
-	#find location of destination and insert
-	if dest.z < 0:
-		dest_zone[dest.y].datas.append_array(moving_stack)
-	else:
-		var dest_stack_cutoff : Array[CardData] = dest_zone[dest.y].datas.slice(dest.z)
-		dest_zone[dest.y].datas.resize(dest.z)
-		dest_zone[dest.y].datas.append_array(moving_stack)
-		dest_zone[dest.y].datas.append_array(dest_stack_cutoff)
-	
-	for data in moving_stack:
-		data.stage = CardData.Stage.PLAY
+	if result.code != Board.OK:
+		push_warning("move_stack rejected: %s (%s -> %s)" \
+				% [Board.ERROR_NAMES[result.code], moving, dest])
+		debug_validate("rejected move")
+		return
 	if trigger_mods:
 		#check if conditions match dropping card
-		if moving_vec3.x == 0 and dest.x == 1:
-			await run_all_mods(&"on_card_dropped_on", onto_card, moving_stack)
-		await run_all_mods(&"on_stack_cards", moving_stack)
+		if result.src_x == 0 and result.dest_x == 1:
+			await run_all_mods(&"on_card_dropped_on", result.onto, result.stack)
+		await run_all_mods(&"on_stack_cards", result.stack)
+	debug_validate("move %s -> %s" % [moving, dest])
+
+## Debug-build invariant sweep (ARCHITECTURE_REVIEW.md §5). Report-only.
+func debug_validate(context: String) -> void:
+	if not OS.is_debug_build(): return
+	var violations := state.validate()
+	if violations:
+		push_warning("state.validate() after %s:\n  %s" % [context, "\n  ".join(violations)])
 
 func move_data_to_data_coords(moving:CardData, dest:CardData, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
 	move_data_to_coord(moving, find_data_vec3(dest), cards_in_stack, trigger_mods)
 
 func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 1, trigger_mods: bool = true) -> void:
-	move_data_to_coord(moving, find_data_vec3(dest) + Vector3i(0,0,1), cards_in_stack, trigger_mods)
+	#dest can be a zone header: Board treats OnTop(header) as ColumnStart of its column
+	await move_stack(moving, cards_in_stack, Board.Anchor.on_top(dest), trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
 	var upper_type_index :=  state.upper_zone_type.find(data)
@@ -200,10 +187,12 @@ func find_data_vec3(data:CardData) -> Vector3i:
 	return Vector3i.MIN
 
 func find_vec3_data(vec3:Vector3i) -> CardData:
+	#explicit bounds checks: Array.get() out of range pushes an engine error (S2)
 	var zone := get_zone_from_vec3(vec3)
-	var col : ArrayCardData = zone.get(vec3.y)
+	if vec3.y < 0 or vec3.y >= zone.size(): return null
+	var col : ArrayCardData = zone[vec3.y]
 	if not col: return null
-	if vec3.z > -1: return col.datas.get(vec3.z)
+	if vec3.z > -1 and vec3.z < col.datas.size(): return col.datas[vec3.z]
 	return null
 
 func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
@@ -221,7 +210,8 @@ func is_data_topmost(data:CardData) -> bool:
 	var vec3 := find_data_vec3(data)
 	if vec3 == Vector3i.MIN: return false
 	var zone := get_zone_from_vec3(vec3)
-	var zone_col : ArrayCardData = zone.get(vec3.y)
+	if vec3.y < 0 or vec3.y >= zone.size(): return false
+	var zone_col : ArrayCardData = zone[vec3.y]
 	if not zone_col or zone_col.datas.is_empty(): return false
 	return data == zone_col.datas[-1]
 
@@ -244,7 +234,9 @@ func _on_submit_pressed() -> void:
 func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
 	var vec3 := find_data_vec3(data)
-	get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
+	#off-board cards (e.g. a column ZoneAdder already popped) skip the zone erase
+	if vec3 != Vector3i.MIN and vec3.z > -1:
+		get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
 	state.discard_deck.append(data)
 	data.stage = CardData.Stage.DISCARD
 

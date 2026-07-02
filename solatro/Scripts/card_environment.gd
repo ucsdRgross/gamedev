@@ -27,9 +27,12 @@ func get_rules_collections() -> Array[CardData]:
 func is_data_in_rules(data: CardData) -> bool:
 	return data in get_rules_collections()
 
-static func run_all_mods(function: StringName, ...params:Array) -> void:
+#Dispatch is INSTANCE-based: each environment runs mods over its own collections.
+#CURRENT is only the "environment on screen" pointer used at the boundaries
+#(CardModifier.env/game accessors, PipComparator, UI) — not inside dispatch.
+func run_all_mods(function: StringName, ...params:Array) -> void:
 	#print(function)
-	for data in CardDataIterator.new():
+	for data in CardDataIterator.new(self):
 		#print(data)
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
@@ -43,8 +46,8 @@ static func run_all_mods(function: StringName, ...params:Array) -> void:
 	if function != passive_effects:
 		await run_all_mods(passive_effects)
 
-static func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
-	for data in CardDataIterator.new():
+func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
+	for data in CardDataIterator.new(self):
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
 				return await Callable(mod, function).callv(params)
@@ -53,8 +56,8 @@ static func return_first_compare_mod_result(function: StringName, ...params:Arra
 			return await Callable(skill, function).callv(params)
 	return NAN
 
-static func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
-	for data in CardDataIterator.new():
+func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
+	for data in CardDataIterator.new(self):
 		for mod : CardModifier in [data.type, data.stamp]:
 			if mod and mod.has_method(function):
 				var result : Array[CardData] = await Callable(mod, function).callv(params)
@@ -65,8 +68,8 @@ static func return_first_data_array_result(function: StringName, ...params:Array
 			if result: return result
 	return []
 
-static func skill_active_check() -> void:
-	for data in CardDataIterator.new():
+func skill_active_check() -> void:
+	for data in CardDataIterator.new(self):
 		var skill : CardModifierSkill = data.skill
 		if skill:
 			if not skill.active and skill.is_active():
@@ -79,4 +82,5 @@ static func skill_active_check() -> void:
 					await Callable(skill, &"on_deactive").call()
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	await run_all_mods(&"on_trigger", [triggered_data, triggered_mod])
+	#loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod)
+	await run_all_mods(&"on_trigger", triggered_data, triggered_mod)

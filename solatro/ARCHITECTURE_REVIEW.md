@@ -212,11 +212,10 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   never disconnects the old state's `state_changed`, and re-assigning the same GameData
   would double-connect. Fix: guard with `is_node_ready()`, disconnect old state.
 
-- [ ] **S2. `find_vec3_data` uses `Array.get(index)` on possibly out-of-range indices.**
-  [game.gd:196-201](Levels/game.gd:196) — the null-checks suggest an expectation that
-  `.get()` returns null out-of-range; verify that's true on your Godot build (for
-  `Dictionary` yes, for `Array` this has historically been an error). If it errors, both
-  `find_vec3_data` and `is_data_topmost` (line 216) can crash on stale coords.
+- [x] **S2. `find_vec3_data` uses `Array.get(index)` on possibly out-of-range indices.**
+  **VERIFIED + FIXED 2026-07-02:** test_board.gd's out-of-range probes confirmed that
+  `Array.get()` returns null but ALSO pushes an engine error on out-of-range indices.
+  Both `find_vec3_data` and `is_data_topmost` now use explicit bounds checks instead.
 
 - [ ] **S3. `move_data_to_coord` same-column shift math.**
   [game.gd:142-156](Levels/game.gd:142) — the `z_dist`/`cards_in_stack` clamp (`= z_dist - 1`)
@@ -519,6 +518,23 @@ this alone will surface latent S3 bugs; (2) add the position index + swap `find_
 internals; (3) introduce `move_stack` with anchors, port `move_data_ontop_data` /
 `move_data_to_coord` callers one by one (keep the old function as a thin adapter:
 `Vector3i` dest → anchor); (4) port the direct-array-write mods; (5) delete the adapter.
+
+**STATUS 2026-07-02:** (1) done as `GameData.validate()` + `Game.debug_validate` after
+moves/undo. (3) done: `Scripts/board.gd` implements `Anchor` + the four-phase
+`move_stack` with error codes; `Game.move_stack` fires the Phase-4 events;
+`move_data_to_coord` / `move_data_ontop_data` are thin adapters over it. Policy changes
+that landed with it (all covered in Tests/test_board.gd): dest-inside-moving-stack is now
+`ERR_DEST_INSIDE_STACK` (was a silent clamp), rejected moves push_warning + leave the
+board bit-identical (was `assert(false)`/crash), `on_card_dropped_on` for `z == -1`
+appends now receives the actual landing card (was always null), and same-position drops
+are explicit `OK_NOOP`s (the pre-fix code swapped the card with the one beneath it).
+(4) done 2026-07-02: `Board.place_card` / `add_column` / `remove_column`; TypeInput's
+draw placement and ZoneAdder's add/remove route through them (and `discard_data` is now
+off-board-safe, fixing ZoneAdder's latent discard-after-pop crash). Also 2026-07-02:
+dispatch de-statics — `run_all_mods` / `return_first_*` / `skill_active_check` are now
+INSTANCE methods iterating `CardDataIterator.new(self)`; `CURRENT` remains only as the
+"environment on screen" pointer read at boundaries (mod accessors, PipComparator, UI).
+Remaining: (2) position index, (5) delete the Vector3i adapters when convenient.
 
 ---
 

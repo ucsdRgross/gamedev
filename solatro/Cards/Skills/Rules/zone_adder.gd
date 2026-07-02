@@ -19,19 +19,15 @@ func on_active() -> void:
 	if not game: return
 	if not card_data:
 		card_data = card_data_to_add()
-	card_data.stage = CardData.Stage.ZONE
-	get_zone_type().append(card_data)
-	get_zone().append(ArrayCardData.new())
-	
+	Board.add_column(get_zone(), get_zone_type(), card_data)
+
 func on_deactive() -> void:
 	if not game: return
 	var index := get_zone_type().find(card_data)
 	if index == -1:
 		card_data = null
 		return
-	get_zone_type().remove_at(index)
-	var datas : Array[CardData] = get_zone().pop_at(index).datas
-	for d : CardData in datas:
+	for d : CardData in Board.remove_column(get_zone(), get_zone_type(), index):
 		await game.discard_data(d)
 	card_data = null
 		

@@ -58,7 +58,9 @@ static func is_scorable(card: CardData) -> bool:
 ## Computes index sorting differences between two custom suit objects.
 static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 	if not s1 or not s2: return NAN
-	var mod_result := await CardEnvironment.return_first_compare_mod_result(&"on_compare_suits", [s1, s2])
+	#loose varargs: wrapping in [s1, s2] would deliver ONE Array arg to on_compare_suits(s1, s2)
+	var env := CardEnvironment.CURRENT
+	var mod_result : float = (await env.return_first_compare_mod_result(&"on_compare_suits", s1, s2)) if env else NAN
 	if not is_nan(mod_result): return mod_result
 	
 	match [s1, s2]:
@@ -92,7 +94,8 @@ static func is_suit_same(s1: PipSuit, s2: PipSuit) -> bool:
 ## Computes the exact delta index distance between two card ranks.
 static func compare_ranks(r1: PipRank, r2: PipRank) -> float:
 	if not r1 or not r2: return NAN
-	var mod_result := await CardEnvironment.return_first_compare_mod_result(&"on_compare_ranks", [r1, r2])
+	var env := CardEnvironment.CURRENT
+	var mod_result : float = (await env.return_first_compare_mod_result(&"on_compare_ranks", r1, r2)) if env else NAN
 	if not is_nan(mod_result): return mod_result
 	
 	match [r1, r2]:

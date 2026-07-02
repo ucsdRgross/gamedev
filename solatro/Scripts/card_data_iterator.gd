@@ -1,5 +1,6 @@
 class_name CardDataIterator
 
+var env : CardEnvironment
 var next_card_data : CardData
 var collections : Array[Variant] = []
 var collection_index : int = 0
@@ -7,10 +8,14 @@ var current_row : int = 0
 var current_col : int = 0
 var is_row_empty := true
 
+#defaults to CURRENT so ad-hoc `CardDataIterator.new()` still walks the live game
+func _init(environment: CardEnvironment = null) -> void:
+	env = environment if environment else CardEnvironment.CURRENT
+
 func _iter_init(_arg:Variant) -> bool:
-	if not CardEnvironment.CURRENT:
+	if not env:
 		return false
-	collections = CardEnvironment.CURRENT.get_card_collections()
+	collections = env.get_card_collections()
 	collection_index = 0
 	current_row = 0
 	current_col = 0

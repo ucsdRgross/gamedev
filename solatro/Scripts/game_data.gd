@@ -56,6 +56,64 @@ func all_card_datas() -> Array[CardData]:
 	for col in lower_zone: all.append_array(col.datas)
 	return all
 
+## Invariant checker (ARCHITECTURE_REVIEW.md §5, I1-I5). Returns a list of
+## violation strings; empty means the state is consistent. Report-only — never
+## mutates. Game calls this after moves in debug builds; tests call it directly.
+func validate() -> Array[String]:
+	var violations : Array[String] = []
+	#I2: zone and zone_type arrays stay in lockstep
+	if upper_zone.size() != upper_zone_type.size():
+		violations.append("I2: upper_zone %d cols vs upper_zone_type %d" \
+				% [upper_zone.size(), upper_zone_type.size()])
+	if lower_zone.size() != lower_zone_type.size():
+		violations.append("I2: lower_zone %d cols vs lower_zone_type %d" \
+				% [lower_zone.size(), lower_zone_type.size()])
+	#I3: no null columns or null cards anywhere
+	for zone_name : String in ["upper_zone", "lower_zone"]:
+		var zone : Array[ArrayCardData] = get(zone_name)
+		for c in zone.size():
+			if not zone[c]:
+				violations.append("I3: %s col %d is null" % [zone_name, c])
+				continue
+			for r in zone[c].datas.size():
+				if not zone[c].datas[r]:
+					violations.append("I3: %s col %d row %d is null" % [zone_name, c, r])
+	for deck_name : String in ["draw_deck", "discard_deck", "rules_deck",
+			"upper_zone_type", "lower_zone_type"]:
+		var deck : Array[CardData] = get(deck_name)
+		for i in deck.size():
+			if not deck[i]:
+				violations.append("I3: %s index %d is null" % [deck_name, i])
+	#I1: every card lives in exactly one collection (no duplicates by identity)
+	var seen := {}
+	for card in all_card_datas():
+		if not card: continue
+		if seen.has(card):
+			violations.append("I1: card in two places: %s (also %s)" % [card, seen[card]])
+		seen[card] = true
+	#I5: stage matches location
+	var expected_stage := {}
+	for card in draw_deck: expected_stage[card] = CardData.Stage.DRAW
+	for card in discard_deck: expected_stage[card] = CardData.Stage.DISCARD
+	for card in rules_deck: expected_stage[card] = CardData.Stage.RULES
+	for card in upper_zone_type: expected_stage[card] = CardData.Stage.ZONE
+	for card in lower_zone_type: expected_stage[card] = CardData.Stage.ZONE
+	for zone : Array[ArrayCardData] in [upper_zone, lower_zone]:
+		for c in zone:
+			if not c: continue
+			for card in c.datas: expected_stage[card] = CardData.Stage.PLAY
+	for card : CardData in expected_stage:
+		if not card: continue
+		if card.stage != expected_stage[card]:
+			violations.append("I5: %s stage %s, expected %s" % [card,
+					CardData.Stage.find_key(card.stage),
+					CardData.Stage.find_key(expected_stage[card])])
+	#score arrays sized to the board
+	if scores_col and upper_zone and scores_col.size() < min(upper_zone.size(), lower_zone.size()):
+		violations.append("scores_col %d entries < %d paired columns" \
+				% [scores_col.size(), min(upper_zone.size(), lower_zone.size())])
+	return violations
+
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:
 	var new_a : Array[BigNumber] = []
 	new_a.resize(a.size())

@@ -32,4 +32,4 @@ func draw_card() -> void:
 	if col > -1 and col < game_state.upper_zone.size():
 		var drawn_card := game.draw_card()
 		if drawn_card:
-			game_state.upper_zone[col].datas.append(drawn_card)
+			Board.place_card(game_state, drawn_card, 0, col)

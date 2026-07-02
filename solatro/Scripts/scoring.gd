@@ -52,6 +52,8 @@ class ScoreModel:
 		return plain
 
 	## Structural base score of ONE sub-hand of size n (suits/copies ignored).
+	## CONTRACT (SC7): for FULL_HOUSE, n must be a multiple of 5 (houses are built
+	## at size 5*s) — other n silently floor to the smaller scale.
 	static func base_per_copy(types: Array[MELD_TYPE], n: int) -> int:
 		if types.has(MELD_TYPE.FULL_HOUSE): return house_base(int(n / 5.0))
 		if types.has(MELD_TYPE.STRAIGHT):   return int(STRAIGHT_PER_CARD * n * straight_len_esc(n))
@@ -107,6 +109,16 @@ class Result:
 class HandProfile:
 	var ranks : RankMap = RankMap.new()
 	var suits : SuitMap = SuitMap.new()
+
+	## SE2: incremental removal so extraction loops can consume the profile
+	## instead of rebuilding it from the shrinking pool every iteration.
+	func remove_card(card: CardData) -> void:
+		for key : float in ranks.map.keys():
+			ranks.map[key].datas.erase(card)
+			if ranks.map[key].datas.is_empty(): ranks.map.erase(key)
+		for key : String in suits.map.keys():
+			suits.map[key].datas.erase(card)
+			if suits.map[key].datas.is_empty(): suits.map.erase(key)
 class RankMap:
 	var map : Dictionary[float,ArrayCardData] = {} # float -> ArrayCardData
 class SuitMap:
@@ -236,6 +248,8 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 		ff_types.append(MELD_TYPE.FLUSH)
 		ff_types.append(MELD_TYPE.ALL_SAME_SUIT)
 		var ff_score := ScoreModel.final_score(ff_types, m, n)
+		#>= is deliberate (SC6): on a tie the Full-Flush label wins because it is
+		#strictly more informative than the plain label
 		if ff_score >= best_score:
 			best_score = ff_score
 			best_types = ff_types
@@ -257,6 +271,9 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 			mf_types.append(MELD_TYPE.MULTI)
 			mf_types.append(MELD_TYPE.FLUSH)
 			var mf_score := ScoreModel.final_score(mf_types, m, n)
+			#> is deliberate (SC6): on a tie the plain label wins over a Multi-Flush
+			#relabel (the flush adds no information if it doesn't add score);
+			#_compare_results still prefers flush when comparing separate Results
 			if mf_score > best_score:
 				best_score = mf_score
 				best_types = mf_types
@@ -274,6 +291,31 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 			sub_list.append(Result.create(sub_name, c.datas, per_copy, max_rank, base_types.duplicate()))
 		res.sub_melds = sub_list
 	return res
+
+## SD2: shared uniform-copy-size search. Tries every distinct group size >= min_size
+## as the uniform copy size (truncating longer groups to it), routes each candidate
+## through build_multi, and keeps the best Result. Callers pre-sort `groups` when the
+## first-wins tie order matters. prefer_larger_meld_on_tie mirrors the straight/flush
+## sites; the grid site keeps its historical strict-> comparison.
+static func best_uniform_multi(groups: Array[ArrayCardData], base_types: Array[MELD_TYPE],
+		max_rank: float, min_size: int = 2, min_copies: int = 2,
+		prefer_larger_meld_on_tie: bool = true) -> Result:
+	var sizes: Array[int] = []
+	for g in groups:
+		var sz := g.datas.size()
+		if sz >= min_size and not sizes.has(sz): sizes.append(sz)
+	var best: Result = null
+	for cand in sizes:
+		var copies: Array[ArrayCardData] = []
+		for g in groups:
+			if g.datas.size() >= cand:
+				copies.append(ArrayCardData.new().with_datas(g.datas.slice(0, cand)))
+		if copies.size() < min_copies: continue
+		var r := await build_multi(copies, cand, base_types, max_rank)
+		if best == null or r.score > best.score \
+				or (prefer_larger_meld_on_tie and r.score == best.score and r.meld.size() > best.meld.size()):
+			best = r
+	return best
 
 ## Asynchronously handles descending rank sort profiles via the centralized comparator
 static func rank_sort_desc_async(a: CardData, b: CardData) -> bool:
@@ -321,15 +363,29 @@ class PokerHands:
 			real_cards.append(card)
 			
 		var candidates: Array[Result] = []
-		
-		var grid_res := await ExpandedGridHandler.score(real_cards)
+
+		#SE3: profile once, gate the expensive handlers, and hand the grid handler
+		#the same profile instead of letting it rebuild it
+		var gate := await Scoring._get_hand_profiles_async(real_cards)
+
+		var grid_res := await ExpandedGridHandler.score(real_cards, gate)
 		if not grid_res.is_empty(): candidates.append_array(grid_res)
 
-		var straight_res := await MultiStraightHandler.score(real_cards)
-		if not straight_res.is_empty(): candidates.append_array(straight_res)
+		#a straight of length >= 5 needs >= 5 distinct rank keys (values only repeat
+		#across full wrap loops, which are longer than the cycle)
+		if real_cards.size() >= 5 and gate.ranks.map.size() >= 5:
+			var straight_res := await MultiStraightHandler.score(real_cards)
+			if not straight_res.is_empty(): candidates.append_array(straight_res)
 
-		var flush_res := await MultiFlushHandler.score(real_cards)
-		if not flush_res.is_empty(): candidates.append_array(flush_res)
+		#a flush needs at least one suit bucket of >= 5 cards
+		var flush_possible := false
+		for suit_id in gate.suits.map:
+			if gate.suits.map[suit_id].datas.size() >= 5:
+				flush_possible = true
+				break
+		if flush_possible:
+			var flush_res := await MultiFlushHandler.score(real_cards)
+			if not flush_res.is_empty(): candidates.append_array(flush_res)
 
 		var high_res := await HighCardHandler.score(real_cards)
 		if not high_res.is_empty(): candidates.append_array(high_res)
@@ -365,8 +421,10 @@ class PokerHands:
 # 1. EXPANDED GRID HANDLER
 # ==============================================================================
 class ExpandedGridHandler:
-	static func score(cards: Array[CardData]) -> Array[Result]:
-		var profiles := await Scoring._get_hand_profiles_async(cards)
+	#SE3: accepts the caller's shared profile (read-only here); builds its own if absent
+	static func score(cards: Array[CardData], profiles: Scoring.HandProfile = null) -> Array[Result]:
+		if not profiles:
+			profiles = await Scoring._get_hand_profiles_async(cards)
 		var clusters: Array[ArrayCardData] = []
 
 		for rank_val in profiles.ranks.map:
@@ -392,19 +450,10 @@ class ExpandedGridHandler:
 		var bn := big.size()
 		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank))
 
-		# --- 2. UNIFORM MULTI-SET (m copies of the same size) ---
-		var sizes: Array[int] = []
-		for c in clusters:
-			var sz := c.datas.size()
-			if not sizes.has(sz): sizes.append(sz)
-		var best_set: Result = null
-		for cand in sizes:
-			var copies: Array[ArrayCardData] = []
-			for c in clusters:
-				if c.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(c.datas.slice(0, cand)))
-			if copies.size() < 2: continue
-			var r := await Scoring.build_multi(copies, cand, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank)
-			if best_set == null or r.score > best_set.score: best_set = r
+		# --- 2. UNIFORM MULTI-SET (m copies of the same size, via the shared SD2 search;
+		# strict-> tie policy preserved from the original loop) ---
+		var best_set := await Scoring.best_uniform_multi(clusters,
+				[MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank, 2, 2, false)
 		if best_set != null: possible_outcomes.append(best_set)
 
 		# --- 3. FULL-HOUSE FAMILY (m houses, each of size 5s; best scale s wins) ---
@@ -476,48 +525,49 @@ class MultiStraightHandler:
 		return optimal
 
 	static func _evaluate_straight_flushes_first(cards: Array[CardData]) -> Result:
-		var pool := cards.duplicate(); var straights_found: Array[ArrayCardData] = []
+		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
-		
+		#SE2: one profile, consumed incrementally — no per-iteration rebuild of the pool
+		var profiles := await Scoring._get_hand_profiles_async(cards)
+
 		while true:
-			var profiles := await Scoring._get_hand_profiles_async(pool)
 			var best_sf: Array[CardData] = []
-			
 			for suit_id in profiles.suits.map:
 				var s_cards: Array[CardData] = profiles.suits.map[suit_id].datas
 				if s_cards.size() >= 5:
 					var test := await _find_best_unbounded_sequence(s_cards)
 					if test.size() > best_sf.size(): best_sf = test
-						
+
 			if best_sf.size() < 5: break
-			
+
 			straights_found.append(ArrayCardData.new().with_datas(best_sf))
 			absolute_max_rank = max(absolute_max_rank, await _get_max_value_of_run_async(best_sf, cards))
-			for c in best_sf: pool.erase(c)
-			
+			for c in best_sf: profiles.remove_card(c)
+
 		while true:
-			var mixed := await _find_best_unbounded_sequence(pool)
+			var mixed := await _best_sequence_from_profiles(profiles)
 			if mixed.size() < 5: break
-			
+
 			straights_found.append(ArrayCardData.new().with_datas(mixed))
 			absolute_max_rank = max(absolute_max_rank, await _get_max_value_of_run_async(mixed, cards))
-			for c in mixed: pool.erase(c)
-			
+			for c in mixed: profiles.remove_card(c)
+
 		if straights_found.is_empty(): return null
 		return await _package_straight_result(straights_found, absolute_max_rank)
 
 	static func _evaluate_mixed_straights_first(cards: Array[CardData]) -> Result:
-		var pool := cards.duplicate(); var straights_found: Array[ArrayCardData] = []
+		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
-		
+		var profiles := await Scoring._get_hand_profiles_async(cards)
+
 		while true:
-			var run := await _find_best_unbounded_sequence(pool)
+			var run := await _best_sequence_from_profiles(profiles)
 			if run.size() < 5: break
-			
+
 			straights_found.append(ArrayCardData.new().with_datas(run))
 			absolute_max_rank = max(absolute_max_rank, await _get_max_value_of_run_async(run, cards))
-			for c in run: pool.erase(c)
-			
+			for c in run: profiles.remove_card(c)
+
 		if straights_found.is_empty(): return null
 		return await _package_straight_result(straights_found, absolute_max_rank)
 
@@ -525,27 +575,21 @@ class MultiStraightHandler:
 	## (truncating longer runs) and routes through the shared flush model.
 	static func _package_straight_result(straights: Array[ArrayCardData], max_rank: float) -> Result:
 		straights.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool: return a.datas.size() > b.datas.size())
-		var best: Result = null
-		var seen_sizes := {}
-		for j in range(straights.size()):
-			var cand := straights[j].datas.size()
-			if cand < 5 or seen_sizes.has(cand): continue
-			seen_sizes[cand] = true
-			var copies: Array[ArrayCardData] = []
-			for run in straights:
-				if run.datas.size() >= cand: copies.append(ArrayCardData.new().with_datas(run.datas.slice(0, cand)))
-			# Length escalation lives in ScoreModel.straight_len_esc: a single long straight
-			# escalates so it is never beaten by splitting the same cards into copies, and
-			# Straight(26) ties 2x Straight(13) (winning on the non-multi tie-break).
-			var r := await Scoring.build_multi(copies, cand, [MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], max_rank)
-			if best == null or r.score > best.score or (r.score == best.score and r.meld.size() > best.meld.size()):
-				best = r
-		return best
+		# Length escalation lives in ScoreModel.straight_len_esc: a single long straight
+		# escalates so it is never beaten by splitting the same cards into copies, and
+		# Straight(26) ties 2x Straight(13) (winning on the non-multi tie-break).
+		# min_copies 1: a lone straight is a valid (single-copy) result here.
+		return await Scoring.best_uniform_multi(straights,
+				[MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], max_rank, 5, 1)
 
 	## Best straight from a pool = longer of the linear scan and the wrap/multi-loop walk.
 	static func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
 		if card_pool.is_empty(): return []
 		var profiles := await Scoring._get_hand_profiles_async(card_pool)
+		return await _best_sequence_from_profiles(profiles)
+
+	## SE2 variant for callers that already hold a (possibly consumed) profile.
+	static func _best_sequence_from_profiles(profiles: Scoring.HandProfile) -> Array[CardData]:
 		var linear := await _scan_linear(profiles)
 		var wrap := await _scan_wrap(profiles)
 		return wrap if wrap.size() > linear.size() else linear
@@ -561,9 +605,10 @@ class MultiStraightHandler:
 		var best: Array[float] = []
 		var curr: Array[float] = [keys[0]]
 		for i in range(1, keys.size()):
-			var hi := PipRankNumeral.new().with_value(keys[i])
-			var lo := PipRankNumeral.new().with_value(keys[i - 1])
-			if await PipComparator.is_rank_next_to(hi, lo):
+			#SD3: keys are plain floats from get_rank_profile — compare directly instead
+			#of allocating synthetic PipRankNumerals (which comparator mods would see
+			#with no owning card). Mod-warped adjacency must act via get_rank_profile.
+			if is_equal_approx(keys[i] - keys[i - 1], 1.0):
 				curr.append(keys[i])
 			else:
 				if curr.size() > best.size(): best = curr.duplicate()
@@ -641,35 +686,34 @@ class MultiStraightHandler:
 # ==============================================================================
 class MultiFlushHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
-		var pool := cards.duplicate()
 		var flushes_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
-		
+		#SE2: one profile, consumed incrementally
+		var profiles := await Scoring._get_hand_profiles_async(cards)
+
 		while true:
-			var profiles := await Scoring._get_hand_profiles_async(pool)
 			var best_flush: Array[CardData] = []
-			
 			for suit_id in profiles.suits.map:
 				var s_cards: Array[CardData] = profiles.suits.map[suit_id].datas
 				if s_cards.size() > best_flush.size(): best_flush = s_cards
-					
+
 			if best_flush.size() < 5: break
-			
+
 			# Pre-calculate scorable values to avoid awaits during sort
 			var val_map := {}
 			for c in best_flush:
 				val_map[c] = await PipComparator.get_scorable_value(c.rank, cards, false)
-			
-			best_flush.sort_custom(func(a: CardData, b: CardData) -> bool:
+
+			#duplicate BEFORE sorting: best_flush references the live profile bucket
+			var sorted_flush : Array[CardData] = best_flush.duplicate()
+			sorted_flush.sort_custom(func(a: CardData, b: CardData) -> bool:
 				return val_map[a] > val_map[b]
 			)
-			
-			var sorted_flush : Array[CardData] = best_flush.duplicate()
 			flushes_found.append(ArrayCardData.new().with_datas(sorted_flush))
-			
+
 			if not sorted_flush.is_empty():
 				absolute_max_rank = max(absolute_max_rank, val_map[sorted_flush[0]])
-			for c in sorted_flush: pool.erase(c)
+			for c in sorted_flush: profiles.remove_card(c)
 			
 		if flushes_found.is_empty(): return []
 		
@@ -686,35 +730,13 @@ class MultiFlushHandler:
 
 		# --- B. MULTI-FLUSH (m groups of a uniform size; additive, no escalation) ---
 		# Distinct groups are different suits, so this is always "Multi-Flush".
+		# SD1: routed through build_multi via the shared SD2 search — one place decides
+		# what a multi-flush Result looks like. base [FLUSH] yields the same names and
+		# scores as the old hand-rolled packaging (pure flush pricing short-circuits
+		# before the ALL_SAME_SUIT doubling in ScoreModel).
 		if flushes_found.size() >= 2:
-			var sizes: Array[int] = []
-			for f in flushes_found:
-				if not sizes.has(f.datas.size()): sizes.append(f.datas.size())
-			var best_mf: Result = null
-			var sub_flush_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.ALL_SAME_SUIT]
-			for cand in sizes:
-				var meld: Array[CardData] = []
-				var mf_subs: Array[Scoring.Result] = []
-				var m := 0
-				for f in flushes_found:
-					if f.datas.size() >= cand:
-						var slice: Array[CardData] = f.datas.slice(0, cand)
-						meld.append_array(slice)
-						# Sub-meld shares the same CardData instances as the parent meld.
-						mf_subs.append(Result.create(
-								Scoring.get_loc_name(sub_flush_types, 1, cand),
-								slice, ScoreModel.final_score(sub_flush_types, 1, cand), \
-								absolute_max_rank, sub_flush_types.duplicate()))
-						m += 1
-				if m < 2: continue
-				var mf_types: Array[MELD_TYPE] = [MELD_TYPE.FLUSH, MELD_TYPE.MULTI]
-				var mf_name := Scoring.get_loc_name(mf_types, m, cand)
-				var r := Result.create(mf_name, meld, ScoreModel.final_score(mf_types, m, cand), absolute_max_rank, mf_types)
-				r.copies_count = m
-				r.copy_size = cand
-				r.sub_melds = mf_subs
-				if best_mf == null or r.score > best_mf.score or (r.score == best_mf.score and r.meld.size() > best_mf.meld.size()):
-					best_mf = r
+			var best_mf := await Scoring.best_uniform_multi(flushes_found,
+					[MELD_TYPE.FLUSH] as Array[MELD_TYPE], absolute_max_rank, 5, 2)
 			if best_mf != null: candidates.append(best_mf)
 
 		candidates.sort_custom(PokerHands._compare_results)

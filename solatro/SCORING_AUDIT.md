@@ -40,7 +40,7 @@ comparator dispatch, and dead abstraction.
   `Handler.score(...)` uniformly. (If you *want* pluggable scorers later, make `score`
   non-static — that's the only way the abstraction can ever be real.)
 
-- [ ] **SC3. Test names claim rank 14 is "the Ace" — it isn't.**
+- [x] **SC3. Test names claim rank 14 is "the Ace" — it isn't.**
   [test_scoring.gd:269-294](Tests/test_scoring.gd:269) — tests 21-L, 31-L, 33-H, 41-H use
   `m_card(14, ...)` and label it "Ace". `PipComparator.is_ace` is `value == 1`; 14 is just
   an off-scale rank (the engine allows arbitrary ranks, so the tests still pass on score).
@@ -67,7 +67,7 @@ comparator dispatch, and dead abstraction.
   delete the `wrap_ace_high` parameter and `get_ace_alt_value` (dead code, see SC12);
   if not, this is a latent tie-break bug.
 
-- [ ] **SC6. Asymmetric tie handling between Full-Flush and Multi-Flush in `build_multi`.**
+- [x] **SC6. Asymmetric tie handling between Full-Flush and Multi-Flush in `build_multi`.**
   [scoring.gd:242](Scripts/scoring.gd:242) uses `if ff_score >= best_score` (flush label
   wins ties) while [scoring.gd:263](Scripts/scoring.gd:263) uses `if mf_score > best_score`
   (plain label wins ties). `_compare_results` separately prefers flush on ties
@@ -76,13 +76,13 @@ comparator dispatch, and dead abstraction.
   (full flush is strictly more informative; multi-flush relabel isn't), but worth one
   comment line saying so, since the `>=`/`>` asymmetry looks like a typo.
 
-- [ ] **SC7. `house_base(int(n / 5.0))` silently floors non-multiple-of-5 sizes.**
+- [x] **SC7. `house_base(int(n / 5.0))` silently floors non-multiple-of-5 sizes.**
   [scoring.gd:56](Scripts/scoring.gd:56) — safe for all current callers (houses are built
   at size `5*s`), but `base_per_copy` is public API per its doc comment; a caller passing
   `FULL_HOUSE` with n=7 gets scale-1 pricing for 7 cards. Add an assert or document the
   contract (`n` must be `5*s`).
 
-- [ ] **SC8. `_scan_wrap` cost is O(13 × total_cards) per call, called per straight
+- [~] **SC8. `_scan_wrap` cost is O(13 × total_cards) per call, called per straight
   extraction per pool iteration.** [scoring.gd:582-621](Scripts/scoring.gd:582) — fine at
   play-area sizes; the deep-stack tests (500 cards, 15b) already make the suite noticeably
   slow because every extraction loop recomputes `_get_hand_profiles_async` + both scans on
@@ -93,7 +93,7 @@ comparator dispatch, and dead abstraction.
 
 ## 2. STRUCTURAL IMPROVEMENTS
 
-- [ ] **SD1. `MultiFlushHandler` section B re-implements `build_multi` by hand.**
+- [x] **SD1. `MultiFlushHandler` section B re-implements `build_multi` by hand.**
   [scoring.gd:680-711](Scripts/scoring.gd:680) builds uniform-size copies, sub-melds,
   names, and scores manually — the exact job of `build_multi` (which already handles the
   m-copies/sub_melds packaging for sets, straights, houses). The only reason it can't call
@@ -101,8 +101,12 @@ comparator dispatch, and dead abstraction.
   distinct suits by construction. Add a `base_types` of `[FLUSH]` path to `build_multi` (or
   a `precomputed_flush` flag) and delete ~30 lines. This also removes a naming/typing drift
   risk — two places currently decide what a multi-flush Result looks like.
+  DONE 2026-07-02 via `Scoring.best_uniform_multi` with base `[FLUSH]` — names/scores
+  identical (pure-flush pricing short-circuits before the ALL_SAME_SUIT doubling). ONE
+  observable diff: multi-flush sub_meld `types` are now `[FLUSH]` instead of
+  `[FLUSH, ALL_SAME_SUIT]`; nothing asserts or reads that today.
 
-- [ ] **SD2. Duplicated "uniform copy size search" pattern.** The
+- [x] **SD2. Duplicated "uniform copy size search" pattern.** The
   try-every-size-truncate-longer-runs loop appears three times:
   `ExpandedGridHandler.score` step 2 ([scoring.gd:399-411](Scripts/scoring.gd:399)),
   `_package_straight_result` ([scoring.gd:529-546](Scripts/scoring.gd:529)),
@@ -110,7 +114,7 @@ comparator dispatch, and dead abstraction.
   Extract `best_uniform_multi(groups: Array[ArrayCardData], base_types, max_rank) -> Result`
   once SD1 is done; each handler becomes "collect groups → call it".
 
-- [ ] **SD3. `_scan_linear` allocates two `PipRankNumeral`s per adjacent-key pair**
+- [x] **SD3. `_scan_linear` allocates two `PipRankNumeral`s per adjacent-key pair**
   ([scoring.gd:567-568](Scripts/scoring.gd:567)) just to reuse `is_rank_next_to`. Besides
   the churn, it means comparator-override mods (`on_compare_ranks`) see *synthetic* rank
   objects with no owning card — any mod keying off `rank.data`-adjacent state gets garbage.
@@ -152,7 +156,7 @@ comparator dispatch, and dead abstraction.
   (cache the list of mods implementing `on_compare_*` per scoring pass; skip when empty),
   not in scoring.gd.
 
-- [ ] **SE2. Extraction loops recompute hand profiles from scratch each iteration.**
+- [x] **SE2. Extraction loops recompute hand profiles from scratch each iteration.**
   `_evaluate_straight_flushes_first` / `_evaluate_mixed_straights_first` /
   `MultiFlushHandler.score` all do `while true: profiles = _get_hand_profiles_async(pool)`
   and `pool.erase(c)` per card ([scoring.gd:485](Scripts/scoring.gd:485),
@@ -160,7 +164,7 @@ comparator dispatch, and dead abstraction.
   fix: remove extracted cards *from the profile maps* instead of rebuilding
   (`profile.ranks.map[key].datas.erase(c)`), rebuild only the pool array at the end.
 
-- [ ] **SE3. `PokerHands.score` runs all four handlers unconditionally.**
+- [x] **SE3. `PokerHands.score` runs all four handlers unconditionally.**
   `MultiStraightHandler` (the most expensive) runs even when fewer than 5 distinct rank
   keys exist; `MultiFlushHandler` runs when no suit has 5 cards. Both handlers do check
   internally, but only after building a full profile. Cheap pre-gates from one shared
@@ -184,12 +188,18 @@ comparator dispatch, and dead abstraction.
 
 Worth adding, in rough priority order:
 
-- [ ] **G1. Comparator-override path**: no test runs with a `CardEnvironment` +
+- [~] **G1. Comparator-override path** — PARTIALLY DONE 2026-07-02: `Tests/test_comparator.gd`
+  covers the mod-dispatch branch through `FakeEnvironment` (override wins, NAN fall-through,
+  first-mod precedence, inactive skills skipped). Still missing: an END-TO-END scoring run
+  under an active comparator mod (flush detection with an "all suits same" mod).
+  Original text: no test runs with a `CardEnvironment` +
   `on_compare_ranks`/`on_compare_suits` mods active, so the entire mod-interaction branch
   of `PipComparator` (and NAN-fallthrough behavior, review B7) is untested. A minimal fake
   environment (a `CardEnvironment` subclass whose `get_card_collections` returns one rules
   card) would cover it.
-- [ ] **G2. Ace-high / `wrap_ace_high`** — see SC3/SC5; currently zero coverage.
+- [x] **G2. Ace-high / `wrap_ace_high`** — DONE: tests 55/55b in test_scoring.gd (wrap
+  straight tie-breaks 14, wheel tie-breaks 5) + `get_scorable_value` unit checks in
+  test_comparator.gd §3.
 - [ ] **G3. `ScoreModel` unit tests**: `final_score`/`base_per_copy`/`copy_escalation` are
   pure static functions — cheap direct assertions (X_OF_KIND escalates from 3rd copy,
   others from 2nd; `MULTI_FLUSH_COPY_MULT` max-vs-plain crossover at m where
@@ -201,7 +211,7 @@ Worth adding, in rough priority order:
 - [ ] **G5. Sort stability tie cases**: `_compare_results`' last two tiers (MULTI penalty,
   flush preference) have exactly one test each (M1, implicit); add a direct pair of
   hand-crafted `Result`s asserting the full ordering chain.
-- [ ] **G6. `sub_melds` re-score parity for MultiFlushHandler results** (S5 covers grid +
+- [x] **G6. `sub_melds` re-score parity for MultiFlushHandler results** (S5 covers grid +
   straight + flush via PokerHands, but the manual sub-meld construction in SD1's code path
   is only structurally checked — after SD1 unification this collapses into existing tests).
 
@@ -223,7 +233,7 @@ additions, none urgent:
   future "why doesn't it find X" bug report gets triaged as by-design. If exactness ever
   matters, this is a small weighted set-partition search, feasible at board sizes.
 
-- [ ] **SA2. `HandProfile` construction is the natural home for the SE2/SE3 fixes** —
+- [x] **SA2. `HandProfile` construction is the natural home for the SE2/SE3 fixes** —
   after profiling once in `PokerHands.score`, hand each handler the same profile and give
   `HandProfile` a `remove_card()` so extraction loops decrement instead of rebuilding.
   (Restates SE2/SE3 as one concrete refactor around the existing class rather than new
@@ -244,3 +254,23 @@ additions, none urgent:
    uniform-size search) — behavior-preserving refactor guarded by the existing suite.
 4. **SE2/SE3** profile reuse (biggest real-game win together with review E2).
 5. **G1–G3** new tests, then SC5 decision (ace-high) with G2 in place to lock it.
+
+## 6. STATUS ADDENDUM (2026-07-02)
+
+Implemented this pass: SE2 (`HandProfile.remove_card` — straight/flush extraction loops
+consume ONE profile incrementally instead of rebuilding per iteration; `_best_sequence_from_profiles`
+variant added), SE3 (`PokerHands.score` profiles once, pre-gates MultiStraightHandler on
+>= 5 distinct rank keys and MultiFlushHandler on any suit bucket >= 5, and hands the shared
+profile to ExpandedGridHandler), which together also mitigate SC8 (the wrap scan now runs
+on shrinking profiles, not rebuilt pools).
+
+Deliberately still open:
+- **SE1** (skip the comparator's environment walk when no mod implements `on_compare_*`):
+  needs a cache invalidation signal that doesn't exist yet (mods can appear/disappear with
+  any card move). Revisit if profiling shows it matters in real games; do NOT bolt on a
+  timer/heuristic cache.
+- **SE4** (single-walk `_scan_wrap`): micro-optimization inside a loop SE2 already tamed.
+- **SD4** (dead `context_pool` param), **SD5** (test section renumbering), **SD6**
+  (exact-name leaderboard asserts): mechanical cosmetics, safe any time.
+- **G3–G5** (ScoreModel / get_loc_name / _compare_results table tests), **SA1** (document
+  greedy-extraction limitation), **SA3** (factory int typing).
