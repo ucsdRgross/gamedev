@@ -207,6 +207,34 @@ Worth adding, in rough priority order:
 
 ---
 
+## 4b. SECOND-PASS ADDENDUM (2026-07-01)
+
+A later pass re-examined the engine looking for anything the first audit missed. Three
+additions, none urgent:
+
+- [ ] **SA1. Straight/flush extraction is greedy, not optimal — document it.** Both
+  straight paths ([scoring.gd:481-525](Scripts/scoring.gd:481)) and the flush extractor
+  ([scoring.gd:641-665](Scripts/scoring.gd:641)) repeatedly remove the single longest
+  run/largest suit group from the pool. Greedy extraction can miss the best *partition*
+  (e.g. taking one maximal run that straddles two suits can destroy two straight
+  flushes; taking the largest flush can starve a second suit down to 4). The two-path A/B
+  in `MultiStraightHandler` (`flushes_first` vs `mixed_first`) exists precisely to hedge
+  this, which deserves a comment — and a known-limitation note in the test file so a
+  future "why doesn't it find X" bug report gets triaged as by-design. If exactness ever
+  matters, this is a small weighted set-partition search, feasible at board sizes.
+
+- [ ] **SA2. `HandProfile` construction is the natural home for the SE2/SE3 fixes** —
+  after profiling once in `PokerHands.score`, hand each handler the same profile and give
+  `HandProfile` a `remove_card()` so extraction loops decrement instead of rebuilding.
+  (Restates SE2/SE3 as one concrete refactor around the existing class rather than new
+  machinery.)
+
+- [ ] **SA3. Test factory type sloppiness:** `m_card(rank_val: float, suit_id: float)`
+  ([test_scoring.gd:89](Tests/test_scoring.gd:89)) feeds a float into
+  `PipSuit.with_value(i: int)` — implicit narrowing that GDScript warns on and that
+  hides intent (suits are categorical ints everywhere else). Type the params `int`;
+  ranks may stay float (half-step ranks are a planned feature per the file's tail note).
+
 ## 5. SUGGESTED ORDER
 
 1. **SC1 + SC4** (await the two sections; single summary) — five-minute fix, restores trust

@@ -308,6 +308,28 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   `Column {header: CardData, cards: Array[CardData]}` — removes the desync class of bugs
   and simplifies `find_data_vec3`, the iterator, and `set_card_zone`.
 
+- [ ] **D12. Kill the `var game : Game = CardEnvironment.CURRENT if ... else null`
+  boilerplate with a base-class accessor.** Every game-related modifier re-derives the
+  game (5+ call sites in Cards/ alone; three different spellings:
+  `get_current_game()`, the ternary, and raw `CURRENT`). Add to `CardModifier`:
+
+  ```gdscript
+  var game : Game:
+      get: return CardEnvironment.get_current_game()
+  var env : CardEnvironment:
+      get: return CardEnvironment.CURRENT
+  ```
+
+  Mod bodies become `if not game: return` — one line, one spelling, and when the
+  environment stops being a static singleton (D4), only the accessor changes, not fifty
+  call sites. Longer-term (with D1's hook-contract work): pass a context object as the
+  first argument of every hook (`func on_next(ctx: CardEnvironment)`), which makes mods
+  testable without any global and removes the null-check entirely — but that touches
+  every hook signature, so do the accessor now and fold the context param into D1's
+  signature pass. Related: mods that *mutate* game state (`TypeInput.draw_card`
+  appending to zone arrays, `ZoneAdder`) must go through the Game/Board API regardless —
+  see D2 and §5.5; the accessor is for *reading*, not a license to keep direct writes.
+
 - [ ] **D11. `Scoring` naming/comment pass.** The file is good structurally (ScoreModel as
   the single scoring authority is the right call) but headers like "CENTRAL STRATEGY ROUTER
   PARALLEL ENGINE" and "TYPE & SCORING VALIDATION MATRICES (DECOUPLED CLOSURES)" describe
@@ -376,7 +398,240 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
 
 ---
 
-## 5. SUGGESTED EXECUTION ORDER
+## 5. MOVE LOGIC REDESIGN (`move_data_to_coord` and friends)
+
+The current implementation ([game.gd:130-179](Levels/game.gd:130)) is the highest-risk
+function in the codebase: it interleaves validation, source lookup, same-column index
+compensation, extraction, and insertion in one body, and the compensation math
+(`z_dist`, `cards_in_stack = z_dist - 1`, `dest.z -= cards_in_stack`) has at least three
+under-specified edge cases (see S3). The structural problem is that **the destination is
+expressed as an index into an array that the move itself mutates** — every same-column
+move needs after-the-fact patching, and every new edge case adds another patch.
+
+### 5.1 Root cause and the fix
+
+Fix the representation, not the patches: **express destinations as anchors (card
+references), not indices.** A card reference stays valid across the extraction; an index
+does not. The whole compensation block disappears.
+
+```
+Public API (what callers use — note callers already think in anchors:
+move_data_ontop_data(moving, dest_card) is the main entry point):
+
+    move_stack(moving: CardData, count: int, dest: Anchor) -> Error
+
+    Anchor is one of:
+      OnTop(card: CardData)      # insert directly above this card
+      ColumnEnd(x, col)          # append to a column (covers dest.z == -1 today)
+      ColumnStart(x, col)        # insert at row 0 (TypeInput's "under everything")
+```
+
+### 5.2 The algorithm (four phases, strictly ordered)
+
+```
+move_stack(moving, count, dest):
+  # PHASE 1 — RESOLVE (read-only; fail fast, mutate nothing)
+  src := locate(moving)                     # (zone, col, row) — from the position index,
+                                            #   not a linear scan (see 5.4)
+  if src == NOT_FOUND: return ERR_NOT_ON_BOARD
+  count := clamp(count, 1, column_size(src) - src.row)   # -1 means "rest of column"
+  stack := the `count` cards at src.row.. (NOT yet removed)
+
+  # PHASE 2 — VALIDATE (all preconditions in one place, still read-only)
+  if dest is OnTop and dest.card in stack: return ERR_DEST_INSIDE_STACK
+  if dest is OnTop and locate(dest.card) == NOT_FOUND and dest.card not in zone_types:
+      return ERR_DEST_NOT_ON_BOARD
+  if dest resolves to exactly (src position): return OK_NOOP   # explicit no-op, no events
+
+  # PHASE 3 — MUTATE (two primitive operations, nothing else)
+  extract(src.zone, src.col, src.row, count)      # one splice
+  insert_at(resolve(dest), stack)                 # anchor resolved AFTER extraction —
+                                                  #   this is the entire "compensation"
+  for c in stack: c.stage = PLAY                  # (or ZONE — derive from dest)
+
+  # PHASE 4 — NOTIFY (after the board is consistent)
+  update position index for affected columns
+  if trigger_mods:
+      emit on_card_dropped_on / on_stack_cards    # board is already valid when mods run
+  return OK
+```
+
+Why each phase boundary matters:
+- **Resolve/Validate before any mutation** → a rejected move provably leaves the board
+  untouched (today the out-of-bounds branch at [game.gd:132-137](Levels/game.gd:132)
+  `assert(false)`s *after* nothing, but the same-column clamp silently mutates intent).
+- **Anchor resolved after extraction** → same-column up-moves, down-moves, and
+  cross-column moves are literally the same code path. No `z_dist`. The only rule left is
+  the Phase-2 "dest inside moving stack" rejection — which today is a silent clamp
+  (`cards_in_stack = z_dist - 1`), a policy no caller actually depends on and which S3
+  flags as untested. Make it an error; if a mod legitimately needs "move the part of the
+  stack above X", it should say so explicitly with a smaller `count`.
+- **Events after consistency** → mods triggered by the move observe a valid board
+  (today `on_card_dropped_on` receives `onto_card` computed from *pre-move* indices,
+  [game.gd:142](Levels/game.gd:142), which is `null` whenever `dest.z == 0` — with
+  anchors, the onto-card IS the anchor, no lookup at all).
+
+### 5.3 Board invariants (assert these; they make everything else testable)
+
+Define once, in a debug-only `Board.validate()` called after every mutation
+(and by every fuzz test in UNIT_TESTS_PLAN.md):
+
+  I1. Every CardData appears in EXACTLY ONE of: draw_deck, discard_deck, rules_deck,
+      a zone column, a zone_type row.  (No duplicates, no orphans.)
+  I2. upper_zone.size() == upper_zone_type.size(); same for lower. (Dies with D10.)
+  I3. card.stage matches its container (DRAW ⇔ draw_deck, ZONE ⇔ zone_type row, ...).
+  I4. Position index (5.4), if present, agrees with a full rescan.
+  I5. No null entries inside any column/deck array.
+
+The current code cannot check I1 cheaply because membership is only discoverable by
+linear scan — which is also why `find_data_vec3` exists (E4). Same fix serves both:
+
+### 5.4 Position index
+
+Maintain `Dictionary[CardData, Vector3i]` (plus a stage tag) updated by the two
+primitives (`extract`/`insert_at` re-index only the affected column's tail — O(column),
+not O(board)). `locate`, `find_data_vec3`, `is_data_topmost` become O(1) lookups, and I1
+becomes a size comparison. This is what makes `Board.validate()` cheap enough to leave on
+in debug builds and in fuzz loops.
+
+### 5.5 Where it lives
+
+Per D3: a `Board` class (plain RefCounted or static funcs over GameData) owning
+`locate / extract / insert_at / move_stack / validate` and the position index, with
+`Game` delegating. `Game` keeps the mod-event firing (Phase 4) so `Board` stays pure and
+unit-testable without a scene tree — which UNIT_TESTS_PLAN.md depends on. `TypeInput`,
+`ZoneAdder`, `discard_data`, and `draw_card` placement then route through `Board` methods
+instead of raw array writes (closes D2's bypass list).
+
+Migration order: (1) add `Board.validate()` + call it after every current mutation —
+this alone will surface latent S3 bugs; (2) add the position index + swap `find_data_vec3`
+internals; (3) introduce `move_stack` with anchors, port `move_data_ontop_data` /
+`move_data_to_coord` callers one by one (keep the old function as a thin adapter:
+`Vector3i` dest → anchor); (4) port the direct-array-write mods; (5) delete the adapter.
+
+---
+
+## 6. SECOND-PASS FINDINGS (2026-07-01, widened to Map/Main/Deck/save/settings)
+
+A later pass over the same code plus the connected files not covered above
+(`Levels/map.gd`, `Levels/main.gd`, `Decks/deck.gd`, `Scripts/player_save.gd`,
+`Scripts/settings_manager.gd`, `Scripts/translation.gd`). Numbered N* to keep the
+original B/S/D/E numbering stable.
+
+### Confirmed
+
+- [ ] **N1. `Map.get_rules_collections()` returns the wrong shape — rules never count as
+  active on the map screen.** [map.gd:17-18](Levels/map.gd:17) returns
+  `[Main.save_info.rule_datas]` — a list *containing* one array — while the base contract
+  ([card_environment.gd:24](Scripts/card_environment.gd:24)) and `Game`'s override return
+  a flat `Array[CardData]`. So `is_data_in_rules(data)` (`data in get_rules_collections()`)
+  is always false on the Map, and `CardModifier.is_active()` fails for every rules card
+  there — any booster/choice logic that consults mod activity on the map silently gets
+  "inactive". The return type also silently loosens `Array[CardData]` → `Array`. Fix:
+  `return Main.save_info.rule_datas`, and type both overrides identically. (Same drift
+  exists for `get_card_collections`: base says `Array[Variant]`, Game says `Array` —
+  harmless today, tighten while there.)
+
+- [ ] **N2. `Game` scenes are never freed — every run leaks the whole game.**
+  [main.gd:44-55](Levels/main.gd:44) — `switch_scene` only `remove_child`s the outgoing
+  scene. That's intentional for the reused `menu_scene`/`map_scene`, but `enter_game`
+  creates a fresh `Game` per run ([main.gd:24-27](Levels/main.gd:24)) and `game_ended`
+  switches back to the map without freeing it: the Game node, its PlayArea, every
+  CardVisual, the GameData history, and its `Deck.new()` (see N6) stay allocated forever.
+  Fix: in `game_ended()`, `current_scene.queue_free()` before switching (or make
+  `switch_scene` take an `owns_old_scene` flag).
+
+- [ ] **N3. Cards can be moved while scoring/next is resolving.** `_on_next_pressed`,
+  `_on_submit_pressed`, and `undo_pressed` all guard on `processing`
+  ([game.gd:108,120,230](Levels/game.gd:108)) — but `on_data_selected`
+  ([game.gd:55](Levels/game.gd:55)) does not. During a multi-second scoring animation the
+  player can grab and re-place stacks, mutating the zones the cascade scorer is iterating
+  (compounds B10) and then `save_state()` mid-pass, corrupting undo history. Fix:
+  `if processing: return` at the top of `on_data_selected` (and probably ungrab on
+  processing start).
+
+- [ ] **N4. `TypeInput.on_next` assumes upper column i maps to lower column i.**
+  [type_input.gd:24-29](Cards/Types/type_input.gd:24) — `drop_card` finds its own column
+  index in `upper_zone_type`, then drops to `Vector3i(1, col, -1)` — the *lower* zone at
+  the same index. Nothing guarantees the zones have equal column counts (they're built by
+  independent `SkillAdderInputUpper`/`Lower` rule cards — remove one lower adder and the
+  counts diverge), at which point the drop lands in the wrong column or trips
+  `move_data_to_coord`'s out-of-bounds assert. Fix: make the pairing explicit — either the
+  upper input card stores a reference to its paired lower zone card, or `drop_card`
+  clamps/validates and no-ops when no matching lower column exists. (The §5 anchor API
+  makes this natural: the dest anchor is the paired zone card, not an index.)
+
+- [ ] **N5. `CardModifier.is_active()` has no "uncovered/topmost" rule — most stamps and
+  skills on ordinary play cards are permanently inert.** [card_modifier.gd:99-106](Cards/card_modifier.gd:99)
+  returns true only for: rules-deck cards, `StampGlobal`, `StampRevealing`. A regular play
+  card with `SkillExtraPoint` or `StampDoubleTrigger` and no stamp (most of `deck5`/`deck7`
+  in [deck.gd](Decks/deck.gd)) fails every `is_active()` check, so `on_score`/`on_trigger`
+  early-return: **those decks' mechanics do nothing today.** `StampRevealing`'s description
+  ("Trigger effects even when covered") implies the intended default is "active while
+  uncovered/topmost", but that condition was never implemented. Fix: add the topmost check
+  (`CardEnvironment.CURRENT is Game and game.is_data_topmost(data)`) as the default-active
+  condition, keeping Revealing as the covered-override — then test deck5/deck7 actually
+  fire. Decide explicitly whether cards in the draw/discard decks should be "active" for
+  Global (currently they are — the iterator includes both decks).
+
+- [ ] **N6. Every `Game` instantiates ALL nine test decks.**
+  [game.gd:9](Levels/game.gd:9) `@export var deck : Deck = Deck.new()` + `Deck`'s member
+  initializers ([deck.gd](Decks/deck.gd)) build `rules1` and `deck1`–`deck9` — hundreds of
+  CardData/Pip/Modifier resources — per game, per run, only for `get_deck()` to return one
+  of them. Combined with N2 they leak. Fix: make deck definitions static factory
+  *functions* (built on demand), which also collapses the ~500 lines of copy-pasted
+  builder chains into loops — see N-E1.
+
+- [ ] **N7. `add_deck`'s `duplicate(true)` has the same back-reference problem as B11 —
+  at game start, not just on undo.** [game.gd:91-96](Levels/game.gd:91) deep-duplicates
+  `Main.save_info`'s cards into `state`. The duplicated modifiers' `.data` back-references
+  (set by `with_skill` at deck construction) are cyclic (`card.skill.data == card`), and
+  `Resource.duplicate(true)`'s handling of shared/cyclic sub-resources is exactly the
+  hazard B11 describes — the play-copies' `skill.data` may point at the *save-file*
+  originals, breaking every `data == self.data` self-guard from turn one. Verify in-engine
+  (`print(card.skill.data == card)` after add_deck); fix with the same rebind pass as B11.
+  This upgrade makes the B11 rebind fix a **prerequisite for correct mod behavior at all**,
+  not just for undo.
+
+### Smaller / verify
+
+- [ ] **N8. Score arrays never shrink.** `resize_score_zone` ([game.gd:252-257](Levels/game.gd:252))
+  only grows; when a `ZoneAdder` deactivates and removes a column, `scores_col` keeps the
+  removed column's total and every later column's score stays shifted relative to the
+  board. Shrink (or re-key scores by zone card rather than index — the D10 `Zone` struct
+  does this for free).
+- [ ] **N9. Resource-signal connect-without-disconnect pattern** (generalizes S1):
+  `Game.state` setter, `SettingsManagerClass.settings` setter
+  ([settings_manager.gd:8-11](Scripts/settings_manager.gd:8)), and `CardVisual.with_data`
+  all connect to a resource's signal and never disconnect the previous resource —
+  re-assignment double-fires or keeps dead objects reachable. Adopt one idiom:
+  disconnect-old / connect-new in every resource-holding setter.
+- [ ] **N10. No persistence:** `Main.save_info` is a static `PlayerSave.new()` — nothing
+  ever `ResourceSaver.save`s it (unlike settings), so runs vanish on quit. If
+  intentional-for-now, add the TODO where it belongs (`PlayerSave`), because `@export`s
+  there imply it was meant to save.
+- [ ] **N11. Map layer/goal math:** every map card click does `layer += 1`
+  ([map.gd:33-38](Levels/map.gd:33)) and goal scales by `1.1 ** layer` with int truncation
+  each game — verify "layer per pick" (vs per map depth) is the intended difficulty curve,
+  and accumulate the goal in float if the truncation compounding matters.
+- [ ] **N12. Map-generated cards have no `type`** ([map.gd:88-92](Levels/map.gd:88)) while
+  every deck-built card gets `TypePaper` — harmless today, but any future
+  `if data.type ...` logic will treat map-acquired cards differently. Pick one convention.
+
+### New efficiency / line-count items
+
+- [ ] **N-E1. `Decks/deck.gd` is ~500 lines of copy-pasted builder chains.** A tiny
+  data-driven factory (`for suit in 4: for rank in 13: ...`, plus a
+  `standard(suit, rank, mods...)` helper) reproduces deck1–deck9 in ~60 lines, and makes
+  N6's lazy construction trivial.
+- [ ] **N-E2. `CardVisual._process` calls `CardEnvironment.get_current_game()` (and a
+  dictionary lookup) every frame per card** ([card_visual.gd:231-237](Cards/card_visual.gd:231))
+  — cache the play_area reference on `_ready`/context change; the existence check belongs
+  to the D5 dirty-flag rework anyway.
+
+---
+
+## 7. SUGGESTED EXECUTION ORDER
 
 1. Quick confirmed fixes, each independent: **B1, B2, B3, B4, B5, B6, B7, B8** (one small
    edit each; test by playing one round + one undo).
@@ -387,3 +642,9 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
 5. **D2 → D5 → E3/E4** (single mutation API, then dirty-flag GUI) — medium effort.
 6. **B11/D6** (undo redesign) — the deep one; do after D2 so commands are easy to record.
 7. Remaining D/E items opportunistically.
+
+Second-pass insertions: **N7 verification belongs in step 0** (if add_deck back-refs are
+broken, the B11 rebind fix jumps to the front of the queue — it gates correct mod behavior
+everywhere). **N1, N2, N3 join step 1** (small, independent, confirmed). **N5** needs a
+design decision (what "active" means for play cards) before deck5/deck7 content can work —
+decide it alongside the D1 hook-contract pass.
