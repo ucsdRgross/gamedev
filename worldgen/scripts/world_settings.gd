@@ -173,7 +173,7 @@ func map_diag() -> float:
 
 @export_group("Step 5 - Rivers & Lakes")
 ## Hydrology grid downscale (1 = full res/no pixelation; higher = faster but blocky).
-@export_range(1, 6) var river_resolution_divisor: int = 1
+@export_range(1, 1) var river_resolution_divisor: int = 1
 ## Exponent: wetter cells source more water (0 = humidity ignored).
 @export_range(0.0, 8.0) var river_source_humidity_bias: float = 3.0
 ## Exponent: higher cells source more water.
