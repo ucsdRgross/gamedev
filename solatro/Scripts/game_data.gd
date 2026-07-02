@@ -36,11 +36,25 @@ signal state_changed
 @export_storage var scores_col : Array[BigNumber]
 
 func duplicate_state() -> GameData:
-	var copy : GameData = self.duplicate(true)
+	#duplicate_deep remaps cross-references (modifier .data backrefs, ZoneAdder.card_data,
+	#etc.) so each historical state is completely separate from the others
+	var copy : GameData = self.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	#BigNumber is RefCounted, invisible to duplicate_deep -> manual copy required
 	copy.scores_row_upper = duplicate_big_number_array(scores_row_upper)
 	copy.scores_row_lower = duplicate_big_number_array(scores_row_lower)
 	copy.scores_col = duplicate_big_number_array(scores_col)
 	return copy
+
+func all_card_datas() -> Array[CardData]:
+	var all : Array[CardData] = []
+	all.append_array(draw_deck)
+	all.append_array(discard_deck)
+	all.append_array(rules_deck)
+	all.append_array(upper_zone_type)
+	all.append_array(lower_zone_type)
+	for col in upper_zone: all.append_array(col.datas)
+	for col in lower_zone: all.append_array(col.datas)
+	return all
 
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:
 	var new_a : Array[BigNumber] = []

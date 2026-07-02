@@ -28,7 +28,10 @@ func enter_game() -> void:
 
 	
 func game_ended() -> void:
+	var old_game : Node = current_scene
 	switch_scene(map_scene)
+	if old_game is Game:
+		old_game.queue_free()
 
 		#prev_game_data.load_game(current_game)
 		

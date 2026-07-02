@@ -14,7 +14,6 @@ func on_score(target:CardData) -> void:
 		await CardEnvironment.CURRENT.on_mod_triggered(self.data, on_score.bind(target))
 
 func add_points(row:int, col:int) -> void:
-	var game := CardEnvironment.get_current_game()
 	if not game: return
 	#CardEnvironment.CURRENT.row_add_score(row, 1)
 	#CardEnvironment.CURRENT.col_add_score(col, 1)

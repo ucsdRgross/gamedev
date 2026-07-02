@@ -34,11 +34,12 @@ var focused : bool = false:
 		else: modulate = Color(1.0, 1.0, 1.0)
 @export var data : CardData:
 	set(value):
+		if data == value: return
 		data = value
 		update_visual()
-		if data == value: return
+		
 		if current_context != DisplayContext.PLAY_AREA: return
-		if is_node_ready and data:
+		if is_node_ready() and data:
 			on_stage_changed()
 var can_move_anim := true
 var can_rot_anim := true
@@ -200,12 +201,14 @@ func on_stage_changed() -> void:
 	if data.stage == data.previous_stage: return
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
+			#anchor may not exist yet (visual created same frame as its control)
+			if not control_anchor or not is_instance_valid(control_anchor): return
 			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
 			await move_tween.finished
 		data.Stage.DRAW:
 			if CardEnvironment.get_current_game():
-				var target_pos := get_control_center(CardEnvironment.get_current_game().discard_ui)
+				var target_pos := get_control_center(CardEnvironment.get_current_game().deck_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.DISCARD:
 			if CardEnvironment.get_current_game():

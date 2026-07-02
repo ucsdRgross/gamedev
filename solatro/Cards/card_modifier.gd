@@ -11,6 +11,14 @@ enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 #@export var tags : Dictionary
 @export_storage var data : CardData
 
+## Current environment / game shortcuts so every modifier doesn't have to re-derive them.
+## Read-only convenience: null when no environment / not in a game — always null-check.
+## State MUTATION should still go through Game's API (move_data_*, discard_data, ...).
+var env : CardEnvironment:
+	get: return CardEnvironment.CURRENT
+var game : Game:
+	get: return CardEnvironment.get_current_game()
+
 @abstract func get_str() -> String
 @abstract func get_description() -> String
 @abstract func get_frame() -> int
@@ -97,13 +105,21 @@ func set_material(polygon2d:Polygon2D) -> void: polygon2d.material = null
 	#pass
 
 func is_active() -> bool:
+	#rules cards are always active
 	if CardEnvironment.CURRENT and CardEnvironment.CURRENT.is_data_in_rules(data):
 		return true
+	#Global: active from anywhere (deck, discard, covered, ...)
 	if data.stamp is StampGlobal:
 		return true
+	#everything else must be on the board
+	if not game: return false
+	if data.stage != CardData.Stage.PLAY and data.stage != CardData.Stage.ZONE:
+		return false
+	#Revealing: active on the board even when covered
 	if data.stamp is StampRevealing:
 		return true
-	return false
+	#default: active while uncovered (topmost of its stack)
+	return game.is_data_topmost(data)
 
 #func card_shake(card_effect:Callable) -> void:
 	#await card_raise()

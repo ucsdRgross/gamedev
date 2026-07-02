@@ -14,8 +14,8 @@ func get_card_collections() -> Array:
 		Main.save_info.rule_datas
 	]
 
-func get_rules_collections() -> Array:
-	return [Main.save_info.rule_datas]
+func get_rules_collections() -> Array[CardData]:
+	return Main.save_info.rule_datas
 
 func _ready() -> void:
 	# Force show/hide on startup to sync FlowContainer caches and drop initialization race conditions

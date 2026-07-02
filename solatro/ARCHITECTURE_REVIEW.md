@@ -116,44 +116,44 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
 
 ### Confirmed
 
-- [ ] **B1. Upper-zone row scores are written to the lower-zone score array.**
+- [x] **B1. Upper-zone row scores are written to the lower-zone score array.**
   [game.gd:260-262](Levels/game.gd:260) — `score_row` does
   `var score_zone := state.scores_row_lower; if zone == state.upper_zone: score_zone = state.scores_row_lower`.
   The `if` branch assigns the *same* array. Should be `state.scores_row_upper`.
   Consequence: `scores_row_upper` is never written; upper-zone scoring silently corrupts
   lower-row scores. Fix: assign `scores_row_upper` in the branch.
 
-- [ ] **B2. Cards animate to the DISCARD pile when moved to the DRAW deck.**
+- [x] **B2. Cards animate to the DISCARD pile when moved to the DRAW deck.**
   [card_visual.gd:206-209](Cards/card_visual.gd:206) — the `data.Stage.DRAW` case in
   `on_stage_changed` targets `discard_ui`. Copy-paste from the DISCARD case; should be
   `deck_ui`. (The `_ready` positioning above it, line 169-170, gets it right.)
 
-- [ ] **B3. Dead code in `CardVisual.data` setter — stage animation never triggers from it.**
+- [x] **B3. Dead code in `CardVisual.data` setter — stage animation never triggers from it.**
   [card_visual.gd:35-42](Cards/card_visual.gd:35) — after `data = value`, the guard
   `if data == value: return` is *always* true, so the `on_stage_changed()` call below is
   unreachable. Also line 41 tests `if is_node_ready and data:` — missing `()`, so it tests
   the Callable (always truthy) instead of calling it. Fix: decide the intended early-out
   (probably compare against the *old* value before assignment) and call `is_node_ready()`.
 
-- [ ] **B4. `find_data_vec3` iterates the wrong array for the upper zone.**
+- [x] **B4. `find_data_vec3` iterates the wrong array for the upper zone.**
   [game.gd:186](Levels/game.gd:186) — `for col : int in state.upper_zone_type.size():`
   then indexes `state.upper_zone[col]`. The lower-zone loop (line 190) correctly uses
   `state.lower_zone.size()`. If `upper_zone_type` and `upper_zone` ever disagree in length
   (e.g. mid `ZoneAdder.on_active`, which appends to the two arrays in separate statements),
   this indexes out of bounds. Fix: iterate `state.upper_zone.size()`.
 
-- [ ] **B5. `find_data_vec3` returns float `Vector3`s from an `-> Vector3i` function.**
+- [x] **B5. `find_data_vec3` returns float `Vector3`s from an `-> Vector3i` function.**
   [game.gd:183-193](Levels/game.gd:183) — four `return Vector3(...)` statements. Godot
   converts implicitly today, but it's a silent truncation hazard and a warning generator.
   Fix: `Vector3i(...)` everywhere.
 
-- [ ] **B6. `ZoneAdder.on_deactive` can `remove_at(-1)`.**
+- [x] **B6. `ZoneAdder.on_deactive` can `remove_at(-1)`.**
   [zone_adder.gd:29-35](Cards/Skills/Rules/zone_adder.gd:29) — `find(card_data)` result is
   not checked; if the zone card was removed by anything else, `index == -1` →
   `remove_at(-1)` / `pop_at(-1)` removes the *last* (wrong) column, silently desyncing
   `zone_type` from `zone`. Fix: `if index == -1: return`.
 
-- [ ] **B7. NAN comparisons make incomparable suits "different", enabling illegal stacks.**
+- [x] **B7. NAN comparisons make incomparable suits "different", enabling illegal stacks.**
   [skill_grabber_og_lower.gd:17](Cards/Skills/Rules/skill_grabber_og_lower.gd:17) and
   [skill_placer_og_lower.gd:17](Cards/Skills/Rules/skill_placer_og_lower.gd:17) —
   `PipComparator.compare_suits` returns `NAN` when suits aren't comparable, and
@@ -161,19 +161,21 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   non-standard suit pair. (`abs(NAN) == 1` is false so rank saves you today, but the same
   pattern applied to ranks/suits independently is a trap.) Fix: check `is_nan()` explicitly.
 
-- [ ] **B8. `PlayArea.popup_score` can divide by zero.**
+- [x] **B8. `PlayArea.popup_score` can divide by zero.**
   [play_area.gd:363-371](UI/play_area.gd:363) — `meld_size` counts only meld cards present
   in `data_card`; if none are (cards just discarded/freed), `combo_pos /= 0` → NaN position.
   Fix: `if meld_size == 0: return`.
 
-- [ ] **B9. `return_to_map` loses cards still on the board and doesn't await mods.**
+- [x] **B9. `return_to_map` loses cards still on the board and doesn't await mods.**
   [game.gd:244-250](Levels/game.gd:244) — only `draw_deck + discard_deck` are saved back to
   `Main.save_info.card_datas`; any card still in `upper_zone`/`lower_zone` is permanently
   lost from the player's deck. Also `run_all_mods("on_game_end")` is not awaited, so mods
   that restore state on game end (e.g. `SkillHungryHippo.on_game_end` returns consumed
   cards) race the save. Fix: sweep zones into `draw_deck` first, and `await` the mods call.
 
-- [ ] **B10. `run_all_mods` iterates live collections that mods mutate.**
+- [~] **B10. (BY DESIGN per owner, 2026-07-01 — live iteration is the intended semantics
+  for now; revisit only if a concrete mis-visit bug appears.)
+  `run_all_mods` iterates live collections that mods mutate.**
   [card_environment.gd:30-44](Scripts/card_environment.gd:30) + CardDataIterator —
   the iterator keeps integer indices into `GameData`'s actual arrays; hooks like
   `on_next` (`TypeInput` moves/draws cards) and `on_discard` mutate those arrays
@@ -182,7 +184,7 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   before dispatch (`var all := []; for d in CardDataIterator.new(): all.append(d)`), or
   queue mutations until after the walk.
 
-- [ ] **B11. Undo history: modifier back-references point at the wrong card copies.**
+- [x] **B11. Undo history: modifier back-references point at the wrong card copies.**
   [game_data.gd:38-43](Scripts/game_data.gd:38) — `duplicate(true)` deep-copies the
   `CardData`s and their sub-resources, but `Resource.duplicate` does **not** remap
   cross-references: each duplicated `CardModifier.data` (`@export_storage var data`) still
@@ -193,6 +195,13 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   same problem applies to modifiers but is unpatched. Fix: after duplicating, walk every
   copied CardData and re-run `with_skill/with_type/with_stamp`-style rebinding
   (`copy.skill.data = copy` etc.), or write an explicit `CardData.clone()`.
+  **FIXED 2026-07-01** using `Resource.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)`
+  (Godot 4.4+) in `duplicate_state()` and `Array.duplicate_deep(...)` in `add_deck` (N7):
+  deep duplicate remaps ALL cross-references consistently — modifier `.data` backrefs AND
+  mod-internal refs (`ZoneAdder.card_data`, `SkillEchoingTrigger.triggered`,
+  `SkillHungryHippo.consumed_cards`) — so no manual rebind is needed. `BigNumber` is
+  RefCounted (owner's own class), invisible to duplicate_deep; the manual
+  `duplicate_big_number_array` copy stays.
 
 ### Suspicious — verify in-engine before fixing
 
@@ -221,13 +230,15 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   is a float if `card_scale` is; returning it from an `int` property either truncates or
   errors depending on strictness. Same pattern in `CardVisual.card_separation_play`.
 
-- [ ] **S5. `update_card_zone_visuals` hard-indexes `data_card[connected_data]`.**
+- [x] **S5. `update_card_zone_visuals` hard-indexes `data_card[connected_data]`.**
   [play_area.gd:208](UI/play_area.gd:208) — if a visual failed `is_instance_valid` during
   `set_card_zone` the key exists (recreated), but any path where visuals lag data by a frame
   (deferred `add_child` in `CardVisual.add_child_card_visual`) makes this a KeyError crash
   candidate. Use `.get()` with a null check.
 
-- [ ] **S6. `CardData.stage` setter always overwrites `previous_stage`,** even when the new
+- [ ] **S6. (Owner reverted an applied guard on 2026-07-01 — same-value re-sets emitting
+  `stage_changed` are relied upon; do not re-apply without discussion.)
+  `CardData.stage` setter always overwrites `previous_stage`,** even when the new
   value equals the old ([card_data.gd:38-42](Cards/card_data.gd:38)). Re-setting the same
   stage erases the real previous stage and re-emits `stage_changed`. Guard with
   `if value == stage: return`.
@@ -308,7 +319,7 @@ Undo pops history, re-duplicates, reassigns `Game.state`; PlayArea rebuilds from
   `Column {header: CardData, cards: Array[CardData]}` — removes the desync class of bugs
   and simplifies `find_data_vec3`, the iterator, and `set_card_zone`.
 
-- [ ] **D12. Kill the `var game : Game = CardEnvironment.CURRENT if ... else null`
+- [x] **D12. Kill the `var game : Game = CardEnvironment.CURRENT if ... else null`
   boilerplate with a base-class accessor.** Every game-related modifier re-derives the
   game (5+ call sites in Cards/ alone; three different spellings:
   `get_current_game()`, the ternary, and raw `CURRENT`). Add to `CardModifier`:
@@ -520,7 +531,7 @@ original B/S/D/E numbering stable.
 
 ### Confirmed
 
-- [ ] **N1. `Map.get_rules_collections()` returns the wrong shape — rules never count as
+- [x] **N1. `Map.get_rules_collections()` returns the wrong shape — rules never count as
   active on the map screen.** [map.gd:17-18](Levels/map.gd:17) returns
   `[Main.save_info.rule_datas]` — a list *containing* one array — while the base contract
   ([card_environment.gd:24](Scripts/card_environment.gd:24)) and `Game`'s override return
@@ -532,7 +543,7 @@ original B/S/D/E numbering stable.
   exists for `get_card_collections`: base says `Array[Variant]`, Game says `Array` —
   harmless today, tighten while there.)
 
-- [ ] **N2. `Game` scenes are never freed — every run leaks the whole game.**
+- [x] **N2. `Game` scenes are never freed — every run leaks the whole game.**
   [main.gd:44-55](Levels/main.gd:44) — `switch_scene` only `remove_child`s the outgoing
   scene. That's intentional for the reused `menu_scene`/`map_scene`, but `enter_game`
   creates a fresh `Game` per run ([main.gd:24-27](Levels/main.gd:24)) and `game_ended`
@@ -541,7 +552,7 @@ original B/S/D/E numbering stable.
   Fix: in `game_ended()`, `current_scene.queue_free()` before switching (or make
   `switch_scene` take an `owns_old_scene` flag).
 
-- [ ] **N3. Cards can be moved while scoring/next is resolving.** `_on_next_pressed`,
+- [x] **N3. Cards can be moved while scoring/next is resolving.** `_on_next_pressed`,
   `_on_submit_pressed`, and `undo_pressed` all guard on `processing`
   ([game.gd:108,120,230](Levels/game.gd:108)) — but `on_data_selected`
   ([game.gd:55](Levels/game.gd:55)) does not. During a multi-second scoring animation the
@@ -550,7 +561,7 @@ original B/S/D/E numbering stable.
   `if processing: return` at the top of `on_data_selected` (and probably ungrab on
   processing start).
 
-- [ ] **N4. `TypeInput.on_next` assumes upper column i maps to lower column i.**
+- [x] **N4. `TypeInput.on_next` assumes upper column i maps to lower column i.**
   [type_input.gd:24-29](Cards/Types/type_input.gd:24) — `drop_card` finds its own column
   index in `upper_zone_type`, then drops to `Vector3i(1, col, -1)` — the *lower* zone at
   the same index. Nothing guarantees the zones have equal column counts (they're built by
@@ -561,7 +572,7 @@ original B/S/D/E numbering stable.
   clamps/validates and no-ops when no matching lower column exists. (The §5 anchor API
   makes this natural: the dest anchor is the paired zone card, not an index.)
 
-- [ ] **N5. `CardModifier.is_active()` has no "uncovered/topmost" rule — most stamps and
+- [x] **N5. `CardModifier.is_active()` has no "uncovered/topmost" rule — most stamps and
   skills on ordinary play cards are permanently inert.** [card_modifier.gd:99-106](Cards/card_modifier.gd:99)
   returns true only for: rules-deck cards, `StampGlobal`, `StampRevealing`. A regular play
   card with `SkillExtraPoint` or `StampDoubleTrigger` and no stamp (most of `deck5`/`deck7`
@@ -582,7 +593,7 @@ original B/S/D/E numbering stable.
   *functions* (built on demand), which also collapses the ~500 lines of copy-pasted
   builder chains into loops — see N-E1.
 
-- [ ] **N7. `add_deck`'s `duplicate(true)` has the same back-reference problem as B11 —
+- [x] **N7. `add_deck`'s `duplicate(true)` has the same back-reference problem as B11 —
   at game start, not just on undo.** [game.gd:91-96](Levels/game.gd:91) deep-duplicates
   `Main.save_info`'s cards into `state`. The duplicated modifiers' `.data` back-references
   (set by `with_skill` at deck construction) are cyclic (`card.skill.data == card`), and
@@ -595,7 +606,7 @@ original B/S/D/E numbering stable.
 
 ### Smaller / verify
 
-- [ ] **N8. Score arrays never shrink.** `resize_score_zone` ([game.gd:252-257](Levels/game.gd:252))
+- [~] **N8. (DECLINED per owner, 2026-07-01 — desync is allowed so scores are never lost.) Score arrays never shrink.** `resize_score_zone` ([game.gd:252-257](Levels/game.gd:252))
   only grows; when a `ZoneAdder` deactivates and removes a column, `scores_col` keeps the
   removed column's total and every later column's score stays shifted relative to the
   board. Shrink (or re-key scores by zone card rather than index — the D10 `Zone` struct

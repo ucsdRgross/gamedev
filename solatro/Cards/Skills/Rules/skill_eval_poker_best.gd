@@ -8,7 +8,6 @@ func get_description() -> String:
 func get_frame() -> int: return 8
 
 func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
-	var game := CardEnvironment.get_current_game()
 	if not game: return
 	var row_cards : Array[CardData] = []
 	for a : ArrayCardData in zone:
@@ -19,7 +18,6 @@ func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
 		await game.score_row(best_hand, zone, row)
 
 func on_score_col(zone : Array[ArrayCardData], col : int) -> void:
-	var game := CardEnvironment.get_current_game()
 	if not game: return
 	if col >= zone.size(): return
 	var col_cards : Array[CardData] = zone[col].datas

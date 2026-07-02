@@ -18,7 +18,6 @@ func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
 
 func eat_card(ate_data:CardData) -> void:
 	consumed_cards.append(ate_data)
-	var game := CardEnvironment.get_current_game()
 	#if CardEnvironment.CURRENT: await CardEnvironment.CURRENT.card_shrink(ate_data.card)
 	#self.data.card.top_card = null
 	#ate_data.card.queue_free()
@@ -28,7 +27,6 @@ func eat_card(ate_data:CardData) -> void:
 
 # Oh boy this needs to handle all PipRank Types
 func on_game_end() -> void:
-	var game := CardEnvironment.get_current_game()
 	for card in consumed_cards:
 		self.data.rank.value -= card.rank.value
 		if game: game.state.draw_deck.append(card)

@@ -205,20 +205,20 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		card_count += 1
 		
 		# Safe: Reads from the active finalized visual tracker registry
-		var card_visual: CardVisual = data_card[connected_data]
-		if connected_data not in selected_cards:
+		var card_visual: CardVisual = data_card.get(connected_data)
+		if card_visual and connected_data not in selected_cards:
 			card_visual.z_index = card_count
-			
+
 		# 2. Visual settings for Row Cards (Index 1 onwards)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
-			
+
 			connected_data = datas[i].datas[j-1]
 			card_count += 1
-			
-			card_visual = data_card[connected_data]
-			if connected_data not in selected_cards:
+
+			card_visual = data_card.get(connected_data)
+			if card_visual and connected_data not in selected_cards:
 				card_visual.z_index = card_count
 				
 		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
@@ -368,6 +368,7 @@ func popup_score(result : Scoring.Result) -> void:
 		if card in data_card:
 			meld_size += 1
 			combo_pos += data_card[card].global_position
+	if meld_size == 0: return
 	combo_pos /= meld_size
 	combo_pos.y -= CardVisual.card_size_play.y * 0.5
 	var score_name_popup := TextPopup.new_popup(result.name + "\n" + str(result.score), combo_pos)

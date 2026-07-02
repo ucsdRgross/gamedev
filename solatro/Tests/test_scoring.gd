@@ -22,8 +22,8 @@ var _next_suit := 700  # hands out unique suit ids so filler never forms acciden
 
 func _ready() -> void:
 	print("============ POKER SCORING ENGINE TEST PASS ============")
-	run_standard_5_card_poker_tests()
-	run_balatro_special_hand_tests()
+	await run_standard_5_card_poker_tests()
+	await run_balatro_special_hand_tests()
 	await run_architecture_edge_cases()
 	await run_micro_card_environment_tests()
 	await run_macro_card_environment_tests()
@@ -32,8 +32,7 @@ func _ready() -> void:
 	await run_chaos_tests()
 	await run_subhand_structure_tests()
 	await run_meld_integrity_tests()
-	_print_summary()
-	await run_leaderboard()
+	await run_leaderboard() # prints the final combined summary
 
 
 # ==============================================================================
@@ -118,40 +117,40 @@ func run_standard_5_card_poker_tests() -> void:
 	print("\n--- SECTION 1: STANDARD 5-CARD POKER (ACE=1) ---")
 
 	# 1. Royal Flush (1 wraps to 14)
-	var res_sf := await Scoring.PokerHands.new().score(make_hand([1, 13, 12, 11, 10], [1, 1, 1, 1, 1]))
+	var res_sf := await Scoring.PokerHands.score(make_hand([1, 13, 12, 11, 10], [1, 1, 1, 1, 1]))
 	assert_result(res_sf, 20, "Straight Flush", [Scoring.MELD_TYPE.STRAIGHT, Scoring.MELD_TYPE.FLUSH, Scoring.MELD_TYPE.ALL_SAME_SUIT], "Royal Flush (Ace High)")
 
 	# 2. Four of a Kind
-	var res_quads := await Scoring.PokerHands.new().score(make_hand([1, 1, 1, 1, 13], [1, 2, 3, 4, 1]))
+	var res_quads := await Scoring.PokerHands.score(make_hand([1, 1, 1, 1, 13], [1, 2, 3, 4, 1]))
 	assert_result(res_quads, 12, "4 of a Kind", [Scoring.MELD_TYPE.X_OF_KIND], "4 Aces")
 
 	# 3. Full House
-	var res_fh := await Scoring.PokerHands.new().score(make_hand([1, 1, 1, 10, 10], [1, 2, 3, 4, 1]))
+	var res_fh := await Scoring.PokerHands.score(make_hand([1, 1, 1, 10, 10], [1, 2, 3, 4, 1]))
 	assert_result(res_fh, 12, "Full House", [Scoring.MELD_TYPE.FULL_HOUSE], "Full House (Aces Full)")
 
 	# 4. Flush (Ace High); tiebreak ignores ace-high (ace = 1 here) -> 11
-	var res_flush := await Scoring.PokerHands.new().score(make_hand([1, 11, 8, 4, 2], [2, 2, 2, 2, 2]))
+	var res_flush := await Scoring.PokerHands.score(make_hand([1, 11, 8, 4, 2], [2, 2, 2, 2, 2]))
 	assert_result(res_flush, 10, "Flush", [Scoring.MELD_TYPE.FLUSH, Scoring.MELD_TYPE.ALL_SAME_SUIT], "Ace High Flush")
 	check(res_flush[0].tie_breaker_high_card == 11.0, "Flush tiebreaker == 11", str(res_flush[0].tie_breaker_high_card))
 
 	# 5. Straight (Wheel A-2-3-4-5)
-	var res_straight := await Scoring.PokerHands.new().score(make_hand([5, 4, 3, 2, 1], [1, 2, 3, 4, 1]))
+	var res_straight := await Scoring.PokerHands.score(make_hand([5, 4, 3, 2, 1], [1, 2, 3, 4, 1]))
 	assert_result(res_straight, 10, "Straight", [Scoring.MELD_TYPE.STRAIGHT], "Low Straight (Wheel)")
 
 	# 6. Three of a Kind
-	var res_trips := await Scoring.PokerHands.new().score(make_hand([12, 12, 12, 10, 2], [1, 2, 3, 4, 1]))
+	var res_trips := await Scoring.PokerHands.score(make_hand([12, 12, 12, 10, 2], [1, 2, 3, 4, 1]))
 	assert_result(res_trips, 6, "3 of a Kind", [Scoring.MELD_TYPE.X_OF_KIND], "Queens Trips")
 
 	# 7. Two Pair
-	var res_twopair := await Scoring.PokerHands.new().score(make_hand([10, 10, 4, 4, 13], [1, 2, 3, 4, 1]))
+	var res_twopair := await Scoring.PokerHands.score(make_hand([10, 10, 4, 4, 13], [1, 2, 3, 4, 1]))
 	assert_result(res_twopair, 4, "Two Pair", [Scoring.MELD_TYPE.X_OF_KIND, Scoring.MELD_TYPE.MULTI], "Two Pair")
 
 	# 8. Pair
-	var res_pair := await Scoring.PokerHands.new().score(make_hand([11, 11, 9, 6, 3], [1, 2, 3, 4, 1]))
+	var res_pair := await Scoring.PokerHands.score(make_hand([11, 11, 9, 6, 3], [1, 2, 3, 4, 1]))
 	assert_result(res_pair, 2, "Pair", [Scoring.MELD_TYPE.X_OF_KIND], "Jacks Pair")
 
 	# 9. High Card
-	var res_hc := await Scoring.PokerHands.new().score(make_hand([1, 9, 7, 4, 2], [1, 2, 3, 4, 1]))
+	var res_hc := await Scoring.PokerHands.score(make_hand([1, 9, 7, 4, 2], [1, 2, 3, 4, 1]))
 	assert_result(res_hc, 1, "High Card", [Scoring.MELD_TYPE.HIGH_CARD], "Ace High Card")
 	check(res_hc[0].tie_breaker_high_card == 9.0, "High Card tiebreak == 9", str(res_hc[0].tie_breaker_high_card))
 
@@ -163,18 +162,18 @@ func run_balatro_special_hand_tests() -> void:
 	print("\n--- SECTION 2: SPECIAL HANDS ---")
 
 	# 10. Five of a Kind
-	var res_five := await Scoring.PokerHands.new().score(make_hand([1, 1, 1, 1, 1], [1, 2, 3, 4, 1]))
+	var res_five := await Scoring.PokerHands.score(make_hand([1, 1, 1, 1, 1], [1, 2, 3, 4, 1]))
 	assert_result(res_five, 20, "5 of a Kind", [Scoring.MELD_TYPE.X_OF_KIND], "5 Aces")
 
 	# 11. Flush House
-	var res_fhouse := await Scoring.PokerHands.new().score(make_hand([10, 10, 10, 5, 5], [1, 1, 1, 1, 1]))
+	var res_fhouse := await Scoring.PokerHands.score(make_hand([10, 10, 10, 5, 5], [1, 1, 1, 1, 1]))
 	assert_result(res_fhouse, 24, "Flush House", [Scoring.MELD_TYPE.FULL_HOUSE, Scoring.MELD_TYPE.FLUSH, Scoring.MELD_TYPE.ALL_SAME_SUIT], "Flush House")
 	var rfh := res_fhouse[0]
 	check(rfh.types.has(Scoring.MELD_TYPE.FLUSH), "Flush House has FLUSH type")
 	check(rfh.types.has(Scoring.MELD_TYPE.ALL_SAME_SUIT), "Flush House has ALL_SAME_SUIT type")
 
 	# 12. Flush Five
-	var res_ff := await Scoring.PokerHands.new().score(make_hand([1, 1, 1, 1, 1], [3, 3, 3, 3, 3]))
+	var res_ff := await Scoring.PokerHands.score(make_hand([1, 1, 1, 1, 1], [3, 3, 3, 3, 3]))
 	assert_result(res_ff, 40, "Flush Five", [Scoring.MELD_TYPE.X_OF_KIND, Scoring.MELD_TYPE.FLUSH, Scoring.MELD_TYPE.ALL_SAME_SUIT], "Flush Five")
 
 
@@ -185,7 +184,7 @@ func run_architecture_edge_cases() -> void:
 	print("\n--- SECTION 3: ARCHITECTURE EDGE CASES ---")
 
 	# 13. Flush pairs (3 pairs, all hearts) -> suited multi-set
-	var res_fp := await Scoring.PokerHands.new().score(make_hand([2,2, 3,3, 4,4], [1,1, 1,1, 1,1]))
+	var res_fp := await Scoring.PokerHands.score(make_hand([2,2, 3,3, 4,4], [1,1, 1,1, 1,1]))
 	var rfp := res_fp[0]
 	check(rfp.types.has(Scoring.MELD_TYPE.MULTI), "Flush Pairs has MULTI")
 	check(rfp.types.has(Scoring.MELD_TYPE.X_OF_KIND), "Flush Pairs has X_OF_KIND")
@@ -369,6 +368,13 @@ func run_advanced_connectivity_tests() -> void:
 	# 54. Tie-break: trips(10s) vs trips(2s) -> 10s win priority.
 	var r54 := await Scoring.PokerHands.score(make_hand([10, 10, 10, 2, 2, 2], [1, 2, 3, 1, 2, 3]))
 	check(r54[0].tie_breaker_high_card == 10.0, "54 tie-break prefers 10s", str(r54[0].tie_breaker_high_card))
+
+	# 55. Ace-high tie-break: a straight wrapping through the top (10-J-Q-K-A) uses Ace as 14...
+	var r55 := await Scoring.PokerHands.score(make_hand([1, 13, 12, 11, 10], [1, 2, 3, 4, 2]))
+	check(r55[0].tie_breaker_high_card == 14.0, "55 wrap-top straight tie-break == 14 (ace high)", str(r55[0].tie_breaker_high_card))
+	# ...but a wheel (A-2-3-4-5) keeps the Ace low -> tie-break is the 5.
+	var r55b := await Scoring.PokerHands.score(make_hand([5, 4, 3, 2, 1], [1, 2, 3, 4, 2]))
+	check(r55b[0].tie_breaker_high_card == 5.0, "55b wheel tie-break == 5 (ace low)", str(r55b[0].tie_breaker_high_card))
 
 
 # ==============================================================================

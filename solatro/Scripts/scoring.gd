@@ -104,9 +104,6 @@ class Result:
 	func _to_string() -> String:
 		return name #+ " " + str(meld)
 
-@abstract class Scorer:
-	static func score(cards:Array[CardData]) -> Array[Result]: return []
-
 class HandProfile:
 	var ranks : RankMap = RankMap.new()
 	var suits : SuitMap = SuitMap.new()
@@ -314,7 +311,7 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 # ==============================================================================
 # CENTRAL STRATEGY ROUTER PARALLEL ENGINE
 # ==============================================================================
-class PokerHands extends Scorer:
+class PokerHands:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.is_empty(): return []
 		
@@ -325,16 +322,16 @@ class PokerHands extends Scorer:
 			
 		var candidates: Array[Result] = []
 		
-		var grid_res := await ExpandedGridHandler.new().score(real_cards)
+		var grid_res := await ExpandedGridHandler.score(real_cards)
 		if not grid_res.is_empty(): candidates.append_array(grid_res)
-		
-		var straight_res := await MultiStraightHandler.new().score(real_cards)
+
+		var straight_res := await MultiStraightHandler.score(real_cards)
 		if not straight_res.is_empty(): candidates.append_array(straight_res)
-		
-		var flush_res := await MultiFlushHandler.new().score(real_cards)
+
+		var flush_res := await MultiFlushHandler.score(real_cards)
 		if not flush_res.is_empty(): candidates.append_array(flush_res)
-		
-		var high_res := await HighCardHandler.new().score(real_cards)
+
+		var high_res := await HighCardHandler.score(real_cards)
 		if not high_res.is_empty(): candidates.append_array(high_res)
 		
 		if candidates.is_empty(): return []
@@ -367,7 +364,7 @@ class PokerHands extends Scorer:
 # ==============================================================================
 # 1. EXPANDED GRID HANDLER
 # ==============================================================================
-class ExpandedGridHandler extends Scorer:
+class ExpandedGridHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		var profiles := await Scoring._get_hand_profiles_async(cards)
 		var clusters: Array[ArrayCardData] = []
@@ -463,7 +460,7 @@ class ExpandedGridHandler extends Scorer:
 # ==============================================================================
 # 2. MULTI-STRAIGHT HANDLER
 # ==============================================================================
-class MultiStraightHandler extends Scorer:
+class MultiStraightHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.size() < 5: return []
 		
@@ -621,10 +618,20 @@ class MultiStraightHandler extends Scorer:
 		return out
 
 	static func _get_max_value_of_run_async(run_cards: Array[CardData], original_pool: Array[CardData]) -> float:
+		# Ace counts high only when the run actually uses it high, i.e. the run wraps
+		# through the top (contains both the wrap-top rank and the Ace, e.g. ...Q-K-A).
+		# A wheel (A-2-3-4-5) keeps the Ace at its normal value of 1.
+		var has_ace := false
+		var has_wrap_top := false
+		for card in run_cards:
+			if card and card.rank and "value" in card.rank:
+				if PipComparator.is_ace(card.rank): has_ace = true
+				elif is_equal_approx(float(card.rank.value), PipComparator.get_wrap_top_value()): has_wrap_top = true
+		var ace_high := has_ace and has_wrap_top
 		var max_val := -INF
 		for card in run_cards:
 			if card and card.rank:
-				var comp_val := await PipComparator.get_scorable_value(card.rank, original_pool, false)
+				var comp_val := await PipComparator.get_scorable_value(card.rank, original_pool, ace_high)
 				max_val = max(max_val, comp_val)
 		return max_val
 
@@ -632,7 +639,7 @@ class MultiStraightHandler extends Scorer:
 # ==============================================================================
 # 3. MULTI-FLUSH HANDLER
 # ==============================================================================
-class MultiFlushHandler extends Scorer:
+class MultiFlushHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		var pool := cards.duplicate()
 		var flushes_found: Array[ArrayCardData] = []
@@ -717,7 +724,7 @@ class MultiFlushHandler extends Scorer:
 # ==============================================================================
 # 4. HIGH CARD HANDLER
 # ==============================================================================
-class HighCardHandler extends Scorer:
+class HighCardHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.is_empty(): return []
 

@@ -9,7 +9,6 @@ func get_frame() -> int: return 7
 
 func on_run_scorer() -> void:
 	#var board_cols : Array[ArrayCard] = get_board_cols()
-	var game := CardEnvironment.get_current_game()
 	if not game: return
 	var zone := game.state.lower_zone
 	var current_row : int = 0

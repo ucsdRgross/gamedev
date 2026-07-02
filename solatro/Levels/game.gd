@@ -10,6 +10,8 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 var state : GameData = GameData.new():
 	set(value):
+		if state and state.state_changed.is_connected(_on_state_changed):
+			state.state_changed.disconnect(_on_state_changed)
 		state = value
 		state.state_changed.connect(_on_state_changed)
 		_on_state_changed()
@@ -53,6 +55,7 @@ func _ready() -> void:
 	state.print_board()
 
 func on_data_selected(data:CardData) -> void:
+	if processing: return
 	#if already holding cards
 	if play_area.selected_cards:
 		#do nothing if position unchanged
@@ -75,6 +78,7 @@ func on_data_selected(data:CardData) -> void:
 		play_area.grab_cards(grabbed)
 
 func _on_state_changed() -> void:
+	if not is_node_ready(): return
 	(%Goal/Label as Label).text = str(state.goal)
 	(%Total/Label as Label).text = str(state.total_score)
 	(%MultScore as Label).text = str(state.mult_score)
@@ -88,10 +92,12 @@ func add_deck() -> void:
 	if not saved_rules: saved_rules = self.deck.get_rules()
 	if not saved_deck: saved_deck = self.deck.get_deck()
 	
-	state.rules_deck = saved_rules.duplicate(true)
+	#Array.duplicate(true) shares Resource elements; duplicate_deep actually copies the
+	#cards (with modifier backrefs remapped) so play never mutates the save's cards
+	state.rules_deck = saved_rules.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for data in state.rules_deck:
 		data.stage = CardData.Stage.RULES
-	state.draw_deck = saved_deck.duplicate(true)
+	state.draw_deck = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
 	shuffle_deck(state.draw_deck)
@@ -180,17 +186,17 @@ func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 
 
 func find_data_vec3(data:CardData) -> Vector3i:
 	var upper_type_index :=  state.upper_zone_type.find(data)
-	if upper_type_index > -1: return Vector3(0,upper_type_index,-1)
+	if upper_type_index > -1: return Vector3i(0,upper_type_index,-1)
 	var lower_type_index :=  state.lower_zone_type.find(data)
-	if lower_type_index > -1: return Vector3(1,lower_type_index,-1)
-	for col : int in state.upper_zone_type.size():
+	if lower_type_index > -1: return Vector3i(1,lower_type_index,-1)
+	for col : int in state.upper_zone.size():
 		var row := state.upper_zone[col].datas.find(data)
 		if row > -1:
-			return Vector3(0,col,row)
+			return Vector3i(0,col,row)
 	for col : int in state.lower_zone.size():
 		var row := state.lower_zone[col].datas.find(data)
 		if row > -1:
-			return Vector3(1,col,row)
+			return Vector3i(1,col,row)
 	return Vector3i.MIN
 
 func find_vec3_data(vec3:Vector3i) -> CardData:
@@ -205,18 +211,19 @@ func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
 	return state.lower_zone 
 	
 func is_data_topmost(data:CardData) -> bool:
-	# check if is type
-	var col : int = state.lower_zone_type.find(data)
-	# if datas is empty the input card must be topmost
-	if col >= 0 and state.lower_zone[col].datas.size() == 0:
-		return true
+	# zone/type header cards are topmost exactly when their column is empty
+	var col : int = state.upper_zone_type.find(data)
+	if col >= 0 and col < state.upper_zone.size():
+		return state.upper_zone[col].datas.size() == 0
+	col = state.lower_zone_type.find(data)
+	if col >= 0 and col < state.lower_zone.size():
+		return state.lower_zone[col].datas.size() == 0
 	var vec3 := find_data_vec3(data)
 	if vec3 == Vector3i.MIN: return false
 	var zone := get_zone_from_vec3(vec3)
 	var zone_col : ArrayCardData = zone.get(vec3.y)
-	if not zone_col: return false
-	if data == zone_col.datas[-1]: return true
-	return false
+	if not zone_col or zone_col.datas.is_empty(): return false
+	return data == zone_col.datas[-1]
 
 #spawns new CARD where deck is
 func draw_card() -> CardData:
@@ -242,8 +249,14 @@ func discard_data(data: CardData) -> void:
 	data.stage = CardData.Stage.DISCARD
 
 func return_to_map() -> void:
-	run_all_mods(&"on_game_end")
+	await run_all_mods(&"on_game_end")
+	#sweep cards still on the board back into the deck (zone/type cards stay with their skills)
+	for zone : Array[ArrayCardData] in [state.upper_zone, state.lower_zone]:
+		for col in zone:
+			state.draw_deck.append_array(col.datas)
+			col.datas.clear()
 	state.draw_deck.append_array(state.discard_deck)
+	state.discard_deck.clear()
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
 	Main.save_info.card_datas = state.draw_deck
@@ -259,7 +272,7 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 	var score_zone : Array[BigNumber] = state.scores_row_lower
 	if zone == state.upper_zone:
-		score_zone = state.scores_row_lower
+		score_zone = state.scores_row_upper
 	resize_score_zone(score_zone, row + 1)
 	await play_area.popup_meld(result)
 	play_area.update_score(score_zone, row, score_zone[row].plus_equals(result.score))

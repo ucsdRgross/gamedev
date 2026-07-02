@@ -27,7 +27,6 @@ buses/default_bus_layout="res://Audio/default_bus_layout.tres"
 
 PseudoLocalisationCycler="*uid://cgwqytqq2t8ih"
 SettingsManager="*uid://0icgb7ix0tbx"
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]
 
@@ -49,7 +48,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/yard/plugin.cfg")
+enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/yard/plugin.cfg")
 
 [global_group]
 

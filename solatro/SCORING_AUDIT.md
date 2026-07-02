@@ -19,7 +19,7 @@ comparator dispatch, and dead abstraction.
 
 ### Confirmed
 
-- [ ] **SC1. The first two test sections run CONCURRENTLY with the rest — results race.**
+- [x] **SC1. The first two test sections run CONCURRENTLY with the rest — results race.**
   [test_scoring.gd:25-26](Tests/test_scoring.gd:25) — `run_standard_5_card_poker_tests()`
   and `run_balatro_special_hand_tests()` are coroutines (they `await` inside) but are called
   **without `await`**. In GDScript that means `_ready` continues at the first suspension
@@ -28,7 +28,7 @@ comparator dispatch, and dead abstraction.
   failures there can be *silently excluded from the summary*. Fix: `await` both calls.
   This is the most important finding in the file: the suite may currently under-report.
 
-- [ ] **SC2. The `Scorer` base class is a fake abstraction.**
+- [x] **SC2. The `Scorer` base class is a fake abstraction.**
   [scoring.gd:107-108](Scripts/scoring.gd:107) — `@abstract class Scorer` defines
   `static func score(...)`. Static functions don't participate in inheritance dispatch in
   GDScript; each handler's `static func score` *shadows* (not overrides) it, nothing ever
@@ -50,7 +50,7 @@ comparator dispatch, and dead abstraction.
   real ace-high test (e.g. tie-break of A-x-x-x-x vs K-x-x-x-x once ace-high is used
   anywhere — see SC10, it currently isn't).
 
-- [ ] **SC4. `_ready`'s summary prints twice with different totals.**
+- [x] **SC4. `_ready`'s summary prints twice with different totals.**
   [test_scoring.gd:35-36](Tests/test_scoring.gd:35) — `_print_summary()` runs, *then*
   `run_leaderboard()` adds ~90 more pass/fail entries and calls `_print_summary()` again
   (line 958). The first "ALL N CHECKS PASSED" line is misleading; combined with SC1 the
@@ -58,7 +58,7 @@ comparator dispatch, and dead abstraction.
 
 ### Suspicious / design decisions to confirm intentional
 
-- [ ] **SC5. Ace never counts high in tie-breaks.** Every `get_scorable_value` call in
+- [x] **SC5. Ace never counts high in tie-breaks.** Every `get_scorable_value` call in
   scoring.gd passes `wrap_ace_high = false` ([scoring.gd:383](Scripts/scoring.gd:383),
   [628](Scripts/scoring.gd:628), [654](Scripts/scoring.gd:654),
   [738](Scripts/scoring.gd:738)), so an Ace (1) loses a high-card tie to a 2, and a
