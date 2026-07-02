@@ -2,6 +2,16 @@ class_name GameData
 extends Resource
 
 signal state_changed
+signal board_changed
+
+#Bumped by every board mutation (Board.*, draw, discard, add_deck, shuffle) AFTER the
+#state is consistent again. The setter emits board_changed (drives the UI rebuild) and
+#the counter keys CardEnvironment's compare-mod cache (SE1).
+#See Board's MUTATION GUIDELINES before adding any new mutation path.
+var revision : int = 0:
+	set(value):
+		revision = value
+		board_changed.emit()
 
 @export_storage var goal : int = 100:
 	set(value):

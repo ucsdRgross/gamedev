@@ -19,7 +19,7 @@ func on_active() -> void:
 	if not game: return
 	if not card_data:
 		card_data = card_data_to_add()
-	Board.add_column(get_zone(), get_zone_type(), card_data)
+	Board.add_column(game.state, get_zone(), get_zone_type(), card_data)
 
 func on_deactive() -> void:
 	if not game: return
@@ -27,7 +27,7 @@ func on_deactive() -> void:
 	if index == -1:
 		card_data = null
 		return
-	for d : CardData in Board.remove_column(get_zone(), get_zone_type(), index):
+	for d : CardData in Board.remove_column(game.state, get_zone(), get_zone_type(), index):
 		await game.discard_data(d)
 	card_data = null
 		

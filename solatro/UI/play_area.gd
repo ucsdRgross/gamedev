@@ -74,6 +74,7 @@ func _input(event: InputEvent) -> void:
 func grab_cards(datas:Array[CardData]) -> void:
 	ungrab_cards()
 	selected_cards = datas
+	set_card_zones_visuals()
 	for index in selected_cards.size():
 		var data := selected_cards[index]
 		if data in data_card: 
@@ -91,11 +92,24 @@ func ungrab_cards() -> void:
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
+	set_card_zones_visuals()
 
-func _physics_process(delta: float) -> void:
-	#since we cannot directly detect if array contents have changed
-	#getting rid of process would require adding update to every function
-	#where we modify the data arrays in some way
+#No per-frame processing: Game relays GameData.board_changed (emitted by every
+#revision bump, i.e. every board mutation) to queue_rebuild(). Focus/selection
+#changes don't touch the board and call set_card_zones_visuals() directly.
+
+#Any number of rebuild requests within one frame collapse into a single
+#set_card_zones() at end of frame (call_deferred). A direct synchronous
+#set_card_zones() (setup_gui/undo) clears the pending request instead.
+var _rebuild_queued := false
+
+func queue_rebuild() -> void:
+	if _rebuild_queued: return
+	_rebuild_queued = true
+	_deferred_rebuild.call_deferred()
+
+func _deferred_rebuild() -> void:
+	if not _rebuild_queued: return #a direct rebuild already happened this frame
 	set_card_zones()
 
 func set_separation() -> void:
@@ -103,6 +117,7 @@ func set_separation() -> void:
 		container.add_theme_constant_override("separation", separation)
 
 func set_card_zones() -> void:
+	_rebuild_queued = false #this rebuild satisfies any queued request
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	ui_data.clear()
@@ -116,6 +131,12 @@ func set_card_zones() -> void:
 	set_card_zones_visuals()
 
 func set_card_zones_visuals() -> void:
+	#a queued rebuild means the control tree is STALE vs the state arrays — running
+	#the visual pass against it can index out of bounds. Flush the rebuild instead
+	#(set_card_zones ends with the visual pass anyway).
+	if _rebuild_queued:
+		set_card_zones()
+		return
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	var game_state := game.state
@@ -287,6 +308,7 @@ func on_control_focus_entered(control:Control) -> void:
 		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom/2.5)
 		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 	focused_control = control
+	set_card_zones_visuals()
 
 func update_score_controls() -> void:
 	var game := CardEnvironment.get_current_game()

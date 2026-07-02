@@ -174,9 +174,10 @@ static func get_ace_alt_value() -> float:
 static func get_wrap_top_value() -> float:
 	return 13.0
 
-## Calculates the scoring value. 
+## Calculates the scoring value.
 ## If wrap_ace_high is true, Ace (1) counts as 14.
-static func get_scorable_value(r: PipRank, context_pool: Array[CardData] = [], wrap_ace_high: bool = false) -> float:
+## (SD4: the old unused context_pool middle parameter was removed.)
+static func get_scorable_value(r: PipRank, wrap_ace_high: bool = false) -> float:
 	if not r: return -INF
 	
 	# DECOUPLED: Check via method, not hardcoded 1 or 14

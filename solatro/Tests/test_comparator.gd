@@ -146,11 +146,11 @@ func run_scorable_tests() -> void:
 	var ace := PipRankNumeral.new().with_value(1)
 	var ten := PipRankNumeral.new().with_value(10)
 
-	check(PipComparator.get_scorable_value(ace, [], true) == 14.0,
+	check(PipComparator.get_scorable_value(ace, true) == 14.0,
 			"ace with wrap_ace_high -> 14")
-	check(PipComparator.get_scorable_value(ace, [], false) == 1.0,
+	check(PipComparator.get_scorable_value(ace, false) == 1.0,
 			"ace without wrap_ace_high -> 1")
-	check(PipComparator.get_scorable_value(ten, [], true) == 10.0,
+	check(PipComparator.get_scorable_value(ten, true) == 10.0,
 			"non-ace unaffected by wrap_ace_high")
 	check(PipComparator.get_scorable_value(null) == -INF, "null rank -> -INF")
 

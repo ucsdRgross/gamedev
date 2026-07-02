@@ -46,14 +46,38 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 	if function != passive_effects:
 		await run_all_mods(passive_effects)
 
-func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
+#SE1: comparators run per card-compare, so the "which mods implement this hook" walk
+#is cached while the board hasn't mutated. Skills stay in the list regardless of
+#`active` and are gate-checked at use time (the active flag flips without a mutation).
+var _compare_cache : Dictionary[StringName, Array] = {}
+var _compare_cache_key : Array = []
+
+## Base environments (tests, map) are uncacheable: their collections mutate freely.
+## Game overrides this with [state id, state.revision].
+func _revision_key() -> Array:
+	return []
+
+func _compare_implementers(function: StringName) -> Array:
+	var key := _revision_key()
+	if key:
+		if key != _compare_cache_key:
+			_compare_cache.clear()
+			_compare_cache_key = key
+		if _compare_cache.has(function):
+			return _compare_cache[function]
+	var impl := []
 	for data in CardDataIterator.new(self):
 		for mod : CardModifier in [data.type, data.stamp]:
-			if mod and mod.has_method(function):
-				return await Callable(mod, function).callv(params)
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
-			return await Callable(skill, function).callv(params)
+			if mod and mod.has_method(function): impl.append(mod)
+		if data.skill and data.skill.has_method(function): impl.append(data.skill)
+	if key:
+		_compare_cache[function] = impl
+	return impl
+
+func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
+	for mod : CardModifier in _compare_implementers(function):
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).active: continue
+		return await Callable(mod, function).callv(params)
 	return NAN
 
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:

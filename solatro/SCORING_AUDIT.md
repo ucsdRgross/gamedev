@@ -222,7 +222,7 @@ Worth adding, in rough priority order:
 A later pass re-examined the engine looking for anything the first audit missed. Three
 additions, none urgent:
 
-- [ ] **SA1. Straight/flush extraction is greedy, not optimal — document it.** Both
+- [x] **SA1. Straight/flush extraction is greedy, not optimal — document it.** Both
   straight paths ([scoring.gd:481-525](Scripts/scoring.gd:481)) and the flush extractor
   ([scoring.gd:641-665](Scripts/scoring.gd:641)) repeatedly remove the single longest
   run/largest suit group from the pool. Greedy extraction can miss the best *partition*
@@ -239,7 +239,7 @@ additions, none urgent:
   (Restates SE2/SE3 as one concrete refactor around the existing class rather than new
   machinery.)
 
-- [ ] **SA3. Test factory type sloppiness:** `m_card(rank_val: float, suit_id: float)`
+- [x] **SA3. Test factory type sloppiness:** `m_card(rank_val: float, suit_id: float)`
   ([test_scoring.gd:89](Tests/test_scoring.gd:89)) feeds a float into
   `PipSuit.with_value(i: int)` — implicit narrowing that GDScript warns on and that
   hides intent (suits are categorical ints everywhere else). Type the params `int`;
@@ -274,3 +274,20 @@ Deliberately still open:
   (exact-name leaderboard asserts): mechanical cosmetics, safe any time.
 - **G3–G5** (ScoreModel / get_loc_name / _compare_results table tests), **SA1** (document
   greedy-extraction limitation), **SA3** (factory int typing).
+
+## 7. FINAL PASS (2026-07-02, second)
+
+- **SE1 DONE** with the owner-approved "cards haven't moved" cache:
+  `GameData.revision` is bumped by every mutation path (Board.move_stack/place_card/
+  add_column/remove_column, Game.draw_card/discard_data/add_deck/shuffle/return_to_map);
+  `CardEnvironment._compare_implementers(hook)` caches the ordered implementer list keyed
+  on `[state id, revision]` (Game provides the key; base environments/tests return an
+  empty key = uncached, identical live behavior). Skills stay in the cached list and are
+  gate-checked on `active` at use time, since that flag flips without a board mutation.
+  CONTRACT: assigning a modifier to an in-play card outside those paths must bump
+  `state.revision` (documented on the field).
+- **SD4 DONE**: unused `context_pool` parameter removed from `get_scorable_value`
+  (all call sites updated). Commented-out `type_filter` block kept per owner convention.
+- **SA1 DONE**: greedy-extraction limitation documented on MultiStraightHandler.
+- **SA3 DONE**: `m_card` suit params typed `int` in both factories.
+- Still open (cosmetic only): SE4, SD5, SD6, G3–G5.

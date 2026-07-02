@@ -1,5 +1,34 @@
 class_name Board
 ## Pure board move logic over GameData (ARCHITECTURE_REVIEW.md §5).
+##
+## ============================ MUTATION GUIDELINES =============================
+## Everything that keeps the game in sync (play-area UI, compare-mod cache, undo,
+## validate()) hangs off ONE rule:
+##
+##   RULE: never write state's card arrays (upper/lower_zone, *_zone_type,
+##   draw_deck, discard_deck, rules_deck) directly. Mutate only through:
+##     Board.move_stack / place_card / add_column / remove_column
+##     Game.draw_card / discard_data / add_deck / shuffle_deck / return_to_map
+##   These all bump state.revision, whose setter emits board_changed -> the UI
+##   rebuilds and the compare-mod cache invalidates. No bump = silent desync
+##   (stale visuals AND possibly stale comparator results).
+##
+## If a new mutation path is truly needed, it must:
+##   1. leave the state fully consistent FIRST (state.validate() returns empty --
+##      zone/type arrays in lockstep, stages matching locations, no card in two
+##      places),
+##   2. bump state.revision exactly once, AFTER the mutation (never mid-way:
+##      board_changed listeners run synchronously and will read the state),
+##   3. be exercised in a debug build, where Game.debug_validate push_warnings
+##      any broken invariant after moves/undo.
+##
+## Two non-array mutations ALSO count as board mutations and need a bump:
+##   - assigning/removing a CardModifier on an in-play card (changes which mods
+##     the comparator cache should see),
+##   - anything that changes zone column/type pairing outside add/remove_column.
+## Reads never need anything: locate / find_data_vec3 / validate are side-effect
+## free, and rejected/no-op move_stack calls do not bump.
+## ==============================================================================
 ## Destinations are ANCHORS (card references / column ends), not indices, so the
 ## extraction step can never invalidate the destination — the anchor is resolved
 ## AFTER extraction and the whole same-column compensation math disappears.
@@ -168,6 +197,7 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 		c.stage = CardData.Stage.PLAY
 
 	# PHASE 4 (events) belongs to Game — board is consistent from here on
+	state.revision += 1
 	res.code = OK
 	return res
 
@@ -182,19 +212,25 @@ static func place_card(state: GameData, card: CardData, x: int, col: int) -> boo
 	if col < 0 or col >= zone(state, x).size(): return false
 	if locate(state, card) != Vector3i.MIN: return false #already on the board
 	zone(state, x)[col].datas.append(card)
-	card.stage = CardData.Stage.PLAY
+	#don't re-set an already-PLAY stage: previous_stage drives the visual's spawn
+	#origin (DRAW -> fly in from the deck), and re-setting would clobber it
+	if card.stage != CardData.Stage.PLAY:
+		card.stage = CardData.Stage.PLAY
+	state.revision += 1
 	return true
 
 ## Appends a header + empty column in lockstep (I2). ZoneAdder's add path.
-static func add_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData], header: CardData) -> void:
+static func add_column(state: GameData, zone_cols: Array[ArrayCardData], zone_types: Array[CardData], header: CardData) -> void:
 	header.stage = CardData.Stage.ZONE
 	zone_types.append(header)
 	zone_cols.append(ArrayCardData.new())
+	state.revision += 1
 
 ## Removes header + column in lockstep; returns the orphaned column cards so the
 ## caller can discard/relocate them. ZoneAdder's remove path.
-static func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData], index: int) -> Array[CardData]:
+static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone_types: Array[CardData], index: int) -> Array[CardData]:
 	if index < 0 or index >= zone_types.size() or index >= zone_cols.size():
 		return []
 	zone_types.remove_at(index)
+	state.revision += 1
 	return zone_cols.pop_at(index).datas

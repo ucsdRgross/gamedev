@@ -10,11 +10,25 @@ const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
 var state : GameData = GameData.new():
 	set(value):
-		if state and state.state_changed.is_connected(_on_state_changed):
-			state.state_changed.disconnect(_on_state_changed)
+		if state:
+			if state.state_changed.is_connected(_on_state_changed):
+				state.state_changed.disconnect(_on_state_changed)
+			if state.board_changed.is_connected(_on_board_changed):
+				state.board_changed.disconnect(_on_board_changed)
 		state = value
 		state.state_changed.connect(_on_state_changed)
+		state.board_changed.connect(_on_board_changed)
 		_on_state_changed()
+
+#board mutated (revision bump) -> rebuild the play area; bumps happen only after the
+#state is consistent, so a synchronous rebuild always sees a valid board.
+#Guard on play_area (assigned via @onready BEFORE _ready runs), NOT is_node_ready():
+#_ready is a coroutine, so is_node_ready() stays false through the whole initial
+#deal — which would swallow every startup bump and leave the board blank.
+func _on_board_changed() -> void:
+	if not play_area: return
+	#coalesced: any number of bumps this frame -> one rebuild at end of frame
+	play_area.queue_rebuild()
 
 var save_history : Array[GameData] = []
 
@@ -29,6 +43,10 @@ var processing : bool = false
 @onready var win_screen: Label = %WinScreen
 @onready var lose_screen: Label = %LoseScreen
 @onready var undo_button: Button = %Undo
+
+#SE1: compare-mod cache stays valid while the same state object is unmutated
+func _revision_key() -> Array:
+	return [state.get_instance_id(), state.revision]
 
 func get_card_collections() -> Array:
 	return [
@@ -45,6 +63,12 @@ func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck
 
 func _ready() -> void:
+	#the declaration default bypasses the state setter (setters only run on later
+	#assignments), so the INITIAL state's signals must be wired here by hand
+	if not state.state_changed.is_connected(_on_state_changed):
+		state.state_changed.connect(_on_state_changed)
+	if not state.board_changed.is_connected(_on_board_changed):
+		state.board_changed.connect(_on_board_changed)
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
 	state.goal = state.goal * (1.1 ** Main.save_info.layer)
@@ -101,6 +125,7 @@ func add_deck() -> void:
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
 	shuffle_deck(state.draw_deck)
+	state.revision += 1
 
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
@@ -220,6 +245,7 @@ func draw_card() -> CardData:
 	if state.draw_deck.size() > 0:
 		var data : CardData = state.draw_deck.pop_back()
 		data.stage = CardData.Stage.PLAY
+		state.revision += 1
 		return data
 	return null
 
@@ -239,6 +265,7 @@ func discard_data(data: CardData) -> void:
 		get_zone_from_vec3(vec3)[vec3.y].datas.erase(data)
 	state.discard_deck.append(data)
 	data.stage = CardData.Stage.DISCARD
+	state.revision += 1
 
 func return_to_map() -> void:
 	await run_all_mods(&"on_game_end")
@@ -251,6 +278,7 @@ func return_to_map() -> void:
 	state.discard_deck.clear()
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
+	state.revision += 1
 	Main.save_info.card_datas = state.draw_deck
 	game_ended.emit()
 

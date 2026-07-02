@@ -5,7 +5,7 @@ extends Node
 # ==============================================================================
 # All checks are NON-FREEZING: a failure prints "[FAIL] ..." and continues
 # (we never call assert(), which halts at a breakpoint at runtime).
-# Sections:
+# Sections (SD5: in _ready order; numbering in section headers below is historical):
 #   1. Standard 5-card poker parity
 #   2. Balatro special hands
 #   3. Architecture edge cases (flush distinction, deep stacks)
@@ -13,7 +13,10 @@ extends Node
 #   5. Macro scaling (30+ cards)
 #   6. Advanced connectivity & tie-breakers
 #   7. Overlapping-hand MELD verification (correct cards extracted)
-#   8. Combined self-checking leaderboard
+#   8. Chaos / degenerate inputs
+#   9. Sub-hand (multi copy) structure verification
+#  10. Meld integrity (wraps, stones, instance re-use)
+#  11. Combined self-checking leaderboard (prints the final summary)
 # ==============================================================================
 
 var _pass := 0
@@ -85,7 +88,7 @@ static func make_hand(ranks: Array[int], suits: Array[int]) -> Array[CardData]:
 		out.append(m_card(ranks[i], suits[i]))
 	return out
 
-static func m_card(rank_val: float, suit_id: float) -> CardData:
+static func m_card(rank_val: float, suit_id: int) -> CardData:
 	var cd := CardData.new()
 	cd.rank = PipRankNumeral.new().with_value(rank_val)
 	cd.suit = PipSuitStandard.new().with_value(suit_id)

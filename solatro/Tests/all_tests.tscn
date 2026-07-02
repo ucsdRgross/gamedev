@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://Tests/test_dispatch.tscn" id="3_conaq"]
 [ext_resource type="PackedScene" uid="uid://tstkex8bp6v1" path="res://Tests/test_fuzz.tscn" id="4_7scqg"]
 [ext_resource type="PackedScene" path="res://Tests/test_iterator.tscn" id="5_0nmpq"]
-[ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/tests.tscn" id="6_aoeg8"]
+[ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/test_score.tscn" id="6_aoeg8"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 
@@ -19,4 +19,4 @@
 
 [node name="TestIterator" parent="." unique_id=642896934 instance=ExtResource("5_0nmpq")]
 
-[node name="Tests" parent="." unique_id=1772777320 instance=ExtResource("6_aoeg8")]
+[node name="TestScore" parent="." unique_id=1772777320 instance=ExtResource("6_aoeg8")]

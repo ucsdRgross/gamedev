@@ -435,7 +435,7 @@ class ExpandedGridHandler:
 
 		# Pre-compute scorable values (no awaits inside the sort).
 		var val_map := {}
-		for c in clusters: val_map[c] = await PipComparator.get_scorable_value(c.datas[0].rank, cards, false)
+		for c in clusters: val_map[c] = await PipComparator.get_scorable_value(c.datas[0].rank)
 
 		clusters.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool:
 			if a.datas.size() != b.datas.size(): return a.datas.size() > b.datas.size()
@@ -510,6 +510,11 @@ class ExpandedGridHandler:
 # 2. MULTI-STRAIGHT HANDLER
 # ==============================================================================
 class MultiStraightHandler:
+	#SA1 KNOWN LIMITATION: extraction is GREEDY (repeatedly remove the single longest
+	#run / largest suit group), which can miss the best PARTITION — e.g. one maximal
+	#mixed run can straddle two suits and destroy two straight flushes. The A/B paths
+	#below (flushes-first vs mixed-first) hedge exactly this. Exact partitioning would
+	#be a small weighted set-partition search — feasible at board sizes if ever needed.
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.size() < 5: return []
 		
@@ -676,7 +681,7 @@ class MultiStraightHandler:
 		var max_val := -INF
 		for card in run_cards:
 			if card and card.rank:
-				var comp_val := await PipComparator.get_scorable_value(card.rank, original_pool, ace_high)
+				var comp_val := await PipComparator.get_scorable_value(card.rank, ace_high)
 				max_val = max(max_val, comp_val)
 		return max_val
 
@@ -702,7 +707,7 @@ class MultiFlushHandler:
 			# Pre-calculate scorable values to avoid awaits during sort
 			var val_map := {}
 			for c in best_flush:
-				val_map[c] = await PipComparator.get_scorable_value(c.rank, cards, false)
+				val_map[c] = await PipComparator.get_scorable_value(c.rank)
 
 			#duplicate BEFORE sorting: best_flush references the live profile bucket
 			var sorted_flush : Array[CardData] = best_flush.duplicate()
@@ -764,5 +769,5 @@ class HighCardHandler:
 
 		var hc_types: Array[MELD_TYPE] = [MELD_TYPE.HIGH_CARD]
 		var result_name := Scoring.get_loc_name(hc_types)
-		var score_val := await PipComparator.get_scorable_value(best_card.rank, cards, false)
+		var score_val := await PipComparator.get_scorable_value(best_card.rank)
 		return [Result.create(result_name, [best_card], ScoreModel.final_score(hc_types, 1, 1), score_val, hc_types)]
