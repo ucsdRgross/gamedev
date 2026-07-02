@@ -32,7 +32,7 @@ const DEFAULT_RANGES := {
 	"continent_frequency": [0.001, 0.01], "detail_frequency": [0.01, 0.1],
 	"ridge_frequency": [0.004, 0.03], "ocean_threshold": [0.25, 0.5],
 	"mountain_threshold": [0.5, 0.8], "island_radius": [0.4, 0.9],
-	"land_contrast": [0.8, 2.0], "boundary_radius": [0.3, 0.6],
+	"land_contrast": [0.8, 2.0], "boundary_radius": [0.4, 0.45],
 	"edge_jag": [0.0, 0.2], "peak_uplift": [0.0, 0.6],
 	"highland_range": [0.1, 0.5], "peak_detail_strength": [0.0, 0.3],
 	"continent_warp_amp": [0.0, 40.0], "continent_warp_freq": [0.002, 0.03],
@@ -48,9 +48,9 @@ const DEFAULT_RANGES := {
 	"river_accum_threshold": [20.0, 120.0], "river_carve_depth": [0.0, 0.06],
 	"erosion_min_elevation": [0.38, 0.6], "erosion_elevation_falloff": [0.02, 0.3],
 	"peak_detail_min_elevation": [0.38, 0.7], "peak_detail_falloff": [0.02, 0.3],
-	"island_falloff": [0.3, 1.6], "boundary_falloff": [0.01, 0.15],
+	"island_falloff": [0.3, 1.6], "boundary_falloff": [0.01, 0.05],
 	"temp_lapse_rate": [0.0, 1.0], "river_humidity_boost": [0.0, 0.6],
-	"lowland_flatten": [1.0, 4.0],
+	"lowland_flatten": [1.0, 2.0],
 }
 
 ## Which generation step each tunable parameter belongs to (the step at which you
