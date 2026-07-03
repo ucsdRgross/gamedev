@@ -33,6 +33,21 @@ class_name Board
 ## extraction step can never invalidate the destination — the anchor is resolved
 ## AFTER extraction and the whole same-column compensation math disappears.
 ## No scene tree, no signals, no mod events: Game keeps Phase 4 (event firing).
+##
+## MUTATION GUIDELINES — follow these and board/UI/cache desync cannot happen:
+## 1. Only mutate cards/zones/decks through: Board.move_stack / place_card /
+##    add_column / remove_column, or Game.draw_card / discard_data / add_deck /
+##    shuffle_deck / return_to_map. Never write state arrays directly from mods/UI.
+## 2. If you MUST add a new mutation path: mutate to a fully consistent state
+##    (state.validate() returns []), THEN bump state.revision exactly once. The bump
+##    emits board_changed (queues the UI rebuild) and invalidates the compare-mod
+##    cache — bumping mid-mutation would let the UI rebuild against a broken board.
+## 3. Assigning or removing a CardModifier on an in-play card is also a mutation:
+##    bump state.revision (the compare-mod cache is keyed on it).
+## 4. PlayArea-side rule: any code reading ui_data/data_ui/data_card or the control
+##    tree must call play_area.flush_rebuild() first (stale-layout crash otherwise).
+## 5. Watch the debug output: state.validate() warnings after moves/undo mean a
+##    mutation path broke an invariant — treat as a bug, not noise.
 
 #move_stack result codes
 const OK := 0

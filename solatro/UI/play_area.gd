@@ -46,6 +46,7 @@ func update_gui() -> void:
 	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
 
 func _on_gui_input(event: InputEvent) -> void:
+	flush_rebuild() #reads ui_data
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
@@ -72,6 +73,7 @@ func _input(event: InputEvent) -> void:
 			ungrab_cards()
 			
 func grab_cards(datas:Array[CardData]) -> void:
+	flush_rebuild() #reads data_card / data_ui
 	ungrab_cards()
 	selected_cards = datas
 	set_card_zones_visuals()
@@ -85,6 +87,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func ungrab_cards() -> void:
+	flush_rebuild() #reads data_card / data_ui
 	for data in selected_cards:
 		if data in data_card: 
 			var card_visual := data_card[data]
@@ -112,6 +115,13 @@ func _deferred_rebuild() -> void:
 	if not _rebuild_queued: return #a direct rebuild already happened this frame
 	set_card_zones()
 
+#GUARD RULE: ui_data / data_ui / data_card and the control tree are only valid for
+#the CURRENT revision. Anything that reads them must flush the queued rebuild first,
+#or it operates on a stale layout (out-of-bounds crashes, missing visuals).
+func flush_rebuild() -> void:
+	if _rebuild_queued:
+		set_card_zones()
+
 func set_separation() -> void:
 	for container : Control in containers:
 		container.add_theme_constant_override("separation", separation)
@@ -135,7 +145,7 @@ func set_card_zones_visuals() -> void:
 	#the visual pass against it can index out of bounds. Flush the rebuild instead
 	#(set_card_zones ends with the visual pass anyway).
 	if _rebuild_queued:
-		set_card_zones()
+		flush_rebuild()
 		return
 	var game := CardEnvironment.get_current_game()
 	if not game: return
@@ -278,6 +288,7 @@ func create_card_control() -> Control:
 
 var focused_visual : CardVisual
 func on_control_focus_entered(control:Control) -> void:
+	flush_rebuild() #reads ui_data / data_card
 	var row_index := control.get_index()
 	var column_node : Control = control.get_parent()
 	if focused_visual: focused_visual.focused = false
@@ -360,6 +371,7 @@ func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
 	#return null
 #
 func get_data_from_control(control : Control) -> CardData:
+	flush_rebuild() #reads ui_data
 	if control in ui_data:
 		return ui_data[control]
 	return null
@@ -370,6 +382,7 @@ func get_data_from_control(control : Control) -> CardData:
 	#return null
 	
 func popup_meld(result : Scoring.Result) -> void:
+	flush_rebuild() #reads data_card
 	var wait_time : float = 0
 	for data in result.meld:
 		if data in data_card:
@@ -378,11 +391,13 @@ func popup_meld(result : Scoring.Result) -> void:
 	await get_tree().create_timer(wait_time).timeout
 	
 func reset_meld(result : Scoring.Result) -> void:
+	flush_rebuild() #reads data_card
 	for data in result.meld:
 		if data in data_card:
 			data_card[data].anim_reset()
 
 func popup_score(result : Scoring.Result) -> void:
+	flush_rebuild() #reads data_card
 	if not result.meld: return
 	var combo_pos : Vector2 = Vector2.ZERO
 	var meld_size : int = 0
