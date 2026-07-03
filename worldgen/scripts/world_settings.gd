@@ -175,9 +175,9 @@ func map_diag() -> float:
 ## Hydrology grid downscale (1 = full res/no pixelation; higher = faster but blocky).
 @export_range(1, 1) var river_resolution_divisor: int = 1
 ## Exponent: wetter cells source more water (0 = humidity ignored).
-@export_range(0.0, 8.0) var river_source_humidity_bias: float = 3.0
+@export_range(0.0, 2.0) var river_source_humidity_bias: float = 1.0
 ## Exponent: higher cells source more water.
-@export_range(0.0, 8.0) var river_source_elevation_bias: float = 1.0
+@export_range(0.0, 2.0) var river_source_elevation_bias: float = 1.0
 ## Min flow accumulation for a cell to count as a river (lower = denser network).
 @export var river_accum_threshold: float = 60.0
 ## Max channel depth carved below land (scaled by river size).
@@ -196,7 +196,7 @@ func map_diag() -> float:
 ## How far below the spill level the lake surface sits.
 @export var lake_carve_depth: float = 0.02
 ## Dilate lakes outward by this many hydrology px (0 = none).
-@export_range(0, 6) var lake_width: int = 0
+@export_range(0, 0) var lake_width: int = 0
 
 @export_group("Step 6 - Climate")
 ## Temperature noise scale (higher = smaller, more varied biome patches).
