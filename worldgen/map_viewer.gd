@@ -229,13 +229,20 @@ func _paint_from(gen: WorldGenerator) -> void:
 	var painter := _painter_for(gen)
 	var n := gen.settings.map_width  # project maps are square
 
-	if not gen.snapshots.has(info.snap):
-		push_warning("[MapViewer] snapshot '%s' missing; nothing to paint" % info.snap)
+	# When the viewed step is toggled off its snapshot is absent, so fall back to
+	# whatever step actually ran last (final_snapshot). The paint kind can stay --
+	# e.g. "graph" over Rivers_Only paints terrain and the graph overlay no-ops, so
+	# graph-off shows plain terrain.
+	var snap: String = info.snap
+	if not gen.snapshots.has(snap):
+		snap = gen.final_snapshot()
+	if snap == "" or not gen.snapshots.has(snap):
+		push_warning("[MapViewer] no snapshot to paint (all steps disabled?)")
 		return
 	var cimg := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	painter._paint_cell(cimg, _kind(), info.snap, Vector2i.ZERO, n)
+	painter._paint_cell(cimg, _kind(), snap, Vector2i.ZERO, n)
 	colored_map = cimg
-	heightmap = _height_image(gen, info.snap, "height")
+	heightmap = _height_image(gen, snap, "height")
 
 	if info.water != "" and gen.snapshots.has(info.water):
 		water_colored_map = painter.water_only_image()

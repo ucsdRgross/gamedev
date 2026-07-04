@@ -47,6 +47,10 @@ var _viewports: Dictionary = {}
 # CPU-baked noise maps: name -> { "img": Image, "tex": ImageTexture }. All noise
 # is generated here so shaders only transform it (and the viewer can show it).
 var noise_maps: Dictionary = {}
+## Snapshot name of the last step that actually ran in the most recent generation
+## (honoring toggles). final_snapshot() exposes it so "final image" consumers key
+## off whatever executed instead of a hardcoded step name.
+var _last_snapshot: String = ""
 
 signal generation_step_finished(step_name: String)
 
@@ -65,16 +69,19 @@ func _ready() -> void:
 	if not settings:
 		print("[WorldGenerator] No settings assigned, using defaults.")
 		settings = WorldSettings.new()
-	_build_viewports()
-	# The viewer (our parent) calls generate_world_map() after it has connected
-	# to generation_step_finished, so we do not kick generation off here.
+	# Viewports are created lazily on first use (see _viewport), so a disabled GPU
+	# step never allocates one. The viewer calls generate_world_map() after it has
+	# connected to generation_step_finished, so we do not kick generation off here.
 
 # =================================================================
 # GPU PIPELINE PLUMBING
 # =================================================================
-func _build_viewports() -> void:
-	for key in SHADER_DEFS:
+## Get-or-create the SubViewport for a shader pass. Lazy so toggled-off GPU steps
+## cost nothing; the two-frame wait in flush() covers a viewport created mid-run.
+func _viewport(key: String) -> SubViewport:
+	if not _viewports.has(key):
 		_viewports[key] = _make_viewport(SHADER_DEFS[key])
+	return _viewports[key]
 
 func _make_viewport(shader_path: String) -> SubViewport:
 	var w := settings.map_width
@@ -97,7 +104,7 @@ func _make_viewport(shader_path: String) -> SubViewport:
 	return vp
 
 func get_material(key: String) -> ShaderMaterial:
-	return _viewports[key].get_child(0).material
+	return _viewport(key).get_child(0).material
 
 func noise_tex(name: String) -> Texture2D:
 	return noise_maps[name]["tex"]
@@ -106,15 +113,16 @@ func noise_img(name: String) -> Image:
 	return noise_maps[name]["img"]
 
 func viewport_texture(key: String) -> Texture2D:
-	return _viewports[key].get_texture()
+	return _viewport(key).get_texture()
 
 ## Force the pass to re-render and wait until the GPU has produced the frame,
 ## then hand back the rendered image. Two frame waits guarantees a populated
 ## target even on the very first run after the nodes entered the tree.
 func flush(key: String) -> Image:
+	var vp := _viewport(key)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-	return _viewports[key].get_texture().get_image()
+	return vp.get_texture().get_image()
 
 # =================================================================
 # CPU READBACK HELPERS (shared by the step files)
@@ -162,6 +170,7 @@ func _reset_state() -> void:
 	graph_curves.clear()
 	map_field = null
 	landmarks.clear()
+	_last_snapshot = ""
 
 	var total := settings.map_width * settings.map_height
 	height_buffer.resize(total)
@@ -169,80 +178,84 @@ func _reset_state() -> void:
 	water_surface_buffer.fill(NO_WATER)
 	plate_id_buffer.resize(total)
 
+## Which pipeline step to stop after. Ordinals match the STEPS table order below,
+## so int(GenStep) indexes straight into it. The map viewer uses this so it only
+## pays for the steps it actually shows.
+enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, GRAPH }
+
+## Ordered pipeline. Each entry: the GenerationStep subclass to run, the snapshot it
+## emits (final_snapshot() = the last ENABLED one), whether it is a GPU coroutine
+## (awaited) or a synchronous CPU pass, and the WorldSettings bool that toggles it
+## ("" = always on: Landmass has no toggle). A disabled step is skipped and its
+## buffers pass through, so the next enabled step consumes the previous output.
+func _pipeline() -> Array:
+	return [
+		{"script": Step1Landmass, "snapshot": "Landmass", "gpu": true, "toggle": ""},
+		{"script": Step2Tectonics, "snapshot": "Tectonics", "gpu": true, "toggle": "enable_tectonics"},
+		{"script": Step3PeaksAndValleys, "snapshot": "PeaksAndValleys", "gpu": true, "toggle": "enable_peaks"},
+		{"script": Step4Erosion, "snapshot": "Erosion", "gpu": true, "toggle": "enable_erosion"},
+		{"script": StepRivers, "snapshot": "Rivers_Only", "gpu": true, "toggle": "enable_rivers"},
+		{"script": StepGraph, "snapshot": "Graph", "gpu": false, "toggle": "enable_graph"},
+	]
+
+## Core driver: run enabled steps in order, stopping after the step at `stop_index`
+## (pass the last index to run everything). Disabled steps are skipped. Tracks
+## _last_snapshot; prints a timing report when `report` is set.
+func _run_pipeline(stop_index: int, report: bool) -> void:
+	var pipe := _pipeline()
+	var timings: Array = []
+	var gen_start := Time.get_ticks_msec()
+	for i in range(pipe.size()):
+		var s: Dictionary = pipe[i]
+		var on: bool = s.toggle == "" or bool(settings.get(s.toggle))
+		if on:
+			var ts := Time.get_ticks_msec()
+			if s.gpu:
+				await s.script.new().execute(self, settings)
+			else:
+				s.script.new().execute(self, settings)
+			_last_snapshot = s.snapshot
+			timings.append([s.snapshot, Time.get_ticks_msec() - ts])
+		if i == stop_index:
+			break
+	if report:
+		var total := Time.get_ticks_msec() - gen_start
+		print("[WorldGenerator] --- Timing (enabled steps: %d ms) ---" % total)
+		for e in timings:
+			var ms: int = e[1]
+			print("  %-16s %6d ms  %5.1f%%" % [e[0], ms, 100.0 * float(ms) / float(maxi(1, total))])
+
 func generate_world_map() -> void:
 	_reset_state()
 	seed(settings.main_seed)
-
-	# Setup (noise + plates) is timed separately; the generation total is measured
-	# strictly from before Landmass to after Graph (excludes debug sheet + PNG).
-	var setup: Array = []
+	# Setup (noise + plates) is timed separately from the step budget.
 	var ts := Time.get_ticks_msec()
 	noise_maps = NoiseBaker.bake(settings)  # all CPU noise, generated once
-	setup.append(["NoiseBake", Time.get_ticks_msec() - ts])
+	print("[WorldGenerator]   setup NoiseBake %d ms" % (Time.get_ticks_msec() - ts))
 	ts = Time.get_ticks_msec()
 	_init_plates()
-	setup.append(["Plates", Time.get_ticks_msec() - ts])
+	print("[WorldGenerator]   setup Plates    %d ms" % (Time.get_ticks_msec() - ts))
 
-	var timings: Array = []
-	var gen_start := Time.get_ticks_msec()
-	ts = gen_start
-	await Step1Landmass.new().execute(self, settings)        # GPU
-	timings.append(["Landmass", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	await Step2Tectonics.new().execute(self, settings)       # GPU
-	timings.append(["Tectonics", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	await Step3PeaksAndValleys.new().execute(self, settings)  # GPU
-	timings.append(["Peaks", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	await Step4Erosion.new().execute(self, settings)         # GPU directional-gabor branching erosion
-	timings.append(["Erosion", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	await StepRivers.new().execute(self, settings)           # CPU D8 flow-accumulation rivers + lakes
-	timings.append(["Rivers", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	StepGraph.new().execute(self, settings)                  # CPU spec -> place -> curves -> export
-	timings.append(["Graph", Time.get_ticks_msec() - ts])
-	var gen_total := Time.get_ticks_msec() - gen_start
+	await _run_pipeline(_pipeline().size() - 1, true)  # run all enabled steps
 
-	# Timing report (generation window only; setup + debug excluded from the %).
-	print("[WorldGenerator] --- Timing (generation Landmass->Graph: ", gen_total, " ms) ---")
-	for entry in setup:
-		print("  %-14s %6d ms  (setup)" % [entry[0], entry[1]])
-	for entry in timings:
-		var ms: int = entry[1]
-		print("  %-14s %6d ms  %5.1f%%" % [entry[0], ms, 100.0 * float(ms) / float(maxi(1, gen_total))])
+	# The emit (not the stored dict) triggers the viewer's debug-sheet export. Each
+	# step already emitted its own snapshot inside execute(); the viewer ignores all
+	# but this one, so no per-step re-emit loop is needed.
+	_save_snapshot_bridge("All_Steps_Grid")
 
-	# Debug sheet + PNG (not part of the generation budget).
-	var ordered := ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys",
-		"Erosion", "Rivers_Only", "Graph"]
-	for k in ordered:
-		if snapshots.has(k):
-			generation_step_finished.emit(k)
-	_save_snapshot_bridge("All_Steps_Grid")  # this emit triggers the viewer's export
+## The snapshot name of the last step that actually ran (honoring toggles), so
+## "final image" consumers key off whatever executed rather than a fixed step.
+func final_snapshot() -> String:
+	return _last_snapshot
 
-## Which pipeline step to stop after. Matches the snapshot order; the map viewer
-## uses this so it only pays for the steps it actually shows.
-enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, GRAPH }
-
-## Run the pipeline only up to (and including) `target`: same setup preamble as
-## the full driver, then the step chain with an early-out.
+## Run the pipeline only up to (and including) `target`, honoring toggles: same
+## setup preamble as the full driver, then the shared step loop with an early-out.
 func generate_up_to(target: GenStep) -> void:
 	_reset_state()
 	seed(settings.main_seed)
 	noise_maps = NoiseBaker.bake(settings)
 	_init_plates()
-	await Step1Landmass.new().execute(self, settings)
-	if target == GenStep.LANDMASS: return
-	await Step2Tectonics.new().execute(self, settings)
-	if target == GenStep.TECTONICS: return
-	await Step3PeaksAndValleys.new().execute(self, settings)
-	if target == GenStep.PEAKS: return
-	await Step4Erosion.new().execute(self, settings)
-	if target == GenStep.EROSION: return
-	await StepRivers.new().execute(self, settings)
-	if target == GenStep.RIVERS: return
-	StepGraph.new().execute(self, settings)
+	await _run_pipeline(int(target), false)
 
 ## Snapshot/restore the post-Rivers base so many graph configs can be rebuilt on
 ## the identical base map (tuning-harness support).

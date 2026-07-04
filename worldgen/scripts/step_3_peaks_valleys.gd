@@ -5,7 +5,10 @@ extends GenerationStep
 ## micro-topography (see step_4_peaks_and_valleys.gdshader).
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var mat := gen.get_material("peaks")
-	mat.set_shader_parameter("deformed_tex", gen.viewport_texture("deform"))
+	# Read the CPU height buffer (R channel = current height) rather than the deform
+	# viewport, so this step consumes whatever the previous ENABLED step produced --
+	# if Tectonics is toggled off, height_buffer still holds the landmass output.
+	mat.set_shader_parameter("deformed_tex", gen.height_texture())
 	mat.set_shader_parameter("ridge_tex", gen.noise_tex("peaks_ridge"))
 	mat.set_shader_parameter("billow_tex", gen.noise_tex("peaks_billow"))
 	mat.set_shader_parameter("detail_tex", gen.noise_tex("peaks_detail"))

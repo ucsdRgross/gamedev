@@ -38,6 +38,17 @@ func map_diag() -> float:
 ## Offset for the humidity map rivers weight their rainfall by.
 @export var humidity_seed_offset: int = 6
 
+@export_group("Pipeline")
+## Per-step on/off switches. A disabled step is skipped and its buffers pass
+## through, so the next enabled step consumes the previous output; the final image
+## reads the last enabled step. Landmass has no toggle (it is always the base).
+## These are bools, so tunable_params()/randomize/record never touch them.
+@export var enable_tectonics: bool = true
+@export var enable_peaks: bool = true
+@export var enable_erosion: bool = true
+@export var enable_rivers: bool = true
+@export var enable_graph: bool = true
+
 @export_group("Step 1 - Landmass")
 ## Base continent scale (lower = larger, fewer continents). Frequency of the
 ## landmass fBm noise.
