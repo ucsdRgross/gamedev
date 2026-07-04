@@ -1,6 +1,6 @@
 # world_settings.gd
 # Parameters are grouped by the generation STEP that consumes them, matching
-# PresetIO.STEP_PARAMS so the per-step record/randomize workflow lines up with the
+# WorldRandomizer.STEP_PARAMS so the per-step record/randomize workflow lines up with the
 # inspector sections. "Map Layout" and "Generation Seeds" are global (not tuned).
 # @tool: the map_viewer generates at edit-time, and methods (place_opts, map_diag)
 # can only be called on a real instance, not an editor placeholder.
@@ -187,7 +187,10 @@ func map_diag() -> float:
 ## Humidity noise scale (rivers weight their rainfall/source map by this noise).
 @export var humid_frequency: float = 0.026
 ## Hydrology grid downscale (1 = full res/no pixelation; higher = faster but blocky).
-@export_range(1, 1) var river_resolution_divisor: int = 1
+## The river/flood solve dominates generation time and scales with cell count, so 2/3/4
+## give roughly 4x/9x/16x faster rivers at the cost of coarser channels/lakes. Default 1
+## preserves existing output; raise it if generation time matters more than river detail.
+@export_range(1, 4) var river_resolution_divisor: int = 1
 ## Exponent: wetter cells source more water (0 = humidity ignored).
 @export_range(0.0, 2.0) var river_source_humidity_bias: float = 1.0
 ## Exponent: higher cells source more water.

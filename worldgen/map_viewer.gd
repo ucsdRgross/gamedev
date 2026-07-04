@@ -48,6 +48,10 @@ const STEP_INFO := [
 @export_tool_button("Process folder -> ranges", "Callable") var _btn_process = process_ranges
 ## Reset valve: archive presets + delete ranges.json for the target step.
 @export_tool_button("Clear step data", "Callable") var _btn_clear = clear_step
+## Merge every step's learned presets/<step>/ranges.json into the addon's shipped
+## ranges_bundle.json (whitelisted to current params). Run after tuning so WorldMap2D
+## Randomize samples the freshest ranges.
+@export_tool_button("Export ranges bundle", "Callable") var _btn_bundle = export_ranges_bundle
 
 # --- generation / view config -------------------------------------------------
 @export var settings: WorldSettings
@@ -388,6 +392,32 @@ func process_ranges() -> void:
 
 func clear_step() -> void:
 	PresetIO.clear_step_data(_target_step())
+
+## Regenerate addons/worldgen/ranges_bundle.json from the live presets/ ranges, then run
+## a sampler-parity check (PresetIO vs WorldRandomizer draw identically from one entry).
+## The bundle is what WorldMap2D samples; map_viewer keeps preferring the live presets/.
+func export_ranges_bundle() -> void:
+	var bundle := WorldRandomizer.export_bundle(PresetIO.load_ranges)
+	var steps: Dictionary = bundle.get("steps", {})
+	var total := 0
+	for s in steps:
+		total += (steps[s] as Dictionary).size()
+	print("[MapViewer] exported ranges bundle -> %s (%d steps, %d params)" % [WorldRandomizer.BUNDLE_PATH, steps.size(), total])
+	_sampler_parity_check(steps)
+
+## Verify the moved sampler is identical to the delegating one: draw from the first
+## available bundle entry with the SAME seed through both paths and print a match line.
+func _sampler_parity_check(steps: Dictionary) -> void:
+	for s in steps:
+		for p in steps[s]:
+			var entry: Dictionary = steps[s][p]
+			var r1 := RandomNumberGenerator.new(); r1.seed = 12345
+			var r2 := RandomNumberGenerator.new(); r2.seed = 12345
+			var a := PresetIO.sample_entry(entry, r1, exploration_base)
+			var b := WorldRandomizer.sample_entry(entry, r2, exploration_base)
+			print("[MapViewer] sampler parity (%s.%s): PresetIO=%f WorldRandomizer=%f match=%s" % [s, p, a, b, str(a == b)])
+			return
+	print("[MapViewer] sampler parity: no bundle entries to compare (all steps fell back to defaults).")
 
 func _target_step() -> String:
 	return _step().name if save_target == "Current" else save_target

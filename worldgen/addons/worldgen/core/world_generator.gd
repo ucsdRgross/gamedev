@@ -43,6 +43,12 @@ var plate_tex: ImageTexture        # texel i = (pos.x, pos.y, dir.x, dir.y)
 var plate_land_tex: ImageTexture   # texel i.r = is_land (1/0)
 const MAX_PLATES := 15
 
+## Opt-in: run the pure-CPU pipeline steps (Rivers, Graph) on a WorkerThreadPool task
+## instead of blocking the main thread, so a caller polling process_frame (WorldMap2D's
+## loading overlay) keeps animating through them. Default off so the verified map_viewer /
+## test paths stay exactly synchronous; WorldMap2D flips it on at runtime.
+var thread_cpu_steps: bool = false
+
 var _viewports: Dictionary = {}
 # CPU-baked noise maps: name -> { "img": Image, "tex": ImageTexture }. All noise
 # is generated here so shaders only transform it (and the viewer can show it).
@@ -194,7 +200,9 @@ func _pipeline() -> Array:
 		{"script": Step2Tectonics, "snapshot": "Tectonics", "gpu": true, "toggle": "enable_tectonics"},
 		{"script": Step3PeaksAndValleys, "snapshot": "PeaksAndValleys", "gpu": true, "toggle": "enable_peaks"},
 		{"script": Step4Erosion, "snapshot": "Erosion", "gpu": true, "toggle": "enable_erosion"},
-		{"script": StepRivers, "snapshot": "Rivers_Only", "gpu": true, "toggle": "enable_rivers"},
+		# Rivers + Graph are pure CPU (no SubViewport/await): gpu:false so they can run on a
+		# worker thread when thread_cpu_steps is set (else they run synchronously as before).
+		{"script": StepRivers, "snapshot": "Rivers_Only", "gpu": false, "toggle": "enable_rivers"},
 		{"script": StepGraph, "snapshot": "Graph", "gpu": false, "toggle": "enable_graph"},
 	]
 
@@ -212,6 +220,8 @@ func _run_pipeline(stop_index: int, report: bool) -> void:
 			var ts := Time.get_ticks_msec()
 			if s.gpu:
 				await s.script.new().execute(self, settings)
+			elif thread_cpu_steps:
+				await _run_cpu_step_threaded(s.script.new())
 			else:
 				s.script.new().execute(self, settings)
 			_last_snapshot = s.snapshot
@@ -224,6 +234,16 @@ func _run_pipeline(stop_index: int, report: bool) -> void:
 		for e in timings:
 			var ms: int = e[1]
 			print("  %-16s %6d ms  %5.1f%%" % [e[0], ms, 100.0 * float(ms) / float(maxi(1, total))])
+
+## Run one pure-CPU step on a WorkerThreadPool task, yielding to the main loop until it
+## finishes so the caller's loading UI keeps animating. The step touches only CPU buffers
+## (no SubViewport/RenderingServer); its snapshot emit is marshalled to the main thread by
+## _save_snapshot_bridge. Requires being in the tree (WorldMap2D always is when threading).
+func _run_cpu_step_threaded(step: GenerationStep) -> void:
+	var tid := WorkerThreadPool.add_task(step.execute.bind(self, settings), true, "worldgen_cpu_step")
+	while not WorkerThreadPool.is_task_completed(tid):
+		await get_tree().process_frame
+	WorkerThreadPool.wait_for_task_completion(tid)
 
 func generate_world_map() -> void:
 	_reset_state()
@@ -343,4 +363,9 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"graph_curves": graph_curves.duplicate(),
 		"landmarks": landmarks.duplicate(),
 	}
-	generation_step_finished.emit(step_name)
+	# When a CPU step runs on a worker thread, marshal the signal to the main thread so
+	# connected slots (loading UI) never touch the scene tree off-thread.
+	if OS.get_thread_caller_id() == OS.get_main_thread_id():
+		generation_step_finished.emit(step_name)
+	else:
+		generation_step_finished.emit.call_deferred(step_name)
