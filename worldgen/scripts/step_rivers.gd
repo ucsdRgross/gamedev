@@ -41,8 +41,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 
 	var lfilled := fill_depressions(lbase, lw, lh, oth)
 
-	# Rainfall map: rivers REUSE the exact climate humidity map (the shared baked
-	# image), so rivers source where the climate is wet.
+	# Rainfall map: the baked humidity noise weights where rivers source.
 	var hum_img := gen.noise_img("humidity")
 
 	# Per-cell rainfall (accumulation seed). Rivers source MULTIPLICATIVELY from
@@ -178,6 +177,10 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	gen.water_surface_buffer.fill(WorldGenerator.NO_WATER)
 	gen.river_nodes.clear()
 	gen.lake_nodes.clear()
+	# Fresh set dicts (never mutate the old ones: earlier snapshots share them by
+	# reference). Built once here so painters/snapshots never rebuild per use.
+	var rset := {}
+	var lset := {}
 	for y in range(h):
 		for x in range(w):
 			var fi := (y * w) + x
@@ -186,11 +189,15 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 				# Keep the real lake floor as the bed; water sits at the spill surface.
 				gen.water_surface_buffer[fi] = lake_surf_l[lc]
 				gen.lake_nodes.append(Vector2i(x, y))
+				lset[Vector2i(x, y)] = true
 			elif depth_l[lc] > 0.0:
 				# Carve the channel; water fills it back up to (near) original grade.
 				gen.height_buffer[fi] = maxf(fullbase[fi] - depth_l[lc], oth + 0.004)
 				gen.water_surface_buffer[fi] = fullbase[fi]
 				gen.river_nodes.append(Vector2i(x, y))
+				rset[Vector2i(x, y)] = true
+	gen.river_set = rset
+	gen.lake_set = lset
 
 	gen._save_snapshot_bridge("Rivers_Only")
 

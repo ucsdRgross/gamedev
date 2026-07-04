@@ -3,15 +3,14 @@ extends RefCounted
 
 ## Bakes every noise map the pipeline needs, on the CPU, as normalized 0..1
 ## grayscale Images (+ matching ImageTextures). No shader generates noise anymore;
-## shaders sample these. One humidity map is baked once and shared by climate and
-## rivers. (Erosion is now a GPU gabor-noise pass that reads the heightmap, so it
-## bakes no noise here.) Returns a Dictionary name -> { "img", "tex" }.
+## shaders sample these. (Erosion is a GPU gabor-noise pass that reads the
+## heightmap, so it bakes no noise here.) Returns a Dictionary name -> { "img", "tex" }.
 ##
 ## All maps use OpenSimplex2 (SIMPLEX_SMOOTH) -- no Perlin grid artifacts. Maps:
 ## landmass (fBm+warp), warp_x/warp_y (tectonic domain warp), peaks_ridge
 ## (ridged-multifractal+warp), peaks_billow (billow-multifractal+warp),
-## peaks_detail (fBm), temperature, humidity. The peaks shader altitude-blends
-## ridge (high ground) and billow (foothills) over the fBm detail.
+## peaks_detail (fBm), humidity (river rainfall weighting). The peaks shader
+## altitude-blends ridge (high ground) and billow (foothills) over the fBm detail.
 static func bake(s: WorldSettings) -> Dictionary:
 	var w := s.map_width
 	var h := s.map_height
@@ -31,9 +30,7 @@ static func bake(s: WorldSettings) -> Dictionary:
 	out["peaks_billow"] = _multi(w, h, s.main_seed + s.peaks_seed_offset + 57, s.billow_frequency,
 		s.peaks_octaves, s.peaks_gain, s.peaks_lacunarity, false, s.ridge_offset, s.peaks_warp_amp, s.peaks_warp_freq)
 	out["peaks_detail"] = _fbm(w, h, s.main_seed + s.peaks_seed_offset + 13, s.detail_frequency, 1, 0.5, 2.0, 0.0, 0.0)
-	# Climate (independent of height/latitude, per request) -- simplex fBm. Rivers
-	# reuse this humidity map.
-	out["temperature"] = _fbm(w, h, s.main_seed + s.temperature_seed_offset, s.temp_frequency, 2, 0.5, 2.0, 0.0, 0.0)
+	# Humidity (independent of height/latitude) -- rivers weight rainfall by it.
 	out["humidity"] = _fbm(w, h, s.main_seed + s.humidity_seed_offset, s.humid_frequency, 2, 0.5, 2.0, 0.0, 0.0)
 	return out
 

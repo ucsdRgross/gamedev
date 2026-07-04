@@ -121,11 +121,6 @@ static func build(cities: int, nodes_between_cities: int, width: int, outgoing: 
 		"start": by_rank[0][0], "end": by_rank[ranks][0], "ranks": ranks,
 	}
 
-## Convenience: build from a WorldSettings (reads the graph-spec params).
-static func build_from_settings(s: WorldSettings) -> Dictionary:
-	return build(s.spec_cities, s.spec_nodes_between_cities, s.spec_graph_width,
-		s.spec_outgoing, s.spec_min_outgoing_after_trim, s.spec_edge_trim_chance, s.main_seed)
-
 # ---------------------------------------------------------------------------
 ## Lane count per rank: 1 at both terminals, fanning to `width` in the middle but
 ## never wider than a chain of `outgoing`-fan-outs from the nearest terminal can

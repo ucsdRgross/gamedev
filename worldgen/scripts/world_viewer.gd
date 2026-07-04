@@ -2,28 +2,13 @@ class_name WorldViewer
 extends Node2D
 
 ## Colorizes the generator's array-backed snapshots on the CPU and renders
-## them. Every visual (topography, biomes, rivers, fault lines, plate vectors,
-## graph) is burned into an Image, so the on-screen grid and the exported PNG
-## are pixel-identical (the PNG simply omits the text legends drawn on top).
+## them. Every visual (topography, rivers, fault lines, plate vectors, graph)
+## is burned into an Image, so the on-screen grid and the exported PNG are
+## pixel-identical (the PNG simply omits the text legends drawn on top).
+## Colorized painting delegates to WorldMapPainter + WorldHeightColorizer.
 
 var generator: WorldGenerator
 var label: Label
-
-# Each display slot -> [source snapshot key, paint mode].
-const SLOT_DEF := {
-	"Landmass": ["Landmass", "topo"],
-	"Tectonics_Debug": ["Tectonics_Debug", "topo"],
-	"PeaksAndValleys": ["PeaksAndValleys", "topo"],
-	"ErosionDebug": ["Erosion", "erosion_debug"],
-	"Erosion": ["Erosion", "topo"],
-	"Climate": ["Climate", "biome"],
-	"Rivers_Only": ["Rivers_Only", "rivers"],
-	"BiomesRivers": ["Climate", "biome_river"],
-	"Graph": ["Graph", "graph"],
-}
-# The 9 grid slots, row-major.
-const GRID_STEPS :Array[String]= ["Landmass", "Tectonics_Debug", "PeaksAndValleys",
-	"ErosionDebug", "Erosion", "Climate", "Rivers_Only", "BiomesRivers", "Graph"]
 
 var step_names: Array[String] = []
 var _cells: Array = []          # flat [kind, src, label] list for arrow cycling
@@ -33,8 +18,6 @@ var _grid_texture: ImageTexture
 
 # --- palettes ----------------------------------------------------------------
 const SUBSTRATE := Color("#0f172a")
-const RIVER := Color("#38bdf8")
-const RIVER_OVERLAY := Color("#2563eb")
 const RIVER_HI := Color("#e0f2fe")  # high-elevation end of the river height ramp
 const RIVER_LO := Color("#0c4a6e")  # low-elevation (near sea) end of the ramp
 const LAKE := Color("#1d4ed8")      # depression-fill lake tint
@@ -42,12 +25,13 @@ const FAULT := Color("#a855f7")
 
 # Adjustable water colors (default to the constants above). map_viewer overrides
 # these before painting so river/lake colors are tunable without touching code.
-# Rivers ramp river_lo (near sea) -> river_hi (high); lakes are flat lake_col;
-# river_overlay is the river tint baked onto the biome/graph terrain colormap.
+# Rivers ramp river_lo (near sea) -> river_hi (high); lakes are flat lake_col.
 var river_lo: Color = RIVER_LO
 var river_hi: Color = RIVER_HI
 var lake_col: Color = LAKE
-var river_overlay: Color = RIVER_OVERLAY
+# Optional user-authored colorizer (custom bands + water colors). When set it is
+# used AS-IS; when null a default ramp is built from the live thresholds.
+var colorizer: WorldHeightColorizer = null
 # Monotone (single-hue, not black/white) ramp for noise maps and raw heightmaps.
 const MONO_LO := Color("#10212e")
 const MONO_HI := Color("#a9d6ec")
@@ -56,20 +40,18 @@ const CELL := 256                   # px size of each cell in the debug composit
 func mono_color(v: float) -> Color:
 	return MONO_LO.lerp(MONO_HI, clampf(v, 0.0, 1.0))
 
-static func topo_color(val: float, oth: float, mth: float) -> Color:
-	if val < oth: return Color("#1a365d")
-	elif val < oth + 0.04: return Color("#2b6cb0")
-	elif val < 0.46: return Color("#2f855a")
-	elif val < mth: return Color("#ecc94b")
-	elif val < 0.82: return Color("#718096")
-	else: return Color("#ffffff")
-
-const BIOME_COLORS := [
-	Color("#1a365d"), Color("#e2e8f0"), Color("#991b1b"), Color("#4b5563"),
-	Color("#38bdf8"), Color("#7c2d12"), Color("#9ca3af"), Color("#f9fafb"),
-	Color("#65a30d"), Color("#047857"), Color("#b45309"), Color("#15803d"),
-	Color("#065f46"),
-]
+## Colorizer for painter-backed cells: the user-authored one if set, else the
+## default topo band ramp keyed on the LIVE ocean/mountain thresholds with this
+## viewer's adjustable water colors applied. Rebuilt per paint (cheap) so
+## threshold changes always track.
+func _make_colorizer(oth: float, mth: float) -> WorldHeightColorizer:
+	if colorizer != null and not colorizer.bands.is_empty():
+		return colorizer
+	var c := WorldHeightColorizer.make_default(oth, mth)
+	c.river_color_low = river_lo
+	c.river_color_high = river_hi
+	c.lake_color = lake_col
+	return c
 
 func _ready() -> void:
 	label = get_node_or_null("CanvasLayer/Label")
@@ -120,7 +102,7 @@ func _display_snapshot() -> void:
 
 ## Debug sheet: one row per generation step/grouping (variable cells per row).
 ## Each cell is [kind, source]. Monotone (non-B&W) for noise maps and raw
-## heightmaps; full color only where color is meaningful (topo, biomes, rivers,
+## heightmaps; full color only where color is meaningful (topo, rivers,
 ## fault lines/arrows, graph).
 ## Rows of cells; each cell is [kind, source, label].
 func _debug_rows() -> Array:
@@ -135,13 +117,11 @@ func _debug_rows() -> Array:
 		# Erosion: incoming height, the gabor erosion field (driven by that height),
 		# then the eroded terrain.
 		[["mono", "PeaksAndValleys", "Height (pre-erosion)"], ["noise", "erosion_field", "Erosion Noise"], ["topo", "Erosion", "Erosion"]],
-		# Climate: incoming height, temperature, humidity, biome map.
-		[["mono", "Rivers_Only", "Height (pre-climate)"], ["noise", "temperature", "Temperature"], ["noise", "humidity", "Humidity"], ["biome", "Climate", "Biomes"]],
-		# Rivers: incoming height, (shared climate) humidity, river network, rivers on biomes.
-		[["mono", "Erosion", "Height (pre-rivers)"], ["noise", "humidity", "Humidity (climate)"], ["rivers", "Rivers_Only", "Rivers"], ["biome_river", "Climate", "Rivers on Biomes"]],
+		# Rivers: incoming height, rainfall humidity, river network, full composite.
+		[["mono", "Erosion", "Height (pre-rivers)"], ["noise", "humidity", "Humidity"], ["rivers", "Rivers_Only", "Rivers"], ["composite", "Rivers_Only", "Rivers on Terrain"]],
 		# Graph: the graph alone (lines + nodes on a flat background), then the
-		# routed graph over biomes.
-		[["graph_only", "Graph", "Graph (lines only)"], ["graph", "Graph", "Graph on Biomes"]],
+		# routed graph over the composite map.
+		[["graph_only", "Graph", "Graph (lines only)"], ["graph", "Graph", "Graph on Terrain"]],
 	]
 
 ## Flat, ordered list of every cell so arrow keys can step through them all.
@@ -178,37 +158,16 @@ func _build_composite_and_export() -> void:
 ## Water-only sheet: rivers + lakes painted (tinted by water-surface elevation) on
 ## a fully TRANSPARENT background, so a 3D pass can drop it straight onto a water
 ## mesh/material with no land. Ocean is omitted (it's the flat plane at oth).
-## Build the transparent-background water sheet as an Image (rivers + lakes only,
-## tinted by water-surface elevation). Returned so the 3D viewer can use it as the
-## water colormap; _export_water_only() wraps this to also write the PNG.
+## Delegates to WorldMapPainter over the Rivers_Only snapshot.
 func water_only_image() -> Image:
 	var w := generator.settings.map_width
 	var h := generator.settings.map_height
 	var oth := generator.settings.ocean_threshold
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))  # transparent
 	var data: Dictionary = generator.snapshots.get("Rivers_Only", {})
 	if data.is_empty():
-		return img
-	var height: PackedFloat32Array = data["height"]
-	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
-	var rset: Dictionary = data["river_set"]
-	var lset: Dictionary = data.get("lake_set", {})
-	for y in range(h):
-		for x in range(w):
-			var pos := Vector2i(x, y)
-			if not (rset.has(pos) or lset.has(pos)):
-				continue
-			var idx := (y * w) + x
-			if height[idx] < oth:
-				continue
-			if lset.has(pos) and not rset.has(pos):
-				img.set_pixel(x, y, lake_col)  # lakes: flat, distinct from rivers
-			else:
-				var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
-				var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-				img.set_pixel(x, y, river_lo.lerp(river_hi, t))
-	return img
+		return Image.create(w, h, false, Image.FORMAT_RGBA8)
+	return WorldMapPainter.water_only_image(data, w, h, oth,
+		_make_colorizer(oth, generator.settings.mountain_threshold), false)
 
 func _export_water_only() -> void:
 	if generator.snapshots.get("Rivers_Only", {}).is_empty():
@@ -219,7 +178,7 @@ func _export_water_only() -> void:
 ## Save full-resolution (map-sized) PNGs for every colored cell -- i.e. anything
 ## that isn't a pure noise map or a pure (monotone) heightmap, since those read
 ## fine downscaled. Lets the composite stay a compact overview while detailed
-## views (biomes, rivers, graph, tectonics, ...) are crisp.
+## views (composite, rivers, graph, tectonics, ...) are crisp.
 func _export_full_res() -> void:
 	var w := generator.settings.map_width
 	var seen := {}
@@ -238,7 +197,9 @@ func _export_full_res() -> void:
 	print("[WorldViewer] Full-res cell PNGs exported (snapshot_*.png)")
 
 ## Paint one cell_px x cell_px cell at `off` (cell_px = full map width for the
-## single-cell arrow view, or CELL for the composite).
+## single-cell arrow view, or CELL for the composite). Colorized kinds (topo /
+## composite / rivers / tectonics base / graph base) are rendered full-res by
+## WorldMapPainter, then sampled into the cell; noise/mono stay local.
 func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: int) -> void:
 	var w := generator.settings.map_width
 	var h := generator.settings.map_height
@@ -263,24 +224,27 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 
 	var data: Dictionary = generator.snapshots.get(src, {})
 	var height: PackedFloat32Array = data.get("height", PackedFloat32Array())
-	var biome: PackedInt32Array = data.get("biome", PackedInt32Array())
-	var rset: Dictionary = data.get("river_set", {})
-	var lset: Dictionary = data.get("lake_set", {})
-	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
 	if kind != "noise" and height.is_empty():
 		return
-	# Erosion channels compare the eroded height against the pre-erosion (peaks)
-	# height, so the combined channel*humidity*height carve is what gets shown.
-	var pre_h: PackedFloat32Array = height
-	if kind == "erosion_water" and generator.snapshots.has("PeaksAndValleys"):
-		pre_h = generator.snapshots["PeaksAndValleys"]["height"]
+
+	# Painter-backed kinds: build the full-res colorized image once, sample below.
+	var src_img: Image = null
+	var czr := _make_colorizer(oth, mth)
+	match kind:
+		"topo", "tectonics":
+			# Pure terrain bands + ocean, no river/lake pixels: hand the painter a
+			# snapshot view without the water sets.
+			src_img = WorldMapPainter.composite_image({"height": height}, w, h, oth, czr)
+		"composite", "graph":
+			src_img = WorldMapPainter.composite_image(data, w, h, oth, czr)
+		"rivers":
+			src_img = WorldMapPainter.water_only_image(data, w, h, oth, czr, false)
 
 	for ty in range(cell_px):
 		for tx in range(cell_px):
 			var ox: int = mini(int(tx / scale), w - 1)
 			var oy: int = mini(int(ty / scale), h - 1)
 			var idx: int = (oy * w) + ox
-			var pos := Vector2i(ox, oy)
 			var col: Color
 			match kind:
 				"noise":
@@ -291,29 +255,10 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 						col = SUBSTRATE
 					else:
 						col = mono_color((height[idx] - oth) / maxf(0.001, 1.0 - oth))
-				"rivers":
-					if (lset.has(pos) or rset.has(pos)) and height[idx] >= oth:
-						var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
-						var t := clampf((wv - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-						col = river_lo.lerp(river_hi, t)
-					else:
-						col = SUBSTRATE
-				"erosion_water":
-					# Combined erosion carve, colored exactly like the rivers/lakes
-					# step: carved land cells ramp by elevation, the rest substrate.
-					if pre_h[idx] - height[idx] > 0.0001 and height[idx] >= oth:
-						var te := clampf((height[idx] - oth) / maxf(0.001, 1.0 - oth), 0.0, 1.0)
-						col = RIVER_LO.lerp(RIVER_HI, te)
-					else:
-						col = SUBSTRATE
-				"biome":
-					col = _biome_color(biome[idx])
-				"biome_river", "graph":
-					col = _biome_color(biome[idx])
-					if (_near_river(rset, pos) or lset.has(pos)) and height[idx] >= oth:
-						col = river_overlay
-				_:  # topo / tectonics base
-					col = topo_color(height[idx], oth, mth)
+				_:
+					col = src_img.get_pixel(ox, oy)
+					if col.a == 0.0:
+						col = SUBSTRATE  # rivers sheet is transparent off-water
 			img.set_pixel(off.x + tx, off.y + ty, col)
 
 	match kind:
@@ -321,30 +266,6 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 			_burn_tectonics(img, data, off, scale)
 		"graph":
 			_burn_graph(img, off, scale, true)  # colored view: curved roads
-
-## Vivid, maximally-separated color for the 3x3x3 biome scheme (id 1..27);
-## id 0 = ocean. Golden-ratio hue spacing keeps even sequential ids far apart in
-## color, and the height band adds a brightness tier. Bright + distinct so the
-## map reads as a colorful patchwork and colors are reliable to sample back.
-const GOLDEN := 0.6180339887498949
-func _biome_color(bid: int) -> Color:
-	if bid <= 0:
-		return Color("#1a365d")  # ocean
-	var id0 := bid - 1
-	var per_height: int = maxi(1, generator.settings.temp_bands * generator.settings.humid_bands)
-	var hbands: int = maxi(1, generator.settings.height_bands)
-	var h_band := id0 / per_height               # height tier
-	var hue := fposmod(float(id0) * GOLDEN, 1.0)
-	var sat: float = 0.80
-	var val: float = 0.78 + (float(h_band) / float(maxi(1, hbands - 1)) if hbands > 1 else 0.0) * 0.22
-	return Color.from_hsv(hue, sat, val)
-
-func _near_river(rset: Dictionary, pos: Vector2i) -> bool:
-	for rx in range(-1, 2):
-		for ry in range(-1, 2):
-			if rset.has(pos + Vector2i(rx, ry)):
-				return true
-	return false
 
 func _burn_tectonics(img: Image, data: Dictionary, offset: Vector2i, scale: float) -> void:
 	var w := generator.settings.map_width

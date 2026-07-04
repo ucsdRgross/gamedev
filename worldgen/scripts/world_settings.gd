@@ -2,6 +2,9 @@
 # Parameters are grouped by the generation STEP that consumes them, matching
 # PresetIO.STEP_PARAMS so the per-step record/randomize workflow lines up with the
 # inspector sections. "Map Layout" and "Generation Seeds" are global (not tuned).
+# @tool: the map_viewer generates at edit-time, and methods (place_opts, map_diag)
+# can only be called on a real instance, not an editor placeholder.
+@tool
 class_name WorldSettings
 extends Resource
 
@@ -32,9 +35,7 @@ func map_diag() -> float:
 @export var erosion_seed_offset: int = 3
 ## Offset for erosion's own humidity map.
 @export var erosion_humidity_seed_offset: int = 4
-## Offset for the climate temperature map.
-@export var temperature_seed_offset: int = 5
-## Offset for the climate humidity map (rivers deliberately reuse this same map).
+## Offset for the humidity map rivers weight their rainfall by.
 @export var humidity_seed_offset: int = 6
 
 @export_group("Step 1 - Landmass")
@@ -42,7 +43,7 @@ func map_diag() -> float:
 ## landmass fBm noise.
 @export var continent_frequency: float = 0.004
 ## Sea level. Height below this is ocean. Also the reference the elevation gates,
-## biome height bands, and river normalization key off -- nudging it shifts a lot.
+## colorizer bands, and river normalization key off -- nudging it shifts a lot.
 @export var ocean_threshold: float = 0.38
 ## Central island-mask radius. Bigger = land reaches further from center (more land).
 @export var island_radius: float = 0.72
@@ -172,6 +173,8 @@ func map_diag() -> float:
 @export var erosion_elevation_falloff: float = 0.12
 
 @export_group("Step 5 - Rivers & Lakes")
+## Humidity noise scale (rivers weight their rainfall/source map by this noise).
+@export var humid_frequency: float = 0.026
 ## Hydrology grid downscale (1 = full res/no pixelation; higher = faster but blocky).
 @export_range(1, 1) var river_resolution_divisor: int = 1
 ## Exponent: wetter cells source more water (0 = humidity ignored).
@@ -198,38 +201,14 @@ func map_diag() -> float:
 ## Dilate lakes outward by this many hydrology px (0 = none).
 @export_range(0, 0) var lake_width: int = 0
 
-@export_group("Step 6 - Climate")
-## Temperature noise scale (higher = smaller, more varied biome patches).
-@export var temp_frequency: float = 0.022
-## Humidity noise scale.
-@export var humid_frequency: float = 0.026
-## Temperature lapse rate: how much temperature drops per unit elevation above sea
-## (higher = colder mountains).
-@export var temp_lapse_rate: float = 0.5
-## Humidity added to cells next to a river (wetter riverbanks).
-@export var river_humidity_boost: float = 0.35
-## Number of height bands for biome classification. Max land biomes =
-## height_bands * temp_bands * humid_bands (default 27 = a 3x3x3 scheme).
-@export_range(1, 6) var height_bands: int = 3
-## Number of temperature bands.
-@export_range(1, 6) var temp_bands: int = 3
-## Number of humidity bands.
-@export_range(1, 6) var humid_bands: int = 3
-
-@export_group("Step 7 - Graph")
+@export_group("Step 6 - Graph")
 ## Cities visited per path, including start & end (abstract spec). Sets the rung
 ## count together with spec_nodes_between_cities.
 @export var spec_cities: int = 5
 ## Travel nodes between consecutive cities (abstract spec).
 @export var spec_nodes_between_cities: int = 2
-## Min distinct cities a city can reach next (graph width, abstract spec).
-@export var spec_graph_width: int = 3
 ## Max forward edges per node (the placement edge cap).
 @export var spec_outgoing: int = 3
-## Variety-trim floor (never orphans a node, abstract spec).
-@export var spec_min_outgoing_after_trim: int = 1
-## Chance to drop a surplus edge during the spec trim.
-@export_range(0.0, 1.0) var spec_edge_trim_chance: float = 0.3
 # --- ladder placement (GraphPlacement opts; see place_opts()) ---
 ## Sections (nodes) per rung where the land is THINNEST.
 @export var graph_min_width: int = 1
@@ -250,6 +229,40 @@ func map_diag() -> float:
 ## Coastal test radius (fraction of the map diagonal): a node within this of open
 ## water counts as coastal and may ferry.
 @export var coast_radius_ratio: float = 0.014
+## Land-sample lattice spacing as a fraction of the map diagonal (lower = denser
+## candidate sites for node snapping; consumed by MapField.from_generator).
+@export var graph_sample_spacing_ratio: float = 0.012
+# --- edge routing (GraphDetail.compute_curves opts; see route_opts()) ---
+## A* grid cell size in px (higher = faster, chunkier routes).
+@export var route_downscale: int = 4
+## Radius (px) around FOREIGN nodes (ones an edge doesn't connect) that routes avoid.
+@export var route_node_clearance: float = 9.0
+## Cost added per step inside a foreign node's clearance zone.
+@export var route_node_penalty: float = 20.0
+## Cost added per step on the outermost map-cell ring (keeps routes off the border).
+@export var route_border_penalty: float = 25.0
+## Cost added per step moving AWAY from the destination (kills behind-origin loops).
+@export var route_backtrack_penalty: float = 3.0
+## Cost of a land cell for a ferry route (water crossings prefer staying wet).
+@export var route_land_penalty: float = 8.0
+## Cost of a water cell for a land route (land roads prefer staying dry).
+@export var route_water_penalty: float = 8.0
+## Weight punishing per-step height change (routes follow contours).
+@export var route_slope_weight: float = 10.0
+## Wall cost for a cell already taken by an earlier route (keeps roads separate).
+@export var route_occupancy_penalty: float = 10.0
+## Wall cost beyond the corridor around the straight a->b line.
+@export var route_corridor_penalty: float = 12.0
+## Corridor half-width as a fraction of the edge length.
+@export var route_corridor_ratio: float = 0.35
+## Wall cost for travelling past either endpoint along the edge axis.
+@export var route_overshoot_penalty: float = 18.0
+## Search-box margin as a fraction of the edge length.
+@export var route_margin: float = 0.7
+## Max height deviation tolerated by the line-of-sight simplifier.
+@export var route_height_tol: float = 0.15
+## Chaikin corner-cutting passes applied after simplification (0 = jagged A* lines).
+@export var route_smooth_iterations: int = 1
 
 ## Ladder-placement options consumed by GraphPlacement.place().
 func place_opts() -> Dictionary:
@@ -262,3 +275,27 @@ func place_opts() -> Dictionary:
 		"branch_local_mul": graph_branch_local_mul,
 		"pole_sep": graph_pole_sep,
 	}
+
+## Edge-routing options consumed by GraphDetail.compute_curves().
+func route_opts() -> Dictionary:
+	return {
+		"route_downscale": route_downscale,
+		"route_node_clearance": route_node_clearance,
+		"route_node_penalty": route_node_penalty,
+		"route_border_penalty": route_border_penalty,
+		"route_backtrack_penalty": route_backtrack_penalty,
+		"route_land_penalty": route_land_penalty,
+		"route_water_penalty": route_water_penalty,
+		"route_slope_weight": route_slope_weight,
+		"route_occupancy_penalty": route_occupancy_penalty,
+		"route_corridor_penalty": route_corridor_penalty,
+		"route_corridor_ratio": route_corridor_ratio,
+		"route_overshoot_penalty": route_overshoot_penalty,
+		"route_margin": route_margin,
+		"route_height_tol": route_height_tol,
+		"route_smooth_iterations": route_smooth_iterations,
+	}
+
+## MapField construction options (land-sample density).
+func field_opts() -> Dictionary:
+	return {"sample_spacing_ratio": graph_sample_spacing_ratio}

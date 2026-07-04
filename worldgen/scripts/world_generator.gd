@@ -1,10 +1,10 @@
 class_name WorldGenerator
 extends Node
 
-## Orchestrates the world-generation pipeline. Steps 1-5 run as GPU canvas
-## shaders (each driven by its own GenerationStep .gd file); node scattering
-## and graph building (steps 6-7) run on the CPU. Results land in the CPU
-## buffers below, and snapshots feed the viewer for colorized debug display.
+## Orchestrates the world-generation pipeline. Steps 1-4 run as GPU canvas
+## shaders (each driven by its own GenerationStep .gd file); rivers and graph
+## building run on the CPU. Results land in the CPU buffers below, and
+## snapshots feed the viewer for colorized debug display.
 
 @export var settings: WorldSettings
 
@@ -17,19 +17,14 @@ var height_buffer: PackedFloat32Array = PackedFloat32Array()
 ## can mesh terrain and water separately. Ocean is NOT stored here -- it is the
 ## implicit flat plane at settings.ocean_threshold (seabed varies below it).
 var water_surface_buffer: PackedFloat32Array = PackedFloat32Array()
-var temp_buffer: PackedFloat32Array = PackedFloat32Array()
-var humid_buffer: PackedFloat32Array = PackedFloat32Array()
-var biome_id_buffer: PackedInt32Array = PackedInt32Array()
 var plate_id_buffer: PackedInt32Array = PackedInt32Array()
-
-var biome_palette: Array[String] = [
-	"Ocean", "Glacial Peak", "Volcanic Crag", "Barren Ridges",
-	"Cryo Frostwastes", "Tectonic Fissures", "Ashen Tundra", "Salt Flats",
-	"Tornado Prairie", "Toxic Swamps", "Shattered Savannah", "Seismic Plains", "Acidic Jungle"
-]
 
 var river_nodes: Array[Vector2i] = []
 var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
+# Vector2i -> true lookup sets over the arrays above, built ONCE by StepRivers so
+# snapshots and painters never rebuild them per use.
+var river_set: Dictionary = {}
+var lake_set: Dictionary = {}
 # --- graph step outputs (StepGraph) ---
 # Plain-data gameplay graph from GraphPlacement.export_graph: {start, end,
 # max_depth, nodes:[{id,pos,depth,landmass,height,biome,out:[{to,ferry,points}]}]}.
@@ -63,8 +58,7 @@ const SHADER_DEFS := {
 	"deform": "res://shaders/step_3_tectonic_deformation.gdshader",
 	"peaks": "res://shaders/step_4_peaks_and_valleys.gdshader",
 	"erosion": "res://shaders/step_4_erosion.gdshader",
-	# River generation (D8 flow accumulation) runs on the CPU, so it needs no viewport.
-	"climate": "res://shaders/step_6_biomes_and_climate.gdshader",
+	# River generation (D8 flow accumulation) and the graph run on the CPU.
 }
 
 func _ready() -> void:
@@ -140,14 +134,6 @@ func read_plate_ids_from_image(img: Image) -> void:
 		for x in range(w):
 			plate_id_buffer[(y * w) + x] = int(round(img.get_pixel(x, y).b * float(MAX_PLATES)))
 
-func read_biomes_from_image(img: Image) -> void:
-	# Climate packs biome id into red as id / 255.
-	var w := settings.map_width
-	var h := settings.map_height
-	for y in range(h):
-		for x in range(w):
-			biome_id_buffer[(y * w) + x] = int(round(img.get_pixel(x, y).r * 255.0))
-
 ## Build an RGBAH float texture whose red channel is the current height buffer.
 ## Used as the read-only base (H0) reference for the GPU erosion sim.
 func height_texture() -> ImageTexture:
@@ -159,23 +145,6 @@ func height_texture() -> ImageTexture:
 			img.set_pixel(x, y, Color(height_buffer[(y * w) + x], 0.0, 0.0, 1.0))
 	return ImageTexture.create_from_image(img)
 
-## Pack the current CPU state into a float texture for the climate shader:
-##   R = height, G = river flag (1 if this cell is a river).
-func build_state_texture() -> ImageTexture:
-	var w := settings.map_width
-	var h := settings.map_height
-	var img := Image.create(w, h, false, Image.FORMAT_RGBAH)
-	var river_set := {}
-	for r in river_nodes:
-		river_set[r] = true
-	for l in lake_nodes:  # lakes are water too -> count toward the river/water flag
-		river_set[l] = true
-	for y in range(h):
-		for x in range(w):
-			var river_flag := 1.0 if river_set.has(Vector2i(x, y)) else 0.0
-			img.set_pixel(x, y, Color(height_buffer[(y * w) + x], river_flag, 0.0, 1.0))
-	return ImageTexture.create_from_image(img)
-
 # =================================================================
 # DRIVER
 # =================================================================
@@ -185,6 +154,9 @@ func _reset_state() -> void:
 	snapshots.clear()
 	river_nodes.clear()
 	lake_nodes.clear()
+	# Reassign (not clear()): snapshots/cached bases share these dicts by reference.
+	river_set = {}
+	lake_set = {}
 	graph_export.clear()
 	graph_ctx = null
 	graph_curves.clear()
@@ -195,9 +167,6 @@ func _reset_state() -> void:
 	height_buffer.resize(total)
 	water_surface_buffer.resize(total)
 	water_surface_buffer.fill(NO_WATER)
-	temp_buffer.resize(total)
-	humid_buffer.resize(total)
-	biome_id_buffer.resize(total)
 	plate_id_buffer.resize(total)
 
 func generate_world_map() -> void:
@@ -232,9 +201,6 @@ func generate_world_map() -> void:
 	await StepRivers.new().execute(self, settings)           # CPU D8 flow-accumulation rivers + lakes
 	timings.append(["Rivers", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
-	await Step5Climate.new().execute(self, settings)         # GPU (reads carved height + river network)
-	timings.append(["Climate", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
 	StepGraph.new().execute(self, settings)                  # CPU spec -> place -> curves -> export
 	timings.append(["Graph", Time.get_ticks_msec() - ts])
 	var gen_total := Time.get_ticks_msec() - gen_start
@@ -249,7 +215,7 @@ func generate_world_map() -> void:
 
 	# Debug sheet + PNG (not part of the generation budget).
 	var ordered := ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys",
-		"Erosion", "Rivers_Only", "Climate", "Graph"]
+		"Erosion", "Rivers_Only", "Graph"]
 	for k in ordered:
 		if snapshots.has(k):
 			generation_step_finished.emit(k)
@@ -257,7 +223,7 @@ func generate_world_map() -> void:
 
 ## Which pipeline step to stop after. Matches the snapshot order; the map viewer
 ## uses this so it only pays for the steps it actually shows.
-enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, CLIMATE, GRAPH }
+enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, GRAPH }
 
 ## Run the pipeline only up to (and including) `target`: same setup preamble as
 ## the full driver, then the step chain with an early-out.
@@ -276,8 +242,6 @@ func generate_up_to(target: GenStep) -> void:
 	if target == GenStep.EROSION: return
 	await StepRivers.new().execute(self, settings)
 	if target == GenStep.RIVERS: return
-	await Step5Climate.new().execute(self, settings)
-	if target == GenStep.CLIMATE: return
 	StepGraph.new().execute(self, settings)
 
 ## Snapshot/restore the post-Rivers base so many graph configs can be rebuilt on
@@ -288,6 +252,8 @@ func cache_base_state() -> Dictionary:
 		"water_surface": water_surface_buffer.duplicate(),
 		"river_nodes": river_nodes.duplicate(),
 		"lake_nodes": lake_nodes.duplicate(),
+		"river_set": river_set,  # never mutated after StepRivers -> share by ref
+		"lake_set": lake_set,
 	}
 
 func restore_base_state(b: Dictionary) -> void:
@@ -295,6 +261,8 @@ func restore_base_state(b: Dictionary) -> void:
 	water_surface_buffer = b["water_surface"].duplicate()
 	river_nodes = b["river_nodes"].duplicate()
 	lake_nodes = b["lake_nodes"].duplicate()
+	river_set = b["river_set"]
+	lake_set = b["lake_set"]
 	graph_export = {}
 	graph_ctx = null
 	graph_curves = []
@@ -352,20 +320,11 @@ func _build_plate_textures() -> void:
 # SNAPSHOTS (array-backed; the viewer colorizes from these)
 # =================================================================
 func _save_snapshot_bridge(step_name: String) -> void:
-	var river_set := {}
-	for r in river_nodes:
-		river_set[r] = true
-	var lake_set := {}
-	for l in lake_nodes:
-		lake_set[l] = true
-
 	snapshots[step_name] = {
 		"height": height_buffer.duplicate(),
 		"water_surface": water_surface_buffer.duplicate(),
-		"biome": biome_id_buffer.duplicate(),
 		"plate_ids": plate_id_buffer.duplicate(),
-		"river_nodes": river_nodes.duplicate(),
-		"river_set": river_set,
+		"river_set": river_set,  # built once by StepRivers; empty before it runs
 		"lake_set": lake_set,
 		"graph_export": graph_export.duplicate(true),
 		"graph_curves": graph_curves.duplicate(),

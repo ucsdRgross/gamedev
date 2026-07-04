@@ -58,7 +58,7 @@ func _ready() -> void:
 		bs.main_seed = sd
 		_gen.settings = bs
 		await _gen.generate_up_to(WorldGenerator.GenStep.RIVERS)
-		var field := GraphPlacement.MapField.from_generator(_gen)
+		var field := GraphPlacement.MapField.from_generator(_gen, bs.field_opts())
 		print("  seed%d water: %d river px, %d lake px, %d landmasses" % [
 			sd, _gen.river_nodes.size(), _gen.lake_nodes.size(), field.sizes.size()])
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
@@ -96,7 +96,7 @@ func _run_chaos() -> void:
 		bs.main_seed = sd
 		_gen.settings = bs
 		await _gen.generate_up_to(WorldGenerator.GenStep.RIVERS)
-		var field := GraphPlacement.MapField.from_generator(_gen)
+		var field := GraphPlacement.MapField.from_generator(_gen, bs.field_opts())
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
 		var cities := rng.randi_range(2, 16)
 		var nbc := rng.randi_range(0, 8)
@@ -169,7 +169,7 @@ func _render(g: Dictionary, res: Dictionary, field, name: String, sd: int) -> vo
 	# Init: nodes only. Final: straight edges. Detail: terrain-fitting curved edges.
 	_draw_graph(base.duplicate(), ctx, res["init_pos"], [], "%s%s_s%d_1_init.png" % [OUT_DIR, name, sd])
 	_draw_graph(base.duplicate(), ctx, res["pos"], _straight_curves(ctx), "%s%s_s%d_3_final.png" % [OUT_DIR, name, sd])
-	var curves := GraphDetail.compute_curves(ctx, field)
+	var curves := GraphDetail.compute_curves(ctx, field, _gen.settings.route_opts())
 	_draw_graph(base.duplicate(), ctx, res["pos"], curves, "%s%s_s%d_4_curved.png" % [OUT_DIR, name, sd])
 
 # Straight one-segment polylines per edge (for the pre-detail final image).

@@ -11,14 +11,14 @@ extends GenerationStep
 ## CPU only; no await.
 
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
-	var field : GraphPlacement.MapField = GraphPlacement.MapField.from_generator(gen)
+	var field : GraphPlacement.MapField = GraphPlacement.MapField.from_generator(gen, settings.field_opts())
 	# layer_min/layer_max are unused by v4 ladder placement (node counts come from
 	# land width); passed as nominal values for the spec's over-provisioning.
 	var g := GraphSpec.build_nodes(settings.spec_cities,
 		settings.spec_nodes_between_cities, 2, 5, settings.main_seed)
 	var res := GraphPlacement.place(g, field, settings, settings.main_seed, settings.place_opts())
 	var ctx = res["ctx"]
-	var curves := GraphDetail.compute_curves(ctx, field)
+	var curves := GraphDetail.compute_curves(ctx, field, settings.route_opts())
 
 	gen.map_field = field
 	gen.graph_ctx = ctx

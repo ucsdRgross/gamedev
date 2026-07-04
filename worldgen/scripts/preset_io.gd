@@ -23,8 +23,7 @@ const EXCLUDE := {
 	"main_seed": true, "map_width": true, "map_height": true,
 	"landmass_seed_offset": true, "tectonic_seed_offset": true,
 	"peaks_seed_offset": true, "erosion_seed_offset": true,
-	"erosion_humidity_seed_offset": true, "temperature_seed_offset": true,
-	"humidity_seed_offset": true,
+	"erosion_humidity_seed_offset": true, "humidity_seed_offset": true,
 }
 
 ## Fallback [lo, hi] for params that carry no @export_range hint (plain int/float).
@@ -41,7 +40,7 @@ const DEFAULT_RANGES := {
 	"plate_count": [3, 12], "drift_intensity": [0.0, 0.6],
 	"plate_move": [0.0, 0.1], "tectonic_band": [20.0, 100.0],
 	"warp_strength": [10.0, 100.0], "warp_frequency": [1.0, 10.0],
-	"temp_frequency": [0.005, 0.05], "humid_frequency": [0.005, 0.05],
+	"humid_frequency": [0.005, 0.05],
 	"erosion_amplitude": [0.0, 0.2], "erosion_frequency": [8.0, 48.0],
 	"erosion_lacunarity": [1.0, 2.5], "erosion_branch_angle_deg": [0.0, 90.0],
 	"erosion_detail": [0.5, 2.0], "erosion_steepness_scale": [20.0, 200.0],
@@ -49,15 +48,21 @@ const DEFAULT_RANGES := {
 	"erosion_min_elevation": [0.38, 0.6], "erosion_elevation_falloff": [0.02, 0.3],
 	"peak_detail_min_elevation": [0.38, 0.7], "peak_detail_falloff": [0.02, 0.3],
 	"island_falloff": [0.3, 1.6], "boundary_falloff": [0.01, 0.05],
-	"temp_lapse_rate": [0.0, 1.0], "river_humidity_boost": [0.0, 0.6],
 	"lowland_flatten": [1.0, 2.0],
-	# Graph (ladder placement) params without @export_range hints.
+	# Graph (ladder placement + edge routing) params without @export_range hints.
 	"spec_cities": [2, 12], "spec_nodes_between_cities": [0, 6],
-	"spec_graph_width": [1, 6], "spec_outgoing": [1, 6],
-	"spec_min_outgoing_after_trim": [1, 3], "graph_min_width": [1, 3],
+	"spec_outgoing": [1, 6], "graph_min_width": [1, 3],
 	"graph_max_width": [3, 8], "graph_lane_tol": [1.2, 2.5],
 	"graph_branch_local_mul": [1.5, 4.0], "graph_pole_sep": [0.5, 3.0],
-	"coast_radius_ratio": [0.008, 0.03],
+	"coast_radius_ratio": [0.008, 0.03], "graph_sample_spacing_ratio": [0.008, 0.02],
+	"route_downscale": [2, 6], "route_node_clearance": [4.0, 16.0],
+	"route_node_penalty": [5.0, 40.0], "route_border_penalty": [10.0, 50.0],
+	"route_backtrack_penalty": [0.0, 8.0], "route_land_penalty": [2.0, 20.0],
+	"route_water_penalty": [2.0, 20.0], "route_slope_weight": [0.0, 30.0],
+	"route_occupancy_penalty": [0.0, 30.0], "route_corridor_penalty": [0.0, 30.0],
+	"route_corridor_ratio": [0.15, 0.7], "route_overshoot_penalty": [0.0, 40.0],
+	"route_margin": [0.4, 1.2], "route_height_tol": [0.05, 0.4],
+	"route_smooth_iterations": [0, 4],
 }
 
 ## Which generation step each tunable parameter belongs to (the step at which you
@@ -97,16 +102,18 @@ const STEP_PARAMS := {
 		"river_source_elevation_bias", "river_accum_threshold", "river_carve_depth",
 		"river_width_gain", "river_flow_exponent", "river_smooth_passes",
 		"lake_min_depth", "lake_min_area", "lake_carve_depth", "lake_width",
-	],
-	"Climate": [
-		"temp_frequency", "humid_frequency", "temp_lapse_rate", "river_humidity_boost",
-		"height_bands", "temp_bands", "humid_bands",
+		"humid_frequency",
 	],
 	"Graph": [
-		"spec_cities", "spec_nodes_between_cities", "spec_graph_width", "spec_outgoing",
-		"spec_min_outgoing_after_trim", "spec_edge_trim_chance", "graph_min_width",
+		"spec_cities", "spec_nodes_between_cities", "spec_outgoing", "graph_min_width",
 		"graph_max_width", "graph_jitter", "graph_landmass_min_frac", "graph_lane_tol",
 		"graph_branch_local_mul", "graph_pole_sep", "coast_radius_ratio",
+		"graph_sample_spacing_ratio", "route_downscale", "route_node_clearance",
+		"route_node_penalty", "route_border_penalty", "route_backtrack_penalty",
+		"route_land_penalty", "route_water_penalty", "route_slope_weight",
+		"route_occupancy_penalty", "route_corridor_penalty", "route_corridor_ratio",
+		"route_overshoot_penalty", "route_margin", "route_height_tol",
+		"route_smooth_iterations",
 	],
 }
 

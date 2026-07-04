@@ -17,11 +17,11 @@ extends Node3D
 ## pass is split into two tuning steps (Ridges / Detail) that both render at it, so
 ## each half of its params can be narrowed separately. The `gen` field in STEP_INFO
 ## holds which WorldGenerator.GenStep to actually run up to.
-enum ViewStep { LANDMASS, TECTONICS, PEAKS_RIDGES, PEAKS_DETAIL, EROSION, RIVERS, CLIMATE, GRAPH }
+enum ViewStep { LANDMASS, TECTONICS, PEAKS_RIDGES, PEAKS_DETAIL, EROSION, RIVERS, GRAPH }
 
 ## Per tuning step: preset folder name, the generation step to run up to (= ordinal
-## of WorldGenerator.GenStep: Landmass0 Tectonics1 Peaks2 Erosion3 Rivers4 Climate5
-## Graph6), the display snapshot + paint kind, and the water source.
+## of WorldGenerator.GenStep: Landmass0 Tectonics1 Peaks2 Erosion3 Rivers4 Graph5),
+## the display snapshot + paint kind, and the water source.
 const STEP_INFO := [
 	{"name": "Landmass", "gen": 0, "snap": "Landmass", "kind": "topo", "water": ""},
 	{"name": "Tectonics", "gen": 1, "snap": "Tectonics_Debug", "kind": "tectonics", "water": ""},
@@ -29,8 +29,7 @@ const STEP_INFO := [
 	{"name": "Peaks Detail", "gen": 2, "snap": "PeaksAndValleys", "kind": "topo", "water": ""},
 	{"name": "Erosion", "gen": 3, "snap": "Erosion", "kind": "topo", "water": ""},
 	{"name": "Rivers", "gen": 4, "snap": "Rivers_Only", "kind": "topo", "water": "Rivers_Only"},
-	{"name": "Climate", "gen": 5, "snap": "Climate", "kind": "biome", "water": "Rivers_Only"},
-	{"name": "Graph", "gen": 6, "snap": "Climate", "kind": "graph", "water": "Rivers_Only"},
+	{"name": "Graph", "gen": 5, "snap": "Graph", "kind": "graph", "water": "Rivers_Only"},
 ]
 
 # --- tool buttons -------------------------------------------------------------
@@ -52,12 +51,12 @@ const STEP_INFO := [
 
 # --- generation / view config -------------------------------------------------
 @export var settings: WorldSettings
-@export var view_step: ViewStep = ViewStep.CLIMATE:
+@export var view_step: ViewStep = ViewStep.RIVERS:
 	set(v):
 		view_step = v
 		_request_regen()
 ## "auto" = the step's default paint kind; otherwise force one.
-@export_enum("auto", "topo", "biome", "biome_river", "mono", "graph", "tectonics")
+@export_enum("auto", "topo", "composite", "mono", "graph", "tectonics")
 var terrain_kind: String = "auto":
 	set(v):
 		terrain_kind = v
@@ -71,7 +70,7 @@ var terrain_kind: String = "auto":
 @export var auto_regenerate: bool = true
 ## Which step Save / Process / Clear target. "Current" = the step you're viewing;
 ## pick a specific step to fix an earlier step's preset/ranges without leaving view.
-@export_enum("Current", "Landmass", "Tectonics", "Peaks Ridges", "Peaks Detail", "Erosion", "Rivers", "Climate", "Graph")
+@export_enum("Current", "Landmass", "Tectonics", "Peaks Ridges", "Peaks Detail", "Erosion", "Rivers", "Graph")
 var save_target: String = "Current"
 ## Exploration floor for Randomize: the sampling curve is (exploration_base + good
 ## - bad). Higher = explore more of the band even with little data; lower (toward 0)
@@ -79,7 +78,15 @@ var save_target: String = "Current"
 ## regions stay reachable while accumulated-bad pockets remain carved out.
 @export var exploration_base: float = 1.0
 
-# --- water colors (baked into the water colormap; repaint on change) ----------
+# --- colors (baked into the colormaps; repaint on change) ---------------------
+## Custom land bands + water colors. Leave EMPTY (or bands empty) to use the
+## default topo ramp built from ocean/mountain thresholds + the colors below.
+## Assign a WorldHeightColorizer and edit its `bands` array (each band =
+## {upper, color, smooth}) to restyle the map in-editor or at runtime.
+@export var colorizer: WorldHeightColorizer:
+	set(v):
+		colorizer = v
+		_request_repaint()
 ## River tint at low (near-sea) elevation; rivers ramp from this to river_color_high.
 @export var river_color_low: Color = Color("#0c4a6e"):
 	set(v):
@@ -94,11 +101,6 @@ var save_target: String = "Current"
 @export var lake_color: Color = Color("#1d4ed8"):
 	set(v):
 		lake_color = v
-		_request_repaint()
-## River tint baked onto the terrain colormap for biome/graph views.
-@export var river_overlay_color: Color = Color("#2563eb"):
-	set(v):
-		river_overlay_color = v
 		_request_repaint()
 
 # --- 3D layout ----------------------------------------------------------------
@@ -219,7 +221,7 @@ func _painter_for(gen: WorldGenerator) -> WorldViewer:
 	_painter.river_lo = river_color_low
 	_painter.river_hi = river_color_high
 	_painter.lake_col = lake_color
-	_painter.river_overlay = river_overlay_color
+	_painter.colorizer = colorizer
 	return _painter
 
 func _paint_from(gen: WorldGenerator) -> void:

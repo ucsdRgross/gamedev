@@ -25,23 +25,20 @@ func _draw_legend(step: String) -> void:
 			{"c": Color("#f43f5e"), "n": "Continental"}, {"c": Color("#0ea5e9"), "n": "Oceanic"},
 			{"c": Color("#a855f7"), "n": "Fault Line"},
 		]
-	elif step == "ErosionDebug":
-		items = [{"c": RIVER, "n": "Carved (erosion only)"}, {"c": SUBSTRATE, "n": "Untouched"}]
-	elif step in ["Rivers_Only", "Rivers", "Erosion Channels"]:
+	elif step in ["Rivers_Only", "Rivers"]:
 		items = [
 			{"c": RIVER_HI, "n": "Water (high)"}, {"c": RIVER_LO, "n": "Water (low)"},
 			{"c": SUBSTRATE, "n": "Substrate"},
 		]
-	elif step == "Graph":
+	elif step.begins_with("Graph"):
 		items = [
-			{"c": Color("#ecc94b"), "n": "Node"}, {"c": Color.GREEN, "n": "Start"},
+			{"c": Color("#60a5fa"), "n": "Node"}, {"c": Color.GREEN, "n": "Start"},
 			{"c": Color.RED, "n": "End"}, {"c": Color.WHITE, "n": "Route"},
 		]
-	else:  # Climate / Biomes (height_bands x temp_bands x humid_bands distinct land biomes)
+	else:  # composite: land bands + water colors
 		items = [
-			{"c": Color("#1a365d"), "n": "Ocean"},
-			{"c": RIVER_OVERLAY, "n": "River"},
-			{"c": Color("#ecc94b"), "n": "City"},
+			{"c": Color("#1a365d"), "n": "Ocean"}, {"c": LAKE, "n": "Lake"},
+			{"c": RIVER_LO, "n": "River"},
 		]
 
 	var font := ThemeDB.get_fallback_font()
