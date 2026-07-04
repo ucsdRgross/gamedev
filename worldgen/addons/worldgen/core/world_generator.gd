@@ -21,10 +21,11 @@ var plate_id_buffer: PackedInt32Array = PackedInt32Array()
 
 var river_nodes: Array[Vector2i] = []
 var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
-# Vector2i -> true lookup sets over the arrays above, built ONCE by StepRivers so
-# snapshots and painters never rebuild them per use.
-var river_set: Dictionary = {}
-var lake_set: Dictionary = {}
+# Full-res presence masks (index y*w+x, 1 = river/lake), built ONCE by StepRivers so the
+# painter can test a pixel by index instead of hashing a Vector2i. Empty before Rivers runs.
+# PackedByteArray is copy-on-write, so snapshots keep a cheap shared copy until mutated.
+var river_set: PackedByteArray = PackedByteArray()
+var lake_set: PackedByteArray = PackedByteArray()
 # --- graph step outputs (StepGraph) ---
 # Plain-data gameplay graph from GraphPlacement.export_graph: {start, end,
 # max_depth, nodes:[{id,pos,depth,landmass,height,biome,out:[{to,ferry,points}]}]}.
@@ -59,6 +60,9 @@ var noise_maps: Dictionary = {}
 var _last_snapshot: String = ""
 
 signal generation_step_finished(step_name: String)
+## Emitted (on the main thread) just BEFORE a step runs, so a loading UI can name the step
+## that is currently executing instead of the last one that finished.
+signal generation_step_started(step_name: String)
 
 # Maps a logical pass key to its shader. The blueprint/deform split and the
 # flow ping-pong each get their own viewport so passes never clobber inputs.
@@ -169,8 +173,8 @@ func _reset_state() -> void:
 	river_nodes.clear()
 	lake_nodes.clear()
 	# Reassign (not clear()): snapshots/cached bases share these dicts by reference.
-	river_set = {}
-	lake_set = {}
+	river_set = PackedByteArray()
+	lake_set = PackedByteArray()
 	graph_export.clear()
 	graph_ctx = null
 	graph_curves.clear()
@@ -217,6 +221,7 @@ func _run_pipeline(stop_index: int, report: bool) -> void:
 		var s: Dictionary = pipe[i]
 		var on: bool = s.toggle == "" or bool(settings.get(s.toggle))
 		if on:
+			generation_step_started.emit(s.snapshot)  # name the step now running (main thread)
 			var ts := Time.get_ticks_msec()
 			if s.gpu:
 				await s.script.new().execute(self, settings)
@@ -245,12 +250,35 @@ func _run_cpu_step_threaded(step: GenerationStep) -> void:
 		await get_tree().process_frame
 	WorkerThreadPool.wait_for_task_completion(tid)
 
+## Bake the noise maps. When thread_cpu_steps is set, compute the (independent) maps in
+## PARALLEL across a WorkerThreadPool group task -- one element per map -- while the main
+## thread polls frames so the loading overlay animates; total time collapses toward the
+## slowest single map instead of their sum. Textures are built on the main thread after.
+## Synchronous single-thread bake otherwise (editor / map_viewer / tests).
+func _bake_noise() -> void:
+	if not thread_cpu_steps:
+		noise_maps = NoiseBaker.bake(settings)
+		return
+	var recipes := NoiseBaker.image_recipes(settings)
+	var imgs: Array = []
+	imgs.resize(recipes.size())
+	# Each group element i computes one map into its own slot -> no shared writes to race.
+	var worker := func(i: int) -> void: imgs[i] = (recipes[i]["fn"] as Callable).call()
+	var gid := WorkerThreadPool.add_group_task(worker, recipes.size(), -1, true, "worldgen_noise")
+	while not WorkerThreadPool.is_group_task_completed(gid):
+		await get_tree().process_frame
+	WorkerThreadPool.wait_for_group_task_completion(gid)
+	var by_name := {}
+	for i in range(recipes.size()):
+		by_name[recipes[i]["name"]] = imgs[i]
+	noise_maps = NoiseBaker.make_textures(by_name)
+
 func generate_world_map() -> void:
 	_reset_state()
 	seed(settings.main_seed)
 	# Setup (noise + plates) is timed separately from the step budget.
 	var ts := Time.get_ticks_msec()
-	noise_maps = NoiseBaker.bake(settings)  # all CPU noise, generated once
+	await _bake_noise()  # all CPU noise, generated once (threaded when thread_cpu_steps)
 	print("[WorldGenerator]   setup NoiseBake %d ms" % (Time.get_ticks_msec() - ts))
 	ts = Time.get_ticks_msec()
 	_init_plates()
@@ -285,7 +313,7 @@ func cache_base_state() -> Dictionary:
 		"water_surface": water_surface_buffer.duplicate(),
 		"river_nodes": river_nodes.duplicate(),
 		"lake_nodes": lake_nodes.duplicate(),
-		"river_set": river_set,  # never mutated after StepRivers -> share by ref
+		"river_set": river_set,  # PackedByteArray mask (COW: cheap shared copy)
 		"lake_set": lake_set,
 	}
 

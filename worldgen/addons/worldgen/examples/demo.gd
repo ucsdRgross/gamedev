@@ -28,6 +28,7 @@ func _ready() -> void:
 	map = WorldMap2D.new()
 	map.world_seed = 0             # 0 = random terrain each launch; set non-zero to pin
 	map.bake_directory = BAKE_DIR  # where B/L read+write
+	map.show_loading_screen = false  # this demo drives its OWN loading UI from the signals
 	map.generation_started.connect(func(): _set_hud("Generating…"))
 	map.generation_progress.connect(func(stage: String, frac: float): _set_hud("%s  %d%%" % [stage, int(frac * 100.0)]))
 	map.generation_finished.connect(_on_finished)

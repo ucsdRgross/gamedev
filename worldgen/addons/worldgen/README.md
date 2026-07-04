@@ -86,13 +86,11 @@ built-in placeholder overlay is shown at runtime (`show_loading_screen`). To use
 your own, connect to those signals and set `show_loading_screen = false`.
 
 `threaded_paint` (default on) runs the pure-CPU work off the main thread so the
-overlay keeps animating: the CPU pipeline steps (Rivers, Graph) run on a
-`WorkerThreadPool` task, and so does the final image painting. The GPU steps already
-yield per frame. Turn `threaded_paint` off to run everything synchronously.
-
-One caveat: the initial noise bake still runs on the main thread (it builds GPU
-textures, which must be main-thread), so there is a brief hitch at the very start of
-generation before the first step reports in.
+overlay keeps animating: the noise bake, the CPU pipeline steps (Rivers, Graph), and
+the final image painting all run on `WorkerThreadPool` tasks while the main thread
+polls frames. The GPU steps already yield per frame. Turn `threaded_paint` off to run
+everything synchronously. `generation_progress` reports the running step, so a custom
+overlay can show "Carving rivers & lakes" etc. as they happen.
 
 ### Customizing node + edge visuals
 
@@ -116,10 +114,13 @@ map.overlay().graph_populated.connect(func():
 ### Baking
 
 **Bake to files** writes `composite.png`, `land.png`, `water.png`, `height.exr`,
-and `graph.json` to `bake_directory` (or beside the saved scene; `user://` if the
-scene is unsaved). With `generate_on_ready = false` the node loads `composite.png`
-+ `graph.json` at runtime instead of regenerating — keeping the `.tscn` tiny, since
-the generated images are never serialized into the scene.
+and `graph.json` to `bake_directory` (default: `res://addons/worldgen/exports`). With
+`generate_on_ready = false` the node loads `composite.png` + `graph.json` from that
+directory at runtime instead of regenerating — keeping the `.tscn` tiny, since the
+generated images are never serialized into the scene.
+
+`res://` is read-only in exported builds, so for **runtime** baking/saving set
+`bake_directory` to a `user://` path (the editor tool buttons write `res://` fine).
 
 ## Notes / caveats
 

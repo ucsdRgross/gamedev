@@ -58,20 +58,23 @@ static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 	if height.size() < w * h:
 		return
 	var wsurf: PackedFloat32Array = data.get("water_surface", PackedFloat32Array())
-	var rset: Dictionary = data.get("river_set", {})
-	var lset: Dictionary = data.get("lake_set", {})
+	# Full-res presence masks (index y*w+x, 1 = river/lake); empty before Rivers runs.
+	var rmask: PackedByteArray = data.get("river_set", PackedByteArray())
+	var lmask: PackedByteArray = data.get("lake_set", PackedByteArray())
+	var has_masks := rmask.size() >= w * h and lmask.size() >= w * h
 	for y in range(h):
 		for x in range(w):
 			var idx := (y * w) + x
-			var pos := Vector2i(x, y)
+			var is_river := has_masks and rmask[idx] == 1
+			var is_lake := has_masks and lmask[idx] == 1
 			var c := Color(0, 0, 0, 0)
 			if height[idx] < oth:
 				if paint_water and include_ocean:
 					c = col.ocean_color
-			elif lset.has(pos) and not rset.has(pos):
+			elif is_lake and not is_river:
 				if paint_water:
 					c = col.lake_color
-			elif rset.has(pos):
+			elif is_river:
 				if paint_water:
 					var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
 					c = col.river_color(wv, oth)

@@ -226,17 +226,29 @@ func _worker() -> WorldGenerator:
 	_gen.thread_cpu_steps = threaded_paint and not Engine.is_editor_hint()
 	if not _gen.generation_step_finished.is_connected(_on_step_finished):
 		_gen.generation_step_finished.connect(_on_step_finished)
+	if not _gen.generation_step_started.is_connected(_on_step_started):
+		_gen.generation_step_started.connect(_on_step_started)
 	return _gen
 
-# Bump the progress fraction as each pipeline step reports in (the final "All_Steps_Grid"
+# Friendly step labels (snapshot names -> what the player sees) for the loading overlay.
+const _STEP_LABELS := {
+	"Landmass": "Shaping landmasses", "Tectonics": "Colliding plates",
+	"PeaksAndValleys": "Raising mountains", "Erosion": "Eroding terrain",
+	"Rivers_Only": "Carving rivers & lakes", "Graph": "Routing paths",
+}
+
+# Name the step that is about to run (so the label tracks the CURRENT step, not the last
+# finished one -- Rivers/Graph take a while and would otherwise read "Erosion").
+func _on_step_started(step_name: String) -> void:
+	_set_loading_text(_STEP_LABELS.get(step_name, step_name))
+
+# Advance the progress fraction as each step reports done (the final "All_Steps_Grid"
 # bridge is ignored; painting owns the last 5%).
 func _on_step_finished(step_name: String) -> void:
 	if step_name == "All_Steps_Grid":
 		return
 	_steps_done += 1
-	var frac := clampf(float(_steps_done) / float(_TOTAL_STEPS), 0.0, 0.9)
-	generation_progress.emit(step_name, frac)
-	_set_loading_text("Generating: %s" % step_name)
+	generation_progress.emit(step_name, clampf(float(_steps_done) / float(_TOTAL_STEPS), 0.0, 0.9))
 
 func _apply_map_texture() -> void:
 	if _composite_img == null:
@@ -403,21 +415,12 @@ func _load_baked() -> void:
 			var size := Vector2(_composite_img.get_width(), _composite_img.get_height())
 			_overlay_node().populate(_graph_from_json(parsed), size)
 
-# Bake target: explicit dir, else beside the saved scene, else user:// (with a warning).
+# Bake target: the explicit bake_directory if set, else the addon's own exports folder.
+# NOTE: res:// is read-only in exported builds, so set bake_directory to a user:// path
+# for runtime baking/saving (the editor tool buttons write res:// fine).
+const DEFAULT_EXPORT_DIR := "res://addons/worldgen/exports"
 func _bake_dir() -> String:
-	if bake_directory != "":
-		return bake_directory
-	var scene_path := ""
-	if Engine.is_editor_hint():
-		var root := get_tree().edited_scene_root
-		if root != null:
-			scene_path = root.scene_file_path
-	else:
-		scene_path = scene_file_path
-	if scene_path != "":
-		return scene_path.get_base_dir()
-	push_warning("[WorldMap2D] scene unsaved; using user://worldgen_bake/")
-	return "user://worldgen_bake"
+	return bake_directory if bake_directory != "" else DEFAULT_EXPORT_DIR
 
 func _images_ready(action: String) -> bool:
 	if _composite_img == null:
