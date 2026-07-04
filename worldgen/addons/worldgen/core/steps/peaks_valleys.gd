@@ -2,7 +2,7 @@ class_name Step3PeaksAndValleys
 extends GenerationStep
 
 ## GPU: layers high-frequency ridged + detail noise onto land to build
-## micro-topography (see step_4_peaks_and_valleys.gdshader).
+## micro-topography (see peaks_and_valleys.gdshader).
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var mat := gen.get_material("peaks")
 	# Read the CPU height buffer (R channel = current height) rather than the deform

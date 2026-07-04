@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://weni27qm78xm"]
+
+[ext_resource type="Script" uid="uid://w7mjuffffbvc" path="res://addons/worldgen/world_map_2d.gd" id="1_3s0gn"]
+
+[node name="WorldMap2D" type="Node2D" unique_id=1023111476]
+script = ExtResource("1_3s0gn")
+metadata/_custom_type_script = "uid://w7mjuffffbvc"

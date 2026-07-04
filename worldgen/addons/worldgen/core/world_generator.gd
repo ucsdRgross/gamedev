@@ -57,11 +57,11 @@ signal generation_step_finished(step_name: String)
 # Maps a logical pass key to its shader. The blueprint/deform split and the
 # flow ping-pong each get their own viewport so passes never clobber inputs.
 const SHADER_DEFS := {
-	"landmass": "res://shaders/step_1_landmass.gdshader",
-	"blueprint": "res://shaders/step_2_tectonic_blueprint.gdshader",
-	"deform": "res://shaders/step_3_tectonic_deformation.gdshader",
-	"peaks": "res://shaders/step_4_peaks_and_valleys.gdshader",
-	"erosion": "res://shaders/step_4_erosion.gdshader",
+	"landmass": "res://addons/worldgen/shaders/landmass.gdshader",
+	"blueprint": "res://addons/worldgen/shaders/tectonic_blueprint.gdshader",
+	"deform": "res://addons/worldgen/shaders/tectonic_deformation.gdshader",
+	"peaks": "res://addons/worldgen/shaders/peaks_and_valleys.gdshader",
+	"erosion": "res://addons/worldgen/shaders/erosion.gdshader",
 	# River generation (D8 flow accumulation) and the graph run on the CPU.
 }
 

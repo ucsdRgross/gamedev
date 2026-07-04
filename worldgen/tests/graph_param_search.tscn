@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://dmd553pq4mjbn"]
-
-[ext_resource type="Script" path="res://tests/graph_param_search.gd" id="1"]
-
-[node name="GraphParamSearch" type="Node" unique_id=684391612]
-script = ExtResource("1")
-tiers_to_run = Array[String](["medium"])
-V = 5

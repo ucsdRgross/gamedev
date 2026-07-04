@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://pgsorh464ay0"]
 
 [ext_resource type="Script" uid="uid://csnfgvnac7noq" path="res://scripts/world_viewer_renderer.gd" id="1_h2yge"]
-[ext_resource type="Script" uid="uid://bnnm36f7v6xuq" path="res://scripts/world_generator.gd" id="2"]
-[ext_resource type="Script" uid="uid://mbt2djybuun1" path="res://scripts/world_settings.gd" id="3"]
+[ext_resource type="Script" uid="uid://bnnm36f7v6xuq" path="res://addons/worldgen/core/world_generator.gd" id="2"]
+[ext_resource type="Script" uid="uid://mbt2djybuun1" path="res://addons/worldgen/core/world_settings.gd" id="3"]
 
 [sub_resource type="Resource" id="Resource_h2yge"]
 script = ExtResource("3")

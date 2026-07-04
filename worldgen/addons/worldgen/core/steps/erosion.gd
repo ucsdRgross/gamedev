@@ -1,7 +1,7 @@
 class_name Step4Erosion
 extends GenerationStep
 
-## GPU directional-gabor erosion (step_4_erosion.gdshader). A single-pass noise
+## GPU directional-gabor erosion (erosion.gdshader). A single-pass noise
 ## that carves branching gullies and ridges by steering anisotropic gabor stripes
 ## along the terrain's own slope. The shader reads the current heightmap (its base)
 ## and writes base + erosion*amplitude back. Replaces the old CPU flow-accumulation
