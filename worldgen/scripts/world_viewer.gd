@@ -139,9 +139,9 @@ func _debug_rows() -> Array:
 		[["mono", "Rivers_Only", "Height (pre-climate)"], ["noise", "temperature", "Temperature"], ["noise", "humidity", "Humidity"], ["biome", "Climate", "Biomes"]],
 		# Rivers: incoming height, (shared climate) humidity, river network, rivers on biomes.
 		[["mono", "Erosion", "Height (pre-rivers)"], ["noise", "humidity", "Humidity (climate)"], ["rivers", "Rivers_Only", "Rivers"], ["biome_river", "Climate", "Rivers on Biomes"]],
-		# Nodes / graph: dense travel nodes, sparse city nodes, the graph alone
-		# (lines + nodes on a flat background), then the routed graph over biomes.
-		[["travel", "Graph", "Travel Nodes"], ["cities", "Graph", "City Nodes"], ["graph_only", "Graph", "Graph (lines only)"], ["graph", "Graph", "Graph on Biomes"]],
+		# Graph: the graph alone (lines + nodes on a flat background), then the
+		# routed graph over biomes.
+		[["graph_only", "Graph", "Graph (lines only)"], ["graph", "Graph", "Graph on Biomes"]],
 	]
 
 ## Flat, ordered list of every cell so arrow keys can step through them all.
@@ -285,7 +285,7 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 			match kind:
 				"noise":
 					col = mono_color(noise_im.get_pixel(ox, oy).r)
-				"mono", "travel", "cities":
+				"mono":
 					# Monotone land height only; below sea reads as flat dark so land pops.
 					if height[idx] < oth:
 						col = SUBSTRATE
@@ -321,23 +321,6 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 			_burn_tectonics(img, data, off, scale)
 		"graph":
 			_burn_graph(img, off, scale, true)  # colored view: curved roads
-		"cities":
-			_burn_nodes(img, off, scale, true)
-		"travel":
-			_burn_nodes(img, off, scale, false)
-
-## Plot node dots from the Cities snapshot: the sparse city set when `cities`,
-## else the dense independent travel-node set.
-func _burn_nodes(img: Image, offset: Vector2i, scale: float, cities: bool) -> void:
-	if not generator.snapshots.has("Cities"):
-		return
-	var data: Dictionary = generator.snapshots["Cities"]
-	if cities:
-		for node in data["city_nodes"]:
-			_plot_disc(img, (node * scale) + Vector2(offset), maxf(2.0, 4.0 * scale), Color("#ecc94b"))
-	else:
-		for node in data.get("travel_nodes", []):
-			_plot_disc(img, (node * scale) + Vector2(offset), maxf(1.0, 1.6 * scale), Color("#9ca3af"))
 
 ## Vivid, maximally-separated color for the 3x3x3 biome scheme (id 1..27);
 ## id 0 = ocean. Golden-ratio hue spacing keeps even sequential ids far apart in
@@ -394,69 +377,35 @@ func _burn_tectonics(img: Image, data: Dictionary, offset: Vector2i, scale: floa
 		_plot_line(img, c, tip, col)
 		_plot_arrowhead(img, c, tip, col, maxf(3.0, 7.0 * scale))
 
-## Graph view: nodes from the full (pre-prune) Cities set so unused nodes show,
-## edges + start/end from the pruned Graph snapshot, with directional arrows.
+## Graph view from the exported gameplay graph (GraphPlacement.export_graph):
+## each node's out-edges carry their routed polyline, drawn white with a midpoint
+## direction arrowhead (`curved=false` forces straight segments). Nodes: green
+## start, red end, blue interior; ferry edges tinted cyan.
 func _burn_graph(img: Image, offset: Vector2i, scale: float, curved: bool = false) -> void:
-	var all_nodes: Array = []
-	if generator.snapshots.has("Cities"):
-		all_nodes = generator.snapshots["Cities"]["city_nodes"]
-	var graph: Dictionary = {}
-	var curves: Array = []
-	var start := Vector2.ZERO
-	var end := Vector2.ZERO
-	var used_nodes: Dictionary = {}
-	if generator.snapshots.has("Graph"):
-		var g: Dictionary = generator.snapshots["Graph"]
-		graph = g["gameplay_graph"]
-		curves = g.get("edge_curves", [])
-		start = g["start_node"]
-		end = g["end_node"]
-		for u in g["city_nodes"]:
-			used_nodes[u] = true
-
-	if curved and not curves.is_empty():
-		# Cosmetic winding roads (routed around water / over passes).
-		for poly in curves:
-			for i in range(poly.size() - 1):
-				var a: Vector2 = (poly[i] * scale) + Vector2(offset)
-				var b: Vector2 = (poly[i + 1] * scale) + Vector2(offset)
-				_plot_line(img, a, b, Color.WHITE)
-			if poly.size() >= 2:
-				var m = poly.size() / 2
-				var f: Vector2 = (poly[m - 1] * scale) + Vector2(offset)
-				var t: Vector2 = (poly[m] * scale) + Vector2(offset)
-				_plot_arrowhead(img, f, t, Color("#fb923c"), maxf(3.0, 6.0 * scale))
-	else:
-		# Straight edges with a midpoint arrowhead for direction.
-		for parent in graph.keys():
-			for child in graph[parent]:
-				var p1: Vector2 = (parent * scale) + Vector2(offset)
-				var p2: Vector2 = (child * scale) + Vector2(offset)
-				_plot_line(img, p1, p2, Color.WHITE)
-				_plot_arrowhead(img, p1, p1.lerp(p2, 0.55), Color("#fb923c"), maxf(3.0, 6.0 * scale))
-
-	# Nodes that participate in the routed graph (keys + children). City nodes are
-	# bright/large anchors; routed travel nodes are medium; everything else dim.
-	var route_nodes: Dictionary = {}
-	for parent in graph.keys():
-		route_nodes[parent] = true
-		for child in graph[parent]:
-			route_nodes[child] = true
-	for node in all_nodes:
-		var p: Vector2 = (node * scale) + Vector2(offset)
-		if used_nodes.has(node):
-			_plot_disc(img, p, maxf(2.0, 4.0 * scale), Color("#ecc94b"))
+	var ge: Dictionary = generator.snapshots.get("Graph", {}).get("graph_export", {})
+	if ge.is_empty():
+		return
+	var nodes: Array = ge["nodes"]  # ordered by compact id -> index == id
+	for nd in nodes:
+		for e in nd["out"]:
+			var pts: PackedVector2Array = e["points"] if curved \
+				else PackedVector2Array([nd["pos"], nodes[e["to"]]["pos"]])
+			var col: Color = Color("#7dd3fc") if e["ferry"] else Color.WHITE
+			for i in range(pts.size() - 1):
+				_plot_line(img, (pts[i] * scale) + Vector2(offset),
+					(pts[i + 1] * scale) + Vector2(offset), col)
+			if pts.size() >= 2:
+				var m: int = maxi(1, pts.size() / 2)
+				_plot_arrowhead(img, (pts[m - 1] * scale) + Vector2(offset),
+					(pts[m] * scale) + Vector2(offset), Color("#fb923c"), maxf(3.0, 6.0 * scale))
+	for nd in nodes:
+		var p: Vector2 = (nd["pos"] * scale) + Vector2(offset)
+		if nd["id"] == int(ge["start"]):
+			_plot_disc(img, p, maxf(3.0, 6.0 * scale), Color.GREEN)
+		elif nd["id"] == int(ge["end"]):
+			_plot_disc(img, p, maxf(3.0, 6.0 * scale), Color.RED)
 		else:
-			_plot_disc(img, p, maxf(1.0, 2.0 * scale), Color("#6b7280"))
-	for node in route_nodes.keys():
-		if used_nodes.has(node):
-			continue  # already drawn bright as a city
-		_plot_disc(img, (node * scale) + Vector2(offset), maxf(1.5, 3.0 * scale), Color("#60a5fa"))
-
-	if start != Vector2.ZERO:
-		_plot_disc(img, (start * scale) + Vector2(offset), maxf(3.0, 6.0 * scale), Color.GREEN)
-	if end != Vector2.ZERO:
-		_plot_disc(img, (end * scale) + Vector2(offset), maxf(3.0, 6.0 * scale), Color.RED)
+			_plot_disc(img, p, maxf(1.5, 3.0 * scale), Color("#60a5fa"))
 
 # --- pixel primitives --------------------------------------------------------
 func _plot_disc(img: Image, c: Vector2, r: float, col: Color) -> void:

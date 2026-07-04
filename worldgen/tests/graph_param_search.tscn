@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://xosthnos1j5h"]
+[gd_scene format=3 uid="uid://dmd553pq4mjbn"]
 
-[ext_resource type="Script" uid="uid://1a8ek44hlghf" path="res://tests/graph_param_search.gd" id="1"]
+[ext_resource type="Script" path="res://tests/graph_param_search.gd" id="1"]
 
 [node name="GraphParamSearch" type="Node" unique_id=684391612]
 script = ExtResource("1")

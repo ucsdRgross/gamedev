@@ -30,22 +30,15 @@ var biome_palette: Array[String] = [
 
 var river_nodes: Array[Vector2i] = []
 var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
-var travel_nodes: Array[Vector2] = [] # dense evenly-distributed waypoints (vs sparse city_nodes)
-var city_nodes: Array[Vector2] = []
-var gameplay_graph: Dictionary = {}
-# Cosmetic curved polylines (PackedVector2Array, map px) for each graph edge,
-# routed around water / over passes. Used by the colored graph view only.
-var edge_curves: Array = []
-# Full result of the last graph build {graph, start, end, meta, injected}; the
-# test suite reads this to validate/measure the exact graph produced.
-var graph_result: Dictionary = {}
-# Continent labeling from Step6: full-res cell (4px grid) -> continent id (0 =
-# largest). landmass_sizes maps id -> cell count. The graph uses these to treat
-# landmasses as nodes (inter-landmass water travel rules).
-var landmass_labels: Dictionary = {}
-var landmass_sizes: Dictionary = {}
-var start_node: Vector2
-var end_node: Vector2
+# --- graph step outputs (StepGraph) ---
+# Plain-data gameplay graph from GraphPlacement.export_graph: {start, end,
+# max_depth, nodes:[{id,pos,depth,landmass,height,biome,out:[{to,ferry,points}]}]}.
+var graph_export: Dictionary = {}
+# The placement context (GraphPlacement.Ctx) + curved edge polylines ([u,v,points])
+# and the sampling field (MapField, incl. water/river masks + landmass labels).
+var graph_ctx = null
+var graph_curves: Array = []
+var map_field = null
 var landmarks: Array[Dictionary] = []
 var plate_data: PackedVector4Array = PackedVector4Array()  # padded to 15
 var plate_is_land: PackedFloat32Array = PackedFloat32Array() # 1.0 continental, 0.0 oceanic
@@ -192,13 +185,10 @@ func _reset_state() -> void:
 	snapshots.clear()
 	river_nodes.clear()
 	lake_nodes.clear()
-	travel_nodes.clear()
-	city_nodes.clear()
-	gameplay_graph.clear()
-	edge_curves.clear()
-	graph_result.clear()
-	landmass_labels.clear()
-	landmass_sizes.clear()
+	graph_export.clear()
+	graph_ctx = null
+	graph_curves.clear()
+	map_field = null
 	landmarks.clear()
 
 	var total := settings.map_width * settings.map_height
@@ -245,10 +235,7 @@ func generate_world_map() -> void:
 	await Step5Climate.new().execute(self, settings)         # GPU (reads carved height + river network)
 	timings.append(["Climate", Time.get_ticks_msec() - ts])
 	ts = Time.get_ticks_msec()
-	Step6Civilizations.new().execute(self, settings)
-	timings.append(["Civilizations", Time.get_ticks_msec() - ts])
-	ts = Time.get_ticks_msec()
-	Step7Graph.new().execute(self, settings)
+	StepGraph.new().execute(self, settings)                  # CPU spec -> place -> curves -> export
 	timings.append(["Graph", Time.get_ticks_msec() - ts])
 	var gen_total := Time.get_ticks_msec() - gen_start
 
@@ -262,37 +249,18 @@ func generate_world_map() -> void:
 
 	# Debug sheet + PNG (not part of the generation budget).
 	var ordered := ["Landmass", "Tectonics_Debug", "Tectonics", "PeaksAndValleys",
-		"Erosion", "Rivers_Only", "Climate", "Cities", "Graph"]
+		"Erosion", "Rivers_Only", "Climate", "Graph"]
 	for k in ordered:
 		if snapshots.has(k):
 			generation_step_finished.emit(k)
 	_save_snapshot_bridge("All_Steps_Grid")  # this emit triggers the viewer's export
 
-# =================================================================
-# TEST-SUITE SUPPORT
-# Generate a map *through Civilizations* (no graph), then snapshot/restore the
-# base so many graph presets can be built on the identical base map.
-# =================================================================
-func generate_base_through_civilizations() -> void:
-	_reset_state()
-	seed(settings.main_seed)
-	noise_maps = NoiseBaker.bake(settings)
-	_init_plates()
-	await Step1Landmass.new().execute(self, settings)
-	await Step2Tectonics.new().execute(self, settings)
-	await Step3PeaksAndValleys.new().execute(self, settings)
-	await Step4Erosion.new().execute(self, settings)
-	await StepRivers.new().execute(self, settings)
-	await Step5Climate.new().execute(self, settings)
-	Step6Civilizations.new().execute(self, settings)
-
 ## Which pipeline step to stop after. Matches the snapshot order; the map viewer
 ## uses this so it only pays for the steps it actually shows.
-enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, CLIMATE, CIVILIZATIONS, GRAPH }
+enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, CLIMATE, GRAPH }
 
-## Run the pipeline only up to (and including) `target`. A strict generalization
-## of generate_base_through_civilizations(): same setup preamble, then the step
-## chain with an early-out once the requested step's snapshot is populated.
+## Run the pipeline only up to (and including) `target`: same setup preamble as
+## the full driver, then the step chain with an early-out.
 func generate_up_to(target: GenStep) -> void:
 	_reset_state()
 	seed(settings.main_seed)
@@ -310,29 +278,27 @@ func generate_up_to(target: GenStep) -> void:
 	if target == GenStep.RIVERS: return
 	await Step5Climate.new().execute(self, settings)
 	if target == GenStep.CLIMATE: return
-	Step6Civilizations.new().execute(self, settings)
-	if target == GenStep.CIVILIZATIONS: return
-	Step7Graph.new().execute(self, settings)
+	StepGraph.new().execute(self, settings)
 
+## Snapshot/restore the post-Rivers base so many graph configs can be rebuilt on
+## the identical base map (tuning-harness support).
 func cache_base_state() -> Dictionary:
 	return {
 		"height": height_buffer.duplicate(),
-		"biome": biome_id_buffer.duplicate(),
-		"city_nodes": city_nodes.duplicate(),
-		"travel_nodes": travel_nodes.duplicate(),
-		"landmass_labels": landmass_labels.duplicate(),
-		"landmass_sizes": landmass_sizes.duplicate(),
+		"water_surface": water_surface_buffer.duplicate(),
+		"river_nodes": river_nodes.duplicate(),
+		"lake_nodes": lake_nodes.duplicate(),
 	}
 
 func restore_base_state(b: Dictionary) -> void:
 	height_buffer = b["height"].duplicate()
-	biome_id_buffer = b["biome"].duplicate()
-	city_nodes = b["city_nodes"].duplicate()
-	travel_nodes = b["travel_nodes"].duplicate()
-	landmass_labels = b["landmass_labels"].duplicate()
-	landmass_sizes = b["landmass_sizes"].duplicate()
-	gameplay_graph = {}
-	graph_result = {}
+	water_surface_buffer = b["water_surface"].duplicate()
+	river_nodes = b["river_nodes"].duplicate()
+	lake_nodes = b["lake_nodes"].duplicate()
+	graph_export = {}
+	graph_ctx = null
+	graph_curves = []
+	map_field = null
 
 func _init_plates() -> void:
 	plate_data.resize(MAX_PLATES)
@@ -401,12 +367,8 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"river_nodes": river_nodes.duplicate(),
 		"river_set": river_set,
 		"lake_set": lake_set,
-		"city_nodes": city_nodes.duplicate(),
-		"travel_nodes": travel_nodes.duplicate(),
-		"gameplay_graph": gameplay_graph.duplicate(),
-		"edge_curves": edge_curves.duplicate(),
-		"start_node": start_node,
-		"end_node": end_node,
+		"graph_export": graph_export.duplicate(true),
+		"graph_curves": graph_curves.duplicate(),
 		"landmarks": landmarks.duplicate(),
 	}
 	generation_step_finished.emit(step_name)

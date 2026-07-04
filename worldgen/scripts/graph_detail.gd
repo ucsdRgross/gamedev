@@ -14,19 +14,50 @@ static func compute_curves(ctx, field, opts: Dictionary = {}) -> Array:
 	var ds: int = maxi(1, int(opts.get("route_downscale", 4)))
 	var curves: Array = []
 	var occ := {}                                  # cell (Vector2i @ ds) -> taken by a prior route
+	var node_occ := _stamp_nodes(ctx, ds, opts)    # cell -> node ids (foreign-node avoidance)
 	for u in range(ctx.n):
 		if ctx.active[u] == 0:
 			continue
 		for v in ctx.adj[u]:
 			var a: Vector2 = ctx.pos[u]
 			var b: Vector2 = ctx.pos[v]
-			# A ferry = endpoints on different landmasses OR a straight line over water.
+			# A ferry = endpoints on different landmasses OR a straight line over water
+			# (incl. lakes/rivers): crossing a large water span directly reads better
+			# than a long coastal land detour.
 			var water_mode :bool= ctx.node_label[u] != ctx.node_label[v] or GraphPlacement.edge_crosses_water(field, a, b)
 			var target_h :float= (field.height_at(a) + field.height_at(b)) * 0.5
-			var pts := _route(field, a, b, water_mode, target_h, ds, opts, occ)
+			var pts := _route(field, a, b, water_mode, target_h, ds, opts, occ, node_occ, {u: true, v: true})
 			_stamp(occ, pts, ds)                   # later routes avoid these cells -> no overlap
 			curves.append([u, v, pts])
 	return curves
+
+## Cells (at ds scale) within `route_node_clearance` px of each active node -> the
+## node ids there. Routes pay a wall cost for entering a FOREIGN node's zone, so a
+## curve never grazes a node it doesn't connect (implying a visit) -- it snakes
+## between unconnected nodes instead.
+static func _stamp_nodes(ctx, ds: int, opts: Dictionary) -> Dictionary:
+	var r: float = float(opts.get("route_node_clearance", 9.0))
+	var cells := maxi(1, int(ceil(r / ds)))
+	var out := {}
+	for id in range(ctx.n):
+		if ctx.active[id] == 0:
+			continue
+		var c := Vector2i(int(ctx.pos[id].x / ds), int(ctx.pos[id].y / ds))
+		for dy in range(-cells, cells + 1):
+			for dx in range(-cells, cells + 1):
+				var key := Vector2i(c.x + dx, c.y + dy)
+				if not out.has(key):
+					out[key] = []
+				out[key].append(id)
+	return out
+
+## Does this cell sit in the clearance zone of a node OTHER than the edge's own
+## endpoints (`excl`)?
+static func _near_foreign_node(node_occ: Dictionary, excl: Dictionary, cell: Vector2i) -> bool:
+	for nid in node_occ.get(cell, []):
+		if not excl.has(nid):
+			return true
+	return false
 
 ## Mark a routed polyline's INTERIOR cells as occupied (skip near the endpoints, where
 ## many edges legitimately converge on a shared node).
@@ -56,7 +87,7 @@ static func _stamp(occ: Dictionary, pts: PackedVector2Array, ds: int) -> void:
 ## line fallback for long routes (it would look out of place among curves); instead, cells
 ## far from the straight line and cells used by earlier routes act as IMAGINARY WALLS
 ## (extra cost) so the route stays near its line and never overlaps another curve.
-static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: float, ds: int, opts: Dictionary, occ: Dictionary = {}) -> PackedVector2Array:
+static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: float, ds: int, opts: Dictionary, occ: Dictionary = {}, node_occ: Dictionary = {}, excl: Dictionary = {}) -> PackedVector2Array:
 	var straight := PackedVector2Array([a, b])
 	var land_pen: float = opts.get("route_land_penalty", 8.0)     # cost of land for a ferry
 	var water_pen: float = opts.get("route_water_penalty", 8.0)   # cost of water for a land route
@@ -69,12 +100,15 @@ static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: fl
 	var ab_len2: float = maxf(1.0, ab.length_squared())
 	var ab_len: float = sqrt(ab_len2)
 
-	# Search box = bounding rect of a,b grown by a margin (room to detour), clamped to map.
+	# Search box = bounding rect of a,b grown by a margin (room to detour), clamped to
+	# the LAST FULL cell so no route point can land past the map edge.
+	var cx_max := int(field.w / ds) - 1
+	var cy_max := int(field.h / ds) - 1
 	var margin: float = a.distance_to(b) * float(opts.get("route_margin", 0.7)) + 16.0
-	var x0 := clampi(int((minf(a.x, b.x) - margin) / ds), 0, int(field.w / ds))
-	var y0 := clampi(int((minf(a.y, b.y) - margin) / ds), 0, int(field.h / ds))
-	var x1 := clampi(int((maxf(a.x, b.x) + margin) / ds), 0, int(field.w / ds))
-	var y1 := clampi(int((maxf(a.y, b.y) + margin) / ds), 0, int(field.h / ds))
+	var x0 := clampi(int((minf(a.x, b.x) - margin) / ds), 0, cx_max)
+	var y0 := clampi(int((minf(a.y, b.y) - margin) / ds), 0, cy_max)
+	var x1 := clampi(int((maxf(a.x, b.x) + margin) / ds), 0, cx_max)
+	var y1 := clampi(int((maxf(a.y, b.y) + margin) / ds), 0, cy_max)
 	var gw := x1 - x0 + 1
 	var gh := y1 - y0 + 1
 	if gw < 2 or gh < 2:
@@ -121,6 +155,17 @@ static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: fl
 				if closed[ni] == 1:
 					continue
 				var base := _cell_cost(field, x0 + nx, y0 + ny, ds, water_mode, target_h, land_pen, water_pen, slope_w, occ, occ_pen)
+				# Map-border wall: cells on the outermost ring cost extra so routes
+				# never run along (or visually off) the image edge.
+				if x0 + nx <= 0 or y0 + ny <= 0 or x0 + nx >= cx_max or y0 + ny >= cy_max:
+					base += float(opts.get("route_border_penalty", 25.0))
+				# Foreign-node wall: don't pass near a node this edge doesn't connect.
+				if _near_foreign_node(node_occ, excl, Vector2i(x0 + nx, y0 + ny)):
+					base += float(opts.get("route_node_penalty", 20.0))
+				# Punish BACKWARDS travel (away from the destination) so a route can't
+				# wander behind its origin and loop back around a node.
+				if Vector2(dx, dy).dot(ab) < 0.0:
+					base += float(opts.get("route_backtrack_penalty", 3.0))
 				var world := Vector2((x0 + nx + 0.5) * ds, (y0 + ny + 0.5) * ds)
 				var dseg := _dist_to_seg(world, a, b)
 				if dseg > corridor:                 # imaginary wall: ramp cost outside the corridor
@@ -155,7 +200,25 @@ static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: fl
 	for i in range(rev.size() - 1, -1, -1):       # reversed = start..goal
 		pts.append(rev[i])
 	pts.append(b)
-	return _los_simplify(field, pts, water_mode, target_h, ds, opts, occ)
+	return _chaikin(_los_simplify(field, pts, water_mode, target_h, ds, opts, occ, node_occ, excl),
+		int(opts.get("route_smooth_iterations", 1)))
+
+## Chaikin corner-cutting: rounds the simplified polyline's corners so routes read
+## as smooth roads instead of jagged A* segments. Endpoints stay fixed; each
+## iteration replaces every interior corner with points at 1/4 and 3/4 of its
+## adjacent segments (deviation is small, so terrain admissibility is preserved
+## in practice).
+static func _chaikin(pts: PackedVector2Array, iterations: int) -> PackedVector2Array:
+	for _i in range(iterations):
+		if pts.size() < 3:
+			return pts
+		var out := PackedVector2Array([pts[0]])
+		for j in range(pts.size() - 1):
+			out.append(pts[j].lerp(pts[j + 1], 0.25))
+			out.append(pts[j].lerp(pts[j + 1], 0.75))
+		out.append(pts[pts.size() - 1])
+		pts = out
+	return pts
 
 ## Distance from point p to segment a-b.
 static func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
@@ -170,14 +233,14 @@ static func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
 ## straight segments still respect the terrain rule. Over a uniform region (e.g. open
 ## ocean for a ferry) the whole run becomes ONE straight segment -- no jaggedness; bends
 ## appear only where a straight line would hit forbidden terrain (land / water / a peak).
-static func _los_simplify(field, pts: PackedVector2Array, water_mode: bool, target_h: float, ds: int, opts: Dictionary, occ: Dictionary = {}) -> PackedVector2Array:
+static func _los_simplify(field, pts: PackedVector2Array, water_mode: bool, target_h: float, ds: int, opts: Dictionary, occ: Dictionary = {}, node_occ: Dictionary = {}, excl: Dictionary = {}) -> PackedVector2Array:
 	if pts.size() <= 2:
 		return pts
 	var tol: float = opts.get("route_height_tol", 0.15)
 	var out := PackedVector2Array([pts[0]])
 	var anchor := 0
 	for i in range(2, pts.size()):
-		if not _segment_clear(field, pts[anchor], pts[i], water_mode, target_h, tol, ds, occ):
+		if not _segment_clear(field, pts[anchor], pts[i], water_mode, target_h, tol, ds, occ, node_occ, excl):
 			out.append(pts[i - 1])                # last point still in line of sight
 			anchor = i - 1
 	out.append(pts[pts.size() - 1])
@@ -186,30 +249,35 @@ static func _los_simplify(field, pts: PackedVector2Array, water_mode: bool, targ
 ## Is the straight a->b admissible? (ferry: all water; land: all land AND within `tol` of
 ## the target height) AND it must not pass through a cell another route already took (so
 ## straightening can't re-create an overlap the A* detour avoided).
-static func _segment_clear(field, a: Vector2, b: Vector2, water_mode: bool, target_h: float, tol: float, ds: int, occ: Dictionary = {}) -> bool:
+static func _segment_clear(field, a: Vector2, b: Vector2, water_mode: bool, target_h: float, tol: float, ds: int, occ: Dictionary = {}, node_occ: Dictionary = {}, excl: Dictionary = {}) -> bool:
 	var steps := maxi(1, int(a.distance_to(b) / maxf(1.0, float(ds))))
 	for s in range(steps + 1):
 		var pt := a.lerp(b, float(s) / steps)
 		var f := float(s) / steps
-		if f > 0.15 and f < 0.85 and occ.has(Vector2i(int(pt.x / ds), int(pt.y / ds))):
+		var cell := Vector2i(int(pt.x / ds), int(pt.y / ds))
+		if f > 0.15 and f < 0.85 and occ.has(cell):
 			return false                          # would overlap another route
-		var hh :float= field.height_at(pt)
+		if _near_foreign_node(node_occ, excl, cell):
+			return false                          # would graze an unconnected node
+		# is_land is mask-aware: lakes count as water, so land routes bend around
+		# them and ferry (water) routes may cross them.
 		if water_mode:
-			if hh >= field.oth:
+			if field.is_land(pt):
 				return false                      # would cross land
 		else:
-			if hh < field.oth or absf(hh - target_h) > tol:
+			if not field.is_land(pt) or absf(field.height_at(pt) - target_h) > tol:
 				return false                      # would cross water or a peak/hole
 	return true
 
-static func _cell_cost(field, cx: int, cy: int, ds: int, water_mode: bool, target_h: float, land_pen: float, water_pen: float, slope_w: float, occ: Dictionary = {}, occ_pen: float = 0.0) -> float:
+static func _cell_cost(field:GraphPlacement.MapField, cx: int, cy: int, ds: int, water_mode: bool, target_h: float, land_pen: float, water_pen: float, slope_w: float, occ: Dictionary = {}, occ_pen: float = 0.0) -> float:
 	var extra := occ_pen if occ.has(Vector2i(cx, cy)) else 0.0   # steer away from taken cells
-	var h :float= field.height_at(Vector2((cx + 0.5) * ds, (cy + 0.5) * ds))
+	var world := Vector2((cx + 0.5) * ds, (cy + 0.5) * ds)
+	var land := field.is_land(world)                             # mask-aware: lakes = water
 	if water_mode:
-		return (1.0 if h < field.oth else land_pen) + extra      # ferry: hug water, avoid land
-	if h < field.oth:
+		return (land_pen if land else 1.0) + extra               # ferry: hug water, avoid land
+	if not land:
 		return water_pen + extra                                 # land route: avoid holes/lakes
-	return 1.0 + slope_w * absf(h - target_h) + extra            # land route: keep height (avoid peaks)
+	return 1.0 + slope_w * absf(field.height_at(world) - target_h) + extra  # keep height (avoid peaks)
 
 static func _heur(i: int, goal: int, gw: int, ds: int) -> float:
 	var dx: float = float((i % gw) - (goal % gw))

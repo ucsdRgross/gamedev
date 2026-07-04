@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://bq8s2x726tm6b"]
+
+[ext_resource type="Script" uid="uid://1tyiu2raaq32" path="res://tests/graph_placement_test.gd" id="1"]
+
+[node name="GraphPlacementTest" type="Node" unique_id=932601277]
+script = ExtResource("1")
+named_seeds = Array[int]([1, 2, 3, 4, 5])
+chaos_count = 20

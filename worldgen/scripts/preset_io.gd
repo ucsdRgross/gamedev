@@ -51,6 +51,13 @@ const DEFAULT_RANGES := {
 	"island_falloff": [0.3, 1.6], "boundary_falloff": [0.01, 0.05],
 	"temp_lapse_rate": [0.0, 1.0], "river_humidity_boost": [0.0, 0.6],
 	"lowland_flatten": [1.0, 2.0],
+	# Graph (ladder placement) params without @export_range hints.
+	"spec_cities": [2, 12], "spec_nodes_between_cities": [0, 6],
+	"spec_graph_width": [1, 6], "spec_outgoing": [1, 6],
+	"spec_min_outgoing_after_trim": [1, 3], "graph_min_width": [1, 3],
+	"graph_max_width": [3, 8], "graph_lane_tol": [1.2, 2.5],
+	"graph_branch_local_mul": [1.5, 4.0], "graph_pole_sep": [0.5, 3.0],
+	"coast_radius_ratio": [0.008, 0.03],
 }
 
 ## Which generation step each tunable parameter belongs to (the step at which you
@@ -95,22 +102,11 @@ const STEP_PARAMS := {
 		"temp_frequency", "humid_frequency", "temp_lapse_rate", "river_humidity_boost",
 		"height_bands", "temp_bands", "humid_bands",
 	],
-	"Cities": [
-		"city_dist_ratio", "max_city_count", "travel_dist_ratio", "max_travel_count",
-		"coast_radius_ratio",
-	],
 	"Graph": [
 		"spec_cities", "spec_nodes_between_cities", "spec_graph_width", "spec_outgoing",
-		"spec_min_outgoing_after_trim", "spec_edge_trim_chance", "layer_count",
-		"min_outgoing", "max_outgoing", "min_outgoing_after_trim",
-		"min_nodes_between_cities", "max_nodes_between_cities", "min_cities_visited",
-		"max_cities_visited", "city_bottleneck_strength", "min_graph_width",
-		"min_biomes_per_path", "max_biomes_per_path", "max_landmasses",
-		"max_cross_ocean_per_band", "water_crossing_ratio", "start_end_island_penalty",
-		"start_end_min_connections", "mountain_pass_bias", "graph_anti_straight",
-		"graph_zigzag_penalty", "edge_trim_chance", "path_curve_max_ratio",
-		"path_curve_min_ratio", "failsafe_max_injected_nodes", "max_paths_enumerated",
-		"graph_build_passes",
+		"spec_min_outgoing_after_trim", "spec_edge_trim_chance", "graph_min_width",
+		"graph_max_width", "graph_jitter", "graph_landmass_min_frac", "graph_lane_tol",
+		"graph_branch_local_mul", "graph_pole_sep", "coast_radius_ratio",
 	],
 }
 

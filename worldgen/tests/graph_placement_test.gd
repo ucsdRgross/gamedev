@@ -16,11 +16,13 @@ const OUT_DIR := "res://placement_debug/"
 @export var chaos_count: int = 40
 @export var chaos_render: int = 6      # how many chaos cases to also render
 
-# Placement levers. v2: multi-landmass by breadth, structured init, edges built
-# after settle.
-# LADDER levers: min_width/max_width = sections per rung at thinnest/widest land; jitter =
-# fraction of rung spacing to randomly offset nodes; landmass_min_frac = ignore small isles.
-const PLACE_OPTS := {"min_width": 1, "max_width": 5, "jitter": 0.5, "landmass_min_frac": 0.12}
+# Placement levers now live on WorldSettings (graph_min_width, graph_max_width,
+# graph_jitter, graph_landmass_min_frac, ...); _opts() reads them + enables the
+# placement diagnostics for this tuner.
+func _opts(bs: WorldSettings) -> Dictionary:
+	var o := bs.place_opts()
+	o["debug"] = true
+	return o
 
 # {name, cities, nbc, outgoing}. v4 placement uses only: cities & nbc -> rung count (D),
 # and `out` -> max edges per node. The old `w`/`lmin`/`lmax` no longer affect placement
@@ -55,13 +57,15 @@ func _ready() -> void:
 		var bs := WorldSettings.new()
 		bs.main_seed = sd
 		_gen.settings = bs
-		await _gen.generate_base_through_civilizations()
+		await _gen.generate_up_to(WorldGenerator.GenStep.RIVERS)
 		var field := GraphPlacement.MapField.from_generator(_gen)
+		print("  seed%d water: %d river px, %d lake px, %d landmasses" % [
+			sd, _gen.river_nodes.size(), _gen.lake_nodes.size(), field.sizes.size()])
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
 		for spec in SPECS:
 			_apply_spec(bs, spec)
 			var g := GraphSpec.build_nodes(spec["cities"], spec["nbc"], 2, 5, sd)   # lmin/lmax unused by v4 placement
-			var res := GraphPlacement.place(g, field, bs, sd, PLACE_OPTS)
+			var res := GraphPlacement.place(g, field, bs, sd, _opts(bs))
 			_report(spec["name"], sd, g, res, field)
 			_render(g, res, field, spec["name"], sd)
 
@@ -91,7 +95,7 @@ func _run_chaos() -> void:
 		var bs := WorldSettings.new()
 		bs.main_seed = sd
 		_gen.settings = bs
-		await _gen.generate_base_through_civilizations()
+		await _gen.generate_up_to(WorldGenerator.GenStep.RIVERS)
 		var field := GraphPlacement.MapField.from_generator(_gen)
 		_coast_radius = bs.coast_radius_ratio * bs.map_diag()
 		var cities := rng.randi_range(2, 16)
@@ -101,7 +105,7 @@ func _run_chaos() -> void:
 		_apply_spec(bs, {"cities": cities, "nbc": nbc, "w": rng.randi_range(1, 12),
 			"out": rng.randi_range(1, 8), "lmin": lmin, "lmax": lmax})
 		var g := GraphSpec.build_nodes(cities, nbc, lmin, lmax, sd)
-		var res := GraphPlacement.place(g, field, bs, sd, PLACE_OPTS)
+		var res := GraphPlacement.place(g, field, bs, sd, bs.place_opts())  # no debug spam in chaos
 		var pos: PackedVector2Array = res["pos"]
 		var active: PackedByteArray = res["active"]
 		var label := "ch%d[c%d n%d L%d-%d]" % [ci, cities, nbc, lmin, lmax]
@@ -126,10 +130,13 @@ func _run_chaos() -> void:
 	print("  chaos done: avg on_land=%.0f%%, worst=%.0f%% [%s]" % [
 		100.0 * total_on_land / maxf(1, chaos_count), 100.0 * worst, worst_desc])
 
+## Per-case stats line. `on_river` MUST stay 0: nodes are never allowed on river
+## pixels (rivers are a placement exclusion; lakes count as water via is_land).
 func _report(name: String, sd: int, g: Dictionary, res: Dictionary, field) -> void:
 	var pos: PackedVector2Array = res["pos"]
 	var active: PackedByteArray = res["active"]
 	var on_land := 0
+	var on_river := 0
 	var kept := 0
 	for i in range(pos.size()):
 		if active[i] == 0:
@@ -137,6 +144,8 @@ func _report(name: String, sd: int, g: Dictionary, res: Dictionary, field) -> vo
 		kept += 1
 		if field.is_land(pos[i]):
 			on_land += 1
+		if field.blocked_at(pos[i]):
+			on_river += 1
 	var adj: Array = res["ctx"].adj
 	var lo := INF
 	var hi := -INF
@@ -148,8 +157,8 @@ func _report(name: String, sd: int, g: Dictionary, res: Dictionary, field) -> vo
 			lo = minf(lo, d); hi = maxf(hi, d); sum += d; cnt += 1
 	var water_bad: int = GraphPlacement.water_edge_violations(res["ctx"]).size()
 	var st: Dictionary = res.get("edge_stats", {})
-	print("  %-12s seed%d: kept=%d/%d on_land=%d (%.0f%%) edges=%d reaches_end=%s water_viol=%d edgelen avg=%.0f [%.0f..%.0f]" % [
-		name, sd, kept, pos.size(), on_land, 100.0 * on_land / maxi(1, kept),
+	print("  %-12s seed%d: kept=%d/%d on_land=%d (%.0f%%) ON_RIVER=%d (must be 0) edges=%d reaches_end=%s water_viol=%d edgelen avg=%.0f [%.0f..%.0f]" % [
+		name, sd, kept, pos.size(), on_land, 100.0 * on_land / maxi(1, kept), on_river,
 		st.get("edges", cnt), str(st.get("reaches_end", false)), water_bad,
 		sum / maxf(1, cnt), lo, hi])
 
@@ -173,19 +182,25 @@ func _straight_curves(ctx) -> Array:
 			out.append([u, v, PackedVector2Array([ctx.pos[u], ctx.pos[v]])])
 	return out
 
+## Terrain backdrop for the debug PNGs. Uses the MapField masks so the water
+## rules are visible: lakes render as water (lighter blue than ocean) and river
+## pixels get their own tint -- so "no node on a river/lake" can be eyeballed.
 func _base_image(field) -> Image:
 	var w: int = field.w
 	var h: int = field.h
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
 		for x in range(w):
-			var ht: float = field.height[(y * w) + x]
+			var i: int = (y * w) + x
 			var col: Color
-			if ht >= field.oth:
-				var t := clampf((ht - field.oth) / maxf(0.001, 1.0 - field.oth), 0.0, 1.0)
-				col = Color(0.25, 0.45, 0.25).lerp(Color(0.6, 0.55, 0.4), t)
+			if field.water[i] == 1:
+				# Lake pixels sit above oth but are masked water -> lighter blue.
+				col = Color(0.20, 0.35, 0.60) if field.height[i] >= field.oth else Color(0.12, 0.18, 0.35)
+			elif field.blocked[i] == 1:
+				col = Color(0.30, 0.55, 0.80)  # river: placement-excluded land
 			else:
-				col = Color(0.12, 0.18, 0.35)
+				var t := clampf((field.height[i] - field.oth) / maxf(0.001, 1.0 - field.oth), 0.0, 1.0)
+				col = Color(0.25, 0.45, 0.25).lerp(Color(0.6, 0.55, 0.4), t)
 			img.set_pixel(x, y, col)
 	return img
 

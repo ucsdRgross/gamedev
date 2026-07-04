@@ -22,6 +22,13 @@ class MapField extends RefCounted:
 	var land_min := Vector2.ZERO         # bounding box of the TARGET landmass
 	var land_max := Vector2.ZERO
 	var land_centroid := Vector2.ZERO
+	# Water mask: 1 = ocean (height < oth) OR lake. Lakes are ocean-identical for
+	# labeling / distance transform / is_land, so a big lake can split a landmass
+	# and ferries may cross it like any strait.
+	var water := PackedByteArray()
+	# River mask: node-placement exclusion ONLY. Rivers stay out of labeling/DT so
+	# they never split a landmass; nodes are just nudged off river pixels.
+	var blocked := PackedByteArray()
 	# Connected-component landmass labels (cell -> id, -1 = water). The graph is
 	# confined to `main_label` (the largest landmass) so it can't zigzag between
 	# islands across water.
@@ -64,6 +71,7 @@ class MapField extends RefCounted:
 		f.h = gen.settings.map_height
 		f.oth = gen.settings.ocean_threshold
 		f.height = gen.height_buffer
+		f._build_masks(gen.lake_nodes, gen.river_nodes)
 		f.confine_main = opts.get("landmass_mode", "multi") == "largest"
 		f._label_landmasses()
 		f.domain_land = f.sizes.get(f.main_label, 0) if f.confine_main else f.total_land
@@ -73,6 +81,27 @@ class MapField extends RefCounted:
 		var spacing: float = gen.settings.map_diag() * opts.get("sample_spacing_ratio", 0.012)
 		f.build_land_samples(spacing, gen.settings.main_seed, opts.get("poisson", true))
 		return f
+
+	## Build the water + river masks once. Lakes join the water mask (ocean-identical);
+	## rivers only populate `blocked`. Both tolerate empty arrays (rivers step off).
+	func _build_masks(lakes: Array, rivers: Array) -> void:
+		var n := w * h
+		water.resize(n)
+		blocked.resize(n)
+		blocked.fill(0)
+		for i in range(n):
+			water[i] = 1 if height[i] < oth else 0
+		for l in lakes:
+			water[(l.y * w) + l.x] = 1
+		for r in rivers:
+			blocked[(r.y * w) + r.x] = 1
+
+	## Is this pixel unusable for NODE PLACEMENT (a river)? Water is handled by
+	## labels/is_land; this is the extra river-only exclusion.
+	func blocked_at(p: Vector2) -> bool:
+		var x := clampi(int(p.x), 0, w - 1)
+		var y := clampi(int(p.y), 0, h - 1)
+		return blocked[(y * w) + x] == 1
 
 	# --- Distance transform (two-pass chamfer, signed) -----------------------
 	func _build_distance_transform(downscale: int) -> void:
@@ -86,7 +115,7 @@ class MapField extends RefCounted:
 		for gy in range(_dth):
 			for gx in range(_dtw):
 				var i := gy * _dtw + gx
-				var landcell := height[(mini(gy * _dtds, h - 1) * w) + mini(gx * _dtds, w - 1)] >= oth
+				var landcell := water[(mini(gy * _dtds, h - 1) * w) + mini(gx * _dtds, w - 1)] == 0
 				to_water[i] = BIG if landcell else 0.0
 				to_land[i] = 0.0 if landcell else BIG
 		_chamfer(to_water)
@@ -95,7 +124,7 @@ class MapField extends RefCounted:
 		for gy in range(_dth):
 			for gx in range(_dtw):
 				var i := gy * _dtw + gx
-				var landcell := height[(mini(gy * _dtds, h - 1) * w) + mini(gx * _dtds, w - 1)] >= oth
+				var landcell := water[(mini(gy * _dtds, h - 1) * w) + mini(gx * _dtds, w - 1)] == 0
 				dt[i] = (to_water[i] if landcell else -to_land[i]) * _dtds
 
 	func _chamfer(d: PackedFloat32Array) -> void:
@@ -144,7 +173,7 @@ class MapField extends RefCounted:
 		for sy in range(h):
 			for sx in range(w):
 				var si := sy * w + sx
-				if height[si] < oth or label[si] != -1:
+				if water[si] == 1 or label[si] != -1:
 					continue
 				var cnt := 0
 				var stack: Array[int] = [si]
@@ -161,7 +190,7 @@ class MapField extends RefCounted:
 						if nx < 0 or ny < 0 or nx >= w or ny >= h:
 							continue
 						var ni := ny * w + nx
-						if height[ni] >= oth and label[ni] == -1:
+						if water[ni] == 0 and label[ni] == -1:
 							label[ni] = cur
 							stack.push_back(ni)
 				sizes[cur] = cnt
@@ -209,7 +238,7 @@ class MapField extends RefCounted:
 		for cy in range(gy):
 			for cx in range(gx):
 				var p := Vector2((cx + rng.randf()) * cs, (cy + rng.randf()) * cs)
-				if in_domain(p):
+				if in_domain(p) and not blocked_at(p):
 					samples.append(p)
 
 	## Bridson's algorithm: blue-noise points >= r apart, kept only on land.
@@ -228,7 +257,9 @@ class MapField extends RefCounted:
 		# sample just one island -- every separate landmass needs its own seed.
 		for lab in label_seed.keys():
 			var seed_pt: Vector2 = label_seed[lab]
-			if in_domain(seed_pt) and _poisson_ok(seed_pt, grid, gw, gh, cell, r):
+			if blocked_at(seed_pt):
+				seed_pt = _unblocked_near(seed_pt, r)
+			if in_domain(seed_pt) and not blocked_at(seed_pt) and _poisson_ok(seed_pt, grid, gw, gh, cell, r):
 				_add_poisson(seed_pt, grid, gw, gh, cell, active)
 		if active.is_empty():                       # no land in domain
 			return
@@ -240,7 +271,7 @@ class MapField extends RefCounted:
 				var ang := rng.randf() * TAU
 				var rad := r * (1.0 + rng.randf())
 				var cand := center + Vector2(cos(ang), sin(ang)) * rad
-				if not in_domain(cand):
+				if not in_domain(cand) or blocked_at(cand):
 					continue
 				if _poisson_ok(cand, grid, gw, gh, cell, r):
 					_add_poisson(cand, grid, gw, gh, cell, active)
@@ -248,6 +279,20 @@ class MapField extends RefCounted:
 					break
 			if not found:
 				active.remove_at(ai)
+
+	## Nearest non-river cell on the SAME landmass as `p` (ring scan, capped). Moves a
+	## Poisson seed off a river so a river-covered seed can't silence a whole island.
+	func _unblocked_near(p: Vector2, max_r: float) -> Vector2:
+		var lab := label_at(p)
+		for ring in range(1, int(ceil(max_r)) + 1):
+			for dy in range(-ring, ring + 1):
+				for dx in range(-ring, ring + 1):
+					if maxi(absi(dx), absi(dy)) != ring:
+						continue
+					var q := p + Vector2(dx, dy)
+					if in_bounds(q) and label_at(q) == lab and not blocked_at(q):
+						return q
+		return p
 
 	func _add_poisson(p: Vector2, grid: PackedInt32Array, gw: int, gh: int, cell: float, active: Array[int]) -> void:
 		var idx := samples.size()
@@ -346,7 +391,9 @@ class MapField extends RefCounted:
 		return height[(y * w) + x]
 
 	func is_land(p: Vector2) -> bool:
-		return height_at(p) >= oth
+		var x := clampi(int(p.x), 0, w - 1)
+		var y := clampi(int(p.y), 0, h - 1)
+		return water[(y * w) + x] == 0
 
 	## Uphill height gradient (points toward higher ground / away from ocean).
 	func gradient(p: Vector2) -> Vector2:
@@ -462,29 +509,31 @@ static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
 	var init_pos := ctx.pos.duplicate()
 	var mid_pos := ctx.pos.duplicate()
 
-	# DIAGNOSTIC (remove later): node-share vs area-share per island (should track),
-	# plus how many nodes were trimmed at thin slices.
-	var _dist := {}
-	var _kept := 0
-	for i in range(ctx.n):
-		if ctx.active[i] == 0:
-			continue
-		_kept += 1
-		var l := ctx.node_label[i]
-		_dist[l] = _dist.get(l, 0) + 1
-	var _area_sum := 0
-	for l in _dist.keys():
-		_area_sum += field.sizes.get(l, 0)
-	var _parts := []
-	for l in _dist.keys():
-		var node_pct :float= 100.0 * _dist[l] / maxi(1, _kept)
-		var area_pct :float= 100.0 * field.sizes.get(l, 0) / maxi(1, _area_sum)
-		_parts.append("%d:%dn(%.0f%%nodes/%.0f%%area)" % [l, _dist[l], node_pct, area_pct])
-	print("    [JIGSAW] kept %d/%d nodes, %d islands: %s" % [_kept, ctx.n, _dist.size(), str(_parts)])
+	var debug: bool = opts.get("debug", false)
+	if debug:
+		# Node-share vs area-share per island (should track), plus thin-slice trims.
+		var _dist := {}
+		var _kept := 0
+		for i in range(ctx.n):
+			if ctx.active[i] == 0:
+				continue
+			_kept += 1
+			var l := ctx.node_label[i]
+			_dist[l] = _dist.get(l, 0) + 1
+		var _area_sum := 0
+		for l in _dist.keys():
+			_area_sum += field.sizes.get(l, 0)
+		var _parts := []
+		for l in _dist.keys():
+			var node_pct :float= 100.0 * _dist[l] / maxi(1, _kept)
+			var area_pct :float= 100.0 * field.sizes.get(l, 0) / maxi(1, _area_sum)
+			_parts.append("%d:%dn(%.0f%%nodes/%.0f%%area)" % [l, _dist[l], node_pct, area_pct])
+		print("    [JIGSAW] kept %d/%d nodes, %d islands: %s" % [_kept, ctx.n, _dist.size(), str(_parts)])
 
 	# Edge creation -- ONE geography-aware forward sweep on the placed nodes.
 	var edge_stats := _create_edges(ctx, graph, settings)
-	_diagnose_edges(ctx)
+	if debug:
+		_diagnose_edges(ctx)
 
 	return {"pos": ctx.pos, "ctx": ctx, "steps": 0, "init_pos": init_pos,
 		"mid_pos": mid_pos, "edge_stats": edge_stats, "active": ctx.active}
@@ -806,9 +855,9 @@ static func water_edge_violations(ctx: Ctx, _coast_radius: float = 0.0) -> Array
 ## Snap an axis pole to the nearest large landmass (start/end sit on land, not in ocean).
 static func _pole_pos(field: MapField, large: Dictionary, center: Vector2, dir: Vector2, a: float) -> Vector2:
 	var pole := center + dir * a
-	if large.has(field.label_at(pole)):
+	if large.has(field.label_at(pole)) and not field.blocked_at(pole):
 		return pole
-	var si := field.nearest_sample_idx(pole, {}, -1, large)
+	var si := field.nearest_sample_idx(pole, {}, -1, large)  # samples are river-free
 	return field.samples[si] if si >= 0 else pole
 
 # ---------------------------------------------------------------------------
@@ -925,6 +974,14 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 				var wj := base + dir * ((rng.randf() - 0.5) * jitter_amt) + perp * ((rng.randf() - 0.5) * jitter_amt)
 				if field.label_at(wj) == lab:
 					base = wj                         # keep jitter only if it stays on this island
+				if field.blocked_at(base):
+					# Never place a node on a river: snap to the nearest land sample on
+					# this island (samples are river-free by construction). Drop the node
+					# if the island has none left.
+					var si := field.nearest_sample_idx(base, {}, lab)
+					if si < 0:
+						continue
+					base = field.samples[si]
 				if base.distance_to(sp) < pole_sep or base.distance_to(ep) < pole_sep:
 					continue                          # keep clearance around the start/end poles
 				g_pos.append(base); g_depth.append(d); g_lane.append(k); g_label.append(lab)

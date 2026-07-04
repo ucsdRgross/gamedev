@@ -216,84 +216,49 @@ func map_diag() -> float:
 ## Number of humidity bands.
 @export_range(1, 6) var humid_bands: int = 3
 
-@export_group("Step 7 - Cities")
-## Min city spacing as a fraction of the map diagonal.
-@export var city_dist_ratio: float = 0.033
-## Hard cap on number of cities.
-@export var max_city_count: int = 150
-## Min travel-node spacing as a fraction of the map diagonal.
-@export var travel_dist_ratio: float = 0.012
-## Cap on dense travel nodes.
-@export var max_travel_count: int = 700
-## Ring radius (fraction of map diagonal) sampled to score coastalness (cities
-## prefer coasts).
-@export var coast_radius_ratio: float = 0.014
-
-@export_group("Step 8 - Graph")
-## Cities visited per path, including start & end (abstract spec).
+@export_group("Step 7 - Graph")
+## Cities visited per path, including start & end (abstract spec). Sets the rung
+## count together with spec_nodes_between_cities.
 @export var spec_cities: int = 5
 ## Travel nodes between consecutive cities (abstract spec).
 @export var spec_nodes_between_cities: int = 2
 ## Min distinct cities a city can reach next (graph width, abstract spec).
 @export var spec_graph_width: int = 3
-## Forward edges per node before trimming (abstract spec).
+## Max forward edges per node (the placement edge cap).
 @export var spec_outgoing: int = 3
 ## Variety-trim floor (never orphans a node, abstract spec).
 @export var spec_min_outgoing_after_trim: int = 1
 ## Chance to drop a surplus edge during the spec trim.
 @export_range(0.0, 1.0) var spec_edge_trim_chance: float = 0.3
-## Number of forward layers nodes are bucketed into (physical placement).
-@export var layer_count: int = 14
-## Target min forward edges per node when building.
-@export var min_outgoing: int = 2
-## Max forward edges per node.
-@export var max_outgoing: int = 3
-## Variety trim may reduce a node down to this (below min_outgoing) but never orphan.
-@export var min_outgoing_after_trim: int = 1
-## Min travel nodes between consecutive cities on a path.
-@export var min_nodes_between_cities: int = 1
-## Max travel nodes between consecutive cities on a path.
-@export var max_nodes_between_cities: int = 4
-## Min cities visited along a start->end path.
-@export var min_cities_visited: int = 3
-## Max cities visited along a start->end path.
-@export var max_cities_visited: int = 8
-## How strictly city layers bottleneck paths. 1 = every path forced through a city
-## per city-layer; 0 = cities are ordinary anchors paths may bypass (freer/wider).
-@export_range(0.0, 1.0) var city_bottleneck_strength: float = 0.5
-## Min number of other cities a single city must directly reach (city-graph branchiness).
-@export var min_graph_width: int = 3
-## Min distinct biomes a path should traverse (contiguous same-biome runs).
-@export var min_biomes_per_path: int = 2
-## Max distinct biomes a path should traverse.
-@export var max_biomes_per_path: int = 6
-## How many continents keep nodes (top-N by size) for inter-landmass travel.
-@export var max_landmasses: int = 4
-## Max INCOMING cross-ocean edges a band may receive (must land on a coastal city).
-@export var max_cross_ocean_per_band: int = 1
-## Longest allowed cross-ocean edge as a fraction of the map diagonal (water reach).
-@export var water_crossing_ratio: float = 0.30
-## Penalty discouraging start/end on small landmasses.
-@export var start_end_island_penalty: float = 4000.0
-## Start/end must have >= this many nearby nodes (else heavily penalized).
-@export var start_end_min_connections: int = 2
-## >0 routes mountain travel through lower/closer-height passes.
-@export var mountain_pass_bias: float = 1.5
-## Penalty on edges that beeline at the goal (higher = more winding).
-@export var graph_anti_straight: float = 0.8
-## Penalty for crossing back over the spine centerline (commit to a side -> bulges
-## instead of zig-zags).
-@export var graph_zigzag_penalty: float = 40.0
-## Chance to drop a surplus edge (keeps min_outgoing, never orphans) so the graph
-## isn't a perfect NxN lattice.
-@export_range(0.0, 1.0) var edge_trim_chance: float = 0.3
-## Max sideways bow of a cosmetic curved road, as a fraction of the map diagonal.
-@export var path_curve_max_ratio: float = 0.076
-## Gentle bow applied to even clear edges so every road curves slightly.
-@export var path_curve_min_ratio: float = 0.008
-## Nodes the failsafe may create to keep paths valid.
-@export var failsafe_max_injected_nodes: int = 40
-## Cap on start->end paths walked for stats/validation.
-@export var max_paths_enumerated: int = 4000
-## build, diagnose+modify nodes, rebuild (1 = single pass).
-@export_range(1, 4) var graph_build_passes: int = 2
+# --- ladder placement (GraphPlacement opts; see place_opts()) ---
+## Sections (nodes) per rung where the land is THINNEST.
+@export var graph_min_width: int = 1
+## Sections (nodes) per rung where the land is WIDEST.
+@export var graph_max_width: int = 5
+## Node jitter as a fraction of the rung spacing (0 = rigid lattice).
+@export_range(0.0, 1.0) var graph_jitter: float = 0.5
+## Ignore landmasses smaller than this fraction of the largest one.
+@export_range(0.0, 1.0) var graph_landmass_min_frac: float = 0.12
+## Branch locality: extra forward links allowed only within this x the nearest
+## forward node's distance (scale-free ratio).
+@export var graph_lane_tol: float = 1.8
+## Isolation cutoff for branching, in rung pitches: a node whose nearest forward
+## node is farther than this emits only its single required edge.
+@export var graph_branch_local_mul: float = 2.5
+## Clearance kept around the start/end poles, in sample spacings.
+@export var graph_pole_sep: float = 1.5
+## Coastal test radius (fraction of the map diagonal): a node within this of open
+## water counts as coastal and may ferry.
+@export var coast_radius_ratio: float = 0.014
+
+## Ladder-placement options consumed by GraphPlacement.place().
+func place_opts() -> Dictionary:
+	return {
+		"min_width": graph_min_width,
+		"max_width": graph_max_width,
+		"jitter": graph_jitter,
+		"landmass_min_frac": graph_landmass_min_frac,
+		"lane_tol": graph_lane_tol,
+		"branch_local_mul": graph_branch_local_mul,
+		"pole_sep": graph_pole_sep,
+	}
