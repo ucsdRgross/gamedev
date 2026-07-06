@@ -34,22 +34,28 @@ static func make_default(oth: float = 0.38, mth: float = 0.65) -> WorldHeightCol
 	return c
 
 
-## Color for a LAND pixel at height `h`: first band whose upper exceeds h; a
+## Shared band walk for ANY ascending band array (this colorizer's bands or a
+## WorldBiome's per-biome ramp): first band whose upper exceeds h wins; a
 ## smooth band lerps to the next band's color across its height interval.
-## Callers guarantee h >= ocean threshold (water is colored separately).
-func land_color(h: float) -> Color:
+static func eval_bands(p_bands: Array[WorldHeightBand], h: float) -> Color:
 	var lower := -INF
-	for i in range(bands.size()):
-		var b := bands[i]
-		if h >= b.upper and i < bands.size() - 1:
+	for i in range(p_bands.size()):
+		var b := p_bands[i]
+		if h >= b.upper and i < p_bands.size() - 1:
 			lower = b.upper
 			continue
-		if b.smooth and i < bands.size() - 1:
+		if b.smooth and i < p_bands.size() - 1:
 			var span := maxf(1e-6, b.upper - lower)
 			var t := clampf((h - lower) / span, 0.0, 1.0) if lower > -INF else 0.0
-			return b.color.lerp(bands[i + 1].color, t)
+			return b.color.lerp(p_bands[i + 1].color, t)
 		return b.color
 	return Color.MAGENTA  # no bands configured: loud fallback
+
+
+## Color for a LAND pixel at height `h` from this colorizer's own bands.
+## Callers guarantee h >= ocean threshold (water is colored separately).
+func land_color(h: float) -> Color:
+	return eval_bands(bands, h)
 
 
 ## River color at water-surface height `wv`, ramped low->high over the land

@@ -9,19 +9,36 @@ extends RefCounted
 ## composite_image pixel-for-pixel.
 
 ## Full colorized map: ocean + lakes + elevation-ramped rivers + banded land.
+## Pass `bset` to color land by biome (needs a full-size biome_buffer in data);
+## null (or no buffer) = the classic height-band look.
 static func composite_image(data: Dictionary, w: int, h: int, oth: float,
-		col: WorldHeightColorizer) -> Image:
+		col: WorldHeightColorizer, bset: WorldBiomeSet = null) -> Image:
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	_paint(img, data, w, h, oth, col, true, true)
+	_paint(img, data, w, h, oth, col, true, true, true, bset)
 	return img
 
 
 ## Land only: banded land colors, fully transparent wherever there is water
-## (ocean, lakes, and river pixels).
+## (ocean, lakes, and river pixels). `bset` = per-biome ramps as above.
 static func land_only_image(data: Dictionary, w: int, h: int, oth: float,
-		col: WorldHeightColorizer) -> Image:
+		col: WorldHeightColorizer, bset: WorldBiomeSet = null) -> Image:
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	_paint(img, data, w, h, oth, col, true, false)
+	_paint(img, data, w, h, oth, col, true, false, true, bset)
+	return img
+
+
+## Stack `water` over `land` into a fresh composite. Exact by construction:
+## every pixel is either a water class (opaque in the water layer) or a land
+## class (opaque in the land layer), never both -- so this reproduces
+## composite_image without a third full _paint pass.
+static func merge_layers(land: Image, water: Image) -> Image:
+	var w := land.get_width()
+	var h := land.get_height()
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	for y in range(h):
+		for x in range(w):
+			var wc := water.get_pixel(x, y)
+			img.set_pixel(x, y, wc if wc.a > 0.0 else land.get_pixel(x, y))
 	return img
 
 
@@ -51,9 +68,11 @@ static func height_image_rf(data: Dictionary, w: int, h: int) -> Image:
 ## Shared per-pixel classifier/painter: each pixel is ocean, lake, river, or
 ## land; `paint_land` / `paint_water` select which classes get color (the other
 ## class stays transparent), so composite = land layer + water layer exactly.
+## Land colors come from the biome's own band ramp when a biome buffer + set are
+## present (with the set's global snow_line override), else the colorizer bands.
 static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 		col: WorldHeightColorizer, paint_land: bool, paint_water: bool,
-		include_ocean: bool = true) -> void:
+		include_ocean: bool = true, bset: WorldBiomeSet = null) -> void:
 	var height: PackedFloat32Array = data.get("height", PackedFloat32Array())
 	if height.size() < w * h:
 		return
@@ -62,6 +81,10 @@ static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 	var rmask: PackedByteArray = data.get("river_set", PackedByteArray())
 	var lmask: PackedByteArray = data.get("lake_set", PackedByteArray())
 	var has_masks := rmask.size() >= w * h and lmask.size() >= w * h
+	# Per-pixel biome ids (index y*w+x, -1 water); empty before Biomes runs.
+	var bbuf: PackedInt32Array = data.get("biome_buffer", PackedInt32Array())
+	var has_biomes := bset != null and bbuf.size() >= w * h
+	var n_biomes := bset.biomes.size() if has_biomes else 0
 	for y in range(h):
 		for x in range(w):
 			var idx := (y * w) + x
@@ -79,5 +102,16 @@ static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 					var wv := wsurf[idx] if (not wsurf.is_empty() and wsurf[idx] >= 0.0) else height[idx]
 					c = col.river_color(wv, oth)
 			elif paint_land:
-				c = col.land_color(height[idx])
+				var hv2 := height[idx]
+				var painted := false
+				if has_biomes:
+					var b := bbuf[idx]
+					if b >= 0 and b < n_biomes and not bset.biomes[b].bands.is_empty():
+						if bset.snow_line > 0.0 and hv2 >= bset.snow_line:
+							c = bset.snow_color
+						else:
+							c = WorldHeightColorizer.eval_bands(bset.biomes[b].bands, hv2)
+						painted = true
+				if not painted:
+					c = col.land_color(hv2)
 			img.set_pixel(x, y, c)

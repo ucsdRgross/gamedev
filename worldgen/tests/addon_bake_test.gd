@@ -36,5 +36,14 @@ func _ready() -> void:
 
 	var loaded := b.overlay().nodes().size()
 	var ok := loaded == made and made > 0
+
+	# graph.json v2: legend present + biome meta survives the bake round-trip.
+	var gj = JSON.parse_string(FileAccess.get_file_as_string(BAKE_DIR.path_join("graph.json")))
+	var v2_ok: bool = typeof(gj) == TYPE_DICTIONARY and int(gj.get("version", 0)) == 2 \
+		and not (gj.get("biomes", []) as Array).is_empty()
+	var meta_ok :bool= loaded > 0 and b.overlay().nodes()[0].meta.has("biome_name")
+	print("[BakeTest] graph.json v2 + legend: %s, reloaded node biome meta: %s" % [
+		"PASS" if v2_ok else "FAIL", "PASS" if meta_ok else "FAIL"])
+	ok = ok and v2_ok and meta_ok
 	print("[BakeTest] reloaded baked map: %d graph nodes (expected %d) -> %s" % [
 		loaded, made, "PASS" if ok else "MISMATCH"])

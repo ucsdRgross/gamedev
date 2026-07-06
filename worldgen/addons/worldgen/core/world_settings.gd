@@ -37,6 +37,8 @@ func map_diag() -> float:
 @export var erosion_humidity_seed_offset: int = 4
 ## Offset for the humidity map rivers weight their rainfall by.
 @export var humidity_seed_offset: int = 6
+## Offset for the biome border-warp noise + biome cast/growth rng.
+@export var biome_seed_offset: int = 7
 
 @export_group("Pipeline")
 ## Per-step on/off switches. A disabled step is skipped and its buffers pass
@@ -48,6 +50,7 @@ func map_diag() -> float:
 @export var enable_erosion: bool = true
 @export var enable_rivers: bool = true
 @export var enable_graph: bool = true
+@export var enable_biomes: bool = true
 
 @export_group("Step 1 - Landmass")
 ## Base continent scale (lower = larger, fewer continents). Frequency of the
@@ -277,6 +280,47 @@ func map_diag() -> float:
 @export var route_height_tol: float = 0.15
 ## Chaikin corner-cutting passes applied after simplification (0 = jagged A* lines).
 @export var route_smooth_iterations: int = 1
+
+@export_group("Step 7 - Biomes")
+## The biome pool + per-path guarantee config. Left empty, generation uses
+## WorldBiomeSet.make_default() (see active_biome_set()).
+@export var biome_set: WorldBiomeSet
+## Target biome territory size grown around each graph node, in region cells.
+@export var biome_territory_cells: int = 8
+## Border-warp noise strength added to the region flood's step cost
+## (higher = wigglier biome frontiers).
+@export var biome_warp_amp: float = 2.0
+## Frequency of the biome border-warp noise.
+@export var biome_warp_freq: float = 0.03
+## Weight punishing height change in the region flood (higher = biome borders
+## hug ridgelines).
+@export var biome_height_cost: float = 3.0
+## Target patch size for climate-prior filler biomes, in region cells.
+@export var biome_filler_patch_cells: int = 6
+## Same-biome regions smaller than this many cells are absorbed by a neighbor.
+@export var biome_min_region_cells: int = 3
+## Global multiplier on every biome's decoration density.
+@export var biome_deco_density_mul: float = 1.0
+
+## The biome set generation + painting read: the assigned Resource, else the
+## shipped default roster (cached so repaints see the same instance).
+var _default_biome_set: WorldBiomeSet
+func active_biome_set() -> WorldBiomeSet:
+	if biome_set != null:
+		return biome_set
+	if _default_biome_set == null:
+		_default_biome_set = WorldBiomeSet.make_default()
+	return _default_biome_set
+
+## Region-building options consumed by BiomeRegions (StepBiomes).
+func biome_opts() -> Dictionary:
+	return {
+		"territory_cells": biome_territory_cells,
+		"warp_amp": biome_warp_amp,
+		"height_cost": biome_height_cost,
+		"filler_patch_cells": biome_filler_patch_cells,
+		"min_region_cells": biome_min_region_cells,
+	}
 
 ## Ladder-placement options consumed by GraphPlacement.place().
 func place_opts() -> Dictionary:

@@ -19,6 +19,7 @@ const EXCLUDE := {
 	"landmass_seed_offset": true, "tectonic_seed_offset": true,
 	"peaks_seed_offset": true, "erosion_seed_offset": true,
 	"erosion_humidity_seed_offset": true, "humidity_seed_offset": true,
+	"biome_seed_offset": true,
 }
 
 ## Fallback [lo, hi] for params that carry no @export_range hint (plain int/float).
@@ -58,6 +59,11 @@ const DEFAULT_RANGES := {
 	"route_corridor_ratio": [0.15, 0.7], "route_overshoot_penalty": [0.0, 40.0],
 	"route_margin": [0.4, 1.2], "route_height_tol": [0.05, 0.4],
 	"route_smooth_iterations": [0, 4],
+	# Biomes (region growth + filler + deco) params without @export_range hints.
+	"biome_territory_cells": [3, 18], "biome_warp_amp": [0.5, 4.0],
+	"biome_warp_freq": [0.01, 0.08], "biome_height_cost": [0.0, 8.0],
+	"biome_filler_patch_cells": [2, 12], "biome_min_region_cells": [2, 6],
+	"biome_deco_density_mul": [0.0, 2.0],
 }
 
 ## Which generation step each tunable parameter belongs to (the step at which you
@@ -109,6 +115,11 @@ const STEP_PARAMS := {
 		"route_occupancy_penalty", "route_corridor_penalty", "route_corridor_ratio",
 		"route_overshoot_penalty", "route_margin", "route_height_tol",
 		"route_smooth_iterations",
+	],
+	"Biomes": [
+		"biome_territory_cells", "biome_warp_amp", "biome_warp_freq",
+		"biome_height_cost", "biome_filler_patch_cells", "biome_min_region_cells",
+		"biome_deco_density_mul",
 	],
 }
 

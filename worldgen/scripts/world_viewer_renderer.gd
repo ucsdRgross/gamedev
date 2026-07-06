@@ -35,15 +35,23 @@ func _draw_legend(step: String) -> void:
 			{"c": Color("#60a5fa"), "n": "Node"}, {"c": Color.GREEN, "n": "Start"},
 			{"c": Color.RED, "n": "End"}, {"c": Color.WHITE, "n": "Route"},
 		]
+	elif step.begins_with("Biome"):
+		# Live legend straight from the generated world (name + first-band swatch).
+		for e in generator.biome_legend:
+			items.append({"c": Color(e.color), "n": e.name})
 	else:  # composite: land bands + water colors
 		items = [
 			{"c": Color("#1a365d"), "n": "Ocean"}, {"c": LAKE, "n": "Lake"},
 			{"c": RIVER_LO, "n": "River"},
 		]
 
+	# Wrap into rows so long legends (the 16-biome set) stay on screen.
 	var font := ThemeDB.get_fallback_font()
-	var y := get_viewport_rect().size.y - 30.0
+	var cols := maxi(1, int((get_viewport_rect().size.x - 16.0) / 135.0))
+	var nrows := int(ceil(float(items.size()) / cols))
+	var y0 := get_viewport_rect().size.y - 30.0 - ((nrows - 1) * 20.0)
 	for i in range(items.size()):
-		var x := 16.0 + (i * 135.0)
+		var x := 16.0 + ((i % cols) * 135.0)
+		var y := y0 + ((i / cols) * 20.0)
 		draw_rect(Rect2(x, y, 14, 14), items[i].c, true)
 		draw_string(font, Vector2(x + 20, y + 12), items[i].n, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)

@@ -47,6 +47,9 @@ static func image_recipes(s: WorldSettings) -> Array:
 		{"name": "peaks_detail", "fn": func() -> Image: return _fbm(w, h, s.main_seed + s.peaks_seed_offset + 13, s.detail_frequency, 1, 0.5, 2.0, 0.0, 0.0)},
 		# Humidity (independent of height/latitude) -- rivers weight rainfall by it.
 		{"name": "humidity", "fn": func() -> Image: return _fbm(w, h, s.main_seed + s.humidity_seed_offset, s.humid_frequency, 2, 0.5, 2.0, 0.0, 0.0)},
+		# Biome border warp -- BiomeRegions adds it to the region flood's step cost
+		# so biome frontiers wander organically instead of tracing clean Voronoi edges.
+		{"name": "biome_warp", "fn": func() -> Image: return _fbm(w, h, s.main_seed + s.biome_seed_offset, s.biome_warp_freq, 3, 0.5, 2.0, 0.0, 0.0)},
 	]
 
 ## Wrap each noise Image into { "img", "tex" } (ImageTexture upload -> main thread only).

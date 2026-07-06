@@ -35,8 +35,9 @@ func _walk() -> void:
 			print("  dead end at node %d (depth %d)" % [n.id, n.depth])
 			return
 		var nxt: WorldGraphNode = nexts[0]
-		print("  node %d (depth %d) -> %d  [%s]  %d path pts" % [
-			n.id, n.depth, nxt.id, "ferry" if n.is_ferry_to(nxt) else "land", n.edge_to(nxt).size()])
+		print("  node %d (depth %d, %s) -> %d  [%s]  %d path pts" % [
+			n.id, n.depth, n.meta.get("biome_name", "biome -1"),
+			nxt.id, "ferry" if n.is_ferry_to(nxt) else "land", n.edge_to(nxt).size()])
 		n = nxt
 		hops += 1
 	if n != null and n.is_end:

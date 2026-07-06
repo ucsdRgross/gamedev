@@ -21,6 +21,8 @@ var edge_width: float = 3.0
 ## Ferry (ocean-crossing) edges are styled distinctly so water travel reads apart.
 var ferry_color: Color = Color("#3182ce")
 var ferry_width: float = 2.0
+## Tint node markers by their biome legend color (start/end keep their own colors).
+var tint_by_biome: bool = false
 ## Optional custom art. Node textures (tint by the color above) replace the drawn disc;
 ## edge textures tile along the Line2D; edge_gradient colors the line along its length.
 ## Leave null to use the vector defaults. For finer control, connect graph_populated and
@@ -48,6 +50,10 @@ func populate(export: Dictionary, map_size: Vector2) -> void:
 	var start_id := int(export.get("start", 0))
 	var end_id := int(export.get("end", 0))
 	var node_dicts: Array = export.get("nodes", [])
+	# Biome legend baked into the export by StepBiomes: id -> {name, color}.
+	var legend := {}
+	for e in export.get("biomes", []):
+		legend[int(e.get("id", -1))] = e
 
 	# Pass 1: node objects (positions needed before edges reference them).
 	for nd in node_dicts:
@@ -56,6 +62,7 @@ func populate(export: Dictionary, map_size: Vector2) -> void:
 		gn.depth = int(nd.get("depth", 0))
 		gn.landmass = int(nd.get("landmass", 0))
 		gn.height = float(nd.get("height", 0.0))
+		gn.biome = int(nd.get("biome", -1))
 		gn.is_start = gn.id == start_id
 		gn.is_end = gn.id == end_id
 		gn.overlay = self
@@ -63,6 +70,11 @@ func populate(export: Dictionary, map_size: Vector2) -> void:
 		gn.marker_radius = node_radius
 		gn.marker_color = start_color if gn.is_start else (end_color if gn.is_end else node_color)
 		gn.marker_texture = start_texture if gn.is_start else (end_texture if gn.is_end else node_texture)
+		if legend.has(gn.biome):
+			gn.meta["biome_name"] = legend[gn.biome].get("name", "")
+			gn.meta["biome_color"] = Color(legend[gn.biome].get("color", "#ffffff"))
+			if tint_by_biome and not gn.is_start and not gn.is_end:
+				gn.marker_color = gn.meta["biome_color"]
 		_nodes[gn.id] = gn
 
 	# Pass 2: edges as Line2D children + fill each node's local-space outgoing list.

@@ -17,11 +17,13 @@ extends Node3D
 ## pass is split into two tuning steps (Ridges / Detail) that both render at it, so
 ## each half of its params can be narrowed separately. The `gen` field in STEP_INFO
 ## holds which WorldGenerator.GenStep to actually run up to.
-enum ViewStep { LANDMASS, TECTONICS, PEAKS_RIDGES, PEAKS_DETAIL, EROSION, RIVERS, GRAPH }
+enum ViewStep { LANDMASS, TECTONICS, PEAKS_RIDGES, PEAKS_DETAIL, EROSION, RIVERS, GRAPH, BIOMES }
 
 ## Per tuning step: preset folder name, the generation step to run up to (= ordinal
-## of WorldGenerator.GenStep: Landmass0 Tectonics1 Peaks2 Erosion3 Rivers4 Graph5),
-## the display snapshot + paint kind, and the water source.
+## of WorldGenerator.GenStep: Landmass0 Tectonics1 Peaks2 Erosion3 Rivers4 Graph5
+## Biomes6), the display snapshot + paint kind, and the water source. Biomes uses
+## the "composite" kind: the full snapshot carries the biome buffer, so the painter
+## renders biome colors (a "topo" cell would strip it to height only).
 const STEP_INFO := [
 	{"name": "Landmass", "gen": 0, "snap": "Landmass", "kind": "topo", "water": ""},
 	{"name": "Tectonics", "gen": 1, "snap": "Tectonics_Debug", "kind": "tectonics", "water": ""},
@@ -30,6 +32,7 @@ const STEP_INFO := [
 	{"name": "Erosion", "gen": 3, "snap": "Erosion", "kind": "topo", "water": ""},
 	{"name": "Rivers", "gen": 4, "snap": "Rivers_Only", "kind": "topo", "water": "Rivers_Only"},
 	{"name": "Graph", "gen": 5, "snap": "Graph", "kind": "graph", "water": "Rivers_Only"},
+	{"name": "Biomes", "gen": 6, "snap": "Biomes", "kind": "composite", "water": "Rivers_Only"},
 ]
 
 # --- tool buttons -------------------------------------------------------------
@@ -74,7 +77,7 @@ var terrain_kind: String = "auto":
 @export var auto_regenerate: bool = true
 ## Which step Save / Process / Clear target. "Current" = the step you're viewing;
 ## pick a specific step to fix an earlier step's preset/ranges without leaving view.
-@export_enum("Current", "Landmass", "Tectonics", "Peaks Ridges", "Peaks Detail", "Erosion", "Rivers", "Graph")
+@export_enum("Current", "Landmass", "Tectonics", "Peaks Ridges", "Peaks Detail", "Erosion", "Rivers", "Graph", "Biomes")
 var save_target: String = "Current"
 ## Exploration floor for Randomize: the sampling curve is (exploration_base + good
 ## - bad). Higher = explore more of the band even with little data; lower (toward 0)

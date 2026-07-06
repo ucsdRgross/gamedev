@@ -14,6 +14,8 @@ addons/worldgen/
 ├── world_map_2d.gd                     the drag-and-drop @tool Node2D deliverable
 ├── graph_overlay.gd / graph_map_node.gd  interactive DAG overlay + per-node API
 ├── height_band.gd / height_colorizer.gd  land/water palette (Resources)
+├── biome.gd / biome_set.gd             biome pool + casting/prior/ramp/deco config
+├── biome_deco.gd                       baked decoration scatter (paint-time)
 ├── map_painter.gd                      composite / land / water / height images
 ├── world_randomizer.gd                 param tables + sampler + bundle randomize
 ├── ranges_bundle.json                  merged density model (dev-generated)
@@ -22,18 +24,20 @@ addons/worldgen/
 │   ├── world_settings.gd               all tunables (@tool)
 │   ├── world_gen_step.gd               GenerationStep base + shared CPU algorithms
 │   ├── noise_baker.gd                  CPU noise bake
-│   ├── steps/    landmass, tectonics, peaks_valleys, erosion, rivers, graph
-│   └── graph/    graph_spec, graph_placement, graph_detail
+│   ├── steps/    landmass, tectonics, peaks_valleys, erosion, rivers, graph, biomes
+│   ├── graph/    graph_spec, graph_placement, graph_detail
+│   └── biomes/   biome_assign (node casting), biome_regions (map regions)
 └── shaders/      landmass, tectonic_blueprint, tectonic_deformation,
                   peaks_and_valleys, erosion
 ```
 
 ## Pipeline
 
-Landmass → Tectonics → Peaks&Valleys → Erosion → Rivers → Graph. Each step after
-Landmass can be toggled off in the WorldSettings **Pipeline** group; a disabled
+Landmass → Tectonics → Peaks&Valleys → Erosion → Rivers → Graph → Biomes. Each step
+after Landmass can be toggled off in the WorldSettings **Pipeline** group; a disabled
 step passes its input through to the next enabled step, and the final image reads
-whatever step ran last.
+whatever step ran last. Biomes off = the classic height-band coloring; Graph off with
+Biomes on degrades to a pure climate map (biomes chosen by height/moisture only).
 
 ## Usage
 
@@ -111,6 +115,42 @@ map.overlay().graph_populated.connect(func():
 )
 ```
 
+### Biomes
+
+The Biomes step colors ALL land into organic biome regions and gives every graph
+node a biome the player will encounter:
+
+- **Config** lives on a `WorldBiomeSet` Resource (WorldSettings → *Step 7 - Biomes*
+  → `biome_set`; left empty, a shipped 16-biome default is used). It holds one pool
+  of `WorldBiome`s plus `required_count` = N: **every start→end path is guaranteed
+  to cross N distinct "required" biomes** — which ones depends on the route the
+  player picks, and the cast is drawn fresh per seed (`force_include` pins a biome
+  into every cast; `ambient_only` biomes only ever fill scenery; `required_eligible`
+  gates the draw).
+- **Land that no node touches** (far islands, interior) fills with climate-plausible
+  biomes from the same pool (`height_range`/`moisture_range`/`weight` priors), so
+  nodes never read as the origins of the coloring.
+- **Look**: each biome carries its own `WorldHeightBand` ramp, so the heightmap
+  stays visible inside every region; `snow_line` on the set is a global high-alt
+  override. Borders wander organically (warp noise) — tune *Step 7* knobs
+  (`biome_territory_cells`, `biome_warp_amp`, `biome_height_cost`, ...).
+- **Decorations**: each biome holds an ARRAY of `WorldDecoLayer`s baked into the
+  land image, so a forest can stack trees + undergrowth + mushrooms. Per layer:
+  `textures` (drop in your own pixel art — stamped scaled + tinted; empty falls
+  back to a procedural `mark`: TREE/ROCK/TUFT/SHARD/MUSHROOM), `density` (stamps
+  per 1000 land px of the biome — 10-20 reads as dense forest; scaled by the
+  global `biome_deco_density_mul`), `scale_range`, `color`, and `stackable`
+  (ground cover overlaps freely; non-stackable stamps keep a small clearance from
+  each other). Decorations avoid water, rivers, and graph nodes.
+- **Gameplay data**: every exported node carries `biome` (index into the set) and
+  the export/`graph.json` carry a `biomes` legend `[{id, name, color, required}]`;
+  `WorldGraphNode.biome` + `meta["biome_name"/"biome_color"]` mirror it on the
+  overlay, and `tint_nodes_by_biome` (Overlay group) optionally tints markers.
+- **Iteration**: the **Repaint biomes** tool button re-runs only the painting, so
+  palette/deco/tint edits show in under a second. Region shapes, the cast, and ids
+  come from generation — reordering `biome_set.biomes` between Generate and Repaint
+  mismatches colors (ids are indices); just Generate again.
+
 ### Baking
 
 **Bake to files** writes `composite.png`, `land.png`, `water.png`, `height.exr`,
@@ -127,9 +167,10 @@ generated images are never serialized into the scene.
 - **`class_name` is project-global.** `WorldGenerator`, `WorldSettings`,
   `GenerationStep`, `GraphSpec`, `GraphPlacement`, `GraphDetail`, `NoiseBaker`,
   `WorldRandomizer`, `WorldHeightBand`, `WorldHeightColorizer`, `WorldMapPainter`,
-  `WorldMap2D`, `WorldGraphOverlay`, and `WorldGraphNode` are declared with
-  `class_name`, so a host project that already defines any of those names will
-  collide. Rename here (and update the internal references) or preload the scripts
+  `WorldMap2D`, `WorldGraphOverlay`, `WorldGraphNode`, `WorldBiome`,
+  `WorldBiomeSet`, `WorldDecoLayer`, `WorldBiomeDeco`, `StepBiomes`,
+  `BiomeAssign`, and `BiomeRegions` are declared with `class_name`, so a host project that already
+  defines any of those names will collide. Rename here (and update the internal references) or preload the scripts
   by path instead of relying on the global name.
 - **EXR export needs `WorkerThreadPool`-safe painting off.** Painting is
   thread-safe (Image/PackedArray only), but if you extend the painter to touch the

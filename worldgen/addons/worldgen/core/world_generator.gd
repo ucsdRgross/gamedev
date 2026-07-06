@@ -35,6 +35,15 @@ var graph_export: Dictionary = {}
 var graph_ctx = null
 var graph_curves: Array = []
 var map_field = null
+# --- biome step outputs (StepBiomes) ---
+# Per-pixel biome index into the biome set (y*w+x; -1 = water). Empty before Biomes runs.
+var biome_buffer: PackedInt32Array = PackedInt32Array()
+# Plain-data legend [{id, name, color, required}] so bakes/overlays are self-contained.
+var biome_legend: Array = []
+# Diagnostics from the biome step (timings, coverage, pin/sliver counts) for dev tests.
+var biome_stats: Dictionary = {}
+# Per-pixel region-cell id from the biome flood (dev visualization; -1 = water).
+var biome_cell_of: PackedInt32Array = PackedInt32Array()
 var landmarks: Array[Dictionary] = []
 var plate_data: PackedVector4Array = PackedVector4Array()  # padded to 15
 var plate_is_land: PackedFloat32Array = PackedFloat32Array() # 1.0 continental, 0.0 oceanic
@@ -179,6 +188,11 @@ func _reset_state() -> void:
 	graph_ctx = null
 	graph_curves.clear()
 	map_field = null
+	# Reassign (not clear()): snapshots share the buffer by COW reference.
+	biome_buffer = PackedInt32Array()
+	biome_legend = []
+	biome_stats = {}
+	biome_cell_of = PackedInt32Array()
 	landmarks.clear()
 	_last_snapshot = ""
 
@@ -191,7 +205,7 @@ func _reset_state() -> void:
 ## Which pipeline step to stop after. Ordinals match the STEPS table order below,
 ## so int(GenStep) indexes straight into it. The map viewer uses this so it only
 ## pays for the steps it actually shows.
-enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, GRAPH }
+enum GenStep { LANDMASS, TECTONICS, PEAKS, EROSION, RIVERS, GRAPH, BIOMES }
 
 ## Ordered pipeline. Each entry: the GenerationStep subclass to run, the snapshot it
 ## emits (final_snapshot() = the last ENABLED one), whether it is a GPU coroutine
@@ -208,6 +222,7 @@ func _pipeline() -> Array:
 		# worker thread when thread_cpu_steps is set (else they run synchronously as before).
 		{"script": StepRivers, "snapshot": "Rivers_Only", "gpu": false, "toggle": "enable_rivers"},
 		{"script": StepGraph, "snapshot": "Graph", "gpu": false, "toggle": "enable_graph"},
+		{"script": StepBiomes, "snapshot": "Biomes", "gpu": false, "toggle": "enable_biomes"},
 	]
 
 ## Core driver: run enabled steps in order, stopping after the step at `stop_index`
@@ -389,6 +404,8 @@ func _save_snapshot_bridge(step_name: String) -> void:
 		"lake_set": lake_set,
 		"graph_export": graph_export.duplicate(true),
 		"graph_curves": graph_curves.duplicate(),
+		"biome_buffer": biome_buffer,  # COW mask like river_set; empty before Biomes runs
+		"biome_legend": biome_legend.duplicate(true),
 		"landmarks": landmarks.duplicate(),
 	}
 	# When a CPU step runs on a worker thread, marshal the signal to the main thread so

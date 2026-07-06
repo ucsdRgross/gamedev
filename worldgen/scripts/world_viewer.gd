@@ -122,6 +122,12 @@ func _debug_rows() -> Array:
 		# Graph: the graph alone (lines + nodes on a flat background), then the
 		# routed graph over the composite map.
 		[["graph_only", "Graph", "Graph (lines only)"], ["graph", "Graph", "Graph on Terrain"]],
+		# Biomes: terrain before biomes (Graph snapshot has no biome buffer -> classic
+		# bands), the moisture prior (the SAME humidity map Rivers rains from), the
+		# border-warp noise, the raw region-cell partition, then the final biome map.
+		[["composite", "Graph", "Terrain (pre-biomes)"], ["noise", "humidity", "Humidity (moisture prior)"],
+			["noise", "biome_warp", "Border Warp Noise"], ["biome_cells", "Biomes", "Region Cells"],
+			["composite", "Biomes", "Biomes"]],
 	]
 
 ## Flat, ordered list of every cell so arrow keys can step through them all.
@@ -131,6 +137,27 @@ func _flat_cells() -> Array:
 		for cell in row:
 			out.append(cell)
 	return out
+
+## Region-cell debug image: one random color per warped-Voronoi cell (the raw
+## partition the biome labeler works on, before biomes are assigned), water dark.
+func _biome_cells_image(w: int, h: int) -> Image:
+	var owner := generator.biome_cell_of
+	if owner.size() < w * h:
+		return null
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	for y in range(h):
+		for x in range(w):
+			var o := owner[(y * w) + x]
+			if o < 0:
+				img.set_pixel(x, y, SUBSTRATE)
+			else:
+				var hv := hash(o * 2654435761)
+				img.set_pixel(x, y, Color(
+					0.25 + 0.75 * float(hv & 255) / 255.0,
+					0.25 + 0.75 * float((hv >> 8) & 255) / 255.0,
+					0.25 + 0.75 * float((hv >> 16) & 255) / 255.0))
+	return img
+
 
 func _build_composite_and_export() -> void:
 	var rows := _debug_rows()
@@ -236,9 +263,16 @@ func _paint_cell(img: Image, kind: String, src: String, off: Vector2i, cell_px: 
 			# snapshot view without the water sets.
 			src_img = WorldMapPainter.composite_image({"height": height}, w, h, oth, czr)
 		"composite", "graph":
-			src_img = WorldMapPainter.composite_image(data, w, h, oth, czr)
+			# Biome set rides along: painter uses it only when the snapshot carries a
+			# full-size biome_buffer (the Biomes step), else plain height bands.
+			src_img = WorldMapPainter.composite_image(data, w, h, oth, czr,
+				generator.settings.active_biome_set())
 		"rivers":
 			src_img = WorldMapPainter.water_only_image(data, w, h, oth, czr, false)
+		"biome_cells":
+			src_img = _biome_cells_image(w, h)
+			if src_img == null:
+				return  # biomes step didn't run
 
 	for ty in range(cell_px):
 		for tx in range(cell_px):

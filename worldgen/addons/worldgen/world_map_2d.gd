@@ -26,6 +26,9 @@ extends Node2D
 @export_tool_button("Export PNGs", "Callable") var _btn_pngs = export_pngs
 ## Write the 32-bit float heightmap as height.exr (editor-only; runtime warns + skips).
 @export_tool_button("Export heightmap EXR", "Callable") var _btn_exr = export_heightmap_exr
+## Re-run only the painting over the cached buffers: biome palette/deco/tint edits show in
+## under a second without regenerating. Region SHAPES still need Generate.
+@export_tool_button("Repaint biomes", "Callable") var _btn_repaint = repaint_biomes
 
 # --- generation config --------------------------------------------------------
 ## All tunable pipeline parameters. Auto-created with defaults on first generate.
@@ -56,6 +59,9 @@ extends Node2D
 @export var edge_width: float = 3.0
 @export var ferry_color: Color = Color("#3182ce")
 @export var ferry_width: float = 2.0
+## Tint node markers by their biome's legend color (start/end keep their own
+## colors). Off by default so custom marker art/colors stay untouched.
+@export var tint_nodes_by_biome: bool = false
 @export_subgroup("Custom art (optional)")
 ## Node markers: assign to replace the drawn discs with your own art (tinted by the colors
 ## above). Edge textures tile along the line; edge_gradient colors it along its length.
@@ -80,7 +86,7 @@ signal generation_started
 signal generation_progress(stage: String, fraction: float)
 signal generation_finished
 
-const _TOTAL_STEPS := 6  # pipeline length; drives the progress fraction.
+const _TOTAL_STEPS := 7  # pipeline length; drives the progress fraction.
 
 # --- runtime state (never serialized) -----------------------------------------
 var _gen: WorldGenerator
@@ -166,7 +172,9 @@ func _run_generation() -> void:
 	_set_loading_text("Painting map…")
 	var w := settings.map_width
 	var h := settings.map_height
-	await _paint_layers(_snapshot, w, h, settings.ocean_threshold, _active_colorizer())
+	var bset := settings.active_biome_set()
+	await _paint_layers(_snapshot, w, h, settings.ocean_threshold, _active_colorizer(),
+		bset, _deco_ctx(bset, gen.graph_export))
 	_apply_map_texture()
 
 	if show_graph:
@@ -182,21 +190,38 @@ func _run_generation() -> void:
 
 ## Paint composite/land/water. Threaded (WorkerThreadPool) at runtime when threaded_paint is
 ## on, so the loading overlay keeps animating; synchronous in the editor / when off.
-func _paint_layers(data: Dictionary, w: int, h: int, oth: float, col: WorldHeightColorizer) -> void:
+func _paint_layers(data: Dictionary, w: int, h: int, oth: float, col: WorldHeightColorizer,
+		bset: WorldBiomeSet = null, deco: Dictionary = {}) -> void:
 	if threaded_paint and not Engine.is_editor_hint():
-		var tid := WorkerThreadPool.add_task(_paint_task.bind(data, w, h, oth, col), true, "worldmap_paint")
+		var tid := WorkerThreadPool.add_task(_paint_task.bind(data, w, h, oth, col, bset, deco), true, "worldmap_paint")
 		while not WorkerThreadPool.is_task_completed(tid):
 			await get_tree().process_frame
 		WorkerThreadPool.wait_for_task_completion(tid)
 	else:
-		_paint_task(data, w, h, oth, col)
+		_paint_task(data, w, h, oth, col, bset, deco)
 
 ## The actual per-pixel painting (runs on a worker thread when threaded). Touches only
-## PackedArray/Image data -- no scene tree / RenderingServer -- so it is thread-safe.
-func _paint_task(data: Dictionary, w: int, h: int, oth: float, col: WorldHeightColorizer) -> void:
-	_composite_img = WorldMapPainter.composite_image(data, w, h, oth, col)
-	_land_img = WorldMapPainter.land_only_image(data, w, h, oth, col)
+## PackedArray/Image data -- no scene tree / RenderingServer -- so it is thread-safe
+## (deco texture Images were prefetched on the main thread by _deco_ctx). Land paints,
+## decorations stamp into it, water paints, and the composite is their exact merge
+## (water over land) -- which drops the third full per-pixel classifier pass.
+func _paint_task(data: Dictionary, w: int, h: int, oth: float, col: WorldHeightColorizer,
+		bset: WorldBiomeSet = null, deco: Dictionary = {}) -> void:
+	_land_img = WorldMapPainter.land_only_image(data, w, h, oth, col, bset)
+	if not deco.is_empty():
+		WorldBiomeDeco.scatter(_land_img, data, w, h, oth, bset, deco)
 	_water_img = WorldMapPainter.water_only_image(data, w, h, oth, col, true)
+	_composite_img = WorldMapPainter.merge_layers(_land_img, _water_img)
+
+## MAIN THREAD: everything the deco scatter needs that is not thread-safe to fetch on the
+## paint worker -- texture Images (RenderingServer), node positions (clearance), knobs.
+func _deco_ctx(bset: WorldBiomeSet, graph_export: Dictionary) -> Dictionary:
+	var nodes := PackedVector2Array()
+	for nd in graph_export.get("nodes", []):
+		nodes.append(nd["pos"])
+	return {"images": WorldBiomeDeco.prepare_images(bset),
+		"mul": settings.biome_deco_density_mul,
+		"seed": settings.main_seed + settings.biome_seed_offset, "nodes": nodes}
 
 ## Ensure settings + colorizer exist (auto-created with defaults).
 func _ensure_config() -> void:
@@ -235,6 +260,7 @@ const _STEP_LABELS := {
 	"Landmass": "Shaping landmasses", "Tectonics": "Colliding plates",
 	"PeaksAndValleys": "Raising mountains", "Erosion": "Eroding terrain",
 	"Rivers_Only": "Carving rivers & lakes", "Graph": "Routing paths",
+	"Biomes": "Painting biomes",
 }
 
 # Name the step that is about to run (so the label tracks the CURRENT step, not the last
@@ -284,6 +310,7 @@ func _push_overlay_style() -> void:
 	o.edge_width = edge_width
 	o.ferry_color = ferry_color
 	o.ferry_width = ferry_width
+	o.tint_by_biome = tint_nodes_by_biome
 	o.node_texture = node_texture
 	o.start_texture = start_texture
 	o.end_texture = end_texture
@@ -445,8 +472,10 @@ func _graph_to_json(export: Dictionary) -> Dictionary:
 			"biome": nd.get("biome", -1), "out": outs,
 		})
 	return {
-		"version": 1, "start": export.get("start", 0), "end": export.get("end", 0),
-		"max_depth": export.get("max_depth", 0), "nodes": nodes,
+		"version": 2, "start": export.get("start", 0), "end": export.get("end", 0),
+		"max_depth": export.get("max_depth", 0),
+		"biomes": export.get("biomes", []),  # legend [{id,name,color,required}]; v2 addition
+		"nodes": nodes,
 	}
 
 func _graph_from_json(d: Dictionary) -> Dictionary:
@@ -467,18 +496,32 @@ func _graph_from_json(d: Dictionary) -> Dictionary:
 		})
 	return {
 		"start": int(d.get("start", 0)), "end": int(d.get("end", 0)),
-		"max_depth": int(d.get("max_depth", 0)), "nodes": nodes,
+		"max_depth": int(d.get("max_depth", 0)),
+		"biomes": d.get("biomes", []),  # absent in v1 files -> overlay skips biome meta
+		"nodes": nodes,
 	}
 
 # =============================================================================
-# FUTURE HOOK (deferred min-conflict/WFC biome assignment)
+# BIOME REPAINT (designer iteration)
 # =============================================================================
-## STUB (not implemented): the deferred biome pass will call this with a Callable that maps
-## a WorldGraphNode to a region/biome, then recolor the map accordingly. Wire against this
-## stable name now; it currently only warns. The graph_populated signal on the overlay and
-## WorldGraphNode.meta are the companion extension points.
-func recolor_regions(_assign: Callable) -> void:
-	push_warning("[WorldMap2D] recolor_regions() is a stub (biome/WFC recolor is deferred).")
+## Re-run ONLY the painting over the cached snapshot: WorldBiome band/palette edits, deco
+## changes, and tint_nodes_by_biome all show without regenerating (~0.5 s at 512^2). Region
+## SHAPES live in the generated buffers, so changing territory/warp knobs or the set's
+## composition still needs Generate. For custom node styling hook graph_populated instead.
+func repaint_biomes() -> void:
+	if _snapshot.is_empty():
+		push_warning("[WorldMap2D] repaint_biomes: no generated snapshot yet (press Generate first).")
+		return
+	_ensure_config()
+	var w := settings.map_width
+	var h := settings.map_height
+	var bset := settings.active_biome_set()
+	await _paint_layers(_snapshot, w, h, settings.ocean_threshold, _active_colorizer(),
+		bset, _deco_ctx(bset, _worker().graph_export))
+	_apply_map_texture()
+	if show_graph and not _worker().graph_export.is_empty():
+		_push_overlay_style()
+		_overlay_node().populate(_worker().graph_export, Vector2(w, h))
 
 ## The graph overlay (creating it if needed), so consumers can walk it for token movement.
 func overlay() -> WorldGraphOverlay:

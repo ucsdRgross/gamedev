@@ -13,12 +13,16 @@ var id: int = -1
 var depth: int = 0
 ## Landmass label this node sits on (edges between differing labels are ferries).
 var landmass: int = 0
+## Biome index into the generating WorldBiomeSet (-1 = biomes step off). Name +
+## color also land in meta ("biome_name"/"biome_color") via the export legend.
+var biome: int = -1
 ## Terrain height at the node position (>= ocean threshold; nodes never sit on water).
 var height: float = 0.0
 ## True for the single start node (depth 0) / end node (depth max_depth).
 var is_start: bool = false
 var is_end: bool = false
-## Extension point for future min-conflict/WFC biome assignment. Untouched by the addon.
+## Free-form consumer data. The overlay drops "biome_name"/"biome_color" in here when the
+## Biomes step ran; everything else is yours.
 var meta: Dictionary = {}
 ## Forward edges as exported: [{to: int, ferry: bool, points: PackedVector2Array}], with
 ## `points` already converted to map-local space by the overlay. `to` is a node id.
