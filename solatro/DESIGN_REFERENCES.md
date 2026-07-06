@@ -4,8 +4,13 @@ Third companion doc (after `DESIGN_DOC.md` — your organized ideas — and
 `DESIGN_RECOMMENDATIONS.md` — my curated recommendations). This one is a **quarry, not a
 plan**: every thematic and historical reference I can surface from the worldwide history
 of circus, magic, sideshow, fairground, street performance, gambling, and card culture —
-each mapped to the *type of effect it could support or become*. Nothing here is committed
-design; it's raw material to mine for future card sets, towns, events, and secrets.
+plus (2026-07-06 expansion) theater and opera, pro wrestling and kayfabe, dance and
+ballroom, concerts and festivals, puppetry, mime, film stunts, and the modern era from
+Cirque du Soleil to drone swarms — each mapped to the *type of effect it could support
+or become*. Coverage is deliberately global: Parts A11–A16 fill in South America,
+Australia & Oceania, Korea & Southeast Asia, the Caribbean, Europe's overlooked corners,
+and the Arctic. Nothing here is committed design; it's raw material to mine for future
+card sets, towns, events, and secrets.
 
 **Hook-type vocabulary** (matches the game's systems): `Skill` (feat card), `Stamp`,
 `Type` (material), `Pip` (rank/suit), `Suit`, `Leader`, `Rule` (rule-deck card),
@@ -205,6 +210,116 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Evel Knievel** (1960s–70s) | The declared-jump daredevil — announcing the impossible (Snake River Canyon), then attempting it in front of everyone | `Mechanic` — the modern anchor for your fame wager / **Booking** system: declare the jump, sell tickets, then survive it |
 | **Coney Island: Luna Park, Dreamland, Steeplechase** | The electric dream-cities of early amusement (Dreamland burned in 1911) | `Town` — the amusement city: every visit its layout/offers differ; may burn down (map event) and rebuild changed |
 | **Dr. Couney's incubator babies** (Coney Island) | Premature-infant incubators run *as a sideshow* for decades — the "exhibit" funded care that hospitals refused; thousands of children saved | `Skill/Event` — **the Incubator**: a sideshow that heals — exhibited (covered) cards recover debuffs/ranks while "on display"; the best true story in this entire document |
+
+## A11. South America
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Capoeira** (Brazil) | A martial art disguised as dance by enslaved Afro-Brazilians — the roda circle, the berimbau's rhythm hiding the fight in plain sight | `Skill/Type` — **the Capoeirista**: registered as a Dancer, functions as a fighter; when a town bans combat acts, it performs anyway — the crown jewel of the "disguised identity" family |
+| **Rio Carnival & the samba schools** | Neighborhood schools spend the entire year building one judged parade — theme (enredo), drums (bateria), costumes, floats, all scored by category | `Mechanic` — judged-category scoring: some shows grade you on formation, suit variety, and stamps *separately* — a deck IS a samba school |
+| **Parintins Folklore Festival** (Amazonas) | Two ox-troupes — Garantido (red) vs. Caprichoso (blue) — battle annually in a purpose-built "bumbódromo"; the whole town wears one color | `Town` — the two-faction city: pick red or blue on arrival; your choice changes the goal, the shop, and who heckles you |
+| **Bumba Meu Boi** | The folk pageant at Parintins' root: the prize ox is killed and *resurrected* amid celebration — death and revival as the show itself | `Skill` — the Ox: a card whose destruction IS its act — when destroyed, the town celebrates (fame), and it revives next show |
+| **Cordel literature** (NE Brazil) | Ballad-pamphlets hung from strings in markets — cheap woodcut covers, verse tales of bandits and miracles | `Meta/Visual` — your lore-scrap delivery format: unlockable verse pamphlets "hung on a string" in the Winter Quarters |
+| **Repentistas & payadores** | Improvised verse duelists (Brazil's repente, the gaucho payada) — alternating stanzas until one falters | `Event` — the verse duel: alternate "stanzas" (mini-submits) with a town champion; first to fail a beat loses |
+| **Danza de las tijeras** (Peru) | The scissors dance: competing dancers (danzaq) trade increasingly acrobatic, painful feats in an endurance duel (atipanakuy), traditionally said to draw power from mountain spirits | `Event` — the one-upmanship duel: you and a rival alternate melds, each must out-score the last — first to fall short loses everything wagered |
+| **La Diablada** (Oruro, Bolivia) | Carnival devil-dance in fabulous masks: the archangel defeats the Seven Deadly Sins — evil paraded gorgeously, then beaten | `Event` — the Devil Parade: play your *debuffed* cards as the show; each one scored converts its debuff to fame |
+| **Diablos Danzantes de Yare** (Venezuela) | Red-masked devils dance through town, then kneel in submission at the church door — evil that surrenders on schedule | `Skill` — the Kneeling Devil: a negative-effect card that, if kept a full tour, converts to a positive card at the final city |
+| **Tango** (Buenos Aires) | Born in dockside courtyards and brothels, then conquered Paris — the embrace, the lead and follow, the cortes | `Skill` — the Tango pair: two cards locked in embrace, always adjacent, alternating who "leads" (which one's skill fires) each turn |
+| **Frevo** (Recife) | Carnival music so frenetic dancers invented the *passo* — acrobatics steadied by a tiny umbrella, originally to disguise capoeira kicks | `Skill` — the Little Umbrella: a prop card that lets its holder perform acrobat moves (another disguised-fighter cousin) |
+| **Murga** (Montevideo / Buenos Aires) | Carnival choirs in whiteface satirizing the year's news — the annual roast of everything that happened | `Skill` — the Murga: scores based on *this run's history* (+points per boss beaten, per card lost, per event survived — the run roasting itself) |
+| **Fuerza Bruta / De La Guarda** (Argentina) | Post-theater spectacle: performers sprint on treadmills through walls, fly over the standing crowd, dance in overhead water pools | `Visual/Event` — the overhead show: cards perform above the board frame; a water-ceiling visual set |
+| **Inti Raymi** (Cusco) | The restaged Inca Festival of the Sun — solstice pageantry at Sacsayhuamán | `Event` — calendar shows: bonus festivals that appear on fixed "dates" (every Nth node), predictable and plannable |
+| **Circo criollo & Latin circus families** | Tent circuses that mixed acrobatics with gaucho melodrama — circus as popular theater; generations of family troupes | `Deck` — the family-tent deck: starts weak, gains a permanent heirloom card each finished tour |
+
+## A12. Australia & Oceania
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Ashton's Circus** (est. 1847) | Australia's founding circus — one of the oldest continuously running family circuses on Earth | `Meta` — the unbroken line: a dynasty save-file bonus for consecutive finished tours |
+| **May Wirth** | The Australian equestrienne called the greatest ever — the only performer doing a backward-backward somersault horse to horse | `Skill` — the Backward-Backward: reverse a run's direction mid-meld (descending counts as ascending for one column) |
+| **Jimmy Sharman's boxing tents** | For 60 years the sideshow-alley cry: "Who'll take a glove?" — locals challenged troupe fighters for prize money | `Event` — the Tent Challenge: a town champion calls out one of your cards for a duel; win for gold, lose a rank |
+| **Sideshow alley & the Royal Shows** | Australia's agricultural-show circuit: rides, showbags, dagwood dogs — the "show" is a national institution | `Naming/Consumable` — the Showbag: a cheap grab-bag pack (random commons, one guaranteed sweet) |
+| **Circus Oz** (1978) | Collectivist, political, defiantly no-star circus — everyone rigs, everyone clowns, no headliners | `Deck` — the Collective: a leaderless deck where every card shares the ensemble's average power (+mult if NO rares in deck — commons-only pride) |
+| **Gravity & Other Myths / Circa** (Brisbane) | The Australian contemporary-acro wave: no apparatus, no glitter — just bodies stacking bodies | `Deck` — the Minimal deck: no stamps, no types, pure pips and stacking — the purist challenge |
+| **The Flying Fruit Fly Circus** (Albury) | The national youth circus — children training as full performers since 1979 | `Skill` — rookie cards with growth conditions (the First of May family, institutionalized) |
+| **Songlines** (Aboriginal Australia) | Routes across the continent encoded as song — navigation, law, and story as one thing; *sacred knowledge, borrow the concept only* | `Mechanic` — **the route as a song**: map paths you've traveled "in the right order" strengthen (repeat a route pattern for bonuses); keep naming generic (see Part H care list) |
+| **Māori haka & kapa haka** | The challenge dance — performed at welcomes, funerals, and rugby tests; kapa haka is a fiercely judged national competition circuit | `Mechanic` — the pre-show challenge: open a show with an intimidation display (sacrifice a turn) to lower the fame goal; respect protocol in naming |
+| **Samoan siva afi (fire knife)** | The ailao war dance armed with a machete wrapped in burning towels — knife AND fire, spinning | `Pip` — the fire-knife: the game's first **dual-suit card** (Knives + Flames simultaneously) — a one-card argument for the Harlequin pip system |
+| **Naghol land diving** (Pentecost Island, Vanuatu) | Men dive from 30m wooden towers with vines tied to their ankles — the yam-harvest ritual that inspired bungee jumping | `Stamp` — **the Vine**: the first time this card would be destroyed by a fall/discard, it stops a hair short and survives (once per tour) |
+| **Sing-sing** (Papua New Guinea) | Hundreds of clans gather to share dance, music, and bodypaint at once — Goroka's festival is one of the world's great gatherings | `Event` — the Gathering: a festival node where every regional card pool is available at once, one purchase each |
+| **Hula & the hālau** (Hawai'i) | Story told through the body; schools (hālau) under a kumu keep lineages of specific dances | `Skill` — the Storyteller's Dance: re-tell (re-trigger) the last effect that fired on an adjacent card |
+| **Tangata manu, the Birdman** (Rapa Nui) | The annual race: swim to a birding islet, retrieve the season's first sooty-tern egg, and your clan's champion rules the year | `Event` — the Birdman Race: a first-to-claim seasonal contest; the winner's card holds a year-long (tour-long) title |
+
+## A13. Korea & Southeast Asia
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Namsadang** (Korea) | Itinerant commoner troupes — social outcasts performing six arts (drumming, tightrope, mask drama, puppetry, dish-spinning, acrobatics) village to village | `Deck` — the Outcast Troupe: cheaper everywhere, banned from rich towns; six-act structure = a deck built of exactly six classes |
+| **Jultagi** (Korea) | Tightrope walking WITH stand-up comedy — the walker cracks jokes mid-wire, working the crowd between tricks | `Skill` — the Talking Wire: a card that scores as Acrobat AND Clown on the same trigger (dual-class precedent) |
+| **Talchum mask dance** (Korea) | Masked satire mocking aristocrats and monks — license to insult the powerful from behind a mask | `Mechanic` — masked satire: heat (infamy) earned safely — the mask absorbs the town's anger (Bauta/lucha family) |
+| **Sangmo spinning** (Korea) | Pungmul drummers spinning long ribbons from swivel-hats while drumming and leaping | `Visual` — ribbon-trail effects on combo cards; a spin-buff that persists while the combo continues (plate-spinning cousin) |
+| **Wayang kulit & the dalang** (Indonesia) | All-night shadow epics performed by ONE person — the dalang voices every character, conducts the gamelan, and improvises the comedy | `Leader` — **the Dalang**: while in play, YOU choose trigger order for all effects (the player becomes the voice of everything) — an information/control leader |
+| **Reog Ponorogo** (Java) | A dancer carries the Singa Barong — a 50kg lion-peacock mask — gripped by his TEETH | `Skill` — the Singa Barong: one card carries an entire stack's weight; everything above it counts as one card for movement |
+| **Kuda Lumping / Jathilan** (Java) | Trance horse-dancers riding woven bamboo horses — in trance they eat glass and feel nothing | `Mechanic` — the Trance: a card enters trance (acts autonomously, immune to everything) for N turns, then Exhausts hard |
+| **Barong vs. Rangda** (Bali) | The eternal battle: protective lion-spirit vs. the witch — and neither ever wins; the point is balance, not victory | `Boss` — **the Balance boss**: cannot be defeated, only balanced — end the show with row points and column points within X% of each other; the alt-win-con your notes were looking for |
+| **Kecak** (Bali) | The "monkey chant": a hundred bare-chested men as a single interlocking voice-orchestra (developed 1930s from the sanghyang trance ritual) | `Skill` — the Chorus: rank-1 commons chant — +mult per rank-1 card on board when any meld scores (mass-commons archetype) |
+| **Water puppetry / múa rối nước** (Vietnam) | Puppets dance ON a pond; puppeteers stand waist-deep behind a screen, hidden for a thousand years — born in flooded rice paddies | `Mechanic` — **flooded rows**: water-covered board rows where cards float (move freely sideways) and their operators (cards beneath) stay hidden but active |
+| **Yoke thé & zat pwe** (Myanmar) | Marionette theater so prestigious puppets outranked human actors; zat pwe = all-night variety marathons | `Event` — the All-Nighter: a triple-length show (3× submits, 3× goal, 3× reward) |
+| **Likay** (Thailand) | Glitter-drenched improvised folk theater — audiences pin money on performers MID-SCENE | `Mechanic` — mid-show tips: overscoring a single meld pays out instantly (not at show end) — dopamine timing |
+| **Khon** (Thailand) | The masked dance-drama of the Ramakien — codified roles: hero, demon, monkey | `Naming` — masked-role card family for a Thai region |
+| **Balagtasan** (Philippines) | Staged poetic debates — verse duels as public entertainment, named for the poet Balagtas | `Event` — the debate duel (the global verse-duel family: repentistas, flyting, extempo) |
+| **Perya & Higantes** (Philippines) | Traveling fairs (perya) with color-wheel games; Angono's festival of giant papier-mâché figures | `Event/Visual` — the color-game booth (bet a gold card on a suit); parade giants as background spectacle |
+| **Wau bulan** (Malaysia) | Giant moon-kites with hummers that sing in the wind — kite-flying as art and contest | `Skill` — the Kite: launch a card above the board (out of play, singing); it returns on a chosen later turn with wind bonus |
+| **Sbek thom** (Cambodia) | Giant sacred leather shadow-panels — whole scenes carved in one hide, danced before fires | `Visual` — the fire-lit shadow show variant (night shows, silhouette rendering) |
+| **Phare Ponleu Selpak** (Cambodia) | The circus school born in a refugee-camp drawing class — now Battambang's professional troupe | `Meta` — already anchored (A9's school family); the strongest modern redemption-arc lore in circus |
+
+## A14. The Caribbean & Central America
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Trinidad Carnival & the Canboulay riots** (1881) | Carnival was born from emancipation celebrations; when colonial police tried to ban the torch processions, the people fought and kept it | `Event` — **the Right to Perform**: a town tries to ban your show — comply (skip, no fame) or resist (fight a hazard show for double fame and the town changes permanently) |
+| **Calypso Monarch & extempo** | Calypso's crowned annual champion; extempo = improvised lyrical duels on stage | `Meta` — the seasonal crown: a per-season (per-patch?) champion title; extempo joins the verse-duel family |
+| **Steelpan** | When drums were banned, Trinidadians hammered melody out of oil barrels — a symphony instrument built from industrial trash | `Skill` — **the Steelpan**: convert a junk/prop card into a scoring instrument card — the most triumphant member of the "ban workaround" family (hanafuda, gumboot, capoeira) |
+| **Moko jumbies** | see A9 — the stilt guardians | — |
+| **J'ouvert** | The pre-dawn opening: mud, oil, and paint — get dirty before you get glorious | `Event` — the Dirty Opening: start a show with all cards debuffed ("muddy"); every one that scores anyway earns double |
+| **Soundclash & dubplates** (Jamaica) | Sound systems battle for crowds; the ammunition is *dubplates* — exclusive custom recordings no rival can own | `Meta` — **the Dubplate**: a custom exclusive card forged for YOUR save file only (name it, seed it); clash events let you "play" it against rival shows |
+| **Rara** (Haiti) | Lenten street processions with bamboo vaksin trumpets — bands walk for miles gathering crowds | `Mechanic` — the Procession: a moving meld that walks one column per turn, collecting +1 from each column it crosses |
+| **The Tropicana** (Havana, 1939) | The open-air cabaret "paradise under the stars" | `Town` — the cabaret city: night show rules, Dancer/Concessions favored |
+| **Día de los Muertos** (Mexico) | The dead honored with ofrendas, marigolds, and *calaveras* — festive remembrance, not horror; La Catrina, the elegant skeleton, mocks vanity | `Event` — **the Ofrenda Show**: one night only, your DISCARD pile performs — destroyed and discarded cards return for a single show, then rest again; tone is celebration, not spookiness |
+| **Guelaguetza** (Oaxaca) | The festival of reciprocal gift-giving — regions exchange dances and goods | `Event` — the Gift Exchange: trade one of your cards for one of the town's (both sides choose blind) |
+
+## A15. Iberia, the Nordics & Eastern Europe (Europe's gaps)
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Castells** (Catalonia) | Human towers up to ten levels; the *enxaneta* — a small child — climbs to the very top and raises a hand to "crown" it; motto: *força, equilibri, valor i seny* (strength, balance, courage, sense) | `Skill/Secret` — **the Castell**: THE solitaire-stacking reference — build a tower and crown it with your SMALLEST card for a massive bonus; collapse risk per level; the four-word motto maps to four buff types |
+| **Las Fallas** (Valencia) | Neighborhoods spend a year building enormous satirical sculptures — then burn every one of them in a single night (la cremà); one figure, the *ninot indultat*, is pardoned by public vote | `Mechanic` — **build-to-burn**: invest in a card all tour, burn it at the finale for a payout proportional to investment; the community "pardons" exactly one (pick a card to save from any mass-destruction effect) |
+| **Recortadores** | Spanish bull-leaping — dodging and vaulting the bull with no harm done to it; Minoan bull-dance's living descendant | `Skill` — the clean dodge: when a hazard targets this card's column, vault it — the hazard passes through and scores YOU points |
+| **Flamenco & duende** | The untranslatable state when a performance stops being technique and becomes possession — Lorca wrote the essay on it | `Mechanic` — **duende**: a rare emergent state (specific combo/tension conditions) where a card transcends — triple score, unique audio, screen dims to one spotlight; never purchasable, only summoned |
+| **Semana Santa & the costaleros** | Monumental floats carried through cities by teams of hidden bearers sweating beneath the platform | `Mechanic` — hidden bearers: the covered cards BENEATH a scoring card add their ranks to it (the buried finally credited) |
+| **Fado & saudade** (Portugal) | Song as performed longing — mourning what is gone as public art | `Skill` — the Fadista: scores +N per card destroyed or lost this run — grief as accumulation |
+| **Skalds & flyting** (Norse) | Court poets whose praise made reputations — and *flyting*, the formal exchange of poetic insults (the rap battle's ancestor) | `Event` — the Flyting: insult-duel a town champion; winner takes fame from the loser |
+| **Glíma** (Iceland) | Viking belt-wrestling, still practiced — codified, courteous, ancient | `Event` — the friendly grapple: a no-stakes duel node for practice (test a card against a boss's stats without risk) |
+| **Czech marionette tradition** | Under Habsburg and later occupations, puppets kept the Czech language and satire alive on stages where actors couldn't — puppetry as national resistance | `Mechanic` — puppets are immune to censorship: in towns that ban speech/satire acts, Puppet-type cards perform unhindered (ban-workaround family) |
+| **Vertep & szopka** (Ukraine/Poland) | Portable nativity puppet-theaters — a whole stage carried in a box | `Skill` — the Box Theater: a card containing a miniature show — cue it to run a one-card mini-submit inside itself |
+| **The csikós & the Puszta Five** (Hungary) | Steppe horsemen standing astride five galloping horses at once | `Skill` — the Puszta Five: for one turn, one card straddles ALL columns (scores in every column's meld) — the Courier's endgame evolution |
+| **Hopak** (Ukraine) | The squat-kick acrobatic dance — explosive, competitive, showy | `Skill` — burst acrobatics: a Dancer that jumps its whole stack one row in a single cue |
+| **Fasnacht** (Basel) | Masked pre-dawn carnival — piccolos, drums, and lantern floats satirizing the year | `Event` — the Lantern Roast: the town satirizes YOU (your run's failures listed for laughs); accept it for fame, or take offense |
+| **The Venice Carnival & the bauta** | The mask that let ALL classes mingle anonymously — nobles gambled beside servants, unreadable | `Stamp` — **the Bauta**: while worn, a card's rarity and identity are hidden (treated as unknown by effects, inspections, and towns) |
+| **Romani performers of Europe** | Centuries of virtuoso musicianship, horse expertise, and fairground craft that shaped European entertainment — credit the real contribution, skip the costume-cliché | `Naming` — virtuoso musician cards credited honestly; see care list (Part H) |
+
+## A16. Africa & the Arctic (additions)
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Gumboot dance** (South Africa) | Miners forbidden to speak invented a slap-and-stamp boot code — forbidden language turned into performance | `Mechanic` — **the Boot Code**: adjacent cards pass a buff down a row via "rhythm" without triggering (untraceable by boss effects that punish triggers); ban-workaround family flagship |
+| **Azmari** (Ethiopia) | Wandering minstrels famed for *sam-enna-warq* ("wax and gold") — lyrics with a surface meaning and a hidden one, both true | `Skill` — **Wax and Gold**: a card with two rule texts — the visible "wax" effect and a hidden "gold" effect discovered by fulfilling the wax one; double-meaning as design |
+| **Sogo bò** (Mali) | Puppet-masquerade festivals of animal spirits on the Niger — whole ecosystems danced | `Skill` — animal-puppet tokens: Animal effects that are "really" Puppet-type (immune to animal bans, gentling-friendly) |
+| **Tahtib** (Egypt) | Stick-fighting as game-dance — millennia old, on pharaonic reliefs | `Event` — the stick game: a light sparring duel node |
+| **Tanoura** (Egypt) | The secular spinning dance — rainbow skirts blooming into discs of color | `Visual` — the spin family's showcase visual (color-wheel trails) |
+| **Katajjaq** (Inuit throat-singing game) | Two women face to face, trading rhythmic vocal patterns — **the first to laugh or break loses**; it's a game, not a concert | `Event` — **the Laughing Duel**: a pattern-matching minigame vs. a town where breaking rhythm (misclicking / failing a meld) loses — and losing is supposed to be funny |
+| **Ajaraaq** (Inuit string figures) | Story-patterns woven in string between hands — cat's cradle as narrative | `Event` — the String Figure: copy a displayed board-pattern with your cards for a bonus (formation puzzles with ancestry) |
+| **Greenlandic drum-dance duels** | Disputes historically settled by song duel — the community laughs the loser out of the grievance | `Event` — settle a town dispute by performance instead of score: a diplomatic show variant (Robert-Houdin's Algeria, poles apart, same idea) |
 
 ---
 
@@ -409,7 +524,158 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 
 ---
 
-# PART F — HANDLE WITH CARE
+# PART F — PERFORMANCE TROPES BEYOND THE CIRCUS
+
+The circus is one province of a bigger empire: theater, opera, wrestling, dance,
+concerts, film stunts. These traditions carry tropes the circus never invented — and
+several map onto Solatro's systems better than circus material does.
+
+## F1. Theater & Opera
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Deus ex machina** | The Greek crane lowering a god to untangle the plot — criticized as a cheat for 2,400 years | `Consumable` — one automatic show-save per run; deliberately feels like a cheat (that's the joke, and the flavor text writes itself) |
+| **The Greek chorus** | The ensemble that watches, comments, and warns — inside the story yet outside it | `Skill` — Chorus cards: reveal the boss's next intent one turn early while any two share a row |
+| **Thalia & Melpomene** (the comedy/tragedy masks) | The two faces of theater, worn as one symbol | `Skill` — the Two Masks: a card with a flip state — comedy side buffs neighbors, tragedy side buffs itself; flips each time it scores |
+| **The City Dionysia** | Athens' playwright competition — drama was literally a judged contest with civic prizes | `Town` — the judged festival: score in categories (best formation / best suit spread / best single meld) instead of one total |
+| **The claque** | Professional paid applauders — Paris opera institutionalized them; *chefs de claque* sold applause packages and blackmailed singers who wouldn't pay | `Consumable/Event` — **hire a claque**: guaranteed minimum fame this show... but the claque demands payment at every subsequent show (a protection racket you invited) |
+| **The loggione** (La Scala's gallery) | The merciless connoisseur balcony that has booed the world's greatest voices off stage | `Town` — the expert audience: commons earn nothing, legendaries earn triple — the anti-Kecak town |
+| **The prima donna** | The diva whose demands reorganize the whole company | `Skill` — the Diva: strongest card in her class, but must be placed FIRST each show or she sulks (skill disabled) |
+| **"The Scottish Play"** | Saying "Macbeth" inside a theater invites the curse; the cleansing ritual (spin thrice, spit, swear) is real backstage practice | `Secret` — a cursed card name: cueing it by its true name triggers bad luck; a discoverable ritual (a specific action sequence) cleanses it — superstition as mechanics |
+| **The whistling ban** | Stage rigging was run by ex-sailors on whistle codes — a stray whistle could drop a sandbag on your head | `Event` — the Stray Whistle: a random Entrance card drops early into a random column |
+| **"Break a leg" / merde** | The theater's inverted luck-language — wishing good is bad, so wish bad | `Naming` — inverted blessings: debuff-granting cards with well-wishing names (and vice versa) |
+| **The encore** | Leave the stage; be called back; return bigger | `Skill` — the Encore Exit: voluntarily discard this card mid-show; the audience "calls it back" next turn at +rank |
+| **The standing ovation** | The full house on its feet — the show's highest verdict | `Naming` — the perfect-show bonus tier above Straw House |
+| **Pantomime & "He's behind you!"** | British panto's sacred audience contract: the crowd screams warnings the hero can't hear; the dame, the principal boy, "oh no it isn't!" | `Mechanic` — **the audience warns you**: the game's hint system rendered diegetically — the crowd (UI) shouts when a hazard is about to hit a card; villains earn boos (heat) |
+| **Melodrama** | Mustache-twirling villains, sawmills, train tracks — morality as spectacle, the audience booing on cue | `Naming` — boss intro staging: villains announced with boo-able flourish |
+| **The Pledge, the Turn, the Prestige** | The three-act grammar of a magic trick (popularized by Priest's novel and Nolan's film, now standard vocabulary) | `Naming` — **name Solatro's three submits per show exactly this**: The Pledge, The Turn, The Prestige — free structure, free gravitas |
+
+## F2. Kayfabe & Sports Entertainment (pro wrestling, lucha libre)
+
+Professional wrestling is the modern institution of the Humbug — an entire industry
+running on a fiction everyone tends. It is carny-descended (the word "kayfabe" itself is
+carnival cant), which makes it Solatro's legitimate cousin.
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Kayfabe** | The never-broken pretense that the show is real — protected for a century like a trade secret | `Rule` — **the Kayfabe rule card**: while in play, all Gaffs/Humbugs COUNT AS REAL (score as what they pretend to be); remove it and everything reverts — the fiction as infrastructure |
+| **Faces & heels** | Heroes and villains as *roles*, assigned and swappable — the crowd needs both | `Mechanic` — alignment: cards have face/heel modes with different bonuses; towns prefer one or the other |
+| **Heat & cheap heat** | Crowd hatred that sells tickets; "cheap heat" = insulting the local team | `Mechanic` — **Infamy as a second currency**: heel shows earn heat instead of fame; some towns pay MORE for a villain — being hated profitably is a build |
+| **The heel turn** | The beloved hero's betrayal (Hollywood Hogan, 1996) — the loudest story wrestling tells | `Event` — the Heel Turn: flip your leader to heel mid-tour — new powers, every town's reaction changes, no going back this run |
+| **The cheap pop** | "It's great to be here in [YOUR TOWN]!" — instant applause, every night, every city | `Skill` — the Hometown Hero: names the current town when scored (+small bonus in EVERY town — universally decent, never great; the design lesson in card form) |
+| **The championship belt** | The title as physical lineage — held, defended, taken | `Stamp` — **the Belt**: exactly one card in the world holds it; it doubles that card, and belt-challenge bosses can TAKE it (win it back next meeting) |
+| **Jobbers & the Washington Generals** | The designated losers — the Generals lost 13,000+ games to the Globetrotters; their rare 1971 win made children cry | `Boss` — the Designated Loser: a "boss" you always beat (morale node)... with a hidden 1-in-1000 chance it WINS, which should feel like the 1971 game |
+| **The Montreal Screwjob** (1997) | The scripted world broke live on air — the promoter really double-crossed the champion inside the fiction | `Event` — **the Screwjob**: once per profile (not per run), a rule card betrays you at the worst moment, legally by its own text; players will talk about it for years — use with extreme care and great reward after |
+| **Foreign objects & the ref's blind spot** | The folding chair behind the referee's back — cheating as choreography | `Mechanic` — the Blind Spot: while the town "inspector" watches one zone, banned cards can act in the other (a timing window for Outlawed cards) |
+| **The manager / mouthpiece** | The talker who carries the silent monster's story | `Skill` — the Manager: cues an adjacent card's ability as its own action (voice-throwing's wrestling cousin) |
+| **Máscara contra máscara** (lucha libre) | Mask vs. mask: the loser is unmasked FOREVER — El Santo wrestled fifty years and was buried in his silver mask | `Event` — **the Mask Wager**: stake a card's stamp/identity in a duel; unmasking is permanent (across the save file); the heaviest bet the game offers |
+| **Técnicos vs. rudos** | Lucha's face/heel — clean technique vs. glorious cheating | `Naming` — the alignment system's lucha skin for Latin-region maps |
+| **The Streak** (Undertaker, WrestleMania 21–0) | A win streak so mythic its END was the story of the decade | `Meta` — per-card win streaks tracked on the card itself; fame scales with streak; a broken streak fires a mourning event |
+| **"To be the man, you gotta beat the man"** (Ric Flair) | The title chase as philosophy | `Naming` — belt-challenge flavor; the champion boss's taunt |
+
+## F3. Music, Concerts & Festivals
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Stage diving & crowd surfing** | Trust the crowd or eat the floor | `Skill` — **the Crowd Surf**: pass a card across the TOPS of all columns, hand to hand — it gains +1 per column crossed, but if any column is empty it DROPS (discarded); risk traversal as an act |
+| **The rider & Van Halen's brown M&Ms** | The famous "no brown M&Ms" clause existed to test whether venues actually read the safety-critical contract — candy as a canary | `Skill` — **the Rider**: a card with long rule text hiding one small instruction; obey it and the card doubles — an attention test disguised as flavor (design's best inside joke) |
+| **Roadies & the soundcheck** | The invisible crew; the empty-hall rehearsal before doors | `Mechanic` — the Soundcheck: one free non-scoring rehearsal turn at show start (see the board, move once, no submit) |
+| **The encore ritual** | see F1 | — |
+| **Lighters up / phone lights** | The audience becomes the light show during the slow song | `Visual/Mechanic` — during a low-scoring turn, the "crowd glow" trickles small fame — the game is gentle when you're building |
+| **Woodstock** (1969) | The fences fell, half a million came, nobody paid, and it became the legend of the century | `Event` — the Overrun: your show goes free — zero gold, enormous permanent fame, and the town is changed forever |
+| **Fyre Festival** (2017) | The luxury festival that did not exist — influencer hype, FEMA tents, the sad cheese sandwich | `Event/Boss` — **the Scam Booking**: arrive and there is no venue — improvise a show from nothing (only commons score) or eat the failure; mirror version: YOU can oversell (declare beyond your deck) and risk going full Fyre |
+| **Milli Vanilli** (1990) | The lip-sync scandal — the Grammy revoked after the tape skipped | `Event` — the Skipping Tape: a Gaff that already SCORED gets exposed retroactively — pay back its fame (the only retroactive penalty in the game; use once, sparingly) |
+| **Eurovision** | Bloc voting, douze points, national camp diplomacy as song contest | `Town` — the International Final: neighboring map regions "vote" on your show — suits favored by regions you toured generously score extra (kindness as strategy) |
+| **The Covent Garden pitch ballot** | Licensed buskers ballot for timeslots at the best pitches | `Event` — the Pitch Lottery: bid gold cards for first pick of the next three nodes |
+| **The busker's hat line** | "If you liked the show..." — the ask is a craft of its own | `Mechanic` — the Hat: after any show, one optional flourish action converts leftover combo into gold instead of fame |
+
+## F4. Dance, Drag & Ballroom
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Ball culture & the houses** (Harlem) | Competitive walking in judged categories; houses as chosen families under Mothers and Fathers — born from Black and Latino queer communities building their own stage when excluded from everyone else's | `Mechanic` — **Houses**: your leader/class system, personified — cards belong to named houses with Mothers (leaders); category walks = judged-show scoring; credit the source honestly (care list) |
+| **Reading & shade** | The stylized roast — "reading is the real art form" | `Event` — the Reading: the global insult-duel family's modern chapter (flyting, extempo, balagtasan, repentistas — build the duel system ONCE, skin it everywhere) |
+| **Voguing** | Battle dance built from magazine poses — frozen glamour as combat | `Mechanic` — the Pose: the mie/style-flourish family — hold a scored formation one extra beat for bonus tips |
+| **"Lip sync for your life"** (Drag Race) | The bottom two performers duel; the winner stays, the loser sashays away | `Mechanic` — **the Elimination Save**: when two of your cards would be destroyed/discarded at once, they duel — the winner survives; loss becomes theater |
+| **Breaking & the cypher** | Crew battles in the circle — from the Bronx to the 2024 Olympics | `Event` — crew vs. crew formation battles; also the "outlawed → sanctioned" arc (a street class that becomes town-legal as the meta progresses) |
+| **The hoofers' cutting contest** | Tap dancers trading escalating breaks — the Nicholas Brothers ended arguments permanently | `Event` — the Cutting Contest: alternating melds where each must beat the previous score (the atipanakuy/scissors-dance structure, tap skin) |
+| **Butoh** (Japan) | The post-war "dance of darkness" — white-painted, glacially slow, transformative | `Skill` — the Butoh Walker: moves one slot every OTHER turn, but permanently transforms (buffs) every slot it passes through |
+| **Jugalbandi** (India) | The virtuoso duet-duel: dancer answers drummer, call and response, neither yielding | `Mechanic` — call-and-response: when an adjacent card triggers, this card may "answer" (mirror the trigger at half power) |
+
+## F5. Puppetry, Mime & Street
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Marcel Marceau** | Bip, the world's mime — and before that, a French Resistance member who used mime to keep Jewish children silent while smuggling them across the Alps | `Skill` — **the Mime**: silent escort — attaches to a stack and absorbs one hostile event targeting it; the history earns it reverent flavor text |
+| **The invisible wall / box** | The mime's constructed nothing | `Skill` — the Invisible Wall: block one column with nothing — no card is there, but nothing can enter or leave for a turn |
+| **Edgar Bergen** | A VENTRILOQUIST who became the #1 act ON RADIO — a skill rendered pointless by the medium, succeeding anyway | `Skill` — the Radio Dummy: a card whose stated gimmick is nullified by context (a spotlight card in a covered slot, say) and which scores anyway — absurdity as design |
+| **Ventriloquism ("throwing your voice")** | Making the voice live somewhere else | `Skill` — the Throw: cue a card's ability as if it were in a different column (trigger at a distance) |
+| **Royal de Luxe & the Nantes giants** | Building-sized marionettes walked through cities by teams of "Lilliputian" operators on cranes | `Skill` — the Giant: a card occupying a 2×2 board footprint, operated (kept active) by adjacent crew cards |
+| **Handspring's War Horse** | Puppets so alive the audience grieves for plywood and cane | `Visual` — the believability bar: puppet-type cards gain lifelike idle animation as they level |
+| **Bread and Puppet Theater** (Vermont) | Political parade puppetry that hands out free bread — "art is cheap, like bread" | `Event` — the Free Show: give a no-fee performance, heal the whole deck one debuff, gain no gold |
+| **Living statues** | The street performer who scores by NOT moving | `Skill` — the Statue: +points each turn it does not move; any movement resets it (patience literally paid) |
+| **The one-man band** | Cymbals between the knees, harmonica in the rack — everything at once, none of it well | `Skill` — the One-Man Band: counts as three classes at one-third effect each; the affectionate anti-specialist |
+
+## F6. Film Stunts & Spectacle Sports
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Buster Keaton's falling façade** (*Steamboat Bill, Jr.*, 1928) | A two-ton house wall falls on him; he survives because he stands exactly where the open window lands — inches of clearance, one take | `Boss` — **the Falling Wall**: a boss attack that destroys an entire column EXCEPT one exact slot, telegraphed one turn ahead — stand your card in the window; the purest spatial-skill moment available |
+| **Harold Lloyd's clock hang** (*Safety Last!*, 1923) | Dangling from the clock face above the street — the defining image of silent-era thrill comedy | `Skill` — the Clock Hang: a card placed half-off the board's last column — double spotlight, double score, and one gust (random event) from falling |
+| **The Peking Opera School & the Seven Little Fortunes** | The brutal academy that forged Jackie Chan, Sammo Hung, and Yuen Biao — opera training became the world's stunt vocabulary | `Meta` — the Academy family (A4's Soviet schools, East wing): train commons into a bonded stunt-troupe with group tags |
+| **Yakima Canutt & the stunt double** | The man who invented modern stunt craft (the *Ben-Hur* chariot race) so stars could seem immortal | `Skill` — the Double: takes destruction meant for its assigned "star" card (the protection family: rodeo clown, target girl, the Mime) |
+| **Monster trucks & demolition derby** | Destruction as the whole show | `Event` — the Demolition Show: a show where DISCARDING scores — points per card destroyed, crowd goes wild; deck-thinning as spectacle |
+| **Sonja Henie's ice shows & Esther Williams' aquamusicals** | Skating and swimming rebuilt as spectacle industries; Weeki Wachee's mermaids have breathed from hidden air hoses since 1947 | `Mechanic` — element boards: ICE rows (placed cards slide to the column's end) and WATER rows (cards float/drift) — the Vietnamese water-puppet mechanic's western cousins |
+
+---
+
+# PART G — THE MODERN ERA (1980s → today)
+
+The show never stopped; it changed venues. Modern spectacle is where your players'
+own references live — and it rhymes with the old material constantly (Tupac's "hologram"
+is Pepper's 1862 glass; David Blaine is Kafka's hunger artist; VTubers are kayfabe).
+
+| Reference | What it was | Game hook |
+|---|---|---|
+| **Guy Laliberté & Cirque du Soleil** | A fire-breathing stilt-walker busking in Quebec builds the world's biggest circus, bans animals, conquers Vegas — then pays his way to the International Space Station | `Meta` — the busker-to-space arc: the game's full progression fantasy in one biography; the final meta unlock should feel like the ISS trip |
+| **Nouveau cirque** (Archaos, NoFit State, Circa) | Circus stripped of glitter and animals: chainsaws, narrative, raw acrobatics | `Deck` — the Punk deck (rule-breaking commons, no Producer class) and the Minimal deck (pips only) as unlockable philosophies |
+| **David Blaine** | Buried alive; frozen in ice; 44 days fasting in a perspex box over the Thames — the hunger artist returned, on television | `Skill` — modern endurance cards that explicitly cite their ancestors (the Hunger Artist chain: Succi → Kafka → Blaine) — lineage as card series |
+| **Derren Brown's "The System"** | A guaranteed horse-racing tipster — revealed as survivorship bias: he filmed EVERY branch and showed you the one that won | `Skill` — **the System**: a card that "predicted" whatever just happened (retroactive prophecy, real bonus); inspecting it reveals the trick and halves it — knowledge costs |
+| **James Randi's Million Dollar Challenge** | The standing prize for provable paranormal ability; never claimed | `Event` — the modern Committee (C2's *Scientific American* event, updated): stake a Gaff against the million — survive scrutiny for a fortune |
+| **Uri Geller on Carson** (1973) | Johnny Carson — an ex-magician, briefed by Randi — controlled the props himself; nothing bent that night | `Town` — the Prepared Town: pre-inspects everything; all Gaffs and Humbugs are disabled — the anti-fake boss check your build must survive |
+| **Shin Lim wins AGT** (2018) | Close-up card magic — just cards — winning the biggest talent show on television | `Naming` — the thesis card: an in-game card whose art is someone playing cards; cards as the whole act is the game's own pitch |
+| **The Golden Buzzer** | One judge's press sends an act straight through, confetti falling | `Consumable` — skip one town's requirement entirely, with confetti; rare, unearned-feeling, delightful |
+| **The Gong Show** | Gonged mid-act — failure as the entertainment | `Town` — the Gong: any submit scoring under a floor ends the show immediately; the crowd loves the gong more than the acts |
+| **The Masked Singer** | Celebrities perform masked; the weekly unmasking is the show | `Mechanic` — hidden-identity cards (Bauta family, TV skin): identity/rarity revealed only after N scores — the reveal is a fanfare moment |
+| **Tupac at Coachella** (2012) | The "hologram" resurrection — which is Pepper's Ghost, the 1862 angled-glass trick, unchanged | `Skill` — the Hologram Tour: resurrect one destroyed card for one show as an intangible Pepper's Ghost duplicate — the Victorian trick literally modern |
+| **Hatsune Miku & the vocaloids** | A synthetic idol whose songs are written by thousands of fans — a performer who is a commons | `Skill` — the Synthetic Idol: an Automaton whose skill is assembled from fragments of your other cards' skills (the crowd writes the act) |
+| **VTubers** | Performers behind digital avatars — kayfabe reborn as a streaming industry | `Stamp` — the Avatar: a card wearing another card's face and identity; unmasking rules apply (lucha family, digital skin) |
+| **Speedrunning & GDQ** | Playing games AS performance — categories (any%, 100%, glitchless), marathons for charity | `Meta` — **ship endless-mode rulesets as speedrun categories**: Any% (fastest win), 100% (every node), Glitchless (no Gaffs), and let players name their PBs |
+| **Twitch Plays Pokémon** (2014) | Eighty thousand people sharing one controller — chaos as collective performance | `Event` — the Crowd Takes Over: for one turn, the "audience" makes your moves (seeded random) — insurance stamps suddenly matter, and it's funny |
+| **Flash mobs** | Sudden coordinated performance in public space — assembly as the trick | `Skill` — the Flash Mob: deploy your ENTIRE Entrance to the board in one action, once per show |
+| **Parkour & the Yamakasi** | The city itself as apparatus — every wall a route | `Skill` — the Traceur: moves across the TOPS of columns (never enters stacks) — the board as terrain, not slots |
+| **Tony Hawk's 900** (X Games, 1999) | Two and a half rotations — the trick that took eleven public failures first | `Naming` — re-trigger counts named as rotations (a "900" = 2.5× re-trigger); public failure before success = a card that must fail N times to unlock its true form |
+| **Competitive cheerleading** | Basket tosses and human pyramids under judging panels | `Mechanic` — the castells' gym cousin (A15): judged formation shows, modern skin |
+| **Drone light shows** | Thousands of drones replacing fireworks — drawing pictures on the night | `Skill` — the Drone Swarm: the Firework suit's modern evolution — project any formation bonus you've previously scored, without the cards |
+| **The Sphere** (Las Vegas, 2023) | The venue IS the performance — a building-sized screen wrapping the audience | `Town` — the Final Venue candidate: a city where the TOWN performs too (board-wide visual effects modify play every turn) |
+| **The Vegas residency** | The tour that stops touring — the city comes to you | `Meta` — **Residency mode**: an alternate endless where you stay in one evolving city instead of circling the map; your "return to where you started" note, solved |
+| **Punchdrunk's *Sleep No More*** | Masked audiences roam a hotel choosing their own show; the famous one-on-one scenes | `Mechanic` — the Masked Audience: fame sources hidden around the board to be found; the One-on-One: a card performs for a single audience token for outsized, intimate fame |
+| **Escape rooms** (2007 →) | Houdini's challenge act, democratized into a global industry | `Event` — the Locked Room: a node needing specific card types as "keys" to open its reward |
+| **ARGs** (*I Love Bees*, Cicada 3301) | Games that leak out of the screen into phone booths and ciphers | `Secret` — the out-of-game secret: one Solatro mystery solvable only by outside research (the Erdnase family's final form) |
+| **Meow Wolf & teamLab** | Immersive art you wander with no fixed path — discovery as the show | `Event` — the Exploration Show: no score goal, only hidden bonuses to find in a pre-built board |
+| **Banksy: "Love is in the Bin"** (2018) | The painting shredded ITSELF the moment it was auctioned — and its value doubled | `Skill` — **the Shredder**: a card that destroys itself when sold and pays double its price; anonymous-artist card (Uncredited Artist family, C4/D) |
+| **Burning Man** | Build a city in the desert, burn the Man, leave no trace | `Event` — the Fallas' desert cousin (A15): build a temporary venue from your own cards, burn it for the payout — and the "Leave No Trace" bonus: end the show with an EMPTY board |
+| **Red Bull Stratos** (Baumgartner, 2012) | The jump from the stratosphere — and the patron's logo on every frame of it | `Mechanic` — **Sponsorship**: a patron funds your tour (gold every show) but stamps ads on your cards (a fame tax); the highest High Dive card caps the lineage (B4) |
+| **Guinness World Records** | The institution that turned feats into bookkeeping | `Meta` — per-card personal bests recorded on the card itself; beating your own record is a fame event (self-competition as retention) |
+| **Kobayashi & competitive eating** (2001) | Technique doubled the hot-dog record overnight — spectacle sport from appetite | `Event` — the Eating Contest: a sanctioned outing for your Hippo/Gluttony/Tigers cards — consume the town's offering faster than the rival |
+| **K-pop fanchants** | The audience answering the stage in synchronized script — the crowd as second performer | `Mechanic` — the Fanchant: melds "answered" by the crowd (echo scoring at a delay) once town loyalty is high enough |
+| **Renaissance faires & LARP** | Audiences who come to perform — the crowd in costume | `Event` — the Faire: a town where the audience are performers; your cards judge THEM for once (reverse show, easy fame, pure comedy) |
+| **The haunted attraction industry** | Scare acting as a seasonal profession — timing, safety, and the art of the startle | `Town` — jaded-city family (C1's Richiardi): fear shows where debuff-inflicting cards are the headliners |
+| **Blue Man Group / Stomp** | Found-object percussion as global franchise — junk becomes the orchestra | `Skill` — the Junk Orchestra: prop cards score by "rhythm" (position pattern) — the steelpan's franchise-era descendant (A14) |
+
+---
+
+# PART H — HANDLE WITH CARE
 
 Real history includes exploitation and tragedy. These ground the tone ("the show must go
 on" has teeth *because* the road was hard) but should be referenced with respect, not
@@ -427,28 +693,87 @@ turned into jokes or loot:
 - **Sacred performance** (Heyoka, Egungun, dervishes, daikagura): borrow *concepts*
   (contrariness, stilted guardianship, spin, blessing) under generic names; never borrow
   regalia, deity names, or claim the ritual itself.
+- **Songlines & corroboree** (Aboriginal Australia): knowledge systems and ceremony, not
+  set dressing. The *concept* of "a route remembered as a story/song" is usable under a
+  generic name; specific songlines, symbols, and ceremony are not.
+- **Haka** (Māori): performed publicly and proudly, but specific haka belong to specific
+  iwi and have protocol. Use the generic idea of a challenge-dance opener; don't
+  reproduce ka mate or specific choreography.
+- **Ball culture** (Harlem): houses, categories, and reading come from Black and Latino
+  queer communities who built their own stage after exclusion from everyone else's.
+  Credit the lineage in flavor text; keep the joy, skip the caricature.
+- **Romani performers**: centuries of real contribution to European music, horse arts,
+  and fairground craft. Credit virtuosity honestly; retire the costume-shop "fortune
+  teller" cliché (your Fortune Teller class should read midway *mitt camp*, not
+  ethnicity).
+- **Día de los Muertos**: festive remembrance, not Halloween horror — the Ofrenda Show
+  (A14) should feel like a family reunion, not a spook show.
+- **Kayfabe tragedies**: wrestling's real history includes exploited and broken
+  performers behind the fiction; mine the tropes (heat, belts, masks), not specific
+  people's pain.
 
 ---
 
-# PART G — QUICK-MINE INDEX (hook type → best candidates)
+# PART I — QUICK-MINE INDEX (hook type → best candidates)
 
 - **New spatial verbs** (the game's core currency): the Courier (two columns), the
   Contortionist (two cards/one slot), Foot Juggler (sub-slot), Walking Through the Wall,
-  Wing Walker (mid-drop transfer), High Dive, the Dragon meld, the Brass Ring.
+  Wing Walker (mid-drop transfer), High Dive, the Dragon meld, the Brass Ring — plus,
+  from the expansion: the Castell crown (smallest card tops the tower), Keaton's Falling
+  Wall (the one safe slot), the Crowd Surf (top-of-columns traversal), the Invisible
+  Wall, the Traceur (parkour tops), the Clock Hang (half-off-board), the Puszta Five
+  (all columns at once), flooded/ice rows (floating and sliding cards).
 - **Anti-spotlight designs** (want to be covered): the Mango Seed, Louis Cyr's Backlift,
-  the Turk, Spirit Cabinet, X-Ray Eyes, Humbug (already specced), the Incubator.
+  the Turk, Spirit Cabinet, X-Ray Eyes, Humbug (already specced), the Incubator — plus
+  the costaleros (covered cards add rank to their carrier) and the water-puppet
+  operators (hidden but active).
 - **Deck-position family** (extends Heavy/Light/Acts): the Ambitious Card, Marked stamp,
   Bottom Deal, the Hunger Artist, Holdout.
 - **Economy flavor**: Canfield rules, money-suited cards, Ticket Stubs, the Forged Ace,
-  Snake Oil, the Rat Sheet, brass checks.
+  Snake Oil, the Rat Sheet, brass checks — plus the Dubplate (custom exclusive card),
+  the claque racket, Sponsorship (fame tax for gold), the Shredder (self-destructs when
+  sold, pays double), the Hat (combo → gold conversion).
+- **THE DUEL SYSTEM — build once, skin globally**: the expansion revealed a worldwide
+  family begging to be ONE mechanic with regional skins — flyting (Norse), repentistas &
+  payadores (South America), extempo (Trinidad), balagtasan (Philippines), atipanakuy
+  scissors duels (Peru), cutting contests (tap), reading/shade (ballroom), katajjaq
+  laughing duels (Inuit), jugalbandi (India), lip-sync-for-your-life (drag), Sharman's
+  boxing tent (Australia), drum-dance dispute settling (Greenland). One alternating
+  one-upmanship minigame, twelve cultures of flavor.
+- **THE BAN-WORKAROUND FAMILY** (pairs with your Outlawed type and town hazards):
+  capoeira (fight disguised as dance), steelpan (banned drums → oil-barrel orchestra),
+  gumboot code (banned speech → boot rhythm), hanafuda (banned decks → new designs),
+  Czech puppets (banned satire → marionettes), frevo umbrellas, the Blind Spot
+  (wrestling's ref-distraction). Oppression → invention is the most repeated story in
+  world performance; make it a core mechanic loop: towns ban, cards adapt.
+- **THE PROTECTION FAMILY**: rodeo clown, target girl, stunt double, the Mime escort,
+  the Vine stamp (Vanuatu land diving), Lloyd's Policy — one "bodyguard" verb, many
+  faces.
+- **Build-to-burn**: Las Fallas (with the pardoned ninot), Burning Man (with Leave No
+  Trace = empty-board bonus) — investment cards that pay out on destruction.
 - **Boss/town batch two**: Hall of Mirrors, the Marathon, Exposition City, jaded cities,
-  Riot of the Factions, the Faro Bank, day-and-date Showdown.
+  Riot of the Factions, the Faro Bank, day-and-date Showdown — plus the Balance boss
+  (Barong vs. Rangda: equalize row/col points instead of maximizing), the Prepared Town
+  (all Gaffs disabled), the Gong, the Scam Booking (Fyre), the two-faction city
+  (Parintins), the Loggione (experts: commons worthless).
+- **Kayfabe layer** (wrestling's gift, wholesale): the Kayfabe rule card (Gaffs count as
+  real), face/heel alignment, Heat as second currency, the Belt stamp, the Mask Wager
+  (permanent unmasking), the Streak, the Screwjob (once per profile), the Designated
+  Loser's 1-in-1000 win.
 - **Secrets batch two**: 4×13 Voladores calendar, yakuza 8-9-3, Dead Man's Hand, the
   Disaster March audio tell, Zip's "?", named court cards, the Uncredited Artist,
-  Buchinger micro-text, the Rope Trick that becomes real.
-- **Meta structures**: the Academy (Soviet schools), dynasties (Bamberg/Zacchini),
-  Kellar→Thurston succession, social-circus redemption school, Winter Quarters (already
-  specced).
+  Buchinger micro-text, the Rope Trick that becomes real — plus the Scottish Play
+  cleansing ritual, the Rider's hidden clause (brown M&Ms), Wax and Gold double-text,
+  the ARG out-of-game mystery, duende (unpurchasable transcendence).
+- **Meta structures**: the Academy (Soviet schools + Peking Opera School), dynasties
+  (Bamberg/Zacchini/Ashton), Kellar→Thurston succession, social-circus redemption
+  school (Phare), Winter Quarters — plus Residency mode (the tour that stays),
+  speedrun-category endless modes, the seasonal crown (Calypso Monarch), Guinness
+  personal bests per card, the busker-to-space progression arc (Laliberté).
+- **Naming gifts**: call the three submits **The Pledge, The Turn, The Prestige**; call
+  the final city **The Palace**; call the discard pile **Showmen's Rest**.
 - **The five stories most worth full flavor-text treatment**: Dr. Couney's incubators,
   Blackstone's calm evacuation, Adelaide Herrmann's bullet catch, Reginald Scot's
-  merciful exposé, Pablo Fanque's poster becoming a Beatles song.
+  merciful exposé, Pablo Fanque's poster becoming a Beatles song — and from the
+  expansion, five more: Marceau's silent children, the steelpan's invention, the
+  Generals' 1971 win, the enxaneta's raised hand, "Love is in the Bin."
