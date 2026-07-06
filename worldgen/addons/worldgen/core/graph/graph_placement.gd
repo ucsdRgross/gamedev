@@ -424,6 +424,23 @@ class MapField extends RefCounted:
 					pts.append(samples[i])
 			if pts.is_empty():
 				pts = samples
+		return _pca_of(pts)
+
+	## PCA restricted to the samples of a landmass-label SET (the graph's eligible
+	## islands): the axis stretches across the aggregate land, so the pole extremes
+	## sit at the far ends of the whole archipelago -- possibly on DIFFERENT
+	## landmasses -- instead of being skewed by islets the graph can't use.
+	func land_pca_labels(labs: Dictionary) -> Dictionary:
+		var pts := PackedVector2Array()
+		for i in range(samples.size()):
+			if labs.has(sample_label[i]):
+				pts.append(samples[i])
+		if pts.is_empty():
+			pts = samples
+		return _pca_of(pts)
+
+	## Shared PCA body for land_pca / land_pca_labels.
+	func _pca_of(pts: PackedVector2Array) -> Dictionary:
 		var n := pts.size()
 		if n == 0:
 			return {"center": land_centroid, "axis": Vector2(1, 0), "perp": Vector2(0, 1),
@@ -803,15 +820,17 @@ static func _orient(a: Vector2, b: Vector2, c: Vector2) -> float:
 	return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 
 ## A water crossing is a LEGAL ferry iff: different landmasses, both endpoints coastal,
-## neither is start/end, AND its straight line is essentially OPEN WATER between the
-## coasts (`_ferry_line_open`) -- it must not cut across a landmass. (City/port requirement
-## dropped while all nodes are one type.)
+## AND its straight line is essentially OPEN WATER between the coasts
+## (`_ferry_line_open`) -- it must not cut across a landmass. Start/end ARE allowed to
+## ferry (the aggregate-axis poles may sit on their own landmass, so their first/last
+## hop can be a crossing); they are also exempt from the coastal test since a pole has
+## no choice of position -- the open-water line test still gates the crossing itself.
+## (City/port requirement dropped while all nodes are one type.)
 static func _legal_ferry(ctx: Ctx, u: int, v: int) -> bool:
-	if u == ctx.start_id or v == ctx.start_id or u == ctx.end_id or v == ctx.end_id:
-		return false
 	if ctx.field.label_at(ctx.pos[u]) == ctx.field.label_at(ctx.pos[v]):
 		return false
-	if not (ctx.field.is_coastal(ctx.pos[u], ctx.coast_radius) and ctx.field.is_coastal(ctx.pos[v], ctx.coast_radius)):
+	var pole := u == ctx.start_id or v == ctx.start_id or u == ctx.end_id or v == ctx.end_id
+	if not pole and not (ctx.field.is_coastal(ctx.pos[u], ctx.coast_radius) and ctx.field.is_coastal(ctx.pos[v], ctx.coast_radius)):
 		return false
 	return _ferry_line_open(ctx.field, ctx.pos[u], ctx.pos[v])
 
@@ -840,7 +859,7 @@ static func edge_crosses_water(field: MapField, a: Vector2, b: Vector2) -> bool:
 	return false
 
 ## Water-travel rule: an edge crossing open water is legal ONLY as a ferry (see
-## _legal_ferry: cross-landmass, both coastal cities, not start/end). Returns the
+## _legal_ferry: cross-landmass, coastal endpoints [poles exempt], open line). Returns the
 ## offending [u, v] edges. Step C trims/curves these; here it's a metric/validator.
 static func water_edge_violations(ctx: Ctx, _coast_radius: float = 0.0) -> Array:
 	var bad: Array = []
@@ -875,7 +894,27 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	ctx.coast_radius = settings.coast_radius_ratio * diag
 	ctx.lane_tol = opts.get("lane_tol", 1.8)
 	var min_frac: float = opts.get("landmass_min_frac", 0.12)
-	var gpca := field.land_pca()
+
+	# Eligible landmasses FIRST (moved above the PCA): the axis is computed over the
+	# AGGREGATE of the islands the grid may actually occupy, so it stretches across
+	# the whole eligible archipelago (longest span over the most usable land) and the
+	# start/end poles can land on different landmasses. Previously the PCA ran over
+	# ALL samples (ineligible islets skewed it) and eligibility was only applied when
+	# snapping poles -- which dragged both poles back onto the main island.
+	var have_samples := {}
+	for sl in field.sample_label:
+		have_samples[sl] = true
+	var big := 0
+	for sid in field.sizes.keys():
+		big = maxi(big, field.sizes[sid])
+	var large := {}
+	for sid in field.sizes.keys():
+		if field.sizes[sid] >= int(big * min_frac) and have_samples.has(sid):
+			large[sid] = true
+	if large.is_empty() and field.main_label >= 0:
+		large[field.main_label] = true
+
+	var gpca := field.land_pca_labels(large)
 	var center: Vector2 = gpca["center"]
 	var dir: Vector2 = gpca["axis"]
 	var perp: Vector2 = gpca["perp"]
@@ -902,20 +941,6 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	ctx.branch_local = rung_pitch * opts.get("branch_local_mul", 2.5)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val * 100069 + 7
-
-	# Large landmasses that carry samples = the islands the grid may occupy.
-	var have_samples := {}
-	for sl in field.sample_label:
-		have_samples[sl] = true
-	var big := 0
-	for sid in field.sizes.keys():
-		big = maxi(big, field.sizes[sid])
-	var large := {}
-	for sid in field.sizes.keys():
-		if field.sizes[sid] >= int(big * min_frac) and have_samples.has(sid):
-			large[sid] = true
-	if large.is_empty() and field.main_label >= 0:
-		large[field.main_label] = true
 
 	# Pass 1: slice each interior rung across every landmass; record on-land coords and the
 	# GLOBAL min/max slice width (so the thinnest land anywhere -> min_width sections, the
