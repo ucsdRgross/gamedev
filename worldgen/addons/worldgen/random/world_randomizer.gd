@@ -11,7 +11,7 @@ extends RefCounted
 
 ## Merged density model shipped inside the addon (regenerated from presets/ by the dev
 ## "Export ranges bundle" button). Format: {"version":1, "steps": {step: {param: entry}}}.
-const BUNDLE_PATH := "res://addons/worldgen/ranges_bundle.json"
+const BUNDLE_PATH := "res://addons/worldgen/random/ranges_bundle.json"
 
 ## Never randomized: seeds, per-step seed offsets, and map dimensions.
 const EXCLUDE := {

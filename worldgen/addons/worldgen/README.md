@@ -12,13 +12,17 @@ centered on the node's origin, driven by tunable parameter ranges.
 addons/worldgen/
 ├── plugin.cfg / plugin.gd / icon.svg   editor plugin (registers WorldMap2D)
 ├── world_map_2d.gd                     the drag-and-drop @tool Node2D deliverable
-├── graph_overlay.gd / graph_map_node.gd  interactive DAG overlay + per-node API
-├── height_band.gd / height_colorizer.gd  land/water palette (Resources)
-├── biome.gd / biome_set.gd             biome pool + casting/prior/ramp/deco config
-├── biome_deco.gd                       baked decoration scatter (paint-time)
-├── map_painter.gd                      composite / land / water / height images
-├── world_randomizer.gd                 param tables + sampler + bundle randomize
-├── ranges_bundle.json                  merged density model (dev-generated)
+├── overlay/
+│   └── graph_overlay.gd / graph_map_node.gd  interactive DAG overlay + per-node API
+├── painting/
+│   ├── height_band.gd / height_colorizer.gd  land/water palette (Resources)
+│   └── map_painter.gd                  composite / land / water / height images
+├── biomes/
+│   ├── biome.gd / biome_set.gd         biome pool + casting/prior/ramp config
+│   └── deco_layer.gd / biome_deco.gd   per-biome deco layers + baked scatter
+├── random/
+│   ├── world_randomizer.gd             param tables + sampler + bundle randomize
+│   └── ranges_bundle.json              merged density model (dev-generated)
 ├── core/
 │   ├── world_generator.gd              pipeline orchestrator (GPU + CPU)
 │   ├── world_settings.gd               all tunables (@tool)

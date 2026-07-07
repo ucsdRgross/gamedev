@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://w7mjuffffbvc" path="res://addons/worldgen/world_map_2d.gd" id="1_3s0gn"]
 [ext_resource type="Script" uid="uid://mbt2djybuun1" path="res://addons/worldgen/core/world_settings.gd" id="2_i3coy"]
-[ext_resource type="Script" uid="uid://brmf2g1vjwnma" path="res://addons/worldgen/height_band.gd" id="3_yvuvc"]
-[ext_resource type="Script" uid="uid://ceiei0y5s1oxj" path="res://addons/worldgen/height_colorizer.gd" id="4_1ae2f"]
+[ext_resource type="Script" uid="uid://brmf2g1vjwnma" path="res://addons/worldgen/painting/height_band.gd" id="3_yvuvc"]
+[ext_resource type="Script" uid="uid://ceiei0y5s1oxj" path="res://addons/worldgen/painting/height_colorizer.gd" id="4_1ae2f"]
 [ext_resource type="Script" uid="uid://c85hkmg4pwxeb" path="res://tests/addon_node_test.gd" id="5_walk"]
 
 [sub_resource type="Resource" id="Resource_g7tl1"]
