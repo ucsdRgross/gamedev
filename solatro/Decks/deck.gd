@@ -7,6 +7,14 @@ func get_deck() -> Array[CardData]:
 func get_rules() -> Array[CardData]:
 	return rules1
 
+## Every starter deck for the menu deck picker: [{name: String, cards: Array[CardData]}].
+func get_deck_list() -> Array[Dictionary]:
+	var list : Array[Dictionary] = []
+	var decks : Array = [deck1, deck2, deck3, deck4, deck5, deck6, deck7, deck8, deck9, deck10]
+	for i in decks.size():
+		list.append({"name": "Deck %d" % (i + 1), "cards": decks[i]})
+	return list
+
 
 var rules1: Array[CardData] = [
 	CardData.new().with_type(TypePaper.new()).with_skill(SkillAdderInputUpper.new()).with_suit(PipSuitStandard.new().with_random()).with_rank(PipRankNumeral.new().with_random()),

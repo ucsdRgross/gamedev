@@ -12,13 +12,62 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_wlx1c")
 
+[node name="Dim" type="ColorRect" parent="." unique_id=1216211906]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
 [node name="FlexContainer" type="Container" parent="." unique_id=413004020]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("2_minph")
 align_horizontal = 1
 align_vertical = 1
 wrapping = true
 align_wrap = 1
 metadata/_custom_type_script = "uid://qjk2k16hh77c"
+
+[node name="ConfirmButton" type="Button" parent="." unique_id=1216211907]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -76.0
+offset_right = 90.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 28
+text = "Take all"
+
+[node name="CardInfo" type="Label" parent="." unique_id=1216211908]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -170.0
+offset_right = 300.0
+offset_bottom = -84.0
+grow_horizontal = 2
+grow_vertical = 0
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[connection signal="pressed" from="ConfirmButton" to="." method="_on_confirm_pressed"]

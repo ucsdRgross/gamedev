@@ -73,8 +73,10 @@ Symphony*, Neon Nightlife (Disconauts).
    without being wiped. Match ends when the deck runs out or the required score is reached.
    Cards enter play by dropping on their own from the input row — they cannot be dragged
    down manually.
-3. **Refinements:** 3 submits per match as a nod to a 3-act performance 💭; each act (or
-   only the final act) could carry an increasing score multiplier 💭.
+3. **Refinements:** 3 submits per match as a nod to a 3-act performance ✅ implemented
+   (`Game.MAX_SUBMITS`; after the 3rd act the goal check wins → fame → map, or loses →
+   run over → menu); each act (or only the final act) could carry an increasing score
+   multiplier 💭.
 
 **Implementation state:** `Game`/`GameData` with draw deck, discard, upper zone (Entrance)
 and lower zone (Ring); `TypeInput.on_next` drops upper stacks into the Ring and refills
@@ -147,15 +149,15 @@ all cards are trying to do."
    as each row resolves. Results return the list of scored cards, which then run through
    the card-effect loop; scored cards are elevated/rise up.
    - Refined once more to: **all row scoring first**, then all 5 lanes (columns) scored
-     simultaneously at that row.
+	 simultaneously at that row.
    - Aggregation idea: **all vertical scores are multiplied with all horizontal scores**
-     at the end (row total × column total). 📋
+	 at the end (row total × column total). 📋
    - Score displays distinguish axes: `-2-` for row points, `|1|` for column points. 📋
    - "Only the first scored poker hand actually scores, ignoring later poker hands" —
-     ✅ (`SkillEvalPokerBest` picks the best/first result).
+	 ✅ (`SkillEvalPokerBest` picks the best/first result).
    - Open TODO from notes: check whether scoring should also scan the draw deck and
-     discard pile 💭; "every 5 rows make row red / increase points by layer" 💭 → later
-     matured into Performance Rings (below).
+	 discard pile 💭; "every 5 rows make row red / increase points by layer" 💭 → later
+	 matured into Performance Rings (below).
 3. **v3 — Combo/damage recontextualization (LATEST thinking, 📋 not built):** points
    reframed as *damage against an antagonist* (Slay-the-Spire/TCG enemy-health framing).
    Row and column scorers become a **combo system**: combo increments by 1 for each
@@ -575,8 +577,18 @@ in the notes (proxy for design recency).
 **Implementation state:** the `worldgen` addon generates the seeded heightmap world
 (Landmass → Tectonics → Peaks&Valleys → Erosion → Rivers → Graph) with an interactive DAG
 overlay (`WorldGraphOverlay` / `WorldGraphNode`), ferry edges, start/end nodes, threaded
-loading, and JSON baking. ✅ The Solatro-side hookup (nodes = towns/packs/events, fame,
-fog of war) is not yet wired. 📋
+loading, and JSON baking. ✅ The Solatro-side hookup is wired ✅: the addon is vendored at
+`addons/worldgen` (canonical home stays the `worldgen` project — re-copy to update, never
+edit the Solatro copy), `WorldMapController` (Scripts/Map/) drives token traversal /
+highlighting / hidden-unusable-edges / gold traveled history, `MapNodeRoles` deterministically
+assigns show/booster/anchor roles from the seed, shows launch `Game` with
+`RunManager.goal_for` fame requirements, booster nodes force-add 5-card packs
+(`ChoiceViewer` take-all; hover shows possible contents), runs persist to `user://run_save/`
+(RunState + map bake), and finishing a lap enters endless mode: the tour reverses
+end→start on the same map, goals scale per lap, traveled history accumulates. Overscore
+feeds fame AND nonlinearly ramps future requirements ✅; fame raises `RunManager.luck()`
+which gates stamp/skill/type rolls in packs ✅ (rarity tiers still 📋). Not built yet:
+tips, fog of war, hype/wagering, tour planning. 📋
 
 **Map content & UX notes (all still current 📋/💭):**
 - Nodes offer **card packs** or occasionally rarer **single cards**; card packs show at

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Tests/Map/test_map_traversal.gd" id="1_maptr"]
+
+[node name="TestMapTraversal" type="Node"]
+script = ExtResource("1_maptr")

@@ -1,11 +1,16 @@
 [gd_scene format=3 uid="uid://dvl2ono4m4a8a"]
 
-[ext_resource type="PackedScene" path="res://Tests/test_board.tscn" id="1_lva42"]
-[ext_resource type="PackedScene" path="res://Tests/test_comparator.tscn" id="2_aoeg8"]
-[ext_resource type="PackedScene" path="res://Tests/test_dispatch.tscn" id="3_conaq"]
-[ext_resource type="PackedScene" uid="uid://tstkex8bp6v1" path="res://Tests/test_fuzz.tscn" id="4_7scqg"]
-[ext_resource type="PackedScene" path="res://Tests/test_iterator.tscn" id="5_0nmpq"]
-[ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/test_score.tscn" id="6_aoeg8"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_board.tscn" id="1_lva42"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_comparator.tscn" id="2_aoeg8"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_dispatch.tscn" id="3_conaq"]
+[ext_resource type="PackedScene" uid="uid://tstkex8bp6v1" path="res://Tests/Engine/test_fuzz.tscn" id="4_7scqg"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_iterator.tscn" id="5_0nmpq"]
+[ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
+[ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
+[ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
+[ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_ui_viewers.tscn" id="11_uivw"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 
@@ -20,3 +25,13 @@
 [node name="TestIterator" parent="." unique_id=642896934 instance=ExtResource("5_0nmpq")]
 
 [node name="TestScore" parent="." unique_id=1772777320 instance=ExtResource("6_aoeg8")]
+
+[node name="TestActScore" parent="." unique_id=742109780 instance=ExtResource("7_actsc")]
+
+[node name="TestRunManager" parent="." unique_id=567230125 instance=ExtResource("8_runmg")]
+
+[node name="TestMapRoles" parent="." unique_id=1737734247 instance=ExtResource("9_maprl")]
+
+[node name="TestMapTraversal" parent="." unique_id=118778426 instance=ExtResource("10_maptr")]
+
+[node name="TestUiViewers" parent="." instance=ExtResource("11_uivw")]

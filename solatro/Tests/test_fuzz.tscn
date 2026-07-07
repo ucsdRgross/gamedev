@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://tstkex8bp6v1"]
-
-[ext_resource type="Script" uid="uid://b1jr424b0fdqt" path="res://Tests/test_fuzz.gd" id="1"]
-
-[node name="TestFuzz" type="Node" unique_id=209384617]
-script = ExtResource("1")

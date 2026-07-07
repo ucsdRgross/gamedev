@@ -2,6 +2,8 @@ extends CardEnvironment
 class_name Game
 
 signal game_ended
+## Emitted when the show fails (goal not met after the final act): the whole run is over.
+signal run_lost
 
 const TEXT_POPUP = preload("res://UI/text_popup.tscn")
 
@@ -34,6 +36,12 @@ var save_history : Array[GameData] = []
 
 var processing : bool = false
 
+## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
+## after the last one.
+const MAX_SUBMITS := 3
+var submits_used : int = 0
+var _won : bool = false
+
 @onready var play_area: PlayArea = %PlayArea
 @onready var deck_ui: Control = %Deck
 @onready var discard_ui: Control = %Discard
@@ -43,6 +51,7 @@ var processing : bool = false
 @onready var win_screen: Label = %WinScreen
 @onready var lose_screen: Label = %LoseScreen
 @onready var undo_button: Button = %Undo
+@onready var submit_button: Button = %Submit
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
@@ -71,12 +80,39 @@ func _ready() -> void:
 		state.board_changed.connect(_on_board_changed)
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
-	state.goal = state.goal * (1.1 ** Main.save_info.layer)
+	if Main.save_info.game_state != null:
+		_resume_show()
+	else:
+		await _start_fresh_show()
+	save_state()
+	# _on_state_changed early-returns while _ready runs (node not ready yet); refresh the
+	# HUD once we are, so a resumed goal/score shows immediately.
+	_on_state_changed.call_deferred()
+	state.print_board()
+
+# A brand new show: build the deck, run the start hook, seed the disk snapshot.
+func _start_fresh_show() -> void:
+	# The map node being played sets the fame requirement (RunManager.goal_for).
+	state.goal = maxi(Main.save_info.pending_goal, 1)
+	submits_used = 0
+	_update_submit_label()
 	add_deck()
 	await run_all_mods(&"on_game_start")
 	skill_active_check()
-	save_state()
-	state.print_board()
+	_sync_game_snapshot()
+	RunManager.save_run()
+
+# Resume the exact board a quit interrupted: adopt the saved state, restore the act count,
+# rebuild the board UI, and re-sync skill active flags WITHOUT re-firing on_active /
+# on_deactive (their effects are already baked into the saved state).
+func _resume_show() -> void:
+	state = Main.save_info.game_state
+	submits_used = Main.save_info.game_submits
+	_update_submit_label()
+	state.revision += 1  # force the play area to rebuild from the restored board
+	for data in CardDataIterator.new(self):
+		if data.skill:
+			data.skill.active = data.skill.is_active()
 
 func on_data_selected(data:CardData) -> void:
 	if processing: return
@@ -146,6 +182,23 @@ func _on_next_pressed() -> void:
 func save_state() -> void:
 	var duplicated_state : GameData = state.duplicate_state()
 	save_history.append(duplicated_state)
+	_sync_game_snapshot()
+
+## Point the run's live snapshot at the current board (cheap in-memory reference). Disk
+## writes happen at act boundaries and on window close (_notification) so rapid card moves
+## with a large deck don't hitch on serialization.
+func _sync_game_snapshot() -> void:
+	if RunManager.run == null: return
+	RunManager.run.game_state = state
+	RunManager.run.game_submits = submits_used
+
+## Graceful window close mid-show: persist the exact board so Continue resumes it. A hard
+## kill falls back to the last act-boundary write (the show restarts from that act).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_sync_game_snapshot()
+		if RunManager.run != null and RunManager.run.game_state != null:
+			RunManager.save_run()
 
 func undo_pressed() -> void:
 	if processing: return
@@ -155,6 +208,7 @@ func undo_pressed() -> void:
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = prev_game_data.duplicate_state()
+		_sync_game_snapshot()  # undo reassigns state; keep the resume snapshot current
 		play_area.setup_gui()
 		debug_validate("undo")
 	
@@ -254,8 +308,48 @@ func _on_submit_pressed() -> void:
 		return
 	processing = true
 	await run_all_mods(&"on_run_scorer")
+	state.apply_act_score()
+	state.discard_lower_board()
 	save_state()
+	submits_used += 1
+	_update_submit_label()
+	if submits_used >= MAX_SUBMITS:
+		_resolve_game()
+		return  # processing stays true: the show is over, no more input
+	# Act boundary: persist the exact board so a quit resumes mid-show.
+	_sync_game_snapshot()
+	RunManager.save_run()
 	processing = false
+
+func _update_submit_label() -> void:
+	submit_button.text = "Submit (%d act%s left)" \
+			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"]
+
+## All acts performed: win if the fame requirement was reached. Win feeds fame (FULL
+## score incl. overscore) and returns to the map; loss ends the whole run. An explicit
+## Continue button (mouse + keyboard/controller) drives the exit.
+func _resolve_game() -> void:
+	_won = state.has_met_goal()
+	var screen : Label = win_screen if _won else lose_screen
+	if _won:
+		RunManager.record_win(state.total_score, state.goal)
+		screen.text = "Fame +%d" % state.total_score
+	screen.show()
+	var cont := Button.new()
+	cont.text = "Continue"
+	cont.add_theme_font_size_override(&"font_size", 40)
+	screen.add_child(cont)
+	cont.set_anchors_preset(Control.PRESET_CENTER)
+	cont.position.y += 220  # sit below the big win/lose text
+	cont.pressed.connect(_exit_show)
+	cont.grab_focus()
+
+# Leave the show: won games hand back to the map, lost games end the run.
+func _exit_show() -> void:
+	if _won:
+		return_to_map()
+	else:
+		run_lost.emit()
 
 func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
@@ -280,6 +374,9 @@ func return_to_map() -> void:
 		data.stage = CardData.Stage.DRAW
 	state.revision += 1
 	Main.save_info.card_datas = state.draw_deck
+	# The show is over — drop the resume snapshot so Continue won't re-enter this game.
+	Main.save_info.game_state = null
+	Main.save_info.game_submits = 0
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
@@ -294,6 +391,7 @@ func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 	if zone == state.upper_zone:
 		score_zone = state.scores_row_upper
 	resize_score_zone(score_zone, row + 1)
+	state.row_total += result.score  # feeds this act's row x col payout (apply_act_score)
 	await play_area.popup_meld(result)
 	play_area.update_score(score_zone, row, score_zone[row].plus_equals(result.score))
 	await play_area.popup_score(result)
@@ -303,6 +401,7 @@ func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
 func score_col(result : Scoring.Result, col : int) -> void:
 	var score_zone : Array[BigNumber] = state.scores_col
 	resize_score_zone(score_zone, col + 1)
+	state.col_total += result.score  # feeds this act's row x col payout (apply_act_score)
 	await play_area.popup_meld(result)
 	play_area.update_score(score_zone, col, score_zone[col].plus_equals(result.score))
 	await play_area.popup_score(result)

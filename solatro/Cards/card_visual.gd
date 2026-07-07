@@ -81,7 +81,9 @@ func update_visual() -> void:
 			data.suit.set_material(suit)
 			data.suit.set_material(rank)
 			suit.show()
-		else: suit.hide()
+		else:
+			suit.hide()
+			rank.material = null  # suitless preview cards render their rank uncolored
 			
 		if data.type:
 			data.type.set_texture(type)
@@ -97,11 +99,11 @@ func update_visual() -> void:
 			data.skill.set_texture(art)
 			data.skill.set_material(art)
 			art.show()
-		elif data.suit:
+		elif data.suit and data.rank:
 			data.suit.set_art_texture(art, data.rank)
 			data.suit.set_material(art)
 			art.show()
-		else: art.hide()
+		else: art.hide()  # rankless suit cards have no art (a bare colored polygon otherwise)
 
 	else:
 		if not is_node_ready():

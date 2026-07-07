@@ -23,18 +23,21 @@ and drawing cards* only happens because a rule-card in `rules_deck` implements `
 
 ```
 Main (Levels/main.gd, scene root)
- ├─ Menu / Map ................. scene switching, PlayerSave (static Main.save_info)
+ ├─ Menu / Map ................. scene switching; Map hosts WorldMapController
+ │                               (Scripts/Map/) over the vendored worldgen addon; run
+ │                               progression = RunState via RunManager autoload
+ │                               (static Main.save_info aliases RunManager.run)
  └─ Game (Levels/game.gd) ...... extends CardEnvironment; the match controller
-     │
-     ├─ state : GameData ....... PURE DATA (Resource): draw/discard/rules decks,
-     │                           upper/lower zones (columns of stacks), score arrays,
-     │                           goal/total. Emits state_changed for the HUD.
-     ├─ save_history ........... Array[GameData] deep copies -> undo
-     └─ PlayArea (UI/play_area.gd, %PlayArea)
-         ├─ builds a Control grid mirroring GameData zones (every physics tick)
-         ├─ maps: ui_data (Control->CardData), data_ui, data_card (CardData->CardVisual)
-         └─ CardVisual (Cards/card_visual.gd, Node2D)
-             follows its anchor Control; tweens, float anim, stage-change animations
+	 │
+	 ├─ state : GameData ....... PURE DATA (Resource): draw/discard/rules decks,
+	 │                           upper/lower zones (columns of stacks), score arrays,
+	 │                           goal/total. Emits state_changed for the HUD.
+	 ├─ save_history ........... Array[GameData] deep copies -> undo
+	 └─ PlayArea (UI/play_area.gd, %PlayArea)
+		 ├─ builds a Control grid mirroring GameData zones (every physics tick)
+		 ├─ maps: ui_data (Control->CardData), data_ui, data_card (CardData->CardVisual)
+		 └─ CardVisual (Cards/card_visual.gd, Node2D)
+			 follows its anchor Control; tweens, float anim, stage-change animations
 
 CardEnvironment (Scripts/card_environment.gd, @abstract, base of Game)
  ├─ static CURRENT ............. global "the active environment" singleton
@@ -45,8 +48,8 @@ CardEnvironment (Scripts/card_environment.gd, @abstract, base of Game)
 
 CardDataIterator (Scripts/card_data_iterator.gd)
  └─ custom _iter_* class; flattens CardEnvironment.CURRENT.get_card_collections()
-    (draw deck, both zones + zone-type rows, discard, rules) into one card stream.
-    2D zones are walked ROW-major (row 0 of every column first).
+	(draw deck, both zones + zone-type rows, discard, rules) into one card stream.
+	2D zones are walked ROW-major (row 0 of every column first).
 
 CardData (Cards/card_data.gd, Resource) — one card
  ├─ suit : PipSuit            rank : PipRank        (the "pips")
@@ -60,13 +63,13 @@ CardModifier (@abstract Resource, back-reference .data -> owning CardData)
  │   └─ ZoneAdder (@abstract)             adds a zone column while active
  ├─ CardModifierStamp                     e.g. StampDoubleTrigger, StampGlobal
  └─ CardModifierType                      e.g. TypeInput (draw/drop pipeline), TypeStone
-     └─ BoosterTemplate (@abstract)       card-pack generation (map screen)
+	 └─ BoosterTemplate (@abstract)       card-pack generation (map screen)
 
 PipComparator (static) ... every rank/suit comparison funnels through here; each call
-    first asks all mods (on_compare_ranks/suits) before falling back to numeric compare.
+	first asks all mods (on_compare_ranks/suits) before falling back to numeric compare.
 Scoring (Scripts/scoring.gd, static) ... poker-hand evaluation: PokerHands router ->
-    ExpandedGridHandler (sets/houses), MultiStraightHandler, MultiFlushHandler,
-    HighCardHandler; ScoreModel = the only place score math lives; Result = hand+score.
+	ExpandedGridHandler (sets/houses), MultiStraightHandler, MultiFlushHandler,
+	HighCardHandler; ScoreModel = the only place score math lives; Result = hand+score.
 ```
 
 ### 1.3 Key data flow traces
@@ -428,12 +431,12 @@ does not. The whole compensation block disappears.
 Public API (what callers use — note callers already think in anchors:
 move_data_ontop_data(moving, dest_card) is the main entry point):
 
-    move_stack(moving: CardData, count: int, dest: Anchor) -> Error
+	move_stack(moving: CardData, count: int, dest: Anchor) -> Error
 
-    Anchor is one of:
-      OnTop(card: CardData)      # insert directly above this card
-      ColumnEnd(x, col)          # append to a column (covers dest.z == -1 today)
-      ColumnStart(x, col)        # insert at row 0 (TypeInput's "under everything")
+	Anchor is one of:
+	  OnTop(card: CardData)      # insert directly above this card
+	  ColumnEnd(x, col)          # append to a column (covers dest.z == -1 today)
+	  ColumnStart(x, col)        # insert at row 0 (TypeInput's "under everything")
 ```
 
 ### 5.2 The algorithm (four phases, strictly ordered)
@@ -633,17 +636,18 @@ original B/S/D/E numbering stable.
   all connect to a resource's signal and never disconnect the previous resource —
   re-assignment double-fires or keeps dead objects reachable. Adopt one idiom:
   disconnect-old / connect-new in every resource-holding setter.
-- [ ] **N10. No persistence:** `Main.save_info` is a static `PlayerSave.new()` — nothing
-  ever `ResourceSaver.save`s it (unlike settings), so runs vanish on quit. If
-  intentional-for-now, add the TODO where it belongs (`PlayerSave`), because `@export`s
-  there imply it was meant to save.
-- [ ] **N11. Map layer/goal math:** every map card click does `layer += 1`
-  ([map.gd:33-38](Levels/map.gd:33)) and goal scales by `1.1 ** layer` with int truncation
-  each game — verify "layer per pick" (vs per map depth) is the intended difficulty curve,
-  and accumulate the goal in float if the truncation compounding matters.
-- [ ] **N12. Map-generated cards have no `type`** ([map.gd:88-92](Levels/map.gd:88)) while
-  every deck-built card gets `TypePaper` — harmless today, but any future
-  `if data.type ...` logic will treat map-acquired cards differently. Pick one convention.
+- [x] **N10. No persistence:** resolved — runs now persist as `RunState`
+  (Scripts/run_state.gd) via the `RunManager` autoload (Scripts/run_manager.gd) to
+  `user://run_save/` (run.tres + the worldgen map bake). Loss clears the save; the menu's
+  Continue gates on `RunManager.has_save()`. Note the standard Godot caveat: loading
+  `.tres` from `user://` can execute embedded script paths (same exposure as
+  settings.tres). `PlayerSave` remains only as the Deck Maker profile container.
+- [x] **N11. Map layer/goal math:** superseded — the triangle map and `layer` are gone.
+  Goals now come from `RunManager.goal_for(progress, lap, is_boss)` (float math, int
+  clamp at the end; lap scaling capped to avoid int64 overflow in endless mode).
+- [x] **N12. Map-generated cards have no `type`:** superseded — the triangle map's random
+  card generation is gone. Map-acquired cards now come from booster packs
+  (`BoosterTemplate.create_one_choice`), where `type` is a luck-gated roll by design.
 
 ### New efficiency / line-count items
 

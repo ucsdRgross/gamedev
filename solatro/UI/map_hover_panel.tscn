@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/map_hover_panel.gd" id="1_hoverp"]
+
+[node name="HoverPanel" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(260, 0)
+script = ExtResource("1_hoverp")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Show"
+
+[node name="Info" type="Label" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(260, 0)
+text = "Fame required: 0"
+
+[node name="CardsScroll" type="ScrollContainer" parent="VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(480, 240)
+horizontal_scroll_mode = 0
+
+[node name="Cards" type="FlowContainer" parent="VBox/CardsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CardInfo" type="Label" parent="VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(480, 0)
+text = ""

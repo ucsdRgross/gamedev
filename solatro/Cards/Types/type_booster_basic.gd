@@ -1,6 +1,6 @@
 class_name TypeBoosterBasic
-extends CardModifierType
-	
+extends BoosterTemplate
+
 func get_str() -> String: return "Basic Booster"
 func get_description() -> String: return "Contains 5 standard cards"
 func get_frame() -> int: return 5
@@ -17,10 +17,10 @@ func get_possible_suits() -> Array[PipSuit]:
 	for i in 4:
 		suits[i] = PipSuitStandard.new().with_value(i + 1)
 	return suits
+## Luck-gated extras: these only appear on generated cards when RunManager.luck rolls hit.
 func get_possible_stamps() -> Array[CardModifierStamp]:
-	return []
+	return [StampRevealing.new(), StampGlobal.new(), StampDoubleTrigger.new()]
 func get_possible_skills() -> Array[CardModifierSkill]:
-	return []
+	return [SkillExtraPoint.new(), SkillEchoingTrigger.new(), SkillHungryHippo.new()]
 func get_possible_types() -> Array[CardModifierType]:
-	return [TypePaper.new()]
-	
+	return [TypePaper.new(), TypeHeavy.new(), TypeStone.new()]

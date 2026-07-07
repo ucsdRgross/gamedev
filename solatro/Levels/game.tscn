@@ -28,7 +28,11 @@ script = ExtResource("1_gj2ix")
 [node name="SceneRoot" type="Control" parent="." unique_id=334352069]
 unique_name_in_owner = true
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="PlayContainer" type="Control" parent="SceneRoot" unique_id=293911350]
 anchors_preset = 0
@@ -42,6 +46,7 @@ unique_name_in_owner = true
 layout_mode = 1
 
 [node name="Submit" type="Button" parent="SceneRoot" unique_id=993658546]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 221.0
 offset_top = 393.0

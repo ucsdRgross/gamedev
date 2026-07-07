@@ -1,125 +1,65 @@
-[gd_scene format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=5 format=3 uid="uid://oc6yiar3wsih"]
 
-[ext_resource type="Script" uid="uid://0udjriminoud" path="res://Levels/map.gd" id="1_uwdp5"]
-[ext_resource type="Script" uid="uid://cnls1uy13mmj7" path="res://Scripts/gui_3d.gd" id="1_wpjh4"]
-[ext_resource type="Texture2D" uid="uid://dhfmcyt2h21a7" path="res://Assets/m31-layered-uv-and-optical.webp" id="2_ylyoy"]
-[ext_resource type="PackedScene" uid="uid://divgmobncm76x" path="res://Levels/triangle_map.tscn" id="5_5sh7s"]
+[ext_resource type="Script" path="res://Levels/map.gd" id="1_mapgd"]
+[ext_resource type="Script" path="res://Scripts/Map/world_map_controller.gd" id="2_wmctrl"]
+[ext_resource type="Script" path="res://Scripts/Map/map_player_token.gd" id="3_token"]
+[ext_resource type="PackedScene" path="res://UI/map_hover_panel.tscn" id="4_hover"]
 
-[sub_resource type="Environment" id="Environment_grdjq"]
-background_mode = 3
+[node name="Map" type="Node"]
+script = ExtResource("1_mapgd")
 
-[sub_resource type="LabelSettings" id="LabelSettings_rx70n"]
-line_spacing = -3.0
-font_size = 12
-shadow_color = Color(0, 0, 0, 1)
+[node name="WorldMapController" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_wmctrl")
 
-[sub_resource type="QuadMesh" id="QuadMesh_c5ijj"]
-size = Vector2(3.556, 2)
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_tkjxf"]
-viewport_path = NodePath("SceneRoot/TiltedGUI/SubViewport")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_15n1f"]
-resource_local_to_scene = true
-transparency = 1
-shading_mode = 0
-albedo_texture = SubResource("ViewportTexture_tkjxf")
-texture_filter = 0
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_d2lex"]
-size = Vector3(3.556, 2, 0.1)
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_ciy4y"]
-viewport_path = NodePath("SceneRoot/TiltedGUI/SubViewport")
-
-[node name="Map" type="Node" unique_id=1518091142]
-script = ExtResource("1_uwdp5")
-
-[node name="SceneRoot" type="Node3D" parent="." unique_id=334352070]
+[node name="Camera2D" type="Camera2D" parent="WorldMapController"]
 unique_name_in_owner = true
 
-[node name="Background" type="WorldEnvironment" parent="SceneRoot" unique_id=623179183]
-environment = SubResource("Environment_grdjq")
-
-[node name="TextureRect" type="TextureRect" parent="SceneRoot/Background" unique_id=1480971404]
-visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -171.02
-offset_top = -7.0
-offset_right = 172.02
-offset_bottom = 2.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = ExtResource("2_ylyoy")
-expand_mode = 3
-stretch_mode = 6
-
-[node name="Camera3D" type="Camera3D" parent="SceneRoot" unique_id=643491103]
-transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, -0.52, 1.185)
-
-[node name="Preview" type="Control" parent="SceneRoot" unique_id=436008421]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 85.0
-offset_top = 559.0
-offset_right = 85.0
-offset_bottom = 559.0
-scale = Vector2(1.5, 1.5)
-
-[node name="PreviewLabel" type="Label" parent="SceneRoot/Preview" unique_id=1126721272]
+[node name="Token" type="Node2D" parent="WorldMapController"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = -43.0
-offset_top = 22.0
-offset_right = 82.0
-offset_bottom = 227.0
-text = "Skill Text
-Skill Text"
-label_settings = SubResource("LabelSettings_rx70n")
-autowrap_mode = 3
+z_index = 10
+script = ExtResource("3_token")
 
-[node name="Button" type="Button" parent="SceneRoot" unique_id=483637534]
-offset_left = 228.0
-offset_top = 483.0
-offset_right = 325.0
-offset_bottom = 537.0
-text = "enter game"
+[node name="UI" type="CanvasLayer" parent="."]
 
-[node name="TiltedGUI" type="Node3D" parent="SceneRoot" unique_id=1096148693]
-script = ExtResource("1_wpjh4")
+[node name="FameLabel" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 260.0
+offset_bottom = 44.0
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 24
+text = "Fame: 0"
 
-[node name="SubViewport" type="SubViewport" parent="SceneRoot/TiltedGUI" unique_id=2091479155]
-transparent_bg = true
-canvas_item_default_texture_filter = 0
-size = Vector2i(1152, 648)
+[node name="LapLabel" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 12.0
+offset_top = 44.0
+offset_right = 260.0
+offset_bottom = 80.0
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 24
+text = "Lap: 1"
 
-[node name="TriangleMap" parent="SceneRoot/TiltedGUI/SubViewport" unique_id=482555167 instance=ExtResource("5_5sh7s")]
+[node name="LuckLabel" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 12.0
+offset_top = 80.0
+offset_right = 260.0
+offset_bottom = 116.0
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 24
+text = "Luck: 0%"
+
+[node name="DeckButton" type="Button" parent="UI"]
+offset_left = 12.0
+offset_top = 596.0
+offset_right = 112.0
+offset_bottom = 636.0
+text = "Deck"
+
+[node name="HoverPanel" parent="UI" instance=ExtResource("4_hover")]
 unique_name_in_owner = true
 
-[node name="Quad" type="MeshInstance3D" parent="SceneRoot/TiltedGUI" unique_id=564128124]
-mesh = SubResource("QuadMesh_c5ijj")
-skeleton = NodePath("../..")
-surface_material_override/0 = SubResource("StandardMaterial3D_15n1f")
-
-[node name="Area3D" type="Area3D" parent="SceneRoot/TiltedGUI/Quad" unique_id=737192238]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="SceneRoot/TiltedGUI/Quad/Area3D" unique_id=1712604245]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
-shape = SubResource("BoxShape3D_d2lex")
-
-[node name="Sprite2D" type="Sprite2D" parent="SceneRoot/TiltedGUI" unique_id=409615748]
-visible = false
-texture = SubResource("ViewportTexture_ciy4y")
-centered = false
-
-[node name="LayerLabel" type="Label" parent="SceneRoot" unique_id=1260479845]
-unique_name_in_owner = true
-offset_right = 183.0
-offset_bottom = 94.0
-theme_override_constants/outline_size = 10
-theme_override_font_sizes/font_size = 30
-text = "Layer: 0"
-
-[connection signal="pressed" from="SceneRoot/Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="UI/DeckButton" to="." method="_on_deck_clicked"]

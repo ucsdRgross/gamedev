@@ -27,6 +27,7 @@ buses/default_bus_layout="res://Audio/default_bus_layout.tres"
 
 PseudoLocalisationCycler="*uid://cgwqytqq2t8ih"
 SettingsManager="*uid://0icgb7ix0tbx"
+RunManager="*res://Scripts/run_manager.gd"
 
 [debug]
 
@@ -48,7 +49,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/yard/plugin.cfg")
+enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/yard/plugin.cfg", "res://addons/worldgen/plugin.cfg")
 
 [global_group]
 

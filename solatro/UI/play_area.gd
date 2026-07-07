@@ -52,13 +52,16 @@ func _on_gui_input(event: InputEvent) -> void:
 		var mouse_event : InputEventMouseButton = event
 		# left click
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			if (focused_control == moused_hovered_control 
+			# is_instance_valid guard: a board rebuild (e.g. submit clearing the board)
+			# can free the control this still points at, and `freed in typed_dict` errors.
+			if (is_instance_valid(focused_control)
+					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				data_selected.emit(ui_data[focused_control])
 	# Controller
 	if event.is_action_pressed("ui_accept"):
-		if focused_control in ui_data:
+		if is_instance_valid(focused_control) and focused_control in ui_data:
 			data_selected.emit(ui_data[focused_control])
 	if event.is_action_pressed("ui_cancel"):
 		ungrab_cards()

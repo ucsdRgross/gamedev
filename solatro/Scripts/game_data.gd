@@ -34,6 +34,30 @@ var revision : int = 0:
 		row_total = value
 		state_changed.emit()
 
+## One act's payout (DESIGN_DOC §2): the act's accumulated row and column totals multiply
+## into mult_score, which is added to total_score; the totals reset for the next act.
+## Note: an act with no scored columns (or rows) pays 0 — both sides must score.
+func apply_act_score() -> void:
+	mult_score = row_total * col_total
+	total_score += mult_score
+	row_total = 0
+	col_total = 0
+
+## Move every lower-zone card to the discard pile — the performed cards of an act. The
+## upper (Entrance) zone is intentionally left intact (DESIGN_DOC §2). Bumps revision so
+## the play area rebuilds.
+func discard_lower_board() -> void:
+	for col in lower_zone:
+		for data in col.datas:
+			data.stage = CardData.Stage.DISCARD
+			discard_deck.append(data)
+		col.datas.clear()
+	revision += 1
+
+## The fame requirement for this show has been reached.
+func has_met_goal() -> bool:
+	return total_score >= goal
+
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
@@ -123,6 +147,37 @@ func validate() -> Array[String]:
 		violations.append("scores_col %d entries < %d paired columns" \
 				% [scores_col.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
+
+## The three BigNumber score arrays flattened to serializable primitives (BigNumber is
+## RefCounted — invisible to ResourceSaver, same reason duplicate_state copies them by
+## hand). Pair with restore_scores() after a load. Format: {ru:[[m,e]...], rl:..., c:...}.
+func scores_to_data() -> Dictionary:
+	return {
+		"ru": _big_numbers_to_pairs(scores_row_upper),
+		"rl": _big_numbers_to_pairs(scores_row_lower),
+		"c": _big_numbers_to_pairs(scores_col),
+	}
+
+## Rebuild the score arrays from scores_to_data() output.
+func restore_scores(data:Dictionary) -> void:
+	scores_row_upper = _pairs_to_big_numbers(data.get("ru", []) as Array)
+	scores_row_lower = _pairs_to_big_numbers(data.get("rl", []) as Array)
+	scores_col = _pairs_to_big_numbers(data.get("c", []) as Array)
+
+func _big_numbers_to_pairs(a:Array[BigNumber]) -> Array[Array]:
+	var out : Array = []
+	for bn in a:
+		out.append([bn.mantissa, bn.exponent])
+	return out
+
+func _pairs_to_big_numbers(pairs:Array) -> Array[BigNumber]:
+	var out : Array[BigNumber] = []
+	for pair:Array in pairs:
+		var bn := BigNumber.new()
+		bn.mantissa = pair[0]
+		bn.exponent = pair[1]
+		out.append(bn)
+	return out
 
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:
 	var new_a : Array[BigNumber] = []

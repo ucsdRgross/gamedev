@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dy0b7aei7mtwe"]
+
+[ext_resource type="Script" uid="uid://j77m7r34b22o" path="res://Tests/Engine/test_scoring.gd" id="1_p6vnm"]
+
+[node name="TestScore" type="Node" unique_id=1772777320]
+script = ExtResource("1_p6vnm")
