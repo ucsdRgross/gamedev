@@ -80,17 +80,16 @@ func _ready() -> void:
 		state.board_changed.connect(_on_board_changed)
 	undo_button.pressed.connect(undo_pressed)
 	play_area.data_selected.connect(on_data_selected)
-	if Main.save_info.game_state != null:
+	if not Main.save_info.game_history.is_empty():
 		_resume_show()
 	else:
 		await _start_fresh_show()
-	save_state()
 	# _on_state_changed early-returns while _ready runs (node not ready yet); refresh the
 	# HUD once we are, so a resumed goal/score shows immediately.
 	_on_state_changed.call_deferred()
 	state.print_board()
 
-# A brand new show: build the deck, run the start hook, seed the disk snapshot.
+# A brand new show: build the deck, run the start hook, seed the undo history + disk save.
 func _start_fresh_show() -> void:
 	# The map node being played sets the fame requirement (RunManager.goal_for).
 	state.goal = maxi(Main.save_info.pending_goal, 1)
@@ -99,20 +98,76 @@ func _start_fresh_show() -> void:
 	add_deck()
 	await run_all_mods(&"on_game_start")
 	skill_active_check()
-	_sync_game_snapshot()
-	RunManager.save_run()
+	save_state()          # seed the history with the opening board
+	RunManager.save_run() # write it once synchronously so a save exists immediately
 
-# Resume the exact board a quit interrupted: adopt the saved state, restore the act count,
-# rebuild the board UI, and re-sync skill active flags WITHOUT re-firing on_active /
-# on_deactive (their effects are already baked into the saved state).
+# Resume the exact board a quit interrupted: restore the saved undo history, rebuild the
+# current runtime state from its top, restore the act count and board UI, and re-sync skill
+# active flags WITHOUT re-firing on_active / on_deactive (effects are baked into the state).
 func _resume_show() -> void:
-	state = Main.save_info.game_state
+	save_history = Main.save_info.game_history
 	submits_used = Main.save_info.game_submits
+	state = _runtime_state(save_history[-1])
 	_update_submit_label()
 	state.revision += 1  # force the play area to rebuild from the restored board
 	for data in CardDataIterator.new(self):
 		if data.skill:
 			data.skill.active = data.skill.is_active()
+	# Lock input immediately: the board is restored but must stay untouchable until its visuals
+	# (cards AND score gutters) are synced and any interrupted action has replayed. The rest is
+	# deferred because the play area hasn't finished its first layout during _ready.
+	processing = true
+	_resume_after_visuals.call_deferred()
+
+## Deferred tail of resume: sync every board visual from the restored state, then either
+## re-show a finished show's outcome, replay an action a quit interrupted, or (plain mid-show
+## resume) hand the board back to the player.
+func _resume_after_visuals() -> void:
+	await _load_board_visuals()
+	if submits_used >= MAX_SUBMITS:
+		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
+	elif Main.save_info.pending_action != &"":
+		await _replay_pending_action(Main.save_info.pending_action)
+	else:
+		processing = false  # nothing pending — the restored board is live again
+
+## Rebuild EVERY board visual from the restored GameData and confirm each pass ran. The board
+## is only "ready" once the cards AND the row/col score gutters reflect the loaded state — the
+## normal rebuild path (revision bump → set_card_zones) does NOT touch the score gutters, so a
+## resumed show would otherwise show empty gutters despite the scores being restored in state.
+func _load_board_visuals() -> void:
+	play_area.flush_rebuild()  # build the card controls + CardVisuals now (they add_child deferred)
+	# CardVisuals enter the tree via call_deferred (the deferral lets the container lay out first,
+	# which is what keeps board rebuilds from flying in from the origin), so they're ready one
+	# frame later. Wait on PlayArea's board_visuals_ready signal instead of polling — check first
+	# in case the build already finished, else the signal fires when the deferred adds land.
+	if not play_area.visuals_ready():
+		await play_area.board_visuals_ready
+	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
+			% [play_area.data_card.size(), play_area.visuals_ready()])
+	play_area.update_score_controls()  # populate the row/col score gutters from state.scores_*
+	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
+			% [state.scores_row_upper.size(), state.scores_row_lower.size(), state.scores_col.size()])
+	print("[resume] board fully loaded: goal=%d total_score=%d submits_used=%d pending_action=%s"
+			% [state.goal, state.total_score, submits_used, Main.save_info.pending_action])
+
+## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
+## board is the exact pre-action board, and these actions are deterministic — scoring has no
+## RNG, draws come from the already-ordered draw_deck — so the replay reproduces the original
+## outcome. Board visuals are already loaded (see _resume_after_visuals); input stays locked
+## throughout (each _perform_* holds processing).
+func _replay_pending_action(action: StringName) -> void:
+	print("[resume] replaying interrupted action: %s" % action)
+	match action:
+		&"on_run_scorer": await _perform_submit()
+		&"on_next": await _perform_next()
+
+# Rebuild a live runtime GameData from a saveable history snapshot (independent copy with
+# modifier backrefs relinked and BigNumber scores rebuilt).
+func _runtime_state(snapshot: GameData) -> GameData:
+	var s : GameData = snapshot.duplicate_state()
+	s.restore_runtime()
+	return s
 
 func on_data_selected(data:CardData) -> void:
 	if processing: return
@@ -174,31 +229,45 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 func _on_next_pressed() -> void:
 	if processing:
 		return
+	await _perform_next()
+
+## Resolve a Next action: input-zone stacks drop + decks refill (on_next mods), then commit.
+## The board is locked (processing) across the async span and the action is persisted as
+## pending first, so a quit mid-resolution replays it verbatim on resume.
+func _perform_next() -> void:
 	processing = true
+	_begin_action(&"on_next")
 	await run_all_mods(&"on_next")
 	save_state()
 	processing = false
 	
+## Commit the current board to the undo history and persist. Every committed action calls
+## this, so closing the game can't rewind a mistake — undo is the only way back. The push
+## is a serialization-ready snapshot; the disk write is queued on a background thread
+## (coalesced) so it never hitches (RunManager.request_save). App-exit flush lives in
+## RunManager._exit_tree.
 func save_state() -> void:
-	var duplicated_state : GameData = state.duplicate_state()
-	save_history.append(duplicated_state)
-	_sync_game_snapshot()
+	save_history.append(state.to_saveable())
+	if RunManager.run != null:
+		RunManager.run.game_history = save_history
+		RunManager.run.game_submits = submits_used
+		# An action fully committed: nothing is mid-resolution anymore, so drop any replay
+		# marker (see _begin_action). Card moves land here too, harmlessly clearing it.
+		RunManager.run.pending_action = &""
+		RunManager.request_save()
 
-## Point the run's live snapshot at the current board (cheap in-memory reference). Disk
-## writes happen at act boundaries and on window close (_notification) so rapid card moves
-## with a large deck don't hitch on serialization.
-func _sync_game_snapshot() -> void:
-	if RunManager.run == null: return
-	RunManager.run.game_state = state
-	RunManager.run.game_submits = submits_used
-
-## Graceful window close mid-show: persist the exact board so Continue resumes it. A hard
-## kill falls back to the last act-boundary write (the show restarts from that act).
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		_sync_game_snapshot()
-		if RunManager.run != null and RunManager.run.game_state != null:
-			RunManager.save_run()
+## Persist, BEFORE any awaits, that a board-mutating button began resolving. The marker rides
+## the (still pre-action) committed board to disk, so a quit mid-resolution replays the action
+## from that board on resume instead of letting the player touch it — closing the app can't
+## undo a Submit/Next. Uses the async queue (no main-thread hitch); if the quit beats the
+## background write the marker is simply lost and resume falls back to the pre-action board,
+## the same accepted tradeoff as any other in-flight action.
+func _begin_action(action: StringName) -> void:
+	if RunManager.run != null:
+		RunManager.run.pending_action = action
+		RunManager.run.game_history = save_history
+		RunManager.run.game_submits = submits_used
+		RunManager.request_save()
 
 func undo_pressed() -> void:
 	if processing: return
@@ -207,8 +276,12 @@ func undo_pressed() -> void:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
-		state = prev_game_data.duplicate_state()
-		_sync_game_snapshot()  # undo reassigns state; keep the resume snapshot current
+		state = _runtime_state(prev_game_data)
+		# History shrank — persist so the reverted state (not the mistake) is what a quit
+		# resumes to. Undo is the sanctioned rewind; closing the game is not.
+		if RunManager.run != null:
+			RunManager.run.game_history = save_history
+			RunManager.request_save()
 		play_area.setup_gui()
 		debug_validate("undo")
 	
@@ -306,19 +379,25 @@ func draw_card() -> CardData:
 func _on_submit_pressed() -> void:
 	if processing:
 		return
+	await _perform_submit()
+
+## Resolve a Submit act: run the scorer, bank the row×col payout, clear the lower board, then
+## continue or resolve the show. Locked (processing) across the async scoring and persisted as
+## pending first, so a quit mid-scoring replays from the pre-submit board on resume (the player
+## can't rewind a Submit by killing the app).
+func _perform_submit() -> void:
 	processing = true
+	_begin_action(&"on_run_scorer")
 	await run_all_mods(&"on_run_scorer")
 	state.apply_act_score()
+	play_area.update_score_controls()  # apply_act_score cleared the gutters — resync the labels
 	state.discard_lower_board()
-	save_state()
-	submits_used += 1
+	submits_used += 1  # bump BEFORE save_state so the persisted act count matches the board
 	_update_submit_label()
+	save_state()
 	if submits_used >= MAX_SUBMITS:
 		_resolve_game()
 		return  # processing stays true: the show is over, no more input
-	# Act boundary: persist the exact board so a quit resumes mid-show.
-	_sync_game_snapshot()
-	RunManager.save_run()
 	processing = false
 
 func _update_submit_label() -> void:
@@ -374,8 +453,9 @@ func return_to_map() -> void:
 		data.stage = CardData.Stage.DRAW
 	state.revision += 1
 	Main.save_info.card_datas = state.draw_deck
-	# The show is over — drop the resume snapshot so Continue won't re-enter this game.
-	Main.save_info.game_state = null
+	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
+	# The show is over — drop the undo history so Continue won't re-enter this game.
+	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_submits = 0
 	game_ended.emit()
 

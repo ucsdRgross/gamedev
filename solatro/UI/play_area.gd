@@ -2,6 +2,12 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
+## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
+## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
+## a deferred emit queued after those adds (FIFO) fires only once they've entered the tree.
+## Lets callers that must animate a freshly built board (e.g. a resumed show) await instead
+## of poll. Pair with visuals_ready() for the already-ready case (check-then-await).
+signal board_visuals_ready
 
 var focused_control : Control = null
 var moused_hovered_control : Control = null
@@ -121,6 +127,16 @@ func _deferred_rebuild() -> void:
 #GUARD RULE: ui_data / data_ui / data_card and the control tree are only valid for
 #the CURRENT revision. Anything that reads them must flush the queued rebuild first,
 #or it operates on a stale layout (out-of-bounds crashes, missing visuals).
+## True once every current card visual is in-tree and _ready — i.e. its @onready nodes
+## exist. CardVisuals add_child via call_deferred, so right after a rebuild they're mapped in
+## data_card but not yet ready; callers that animate visuals immediately (e.g. a resumed
+## show replaying its scoring) wait on this first.
+func visuals_ready() -> bool:
+	for visual: CardVisual in data_card.values():
+		if not is_instance_valid(visual) or not visual.is_node_ready():
+			return false
+	return true
+
 func flush_rebuild() -> void:
 	if _rebuild_queued:
 		set_card_zones()
@@ -142,6 +158,12 @@ func set_card_zones() -> void:
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
+	# The CardVisuals just created queued their add_child via call_deferred; this deferred emit
+	# is queued AFTER them (FIFO), so it fires once they're all in-tree and _ready.
+	_emit_board_visuals_ready.call_deferred()
+
+func _emit_board_visuals_ready() -> void:
+	board_visuals_ready.emit()
 
 func set_card_zones_visuals() -> void:
 	#a queued rebuild means the control tree is STALE vs the state arrays — running

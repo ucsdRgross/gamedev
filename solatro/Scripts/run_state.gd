@@ -28,14 +28,21 @@ extends Resource
 ## Node being resolved when a game starts (quit mid-show resumes the exact board below).
 @export var pending_node_id : int = -1
 
-## Exact snapshot of an in-progress show (null when not in one) so a mid-game quit resumes
-## the precise board, decks, scores and act count. Managed by Game + RunManager.
-@export var game_state : GameData = null
+## The in-progress show's FULL undo stack (empty when not in a show): one serialization-
+## ready GameData snapshot per committed action, oldest first, current = last. Persisting
+## the whole history means the undo system survives a quit AND closing the game can't
+## rewind a mistake (anti-cheat). Snapshots are "saveable" form — modifier self-cycles
+## unlinked, scores packed to primitives — rebuilt to runtime by Game when pulled.
+@export var game_history : Array[GameData] = []
+## Acts (submits) used in the in-progress show.
 @export var game_submits : int = 0
-## The snapshot's BigNumber score arrays flattened to [[mantissa, exponent], ...] lists —
-## RefCounted BigNumber can't be written by ResourceSaver, so RunManager stashes them here
-## around the write and rebuilds the arrays on load.
-@export var game_scores : Dictionary = {}
+## A board-mutating button (Submit/Next) was pressed but its async resolution (scoring /
+## draw animations) had not committed when the run was last saved. Persisted so a quit
+## mid-resolution REPLAYS the action from the committed pre-action board on resume — the
+## player can't dodge a Submit by killing the app (anti-cheat). Empty = no action pending.
+## Values are the mod event name the action runs: &"on_run_scorer" (Submit) / &"on_next"
+## (Next). Cleared the instant an action fully commits (see Game.save_state).
+@export var pending_action : StringName = &""
 
 ## Odd laps traverse the graph backwards (end -> start).
 func is_reversed() -> bool:

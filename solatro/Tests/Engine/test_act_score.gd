@@ -13,6 +13,7 @@ func _ready() -> void:
 	test_basic_multiply()
 	test_zero_side_pays_nothing()
 	test_totals_reset_between_acts()
+	test_scores_cleared_between_acts()
 	test_accumulates_across_acts()
 	test_discard_lower_board()
 	test_has_met_goal()
@@ -63,6 +64,31 @@ func test_accumulates_across_acts() -> void:
 	check(state.total_score == 2 * 3 + 4 * 5, "acts accumulate into total_score",
 			"total=%d" % state.total_score)
 	check(state.mult_score == 20, "mult_score shows the latest act's payout")
+
+func test_scores_cleared_between_acts() -> void:
+	# The per-row/col BigNumber gutters must reset each act, or the next act's plus_equals
+	# stacks onto the previous act's values (the "old scores on top of new" double-count).
+	var state := GameData.new()
+	state.scores_col = _bn_array([12.0, 3.4])
+	state.scores_row_lower = _bn_array([7.0])
+	state.scores_row_upper = _bn_array([1.0, 2.0, 3.0])
+	state.row_total = 5
+	state.col_total = 5
+	state.apply_act_score()
+	check(state.scores_col.is_empty() and state.scores_row_lower.is_empty()
+			and state.scores_row_upper.is_empty(),
+			"apply_act_score clears the row/col score gutters",
+			"col=%d rl=%d ru=%d" % [state.scores_col.size(),
+					state.scores_row_lower.size(), state.scores_row_upper.size()])
+	check(state.total_score == 25, "act still pays row x col before clearing", "total=%d" % state.total_score)
+
+func _bn_array(mantissas: Array) -> Array[BigNumber]:
+	var out: Array[BigNumber] = []
+	for m: float in mantissas:
+		var bn := BigNumber.new()
+		bn.mantissa = m
+		out.append(bn)
+	return out
 
 func _col(cards: Array[CardData]) -> ArrayCardData:
 	var col := ArrayCardData.new()

@@ -4,8 +4,8 @@ extends Control
 ## Modal viewer for pack-opening: shows the generated cards over a dimmed backdrop.
 ## choose == 0 is the wired take-all mode ("Take all" force-adds every card via the
 ## `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers.
-## Cards are populated one frame after entering the tree so the container is laid out
-## before the CardVisuals anchor (otherwise the first card flies in from the origin).
+## Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in
+## CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
 ## Hovering/focusing a card explains its parts in the %CardInfo inspector label.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
@@ -18,6 +18,8 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 @onready var card_info: Label = %CardInfo
 
 var data : Data = null
+## Owns the listed choice cards (the shared listing logic; see CardsViewer).
+var _cards : CardsViewer
 
 class Data:
 	var current_choices : Array[CardData]
@@ -43,14 +45,11 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 func _ready() -> void:
 	# ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.grab_focus()
-	_populate.call_deferred()
+	_populate()
 
 func _populate() -> void:
-	for card in data.current_choices:
-		var control := ControlCard.add_child_control_card(
-			flex_container, card, CardVisual.DisplayContext.DECK_VIEWER)
-		control.mouse_entered.connect(_on_card_inspected.bind(card))
-		control.focus_entered.connect(_on_card_inspected.bind(card))
+	_cards = CardsViewer.new(flex_container)
+	_cards.populate(data.current_choices, _on_card_inspected)
 
 ## Inspector: explain the hovered/focused card's parts using their own descriptions.
 func _on_card_inspected(card: CardData) -> void:

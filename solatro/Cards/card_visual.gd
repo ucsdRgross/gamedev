@@ -71,6 +71,12 @@ var show_front := false :
 	#basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if flip else 1)))
 
 func update_visual() -> void:
+	# @onready polygon nodes only exist once ready — await BEFORE choosing the branch so the
+	# front/placeholder decision reflects the current show_front. Deciding first and awaiting
+	# inside a branch let an early (pre-_ready) call resume into a now-stale branch and clobber
+	# a face already set during _ready (e.g. the instant-face snap for non-drawn cards).
+	if not is_node_ready():
+		await ready
 	if show_front and data:
 		if data.rank:
 			data.rank.set_texture(rank)
@@ -106,13 +112,11 @@ func update_visual() -> void:
 		else: art.hide()  # rankless suit cards have no art (a bare colored polygon otherwise)
 
 	else:
-		if not is_node_ready():
-			await ready
 		rank.hide()
 		stamp.hide()
 		suit.hide()
 		art.hide()
-		
+
 		#placeholder
 		CardModifier.update_polygon_uv_frame(
 			type,CardModifierType.TYPE_TEXTURE, 
@@ -177,6 +181,13 @@ func _ready() -> void:
 		data.Stage.RULES:
 			if CardEnvironment.get_current_game():
 				global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
+	# Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the default
+	# face-down basis3d and the floating anim slerps it to front. Everything else — non-draw
+	# board cards AND every viewer card (deck/pack/preview), even ones whose previous_stage is
+	# DRAW — spawns already showing its resting face (respecting data.flipped). Without this the
+	# slerp would flip every card from back to front on init.
+	if not (current_context == DisplayContext.PLAY_AREA and data.previous_stage == data.Stage.DRAW):
+		basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data.flipped else 1)))
 	on_stage_changed()
 
 func recalculate_size() -> void:
@@ -258,14 +269,22 @@ func delta_self_moving_logic(delta:float) -> void:
 			
 		target.y -= y_delta
 		var move : Vector2 = target - global_position
-		# lerp is bad, frame dependent
-		# should be a tween instead when data is moving slots
-		# still need something to keep card attached to control though
-		# probably some sort of flag to trigger on next move instead of attach
-		# global_position = global_position.lerp(target, .2)
-		global_position = target + (global_position - target) * exp(-10 * delta)
+		# Only PLAY_AREA cards ease toward their slot — that smooths slot-to-slot moves and the
+		# fly-in from the deck/discard/rules pile (initial position seeded in _ready). Every
+		# other context (deck/pack viewers, map, preview) is a static display that tracks its
+		# anchor exactly, so it never eases in from the origin (no first-card fly-in). The
+		# difference is inherent to the context, so it branches on the context, not on a flag.
+		if current_context == DisplayContext.PLAY_AREA:
+			# lerp is bad, frame dependent — should be a tween when data is moving slots, but
+			# something must keep the card attached to its control between moves.
+			global_position = target + (global_position - target) * exp(-10 * delta)
+		else:
+			global_position = target
 		
-		if can_rot_anim and data and data.stage != data.Stage.ZONE:
+		# Tilt/bob juice reacts to `move` — but only PLAY_AREA cards actually travel. Viewer
+		# cards snap straight to their anchor (above), so their one-frame settle would otherwise
+		# read as a big `move.x` and spin them into place. Gate the juice to PLAY_AREA.
+		if current_context == DisplayContext.PLAY_AREA and can_rot_anim and data and data.stage != data.Stage.ZONE:
 			y_delta = lerpf(y_delta, move.y, 15 * delta)
 			y_delta = clampf(y_delta, -4, 4)
 			
@@ -315,6 +334,9 @@ func create_move_tween(target_pos:Vector2) -> Tween:
 	return move_tween
 
 func anim_jump() -> float:
+	# offset (@onready) is null until this visual's _ready runs; a freshly built board adds
+	# visuals deferred, so guard rather than tween a null target (rp_target null error).
+	if not offset: return 0.0
 	reset_tween(move_tween)
 	var delay := CardEnvironment.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -325,6 +347,7 @@ func anim_jump() -> float:
 	return delay * .4
 
 func anim_reset() -> void:
+	if not offset: return
 	reset_tween(move_tween)
 	var delay := CardEnvironment.CURRENT.get_delay()
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)

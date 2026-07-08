@@ -80,6 +80,7 @@ func _open_booster(node: WorldGraphNode) -> void:
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
 		Main.save_info.card_datas.append(card)
+	RunManager.mark_deck_dirty()  # run deck grew
 	RunManager.save_run()
 	_update_hud()
 

@@ -18,6 +18,7 @@ func _ready() -> void:
 	test_goal_scaling()
 	test_overscore_inflation()
 	test_record_win()
+	test_scores_packing()
 	test_disk_round_trip()
 	test_game_state_round_trip()
 	RunManager.run = real_run
@@ -89,6 +90,43 @@ func test_record_win() -> void:
 	check(absf(run.overscore_ratio_sum - 0.5) < 0.001,
 			"overscore ratio tracks overscore/goal", "sum=%f" % run.overscore_ratio_sum)
 
+# GameData score packing: the BigNumber score arrays flatten to PARALLEL typed packed
+# arrays (mantissa float + exponent int), not an Array[Array] of pairs. Pure in-memory —
+# never touches disk, so it always runs. Guards the perf-motivated storage format and the
+# copy-on-write assign-back (packing must actually populate the fields).
+func test_scores_packing() -> void:
+	var gs := GameData.new()
+	gs.scores_col = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
+	gs.scores_row_upper = _big_numbers([[2.5, 1]])
+	gs.scores_row_lower = []
+	gs.pack_scores()
+	check(gs.packed_col_mant is PackedFloat64Array and gs.packed_col_exp is PackedInt64Array,
+			"scores pack into typed packed arrays, not Array[Array]")
+	check(gs.packed_col_mant.size() == 3 and gs.packed_col_exp.size() == 3,
+			"packing populates the fields (copy-on-write assign-back)", "size=%d" % gs.packed_col_mant.size())
+	check(is_equal_approx(gs.packed_col_mant[1], 1.5) and gs.packed_col_exp[1] == 9,
+			"mantissa/exponent columns stay aligned")
+	check(gs.packed_row_upper_mant.size() == 1 and gs.packed_row_lower_mant.is_empty(),
+			"each score array packs independently (incl. empty ones)")
+	# Round-trip back to runtime BigNumbers.
+	gs.scores_col = []
+	gs.scores_row_upper = []
+	gs.unpack_scores()
+	check(gs.scores_col.size() == 3 \
+			and is_equal_approx(gs.scores_col[2].mantissa, 7.0) and gs.scores_col[2].exponent == 0,
+			"unpack rebuilds the BigNumber arrays exactly")
+	check(gs.scores_row_upper.size() == 1 and gs.scores_row_lower.is_empty(),
+			"unpack restores each array independently")
+
+func _big_numbers(pairs: Array) -> Array[BigNumber]:
+	var out: Array[BigNumber] = []
+	for p: Array in pairs:
+		var bn := BigNumber.new()
+		bn.mantissa = p[0]
+		bn.exponent = p[1]
+		out.append(bn)
+	return out
+
 func test_disk_round_trip() -> void:
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		print("  [SKIP] disk round-trip: a real run save exists; not touching it")
@@ -108,7 +146,10 @@ func test_disk_round_trip() -> void:
 	check(run.card_datas.size() == 1 and run.card_datas[0] != cards[0],
 			"new_run deep-copies the picked deck")
 	check(FileAccess.file_exists(RunManagerClass.RUN_PATH), "new_run writes run.tres")
-	check(not RunManager.has_save(), "has_save also requires the map bake")
+	# has_save gates on run.tres ALONE: the map bake is a regenerable cache of world_seed
+	# (WorldMapController.start_run rebakes it when missing), so a run with no bake yet still
+	# resumes.
+	check(RunManager.has_save(), "has_save is true from the run doc alone (map bake is a cache)")
 	check(run.card_datas[0].skill.data == run.card_datas[0],
 			"modifier backrefs are relinked after saving")
 	run.fame = 777
@@ -134,42 +175,57 @@ func test_disk_round_trip() -> void:
 	check(not FileAccess.file_exists(RunManagerClass.RUN_PATH), "clear_save deletes the run doc")
 	check(RunManager.run == null, "clear_save drops the in-memory run")
 
-# An in-progress show (GameData with a played board + BigNumber scores) must survive a
-# quit/resume exactly — the whole point of mid-game persistence.
+# The in-progress show's FULL undo history (played boards + BigNumber scores) must survive
+# a quit/resume exactly — mid-game persistence + anti-cheat (every action saved).
 func test_game_state_round_trip() -> void:
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		print("  [SKIP] game_state round-trip: a real run save exists; not touching it")
 		return
 	var run := RunManager.new_run([] as Array[CardData], [] as Array[CardData])
+	# Build two runtime states (an undo stack of depth 2) and store them saveable.
+	run.game_history = [_show_state(100), _show_state(123)] as Array[GameData]
+	run.game_submits = 2
+	# A Submit was mid-scoring when saved — the marker must survive so resume replays it.
+	run.pending_action = &"on_run_scorer"
+	RunManager.save_run()
+	# Directly guards the temp-file-extension bug: a save that failed to write left no
+	# run.tres on disk (so Continue was disabled). The full state MUST be on disk here.
+	check(FileAccess.file_exists(RunManagerClass.RUN_PATH),
+			"save_run actually writes run.tres to disk (temp file keeps a .tres extension)")
+
+	var loaded := RunManager.load_run()
+	check(loaded.game_history.size() == 2 and loaded.game_submits == 2,
+			"full undo history + act count persist")
+	check(loaded.pending_action == &"on_run_scorer",
+			"pending-action marker persists (quit mid-scoring replays the Submit on resume)")
+	var top : GameData = loaded.game_history[-1]
+	# History snapshots are stored in saveable form — rebuild runtime to verify.
+	top = top.duplicate_state()
+	top.restore_runtime()
+	check(top.goal == 500 and top.total_score == 123, "game state scalars round-trip")
+	var lp: CardData = top.lower_zone[0].datas[0]
+	check(lp.skill is SkillExtraPoint and lp.skill.data == lp,
+			"board cards + relinked modifier backrefs survive")
+	check(top.scores_col.size() == 1 \
+			and is_equal_approx(top.scores_col[0].mantissa, 4.2) \
+			and top.scores_col[0].exponent == 3,
+			"BigNumber scores round-trip via the flattened snapshot")
+	RunManager.clear_save()
+
+# A runtime GameData with a played, modifier-carrying card and a BigNumber score, returned
+# in saveable form (as Game pushes to history).
+func _show_state(total: int) -> GameData:
 	var gs := GameData.new()
 	gs.goal = 500
-	gs.total_score = 123
-	# A card on the board (lower zone) carrying a modifier (cyclic backref path).
+	gs.total_score = total
 	var played := CardData.new().with_rank(PipRankNumeral.new().with_value(7)) \
 			.with_suit(PipSuitStandard.new().with_value(3)).with_skill(SkillExtraPoint.new())
 	played.stage = CardData.Stage.PLAY
 	var col := ArrayCardData.new()
 	col.datas = [played] as Array[CardData]
 	gs.lower_zone = [col] as Array[ArrayCardData]
-	# A BigNumber score (RefCounted — the part ResourceSaver can't write directly).
 	var bn := BigNumber.new()
 	bn.mantissa = 4.2
 	bn.exponent = 3
 	gs.scores_col = [bn] as Array[BigNumber]
-	run.game_state = gs
-	run.game_submits = 2
-	RunManager.save_run()
-
-	var loaded := RunManager.load_run()
-	check(loaded.game_state != null and loaded.game_submits == 2,
-			"in-progress show + act count persist")
-	check(loaded.game_state.goal == 500 and loaded.game_state.total_score == 123,
-			"game state scalars round-trip")
-	var lp: CardData = loaded.game_state.lower_zone[0].datas[0]
-	check(lp.skill is SkillExtraPoint and lp.skill.data == lp,
-			"board cards + relinked modifier backrefs survive")
-	check(loaded.game_state.scores_col.size() == 1 \
-			and is_equal_approx(loaded.game_state.scores_col[0].mantissa, 4.2) \
-			and loaded.game_state.scores_col[0].exponent == 3,
-			"BigNumber scores round-trip via the flattened snapshot")
-	RunManager.clear_save()
+	return gs.to_saveable()

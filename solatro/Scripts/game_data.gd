@@ -42,6 +42,13 @@ func apply_act_score() -> void:
 	total_score += mult_score
 	row_total = 0
 	col_total = 0
+	# Clear the per-row/col score gutters too, so the NEXT act starts from zero. Without this
+	# the BigNumber accumulators (scores_row_*/scores_col) keep growing and the next act's
+	# plus_equals stacks onto the previous act's values. The UI gutters resync from these
+	# empty arrays via PlayArea.update_score_controls (see Game._perform_submit).
+	scores_row_upper.clear()
+	scores_row_lower.clear()
+	scores_col.clear()
 
 ## Move every lower-zone card to the discard pile — the performed cards of an act. The
 ## upper (Entrance) zone is intentionally left intact (DESIGN_DOC §2). Bumps revision so
@@ -65,9 +72,23 @@ func has_met_goal() -> bool:
 @export_storage var upper_zone : Array[ArrayCardData]
 @export_storage var lower_zone_type : Array[CardData]
 @export_storage var lower_zone : Array[ArrayCardData]
-@export_storage var scores_row_upper : Array[BigNumber]
-@export_storage var scores_row_lower : Array[BigNumber]
-@export_storage var scores_col : Array[BigNumber]
+# Runtime score accumulators. NOT serialized (BigNumber is RefCounted, invisible to
+# ResourceSaver) — the disk form lives in the packed_*_mant/exp arrays below, synced by
+# pack_scores()/unpack_scores(). BigNumber only exists at runtime.
+var scores_row_upper : Array[BigNumber]
+var scores_row_lower : Array[BigNumber]
+var scores_col : Array[BigNumber]
+# Serializable score form: each BigNumber array is flattened into two PARALLEL typed arrays
+# (mantissa float + exponent int) instead of an Array[Array] of [m,e] pairs. Typed packed
+# arrays are contiguous and avoid per-pair Variant/Array allocation, so they serialize and
+# reload far cheaper than the old Dictionary-of-pairs. Written to disk; kept in lockstep by
+# pack_scores()/unpack_scores().
+@export_storage var packed_row_upper_mant : PackedFloat64Array
+@export_storage var packed_row_upper_exp : PackedInt64Array
+@export_storage var packed_row_lower_mant : PackedFloat64Array
+@export_storage var packed_row_lower_exp : PackedInt64Array
+@export_storage var packed_col_mant : PackedFloat64Array
+@export_storage var packed_col_exp : PackedInt64Array
 
 func duplicate_state() -> GameData:
 	#duplicate_deep remaps cross-references (modifier .data backrefs, ZoneAdder.card_data,
@@ -148,35 +169,82 @@ func validate() -> Array[String]:
 				% [scores_col.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
 
-## The three BigNumber score arrays flattened to serializable primitives (BigNumber is
-## RefCounted — invisible to ResourceSaver, same reason duplicate_state copies them by
-## hand). Pair with restore_scores() after a load. Format: {ru:[[m,e]...], rl:..., c:...}.
-func scores_to_data() -> Dictionary:
-	return {
-		"ru": _big_numbers_to_pairs(scores_row_upper),
-		"rl": _big_numbers_to_pairs(scores_row_lower),
-		"c": _big_numbers_to_pairs(scores_col),
-	}
+## Capture the runtime BigNumber scores into the serializable packed_* arrays (BigNumber is
+## RefCounted — invisible to ResourceSaver, same reason duplicate_state copies them by hand).
+## Each array becomes two parallel typed arrays (mantissa/exponent). Pair with unpack_scores().
+func pack_scores() -> void:
+	# Packed arrays are value types (copy-on-write) — assign the built arrays back to the
+	# fields rather than mutating them through a parameter, which would only touch a copy.
+	packed_row_upper_mant = _mantissas(scores_row_upper)
+	packed_row_upper_exp = _exponents(scores_row_upper)
+	packed_row_lower_mant = _mantissas(scores_row_lower)
+	packed_row_lower_exp = _exponents(scores_row_lower)
+	packed_col_mant = _mantissas(scores_col)
+	packed_col_exp = _exponents(scores_col)
 
-## Rebuild the score arrays from scores_to_data() output.
-func restore_scores(data:Dictionary) -> void:
-	scores_row_upper = _pairs_to_big_numbers(data.get("ru", []) as Array)
-	scores_row_lower = _pairs_to_big_numbers(data.get("rl", []) as Array)
-	scores_col = _pairs_to_big_numbers(data.get("c", []) as Array)
+## Rebuild the runtime BigNumber scores from the packed_* arrays (after a load).
+func unpack_scores() -> void:
+	scores_row_upper = _unpack(packed_row_upper_mant, packed_row_upper_exp)
+	scores_row_lower = _unpack(packed_row_lower_mant, packed_row_lower_exp)
+	scores_col = _unpack(packed_col_mant, packed_col_exp)
 
-func _big_numbers_to_pairs(a:Array[BigNumber]) -> Array[Array]:
-	var out : Array = []
-	for bn in a:
-		out.append([bn.mantissa, bn.exponent])
+# Cyclic CardModifier.data self-references (card -> its modifier -> back to the card) are
+# the only thing ResourceSaver can't write; unlink for a save, relink after. The backref
+# always equals the owning card, so relinking is lossless. ZoneAdder.card_data is a plain
+# forward ref (no cycle) and is left intact.
+func unlink_modifier_backrefs() -> void:
+	for card in all_card_datas():
+		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+			if mod: mod.data = null
+
+func relink_modifier_backrefs() -> void:
+	for card in all_card_datas():
+		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+			if mod: mod.data = card
+
+## An independent, disk-ready copy: modifier self-cycles unlinked and scores packed to
+## primitives, so ResourceSaver can write it and a background thread can read it safely
+## (the copy is immutable — never mutated again). Rebuild a runtime GameData from it with
+## duplicate_state() + restore_runtime().
+func to_saveable() -> GameData:
+	var copy : GameData = duplicate_state()
+	copy.pack_scores()
+	copy.scores_row_upper.clear()
+	copy.scores_row_lower.clear()
+	copy.scores_col.clear()
+	copy.unlink_modifier_backrefs()
+	return copy
+
+## Turn a to_saveable() copy back into a live runtime state (relink backrefs, rebuild the
+## BigNumber score arrays). Mutates in place.
+func restore_runtime() -> void:
+	relink_modifier_backrefs()
+	unpack_scores()
+
+# The mantissa / exponent columns of a BigNumber array as their own typed packed arrays.
+func _mantissas(src:Array[BigNumber]) -> PackedFloat64Array:
+	var out := PackedFloat64Array()
+	out.resize(src.size())
+	for i in src.size():
+		out[i] = src[i].mantissa
 	return out
 
-func _pairs_to_big_numbers(pairs:Array) -> Array[BigNumber]:
+func _exponents(src:Array[BigNumber]) -> PackedInt64Array:
+	var out := PackedInt64Array()
+	out.resize(src.size())
+	for i in src.size():
+		out[i] = src[i].exponent
+	return out
+
+# Rebuild a BigNumber array from parallel mantissa/exponent packed arrays.
+func _unpack(mant:PackedFloat64Array, exp:PackedInt64Array) -> Array[BigNumber]:
 	var out : Array[BigNumber] = []
-	for pair:Array in pairs:
+	out.resize(mant.size())
+	for i in mant.size():
 		var bn := BigNumber.new()
-		bn.mantissa = pair[0]
-		bn.exponent = pair[1]
-		out.append(bn)
+		bn.mantissa = mant[i]
+		bn.exponent = exp[i]
+		out[i] = bn
 	return out
 
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:

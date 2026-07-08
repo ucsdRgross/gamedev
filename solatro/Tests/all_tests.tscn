@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
+[ext_resource type="PackedScene" path="res://Tests/Map/test_persistence_fuzz.tscn" id="12_pfuzz"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_viewers.tscn" id="11_uivw"]
@@ -29,6 +30,8 @@
 [node name="TestActScore" parent="." unique_id=742109780 instance=ExtResource("7_actsc")]
 
 [node name="TestRunManager" parent="." unique_id=567230125 instance=ExtResource("8_runmg")]
+
+[node name="TestPersistenceFuzz" parent="." instance=ExtResource("12_pfuzz")]
 
 [node name="TestMapRoles" parent="." unique_id=1737734247 instance=ExtResource("9_maprl")]
 

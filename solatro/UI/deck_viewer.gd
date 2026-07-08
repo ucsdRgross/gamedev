@@ -9,6 +9,8 @@ enum SORTING_TYPE {RANK,SUIT,EFFECT}
 enum SORTING_ORDER {ASCENDING,DESCENDING}
 
 var deck : Array[CardData]
+## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
+var _cards : CardsViewer
 var randomized : bool = false
 var sorting_type : SORTING_TYPE = SORTING_TYPE.RANK
 var sorting_order : SORTING_ORDER = SORTING_ORDER.ASCENDING
@@ -37,11 +39,9 @@ func _close() -> void:
 	queue_free()
 
 func update_viewer() -> void:
-	var first : ControlCard = null
-	for data in deck:
-		var control_card := ControlCard.add_child_control_card(
-			flow_container, data, CardVisual.DisplayContext.DECK_VIEWER)
-		if not first: first = control_card
+	# Read-only browse: no inspector callback.
+	_cards = CardsViewer.new(flow_container)
+	var first := _cards.populate(deck)
 	# Steal focus from whatever button opened the viewer, so ui_accept can't re-open it
 	# and arrow keys walk the cards (ControlCards are focusable).
 	if first: first.grab_focus()
@@ -54,10 +54,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_close()
 
 func _on_flow_container_hidden() -> void:
-	if flow_container:
-		for child in flow_container.get_children():
-			flow_container.remove_child(child)
-			child.queue_free()
+	if _cards: _cards.clear()
 
 func _on_margin_container_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:

@@ -22,6 +22,8 @@ const HIDE_GRACE_MS := 350.0
 @onready var cards_flow: FlowContainer = %Cards
 @onready var card_info: Label = %CardInfo
 
+# Owns the listed booster-preview cards (the shared listing logic; see CardsViewer).
+var _cards : CardsViewer
 # A node is currently hovered (keeps the panel open regardless of cursor position).
 var _engaged : bool = false
 # msec timestamp to hide at; < 0 = not scheduled.
@@ -55,24 +57,22 @@ func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNo
 	info_label.text = "\n".join(lines)
 	cards_scroll.visible = booster != null
 	visible = true
-	# Clamp inside the screen margin (never touches an edge); position BEFORE the preview
-	# cards spawn so their visuals anchor to the final layout (no fly-in).
+	# Clamp inside the screen margin (never touches an edge).
 	reset_size()
 	var vp := get_viewport_rect().size
 	position = (anchor_screen_pos + MOUSE_OFFSET).clamp(SCREEN_MARGIN, vp - size - SCREEN_MARGIN)
 	if booster:
-		_populate_cards.call_deferred(booster)
+		_populate_cards(booster)
 
-# One frame later than show_for_node (call_deferred) so the containers are laid out
-# before the CardVisuals pick their anchor positions.
+# Populate synchronously (like DeckViewer). The no-fly-in guarantee is CardVisual's own:
+# non-PLAY_AREA cards track their anchor exactly, so no per-viewer deferral is needed.
 func _populate_cards(booster: BoosterTemplate) -> void:
 	if not visible or not cards_scroll.visible:
 		return
-	for data in booster.get_possible_preview_cards():
-		var card := ControlCard.add_child_control_card(
-			cards_flow, data, CardVisual.DisplayContext.DECK_VIEWER)
-		card.mouse_entered.connect(_on_card_inspected.bind(data))
-		card.focus_entered.connect(_on_card_inspected.bind(data))
+	if not _cards:
+		_cards = CardsViewer.new(cards_flow)
+	_cards.clear()  # a previous hover may have listed different cards
+	_cards.populate(booster.get_possible_preview_cards(), _on_card_inspected)
 
 ## Inspector: hovering/focusing a preview card explains its parts via their own
 ## get_str/get_description.
@@ -109,6 +109,4 @@ func hide_panel() -> void:
 func _clear_cards() -> void:
 	card_info.text = ""
 	card_info.visible = false
-	for child in cards_flow.get_children():
-		cards_flow.remove_child(child)
-		child.queue_free()
+	if _cards: _cards.clear()
