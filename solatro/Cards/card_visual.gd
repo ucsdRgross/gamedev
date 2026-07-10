@@ -173,14 +173,14 @@ func _ready() -> void:
 			if CardEnvironment.CURRENT:
 				global_position = get_card_control_center(control_anchor)
 		data.Stage.DRAW:
-			if CardEnvironment.get_current_game():
-				global_position = get_control_center(CardEnvironment.get_current_game().deck_ui)
+			if _game_view():
+				global_position = get_control_center(_game_view().deck_ui)
 		data.Stage.DISCARD:
-			if CardEnvironment.get_current_game():
-				global_position = get_control_center(CardEnvironment.get_current_game().discard_ui)
+			if _game_view():
+				global_position = get_control_center(_game_view().discard_ui)
 		data.Stage.RULES:
-			if CardEnvironment.get_current_game():
-				global_position = get_control_center(CardEnvironment.get_current_game().rules_ui)
+			if _game_view():
+				global_position = get_control_center(_game_view().rules_ui)
 	# Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the default
 	# face-down basis3d and the floating anim slerps it to front. Everything else — non-draw
 	# board cards AND every viewer card (deck/pack/preview), even ones whose previous_stage is
@@ -220,17 +220,23 @@ func on_stage_changed() -> void:
 			create_move_tween(target_pos)
 			await move_tween.finished
 		data.Stage.DRAW:
-			if CardEnvironment.get_current_game():
-				var target_pos := get_control_center(CardEnvironment.get_current_game().deck_ui)
+			if _game_view():
+				var target_pos := get_control_center(_game_view().deck_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.DISCARD:
-			if CardEnvironment.get_current_game():
-				var target_pos := get_control_center(CardEnvironment.get_current_game().discard_ui)
+			if _game_view():
+				var target_pos := get_control_center(_game_view().discard_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.RULES:
-			if CardEnvironment.get_current_game():
-				var target_pos := get_control_center(CardEnvironment.get_current_game().rules_ui)
+			if _game_view():
+				var target_pos := get_control_center(_game_view().rules_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
+
+## The active game's view (the UI layer that owns the deck/discard/rules anchors + PlayArea).
+## Null when headless (no view) — every caller null-checks, so those visual moves simply skip.
+func _game_view() -> GameView:
+	var game := CardEnvironment.get_current_game()
+	return game.view if game else null
 
 func get_card_control_center(control:Control) -> Vector2:
 	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
@@ -248,7 +254,7 @@ func delta_self_moving_logic(delta:float) -> void:
 	# Needs state check, if discard then discard animation first before free
 	match current_context:
 		DisplayContext.PLAY_AREA:
-			if CardEnvironment.get_current_game() and data not in CardEnvironment.get_current_game().play_area.data_ui: queue_free()
+			if _game_view() and data not in _game_view().play_area.data_ui: queue_free()
 		_:
 			if not Engine.is_editor_hint() and (not control_anchor or not is_instance_valid(control_anchor)): queue_free()
 	if (not (move_tween and move_tween.is_running())) and control_anchor:

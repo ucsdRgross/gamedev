@@ -7,7 +7,7 @@ extends Node
 
 const MENU = preload("res://Levels/menu.tscn")
 const MAP = preload("res://Levels/map.tscn")
-const GAME = preload("res://Levels/game.tscn")
+const GAME_VIEW = preload("res://Levels/game_view.tscn")
 
 var menu_scene : Menu = MENU.instantiate()
 var map_scene : Map = MAP.instantiate()
@@ -42,18 +42,18 @@ func enter_map() -> void:
 	switch_scene(map_scene)
 
 func enter_game() -> void:
-	var new_game : Game = GAME.instantiate()
-	switch_scene(new_game)
-	new_game.game_ended.connect(game_ended)
-	new_game.run_lost.connect(_on_run_lost)
+	var new_view : GameView = GAME_VIEW.instantiate()
+	switch_scene(new_view)  # add_child runs GameView._ready synchronously (creates its Game child)
+	new_view.game_ended.connect(game_ended)
+	new_view.run_lost.connect(_on_run_lost)
 
 ## Won game handing back: return to the map and let it resolve the node (fame HUD, lap
 ## completion, save).
 func game_ended() -> void:
 	var old_game : Node = current_scene
 	switch_scene(map_scene)
-	if old_game is Game:
-		old_game.queue_free()
+	if old_game is GameView:
+		old_game.queue_free()  # frees the view and its Game child together
 	map_scene.returned_from_game()
 
 ## Lost game = run over: discard the save, rebuild the map scene so the next run starts
@@ -66,8 +66,8 @@ func _on_run_lost() -> void:
 	map_scene = MAP.instantiate()
 	map_scene.enter_game.connect(enter_game)
 	switch_scene(menu_scene)
-	if old_game is Game:
-		old_game.queue_free()
+	if old_game is GameView:
+		old_game.queue_free()  # frees the view and its Game child together
 	menu_scene.refresh_continue()
 
 func switch_scene(new_scene : Node) -> void:

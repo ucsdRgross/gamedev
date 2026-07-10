@@ -1,0 +1,359 @@
+[gd_scene format=3 uid="uid://c8gv1ew0game0"]
+
+[ext_resource type="Script" path="res://Levels/game_view.gd" id="1_gview"]
+[ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
+[ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
+font_size = 41
+
+[sub_resource type="LabelSettings" id="LabelSettings_voryx"]
+line_spacing = -3.0
+font_size = 12
+shadow_color = Color(0, 0, 0, 1)
+
+[node name="GameView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gview")
+
+[node name="SceneRoot" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayContainer" type="Control" parent="SceneRoot"]
+anchors_preset = 0
+offset_left = 423.0
+offset_top = 3.0
+offset_right = 1142.0
+offset_bottom = 639.0
+
+[node name="PlayArea" parent="SceneRoot/PlayContainer" instance=ExtResource("4_fiyor")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="Submit" type="Button" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 221.0
+offset_top = 393.0
+offset_right = 335.0
+offset_bottom = 424.0
+text = "Submit
+"
+
+[node name="Undo" type="Button" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 388.0
+offset_bottom = 78.0
+text = "Undo
+"
+
+[node name="Next" type="Button" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 45.0
+offset_top = 164.0
+offset_right = 145.0
+offset_bottom = 226.0
+text = "Next Round
+"
+
+[node name="Reroll" type="Button" parent="SceneRoot"]
+visible = false
+layout_mode = 0
+offset_left = 882.0
+offset_top = 265.0
+offset_right = 979.0
+offset_bottom = 321.0
+text = "Reroll"
+
+[node name="ScoreName" type="Label" parent="SceneRoot"]
+visible = false
+layout_mode = 0
+offset_left = 886.0
+offset_top = 341.0
+offset_right = 1135.0
+offset_bottom = 398.0
+text = "ScoreNames
+"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Label" type="Label" parent="SceneRoot/ScoreName"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 57.0
+offset_right = 249.0
+offset_bottom = 114.0
+text = "123456789
+"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Score" type="Label" parent="SceneRoot"]
+visible = false
+layout_mode = 0
+offset_left = 899.0
+offset_top = 200.0
+offset_right = 1020.0
+offset_bottom = 261.0
+text = "Score:"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="SceneRoot/Score"]
+layout_mode = 0
+offset_left = 149.0
+offset_top = -1.0
+offset_right = 270.0
+offset_bottom = 60.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="MultScore" type="Label" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 202.0
+offset_top = 231.0
+offset_right = 334.0
+offset_bottom = 288.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Col" type="Label" parent="SceneRoot/MultScore"]
+layout_mode = 0
+offset_left = -77.0
+offset_top = 64.0
+offset_right = 44.0
+offset_bottom = 125.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 2
+
+[node name="x" type="Label" parent="SceneRoot/MultScore"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 62.0
+offset_right = 124.0
+offset_bottom = 123.0
+text = "x"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
+[node name="Row" type="Label" parent="SceneRoot/MultScore"]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 64.0
+offset_right = 204.0
+offset_bottom = 125.0
+text = "0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Total" type="Label" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 167.0
+offset_top = 144.0
+offset_right = 289.0
+offset_bottom = 205.0
+text = "Total: "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="SceneRoot/Total"]
+layout_mode = 0
+offset_left = 131.0
+offset_top = 2.0
+offset_right = 243.0
+offset_bottom = 63.0
+text = " 0"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Goal" type="Label" parent="SceneRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 164.0
+offset_top = 80.0
+offset_right = 276.0
+offset_bottom = 141.0
+text = "Goal: "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="SceneRoot/Goal"]
+layout_mode = 0
+offset_left = 140.0
+offset_top = 2.0
+offset_right = 258.0
+offset_bottom = 63.0
+text = "100"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Turns" type="Label" parent="SceneRoot"]
+visible = false
+layout_mode = 0
+offset_left = 882.0
+offset_top = 5.0
+offset_right = 1028.0
+offset_bottom = 66.0
+text = "Turns:  "
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="SceneRoot/Turns"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 1.0
+offset_right = 281.0
+offset_bottom = 62.0
+text = "5"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Rerolls" type="Label" parent="SceneRoot"]
+visible = false
+layout_mode = 0
+offset_left = 975.0
+offset_top = 271.0
+offset_right = 1121.0
+offset_bottom = 328.0
+text = "Rerolls:"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Label" type="Label" parent="SceneRoot/Rerolls"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 1.0
+offset_right = 208.0
+offset_bottom = 62.0
+text = "5
+"
+label_settings = SubResource("LabelSettings_xc73h")
+
+[node name="Preview" type="Control" parent="SceneRoot"]
+anchors_preset = 0
+offset_left = 65.0
+offset_top = 391.0
+offset_right = 65.0
+offset_bottom = 391.0
+scale = Vector2(1.25, 1.25)
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="SceneRoot/Preview"]
+layout_mode = 0
+offset_left = -43.0
+offset_top = 22.0
+offset_right = 82.0
+offset_bottom = 227.0
+text = "Skill Text
+Skill Text"
+label_settings = SubResource("LabelSettings_voryx")
+autowrap_mode = 3
+
+[node name="Deck" type="Control" parent="SceneRoot"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+anchors_preset = 0
+offset_left = 34.0
+offset_top = 28.0
+offset_right = 134.0
+offset_bottom = 128.0
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="SceneRoot/Deck"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Deck"
+
+[node name="Discard" type="Control" parent="SceneRoot"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+anchors_preset = 0
+offset_left = 191.0
+offset_top = 486.0
+offset_right = 291.0
+offset_bottom = 586.0
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="SceneRoot/Discard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Discard
+"
+
+[node name="Rules" type="Control" parent="SceneRoot"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+anchors_preset = 0
+offset_left = 302.0
+offset_top = 485.0
+offset_right = 402.0
+offset_bottom = 585.0
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="SceneRoot/Rules"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Rules
+"
+
+[node name="WinScreen" type="Label" parent="SceneRoot"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 226
+text = "You win!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LoseScreen" type="Label" parent="SceneRoot"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 226
+text = "You lose!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Background" type="TextureRect" parent="SceneRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_78hkv")
+expand_mode = 5
+stretch_mode = 6

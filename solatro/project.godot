@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Solatro"
-run/main_scene="uid://bjgp86y4k3875"
+run/main_scene="uid://drlnkxh17heyl"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 

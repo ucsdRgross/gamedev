@@ -1,57 +1,55 @@
 extends CardEnvironment
 class_name Game
+## Headless match-logic layer: the single source of truth that mutates only `state`. Owns NO
+## UI — every visual/input/HUD concern lives in the injected [GameView] (see the `view` field).
+## Runs a full show with `view == null` (unit-testable with no scene); the view only paces
+## animations and mirrors state. Communication: reactive signals (Game -> view, fire-and-forget)
+## + dependency injection (view injected into Game; Game awaits the view only for pacing).
 
 signal game_ended
 ## Emitted when the show fails (goal not met after the final act): the whole run is over.
 signal run_lost
 
-const TEXT_POPUP = preload("res://UI/text_popup.tscn")
+## Game -> view reactive signals (fire-and-forget; the view binds these). See GameView.
+## Fired whenever `state` is (re)assigned so the view can rebind an old state's signals (N9).
+signal state_bound(new_state: GameData)
+## processing flipped: the view enables/disables input controls.
+signal processing_changed(busy: bool)
+## The submit button's label text changed (acts remaining).
+signal submit_label_changed(text: String)
+## The show finished: the view shows the win/lose screen + a Continue button.
+signal show_resolved(won: bool, score: int, goal: int)
 
 #placeholder
 @export var deck : Deck = Deck.new()
 
+## The paced/visual view. Optional: every touch is guarded `if view:`, and a null view is the
+## entire headless story (data already applied, the visual step is simply skipped). Injected by
+## GameView (`game.view = self`); left null in unit tests.
+var view : GameView = null
+
 var state : GameData = GameData.new():
 	set(value):
-		if state:
-			if state.state_changed.is_connected(_on_state_changed):
-				state.state_changed.disconnect(_on_state_changed)
-			if state.board_changed.is_connected(_on_board_changed):
-				state.board_changed.disconnect(_on_board_changed)
 		state = value
-		state.state_changed.connect(_on_state_changed)
-		state.board_changed.connect(_on_board_changed)
-		_on_state_changed()
-
-#board mutated (revision bump) -> rebuild the play area; bumps happen only after the
-#state is consistent, so a synchronous rebuild always sees a valid board.
-#Guard on play_area (assigned via @onready BEFORE _ready runs), NOT is_node_ready():
-#_ready is a coroutine, so is_node_ready() stays false through the whole initial
-#deal — which would swallow every startup bump and leave the board blank.
-func _on_board_changed() -> void:
-	if not play_area: return
-	#coalesced: any number of bumps this frame -> one rebuild at end of frame
-	play_area.queue_rebuild()
+		#UI/HUD no longer lives here (S1 gone): just announce the swap so the view rebinds
+		#the new state's signals and drops the old one's (N9 handled in GameView._bind_state).
+		state_bound.emit(value)
 
 var save_history : Array[GameData] = []
 
-var processing : bool = false
+## Input lock across an async action. The setter announces flips so the view can disable
+## controls; no view polling needed. Guarded so a redundant assignment doesn't re-emit.
+var processing : bool = false:
+	set(value):
+		if processing == value: return
+		processing = value
+		processing_changed.emit(value)
 
 ## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
 ## after the last one.
 const MAX_SUBMITS := 3
 var submits_used : int = 0
 var _won : bool = false
-
-@onready var play_area: PlayArea = %PlayArea
-@onready var deck_ui: Control = %Deck
-@onready var discard_ui: Control = %Discard
-@onready var rules_ui: Control = %Rules
-@onready var audio_card_placing: AudioStreamPlayer = %AudioCardPlacing
-@onready var audio_card_shake: AudioStreamPlayer = %AudioCardShake
-@onready var win_screen: Label = %WinScreen
-@onready var lose_screen: Label = %LoseScreen
-@onready var undo_button: Button = %Undo
-@onready var submit_button: Button = %Submit
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
@@ -72,21 +70,10 @@ func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck
 
 func _ready() -> void:
-	#the declaration default bypasses the state setter (setters only run on later
-	#assignments), so the INITIAL state's signals must be wired here by hand
-	if not state.state_changed.is_connected(_on_state_changed):
-		state.state_changed.connect(_on_state_changed)
-	if not state.board_changed.is_connected(_on_board_changed):
-		state.board_changed.connect(_on_board_changed)
-	undo_button.pressed.connect(undo_pressed)
-	play_area.data_selected.connect(on_data_selected)
 	if not Main.save_info.game_history.is_empty():
 		_resume_show()
 	else:
 		await _start_fresh_show()
-	# _on_state_changed early-returns while _ready runs (node not ready yet); refresh the
-	# HUD once we are, so a resumed goal/score shows immediately.
-	_on_state_changed.call_deferred()
 	state.print_board()
 
 # A brand new show: build the deck, run the start hook, seed the undo history + disk save.
@@ -98,6 +85,11 @@ func _start_fresh_show() -> void:
 	add_deck()
 	await run_all_mods(&"on_game_start")
 	skill_active_check()
+	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
+	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
+	# setup_gui found no game and skipped the score gutters — including the row buffer control
+	# that keeps the play area from shifting when scores first appear. Headless: no-op.
+	if view: view.rebuild()
 	save_state()          # seed the history with the opening board
 	RunManager.save_run() # write it once synchronously so a save exists immediately
 
@@ -123,33 +115,17 @@ func _resume_show() -> void:
 ## re-show a finished show's outcome, replay an action a quit interrupted, or (plain mid-show
 ## resume) hand the board back to the player.
 func _resume_after_visuals() -> void:
-	await _load_board_visuals()
+	# headless: no view means no visuals to sync — the state is already restored, so skip
+	# straight to the outcome/replay/handoff decision below.
+	if view: await view.load_board_visuals()
+	print("[resume] board fully loaded: goal=%d total_score=%d submits_used=%d pending_action=%s"
+			% [state.goal, state.total_score, submits_used, Main.save_info.pending_action])
 	if submits_used >= MAX_SUBMITS:
 		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
 	elif Main.save_info.pending_action != &"":
 		await _replay_pending_action(Main.save_info.pending_action)
 	else:
 		processing = false  # nothing pending — the restored board is live again
-
-## Rebuild EVERY board visual from the restored GameData and confirm each pass ran. The board
-## is only "ready" once the cards AND the row/col score gutters reflect the loaded state — the
-## normal rebuild path (revision bump → set_card_zones) does NOT touch the score gutters, so a
-## resumed show would otherwise show empty gutters despite the scores being restored in state.
-func _load_board_visuals() -> void:
-	play_area.flush_rebuild()  # build the card controls + CardVisuals now (they add_child deferred)
-	# CardVisuals enter the tree via call_deferred (the deferral lets the container lay out first,
-	# which is what keeps board rebuilds from flying in from the origin), so they're ready one
-	# frame later. Wait on PlayArea's board_visuals_ready signal instead of polling — check first
-	# in case the build already finished, else the signal fires when the deferred adds land.
-	if not play_area.visuals_ready():
-		await play_area.board_visuals_ready
-	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
-			% [play_area.data_card.size(), play_area.visuals_ready()])
-	play_area.update_score_controls()  # populate the row/col score gutters from state.scores_*
-	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
-			% [state.scores_row_upper.size(), state.scores_row_lower.size(), state.scores_col.size()])
-	print("[resume] board fully loaded: goal=%d total_score=%d submits_used=%d pending_action=%s"
-			% [state.goal, state.total_score, submits_used, Main.save_info.pending_action])
 
 ## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
 ## board is the exact pre-action board, and these actions are deterministic — scoring has no
@@ -169,36 +145,25 @@ func _runtime_state(snapshot: GameData) -> GameData:
 	s.restore_runtime()
 	return s
 
-func on_data_selected(data:CardData) -> void:
-	if processing: return
-	#if already holding cards
-	if play_area.selected_cards:
-		#do nothing if position unchanged
-		if (data == play_area.selected_cards[0]
-				or find_data_vec3(data) == find_data_vec3(play_area.selected_cards[0]) - Vector3i(0,0,1)):
-			play_area.ungrab_cards()
-		#dont place within own stack
-		elif data not in play_area.selected_cards:
-			#attempt placing cards, do nothing if no result
-			var stacked := await return_first_data_array_result(&"on_can_place_stack", play_area.selected_cards, data)
-			if stacked:
-				var onto_data := data
-				for moving_data in stacked:
-					move_data_ontop_data(moving_data, onto_data, 1, false)
-					onto_data = moving_data
-				play_area.ungrab_cards()
-				save_state()
-	else:
-		var grabbed := await return_first_data_array_result(&"on_can_grab_stack", data)
-		play_area.grab_cards(grabbed)
+## Command (view-called): the grabbable stack starting at `data`, or [] if nothing grabs (or
+## the board is locked). The view shows the grab; the data query + guard live here so no caller
+## can start a grab mid-resolution (review N3).
+func try_grab(data: CardData) -> Array[CardData]:
+	if processing: return []
+	return await return_first_data_array_result(&"on_can_grab_stack", data)
 
-func _on_state_changed() -> void:
-	if not is_node_ready(): return
-	(%Goal/Label as Label).text = str(state.goal)
-	(%Total/Label as Label).text = str(state.total_score)
-	(%MultScore as Label).text = str(state.mult_score)
-	(%MultScore/Col as Label).text = str(state.col_total)
-	(%MultScore/Row as Label).text = str(state.row_total)
+## Command (view-called): try to place `stack` onto `target`. Performs the moves + save_state()
+## on success and returns whether anything was placed. Guarded so a locked board rejects.
+func try_place(stack: Array[CardData], target: CardData) -> bool:
+	if processing: return false
+	var stacked := await return_first_data_array_result(&"on_can_place_stack", stack, target)
+	if stacked:
+		var onto_data := target
+		for moving_data in stacked:
+			move_data_ontop_data(moving_data, onto_data, 1, false)
+			onto_data = moving_data
+		save_state()
+	return not stacked.is_empty()
 
 func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
@@ -226,7 +191,8 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 		await run_all_mods(&"on_append", new_deck, data)
 	datas.assign(new_deck)
 		
-func _on_next_pressed() -> void:
+## Command (view-called): advance to the next round.
+func next() -> void:
 	if processing:
 		return
 	await _perform_next()
@@ -269,9 +235,10 @@ func _begin_action(action: StringName) -> void:
 		RunManager.run.game_submits = submits_used
 		RunManager.request_save()
 
-func undo_pressed() -> void:
+## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
+## (selection state lives there); Game only guards `processing` and owns the history rewind.
+func undo() -> void:
 	if processing: return
-	if play_area.selected_cards: return
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
@@ -282,7 +249,7 @@ func undo_pressed() -> void:
 		if RunManager.run != null:
 			RunManager.run.game_history = save_history
 			RunManager.request_save()
-		play_area.setup_gui()
+		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
 	
 # destination Vector3( 0:1 for upper:lower, row, col)
@@ -376,7 +343,8 @@ func draw_card() -> CardData:
 		return data
 	return null
 
-func _on_submit_pressed() -> void:
+## Command (view-called): perform a Submit act.
+func submit() -> void:
 	if processing:
 		return
 	await _perform_submit()
@@ -390,7 +358,8 @@ func _perform_submit() -> void:
 	_begin_action(&"on_run_scorer")
 	await run_all_mods(&"on_run_scorer")
 	state.apply_act_score()
-	play_area.update_score_controls()  # apply_act_score cleared the gutters — resync the labels
+	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
+	if view: view.sync_scores()
 	state.discard_lower_board()
 	submits_used += 1  # bump BEFORE save_state so the persisted act count matches the board
 	_update_submit_label()
@@ -401,30 +370,20 @@ func _perform_submit() -> void:
 	processing = false
 
 func _update_submit_label() -> void:
-	submit_button.text = "Submit (%d act%s left)" \
-			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"]
+	submit_label_changed.emit("Submit (%d act%s left)" \
+			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"])
 
-## All acts performed: win if the fame requirement was reached. Win feeds fame (FULL
-## score incl. overscore) and returns to the map; loss ends the whole run. An explicit
-## Continue button (mouse + keyboard/controller) drives the exit.
+## All acts performed: win if the fame requirement was reached. Win feeds fame (FULL score
+## incl. overscore); the view shows the win/lose screen + Continue button and calls exit_show().
 func _resolve_game() -> void:
 	_won = state.has_met_goal()
-	var screen : Label = win_screen if _won else lose_screen
 	if _won:
 		RunManager.record_win(state.total_score, state.goal)
-		screen.text = "Fame +%d" % state.total_score
-	screen.show()
-	var cont := Button.new()
-	cont.text = "Continue"
-	cont.add_theme_font_size_override(&"font_size", 40)
-	screen.add_child(cont)
-	cont.set_anchors_preset(Control.PRESET_CENTER)
-	cont.position.y += 220  # sit below the big win/lose text
-	cont.pressed.connect(_exit_show)
-	cont.grab_focus()
+	show_resolved.emit(_won, state.total_score, state.goal)
 
-# Leave the show: won games hand back to the map, lost games end the run.
-func _exit_show() -> void:
+# Leave the show (view-called from Continue): won games hand back to the map, lost games end
+# the run.
+func exit_show() -> void:
 	if _won:
 		return_to_map()
 	else:
@@ -466,33 +425,23 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 			score_zone[i] = BigNumber.new()
 			score_zone[i].mantissa = 0
 
-func score_row(result : Scoring.Result, zone:Array, row : int) -> void:
-	var score_zone : Array[BigNumber] = state.scores_row_lower
-	if zone == state.upper_zone:
-		score_zone = state.scores_row_upper
-	resize_score_zone(score_zone, row + 1)
-	state.row_total += result.score  # feeds this act's row x col payout (apply_act_score)
-	await play_area.popup_meld(result)
-	play_area.update_score(score_zone, row, score_zone[row].plus_equals(result.score))
-	await play_area.popup_score(result)
+## Score one row or column (E7: unifies the old score_row/score_col). Data mutation (row/col
+## total, BigNumber gutter accumulation) always runs; the visuals are paced through the view and
+## simply skipped when headless. `zone` is only read for rows (upper vs lower gutter) — pass the
+## upper/lower zone array; it is ignored for columns.
+func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : int) -> void:
+	var score_zone : Array[BigNumber]
+	if is_row:
+		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
+		state.row_total += result.score  # feeds this act's row x col payout (apply_act_score)
+	else:
+		score_zone = state.scores_col
+		state.col_total += result.score
+	resize_score_zone(score_zone, index + 1)
+	if view: await view.animate_meld(result)
+	# plus_equals mutates the gutter accumulator — must run headless too (feeds the packed save)
+	var new_score := score_zone[index].plus_equals(result.score)
+	if view: view.update_line_score(score_zone, index, new_score)
+	if view: await view.show_meld_score(result)
 	#await play trigger score effects
-	play_area.reset_meld(result)
-
-func score_col(result : Scoring.Result, col : int) -> void:
-	var score_zone : Array[BigNumber] = state.scores_col
-	resize_score_zone(score_zone, col + 1)
-	state.col_total += result.score  # feeds this act's row x col payout (apply_act_score)
-	await play_area.popup_meld(result)
-	play_area.update_score(score_zone, col, score_zone[col].plus_equals(result.score))
-	await play_area.popup_score(result)
-	#await play trigger score effects
-	play_area.reset_meld(result)
-
-func _on_deck_clicked() -> void:
-	DeckViewer.show_deck(self, state.draw_deck)
-
-func _on_discard_clicked() -> void:
-	DeckViewer.show_deck(self, state.discard_deck)
-
-func _on_rules_clicked() -> void:
-	DeckViewer.show_deck(self, state.rules_deck)
+	if view: view.reset_meld(result)
