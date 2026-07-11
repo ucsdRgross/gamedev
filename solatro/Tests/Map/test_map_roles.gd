@@ -1,31 +1,27 @@
-extends Node
+extends SolatroTest
 # res://Tests/Map/test_map_roles.gd
 # ==============================================================================
 # MAP NODE ROLES — deterministic seed-derived assignment over a synthetic graph.
 # Builds WorldGraphOverlay.populate() input by hand (no world generation needed),
 # so roles/goals are testable without the GPU pipeline.
+#
+# CATEGORY MAP: all BEHAVIOR — where bosses/rest stops/boosters land, the booster
+# pacing guarantee, per-lap scaling, and same-seed determinism are map design rules.
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "MAP ROLES"
 
 func _ready() -> void:
 	print("============ MAP NODE ROLES TEST PASS ============")
+	behavior_section("SEED-DERIVED NODE ROLES & GOALS")
 	var real_run: RunState = RunManager.run
 	test_anchor_roles_and_goals()
 	test_booster_window_guarantee()
 	test_determinism()
 	test_lap_reversal_and_scaling()
 	RunManager.run = real_run
-	print("map_roles: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 ## A straight-line graph: one node per depth 0..max_depth, edge i -> i+1.
 func _line_export(max_depth: int) -> Dictionary:

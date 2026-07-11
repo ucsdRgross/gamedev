@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Map/test_persistence_fuzz.gd
 # ==============================================================================
 # PERSISTENCE FUZZ — chaos round-trip of the WHOLE save document through real disk
@@ -12,21 +12,25 @@ extends Node
 # destroy an actual run (same guard as test_run_manager's disk tests).
 # ==============================================================================
 
-const ITERATIONS := 25
+# CATEGORY MAP: all BEHAVIOR — "whatever the run contains, saving and loading loses
+# nothing" is the player-facing persistence guarantee (the deep-diff is just the probe).
 
-var _pass := 0
-var _fail := 0
+const ITERATIONS := 25
 
 # Concrete modifier classes safe to instantiate with .new(); randomly attached to cards.
 var _skills: Array[Callable] = [SkillExtraPoint.new, SkillHungryHippo.new, SkillEchoingTrigger.new]
 var _types: Array[Callable] = [TypePaper.new, TypeHeavy.new, TypeStone.new]
 var _stamps: Array[Callable] = [StampGlobal.new, StampDoubleTrigger.new, StampRevealing.new]
 
+func suite_name() -> String:
+	return "PERSISTENCE FUZZ"
+
 func _ready() -> void:
 	print("============ PERSISTENCE FUZZ TEST PASS ============")
+	behavior_section("SAVE DOCUMENT ROUND-TRIP FUZZ")
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		print("  [SKIP] persistence fuzz: a real run save exists; not touching it")
-		print("persistence_fuzz: %d passed, %d failed" % [_pass, _fail])
+		finish()
 		return
 	var real_run: RunState = RunManager.run
 	var rng := RandomNumberGenerator.new()
@@ -40,15 +44,7 @@ func _ready() -> void:
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(RunManagerClass.RUN_PATH))
 	RunManager.run = real_run
-	print("persistence_fuzz: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func _run_iteration(iter: int, rng: RandomNumberGenerator) -> void:
 	var original := _rand_run_state(rng)

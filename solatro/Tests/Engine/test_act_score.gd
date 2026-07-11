@@ -1,15 +1,19 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_act_score.gd
 # ==============================================================================
 # ACT SCORE (row_total x col_total per submit) — GameData.apply_act_score
 # Non-freezing checks (prints [FAIL] and continues), same pattern as test_scoring.gd.
+#
+# CATEGORY MAP: all BEHAVIOR — how an act pays out, what resets between acts, what
+# a submit discards, and what counts as winning are the core scoring rules.
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "ACT SCORE"
 
 func _ready() -> void:
 	print("============ ACT SCORE TEST PASS ============")
+	behavior_section("ACT PAYOUT & GOAL RULES")
 	test_basic_multiply()
 	test_zero_side_pays_nothing()
 	test_totals_reset_between_acts()
@@ -17,15 +21,7 @@ func _ready() -> void:
 	test_accumulates_across_acts()
 	test_discard_lower_board()
 	test_has_met_goal()
-	print("act_score: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func test_basic_multiply() -> void:
 	var state := GameData.new()

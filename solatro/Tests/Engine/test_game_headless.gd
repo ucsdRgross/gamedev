@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_game_headless.gd
 # ==============================================================================
 # Game LOGIC with view == null (Plan 2 §6.2): proves the data layer runs a full
@@ -10,26 +10,23 @@ extends Node
 # skills resolve `game`. The view field is left null throughout.
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+# CATEGORY MAP: all BEHAVIOR — these drive the player-facing commands (grab, place,
+# undo, submit) through the real Game API and assert the outcomes a player sees.
+# The single representation-level check (gutter BigNumber accumulation) is check_impl.
+
+func suite_name() -> String:
+	return "GAME HEADLESS"
 
 func _ready() -> void:
 	print("============ GAME HEADLESS TEST PASS ============")
+	behavior_section("PLAYER COMMANDS, HEADLESS")
 	await test_command_guard_blocks_input()
 	await test_try_grab_returns_stack()
 	await test_try_place_moves_and_commits()
 	await test_undo_reverts_state_and_history()
 	await test_score_line_headless_mutates_data()
 	await test_submit_headless_full_act()
-	print("game_headless: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)
@@ -158,7 +155,7 @@ func test_score_line_headless_mutates_data() -> void:
 	check(g.state.row_total == 0, "precondition: row_total starts at 0")
 	await g.score_line(r, true, g.state.lower_zone, 0)  # row, lower gutter, index 0
 	check(g.state.row_total == 7, "score_line adds to row_total headless", str(g.state.row_total))
-	check(g.state.scores_row_lower.size() >= 1 and g.state.scores_row_lower[0] != null,
+	check_impl(g.state.scores_row_lower.size() >= 1 and g.state.scores_row_lower[0] != null,
 			"score_line accumulates a gutter BigNumber headless (view skipped, no crash)")
 	await g.score_line(r, false, [] as Array, 0)  # col path
 	check(g.state.col_total == 7, "score_line adds to col_total headless")

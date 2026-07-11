@@ -1,36 +1,37 @@
-extends Node
+extends SolatroTest
 # res://Tests/Map/test_run_manager.gd
 # ==============================================================================
 # RUN MANAGER — fame/luck/goal formulas + RunState + (guarded) disk round-trip.
 # Formula tests run against a scratch RunState swapped into the RunManager autoload
 # (the real run is restored afterwards). Disk tests are SKIPPED whenever a real save
 # exists at user://run_save/ so running tests can never destroy an actual run.
+#
+# CATEGORY MAP:
+#   BEHAVIOR — progression rules (lap direction, luck curve, goal scaling, overscore
+#     inflation, fame from wins) and the save/resume guarantees.
+#   IMPLEMENTATION — the packed-array score storage format; deep-copy/backref pins
+#     inside the disk tests (check_impl inline).
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "RUN MANAGER"
 
 func _ready() -> void:
 	print("============ RUN MANAGER TEST PASS ============")
 	var real_run: RunState = RunManager.run
+	behavior_section("PROGRESSION FORMULAS")
 	test_is_reversed()
 	test_luck_curve()
 	test_goal_scaling()
 	test_overscore_inflation()
 	test_record_win()
+	implementation_section("SCORE PACKING FORMAT")
 	test_scores_packing()
+	behavior_section("SAVE / RESUME ON DISK")
 	test_disk_round_trip()
 	test_game_state_round_trip()
 	RunManager.run = real_run
-	print("run_manager: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func _fresh_run() -> RunState:
 	var run := RunState.new()
@@ -143,14 +144,14 @@ func test_disk_round_trip() -> void:
 	var rules: Array[CardData] = Deck.new().get_rules()
 	var run := RunManager.new_run(cards, rules)
 	check(run.world_seed != 0, "new_run pins a non-zero world seed")
-	check(run.card_datas.size() == 1 and run.card_datas[0] != cards[0],
+	check_impl(run.card_datas.size() == 1 and run.card_datas[0] != cards[0],
 			"new_run deep-copies the picked deck")
 	check(FileAccess.file_exists(RunManagerClass.RUN_PATH), "new_run writes run.tres")
 	# has_save gates on run.tres ALONE: the map bake is a regenerable cache of world_seed
 	# (WorldMapController.start_run rebakes it when missing), so a run with no bake yet still
 	# resumes.
 	check(RunManager.has_save(), "has_save is true from the run doc alone (map bake is a cache)")
-	check(run.card_datas[0].skill.data == run.card_datas[0],
+	check_impl(run.card_datas[0].skill.data == run.card_datas[0],
 			"modifier backrefs are relinked after saving")
 	run.fame = 777
 	run.traveled.append(Vector3i(1, 2, 0))
@@ -168,7 +169,7 @@ func test_disk_round_trip() -> void:
 			and loaded.card_datas[0].stamp is StampGlobal \
 			and loaded.card_datas[0].type is TypePaper,
 			"modifiers survive the round trip")
-	check(loaded.card_datas[0].skill.data == loaded.card_datas[0],
+	check_impl(loaded.card_datas[0].skill.data == loaded.card_datas[0],
 			"modifier backrefs are relinked after loading")
 	check(loaded.rule_datas.size() == rules.size(), "rules deck survives the round trip")
 	RunManager.clear_save()

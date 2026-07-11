@@ -1,11 +1,17 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_comparator.gd
 # PipComparator suite (UNIT_TESTS_PLAN.md §4): default comparisons without an
 # environment, then mod overrides through a FakeEnvironment.
 # Non-freezing checks, every coroutine awaited (SC1 convention).
+#
+# CATEGORY MAP (see SolatroTest):
+#   BEHAVIOR — what counts as adjacent/same/ace for real cards (card-game semantics,
+#     incl. the ace-high scorable rule) and that a rules-card mod can override compares.
+#   IMPLEMENTATION — null/NAN edge handling, non-standard pip classes, dispatch
+#     pins (fall-through, precedence, vararg regression, CURRENT lifecycle).
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "COMPARATOR"
 
 func _ready() -> void:
 	print("============ PIP COMPARATOR TEST PASS ============")
@@ -13,22 +19,7 @@ func _ready() -> void:
 	await run_predicate_tests()
 	await run_scorable_tests()
 	await run_mod_override_tests()
-	_print_summary()
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
-
-func _print_summary() -> void:
-	var total := _pass + _fail
-	if _fail == 0:
-		print("============ COMPARATOR: ALL %d CHECKS PASSED ============" % total)
-	else:
-		printerr("============ COMPARATOR: %d passed, %d FAILED (of %d) ============" % [_pass, _fail, total])
+	finish()
 
 
 # ==============================================================================
@@ -72,8 +63,8 @@ class SpyCompare extends CardModifierType:
 # SECTION 1: DEFAULTS, NO ENVIRONMENT (CURRENT == null -> mods skipped)
 # ==============================================================================
 func run_no_environment_tests() -> void:
-	print("\n--- SECTION 1: DEFAULT COMPARISONS (NO ENV) ---")
-	check(CardEnvironment.CURRENT == null, "precondition: no CardEnvironment.CURRENT",
+	behavior_section("SECTION 1: DEFAULT COMPARISONS (NO ENV)")
+	check_impl(CardEnvironment.CURRENT == null, "precondition: no CardEnvironment.CURRENT",
 			str(CardEnvironment.CURRENT))
 
 	var r7 := PipRankNumeral.new().with_value(7)
@@ -83,19 +74,19 @@ func run_no_environment_tests() -> void:
 
 	check(await PipComparator.compare_ranks(r7, r5) == 2.0, "compare_ranks 7 vs 5 == 2")
 	check(await PipComparator.compare_ranks(r5, r7) == -2.0, "compare_ranks antisymmetric")
-	check(is_nan(await PipComparator.compare_ranks(null, r5)), "compare_ranks null r1 -> NAN")
-	check(is_nan(await PipComparator.compare_ranks(r5, null)), "compare_ranks null r2 -> NAN")
+	check_impl(is_nan(await PipComparator.compare_ranks(null, r5)), "compare_ranks null r1 -> NAN")
+	check_impl(is_nan(await PipComparator.compare_ranks(r5, null)), "compare_ranks null r2 -> NAN")
 
 	check(await PipComparator.compare_suits(s3, s1) == 2.0, "compare_suits 3 vs 1 == 2")
-	check(is_nan(await PipComparator.compare_suits(null, s1)), "compare_suits null -> NAN")
-	check(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), s1)),
+	check_impl(is_nan(await PipComparator.compare_suits(null, s1)), "compare_suits null -> NAN")
+	check_impl(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), s1)),
 			"compare_suits non-standard suit -> NAN")
-	check(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), WeirdSuit.new())),
+	check_impl(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), WeirdSuit.new())),
 			"compare_suits two non-standard suits -> NAN")
 
 	#pin: non-numeral ranks still compare via the generic `value` arm
 	var w4 : PipRank = WeirdRank.new().with_value(4)
-	check(await PipComparator.compare_ranks(w4, r5) == -1.0,
+	check_impl(await PipComparator.compare_ranks(w4, r5) == -1.0,
 			"compare_ranks non-numeral rank with value compares numerically (pinned)")
 
 
@@ -103,7 +94,7 @@ func run_no_environment_tests() -> void:
 # SECTION 2: PREDICATES (is_rank_same / next_to / suit_same / is_ace)
 # ==============================================================================
 func run_predicate_tests() -> void:
-	print("\n--- SECTION 2: PREDICATES ---")
+	behavior_section("SECTION 2: PREDICATES")
 	var a := PipRankNumeral.new().with_value(9)
 	var b := PipRankNumeral.new().with_value(9)
 	var c := PipRankNumeral.new().with_value(8)
@@ -111,13 +102,13 @@ func run_predicate_tests() -> void:
 	check(await PipComparator.is_rank_same(a, a), "is_rank_same identity")
 	check(await PipComparator.is_rank_same(a, b), "is_rank_same equal values, distinct objects")
 	check(not await PipComparator.is_rank_same(a, c), "is_rank_same 9 vs 8 false")
-	check(not await PipComparator.is_rank_same(null, a), "is_rank_same null false")
+	check_impl(not await PipComparator.is_rank_same(null, a), "is_rank_same null false")
 
 	check(await PipComparator.is_rank_next_to(a, c), "is_rank_next_to 9,8 (diff +1) true")
 	check(not await PipComparator.is_rank_next_to(c, a), "is_rank_next_to 8,9 (diff -1) false")
 	check(not await PipComparator.is_rank_next_to(a,
 			PipRankNumeral.new().with_value(7)), "is_rank_next_to diff 2 false")
-	check(not await PipComparator.is_rank_next_to(a, null), "is_rank_next_to null false")
+	check_impl(not await PipComparator.is_rank_next_to(a, null), "is_rank_next_to null false")
 
 	var h1 := PipSuitStandard.new().with_value(2)
 	var h2 := PipSuitStandard.new().with_value(2)
@@ -125,10 +116,10 @@ func run_predicate_tests() -> void:
 	check(PipComparator.is_suit_same(h1, h2), "is_suit_same equal values")
 	check(not PipComparator.is_suit_same(h1, PipSuitStandard.new().with_value(3)),
 			"is_suit_same 2 vs 3 false")
-	check(not PipComparator.is_suit_same(null, h1), "is_suit_same null false")
+	check_impl(not PipComparator.is_suit_same(null, h1), "is_suit_same null false")
 	var wa := WeirdSuit.new()
-	check(PipComparator.is_suit_same(wa, wa), "is_suit_same non-standard identity true")
-	check(not PipComparator.is_suit_same(WeirdSuit.new(), WeirdSuit.new()),
+	check_impl(PipComparator.is_suit_same(wa, wa), "is_suit_same non-standard identity true")
+	check_impl(not PipComparator.is_suit_same(WeirdSuit.new(), WeirdSuit.new()),
 			"is_suit_same distinct non-standard false")
 
 	check(PipComparator.is_ace(PipRankNumeral.new().with_value(1)), "is_ace value 1 true")
@@ -142,7 +133,7 @@ func run_predicate_tests() -> void:
 # SECTION 3: SCORABLE VALUES (SCORING_AUDIT G2 — ace-high coverage)
 # ==============================================================================
 func run_scorable_tests() -> void:
-	print("\n--- SECTION 3: SCORABLE VALUES ---")
+	behavior_section("SECTION 3: SCORABLE VALUES")
 	var ace := PipRankNumeral.new().with_value(1)
 	var ten := PipRankNumeral.new().with_value(10)
 
@@ -152,11 +143,11 @@ func run_scorable_tests() -> void:
 			"ace without wrap_ace_high -> 1")
 	check(PipComparator.get_scorable_value(ten, true) == 10.0,
 			"non-ace unaffected by wrap_ace_high")
-	check(PipComparator.get_scorable_value(null) == -INF, "null rank -> -INF")
+	check_impl(PipComparator.get_scorable_value(null) == -INF, "null rank -> -INF")
 
 	check(PipComparator.is_scorable(TestFactories.m_card(5, 2)), "full card scorable")
 	check(not PipComparator.is_scorable(TestFactories.m_stone()), "stone (no pips) not scorable")
-	check(not PipComparator.is_scorable(null), "null card not scorable")
+	check_impl(not PipComparator.is_scorable(null), "null card not scorable")
 	var rankless := CardData.new()
 	rankless.suit = PipSuitStandard.new().with_value(1)
 	check(not PipComparator.is_scorable(rankless), "null rank not scorable")
@@ -166,7 +157,7 @@ func run_scorable_tests() -> void:
 # SECTION 4: MOD OVERRIDES VIA FakeEnvironment
 # ==============================================================================
 func run_mod_override_tests() -> void:
-	print("\n--- SECTION 4: MOD OVERRIDES (FakeEnvironment) ---")
+	implementation_section("SECTION 4: MOD OVERRIDES (FakeEnvironment)")
 	var env := FakeEnvironment.new()
 	add_child(env)
 	check(CardEnvironment.CURRENT == env, "FakeEnvironment installs as CURRENT")
@@ -179,10 +170,10 @@ func run_mod_override_tests() -> void:
 	var r9 := PipRankNumeral.new().with_value(9)
 	var r2 := PipRankNumeral.new().with_value(2)
 
-	#override wins over default math
+	#override wins over default math (BEHAVIOR: rules cards CAN rewrite comparisons)
 	spy.rank_result = 0.0
-	check(await PipComparator.compare_ranks(r9, r2) == 0.0, "mod override: ranks 9,2 -> 0")
-	check(await PipComparator.is_rank_same(r9, r2), "is_rank_same true under 'all same' mod")
+	check_behavior(await PipComparator.compare_ranks(r9, r2) == 0.0, "mod override: ranks 9,2 -> 0")
+	check_behavior(await PipComparator.is_rank_same(r9, r2), "is_rank_same true under 'all same' mod")
 	check((spy.last_rank_args.size() == 2 and spy.last_rank_args[0] == r9 and spy.last_rank_args[1] == r2) as bool,
 			"hook receives TWO pip args, not one array (vararg regression)",
 			str(spy.last_rank_args))
@@ -194,7 +185,7 @@ func run_mod_override_tests() -> void:
 
 	#suits too
 	spy.suit_result = 5.0
-	check(await PipComparator.compare_suits(PipSuitStandard.new().with_value(1),
+	check_behavior(await PipComparator.compare_suits(PipSuitStandard.new().with_value(1),
 			PipSuitStandard.new().with_value(1)) == 5.0, "mod override: suits -> 5")
 
 	#nulls short-circuit BEFORE mods run (pinned: mods never see null pips)
@@ -220,11 +211,11 @@ func run_mod_override_tests() -> void:
 	var arr2 : Array[CardData] = [skill_carrier]
 	env.card_collections.append(arr2)
 	skill_spy.active = false
-	check(await PipComparator.compare_ranks(r9, r2) == 7.0 \
+	check_behavior(await PipComparator.compare_ranks(r9, r2) == 7.0 \
 			and skill_spy.rank_calls == 0, "inactive skill mod not dispatched")
 	skill_spy.active = true
 	skill_spy.rank_result = -1.0
-	check(await PipComparator.compare_ranks(r9, r2) == -1.0 and skill_spy.rank_calls == 1,
+	check_behavior(await PipComparator.compare_ranks(r9, r2) == -1.0 and skill_spy.rank_calls == 1,
 			"active skill mod dispatched")
 
 	remove_child(env)

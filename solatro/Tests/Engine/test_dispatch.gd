@@ -1,16 +1,22 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_dispatch.gd
 # Dispatch / CardEnvironment suite (UNIT_TESTS_PLAN.md §3): run_all_mods ordering,
 # skill_active_check activation edges, on_anything non-recursion, first-result
 # semantics, CURRENT lifecycle. Uses FakeEnvironment + spy modifiers.
 #
+# CATEGORY MAP: this whole suite is IMPLEMENTATION — it pins the internal mod
+# dispatch machinery (call order, hook gating, first-result semantics, CURRENT
+# policy). Nothing here is a rule a player sees; failures after a dispatcher
+# refactor may just mean the pinned policy legitimately changed.
+#
 # NOTE on skills under FakeEnvironment: CardModifier.is_active() only returns true
 # outside a Game for rules cards / StampGlobal — so skill carriers here are
 # registered in env.rules as well, exactly like rules_deck cards in-game.
 
-var _pass := 0
-var _fail := 0
 var env : FakeEnvironment
+
+func suite_name() -> String:
+	return "DISPATCH"
 
 func _ready() -> void:
 	print("============ DISPATCH TEST PASS ============")
@@ -22,22 +28,7 @@ func _ready() -> void:
 	await run_first_result_tests()
 	env.queue_free()
 	await run_current_lifecycle_tests()
-	_print_summary()
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
-
-func _print_summary() -> void:
-	var total := _pass + _fail
-	if _fail == 0:
-		print("============ DISPATCH: ALL %d CHECKS PASSED ============" % total)
-	else:
-		printerr("============ DISPATCH: %d passed, %d FAILED (of %d) ============" % [_pass, _fail, total])
+	finish()
 
 func reset_env() -> void:
 	env.card_collections.clear()
@@ -115,7 +106,7 @@ func spy_skill(log: Array, tag: String) -> SpySkill:
 # SECTION 1: DISPATCH ORDER (type, stamp, skill per card, iterator order)
 # ==============================================================================
 func run_order_tests() -> void:
-	print("\n--- SECTION 1: ORDER ---")
+	implementation_section("SECTION 1: ORDER")
 	reset_env()
 	var log := []
 	var c1 := CardData.new() \
@@ -151,7 +142,7 @@ func run_order_tests() -> void:
 # SECTION 2: on_anything passive pass
 # ==============================================================================
 func run_on_anything_tests() -> void:
-	print("\n--- SECTION 2: ON_ANYTHING ---")
+	implementation_section("SECTION 2: ON_ANYTHING")
 	reset_env()
 	var log := []
 	var c := CardData.new().with_type(spy_type(log, "c"))
@@ -171,7 +162,7 @@ func run_on_anything_tests() -> void:
 # SECTION 3: skill_active_check edges
 # ==============================================================================
 func run_active_check_tests() -> void:
-	print("\n--- SECTION 3: ACTIVE CHECK ---")
+	implementation_section("SECTION 3: ACTIVE CHECK")
 	reset_env()
 	var log := []
 	var skill := spy_skill(log, "k")
@@ -201,7 +192,7 @@ func run_active_check_tests() -> void:
 # SECTION 4: return_first_* semantics
 # ==============================================================================
 func run_first_result_tests() -> void:
-	print("\n--- SECTION 4: FIRST-RESULT ---")
+	implementation_section("SECTION 4: FIRST-RESULT")
 	reset_env()
 	var first := SpyFirst.new()
 	var second := SpyFirst.new()
@@ -240,7 +231,7 @@ func run_first_result_tests() -> void:
 # SECTION 5: CURRENT lifecycle (review D4 — pin current policy)
 # ==============================================================================
 func run_current_lifecycle_tests() -> void:
-	print("\n--- SECTION 5: CURRENT LIFECYCLE ---")
+	implementation_section("SECTION 5: CURRENT LIFECYCLE")
 	var a := FakeEnvironment.new()
 	var b := FakeEnvironment.new()
 	add_child(a)

@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/UI/test_ui_viewers.gd
 # ==============================================================================
 # UI VIEWERS — regression tests for the playtest bugs of 2026-07:
@@ -7,27 +7,23 @@ extends Node
 #   * ChoiceViewer take-all wiring + deferred population
 #   * CardVisual partial-card rendering (rank-only colored / suit-only art square)
 #   * describe_card inspector text
+#
+# CATEGORY MAP: all BEHAVIOR — every check here is something the player saw go
+# wrong in a playtest (stacked viewers, dead keyboard, broken card art/text).
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "UI VIEWERS"
 
 func _ready() -> void:
 	print("============ UI VIEWERS TEST PASS ============")
+	behavior_section("VIEWER & CARD RENDERING REGRESSIONS")
 	await test_deck_viewer_singleton()
 	await test_control_card_focus()
 	test_describe_card()
 	await test_choice_viewer_take_all()
 	await test_partial_card_rendering()
-	print("ui_viewers: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func _card() -> CardData:
 	return CardData.new().with_rank(PipRankNumeral.new().with_value(5)) \

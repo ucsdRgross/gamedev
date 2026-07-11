@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_game_data.gd
 # ==============================================================================
 # GameData as the source of truth (Plan 2 §6.1). Non-freezing checks (print
@@ -6,28 +6,26 @@ extends Node
 # Deliberately exercises EDGE cases layered on top of defaults (packed round-trip
 # with non-trivial exponents, injected invariant violations, deep-copy aliasing)
 # so a future regression in the data layer trips a specific check.
+#
+# CATEGORY MAP: all IMPLEMENTATION — saveable-form internals (backref unlinking,
+# packed score arrays, deep-copy aliasing, validate() plumbing). The player-facing
+# guarantee these support ("a save restores the run exactly") is covered as
+# BEHAVIOR in test_run_manager / test_persistence_fuzz / the E2E suite.
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "GAME DATA"
 
 func _ready() -> void:
 	print("============ GAME DATA TEST PASS ============")
+	implementation_section("SAVEABLE FORM / COPY / VALIDATE INTERNALS")
 	test_saveable_roundtrip_preserves_gutters()
 	test_saveable_unlinks_backrefs_restore_relinks()
 	test_duplicate_state_aliasing()
 	test_validate_clean_board()
 	test_validate_reports_injected_violations()
 	test_pack_unpack_edge_values()
-	print("game_data: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func _bn(m: float, e: int) -> BigNumber:
 	var bn := BigNumber.new()

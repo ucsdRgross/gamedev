@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://dvl2ono4m4a8a"]
 
+[ext_resource type="Script" path="res://Tests/all_tests.gd" id="0_root"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_board.tscn" id="1_lva42"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_comparator.tscn" id="2_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_dispatch.tscn" id="3_conaq"]
@@ -14,8 +15,11 @@
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_viewers.tscn" id="11_uivw"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_mods.tscn" id="15_mods"]
+[ext_resource type="PackedScene" path="res://Tests/E2E/test_e2e_run.tscn" id="16_e2e"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
+script = ExtResource("0_root")
 
 [node name="TestBoard" parent="." unique_id=525863356 instance=ExtResource("1_lva42")]
 
@@ -35,6 +39,8 @@
 
 [node name="TestGameHeadless" parent="." instance=ExtResource("14_ghead")]
 
+[node name="TestMods" parent="." instance=ExtResource("15_mods")]
+
 [node name="TestRunManager" parent="." unique_id=567230125 instance=ExtResource("8_runmg")]
 
 [node name="TestPersistenceFuzz" parent="." instance=ExtResource("12_pfuzz")]
@@ -44,3 +50,5 @@
 [node name="TestMapTraversal" parent="." unique_id=118778426 instance=ExtResource("10_maptr")]
 
 [node name="TestUiViewers" parent="." instance=ExtResource("11_uivw")]
+
+[node name="TestE2ERun" parent="." instance=ExtResource("16_e2e")]

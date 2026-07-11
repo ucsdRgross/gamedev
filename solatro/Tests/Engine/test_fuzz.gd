@@ -1,22 +1,28 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_fuzz.gd
 # F1 random-walk board fuzz (UNIT_TESTS_PLAN.md §8) against Board.move_stack +
 # GameData.validate(). Seeded and deterministic: on failure it prints the seed and
 # the last actions — rerun with that seed in `fuzz_seed` to reproduce.
 # Pure GameData/Board layer (no Game node, no mods) so every state is fully checked.
+#
+# CATEGORY MAP: BEHAVIOR — the properties asserted (board always validates, cards are
+# never created/destroyed by moves, rejected moves change nothing) are game-level
+# invariants, whatever the internals look like.
 
 @export var fuzz_seed : int = 0        #0 = randomize (seed is printed either way)
 @export var iterations : int = 500
 
 const LOG_TAIL := 50
 
-var _pass := 0
-var _fail := 0
 var _rng := RandomNumberGenerator.new()
 var _log : Array[String] = []
 
+func suite_name() -> String:
+	return "BOARD FUZZ"
+
 func _ready() -> void:
 	print("============ BOARD FUZZ (F1) ============")
+	behavior_section("RANDOM WALK INVARIANTS")
 	if fuzz_seed == 0:
 		_rng.randomize()
 		fuzz_seed = int(_rng.seed)
@@ -24,13 +30,11 @@ func _ready() -> void:
 	print("seed: %d, iterations: %d" % [fuzz_seed, iterations])
 	run_random_walk()
 	if _fail == 0:
-		print("============ FUZZ: ALL %d CHECKS PASSED (seed %d) ============" % [_pass, fuzz_seed])
-	else:
-		printerr("============ FUZZ: %d FAILED of %d (SEED %d) ============" % [_fail, _pass + _fail, fuzz_seed])
+		print("(fuzz seed %d)" % fuzz_seed)
+	finish()
 
 func fail(ctx: String, detail: String) -> void:
-	_fail += 1
-	printerr("[FAIL] ", ctx, " -- ", detail)
+	check(false, ctx, detail)
 	printerr("  seed: %d — last %d actions:" % [fuzz_seed, mini(_log.size(), LOG_TAIL)])
 	for line : String in _log.slice(maxi(0, _log.size() - LOG_TAIL)):
 		printerr("    ", line)

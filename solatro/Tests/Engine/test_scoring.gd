@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_scoring.gd
 # ==============================================================================
 # DATA-ORIENTED POKER SCORING ENGINE TESTER
@@ -18,10 +18,16 @@ extends Node
 #  10. Meld integrity (wraps, stones, instance re-use)
 #  11. Combined self-checking leaderboard (prints the final summary)
 # ==============================================================================
+# CATEGORY MAP: virtually everything here is BEHAVIOR — which hand a set of cards
+# forms and what it pays IS the game. The only IMPLEMENTATION checks are the
+# object-identity/representation pins in section 10 (sub-meld reference linkage,
+# atomic results carrying no sub_melds) — marked check_impl inline.
+# ==============================================================================
 
-var _pass := 0
-var _fail := 0
 var _next_suit := 700  # hands out unique suit ids so filler never forms accidental flushes
+
+func suite_name() -> String:
+	return "SCORING"
 
 func _ready() -> void:
 	print("============ POKER SCORING ENGINE TEST PASS ============")
@@ -35,21 +41,13 @@ func _ready() -> void:
 	await run_chaos_tests()
 	await run_subhand_structure_tests()
 	await run_meld_integrity_tests()
-	await run_leaderboard() # prints the final combined summary
+	await run_leaderboard()
+	finish()
 
 
 # ==============================================================================
-# NON-FREEZING ASSERT HELPERS
+# ASSERT HELPERS
 # ==============================================================================
-
-## Generic boolean check. Prints PASS/FAIL, never halts. Tracks counters.
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
 
 ## Result check: gates on score AND name AND that the result carries EVERY expected
 ## MELD_TYPE (name is a hard gate). Pass all structural types a hand should have,
@@ -70,13 +68,6 @@ func assert_result(results: Array[Scoring.Result], expected_score: int, label: S
 	else:
 		check(false, ctx, "score got %d/exp %d | name '%s' wants '%s' | types %s missing %s" \
 				% [r.score, expected_score, r.name, label, str(r.types), str(missing)])
-
-func _print_summary() -> void:
-	var total := _pass + _fail
-	if _fail == 0:
-		print("============ RESULTS: ALL %d CHECKS PASSED ============" % total)
-	else:
-		printerr("============ RESULTS: %d passed, %d FAILED (of %d) ============" % [_pass, _fail, total])
 
 
 # ==============================================================================
@@ -117,7 +108,7 @@ func meld_all_suit(r: Scoring.Result, suit_val: float) -> bool:
 # SECTION 1: STANDARD 5-CARD POKER PARITY
 # ==============================================================================
 func run_standard_5_card_poker_tests() -> void:
-	print("\n--- SECTION 1: STANDARD 5-CARD POKER (ACE=1) ---")
+	behavior_section("SECTION 1: STANDARD 5-CARD POKER (ACE=1)")
 
 	# 1. Royal Flush (1 wraps to 14)
 	var res_sf := await Scoring.PokerHands.score(make_hand([1, 13, 12, 11, 10], [1, 1, 1, 1, 1]))
@@ -162,7 +153,7 @@ func run_standard_5_card_poker_tests() -> void:
 # SECTION 2: BALATRO SPECIAL HANDS
 # ==============================================================================
 func run_balatro_special_hand_tests() -> void:
-	print("\n--- SECTION 2: SPECIAL HANDS ---")
+	behavior_section("SECTION 2: SPECIAL HANDS")
 
 	# 10. Five of a Kind
 	var res_five := await Scoring.PokerHands.score(make_hand([1, 1, 1, 1, 1], [1, 2, 3, 4, 1]))
@@ -184,7 +175,7 @@ func run_balatro_special_hand_tests() -> void:
 # SECTION 3: ARCHITECTURE EDGE CASES
 # ==============================================================================
 func run_architecture_edge_cases() -> void:
-	print("\n--- SECTION 3: ARCHITECTURE EDGE CASES ---")
+	behavior_section("SECTION 3: ARCHITECTURE EDGE CASES")
 
 	# 13. Flush pairs (3 pairs, all hearts) -> suited multi-set
 	var res_fp := await Scoring.PokerHands.score(make_hand([2,2, 3,3, 4,4], [1,1, 1,1, 1,1]))
@@ -245,7 +236,7 @@ func run_architecture_edge_cases() -> void:
 # SECTION 4: MICRO SCALING (<10 CARDS)
 # ==============================================================================
 func run_micro_card_environment_tests() -> void:
-	print("\n--- SECTION 4: MICRO SCALING (<10 CARDS) ---")
+	behavior_section("SECTION 4: MICRO SCALING (<10 CARDS)")
 
 	var r13 := await Scoring.PokerHands.score(make_hand([12, 8, 5], [1, 2, 3]))
 	check(r13[0].score == 1 and r13[0].tie_breaker_high_card == 12, "13-L high card baseline")
@@ -284,7 +275,7 @@ func run_micro_card_environment_tests() -> void:
 # SECTION 5: MACRO SCALING (30+ CARDS)
 # ==============================================================================
 func run_macro_card_environment_tests() -> void:
-	print("\n--- SECTION 5: MACRO SCALING (30+ CARDS) ---")
+	behavior_section("SECTION 5: MACRO SCALING (30+ CARDS)")
 
 	# 33-H: clutter -> high card isolates the lone rank-14 card (an off-scale rank, NOT an ace).
 	var c33: Array[CardData] = []
@@ -349,7 +340,7 @@ func run_macro_card_environment_tests() -> void:
 # SECTION 6: ADVANCED CONNECTIVITY & TIE-BREAKERS
 # ==============================================================================
 func run_advanced_connectivity_tests() -> void:
-	print("\n--- SECTION 6: ADVANCED CONNECTIVITY & TIE-BREAKERS ---")
+	behavior_section("SECTION 6: ADVANCED CONNECTIVITY & TIE-BREAKERS")
 
 	# 50. Steel Wheel (suited A-2-3-4-5)
 	var r50 := await Scoring.PokerHands.score(make_hand([5, 4, 3, 2, 1], [1, 1, 1, 1, 1]))
@@ -385,7 +376,7 @@ func run_advanced_connectivity_tests() -> void:
 # Confirms the engine picks the right interpretation AND returns the right cards.
 # ==============================================================================
 func run_overlap_meld_tests() -> void:
-	print("\n--- SECTION 7: OVERLAP MELD VERIFICATION ---")
+	behavior_section("SECTION 7: OVERLAP MELD VERIFICATION")
 
 	# M1. Multi-loop straight. Connected 2 loops of 1..13 (26 cards) is ONE straight,
 	# and must score >= a disconnected 2x Straight(13). Tested via the straight handler
@@ -438,7 +429,7 @@ func add_noise(hand: Array[CardData], count: int, base_rank: int = 5000) -> void
 		hand.append(uc(base_rank + i * 7))   # gaps of 7 -> never adjacent / never equal
 
 func run_chaos_tests() -> void:
-	print("\n--- SECTION 9: CHAOTIC HANDS & MULTI-MELD COMPETITION ---")
+	behavior_section("SECTION 9: CHAOTIC HANDS & MULTI-MELD COMPETITION")
 
 	# C1. Intended straight 5..9 buried in 25 isolated filler cards -> straight survives,
 	# meld is exactly the 5 run cards (no filler).
@@ -624,7 +615,7 @@ func block_all_suit(block: Array, suit_val: float) -> bool:
 	return true
 
 func run_subhand_structure_tests() -> void:
-	print("\n--- SECTION 10: Nx SUB-HAND STRUCTURE ---")
+	behavior_section("SECTION 10: Nx SUB-HAND STRUCTURE")
 
 	# S1. straight(9) + straight(10), disjoint ranks/suits -> 2x Straight(9). Each
 	# sub-hand is a 9-long run; the spare 10th card is dropped (no Straight(10)).
@@ -750,7 +741,7 @@ func has_dup_instances(cards: Array) -> bool:
 	return false
 
 func run_meld_integrity_tests() -> void:
-	print("\n--- SECTION 11: MELD INTEGRITY & EDGE INPUTS ---")
+	behavior_section("SECTION 11: MELD INTEGRITY & EDGE INPUTS")
 
 	# T1. Ace single-use across a wrap: 10-J-Q-K-A-2-3-4-5 with exactly ONE ace ->
 	# a 9-card wrap straight that consumes the lone Ace once (no instance reuse).
@@ -776,14 +767,14 @@ func run_meld_integrity_tests() -> void:
 	for sub: Scoring.Result in rt2.sub_melds:
 		for c: CardData in sub.meld:
 			if not (c in rt2.meld): all_linked = false
-	check(all_linked, "T2 every sub-meld card is the same instance present in parent meld", \
+	check_impl(all_linked, "T2 every sub-meld card is the same instance present in parent meld", \
 			"subs=%d parent_meld=%d" % [rt2.sub_melds.size(), rt2.meld.size()])
 
 	# T3. Atomic (non-multi) results expose no sub_melds and copies_count == 1.
 	var t3a := (await Scoring.PokerHands.score([uc(5), uc(6), uc(7), uc(8), uc(9)]))[0]      # plain straight
 	var t3b := (await Scoring.PokerHands.score([m_card(2, 9), m_card(5, 9), m_card(8, 9), m_card(11, 9), m_card(13, 9)]))[0]  # plain flush
 	var t3c := (await Scoring.PokerHands.score([uc(7000)]))[0]                                # high card
-	check(t3a.sub_melds.is_empty() and t3a.copies_count == 1 \
+	check_impl(t3a.sub_melds.is_empty() and t3a.copies_count == 1 \
 			and t3b.sub_melds.is_empty() and t3b.copies_count == 1 \
 			and t3c.sub_melds.is_empty() and t3c.copies_count == 1, \
 			"T3 atomic results carry no sub_melds (copies_count == 1)", \
@@ -832,7 +823,7 @@ func run_meld_integrity_tests() -> void:
 # pass/fail tally. "NOTE" describes how the hand was constructed.
 # ==============================================================================
 func run_leaderboard() -> void:
-	print("\n=== COMBINED ARCHETYPE LEADERBOARD (self-checking) ===")
+	behavior_section("SECTION 8: COMBINED ARCHETYPE LEADERBOARD (self-checking)")
 	print("| SCORE  | HAND NAME                       | EXPECTED                        | OK?")
 	print("|:-------|:--------------------------------|:--------------------------------|:----")
 
@@ -940,9 +931,9 @@ func run_leaderboard() -> void:
 	var order: Array = []
 	for e in rows:
 		var ok: bool = (e.name as String).contains(e.expected as String)
-		if ok: _pass += 1
+		if ok: _pass += 1  # silent: one [PASS] line per row would drown the output
 		else:
-			_fail += 1
+			check(false, "leaderboard row: got '%s', expected '%s'" % [e.name, e.expected])
 			mism += 1
 		var key: String = "%d|%s|%s" % [e.score, e.name, e.expected]
 		if uniq.has(key):
@@ -964,7 +955,6 @@ func run_leaderboard() -> void:
 		print("=== LEADERBOARD: all %d rows match expected names ===" % rows.size())
 	else:
 		printerr("=== LEADERBOARD: %d of %d rows MISMATCH expected names ===" % [mism, rows.size()])
-	_print_summary()
 
 
 # --- Leaderboard helpers ----------------------------------------------------

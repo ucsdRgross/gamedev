@@ -5,6 +5,29 @@ STATUS_EFFECTS_PLAN.md. Goal: every confirmed/suspected bug gets a regression te
 invariant gets a property test, and chaos/fuzz suites guard the areas where enumeration
 can't cover the state space.
 
+## Test categories + harness — **ADDED 2026-07-10**
+
+Every suite extends `Tests/Support/test_base.gd` (`SolatroTest`) and tags each check:
+
+- **BEHAVIOR** — asserts WHAT the game does (rules, payouts, invariants a player or the
+  design doc cares about). These are the tests we want more of; a failure means the game
+  is wrong, or a rule changed on purpose (update the design doc, then the test).
+- **IMPLEMENTATION** — pins HOW the code currently does it (internal structures, dispatch
+  order, storage formats, pinned policies). Mostly sanity checks that (often agent-written)
+  code does what it looks like; after a refactor a failure may just mean the pin is stale.
+
+Mechanics: sections open with `behavior_section("...")` / `implementation_section("...")`;
+`check()` inherits the section's category; one-off `check_behavior()` / `check_impl()`
+override it. Failures print `[FAIL][BEHAVIOR] SUITE: ...` or `[FAIL][IMPLEMENTATION]
+SUITE: ...`; each suite ends with `finish()`. The all_tests.tscn root (`Tests/all_tests.gd`)
+prints a grand total split by category and, when headless, exits with code = failure count:
+
+	godot --headless --path . res://Tests/all_tests.tscn
+
+`Tests/E2E/test_e2e_run.gd` runs the whole loop (new run -> bootstrap -> Next/Submit acts
+-> win -> fame -> quit/resume from disk -> loss path) headless; it waits for every other
+suite before starting because it owns RunManager.run / Main.save_info / CURRENT.
+
 Conventions (follow `Tests/test_scoring.gd`'s existing style):
 - Non-freezing `check(ok, ctx, detail)` helpers; never `assert()`.
 - **`await` every coroutine test function** (regression for SCORING_AUDIT SC1).
@@ -53,15 +76,15 @@ below ends with `check(board.validate())` — that's half the coverage for free.
 - [ ] card in draw/discard/rules → NOT_FOUND from `locate` (they're not board positions).
 - [ ] card in NO collection → NOT_FOUND (`Vector3i.MIN` today).
 - [ ] **B4 regression:** upper_zone has MORE columns than upper_zone_type (and vice versa)
-      → locate still finds cards in every column, no crash.
+	  → locate still finds cards in every column, no crash.
 - [ ] after any move: position-index result == full-rescan result (I4), for every card.
 
 ### 1.2 `find_vec3_data` / `is_data_topmost` (review S2)
 - [ ] out-of-range col, out-of-range row, negative row → null, no error (S2 verification).
 - [ ] topmost: last card of column true; middle card false; zone header with empty column
-      true; zone header with non-empty column false; card not on board false.
+	  true; zone header with non-empty column false; card not on board false.
 - [ ] upper-zone header topmost check (current code only checks `lower_zone_type`,
-      [game.gd:209](Levels/game.gd:209) — this test documents/fixes that asymmetry).
+	  [game.gd:209](Levels/game.gd:209) — this test documents/fixes that asymmetry).
 
 ### 1.3 `move_stack` matrix (review S3 — the core suite)
 
@@ -71,18 +94,18 @@ the returned error code.
 
 Cross-column:
 - [ ] single card onto top of another column; onto empty column (ColumnEnd); onto zone
-      header of empty column.
+	  header of empty column.
 - [ ] stack of 3 onto another column — order preserved.
 - [ ] whole column (`count = -1`) onto another column; source column left empty but present.
 - [ ] upper → lower and lower → upper (fires `on_card_dropped_on` only for upper→lower —
-      assert via spy mod).
+	  assert via spy mod).
 Same-column (the S3 danger zone — enumerate ALL of these):
 - [ ] move card DOWN within column (src.row < dest position).
 - [ ] move card UP within column (src.row > dest position).
 - [ ] move onto the card directly beneath itself → OK_NOOP, no events, board unchanged.
 - [ ] move onto itself → error (or no-op; pin the chosen policy).
 - [ ] dest anchor inside the moving stack → ERR_DEST_INSIDE_STACK, board unchanged
-      (replaces today's silent clamp — this test pins the policy change).
+	  (replaces today's silent clamp — this test pins the policy change).
 - [ ] `count` larger than cards available below src → clamped to remainder.
 - [ ] `count = -1` within same column, moving middle-to-top.
 Degenerate:
@@ -109,22 +132,22 @@ Degenerate:
       fires before the card leaves the board, which mods may rely on).
 - [ ] discard a card that's mid-stack → cards above it shift down correctly (validate()).
 - [ ] `shuffle_deck` with a seeded RNG: same seed → same order; `on_append` fired once per
-      card in final order; deck size preserved.
+	  card in final order; deck size preserved.
 - [ ] shuffle with an `on_append`-reordering mod (Heavy-card style: move to front) →
-      resulting order respects the mod, size preserved, no duplicates (I1).
+	  resulting order respects the mod, size preserved, no duplicates (I1).
 
 ### 1.6 Undo / `duplicate_state` (review B11 — regression-critical)
 - [ ] snapshot → mutate scores + move cards → undo → all GameData fields equal snapshot
-      (field-by-field, incl. BigNumber mantissa/exponent).
+	  (field-by-field, incl. BigNumber mantissa/exponent).
 - [ ] **B11 regression:** after `duplicate_state()`, for every card in the copy:
-      `card.skill.data == card`, `card.type.data == card`, `card.stamp.data == card`
-      (and `statuses[i].data == card` once statuses land).
+	  `card.skill.data == card`, `card.type.data == card`, `card.stamp.data == card`
+	  (and `statuses[i].data == card` once statuses land).
 - [ ] mod-internal refs rebound: `ZoneAdder.card_data`, `SkillEchoingTrigger.triggered`
-      entries point into the COPY's cards, not the original's.
+	  entries point into the COPY's cards, not the original's.
 - [ ] undo after zone add/remove (ZoneAdder active↔inactive across the snapshot) restores
-      column count AND zone_type count (I2).
+	  column count AND zone_type count (I2).
 - [ ] double-undo to same state, then redo-by-replay → no shared mutable objects between
-      history entries (mutate current, assert history entry unchanged).
+	  history entries (mutate current, assert history entry unchanged).
 
 ## 2. CardDataIterator (`Tests/test_iterator.gd`) (review B10, E9) — **DONE 2026-07-01**
 Implemented (run `Tests/test_iterator.tscn`). B10 pinned as live-mutation-by-design:
@@ -139,8 +162,8 @@ compares iterator output list to oracle.
 - [ ] unrecognized collection type entries skipped without error.
 - [ ] iterator is re-usable: two full passes over same instance give same result.
 - [ ] **B10 pin:** document current behavior under mutation — build a mod that discards
-      the next card during iteration; assert the chosen contract (after the snapshot fix:
-      iteration sees the pre-mutation snapshot, exactly once each).
+	  the next card during iteration; assert the chosen contract (after the snapshot fix:
+	  iteration sees the pre-mutation snapshot, exactly once each).
 
 ## 3. Dispatch / CardEnvironment (`Tests/test_dispatch.gd`) (review B10, E1, D1) — **FIRST CUT DONE 2026-07-02**
 Implemented (run `Tests/test_dispatch.tscn`): dispatch order, unimplemented-hook safety,
@@ -158,19 +181,19 @@ Uses T-ENV FakeEnvironment + spy modifiers that record `(hook, args, call_order)
       does NOT recurse.
 - [ ] `skill_active_check`: activation edge fires `on_active` once (not per check);
       deactivation fires `on_deactive`; no-change fires neither; a skill whose
-      `is_active()` flips DURING the check doesn't infinite-loop.
+	  `is_active()` flips DURING the check doesn't infinite-loop.
 - [ ] `return_first_compare_mod_result`: first implementing mod wins, later mods NOT
-      called (spy call counts); no implementers → NAN.
+	  called (spy call counts); no implementers → NAN.
 - [ ] `return_first_data_array_result`: empty-array results are skipped, first non-empty
-      wins; all-empty → [].
+	  wins; all-empty → [].
 - [ ] **B10 regression:** a mod that MOVES its own card during `on_next` → every card
-      still visited exactly once (needs snapshot fix first; until then this test pins the
-      bug as expected-fail).
+	  still visited exactly once (needs snapshot fix first; until then this test pins the
+	  bug as expected-fail).
 - [ ] statuses (when implemented): status hooks fire; self-removal mid-hook doesn't skip
-      the card's remaining mods (STATUS_EFFECTS_PLAN C2).
+	  the card's remaining mods (STATUS_EFFECTS_PLAN C2).
 - [ ] `CURRENT` lifecycle: two environments enter/exit tree → CURRENT restored correctly
-      (pins the deck-viewer-vs-game fight noted in review D4; currently exit sets null,
-      not previous — pin whichever policy you choose).
+	  (pins the deck-viewer-vs-game fight noted in review D4; currently exit sets null,
+	  not previous — pin whichever policy you choose).
 
 ## 4. PipComparator (`Tests/test_comparator.gd`) (review B7, S-items; SCORING_AUDIT G1/G2) — **DONE 2026-07-01**
 Implemented (run `Tests/test_comparator.tscn`). Also FIXED while writing it: hook
@@ -182,18 +205,18 @@ through to default compare; null pips short-circuit before mods; first mod wins.
 
 No environment (NAN fallbacks) AND with FakeEnvironment (mod overrides) — run both.
 - [ ] `compare_ranks/suits`: standard vs standard → numeric diff; either null → NAN;
-      non-standard subclass pair → NAN.
+	  non-standard subclass pair → NAN.
 - [ ] **B7 regression:** helper `is_suit_different(s1, s2)` (or the fixed call sites):
-      NAN comparison → treated as NOT different / rejected, never "different".
+	  NAN comparison → treated as NOT different / rejected, never "different".
 - [ ] `is_rank_same`: identity; equal values distinct objects; 0.5 apart false; NAN false.
 - [ ] `is_rank_next_to`: diff exactly 1 true; -1 false; 2 false; NAN false.
 - [ ] `is_ace`: value 1 true; 14 false (SCORING_AUDIT SC3); 1.0 float true.
 - [ ] `get_scorable_value`: wrap_ace_high true + ace → 14; false → 1; non-ace unaffected;
-      null rank → -INF. (G2 — first real coverage of ace-high.)
+	  null rank → -INF. (G2 — first real coverage of ace-high.)
 - [ ] `is_scorable`: null card / null rank / null suit → false; full card → true.
 - [ ] mod override: env with an `on_compare_ranks` mod returning 0 → is_rank_same true for
-      any pair; mod returning NAN → falls through to default compare (pin fall-through!
-      current code returns the mod's NAN result only via `is_nan` check — verify).
+	  any pair; mod returning NAN → falls through to default compare (pin fall-through!
+	  current code returns the mod's NAN result only via `is_nan` check — verify).
 - [ ] mod-override precedence: two mods implementing the hook → first in iterator order wins.
 
 ## 5. GameData (`Tests/test_game_data.gd`)
@@ -202,44 +225,52 @@ No environment (NAN fallbacks) AND with FakeEnvironment (mod overrides) — run 
 - [ ] `duplicate_big_number_array`: values equal, instances distinct, empty array, array
       with default-exponent entries.
 - [ ] `print_board` doesn't crash on: empty zones, ragged columns, zone_type without
-      columns entry (B4-adjacent), cards with null pips.
+	  columns entry (B4-adjacent), cards with null pips.
 
 ## 6. Scoring (extend `Tests/test_scoring.gd`)
 
 Existing suite is strong — add only the SCORING_AUDIT gaps:
 - [ ] G1: comparator-mod interaction under FakeEnvironment (flush detection with an
-      `on_compare_suits` "all suits same" mod; straight with rank-warping mod).
+	  `on_compare_suits` "all suits same" mod; straight with rank-warping mod).
 - [ ] G2: ace-high tie-breaks (once SC5 decision made).
 - [ ] G3: direct `ScoreModel` table tests: `final_score` over a matrix of
-      (types, m, n) with hand-computed expectations; escalation boundaries (m=2 vs 3 for
-      X_OF_KIND); multi-flush max() crossover point.
+	  (types, m, n) with hand-computed expectations; escalation boundaries (m=2 vs 3 for
+	  X_OF_KIND); multi-flush max() crossover point.
 - [ ] G4: `get_loc_name` table test over (types, m, n, flush flags) → exact strings.
 - [ ] G5: `_compare_results` full ordering chain with hand-built Results (score tie →
-      meld size tie → high card tie → MULTI penalty → flush preference).
+	  meld size tie → high card tie → MULTI penalty → flush preference).
 - [ ] SC1 regression: a meta-check that `_ready` awaits everything — simplest form:
-      pass/fail totals asserted at the very end against a known count.
+	  pass/fail totals asserted at the very end against a known count.
 
-## 7. Mods / rules cards (`Tests/test_mods.gd`) — via FakeEnvironment + Board
+## 7. Mods / rules cards (`Tests/Engine/test_mods.gd`) — **FIRST CUT DONE 2026-07-10**
+Implemented (run `Tests/Engine/test_mods.tscn`) against a real headless Game:
+grabber/placer legality matrix (incl. the zigzag ±1 pin), TypeInput placement + Next
+drop/draw cycle, ZoneAdder lockstep add/remove + B6 double-deactivate pin,
+StampDoubleTrigger / SkillEchoingTrigger counts + combined-termination pin,
+TypeBoosterBasic generation at luck 0, and shuffle_deck (seeded determinism,
+on_append contract, conservation). Still todo below: grabber B7 non-standard-suit
+stack case, StampDoubleTrigger with a card that has no skill, luck-gated booster
+rolls (needs a seeded RunState with fame).
 - [ ] `TypeInput.on_can_place_stack`: target is self + topmost → stack; not topmost → [];
-      target another card → [].
+	  target another card → [].
 - [ ] `TypeInput.on_next`: drops top upper card to lower zone bottom (ColumnStart), draws
-      replacement; empty draw deck → drop still works, no crash; column not found → no-op.
+	  replacement; empty draw deck → drop still works, no crash; column not found → no-op.
 - [ ] `ZoneAdder` activate/deactivate: zone + type arrays grow/shrink in lockstep (I2);
-      **B6 regression:** deactivate when card_data was already removed → no-op, does NOT
-      remove the last column.
+	  **B6 regression:** deactivate when card_data was already removed → no-op, does NOT
+	  remove the last column.
 - [ ] `SkillGrabberOgLower` / `SkillPlacerOgLower`: alternating-suit ascending run →
-      grabbed; repeated suit → []; rank gap 2 → []; upper zone target → []; single card →
-      grabbed; **B7 case:** stack containing a non-standard suit → [] (not grabbed).
+	  grabbed; repeated suit → []; rank gap 2 → []; upper zone target → []; single card →
+	  grabbed; **B7 case:** stack containing a non-standard suit → [] (not grabbed).
 - [ ] `StampDoubleTrigger`: triggers exactly twice per score pass, counter resets on
-      `on_after_score`; card without skill → no re-trigger.
+	  `on_after_score`; card without skill → no re-trigger.
 - [ ] `SkillEchoingTrigger`: each skill echoed once; `triggered` cleared after score;
-      does not echo itself into a loop with StampDoubleTrigger on the same board (pin!).
+	  does not echo itself into a loop with StampDoubleTrigger on the same board (pin!).
 - [ ] `CardModifier.is_active`: in rules deck true; StampGlobal true; StampRevealing true;
-      plain card in play false.
+	  plain card in play false.
 - [ ] `BoosterTemplate.create_one_choice`: with empty stamp/skill pools → `pick_random`
-      on empty array is an error — pin current behavior (likely a real bug: basic booster
-      has empty stamps/skills and calls `pick_random` on them → null with error).
-      TypeBoosterBasic path must produce a valid card with rank 1–13, suit 1–4.
+	  on empty array is an error — pin current behavior (likely a real bug: basic booster
+	  has empty stamps/skills and calls `pick_random` on them → null with error).
+	  TypeBoosterBasic path must produce a valid card with rank 1–13, suit 1–4.
 
 ## 8. CHAOS / FUZZ SUITES (`Tests/test_fuzz.gd`)
 

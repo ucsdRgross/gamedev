@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_board.gd
 # Board / move-logic suite (UNIT_TESTS_PLAN.md §1) against the CURRENT
 # Game.move_data_to_coord, using GameData.validate() after every action.
@@ -8,9 +8,15 @@ extends Node
 #
 # Since the §5 anchor rewrite (Board.move_stack, 2026-07-02) rejected moves return
 # error codes and provably leave the board untouched — covered in section 5.
+#
+# CATEGORY MAP (see SolatroTest):
+#   BEHAVIOR — topmost rules, every move outcome (cross/same-column, rejections,
+#     clamps, no-ops), draw/discard. These are the solitaire rules of the game.
+#   IMPLEMENTATION — locate/coordinate lookup internals, the mod-event dispatch
+#     contract, duplicate_state instance/backref separation.
 
-var _pass := 0
-var _fail := 0
+func suite_name() -> String:
+	return "BOARD"
 
 func _ready() -> void:
 	print("============ BOARD / MOVE LOGIC TEST PASS ============")
@@ -22,22 +28,7 @@ func _ready() -> void:
 	await run_event_tests()
 	await run_draw_discard_tests()
 	await run_undo_duplicate_tests()
-	_print_summary()
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
-
-func _print_summary() -> void:
-	var total := _pass + _fail
-	if _fail == 0:
-		print("============ BOARD: ALL %d CHECKS PASSED ============" % total)
-	else:
-		printerr("============ BOARD: %d passed, %d FAILED (of %d) ============" % [_pass, _fail, total])
+	finish()
 
 
 # ==============================================================================
@@ -100,9 +91,11 @@ func col_datas(g: Game, x: int, y: int) -> Array[CardData]:
 
 # ==============================================================================
 # SECTION 1: locate (find_data_vec3 / find_vec3_data)
+# IMPLEMENTATION: internal coordinate-lookup contract (Vector3i encoding, MIN
+# sentinel, header z == -1) — only meaningful while this representation exists.
 # ==============================================================================
 func run_locate_tests() -> void:
-	print("\n--- SECTION 1: LOCATE ---")
+	implementation_section("SECTION 1: LOCATE")
 	var g := make_game()
 	validate_ok(g, "fresh fixture")
 
@@ -134,9 +127,11 @@ func run_locate_tests() -> void:
 
 # ==============================================================================
 # SECTION 2: is_data_topmost
+# BEHAVIOR: which card is interactable (grabbable / a legal drop target) is a
+# rule of the game the player sees directly.
 # ==============================================================================
 func run_topmost_tests() -> void:
-	print("\n--- SECTION 2: TOPMOST ---")
+	behavior_section("SECTION 2: TOPMOST")
 	var g := make_game()
 
 	check(g.is_data_topmost(col_datas(g, 0, 2)[3]), "last card of column is topmost")
@@ -153,9 +148,11 @@ func run_topmost_tests() -> void:
 
 # ==============================================================================
 # SECTION 3: CROSS-COLUMN MOVES
+# BEHAVIOR: what actually happens to the board when a stack moves — order
+# preserved, source emptied, card count conserved.
 # ==============================================================================
 func run_cross_column_moves() -> void:
-	print("\n--- SECTION 3: CROSS-COLUMN MOVES ---")
+	behavior_section("SECTION 3: CROSS-COLUMN MOVES")
 	var g := make_game()
 	var big : Array[CardData] = col_datas(g, 0, 2).duplicate() # [a,b,c,d]
 
@@ -202,9 +199,10 @@ func run_cross_column_moves() -> void:
 
 # ==============================================================================
 # SECTION 4: SAME-COLUMN MOVES (S3 danger zone)
+# BEHAVIOR: chosen move policies (rejections, clamps, no-ops) are game rules.
 # ==============================================================================
 func run_same_column_moves() -> void:
-	print("\n--- SECTION 4: SAME-COLUMN MOVES ---")
+	behavior_section("SECTION 4: SAME-COLUMN MOVES")
 	var g := make_game()
 	var a := col_datas(g, 0, 2)[0]; var b := col_datas(g, 0, 2)[1]
 	var c := col_datas(g, 0, 2)[2]; var d := col_datas(g, 0, 2)[3]
@@ -257,9 +255,10 @@ func run_same_column_moves() -> void:
 
 # ==============================================================================
 # SECTION 5: DEGENERATE INPUTS
+# BEHAVIOR: illegal moves are rejected and provably change nothing.
 # ==============================================================================
 func run_degenerate_moves() -> void:
-	print("\n--- SECTION 5: DEGENERATE ---")
+	behavior_section("SECTION 5: DEGENERATE")
 	var g := make_game()
 
 	#count = 0 -> pin: nothing moves
@@ -301,6 +300,8 @@ func run_degenerate_moves() -> void:
 
 # ==============================================================================
 # SECTION 6: EVENT DISPATCH (Phase-4 contract, via spy mod)
+# IMPLEMENTATION: the internal mod-hook contract (which hooks fire, with what
+# args, in which zone direction) — pins the architecture, not a player rule.
 # ==============================================================================
 
 class SpyEvents extends CardModifierType:
@@ -315,7 +316,7 @@ class SpyEvents extends CardModifierType:
 		stack_calls.append(stack.duplicate())
 
 func run_event_tests() -> void:
-	print("\n--- SECTION 6: EVENTS ---")
+	implementation_section("SECTION 6: EVENTS")
 	var g := make_game()
 	var spy := SpyEvents.new()
 	col_datas(g, 1, 2)[0].with_type(spy) #spy rides a lower-zone card
@@ -358,9 +359,10 @@ func run_event_tests() -> void:
 
 # ==============================================================================
 # SECTION 7: DRAW / DISCARD
+# BEHAVIOR: drawing and discarding are player-visible actions.
 # ==============================================================================
 func run_draw_discard_tests() -> void:
-	print("\n--- SECTION 7: DRAW / DISCARD ---")
+	behavior_section("SECTION 7: DRAW / DISCARD")
 	var g := make_game()
 
 	var top := g.state.draw_deck[-1]
@@ -384,9 +386,12 @@ func run_draw_discard_tests() -> void:
 
 # ==============================================================================
 # SECTION 8: duplicate_state / UNDO SEPARATION (B11 regression)
+# IMPLEMENTATION: instance identity, modifier backrefs, BigNumber copying — the
+# machinery under undo. (The player-facing undo behavior itself is covered in
+# test_game_headless.)
 # ==============================================================================
 func run_undo_duplicate_tests() -> void:
-	print("\n--- SECTION 8: DUPLICATE / UNDO ---")
+	implementation_section("SECTION 8: DUPLICATE / UNDO")
 	var g := make_game()
 	#give some cards mods so back-references exist to check
 	var modded := col_datas(g, 0, 2)[0].with_type(SpyEvents.new())
@@ -421,9 +426,10 @@ func run_undo_duplicate_tests() -> void:
 			"BigNumber scores copied by value, distinct instances")
 
 	#history separation: mutate the current board, the snapshot must not change
+	#(BEHAVIOR: this is the guarantee that makes undo trustworthy)
 	var copy_col_size := copy.upper_zone[2].datas.size()
 	await g.move_data_to_coord(modded, Vector3i(0, 0, -1), -1, false)
-	check(copy.upper_zone[2].datas.size() == copy_col_size,
+	check_behavior(copy.upper_zone[2].datas.size() == copy_col_size,
 			"mutating live state leaves the snapshot untouched")
 	var v := copy.validate()
 	check(v.is_empty(), "snapshot itself validates", str(v))

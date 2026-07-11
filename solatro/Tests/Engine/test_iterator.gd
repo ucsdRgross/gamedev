@@ -1,11 +1,15 @@
-extends Node
+extends SolatroTest
 # res://Tests/Engine/test_iterator.gd
 # CardDataIterator suite (UNIT_TESTS_PLAN.md §2): every case compares the iterator's
 # output to a naive flatten oracle (1D in order; 2D row-major across columns).
+#
+# CATEGORY MAP: this whole suite is IMPLEMENTATION — it pins the iterator's internal
+# traversal order and live-mutation policy (B10). No player-visible rule lives here.
 
-var _pass := 0
-var _fail := 0
 var env : FakeEnvironment
+
+func suite_name() -> String:
+	return "ITERATOR"
 
 func _ready() -> void:
 	print("============ CARD DATA ITERATOR TEST PASS ============")
@@ -15,22 +19,7 @@ func _ready() -> void:
 	run_mixed_tests()
 	run_reuse_and_mutation_tests()
 	env.queue_free()
-	_print_summary()
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
-
-func _print_summary() -> void:
-	var total := _pass + _fail
-	if _fail == 0:
-		print("============ ITERATOR: ALL %d CHECKS PASSED ============" % total)
-	else:
-		printerr("============ ITERATOR: %d passed, %d FAILED (of %d) ============" % [_pass, _fail, total])
+	finish()
 
 
 # ==============================================================================
@@ -84,7 +73,7 @@ func zone(col_sizes: Array[int]) -> Array[ArrayCardData]:
 # SECTION 1: COLLECTION SHAPES
 # ==============================================================================
 func run_shape_tests() -> void:
-	print("\n--- SECTION 1: SHAPES ---")
+	implementation_section("SECTION 1: SHAPES")
 
 	env.card_collections = []
 	check(iterate().is_empty(), "no collections -> empty")
@@ -124,7 +113,7 @@ func run_shape_tests() -> void:
 # SECTION 2: MIXED (GAME-SHAPED) COLLECTION SETS
 # ==============================================================================
 func run_mixed_tests() -> void:
-	print("\n--- SECTION 2: MIXED ---")
+	implementation_section("SECTION 2: MIXED")
 
 	#mirror of Game.get_card_collections: 1D deck, two 2D zones, 1D discard/type/rules
 	env.card_collections = [
@@ -152,7 +141,7 @@ func run_mixed_tests() -> void:
 # SECTION 3: RE-USE + LIVE-MUTATION PIN (review B10 — live iteration BY DESIGN)
 # ==============================================================================
 func run_reuse_and_mutation_tests() -> void:
-	print("\n--- SECTION 3: RE-USE / MUTATION ---")
+	implementation_section("SECTION 3: RE-USE / MUTATION")
 
 	env.card_collections = [cards(4)]
 	var it := CardDataIterator.new()

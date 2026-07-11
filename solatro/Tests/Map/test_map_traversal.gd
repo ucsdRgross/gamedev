@@ -1,4 +1,4 @@
-extends Node
+extends SolatroTest
 # res://Tests/Map/test_map_traversal.gd
 # ==============================================================================
 # WORLD MAP TRAVERSAL — WorldMapController over a synthetic diamond graph:
@@ -11,15 +11,20 @@ extends Node
 # found" warning from the stub WorldMap2D).
 # ==============================================================================
 
-var _pass := 0
-var _fail := 0
+# CATEGORY MAP: all BEHAVIOR — token movement, reachability, edge visuals, lap
+# flips, and keyboard selection are what the player sees on the map. The traveled-
+# history storage format checks are the one implementation pin (check_impl inline).
 
 var controller: WorldMapController
 var overlay: WorldGraphOverlay
 var run: RunState
 
+func suite_name() -> String:
+	return "MAP TRAVERSAL"
+
 func _ready() -> void:
 	print("============ MAP TRAVERSAL TEST PASS ============")
+	behavior_section("MAP TRAVERSAL & LAPS")
 	var real_run: RunState = RunManager.run
 	_build_rig()
 	await test_initial_state()
@@ -29,15 +34,7 @@ func _ready() -> void:
 	await test_keyboard_selection()
 	RunManager.run = real_run
 	controller.queue_free()
-	print("map_traversal: %d passed, %d failed" % [_pass, _fail])
-
-func check(ok: bool, ctx: String, detail: String = "") -> void:
-	if ok:
-		_pass += 1
-		print("  [PASS] ", ctx)
-	else:
-		_fail += 1
-		printerr("[FAIL] ", ctx, "" if detail.is_empty() else (" -- " + detail))
+	finish()
 
 func _edge(from_id: int, to_id: int) -> Dictionary:
 	var a: Vector2 = _pos(from_id)
@@ -118,8 +115,8 @@ func test_forward_move_and_edge_states() -> void:
 	await controller.move_to(_node(1))
 	check(run.current_node_id == 1, "token arrived at node 1")
 	check(controller.token.position == _node(1).position, "token walked to the node position")
-	check(run.traveled == ([Vector3i(0, 1, 0)] as Array[Vector3i]),
-			"history records the forward edge with the lap", str(run.traveled))
+	check_impl(run.traveled == ([Vector3i(0, 1, 0)] as Array[Vector3i]),
+			"history records the forward edge with the lap (Vector3i storage format)", str(run.traveled))
 	check(_line(0, 1).default_color == WorldMapController.HISTORY_COLOR,
 			"traveled edge shows the history color")
 	check(not _line(0, 2).visible, "abandoned branch edge is removed from display")
@@ -148,7 +145,7 @@ func test_lap_flip_and_reverse_move() -> void:
 	check(run.current_node_id == 2, "reverse move lands on the predecessor")
 	check(controller.token.position == _node(2).position,
 			"token walked the reversed edge curve to the node")
-	check(run.traveled[2] == Vector3i(2, 3, 1),
+	check_impl(run.traveled[2] == Vector3i(2, 3, 1),
 			"reverse travel is stored in forward-edge orientation", str(run.traveled))
 	check(_ids(controller.next_nodes_of(_node(2))) == [0], "next step heads to the old start")
 	check(not _line(0, 1).visible or _line(0, 1).default_color == WorldMapController.HISTORY_COLOR,
