@@ -123,13 +123,13 @@ func _build_payload() -> RunState:
 func _to_saveable_cards(cards: Array[CardData]) -> Array[CardData]:
 	var out : Array[CardData] = cards.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for card in out:
-		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = null
 	return out
 
 func _relink_cards(cards: Array[CardData]) -> void:
 	for card in cards:
-		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = card
 
 func _write_payload(payload: RunState) -> void:

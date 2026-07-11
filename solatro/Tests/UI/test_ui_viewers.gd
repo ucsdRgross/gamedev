@@ -27,7 +27,7 @@ func _ready() -> void:
 
 func _card() -> CardData:
 	return CardData.new().with_rank(PipRankNumeral.new().with_value(5)) \
-			.with_suit(PipSuitStandard.new().with_value(2))
+			.with_suit(PipSuit.from_index(1))
 
 func _count_viewers() -> int:
 	var n := 0
@@ -103,7 +103,7 @@ func test_partial_card_rendering() -> void:
 		self, CardData.new().with_rank(PipRankNumeral.new().with_value(4)),
 		CardVisual.DisplayContext.DECK_VIEWER)
 	var suit_only := ControlCard.add_child_control_card(
-		self, CardData.new().with_suit(PipSuitStandard.new().with_value(2)),
+		self, CardData.new().with_suit(PipSuit.from_index(1)),
 		CardVisual.DisplayContext.DECK_VIEWER)
 	await get_tree().process_frame
 	await get_tree().process_frame

@@ -62,10 +62,8 @@ static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 	var env := CardEnvironment.CURRENT
 	var mod_result : float = (await env.return_first_compare_mod_result(&"on_compare_suits", s1, s2)) if env else NAN
 	if not is_nan(mod_result): return mod_result
-	
-	match [s1, s2]:
-		[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
-			return a.value - b.value
+
+	# Suits are nominal, not ordinal — no intrinsic order.
 	return NAN
 
 
@@ -73,18 +71,14 @@ static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 static func is_suit_same(s1: PipSuit, s2: PipSuit) -> bool:
 	if not s1 or not s2: return false
 	if s1 == s2: return true
-	
-	match [s1, s2]:
-		[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
-			return a.value == b.value
-		#[var a, var b] when a is Scoring.MultiSuit or b is Scoring.MultiSuit:
-			#var suits_a := _get_suit_objects(a)
-			#var suits_b := _get_suit_objects(b)
-			#for sa in suits_a:
-				#for sb in suits_b:
-					#if sa.value == sb.value: return true
-			#return false
-	return false
+
+	var env := CardEnvironment.CURRENT
+	var mod_result : float = (await env.return_first_compare_mod_result(&"on_compare_suits", s1, s2)) if env else NAN
+	if not is_nan(mod_result): return is_equal_approx(mod_result, 0.0)
+
+	# Nominal identity: same class + same name. One parameterized test-suit class can thus
+	# stand in for unlimited distinct suits; real suits have a constant get_str() per class.
+	return s1.get_script() == s2.get_script() and s1.get_str() == s2.get_str()
 
 
 # ==============================================================================

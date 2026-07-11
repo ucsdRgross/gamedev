@@ -59,11 +59,6 @@ func _ready() -> void:
 	suit_option_value.select(0)
 	_on_suit_option_value_item_selected(0)
 
-func new_PipSuit(name:StringName) -> PipSuit:
-	match name: 
-		STANDARD: return PipSuitStandard.new()
-	return null
-
 func new_PipRank(name:StringName) -> PipRank:
 	match name: 
 		NUMERAL: return PipRankNumeral.new()
@@ -84,7 +79,7 @@ func _on_add_card_pressed() -> void:
 	if rank_option_value.get_selected_id() == 0:
 		data.rank.with_random()
 	if suit_option_value.get_selected_id() == 0:
-		data.suit.with_random()
+		data.with_suit(PipSuit.random_standard())
 	#if skill_option.get_selected_id() == 1:
 		#preview_card.data.with_skill(skills.pick_random() as CardModifier)
 	add_card(data)
@@ -105,14 +100,10 @@ func _on_suit_option_item_selected(index: int) -> void:
 
 func _on_suit_option_value_item_selected(index: int) -> void:
 	if suit_option_value.get_item_id(index) == 0:
-		preview_card.data.with_suit(\
-			new_PipSuit(suit_option.get_item_text(suit_option.get_selected_id()))\
-			.with_random())
+		preview_card.data.with_suit(PipSuit.random_standard())
 		randomizer_timer.start()
 	else:
-		preview_card.data.with_suit(\
-			new_PipSuit(suit_option.get_item_text(suit_option.get_selected_id()))\
-			.with_value(suit_option_value.get_item_id(index)))
+		preview_card.data.with_suit(PipSuit.from_index(suit_option_value.get_item_id(index) - 1))
 
 func _on_rank_option_item_selected(index: int) -> void:
 	rank_option_value.clear()
@@ -143,7 +134,7 @@ func _on_randomizer_timer_timeout() -> void:
 		preview_card.data.rank.with_random()
 		randomizer_timer.start()
 	if suit_option_value.get_selected_id() == 0:
-		preview_card.data.suit.with_random()
+		preview_card.data.with_suit(PipSuit.random_standard())
 		randomizer_timer.start()
 	#if skill_option.get_selected_id() == 1:
 		#preview_card.data.with_skill(skills.pick_random() as CardModifier)

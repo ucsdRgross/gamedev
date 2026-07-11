@@ -94,7 +94,7 @@ func _rand_card_array(rng: RandomNumberGenerator, n: int, stage: CardData.Stage)
 func _rand_card(rng: RandomNumberGenerator, stage: CardData.Stage) -> CardData:
 	var c := CardData.new()
 	c.with_rank(PipRankNumeral.new().with_value(rng.randi_range(1, 13)))
-	c.with_suit(PipSuitStandard.new().with_value(rng.randi_range(1, 4)))
+	c.with_suit(PipSuit.from_index(rng.randi_range(0, 3)))
 	if rng.randf() < 0.6: c.with_skill(_skills[rng.randi_range(0, _skills.size() - 1)].call() as CardModifier)
 	if rng.randf() < 0.5: c.with_type(_types[rng.randi_range(0, _types.size() - 1)].call() as CardModifier)
 	if rng.randf() < 0.4: c.with_stamp(_stamps[rng.randi_range(0, _stamps.size() - 1)].call() as CardModifier)

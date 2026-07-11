@@ -13,9 +13,9 @@ func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardD
 	var vec3 := game.find_data_vec3(target)
 	if vec3 == Vector3i.MIN or vec3.x == 0: return []
 	if not game.is_data_topmost(target): return []
-	var suit_diff := await PipComparator.compare_suits(stack[0].suit,target.suit)
+	var same_suit := await PipComparator.is_suit_same(stack[0].suit,target.suit)
 	var rank_diff := await PipComparator.compare_ranks(stack[0].rank,target.rank)
-	#incomparable (NAN) pips never form a valid run
-	if is_nan(suit_diff) or is_nan(rank_diff): return []
-	if not (suit_diff != 0 and absf(rank_diff) == 1): return []
+	#incomparable (NAN) ranks / repeated suits never form a valid run
+	if is_nan(rank_diff): return []
+	if not (not same_suit and absf(rank_diff) == 1): return []
 	return stack

@@ -373,11 +373,11 @@ func run_booster_tests() -> void:
 	for i in 20:
 		var card := booster.create_one_choice()
 		if not (card.rank is PipRankNumeral and card.rank.value >= 1 and card.rank.value <= 13 \
-				and card.suit is PipSuitStandard and card.suit.value >= 1 and card.suit.value <= 4):
+				and card.suit is PipSuit and PipSuit.STANDARD.has(card.suit.get_script())):
 			all_valid = false
 		if card.stamp != null or card.skill != null or not (card.type is TypePaper):
 			no_lucky_extras = false
-	check(all_valid, "every generated card is a playable rank 1-13 / suit 1-4 card")
+	check(all_valid, "every generated card is a playable rank 1-13 / standard-suit card")
 	check(no_lucky_extras, "at luck 0 cards carry only the base type, no stamp/skill")
 
 

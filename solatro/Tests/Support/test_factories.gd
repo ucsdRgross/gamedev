@@ -7,7 +7,7 @@ static var _next_suit := 700  # unique suit ids so filler never forms accidental
 static func m_card(rank_val: float, suit_id: int) -> CardData:
 	var cd := CardData.new()
 	cd.rank = PipRankNumeral.new().with_value(rank_val)
-	cd.suit = PipSuitStandard.new().with_value(suit_id)
+	cd.with_suit(PipSuitTest.with_id(suit_id))
 	return cd
 
 static func m_stone() -> CardData:

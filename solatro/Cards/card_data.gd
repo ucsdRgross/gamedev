@@ -43,7 +43,7 @@ enum Stage {PLAY, DRAW, DISCARD, RULES, ZONE, DATA}
 @export_storage var previous_stage : Stage = Stage.PLAY
 
 func with_suit(suit:PipSuit) -> CardData:
-	self.suit = suit
+	self.suit = suit.with_data(self) if suit else null
 	return self
 	
 func with_rank(rank:PipRank) -> CardData:
