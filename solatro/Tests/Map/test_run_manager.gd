@@ -3,8 +3,9 @@ extends SolatroTest
 # ==============================================================================
 # RUN MANAGER — fame/luck/goal formulas + RunState + (guarded) disk round-trip.
 # Formula tests run against a scratch RunState swapped into the RunManager autoload
-# (the real run is restored afterwards). Disk tests are SKIPPED whenever a real save
-# exists at user://run_save/ so running tests can never destroy an actual run.
+# (the real run is restored afterwards). Disk tests always run full: any real run.tres is
+# moved aside (backup_real_save) before the disk section and restored after, so the tests
+# never depend on — nor destroy — an actual run.
 #
 # CATEGORY MAP:
 #   BEHAVIOR — progression rules (lap direction, luck curve, goal scaling, overscore
@@ -28,8 +29,10 @@ func _ready() -> void:
 	implementation_section("SCORE PACKING FORMAT")
 	test_scores_packing()
 	behavior_section("SAVE / RESUME ON DISK")
+	backup_real_save()   # move any real run.tres aside so disk tests run full, then restore
 	test_disk_round_trip()
 	test_game_state_round_trip()
+	restore_real_save()
 	RunManager.run = real_run
 	finish()
 
@@ -129,9 +132,6 @@ func _big_numbers(pairs: Array) -> Array[BigNumber]:
 	return out
 
 func test_disk_round_trip() -> void:
-	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
-		print("  [SKIP] disk round-trip: a real run save exists; not touching it")
-		return
 	# REAL cards, not bare ones: modifiers carry a cyclic data backref that broke
 	# ResourceSaver ("Resource was not pre cached") until RunManager unlinked it around
 	# the write — always test with the full card graph.
@@ -179,9 +179,6 @@ func test_disk_round_trip() -> void:
 # The in-progress show's FULL undo history (played boards + BigNumber scores) must survive
 # a quit/resume exactly — mid-game persistence + anti-cheat (every action saved).
 func test_game_state_round_trip() -> void:
-	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
-		print("  [SKIP] game_state round-trip: a real run save exists; not touching it")
-		return
 	var run := RunManager.new_run([] as Array[CardData], [] as Array[CardData])
 	# Build two runtime states (an undo stack of depth 2) and store them saveable.
 	run.game_history = [_show_state(100), _show_state(123)] as Array[GameData]

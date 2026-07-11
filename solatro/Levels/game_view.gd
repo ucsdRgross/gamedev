@@ -138,6 +138,13 @@ func sync_scores() -> void:
 ## (revision bump -> set_card_zones) does NOT touch the gutters, so a resumed show would
 ## otherwise show empty gutters despite the scores being restored in state.
 func load_board_visuals() -> void:
+	# Create the row/col score gutters (incl. the row buffer control) FIRST, so the containers
+	# reserve their space before the cards lay out. Otherwise the cards build into an
+	# unbuffered layout, and adding the gutters afterwards shifts the board down AFTER the
+	# cards are already positioned — so a resumed mid-submit show plays its scoring jump from
+	# the old (higher, pre-buffer) spot, misaligned with the board. A fresh show avoids this
+	# because setup_gui() builds the buffer up-front, before any card exists.
+	play_area.update_score_controls()  # populate the row/col score gutters from state.scores_*
 	play_area.flush_rebuild()  # build the card controls + CardVisuals now (they add_child deferred)
 	# CardVisuals enter the tree via call_deferred (the deferral lets the container lay out first,
 	# which is what keeps board rebuilds from flying in from the origin), so they're ready one
@@ -147,7 +154,9 @@ func load_board_visuals() -> void:
 		await play_area.board_visuals_ready
 	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
 			% [play_area.data_card.size(), play_area.visuals_ready()])
-	play_area.update_score_controls()  # populate the row/col score gutters from state.scores_*
+	# Refresh the gutter values now the board is fully laid out (idempotent; the space was
+	# already reserved above so this no longer shifts the board).
+	play_area.update_score_controls()
 	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
 			% [game.state.scores_row_upper.size(), game.state.scores_row_lower.size(),
 					game.state.scores_col.size()])
@@ -167,6 +176,16 @@ func reset_meld(result: Scoring.Result) -> void:
 ## Animate one gutter label to its new accumulated score.
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
+
+## Start one prop-simulation tick's visuals and return a signal the Game awaits for
+## completion (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Phase 1 stub: no
+## PropLayer exists yet and no suit spawns props until Phase 3, so this is never reached in
+## practice; it returns an immediately-completing signal so the await never hangs. Phase 4
+## replaces it with the real PropLayer-driven tick.
+signal _prop_tick_done
+func begin_prop_tick(_live: Array, _spawned: Array, _movers: Array, _relocated: Array) -> Signal:
+	_prop_tick_done.emit.call_deferred()
+	return _prop_tick_done
 
 # ==============================================================================
 # VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)

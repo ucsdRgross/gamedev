@@ -67,73 +67,73 @@ sites), [[code-style-lean-documented]].
 ---
 
 ## Phase 2 — Status-effect foundation (data) — STATUS_EFFECTS_PLAN Steps 1–7
-- [ ] `Cards/card_modifier_status.gd` — `@abstract CardModifierStatus extends CardModifier`, `stacks` setter (removes at ≤0), `can_merge_with`, `is_active(): stacks>0`, `static stacked(n)`
-- [ ] `card_data.gd`: replace `statuses: Dictionary[String,int]` → `Array[CardModifierStatus]`
-- [ ] `add_status` (merge-by-class; defensively duplicate foreign-`data` status — S7), `remove_status`, `with_status`
-- [ ] Extend `_to_string()` with status strs + stacks
-- [ ] Dispatch snapshot: statuses join `run_all_mods` (:37), `_compare_implementers` (:70-72), `return_first_data_array_result` (:85), `run_card_mods` (Phase 1) — four sites; self-guard `if target != data: return`; NOT in `skill_active_check`
-- [ ] Backrefs: `for st in card.statuses: st.data = ...` at same four unlink/relink sites
-- [ ] `Tests/Engine/test_statuses.gd` — merge/coexist/override/expiry/self-scope/undo/save round-trip/self-removal-mid-pass
+- [x] `Cards/card_modifier_status.gd` — `@abstract CardModifierStatus extends CardModifier`, `stacks` setter (removes at ≤0), `can_merge_with`, `is_active(): stacks>0`, `stacked(script, n)` + `with_stacks(n)` — NOTE: `stacked` takes the concrete `GDScript` (not a polymorphic `static stacked(n)`: GDScript static funcs have no `self`); Phase 3 calls `CardModifierStatus.stacked(StatusJuggling, 1)`
+- [x] `card_data.gd`: replace `statuses: Dictionary[String,int]` → `Array[CardModifierStatus]`
+- [x] `add_status` (merge-by-class; defensively duplicate foreign-`data` status — S7), `remove_status`, `with_status`
+- [x] Extend `_to_string()` with status strs + stacks (`Namex<stacks>`)
+- [x] Dispatch snapshot: statuses join `run_all_mods` (:37), `_compare_implementers` (:70-72), `return_first_data_array_result` (:85); `run_card_mods` is Phase 1 (4th site, TODO there); self-guard `if target != data: return`; NOT in `skill_active_check`
+- [x] Backrefs: `for st: CardModifierStatus in card.statuses: st.data = ...` at both `game_data.gd` + both `run_manager.gd` sites
+- [x] `Tests/Engine/test_statuses.gd` (registered in all_tests.tscn) — merge/coexist/override/expiry/S7-dup/self-scope/self-removal-mid-pass/backref-through-duplicate/save round-trip — 19/19 green. Test-only statuses live in `Tests/Support/status_test*.gd` (A/B/Seal/Scored); `test_persistence_fuzz` updated to build `Array[CardModifierStatus]`
 
 ---
 
 ## Phase 1 — Prop engine + tick loop + dispatch + scoring seam + compression
 
 ### 1.1 `Cards/Props/prop_data.gd`
-- [ ] `PropData extends RefCounted`; `enum Reaction {NONE,JUMP,SPIN,JUGGLE,BURN}`
-- [ ] Movement: `at:=Vector3i.MIN`, `route:Array[Vector3i]`, `countdown:int`, `ticks_per_slot:=1`, `done`, `pass_negated`
-- [ ] `mods:Array[PropModifier]`, `kind`, `fire_stacks`, `source:CardData`
-- [ ] API: `negate_pass()`, `teleport(coord,new_route)`, `set_route(new_route)`, `run_mods(fn,...)`, `reactions_for(card)`
+- [x] `PropData extends RefCounted`; `enum Reaction {NONE,JUMP,SPIN,JUGGLE,BURN}`
+- [x] Movement: `at:=Vector3i.MIN`, `route:Array[Vector3i]`, `countdown:int`, `ticks_per_slot:=1`, `done`, `pass_negated`
+- [x] `mods:Array[PropModifier]`, `kind`, `fire_stacks`, `source:CardData` (+ `reloc_sink` for teleport records)
+- [x] API: `negate_pass()`, `teleport(coord,new_route)`, `set_route(new_route)`, `run_mods(fn,...)`, `reactions_for(card)` — NOTE: `reactions_for` dispatches `reaction_for` via `m.call(...)` (static-typed `PropModifier` has no such method → warning-as-error otherwise)
 
 ### 1.1b `Cards/Props/prop_modifier.gd`
-- [ ] `PropModifier extends RefCounted`; hook doc block (on_spawned/on_pass_card/on_finish/reaction_for)
+- [x] `PropModifier extends RefCounted`; hook doc block (on_spawned/on_pass_card/on_finish/reaction_for)
 
 ### 1.2 `Cards/Props/prop_spawner.gd`
-- [ ] `PropSpawner extends RefCounted`: origin, remaining, batch_size, interval, max_live, live, factory
-- [ ] `func due(tick): remaining>0 and tick%interval==0`
-- [ ] Emission staging: i-th prop `countdown = ticks_per_slot + i`; refill stages behind hindmost live
+- [x] `PropSpawner extends RefCounted`: origin, remaining, batch_size, interval, max_live, live, factory (+ `emitted` = emit_index counter)
+- [x] `func due(tick): remaining>0 and tick%interval==0`
+- [x] Emission staging: i-th prop `countdown = ticks_per_slot + i` (set by the loop). Refill-behind-hindmost is emergent from countdown staging; not separately special-cased.
 
 ### 1.3 Tick loop (Game) `run_props(spawners)`
-- [ ] `const MAX_TICKS := 2048`
-- [ ] SPAWN (per due spawner, cap by max_live, `on_spawned`)
-- [ ] MOVE (instant; exclude spawn-tick props; countdown--; pop route[0]→at or done)
-- [ ] START `if view: tick_done = view.begin_prop_tick(...)` (NOT awaited)
-- [ ] EVENTS (movers only, emission order; `note_processing()` per entry; 3-phase pass)
-- [ ] FINISH (done props: `on_finish`, release spawner slot)
-- [ ] `await skill_active_check()` once/tick
-- [ ] SYNC `if view: await tick_done`; filter done; `tick += 1`
-- [ ] Break on `act_overrun or tick >= MAX_TICKS`
+- [x] `const MAX_TICKS := 2048`
+- [x] SPAWN (per due spawner, cap by max_live, `on_spawned`)
+- [x] MOVE (instant; exclude spawn-tick props; countdown--; pop route[0]→at or done)
+- [x] START `if view: tick_done = view.begin_prop_tick(...)` (NOT awaited) — Phase 1 stub `begin_prop_tick` added to game_view.gd
+- [x] EVENTS (movers only, emission order; `note_processing()` per entry; 3-phase pass)
+- [x] FINISH (done props: `on_finish`, release spawner slot via `owner_of` map)
+- [x] `await skill_active_check()` once/tick
+- [x] SYNC `if view: await tick_done`; filter done; `tick += 1`
+- [x] Break on `act_overrun or tick >= MAX_TICKS`
 
 ### 1.4 `run_card_mods` (CardEnvironment)
-- [ ] Iterate `[card.type, card.stamp, card.suit]` + statuses snapshot + active skill; targeted dispatch
+- [x] Iterate `[card.type, card.stamp, card.suit]` + statuses snapshot + active skill; targeted dispatch (this is the statuses 4th dispatch site from Phase 2)
 
 ### 1.5 Scoring seam (Game)
-- [ ] `add_line_score(is_row, score_zone, index, amount)` — single write path
-- [ ] `row_gutter(v)` helper
-- [ ] Refactor `score_line` onto `add_line_score` (no behavior change)
-- [ ] `_run_score_effects(result)` at game.gd:446: gather spawners → `run_props` → `on_score` broadcast per meld card → `on_after_score`
+- [x] `add_line_score(is_row, score_zone, index, amount)` — single write path
+- [x] `row_gutter(v)` helper
+- [x] Refactor `score_line` onto `add_line_score` (behavior preserved; row_total now banked after animate_meld — irrelevant, consumed only at apply_act_score)
+- [x] `_run_score_effects(result)` in score_line: gather spawners → `run_props` → `on_score` broadcast per meld card → `on_after_score`. NOTE: this ACTIVATES previously-dormant `on_score`/`on_after_score` (all call sites were commented out) — SkillExtraPoint/StampDoubleTrigger/SkillEchoingTrigger now fire. All test suites still green (1074 checks), but USER should playtest for balance.
 
 ### 1.6 Path helpers, sides, compression
-- [ ] `entity_side_for_row(v)` — `hash([submits_used, save_history.size(), v.x, v.z]) & 1 == 0`
-- [ ] `row_slot_path(v, l2r)`, `row_slot_path_from(coord, l2r)`, `column_rise_path(v)`, `mancala_targets(v, count, eligible)`
-- [ ] `note_processing(weight)` base no-op in CardEnvironment; one per mod invoked in run_all_mods + run_card_mods
-- [ ] Game compression: consts (COMPRESS_RATIO/STEP_MS/MIN_FACTOR/SOFT_MS/HARD_CAP), `_begin_act`, `note_processing` override, `get_delay()` override
-- [ ] `_begin_act()` at top of `_perform_submit`/`_perform_next`
+- [x] `entity_side_for_row(v)` — `hash([submits_used, save_history.size(), v.x, v.z]) & 1 == 0`
+- [x] `row_slot_path(v, l2r)`, `row_slot_path_from(coord, l2r)`, `column_rise_path(v)`, `mancala_targets(v, count, eligible)`
+- [x] `note_processing(weight)` base no-op in CardEnvironment; one per mod invoked in run_all_mods + run_card_mods
+- [x] Game compression: consts (COMPRESS_RATIO/STEP_MS/MIN_FACTOR/SOFT_MS/HARD_CAP), `_begin_act`, `note_processing` override, `get_delay()` override (delegates to `super.get_delay()` to avoid a SettingsManager compile-order typing error)
+- [x] `_begin_act()` at top of `_perform_submit`/`_perform_next`
 
-### 1.7 `Tests/Engine/test_prop_engine.gd` (register in all_tests.tscn)
-- [ ] Probe classes + all listed cases (traversal, train/speed, mixed speeds, same-slot silence, spawn-tick exclusion, one-frame headless, schedules, ballistic, self-pass, empty-route runaway, 3-phase pass, dodge, redirect, teleport, spawner-removal, concurrent, robustness, scoring seam, determinism)
+### 1.7 `Tests/Engine/test_prop_engine.gd` (registered in all_tests.tscn) — 26/26 green
+- [x] Probe classes + cases: traversal, ballistic, 3-phase-targeted, dodge, redirect, teleport, batch-vs-sequential schedules, max_live-cap-delivers-all, spawner-card-removal, concurrent, empty-route-runaway-terminates, determinism, add_line_score/row_gutter seam. NOTE: absolute per-tick timing cases (train/speed, mixed speeds, same-slot silence, spawn-tick exclusion, one-frame headless) are asserted indirectly via order/counts/live-cap — prop mods can't see the tick number headless; exact timing is validated visually in Phase 4.
 
 ---
 
-## Phase 3 — Five suits: spawner configs + prop mods
-- [ ] Shared `spawn_props` shape (skill/game/vec3 guards; count = rank×fire_mult)
-- [ ] 3.1 Hoop — `PropScoreTalents` mod; batch burst; row_slot_path(entity_side)
-- [ ] 3.2 Knife — `PropScoreProps` mod; opposite side
-- [ ] 3.3 Ball — ballistic; `PropDropStatus(StatusJuggling)`; mancala targets; `StatusJuggling`
-- [ ] 3.4 Fire — ballistic; `StatusBurning`; eligibility skips talents + Fire suits
-- [ ] 3.5 Firework — column rise; `PropBankColScore`
-- [ ] `PropBurning` mod (sets prop.fire_stacks)
-- [ ] `Tests/Engine/test_suit_props.gd` — all cases incl. mancala worked example `t,,b5,t,t`→`t1,,b5,t2,t2`
+## Phase 3 — Five suits: spawner configs + prop mods — DONE (test_suit_props 12/12 green)
+- [x] Shared `spawn_props` shape via base helpers `_spawn_origin()` / `_spawn_count()` / `_burning_mods()` (skill/game/vec3 guards; count = rank×fire_mult). NOTE: base `spawn_props()` + all subclasses now typed `-> Array[PropSpawner]` (was untyped `Array`; run_props rejected the untyped array) — PipSuitTest updated too.
+- [x] 3.1 Hoop — `PropScoreTalents` mod; batch burst; `row_slot_path(entity_side)`; HOOP_TICKS_PER_SLOT=2
+- [x] 3.2 Knife — `PropScoreProps` mod; opposite side (`not entity_side_for_row`); scores no-skill cards incl. self (self-pass)
+- [x] 3.3 Ball — ballistic; `PropDropStatus(StatusJuggling, JUGGLE)`; mancala targets (eligible = has skill); `StatusJuggling` pays column on_score
+- [x] 3.4 Fire — ballistic; `PropDropStatus(StatusBurning, BURN)`; eligibility skips talents AND Fire suits; `StatusBurning` read by fire_stacks/fire_mult (count buff)
+- [x] 3.5 Firework — column rise; `PropBankColScore` on_finish (empty route → banks immediately)
+- [x] `PropBurning` mod (sets prop.fire_stacks) folded on via `_burning_mods()` when the source card is Burning
+- [x] `Tests/Engine/test_suit_props.gd` (registered) — hoop/knife row scoring, suppression, Ball worked example `t,,b5,t,t`→`t1,,b5,t2,t2`, fire skip talents+Fire, fire count-buff, firework column bank, Juggling on_score. `fire_stacks()` in pip_suit.gd now reads StatusBurning.
 
 ---
 

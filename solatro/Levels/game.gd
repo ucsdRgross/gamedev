@@ -51,6 +51,44 @@ const MAX_SUBMITS := 3
 var submits_used : int = 0
 var _won : bool = false
 
+# --- Elapsed-time compression + runaway event cap (SUIT_PROPS_PLAN §1.6) ---
+# Long/looping score cascades (prop chains, echoing triggers) shrink their per-step delay as
+# real time elapses so a huge act still resolves, and a hard event count cuts an infinite
+# chain outright ("the audience went home"). Normal play is untouched (get_delay only
+# compresses while `processing`).
+const COMPRESS_RATIO := 0.85
+const STEP_MS := 1500.0
+const MIN_FACTOR := 0.05
+const SOFT_MS := 20000.0
+const HARD_CAP := 6000
+var act_start_ms : int = 0
+var act_calls : int = 0
+var act_overrun : bool = false
+
+## Reset the compression clock + event counter at the start of a board action.
+func _begin_act() -> void:
+	act_start_ms = Time.get_ticks_msec()
+	act_calls = 0
+	act_overrun = false
+
+## Count one unit of processing (per mod invoked, per prop slot entry); trip the runaway cap.
+func note_processing(weight := 1) -> void:
+	act_calls += weight
+	if act_calls > HARD_CAP:
+		act_overrun = true
+
+## Per-step pacing delay. Normal play returns the base delay untouched; only while a locked
+## action is resolving does it shrink toward 0 with elapsed time (read live every frame by the
+## view's interpolation, so speed changes apply mid-slot).
+func get_delay() -> float:
+	# base returns SettingsManager.settings.base_delay (normal play untouched)
+	if not processing:
+		return super.get_delay()
+	var elapsed := float(Time.get_ticks_msec() - act_start_ms)
+	if elapsed > SOFT_MS:
+		return 0.0
+	return super.get_delay() * maxf(MIN_FACTOR, pow(COMPRESS_RATIO, elapsed / STEP_MS))
+
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
 	return [state.get_instance_id(), state.revision]
@@ -202,6 +240,7 @@ func next() -> void:
 ## pending first, so a quit mid-resolution replays it verbatim on resume.
 func _perform_next() -> void:
 	processing = true
+	_begin_act()
 	_begin_action(&"on_next")
 	await run_all_mods(&"on_next")
 	save_state()
@@ -355,6 +394,7 @@ func submit() -> void:
 ## can't rewind a Submit by killing the app).
 func _perform_submit() -> void:
 	processing = true
+	_begin_act()
 	_begin_action(&"on_run_scorer")
 	await run_all_mods(&"on_run_scorer")
 	state.apply_act_score()
@@ -433,15 +473,175 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 	var score_zone : Array[BigNumber]
 	if is_row:
 		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
-		state.row_total += result.score  # feeds this act's row x col payout (apply_act_score)
 	else:
 		score_zone = state.scores_col
-		state.col_total += result.score
-	resize_score_zone(score_zone, index + 1)
 	if view: await view.animate_meld(result)
-	# plus_equals mutates the gutter accumulator — must run headless too (feeds the packed save)
-	var new_score := score_zone[index].plus_equals(result.score)
-	if view: view.update_line_score(score_zone, index, new_score)
+	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
+	# animates the label. Must run headless too (feeds the packed save).
+	add_line_score(is_row, score_zone, index, result.score)
 	if view: await view.show_meld_score(result)
-	#await play trigger score effects
+	await _run_score_effects(result)
 	if view: view.reset_meld(result)
+
+## Bank `amount` into a row/col gutter + the matching act total; animate the label when a view
+## exists. THE single write path for line scores — melds and prop effects both call it.
+func add_line_score(is_row: bool, score_zone: Array[BigNumber], index: int, amount: int) -> void:
+	resize_score_zone(score_zone, index + 1)
+	if is_row:
+		state.row_total += amount   # feeds this act's row x col payout (apply_act_score)
+	else:
+		state.col_total += amount
+	var new_score := score_zone[index].plus_equals(amount)
+	if view: view.update_line_score(score_zone, index, new_score)
+
+## The row gutter (upper vs lower) a slot coord banks into — prop effects that know only a
+## Vector3i use this instead of the zone-array identity check score_line does.
+func row_gutter(v: Vector3i) -> Array[BigNumber]:
+	return state.scores_row_upper if v.x == 0 else state.scores_row_lower
+
+## Suit-effect phase for one scored meld (SUIT_PROPS_PLAN §1.5). Gather every meld card's suit
+## spawners, run the ONE shared prop simulation, then fire the on_score / on_after_score
+## broadcast (activates SkillExtraPoint / StampDoubleTrigger / SkillEchoingTrigger — previously
+## inert). Fires per meld membership (row + col each), by design. Prop effects only touch
+## gutters + card-local statuses, never the zone/deck arrays the outer scorer walks (B10 safe).
+func _run_score_effects(result: Scoring.Result) -> void:
+	var spawners : Array[PropSpawner] = []
+	for card in result.meld:
+		if card.suit:
+			spawners.append_array(card.suit.spawn_props())
+	await run_props(spawners)
+	for card in result.meld:
+		await run_all_mods(&"on_score", card)
+	await run_all_mods(&"on_after_score")
+
+# ==============================================================================
+# PROP SIMULATION — the tick loop (SUIT_PROPS_PLAN §1.3)
+# ==============================================================================
+const MAX_TICKS := 2048   # belt-and-braces alongside HARD_CAP for empty-route runaways
+
+## THE prop simulation. Per tick: SPAWN -> MOVE (instant data) -> START the visual tick (not
+## awaited) -> EVENTS in parallel with the animation (new-slot props only, 3-phase pass) ->
+## FINISH -> await tick completion. The data layer is one step ahead of the visuals (physics
+## interpolation); headless (view == null) there is no visual tick, so the WHOLE submit
+## resolves in one frame. Deterministic: spawners in spawn order, props in emission order,
+## integer ticks. Cut short by act_overrun (runaway cap) or MAX_TICKS.
+func run_props(spawners: Array[PropSpawner]) -> void:
+	if spawners.is_empty(): return
+	var live_props : Array[PropData] = []
+	var owner_of : Dictionary = {}   # prop -> its spawner (to release the live slot on finish)
+	var tick := 0
+	while not live_props.is_empty() or spawners.any(func(s: PropSpawner) -> bool: return s.remaining > 0):
+		if act_overrun or tick >= MAX_TICKS:
+			break
+		# SPAWN — each due spawner emits up to batch_size, throttled by max_live
+		var spawned : Array[PropData] = []
+		for sp in spawners:
+			if not sp.due(tick): continue
+			var emit_count := mini(sp.batch_size, mini(sp.remaining, sp.max_live - sp.live))
+			for i in emit_count:
+				var p : PropData = sp.factory.call(sp.emitted)
+				p.countdown = p.ticks_per_slot + i   # stage the i-th of a batch one tick back
+				sp.remaining -= 1
+				sp.emitted += 1
+				sp.live += 1
+				owner_of[p] = sp
+				await p.run_mods(&"on_spawned", p, self)
+				spawned.append(p)
+				live_props.append(p)
+		# MOVE — instant, data only; spawn-tick props excluded (no pop-and-teleport)
+		var movers : Array[PropData] = []   # props that ENTERED a new slot this tick
+		var relocated : Array = []          # (prop, from, to) — view blinks, not tweens
+		for p in live_props:
+			p.reloc_sink = relocated        # so a hook's teleport() records into this tick
+			if p in spawned: continue
+			p.countdown -= 1
+			if p.countdown > 0: continue    # mid-slot: fires nothing this tick
+			if p.route.is_empty():
+				p.done = true               # into the void; FINISH handles on_finish
+			else:
+				p.at = p.route.pop_front()  # route re-read HERE — a hook may have rewritten it
+				p.countdown = p.ticks_per_slot
+				movers.append(p)
+		# START the visual tick — NOT awaited: animation and mods run in parallel
+		var tick_done : Signal
+		if view: tick_done = view.begin_prop_tick(live_props, spawned, movers, relocated)
+		# EVENTS — new-slot props ONLY, in emission order; hooks stay await-light
+		for p in movers:
+			note_processing()               # per SLOT ENTRY: feeds the runaway cap
+			var card := find_vec3_data(p.at)
+			if card:                        # slot may have emptied mid-flight
+				p.pass_negated = false
+				await run_card_mods(card, &"on_prop_passing", p)   # 1: intercept/dodge
+				if not p.pass_negated:
+					await p.run_mods(&"on_pass_card", p, self, card)  # 2: the effect
+				await run_card_mods(card, &"on_prop_passed", p)    # 3: notification
+				p.pass_negated = false
+		# FINISH — void-arrived props: effect hook, release the spawner slot
+		for p in live_props:
+			if p.done:
+				await p.run_mods(&"on_finish", p, self)
+				var sp : PropSpawner = owner_of.get(p)
+				if sp: sp.live -= 1
+		await skill_active_check()          # once per tick: hooks may flip active states
+		# SYNC — tick over when animation AND events are both complete (headless: nothing awaited)
+		if view: await tick_done
+		live_props = live_props.filter(func(pp: PropData) -> bool: return not pp.done)
+		tick += 1
+
+# ==============================================================================
+# PATH HELPERS + deterministic sides (SUIT_PROPS_PLAN §1.6) — used by Phase 3 suits
+# ==============================================================================
+
+## Replay-stable 50/50 pick for a hoop/knife row side. Hashes only resume-persisted inputs
+## (direction affects hook order, so it is data, not RNG).
+func entity_side_for_row(v: Vector3i) -> bool:
+	return hash([submits_used, save_history.size(), v.x, v.z]) & 1 == 0
+
+## Every slot in v's row (fixed zone x + row z, across columns y), left-to-right or reversed.
+func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:
+	var zone := get_zone_from_vec3(v)
+	var out : Array[Vector3i] = []
+	for col in zone.size():
+		out.append(Vector3i(v.x, col, v.z))
+	if not left_to_right:
+		out.reverse()
+	return out
+
+## The remaining slots of coord's row PAST coord in the given direction (exclusive of coord) —
+## for mid-flight re-routes (Strongman pushes a prop along a parallel row).
+func row_slot_path_from(coord: Vector3i, left_to_right: bool) -> Array[Vector3i]:
+	var full := row_slot_path(coord, left_to_right)
+	var idx := full.find(coord)
+	if idx == -1:
+		return full
+	return full.slice(idx + 1)
+
+## The slots above v in its column (rows past v toward the far edge). May be EMPTY (v is the
+## topmost card) — a firework then banks its column score immediately.
+func column_rise_path(v: Vector3i) -> Array[Vector3i]:
+	var out : Array[Vector3i] = []
+	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
+	for z in range(v.z + 1, col.datas.size()):
+		out.append(Vector3i(v.x, v.y, z))
+	return out
+
+## Mancala TARGETS for ballistic Ball/Fire: walk below v.z wrapping to the column top,
+## collecting `count` eligible cards' coords (each may repeat). Bounded at (count+1) laps so a
+## no-eligible-target column terminates. PURE — computed once at spawn.
+func mancala_targets(v: Vector3i, count: int, eligible: Callable) -> Array[Vector3i]:
+	var out : Array[Vector3i] = []
+	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
+	var n := col.datas.size()
+	if n == 0 or count <= 0:
+		return out
+	var pos := v.z
+	var steps := 0
+	var max_steps := (count + 1) * n
+	while out.size() < count and steps < max_steps:
+		pos = (pos + 1) % n
+		steps += 1
+		var coord := Vector3i(v.x, v.y, pos)
+		var card := find_vec3_data(coord)
+		if card and eligible.call(card):
+			out.append(coord)
+	return out

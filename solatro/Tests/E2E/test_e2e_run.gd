@@ -13,7 +13,8 @@ extends SolatroTest
 # Ordering: this suite deliberately runs LAST (it owns CardEnvironment.CURRENT,
 # RunManager.run and Main.save_info while it runs) — it waits for every sibling
 # suite to finish first.
-# Safety: skipped entirely when a real run save exists, like the other disk suites.
+# Safety: any real run.tres is moved aside (backup_real_save) before the scenarios and
+# restored after, so it always runs full and never touches the player's save.
 # ==============================================================================
 
 func suite_name() -> String:
@@ -27,19 +28,17 @@ func _ready() -> void:
 				await suite.suite_finished
 	print("============ END-TO-END RUN TEST PASS ============")
 	behavior_section("FULL SHOW LOOP, HEADLESS")
-	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
-		print("  [SKIP] e2e: a real run save exists; not touching it")
-		finish()
-		return
+	# Always run full: move any real run.tres aside so the scenarios can write/clear freely.
+	backup_real_save()
 	var real_run: RunState = RunManager.run
 	var real_save_info: RunState = Main.save_info
 	await run_win_and_resume_scenario()
 	await run_loss_scenario()
 	# Join any in-flight background save FIRST — otherwise a write queued by the last
-	# save_state can land after clear_save and resurrect run.tres (which would make
-	# every save-guarded suite skip on the next run).
+	# save_state can land after clear_save and resurrect run.tres.
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
+	restore_real_save()   # put the player's real run.tres back
 	RunManager.run = real_run
 	Main.save_info = real_save_info
 	finish()

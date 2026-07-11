@@ -67,6 +67,29 @@ func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 	printerr("[FAIL][%s] %s: %s" % [tag, suite_name(), ctx],
 			"" if detail.is_empty() else (" -- " + detail))
 
+## Disk-test isolation. The save/load suites write and delete user://run_save/run.tres —
+## the SAME file a real run uses. Rather than skip when a real save exists (which made the
+## tests dependent on unrelated player state), the disk suites call backup_real_save()
+## before touching disk and restore_real_save() after, so they ALWAYS run full and a real
+## run is preserved. The backup uses a non-.tres suffix so has_save() (which keys on
+## run.tres) never sees it.
+const REAL_RUN_PATH := "user://run_save/run.tres"
+const REAL_RUN_BAK := "user://run_save/run.tres.testbak"
+
+func backup_real_save() -> void:
+	if FileAccess.file_exists(REAL_RUN_PATH):
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_PATH),
+				ProjectSettings.globalize_path(REAL_RUN_BAK))
+
+func restore_real_save() -> void:
+	if not FileAccess.file_exists(REAL_RUN_BAK):
+		return
+	# a test may have left its own run.tres behind — clear it before restoring the real one
+	if FileAccess.file_exists(REAL_RUN_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_RUN_PATH))
+	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_BAK),
+			ProjectSettings.globalize_path(REAL_RUN_PATH))
+
 ## Print the suite banner + per-category failure split, then signal the aggregate runner
 ## (all_tests.gd) that this suite is done.
 func finish() -> void:

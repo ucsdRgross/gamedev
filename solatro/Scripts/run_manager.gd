@@ -125,12 +125,16 @@ func _to_saveable_cards(cards: Array[CardData]) -> Array[CardData]:
 	for card in out:
 		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = null
+		for st: CardModifierStatus in card.statuses:
+			st.data = null
 	return out
 
 func _relink_cards(cards: Array[CardData]) -> void:
 	for card in cards:
 		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = card
+		for st: CardModifierStatus in card.statuses:
+			st.data = card
 
 func _write_payload(payload: RunState) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVE_DIR))

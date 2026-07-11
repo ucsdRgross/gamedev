@@ -10,7 +10,7 @@ var id : int = 0
 func get_suit_index() -> int: return id % 4          # art slot only; never rendered in tests
 func get_str() -> String: return "TestSuit%d" % id   # distinct id => distinct suit
 func get_description() -> String: return "test suit"
-func spawn_props() -> Array: return []               # inert in scoring tests
+func spawn_props() -> Array[PropSpawner]: return []  # inert in scoring tests
 
 static func with_id(i:int) -> PipSuitTest:
 	var s := PipSuitTest.new()

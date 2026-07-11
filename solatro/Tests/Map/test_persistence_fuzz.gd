@@ -8,8 +8,8 @@ extends SolatroTest
 # a random pending-action marker, and a random undo history of random GameData boards
 # (random zones/columns/stacks + random BigNumber score arrays) — writes it, reads it
 # back, and deep-diffs every persisted field. Anything the serializer drops shows up
-# as a concrete mismatch. SKIPPED whenever a real run save exists so it can never
-# destroy an actual run (same guard as test_run_manager's disk tests).
+# as a concrete mismatch. Any real run.tres is moved aside (backup_real_save) before the
+# fuzz writes to disk and restored after, so it always runs full and never destroys a run.
 # ==============================================================================
 
 # CATEGORY MAP: all BEHAVIOR — "whatever the run contains, saving and loading loses
@@ -28,21 +28,19 @@ func suite_name() -> String:
 func _ready() -> void:
 	print("============ PERSISTENCE FUZZ TEST PASS ============")
 	behavior_section("SAVE DOCUMENT ROUND-TRIP FUZZ")
-	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
-		print("  [SKIP] persistence fuzz: a real run save exists; not touching it")
-		finish()
-		return
+	# Always run full: move any real run.tres aside first, restore it at the end.
+	backup_real_save()
 	var real_run: RunState = RunManager.run
 	var rng := RandomNumberGenerator.new()
 	for iter in ITERATIONS:
 		rng.seed = 0x5015A + iter * 2654435761
 		_run_iteration(iter, rng)
 	# Delete only the run doc we wrote — NOT via clear_save(), which also wipes the shared
-	# map bake dir (a map may belong to a real run in another slot; the guard above only
-	# checks run.tres). We reach here only when no real run.tres existed to begin with.
+	# map bake dir. Then restore any backed-up real run.tres.
 	RunManager.run = null
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(RunManagerClass.RUN_PATH))
+	restore_real_save()
 	RunManager.run = real_run
 	finish()
 
@@ -99,10 +97,11 @@ func _rand_card(rng: RandomNumberGenerator, stage: CardData.Stage) -> CardData:
 	if rng.randf() < 0.5: c.with_type(_types[rng.randi_range(0, _types.size() - 1)].call() as CardModifier)
 	if rng.randf() < 0.4: c.with_stamp(_stamps[rng.randi_range(0, _stamps.size() - 1)].call() as CardModifier)
 	c.flipped = rng.randf() < 0.5
-	var statuses: Dictionary[String, int] = {}
+	# random statuses across the distinct test classes (merge-by-class means repeats fold)
+	var status_scripts : Array[GDScript] = [StatusTestA, StatusTestB, StatusTestSeal]
 	for s in rng.randi_range(0, 3):
-		statuses["st%d" % rng.randi_range(0, 5)] = rng.randi_range(-100, 100)
-	c.statuses = statuses
+		var script: GDScript = status_scripts[rng.randi_range(0, status_scripts.size() - 1)]
+		c.add_status(CardModifierStatus.stacked(script, rng.randi_range(1, 100)))
 	c.stage = stage
 	# previous_stage is persisted independently — scramble it after the stage setter ran.
 	c.previous_stage = rng.randi_range(0, CardData.Stage.size() - 1) as CardData.Stage
@@ -215,13 +214,15 @@ func _diff_cards(e: Array[String], path: String, a: Array[CardData], b: Array[Ca
 			e.append("%s[%d] null mismatch" % [path, i])
 			continue
 		if ca == null: continue
-		# _to_string() folds suit, rank, skill, type, stamp, stage AND previous_stage.
+		# _to_string() folds suit, rank, skill, type, stamp, statuses (str+stacks), stage
+		# AND previous_stage — so it already covers the status round-trip. Keep an explicit
+		# size check as a cheap belt-and-braces on the Array[CardModifierStatus] field.
 		if str(ca) != str(cb):
 			e.append("%s[%d] '%s' != '%s'" % [path, i, ca, cb])
 		if ca.flipped != cb.flipped:
 			e.append("%s[%d].flipped %s != %s" % [path, i, ca.flipped, cb.flipped])
-		if not _dict_eq(ca.statuses, cb.statuses):
-			e.append("%s[%d].statuses %s != %s" % [path, i, ca.statuses, cb.statuses])
+		if ca.statuses.size() != cb.statuses.size():
+			e.append("%s[%d].statuses size %d != %d" % [path, i, ca.statuses.size(), cb.statuses.size()])
 
 func _diff_packed(e: Array[String], path: String, am: PackedFloat64Array, ae: PackedInt64Array,
 		bm: PackedFloat64Array, be: PackedInt64Array) -> void:
@@ -231,9 +232,3 @@ func _diff_packed(e: Array[String], path: String, am: PackedFloat64Array, ae: Pa
 	for i in am.size():
 		if not is_equal_approx(am[i], bm[i]) or ae[i] != be[i]:
 			e.append("%s[%d] (%f,%d) != (%f,%d)" % [path, i, am[i], ae[i], bm[i], be[i]])
-
-func _dict_eq(a: Dictionary, b: Dictionary) -> bool:
-	if a.size() != b.size(): return false
-	for k: String in a:
-		if not b.has(k) or b[k] != a[k]: return false
-	return true

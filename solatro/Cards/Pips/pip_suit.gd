@@ -22,8 +22,7 @@ const PALETTE : Array[int] = [8, 11, 14, 2, 6]
 @abstract func get_suit_index() -> int
 ## PURE factory: the spawners this suit launches when its card is scored in a meld.
 ## Empty when the card is talented (data.skill) or off-board. NO mutation in here.
-## (Return type is untyped Array until Phase 1 introduces PropSpawner.)
-@abstract func spawn_props() -> Array
+@abstract func spawn_props() -> Array[PropSpawner]
 
 func get_frame() -> int: return get_suit_index()
 
@@ -53,9 +52,35 @@ static var STANDARD : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall,
 static func from_index(i:int) -> PipSuit: return STANDARD[i].new()
 static func random_standard() -> PipSuit: return STANDARD[randi() % STANDARD.size()].new()
 
-## Fire-buff readers (self-inspection of the OWN card's statuses at spawn time).
-## Phase 2 fills this once statuses is an Array[CardModifierStatus] holding StatusBurning.
+## Fire-buff readers (self-inspection of the OWN card's statuses at spawn time). fire_mult
+## multiplies the suit-effect prop COUNT only (one knob; v1's double-dip was dropped).
 func fire_stacks() -> int:
+	if not data: return 0
+	for s : CardModifierStatus in data.statuses:
+		if s is StatusBurning: return s.stacks
 	return 0
 func fire_mult() -> int:
 	return 1 + fire_stacks()
+
+# --- Shared spawn preamble (Phase 3) --------------------------------------------------------
+
+## The board slot this suit launches from, or Vector3i.MIN when it spawns nothing: a talented
+## card (its skill suppresses its own suit effect — locked) or an off-board card.
+func _spawn_origin() -> Vector3i:
+	if data.skill: return Vector3i.MIN
+	if not game: return Vector3i.MIN
+	return game.find_data_vec3(data)
+
+## Prop count = rank × fire_mult (fire buffs count only). Non-numeral ranks count as 1.
+func _spawn_count() -> int:
+	var rank_value := 1
+	if data.rank is PipRankNumeral:
+		rank_value = int((data.rank as PipRankNumeral).value)
+	return rank_value * fire_mult()
+
+## PropBurning mod list to fold onto every emitted prop when this card is Burning (else empty).
+func _burning_mods() -> Array[PropModifier]:
+	var stacks := fire_stacks()
+	if stacks > 0:
+		return [PropBurning.new(stacks)] as Array[PropModifier]
+	return [] as Array[PropModifier]

@@ -196,11 +196,15 @@ func unlink_modifier_backrefs() -> void:
 	for card in all_card_datas():
 		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = null
+		for st: CardModifierStatus in card.statuses:
+			st.data = null
 
 func relink_modifier_backrefs() -> void:
 	for card in all_card_datas():
 		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = card
+		for st: CardModifierStatus in card.statuses:
+			st.data = card
 
 ## An independent, disk-ready copy: modifier self-cycles unlinked and scores packed to
 ## primitives, so ResourceSaver can write it and a background thread can read it safely

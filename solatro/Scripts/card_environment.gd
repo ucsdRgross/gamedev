@@ -18,6 +18,11 @@ func _exit_tree() -> void:
 func get_delay() -> float:
 	return SettingsManager.settings.base_delay
 
+## Elapsed-processing accounting hook: Game overrides this to feed the runaway event cap
+## (one call per mod invoked + per prop slot entry). No-op in base environments (map, tests).
+func note_processing(_weight := 1) -> void:
+	pass
+
 func get_card_collections() -> Array[Variant]:
 	return []
 
@@ -34,12 +39,18 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 	#print(function)
 	for data in CardDataIterator.new(self):
 		#print(data)
-		for mod : CardModifier in [data.type, data.stamp]:
+		# statuses join type/stamp as a SNAPSHOT copy (append_array) so a status removing
+		# itself mid-hook can't corrupt this walk. Statuses self-scope targeted hooks.
+		var mods : Array[CardModifier] = [data.type, data.stamp]
+		mods.append_array(data.statuses)
+		for mod : CardModifier in mods:
 			if mod and mod.has_method(function):
+				note_processing()
 				await Callable(mod, function).callv(params)
 				await skill_active_check()
 		var skill : CardModifierSkill = data.skill
 		if skill and skill.has_method(function) and skill.active:
+			note_processing()
 			await Callable(skill, function).callv(params)
 			await skill_active_check()
 	var passive_effects := &"on_anything"
@@ -67,7 +78,9 @@ func _compare_implementers(function: StringName) -> Array:
 			return _compare_cache[function]
 	var impl := []
 	for data in CardDataIterator.new(self):
-		for mod : CardModifier in [data.type, data.stamp]:
+		var mods : Array[CardModifier] = [data.type, data.stamp]
+		mods.append_array(data.statuses)
+		for mod : CardModifier in mods:
 			if mod and mod.has_method(function): impl.append(mod)
 		if data.skill and data.skill.has_method(function): impl.append(data.skill)
 	if key:
@@ -82,7 +95,9 @@ func return_first_compare_mod_result(function: StringName, ...params:Array) -> f
 
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
 	for data in CardDataIterator.new(self):
-		for mod : CardModifier in [data.type, data.stamp]:
+		var mods : Array[CardModifier] = [data.type, data.stamp]
+		mods.append_array(data.statuses)
+		for mod : CardModifier in mods:
 			if mod and mod.has_method(function):
 				var result : Array[CardData] = await Callable(mod, function).callv(params)
 				if result: return result
@@ -104,6 +119,22 @@ func skill_active_check() -> void:
 				skill.active = false
 				if skill.has_method(&"on_deactive"):
 					await Callable(skill, &"on_deactive").call()
+
+## Run `function` on ONE card's own modifiers — type, stamp, suit, a statuses snapshot, then
+## the active skill. The ONLY dispatch that sees suits; the board-wide run_all_mods iterator
+## stays suit-free. Used by the prop tick loop's 3-phase pass (on_prop_passing/passed).
+## Cost: O(mods on this card). Statuses are appended as a copy (safe if one self-removes).
+func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
+	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
+	mods.append_array(card.statuses)
+	for mod : CardModifier in mods:
+		if mod and mod.has_method(function):
+			note_processing()
+			await Callable(mod, function).callv(params)
+	var skill : CardModifierSkill = card.skill
+	if skill and skill.active and skill.has_method(function):
+		note_processing()
+		await Callable(skill, function).callv(params)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod)

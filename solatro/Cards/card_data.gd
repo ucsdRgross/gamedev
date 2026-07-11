@@ -32,7 +32,7 @@ signal stage_changed
 	set(value):
 		stamp = value
 		data_changed.emit()
-@export var statuses: Dictionary[String,int]
+@export var statuses: Array[CardModifierStatus] = []
 @export var flipped := false
 enum Stage {PLAY, DRAW, DISCARD, RULES, ZONE, DATA}
 @export var stage : Stage = Stage.PLAY:
@@ -71,6 +71,27 @@ func with_stamp(stamp:CardModifier) -> CardData:
 		self.stamp = null
 	return self
 
+## Apply a status: merge into an existing same-class status (stacks add) or append a fresh
+## copy. S7 trap: a status arriving already bound to another card is duplicated so the two
+## cards never share one stacks/data.
+func add_status(status: CardModifierStatus) -> void:
+	for existing: CardModifierStatus in statuses:
+		if existing.can_merge_with(status):
+			existing.stacks += status.stacks   # setter emits data_changed
+			return
+	if status.data != null and status.data != self:
+		status = status.duplicate() as CardModifierStatus
+	statuses.append(status.with_data(self))
+	data_changed.emit()
+
+func remove_status(status: CardModifierStatus) -> void:
+	statuses.erase(status)
+	data_changed.emit()
+
+func with_status(status: CardModifierStatus) -> CardData:
+	add_status(status)
+	return self
+
 func _on_child_data_changed() -> void:
 	data_changed.emit()
 
@@ -81,6 +102,8 @@ func _to_string() -> String:
 	if skill: s += " " + skill.get_str()
 	if type: s += " " + type.get_str()
 	if stamp: s += " " + stamp.get_str()
+	for status: CardModifierStatus in statuses:
+		s += " " + status.get_str() + "x" + str(status.stacks)
 	if s: s += " "
 	s += Stage.find_key(stage) + " " + Stage.find_key(previous_stage)
 	return s
