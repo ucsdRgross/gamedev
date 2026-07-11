@@ -91,7 +91,7 @@ static func make_hand(ranks: Array[int], suits: Array[int]) -> Array[CardData]:
 static func m_card(rank_val: float, suit_id: int) -> CardData:
 	var cd := CardData.new()
 	cd.rank = PipRankNumeral.new().with_value(rank_val)
-	cd.suit = PipSuitStandard.new().with_value(suit_id)
+	cd.suit = PipSuitTest.with_id(suit_id)
 	return cd
 
 static func m_stone() -> CardData:
@@ -108,8 +108,8 @@ func meld_ranks(r: Scoring.Result) -> Array:
 ## True if every card in the meld carries suit value == suit_val.
 func meld_all_suit(r: Scoring.Result, suit_val: float) -> bool:
 	for c in r.meld:
-		if not c or not c.suit or not ("value" in c.suit): return false
-		if float(c.suit.value) != suit_val: return false
+		if not c or not c.suit or not ("id" in c.suit): return false
+		if float((c.suit as PipSuitTest).id) != suit_val: return false
 	return true
 
 
@@ -619,8 +619,8 @@ func block_is_run(block: Array) -> bool:
 ## True if every card in the block shares suit value == suit_val.
 func block_all_suit(block: Array, suit_val: float) -> bool:
 	for c: CardData in block:
-		if not c or not c.suit or not ("value" in c.suit): return false
-		if float(c.suit.value) != suit_val: return false
+		if not c or not c.suit or not ("id" in c.suit): return false
+		if float((c.suit as PipSuitTest).id) != suit_val: return false
 	return true
 
 func run_subhand_structure_tests() -> void:
@@ -655,7 +655,7 @@ func run_subhand_structure_tests() -> void:
 	var suits_seen: Array[float] = []
 	for b in subs2:
 		if b.size() != 5: s2_ok = false; continue
-		var sv: float = b[0].suit.value if (b[0] and b[0].suit) else -1.0
+		var sv: float = (b[0].suit as PipSuitTest).id if (b[0] and b[0].suit) else -1.0
 		if not block_all_suit(b, sv): s2_ok = false
 		if suits_seen.has(sv): s2_ok = false
 		else: suits_seen.append(sv)

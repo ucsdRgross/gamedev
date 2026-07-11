@@ -4,6 +4,12 @@ Audit date: 2026-07-01. Scope: `Levels/game.gd`, `Scripts/` (card_data_iterator,
 pip_comparator, card_environment, scoring, card_data_array, mods_list), `UI/play_area.gd`,
 everything in `Cards/`, plus `Levels/main.gd` for context.
 
+**Update 2026-07-10:** the Game/GameView split landed (`Levels/game_view.gd` — headless `Game`
+logic node owned by a detachable UI view; `score_row`/`score_col` unified into `score_line`;
+headless unit tests in `Tests/Engine/test_game_data.gd` / `test_game_headless.gd`). §1.2/§1.3
+below are refreshed; resolves **S1**, **N3**, the score half of **E7**, and **D5/E3**'s
+rebuild churn — see the per-item notes.
+
 ---
 
 ## 1. ARCHITECTURE OVERVIEW
@@ -13,9 +19,9 @@ everything in `Cards/`, plus `Levels/main.gd` for context.
 Solatro is a solitaire/Balatro hybrid. **All game state lives in plain `Resource` data
 objects** (`GameData` holding arrays of `CardData`); **all game rules live in "modifier"
 resources attached to cards** (skills/stamps/types) that are invoked by name via a global
-broadcast system (`CardEnvironment.run_all_mods("on_xxx")`); **all visuals are rebuilt every
-physics frame** from the data (`PlayArea` reconciles Control nodes + `CardVisual` sprites
-against `GameData`). The engine itself (`game.gd`) contains almost no rules — even *scoring
+broadcast system (`CardEnvironment.run_all_mods("on_xxx")`); **all visuals are rebuilt from the data on
+demand** (`GameData.board_changed` → `PlayArea.queue_rebuild` reconciles Control nodes +
+`CardVisual` sprites against `GameData`). The engine itself (`game.gd`) contains almost no rules — even *scoring
 and drawing cards* only happens because a rule-card in `rules_deck` implements `on_run_scorer`
 / `on_next`.
 
@@ -27,15 +33,21 @@ Main (Levels/main.gd, scene root)
  │                               (Scripts/Map/) over the vendored worldgen addon; run
  │                               progression = RunState via RunManager autoload
  │                               (static Main.save_info aliases RunManager.run)
- └─ Game (Levels/game.gd) ...... extends CardEnvironment; the match controller
-	 │
-	 ├─ state : GameData ....... PURE DATA (Resource): draw/discard/rules decks,
-	 │                           upper/lower zones (columns of stacks), score arrays,
-	 │                           goal/total. Emits state_changed for the HUD.
-	 ├─ save_history ........... Array[GameData] "saveable" snapshots -> undo AND the
+ └─ GameView (Levels/game_view.gd) .. the show's scene root: ALL UI/input/HUD/animation.
+	 │   Creates a headless Game child and injects itself (game.view = self); binds Game's
+	 │   reactive signals (state_bound/processing_changed/submit_label_changed/show_resolved);
+	 │   buttons + card clicks call Game commands (submit/next/undo/try_grab/try_place).
+	 ├─ Game (Levels/game.gd) .. extends CardEnvironment; headless match logic. Mutates
+	 │   │                       only `state`; zero UI children; every visual touch is
+	 │   │                       `if view:` (view == null runs a full show — unit-tested
+	 │   │                       by Tests/Engine/test_game_headless.gd)
+	 │   ├─ state : GameData ... PURE DATA (Resource): draw/discard/rules decks,
+	 │   │                       upper/lower zones (columns of stacks), score arrays,
+	 │   │                       goal/total. Emits state_changed for the HUD.
+	 │   └─ save_history ....... Array[GameData] "saveable" snapshots -> undo AND the
 	 │                           persisted run.game_history (survives quit; see §1.4)
 	 └─ PlayArea (UI/play_area.gd, %PlayArea)
-		 ├─ builds a Control grid mirroring GameData zones (every physics tick)
+		 ├─ builds a Control grid mirroring GameData zones (board_changed -> queued rebuild)
 		 ├─ maps: ui_data (Control->CardData), data_ui, data_card (CardData->CardVisual)
 		 └─ CardVisual (Cards/card_visual.gd, Node2D)
 			 follows its anchor Control; tweens, float anim, stage-change animations
@@ -76,18 +88,20 @@ Scoring (Scripts/scoring.gd, static) ... poker-hand evaluation: PokerHands route
 ### 1.3 Key data flow traces
 
 **Player clicks a card** (grab/place):
-`PlayArea._on_gui_input` → `data_selected.emit(CardData)` → `Game.on_data_selected`
-→ `return_first_data_array_result("on_can_grab_stack" / "on_can_place_stack")` —
-i.e. the *rule cards* (e.g. `SkillGrabberOgLower`, `SkillPlacerOgLower`, `TypeInput`)
+`PlayArea._on_gui_input` → `data_selected.emit(CardData)` → `GameView._on_data_selected`
+(selection UI lives in the view; guarded on `game.processing`) → `Game.try_grab` /
+`Game.try_place` → `return_first_data_array_result("on_can_grab_stack" / "on_can_place_stack")`
+— i.e. the *rule cards* (e.g. `SkillGrabberOgLower`, `SkillPlacerOgLower`, `TypeInput`)
 decide legality and return the stack → `Game.move_data_ontop_data` mutates
 `GameData` arrays → fires `on_card_dropped_on` / `on_stack_cards` mods →
-`Game.save_state()` snapshots for undo. Visuals catch up next physics tick.
+`Game.save_state()` snapshots for undo. Visuals catch up via the queued rebuild.
 
 **Player presses Submit**:
-`Game._on_submit_pressed` → `run_all_mods("on_run_scorer")` → `SkillScorerCascadeLower`
+`GameView` button → `Game.submit()` → `run_all_mods("on_run_scorer")` → `SkillScorerCascadeLower`
 (a rule card) walks lower-zone rows/cols → for each, `run_all_mods("on_score_row"/"on_score_col")`
 → `SkillEvalPokerBest` calls `Scoring.PokerHands.score(cards)` → best `Result` →
-`Game.score_row/score_col` → `PlayArea.popup_meld / update_score / popup_score` animations.
+`Game.score_line` (data always; paced visuals only `if view:` —
+`view.animate_meld / update_line_score / show_meld_score / reset_meld`).
 
 **Player presses Next**:
 `run_all_mods("on_next")` → `TypeInput.on_next` (per input-zone column): drops its upper
@@ -257,12 +271,15 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
 
 ### Suspicious — verify in-engine before fixing
 
-- [ ] **S1. `Game.state` initializer + setter side effects.**
+- [x] **S1. `Game.state` initializer + setter side effects.**
   [game.gd:11-15](Levels/game.gd:11) — in Godot 4 the declaration initializer invokes the
   setter, which calls `_on_state_changed()` → `%Goal/Label` before the node is in the tree.
   If you see `get_node: Node not found` errors at game start, this is why. Also: the setter
   never disconnects the old state's `state_changed`, and re-assigning the same GameData
   would double-connect. Fix: guard with `is_node_ready()`, disconnect old state.
+  **RESOLVED 2026-07-10 by the Game/GameView split:** the `state` setter no longer touches
+  UI — it only emits `state_bound`; the view rebinds through `GameView._bind_state`
+  (disconnect-old / connect-new, the N9 discipline).
 
 - [x] **S2. `find_vec3_data` uses `Array.get(index)` on possibly out-of-range indices.**
   **VERIFIED + FIXED 2026-07-02:** test_board.gd's out-of-range probes confirmed that
@@ -319,11 +336,14 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
   the `on_stack_cards` events, and is what makes B10 dangerous. Route all placement through
   `Game.move_*` / a new `Game.add_card_to_zone`, and make those functions defer-safe.
 
-- [ ] **D3. Split `game.gd`'s responsibilities.** It is simultaneously: board mutation
+- [x] **D3. Split `game.gd`'s responsibilities.** It is simultaneously: board mutation
   engine (`move_data_to_coord` family), match lifecycle (deck setup, undo, save), scoring
   presentation (`score_row/score_col`), and HUD glue (`_on_state_changed`). Extract a
   `Board` (pure functions over GameData: find/move/topmost) — this also makes the move
   logic unit-testable, which S3 needs.
+  **DONE in two landings:** `Scripts/board.gd` (anchor-based move engine, see §5 STATUS
+  2026-07-02) and the 2026-07-10 Game/GameView split (HUD/input/animation out of game.gd;
+  headless Game unit-tested in Tests/Engine/).
 
 - [ ] **D4. Kill the global-singleton reach-through.** `CardEnvironment.CURRENT` +
   `get_current_game()` appears in ~15 files, including deep inside `CardVisual._process`.
@@ -332,12 +352,15 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
   the environment into `run_all_mods` as a parameter instead of static state; mods already
   receive nothing and fetch everything.
 
-- [ ] **D5. Replace per-physics-frame GUI rebuild with dirty flagging.**
+- [x] **D5. Replace per-physics-frame GUI rebuild with dirty flagging.**
   [play_area.gd:95-99](UI/play_area.gd:95) — the comment admits it: "since we cannot
   directly detect if array contents have changed." You *can*: every mutation already funnels
   through Game (after D2). Emit one `board_changed` signal from Game after each
   `move/discard/draw/undo` and call `set_card_zones()` from that. Keeps
   `set_card_zones_visuals` (cheap part) in process if needed for focus effects.
+  **DONE (landed with the revision counter):** `GameData.revision` setter emits
+  `board_changed` → `PlayArea.queue_rebuild()` (coalesced, deferred); direct
+  `set_card_zones`/`flush_rebuild` for undo/resume paths.
 
 - [ ] **D6. Undo via full deep-copy is fragile (B11) and heavy.** Consider command-pattern
   undo (each move records its inverse) — it eliminates the reference-remapping problem
@@ -377,9 +400,9 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
 
   ```gdscript
   var game : Game:
-      get: return CardEnvironment.get_current_game()
+	  get: return CardEnvironment.get_current_game()
   var env : CardEnvironment:
-      get: return CardEnvironment.CURRENT
+	  get: return CardEnvironment.CURRENT
   ```
 
   Mod bodies become `if not game: return` — one line, one spelling, and when the
@@ -416,9 +439,10 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
   `on_compare_ranks/suits` once into an array and consult only those; skip the walk
   entirely when the array is empty (the common case).
 
-- [ ] **E3. `_physics_process` rebuild churn** (see D5). `set_card_zones` clears and
+- [x] **E3. `_physics_process` rebuild churn** (see D5). `set_card_zones` clears and
   refills three dictionaries and touches every Control 60×/sec even when nothing moved.
   This is the biggest steady-state cost in the project.
+  **DONE with D5:** rebuilds only run on `board_changed` (revision bump), coalesced per frame.
 
 - [ ] **E4. `find_data_vec3` linear-scans the whole board** and is called repeatedly per
   move (`move_data_to_coord` calls it, callers call it first too — `move_data_ontop_data`
@@ -435,9 +459,11 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
   `bind_control(c: Control, d: CardData)`; same for the visual settings. ~40 lines saved,
   one place to fix S5.
 
-- [ ] **E7. `game_data.gd:print_board` duplicates the upper/lower dump** — extract
+- [~] **E7. `game_data.gd:print_board` duplicates the upper/lower dump** — extract
   `_zone_to_csv(types, zone)` and call twice. `score_row`/`score_col` in game.gd are also
   near-identical → one `score_line(result, score_zone, index)` after B1 is fixed.
+  **PARTIAL 2026-07-10:** the score half landed as `Game.score_line(result, is_row, zone,
+  index)`; the `print_board` duplication remains.
 
 - [ ] **E8. `BoosterTemplate` repeats the gather-and-broadcast pattern 10×**
   ([booster_template.gd](Cards/Types/booster_template.gd)) — `create_one_choice` and
@@ -494,7 +520,7 @@ move_data_ontop_data(moving, dest_card) is the main entry point):
 move_stack(moving, count, dest):
   # PHASE 1 — RESOLVE (read-only; fail fast, mutate nothing)
   src := locate(moving)                     # (zone, col, row) — from the position index,
-                                            #   not a linear scan (see 5.4)
+											#   not a linear scan (see 5.4)
   if src == NOT_FOUND: return ERR_NOT_ON_BOARD
   count := clamp(count, 1, column_size(src) - src.row)   # -1 means "rest of column"
   stack := the `count` cards at src.row.. (NOT yet removed)
@@ -502,19 +528,19 @@ move_stack(moving, count, dest):
   # PHASE 2 — VALIDATE (all preconditions in one place, still read-only)
   if dest is OnTop and dest.card in stack: return ERR_DEST_INSIDE_STACK
   if dest is OnTop and locate(dest.card) == NOT_FOUND and dest.card not in zone_types:
-      return ERR_DEST_NOT_ON_BOARD
+	  return ERR_DEST_NOT_ON_BOARD
   if dest resolves to exactly (src position): return OK_NOOP   # explicit no-op, no events
 
   # PHASE 3 — MUTATE (two primitive operations, nothing else)
   extract(src.zone, src.col, src.row, count)      # one splice
   insert_at(resolve(dest), stack)                 # anchor resolved AFTER extraction —
-                                                  #   this is the entire "compensation"
+												  #   this is the entire "compensation"
   for c in stack: c.stage = PLAY                  # (or ZONE — derive from dest)
 
   # PHASE 4 — NOTIFY (after the board is consistent)
   update position index for affected columns
   if trigger_mods:
-      emit on_card_dropped_on / on_stack_cards    # board is already valid when mods run
+	  emit on_card_dropped_on / on_stack_cards    # board is already valid when mods run
   return OK
 ```
 
@@ -539,7 +565,7 @@ Define once, in a debug-only `Board.validate()` called after every mutation
 (and by every fuzz test in UNIT_TESTS_PLAN.md):
 
   I1. Every CardData appears in EXACTLY ONE of: draw_deck, discard_deck, rules_deck,
-      a zone column, a zone_type row.  (No duplicates, no orphans.)
+	  a zone column, a zone_type row.  (No duplicates, no orphans.)
   I2. upper_zone.size() == upper_zone_type.size(); same for lower. (Dies with D10.)
   I3. card.stage matches its container (DRAW ⇔ draw_deck, ZONE ⇔ zone_type row, ...).
   I4. Position index (5.4), if present, agrees with a full rescan.
@@ -628,6 +654,9 @@ original B/S/D/E numbering stable.
   (compounds B10) and then `save_state()` mid-pass, corrupting undo history. Fix:
   `if processing: return` at the top of `on_data_selected` (and probably ungrab on
   processing start).
+  **FIXED 2026-07-10 (split):** every Game command (`submit/next/undo/try_grab/try_place`)
+  guards `processing` in Game, and `GameView._on_data_selected` early-returns while busy.
+  Covered by `test_game_headless.test_command_guard_blocks_input`.
 
 - [x] **N4. `TypeInput.on_next` assumes upper column i maps to lower column i.**
   [type_input.gd:24-29](Cards/Types/type_input.gd:24) — `drop_card` finds its own column
@@ -679,12 +708,15 @@ original B/S/D/E numbering stable.
   removed column's total and every later column's score stays shifted relative to the
   board. Shrink (or re-key scores by zone card rather than index — the D10 `Zone` struct
   does this for free).
-- [ ] **N9. Resource-signal connect-without-disconnect pattern** (generalizes S1):
+- [~] **N9. Resource-signal connect-without-disconnect pattern** (generalizes S1):
   `Game.state` setter, `SettingsManagerClass.settings` setter
   ([settings_manager.gd:8-11](Scripts/settings_manager.gd:8)), and `CardVisual.with_data`
   all connect to a resource's signal and never disconnect the previous resource —
   re-assignment double-fires or keeps dead objects reachable. Adopt one idiom:
   disconnect-old / connect-new in every resource-holding setter.
+  **PARTIAL 2026-07-10:** the game-state case is fixed (`GameView._bind_state` disconnects
+  the old state on every swap); `SettingsManagerClass.settings` and `CardVisual.with_data`
+  still open.
 - [x] **N10. No persistence:** resolved — runs now persist as `RunState`
   (Scripts/run_state.gd) via the `RunManager` autoload (Scripts/run_manager.gd) to
   `user://run_save/` (run.tres + the worldgen map bake). Loss clears the save; the menu's

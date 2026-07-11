@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://b0nr8s0uyec23" path="res://Cards/card_data.gd" id="2_rbggy"]
 [ext_resource type="Texture2D" uid="uid://kn4i2neigyf3" path="res://Assets/card_types.png" id="2_y74k2"]
 [ext_resource type="Script" uid="uid://c5mgc8r0lle4w" path="res://Cards/Stamps/stamp_global.gd" id="4_uqrsc"]
-[ext_resource type="Script" uid="uid://cuxy11agy0s0s" path="res://Cards/Pips/pip_suit_standard.gd" id="5_2gib3"]
 [ext_resource type="Script" uid="uid://d0trwxy6cxbji" path="res://Cards/Types/type_paper.gd" id="6_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="8_rbggy"]
 [ext_resource type="Shader" uid="uid://nme8n2abyqji" path="res://Assets/color_picker.tres" id="8_uqrsc"]
@@ -23,8 +22,6 @@ script = ExtResource("4_uqrsc")
 metadata/_custom_type_script = "uid://c5mgc8r0lle4w"
 
 [sub_resource type="Resource" id="Resource_cksyn"]
-script = ExtResource("5_2gib3")
-value = 1
 metadata/_custom_type_script = "uid://cuxy11agy0s0s"
 
 [sub_resource type="Resource" id="Resource_0xvu6"]

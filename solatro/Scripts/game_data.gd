@@ -194,12 +194,12 @@ func unpack_scores() -> void:
 # forward ref (no cycle) and is left intact.
 func unlink_modifier_backrefs() -> void:
 	for card in all_card_datas():
-		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = null
 
 func relink_modifier_backrefs() -> void:
 	for card in all_card_datas():
-		for mod : CardModifier in [card.skill, card.type, card.stamp]:
+		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
 			if mod: mod.data = card
 
 ## An independent, disk-ready copy: modifier self-cycles unlinked and scores packed to

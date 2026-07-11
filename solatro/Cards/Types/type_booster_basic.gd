@@ -15,7 +15,7 @@ func get_possible_suits() -> Array[PipSuit]:
 	var suits : Array[PipSuit]
 	suits.resize(4)
 	for i in 4:
-		suits[i] = PipSuitStandard.new().with_value(i + 1)
+		suits[i] = PipSuit.from_index(i)
 	return suits
 ## Luck-gated extras: these only appear on generated cards when RunManager.luck rolls hit.
 func get_possible_stamps() -> Array[CardModifierStamp]:

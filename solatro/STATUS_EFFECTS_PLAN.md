@@ -13,6 +13,14 @@ Design decisions locked in by this plan:
 - **Always active**: unlike skills, statuses don't need the rules deck; `is_active()` is
   overridden to `stacks > 0`.
 
+**Update 2026-07-10:** this plan is now Phase 2 of the suit-modifier plan
+(`task-plan-out-adding-precious-mochi.md`), whose first consumers are `StatusJuggling` /
+`StatusBurning`. Two deltas from the text below: (1) dispatch has since become
+instance-based and the comparator walk moved into a cached `_compare_implementers` — see
+the corrected site list in Step 3; (2) statuses also hear the new targeted per-card hook
+`on_entity_passed(entity)` (fired via `run_card_mods` when a board entity passes over
+their card).
+
 ---
 
 ## Step 1 — Base class `Cards/card_modifier_status.gd`
@@ -86,9 +94,12 @@ Migration: grep for uses of the old `statuses` dictionary first; if it is truly 
 
 ## Step 3 — Dispatch ([card_environment.gd](Scripts/card_environment.gd))
 
-In **all three** walkers — `run_all_mods` (line 34), `return_first_compare_mod_result`
-(line 48), `return_first_data_array_result` (line 58) — replace the fixed
-`[data.type, data.stamp]` inner list with a snapshot that includes statuses:
+In **all four** dispatch sites (dispatch is instance-based since 2026-07-02) —
+`run_all_mods` (~line 37), `_compare_implementers` (~line 70; it feeds
+`return_first_compare_mod_result`, which no longer walks cards itself),
+`return_first_data_array_result` (~line 85), and the targeted `run_card_mods` (added by the
+suit-modifier plan) — replace the fixed `[data.type, data.stamp]` inner list with a snapshot
+that includes statuses:
 
 ```gdscript
 var mods : Array[CardModifier] = [data.type, data.stamp]
@@ -159,12 +170,13 @@ extend to a variable-count list.
 
 ## Step 7 — Persistence
 
-Free: `@export`/`@export_storage` on an `Array[CardModifierStatus]` of Resources
-serializes through `PlayerSave` the same way skill/type/stamp already do. Verify
-`return_to_map` keeps statuses (it keeps the CardData objects, so yes) and decide
-per-status whether it should survive the run — add an optional
-`func persists_between_games() -> bool: return true` and strip non-persistent ones in
-`Game.return_to_map`.
+Mostly free: `@export`/`@export_storage` on an `Array[CardModifierStatus]` of Resources
+serializes through the run save (`RunManager` → `user://run_save/run.tres`) the same way
+skill/type/stamp already do — EXCEPT the `data` back-cycle, which must join the
+unlink/relink lists (see C1 below). Verify `return_to_map` keeps statuses (it keeps the
+CardData objects, so yes) and decide per-status whether it should survive the show — add an
+optional `func persists_between_games() -> bool: return true` and strip non-persistent ones
+in `Game.return_to_map`.
 
 ---
 
@@ -172,29 +184,21 @@ per-status whether it should survive the run — add an optional
 
 These are from ARCHITECTURE_REVIEW.md; both get *worse* once statuses exist.
 
-### C1. Undo back-reference corruption (review item B11) — fix BEFORE or WITH this feature
+### C1. Undo back-reference corruption (review item B11) — RESOLVED upstream, one task left
 
-`GameData.duplicate_state()` uses `Resource.duplicate(true)`, which copies resources but
-does **not** remap cross-references: every duplicated modifier's `.data` still points at
-the CardData from the previous snapshot. Statuses multiply the exposure — an array of
-stateful resources per card (`stacks` is exactly the kind of mutable state undo must
-restore), and every self-scope guard (`if target != data`) silently fails against stale
-references after one undo.
+**B11 was fixed 2026-07-01:** `GameData.duplicate_state()` now uses
+`Resource.duplicate_deep(DEEP_DUPLICATE_ALL)`, which remaps ALL cross-references — including
+each status's `.data` backref and mod-internal card refs (`ZoneAdder.card_data`,
+`SkillEchoingTrigger.triggered`, `SkillHungryHippo.consumed_cards`). No manual rebind pass
+is needed for undo copies.
 
-Required fix (in `duplicate_state()` or a new `CardData.rebind()`): after duplication,
-walk every copied CardData and re-point children at the copy:
-
-```gdscript
-for data in copy.all_card_datas():   # draw/discard/rules/zones/zone types
-    if data.skill: data.skill.data = data
-    if data.type:  data.type.data  = data
-    if data.stamp: data.stamp.data = data
-    for st in data.statuses: st.data = data
-```
-
-(Also audit mod-internal card refs: `ZoneAdder.card_data`, `SkillEchoingTrigger.triggered`,
-`SkillHungryHippo.consumed_cards` — same staleness class, needs per-mod rebind or a
-command-pattern undo, see review D6.)
+**What this feature still owes:** the *serialization* cycle. `card → status → data` is a
+self-cycle ResourceSaver can't write, exactly like skill/type/stamp — add
+`for st in card.statuses: st.data = ...` to all FOUR unlink/relink sites:
+`GameData.unlink_modifier_backrefs` / `relink_modifier_backrefs` (game_data.gd) and
+`RunManager._to_saveable_cards` / `_relink_cards` (run_manager.gd). And keep the undo
+regression test (`status.data == its card` after undo) — cheap insurance on the
+duplicate_deep behavior.
 
 ### C2. Mutation during dispatch (review item B10)
 

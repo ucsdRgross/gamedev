@@ -35,12 +35,18 @@ func _print_summary() -> void:
 # TEST DOUBLES
 # ==============================================================================
 
-## Suit outside the PipSuitStandard match arm — compare_suits must return NAN for these.
+## Parameterized test suit — compare_suits is always NAN now (suits are nominal); id drives
+## get_str so distinct ids are distinct suits and equal ids are the same suit.
 class WeirdSuit extends PipSuit:
-	func get_str() -> String: return "?"
-	func set_texture(_p: Polygon2D) -> void: pass
-	func set_art_texture(_p: Polygon2D, _r: PipRank) -> void: pass
-	func with_random() -> PipSuit: return self
+	var id := 0
+	func get_suit_index() -> int: return 0
+	func get_str() -> String: return "Weird%d" % id
+	func get_description() -> String: return "?"
+	func spawn_props() -> Array: return []
+	static func with_id(i: int) -> WeirdSuit:
+		var s := WeirdSuit.new()
+		s.id = i
+		return s
 
 ## Rank outside PipRankNumeral — still has `value`, so compare_ranks falls to the
 ## "value in both" arm and compares numerically (pinned below).
@@ -78,20 +84,19 @@ func run_no_environment_tests() -> void:
 
 	var r7 := PipRankNumeral.new().with_value(7)
 	var r5 := PipRankNumeral.new().with_value(5)
-	var s1 := PipSuitStandard.new().with_value(1)
-	var s3 := PipSuitStandard.new().with_value(3)
+	var s1 := PipSuit.from_index(0)
+	var s3 := PipSuit.from_index(2)
 
 	check(await PipComparator.compare_ranks(r7, r5) == 2.0, "compare_ranks 7 vs 5 == 2")
 	check(await PipComparator.compare_ranks(r5, r7) == -2.0, "compare_ranks antisymmetric")
 	check(is_nan(await PipComparator.compare_ranks(null, r5)), "compare_ranks null r1 -> NAN")
 	check(is_nan(await PipComparator.compare_ranks(r5, null)), "compare_ranks null r2 -> NAN")
 
-	check(await PipComparator.compare_suits(s3, s1) == 2.0, "compare_suits 3 vs 1 == 2")
+	#suits are nominal now — compare_suits has no order, always NAN without a mod
+	check(is_nan(await PipComparator.compare_suits(s3, s1)), "compare_suits nominal -> NAN")
 	check(is_nan(await PipComparator.compare_suits(null, s1)), "compare_suits null -> NAN")
 	check(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), s1)),
-			"compare_suits non-standard suit -> NAN")
-	check(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), WeirdSuit.new())),
-			"compare_suits two non-standard suits -> NAN")
+			"compare_suits any suit -> NAN")
 
 	#pin: non-numeral ranks still compare via the generic `value` arm
 	var w4 : PipRank = WeirdRank.new().with_value(4)
@@ -119,17 +124,19 @@ func run_predicate_tests() -> void:
 			PipRankNumeral.new().with_value(7)), "is_rank_next_to diff 2 false")
 	check(not await PipComparator.is_rank_next_to(a, null), "is_rank_next_to null false")
 
-	var h1 := PipSuitStandard.new().with_value(2)
-	var h2 := PipSuitStandard.new().with_value(2)
-	check(PipComparator.is_suit_same(h1, h1), "is_suit_same identity")
-	check(PipComparator.is_suit_same(h1, h2), "is_suit_same equal values")
-	check(not PipComparator.is_suit_same(h1, PipSuitStandard.new().with_value(3)),
-			"is_suit_same 2 vs 3 false")
-	check(not PipComparator.is_suit_same(null, h1), "is_suit_same null false")
-	var wa := WeirdSuit.new()
-	check(PipComparator.is_suit_same(wa, wa), "is_suit_same non-standard identity true")
-	check(not PipComparator.is_suit_same(WeirdSuit.new(), WeirdSuit.new()),
-			"is_suit_same distinct non-standard false")
+	var h1 := PipSuit.from_index(1)
+	var h2 := PipSuit.from_index(1)
+	check(await PipComparator.is_suit_same(h1, h1), "is_suit_same identity")
+	check(await PipComparator.is_suit_same(h1, h2), "is_suit_same same class (nominal)")
+	check(not await PipComparator.is_suit_same(h1, PipSuit.from_index(2)),
+			"is_suit_same different class false")
+	check(not await PipComparator.is_suit_same(null, h1), "is_suit_same null false")
+	var wa := WeirdSuit.with_id(0)
+	check(await PipComparator.is_suit_same(wa, wa), "is_suit_same identity (parameterized) true")
+	check(await PipComparator.is_suit_same(WeirdSuit.with_id(5), WeirdSuit.with_id(5)),
+			"is_suit_same same id (same name) true")
+	check(not await PipComparator.is_suit_same(WeirdSuit.with_id(1), WeirdSuit.with_id(2)),
+			"is_suit_same distinct ids false")
 
 	check(PipComparator.is_ace(PipRankNumeral.new().with_value(1)), "is_ace value 1 true")
 	check(PipComparator.is_ace(PipRankNumeral.new().with_value(1.0)), "is_ace 1.0 float true")
@@ -158,7 +165,7 @@ func run_scorable_tests() -> void:
 	check(not PipComparator.is_scorable(TestFactories.m_stone()), "stone (no pips) not scorable")
 	check(not PipComparator.is_scorable(null), "null card not scorable")
 	var rankless := CardData.new()
-	rankless.suit = PipSuitStandard.new().with_value(1)
+	rankless.suit = PipSuit.from_index(0)
 	check(not PipComparator.is_scorable(rankless), "null rank not scorable")
 
 
@@ -194,8 +201,8 @@ func run_mod_override_tests() -> void:
 
 	#suits too
 	spy.suit_result = 5.0
-	check(await PipComparator.compare_suits(PipSuitStandard.new().with_value(1),
-			PipSuitStandard.new().with_value(1)) == 5.0, "mod override: suits -> 5")
+	check(await PipComparator.compare_suits(PipSuit.from_index(0),
+			PipSuit.from_index(0)) == 5.0, "mod override: suits -> 5")
 
 	#nulls short-circuit BEFORE mods run (pinned: mods never see null pips)
 	spy.rank_calls = 0
