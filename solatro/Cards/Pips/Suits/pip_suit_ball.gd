@@ -3,9 +3,8 @@ class_name PipSuitBall
 extends PipSuit
 
 func get_suit_index() -> int: return 2
-func get_str() -> String: return "Ball"
-func get_description() -> String:
-	return "On score: balls equal to rank fly to talents down the column (mancala), leaving Juggling."
+func get_str() -> String: return TRANSLATION.find('SUIT_BALL')
+func get_description() -> String: return TRANSLATION.find('SUIT_BALL_DESCRIPTION')
 
 ## Balls are ballistic: a mancala walk down the column picks `count` talent targets at spawn
 ## (pure data), and one ball per tick flies straight to each, dropping Juggling on arrival.

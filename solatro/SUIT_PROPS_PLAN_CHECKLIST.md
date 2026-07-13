@@ -48,7 +48,8 @@ sites), [[code-style-lean-documented]].
 - [x] `with_suit`: `self.suit = suit.with_data(self) if suit else null`
 - [x] `game_data.gd` `unlink_modifier_backrefs`/`relink_modifier_backrefs` (:195-203) — add `card.suit`
 - [x] `run_manager.gd` `_to_saveable_cards`/`_relink_cards` (:123-133) — add `card.suit`
-- [ ] Verify undo + add_deck: print `card.suit.data == card` true after both
+- [x] Verify undo + add_deck: `card.suit.data == card` after both — as CHECKS in
+  `test_game_headless.gd` (undo relink + add_deck deep-duplicate), not prints (audit pass)
 
 ### 0.5 Deck construction (mechanical)
 - [x] `Decks/deck.gd` (40+ sites): `PipSuitStandard.new().with_value(i)` → `PipSuit.from_index(i-1)`; `.with_random()` → `PipSuit.random_standard()`
@@ -138,23 +139,66 @@ sites), [[code-style-lean-documented]].
 ---
 
 ## Phase 4 — Visual layer
-- [ ] `UI/prop_layer.gd` (node under SmoothScrollContainer/TopLevelVBox, unique name)
-- [ ] `PropLayer`: `_process` interpolation vs LIVE tick seconds, `begin_prop_tick`, reactions state machine, `slot_point`/`staged_point`/`void_point`
-- [ ] `Cards/Props/prop_visual.gd` + hoop/knife/ball/fire/firework visuals (placeholder `_draw`, `art_size`)
-- [ ] `UI/play_area.gd` expose `prop_layer`; `game_view.gd` `begin_prop_tick` seam
-- [ ] `card_visual.gd` `anim_spin()`
-- [ ] Verify (USER runs)
+- [x] `UI/prop_layer.gd` (node under SmoothScrollContainer/TopLevelVBox, unique name `%PropLayer`)
+- [x] `PropLayer`: `_process` interpolation vs LIVE tick seconds, `begin_prop_tick`, reactions state machine, `slot_point`/`staged_point`/`void_point` — NOTE: coord→point via `PlayArea.slot_center_global` + `to_local`; reactions fire at tick-start occupancy (anticipation), not arrival
+- [x] `Cards/Props/prop_visual.gd` + hoop/knife/ball/fire/firework visuals (placeholder `_draw`, `art_size`); added `face_travel` (knife points along travel), Ball/Fire arc `travel_curve`
+- [x] `UI/play_area.gd` expose `prop_layer` (+ `control_for_coord`/`slot_center_global`); `game_view.gd` `begin_prop_tick` seam
+- [x] `card_visual.gd` `anim_spin()`
+- [x] Playtest fixes: last-tick despawn (self-despawn tween), speed knob → `PlayerSettings.prop_tick_fraction`
+- [x] Verify (USER playtested — works; issues logged for later polish)
 
 ---
 
 ## Phase 5 — Status visuals + tooltips
-- [ ] Status Polygon2D slot + count Label in `update_visual()`
-- [ ] `ControlCard.describe_card` append suit + status descriptions
-- [ ] Pip/status hover tooltips + keyboard/controller focus path [[solatro-multimodal-input]]
+- [x] Status visual v1 in `update_visual()` — runtime `StatusLayer` (Node2D, no .tscn slot/asset) drawing per-status placeholder icons + `×N` counts; `CardModifierStatus.draw_icon` hook
+- [x] `ControlCard.describe_card` append suit description + one line per status
+- [x] Board card hover tooltip = `describe_card` (mouse). — [x] keyboard/controller focus popup
+  (audit pass: play_area.gd focus inspector — non-mouse focus pops a describe_card panel; mouse
+  keeps the native tooltip; ui_cancel dismisses [[solatro-multimodal-input]]). — [ ] per-pip
+  granularity still TODO (runtime iteration)
+- [x] Localization: all suit/status UI text via `TRANSLATION.find` (CSV SUITS/STATUSES section)
 
 ---
 
 ## Phase 6 — Docs
-- [ ] DESIGN_DOC.md §10
-- [ ] ARCHITECTURE_REVIEW.md
-- [ ] STATUS_EFFECTS_PLAN.md (mark Steps 1–7 done)
+- [x] DESIGN_DOC.md §10 (Locked & implemented block)
+- [x] ARCHITECTURE_REVIEW.md (§1.6 Suit props & statuses)
+- [x] STATUS_EFFECTS_PLAN.md (banner: Steps 1–7 done; `on_prop_passed` name fix)
+
+---
+
+## Audit pass (2026-07-11, SUIT_PROPS_AUDIT_BRIEF.md) — see SUIT_PROPS_HANDOFF.md top section
+- [x] FIX: StatusLayer corner used scaled `card_size` in root-scaled coords (≈2.5× off at
+  default card_scale) → constant `CARD_SIZE`, scale-proof (card_visual.gd)
+- [x] FIX: `tick_done` persistent-signal hang risk → `PropLayer.tick_pending()` +
+  `GameView.prop_tick_pending()`; run_props awaits only while pending (game.gd SYNC)
+- [x] FIX: `slot_center_global` empty-slot fallback now includes the VBox theme separation
+- [x] Keyboard/controller focus inspector (Phase 5 open item — above)
+- [x] Checklist 0.4 verify as tests (above)
+- [x] NEW: `Tests/UI/test_ui_props.gd` (36 checks) — PropLayer lifecycle/teleport/reactions,
+  slot geometry, StatusLayer/tooltips, focus inspector, full GameView submit under watchdog;
+  registered in all_tests.tscn before E2E (waits for all siblings except E2E)
+- Open (owner decisions): Firework grant path; reactions at tick-start vs arrival; real
+  `status_pips.png`; per-pip tooltip granularity; staged-train edge clipping (visual check)
+
+## Playtest round 2 (2026-07-12) — see SUIT_PROPS_HANDOFF.md top section
+- [x] Native tooltips REMOVED (popup Window blocked clicks) → focus inspector is THE card-text
+  surface for all input modes; pure-display (IGNORE/FOCUS_NONE), hides on mouse-exit/cancel
+- [x] `slot_center_global` anchors card centers (control top + half card), not rect centers →
+  straight row travel (was zig-zagging between strip and full-height controls)
+- [x] Props pop from their SOURCE CARD, not `route[0]` (knives no longer materialize at the edge)
+- [x] `PropVisual.span_ticks`/`t_goal`: tps>1 legs spread continuously over their ticks (no
+  sprint-then-freeze); despawn runs at prop speed and exits a full slot pitch
+- [ ] Re-playtest: knife/hoop symmetry + staged-train look after these fixes
+
+## Playtest round 3 (2026-07-12) — see SUIT_PROPS_HANDOFF.md top section
+- [x] Click blocker was the SmoothScroll addon rewriting the inspector panel to
+  MOUSE_FILTER_PASS → panel claims the addon's meta marker before add_child
+- [x] `submits_used` moved into GameData (undo/save snapshots rewind the act count);
+  `Game.submits_used` forwards; resume order fixed; undo persists + relabels;
+  `test_undo_rewinds_act_count` added
+- [x] Row props materialize at their staged off-board train spot (no card→edge backswing)
+- [x] Empty-slot fallback y now matches occupied slots exactly (knife dip at short columns)
+- [x] Fixed the 2 broken test assertions (zero-length leg; FOCUS_NONE header grab)
+- [ ] OWNER: run all_tests from the editor (agent must not run headless while the editor is
+  open) + re-playtest knives/hoops and undo-across-submit

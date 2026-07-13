@@ -21,6 +21,20 @@ the corrected site list in Step 3; (2) statuses also hear the new targeted per-c
 `on_entity_passed(entity)` (fired via `run_card_mods` when a board entity passes over
 their card).
 
+**✅ IMPLEMENTED 2026-07-11 (Suit-Props plan Phase 2 + Phase 5).** Steps 1–7 are all done and
+unit-tested (`test_statuses`, 19 checks): `CardModifierStatus` base + merge/expiry/self-scope,
+`CardData.statuses` with `add_status`/`remove_status`/`with_status`, the instance-based dispatch
+snapshot in all four sites, and the shipped statuses `StatusJuggling` / `StatusBurning`. As-built
+notes vs the text below:
+- The per-card prop hook is named **`on_prop_passed`** (not `on_entity_passed`); statuses hear it
+  through `run_card_mods` alongside the `run_all_mods` broadcasts.
+- `stacked(script, n)` is script-based (GDScript static funcs have no `self`), not the polymorphic
+  `static stacked(n)` sketched below.
+- **Step 6 visuals shipped as placeholders** (Phase 5): no `status_pips.png` asset yet, so
+  `set_texture` is a no-op and a runtime `StatusLayer` draws primitive icons + `×N` counts;
+  descriptions are localized via `TRANSLATION.find` and appear in `describe_card` / card tooltips.
+  Swap in the real asset + framing when it exists.
+
 ---
 
 ## Step 1 — Base class `Cards/card_modifier_status.gd`

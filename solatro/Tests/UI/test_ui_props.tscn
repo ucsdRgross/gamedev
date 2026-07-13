@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/UI/test_ui_props.gd" id="1"]
+
+[node name="TestUiProps" type="Node"]
+script = ExtResource("1")

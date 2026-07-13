@@ -3,10 +3,14 @@ extends CardModifierStatus
 ## Dropped by Ball props. When its card is scored, banks `stacks` into that card's COLUMN
 ## gutter (the balls it is juggling pay out). Self-scoped like every status.
 
-func get_str() -> String: return "Juggling"
+func get_str() -> String: return TRANSLATION.find('STATUS_JUGGLING')
 func get_description() -> String:
-	return "When scored: +%d column score (balls juggled)." % stacks
+	return TRANSLATION.find('STATUS_JUGGLING_DESCRIPTION') % stacks
 func get_frame() -> int: return 0
+
+## Placeholder: a small ball (matches BallVisual's fill).
+func draw_icon(canvas: CanvasItem, at: Vector2, size: float) -> void:
+	canvas.draw_circle(at + Vector2(size, size) * 0.5, size * 0.4, Color(1.0, 0.8, 0.3))
 
 func on_score(target: CardData) -> void:
 	if target != data: return

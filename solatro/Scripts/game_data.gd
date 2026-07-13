@@ -33,6 +33,10 @@ var revision : int = 0:
 	set(value):
 		row_total = value
 		state_changed.emit()
+## Acts used this show. Lives ON the board state so every undo/history snapshot carries it:
+## undoing across a Submit rewinds the act count together with the board (it used to be a
+## Game-level counter that undo never touched — owner bug report 2026-07-12).
+@export_storage var submits_used : int = 0
 
 ## One act's payout (DESIGN_DOC §2): the act's accumulated row and column totals multiply
 ## into mult_score, which is added to total_score; the totals reset for the next act.

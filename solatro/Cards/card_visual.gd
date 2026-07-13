@@ -77,6 +77,10 @@ func update_visual() -> void:
 	# a face already set during _ready (e.g. the instant-face snap for non-drawn cards).
 	if not is_node_ready():
 		await ready
+	if status_layer:
+		# Statuses show only on the card's front face.
+		status_layer.visible = show_front and data != null
+		if status_layer.visible: status_layer.refresh(data)
 	if show_front and data:
 		if data.rank:
 			data.rank.set_texture(rank)
@@ -130,6 +134,7 @@ func update_visual() -> void:
 var num : int = 0
 var move_tween : Tween
 var tilt_tween : Tween
+var spin_tween : Tween
 var held : int = 0
 var hover : bool = false
 
@@ -140,8 +145,11 @@ var hover : bool = false
 @onready var stamp: Polygon2D = $Offset/Visual/Stamp
 @onready var suit: Polygon2D  = $Offset/Visual/Suit
 @onready var art: Polygon2D = $Offset/Visual/Art
-	
-	
+## Phase 5 status icons — created at runtime (no .tscn slot) so a status_pips.png asset isn't
+## required; sits in the card's top-left corner and rides the offset like the polygons.
+var status_layer : StatusLayer
+
+
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
 	card.current_context = context
@@ -166,6 +174,13 @@ func _ready() -> void:
 		#front.frame = 0
 		##child_offset = Vector2(0,0)
 		#basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
+	status_layer = StatusLayer.new()
+	# Top-left of the card face in UNSCALED local coords (the root's `scale` applies card_scale,
+	# exactly like the polygon children) — using the scaled card_size here would double-apply it.
+	status_layer.position = Vector2(-CARD_SIZE.x * 0.5 + 3.0, -CARD_SIZE.y * 0.5 + 3.0)
+	status_layer.z_index = 1   # above the card polygons
+	visual.add_child(status_layer)
+	status_layer.refresh(data)
 	SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()
 	match data.previous_stage:
@@ -280,6 +295,9 @@ func delta_self_moving_logic(delta:float) -> void:
 		# other context (deck/pack viewers, map, preview) is a static display that tracks its
 		# anchor exactly, so it never eases in from the origin (no first-card fly-in). The
 		# difference is inherent to the context, so it branches on the context, not on a flag.
+		# NOTE: PLAY_AREA cards live on PlayArea's CardLayer INSIDE the scroll content, so a
+		# scroll shifts card and anchor globals identically — the ease sees no scroll motion
+		# and only ever animates genuine anchor-relative travel (no scroll lag).
 		if current_context == DisplayContext.PLAY_AREA:
 			# lerp is bad, frame dependent — should be a tween when data is moving slots, but
 			# something must keep the card attached to its control between moves.
@@ -351,6 +369,17 @@ func anim_jump() -> float:
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
 	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
 	return delay * .4
+
+func anim_spin() -> float:
+	# Mirrors anim_jump (:342) but drives rotation, so it COMPOSES with a concurrent jump
+	# (offset:y vs offset:rotation are independent properties). Guard the null offset the same.
+	if not offset: return 0.0
+	reset_tween(spin_tween)
+	var delay := CardEnvironment.CURRENT.get_delay()
+	spin_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	spin_tween.tween_property(offset, "rotation", TAU, delay * .6)
+	spin_tween.tween_callback(func()->void: offset.rotation = 0.0)
+	return delay * .6
 
 func anim_reset() -> void:
 	if not offset: return

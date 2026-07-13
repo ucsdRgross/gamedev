@@ -3,9 +3,8 @@ class_name PipSuitFire
 extends PipSuit
 
 func get_suit_index() -> int: return 3
-func get_str() -> String: return "Fire"
-func get_description() -> String:
-	return "On score: fire equal to rank flies down the column (skipping talents and Fire), leaving Burning."
+func get_str() -> String: return TRANSLATION.find('SUIT_FIRE')
+func get_description() -> String: return TRANSLATION.find('SUIT_FIRE_DESCRIPTION')
 
 ## Fire is ballistic like Ball, but its mancala eligibility skips talents AND other Fire cards,
 ## and it drops Burning (which buffs the target's own suit-effect count). The same-act cascade

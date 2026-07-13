@@ -61,8 +61,10 @@ func validate_ok(g: Game, ctx: String) -> void:
 # ==============================================================================
 func run_win_and_resume_scenario() -> void:
 	var deck := Deck.new()
-	var deck_size := deck.get_deck().size()
-	var run := RunManager.new_run(deck.get_deck(), deck.get_rules())
+	# PINNED deck, not get_deck(): the seeded win below was built against deck9, and the
+	# active playtest deck changes freely.
+	var deck_size := deck.deck9.size()
+	var run := RunManager.new_run(deck.deck9, deck.get_rules())
 	Main.save_info = run
 	check(RunManager.has_save(), "starting a run immediately writes a resumable save")
 	run.pending_goal = 1     # the map node's fame requirement for this show
@@ -175,7 +177,8 @@ func run_win_and_resume_scenario() -> void:
 # ==============================================================================
 func run_loss_scenario() -> void:
 	var deck := Deck.new()
-	var run := RunManager.new_run(deck.get_deck(), deck.get_rules())
+	# PINNED for the same reason as the win scenario: replay-stable across get_deck() flips.
+	var run := RunManager.new_run(deck.deck9, deck.get_rules())
 	Main.save_info = run
 	run.pending_goal = 1000000000
 	run.pending_node_id = 1

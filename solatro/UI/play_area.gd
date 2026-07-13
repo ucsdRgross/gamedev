@@ -34,6 +34,12 @@ var new_data_card : Dictionary[CardData, CardVisual]
 @onready var lower_zone_right: HBoxContainer = %LowerZoneRight
 @onready var middle_zone_left: Control = %MiddleZoneLeft
 @onready var middle_zone_right: HBoxContainer = %MiddleZoneRight
+@onready var prop_layer: PropLayer = %PropLayer   ## Phase 4 prop-animation surface
+## CardVisual host INSIDE the scroll content (a Node2D the containers ignore, like PropLayer):
+## the scroll transform carries cards, controls, and props together. Parented to the PlayArea
+## root, cards chased their anchors' scrolled globals through the _process ease and visibly
+## lagged every scroll (owner report 2026-07-12).
+@onready var card_layer: Node2D = %CardLayer
 
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
@@ -97,6 +103,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 
 func ungrab_cards() -> void:
 	flush_rebuild() #reads data_card / data_ui
+	hide_focus_info() #ui_cancel/right-click also dismisses the focus inspector
 	for data in selected_cards:
 		if data in data_card: 
 			var card_visual := data_card[data]
@@ -141,12 +148,53 @@ func flush_rebuild() -> void:
 	if _rebuild_queued:
 		set_card_zones()
 
+## The board Control at a slot coord (z == -1 header, z >= 0 row card), or null if the layout
+## has no control there (empty slot past the built rows). PropLayer maps these to points; a
+## missing control falls back to the column header + a row offset (slot_center_global).
+func control_for_coord(v: Vector3i) -> Control:
+	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
+	if v.y < 0 or v.y >= hbox.get_child_count(): return null
+	var vbox := hbox.get_child(v.y)
+	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
+	if idx < 0 or idx >= vbox.get_child_count(): return null
+	return vbox.get_child(idx) as Control
+
+## Global-space center of the CARD at any slot coord — direction-agnostic, works for occupied,
+## header, and (via header + row offset) empty slots. PropLayer converts this to its
+## scroll-invariant local. NOT the control's rect center: stacked row controls are thin strips
+## while each column's LAST control is full card height, so rect centers zig-zag by up to half
+## a card across one row. Cards anchor at control top + half a card
+## (CardVisual.get_card_control_center) — anchor props the same way so row travel is straight.
+func slot_center_global(v: Vector3i) -> Vector2:
+	var card_anchor := Vector2(0.0, CardVisual.card_size_play.y * 0.5)
+	var control := control_for_coord(v)
+	if control:
+		return control.global_position + Vector2(control.size.x * 0.5, 0.0) + card_anchor
+	# Empty slot in a SHORT column (a row crossing passes every column, built or not): mirror
+	# the occupied-slot formula exactly — slot z's control top sits at header TOP + one
+	# separation + z row-pitches — so a prop crossing a row keeps ONE y through empty columns
+	# (a mismatched fallback made knives dip at every short column: owner report 2026-07-12).
+	# Header TOP, not bottom: "every column's LAST control is full card height"
+	# (update_card_zone_visuals) inflates the header of a COMPLETELY EMPTY column (the header
+	# IS its last control) to a full card, while occupied columns' headers are 0-high — using
+	# header bottom put empty-column slots a whole card BELOW the row, so routes entering or
+	# crossing empty columns bent diagonally (owner report 2026-07-13: staged knife trains
+	# stacked at 45° off the board edge). Vbox tops align across columns, so header top + the
+	# occupied columns' 0 header height is THE row line.
+	var header := control_for_coord(Vector3i(v.x, v.y, -1))
+	if header:
+		var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
+		var slot_top := header.global_position.y + float(separation) + pitch * float(v.z)
+		return Vector2(header.global_position.x + header.size.x * 0.5, slot_top) + card_anchor
+	return Vector2.ZERO
+
 func set_separation() -> void:
 	for container : Control in containers:
 		container.add_theme_constant_override("separation", separation)
 
 func set_card_zones() -> void:
 	_rebuild_queued = false #this rebuild satisfies any queued request
+	hide_focus_info() #the control it anchored to may be about to move or free
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	ui_data.clear()
@@ -216,26 +264,26 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 		var connected_data: CardData = type[i]
 		ui_data[c] = connected_data
 		data_ui[connected_data] = c
-		
+
 		if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 			new_data_card[connected_data] = data_card[connected_data]
 			new_data_card[connected_data].control_anchor = c
 		else:
 			new_data_card[connected_data] = CardVisual.add_child_card_visual(
-				self, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)			
+				card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 		# Map the individual Row Cards (Index 1 onwards)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			connected_data = datas[i].datas[j-1]
 			ui_data[c] = connected_data
 			data_ui[connected_data] = c
-			
+
 			if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 				new_data_card[connected_data] = data_card[connected_data]
 				new_data_card[connected_data].control_anchor = c
 			else:
 				new_data_card[connected_data] = CardVisual.add_child_card_visual(
-					self, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
+					card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 
 func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	var card_count: int = 0
@@ -308,7 +356,10 @@ func create_card_control() -> Control:
 			new_control.grab_focus()
 			moused_hovered_control = new_control)
 	new_control.mouse_exited.connect(func()->void:
-			if moused_hovered_control == new_control: moused_hovered_control = null)
+			if moused_hovered_control == new_control:
+				moused_hovered_control = null
+				# hover-driven inspector hides with the hover (keyboard re-focus re-shows it)
+				if focused_control == new_control: hide_focus_info())
 	return new_control
 
 var focused_visual : CardVisual
@@ -320,7 +371,14 @@ func on_control_focus_entered(control:Control) -> void:
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
 		focused_visual.focused = true
-	
+	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
+	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
+	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
+	if ui_data.has(control):
+		_show_focus_info(control, ui_data[control])
+	else:
+		hide_focus_info()
+
 	#var column_index := column_node.get_index()
 	#var zone_level : Control = column_node.get_parent()
 	#if zone_level == upper_zone_right:
@@ -345,6 +403,86 @@ func on_control_focus_entered(control:Control) -> void:
 		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 	focused_control = control
 	set_card_zones_visuals()
+
+# ==============================================================================
+# FOCUS CARD INSPECTOR — THE card-text surface for every input mode
+# ([[solatro-multimodal-input]]): mouse hover grabs focus, so focus covers mouse, keyboard,
+# and controller alike. Deliberately NOT Control.tooltip_text — the native tooltip is a
+# popup Window that sat under the cursor and blocked board clicks; this panel is pure
+# display (MOUSE_FILTER_IGNORE everywhere, focus NONE) and can never touch input. Text =
+# localized ControlCard.describe_card. A PERMANENT child of the prop layer (a Node2D in the
+# scroll content, so scroll carries it), re-pinned beside its anchor control every frame
+# (_position_focus_info) so container relayouts can't strand it — it was briefly reparented
+# under the focused control for that, which is unnecessary now that the whole board (cards
+# included) rides one scroll transform. Mouse-exit / ui_cancel / ungrab / rebuild dismisses it.
+# ==============================================================================
+const FOCUS_INFO_WIDTH := 260.0
+const FOCUS_INFO_GAP := 4.0
+
+var _focus_info : PanelContainer = null
+var _focus_info_label : Label = null
+var _focus_info_anchor : Control = null   ## the board control the panel is pinned beside
+
+func _ensure_focus_info() -> void:
+	if _focus_info and is_instance_valid(_focus_info): return
+	_focus_info = PanelContainer.new()
+	_focus_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_focus_info.focus_mode = Control.FOCUS_NONE
+	_focus_info.z_index = 300   # above card visuals (z = card count) and props (100)
+	_focus_info_label = Label.new()
+	_focus_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_focus_info_label.custom_minimum_size = Vector2(FOCUS_INFO_WIDTH, 0)
+	_focus_info.add_child(_focus_info_label)
+	# CRITICAL: SmoothScrollContainer force-rewrites every Control added under it to
+	# MOUSE_FILTER_PASS (smooth_scroll_container.gd _on_node_added) — which turned this panel
+	# into a mouse hit-target hovering over cards and BLOCKED board clicks. It skips nodes
+	# already carrying its meta marker, so claim the marker BEFORE entering the tree.
+	_focus_info.set_meta("_smooth_scroll_default_mouse_filter_set", true)
+	_focus_info_label.set_meta("_smooth_scroll_default_mouse_filter_set", true)
+	prop_layer.add_child(_focus_info)
+	_focus_info.hide()
+
+## Show `data`'s description beside the focused control (right of it; flips left at the
+## edge). Placement is re-pinned every frame while visible (_process) so focus-driven
+## container relayouts — which move the anchor a frame later — never strand the panel.
+func _show_focus_info(control: Control, data: CardData) -> void:
+	_ensure_focus_info()
+	_focus_info_anchor = control
+	_focus_info_label.text = ControlCard.describe_card(data)
+	_focus_info.show()
+	_focus_info.reset_size()
+	_position_focus_info()
+
+## Pin the panel beside its anchor control; flip left / lift up when it would leave the area.
+## Global placement is safe every frame: the panel and the anchor both live in the scroll
+## content, so their globals move in lockstep under scrolling.
+func _position_focus_info() -> void:
+	if not _focus_info or not is_instance_valid(_focus_info) or not _focus_info.visible:
+		return
+	if not is_instance_valid(_focus_info_anchor) or not _focus_info_anchor.is_inside_tree():
+		hide_focus_info()   # the control it anchored to was freed by a rebuild
+		return
+	var area := get_global_rect()
+	var at := _focus_info_anchor.global_position \
+			+ Vector2(_focus_info_anchor.size.x + FOCUS_INFO_GAP, 0.0)
+	if at.x + _focus_info.size.x > area.end.x:
+		at.x = _focus_info_anchor.global_position.x - _focus_info.size.x - FOCUS_INFO_GAP
+	var overflow_y := at.y + _focus_info.size.y - area.end.y
+	if overflow_y > 0.0:
+		at.y -= overflow_y
+	_focus_info.global_position = at
+
+## The board itself has no per-frame work (rebuilds are signal-driven, see queue_rebuild);
+## this hook ONLY keeps the visible focus inspector pinned to its live anchor position.
+func _process(_delta: float) -> void:
+	_position_focus_info()
+
+func hide_focus_info() -> void:
+	_focus_info_anchor = null
+	if not _focus_info or not is_instance_valid(_focus_info):
+		_focus_info = null
+		return
+	_focus_info.hide()
 
 func update_score_controls() -> void:
 	var game := CardEnvironment.get_current_game()

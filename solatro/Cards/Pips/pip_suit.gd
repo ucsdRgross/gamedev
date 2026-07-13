@@ -2,7 +2,9 @@
 extends CardModifier
 ## A card's suit. Now a CardModifier (was Resource): reached ONLY via run_card_mods +
 ## spawn_props, never through the suit-free run_all_mods iterator. Suits are NOMINAL, not
-## ordinal — there is no `value`; switching uses PipSuit.from_index, never value ± 1.
+## ordinal — there is no `value`; construct the exact suit class (PipSuitHoop.new(), ...)
+## or pick from STANDARD, never value ± 1. from_index was deleted: an index hid WHICH suit
+## a call site actually produced.
 
 ## CardData.suit's setter connects this (card_data.gd:9-13). Suits no longer mutate
 ## themselves, but the seam stays for future dynamic suits.
@@ -49,7 +51,6 @@ func set_art_texture(polygon2d:Polygon2D, rank:PipRank) -> void:
 
 ## Registry + switching (replaces all `value` math). Firework excluded: never random.
 static var STANDARD : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
-static func from_index(i:int) -> PipSuit: return STANDARD[i].new()
 static func random_standard() -> PipSuit: return STANDARD[randi() % STANDARD.size()].new()
 
 ## Fire-buff readers (self-inspection of the OWN card's statuses at spawn time). fire_mult

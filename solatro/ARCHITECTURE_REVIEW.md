@@ -176,6 +176,42 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
 `ResourceSaver` picks its format from the extension. See the handoff doc
 `HANDOFF_worldgen_map.md` for the full picture, file map, and open follow-ups.
 
+### 1.6 Suit props & statuses (added 2026-07, Suit-Props plan Phases 0–5)
+
+Suits became a **fourth kind of `CardModifier`** (`PipSuit`), and a new **prop simulation** rides
+on top of the scorer. Key facts for anyone extending this:
+
+- **`PipSuit` is dispatched ONLY via `run_card_mods` + `spawn_props`** — never through the
+  suit-blind `run_all_mods` iterator. It is the one dispatch path that sees suits. Suits are
+  nominal (`get_suit_index()` = palette/art slot only); the old **ordinal `compare_suits` was
+  removed** (settles the B7 / D8 suit scaffolding). Switch by constructing the exact class
+  (`PipSuitHoop.new()`, …) or indexing `PipSuit.STANDARD` (`from_index` deleted 2026-07-13).
+- **`on_score` / `on_after_score` are now broadcast** by `Game._run_score_effects` per scored
+  meld (previously commented out) — this activates `SkillExtraPoint` / `StampDoubleTrigger` /
+  `SkillEchoingTrigger`, which were dormant before.
+- **Statuses** (`CardModifierStatus`, an `Array` on `CardData`) merge by class, self-scope their
+  targeted hooks (`if target != data: return`), and are heard both by the `run_all_mods`
+  broadcasts and by `run_card_mods` prop passes. **The suit self-cycle (`CardModifier.data`) and
+  the status back-refs are unlinked/relinked in all four save/restore sites** (game_data.gd +
+  run_manager.gd) — same discipline as the pre-existing modifier cycle.
+- **The prop simulation lives in the data layer:** `Game.run_props(spawners)` is one deterministic,
+  integer-ticked loop (spawn → move → 3-phase pass → finish → sync) with an `act_overrun` runaway
+  cap + `note_processing` weighting and **time-compression** in `get_delay()` (shrinks the
+  per-step delay under a long resolve, read live so animations retime mid-flight). Headless
+  (`view == null`) the whole submit resolves in one frame. Props are transient (never serialized);
+  a quit mid-act replays from the pre-act board.
+- **The view layer is `PropLayer`** (`UI/prop_layer.gd`, under the scroll content so props ride
+  the scroll): per-frame interpolation against the live tick duration, spawn/teleport/void
+  animations, and a card-reaction state machine (jump/spin) aggregated from prop hints. The Game
+  is one tick ahead of the view and awaits `PropLayer.tick_done` each tick — guarded by
+  `view.prop_tick_pending()` so an events phase that outlasts the animation (persistent-signal
+  emission already fired) skips the await instead of hanging.
+- **Extension contract (zero engine edits):** a new prop behavior = one `PropModifier`; a new
+  prop-suit = one `PipSuit` subclass (+ optional `PropVisual`, palette entry); a new status = one
+  `CardModifierStatus` subclass. The tick loop, dispatch, scoring seam, pacing, compression, and
+  tests stay closed. UI-facing strings go through `TRANSLATION.find` (CSV keys); shared tuning
+  knobs (e.g. `prop_tick_fraction`) live in `PlayerSettings`.
+
 ---
 
 ## 2. BUGS

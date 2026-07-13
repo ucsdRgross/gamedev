@@ -356,6 +356,39 @@ across the board and interact with other cards:
 3. Consequences noted: most feat cards should be *alive* in some way and somewhat
    individualized; cards dynamically **jump up through hoops and duck under knives**.
 
+**Locked & implemented (Suit-Props plan, Phases 0–5 ✅ — see `SUIT_PROPS_PLAN.md` /
+`SUIT_PROPS_HANDOFF.md`):**
+- **Nominal suit subclasses, not ordinal.** Each suit is a `PipSuit` (a `CardModifier`)
+  subclass — `PipSuitHoop/Knife/Ball/Fire/Firework` — with a palette/art index only; there is
+  **no `value`** and no suit ordering. Construct the exact class (`PipSuitHoop.new()`, …) or
+  pick from `PipSuit.STANDARD`, never `value ± 1` (the old ordinal `compare_suits` is gone;
+  `from_index` was deleted 2026-07-13 — an index hid which suit a call site produced).
+- **Factory switching + random roster.** `PipSuit.STANDARD = [Hoop, Knife, Ball, Fire]`;
+  `random_standard()` rolls only those four. **Firework is special and excluded** — never rolled
+  randomly; it rises up its column and banks column score at the top.
+- **Per-meld firing.** A scored card's suit fires **once per meld membership** (row and column
+  each), by design. Talented cards (`data.skill`) suppress their own suit effect.
+- **Knife kept** (not re-themed): mirrors Hoop but launches from the opposite row side and scores
+  plain (prop) cards instead of talents.
+- **Fire = count buff.** Fire drops the **Burning** status, which multiplies the target card's OWN
+  suit-effect prop **count** (one knob; the early double-dip was dropped). Ball drops **Juggling**
+  (pays column score when that card later scores).
+- **Mancala rule.** Ball/Fire are ballistic: a mancala walk down the column picks `count` talent
+  targets at spawn; one prop per tick flies to each (Fire's eligibility skips talents and other
+  Fire).
+- **Prop architecture.** Props are transient data (`PropData`, never serialized) whose behavior is
+  **composed `PropModifier`s** (score-talents / score-props / drop-status / bank-col / burning).
+  The suit's `spawn_props()` returns configured `PropSpawner`s (origin, count, batch, interval,
+  max_live). `Game.run_props` is one deterministic tick loop (spawn → move → events(3-phase
+  pass) → finish → sync), integer-ticked and replay-exact. Ball/Fire arc ballistically; the view
+  aggregates each card's **reaction hints** (jump/spin/juggle/burn) across all props over it.
+- **Determinism rule.** No RNG inside the sim — side/target picks hash only resume-persisted state,
+  so a quit mid-act replays identically. A quit mid-scoring replays the whole act from the pre-act
+  board (props never survive a save).
+- **View layer.** `PropLayer` animates props with per-frame interpolation against the live
+  animation delay (`SettingsManager.settings.prop_tick_fraction`); statuses draw placeholder icons
+  + counts on the card and appear in the card tooltip / inspector text.
+
 ---
 
 ## 11. Classes, Groups & Leader Cards

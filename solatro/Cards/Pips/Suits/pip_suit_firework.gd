@@ -6,9 +6,8 @@ extends PipSuit
 const FIREWORK_POINTS := 1
 
 func get_suit_index() -> int: return 4
-func get_str() -> String: return "Firework"
-func get_description() -> String:
-	return "On score: fireworks equal to rank rise up the column and bank column score at the top."
+func get_str() -> String: return TRANSLATION.find('SUIT_FIREWORK')
+func get_description() -> String: return TRANSLATION.find('SUIT_FIREWORK_DESCRIPTION')
 
 ## Fireworks rise up their column (a staggered rocket per tick) and each banks column score at
 ## the edge. The rise route may be empty (card at the top) — then it banks immediately.

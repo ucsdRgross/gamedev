@@ -6,9 +6,8 @@ const HOOP_POINTS := 1
 const HOOP_TICKS_PER_SLOT := 2
 
 func get_suit_index() -> int: return 0
-func get_str() -> String: return "Hoop"
-func get_description() -> String:
-	return "On score: hoops equal to rank cross this row. Talents they pass jump through and score."
+func get_str() -> String: return TRANSLATION.find('SUIT_HOOP')
+func get_description() -> String: return TRANSLATION.find('SUIT_HOOP_DESCRIPTION')
 
 ## Hoops burst all at once from the card and cross the whole row (deterministic side), scoring
 ## every talent they pass.

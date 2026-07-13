@@ -36,9 +36,13 @@ static func add_child_control_card(parent:Node,connected_data:CardData, context:
 static func describe_card(data: CardData) -> String:
 	var lines : Array[String] = []
 	if data.rank: lines.append(data.rank.get_str())
-	if data.suit: lines.append(data.suit.get_str())
+	# Suit now describes its prop effect too (Phase 5): "Knife — <what it does>".
+	if data.suit: lines.append("%s — %s" % [data.suit.get_str(), data.suit.get_description()])
 	for mod : CardModifier in [data.skill, data.stamp, data.type]:
 		# Skip nameless modifiers (e.g. TypePaper) so they don't render a blank " — " line.
 		if mod and not mod.get_str().is_empty():
 			lines.append("%s — %s" % [mod.get_str(), mod.get_description()])
+	# One line per active status: "Juggling ×2 — <effect>".
+	for status : CardModifierStatus in data.statuses:
+		lines.append("%s ×%d — %s" % [status.get_str(), status.stacks, status.get_description()])
 	return "\n".join(lines)

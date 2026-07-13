@@ -137,7 +137,7 @@ func test_disk_round_trip() -> void:
 	# the write — always test with the full card graph.
 	var cards: Array[CardData] = [
 		CardData.new().with_rank(PipRankNumeral.new().with_value(3)) \
-				.with_suit(PipSuit.from_index(0)) \
+				.with_suit(PipSuitHoop.new()) \
 				.with_skill(SkillExtraPoint.new()).with_type(TypePaper.new()) \
 				.with_stamp(StampGlobal.new()),
 	]
@@ -217,7 +217,7 @@ func _show_state(total: int) -> GameData:
 	gs.goal = 500
 	gs.total_score = total
 	var played := CardData.new().with_rank(PipRankNumeral.new().with_value(7)) \
-			.with_suit(PipSuit.from_index(2)).with_skill(SkillExtraPoint.new())
+			.with_suit(PipSuitBall.new()).with_skill(SkillExtraPoint.new())
 	played.stage = CardData.Stage.PLAY
 	var col := ArrayCardData.new()
 	col.datas = [played] as Array[CardData]

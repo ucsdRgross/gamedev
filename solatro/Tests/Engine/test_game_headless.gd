@@ -24,6 +24,8 @@ func _ready() -> void:
 	await test_try_grab_returns_stack()
 	await test_try_place_moves_and_commits()
 	await test_undo_reverts_state_and_history()
+	await test_undo_rewinds_act_count()
+	test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
 	await test_submit_headless_full_act()
 	finish()
@@ -143,6 +145,43 @@ func test_undo_reverts_state_and_history() -> void:
 	check(g.state.lower_zone[0].datas.size() == baseline_cols,
 			"undo reverts the board to the previous snapshot",
 			"%d vs %d" % [g.state.lower_zone[0].datas.size(), baseline_cols])
+	# Checklist 0.4: the undo path (duplicate_state + restore_runtime) must relink the suit
+	# self-cycle — a stale backref silently breaks suit spawns (suit.game / find_data_vec3).
+	var undone := g.state.lower_zone[0].datas[0]
+	check_impl(undone.suit != null and undone.suit.data == undone,
+			"undo relinks the suit back-reference (suit.data == its card)")
+	CardEnvironment.CURRENT = null
+	g.free()
+
+## submits_used lives on GameData so history snapshots carry it: undoing across a Submit must
+## rewind the act count together with the board (owner bug report 2026-07-12 — the old
+## Game-level counter survived undo, permanently eating acts).
+func test_undo_rewinds_act_count() -> void:
+	var g := make_game()
+	g.save_state()   # baseline snapshot (act 0) so undo has somewhere to go
+	await g.submit()
+	check(g.submits_used == 1, "precondition: submit consumed an act")
+	g.undo()
+	check(g.submits_used == 0, "undo rewinds the act count with the board")
+	check(g.save_history[-1].submits_used == 0,
+			"the restored snapshot itself carries the rewound act count")
+	CardEnvironment.CURRENT = null
+	g.free()
+
+## Checklist 0.4's other half: add_deck deep-duplicates the saved deck into the show; the
+## duplicate must remap (not share or drop) every suit's back-reference.
+func test_add_deck_relinks_suit_backrefs() -> void:
+	var g := make_game()
+	var prev_save_info : RunState = Main.save_info
+	Main.save_info = RunState.new()   # blank save -> add_deck falls back to the full starter Deck
+	g.add_deck()
+	var all_linked := not g.state.draw_deck.is_empty()
+	for card : CardData in g.state.draw_deck:
+		if card.suit and card.suit.data != card:
+			all_linked = false
+	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
+			"deck size %d" % g.state.draw_deck.size())
+	Main.save_info = prev_save_info
 	CardEnvironment.CURRENT = null
 	g.free()
 

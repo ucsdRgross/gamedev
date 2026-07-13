@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="1_07a3p"]
 [ext_resource type="Script" uid="uid://4b6ha7k1yee2" path="res://UI/play_area.gd" id="1_34k5y"]
 [ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="2_34k5y"]
+[ext_resource type="Script" uid="uid://camnrbi47o3eb" path="res://UI/prop_layer.gd" id="3_prop"]
+[ext_resource type="Script" path="res://Cards/Props/prop_formation.gd" id="4_form"]
 
 [sub_resource type="Resource" id="Resource_frxyd"]
 script = ExtResource("2_34k5y")
@@ -20,6 +22,7 @@ grow_vertical = 2
 script = ExtResource("1_34k5y")
 
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="." unique_id=860459358]
+clip_contents = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,5 +105,16 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="CardLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1467391208]
+unique_name_in_owner = true
+
+[node name="PropLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=2038411771]
+unique_name_in_owner = true
+z_index = 100
+script = ExtResource("3_prop")
+
+[node name="PropFormation" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox/PropLayer" unique_id=1893224407]
+script = ExtResource("4_form")
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]

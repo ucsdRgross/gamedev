@@ -13,9 +13,8 @@ func get_possible_ranks() -> Array[PipRank]:
 	return ranks
 func get_possible_suits() -> Array[PipSuit]:
 	var suits : Array[PipSuit]
-	suits.resize(4)
-	for i in 4:
-		suits[i] = PipSuit.from_index(i)
+	for suit : GDScript in PipSuit.STANDARD:
+		suits.append(suit.new() as PipSuit)
 	return suits
 ## Luck-gated extras: these only appear on generated cards when RunManager.luck rolls hit.
 func get_possible_stamps() -> Array[CardModifierStamp]:

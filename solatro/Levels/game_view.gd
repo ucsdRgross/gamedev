@@ -61,9 +61,37 @@ func _ready() -> void:
 	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
 
 	add_child(game)
+	_add_prop_debug_controls()
 	# _refresh_hud early-returns while _ready runs (node not ready yet); refresh once we are, so
 	# a fresh goal / resumed score shows immediately.
 	_refresh_hud.call_deferred()
+
+## Debug prop stepping (owner tool, 2026-07-13): a toggle that holds every finished prop tick
+## open (PropLayer.manual_step — the whole run_props loop pauses at its SYNC await), and a
+## step button that releases exactly one tick, so a prop run can be watched tick by tick.
+## Mouse-only (FOCUS_NONE) so keyboard/controller navigation never lands on them.
+func _add_prop_debug_controls() -> void:
+	var box := HBoxContainer.new()
+	box.name = "PropDebug"
+	var toggle := Button.new()
+	toggle.toggle_mode = true
+	toggle.text = TRANSLATION.find('DEBUG_PROP_STEP_MODE')
+	toggle.focus_mode = Control.FOCUS_NONE
+	var step := Button.new()
+	step.text = TRANSLATION.find('DEBUG_PROP_STEP_TICK')
+	step.focus_mode = Control.FOCUS_NONE
+	step.disabled = true
+	toggle.toggled.connect(func(on: bool) -> void:
+		play_area.prop_layer.manual_step = on
+		step.disabled = not on)
+	step.pressed.connect(func() -> void: play_area.prop_layer.step())
+	box.add_child(toggle)
+	box.add_child(step)
+	add_child(box)
+	# Bottom-right corner, growing up/left so the content never leaves the screen.
+	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 8)
 
 # ==============================================================================
 # STATE BINDING (N9: disconnect old, connect new on every state swap)
@@ -177,15 +205,18 @@ func reset_meld(result: Scoring.Result) -> void:
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
 
-## Start one prop-simulation tick's visuals and return a signal the Game awaits for
-## completion (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Phase 1 stub: no
-## PropLayer exists yet and no suit spawns props until Phase 3, so this is never reached in
-## practice; it returns an immediately-completing signal so the await never hangs. Phase 4
-## replaces it with the real PropLayer-driven tick.
-signal _prop_tick_done
-func begin_prop_tick(_live: Array, _spawned: Array, _movers: Array, _relocated: Array) -> Signal:
-	_prop_tick_done.emit.call_deferred()
-	return _prop_tick_done
+## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion
+## (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Delegates to the PropLayer,
+## which animates every live prop and emits its `tick_done` once they've all reached target.
+func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Array) -> Signal:
+	return play_area.prop_layer.begin_prop_tick(live, spawned, movers, relocated)
+
+## True while the started visual tick is still animating. The Game's SYNC step awaits
+## `tick_done` only while this holds — if the events phase outlasted the animation, the
+## emission already fired and awaiting it now would hang (persistent-signal race, see
+## PropLayer.tick_pending).
+func prop_tick_pending() -> bool:
+	return play_area.prop_layer.tick_pending()
 
 # ==============================================================================
 # VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)

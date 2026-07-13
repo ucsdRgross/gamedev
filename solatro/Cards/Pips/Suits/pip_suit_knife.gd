@@ -6,9 +6,8 @@ const KNIFE_POINTS := 1
 const KNIFE_TICKS_PER_SLOT := 2
 
 func get_suit_index() -> int: return 1
-func get_str() -> String: return "Knife"
-func get_description() -> String:
-	return "On score: knives equal to rank cross this row from the far side. Props they pass are scored; talents spin."
+func get_str() -> String: return TRANSLATION.find('SUIT_KNIFE')
+func get_description() -> String: return TRANSLATION.find('SUIT_KNIFE_DESCRIPTION')
 
 ## Knives mirror hoops: same batch burst, but from the OPPOSITE side, scoring plain cards
 ## (props) instead of talents. The route includes the knife's own card (self-scored by design).

@@ -103,7 +103,9 @@ func _on_suit_option_value_item_selected(index: int) -> void:
 		preview_card.data.with_suit(PipSuit.random_standard())
 		randomizer_timer.start()
 	else:
-		preview_card.data.with_suit(PipSuit.from_index(suit_option_value.get_item_id(index) - 1))
+		# Item ids are 1-based over PipSuit.STANDARD (id 0 = random).
+		var suit_script : GDScript = PipSuit.STANDARD[suit_option_value.get_item_id(index) - 1]
+		preview_card.data.with_suit(suit_script.new() as PipSuit)
 
 func _on_rank_option_item_selected(index: int) -> void:
 	rank_option_value.clear()

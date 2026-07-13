@@ -75,8 +75,8 @@ func run_no_environment_tests() -> void:
 
 	var r7 := PipRankNumeral.new().with_value(7)
 	var r5 := PipRankNumeral.new().with_value(5)
-	var s1 := PipSuit.from_index(0)
-	var s3 := PipSuit.from_index(2)
+	var s1 : PipSuit = PipSuitHoop.new()
+	var s3 : PipSuit = PipSuitBall.new()
 
 	check(await PipComparator.compare_ranks(r7, r5) == 2.0, "compare_ranks 7 vs 5 == 2")
 	check(await PipComparator.compare_ranks(r5, r7) == -2.0, "compare_ranks antisymmetric")
@@ -116,11 +116,11 @@ func run_predicate_tests() -> void:
 			PipRankNumeral.new().with_value(7)), "is_rank_next_to diff 2 false")
 	check_impl(not await PipComparator.is_rank_next_to(a, null), "is_rank_next_to null false")
 
-	var h1 := PipSuit.from_index(1)
-	var h2 := PipSuit.from_index(1)
+	var h1 : PipSuit = PipSuitKnife.new()
+	var h2 : PipSuit = PipSuitKnife.new()
 	check(await PipComparator.is_suit_same(h1, h1), "is_suit_same identity")
 	check(await PipComparator.is_suit_same(h1, h2), "is_suit_same same class (nominal)")
-	check(not await PipComparator.is_suit_same(h1, PipSuit.from_index(2)),
+	check(not await PipComparator.is_suit_same(h1, PipSuitBall.new()),
 			"is_suit_same different class false")
 	check_impl(not await PipComparator.is_suit_same(null, h1), "is_suit_same null false")
 	var wa := WeirdSuit.with_id(0)
@@ -157,7 +157,7 @@ func run_scorable_tests() -> void:
 	check(not PipComparator.is_scorable(TestFactories.m_stone()), "stone (no pips) not scorable")
 	check_impl(not PipComparator.is_scorable(null), "null card not scorable")
 	var rankless := CardData.new()
-	rankless.suit = PipSuit.from_index(0)
+	rankless.suit = PipSuitHoop.new()
 	check(not PipComparator.is_scorable(rankless), "null rank not scorable")
 
 
@@ -193,8 +193,8 @@ func run_mod_override_tests() -> void:
 
 	#suits too
 	spy.suit_result = 5.0
-	check_behavior(await PipComparator.compare_suits(PipSuit.from_index(0),
-			PipSuit.from_index(0)) == 5.0, "mod override: suits -> 5")
+	check_behavior(await PipComparator.compare_suits(PipSuitHoop.new(),
+			PipSuitHoop.new()) == 5.0, "mod override: suits -> 5")
 
 	#nulls short-circuit BEFORE mods run (pinned: mods never see null pips)
 	spy.rank_calls = 0

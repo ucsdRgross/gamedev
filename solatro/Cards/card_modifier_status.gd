@@ -40,3 +40,9 @@ func with_stacks(n: int) -> CardModifierStatus:
 ## Visuals are Phase 5 (no status_pips.png asset yet); satisfy the abstract slot as a no-op.
 func set_texture(_polygon2d: Polygon2D) -> void:
 	pass
+
+## Placeholder icon draw (Phase 5, pending a status_pips.png asset). Subclasses draw a
+## kind-distinct primitive into `canvas` anchored at `at`, spanning roughly `size` px wide.
+## Base draws nothing so an un-arted status simply shows its count label (StatusLayer).
+func draw_icon(_canvas: CanvasItem, _at: Vector2, _size: float) -> void:
+	pass

@@ -48,7 +48,11 @@ var processing : bool = false:
 ## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
 ## after the last one.
 const MAX_SUBMITS := 3
-var submits_used : int = 0
+## Acts used this show — FORWARDS to state.submits_used (GameData) so undo/save snapshots
+## rewind it with the board. Callers keep the old Game-level API.
+var submits_used : int:
+	get: return state.submits_used
+	set(value): state.submits_used = value
 var _won : bool = false
 
 # --- Elapsed-time compression + runaway event cap (SUIT_PROPS_PLAN §1.6) ---
@@ -136,8 +140,11 @@ func _start_fresh_show() -> void:
 # active flags WITHOUT re-firing on_active / on_deactive (effects are baked into the state).
 func _resume_show() -> void:
 	save_history = Main.save_info.game_history
-	submits_used = Main.save_info.game_submits
 	state = _runtime_state(save_history[-1])
+	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
+	# into the state being replaced). The run save stays authoritative: snapshots from before
+	# the field existed default to 0 and this rescues them.
+	submits_used = Main.save_info.game_submits
 	_update_submit_label()
 	state.revision += 1  # force the play area to rebuild from the restored board
 	for data in CardDataIterator.new(self):
@@ -283,10 +290,14 @@ func undo() -> void:
 		var prev_game_data : GameData = save_history[-1]
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = _runtime_state(prev_game_data)
+		# The restored snapshot carries its own submits_used — refresh the Submit button label
+		# so an undo across a Submit shows the act back (state swap bypasses the setter).
+		_update_submit_label()
 		# History shrank — persist so the reverted state (not the mistake) is what a quit
 		# resumes to. Undo is the sanctioned rewind; closing the game is not.
 		if RunManager.run != null:
 			RunManager.run.game_history = save_history
+			RunManager.run.game_submits = submits_used
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
@@ -583,8 +594,11 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 				var sp : PropSpawner = owner_of.get(p)
 				if sp: sp.live -= 1
 		await skill_active_check()          # once per tick: hooks may flip active states
-		# SYNC — tick over when animation AND events are both complete (headless: nothing awaited)
-		if view: await tick_done
+		# SYNC — tick over when animation AND events are both complete (headless: nothing
+		# awaited). tick_done is a persistent signal: if the events phase spanned frames the
+		# animation may ALREADY have emitted, so only await while the tick is still pending —
+		# awaiting after the emission would hang forever (view.prop_tick_pending doc).
+		if view and view.prop_tick_pending(): await tick_done
 		live_props = live_props.filter(func(pp: PropData) -> bool: return not pp.done)
 		tick += 1
 

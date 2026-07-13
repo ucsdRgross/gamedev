@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c8gv1ew0game0"]
 
-[ext_resource type="Script" path="res://Levels/game_view.gd" id="1_gview"]
+[ext_resource type="Script" uid="uid://c75iyc2gw2tpm" path="res://Levels/game_view.gd" id="1_gview"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
 
@@ -12,7 +12,7 @@ line_spacing = -3.0
 font_size = 12
 shadow_color = Color(0, 0, 0, 1)
 
-[node name="GameView" type="Control"]
+[node name="GameView" type="Control" unique_id=1768635018]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,27 +21,27 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gview")
 
-[node name="SceneRoot" type="Control" parent="."]
+[node name="SceneRoot" type="Control" parent="." unique_id=143229185]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PlayContainer" type="Control" parent="SceneRoot"]
+[node name="PlayContainer" type="Control" parent="SceneRoot" unique_id=1980564137]
 anchors_preset = 0
 offset_left = 423.0
 offset_top = 3.0
 offset_right = 1142.0
 offset_bottom = 639.0
 
-[node name="PlayArea" parent="SceneRoot/PlayContainer" instance=ExtResource("4_fiyor")]
+[node name="PlayArea" parent="SceneRoot/PlayContainer" unique_id=1317398588 instance=ExtResource("4_fiyor")]
 unique_name_in_owner = true
 layout_mode = 1
 
-[node name="Submit" type="Button" parent="SceneRoot"]
+[node name="Submit" type="Button" parent="SceneRoot" unique_id=1304615994]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 221.0
@@ -51,7 +51,7 @@ offset_bottom = 424.0
 text = "Submit
 "
 
-[node name="Undo" type="Button" parent="SceneRoot"]
+[node name="Undo" type="Button" parent="SceneRoot" unique_id=1536477476]
 unique_name_in_owner = true
 layout_mode = 1
 offset_left = 168.0
@@ -61,7 +61,7 @@ offset_bottom = 78.0
 text = "Undo
 "
 
-[node name="Next" type="Button" parent="SceneRoot"]
+[node name="Next" type="Button" parent="SceneRoot" unique_id=1267428029]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 45.0
@@ -71,7 +71,7 @@ offset_bottom = 226.0
 text = "Next Round
 "
 
-[node name="Reroll" type="Button" parent="SceneRoot"]
+[node name="Reroll" type="Button" parent="SceneRoot" unique_id=1219511678]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -80,7 +80,7 @@ offset_right = 979.0
 offset_bottom = 321.0
 text = "Reroll"
 
-[node name="ScoreName" type="Label" parent="SceneRoot"]
+[node name="ScoreName" type="Label" parent="SceneRoot" unique_id=959450667]
 visible = false
 layout_mode = 0
 offset_left = 886.0
@@ -92,7 +92,7 @@ text = "ScoreNames
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="SceneRoot/ScoreName"]
+[node name="Label" type="Label" parent="SceneRoot/ScoreName" unique_id=1449040584]
 layout_mode = 0
 offset_left = 6.0
 offset_top = 57.0
@@ -103,7 +103,7 @@ text = "123456789
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Score" type="Label" parent="SceneRoot"]
+[node name="Score" type="Label" parent="SceneRoot" unique_id=1221542965]
 visible = false
 layout_mode = 0
 offset_left = 899.0
@@ -113,7 +113,7 @@ offset_bottom = 261.0
 text = "Score:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="SceneRoot/Score"]
+[node name="Label" type="Label" parent="SceneRoot/Score" unique_id=905121522]
 layout_mode = 0
 offset_left = 149.0
 offset_top = -1.0
@@ -122,7 +122,7 @@ offset_bottom = 60.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="MultScore" type="Label" parent="SceneRoot"]
+[node name="MultScore" type="Label" parent="SceneRoot" unique_id=964219693]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 202.0
@@ -133,7 +133,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Col" type="Label" parent="SceneRoot/MultScore"]
+[node name="Col" type="Label" parent="SceneRoot/MultScore" unique_id=379225549]
 layout_mode = 0
 offset_left = -77.0
 offset_top = 64.0
@@ -143,7 +143,7 @@ text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 2
 
-[node name="x" type="Label" parent="SceneRoot/MultScore"]
+[node name="x" type="Label" parent="SceneRoot/MultScore" unique_id=1911383157]
 layout_mode = 0
 offset_left = 3.0
 offset_top = 62.0
@@ -153,7 +153,7 @@ text = "x"
 label_settings = SubResource("LabelSettings_xc73h")
 horizontal_alignment = 1
 
-[node name="Row" type="Label" parent="SceneRoot/MultScore"]
+[node name="Row" type="Label" parent="SceneRoot/MultScore" unique_id=1333752682]
 layout_mode = 0
 offset_left = 83.0
 offset_top = 64.0
@@ -162,7 +162,7 @@ offset_bottom = 125.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Total" type="Label" parent="SceneRoot"]
+[node name="Total" type="Label" parent="SceneRoot" unique_id=949581822]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 167.0
@@ -172,7 +172,7 @@ offset_bottom = 205.0
 text = "Total: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="SceneRoot/Total"]
+[node name="Label" type="Label" parent="SceneRoot/Total" unique_id=646998641]
 layout_mode = 0
 offset_left = 131.0
 offset_top = 2.0
@@ -181,7 +181,7 @@ offset_bottom = 63.0
 text = " 0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Goal" type="Label" parent="SceneRoot"]
+[node name="Goal" type="Label" parent="SceneRoot" unique_id=1411231296]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 164.0
@@ -191,7 +191,7 @@ offset_bottom = 141.0
 text = "Goal: "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="SceneRoot/Goal"]
+[node name="Label" type="Label" parent="SceneRoot/Goal" unique_id=998221257]
 layout_mode = 0
 offset_left = 140.0
 offset_top = 2.0
@@ -200,7 +200,7 @@ offset_bottom = 63.0
 text = "100"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Turns" type="Label" parent="SceneRoot"]
+[node name="Turns" type="Label" parent="SceneRoot" unique_id=1557220371]
 visible = false
 layout_mode = 0
 offset_left = 882.0
@@ -210,7 +210,7 @@ offset_bottom = 66.0
 text = "Turns:  "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="SceneRoot/Turns"]
+[node name="Label" type="Label" parent="SceneRoot/Turns" unique_id=1921930699]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -219,7 +219,7 @@ offset_bottom = 62.0
 text = "5"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Rerolls" type="Label" parent="SceneRoot"]
+[node name="Rerolls" type="Label" parent="SceneRoot" unique_id=796565761]
 visible = false
 layout_mode = 0
 offset_left = 975.0
@@ -229,7 +229,7 @@ offset_bottom = 328.0
 text = "Rerolls:"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Label" type="Label" parent="SceneRoot/Rerolls"]
+[node name="Label" type="Label" parent="SceneRoot/Rerolls" unique_id=301023150]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 1.0
@@ -239,7 +239,7 @@ text = "5
 "
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="Preview" type="Control" parent="SceneRoot"]
+[node name="Preview" type="Control" parent="SceneRoot" unique_id=1233425980]
 anchors_preset = 0
 offset_left = 65.0
 offset_top = 391.0
@@ -248,7 +248,7 @@ offset_bottom = 391.0
 scale = Vector2(1.25, 1.25)
 mouse_filter = 2
 
-[node name="Label" type="Label" parent="SceneRoot/Preview"]
+[node name="Label" type="Label" parent="SceneRoot/Preview" unique_id=499140308]
 layout_mode = 0
 offset_left = -43.0
 offset_top = 22.0
@@ -259,7 +259,7 @@ Skill Text"
 label_settings = SubResource("LabelSettings_voryx")
 autowrap_mode = 3
 
-[node name="Deck" type="Control" parent="SceneRoot"]
+[node name="Deck" type="Control" parent="SceneRoot" unique_id=1376436768]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
@@ -269,7 +269,7 @@ offset_right = 134.0
 offset_bottom = 128.0
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="SceneRoot/Deck"]
+[node name="Button" type="Button" parent="SceneRoot/Deck" unique_id=1384352180]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -278,7 +278,7 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Deck"
 
-[node name="Discard" type="Control" parent="SceneRoot"]
+[node name="Discard" type="Control" parent="SceneRoot" unique_id=717666025]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
@@ -288,7 +288,7 @@ offset_right = 291.0
 offset_bottom = 586.0
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="SceneRoot/Discard"]
+[node name="Button" type="Button" parent="SceneRoot/Discard" unique_id=2077643948]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -298,7 +298,7 @@ grow_vertical = 2
 text = "Discard
 "
 
-[node name="Rules" type="Control" parent="SceneRoot"]
+[node name="Rules" type="Control" parent="SceneRoot" unique_id=1763278671]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 anchors_preset = 0
@@ -308,7 +308,7 @@ offset_right = 402.0
 offset_bottom = 585.0
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="SceneRoot/Rules"]
+[node name="Button" type="Button" parent="SceneRoot/Rules" unique_id=732054802]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -318,7 +318,7 @@ grow_vertical = 2
 text = "Rules
 "
 
-[node name="WinScreen" type="Label" parent="SceneRoot"]
+[node name="WinScreen" type="Label" parent="SceneRoot" unique_id=739596615]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -332,7 +332,7 @@ text = "You win!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LoseScreen" type="Label" parent="SceneRoot"]
+[node name="LoseScreen" type="Label" parent="SceneRoot" unique_id=1238308529]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -346,7 +346,7 @@ text = "You lose!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Background" type="TextureRect" parent="SceneRoot"]
+[node name="Background" type="TextureRect" parent="SceneRoot" unique_id=1013700482]
 visible = false
 layout_mode = 1
 anchors_preset = 15
