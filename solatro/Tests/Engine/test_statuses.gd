@@ -1,7 +1,7 @@
 extends SolatroTest
 # res://Tests/Engine/test_statuses.gd
 # ==============================================================================
-# Status-effect foundation (SUIT_PROPS_PLAN Phase 2 / STATUS_EFFECTS_PLAN Steps 1-7):
+# Status-effect foundation (SUIT_PROPS_PLAN Phase 2):
 # CardData.statuses as an Array[CardModifierStatus], merge-by-class stacking,
 # self-scope dispatch, expiry, the data backref through duplicate/save, and
 # self-removal mid-dispatch not skipping sibling mods.

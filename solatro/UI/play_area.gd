@@ -59,7 +59,10 @@ func update_gui() -> void:
 
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
-	# Mouse
+	# Mouse ONLY: key/joypad events never reach this root handler — Godot 4 delivers them to
+	# the FOCUSED control alone (no ancestor bubbling), so keyboard/controller accept+cancel
+	# live in _unhandled_input below (caught by the interaction suite 2026-07-13: Enter/A on
+	# a focused card silently did nothing).
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		# left click
@@ -71,12 +74,28 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				data_selected.emit(ui_data[focused_control])
-	# Controller
+
+## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
+## card control consumes nothing), then fall through the focus-navigation pass to unhandled
+## input — this is the first place the board can hear them. Buttons (Submit/Continue/…)
+## consume their own ui_accept before this runs, so a focused button never double-acts.
+func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
-		if is_instance_valid(focused_control) and focused_control in ui_data:
+		flush_rebuild() #reads ui_data
+		# Act only when a BOARD control genuinely holds focus RIGHT NOW (focused_control is
+		# our last-known card control; it can go stale when focus moves to other UI, and it
+		# must stay inert while the game-over overlay has the board focus-locked).
+		if (is_instance_valid(focused_control)
+				and focused_control in ui_data
+				and get_viewport().gui_get_focus_owner() == focused_control):
 			data_selected.emit(ui_data[focused_control])
-	if event.is_action_pressed("ui_cancel"):
-		ungrab_cards()
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		if selected_cards:
+			ungrab_cards()
+			get_viewport().set_input_as_handled()
+		else:
+			hide_focus_info() # nothing held: just dismiss the inspector, leave the event be
 
 # since clicks outside of play area can happen
 func _input(event: InputEvent) -> void:
@@ -112,6 +131,25 @@ func ungrab_cards() -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 	set_card_zones_visuals()
+
+## Game over: the outcome overlay covers the board and blocks the mouse, but keyboard/
+## controller focus could still walk onto the covered cards — drop it, and KEEP it dropped
+## through rebuilds: the final Submit's discard queues a deferred rebuild that lands AFTER
+## the overlay went up and would otherwise hand the focus modes right back.
+var board_focus_locked := false
+
+func disable_board_focus() -> void:
+	board_focus_locked = true
+	for control : Control in ui_data:
+		control.focus_mode = Control.FOCUS_NONE
+
+## Outcome dismissed (undo): unlock and restore card focus. The dismissal's full rebuild
+## follows immediately and re-derives the header focus exceptions, so a blanket FOCUS_ALL
+## here is safe (reused pooled controls never re-run create_card_control's defaults).
+func enable_board_focus() -> void:
+	board_focus_locked = false
+	for control : Control in ui_data:
+		control.focus_mode = Control.FOCUS_ALL
 
 #No per-frame processing: Game relays GameData.board_changed (emitted by every
 #revision bump, i.e. every board mutation) to queue_rebuild(). Focus/selection
@@ -206,6 +244,10 @@ func set_card_zones() -> void:
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
+	# Game-over lock outlives rebuilds: re-strip whatever focus the passes above assigned.
+	if board_focus_locked:
+		for control : Control in ui_data:
+			control.focus_mode = Control.FOCUS_NONE
 	# The CardVisuals just created queued their add_child via call_deferred; this deferred emit
 	# is queued AFTER them (FIFO), so it fires once they're all in-tree and _ready.
 	_emit_board_visuals_ready.call_deferred()

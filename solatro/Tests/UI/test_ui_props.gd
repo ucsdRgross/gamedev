@@ -749,10 +749,9 @@ func test_game_view_submit_with_props() -> void:
 	backup_real_save()
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	var deck := Deck.new()
-	# PINNED deck, not get_deck(): the active playtest deck changes freely, and this seeded
-	# run's observations (the 424242 deal scores knife melds) were built against deck9.
-	var run := RunManager.new_run(deck.deck9, deck.get_rules())
+	# FROZEN test deck, never Decks/deck.gd: this seeded run's observations (the 424242 deal
+	# scores knife melds) replay against TestDecks.seeded_deck's exact composition.
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -884,10 +883,9 @@ func test_all_kinds_live_in_game_view() -> void:
 	backup_real_save()
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	var deck := Deck.new()
-	# PINNED deck (get_deck() is the freely-changing playtest deck); the run only bootstraps
-	# a valid save — the board below is fully crafted, so any small deck works.
-	var run := RunManager.new_run(deck.deck9, deck.get_rules())
+	# The run only bootstraps a valid save — the board below is fully crafted, so the
+	# minimal frozen deck suffices (never Decks/deck.gd; playtest decks change freely).
+	var run := RunManager.new_run(TestDecks.minimal_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2

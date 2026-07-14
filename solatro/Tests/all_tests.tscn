@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_prop_engine.tscn" id="18_prop"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_suit_props.tscn" id="19_suit"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_props.tscn" id="20_uiprops"]
+[ext_resource type="PackedScene" path="res://Tests/Interaction/test_interaction.tscn" id="21_inter"]
 [ext_resource type="PackedScene" path="res://Tests/E2E/test_e2e_run.tscn" id="16_e2e"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
@@ -60,6 +61,8 @@ script = ExtResource("0_root")
 [node name="TestMapTraversal" parent="." unique_id=118778426 instance=ExtResource("10_maptr")]
 
 [node name="TestUiViewers" parent="." instance=ExtResource("11_uivw")]
+
+[node name="TestInteraction" parent="." instance=ExtResource("21_inter")]
 
 [node name="TestUiProps" parent="." instance=ExtResource("20_uiprops")]
 

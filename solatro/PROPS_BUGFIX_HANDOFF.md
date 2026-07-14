@@ -1,9 +1,12 @@
-# HANDOFF — Prop/Status visual-layer bug triage (2026-07-12)
+# PROP/STATUS SYSTEM — reference + bug-triage handoff (2026-07-12/13)
 
-You are picking up an in-flight bug-fixing session on the **suit-props visual layer**
-(SUIT_PROPS_PLAN.md Phases 4–5). The owner playtests, reports bugs, you fix. This doc gives
-you the map. Read `SUIT_PROPS_HANDOFF.md` (top sections, newest first) for the full build log;
-`SUIT_PROPS_AUDIT_BRIEF.md` for the original audit scope.
+THE authoritative doc for the **suit-props system** (built per SUIT_PROPS_PLAN.md, Phases 0–6
+complete). The owner playtests, reports bugs, you fix. This doc gives you the map: fix log,
+architecture, landmines, tests, and the full PROP SYSTEM REFERENCE (file map → recipes).
+Architecture summary lives in `ARCHITECTURE_REVIEW.md` §1.6; locked design decisions in
+`DESIGN_DOC.md` §10. (The interim docs SUIT_PROPS_HANDOFF / SUIT_PROPS_AUDIT_BRIEF /
+SUIT_PROPS_PLAN_CHECKLIST / STATUS_EFFECTS_PLAN were retired 2026-07-13 — their live content
+was folded in here and into ARCHITECTURE_REVIEW; git history has the originals.)
 
 **Ground rules** (from memory + hard experience this session):
 - The owner runs scenes AND tests from their editor. **Never run headless Godot while their
@@ -13,7 +16,15 @@ you the map. Read `SUIT_PROPS_HANDOFF.md` (top sections, newest first) for the f
 - No `git add`/commit. Type every array/for-iterator (warnings-as-errors). UI strings via
   `TRANSLATION.find` + `Locale/localization.csv`. Tuning knobs in `Scripts/player_settings.gd`.
 - Full suite: `all_tests.tscn` — pin exit code / FAIL lines, never total check counts (fuzz
-  suites vary per run).
+  suites vary per run). Run with NO `--quit-after` (it self-quits headless; `--quit-after`
+  makes it idle the full duration and look hung). After adding a `class_name`: delete
+  `.godot/`, run `--headless --path . --import` once (ignore the `yard` addon editor error +
+  a cold-import `SettingsManager.settings` parse-error/segfault — clears on the next real
+  run), then run tests. Reimport also regenerates `Locale/localization.en.translation`.
+- Disk tests use `SolatroTest.backup_real_save()`/`restore_real_save()` to move a real
+  `user://run_save/run.tres` aside — **never reintroduce a save-existence `[SKIP]` guard.**
+- Warnings-as-errors gotchas: class-ref arrays in a func body must be `var … : Array[GDScript]`
+  not `const`; duck-typed hook calls on a typed base go through `obj.call(&"hook", …)`.
 
 ## Fixed this round (2026-07-12, unverified by owner)
 
@@ -120,11 +131,22 @@ you the map. Read `SUIT_PROPS_HANDOFF.md` (top sections, newest first) for the f
    caller now names the exact class (tests, `type_booster_basic`) or indexes
    `PipSuit.STANDARD[...]` where the index is genuinely data (deck_builder's option ids,
    persistence fuzz's rng draw). `random_standard()` stays.
-16. **Tests no longer ride the `get_deck()` placeholder** — `get_deck()` is the owner's
-   freely-changing playtest deck; seeded tests that used it silently changed behavior on
-   every flip (that's how #13 slipped in). `test_game_view_submit_with_props`,
-   `test_all_kinds_live_in_game_view`, and both E2E scenarios now PIN `deck.deck9` (the deck
-   their seeded observations were built against). `game.gd:218` still uses `get_deck()` —
+16a. **Undo can now cancel a resolving act (2026-07-13, owner feature)** — `Game.undo()`
+   mid-Submit/Next sets `act_cancelled`: `get_delay()` -> 0 (props/animations snap, read
+   live), `run_props` breaks like `act_overrun`, `PropLayer` releases a manual-step hold,
+   and the act restores the pre-act board (`_restore_pre_act_board` -> `PropLayer.abort_all`
+   frees every prop visual — no later tick would prune them). Undo at the win/lose screen
+   rewinds the final Submit; fame now banks at Continue (`exit_show`), not at resolve.
+   See ARCHITECTURE_REVIEW §1.7 for the full contract.
+16. **Tests no longer ride `Decks/deck.gd` AT ALL (final form 2026-07-13)** — `get_deck()`
+   is the owner's freely-changing playtest deck; seeded tests that used it silently changed
+   behavior on every flip (that's how #13 slipped in), and even pinning `deck.deck9` left
+   them exposed to future deck.gd edits. Tests now build their own FROZEN compositions from
+   `Tests/Support/test_decks.gd` (`TestDecks`): `seeded_deck()` (verbatim freeze of deck9
+   as of 2026-07-13 — the composition the 424242/31337 observations replay against, hoop
+   suppression quirk included), `standard_rules()` (rules1 freeze with fixed cosmetic pips),
+   `minimal_deck()` (save bootstrap for crafted-board tests). Existing TestDecks functions
+   are replay contracts — add new ones, never edit. `game.gd:218` still uses `get_deck()` —
    that one is the real game entry and SHOULD follow the active deck.
 
 ## Architecture in 6 lines
@@ -188,7 +210,10 @@ you the map. Read `SUIT_PROPS_HANDOFF.md` (top sections, newest first) for the f
 ## Tests that guard all this
 
 `Tests/UI/test_ui_props.gd` (suite "UI PROPS", runs second-to-last; E2E waits on it — never
-make it wait on E2E or they deadlock). Notables:
+make it wait on E2E or they deadlock). Suite ordering chain (each owns CURRENT/save/settings
+while it runs): everything else → INTERACTION (`Tests/Interaction/test_interaction.gd`,
+multimodal input incl. mid-submit undo-cancel + game-over overlay) → UI PROPS → E2E.
+Notables:
 - `test_row_prop_never_leaves_its_row` — one CONTINUOUS per-frame sampler (`_sample_flight`,
   spawn to node-free, no per-tick gaps) against a LIVE row band + x-span envelope, with a
   mid-flight focus-resize relayout poke. **Extend this pattern for any new "prop moved
@@ -455,7 +480,11 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 - Hoop vs knife visual symmetry: they cross the same row in OPPOSITE directions
   (`entity_side_for_row`); if one side still misbehaves, suspect the staged/void points near
   the clipped board edges (landmine 2).
-- Firework grant path (not in `PipSuit.STANDARD`, no way to obtain), per-pip tooltip
-  granularity, real `status_pips.png` asset, reactions at tick-start vs arrival — all owner
-  decisions, all documented in SUIT_PROPS_PLAN_CHECKLIST.md's audit sections.
+- ~~Firework grant path~~ RESOLVED: `deck12` is the deliberate grant path (#14) — though a
+  general in-run acquisition mechanism (booster/shop) is still an owner decision.
+  ~~Reactions at tick-start vs arrival~~ RESOLVED: reactions fire per ARRIVAL (#9).
+- Still open owner decisions: per-pip tooltip granularity (focus inspector shows whole-card
+  text only), real `status_pips.png` asset (StatusLayer + `draw_icon` are placeholders),
+  moving the game.gd compression consts (COMPRESS_RATIO/STEP_MS/SOFT_MS/MIN_FACTOR) into
+  PlayerSettings if they should be player-tunable.
 - Balance of the now-live `on_score`/`on_after_score` broadcasts — never balance-tested.

@@ -87,7 +87,11 @@ func _process(delta: float) -> void:
 		vis.position = vis.travel_curve(vis.from, vis.target, minf(vis.t, 1.0))
 		if vis.t < vis.t_goal: all_done = false
 	if all_done:
-		if manual_step and not _step_queued:
+		# A cancelled act must not stay held at a manual-step boundary — the run_props loop is
+		# parked on tick_done and the cancel can only unwind once it resumes.
+		var game := _game()
+		var cancelled := game != null and game.act_cancelled
+		if manual_step and not _step_queued and not cancelled:
 			return                       # hold the finished tick open until step()
 		_step_queued = false
 		_tick_active = false
@@ -189,6 +193,20 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 	_prune_done(live)
 	_tick_active = true
 	return tick_done
+
+## Cancel path (undo during a resolving act): the simulation stopped mid-run, so no later
+## tick will retarget or prune anything — free every visual NOW, drop held poses, and close
+## the tick so nothing lingers over the restored board.
+func abort_all() -> void:
+	for vis : PropVisual in _visuals.values():
+		if is_instance_valid(vis): vis.queue_free()
+	_visuals.clear()
+	for vis : PropVisual in _exiting:
+		if is_instance_valid(vis): vis.queue_free()
+	_exiting.clear()
+	# prop-raised poses die with their visuals; the board rebuild replaces the card visuals
+	_reacting.clear()
+	_tick_active = false
 
 ## Despawn by kind of journey: route travelers exit one slot past the board edge along their
 ## travel line — as a NORMAL leg through _drive_exiting (same movement code, still re-pinned

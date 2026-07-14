@@ -45,6 +45,7 @@ func _ready() -> void:
 	game.processing_changed.connect(_on_processing_changed)
 	game.submit_label_changed.connect(_on_submit_label_changed)
 	game.show_resolved.connect(_on_show_resolved)
+	game.show_unresolved.connect(_on_show_unresolved)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
@@ -131,24 +132,46 @@ func _on_board_changed() -> void:
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
 	next_button.disabled = busy
-	undo_button.disabled = busy
+	# Undo stays ENABLED while busy: pressing it mid-act cancels the act (Game.undo requests
+	# the cancel; the act restores the pre-act board), and at the win/lose screen it rewinds
+	# the final Submit. Game ignores the press in the states where undo can't act.
 
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text
 
+## The win/lose overlay covers ONLY the play area (it lives inside PlayContainer): the board
+## underneath is blocked (mouse by the overlay's STOP filter, keyboard/controller by dropping
+## the card controls' focus), while the rest of the HUD stays clickable — Undo rewinds the
+## outcome, the deck/discard/rules viewers still open; Submit/Next stay disabled (processing
+## holds true, no more card logic).
+var _continue_button : Button = null
+
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	var screen : Label = win_screen if won else lose_screen
-	if won:
-		screen.text = "Fame +%d" % score
+	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
+			else TRANSLATION.find('GAME_LOSE')
 	screen.show()
-	var cont := Button.new()
-	cont.text = "Continue"
-	cont.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	screen.add_child(cont)
-	cont.set_anchors_preset(Control.PRESET_CENTER)
-	cont.position.y += CONTINUE_OFFSET_Y  # sit below the big win/lose text
-	cont.pressed.connect(game.exit_show)
-	cont.grab_focus()
+	play_area.hide_focus_info()
+	play_area.disable_board_focus()
+	_continue_button = Button.new()
+	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')
+	_continue_button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
+	screen.add_child(_continue_button)
+	_continue_button.set_anchors_preset(Control.PRESET_CENTER)
+	_continue_button.position.y += CONTINUE_OFFSET_Y  # sit below the big win/lose text
+	_continue_button.pressed.connect(game.exit_show)
+	_continue_button.grab_focus()
+
+## Undo at the win/lose screen: drop the overlay. The Game follows up with the normal undo
+## rebuild (fresh board controls restore card focus), so nothing else needs restoring here.
+func _on_show_unresolved() -> void:
+	win_screen.hide()
+	lose_screen.hide()
+	play_area.enable_board_focus()  # the undo's rebuild follows and re-derives header focus
+	if _continue_button and is_instance_valid(_continue_button):
+		_continue_button.queue_free()
+	_continue_button = null
+	undo_button.grab_focus()  # keyboard/controller: focus was on the freed Continue
 
 # ==============================================================================
 # GAME -> VIEW PACED (injected view; Game calls `if view: await view.<m>()`)
@@ -210,6 +233,11 @@ func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> 
 ## which animates every live prop and emits its `tick_done` once they've all reached target.
 func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Array) -> Signal:
 	return play_area.prop_layer.begin_prop_tick(live, spawned, movers, relocated)
+
+## Undo cancelled a resolving act: the prop simulation stopped mid-run, so free every prop
+## visual immediately (no later tick will prune them).
+func abort_props() -> void:
+	play_area.prop_layer.abort_all()
 
 ## True while the started visual tick is still animating. The Game's SYNC step awaits
 ## `tick_done` only while this holds — if the events phase outlasted the animation, the

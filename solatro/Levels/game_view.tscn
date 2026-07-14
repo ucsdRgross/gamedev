@@ -41,6 +41,58 @@ offset_bottom = 639.0
 unique_name_in_owner = true
 layout_mode = 1
 
+[node name="WinScreen" type="Label" parent="SceneRoot/PlayContainer" unique_id=739596615]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_font_sizes/font_size = 100
+text = "You win!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Dim" type="ColorRect" parent="SceneRoot/PlayContainer/WinScreen" unique_id=1522090341]
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.04, 0.04, 0.08, 0.92)
+
+[node name="LoseScreen" type="Label" parent="SceneRoot/PlayContainer" unique_id=1238308529]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_font_sizes/font_size = 100
+text = "You lose!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Dim" type="ColorRect" parent="SceneRoot/PlayContainer/LoseScreen" unique_id=1522090342]
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.03, 0.03, 0.92)
+
 [node name="Submit" type="Button" parent="SceneRoot" unique_id=1304615994]
 unique_name_in_owner = true
 layout_mode = 0
@@ -317,34 +369,6 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Rules
 "
-
-[node name="WinScreen" type="Label" parent="SceneRoot" unique_id=739596615]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 226
-text = "You win!"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="LoseScreen" type="Label" parent="SceneRoot" unique_id=1238308529]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 226
-text = "You lose!"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Background" type="TextureRect" parent="SceneRoot" unique_id=1013700482]
 visible = false

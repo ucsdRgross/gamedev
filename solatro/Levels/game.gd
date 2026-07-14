@@ -19,6 +19,9 @@ signal processing_changed(busy: bool)
 signal submit_label_changed(text: String)
 ## The show finished: the view shows the win/lose screen + a Continue button.
 signal show_resolved(won: bool, score: int, goal: int)
+## Undo pressed at the win/lose screen: the view dismisses the outcome overlay (the undo of
+## the final Submit follows through the normal rebuild path).
+signal show_unresolved
 
 #placeholder
 @export var deck : Deck = Deck.new()
@@ -54,6 +57,17 @@ var submits_used : int:
 	get: return state.submits_used
 	set(value): state.submits_used = value
 var _won : bool = false
+## The show finished and the win/lose screen is up. Undo in this state dismisses the outcome
+## and rewinds the final Submit (show_unresolved). Reset by that undo; a fresh _resolve_game
+## sets it again.
+var _resolved : bool = false
+## Undo pressed while an act (Submit/Next) was still resolving: the in-flight resolution
+## fast-forwards (get_delay -> 0, score_line/run_props short-circuit) and the performing
+## function restores the pre-act board instead of committing. Reset by _begin_act / restore.
+var act_cancelled : bool = false
+## True only across the cancellable span of _perform_submit/_perform_next — undo() may only
+## request a cancel while the act can still unwind.
+var _act_cancellable : bool = false
 
 # --- Elapsed-time compression + runaway event cap (SUIT_PROPS_PLAN §1.6) ---
 # Long/looping score cascades (prop chains, echoing triggers) shrink their per-step delay as
@@ -74,6 +88,7 @@ func _begin_act() -> void:
 	act_start_ms = Time.get_ticks_msec()
 	act_calls = 0
 	act_overrun = false
+	act_cancelled = false
 
 ## Count one unit of processing (per mod invoked, per prop slot entry); trip the runaway cap.
 func note_processing(weight := 1) -> void:
@@ -85,6 +100,9 @@ func note_processing(weight := 1) -> void:
 ## action is resolving does it shrink toward 0 with elapsed time (read live every frame by the
 ## view's interpolation, so speed changes apply mid-slot).
 func get_delay() -> float:
+	# a cancelled act fast-forwards: every remaining animation snaps (read live per frame)
+	if act_cancelled:
+		return 0.0
 	# base returns SettingsManager.settings.base_delay (normal play untouched)
 	if not processing:
 		return super.get_delay()
@@ -249,7 +267,12 @@ func _perform_next() -> void:
 	processing = true
 	_begin_act()
 	_begin_action(&"on_next")
+	_act_cancellable = true
 	await run_all_mods(&"on_next")
+	_act_cancellable = false
+	if act_cancelled:
+		_restore_pre_act_board("cancelled next")
+		return
 	save_state()
 	processing = false
 	
@@ -282,9 +305,24 @@ func _begin_action(action: StringName) -> void:
 		RunManager.request_save()
 
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
-## (selection state lives there); Game only guards `processing` and owns the history rewind.
+## (selection state lives there); Game owns the history rewind. Three states:
+##   - win/lose screen up (_resolved): dismiss the outcome, then rewind the final Submit.
+##   - an act is resolving (_act_cancellable): request a cancel — the act fast-forwards and
+##     restores the pre-act board itself (_perform_submit/_perform_next).
+##   - otherwise locked (resume load / replay tail): ignored.
 func undo() -> void:
-	if processing: return
+	if _resolved:
+		_resolved = false
+		_won = false
+		show_unresolved.emit()
+		processing = false
+		# fall through: pop the final Submit's committed board below
+	elif processing:
+		# the restore needs a committed board to return to (always true in a real show —
+		# _start_fresh_show seeds history — but bare test fixtures may not have one)
+		if _act_cancellable and not save_history.is_empty():
+			act_cancelled = true
+		return
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
@@ -301,7 +339,28 @@ func undo() -> void:
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
-	
+
+## Undo pressed while an act was resolving: throw away the partially-resolved state and
+## restore the last committed board — the pre-act snapshot save_state pushed (the act itself
+## only commits at its END, so history's top IS the board from before the button press).
+## Mods kept running against the doomed state through the fast-forward unwind; that is safe
+## because the whole GameData is replaced here. Nothing is popped from history.
+func _restore_pre_act_board(context: String) -> void:
+	act_cancelled = false
+	state = _runtime_state(save_history[-1])
+	_update_submit_label()
+	if RunManager.run != null:
+		RunManager.run.pending_action = &""   # nothing is mid-resolution anymore
+		RunManager.run.game_history = save_history
+		RunManager.run.game_submits = submits_used
+		RunManager.request_save()
+	if view:
+		view.abort_props()   # the simulation stopped mid-run; free its stranded visuals
+		view.rebuild()
+		view.sync_scores()
+	processing = false
+	debug_validate(context)
+
 # destination Vector3( 0:1 for upper:lower, row, col)
 # Legacy Vector3i entry point — thin adapter over Board.move_stack (review §5).
 # Prefer move_data_ontop_data / move_stack for new call sites.
@@ -407,7 +466,12 @@ func _perform_submit() -> void:
 	processing = true
 	_begin_act()
 	_begin_action(&"on_run_scorer")
+	_act_cancellable = true
 	await run_all_mods(&"on_run_scorer")
+	_act_cancellable = false
+	if act_cancelled:
+		_restore_pre_act_board("cancelled submit")
+		return
 	state.apply_act_score()
 	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
 	if view: view.sync_scores()
@@ -424,18 +488,20 @@ func _update_submit_label() -> void:
 	submit_label_changed.emit("Submit (%d act%s left)" \
 			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"])
 
-## All acts performed: win if the fame requirement was reached. Win feeds fame (FULL score
-## incl. overscore); the view shows the win/lose screen + Continue button and calls exit_show().
+## All acts performed: win if the fame requirement was reached. The view shows the win/lose
+## screen + Continue button and calls exit_show(). Fame is NOT banked here — the outcome
+## stays undoable until the player commits via Continue (and a quit at the win screen can't
+## double-bank on the resume re-show, which calls this again).
 func _resolve_game() -> void:
 	_won = state.has_met_goal()
-	if _won:
-		RunManager.record_win(state.total_score, state.goal)
+	_resolved = true
 	show_resolved.emit(_won, state.total_score, state.goal)
 
-# Leave the show (view-called from Continue): won games hand back to the map, lost games end
-# the run.
+# Leave the show (view-called from Continue): won games bank the fame (FULL score incl.
+# overscore) and hand back to the map, lost games end the run.
 func exit_show() -> void:
 	if _won:
+		RunManager.record_win(state.total_score, state.goal)
 		return_to_map()
 	else:
 		run_lost.emit()
@@ -481,6 +547,8 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 ## simply skipped when headless. `zone` is only read for rows (upper vs lower gutter) — pass the
 ## upper/lower zone array; it is ignored for columns.
 func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : int) -> void:
+	# a cancelled act discards its whole state — skip the remaining lines outright
+	if act_cancelled: return
 	var score_zone : Array[BigNumber]
 	if is_row:
 		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
@@ -516,6 +584,7 @@ func row_gutter(v: Vector3i) -> Array[BigNumber]:
 ## inert). Fires per meld membership (row + col each), by design. Prop effects only touch
 ## gutters + card-local statuses, never the zone/deck arrays the outer scorer walks (B10 safe).
 func _run_score_effects(result: Scoring.Result) -> void:
+	if act_cancelled: return
 	var spawners : Array[PropSpawner] = []
 	for card in result.meld:
 		if card.suit:
@@ -542,7 +611,7 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 	var owner_of : Dictionary = {}   # prop -> its spawner (to release the live slot on finish)
 	var tick := 0
 	while not live_props.is_empty() or spawners.any(func(s: PropSpawner) -> bool: return s.remaining > 0):
-		if act_overrun or tick >= MAX_TICKS:
+		if act_overrun or act_cancelled or tick >= MAX_TICKS:
 			break
 		# SPAWN — each due spawner emits up to batch_size, throttled by max_live
 		var spawned : Array[PropData] = []

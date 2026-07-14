@@ -176,10 +176,11 @@ The atomic write uses a `run.tmp.tres` temp file — the `.tres` extension is re
 `ResourceSaver` picks its format from the extension. See the handoff doc
 `HANDOFF_worldgen_map.md` for the full picture, file map, and open follow-ups.
 
-### 1.6 Suit props & statuses (added 2026-07, Suit-Props plan Phases 0–5)
+### 1.6 Suit props & statuses (added 2026-07, Suit-Props plan Phases 0–6; refreshed 2026-07-13)
 
 Suits became a **fourth kind of `CardModifier`** (`PipSuit`), and a new **prop simulation** rides
-on top of the scorer. Key facts for anyone extending this:
+on top of the scorer. The full reference (file map, tick loop, view pipeline, knobs, landmines,
+recipes) is `PROPS_BUGFIX_HANDOFF.md`; key facts for anyone extending this:
 
 - **`PipSuit` is dispatched ONLY via `run_card_mods` + `spawn_props`** — never through the
   suit-blind `run_all_mods` iterator. It is the one dispatch path that sees suits. Suits are
@@ -205,12 +206,67 @@ on top of the scorer. Key facts for anyone extending this:
   animations, and a card-reaction state machine (jump/spin) aggregated from prop hints. The Game
   is one tick ahead of the view and awaits `PropLayer.tick_done` each tick — guarded by
   `view.prop_tick_pending()` so an events phase that outlasts the animation (persistent-signal
-  emission already fired) skips the await instead of hanging.
+  emission already fired) skips the await instead of hanging. Every visual carries an
+  `anchor_coord` re-pinned to live slot geometry per frame (relayout-proof); batch mates spread
+  via `PropFormation` lane offsets (an @tool node under PropLayer, plotted in the editor);
+  `PropLayer.manual_step` + two GameView debug buttons let the owner step prop ticks one at a time.
+- **CardVisuals moved into the scroll content too (2026-07-13):** cards live on `%CardLayer`
+  (Node2D inside TopLevelVBox, sibling of PropLayer), so the scroll transform carries controls,
+  cards, and props together — no more scroll-lag chase. Consequence: cards clip at the play-area
+  rect like props (the deck/discard fly-in is invisible outside it). The §1.2 class-map line
+  placing CardVisual under PlayArea's root predates this.
+- **Card text surface is the focus inspector panel** (play_area.gd), a permanent PropLayer child
+  re-pinned beside its anchor control every frame — native `tooltip_text` popups were removed
+  (they blocked board clicks). Any display-only Control under the scroll content must claim the
+  SmoothScroll addon's `_smooth_scroll_default_mouse_filter_set` meta BEFORE `add_child` or the
+  addon rewrites it into a click-blocking hit-target.
+- **Reactions key on `card.skill` by design:** only talented cards ever JUMP (hoop pass) or SPIN
+  (knife pass) — a fully plain deck shows no poses at all. A talented card also suppresses its
+  own suit's prop emission (`PipSuit._spawn_origin`), so an all-talent suit spawns nothing.
+  Decks are loop-built in `Decks/deck.gd` (each `_build_deckN()` documents its niche): `deck11`
+  (the `get_deck()` default) mixes plain + talent cards per suit so every kind spawns AND reacts;
+  `deck12` is the only Firework grant path (kind 4 is outside `PipSuit.STANDARD`, never random);
+  `deck13` is the Burning/Juggling status stress deck. deck9/deck10 show zero hoops by
+  construction (every hoop card is talented) — documented on their builders.
+- **`submits_used` lives ON `GameData`** (`@export_storage`) so undo/history snapshots rewind the
+  act count; `Game.submits_used` is a forwarding property. Any new per-show counter that undo must
+  rewind belongs on GameData, not Game.
 - **Extension contract (zero engine edits):** a new prop behavior = one `PropModifier`; a new
   prop-suit = one `PipSuit` subclass (+ optional `PropVisual`, palette entry); a new status = one
   `CardModifierStatus` subclass. The tick loop, dispatch, scoring seam, pacing, compression, and
   tests stay closed. UI-facing strings go through `TRANSLATION.find` (CSV keys); shared tuning
   knobs (e.g. `prop_tick_fraction`) live in `PlayerSettings`.
+
+### 1.7 Undo & game-over contract (added 2026-07-13)
+
+Undo is live in every state; `Game.undo()` dispatches on three:
+
+- **Mid-act cancel:** pressing Undo while Submit/Next resolves sets `act_cancelled`
+  (allowed only inside the `_act_cancellable` span of `_perform_submit/_perform_next`).
+  The resolution FAST-FORWARDS — `get_delay()` returns 0 (read live, so animations snap),
+  `score_line`/`_run_score_effects` early-return, `run_props` breaks like `act_overrun`,
+  and `PropLayer` releases a manual-step hold — then the performing function calls
+  `_restore_pre_act_board()`: state is rebuilt from `save_history[-1]` (the pre-act
+  snapshot; the act only commits at its END), `pending_action` clears, the view aborts
+  stranded prop visuals (`PropLayer.abort_all`) and rebuilds. Nothing pops from history.
+  Mods keep mutating the doomed state during the unwind — safe, it's replaced wholesale.
+- **Game over (`_resolved`):** Undo emits `show_unresolved` (view drops the outcome
+  overlay), unlocks, then falls through to a NORMAL undo of the final Submit's snapshot.
+  Because of this, **fame banks in `exit_show()` (Continue), not `_resolve_game()`** — the
+  win stays undoable, and a quit-at-win-screen resume (which re-runs `_resolve_game`) can't
+  double-bank fame (that was a live bug before).
+- **Otherwise locked** (resume load, replay tail before the cancellable span): ignored.
+
+View side: the win/lose overlays live INSIDE `PlayContainer` (full-rect Labels + dim
+ColorRect, `mouse_filter` STOP) so they cover exactly the board; Submit/Next stay disabled
+(`processing` holds), the Undo button is never disabled, deck/discard/rules viewers stay
+usable, `PlayArea.disable_board_focus()` strips card focus so keyboard/controller can't
+reach covered cards — and LOCKS it (`board_focus_locked`, re-applied at the end of every
+`set_card_zones`) because the final Submit's discard queues a deferred rebuild that lands
+after the overlay and would otherwise re-enable focus; `enable_board_focus()` on dismissal.
+Continue holds focus.
+Guarded by `test_game_headless` (cancel + game-over-rewind semantics) and the
+`Tests/Interaction/` suite (real input events through every modality).
 
 ---
 
@@ -796,3 +852,44 @@ broken, the B11 rebind fix jumps to the front of the queue — it gates correct 
 everywhere). **N1, N2, N3 join step 1** (small, independent, confirmed). **N5** needs a
 design decision (what "active" means for play cards) before deck5/deck7 content can work —
 decide it alongside the D1 hook-contract pass.
+
+---
+
+## 8. SHARP EDGES & WORKING AGREEMENTS (salvaged from HANDOFF.md, 2026-07-02 era; still true)
+
+Working agreements (do not "fix" — owner rulings, see the [~] items above):
+- B10 live iteration, S6 same-value `stage_changed` re-emits, N8 score-array desync, D7
+  commented-out code kept as reference.
+- Player drops move with `trigger_mods = false` → `on_card_dropped_on`/`on_stack_cards` fire
+  ONLY from automated moves (TypeInput). Confirm intentional before building content around
+  player-drop triggers.
+- All board mutations go through `Board` (see `Scripts/board.gd` header **MUTATION
+  GUIDELINES**) or Game's draw/discard/deck functions; every mutation bumps
+  `GameData.revision` AFTER the state is consistent. The bump (a) drives the coalesced
+  PlayArea rebuild, (b) keys the compare-mod implementer cache. **A missed revision bump =
+  stuck UI (visible) + stale compare cache (silent).**
+- Anything reading PlayArea's `ui_data`/`data_ui`/`data_card`/control tree calls
+  `flush_rebuild()` first.
+
+Sharp edges:
+- `stage` does triple duty: logical location, animation origin (`previous_stage`), S6
+  re-emit channel. Re-setting an already-correct stage clobbers `previous_stage` and kills
+  spawn/tween animations (bit us twice).
+- First-implementer-wins mod dispatch precedence depends on board order — moving an
+  unrelated card can change which of two comparator mods wins. Fine at 0–1 implementers.
+- GDScript: declaration-default values BYPASS property setters (initial `state` signals
+  must be wired in `_ready`; this caused the blank-board bug).
+- Godot 4 delivers key/joypad events ONLY to the focused control — they never bubble to
+  ancestor Controls (mouse events do). A `gui_input` handler on a container root will
+  silently never see `ui_accept`/`ui_cancel`; board-wide keyboard/controller handling
+  belongs in `_unhandled_input` (caught by the interaction suite 2026-07-13 — keyboard
+  card selection had been dead code).
+- `ui_accept`/`ui_cancel` are explicitly OVERRIDDEN in project.godot to bind joypad A/B —
+  the engine defaults here didn't include them (also caught by the interaction suite:
+  controller accept/cancel did nothing). Overriding a built-in ui_* action REPLACES its
+  defaults, so the overrides re-list the full keyboard set (Enter/KP-Enter/Space; Escape);
+  keep that in mind when editing them in the project-settings input map.
+- Statuses must not call `move_data_*`/`discard_data` from hooks dispatched by
+  `run_all_mods` (B10 live iteration) — defer via a queued action. And always
+  `duplicate()`/`.new()` a status at the point of application (S7 shared-instance trap;
+  `add_status` defensively duplicates foreign-`data` statuses).

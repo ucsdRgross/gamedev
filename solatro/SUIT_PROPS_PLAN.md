@@ -1,5 +1,12 @@
 # Plan v3 — Suit Modifiers as Data-Layer Props (Hoop / Knife / Ball / Fire / Firework)
 
+> **STATUS 2026-07-13: COMPLETE (Phases 0–6 shipped).** This doc is kept as the SPEC that
+> code comments cite by section number (game.gd, prop_layer.gd, tests, …). It is NOT
+> maintained as-built: the live reference is `PROPS_BUGFIX_HANDOFF.md` (file map, tick loop,
+> view pipeline, knobs, landmines) + `ARCHITECTURE_REVIEW.md` §1.6 + `DESIGN_DOC.md` §10.
+> The companion docs STATUS_EFFECTS_PLAN / SUIT_PROPS_HANDOFF / SUIT_PROPS_AUDIT_BRIEF /
+> SUIT_PROPS_PLAN_CHECKLIST were retired the same day (git history has them).
+
 ## Revision history
 
 - **v1** — banked closed-form scores, cosmetic entities. Superseded (couldn't support the

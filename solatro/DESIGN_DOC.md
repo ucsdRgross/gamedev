@@ -77,6 +77,13 @@ Symphony*, Neon Nightlife (Disconauts).
    (`Game.MAX_SUBMITS`; after the 3rd act the goal check wins → fame → map, or loses →
    run over → menu); each act (or only the final act) could carry an increasing score
    multiplier 💭.
+4. **Undo is always live** ✅ (2026-07-13): pressing Undo DURING a resolving act cancels it
+   (the resolution fast-forwards and the pre-act board restores — no act consumed, nothing
+   committed), and pressing it AT the win/lose screen dismisses the outcome and rewinds the
+   final Submit. The outcome overlay covers only the board (card input of every mode is
+   blocked; the HUD stays live, Submit/Next disabled). Consequence: **fame banks at
+   Continue** (`exit_show` → `RunManager.record_win`), not at the outcome screen — the win
+   stays undoable until committed, and resuming at the win screen can't double-bank.
 
 **Implementation state:** `Game`/`GameData` with draw deck, discard, upper zone (Entrance)
 and lower zone (Ring); `TypeInput.on_next` drops upper stacks into the Ring and refills
@@ -356,8 +363,8 @@ across the board and interact with other cards:
 3. Consequences noted: most feat cards should be *alive* in some way and somewhat
    individualized; cards dynamically **jump up through hoops and duck under knives**.
 
-**Locked & implemented (Suit-Props plan, Phases 0–5 ✅ — see `SUIT_PROPS_PLAN.md` /
-`SUIT_PROPS_HANDOFF.md`):**
+**Locked & implemented (Suit-Props plan, Phases 0–6 ✅ — spec `SUIT_PROPS_PLAN.md`; live
+reference `PROPS_BUGFIX_HANDOFF.md`):**
 - **Nominal suit subclasses, not ordinal.** Each suit is a `PipSuit` (a `CardModifier`)
   subclass — `PipSuitHoop/Knife/Ball/Fire/Firework` — with a palette/art index only; there is
   **no `value`** and no suit ordering. Construct the exact class (`PipSuitHoop.new()`, …) or

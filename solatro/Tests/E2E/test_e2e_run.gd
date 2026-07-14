@@ -60,11 +60,11 @@ func validate_ok(g: Game, ctx: String) -> void:
 # resume from disk, finish, win, hand the board back to the map.
 # ==============================================================================
 func run_win_and_resume_scenario() -> void:
-	var deck := Deck.new()
-	# PINNED deck, not get_deck(): the seeded win below was built against deck9, and the
-	# active playtest deck changes freely.
-	var deck_size := deck.deck9.size()
-	var run := RunManager.new_run(deck.deck9, deck.get_rules())
+	# FROZEN test deck, never Decks/deck.gd: the seeded win below replays against
+	# TestDecks.seeded_deck's exact composition (playtest decks change freely).
+	var cards := TestDecks.seeded_deck()
+	var deck_size := cards.size()
+	var run := RunManager.new_run(cards, TestDecks.standard_rules())
 	Main.save_info = run
 	check(RunManager.has_save(), "starting a run immediately writes a resumable save")
 	run.pending_goal = 1     # the map node's fame requirement for this show
@@ -152,15 +152,18 @@ func run_win_and_resume_scenario() -> void:
 	await g2.submit()
 	check((resolved.size() == 1 and resolved[0][0] == true) as bool,
 			"after the final act the show resolves as a win (goal met)", str(resolved))
-	check(loaded.fame == g2.state.total_score,
-			"winning banks the FULL score (incl. overscore) as fame",
-			"fame %d, score %d" % [loaded.fame, g2.state.total_score])
+	check(loaded.fame == 0,
+			"the win is NOT banked at the outcome screen (it stays undoable until Continue)",
+			"fame %d" % loaded.fame)
 
-	# --- Continue: the board sweeps back into the run deck for the map ---
+	# --- Continue: fame banks, the board sweeps back into the run deck for the map ---
 	var ended: Array = []
 	g2.game_ended.connect(func() -> void: ended.append(true))
 	g2.exit_show()
 	check(ended.size() == 1, "leaving a won show hands back to the map")
+	check(loaded.fame == g2.state.total_score,
+			"Continue banks the FULL score (incl. overscore) as fame",
+			"fame %d, score %d" % [loaded.fame, g2.state.total_score])
 	check(total_zone_cards(g2) == 0 and g2.state.discard_deck.is_empty(),
 			"the board and discard pile are swept clean")
 	check(g2.state.draw_deck.size() == deck_size,
@@ -176,9 +179,9 @@ func run_win_and_resume_scenario() -> void:
 # SCENARIO 2: LOSS — an unreachable goal ends the run.
 # ==============================================================================
 func run_loss_scenario() -> void:
-	var deck := Deck.new()
-	# PINNED for the same reason as the win scenario: replay-stable across get_deck() flips.
-	var run := RunManager.new_run(deck.deck9, deck.get_rules())
+	# FROZEN test deck for the same reason as the win scenario: replay-stable regardless
+	# of what happens to Decks/deck.gd.
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1000000000
 	run.pending_node_id = 1

@@ -1,7 +1,8 @@
 # Unit Test Plan
 
 Derived from ARCHITECTURE_REVIEW.md (incl. §5 move-logic redesign), SCORING_AUDIT.md, and
-STATUS_EFFECTS_PLAN.md. Goal: every confirmed/suspected bug gets a regression test, every
+the status-effects plan (retired; now SUIT_PROPS_PLAN Phase 2 / ARCHITECTURE_REVIEW §1.6).
+Goal: every confirmed/suspected bug gets a regression test, every
 invariant gets a property test, and chaos/fuzz suites guard the areas where enumeration
 can't cover the state space.
 
@@ -189,8 +190,8 @@ Uses T-ENV FakeEnvironment + spy modifiers that record `(hook, args, call_order)
 - [ ] **B10 regression:** a mod that MOVES its own card during `on_next` → every card
 	  still visited exactly once (needs snapshot fix first; until then this test pins the
 	  bug as expected-fail).
-- [ ] statuses (when implemented): status hooks fire; self-removal mid-hook doesn't skip
-	  the card's remaining mods (STATUS_EFFECTS_PLAN C2).
+- [x] statuses: status hooks fire; self-removal mid-hook doesn't skip the card's remaining
+	  mods (the dispatch snapshot rule) — DONE in `Tests/Engine/test_statuses.gd`.
 - [ ] `CURRENT` lifecycle: two environments enter/exit tree → CURRENT restored correctly
 	  (pins the deck-viewer-vs-game fight noted in review D4; currently exit sets null,
 	  not previous — pin whichever policy you choose).
@@ -326,6 +327,23 @@ Random rank/suit values (incl. NAN-producing null/mixed-class pairs):
   - `is_rank_same(a,a)` always true; `is_rank_next_to` consistent with compare diff,
   - with a random-value `on_compare_ranks` mod: results always flow through the mod
     (never the default path) when the mod returns non-NAN.
+
+## 8.5 Interaction suite (`Tests/Interaction/test_interaction.gd`) — **ADDED 2026-07-13**
+
+Multimodal input against a REAL GameView: every event goes through
+`Input.parse_input_event` (full pipeline — mouse emulation, hover, focus routing), never a
+direct handler call, so a broken signal connection or mouse filter fails like it would for
+a player. Covers: mouse click/right-click card selection + cancel, keyboard Enter/Escape,
+controller A/B + dpad focus navigation, touchscreen tap (touch → emulated mouse → button),
+Undo pressed mid-Submit through the real button (cancel semantics pinned headless in
+test_game_headless; this pins the button path + no-hang + no stranded prop visuals), and
+the game-over overlay contract (covers exactly the board, card focus stripped, Continue
+focused, Undo rewinds the outcome). Deck: `TestDecks` frozen compositions — interaction
+suites must NEVER ride `Decks/deck.gd` (see Tests/Support/test_decks.gd).
+
+Ordering: runs third-to-last — waits for every sibling except UI PROPS (which waits for it)
+and E2E (which waits for all). It owns CURRENT / Main.save_info / settings + the real save
+while running (same backup/restore discipline as UI PROPS).
 
 ## 9. Rollout order
 

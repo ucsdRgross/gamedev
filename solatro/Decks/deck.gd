@@ -239,7 +239,7 @@ func _build_deck11() -> Array[CardData]:
 ## DECK 12 — firework access (16): two Fireworks at ranks 1-4, padded with one plain card
 ## of every standard suit at ranks 1-2.
 ## Tests: the ONLY way to play kind-4 fireworks today (PipSuitFirework is outside
-## PipSuit.STANDARD and has no other grant path — SUIT_PROPS_PLAN_CHECKLIST open item);
+## PipSuit.STANDARD and has no other grant path — in-run acquisition is an open owner decision);
 ## exercises column_rise_path against normal row traffic. Balance: first read on whether
 ## FIREWORK_POINTS is worth a deck slot.
 var deck12 : Array[CardData] = _build_deck12()

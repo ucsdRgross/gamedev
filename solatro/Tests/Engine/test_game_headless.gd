@@ -25,6 +25,8 @@ func _ready() -> void:
 	await test_try_place_moves_and_commits()
 	await test_undo_reverts_state_and_history()
 	await test_undo_rewinds_act_count()
+	await test_undo_cancels_resolving_submit()
+	await test_undo_at_game_over_rewinds_final_submit()
 	test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
 	await test_submit_headless_full_act()
@@ -165,6 +167,76 @@ func test_undo_rewinds_act_count() -> void:
 	check(g.submits_used == 0, "undo rewinds the act count with the board")
 	check(g.save_history[-1].submits_used == 0,
 			"the restored snapshot itself carries the rewound act count")
+	CardEnvironment.CURRENT = null
+	g.free()
+
+## "The player pressing Undo" mid-scoring: a rules-card probe that calls game.undo() from
+## inside the scoring cascade (headless resolves in one await chain, so the press can only
+## come from within it — exactly what the live button does mid-animation).
+class UndoDuringScoring extends CardModifierSkill:
+	var pressed := false
+	func get_str() -> String: return "UndoProbe"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_score_row(_zone: Array, _row: int) -> void:
+		if pressed: return
+		pressed = true
+		var g := CardEnvironment.get_current_game()
+		if g: g.undo()
+
+## Undo during a resolving Submit cancels the act: the resolution fast-forwards and the
+## board restores to the exact pre-submit snapshot — nothing scored, no act consumed, no
+## new history entry, input handed back.
+func test_undo_cancels_resolving_submit() -> void:
+	var g := make_game()
+	g.state.rules_deck.append(rules_card(UndoDuringScoring.new()))
+	g.save_state()   # the committed pre-submit board the cancel restores
+	var history_before := g.save_history.size()
+	var lower_before : int = 0
+	for col : ArrayCardData in g.state.lower_zone:
+		lower_before += col.datas.size()
+	await g.submit()
+	check(g.submits_used == 0, "the cancelled Submit consumes NO act")
+	check(g.save_history.size() == history_before, "the cancelled Submit commits nothing")
+	var lower_after : int = 0
+	for col : ArrayCardData in g.state.lower_zone:
+		lower_after += col.datas.size()
+	check(lower_after == lower_before,
+			"the performed board is restored (not discarded)",
+			"%d vs %d" % [lower_after, lower_before])
+	check(g.state.total_score == 0, "no act score was applied", str(g.state.total_score))
+	check(not g.processing, "input is handed back after the cancel")
+	check(not g.act_cancelled, "the cancel flag is consumed by the restore")
+	check(g.state.validate().is_empty(), "restored board validates")
+	CardEnvironment.CURRENT = null
+	g.free()
+
+## Undo at the win/lose screen dismisses the outcome (show_unresolved) and rewinds the
+## final Submit: the act comes back, input unlocks, and nothing was banked (fame only
+## moves on Continue — exit_show — which never ran).
+func test_undo_at_game_over_rewinds_final_submit() -> void:
+	var g := make_game()
+	g.save_state()
+	var resolved : Array = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+	var unresolved : Array = []
+	g.show_unresolved.connect(func() -> void: unresolved.append(true))
+	await g.submit()
+	await g.submit()
+	await g.submit()
+	check(resolved.size() == 1, "the third Submit resolves the show", str(resolved))
+	check(g.processing, "the resolved show locks input")
+	var history_at_over := g.save_history.size()
+	g.undo()
+	check(unresolved.size() == 1, "undo at the outcome screen emits show_unresolved")
+	check(g.submits_used == Game.MAX_SUBMITS - 1,
+			"undo rewinds the final Submit's act", str(g.submits_used))
+	check(g.save_history.size() == history_at_over - 1,
+			"the final Submit's snapshot is popped")
+	check(not g.processing, "input unlocks — the show is live again")
+	# the show can re-resolve after the rewind (undo -> submit again)
+	await g.submit()
+	check(resolved.size() == 2, "re-submitting after the rewind resolves the show again")
 	CardEnvironment.CURRENT = null
 	g.free()
 

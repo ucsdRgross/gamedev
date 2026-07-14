@@ -141,7 +141,7 @@ func test_disk_round_trip() -> void:
 				.with_skill(SkillExtraPoint.new()).with_type(TypePaper.new()) \
 				.with_stamp(StampGlobal.new()),
 	]
-	var rules: Array[CardData] = Deck.new().get_rules()
+	var rules: Array[CardData] = TestDecks.standard_rules()
 	var run := RunManager.new_run(cards, rules)
 	check(run.world_seed != 0, "new_run pins a non-zero world seed")
 	check_impl(run.card_datas.size() == 1 and run.card_datas[0] != cards[0],
