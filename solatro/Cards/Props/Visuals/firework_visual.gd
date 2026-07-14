@@ -1,6 +1,7 @@
+@tool
 class_name FireworkVisual
 extends PropVisual
-## Kind 4. A rocket that rises — vertical travel is the same linear tween as any other, this
+## Kind 4. A rocket that rises â€” vertical travel is the same linear tween as any other, this
 ## kind just leans into it (and is never rolled randomly; see PipSuit.STANDARD).
 
 func _init() -> void:

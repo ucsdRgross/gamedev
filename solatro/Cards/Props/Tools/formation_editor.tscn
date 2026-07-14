@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://duhdrg0iroucb"]
+
+[ext_resource type="Script" uid="uid://bvc7g06k1bb5" path="res://Cards/Props/Tools/formation_editor.gd" id="1_fedit"]
+
+[node name="FormationEditor" type="Node2D" unique_id=634773069]
+script = ExtResource("1_fedit")
+points = PackedVector2Array(-19, -2.2478437, -14.348515, -1.986803, -2.3442936, -0.16768622, 5.7523584, 0.11011982, 10.978483, -1.6087593, 19, 2.942974)

@@ -27,17 +27,27 @@ func tick_pending() -> bool:
 	return _tick_active
 
 var _visuals : Dictionary[PropData, PropVisual] = {}
-## Cards currently HELD RAISED by a prop's JUMP reaction — reset to rest when the last
-## jump-holding prop leaves. Only cards a reaction actually animated are ever tracked here:
-## props crossing a card with NO reaction must never anim_reset a pose they don't own (that
-## stomped the meld-score jump of cards knives merely passed over).
-var _reacting : Dictionary[CardData, bool] = {}
+## Cards currently HELD in a prop-driven pose, as bitflags (HOLD_JUMP | HOLD_SPIN): JUMP holds
+## while a jump-hinting prop OCCUPIES the card; SPIN loops while any spin-hinting prop is
+## still INBOUND (on the card or with it in its remaining route — owner spec 2026-07-13:
+## keep spinning until no more are coming, then settle once). Only cards a reaction actually
+## animated are ever tracked here: props crossing a card with NO reaction must never reset a
+## pose they don't own (that stomped the meld-score jump of cards knives merely passed over).
+var _reacting : Dictionary[CardData, int] = {}
+const HOLD_JUMP := 1
+const HOLD_SPIN := 2
 ## Visuals travelling their void-exit leg: no longer in _visuals (their prop is done) but
 ## still driven — and re-pinned — every frame by _drive_exiting until they arrive and fade.
 var _exiting : Array[PropVisual] = []
 var _tick_active : bool = false
-## Running spawn count — indexes the formation's points in DETERMINISTIC mode.
+## Running spawn count — folded into each batch's formation seed so batches within one run
+## draw DIFFERENT (but replay-identical) formations/point subsets.
 var _spawn_index : int = 0
+## Per-kind formation sets, lazy-loaded from res://Cards/Props/Formations/<kind>.tres
+## (PropFormationSet.load_for_kind). null is a valid cached answer: the kind has no
+## formation and flies the exact slot line.
+var _formation_sets : Dictionary[int, PropFormationSet] = {}
+var _formation_checked : Dictionary[int, bool] = {}
 
 ## Debug stepping (GameView's prop-debug buttons): when ON, a finished visual tick HOLDS —
 ## motion freezes at the tick boundary and `tick_done` is not emitted, which pauses the whole
@@ -52,12 +62,18 @@ func step() -> void:
 	_step_queued = true
 
 var play_area : PlayArea
-var formation : PropFormation
 
 func _ready() -> void:
 	play_area = owner as PlayArea   # the play_area.tscn root
 	top_level = false               # ride the scroll container's transform
-	formation = get_node_or_null("PropFormation") as PropFormation
+
+## The kind's authored formation set, or null (no formation). Tests may pre-seed
+## _formation_sets to exercise assignment without touching the shipped .tres files.
+func _formation_set(kind: int) -> PropFormationSet:
+	if kind not in _formation_checked and kind not in _formation_sets:
+		_formation_sets[kind] = PropFormationSet.load_for_kind(kind)
+		_formation_checked[kind] = true
+	return _formation_sets.get(kind)
 
 func _game() -> Game:
 	return CardEnvironment.get_current_game()
@@ -145,13 +161,14 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 	# sprint-one-tick-then-freeze. The retargets below overwrite this for props that DID move.
 	for vis : PropVisual in _visuals.values():
 		vis.t_goal = minf(vis.t_goal + 1.0 / vis.span_ticks, 1.0)
+	var batch_offsets := _assign_formation_offsets(spawned)
 	for prop : PropData in spawned:
 		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
 		var vis := _make_visual(prop, Vector2.ZERO)
-		# Personal spread offset (PropFormation points), applied to every slot point this prop
-		# travels through — a batch fans into a staggered volley, not a single-file line.
-		vis.lane_offset = formation.offset_for(_spawn_index) if formation else Vector2.ZERO
-		_spawn_index += 1
+		# Personal formation point (PropFormationSet, per kind+origin batch), applied to every
+		# slot point this prop travels through — a batch reads as a condensed formation, not a
+		# single-file line. ZERO (exact slot line) for kinds with no authored formation.
+		vis.lane_offset = batch_offsets.get(prop, Vector2.ZERO)
 		# Appear directly AT the staged spot — no pop-out-of-the-card flight. The earlier
 		# card->staging leg made row props visibly shoot to one end and REVERSE (owner report
 		# 2026-07-12); a burst now just materializes as a train behind its row entry.
@@ -204,7 +221,13 @@ func abort_all() -> void:
 	for vis : PropVisual in _exiting:
 		if is_instance_valid(vis): vis.queue_free()
 	_exiting.clear()
-	# prop-raised poses die with their visuals; the board rebuild replaces the card visuals
+	# The board rebuild replaces card visuals, but the SPIN loop is an infinite tween — stop
+	# held poses explicitly in case a visual survives (rebuild reuse) rather than trust the free.
+	for card : CardData in _reacting.keys():
+		var vis : CardVisual = play_area.data_card.get(card) if play_area else null
+		if vis:
+			if _reacting[card] & HOLD_JUMP: vis.anim_reset()
+			if _reacting[card] & HOLD_SPIN: vis.anim_spin_stop()
 	_reacting.clear()
 	_tick_active = false
 
@@ -227,6 +250,28 @@ func _despawn_visual(prop: PropData) -> void:
 		tw.tween_property(vis, "scale", Vector2.ONE * 1.5, 0.12)
 		tw.parallel().tween_property(vis, "modulate:a", 0.0, 0.12)
 		tw.tween_callback(vis.queue_free)
+
+## Map this tick's spawns onto their kind's formation points. Spawns are batched by
+## (kind, origin) — two melds bursting the same kind on one tick each get their OWN
+## formation draw. The seed folds in _spawn_index so successive batches in a run vary but
+## the whole run replays identically (offsets are view-only; data never sees them).
+func _assign_formation_offsets(spawned: Array) -> Dictionary[PropData, Vector2]:
+	var out : Dictionary[PropData, Vector2] = {}
+	var batches : Dictionary[String, Array] = {}
+	for prop : PropData in spawned:
+		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
+		var key := "%d|%s" % [prop.kind, origin]
+		if key not in batches: batches[key] = []
+		(batches[key] as Array).append(prop)
+	for key : String in batches:
+		var batch : Array = batches[key]
+		var fset := _formation_set((batch[0] as PropData).kind)
+		if fset == null: continue
+		var offsets := fset.offsets_for(batch.size(), hash(key) ^ hash(_spawn_index))
+		for i : int in batch.size():
+			out[batch[i]] = offsets[i] * SettingsManager.settings.card_scale
+	_spawn_index += spawned.size()
+	return out
 
 # --- visual lifecycle ---------------------------------------------------------
 
@@ -311,39 +356,59 @@ func _spawn_origin_of(prop: PropData) -> Vector3i:
 
 # --- card reactions -----------------------------------------------------------
 
-## Reactions fire per ARRIVAL: every mover entering a card plays that prop's reaction hints
-## NOW — a train of knives re-spins the talent once per knife (the old rising-edge-on-a-
-## boolean showed only the FIRST prop of a streak: owner report 2026-07-13, "cards don't
-## reliably spin"). The JUMP pose additionally HOLDS while any jump-hinting prop occupies the
-## card and resets when the last leaves. JUGGLE/BURN are one-shots handed to the status
-## visuals; they don't drive the jump/spin pose.
+## Reactions run as HELD group animations, not per-prop restarts (owner spec 2026-07-13:
+## "keeps spinning until no more is coming"). JUMP: each arrival re-pulses the pose (a train
+## re-hops per prop) AND the raised pose holds while any jump-hinting prop OCCUPIES the card.
+## SPIN: the card starts a LOOP (CardVisual.anim_spin_start) when the FIRST spin-hinting prop
+## arrives over it — never before (owner report 2026-07-14: cards spun at knife spawn) — and
+## keeps looping while more spin props still have it in their remaining route, winding down
+## once (anim_spin_stop) when the last has passed; individual knives never restart the spin.
+## JUGGLE/BURN are one-shots handed to the status visuals; they don't drive poses.
 func _update_reactions(live: Array, movers: Array) -> void:
 	var game := _game()
 	if not game or not play_area: return
-	# 1. Arrivals: re-trigger the pose per prop (anim_jump/anim_spin restart cleanly).
+	# 1. JUMP arrivals re-pulse per prop (anim_jump restarts cleanly; spin is hold-driven).
 	for prop: PropData in movers:
 		if prop.done or prop.at == Vector3i.MIN: continue
 		var card := game.find_vec3_data(prop.at)
 		if not card: continue
 		var vis : CardVisual = play_area.data_card.get(card)
 		if not vis: continue
-		for r: PropData.Reaction in prop.reactions_for(card):
-			if r == PropData.Reaction.JUMP: vis.anim_jump()
-			elif r == PropData.Reaction.SPIN: vis.anim_spin()
-	# 2. JUMP occupancy: which cards still have a jump-hinting prop sitting on them.
-	var holding : Dictionary[CardData, bool] = {}
-	for prop: PropData in live:
-		if prop.done or prop.at == Vector3i.MIN: continue
-		var card := game.find_vec3_data(prop.at)
-		if not card: continue
 		if PropData.Reaction.JUMP in prop.reactions_for(card):
-			holding[card] = true
-	# 3. Cards whose last jump-holder left return to rest. ONLY tracked (prop-raised) cards
-	#    are ever reset — never a pose someone else (the meld-score jump) owns.
-	for card: CardData in _reacting.keys():
-		if card in holding: continue
-		var vis : CardVisual = play_area.data_card.get(card)
-		if vis: vis.anim_reset()
-		_reacting.erase(card)
+			vis.anim_jump()
+	# 2. Holds. JUMP and SPIN both START on occupancy (prop.at over the card — never before
+	#    the first prop arrives); SPIN is additionally SUSTAINED, once started, while the card
+	#    is still in any spin-hinting prop's remaining route (more are coming: keep turning).
+	var holding : Dictionary[CardData, int] = {}
+	for prop: PropData in live:
+		if prop.done: continue
+		if prop.at != Vector3i.MIN:
+			var card := game.find_vec3_data(prop.at)
+			if card:
+				var reactions := prop.reactions_for(card)
+				if PropData.Reaction.JUMP in reactions:
+					holding[card] = holding.get(card, 0) | HOLD_JUMP
+				if PropData.Reaction.SPIN in reactions:
+					holding[card] = holding.get(card, 0) | HOLD_SPIN
+		for coord : Vector3i in prop.route:
+			var card := game.find_vec3_data(coord)
+			if card and (_reacting.get(card, 0) & HOLD_SPIN) \
+					and PropData.Reaction.SPIN in prop.reactions_for(card):
+				holding[card] = holding.get(card, 0) | HOLD_SPIN
+	# 3. Start/hold poses. anim_spin_start self-guards: already-spinning cards keep looping.
 	for card: CardData in holding:
-		_reacting[card] = true
+		if holding[card] & HOLD_SPIN:
+			var vis : CardVisual = play_area.data_card.get(card)
+			if vis: vis.anim_spin_start()
+	# 4. Release only what WE held and only the pose whose hold ended — never a pose someone
+	#    else (the meld-score jump) owns.
+	for card: CardData in _reacting.keys():
+		var was : int = _reacting[card]
+		var now : int = holding.get(card, 0)
+		var vis : CardVisual = play_area.data_card.get(card)
+		if vis:
+			if (was & HOLD_JUMP) and not (now & HOLD_JUMP): vis.anim_reset()
+			if (was & HOLD_SPIN) and not (now & HOLD_SPIN): vis.anim_spin_stop()
+		if now == 0: _reacting.erase(card)
+	for card: CardData in holding:
+		_reacting[card] = holding[card]

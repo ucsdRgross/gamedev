@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://4b6ha7k1yee2" path="res://UI/play_area.gd" id="1_34k5y"]
 [ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="2_34k5y"]
 [ext_resource type="Script" uid="uid://camnrbi47o3eb" path="res://UI/prop_layer.gd" id="3_prop"]
-[ext_resource type="Script" path="res://Cards/Props/prop_formation.gd" id="4_form"]
 
 [sub_resource type="Resource" id="Resource_frxyd"]
 script = ExtResource("2_34k5y")
@@ -113,8 +112,5 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 z_index = 100
 script = ExtResource("3_prop")
-
-[node name="PropFormation" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox/PropLayer" unique_id=1893224407]
-script = ExtResource("4_form")
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]

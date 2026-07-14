@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PropFormationSet" format=3 uid="uid://d1i42he2sh3ew"]
+
+[ext_resource type="Script" uid="uid://u6hl055o86fl" path="res://Cards/Props/formation_data.gd" id="1_b3pf0"]
+[ext_resource type="Script" uid="uid://dpqgv7g4kmwew" path="res://Cards/Props/formation_set.gd" id="2_kas2t"]
+
+[sub_resource type="Resource" id="Resource_qqmbo"]
+script = ExtResource("1_b3pf0")
+points = PackedVector2Array(-19, -2.2478437, -14.348515, -1.986803, -2.3442936, -0.16768622, 5.7523584, 0.11011982, 10.978483, -1.6087593, 19, 2.942974)
+
+[resource]
+script = ExtResource("2_kas2t")
+formations = Array[ExtResource("1_b3pf0")]([SubResource("Resource_qqmbo")])

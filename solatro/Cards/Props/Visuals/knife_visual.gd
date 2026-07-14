@@ -1,3 +1,4 @@
+@tool
 class_name KnifeVisual
 extends PropVisual
 ## Kind 1. A blade that travels straight along its row, tilted toward travel.

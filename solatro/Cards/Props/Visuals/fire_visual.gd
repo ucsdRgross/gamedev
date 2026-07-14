@@ -1,6 +1,7 @@
+@tool
 class_name FireVisual
 extends PropVisual
-## Kind 3. A flame that arcs to its target, drawn as a teardrop with its own fire tips — the
+## Kind 3. A flame that arcs to its target, drawn as a teardrop with its own fire tips â€” the
 ## shared travel_curve with arc_height set; no movement code of its own.
 
 func _init() -> void:

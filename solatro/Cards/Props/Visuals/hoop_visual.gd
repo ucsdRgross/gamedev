@@ -1,3 +1,4 @@
+@tool
 class_name HoopVisual
 extends PropVisual
 ## Kind 0. A ring that travels straight along its row.

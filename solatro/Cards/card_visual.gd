@@ -373,13 +373,41 @@ func anim_jump() -> float:
 func anim_spin() -> float:
 	# Mirrors anim_jump (:342) but drives rotation, so it COMPOSES with a concurrent jump
 	# (offset:y vs offset:rotation are independent properties). Guard the null offset the same.
-	if not offset: return 0.0
+	# A held spin loop owns the rotation — never custom_step an INFINITE tween (it won't end).
+	if not offset or _spin_holding: return 0.0
 	reset_tween(spin_tween)
 	var delay := CardEnvironment.CURRENT.get_delay()
 	spin_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	spin_tween.tween_property(offset, "rotation", TAU, delay * .6)
 	spin_tween.tween_callback(func()->void: offset.rotation = 0.0)
 	return delay * .6
+
+## Held-spin state (PropLayer SPIN hold): true while the looping spin owns offset.rotation.
+var _spin_holding : bool = false
+
+## Continuous spin (owner spec 2026-07-13): one full revolution per pulse, LOOPING until
+## anim_spin_stop — a stream of spin-hinting props keeps the card turning instead of
+## restarting a one-shot per prop. Self-guarding: calling again while held is a no-op.
+func anim_spin_start() -> void:
+	if not offset or _spin_holding: return
+	_spin_holding = true
+	if spin_tween and spin_tween.is_running(): spin_tween.kill()
+	# Floor the revolution time: get_delay() can be 0 (undo-cancel snap / compression floor),
+	# and a zero-duration LOOPING tween trips Godot's infinite-loop guard every frame.
+	var delay := maxf(CardEnvironment.CURRENT.get_delay(), 0.2)
+	spin_tween = create_tween().set_loops().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	spin_tween.tween_property(offset, "rotation", TAU, delay * .6).from(0.0)
+
+## Wind the held spin down: kill the loop and close the CURRENT revolution once, then rest.
+func anim_spin_stop() -> void:
+	if not _spin_holding: return
+	_spin_holding = false
+	if not offset: return
+	if spin_tween and spin_tween.is_running(): spin_tween.kill()
+	var delay := maxf(CardEnvironment.CURRENT.get_delay(), 0.2)
+	spin_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	spin_tween.tween_property(offset, "rotation", TAU, delay * .3)
+	spin_tween.tween_callback(func()->void: offset.rotation = 0.0)
 
 func anim_reset() -> void:
 	if not offset: return

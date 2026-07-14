@@ -1,3 +1,4 @@
+@tool   # editor-instantiable: the formation editor previews real prop art over its points
 class_name PropVisual
 extends Node2D
 ## The view-side twin of a PropData: pure draw + trajectory params, NO CardData/PropData
@@ -42,8 +43,9 @@ var anchor_coord : Vector3i = Vector3i.MIN
 ## The anchor slot's last-known content-local point; _repin shifts the leg by the delta to
 ## the live point and refreshes this cache.
 var anchor_point : Vector2
-## This prop's personal offset from every slot point it travels through (a PropFormation pick,
-## set once at spawn): a batch spreads into a staggered volley instead of a single-file line.
+## This prop's personal offset from every slot point it travels through (its assigned
+## PropFormationData point, set once at spawn): a batch reads as a condensed formation
+## instead of a single-file line. ZERO when the kind has no authored formation.
 var lane_offset : Vector2 = Vector2.ZERO
 
 ## Begin a fresh travel from the current position to `point`, spread over `ticks` data ticks;

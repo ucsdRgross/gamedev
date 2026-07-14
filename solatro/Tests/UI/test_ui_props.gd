@@ -652,15 +652,21 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 			"a ballistic prop poofs AT its target (no random exit direction)", strayed)
 	await cleanup(g, pa)
 
-## A batch's props take DIFFERENT PropFormation offsets (the plotted card-space points under
-## the PropLayer), so a burst spreads into a staggered volley instead of a single-file line
-## (owner request 2026-07-12). Point 0 is ZERO by convention — lone props fly the exact line.
+## A batch's props map onto their kind's PropFormationData points (owner spec 2026-07-13):
+## with an authored formation, a burst reads as a condensed formation instead of a single-file
+## line; kinds with NO authored set (the default — no .tres shipped) fly the exact slot line.
+## The set is injected into the layer's cache here, never loaded from disk.
 func test_batch_props_stagger() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
 	await settle(pa)
 	var pl := pa.prop_layer
-	check_impl(pl.formation != null, "the prop layer found its PropFormation child")
+	var fdata := PropFormationData.new()
+	fdata.points = PackedVector2Array([Vector2(0.0, -10.0), Vector2(0.0, 10.0)])
+	var fset := PropFormationSet.new()
+	fset.formations = [fdata] as Array[PropFormationData]
+	pl._formation_sets[1] = fset
+	pl._formation_checked[1] = true
 	var route := g.row_slot_path(slot(0), true)
 	var a := PropData.new()
 	a.kind = 1

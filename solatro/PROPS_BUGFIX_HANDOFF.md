@@ -1,8 +1,10 @@
-# PROP/STATUS SYSTEM — reference + bug-triage handoff (2026-07-12/13)
+# PROP/STATUS SYSTEM — reference + bug-triage handoff (updated 2026-07-14)
 
 THE authoritative doc for the **suit-props system** (built per SUIT_PROPS_PLAN.md, Phases 0–6
-complete). The owner playtests, reports bugs, you fix. This doc gives you the map: fix log,
-architecture, landmines, tests, and the full PROP SYSTEM REFERENCE (file map → recipes).
+complete). The owner playtests, reports bugs, you fix. This doc gives you the map: design
+rulings, architecture, landmines, tests, and the full PROP SYSTEM REFERENCE (file map →
+recipes). Per-fix history was trimmed 2026-07-14 — git has it; only live implementation
+details remain.
 Architecture summary lives in `ARCHITECTURE_REVIEW.md` §1.6; locked design decisions in
 `DESIGN_DOC.md` §10. (The interim docs SUIT_PROPS_HANDOFF / SUIT_PROPS_AUDIT_BRIEF /
 SUIT_PROPS_PLAN_CHECKLIST / STATUS_EFFECTS_PLAN were retired 2026-07-13 — their live content
@@ -26,128 +28,70 @@ was folded in here and into ARCHITECTURE_REVIEW; git history has the originals.)
 - Warnings-as-errors gotchas: class-ref arrays in a func body must be `var … : Array[GDScript]`
   not `const`; duck-typed hook calls on a typed base go through `obj.call(&"hook", …)`.
 
-## Fixed this round (2026-07-12, unverified by owner)
+## Standing design rulings + implementation notes (history trimmed 2026-07-14; git has it)
 
-1. **Cards lagged scrolling** — CardVisuals were children of the PlayArea ROOT, outside the
-   scroll content, so they chased their anchors' scrolled globals through the `_process` ease.
-   Now they live on `%CardLayer` (a Node2D inside TopLevelVBox, sibling of PropLayer): the
-   scroll transform carries controls, cards, AND props together, and the ease only ever
-   animates genuine anchor-relative travel. NOTE: cards now clip at the scroll rect like props
-   (landmine 2) — the deck/discard fly-in is invisible outside the play-area rect.
-2. **Focus inspector un-reparented** — with cards riding the scroll, the child-of-control
-   workaround is gone: the panel is a PERMANENT prop_layer child, re-pinned beside its anchor
-   control every frame (`PlayArea._process` -> `_position_focus_info`; hides itself if the
-   anchor was freed by a rebuild).
-3. **Diagonal prop drift** — legs locked in PIXEL geometry; any container relayout mid-flight
-   (score labels growing as lines bank, focus resizing headers/rows) moved slot centers from
-   under them and the leg walked a diagonal to a stale point — worst OFF-BOARD, where staged
-   trains and void exits had no live slot at all. EVERY visual now carries
-   `PropVisual.anchor_coord` (its slot target, the route entry while staged, the last slot
-   during a void exit) and `PropLayer._repin` shifts from/target/position by the anchor's
-   live delta EVERY frame — staged trains, mid-leg waits, and exits included. Void exits are
-   now normal legs through `_drive_exiting` (same travel_curve/timing, tick-independent,
-   fade+free on arrival), NOT fixed-pixel tweens.
-4. **One shared movement function** — Ball/Fire's duplicated `travel_curve` overrides are
-   gone; base `PropVisual.travel_curve` = line + optional parabolic hump via `arc_height`
-   (ball 28, fire 24, everything else 0). Kinds differ ONLY by that knob.
-5. **Tests now read RAW visual output** — `_sample_flight` captures a visual's position EVERY
-   frame from spawn to node-free in one continuous loop (the old per-tick polling had gaps
-   and only checked y on despawn); `_direction_changes` derives direction flips from the
-   samples and PRINTS each with its position. Movement samples are taken RELATIVE to a live
-   board anchor (`origin` callable): the whole board moves as one under smooth-scroll settle
-   and relayouts, and global-space sampling flagged that shared wobble as prop turns (the
-   first ball/fire failures). `settle()` also waits for slot geometry to hold still 3 frames.
-   The row test pokes a mid-flight focus-resize relayout and holds the prop to the LIVE row
-   y; `test_each_kind_moves_as_expected` covers hoop/knife (straight one-way sweep) and
-   ball/fire (monotonic x, exactly one vertical turn, lands at target).
-6. **Ballistic hop at spawn (2026-07-13)** — the stationary staged pose is a retarget to
-   itself, and `travel_curve` applied the arc hump to that zero-length "leg": balls/fires
-   visibly hopped in place at their card before the real flight (the extra y direction-flips
-   the movement tests caught). `travel_curve` now skips the hump when `from == target`.
-7. **THE live diagonal: empty-column header inflation (2026-07-13)** — `update_card_zone_
-   visuals` gives every column's LAST control full card height; in a COMPLETELY EMPTY column
-   the header IS the last control, so `slot_center_global`'s fallback (header BOTTOM + ...)
-   put that column's slots a whole card below the row. Row paths span every column, so props
-   entering or crossing empty columns (the usual live board shape — empty edge columns!)
-   staged and swept diagonally. The fallback now anchors to the header TOP (vbox tops align
-   across columns; occupied headers are 0-high), which IS the row line. Guarded by a
-   `test_slot_geometry` pin, the row test's now-empty entry column, and the live-seam tests.
-8. **Live seam now exercises ALL kinds** — the seeded submit spawns only knives, so
-   hoops/balls/fires never touched the real view in tests ("hoops invisible in game view"
-   slipped through). `test_all_kinds_live_in_game_view` crafts a board (incl. an empty edge
-   column) where one `_run_score_effects` pass fans all four kinds through a REAL GameView,
-   with per-frame guards: each kind spawned + visible in the viewport at least once, and
-   hoops/knives hold their row (stray reports include anchor + leg endpoints).
-9. **Reactions fire per ARRIVAL (2026-07-13)** — `_update_reactions` was edge-triggered on a
-   boolean, so a TRAIN of props crossing the same card animated it only once ("cards don't
-   reliably spin"), and it tracked cards with NO reaction, anim_reset-ing them when a prop
-   merely passed over — stomping the meld-score jump pose it didn't own. Now: every MOVER
-   arrival replays its reactions (one spin per knife), the JUMP pose holds while any
-   jump-hinting prop occupies the card, and ONLY prop-raised cards are ever reset. NOTE: meld
-   cards staying raised until the knives finish is BY DESIGN — `score_line` calls
-   `view.reset_meld` after `_run_score_effects`; move that call earlier if the owner wants
-   cards to drop before the props fly.
-10. **WHY HOOPS NEVER APPEAR IN REAL PLAY (2026-07-13)** — not a rendering bug: the active
-   starter deck (`Decks/deck.gd` `deck9`, also deck10) gives EVERY hoop-suited card
-   (`from_index(0)`) a `SkillExtraPoint` — and a talented card suppresses its own suit effect
-   (`PipSuit._spawn_origin`, by design). Hoops literally cannot spawn with these decks. Fire
-   is half-suppressed the same way (rank-4 fires carry skills). OWNER DECISION: change the
-   deck lists or the suppression rule. `test_all_kinds_live_in_game_view` proves the whole
-   hoop pipeline works when a skill-less hoop card scores.
-11. **Manual prop stepping (owner tool)** — `PropLayer.manual_step` + `step()`: when ON, each
-   finished visual tick HOLDS (motion frozen at the boundary, `tick_done` withheld, so
-   run_props pauses at its SYNC await) until stepped. GameView builds two debug buttons in
-   `_add_prop_debug_controls` (bottom-right: "Prop Step" toggle + "Tick +1", FOCUS_NONE,
-   localized keys DEBUG_PROP_STEP_MODE / DEBUG_PROP_STEP_TICK).
-12. **Staggered volleys (owner request)** — `Cards/Props/prop_formation.gd` (`PropFormation`,
-   @tool Node2D child of PropLayer in play_area.tscn): a plotted set of UNSCALED card-space
-   points, drawn over a card footprint in the editor. Each spawned prop takes one as its
-   `lane_offset` (DETERMINISTIC walks spawn order, RANDOM draws uniformly), applied to every
-   slot point it travels through. KEEP POINT 0 AT ZERO — lone props (and single-prop tests)
-   fly the exact slot line. `test_batch_props_stagger` guards it.
+- **CardVisuals live on `%CardLayer`** (Node2D inside TopLevelVBox, sibling of PropLayer):
+  scroll carries controls, cards, AND props together. Consequence: cards clip at the
+  play-area rect (landmine 2) — the deck/discard fly-in is invisible outside it.
+- **Suit-effect suppression is BY DESIGN**: a talented card suppresses its OWN suit effect
+  (`PipSuit._spawn_origin`). Decks with talents on every card of a suit therefore never
+  spawn that suit's props (deck9/deck10 show zero hoops by construction — documented on
+  their builders). The default `get_deck()` is `deck11` (every suit has plain cards AND
+  ExtraPoint talents); `deck12` is the only firework grant path; `deck13` = status stress.
+- **Meld cards stay raised until all props finish** — `score_line` calls `view.reset_meld`
+  AFTER `_run_score_effects`; move that call earlier if cards should drop first.
+- **Only talents jump/spin**: both reaction hooks key on `card.skill` (`PropScoreTalents` ->
+  JUMP, `PropScoreProps` -> SPIN). A plain card a knife scores gets no pose; add e.g.
+  JUMP-for-plain in `PropScoreProps.reaction_for` if scored cards should react.
+- **Card reactions are held group animations** (owner spec 2026-07-13/14): JUMP re-pulses
+  per arrival AND holds while a jump-hinting prop OCCUPIES the card. SPIN STARTS on
+  occupancy too (first spin prop ARRIVES over the card — never at spawn), then loops
+  (`CardVisual.anim_spin_start`) while the card is still in any spin-hinting prop's
+  remaining route (more coming: keep turning), winding down once via `anim_spin_stop`.
+  `PropLayer._reacting` is `Dictionary[CardData, int]` bitflags (HOLD_JUMP|HOLD_SPIN);
+  `abort_all` stops held poses explicitly. The spin loop is an INFINITE tween — never
+  `custom_step(INF)` it (`anim_spin` guards on `_spin_holding`), and its revolution time
+  floors get_delay() at 0.2s (a zero-duration looping tween trips Godot's
+  infinite-loop guard, seen under manual prop stepping).
+- **Formations are per-kind resources** — see the FORMATIONS section below. play_area.tscn
+  contains NO formation node.
+- **Undo can cancel a resolving act**: `act_cancelled` -> `get_delay()` 0, `run_props`
+  breaks, manual-step hold releases, `_restore_pre_act_board` -> `PropLayer.abort_all`.
+  Full contract: ARCHITECTURE_REVIEW §1.7. Fame banks at Continue (`exit_show`).
+- **Tests never ride `Decks/deck.gd`** — it is the owner's freely-changing playtest deck.
+  Seeded/crafted tests build FROZEN compositions from `Tests/Support/test_decks.gd`
+  (`TestDecks`: `seeded_deck()` = deck9 freeze the 424242/31337 observations replay against,
+  `standard_rules()`, `minimal_deck()`). Existing TestDecks functions are replay contracts —
+  add new ones, never edit. `game.gd:218` SHOULD follow the live `get_deck()`.
+- **Suits are referenced by exact class** (`PipSuitHoop`, ... via `PipSuit.ALL_SUITS` /
+  `STANDARD`), never by index — `PipSuit.from_index` was deleted deliberately.
 
-## Fixed this round (2026-07-13, session 2)
+## FORMATIONS — condensed spawn patterns (owner spec 2026-07-13)
 
-13. **"Cards not jumping or spinning for hoops or knives" — NOT an animation bug** — the
-   owner had flipped `get_deck()` to `deck4` (the full 52, every card PLAIN). Both reaction
-   hooks key on `card.skill` (`PropScoreTalents.reaction_for` -> JUMP a talent,
-   `PropScoreProps.reaction_for` -> SPIN a talent): with zero skill cards on the board there
-   is NOTHING that can ever jump or spin, by design. The anim chain itself is proven live by
-   `test_all_kinds_live_in_game_view` (crafted talents; asserts raised + rotated poses on the
-   real seam). FIX: `get_deck()` now returns the new `deck11` — every suit has BOTH plain
-   cards (so no suit is skill-suppressed; hoops spawn) AND ExtraPoint talents (so hoops JUMP
-   and knives SPIN something). This also closes the "hoops can't spawn with deck9/deck10"
-   owner decision from #10 — via deck choice, not a suppression-rule change (rule intact).
-14. **deck.gd rewritten with loop builders** — every deck is now a `_build_deckN()` loop
-   with a comment stating its testing + balance niche; decks 1-10 keep their EXACT original
-   compositions (incl. the hand-written quirk where deck7/deck8's 3rd back-half repeat closes
-   on a fully plain card — preserved verbatim and commented). Suits are referenced by EXACT
-   class (`PipSuitHoop`, ...) via the `ALL_SUITS` const, never by index. NEW decks:
-   `deck11` prop+reaction showcase (all suits x ranks 1-4 plain + 2 ExtraPoint talents per
-   suit — the default), `deck12` firework access (the ONLY grant path for kind-4 fireworks,
-   which are outside `PipSuit.STANDARD`), `deck13` status stress (max-pip fires/balls +
-   plain hoop/knife targets for Burning/Juggling stacking).
-15. **`PipSuit.from_index` DELETED** — an index hid which suit a call site produced. Every
-   caller now names the exact class (tests, `type_booster_basic`) or indexes
-   `PipSuit.STANDARD[...]` where the index is genuinely data (deck_builder's option ids,
-   persistence fuzz's rng draw). `random_standard()` stays.
-16a. **Undo can now cancel a resolving act (2026-07-13, owner feature)** — `Game.undo()`
-   mid-Submit/Next sets `act_cancelled`: `get_delay()` -> 0 (props/animations snap, read
-   live), `run_props` breaks like `act_overrun`, `PropLayer` releases a manual-step hold,
-   and the act restores the pre-act board (`_restore_pre_act_board` -> `PropLayer.abort_all`
-   frees every prop visual — no later tick would prune them). Undo at the win/lose screen
-   rewinds the final Submit; fame now banks at Continue (`exit_show`), not at resolve.
-   See ARCHITECTURE_REVIEW §1.7 for the full contract.
-16. **Tests no longer ride `Decks/deck.gd` AT ALL (final form 2026-07-13)** — `get_deck()`
-   is the owner's freely-changing playtest deck; seeded tests that used it silently changed
-   behavior on every flip (that's how #13 slipped in), and even pinning `deck.deck9` left
-   them exposed to future deck.gd edits. Tests now build their own FROZEN compositions from
-   `Tests/Support/test_decks.gd` (`TestDecks`): `seeded_deck()` (verbatim freeze of deck9
-   as of 2026-07-13 — the composition the 424242/31337 observations replay against, hoop
-   suppression quirk included), `standard_rules()` (rules1 freeze with fixed cosmetic pips),
-   `minimal_deck()` (save bootstrap for crafted-board tests). Existing TestDecks functions
-   are replay contracts — add new ones, never edit. `game.gd:218` still uses `get_deck()` —
-   that one is the real game entry and SHOULD follow the active deck.
+- **Data**: `Cards/Props/formation_data.gd` (`PropFormationData`: ONE pattern of UNSCALED
+  card-space points, all inside one card footprint, plus its `mode`) +
+  `Cards/Props/formation_set.gd` (`PropFormationSet`: all of a kind's formations). Loaded
+  from `Cards/Props/Formations/<kind>.tres`; a MISSING file = no formation = exact
+  slot-line flight — the DEFAULT for every kind until the owner authors one.
+- **Runtime** (`PropLayer._assign_formation_offsets`): each spawn tick batches spawns by
+  (kind, origin); each batch draws ONE formation (seeded — replay-identical, varies across
+  batches via `_spawn_index`) and maps props onto its points per the formation's `mode`:
+  DETERMINISTIC = exact point-list order (prop i -> point i), RANDOM = seeded shuffle of
+  the list (points only — no repeats until all are used, never random free positions).
+  Either way extras wrap (overflow separates in TIME via countdown stagger, never widens
+  past the card) and a full batch fills every point. Offsets are view-only
+  (`PropVisual.lane_offset` = point * card_scale; the prop ART is never scaled);
+  data/replay never see them.
+- **Authoring**: open `Cards/Props/Tools/formation_editor.tscn`, select the root node —
+  inspector only: kind dropdown (auto-loads its set), formation index + mode dropdown
+  (DETERMINISTIC/RANDOM, saved per formation), add/delete formation, generators
+  (grid/ring/scatter/line + count/spacing/jitter/seed), hand-editable points (out-of-card
+  points draw RED), SAVE writes the kind's .tres. Preview spawns REAL PropVisuals over the
+  assigned points (`PropVisual` + subclasses are @tool for this) at their true in-game
+  size — `preview_scale` scales the card footprint and point offsets ONLY, mirroring
+  card_scale; set it to the live card_scale for exact parity. Counts beyond one formation
+  spill into extra columns, each with its own seeded formation — adjacent in-game slots.
+  Card footprint/stack drawings are debug scenery only (scale/stack/pitch knobs).
 
 ## Architecture in 6 lines
 
@@ -233,7 +177,8 @@ Notables:
   diagonal that synthetic fixtures missed) and every kind that spawned must enter the
   visible viewport at least once (catches invisible hoops). The suite backs up
   `settings.tres` (Settings writes to disk on every change) and `run.tres`.
-- `test_batch_props_stagger` — batch mates take different PropFormation offsets.
+- `test_batch_props_stagger` — batch mates map onto an injected PropFormationSet's points
+  (cache-injected; no .tres on disk is read or required).
 `Tests/Engine/test_game_headless.gd`: `test_undo_rewinds_act_count`, suit-backref checks.
 
 # PROP SYSTEM REFERENCE — full lifecycle, files, variables, knobs
@@ -250,7 +195,7 @@ the tick loop -> the view pipeline -> timing -> structures -> recipes.
 | `Cards/Props/prop_modifier.gd` (`PropModifier`, RefCounted) | Behavior unit; all prop behavior composes as a list of these. Duck-typed hooks. |
 | `Cards/Props/prop_visual.gd` (`PropVisual`, Node2D) | View twin: draw + trajectory params. NO PropData retention. |
 | `Cards/Props/Visuals/*.gd` | Per-kind subclasses: placeholder `_draw_body` + `art_size`/`color`/`face_travel`/`arc_height`. NO movement code of their own. |
-| `Cards/Props/prop_formation.gd` (`PropFormation`, @tool Node2D) | Plotted card-space spread points -> per-prop `lane_offset`. Child of PropLayer in play_area.tscn. |
+| `Cards/Props/formation_data.gd` (`PropFormationData`) + `formation_set.gd` (`PropFormationSet`) | Per-KIND condensed spawn patterns (card-space points -> per-prop `lane_offset`), loaded from `Cards/Props/Formations/<kind>.tres`; missing file = slot-line flight. Authored via `Cards/Props/Tools/formation_editor.tscn` (standalone @tool scene, inspector buttons only). |
 | `Levels/game.gd` -> `run_props`, `_run_score_effects`, path helpers (§1.6) | THE simulation: the tick loop, spawn/move/events/finish, sync with the view. |
 | `Levels/game_view.gd` -> `begin_prop_tick`, `prop_tick_pending` | The seam: forwards to PlayArea's PropLayer. Headless = no view = no visuals, whole run resolves in one frame. |
 | `UI/prop_layer.gd` (`PropLayer`, Node2D in the scroll content) | ALL prop animation: visuals lifecycle, per-frame interpolation, repin, exits, card reactions. |
@@ -363,15 +308,17 @@ State:
 - `_reacting : Dictionary[CardData, Dictionary]` — held jump/spin poses (rising-edge fires).
 - `_tick_active : bool` — the `prop_tick_pending()` truth; `tick_done` emits when every
   visual reached its `t_goal`.
-- `_spawn_index : int` — running count indexing `PropFormation.points` (DETERMINISTIC mode).
-- `formation : PropFormation` — child node lookup in `_ready`.
+- `_spawn_index : int` — running spawn count folded into each batch's formation seed.
+- `_formation_sets/_formation_checked` — lazy per-kind PropFormationSet cache (null = none);
+  tests pre-seed the cache instead of touching the shipped .tres files.
 
 **`begin_prop_tick(live, spawned, movers, relocated)`** — one data tick's animation orders:
 1. `play_area.flush_rebuild()` (geometry must match current revision).
 2. Ratchet every visual's `t_goal += 1/span_ticks` (slow props keep moving through
    no-new-slot ticks — landmine 7).
-3. SPAWNED: `_make_visual` (kind -> subclass), assign `lane_offset =
-   formation.offset_for(_spawn_index++)`, position at `_staged_point(prop, origin) +
+3. SPAWNED: `_make_visual` (kind -> subclass), assign `lane_offset` from
+   `_assign_formation_offsets` (per-(kind,origin) batch onto the kind's PropFormationSet
+   points, seeded; ZERO when no set), position at `_staged_point(prop, origin) +
    lane_offset` (route travelers: <= ~1.5 slot pitches behind the route entry, compressed —
    landmine 2; ballistic: at the source card, lifted 6px per countdown step), capture
    `exits_into_void = route.size() >= 2`, stationary `retarget`, set `anchor_coord` =
@@ -426,7 +373,7 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 | Staging compression (1 + 0.15/pitch, cap 0.5) | prop_layer `_staged_point` | How far behind the entry a burst queues. |
 | Exit distance (last leg length, min card width) | prop_layer `_void_point_of` | How far past the edge exits travel. |
 | `arc_height` | each Visuals subclass `_init` | Ballistic hump height. |
-| Formation points / mode | PropFormation node in play_area.tscn | Batch spread offsets (card-space; POINT 0 STAYS ZERO). |
+| Formation points / sets | `Cards/Props/Formations/<kind>.tres` via the formation editor tool | Per-kind batch spread patterns (card-space, fit one card; no file = slot-line flight). |
 | `max_live`, `batch_size`, `interval` | each suit's `spawn_props()` | Emission shape/concurrency. |
 | `MAX_TICKS` (2048) + `note_processing` runaway cap | game.gd | Hard stops for infinite props. |
 | `manual_step` / `step()` | prop_layer.gd (GameView debug buttons, bottom-right) | Hold each finished visual tick until stepped — watch a run tick by tick. |
@@ -444,8 +391,10 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 
 - **Prop speed (visual)**: `prop_tick_fraction` in player_settings.gd. **(data)**: the
   suit's `ticks_per_slot`.
-- **Spread pattern**: select PropFormation under PropLayer in play_area.tscn; edit `points`
-  (card-space, drawn in-editor) / `mode`.
+- **Spread pattern (formations)**: open `Cards/Props/Tools/formation_editor.tscn`, select
+  the root node — kind dropdown, generate/hand-edit points, SAVE writes the kind's
+  `Formations/<kind>.tres`, preview spawns real prop visuals (overflow = extra columns).
+  Delete the .tres to return a kind to slot-line flight.
 - **New prop kind**: add `Visuals/<kind>_visual.gd` (set `art_size`/`color`/`face_travel`/
   `arc_height`, override `_draw_body`), extend the match in `PropLayer._make_visual`,
   pick the next `kind` int, launch it from a suit's `spawn_props()`.
@@ -459,30 +408,20 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 - **Staging/exit look**: `_staged_point` / `_void_point_of` / `_despawn_visual` in
   prop_layer.gd — keep everything anchored (`anchor_coord`) or it will drift on relayout.
 - **Reactions (card poses under props)**: `reaction_for` on the prop mod +
-  `_update_reactions` in prop_layer.gd; one-shot statuses (JUGGLE/BURN) are status visuals,
-  not poses.
+  `_update_reactions` in prop_layer.gd. JUMP = re-pulse per arrival + hold by occupancy;
+  SPIN = continuous loop while inbound (`anim_spin_start`/`anim_spin_stop`, see the
+  standing rulings section); one-shot statuses (JUGGLE/BURN) are status visuals, not poses.
 
 ## Known-open / unverified (as of this handoff)
 
-- ~~Hoops can't spawn with deck9/deck10~~ RESOLVED via deck choice (#13): `get_deck()` is now
-  `deck11`, which keeps skill-less cards of every suit. The suppression rule itself is
-  unchanged (talented cards still skip their own suit effect) — deck9/deck10 still show zero
-  hoops by construction, now documented on their builders in deck.gd.
-- **Reaction design note (#13)**: ONLY talents ever jump/spin (both `reaction_for` hooks key
-  on `card.skill`). A plain card a knife SCORES gets no pose. If the owner wants scored cards
-  to visibly react, add e.g. JUMP-for-plain in `PropScoreProps.reaction_for` — one line, the
-  hold/reset plumbing already handles it.
-- **Meld cards stay raised until all props finish** — by design (`score_line` resets AFTER
-  `_run_score_effects`); owner to confirm the feel or move the `reset_meld` call.
-
-- Owner has NOT yet re-verified after this round: description panel scroll-lock, knife row
-  behavior, hoop visibility (clipping/staging fix), ballistic poof, undo-across-submit.
+- Owner has NOT yet re-verified: description panel scroll-lock, knife row behavior, hoop
+  visibility (clipping/staging fix), ballistic poof, undo-across-submit, held-loop spin,
+  the formation system + editor tool end-to-end (no formation .tres authored yet).
 - Hoop vs knife visual symmetry: they cross the same row in OPPOSITE directions
   (`entity_side_for_row`); if one side still misbehaves, suspect the staged/void points near
   the clipped board edges (landmine 2).
-- ~~Firework grant path~~ RESOLVED: `deck12` is the deliberate grant path (#14) — though a
-  general in-run acquisition mechanism (booster/shop) is still an owner decision.
-  ~~Reactions at tick-start vs arrival~~ RESOLVED: reactions fire per ARRIVAL (#9).
+- A general in-run firework acquisition mechanism (booster/shop) beyond deck12 is still an
+  owner decision.
 - Still open owner decisions: per-pip tooltip granularity (focus inspector shows whole-card
   text only), real `status_pips.png` asset (StatusLayer + `draw_icon` are placeholders),
   moving the game.gd compression consts (COMPRESS_RATIO/STEP_MS/SOFT_MS/MIN_FACTOR) into

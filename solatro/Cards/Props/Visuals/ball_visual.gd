@@ -1,6 +1,7 @@
+@tool
 class_name BallVisual
 extends PropVisual
-## Kind 2. A ball that arcs (ballistic) from its origin card to the target slot — the shared
+## Kind 2. A ball that arcs (ballistic) from its origin card to the target slot â€” the shared
 ## travel_curve with arc_height set; no movement code of its own.
 
 func _init() -> void:
