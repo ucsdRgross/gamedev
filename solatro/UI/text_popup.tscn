@@ -12,7 +12,6 @@ shadow_size = 5
 shadow_color = Color(1, 0, 0, 1)
 
 [node name="TextPopup" type="Node2D" unique_id=1008306545]
-z_index = 100
 script = ExtResource("1_yxjeg")
 
 [node name="Label" type="Label" parent="." unique_id=1107266559]

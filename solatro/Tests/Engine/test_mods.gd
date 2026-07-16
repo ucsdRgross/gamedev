@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_mods.gd
 # ==============================================================================
 # RULES CARDS / MODIFIERS (UNIT_TESTS_PLAN.md §7) — the shipped mods driven through
@@ -22,7 +22,7 @@ func suite_name() -> String:
 	return "MODS"
 
 func _ready() -> void:
-	print("============ RULES MODS TEST PASS ============")
+	TestLog.line("============ RULES MODS TEST PASS ============")
 	# These tests build private Games; make sure no stray run receives their saves.
 	var real_run: RunState = RunManager.run
 	RunManager.run = null

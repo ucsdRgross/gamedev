@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_suit_props.gd
 # ==============================================================================
 # SUIT PROPS (SUIT_PROPS_PLAN Phase 3 §3.6): the five real suits' spawn configs +
@@ -14,7 +14,7 @@ func suite_name() -> String:
 	return "SUIT PROPS"
 
 func _ready() -> void:
-	print("============ SUIT PROPS TEST PASS ============")
+	TestLog.line("============ SUIT PROPS TEST PASS ============")
 	behavior_section("HOOP / KNIFE (row travellers)")
 	await test_hoop_scores_talents()
 	await test_knife_scores_props()

@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_dispatch.gd
 # Dispatch / CardEnvironment suite (UNIT_TESTS_PLAN.md §3): run_all_mods ordering,
 # skill_active_check activation edges, on_anything non-recursion, first-result
@@ -19,7 +19,7 @@ func suite_name() -> String:
 	return "DISPATCH"
 
 func _ready() -> void:
-	print("============ DISPATCH TEST PASS ============")
+	TestLog.line("============ DISPATCH TEST PASS ============")
 	env = FakeEnvironment.new()
 	add_child(env)
 	await run_order_tests()

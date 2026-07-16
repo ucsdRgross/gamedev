@@ -40,6 +40,9 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## root, cards chased their anchors' scrolled globals through the _process ease and visibly
 ## lagged every scroll (owner report 2026-07-12).
 @onready var card_layer: Node2D = %CardLayer
+## Always-on-top surface (last sibling of TopLevelVBox): the focus inspector panel and score
+## popups live here so they render above every card and prop by TREE ORDER — no z_index needed.
+@onready var overlay_layer: Node2D = %OverlayLayer
 
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
@@ -113,10 +116,14 @@ func grab_cards(datas:Array[CardData]) -> void:
 	set_card_zones_visuals()
 	for index in selected_cards.size():
 		var data := selected_cards[index]
-		if data in data_card: 
+		if data in data_card:
 			var card_visual := data_card[data]
 			card_visual.held = index + 1
-			card_visual.z_index = get_tree().get_nodes_in_group("CardVisualControl").size() + index + 1
+			# Held cards ride ABOVE all resting cards, still below PropLayer (a later sibling of
+			# CardLayer). move_child to the end of CardLayer — no z_index (structural order,
+			# LAYERING.md). ungrab_cards -> rebuild restores row-major order.
+			if card_visual.get_parent() == card_layer:
+				card_layer.move_child(card_visual, -1)
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -187,8 +194,8 @@ func flush_rebuild() -> void:
 		set_card_zones()
 
 ## The board Control at a slot coord (z == -1 header, z >= 0 row card), or null if the layout
-## has no control there (empty slot past the built rows). PropLayer maps these to points; a
-## missing control falls back to the column header + a row offset (slot_center_global).
+## has no control there (empty slot past the built rows). Focus/input helpers use this;
+## slot GEOMETRY does not — slot_center_global below is pure math (owner spec 2026-07-15).
 func control_for_coord(v: Vector3i) -> Control:
 	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
 	if v.y < 0 or v.y >= hbox.get_child_count(): return null
@@ -197,34 +204,44 @@ func control_for_coord(v: Vector3i) -> Control:
 	if idx < 0 or idx >= vbox.get_child_count(): return null
 	return vbox.get_child(idx) as Control
 
-## Global-space center of the CARD at any slot coord — direction-agnostic, works for occupied,
-## header, and (via header + row offset) empty slots. PropLayer converts this to its
-## scroll-invariant local. NOT the control's rect center: stacked row controls are thin strips
-## while each column's LAST control is full card height, so rect centers zig-zag by up to half
-## a card across one row. Cards anchor at control top + half a card
-## (CardVisual.get_card_control_center) — anchor props the same way so row travel is straight.
+## Global-space center of the CARD at any slot coord — PURE MATH from the zone container's
+## origin plus layout constants, NO control_for_coord / control rect reads (owner spec
+## 2026-07-15): geometry is deterministic and independent of container relayout timing, and the
+## one formula covers occupied, empty, and off-board slots alike — so a prop crossing a row keeps
+## ONE y through empty and short columns (the header-fallback bugs of 2026-07-12/13 can't recur:
+## an inflated empty-column header or a focus-resized row no longer moves the slot line).
+## Derivation (mirrors the container build in set_card_zone / update_card_zone_visuals):
+##   column x = zone hbox left + column * (card width + separation) + half card width
+##   slot top = zone hbox top + header height (0) + separation + slot * row pitch
+##     with row pitch = card strip height (card_separation_play_custom) + separation
+##   card anchor = slot top + half a card (CardVisual.get_card_control_center) — stacked row
+##     strips are thin while the card art hangs a full card below its control top.
 func slot_center_global(v: Vector3i) -> Vector2:
-	var card_anchor := Vector2(0.0, CardVisual.card_size_play.y * 0.5)
-	var control := control_for_coord(v)
-	if control:
-		return control.global_position + Vector2(control.size.x * 0.5, 0.0) + card_anchor
-	# Empty slot in a SHORT column (a row crossing passes every column, built or not): mirror
-	# the occupied-slot formula exactly — slot z's control top sits at header TOP + one
-	# separation + z row-pitches — so a prop crossing a row keeps ONE y through empty columns
-	# (a mismatched fallback made knives dip at every short column: owner report 2026-07-12).
-	# Header TOP, not bottom: "every column's LAST control is full card height"
-	# (update_card_zone_visuals) inflates the header of a COMPLETELY EMPTY column (the header
-	# IS its last control) to a full card, while occupied columns' headers are 0-high — using
-	# header bottom put empty-column slots a whole card BELOW the row, so routes entering or
-	# crossing empty columns bent diagonally (owner report 2026-07-13: staged knife trains
-	# stacked at 45° off the board edge). Vbox tops align across columns, so header top + the
-	# occupied columns' 0 header height is THE row line.
-	var header := control_for_coord(Vector3i(v.x, v.y, -1))
-	if header:
-		var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-		var slot_top := header.global_position.y + float(separation) + pitch * float(v.z)
-		return Vector2(header.global_position.x + header.size.x * 0.5, slot_top) + card_anchor
-	return Vector2.ZERO
+	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
+	var origin := hbox.global_position
+	var width := CardVisual.card_size_play.x
+	var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
+	var x := origin.x + float(v.y) * (width + float(separation)) + width * 0.5
+	var y := origin.y + float(separation) + pitch * float(v.z) + CardVisual.card_size_play.y * 0.5
+	return Vector2(x, y)
+
+## Every CardVisual on slot `v`'s ROW — same zone, row v.z across every column (z == -1 = the
+## zone/type header row); ragged/short columns simply have no control at that row and are
+## skipped, so an empty slot never pulls another row's card into the set. Row-major CardLayer
+## order (_order_board_cards) keeps a row contiguous, so PropLayer brackets [first..last] of
+## this set to render a split prop behind / in front of the WHOLE row.
+func row_card_visuals(v: Vector3i) -> Array[CardVisual]:
+	var out : Array[CardVisual] = []
+	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
+	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
+	if idx < 0: return out
+	for col : Node in hbox.get_children():
+		if idx >= col.get_child_count(): continue
+		var d : CardData = ui_data.get(col.get_child(idx))
+		var vis : CardVisual = data_card.get(d) if d else null
+		if vis and is_instance_valid(vis):
+			out.append(vis)
+	return out
 
 func set_separation() -> void:
 	for container : Control in containers:
@@ -265,9 +282,12 @@ func set_card_zones_visuals() -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	var game_state := game.state
-	# Handles sizing, Z-indexing, style overrides, and focus logic safely
+	# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
+	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
+	# lower-zone cards draw over upper.
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_card_zone_visuals(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
+	_order_board_cards(game_state)
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	var card_columns := type.size()
@@ -327,9 +347,77 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 				new_data_card[connected_data] = CardVisual.add_child_card_visual(
 					card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 
+## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
+## (owner spec 2026-07-16): per zone, the type/zone headers first, then row 0 of every column,
+## then row 1, and so on — upper zone before lower. Cards only overlap WITHIN a column, so this
+## renders identically to the old column-major order for the cards themselves, but it makes each
+## row CONTIGUOUS in CardLayer: a split prop (hoop) brackets a whole ROW — back half before the
+## row's first card (behind every card in the row, above every earlier row), front half after
+## its last (in front of the whole row, below the rows beneath). See PropLayer._apply_split.
+##
+## GUARDED and index-safe by construction: targets are assigned 0,1,2,… in ascending order and
+## only to visuals verified IN CardLayer at this moment (each at most once — `seen` dedups in
+## case a data ever appears twice), so `desired` < the number of verified children ≤ the child
+## count and move_child can never go out of bounds (the old cross-checked counter once crashed
+## with "Invalid new child index" during a settings change). Ascending processing also converges
+## in ONE pass, and a still board does zero move_childs. Freshly created CardVisuals add_child
+## via call_deferred, so they aren't in CardLayer yet — skipped; they append in creation order
+## and the next rebuild slots them. Held/selected cards keep their lifted end-of-layer spot
+## (grab_cards); prop half nodes drift toward the end and PropLayer re-fixes them next frame.
+func _order_board_cards(game_state: GameData) -> void:
+	var ordered : Array[CardVisual] = []
+	var seen : Dictionary[CardVisual, bool] = {}
+	var pending : Array[bool] = [false]
+	_append_zone_row_major(ordered, seen, pending, game_state.upper_zone_type, game_state.upper_zone)
+	_append_zone_row_major(ordered, seen, pending, game_state.lower_zone_type, game_state.lower_zone)
+	for i : int in ordered.size():
+		var vis := ordered[i]
+		if vis.get_index() != i:
+			card_layer.move_child(vis, i)
+	# Freshly created CardVisuals enter the tree via call_deferred and were skipped above — but
+	# their creation order is COLUMN-major, so without a follow-up pass a fresh board keeps the
+	# wrong row order until some unrelated rebuild happens (which nothing guarantees: hoop halves
+	# then bracketed scattered indices — back arcs behind the row above, owner report 2026-07-16).
+	# Queue exactly ONE re-order behind the pending add_childs (deferred FIFO: adds run first).
+	if pending[0] and not _reorder_queued:
+		_reorder_queued = true
+		_deferred_reorder.call_deferred()
+
+var _reorder_queued := false
+
+func _deferred_reorder() -> void:
+	_reorder_queued = false
+	var game := CardEnvironment.get_current_game()
+	if game: _order_board_cards(game.state)
+
+## Append one zone's CardVisuals in row-major order: headers (row -1), then each row across all
+## columns (ragged columns simply skip the rows they don't have). `pending[0]` flips true when a
+## visual exists but is not yet in CardLayer (deferred add) — the caller re-orders once it lands.
+func _append_zone_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
+		pending: Array[bool], type: Array[CardData], datas: Array[ArrayCardData]) -> void:
+	var max_rows := 0
+	for col : ArrayCardData in datas:
+		max_rows = maxi(max_rows, col.datas.size())
+	for data : CardData in type:
+		_append_ordered_visual(out, seen, pending, data)
+	for z : int in max_rows:
+		for i : int in datas.size():
+			if z < datas[i].datas.size():
+				_append_ordered_visual(out, seen, pending, datas[i].datas[z])
+
+func _append_ordered_visual(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
+		pending: Array[bool], data: CardData) -> void:
+	if data in selected_cards: return   # held cards stay lifted at the layer's end
+	var vis : CardVisual = data_card.get(data)
+	if vis == null or not is_instance_valid(vis): return
+	if vis.get_parent() != card_layer:
+		pending[0] = true   # deferred add still in flight; re-order once it lands
+		return
+	if vis in seen: return
+	seen[vis] = true
+	out.append(vis)
+
 func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
-	var card_count: int = 0
-	
 	for i in type.size():
 		var vbox: VBoxContainer = hbox.get_child(i)
 		vbox.add_theme_constant_override("separation", separation)
@@ -347,26 +435,12 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		elif vbox.get_child_count() != 1:
 			c.focus_mode = Control.FOCUS_NONE
 			
-		var connected_data: CardData = type[i]
-		card_count += 1
-		
-		# Safe: Reads from the active finalized visual tracker registry
-		var card_visual: CardVisual = data_card.get(connected_data)
-		if card_visual and connected_data not in selected_cards:
-			card_visual.z_index = card_count
-
-		# 2. Visual settings for Row Cards (Index 1 onwards)
+		# 2. Visual settings for Row Cards (Index 1 onwards). (Structural ordering moved to the
+		# dedicated row-major pass — _order_board_cards, run once after both zones.)
 		for j in range(1, vbox.get_child_count()):
 			c = vbox.get_child(j)
 			c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
 
-			connected_data = datas[i].datas[j-1]
-			card_count += 1
-
-			card_visual = data_card.get(connected_data)
-			if card_visual and connected_data not in selected_cards:
-				card_visual.z_index = card_count
-				
 		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 
 	# 3. Focus neighborhood linking
@@ -452,7 +526,7 @@ func on_control_focus_entered(control:Control) -> void:
 # and controller alike. Deliberately NOT Control.tooltip_text — the native tooltip is a
 # popup Window that sat under the cursor and blocked board clicks; this panel is pure
 # display (MOUSE_FILTER_IGNORE everywhere, focus NONE) and can never touch input. Text =
-# localized ControlCard.describe_card. A PERMANENT child of the prop layer (a Node2D in the
+# localized ControlCard.describe_card. A PERMANENT child of the OverlayLayer (a Node2D in the
 # scroll content, so scroll carries it), re-pinned beside its anchor control every frame
 # (_position_focus_info) so container relayouts can't strand it — it was briefly reparented
 # under the focused control for that, which is unnecessary now that the whole board (cards
@@ -470,7 +544,8 @@ func _ensure_focus_info() -> void:
 	_focus_info = PanelContainer.new()
 	_focus_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_focus_info.focus_mode = Control.FOCUS_NONE
-	_focus_info.z_index = 300   # above card visuals (z = card count) and props (100)
+	# No z_index: OverlayLayer is the last sibling of TopLevelVBox, so its children draw above
+	# every card and prop by tree order (the structural layering scheme — see LAYERING.md).
 	_focus_info_label = Label.new()
 	_focus_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_focus_info_label.custom_minimum_size = Vector2(FOCUS_INFO_WIDTH, 0)
@@ -481,7 +556,7 @@ func _ensure_focus_info() -> void:
 	# already carrying its meta marker, so claim the marker BEFORE entering the tree.
 	_focus_info.set_meta("_smooth_scroll_default_mouse_filter_set", true)
 	_focus_info_label.set_meta("_smooth_scroll_default_mouse_filter_set", true)
-	prop_layer.add_child(_focus_info)
+	overlay_layer.add_child(_focus_info)
 	_focus_info.hide()
 
 ## Show `data`'s description beside the focused control (right of it; flips left at the
@@ -614,6 +689,9 @@ func popup_score(result : Scoring.Result) -> void:
 	combo_pos /= meld_size
 	combo_pos.y -= CardVisual.card_size_play.y * 0.5
 	var score_name_popup := TextPopup.new_popup(result.name + "\n" + str(result.score), combo_pos)
-	add_child(score_name_popup)
+	# OverlayLayer (last sibling) draws above every card and prop by tree order. It rides the
+	# scroll content, so a global-space combo_pos stays put; the old PlayArea-root parent + z=100
+	# scheme is gone (see LAYERING.md).
+	overlay_layer.add_child(score_name_popup)
 	await get_tree().create_timer(CardEnvironment.CURRENT.get_delay()*.3).timeout
 	score_name_popup.queue_free()

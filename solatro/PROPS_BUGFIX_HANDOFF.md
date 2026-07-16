@@ -106,9 +106,9 @@ was folded in here and into ARCHITECTURE_REVIEW; git history has the originals.)
   Each visual has `from/target/t` + `span_ticks` (= prop's `ticks_per_slot`; a leg spreads
   continuously over that many ticks) + `t_goal` (per-tick ratchet; `tick_done` fires when all
   visuals reach their goal — never waits a whole leg).
-- Coords: `PlayArea.slot_center_global(v)` = **card anchor** (control top + half
-  `card_size_play`), NOT rect center; empty slots in short columns extrapolate from the
-  column header with the same formula. `PropLayer._slot_point` = `to_local` of that.
+- Coords: `PlayArea.slot_center_global(v)` = **card anchor**, PURE MATH since 2026-07-15 (zone
+  hbox origin + column/row pitch + half `card_size_play`; NO control reads, one formula for
+  occupied/empty/off-board slots). `PropLayer._slot_point` = `to_local` of that.
 - `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*` = per-kind placeholder draw
   (kind: 0 hoop 1 knife 2 ball 3 fire 4 firework) + `travel_curve` shape (ball/fire arc).
 - Statuses draw via `StatusLayer` (runtime child of CardVisual, `CARD_SIZE`-anchored);
@@ -127,11 +127,12 @@ was folded in here and into ARCHITECTURE_REVIEW; git history has the originals.)
    never render. Staging is therefore compressed to ≤ ~1.5 slot pitches behind the route
    entry (`PropLayer._staged_point`). If props "disappear", suspect clipping before code.
 3. **Slot y-geometry**: row controls are thin strips, each column's LAST control is full card
-   height, headers resize with focus. Anything reading `control.size * 0.5` for a position
-   will zig-zag. Always anchor `control top + card_size_play.y * 0.5`, and keep the
-   empty-slot fallback in `slot_center_global` EXACTLY mirroring the occupied formula —
-   anchored to the header TOP, never its bottom: an EMPTY column's header is its LAST control
-   and gets inflated to full card height, which bent every route crossing empty columns.
+   height, headers resize with focus. Anything reading control rects for slot positions will
+   zig-zag — which is why `slot_center_global` is now pure math (2026-07-15) and prop geometry
+   must NEVER go back to control reads. Related trap: a fanned card is a full card TALL behind
+   its visible strip, so "which card is under this point" tests pick cards from the wrong row
+   (short-column hoop bracket bug, 2026-07-16) — use the prop's anchor slot + `body_size`
+   overlap instead (`PropLayer._apply_split`/`_body_over_any_card`).
 4. **`tick_done` is a persistent signal**: the Game awaits it only while
    `view.prop_tick_pending()`. Don't emit or await it any other way.
 5. **`submits_used` lives ON `GameData`** (`@export_storage`) so undo/history snapshots rewind
@@ -316,9 +317,11 @@ State:
 1. `play_area.flush_rebuild()` (geometry must match current revision).
 2. Ratchet every visual's `t_goal += 1/span_ticks` (slow props keep moving through
    no-new-slot ticks — landmine 7).
-3. SPAWNED: `_make_visual` (kind -> subclass), assign `lane_offset` from
-   `_assign_formation_offsets` (per-(kind,origin) batch onto the kind's PropFormationSet
-   points, seeded; ZERO when no set), position at `_staged_point(prop, origin) +
+3. SPAWNED: `_make_visual` (kind -> subclass), assign the STORED formation point + spread flag
+   from `_assign_formation_points` (per-(kind,origin) batch onto the kind's PropFormationSet
+   points, seeded; none when no set; hoops always skip — card center); the pixel `lane_offset`
+   is derived LIVE per frame from settings (`_refresh_lane_offset` — card scale / separation
+   changes re-project mid-flight). Position at `_staged_point(prop, origin) +
    lane_offset` (route travelers: <= ~1.5 slot pitches behind the route entry, compressed —
    landmine 2; ballistic: at the source card, lifted 6px per countdown step), capture
    `exits_into_void = route.size() >= 2`, stationary `retarget`, set `anchor_coord` =
@@ -340,9 +343,11 @@ State:
 **`_process(delta)`** — every frame:
 1. `_repin` EVERY visual in `_visuals`: shift `from`/`target`/`position` by however much
    `anchor_coord`'s live point moved (relayouts: score labels growing, focus resizes,
-   rebuilds). Skips MIN anchors and vanished slots (slot_center_global == ZERO).
+   rebuilds); also `_refresh_lane_offset` (live formation offset) and the live art scale
+   (`card_scale / PropVisual.AUTHORED_CARD_SCALE`). Skips MIN anchors.
 2. `_drive_exiting`: same repin + same interpolation for void exits, INDEPENDENT of
-   `_tick_active` (a run-final exit must complete); on arrival: fade 0.15s + free.
+   `_tick_active` (a run-final exit must complete); on arrival: fade
+   (`prop_fade_fraction` of get_delay) + free.
 3. If `_tick_active`: advance each leg — `t += delta / (current_tick_seconds() *
    span_ticks)` (secs re-read LIVE every frame; 0 -> snap), `position =
    travel_curve(from, target, min(t, 1))`. When all visuals reach `t_goal`:
@@ -355,11 +360,11 @@ pixels), `t` (0..1 along the leg), `span_ticks` (data ticks the leg spans = tick
 `travel_curve(a, b, u)` = THE one movement function: `a.lerp(b, u)` minus
 `arc_height * 4u(1-u)` — kinds differ ONLY by `arc_height` (ball 28, fire 24, rest 0).
 
-**Geometry** (play_area.gd): `slot_center_global(v)` = control top + half
-`card_size_play` (NEVER rect center — landmine 3), empty-slot fallback extrapolates from
-the column header's TOP with the SAME formula (never its bottom — empty columns' headers
-are inflated to full card height by the last-control rule); `control_for_coord` walks
-upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
+**Geometry** (play_area.gd): `slot_center_global(v)` = PURE MATH (zone hbox origin +
+column/row pitch + half `card_size_play`; no control reads, one formula for every slot —
+2026-07-15); `control_for_coord` (focus/input only) walks upper/lower_zone_right -> vbox
+children (child 0 = header, z == -1); `row_card_visuals(v)` = the row's visuals across all
+columns (PropLayer's row-bracket source).
 
 ## R6. Timing + tuning knobs
 
@@ -367,7 +372,7 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 |---|---|---|
 | `base_delay` | `Scripts/player_settings.gd` (`SettingsManager.settings`) | Global animation delay; everything scales off it. |
 | `prop_tick_fraction` (0.45) | player_settings.gd | Seconds per prop tick = `game.get_delay() * this`. Bigger = slower props. Read LIVE every frame. |
-| `get_delay()` compression | game.gd (COMPRESS_RATIO/STEP_MS/SOFT_MS/MIN_FACTOR) | Long acts shrink the delay; props retime mid-flight automatically (nothing locks in durations). |
+| `get_delay()` compression | PlayerSettings `compress_ratio`/`compress_step_calls`/`compress_min_factor`/`compress_soft_calls` — per-ACTIVATION via `act_calls`, no wall clock (2026-07-16) | Long acts shrink the delay; props retime mid-flight automatically (nothing locks in durations). |
 | `ticks_per_slot` | per prop (suit constants) | Data speed: slot residency in ticks. |
 | `countdown` at emission | run_props SPAWN (`+ i`) | Train stagger spacing in ticks. |
 | Staging compression (1 + 0.15/pitch, cap 0.5) | prop_layer `_staged_point` | How far behind the entry a burst queues. |
@@ -375,7 +380,7 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
 | `arc_height` | each Visuals subclass `_init` | Ballistic hump height. |
 | Formation points / sets | `Cards/Props/Formations/<kind>.tres` via the formation editor tool | Per-kind batch spread patterns (card-space, fit one card; no file = slot-line flight). |
 | `max_live`, `batch_size`, `interval` | each suit's `spawn_props()` | Emission shape/concurrency. |
-| `MAX_TICKS` (2048) + `note_processing` runaway cap | game.gd | Hard stops for infinite props. |
+| `MAX_TICKS` (2048, game.gd) + `act_event_cap` (PlayerSettings) | game.gd `note_processing` | Hard stops for infinite props. |
 | `manual_step` / `step()` | prop_layer.gd (GameView debug buttons, bottom-right) | Hold each finished visual tick until stepped — watch a run tick by tick. |
 
 ## R7. Why each container is what it is
@@ -424,6 +429,6 @@ upper/lower_zone_right -> vbox children (child 0 = header, z == -1).
   owner decision.
 - Still open owner decisions: per-pip tooltip granularity (focus inspector shows whole-card
   text only), real `status_pips.png` asset (StatusLayer + `draw_icon` are placeholders),
-  moving the game.gd compression consts (COMPRESS_RATIO/STEP_MS/SOFT_MS/MIN_FACTOR) into
-  PlayerSettings if they should be player-tunable.
+  ~~moving the game.gd compression consts into PlayerSettings~~ — DONE 2026-07-16, and
+  reworked to per-activation compression (see FORMATION_LAYERING_HANDOFF.md rounds 2-4).
 - Balance of the now-live `on_score`/`on_after_score` broadcasts — never balance-tested.

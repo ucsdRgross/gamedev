@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_game_headless.gd
 # ==============================================================================
 # Game LOGIC with view == null (Plan 2 §6.2): proves the data layer runs a full
@@ -18,7 +18,7 @@ func suite_name() -> String:
 	return "GAME HEADLESS"
 
 func _ready() -> void:
-	print("============ GAME HEADLESS TEST PASS ============")
+	TestLog.line("============ GAME HEADLESS TEST PASS ============")
 	behavior_section("PLAYER COMMANDS, HEADLESS")
 	await test_command_guard_blocks_input()
 	await test_try_grab_returns_stack()

@@ -69,36 +69,34 @@ var act_cancelled : bool = false
 ## request a cancel while the act can still unwind.
 var _act_cancellable : bool = false
 
-# --- Elapsed-time compression + runaway event cap (SUIT_PROPS_PLAN §1.6) ---
-# Long/looping score cascades (prop chains, echoing triggers) shrink their per-step delay as
-# real time elapses so a huge act still resolves, and a hard event count cuts an infinite
-# chain outright ("the audience went home"). Normal play is untouched (get_delay only
-# compresses while `processing`).
-const COMPRESS_RATIO := 0.85
-const STEP_MS := 1500.0
-const MIN_FACTOR := 0.05
-const SOFT_MS := 20000.0
-const HARD_CAP := 6000
-var act_start_ms : int = 0
+# --- Per-ACTIVATION compression + runaway event cap (SUIT_PROPS_PLAN §1.6, reworked
+# 2026-07-16) --- Long/looping score cascades shrink their per-step delay per unit of WORK
+# PROCESSED (`act_calls`, the same counter act_event_cap trips on), never per wall-clock time:
+# elapsed-time compression made a slow first prop phase inflate `elapsed` and then everything
+# after it lurched to insane speed — activation counting is deterministic and incremental, every
+# mod/prop activation ratchets the speed-up by exactly one unit. Normal play is untouched
+# (get_delay only compresses while `processing`); animations enforce the pacing by always
+# deriving their durations from get_delay (never a fixed wall-clock length). All knobs live in
+# PlayerSettings (compress_* / act_event_cap) — no ms values anywhere.
 var act_calls : int = 0
 var act_overrun : bool = false
 
-## Reset the compression clock + event counter at the start of a board action.
+## Reset the activation counter (compression ramp + event cap) at the start of a board action.
 func _begin_act() -> void:
-	act_start_ms = Time.get_ticks_msec()
 	act_calls = 0
 	act_overrun = false
 	act_cancelled = false
 
-## Count one unit of processing (per mod invoked, per prop slot entry); trip the runaway cap.
+## Count one unit of processing (per mod invoked, per prop slot entry); advances the compression
+## ramp and trips the runaway cap.
 func note_processing(weight := 1) -> void:
 	act_calls += weight
-	if act_calls > HARD_CAP:
+	if act_calls > SettingsManager.settings.act_event_cap:
 		act_overrun = true
 
 ## Per-step pacing delay. Normal play returns the base delay untouched; only while a locked
-## action is resolving does it shrink toward 0 with elapsed time (read live every frame by the
-## view's interpolation, so speed changes apply mid-slot).
+## action is resolving does it shrink toward 0 with the number of activations processed (read
+## live every frame by the view's interpolation, so the ramp applies mid-slot).
 func get_delay() -> float:
 	# a cancelled act fast-forwards: every remaining animation snaps (read live per frame)
 	if act_cancelled:
@@ -106,10 +104,11 @@ func get_delay() -> float:
 	# base returns SettingsManager.settings.base_delay (normal play untouched)
 	if not processing:
 		return super.get_delay()
-	var elapsed := float(Time.get_ticks_msec() - act_start_ms)
-	if elapsed > SOFT_MS:
+	var s := SettingsManager.settings
+	if act_calls > s.compress_soft_calls:
 		return 0.0
-	return super.get_delay() * maxf(MIN_FACTOR, pow(COMPRESS_RATIO, elapsed / STEP_MS))
+	return super.get_delay() * maxf(s.compress_min_factor,
+			pow(s.compress_ratio, float(act_calls) / s.compress_step_calls))
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:

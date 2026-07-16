@@ -110,7 +110,9 @@ unique_name_in_owner = true
 
 [node name="PropLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=2038411771]
 unique_name_in_owner = true
-z_index = 100
 script = ExtResource("3_prop")
+
+[node name="OverlayLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=2038411772]
+unique_name_in_owner = true
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]

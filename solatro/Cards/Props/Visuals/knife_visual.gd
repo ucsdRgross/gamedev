@@ -5,6 +5,7 @@ extends PropVisual
 
 func _init() -> void:
 	art_size = Vector2(20, 8)
+	body_size = Vector2(20, 8)   # placeholder: matches placeholder art
 	color = Color(0.85, 0.85, 0.9)
 	face_travel = true   # blade tip (drawn toward +x) points along travel; flips when going left
 

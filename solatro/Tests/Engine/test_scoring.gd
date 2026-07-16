@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_scoring.gd
 # ==============================================================================
 # DATA-ORIENTED POKER SCORING ENGINE TESTER
@@ -30,7 +30,7 @@ func suite_name() -> String:
 	return "SCORING"
 
 func _ready() -> void:
-	print("============ POKER SCORING ENGINE TEST PASS ============")
+	TestLog.line("============ POKER SCORING ENGINE TEST PASS ============")
 	await run_standard_5_card_poker_tests()
 	await run_balatro_special_hand_tests()
 	await run_architecture_edge_cases()
@@ -208,7 +208,7 @@ func run_architecture_edge_cases() -> void:
 	for res in deep10_res:
 		if res.types.has(Scoring.MELD_TYPE.FULL_HOUSE) and res.types.has(Scoring.MELD_TYPE.MULTI) and res.score > 1000:
 			found10 = true
-			print("  > Deep10 result: score ", res.score, " name '", res.name, "'")
+			TestLog.line("  > Deep10 result: score %s name '%s'" % [res.score, res.name])
 			check(res.name.contains("10x Full House (50)"), "Deep stack 10 -> '10x Full House (50)'", res.name)
 			break
 	check(found10, "Deep stack 10 produced a MULTI full house")
@@ -226,7 +226,7 @@ func run_architecture_edge_cases() -> void:
 	for res in deep100_res:
 		if res.types.has(Scoring.MELD_TYPE.FULL_HOUSE) and res.types.has(Scoring.MELD_TYPE.MULTI):
 			found100 = true
-			print("  > Deep100 result: score ", res.score, " name '", res.name, "'")
+			TestLog.line("  > Deep100 result: score %s name '%s'" % [res.score, res.name])
 			check(res.name.contains("100x Full House (5)"), "Deep stack 100 -> '100x Full House (5)'", res.name)
 			break
 	check(found100, "Deep stack 100 produced a MULTI full house")
@@ -824,8 +824,8 @@ func run_meld_integrity_tests() -> void:
 # ==============================================================================
 func run_leaderboard() -> void:
 	behavior_section("SECTION 8: COMBINED ARCHETYPE LEADERBOARD (self-checking)")
-	print("| SCORE  | HAND NAME                       | EXPECTED                        | OK?")
-	print("|:-------|:--------------------------------|:--------------------------------|:----")
+	TestLog.line("| SCORE  | HAND NAME                       | EXPECTED                        | OK?")
+	TestLog.line("|:-------|:--------------------------------|:--------------------------------|:----")
 
 	var rows: Array[Dictionary] = []
 
@@ -948,13 +948,13 @@ func run_leaderboard() -> void:
 	disp.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 	for e : Dictionary in disp:
 		var tag: String = "" if e.count == 1 else (" x%d" % e.count)
-		print("| %s | %s | %s | %s" % [
+		TestLog.line("| %s | %s | %s | %s" % [
 			str(e.score).rpad(6), (e.name as String).rpad(31),
 			((e.expected as String) + tag).rpad(31), ("OK" if e.ok else "XX")])
 	if mism == 0:
-		print("=== LEADERBOARD: all %d rows match expected names ===" % rows.size())
+		TestLog.line("=== LEADERBOARD: all %d rows match expected names ===" % rows.size())
 	else:
-		printerr("=== LEADERBOARD: %d of %d rows MISMATCH expected names ===" % [mism, rows.size()])
+		TestLog.line("=== LEADERBOARD: %d of %d rows MISMATCH expected names ===" % [mism, rows.size()], true)
 
 
 # --- Leaderboard helpers ----------------------------------------------------

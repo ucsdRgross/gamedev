@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/UI/test_ui_viewers.gd
 # ==============================================================================
 # UI VIEWERS — regression tests for the playtest bugs of 2026-07:
@@ -16,7 +16,7 @@ func suite_name() -> String:
 	return "UI VIEWERS"
 
 func _ready() -> void:
-	print("============ UI VIEWERS TEST PASS ============")
+	TestLog.line("============ UI VIEWERS TEST PASS ============")
 	behavior_section("VIEWER & CARD RENDERING REGRESSIONS")
 	await test_deck_viewer_singleton()
 	await test_control_card_focus()

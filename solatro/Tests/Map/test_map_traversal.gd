@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Map/test_map_traversal.gd
 # ==============================================================================
 # WORLD MAP TRAVERSAL — WorldMapController over a synthetic diamond graph:
@@ -23,7 +23,7 @@ func suite_name() -> String:
 	return "MAP TRAVERSAL"
 
 func _ready() -> void:
-	print("============ MAP TRAVERSAL TEST PASS ============")
+	TestLog.line("============ MAP TRAVERSAL TEST PASS ============")
 	behavior_section("MAP TRAVERSAL & LAPS")
 	var real_run: RunState = RunManager.run
 	_build_rig()

@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Interaction/test_interaction.gd
 # ==============================================================================
 # INTERACTIVITY, ALL INPUT MODES: drives the REAL GameView with synthesized
@@ -22,7 +22,6 @@ extends SolatroTest
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const WATCHDOG_SECS := 10.0
-const FAST_DELAY := 0.05
 ## Slow enough that a Submit is still mid-animation two frames in (the cancel test
 ## needs the Undo click to land DURING the resolution).
 const SLOW_DELAY := 0.4
@@ -43,17 +42,14 @@ var prev_save_info : RunState
 var selections : Array[CardData] = []
 
 func _ready() -> void:
-	if get_parent():
-		for sibling in get_parent().get_children():
-			var suite := sibling as SolatroTest
-			if suite and suite != self and suite.suite_name() != "UI PROPS" \
-					and suite.suite_name() != "E2E RUN" and not suite.finished:
-				await suite.suite_finished
-	print("============ INTERACTION TEST PASS ============")
+	# Runs before UI PROPS / VISUAL LAYERS / E2E (they wait on this) — exclude them to avoid a
+	# deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
+	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "E2E RUN"])
+	TestLog.line("============ INTERACTION TEST PASS ============")
 	backup_real_save()
 	_backup_settings()
 	var prev_delay : float = SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = FAST_DELAY
+	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	prev_run = RunManager.run
 	prev_save_info = Main.save_info
 	await _setup_view()
@@ -318,7 +314,7 @@ func test_undo_button_cancels_live_submit() -> void:
 	check(game.save_history.size() == history_before,
 			"nothing was committed by the cancelled submit")
 	check(game.state.total_score == score_before, "no act score was applied")
-	SettingsManager.settings.base_delay = FAST_DELAY
+	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	# abort_all frees the visuals; queue_free lands end-of-frame — wait, don't count blind
 	var cleared := await wait_until(func() -> bool: return prop_visual_count() == 0)
 	check(cleared, "no prop visual is stranded after the cancel", str(prop_visual_count()))

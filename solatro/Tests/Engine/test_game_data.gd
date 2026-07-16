@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_game_data.gd
 # ==============================================================================
 # GameData as the source of truth (Plan 2 §6.1). Non-freezing checks (print
@@ -17,7 +17,7 @@ func suite_name() -> String:
 	return "GAME DATA"
 
 func _ready() -> void:
-	print("============ GAME DATA TEST PASS ============")
+	TestLog.line("============ GAME DATA TEST PASS ============")
 	implementation_section("SAVEABLE FORM / COPY / VALIDATE INTERNALS")
 	test_saveable_roundtrip_preserves_gutters()
 	test_saveable_unlinks_backrefs_restore_relinks()

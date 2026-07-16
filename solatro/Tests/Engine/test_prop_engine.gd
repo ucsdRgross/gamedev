@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_prop_engine.gd
 # ==============================================================================
 # PROP ENGINE (SUIT_PROPS_PLAN Phase 1 §1.7): the headless tick simulation —
@@ -16,7 +16,7 @@ func suite_name() -> String:
 	return "PROP ENGINE"
 
 func _ready() -> void:
-	print("============ PROP ENGINE TEST PASS ============")
+	TestLog.line("============ PROP ENGINE TEST PASS ============")
 	behavior_section("TRAVERSAL + BALLISTIC")
 	await test_row_traversal()
 	await test_ballistic_single_slot()

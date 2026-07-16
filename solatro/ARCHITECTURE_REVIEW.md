@@ -215,7 +215,14 @@ recipes) is `PROPS_BUGFIX_HANDOFF.md`; key facts for anyone extending this:
   cards, and props together — no more scroll-lag chase. Consequence: cards clip at the play-area
   rect like props (the deck/discard fly-in is invisible outside it). The §1.2 class-map line
   placing CardVisual under PlayArea's root predates this.
-- **Card text surface is the focus inspector panel** (play_area.gd), a permanent PropLayer child
+- **Board draw order is 100% structural (no z_index anywhere), 2026-07-15:** the whole board sits
+  on ONE canvas (no `CanvasLayer`), so every board CanvasItem is kept at `z_index == 0` and order
+  is decided by sibling position + parent nesting: `TopLevelVBox` children run `CardLayer →
+  PropLayer → OverlayLayer` (later = on top); CardVisuals hold row-major child order in CardLayer
+  (`move_child`, not z); a prop can render a **back half** parented into CardLayer beneath its
+  occupied card so a card passes *through* it (the hoop ring). Full exhaustive reference:
+  **`LAYERING.md`**.
+- **Card text surface is the focus inspector panel** (play_area.gd), a permanent OverlayLayer child
   re-pinned beside its anchor control every frame — native `tooltip_text` popups were removed
   (they blocked board clicks). Any display-only Control under the scroll content must claim the
   SmoothScroll addon's `_smooth_scroll_default_mouse_filter_set` meta BEFORE `add_child` or the

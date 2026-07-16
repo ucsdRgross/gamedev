@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_iterator.gd
 # CardDataIterator suite (UNIT_TESTS_PLAN.md §2): every case compares the iterator's
 # output to a naive flatten oracle (1D in order; 2D row-major across columns).
@@ -12,7 +12,7 @@ func suite_name() -> String:
 	return "ITERATOR"
 
 func _ready() -> void:
-	print("============ CARD DATA ITERATOR TEST PASS ============")
+	TestLog.line("============ CARD DATA ITERATOR TEST PASS ============")
 	env = FakeEnvironment.new()
 	add_child(env)
 	run_shape_tests()

@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_statuses.gd
 # ==============================================================================
 # Status-effect foundation (SUIT_PROPS_PLAN Phase 2):
@@ -20,7 +20,7 @@ func suite_name() -> String:
 	return "STATUSES"
 
 func _ready() -> void:
-	print("============ STATUSES TEST PASS ============")
+	TestLog.line("============ STATUSES TEST PASS ============")
 	env = FakeEnvironment.new()
 	add_child(env)
 	test_merge_stacking()

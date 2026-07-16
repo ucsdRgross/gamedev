@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Map/test_persistence_fuzz.gd
 # ==============================================================================
 # PERSISTENCE FUZZ — chaos round-trip of the WHOLE save document through real disk
@@ -26,7 +26,7 @@ func suite_name() -> String:
 	return "PERSISTENCE FUZZ"
 
 func _ready() -> void:
-	print("============ PERSISTENCE FUZZ TEST PASS ============")
+	TestLog.line("============ PERSISTENCE FUZZ TEST PASS ============")
 	behavior_section("SAVE DOCUMENT ROUND-TRIP FUZZ")
 	# Always run full: move any real run.tres aside first, restore it at the end.
 	backup_real_save()

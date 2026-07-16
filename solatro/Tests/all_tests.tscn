@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dvl2ono4m4a8a"]
 
-[ext_resource type="Script" path="res://Tests/all_tests.gd" id="0_root"]
+[ext_resource type="Script" uid="uid://cf5aluv5620t4" path="res://Tests/all_tests.gd" id="0_root"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_board.tscn" id="1_lva42"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_comparator.tscn" id="2_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_dispatch.tscn" id="3_conaq"]
@@ -8,23 +8,25 @@
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_iterator.tscn" id="5_0nmpq"]
 [ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
-[ext_resource type="PackedScene" path="res://Tests/Engine/test_game_data.tscn" id="13_gdata"]
-[ext_resource type="PackedScene" path="res://Tests/Engine/test_game_headless.tscn" id="14_ghead"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
-[ext_resource type="PackedScene" path="res://Tests/Map/test_persistence_fuzz.tscn" id="12_pfuzz"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_viewers.tscn" id="11_uivw"]
+[ext_resource type="PackedScene" path="res://Tests/Map/test_persistence_fuzz.tscn" id="12_pfuzz"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_game_data.tscn" id="13_gdata"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_game_headless.tscn" id="14_ghead"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_mods.tscn" id="15_mods"]
+[ext_resource type="PackedScene" path="res://Tests/E2E/test_e2e_run.tscn" id="16_e2e"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_statuses.tscn" id="17_stat"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_prop_engine.tscn" id="18_prop"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_suit_props.tscn" id="19_suit"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_props.tscn" id="20_uiprops"]
 [ext_resource type="PackedScene" path="res://Tests/Interaction/test_interaction.tscn" id="21_inter"]
-[ext_resource type="PackedScene" path="res://Tests/E2E/test_e2e_run.tscn" id="16_e2e"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_visual_layers.tscn" id="22_vislay"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
+speed_base_delay = 0.1
 
 [node name="TestBoard" parent="." unique_id=525863356 instance=ExtResource("1_lva42")]
 
@@ -40,30 +42,32 @@ script = ExtResource("0_root")
 
 [node name="TestActScore" parent="." unique_id=742109780 instance=ExtResource("7_actsc")]
 
-[node name="TestGameData" parent="." instance=ExtResource("13_gdata")]
+[node name="TestGameData" parent="." unique_id=871797032 instance=ExtResource("13_gdata")]
 
-[node name="TestGameHeadless" parent="." instance=ExtResource("14_ghead")]
+[node name="TestGameHeadless" parent="." unique_id=1560842712 instance=ExtResource("14_ghead")]
 
-[node name="TestMods" parent="." instance=ExtResource("15_mods")]
+[node name="TestMods" parent="." unique_id=1295448001 instance=ExtResource("15_mods")]
 
-[node name="TestStatuses" parent="." instance=ExtResource("17_stat")]
+[node name="TestStatuses" parent="." unique_id=1603014823 instance=ExtResource("17_stat")]
 
-[node name="TestPropEngine" parent="." instance=ExtResource("18_prop")]
+[node name="TestPropEngine" parent="." unique_id=1208581618 instance=ExtResource("18_prop")]
 
-[node name="TestSuitProps" parent="." instance=ExtResource("19_suit")]
+[node name="TestSuitProps" parent="." unique_id=1241990485 instance=ExtResource("19_suit")]
 
 [node name="TestRunManager" parent="." unique_id=567230125 instance=ExtResource("8_runmg")]
 
-[node name="TestPersistenceFuzz" parent="." instance=ExtResource("12_pfuzz")]
+[node name="TestPersistenceFuzz" parent="." unique_id=2025022038 instance=ExtResource("12_pfuzz")]
 
 [node name="TestMapRoles" parent="." unique_id=1737734247 instance=ExtResource("9_maprl")]
 
 [node name="TestMapTraversal" parent="." unique_id=118778426 instance=ExtResource("10_maptr")]
 
-[node name="TestUiViewers" parent="." instance=ExtResource("11_uivw")]
+[node name="TestUiViewers" parent="." unique_id=445958866 instance=ExtResource("11_uivw")]
 
-[node name="TestInteraction" parent="." instance=ExtResource("21_inter")]
+[node name="TestInteraction" parent="." unique_id=1565271951 instance=ExtResource("21_inter")]
 
-[node name="TestUiProps" parent="." instance=ExtResource("20_uiprops")]
+[node name="TestUiProps" parent="." unique_id=1146959532 instance=ExtResource("20_uiprops")]
 
-[node name="TestE2ERun" parent="." instance=ExtResource("16_e2e")]
+[node name="TestVisualLayers" parent="." unique_id=1829713258 instance=ExtResource("22_vislay")]
+
+[node name="TestE2ERun" parent="." unique_id=1177089969 instance=ExtResource("16_e2e")]

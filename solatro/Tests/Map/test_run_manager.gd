@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Map/test_run_manager.gd
 # ==============================================================================
 # RUN MANAGER — fame/luck/goal formulas + RunState + (guarded) disk round-trip.
@@ -18,7 +18,7 @@ func suite_name() -> String:
 	return "RUN MANAGER"
 
 func _ready() -> void:
-	print("============ RUN MANAGER TEST PASS ============")
+	TestLog.line("============ RUN MANAGER TEST PASS ============")
 	var real_run: RunState = RunManager.run
 	behavior_section("PROGRESSION FORMULAS")
 	test_is_reversed()

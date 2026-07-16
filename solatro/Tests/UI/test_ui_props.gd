@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/UI/test_ui_props.gd
 # ==============================================================================
 # UI PROPS (SUIT_PROPS_PLAN Phases 4-5): the VIEW side of the prop pipeline —
@@ -23,10 +23,9 @@ extends SolatroTest
 const PLAY_AREA_SCENE := preload("res://UI/play_area.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 
-## Wall-clock cap for any single awaited animation/coroutine (base_delay is shrunk to
-## FAST_DELAY for the whole suite, so real completions are far quicker than this).
+## Wall-clock cap for any single awaited animation/coroutine (base_delay is shrunk to the shared
+## TestLog.speed_base_delay for the whole suite, so real completions are far quicker than this).
 const WATCHDOG_SECS := 10.0
-const FAST_DELAY := 0.05
 
 const REAL_SETTINGS_PATH := "user://settings.tres"
 const REAL_SETTINGS_BAK := "user://settings.tres.testbak"
@@ -35,15 +34,13 @@ func suite_name() -> String:
 	return "UI PROPS"
 
 func _ready() -> void:
-	if get_parent():
-		for sibling in get_parent().get_children():
-			var suite := sibling as SolatroTest
-			if suite and suite != self and suite.suite_name() != "E2E RUN" and not suite.finished:
-				await suite.suite_finished
-	print("============ UI PROPS TEST PASS ============")
+	# Runs before VISUAL LAYERS / E2E (they wait on this — shared CardEnvironment.CURRENT), so
+	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
+	await await_siblings_except(["VISUAL LAYERS", "E2E RUN"])
+	TestLog.line("============ UI PROPS TEST PASS ============")
 	_backup_settings()
 	var prev_delay := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = FAST_DELAY
+	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("SLOT GEOMETRY")
 	await test_slot_geometry()
 	behavior_section("PROP VISUAL LIFECYCLE")
@@ -55,6 +52,8 @@ func _ready() -> void:
 	await test_each_kind_moves_as_expected()
 	await test_ballistic_despawn_poofs_in_place()
 	await test_batch_props_stagger()
+	await test_formation_separation_agnostic()
+	await test_formation_live_rescale()
 	await test_reactions_drive_card_pose()
 	behavior_section("STATUS + CARD TEXT SURFACES")
 	await test_status_and_description_surface()
@@ -117,7 +116,19 @@ func make_play_area() -> PlayArea:
 	var pa : PlayArea = PLAY_AREA_SCENE.instantiate()
 	add_child(pa)
 	pa.size = Vector2(1152, 648)
+	# Disable AUTHORED per-kind formations for these bare-PlayArea tests. They assert props land on
+	# EXACT slot centers / hold their row's y; an authored Formations/<kind>.tres adds a view-only
+	# lane_offset that shifts every slot point and would (correctly) break those geometry checks.
+	# test_batch_props_stagger injects its OWN formation AFTER this to test the formation path.
+	# (The real-GameView submit tests below use the shipped formations on purpose.)
+	_disable_formations(pa.prop_layer)
 	return pa
+
+## Mark every prop kind as "formation-checked, none present" so _formation_set() returns null and
+## lane_offset stays ZERO — props fly the exact slot line regardless of what .tres files exist.
+func _disable_formations(pl: PropLayer) -> void:
+	for kind : int in range(PropFormationSet.KIND_NAMES.size()):
+		pl._formation_checked[kind] = true
 
 ## Wait until every board CardVisual is in-tree and ready, then until the slot GEOMETRY holds
 ## still for a few consecutive frames — split containers, score labels, and the smooth-scroll
@@ -268,7 +279,7 @@ func _direction_changes(samples: Array[Vector2], axis: int, label: String) -> in
 		var s := 1 if d > 0.0 else -1
 		if prev_sign != 0 and s != prev_sign:
 			flips += 1
-			print("[%s] axis-%s direction change #%d at %s (%+d -> %+d)"
+			TestLog.line("[%s] axis-%s direction change #%d at %s (%+d -> %+d)"
 					% [label, "x" if axis == 0 else "y", flips, samples[i], prev_sign, s])
 		prev_sign = s
 	return flips
@@ -292,7 +303,7 @@ func test_slot_geometry() -> void:
 		var center := control.global_position + control.size * 0.5
 		check_impl(pa.slot_center_global(slot(0)).is_equal_approx(center),
 				"slot_center_global returns the control's rect center")
-	# Slots past the built rows have no control: the fallback extrapolates down the column.
+	# Slots past the built rows have no control: the slot MATH extrapolates down the column.
 	var deep_a := pa.slot_center_global(Vector3i(0, 0, 4))
 	var deep_b := pa.slot_center_global(Vector3i(0, 0, 5))
 	check_impl(deep_b.y > deep_a.y and is_equal_approx(deep_a.x, deep_b.x),
@@ -312,6 +323,32 @@ func test_slot_geometry() -> void:
 			"an empty column's row-0 slot sits ON the row line of its occupied neighbors",
 			"occupied y %.1f vs empty-column y %.1f" % [occupied_y, empty_y])
 	await cleanup(g, pa)
+	# TASK 3 (owner spec 2026-07-15): slot centers are PURE MATH (zone origin + indices), no
+	# control reads — verify the math reproduces the CONTROL layout at MULTIPLE card-separation
+	# levels, since the row pitch folds in card_separation_play_custom. The math must match the
+	# built controls' card anchors (control top + half a card) and keep empty columns on the row
+	# line at every separation.
+	var prev_sep := SettingsManager.settings.card_separation_scale
+	for sep_scale : float in [0.5, 1.0, 2.0] as Array[float]:
+		SettingsManager.settings.card_separation_scale = sep_scale
+		g = make_board_game(3, [1] as Array[int])
+		pa = make_play_area()
+		await settle(pa)
+		var control_a := pa.control_for_coord(slot(0))
+		var anchor_a : Vector2 = control_a.global_position \
+				+ Vector2(control_a.size.x * 0.5, CardVisual.card_size_play.y * 0.5)
+		check_impl(pa.slot_center_global(slot(0)).is_equal_approx(anchor_a),
+				"math slot center matches the built control's card anchor at separation %.1f" % sep_scale,
+				"%s vs %s" % [pa.slot_center_global(slot(0)), anchor_a])
+		check_impl(is_equal_approx(pa.slot_center_global(slot(0)).y,
+				pa.slot_center_global(slot(1)).y),
+				"empty column stays on the row line at separation %.1f" % sep_scale)
+		var pitch := pa.slot_center_global(Vector3i(0, 0, 1)).y - pa.slot_center_global(slot(0)).y
+		check_impl(is_equal_approx(pitch,
+				float(CardVisual.card_separation_play_custom) + float(pa.separation)),
+				"row pitch = card strip + separation at separation %.1f" % sep_scale, str(pitch))
+		await cleanup(g, pa)
+	SettingsManager.settings.card_separation_scale = prev_sep
 
 func test_prop_visual_lifecycle() -> void:
 	var g := make_board_game(3)
@@ -337,9 +374,22 @@ func test_prop_visual_lifecycle() -> void:
 		check(ok, "a mover tick completes (slot %s)" % str(p.at))
 	var vis : PropVisual = pl._visuals.get(p)
 	if vis:
+		# NOTE (2026-07-15): this landing check and the "arrives exactly" check in
+		# test_slow_props have been observed FAILING independent of the z→structure layering
+		# migration (their prop kinds/paths don't touch that code). They are timing-sensitive
+		# ([[running-godot-scenes]]): after the last tick the board can still be settling and
+		# _repin chases the live slot for a frame or two. Poll briefly for the position to settle,
+		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
 		var want := pl.to_local(pa.slot_center_global(p.at))
+		var w := 0.0
+		while (vis.position - want).length() >= 1.0 and w < 1.0:
+			await get_tree().process_frame
+			w += get_process_delta_time()
+			want = pl.to_local(pa.slot_center_global(p.at))
 		check((vis.position - want).length() < 1.0,
-				"the visual lands on its slot's center", "%s vs %s" % [vis.position, want])
+				"the visual lands on its slot's center",
+				"pos %s vs want %s | anchor %s from %s target %s t %.2f/%.2f" %
+				[vis.position, want, vis.anchor_coord, vis.from, vis.target, vis.t, vis.t_goal])
 	# final tick: route exhausted -> done -> the visual exits into the void and frees itself
 	p.done = true
 	ok = await run_tick(pl, [p], [], [], [])
@@ -386,8 +436,20 @@ func test_slow_props_move_continuously() -> void:
 	# the in-between tick (no new slot) carries it the rest of the way — never frozen
 	ok = await run_tick(pl, [p], [], [], [])
 	check(ok, "the mid-slot tick completes")
+	# Settle a few frames (see the timing NOTE in test_prop_visual_lifecycle); re-derive `target`
+	# live each frame since _repin chases the settling board. Dump the leg state on failure.
+	var w := 0.0
+	target = pl.to_local(pa.slot_center_global(p.at))
+	while vis != null and (vis.position - target).length() >= 1.0 and w < 1.0:
+		await get_tree().process_frame
+		w += get_process_delta_time()
+		target = pl.to_local(pa.slot_center_global(p.at))
 	check(vis != null and (vis.position - target).length() < 1.0,
-			"the prop arrives exactly as its slot residency ends (smooth, no pause)")
+			"the prop arrives exactly as its slot residency ends (smooth, no pause)",
+			"pos %s vs target %s | anchor %s from %s target %s t %.2f/%.2f" %
+			[vis.position if vis else Vector2.INF, target, vis.anchor_coord if vis else Vector3i.MIN,
+			vis.from if vis else Vector2.ZERO, vis.target if vis else Vector2.ZERO,
+			vis.t if vis else -1.0, vis.t_goal if vis else -1.0])
 	SettingsManager.settings.base_delay = fast
 	await cleanup(g, pa)
 
@@ -604,7 +666,7 @@ func test_each_kind_moves_as_expected() -> void:
 				"%s flies toward its target without reversing x (raw positions)" % label)
 		var y_flips := _direction_changes(samples, 1, label)
 		if y_flips != 1:   # dump the raw flight so a failure names the whole path, not one point
-			print("[%s] FULL SAMPLE DUMP (%d frames, board-relative): %s"
+			TestLog.line("[%s] FULL SAMPLE DUMP (%d frames, board-relative): %s"
 					% [label, samples.size(), samples])
 		check(y_flips == 1,
 				"%s arcs: exactly one vertical turn at the peak (raw positions)" % label)
@@ -687,6 +749,123 @@ func test_batch_props_stagger() -> void:
 			"%s vs %s" % [va.position if va else Vector2.INF, vb.position if vb else Vector2.INF])
 	await cleanup(g, pa)
 
+## TASK 2 (owner spec 2026-07-15): spread_by_separation points are STORED separation-agnostically
+## in FULL-CARD normalized space — ratio 1 when the separation equals the card height. Placing the
+## same visual pattern at ANY separation stores the SAME points, and offsets_for re-projects them
+## into whatever strip the live separation gives (same strip FRACTION at every level).
+func test_formation_separation_agnostic() -> void:
+	var top := -CardVisual.CARD_SIZE.y * 0.5
+	var max_factor := CardVisual.CARD_SIZE.y / float(CardVisual.CARD_SEPARATION)
+	# Ratio-1 reference: with the strip == the full card, stored points project 1:1.
+	check_impl(is_equal_approx(PropFormationSet.norm_to_strip(12.5, max_factor), 12.5)
+			and is_equal_approx(PropFormationSet.strip_to_norm(12.5, max_factor), 12.5),
+			"at separation == card height (ratio 1) points store and project 1:1")
+	# Placement is separation-agnostic: authoring the SAME pattern (same fraction of the visible
+	# strip) at min, default, and max separation stores the SAME normalized point — and the
+	# strip -> norm -> strip round trip is exact at every factor.
+	var fraction := 0.6
+	var stored_ys : Array[float] = []
+	for factor : float in [0.25, 1.0, 2.0, max_factor] as Array[float]:
+		var strip_h := PropFormationSet.strip_ratio(factor) * CardVisual.CARD_SIZE.y
+		var placed := top + fraction * strip_h   # inside the strip — the round-trippable domain
+		var stored := PropFormationSet.strip_to_norm(placed, factor)
+		stored_ys.append(stored)
+		check_impl(is_equal_approx(PropFormationSet.norm_to_strip(stored, factor), placed),
+				"strip -> norm -> strip round-trips exactly at factor %.2f" % factor)
+	# A point placed BELOW the strip clamps to the card bottom on store — a formation can never
+	# leave one card (the authored knife.tres briefly stored y=73 on a 50-tall card and knives
+	# sank 1.5 cards under their row at high separation); bad stored values also clamp on read.
+	check_impl(is_equal_approx(PropFormationSet.strip_to_norm(20.0, 0.25),
+			CardVisual.CARD_SIZE.y * 0.5),
+			"an out-of-strip placement stores the card bottom, never past the card")
+	check_impl(is_equal_approx(PropFormationSet.norm_to_strip(73.0, max_factor),
+			CardVisual.CARD_SIZE.y * 0.5),
+			"an out-of-card STORED value clamps to the card bottom on read (heals bad .tres)")
+	for i : int in range(1, stored_ys.size()):
+		check_impl(is_equal_approx(stored_ys[i], stored_ys[0]),
+				"the same visual pattern stores the SAME normalized point at every separation",
+				"factor set stored %s" % str(stored_ys))
+	# Consume side: a stored bottom-of-card point always lands at the BOTTOM of the current strip —
+	# the whole card at max separation, the top sliver at min (offsets_for projection).
+	var fdata := PropFormationData.new()
+	fdata.spread_by_separation = true
+	fdata.points = PackedVector2Array([Vector2(3.0, CardVisual.CARD_SIZE.y * 0.5)])
+	var fset := PropFormationSet.new()
+	fset.formations = [fdata] as Array[PropFormationData]
+	for factor : float in [0.5, 1.0, max_factor] as Array[float]:
+		var strip_h := PropFormationSet.strip_ratio(factor) * CardVisual.CARD_SIZE.y
+		var got : Vector2 = fset.offsets_for(1, 7, factor)[0]
+		check_impl(is_equal_approx(got.y, top + strip_h) and is_equal_approx(got.x, 3.0),
+				"offsets_for projects a full-card point onto the strip bottom at factor %.2f" % factor,
+				"got %s want y %.2f" % [got, top + strip_h])
+	# spread_by_separation OFF keeps fixed card-space y regardless of the factor.
+	fdata.spread_by_separation = false
+	var fixed_a : Vector2 = fset.offsets_for(1, 7, 0.5)[0]
+	var fixed_b : Vector2 = fset.offsets_for(1, 7, max_factor)[0]
+	check_impl(fixed_a.is_equal_approx(fixed_b),
+			"a non-spread formation ignores the separation factor entirely")
+
+## Formation offsets and prop art must track LIVE settings mid-flight (owner report 2026-07-15:
+## separation/card-scale changes did nothing until the next spawn). Root cause was
+## capture-at-spawn — and it is exactly why the earlier tests missed it: none of them touched a
+## setting while a prop was airborne. This one does: spawn a spread-formation knife, then move
+## the separation and card-scale sliders and assert the offset re-projects within a frame, the
+## spread clamps at one full card, and the art scales with the cards.
+func test_formation_live_rescale() -> void:
+	var g := make_board_game(3)
+	var pa := make_play_area()
+	await settle(pa)
+	var pl := pa.prop_layer
+	var fdata := PropFormationData.new()
+	fdata.spread_by_separation = true
+	fdata.points = PackedVector2Array([Vector2(4.0, CardVisual.CARD_SIZE.y * 0.5)])  # strip bottom
+	var fset := PropFormationSet.new()
+	fset.formations = [fdata] as Array[PropFormationData]
+	pl._formation_sets[1] = fset
+	pl._formation_checked[1] = true
+	var p := PropData.new()
+	p.kind = 1
+	p.route = g.row_slot_path(slot(0), true)
+	p.countdown = p.ticks_per_slot
+	var ok := await run_tick(pl, [p], [p], [], [])
+	check(ok, "the spread-formation spawn tick completes")
+	var vis : PropVisual = pl._visuals.get(p)
+	check(vis != null and vis.has_formation_point, "the knife carries its stored formation point")
+	var prev_scale := SettingsManager.settings.card_scale
+	var prev_sep := SettingsManager.settings.card_separation_scale
+	var top := -CardVisual.CARD_SIZE.y * 0.5
+	# Separation change re-projects the offset IMMEDIATELY (same frame family as the cards).
+	SettingsManager.settings.card_separation_scale = 2.0
+	await get_tree().process_frame
+	var strip_h := PropFormationSet.strip_ratio(2.0) * CardVisual.CARD_SIZE.y
+	check(vis != null and is_equal_approx(vis.lane_offset.y, (top + strip_h) * prev_scale),
+			"a separation change re-projects a spread offset mid-flight",
+			str(vis.lane_offset) if vis else "no visual")
+	# Max spread clamps at exactly one card even when the separation setting overshoots.
+	SettingsManager.settings.card_separation_scale = 50.0
+	await get_tree().process_frame
+	check(vis != null and is_equal_approx(vis.lane_offset.y,
+			CardVisual.CARD_SIZE.y * 0.5 * prev_scale),
+			"spread height clamps at one full card at absurd separation",
+			str(vis.lane_offset) if vis else "no visual")
+	# Card-scale change rescales the whole offset AND the prop art, live.
+	SettingsManager.settings.card_separation_scale = 1.0
+	SettingsManager.settings.card_scale = prev_scale * 2.0
+	await get_tree().process_frame
+	var want_y := PropFormationSet.norm_to_strip(CardVisual.CARD_SIZE.y * 0.5, 1.0) \
+			* prev_scale * 2.0
+	check(vis != null and is_equal_approx(vis.lane_offset.y, want_y)
+			and is_equal_approx(vis.lane_offset.x, 4.0 * prev_scale * 2.0),
+			"a card-scale change rescales the whole offset mid-flight",
+			str(vis.lane_offset) if vis else "no visual")
+	check(vis != null and is_equal_approx(vis.scale.x,
+			prev_scale * 2.0 / PropVisual.AUTHORED_CARD_SCALE),
+			"prop art scales with the live card scale",
+			str(vis.scale) if vis else "no visual")
+	SettingsManager.settings.card_scale = prev_scale
+	SettingsManager.settings.card_separation_scale = prev_sep
+	await cleanup(g, pa)
+
 func test_status_and_description_surface() -> void:
 	var g := make_board_game(2)
 	var pa := make_play_area()
@@ -720,8 +899,8 @@ func test_focus_inspector_all_input_modes() -> void:
 	check(pa._focus_info.mouse_filter == Control.MOUSE_FILTER_IGNORE
 			and pa._focus_info.focus_mode == Control.FOCUS_NONE,
 			"the inspector ignores the mouse and can never take focus (no click blocking)")
-	check(pa._focus_info.get_parent() == pa.prop_layer,
-			"the inspector stays a permanent child of the prop layer (scroll content) — never of a card control")
+	check(pa._focus_info.get_parent() == pa.overlay_layer,
+			"the inspector stays a permanent child of the overlay layer (scroll content) — never of a card control")
 	# the per-frame pin places it beside the anchor control (right of it, or flipped left)
 	await get_tree().process_frame
 	var panel_x := pa._focus_info.global_position.x

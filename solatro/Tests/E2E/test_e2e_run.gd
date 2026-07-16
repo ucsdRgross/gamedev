@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/E2E/test_e2e_run.gd
 # ==============================================================================
 # END-TO-END, HEADLESS: the full player loop through the REAL production paths —
@@ -21,12 +21,9 @@ func suite_name() -> String:
 	return "E2E RUN"
 
 func _ready() -> void:
-	if get_parent():
-		for sibling in get_parent().get_children():
-			var suite := sibling as SolatroTest
-			if suite and suite != self and not suite.finished:
-				await suite.suite_finished
-	print("============ END-TO-END RUN TEST PASS ============")
+	# Runs LAST — waits for every other suite. See TestSuite.await_siblings_except.
+	await await_siblings_except([])
+	TestLog.line("============ END-TO-END RUN TEST PASS ============")
 	behavior_section("FULL SHOW LOOP, HEADLESS")
 	# Always run full: move any real run.tres aside so the scenarios can write/clear freely.
 	backup_real_save()

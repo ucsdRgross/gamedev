@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_board.gd
 # Board / move-logic suite (UNIT_TESTS_PLAN.md §1) against the CURRENT
 # Game.move_data_to_coord, using GameData.validate() after every action.
@@ -9,7 +9,7 @@ extends SolatroTest
 # Since the §5 anchor rewrite (Board.move_stack, 2026-07-02) rejected moves return
 # error codes and provably leave the board untouched — covered in section 5.
 #
-# CATEGORY MAP (see SolatroTest):
+# CATEGORY MAP (see TestSuite):
 #   BEHAVIOR — topmost rules, every move outcome (cross/same-column, rejections,
 #     clamps, no-ops), draw/discard. These are the solitaire rules of the game.
 #   IMPLEMENTATION — locate/coordinate lookup internals, the mod-event dispatch
@@ -19,7 +19,7 @@ func suite_name() -> String:
 	return "BOARD"
 
 func _ready() -> void:
-	print("============ BOARD / MOVE LOGIC TEST PASS ============")
+	TestLog.line("============ BOARD / MOVE LOGIC TEST PASS ============")
 	await run_locate_tests()
 	await run_topmost_tests()
 	await run_cross_column_moves()

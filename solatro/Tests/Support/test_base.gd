@@ -1,4 +1,4 @@
-class_name SolatroTest
+class_name TestSuite
 extends Node
 ## Base class for every suite under res://Tests. Provides category-tagged, non-freezing
 ## checks (never assert()) so every failure names which KIND of test broke:
@@ -34,13 +34,43 @@ var finished := false
 func suite_name() -> String:
 	return "TEST"
 
+# ==============================================================================
+# SUITE ORDERING — READ THIS BEFORE ADDING A SUITE THAT WAITS ON OTHERS.
+#
+# Most suites run concurrently. A few need near-exclusive access to global singletons
+# (CardEnvironment.CURRENT, Main.save_info, SettingsManager — which write to disk) and so wait
+# for other suites to finish first, at the top of their _ready(), via await_siblings_except().
+#
+# ⚠️ THE DEADLOCK RULE: waiting is a directed dependency. If suite A waits for suite B, then B
+# must NOT wait for A — directly OR transitively — or BOTH hang forever and the whole run never
+# finishes (all_tests never quits; log tails just stop). A real deadlock shipped once because a
+# new suite (VISUAL LAYERS) waited for INTERACTION while INTERACTION still waited for it.
+#
+# The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
+#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN
+#
+# When you add a waiting suite: place it in this chain, pass the names of all suites that come
+# AFTER it to await_siblings_except(), and add its name to the excludes of every suite BEFORE it.
+# Never have two suites exclude-then-wait on each other.
+# ==============================================================================
+
+## Await every sibling suite to finish EXCEPT those named in `exclude_names` (and self). See the
+## DEADLOCK RULE above — the excludes must be consistent across suites or the run hangs.
+func await_siblings_except(exclude_names: Array[String]) -> void:
+	if not get_parent(): return
+	for sibling in get_parent().get_children():
+		var suite := sibling as TestSuite
+		if suite and suite != self and suite.suite_name() not in exclude_names \
+				and not suite.finished:
+			await suite.suite_finished
+
 func behavior_section(title: String) -> void:
 	_category = Category.BEHAVIOR
-	print("\n--- [BEHAVIOR] %s ---" % title)
+	TestLog.line("\n--- [BEHAVIOR] %s ---" % title)
 
 func implementation_section(title: String) -> void:
 	_category = Category.IMPLEMENTATION
-	print("\n--- [IMPLEMENTATION] %s ---" % title)
+	TestLog.line("\n--- [IMPLEMENTATION] %s ---" % title)
 
 ## Non-freezing check in the current section's category.
 func check(ok: bool, ctx: String, detail: String = "") -> void:
@@ -56,7 +86,7 @@ func check_impl(ok: bool, ctx: String, detail: String = "") -> void:
 func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 	if ok:
 		_pass += 1
-		print("  [PASS] ", ctx)
+		TestLog.line("  [PASS] " + ctx)
 		return
 	_fail += 1
 	if cat == Category.BEHAVIOR:
@@ -64,8 +94,8 @@ func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 	else:
 		_fail_impl += 1
 	var tag := "BEHAVIOR" if cat == Category.BEHAVIOR else "IMPLEMENTATION"
-	printerr("[FAIL][%s] %s: %s" % [tag, suite_name(), ctx],
-			"" if detail.is_empty() else (" -- " + detail))
+	TestLog.line("[FAIL][%s] %s: %s%s" % [tag, suite_name(), ctx,
+			"" if detail.is_empty() else (" -- " + detail)], true)
 
 ## Disk-test isolation. The save/load suites write and delete user://run_save/run.tres —
 ## the SAME file a real run uses. Rather than skip when a real save exists (which made the
@@ -95,9 +125,9 @@ func restore_real_save() -> void:
 func finish() -> void:
 	var total := _pass + _fail
 	if _fail == 0:
-		print("============ %s: ALL %d CHECKS PASSED ============" % [suite_name(), total])
+		TestLog.line("============ %s: ALL %d CHECKS PASSED ============" % [suite_name(), total])
 	else:
-		printerr("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d ============"
-				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total])
+		TestLog.line("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d ============"
+				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total], true)
 	finished = true
 	suite_finished.emit()

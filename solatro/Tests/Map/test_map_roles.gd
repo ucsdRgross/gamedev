@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Map/test_map_roles.gd
 # ==============================================================================
 # MAP NODE ROLES — deterministic seed-derived assignment over a synthetic graph.
@@ -13,7 +13,7 @@ func suite_name() -> String:
 	return "MAP ROLES"
 
 func _ready() -> void:
-	print("============ MAP NODE ROLES TEST PASS ============")
+	TestLog.line("============ MAP NODE ROLES TEST PASS ============")
 	behavior_section("SEED-DERIVED NODE ROLES & GOALS")
 	var real_run: RunState = RunManager.run
 	test_anchor_roles_and_goals()

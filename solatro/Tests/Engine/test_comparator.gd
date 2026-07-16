@@ -1,10 +1,10 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_comparator.gd
 # PipComparator suite (UNIT_TESTS_PLAN.md §4): default comparisons without an
 # environment, then mod overrides through a FakeEnvironment.
 # Non-freezing checks, every coroutine awaited (SC1 convention).
 #
-# CATEGORY MAP (see SolatroTest):
+# CATEGORY MAP (see TestSuite):
 #   BEHAVIOR — what counts as adjacent/same/ace for real cards (card-game semantics,
 #     incl. the ace-high scorable rule) and that a rules-card mod can override compares.
 #   IMPLEMENTATION — null/NAN edge handling, non-standard pip classes, dispatch
@@ -14,7 +14,7 @@ func suite_name() -> String:
 	return "COMPARATOR"
 
 func _ready() -> void:
-	print("============ PIP COMPARATOR TEST PASS ============")
+	TestLog.line("============ PIP COMPARATOR TEST PASS ============")
 	await run_no_environment_tests()
 	await run_predicate_tests()
 	await run_scorable_tests()

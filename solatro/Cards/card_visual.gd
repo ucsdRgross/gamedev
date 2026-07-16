@@ -178,7 +178,9 @@ func _ready() -> void:
 	# Top-left of the card face in UNSCALED local coords (the root's `scale` applies card_scale,
 	# exactly like the polygon children) — using the scaled card_size here would double-apply it.
 	status_layer.position = Vector2(-CARD_SIZE.x * 0.5 + 3.0, -CARD_SIZE.y * 0.5 + 3.0)
-	status_layer.z_index = 1   # above the card polygons
+	# No z_index: added LAST under `visual` (after every face polygon), so it draws on top by
+	# tree order. A relative z here would resolve non-zero and jump the whole structural scheme
+	# (props/overlay), the global-z trap — see LAYERING.md.
 	visual.add_child(status_layer)
 	status_layer.refresh(data)
 	SettingsManager.settings_changed.connect(recalculate_size)
@@ -362,13 +364,19 @@ func anim_jump() -> float:
 	# visuals deferred, so guard rather than tween a null target (rp_target null error).
 	if not offset: return 0.0
 	reset_tween(move_tween)
+	# Phase lengths are PlayerSettings fractions of the live delay (tunable, and every animation
+	# respects the pacing/compression — nothing runs on a fixed wall-clock length).
 	var delay := CardEnvironment.CURRENT.get_delay()
+	var s := SettingsManager.settings
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_callback(func()->void: floating = false)
-	move_tween.tween_property(offset, "position:y", -CARD_SIZE.y / 5.0, delay * .4)
-	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15, delay * .3)
-	move_tween.tween_property(offset, "scale", Vector2.ONE, delay * .2)
-	return delay * .4
+	move_tween.tween_property(offset, "position:y", -CARD_SIZE.y / 5.0,
+			delay * s.card_jump_raise_fraction)
+	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15,
+			delay * s.card_jump_pulse_fraction)
+	move_tween.tween_property(offset, "scale", Vector2.ONE,
+			delay * s.card_jump_settle_fraction)
+	return delay * s.card_jump_raise_fraction
 
 func anim_spin() -> float:
 	# Mirrors anim_jump (:342) but drives rotation, so it COMPOSES with a concurrent jump

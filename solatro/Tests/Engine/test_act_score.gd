@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_act_score.gd
 # ==============================================================================
 # ACT SCORE (row_total x col_total per submit) — GameData.apply_act_score
@@ -12,7 +12,7 @@ func suite_name() -> String:
 	return "ACT SCORE"
 
 func _ready() -> void:
-	print("============ ACT SCORE TEST PASS ============")
+	TestLog.line("============ ACT SCORE TEST PASS ============")
 	behavior_section("ACT PAYOUT & GOAL RULES")
 	test_basic_multiply()
 	test_zero_side_pays_nothing()

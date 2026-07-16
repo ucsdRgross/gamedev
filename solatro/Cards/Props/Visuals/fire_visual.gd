@@ -6,6 +6,7 @@ extends PropVisual
 
 func _init() -> void:
 	art_size = Vector2(14, 18)
+	body_size = Vector2(14, 18)   # placeholder: matches placeholder art
 	color = Color(1.0, 0.45, 0.1)
 	arc_height = 24.0
 

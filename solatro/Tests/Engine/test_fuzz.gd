@@ -1,4 +1,4 @@
-extends SolatroTest
+extends TestSuite
 # res://Tests/Engine/test_fuzz.gd
 # F1 random-walk board fuzz (UNIT_TESTS_PLAN.md §8) against Board.move_stack +
 # GameData.validate(). Seeded and deterministic: on failure it prints the seed and
@@ -21,23 +21,23 @@ func suite_name() -> String:
 	return "BOARD FUZZ"
 
 func _ready() -> void:
-	print("============ BOARD FUZZ (F1) ============")
+	TestLog.line("============ BOARD FUZZ (F1) ============")
 	behavior_section("RANDOM WALK INVARIANTS")
 	if fuzz_seed == 0:
 		_rng.randomize()
 		fuzz_seed = int(_rng.seed)
 	_rng.seed = fuzz_seed
-	print("seed: %d, iterations: %d" % [fuzz_seed, iterations])
+	TestLog.line("seed: %d, iterations: %d" % [fuzz_seed, iterations])
 	run_random_walk()
 	if _fail == 0:
-		print("(fuzz seed %d)" % fuzz_seed)
+		TestLog.line("(fuzz seed %d)" % fuzz_seed)
 	finish()
 
 func fail(ctx: String, detail: String) -> void:
 	check(false, ctx, detail)
-	printerr("  seed: %d — last %d actions:" % [fuzz_seed, mini(_log.size(), LOG_TAIL)])
+	TestLog.line("  seed: %d — last %d actions:" % [fuzz_seed, mini(_log.size(), LOG_TAIL)], true)
 	for line : String in _log.slice(maxi(0, _log.size() - LOG_TAIL)):
-		printerr("    ", line)
+		TestLog.line("    " + line, true)
 
 func note(action: String) -> void:
 	_log.append(action)

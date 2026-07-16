@@ -77,6 +77,10 @@ ui_cancel={
 locale/translations=PackedStringArray("res://Locale/localization.en.translation")
 locale/translation_add_builtin_strings_to_pot=true
 
+[network]
+
+limits/debugger/max_chars_per_second=65536
+
 [physics]
 
 common/physics_jitter_fix=0.0

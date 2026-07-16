@@ -13,4 +13,14 @@ enum Mode { ORDERED, RANDOM }
 ## no point repeats until all are used, and a full batch still fills every point).
 @export var mode : Mode = Mode.ORDERED
 
+## When ON, the formation's HEIGHT tracks the live card-separation setting and its points are
+## STORED separation-agnostically in FULL-CARD normalized space (ratio 1 when separation == card
+## height — owner spec 2026-07-15): authoring the same visual pattern at any separation level
+## stores the same points. Consume via PropFormationSet.norm_to_strip (offsets_for does this):
+## the pattern always fills the same fraction of the visible top strip — the whole card at max
+## separation, squeezed into the top sliver at min. Factor =
+## SettingsManager.settings.card_separation_scale in game / the editor's separation stand-in in
+## the tool. OFF = points are fixed card-space y. Saved per formation (tunable like `mode`).
+@export var spread_by_separation : bool = false
+
 @export var points : PackedVector2Array = PackedVector2Array()
