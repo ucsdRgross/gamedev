@@ -116,25 +116,21 @@ func _build_payload() -> RunState:
 	p.card_datas = _saveable_deck
 	p.rule_datas = _saveable_rules
 	p.game_history = run.game_history.duplicate()  # entries already saveable + immutable
+	p.game_history_trimmed = run.game_history_trimmed
 	return p
 
 # Deep-copy a card array and unlink the modifier self-cycles → serialization-ready and
-# independent (the live cards keep their backrefs).
+# independent (the live cards keep their backrefs). The modifier slot list lives in
+# GameData's static per-card helpers so this path can't drift from the board save path.
 func _to_saveable_cards(cards: Array[CardData]) -> Array[CardData]:
 	var out : Array[CardData] = cards.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for card in out:
-		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
-			if mod: mod.data = null
-		for st: CardModifierStatus in card.statuses:
-			st.data = null
+		GameData.unlink_card_backrefs(card)
 	return out
 
 func _relink_cards(cards: Array[CardData]) -> void:
 	for card in cards:
-		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
-			if mod: mod.data = card
-		for st: CardModifierStatus in card.statuses:
-			st.data = card
+		GameData.relink_card_backrefs(card)
 
 func _write_payload(payload: RunState) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVE_DIR))

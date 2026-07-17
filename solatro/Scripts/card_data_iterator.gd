@@ -28,54 +28,54 @@ func _iter_next(_arg:Variant) -> bool:
 func _iter_get(_arg:Variant) -> CardData:
 	return next_card_data
 
+#flat loop (was self-recursive per empty/finished collection — review E9): one
+#iteration per collection advance, `continue` where the recursion re-entered
 func should_continue() -> bool:
-	if collection_index >= collections.size():
-		return false
-	
-	var current_coll : Variant = collections[collection_index]
-	
-	# Handle null/empty collections
-	if not current_coll:
-		collection_index += 1
-		return should_continue()
+	while collection_index < collections.size():
+		var current_coll : Variant = collections[collection_index]
 
-	# Handle 2D Arrays (Array[ArrayCardData])
-	if current_coll is Array[ArrayCardData] and (current_coll as Array).size() > 0:
-		while true:
-			if current_col < (current_coll as Array).size():
-				var col : Array[CardData] = current_coll[current_col].datas
-				if current_row < col.size():
-					next_card_data = col[current_row]
-					current_col += 1
-					is_row_empty = false
-					return true
-				else:
-					current_col += 1
-			else:
-				if is_row_empty: 
-					break
-				current_row += 1
-				current_col = 0
-				is_row_empty = true
-		
-		# Move to next collection
-		collection_index += 1
-		current_row = 0
-		current_col = 0
-		is_row_empty = true
-		return should_continue()
-	
-	# Handle 1D Arrays (Array[CardData])
-	elif current_coll is Array[CardData]:
-		if current_col < (current_coll as Array).size():
-			next_card_data = current_coll[current_col]
-			current_col += 1
-			return true
-		else:
+		# Handle null/empty collections
+		if not current_coll:
 			collection_index += 1
-			current_col = 0
-			return should_continue()
+			continue
 
-	# Skip unrecognized types
-	collection_index += 1
-	return should_continue()
+		# Handle 2D Arrays (Array[ArrayCardData])
+		if current_coll is Array[ArrayCardData] and (current_coll as Array).size() > 0:
+			while true:
+				if current_col < (current_coll as Array).size():
+					var col : Array[CardData] = current_coll[current_col].datas
+					if current_row < col.size():
+						next_card_data = col[current_row]
+						current_col += 1
+						is_row_empty = false
+						return true
+					else:
+						current_col += 1
+				else:
+					if is_row_empty:
+						break
+					current_row += 1
+					current_col = 0
+					is_row_empty = true
+
+			# Move to next collection
+			collection_index += 1
+			current_row = 0
+			current_col = 0
+			is_row_empty = true
+			continue
+
+		# Handle 1D Arrays (Array[CardData])
+		elif current_coll is Array[CardData]:
+			if current_col < (current_coll as Array).size():
+				next_card_data = current_coll[current_col]
+				current_col += 1
+				return true
+			else:
+				collection_index += 1
+				current_col = 0
+				continue
+
+		# Skip unrecognized types
+		collection_index += 1
+	return false

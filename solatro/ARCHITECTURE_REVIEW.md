@@ -466,6 +466,7 @@ Guarded by `test_game_headless` (cancel + game-over-rewind semantics) and the
   entirely, makes saves cheap, and you already have a single mutation choke point after D2.
 
 - [ ] **D7. Delete the dead code.** Roughly a third of the audited lines are commented-out
+  **DONE for the audited blocks 2026-07-16 (P11, owner overrode the keep-as-reference ruling):** implemented-elsewhere blocks removed; unimplemented-mechanic blocks replaced with TODO comments (see handoff P11 STATUS for the file list). Ruling for future code: TODO if unimplemented, delete if implemented.
   history: [pip_comparator.gd:199-265](Scripts/pip_comparator.gd:199) (entire old class),
   the disabled `Scoring.HalfStepRank`/`MultiSuit` match arms throughout pip_comparator,
   [card_visual.gd:329-365](Cards/card_visual.gd:329),
@@ -474,7 +475,7 @@ Guarded by `test_game_headless` (cancel + game-over-rewind semantics) and the
   [card_modifier.gd:108-147](Cards/card_modifier.gd:108), `skill_hungry_hippo.gd`'s gutted
   `on_card_dropped_on`. Git already remembers it. This alone cuts several hundred lines.
 
-- [ ] **D8. `PipComparator`'s speculative abstractions.** `get_rank_profile`,
+- [x] **D8. `PipComparator`'s speculative abstractions.** `get_rank_profile`,
   `get_suit_profile`, `get_rank_split_bounds`, `_get_suit_objects` are all `match` statements
   with only a default arm — they exist for commented-out future card types. Either implement
   those types or collapse each to its one-line default; the "decoupled closure matrix"
@@ -525,63 +526,78 @@ Guarded by `test_game_headless` (cancel + game-over-rewind semantics) and the
 ## 4. EFFICIENCY & LINE-COUNT REDUCTIONS
 
 - [ ] **E1. `run_all_mods` fires a full `on_anything` pass after every event**
+  **PARTIAL 2026-07-16 (P1):** implementer-cache gating skips walks for unimplemented hooks, and the on_anything tail fires only when the event invoked a mod (owner ruling). E1a (batching skill_active_check) was REJECTED by the owner (P2) — mid-event on_active/on_deactive timing is intentional.
   ([card_environment.gd:42-44](Scripts/card_environment.gd:42)), and every mod call is
   followed by a full `skill_active_check()` walk (line 37, 41). One user action can trigger
   dozens of complete board scans. Cache the flattened card list once per dispatch (also
   fixes B10), and only run `skill_active_check` once per event, not per mod.
 
-- [ ] **E2. Comparator dispatch is O(all cards) per comparison.**
+- [x] **E2. Comparator dispatch is O(all cards) per comparison.**
   `PipComparator.compare_ranks/suits` call `return_first_compare_mod_result`, which walks
   every card in play *per pair compared*. Scoring compares pairs in nested loops
   (`is_flush`, straight scans, sorts) → scoring one board is O(cards² × board). Fix: at
   the start of a scoring pass, collect the (rare) mods implementing
   `on_compare_ranks/suits` once into an array and consult only those; skip the walk
   entirely when the array is empty (the common case).
+  **DONE (pre-2026-07-16, doc was stale):** implemented as the SE1 compare-mod cache —
+  `CardEnvironment._compare_implementers` keyed on `[state id, state.revision]`
+  (card_environment.gd:60-88).
 
 - [x] **E3. `_physics_process` rebuild churn** (see D5). `set_card_zones` clears and
   refills three dictionaries and touches every Control 60×/sec even when nothing moved.
   This is the biggest steady-state cost in the project.
   **DONE with D5:** rebuilds only run on `board_changed` (revision bump), coalesced per frame.
 
-- [ ] **E4. `find_data_vec3` linear-scans the whole board** and is called repeatedly per
+- [x] **E4. `find_data_vec3` linear-scans the whole board** and is called repeatedly per
+  **DONE 2026-07-16 (P3):** lazy revision-keyed position index (GameData.position_of); locate/find_data_vec3/is_data_topmost are O(1). I4 added to validate(); fuzz suite cross-checks every position per action.
   move (`move_data_to_coord` calls it, callers call it first too — `move_data_ontop_data`
   computes it, then `move_data_to_coord` computes the source again). Pass coords through
   instead of re-finding, or maintain a `CardData -> Vector3i` dictionary updated on move.
 
-- [ ] **E5. `save_state` deep-duplicates the entire game state after every single action.**
+- [x] **E5. `save_state` deep-duplicates the entire game state after every single action.**
+  **PARTIAL 2026-07-16 (P6, E5-lite):** history capped (MAX_UNDO_HISTORY=100 hard, undo_cap=25 mod-adjustable) so memory + save payload are bounded; the per-action deep-copy itself remains (D6 command log still the real fix).
   With big decks this is the per-click hitch. Superseded by D6; short-term, duplicate lazily
   (only when undo is pressed... not possible — so D6 is the real fix) or cap history length.
 
-- [ ] **E6. `set_card_zone` / `update_card_zone_visuals` duplicate their body for
+- [x] **E6. `set_card_zone` / `update_card_zone_visuals` duplicate their body for
   index 0 vs 1..n** ([play_area.gd:158-182](UI/play_area.gd:158)): the "map the zone card"
   block and the "map row cards" block are identical except for the data source. Extract
   `bind_control(c: Control, d: CardData)`; same for the visual settings. ~40 lines saved,
   one place to fix S5.
+  **DONE 2026-07-16 (efficiency audit):** the mapping half landed as
+  `PlayArea._bind_slot`. The visual-settings half is NOT extracted — header vs row
+  sizing/focus rules have since diverged and are no longer identical.
 
-- [~] **E7. `game_data.gd:print_board` duplicates the upper/lower dump** — extract
+- [x] **E7. `game_data.gd:print_board` duplicates the upper/lower dump** — extract
   `_zone_to_csv(types, zone)` and call twice. `score_row`/`score_col` in game.gd are also
   near-identical → one `score_line(result, score_zone, index)` after B1 is fixed.
   **PARTIAL 2026-07-10:** the score half landed as `Game.score_line(result, is_row, zone,
   index)`; the `print_board` duplication remains.
+  **DONE 2026-07-16 (efficiency audit):** `print_board` now calls `_zone_to_csv` twice.
 
-- [ ] **E8. `BoosterTemplate` repeats the gather-and-broadcast pattern 10×**
+- [x] **E8. `BoosterTemplate` repeats the gather-and-broadcast pattern 10×**
+  **DONE 2026-07-16 (P5):** one _gather helper, broadcasts awaited (callers ripple await; no-suspend coroutines stay synchronous).
   ([booster_template.gd](Cards/Types/booster_template.gd)) — `create_one_choice` and
   `view_choices` each list all five `get_possible_X` + `run_all_mods("on_get_possible_x")`
   pairs. One helper returning a struct/dictionary of the five arrays halves the file. Note
   also: those `run_all_mods` calls aren't awaited — results may be consumed before async
   mods finish; make the helper `await`.
 
-- [ ] **E9. `CardDataIterator.should_continue` recurses** for every empty/finished
+- [x] **E9. `CardDataIterator.should_continue` recurses** for every empty/finished
   collection; a `while` loop is cheaper and immune to deep recursion. Cosmetic, but it's
   also the file you'll touch for B10/E1 anyway.
+  **DONE 2026-07-16 (efficiency audit):** flat `while` loop, identical branch structure.
 
-- [ ] **E10. GameData scalar setters emit `state_changed` unconditionally**
+- [x] **E10. GameData scalar setters emit `state_changed` unconditionally**
   ([game_data.gd:6-25](Scripts/game_data.gd:6)) → five HUD label updates per emission,
   multiple emissions per scoring pass. Guard `if value == goal: return` per setter, or
   batch with `call_deferred`-style single emit per frame.
+  **DONE 2026-07-16 (efficiency audit):** same-value guard on all five setters.
 
-- [ ] **E11. Editor-only, low priority:** `card_visual.gd`'s bake tool `get_v_idx` lambda
+- [x] **E11. Editor-only, low priority:** `card_visual.gd`'s bake tool `get_v_idx` lambda
   is O(V²) vertex lookup; use a `Dictionary[Vector2i, int]` of quantized positions.
+  **DONE 2026-07-16 (efficiency audit):** `Dictionary[Vector2, int]` (exact keys are safe —
+  every query is bit-identical to its grid_pts source).
 
 ---
 
@@ -711,7 +727,12 @@ off-board-safe, fixing ZoneAdder's latent discard-after-pop crash). Also 2026-07
 dispatch de-statics — `run_all_mods` / `return_first_*` / `skill_active_check` are now
 INSTANCE methods iterating `CardDataIterator.new(self)`; `CURRENT` remains only as the
 "environment on screen" pointer read at boundaries (mod accessors, PipComparator, UI).
-Remaining: (2) position index, (5) delete the Vector3i adapters when convenient.
+Remaining: (5) delete the Vector3i adapters when convenient.
+**STATUS 2026-07-16:** (2) DONE — position index landed as a LAZY revision-keyed cache
+(GameData.position_of, invalidated by the same bump-after-consistency rule as the SE1
+compare cache; move_stack refreshes once mid-mutation after extraction). I4 lives in
+GameData.validate(); test_fuzz cross-checks every card's position against an
+independent scan after every action.
 
 ---
 
@@ -781,7 +802,7 @@ original B/S/D/E numbering stable.
   fire. Decide explicitly whether cards in the draw/discard decks should be "active" for
   Global (currently they are — the iterator includes both decks).
 
-- [ ] **N6. Every `Game` instantiates ALL nine test decks.**
+- [x] **N6. Every `Game` instantiates ALL nine test decks.**
   [game.gd:9](Levels/game.gd:9) `@export var deck : Deck = Deck.new()` + `Deck`'s member
   initializers ([deck.gd](Decks/deck.gd)) build `rules1` and `deck1`–`deck9` — hundreds of
   CardData/Pip/Modifier resources — per game, per run, only for `get_deck()` to return one
@@ -816,6 +837,9 @@ original B/S/D/E numbering stable.
   **PARTIAL 2026-07-10:** the game-state case is fixed (`GameView._bind_state` disconnects
   the old state on every swap); `SettingsManagerClass.settings` and `CardVisual.with_data`
   still open.
+  **DONE 2026-07-16 (efficiency audit):** both remaining cases fixed —
+  `SettingsManagerClass.settings` setter disconnects the old resource, and the
+  `CardVisual.data` setter now owns the connect/disconnect pair (`with_data` just assigns).
 - [x] **N10. No persistence:** resolved — runs now persist as `RunState`
   (Scripts/run_state.gd) via the `RunManager` autoload (Scripts/run_manager.gd) to
   `user://run_save/` (run.tres + the worldgen map bake). Loss clears the save; the menu's
@@ -831,14 +855,21 @@ original B/S/D/E numbering stable.
 
 ### New efficiency / line-count items
 
-- [ ] **N-E1. `Decks/deck.gd` is ~500 lines of copy-pasted builder chains.** A tiny
+- [x] **N-E1. `Decks/deck.gd` is ~500 lines of copy-pasted builder chains.** A tiny
   data-driven factory (`for suit in 4: for rank in 13: ...`, plus a
   `standard(suit, rank, mods...)` helper) reproduces deck1–deck9 in ~60 lines, and makes
   N6's lazy construction trivial.
-- [ ] **N-E2. `CardVisual._process` calls `CardEnvironment.get_current_game()` (and a
+  **ALREADY DONE (found 2026-07-16, doc was stale):** deck.gd is loop-built via `_card()`
+  + per-deck `_build_deckN()` funcs (271 lines, 13 decks). N6's eager-construction half
+  remains — see AUDIT_PROPOSALS_HANDOFF.md P4.
+- [~] **N-E2. `CardVisual._process` calls `CardEnvironment.get_current_game()` (and a
   dictionary lookup) every frame per card** ([card_visual.gd:231-237](Cards/card_visual.gd:231))
   — cache the play_area reference on `_ready`/context change; the existence check belongs
   to the D5 dirty-flag rework anyway.
+  **PARTIAL 2026-07-16 (efficiency audit):** the doubled `_game_view()` call is collapsed
+  to one; `get_current_game()` itself is a static-var read (cheap), and the per-frame
+  `data_ui` membership check IS the liveness test — moving it to a signal belongs to the
+  D5-style rework, deferred.
 
 ---
 

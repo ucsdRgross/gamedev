@@ -56,6 +56,13 @@ func _run_iteration(iter: int, rng: RandomNumberGenerator) -> void:
 	var errs := _diff_run(original, loaded)
 	check(errs.is_empty(), "fuzz iter %d round-trips the whole document" % iter,
 			"\n    " + "\n    ".join(errs))
+	# Teardown discipline (see test_leak_canary.gd): both documents are dropped here, and
+	# their run decks carry CardData<->modifier RefCounted cycles Godot never collects.
+	# History entries are already in saveable (unlinked) form on both sides.
+	for deck: Array[CardData] in [original.card_datas, original.rule_datas,
+			loaded.card_datas, loaded.rule_datas]:
+		for card in deck:
+			GameData.unlink_card_backrefs(card)
 
 # =============================================================================
 # RANDOM BUILDERS
@@ -80,7 +87,9 @@ func _rand_run_state(rng: RandomNumberGenerator) -> RunState:
 	# The undo history: several fully-random boards in saveable form (as Game stores them).
 	rs.game_history = [] as Array[GameData]
 	for i in rng.randi_range(0, 4):
-		rs.game_history.append(_rand_game_data(rng).to_saveable())
+		var live := _rand_game_data(rng)
+		rs.game_history.append(live.to_saveable())
+		live.unlink_modifier_backrefs()  # the live board is dropped here — break its cycles
 	return rs
 
 func _rand_card_array(rng: RandomNumberGenerator, n: int, stage: CardData.Stage) -> Array[CardData]:

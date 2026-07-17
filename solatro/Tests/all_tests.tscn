@@ -23,6 +23,7 @@
 [ext_resource type="PackedScene" path="res://Tests/UI/test_ui_props.tscn" id="20_uiprops"]
 [ext_resource type="PackedScene" path="res://Tests/Interaction/test_interaction.tscn" id="21_inter"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_visual_layers.tscn" id="22_vislay"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_leak_canary.tscn" id="23_leak"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -71,3 +72,5 @@ speed_base_delay = 0.1
 [node name="TestVisualLayers" parent="." unique_id=1829713258 instance=ExtResource("22_vislay")]
 
 [node name="TestE2ERun" parent="." unique_id=1177089969 instance=ExtResource("16_e2e")]
+
+[node name="TestLeakCanary" parent="." unique_id=1594031177 instance=ExtResource("23_leak")]

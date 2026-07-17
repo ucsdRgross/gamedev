@@ -7,8 +7,13 @@ const SAVE_PATH := "user://settings.tres"
 
 @export var settings: PlayerSettings:
 	set(value):
+		#N9 idiom: drop the old resource's connection so re-assignment can't double-fire
+		#or keep the replaced settings object reachable
+		if settings and settings.settings_changed.is_connected(on_settings_changed):
+			settings.settings_changed.disconnect(on_settings_changed)
 		settings = value
-		settings.settings_changed.connect(on_settings_changed)
+		if settings:
+			settings.settings_changed.connect(on_settings_changed)
 
 func _init() -> void:
 	if ResourceLoader.exists(SAVE_PATH):

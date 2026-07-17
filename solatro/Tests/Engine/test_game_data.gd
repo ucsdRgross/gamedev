@@ -77,6 +77,9 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 			"restore_runtime() rebuilds a multi-entry row gutter")
 	check(restored.goal == 314 and restored.total_score == 271,
 			"scalar stages survive the round-trip")
+	# Teardown discipline (see test_leak_canary.gd): the live states drop here.
+	s.unlink_modifier_backrefs()
+	restored.unlink_modifier_backrefs()
 
 func test_saveable_unlinks_backrefs_restore_relinks() -> void:
 	var s := make_state()
@@ -93,6 +96,8 @@ func test_saveable_unlinks_backrefs_restore_relinks() -> void:
 	var r_card := restored.lower_zone[0].datas[0]
 	check(r_card.skill and r_card.skill.data == r_card,
 			"restore_runtime() relinks each backref to the restored card")
+	s.unlink_modifier_backrefs()
+	restored.unlink_modifier_backrefs()
 
 func test_duplicate_state_aliasing() -> void:
 	var s := make_state()
@@ -111,11 +116,14 @@ func test_duplicate_state_aliasing() -> void:
 	# mutating the copy's gutter does not touch the original
 	copy.scores_col[0].exponent = 99
 	check(s.scores_col[0].exponent == 12, "copy and original gutters are independent")
+	s.unlink_modifier_backrefs()
+	copy.unlink_modifier_backrefs()
 
 func test_validate_clean_board() -> void:
 	var s := make_state()
 	var v := s.validate()
 	check(v.is_empty(), "a well-formed board validates clean", str(v))
+	s.unlink_modifier_backrefs()
 
 func test_validate_reports_injected_violations() -> void:
 	# I2: zone / zone_type length mismatch
@@ -129,6 +137,8 @@ func test_validate_reports_injected_violations() -> void:
 	s2.draw_deck.append(dupe)
 	check(s2.validate().any(func(x: String) -> bool: return x.begins_with("I1")),
 			"validate() reports an I1 duplicate-card violation")
+	s1.unlink_modifier_backrefs()
+	s2.unlink_modifier_backrefs()
 
 func test_pack_unpack_edge_values() -> void:
 	# round-trip an empty array and a large-exponent value through the packed form. Read back

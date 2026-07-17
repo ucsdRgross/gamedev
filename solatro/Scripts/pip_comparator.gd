@@ -8,14 +8,9 @@ static func get_rank_profile(r: PipRank) -> Array[float]:
 	
 	var rv := float(r.value)
 	
-	# Clean pattern matching separates standard numerals from half-step cards
-	match r:
-		#var a when a is Scoring.HalfStepRank:
-			#keys.append(floor(rv))
-			#keys.append(ceil(rv))
-		_:
-			keys.append(rv)
-			
+	# TODO(half-step ranks): a fractional rank (e.g. 2.5) should bucket into BOTH
+	# neighbors: keys.append(floor(rv)); keys.append(ceil(rv)) — no HalfStepRank class yet.
+	keys.append(rv)
 	return keys
 	
 ## Inspects suit configurations dynamically to determine structural category mapping keys.
@@ -24,18 +19,11 @@ static func get_suit_profile(s: PipSuit) -> Array[String]:
 	var keys: Array[String] = []
 	if not s: return keys
 	
-	# Pattern match directly against your specialized class profiles
-	match s:
-		#var m when m is Scoring.MultiSuit:
-			## If it's a multi-suit card, it split-populates every allowed target key signature concurrently
-			#for sub_suit in m.allowed_suits:
-				#if sub_suit: keys.append(sub_suit.get_str())
-		_:
-			# Default path for static standard single-suit cards
-			var base_str := s.get_str()
-			if not base_str.strip_edges().is_empty():
-				keys.append(base_str)
-				
+	# TODO(multi-suit / wildcard): a multi-suit card should append EVERY allowed
+	# sub-suit's key concurrently — no MultiSuit class yet.
+	var base_str := s.get_str()
+	if not base_str.strip_edges().is_empty():
+		keys.append(base_str)
 	return keys
 
 # ==============================================================================
@@ -46,8 +34,8 @@ static func get_suit_profile(s: PipSuit) -> Array[String]:
 static func is_scorable(card: CardData) -> bool:
 	if not card or not card.rank or not card.suit: 
 		return false
-	#if card.rank is Scoring.UnrankedStoneRank or card.suit is Scoring.UnsuitedStoneSuit:
-		#return false
+	# TODO(stone pips): dedicated unranked/unsuited Stone pip classes would be filtered
+	# here once they exist (today Stone cards are excluded by the null checks above).
 	return true
 
 
@@ -109,11 +97,8 @@ static func is_rank_same(r1: PipRank, r2: PipRank) -> bool:
 	if not is_nan(diff) and is_equal_approx(diff, 0.0): 
 		return true
 		
-	#match [r1, r2]:
-		#[var a, var b] when a is Scoring.HalfStepRank or b is Scoring.HalfStepRank:
-			#var v1: float = float(a.value) if "value" in a else 0.0
-			#var v2: float = float(b.value) if "value" in b else 0.0
-			#if is_equal_approx(abs(v1 - v2), 0.5): return true
+	# TODO(half-step ranks): a half-step rank should also equal both neighbors
+	# (|v1 - v2| == 0.5) — no HalfStepRank class yet.
 	return false
 
 
@@ -123,8 +108,7 @@ static func get_rank_split_bounds(rank: PipRank) -> Array[float]:
 	if not rank or not ("value" in rank): return []
 	var val: float = float(rank.value)
 	
-	#if rank is Scoring.HalfStepRank or is_equal_approx(fposmod(val, 1.0), 0.5):
-		#return [floor(val), ceil(val)]
+	# TODO(half-step ranks): fractional values should split-return [floor(val), ceil(val)].
 	return [val]
 
 
@@ -139,12 +123,8 @@ static func is_rank_next_to(r1: PipRank, r2: PipRank) -> bool:
 	if not is_nan(diff) and is_equal_approx(diff, 1.0):
 		return true
 		
-	#match [r1, r2]:
-		#[var a, var b] when a is Scoring.HalfStepRank or b is Scoring.HalfStepRank:
-			#var v1: float = float(a.value) if "value" in a else 0.0
-			#var v2: float = float(b.value) if "value" in b else 0.0
-			#if is_equal_approx(v1 - v2, 0.5) or is_equal_approx(v1 - v2, 1.5): 
-				#return true
+	# TODO(half-step ranks): a half-step between the two (delta 0.5 or 1.5) should also
+	# count as adjacent — no HalfStepRank class yet.
 	return false
 
 
@@ -185,78 +165,7 @@ static func get_scorable_value(r: PipRank, wrap_ace_high: bool = false) -> float
 static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:
 	var results: Array[PipSuit] = []
 	if not suit: return results
-	#if suit is Scoring.MultiSuit:
-		#for s in suit.allowed_suits: if s: results.append(s)
-	#else:
-		#results.append(suit)
+	# TODO(multi-suit): expand a MultiSuit into all its allowed sub-suits here.
 	results.append(suit)
 	return results
 
-
-
-#class_name PipComparator
-## Checks card pips against each other 
-#
-#static func compare_suits(s1:PipSuit, s2:PipSuit) -> float:
-	#var mod_result := await Game.return_first_compare_mod_result(&"on_compare_suits", s1, s2)
-	#if not is_nan(mod_result): return mod_result
-	#match [s1, s2]:
-		#[var a, var b] when a is PipSuitStandard and b is PipSuitStandard:
-			#return a.value - b.value
-	#return NAN
-#
-#static func compare_ranks(r1:PipRank, r2:PipRank) -> float:
-	#var mod_result := await Game.return_first_compare_mod_result(&"on_compare_ranks", r1, r2)
-	#if not is_nan(mod_result): return mod_result
-	#match [r1, r2]:
-		#[var a, var b] when a is PipRankNumeral and b is PipRankNumeral:
-			#return a.value - b.value
-	#return NAN
-	
-#to implement
-#static func is_rank_next_to(r1:PipRank, r2:PipRank) -> bool
-#static func is_suit_same(s1:PipSuit, s2:PipSuit) -> bool
-
-
-
-# 1. Before running default comparisons, checks all card effects first
-# 2. Checks all cards for if comparison is blacklisted by an effect effect first
-# 3. Then checks all cards again for if comparison is whitelisted
-# In both cases first effect that returns true determines determines the comparison result
-
-#func can_add_card(stack : Card, to_stack : Card) -> bool:
-	#
-	#if stack.top_card == to_stack and to_stack == held_card:
-		#return true
-	#if true: #not stack.top_card:
-		#if true:#stack.stack_limit < 0 or (stack.stack_limit >= to_stack.get_stack_size()):
-			#if stack.is_zone:
-				#return true
-			#if stack.data.suit.value != to_stack.data.suit.value:
-				#if to_stack.data.rank.value == stack.data.rank - 1:
-					#return true
-				#if to_stack.data.rank == stack.data.rank + 1:
-					#return true
-	#return false
-#
-#func can_pickup_stack(stack : Card, to_stack : Card) -> bool:
-	##return true
-	#if stack.is_zone:
-		#return true
-	#if stack.data.suit != to_stack.data.suit:
-		#if to_stack.data.rank == stack.data.rank - 1:
-			#return true
-		#if to_stack.data.rank == stack.data.rank + 1:
-			#return true
-	#return false
-
-# use CardEnvironment.CURRENT.run_all_mods
-#
-#func run_all_mods(function: StringName, ...params:Array) -> void:
-	#for data in CardDataIterator.new():
-		#for mod : CardModifier in [data.type, data.stamp, data.skill]:
-			#if mod:
-				#await Callable(mod, function).callv(params)
-#
-#func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	#await run_all_mods(&"on_trigger", triggered_data, triggered_mod)

@@ -108,17 +108,10 @@ static func zone(state: GameData, x: int) -> Array[ArrayCardData]:
 	return state.upper_zone if x == 0 else state.lower_zone
 
 ## Board position of a card: (x, col, row); headers get row -1; MIN if not on board.
+## O(1): reads GameData's lazy position index (§5.4), which rebuilds itself whenever
+## state.revision moved — the same invalidation key as the SE1 compare-mod cache.
 static func locate(state: GameData, data: CardData) -> Vector3i:
-	var i := state.upper_zone_type.find(data)
-	if i > -1: return Vector3i(0, i, -1)
-	i = state.lower_zone_type.find(data)
-	if i > -1: return Vector3i(1, i, -1)
-	for zone_x in 2:
-		var z := zone(state, zone_x)
-		for c in z.size():
-			var row := z[c].datas.find(data)
-			if row > -1: return Vector3i(zone_x, c, row)
-	return Vector3i.MIN
+	return state.position_of(data)
 
 ## Adapter from the legacy Vector3i destination convention (z < 0 append,
 ## z == 0 column start, z > 0 insert above card at z-1). Null when unmappable.
@@ -185,6 +178,10 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 	var src_cutoff : Array[CardData] = src_col.datas.slice(src.z + count)
 	src_col.datas.resize(src.z)
 	src_col.datas.append_array(src_cutoff)
+	#the extraction shifted rows without a revision bump (the bump comes AFTER the
+	#insert, per the guidelines) — invalidate so the post-extraction locate below
+	#rebuilds the position index from the current arrays
+	state.invalidate_pos_index()
 	var dest_col : ArrayCardData
 	var insert_row : int
 	match dest.kind:
@@ -247,5 +244,8 @@ static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone
 	if index < 0 or index >= zone_types.size() or index >= zone_cols.size():
 		return []
 	zone_types.remove_at(index)
+	#pop BEFORE the bump: board_changed listeners run synchronously inside the bump and
+	#must see types/columns already back in lockstep (the old order bumped mid-mutation)
+	var orphans : Array[CardData] = zone_cols.pop_at(index).datas
 	state.revision += 1
-	return zone_cols.pop_at(index).datas
+	return orphans

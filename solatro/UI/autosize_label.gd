@@ -40,13 +40,16 @@ func _calculate_best_font_size() -> int:
 	var available_height := size.y
 
 	var font := get_theme_font("font")
-	var font_size := font_size_max
-
-	while font_size > font_size_min:
-		var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	# Largest size that fits (fit is monotonic in size): binary search, ~7 string
+	# measurements instead of one per size stepping down — this runs on every resize.
+	var lo := font_size_min
+	var hi := font_size_max
+	while lo < hi:
+		var mid := (lo + hi + 1) >> 1
+		var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, mid)
 		if text_size.x <= available_width and text_size.y <= available_height:
-			break
-		
-		font_size -= 1
+			lo = mid
+		else:
+			hi = mid - 1
 
-	return max(font_size_min, min(font_size_max, font_size))
+	return max(font_size_min, min(font_size_max, lo))

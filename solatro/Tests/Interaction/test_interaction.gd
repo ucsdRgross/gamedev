@@ -44,7 +44,7 @@ var selections : Array[CardData] = []
 func _ready() -> void:
 	# Runs before UI PROPS / VISUAL LAYERS / E2E (they wait on this) — exclude them to avoid a
 	# deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "E2E RUN"])
+	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "E2E RUN", "LEAK CANARY"])
 	TestLog.line("============ INTERACTION TEST PASS ============")
 	backup_real_save()
 	_backup_settings()
@@ -74,7 +74,11 @@ func _ready() -> void:
 # FIXTURE — one real GameView on a frozen test deck, board dealt by two Nexts.
 # ==============================================================================
 func _setup_view() -> void:
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	var src_cards := TestDecks.seeded_deck()
+	var src_rules := TestDecks.standard_rules()
+	var run := RunManager.new_run(src_cards, src_rules)
+	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
+	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -90,8 +94,16 @@ func _setup_view() -> void:
 	await frames(2)
 
 func _teardown_view() -> void:
+	# Teardown discipline (see test_leak_canary.gd): the Game frees with the view and the
+	# run doc drops with clear_save — break their CardData<->modifier cycles.
+	var doomed_state : GameData = game.state
+	var run : RunState = RunManager.run
 	view.queue_free()   # frees its Game child too
 	await frames(1)
+	doomed_state.unlink_modifier_backrefs()
+	if run:
+		unlink_cards(run.card_datas)
+		unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	# join any in-flight background save BEFORE clearing, then put reality back
 	RunManager._shutdown_saver()
@@ -116,6 +128,16 @@ func _restore_settings() -> void:
 # ==============================================================================
 # INPUT SYNTHESIS — everything through Input.parse_input_event + flush, so the
 # full pipeline (emulation, hover, focus routing) runs like a real device.
+#
+# COORDINATES: parse_input_event takes WINDOW coordinates, but every rect we
+# measure (get_global_rect) is in CANVAS coordinates. In a desktop window the
+# two coincide, so raw positions happen to work — but headless the window is
+# 0x0 (Godot clamps the root to 100x100) while canvas_items stretch keeps the
+# canvas at 1152 wide, so the window->canvas inverse transform blows raw canvas
+# positions ~11x past every control and no positioned click ever lands (all 10
+# position-based checks failed headless, 2026-07-16). to_window() maps canvas ->
+# window via the root's final transform; identity in a normal window, so this
+# is correct everywhere, not a headless special case.
 # ==============================================================================
 func frames(n: int) -> void:
 	for _i : int in n:
@@ -133,25 +155,32 @@ func send(ev: InputEvent) -> void:
 	Input.flush_buffered_events()
 	await get_tree().process_frame
 
+## Canvas -> window coordinates (see COORDINATES above). All the positioned
+## event builders below take canvas positions and convert here.
+func to_window(pos: Vector2) -> Vector2:
+	return get_viewport().get_final_transform() * pos
+
 func mouse_move_to(pos: Vector2) -> void:
+	var wpos := to_window(pos)
 	var mm := InputEventMouseMotion.new()
-	mm.position = pos
-	mm.global_position = pos
+	mm.position = wpos
+	mm.global_position = wpos
 	await send(mm)
 
 func mouse_click(pos: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
 	await mouse_move_to(pos)   # hover first: selection requires the hovered control
+	var wpos := to_window(pos)
 	var down := InputEventMouseButton.new()
 	down.button_index = button
 	down.pressed = true
-	down.position = pos
-	down.global_position = pos
+	down.position = wpos
+	down.global_position = wpos
 	await send(down)
 	var up := InputEventMouseButton.new()
 	up.button_index = button
 	up.pressed = false
-	up.position = pos
-	up.global_position = pos
+	up.position = wpos
+	up.global_position = wpos
 	await send(up)
 
 func key_tap(keycode: Key) -> void:
@@ -177,14 +206,15 @@ func joy_tap(button: JoyButton) -> void:
 	await send(up)
 
 func touch_tap(pos: Vector2) -> void:
+	var wpos := to_window(pos)
 	var down := InputEventScreenTouch.new()
 	down.index = 0
-	down.position = pos
+	down.position = wpos
 	down.pressed = true
 	await send(down)
 	var up := InputEventScreenTouch.new()
 	up.index = 0
-	up.position = pos
+	up.position = wpos
 	up.pressed = false
 	await send(up)
 

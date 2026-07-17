@@ -72,6 +72,14 @@ func make_game() -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
+## Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier RefCounted
+## cycles before dropping the Game, or every fixture leaks until exit. History snapshots
+## are already in saveable (unlinked) form.
+func free_game(g: Game) -> void:
+	g.state.unlink_modifier_backrefs()
+	CardEnvironment.CURRENT = null
+	g.free()
+
 func lower(g: Game, col: int) -> Array[CardData]:
 	return g.state.lower_zone[col].datas
 
@@ -88,7 +96,7 @@ func test_command_guard_blocks_input() -> void:
 	check(g.save_history.size() == history_before and g.submits_used == used_before,
 			"submit() is a no-op while processing (no history/act change)")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 func test_try_grab_returns_stack() -> void:
 	var g := make_game()
@@ -102,7 +110,7 @@ func test_try_grab_returns_stack() -> void:
 	check((await g.try_grab(upper_card)).is_empty(),
 			"try_grab rejects an upper-zone card (grabber is lower-only)")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 func test_try_place_moves_and_commits() -> void:
 	var g := make_game()
@@ -129,7 +137,7 @@ func test_try_place_moves_and_commits() -> void:
 	check(g.save_history.size() == history_before + 1, "legal place commits exactly one save")
 	check(g.state.validate().is_empty(), "board still validates after the move")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 func test_undo_reverts_state_and_history() -> void:
 	var g := make_game()
@@ -153,7 +161,7 @@ func test_undo_reverts_state_and_history() -> void:
 	check_impl(undone.suit != null and undone.suit.data == undone,
 			"undo relinks the suit back-reference (suit.data == its card)")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 ## submits_used lives on GameData so history snapshots carry it: undoing across a Submit must
 ## rewind the act count together with the board (owner bug report 2026-07-12 — the old
@@ -168,7 +176,7 @@ func test_undo_rewinds_act_count() -> void:
 	check(g.save_history[-1].submits_used == 0,
 			"the restored snapshot itself carries the rewound act count")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 ## "The player pressing Undo" mid-scoring: a rules-card probe that calls game.undo() from
 ## inside the scoring cascade (headless resolves in one await chain, so the press can only
@@ -209,7 +217,7 @@ func test_undo_cancels_resolving_submit() -> void:
 	check(not g.act_cancelled, "the cancel flag is consumed by the restore")
 	check(g.state.validate().is_empty(), "restored board validates")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 ## Undo at the win/lose screen dismisses the outcome (show_unresolved) and rewinds the
 ## final Submit: the act comes back, input unlocks, and nothing was banked (fame only
@@ -238,7 +246,7 @@ func test_undo_at_game_over_rewinds_final_submit() -> void:
 	await g.submit()
 	check(resolved.size() == 2, "re-submitting after the rewind resolves the show again")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 ## Checklist 0.4's other half: add_deck deep-duplicates the saved deck into the show; the
 ## duplicate must remap (not share or drop) every suit's back-reference.
@@ -254,8 +262,12 @@ func test_add_deck_relinks_suit_backrefs() -> void:
 	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
 			"deck size %d" % g.state.draw_deck.size())
 	Main.save_info = prev_save_info
+	# The fallback built the Game's own Deck resource's starter deck + rules — those source
+	# cards (not the duplicates on the board) carry their own cycles and drop with the Game.
+	for card : CardData in g.deck.get_deck() + g.deck.get_rules():
+		GameData.unlink_card_backrefs(card)
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 func test_score_line_headless_mutates_data() -> void:
 	var g := make_game()
@@ -271,7 +283,7 @@ func test_score_line_headless_mutates_data() -> void:
 	await g.score_line(r, false, [] as Array, 0)  # col path
 	check(g.state.col_total == 7, "score_line adds to col_total headless")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 func test_submit_headless_full_act() -> void:
 	var g := make_game()
@@ -289,4 +301,4 @@ func test_submit_headless_full_act() -> void:
 			"gutters cleared after the act")
 	check(g.state.validate().is_empty(), "board validates after submit")
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)

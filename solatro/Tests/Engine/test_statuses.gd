@@ -46,6 +46,7 @@ func test_merge_stacking() -> void:
 			str(c.statuses))
 	check(c.statuses[0].stacks == 3, "merged stacks add (1 + 2 == 3)",
 			str(c.statuses[0].stacks))
+	unlink_cards([c])  # teardown discipline, see test_leak_canary.gd
 
 func test_heterogeneous_coexist() -> void:
 	behavior_section("HETEROGENEOUS COEXISTENCE")
@@ -54,6 +55,7 @@ func test_heterogeneous_coexist() -> void:
 	c.add_status(StatusTestB.new())
 	check(c.statuses.size() == 2, "different-class statuses coexist as two entries",
 			str(c.statuses))
+	unlink_cards([c])
 
 func test_non_merge_override() -> void:
 	behavior_section("NON-MERGE OVERRIDE (can_merge_with)")
@@ -62,6 +64,7 @@ func test_non_merge_override() -> void:
 	c.add_status(StatusTestSeal.new())
 	check(c.statuses.size() == 2, "a status refusing to merge stays two entries",
 			str(c.statuses))
+	unlink_cards([c])
 
 func test_expiry_at_zero() -> void:
 	behavior_section("EXPIRY AT ZERO STACKS")
@@ -86,6 +89,7 @@ func test_shared_instance_defensive_dup() -> void:
 	check(other.statuses[0].data == other, "the duplicate is bound to the new card")
 	other.statuses[0].stacks = 9
 	check(shared.stacks == 1, "the two cards do not share one stacks field")
+	unlink_cards([owner_card, other] as Array[CardData])
 
 func test_self_scope_guard() -> void:
 	implementation_section("SELF-SCOPE GUARD (targeted on_score)")
@@ -104,6 +108,8 @@ func test_self_scope_guard() -> void:
 	await env.run_all_mods(&"on_score", carrier)
 	check(scored.hits == 1, "scoring the carrier fires its own status", str(scored.hits))
 	check(carrier.statuses.is_empty(), "the one-shot status is consumed to 0 and removed")
+	env.card_collections.clear()
+	unlink_cards(cards)
 
 func test_self_removal_mid_pass() -> void:
 	implementation_section("SELF-REMOVAL MID-PASS DOESN'T SKIP SIBLINGS (B10/C2)")
@@ -121,6 +127,8 @@ func test_self_removal_mid_pass() -> void:
 			str(carrier.statuses))
 	check(witness.hits == 1,
 			"a sibling status still fires after an earlier one removed itself (snapshot dispatch)")
+	env.card_collections.clear()
+	unlink_cards(cards)
 
 func test_backref_through_duplicate() -> void:
 	implementation_section("DATA BACKREF SURVIVES DEEP DUPLICATE (undo path)")
@@ -131,6 +139,8 @@ func test_backref_through_duplicate() -> void:
 			"duplicate_state remaps status.data to the copied card")
 	check(card.statuses[0] != state.upper_zone[0].datas[0].statuses[0],
 			"the copy's status is a distinct instance (no aliasing)")
+	state.unlink_modifier_backrefs()
+	copy.unlink_modifier_backrefs()
 
 func test_save_roundtrip() -> void:
 	implementation_section("STATUS SURVIVES SAVE ROUND-TRIP (unlink/relink)")
@@ -145,6 +155,8 @@ func test_save_roundtrip() -> void:
 	check(r_card.statuses.size() == 1 and r_card.statuses[0].stacks == 7,
 			"restore keeps the status and its stack count", str(r_card.statuses))
 	check(r_card.statuses[0].data == r_card, "restore relinks the status backref to its card")
+	state.unlink_modifier_backrefs()
+	restored.unlink_modifier_backrefs()
 
 # ------------------------------------------------------------------ helpers
 

@@ -188,7 +188,7 @@ static func paint_cells(cells: Dictionary, bset: WorldBiomeSet, pins: Array,
 	pinned.fill(0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
-	var used := {}                          # biome -> true (novelty damp for filler)
+	var used: Dictionary[int, bool] = {}                          # biome -> true (novelty damp for filler)
 
 	# --- Pins: a node's cell takes its biome; a rare collision (two nodes, one
 	# cell) falls back to the nearest unpinned same-landmass neighbor (BFS <= 2).
@@ -298,7 +298,7 @@ static func paint_cells(cells: Dictionary, bset: WorldBiomeSet, pins: Array,
 					has_pin = has_pin or pinned[nb] == 1
 		if has_pin or comp.size() >= min_region:
 			continue
-		var votes := {}
+		var votes: Dictionary[int, int] = {}
 		for c in comp:
 			for nb in adj[c]:
 				var ob := cell_biome[nb]
@@ -338,7 +338,7 @@ static func rasterize(cells: Dictionary, cell_biome: PackedInt32Array, field) ->
 ## self-contained even if the WorldBiomeSet is later edited. Color = the
 ## biome's first band swatch.
 static func legend(bset: WorldBiomeSet, assign: Dictionary = {}) -> Array:
-	var cast := {}
+	var cast: Dictionary[int, bool] = {}
 	for b in assign.get("cast", PackedInt32Array()):
 		cast[b] = true
 	var out: Array = []

@@ -55,7 +55,7 @@ func start_run(new_run: RunState) -> void:
 func _on_node_entered(node: WorldGraphNode) -> void:
 	var role :String= node.meta.get(MapNodeRoles.ROLE_KEY, "")
 	if role == MapNodeRoles.ROLE_BOOSTER:
-		_open_booster(node)
+		await _open_booster(node)
 	elif role == MapNodeRoles.ROLE_GAME or node == controller.lap_target():
 		_start_show(node)
 	else:
@@ -74,7 +74,7 @@ func _start_show(node: WorldGraphNode) -> void:
 # later from modifiers).
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	var viewer := booster.on_map_picked(ui_layer)
+	var viewer := await booster.on_map_picked(ui_layer)
 	viewer.confirmed.connect(_on_booster_confirmed)
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:

@@ -109,16 +109,25 @@ class Result:
 class HandProfile:
 	var ranks : RankMap = RankMap.new()
 	var suits : SuitMap = SuitMap.new()
+	## Reverse maps recorded at profiling time (card -> the bucket keys it was appended to),
+	## so remove_card touches only its own buckets instead of walking every key. Only
+	## _get_hand_profiles_async populates the maps, so these can never go stale.
+	var card_rank_keys : Dictionary[CardData, Array] = {}   # -> Array[float]
+	var card_suit_keys : Dictionary[CardData, Array] = {}   # -> Array[String]
 
 	## SE2: incremental removal so extraction loops can consume the profile
 	## instead of rebuilding it from the shrinking pool every iteration.
 	func remove_card(card: CardData) -> void:
-		for key : float in ranks.map.keys():
-			ranks.map[key].datas.erase(card)
-			if ranks.map[key].datas.is_empty(): ranks.map.erase(key)
-		for key : String in suits.map.keys():
-			suits.map[key].datas.erase(card)
-			if suits.map[key].datas.is_empty(): suits.map.erase(key)
+		for key : float in card_rank_keys.get(card, []):
+			if ranks.map.has(key):
+				ranks.map[key].datas.erase(card)
+				if ranks.map[key].datas.is_empty(): ranks.map.erase(key)
+		for key : String in card_suit_keys.get(card, []):
+			if suits.map.has(key):
+				suits.map[key].datas.erase(card)
+				if suits.map[key].datas.is_empty(): suits.map.erase(key)
+		card_rank_keys.erase(card)
+		card_suit_keys.erase(card)
 class RankMap:
 	var map : Dictionary[float,ArrayCardData] = {} # float -> ArrayCardData
 class SuitMap:
@@ -335,16 +344,18 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 		# --- PHASE A: DECOUPLED RANK PROFILING BUCKETS ---
 		# Ask the comparator which structural numeric keys this rank represents
 		var placement_keys: Array[float] = PipComparator.get_rank_profile(card.rank)
+		profile.card_rank_keys[card] = placement_keys  # reverse map for O(1) remove_card
 		for scalar_key in placement_keys:
-			if not profile.ranks.map.has(scalar_key): 
+			if not profile.ranks.map.has(scalar_key):
 				profile.ranks.map[scalar_key] = ArrayCardData.new()
 			profile.ranks.map[scalar_key].datas.append(card)
-			
+
 		# --- PHASE B: DECOUPLED SUIT PROFILING BUCKETS ---
 		# Ask the comparator which suit key strings this card satisfies simultaneously
 		var suit_keys: Array[String] = PipComparator.get_suit_profile(card.suit)
+		profile.card_suit_keys[card] = suit_keys
 		for st in suit_keys:
-			if not profile.suits.map.has(st): 
+			if not profile.suits.map.has(st):
 				profile.suits.map[st] = ArrayCardData.new()
 			profile.suits.map[st].datas.append(card)
 			
@@ -434,7 +445,7 @@ class ExpandedGridHandler:
 		if clusters.is_empty(): return []
 
 		# Pre-compute scorable values (no awaits inside the sort).
-		var val_map := {}
+		var val_map : Dictionary[ArrayCardData, float] = {}
 		for c in clusters: val_map[c] = await PipComparator.get_scorable_value(c.datas[0].rank)
 
 		clusters.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool:
@@ -631,7 +642,7 @@ class MultiStraightHandler:
 		var W := int(PipComparator.get_wrap_top_value())
 		if W < A: return []
 
-		var cnt := {}
+		var cnt : Dictionary[int, int] = {}
 		var max_steps := 0
 		var any := false
 		for v in range(A, W + 1):
@@ -659,7 +670,7 @@ class MultiStraightHandler:
 		# A single rank is not a straight; require the walk to actually advance.
 		if best_path.size() < 2: return []
 
-		var used := {}
+		var used : Dictionary[int, int] = {}
 		var out: Array[CardData] = []
 		for v in best_path:
 			var idx: int = used.get(v, 0)
@@ -705,7 +716,7 @@ class MultiFlushHandler:
 			if best_flush.size() < 5: break
 
 			# Pre-calculate scorable values to avoid awaits during sort
-			var val_map := {}
+			var val_map : Dictionary[CardData, float] = {}
 			for c in best_flush:
 				val_map[c] = await PipComparator.get_scorable_value(c.rank)
 

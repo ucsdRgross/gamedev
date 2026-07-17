@@ -33,8 +33,8 @@ class MapField extends RefCounted:
 	# confined to `main_label` (the largest landmass) so it can't zigzag between
 	# islands across water.
 	var label := PackedInt32Array()
-	var sizes := {}                      # landmass id -> cell count
-	var label_seed := {}                 # landmass id -> a representative land cell
+	var sizes: Dictionary[int, int] = {}          # landmass id -> cell count
+	var label_seed: Dictionary[int, Vector2] = {} # landmass id -> a representative land cell
 	var main_label := -1
 	var total_land := 0                  # total land cells (all landmasses)
 	var domain_land := 0                 # land cells in the graph's domain
@@ -55,7 +55,7 @@ class MapField extends RefCounted:
 	# so they can never end up in water.
 	var samples := PackedVector2Array()
 	var sample_label := PackedInt32Array() # landmass id per sample
-	var _shash := {}                     # Vector2i cell -> Array[int] sample indices
+	var _shash: Dictionary[Vector2i, Array] = {}  # cell -> Array of sample indices
 	var _cs := 1.0                       # hash cell size (= sample spacing)
 	# Signed distance-to-coast field (positive inland = dist to water, negative in
 	# water = -dist to land), on a downscaled grid. Powers land attraction (gradient
@@ -84,7 +84,7 @@ class MapField extends RefCounted:
 
 	## Build the water + river masks once. Lakes join the water mask (ocean-identical);
 	## rivers only populate `blocked`. Both tolerate empty arrays (rivers step off).
-	func _build_masks(lakes: Array, rivers: Array) -> void:
+	func _build_masks(lakes: PackedInt32Array, rivers: PackedInt32Array) -> void:
 		var n := w * h
 		water.resize(n)
 		blocked.resize(n)
@@ -92,9 +92,9 @@ class MapField extends RefCounted:
 		for i in range(n):
 			water[i] = 1 if height[i] < oth else 0
 		for l in lakes:
-			water[(l.y * w) + l.x] = 1
+			water[l] = 1
 		for r in rivers:
-			blocked[(r.y * w) + r.x] = 1
+			blocked[r] = 1
 
 	## Is this pixel unusable for NODE PLACEMENT (a river)? Water is handled by
 	## labels/is_land; this is the extra river-only exclusion.
@@ -511,7 +511,7 @@ class Ctx extends RefCounted:
 										 # within this x the nearest one's distance (a ratio,
 										 # so scale-free across map sizes). Tunable via opts.
 	var branch_local := 0.0              # max nearest-distance for a node to still emit branches
-	var edge_tag := {}                   # DIAGNOSTIC: Vector2i(u,v) -> which sweep step made it
+	var edge_tag: Dictionary[Vector2i, String] = {} # DIAGNOSTIC: (u,v) -> which sweep step made it
 
 # ---------------------------------------------------------------------------
 # Public entry point.
@@ -529,7 +529,7 @@ static func place(graph: Dictionary, field: MapField, settings: WorldSettings,
 	var debug: bool = opts.get("debug", false)
 	if debug:
 		# Node-share vs area-share per island (should track), plus thin-slice trims.
-		var _dist := {}
+		var _dist: Dictionary[int, int] = {}
 		var _kept := 0
 		for i in range(ctx.n):
 			if ctx.active[i] == 0:
@@ -571,7 +571,7 @@ static func export_graph(ctx: Ctx, field: MapField, curves: Array = [], opts: Di
 	var pts_of := {}                                    # Vector2i(u,v) -> routed polyline
 	for e in curves:
 		pts_of[Vector2i(e[0], e[1])] = e[2]
-	var id_map := {}                                    # old id -> compact id (drop inactive)
+	var id_map: Dictionary[int, int] = {}                                    # old id -> compact id (drop inactive)
 	var compact := 0
 	for i in range(ctx.n):
 		if ctx.active[i] == 1:
@@ -901,13 +901,13 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	# start/end poles can land on different landmasses. Previously the PCA ran over
 	# ALL samples (ineligible islets skewed it) and eligibility was only applied when
 	# snapping poles -- which dragged both poles back onto the main island.
-	var have_samples := {}
+	var have_samples: Dictionary[int, bool] = {}
 	for sl in field.sample_label:
 		have_samples[sl] = true
 	var big := 0
 	for sid in field.sizes.keys():
 		big = maxi(big, field.sizes[sid])
-	var large := {}
+	var large: Dictionary[int, bool] = {}
 	for sid in field.sizes.keys():
 		if field.sizes[sid] >= int(big * min_frac) and have_samples.has(sid):
 			large[sid] = true
@@ -945,12 +945,12 @@ static func _make_ctx(graph: Dictionary, field: MapField, settings: WorldSetting
 	# Pass 1: slice each interior rung across every landmass; record on-land coords and the
 	# GLOBAL min/max slice width (so the thinnest land anywhere -> min_width sections, the
 	# widest -> max_width).
-	var slices := {}                                  # d -> { lab -> PackedFloat32Array coords }
+	var slices: Dictionary[int, Dictionary] = {}                                  # d -> { lab -> PackedFloat32Array coords }
 	var gwmin := INF
 	var gwmax := 0.0
 	for d in range(1, D):
 		var a := amin0 + axis_ext * (float(d) / float(D))
-		var by_lab := {}
+		var by_lab: Dictionary[int, PackedFloat32Array] = {}
 		for lab in large.keys():
 			var coords := field.slice_land_coords(center, dir, perp, a, pmin0, pmax0, lab, scan_step)
 			if coords.is_empty():

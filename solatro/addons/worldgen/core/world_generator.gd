@@ -19,8 +19,10 @@ var height_buffer: PackedFloat32Array = PackedFloat32Array()
 var water_surface_buffer: PackedFloat32Array = PackedFloat32Array()
 var plate_id_buffer: PackedInt32Array = PackedInt32Array()
 
-var river_nodes: Array[Vector2i] = []
-var lake_nodes: Array[Vector2i] = []  # cells where depression-fill raised a lake
+# River/lake cells as flat indices (y*w+x) -- PackedInt32Array, not Array[Vector2i]:
+# per-pixel Variant boxing made these huge on big maps. Decode: x = i % w, y = i / w.
+var river_nodes: PackedInt32Array = PackedInt32Array()
+var lake_nodes: PackedInt32Array = PackedInt32Array()  # cells where depression-fill raised a lake
 # Full-res presence masks (index y*w+x, 1 = river/lake), built ONCE by StepRivers so the
 # painter can test a pixel by index instead of hashing a Vector2i. Empty before Rivers runs.
 # PackedByteArray is copy-on-write, so snapshots keep a cheap shared copy until mutated.
@@ -149,6 +151,15 @@ func flush(key: String) -> Image:
 func read_height_from_image(img: Image) -> void:
 	var w := settings.map_width
 	var h := settings.map_height
+	if img.get_width() == w and img.get_height() == h:
+		# Bulk path: one C++ format conversion, then adopt the raw float data.
+		# convert(RF) yields the exact same floats as get_pixel().r (verified for
+		# RGBAH/RGBAF sources), so this is bit-identical to the per-pixel loop.
+		var rf := img.duplicate() as Image
+		if rf.get_format() != Image.FORMAT_RF:
+			rf.convert(Image.FORMAT_RF)
+		height_buffer = rf.get_data().to_float32_array()
+		return
 	for y in range(h):
 		for x in range(w):
 			height_buffer[(y * w) + x] = img.get_pixel(x, y).r
@@ -157,6 +168,16 @@ func read_plate_ids_from_image(img: Image) -> void:
 	# Blueprint packs plate index into the blue channel as idx / 15.
 	var w := settings.map_width
 	var h := settings.map_height
+	if img.get_width() == w and img.get_height() == h:
+		# Index the raw float data (stride 4, blue = +2) instead of get_pixel;
+		# convert(RGBAF) reproduces get_pixel's channel values exactly.
+		var rgbaf := img.duplicate() as Image
+		if rgbaf.get_format() != Image.FORMAT_RGBAF:
+			rgbaf.convert(Image.FORMAT_RGBAF)
+		var f: PackedFloat32Array = rgbaf.get_data().to_float32_array()
+		for i in range(w * h):
+			plate_id_buffer[i] = int(round(f[(i * 4) + 2] * float(MAX_PLATES)))
+		return
 	for y in range(h):
 		for x in range(w):
 			plate_id_buffer[(y * w) + x] = int(round(img.get_pixel(x, y).b * float(MAX_PLATES)))
@@ -166,10 +187,11 @@ func read_plate_ids_from_image(img: Image) -> void:
 func height_texture() -> ImageTexture:
 	var w := settings.map_width
 	var h := settings.map_height
-	var img := Image.create(w, h, false, Image.FORMAT_RGBAH)
-	for y in range(h):
-		for x in range(w):
-			img.set_pixel(x, y, Color(height_buffer[(y * w) + x], 0.0, 0.0, 1.0))
+	# Adopt the buffer as an RF image, then convert to RGBAH in one C++ pass --
+	# byte-identical to per-pixel set_pixel(Color(h, 0, 0, 1)) into RGBAH.
+	var img := Image.create_from_data(w, h, false, Image.FORMAT_RF,
+		height_buffer.slice(0, w * h).to_byte_array())
+	img.convert(Image.FORMAT_RGBAH)
 	return ImageTexture.create_from_image(img)
 
 # =================================================================

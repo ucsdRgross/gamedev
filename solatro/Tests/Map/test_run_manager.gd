@@ -172,6 +172,14 @@ func test_disk_round_trip() -> void:
 	check_impl(loaded.card_datas[0].skill.data == loaded.card_datas[0],
 			"modifier backrefs are relinked after loading")
 	check(loaded.rule_datas.size() == rules.size(), "rules deck survives the round trip")
+	# Teardown discipline (see test_leak_canary.gd): the sources, the original run doc and
+	# the reloaded one all drop here — break their CardData<->modifier cycles.
+	unlink_cards(cards)
+	unlink_cards(rules)
+	unlink_cards(run.card_datas)
+	unlink_cards(run.rule_datas)
+	unlink_cards(loaded.card_datas)
+	unlink_cards(loaded.rule_datas)
 	RunManager.clear_save()
 	check(not FileAccess.file_exists(RunManagerClass.RUN_PATH), "clear_save deletes the run doc")
 	check(RunManager.run == null, "clear_save drops the in-memory run")
@@ -208,6 +216,7 @@ func test_game_state_round_trip() -> void:
 			and is_equal_approx(top.scores_col[0].mantissa, 4.2) \
 			and top.scores_col[0].exponent == 3,
 			"BigNumber scores round-trip via the flattened snapshot")
+	top.unlink_modifier_backrefs()  # the rebuilt runtime snapshot drops here
 	RunManager.clear_save()
 
 # A runtime GameData with a played, modifier-carrying card and a BigNumber score, returned
@@ -226,4 +235,6 @@ func _show_state(total: int) -> GameData:
 	bn.mantissa = 4.2
 	bn.exponent = 3
 	gs.scores_col = [bn] as Array[BigNumber]
-	return gs.to_saveable()
+	var saveable := gs.to_saveable()
+	gs.unlink_modifier_backrefs()  # the live builder state drops here — break its cycles
+	return saveable

@@ -3,12 +3,8 @@ extends Resource
 
 enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 
-#export makes no sense here, should be abstract methods
-#@export var name : StringName
-#@export var description : StringName
-#@export var frame : int
-#@export var rarity : Rarity
-#@export var tags : Dictionary
+# TODO(rarity/tags): Rarity above is carried by nothing yet. If modifiers grow
+# rarity/tags, expose them as abstract getters (like get_str/get_frame), not @export vars.
 @export_storage var data : CardData
 
 ## Current environment / game shortcuts so every modifier doesn't have to re-derive them.
@@ -33,76 +29,10 @@ func set_material(polygon2d:Polygon2D) -> void: polygon2d.material = null
 
 
 
-# Implementable conditions. Kept as comments here for reference so has_method works as tagging
-#func on_active() -> void
-#func on_deactive() -> void
-#func on_stack_card(target: Card) -> void
-#func on_append(deck:Array[CardData], data:CardData) -> void
-#func on_trigger(data:CardData, mod:Callable) -> void
-#func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void
-#func on_game_end() -> void
-#func on_score(target:Card) -> void
-#func on_after_score() -> void
-#func on_next() -> void
-#func on_can_grab_stack(target : CardData) -> Array[CardData]
-#func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]
-#func on_run_scorer() -> void
-#func on_score_row(zone : Array[ArrayCardData], row : int) -> void
-#func on_score_col(zone : Array[ArrayCardData], col : int) -> void
-
-
-#func on_cannot_stack(stack : CardData, to_stack : CardData) -> bool
-
-#func on_round_start() -> void:
-	#pass
-#func on_round_end() -> void:
-	#pass
-#func on_card_enter_game(target:Card) -> void:
-	#pass
-#func on_card_leave_game(target:Card) -> void:
-	#pass
-#func stack_rule(target:Card) -> bool:
-	#return false
-#func on_stack_card(target:Card) -> void:
-	#pass
-#func pickup_rule(target:Card) -> bool:
-	#return true
-#func on_pickup(target:Card) -> void:
-	#pass
-#func on_submit(target:Card) -> void:
-	#pass
-#func on_card_click(target:Card) -> void:
-	#pass
-#func on_skill_activated(target:Card) -> void:
-	#pass
-#func score_rule() -> void:
-	#pass
-#func on_score(target:Card) -> void:
-	#pass
-#func on_after_score() -> void:
-	#pass
-#func on_game_start() -> void:
-	#pass
-#func on_game_win() -> void:
-	#pass
-#func on_game_loss() -> void:
-	#pass
-#func on_game_end() -> void:
-	#pass
-#func on_deck_enter(target:Card) -> void:
-	#pass
-#func on_discard(target:Card) -> void:
-	#pass
-#func on_delete(target:Card) -> void:
-	#pass
-#func on_draw(target:Card) -> void:
-	#pass
-#func on_append(deck:Array[CardData], data:CardData) -> void:
-	#pass
-#func on_trigger(data:CardData, mod:Callable) -> void:
-	#pass	
-#func on_card_dropped_on(bot_card:CardData, top_card:CardData) -> void:
-	#pass
+# Hooks are duck-typed: implementing a method named after an event opts the modifier in
+# (dispatch checks has_method — see CardEnvironment.run_all_mods). The MAINTAINED hook
+# list with signatures lives in ARCHITECTURE_REVIEW.md §1.4; keep THAT current when
+# adding events. (The stale copy that used to sit here was purged 2026-07-16, D7 override.)
 
 func is_active() -> bool:
 	#rules cards are always active
@@ -121,47 +51,12 @@ func is_active() -> bool:
 	#default: active while uncovered (topmost of its stack)
 	return game.is_data_topmost(data)
 
-#func card_shake(card_effect:Callable) -> void:
-	#await card_raise()
-	#await card_effect.call()
-	#await card_lower()
-		#
-#func card_raise() -> void:
-	#await _do_popup(&"card_raise")
-#
-#func card_lower() -> void:
-	#await _do_popup(&"card_lower")
-#
-#func card_shrink() -> void:
-	#await _do_popup(&"card_shrink")
-#
-#func _do_popup(method:StringName) -> void:
-	#var popup_card : CardVisual
-	#var temp_card := false
-	##if data.card:
-		##popup_card = data.card
-	#if method == &"card_raise":
-		#match data.stage:
-			#data.Stage.DRAW:
-				#popup_card = CardEnvironment.CURRENT.deck_popup
-			#data.Stage.DISCARD:
-				#popup_card = CardEnvironment.CURRENT.discard_popup
-		#if not popup_card:
-			#return
-		#var new_popup_card := popup_card.duplicate(8)
-		#popup_card.get_parent().add_child(new_popup_card)
-		#popup_card = new_popup_card
-		#popup_card.data = data
-		#temp_card = true
-		#popup_card.flipped = !popup_card.flipped
-		#popup_card.show()
-	#else:
-		#return
-	#await Callable(CardEnvironment.CURRENT, method).call(popup_card)
-	#if temp_card:
-		#await Callable(CardEnvironment.CURRENT, &"card_lower").call(popup_card)
-		#popup_card.queue_free()
-			
+# TODO(card feedback popups): the old card_shake / card_raise / card_lower / _do_popup
+# flow (spawn a temp visual off the deck/discard pile, raise it, run the effect, lower
+# and free it) was never ported to the CardVisual rewrite. SkillExtraPoint and
+# SkillHungryHippo still reference card_shake in comments and want it back when a
+# visual-feedback pass happens.
+
 ## Robust runtime UV framing method that automatically adapts to ANY texture size
 static func update_polygon_uv_frame(polygon2d: Polygon2D, source_sheet: Texture2D, h_frame: int, v_frame: int, target_frame: int) -> void:
 	if not polygon2d or polygon2d.polygon.is_empty():

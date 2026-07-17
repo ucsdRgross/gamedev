@@ -124,11 +124,12 @@ func run_order_tests() -> void:
 			"c1.type.anything", "c2.type.anything"],
 			"type, stamp, skill per card, in iterator order (+ on_anything pass)", str(log))
 
-	#hook nobody implements: no error; only the on_anything pass runs
+	#hook nobody implements: no error, and (P1 owner ruling 2026-07-16) the passive
+	#on_anything tail is SKIPPED — no mod ran, so nothing could have changed
 	log.clear()
 	await env.run_all_mods(&"on_unimplemented_hook")
-	check(log == ["c1.type.anything", "c2.type.anything"],
-			"unimplemented hook -> no calls, no error (on_anything still runs)", str(log))
+	check(log == [],
+			"unimplemented hook -> no calls, no error, on_anything skipped", str(log))
 
 	#skill with active == false is skipped even if it implements the hook
 	log.clear()

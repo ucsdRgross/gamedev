@@ -28,7 +28,7 @@ static func assign(ctx, bset: WorldBiomeSet, seed_val: int) -> Dictionary:
 	rng.seed = seed_val
 
 	# Populated interior depths (poles are assigned last, by inheritance).
-	var by_depth := {}                       # depth -> Array[int] of active node ids
+	var by_depth: Dictionary[int, Array] = {}                       # depth -> Array[int] of active node ids
 	for i in range(ctx.n):
 		if ctx.active[i] == 0 or i == ctx.start_id or i == ctx.end_id:
 			continue
@@ -45,13 +45,13 @@ static func assign(ctx, bset: WorldBiomeSet, seed_val: int) -> Dictionary:
 
 	# Guarantee rung selection: even spread over the populated interior depths.
 	var n_req: int = clampi(bset.required_count, 0, depths.size())
-	var guard := {}                          # depth -> true
+	var guard: Dictionary[int, bool] = {}                          # depth -> true
 	for i in range(n_req):
 		guard[depths[int((float(i) + 0.5) * depths.size() / n_req)]] = true
 
 	# Cast draw: 1 biome per small guarantee rung, 2 per rung with >= 4 nodes
 	# (a 2-biome rung splits geographically, so the route picks between them).
-	var want := {}                           # depth -> rung biome count
+	var want: Dictionary[int, int] = {}                           # depth -> rung biome count
 	var slots := 0
 	for d in guard:
 		want[d] = 2 if by_depth[d].size() >= 4 else 1
@@ -62,7 +62,7 @@ static func assign(ctx, bset: WorldBiomeSet, seed_val: int) -> Dictionary:
 
 	# Deal in depth order: round 1 gives every guarantee rung one biome, round 2
 	# tops up the wide rungs while cast biomes remain. Disjoint by construction.
-	var dealt := {}                          # depth -> Array[int]
+	var dealt: Dictionary[int, Array] = {}                          # depth -> Array[int]
 	var ci := 0
 	for d in depths:
 		if guard.has(d):
@@ -137,7 +137,7 @@ static func _pick_ambient(bset: WorldBiomeSet, rng: RandomNumberGenerator, k: in
 static func _split_rung(ctx, nodes: Array, biomes: Array, node_biome: PackedInt32Array) -> void:
 	if biomes.is_empty():
 		return
-	var groups := {}                         # landmass label -> Array[int]
+	var groups: Dictionary[int, Array] = {}                         # landmass label -> Array[int]
 	for id in nodes:
 		var lab: int = ctx.node_label[id]
 		if not groups.has(lab):

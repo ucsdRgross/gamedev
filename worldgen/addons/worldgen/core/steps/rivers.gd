@@ -190,13 +190,13 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			if is_lake_l[lc] == 1:
 				# Keep the real lake floor as the bed; water sits at the spill surface.
 				gen.water_surface_buffer[fi] = lake_surf_l[lc]
-				gen.lake_nodes.append(Vector2i(x, y))
+				gen.lake_nodes.append(fi)
 				lmask[fi] = 1
 			elif depth_l[lc] > 0.0:
 				# Carve the channel; water fills it back up to (near) original grade.
 				gen.height_buffer[fi] = maxf(fullbase[fi] - depth_l[lc], oth + 0.004)
 				gen.water_surface_buffer[fi] = fullbase[fi]
-				gen.river_nodes.append(Vector2i(x, y))
+				gen.river_nodes.append(fi)
 				rmask[fi] = 1
 	gen.river_set = rmask
 	gen.lake_set = lmask

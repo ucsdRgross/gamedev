@@ -1,0 +1,281 @@
+# Efficiency Audit Tracker
+
+Living tracker for the `efficiency_audit.txt` optimization plan. **Purpose: progress
+checking + handoffs — future audits should consult this first and NOT re-audit files
+marked done.** Update the status tables and findings as work lands.
+
+- Plan: [efficiency_audit.txt](efficiency_audit.txt) (§1 complexity, §2 typing, §3 engine
+  integration, §4 composition, §5 doc leanification, §6 health/tests, §7 C#/C++ notes,
+  §8 agent directives)
+- Companion: [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) — B/S/D/E/N item numbering
+  referenced below. Doc updates land there; THIS doc records audit coverage.
+- Rules of engagement: low-hanging fruit first; **new files / architectural changes need
+  owner approval + a design doc first**; strict logic preservation; all tests stay green.
+- Tests: `C:\richard\Godot_v4.7-stable_win64_console.exe --headless --path
+  C:\richard\gamedev\solatro res://Tests/all_tests.tscn`. NOTE: the headless process can
+  HANG after printing the final banner — read the result from the newest
+  `%APPDATA%\Godot\app_userdata\Solatro\logs\godot*.log` (look for the
+  `======== ALL N SUITES ========` line), then kill the process.
+
+**Phase 2:** every remaining item is written up as a yes/no proposal in
+[AUDIT_PROPOSALS_HANDOFF.md](AUDIT_PROPOSALS_HANDOFF.md) (P1-P15) — approved items get
+implemented from there; this doc stays the coverage record.
+
+## Owner rulings — do NOT "fix" (ARCHITECTURE_REVIEW §8)
+
+- B10 live iteration in `run_all_mods` (no snapshot), S6 same-value `stage_changed`
+  re-emits, N8 score-array desync, D7 commented-out code kept as reference.
+- `addons/worldgen/` is **vendored** — canonical home is the separate worldgen project;
+  never edit the copy here (§1.5). Worldgen findings are documented below for upstreaming.
+
+## Audit status by area
+
+Status: `done` = audited 2026-07-16 (fixes applied or findings logged — don't re-audit),
+`todo` = not yet audited.
+
+| Area | Status | Notes |
+|---|---|---|
+| Scripts/ (all 14 files) | done | fixes below; scoring.gd already carried SE1-SE3/SD/SC optimizations |
+| Scripts/Map/ (3 files) | done | traveled-set fix; token/roles clean |
+| Levels/ (game, game_view, main, map, menu) | done | find_data_vec3 dedup; rest clean |
+| UI/ (all 12 files) | done | play_area/prop_layer already signal-driven (E3/D5); fixes below |
+| Cards/ (all files incl. Props/Skills/Types/Statuses/Pips) | done | card_visual fixes; prop stack clean and deliberate |
+| Decks/ | done | audited 2026-07-16 (late pass): N-E1's copy-paste is ALREADY loop-built (doc was stale); only N6 eager construction remains — proposal P4 in AUDIT_PROPOSALS_HANDOFF.md |
+| Tests/ | deferred | leanification is LAST per plan §6; suite is green and fast enough |
+| addons/worldgen/ | done | document-only (vendored) — findings below, upstream to the worldgen project |
+| Other addons (big_number, flex_container, script-ide, SmoothScroll, yard) | out of scope | third-party |
+
+## Fixes applied 2026-07-16 (this audit)
+
+All logic-preserving; verified by the full 22-suite run (identical failure set before and
+after the changes — see "Test runs" at the bottom).
+
+| Fix | File(s) | Plan § / review item |
+|---|---|---|
+| Iterator recursion → flat `while` loop | Scripts/card_data_iterator.gd | §1 recursion ban / E9 |
+| `print_board` upper/lower dup → `_zone_to_csv` | Scripts/game_data.gd | E7 (remaining half) |
+| Same-value guards on 5 scalar setters | Scripts/game_data.gd | E10 |
+| Typed dicts in `validate()` (`seen`, `expected_stage`) | Scripts/game_data.gd | §2 typing |
+| Typed `_compare_implementers` impl array | Scripts/card_environment.gd | §2 typing |
+| Typed `ModsList.stamps/types` | Scripts/mods_list.gd | §2 typing |
+| Typed 4 local dicts (val_map ×2, cnt, used) | Scripts/scoring.gd | §2 typing |
+| `find_data_vec3` → delegate to `Board.locate` (removes duplicate walk) | Levels/game.gd | §6 AI-bloat dedup |
+| `settings` setter disconnect-old/connect-new | Scripts/settings_manager.gd | N9 |
+| `CardVisual.data` setter owns signal wiring (disconnect on swap) | Cards/card_visual.gd | N9 |
+| `refresh_visuals` traveled lookup: linear per edge → prebuilt set; dead `_is_traveled` removed | Scripts/Map/world_map_controller.gd | §1 single-pass |
+| Typed `_reverse_adj`, `_booster_ranks` dict | Scripts/Map/world_map_controller.gd, map_node_roles.gd | §2 typing |
+| `set_card_zone` duplicated map-block → `_bind_slot` | UI/play_area.gd | E6 (mapping half) |
+| Focus-inspector `_process` gated by panel visibility (`set_process`) | UI/play_area.gd | §3 idle-cycle removal |
+| Autosize font fit: linear scan (~90 measures) → binary search (~7) | UI/autosize_label.gd | §1 complexity |
+| `assert(ResourceSaver.save(...))` → checked save (assert strips side effects in release!) | UI/deck_builder.gd | §6 silent failures |
+| `_game_view()` called twice per frame → once | Cards/card_visual.gd | N-E2 (partial) |
+| Bake tool `get_v_idx` O(V²) → Dictionary lookup (editor-only) | Cards/card_visual.gd | E11 |
+
+## Findings log
+
+### Already-done items discovered (docs were stale — ARCHITECTURE_REVIEW now updated)
+
+- **E2 comparator dispatch cache** — implemented as `SE1` (`_compare_implementers` keyed
+  on `[state id, revision]`). §4 now shows [x].
+- **E3/D5** rebuild churn — signal-driven coalesced rebuilds confirmed in play_area.gd.
+- **Threaded async save I/O (plan §3)**: `RunManager` background saver thread, coalesced
+  payloads, atomic temp-file rename.
+- **Asset preloading (plan §3)**: no runtime `load()` in hot paths; `ResourceLoader.load`
+  only at run/settings load boundaries. Scene refs are `preload`/uid consts.
+- **N5** default-active topmost rule — implemented in `CardModifier.is_active()`.
+
+### Log-only observations (acceptable now; revisit only if profiling says so)
+
+- `Scoring.HandProfile.remove_card` walks every rank/suit key per removal → extraction
+  loops are O(cards × keys). Bounded by board size; a card→keys reverse map would fix it.
+- `PropLayer._body_over_any_card` is O(split-props × cards) per frame; reaction pass is
+  O(live × route) `find_vec3_data` (linear) calls per TICK. Both bounded small; the real
+  fix is the §5.4 position index (E4).
+- `WorldMapController._pulse_next_markers` re-derives + sorts `next_nodes_of` per frame
+  while idle on the map (2-4 nodes — trivial; cache on move if it ever grows).
+- `MapHoverPanel._process` polls its rect every frame while visible (documented: its
+  mouse_entered never fires under covering children). Early-returns when hidden.
+- `AutosizeLabel` binary-search fix above; `_update_font_size` still runs per resize (event-driven, fine).
+- `run_all_mods` varargs + `Callable.callv` allocate per dispatch — inherent to the
+  duck-typed hook design; do not micro-optimize without an E1 ruling.
+
+### Suspicious / latent bugs flagged (NOT fixed — behavior changes need owner sign-off)
+
+- `Cards/Skills/skill_extra_point.gd:11` — `if data == self.data` is always-true
+  (member compared to itself); almost certainly meant `target == self.data`. As written,
+  EVERY active ExtraPoint card triggers on every scored card. Covered by tests as-is.
+- `Cards/Skills/skill_hungry_hippo.gd:32` — `game.state.draw_deck.append(card)` bypasses
+  Board/revision-bump (MUTATION GUIDELINES). Path is currently dead (its dropped-on hook
+  is fully commented out).
+- `Scripts/game_data.gd validate()` I1 message prints `seen[card]` which is just `true` —
+  message never shows the "other place". Cosmetic.
+- `UI/deck_builder.gd` + `UI/deck_builder.tscn` are ORPHANED: preload
+  `res://Cards/card.tscn` / `res://UI/card_control.tscn` which no longer exist, and type
+  against the deleted `Card` class. Nothing references the scene. Candidate for deletion
+  (owner call — D7-adjacent).
+
+### Deferred — needs owner approval (behavior or architecture)
+
+- **E1** (`run_all_mods` full `on_anything` pass after every event + per-mod
+  `skill_active_check`): the fix changes `on_active`/`on_deactive` firing ORDER
+  mid-dispatch — not logic-preserving, and adjacent to the B10 owner ruling. Needs a
+  ruling. This is the single biggest remaining dispatch cost.
+- **E4 / §5.4 position index** (`Board.locate` / `find_data_vec3` linear scans, also felt
+  in the prop tick loop): the architected fix is the `Dictionary[CardData, Vector3i]`
+  index — §5 step (2), still open.
+- **E5/D6 undo snapshot cost** (`save_state` deep-duplicates the whole state per action).
+- **E8 BoosterTemplate** gather-and-broadcast ×10 + un-awaited `run_all_mods`: the await
+  half is a behavior change; the dedup-only half would un-type the pools. Do together,
+  with a ruling on the async semantics.
+- **N6 + N-E1** `Decks/deck.gd`: all nine test decks built per `Game` (hundreds of
+  resources; DeckPicker builds them again). Factory-function rework ≈ new design.
+
+### §7 C# / GDExtension migration candidates (log only — no conversion)
+
+- `Scripts/scoring.gd` poker evaluation (cluster/straight/flush extraction over big
+  hands; the wrap-walk `_scan_wrap` is O(ranks²) worst case) — prime C# candidate.
+- `addons/worldgen/core/steps/rivers.gd` — the whole CPU hydrology pass (priority-flood
+  depression fill, MFD flow accumulation, per-cell dilate/box-blur/stamp loops). Already
+  mitigated by the downscaled grid + WorkerThreadPool; the per-cell GDScript loops are
+  the project's #1 GDExtension candidate if generation time ever matters.
+- `addons/worldgen/core/graph/graph_placement.gd` MapField (landmass labeling, signed
+  distance transform, blue-noise sampling) + `biomes/biome_regions.gd` flood/voting.
+- `addons/worldgen/painting/map_painter.gd` + `core/world_generator.gd` readback loops.
+
+### Worldgen addon findings (2026-07-16, document-only — vendored; upstream these)
+
+> **UPSTREAMED + RE-COPIED 2026-07-17.** All four micro-items below are implemented in
+> the canonical worldgen project and the vendored copy here is current. Details (incl.
+> where the ~10x readback claim was corrected by measurement) live in
+> `../worldgen/UPSTREAM_EFFICIENCY_TODO.md`.
+
+- **§8 cross-folder coupling: PASS** — zero references to base-project scripts/classes
+  anywhere in the addon.
+- **Already excellent**: GPU shader steps, WorkerThreadPool for CPU steps + parallel
+  noise baking, COW PackedArray buffers/masks, texelFetch data textures (working around
+  the vec4[] uniform bug), downscaled hydrology + distance-transform grids, thread-safe
+  pure-data graph placement. No recursion found. No runtime `load()` in per-frame paths.
+- Upstream-worthy micro-items:
+  - `world_generator.gd` `read_height_from_image` / `read_plate_ids_from_image` /
+    `height_texture`: per-pixel `get_pixel`/`set_pixel` over the full map — Image raw
+    `data` buffer math is ~10x faster for readback at scale.
+  - `rivers.gd` builds `river_nodes/lake_nodes` as `Array[Vector2i]` per pixel
+    (Variant-boxed, can be huge) — `PackedInt32Array` of indices (or PackedVector2Array)
+    is denser; consumers already have the byte masks.
+  - Untyped local `{}` dicts throughout (graph_spec, world_randomizer, biome steps, …) —
+    typed dictionaries where the K/V are stable.
+  - `world_map_2d.gd` `_process` spinner ticks even with no overlay (early-return,
+    trivial) — could `set_process` gate on overlay visibility.
+
+
+## Phase 2 fixes applied 2026-07-16 (owner-approved proposals, AUDIT_PROPOSALS_HANDOFF.md)
+
+Implemented in handoff order; the FULL 22-suite run was green (exit 0) after every step.
+Per-item implementation notes live in the handoff doc's STATUS lines.
+
+| Item | Fix | File(s) |
+|---|---|---|
+| P10 | I1 duplicate-card message names both containers | Scripts/game_data.gd |
+| P12 | Static per-card backref link/unlink helpers, shared by RunManager | Scripts/game_data.gd, Scripts/run_manager.gd |
+| P8 | HungryHippo eat/return routed through consistent state + revision bumps | Cards/Skills/skill_hungry_hippo.gd |
+| P4 | 13 decks + rules1 lazily built (Deck.new() allocates nothing; ~146k -> ~18k leaked instances at test exit) | Decks/deck.gd |
+| P6 | Undo history caps: MAX_UNDO_HISTORY=100 hard, undo_cap=25 mod-adjustable; trimmed count persisted so entity_side_for_row is unchanged | Levels/game.gd, Scripts/run_state.gd, Scripts/run_manager.gd |
+| P15 | HandProfile reverse maps: remove_card touches only its own buckets | Scripts/scoring.gd |
+| P1 | Hook-implementer gating in run_all_mods + owner rule (skip on_anything when nothing fired) + on_append gate in shuffle_deck; 1 deliberate test_dispatch assertion update | Scripts/card_environment.gd, Levels/game.gd, Tests/Engine/test_dispatch.gd |
+| P5 | BoosterTemplate _gather helper (10 pairs -> 1) + awaited pool broadcasts; await ripple through ChoiceViewer/map/hover panel | Cards/Types/booster_template.gd, UI/choice_viewer.gd, Levels/map.gd, UI/map_hover_panel.gd |
+| P7 | SkillExtraPoint self-check fixed (target == self.data) | Cards/Skills/skill_extra_point.gd |
+| P3 | SS5.4 position index: lazy revision-keyed GameData.position_of; I4 in validate(); locate/find_data_vec3/is_data_topmost O(1); remove_column bump ordering fixed; fuzz suite now cross-checks every position vs an independent scan + duplicate_state hops | Scripts/game_data.gd, Scripts/board.gd, Levels/game.gd, Tests/Engine/test_fuzz.gd, Tests/Engine/test_board.gd |
+| P11 | Commented-code purge per owner TODO rule (D7 overridden for these blocks) | Scripts/pip_comparator.gd, Cards/Skills/Rules/skill_scorer_cascade_lower.gd, Cards/card_modifier.gd, Cards/card_visual.gd, Cards/Types/type_stone.gd, Scripts/card_data_array.gd, UI/play_area.gd |
+| P14 | Worldgen findings opened as upstream work; IMPLEMENTED upstream + re-copied here 2026-07-17 (see that file's inline notes — incl. the measured correction: per-byte GDScript writes are ~3x slower than set_pixel, so wins were taken as whole-image C++ passes, all verified bit-identical) | ../worldgen/UPSTREAM_EFFICIENCY_TODO.md, addons/worldgen/ (10 .gd files re-copied) |
+
+Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion), P13
+(tests leanification).
+
+## Test runs + environment gotchas (READ BEFORE TRUSTING A RUN ON THIS MACHINE)
+
+> The headless/environment findings now live in **HEADLESS_TESTING.md** (project root)
+> — canonical, kept current. The entries below are the historical log.
+
+- **Stale global class cache trap (found + fixed 2026-07-16):**
+  `.godot/global_script_class_cache.cfg` was stale (2026-07-11) and did NOT contain the
+  suit-props-era classes (PropSpawner/PropData/CardModifierStatus/...). Under it, six
+  newer test suites (INTERACTION, UI PROPS, VISUAL LAYERS, PROP ENGINE, STATUSES,
+  SUIT PROPS) silently failed to load — "16 suites / 849 checks" runs were INCOMPLETE.
+  Mid-session it degraded into hard parse-error cascades ("Could not find type
+  CardModifierStatus"). Fix: `Godot --headless --path <project> --import` rebuilds the
+  cache. If class-resolution cascades ever appear again, re-import BEFORE debugging code.
+- 2026-07-16 "baseline" (pre-change, stale cache): 16 suites, 849 checks passed —
+  incomplete, see above.
+- 2026-07-16 post-change (cache fixed, ALL 22 suites): **1269 passed, 10 FAILED — all 10
+  in INTERACTION, all position-based synthetic input** (mouse click/touch tap/button
+  click; keyboard + joypad paths pass). **Verified PRE-EXISTING, not audit regressions**:
+  reverting every runtime-relevant audit edit and re-running the suite in isolation
+  reproduced the identical 10 failures. These tests had NEVER successfully run on this
+  machine (suite added 2026-07-13, cache stale since 07-11). Likely headless/environment
+  mouse-emulation behavior on this box or a genuine bug that shipped with the suite —
+  needs an owner look on the machine where the suite was developed.
+  - **ROOT-CAUSED + FIXED 2026-07-16 (later session):** a suite bug that only bites
+    headless. `Input.parse_input_event` takes WINDOW coordinates; the suite fed it
+    CANVAS coordinates from `get_global_rect()`. In a desktop window the two coincide,
+    so the suite passed where it was developed. Headless, `DisplayServer.window_get_size()`
+    is (0,0) (Godot clamps the root window to 100x100) while `canvas_items` stretch keeps
+    the canvas at 1152 wide — the window->canvas inverse transform blew every synthetic
+    click ~11x past the controls, so no positioned press ever landed (keyboard/joypad
+    checks don't carry positions, hence they passed; right-click cancel passed because
+    ungrab lives in `_unhandled_input`, no hit-test). Fix in `test_interaction.gd`: a
+    `to_window()` helper (`get_viewport().get_final_transform() * pos`) applied in
+    `mouse_move_to` / `mouse_click` / `touch_tap`. Identity in a normal window, so the
+    suite still passes windowed. Verified: INTERACTION 34/34 headless in isolation and
+    in the full 22-suite run.
+- Final post-change full run (all audit fixes applied): **22 suites, 1251 passed,
+  the SAME 10 pre-existing INTERACTION failures, 0 implementation failures** — the
+  audit introduced zero regressions. (Check totals vary a little run-to-run from
+  data-dependent suites; the failure set is what's compared.)
+- 2026-07-16 Phase 2 implementation runs: 9 full 22-suite runs, one after each landed
+  step (batch P10/P12/P8, P4, P6, P15, P1, P5, P7, P3, P3-testfix, P11). All exit 0.
+  Check totals ranged 1219-1327 (data-dependent suites vary run-to-run); the only
+  mid-stream failure was the B4 locate check in BOARD, caused by that test's raw column
+  append not bumping revision - fixed in the test per the MUTATION GUIDELINES, green on
+  re-run. INTERACTION stayed 34/34 throughout.
+- 2026-07-17 P14 re-copy run (upstream worldgen batch copied into addons/worldgen/,
+  after `--import`): **ALL 22 SUITES, 1252 CHECKS PASSED, exit 0.** ~19.5k leaked
+  instances at exit (consistent with the known ~18k baseline, canary work still open).
+- 2026-07-17 LEAK CANARY landed (owner-approved): new 23rd suite
+  Tests/Engine/test_leak_canary.gd, runs last+alone in the ordering chain. Full run
+  after wiring: **ALL 23 SUITES, 1221 CHECKS PASSED, exit 0** (totals vary run-to-run).
+- 2026-07-17 P14 A/B generation timing (worldgen addon_node_test, seed 12356, 2 runs
+  each): enabled-steps avg **5663 ms (baseline) -> 5287 ms (new), ~6.5% faster**;
+  readback steps consistently down (PeaksAndValleys 50-67 -> 34 ms, Erosion ~109 -> ~86 ms),
+  Rivers unchanged (hydrology-bound — the GDExtension candidate). Painting/merge savings
+  (~30 ms/repaint at 512²) and the packed river/lake memory win are not in step timings.
+- **Headless-hang lead (2026-07-17, from validating P14 upstream):** Godot 4.7
+  `--headless` never fires `RenderingServer.frame_post_draw`; any await on it stalls
+  forever (this is what freezes the worldgen pipeline test scenes headless — they must
+  run windowed). Candidate root cause for the "hangs after the final banner" quirk.
+- **2026-07-17 (later session) headless-hang + leak-attribution work:**
+  - Headless hang: DOES NOT REPRODUCE — 6 consecutive full headless runs self-terminated
+    cleanly (~20 s, exit 0). Nothing in Scripts/Tests awaits frame_post_draw (only the
+    vendored worldgen flush(), untouched by tests); RunManager's saver thread joins in
+    _exit_tree. Documented in HEADLESS_TESTING.md §1 with a recurrence workaround.
+  - Residual exit leak ATTRIBUTED per suite via new Tests/Support/leak_probe.tscn (runs
+    one suite scene, quits; exit leak count = that suite's leak). All test-owned; sums
+    matched the full-run ~19.3k. Teardown fixes (test_base.gd unlink_cards helper +
+    unlink at every fixture drop site) landed in persistence_fuzz, board fuzz, board,
+    game_headless, e2e, ui_props, visual_layers, interaction; plus ONE production fix:
+    Game.undo() unlinks the outgoing live state (quiescent; _restore_pre_act_board
+    deliberately left linked — mods still run against the doomed state there).
+  - Full-run exit leak: **19,335 -> 1,847 instances (-90%)**. Validation runs mid-work
+    and final: ALL 23 SUITES green (1246 / 1228 checks, exit 0).
+  - Worldgen C++ port note: BLOCKED — no C++ toolchain on this box (no MSVC/MinGW/scons);
+    owner call needed to install Build Tools.
+- **2026-07-17 (same later session) leak-tail sweep:** teardown unlinks added to
+  test_mods (done() helper), test_run_manager, test_prop_engine (done()), test_iterator
+  (_made tracking), test_game_data, test_suit_props (done()), test_statuses.
+  Per-suite: MODS 382->98, RUN MANAGER 278->0, PROP ENGINE 238->11, ITERATOR 161->0,
+  GAME DATA 109->0, SUIT PROPS 104->0, STATUSES 54->0. Full-run exit leak now **699**
+  (19,335 originally, -96%). Accepted floor: UI VIEWERS/DISPATCH/COMPARATOR (~100,
+  scattered inline card builds), LEAK CANARY 57 (deliberate), small mid-test residues.
+  Validation: ALL 23 SUITES, 1240 CHECKS PASSED, exit 0.
+- **2026-07-17 C++ port handoff written:** worldgen/GDEXTENSION_PORT_HANDOFF.md
+  (implementation) + worldgen/CPP_SETUP_FOR_OWNER.md (owner's toolchain install steps).
+  Port remains blocked until the owner installs VS Build Tools + scons.

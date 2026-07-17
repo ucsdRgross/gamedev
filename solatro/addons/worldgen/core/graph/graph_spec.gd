@@ -87,7 +87,7 @@ static func build(cities: int, nodes_between_cities: int, width: int, outgoing: 
 			nodes.append({"id": id, "rank": r, "lane": lane, "is_city": is_city, "role": role})
 			by_rank[r].append(id)
 
-	var adj: Dictionary = {}
+	var adj: Dictionary[int, Array] = {}
 	for n in nodes:
 		adj[n["id"]] = []
 
@@ -104,7 +104,7 @@ static func build(cities: int, nodes_between_cities: int, width: int, outgoing: 
 		var k := mini(outgoing, c1)
 		for li in range(src.size()):
 			var su: int = src[li]
-			var seen := {}
+			var seen: Dictionary[int, bool] = {}
 			var chosen: Array[int] = []
 			for j in range(k):
 				var lane := (li * outgoing + j) % c1
@@ -154,7 +154,7 @@ static func _trim_edges(nodes: Array, adj: Dictionary, by_rank: Array, ranks: in
 	var removed: Array = []
 	if trim_chance <= 0.0:
 		return removed
-	var indeg := {}
+	var indeg: Dictionary[int, int] = {}
 	for u in adj.keys():
 		for v in adj[u]:
 			indeg[v] = indeg.get(v, 0) + 1
@@ -182,7 +182,7 @@ static func _ideal_reach(lanes_at: Array, r: int, ncr: int, outgoing: int, lane:
 	for k in range(r, ncr):
 		var c1: int = lanes_at[k + 1]
 		var kk := mini(outgoing, c1)
-		var nxt := {}
+		var nxt: Dictionary[int, bool] = {}
 		for L in cur.keys():
 			for j in range(kk):
 				nxt[(L * outgoing + j) % c1] = true
@@ -248,8 +248,8 @@ static func _count_at_rank(reached: Dictionary, nodes: Array, target_rank: int) 
 
 ## Set of city ids at `target_rank` reachable from `src` going forward.
 static func _cities_reached(adj: Dictionary, nodes: Array, src: int, target_rank: int) -> Dictionary:
-	var seen := {}
-	var out := {}
+	var seen: Dictionary[int, bool] = {}
+	var out: Dictionary[int, bool] = {}
 	var stack: Array[int] = [src]
 	seen[src] = true
 	while not stack.is_empty():
@@ -296,7 +296,7 @@ static func validate(g: Dictionary, cities: int, nodes_between_cities: int,
 		lanes_at[r] = by_rank[r].size()
 
 	# Degrees + acyclic-by-rank (every edge must go to a strictly later rank).
-	var indeg := {}
+	var indeg: Dictionary[int, int] = {}
 	for u in adj.keys():
 		for w in adj[u]:
 			indeg[w] = indeg.get(w, 0) + 1

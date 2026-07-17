@@ -62,17 +62,19 @@ func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNo
 	var vp := get_viewport_rect().size
 	position = (anchor_screen_pos + MOUSE_OFFSET).clamp(SCREEN_MARGIN, vp - size - SCREEN_MARGIN)
 	if booster:
-		_populate_cards(booster)
+		await _populate_cards(booster)
 
-# Populate synchronously (like DeckViewer). The no-fly-in guarantee is CardVisual's own:
-# non-PLAY_AREA cards track their anchor exactly, so no per-viewer deferral is needed.
+# Populate effectively-synchronously (like DeckViewer): the preview-pool awaits only
+# suspend if an async mod actually implements an on_get_possible_* hook (none today).
+# The no-fly-in guarantee is CardVisual's own: non-PLAY_AREA cards track their anchor
+# exactly, so no per-viewer deferral is needed.
 func _populate_cards(booster: BoosterTemplate) -> void:
 	if not visible or not cards_scroll.visible:
 		return
 	if not _cards:
 		_cards = CardsViewer.new(cards_flow)
 	_cards.clear()  # a previous hover may have listed different cards
-	_cards.populate(booster.get_possible_preview_cards(), _on_card_inspected)
+	_cards.populate(await booster.get_possible_preview_cards(), _on_card_inspected)
 
 ## Inspector: hovering/focusing a preview card explains its parts via their own
 ## get_str/get_description.

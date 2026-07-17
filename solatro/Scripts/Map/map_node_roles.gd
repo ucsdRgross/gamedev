@@ -45,7 +45,7 @@ static func _progress(n: WorldGraphNode, max_depth: int, run: RunState) -> int:
 ## Seeded pick of one booster rank per window of BOOSTER_RANK_WINDOW mid-ranks
 ## (1 .. max_depth-1). Dictionary used as a set: rank -> true.
 static func _booster_ranks(world_seed: int, max_depth: int) -> Dictionary:
-	var ranks := {}
+	var ranks : Dictionary[int, bool] = {}
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([world_seed, "roles"])
 	var rank := 1

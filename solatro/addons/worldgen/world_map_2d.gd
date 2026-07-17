@@ -104,6 +104,8 @@ var _water_img: Image
 var _snapshot: Dictionary = {}
 
 func _ready() -> void:
+	# _process only animates the loading spinner; stay off until an overlay shows.
+	set_process(false)
 	if Engine.is_editor_hint():
 		return
 	if not generate_on_ready:
@@ -359,6 +361,7 @@ func _show_loading(text: String) -> void:
 		_loading.add_child(_loading_label)
 		add_child(_loading)
 	_loading.visible = true
+	set_process(true)  # spinner ticks only while the overlay is up
 	_set_loading_text(text)
 
 func _set_loading_text(text: String) -> void:
@@ -366,6 +369,7 @@ func _set_loading_text(text: String) -> void:
 		_loading_label.text = text
 
 func _hide_loading() -> void:
+	set_process(false)
 	if _loading != null:
 		_loading.visible = false
 
@@ -435,6 +439,7 @@ func release_generator() -> void:
 		_gen.queue_free()
 		_gen = null
 	if _loading != null and is_instance_valid(_loading):
+		set_process(false)
 		_loading.queue_free()
 		_loading = null
 		_loading_label = null

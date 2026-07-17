@@ -59,7 +59,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 		# Re-export through the export_graph biome hook. Exact pos->biome LUT
 		# (export_graph calls biome_fn with ctx.pos[i] verbatim) keeps node data
 		# truthful even under pin fallbacks; the buffer lookup covers any miss.
-		var lut := {}
+		var lut: Dictionary[Vector2, int] = {}
 		var nb2: PackedInt32Array = assign.node_biome
 		for i in range(ctx.n):
 			if ctx.active[i] == 1:

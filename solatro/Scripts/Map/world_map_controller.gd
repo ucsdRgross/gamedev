@@ -29,7 +29,7 @@ var map : WorldMap2D = null
 
 var _current : WorldGraphNode = null
 var _hovered : WorldGraphNode = null
-var _reverse_adj : Dictionary = {}     # node id -> Array[int] of forward-edge sources
+var _reverse_adj : Dictionary[int, Array] = {}     # node id -> Array[int] of forward-edge sources
 var _accepting_input : bool = false
 var _moving : bool = false
 var _follow_token : bool = true
@@ -153,6 +153,10 @@ func reachable_ids() -> Dictionary:
 func refresh_visuals() -> void:
 	var overlay := map.overlay()
 	var reachable := reachable_ids()
+	#traveled set built once: the edge loop below is O(edges), not O(edges x history)
+	var traveled_set : Dictionary[Vector2i, bool] = {}
+	for t in run.traveled:
+		traveled_set[Vector2i(t.x, t.y)] = true
 	for n: WorldGraphNode in overlay.nodes():
 		_style_marker(n)
 		for e: Dictionary in n.outgoing:
@@ -163,7 +167,7 @@ func refresh_visuals() -> void:
 			var ferry :bool= e["ferry"]
 			line.visible = true
 			line.width = overlay.ferry_width if ferry else overlay.edge_width
-			if _is_traveled(n.id, to.id):
+			if traveled_set.has(Vector2i(n.id, to.id)):
 				line.default_color = HISTORY_COLOR
 			elif _edge_from_current(n, to):
 				line.default_color = HIGHLIGHT_COLOR
@@ -172,12 +176,6 @@ func refresh_visuals() -> void:
 				line.default_color = overlay.ferry_color if ferry else overlay.edge_color
 			else:
 				line.visible = false
-
-func _is_traveled(from_id: int, to_id: int) -> bool:
-	for t in run.traveled:
-		if t.x == from_id and t.y == to_id:
-			return true
-	return false
 
 # Does forward edge (u -> v) leave the token's node in the current lap direction?
 func _edge_from_current(u: WorldGraphNode, v: WorldGraphNode) -> bool:

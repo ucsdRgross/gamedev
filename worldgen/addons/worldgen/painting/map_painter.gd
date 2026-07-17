@@ -34,11 +34,11 @@ static func land_only_image(data: Dictionary, w: int, h: int, oth: float,
 static func merge_layers(land: Image, water: Image) -> Image:
 	var w := land.get_width()
 	var h := land.get_height()
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	for y in range(h):
-		for x in range(w):
-			var wc := water.get_pixel(x, y)
-			img.set_pixel(x, y, wc if wc.a > 0.0 else land.get_pixel(x, y))
+	# Start from the land layer, then blit water where its alpha > 0 (the water
+	# image is its own mask). One C++ pass, same "wc if wc.a > 0.0 else land"
+	# per-pixel result as the old GDScript loop.
+	var img := land.duplicate() as Image
+	img.blit_rect_mask(water, water, Rect2i(0, 0, w, h), Vector2i.ZERO)
 	return img
 
 
@@ -54,15 +54,12 @@ static func water_only_image(data: Dictionary, w: int, h: int, oth: float,
 
 ## Raw heightmap as 32-bit float FORMAT_RF (red = height), for EXR export.
 static func height_image_rf(data: Dictionary, w: int, h: int) -> Image:
-	var img := Image.create(w, h, false, Image.FORMAT_RF)
 	var height: PackedFloat32Array = data.get("height", PackedFloat32Array())
 	if height.size() < w * h:
-		return img
-	for y in range(h):
-		for x in range(w):
-			var v := height[(y * w) + x]
-			img.set_pixel(x, y, Color(v, 0.0, 0.0, 1.0))
-	return img
+		return Image.create(w, h, false, Image.FORMAT_RF)
+	# FORMAT_RF is float32 red -- the buffer IS the pixel data, adopt it directly.
+	return Image.create_from_data(w, h, false, Image.FORMAT_RF,
+		height.slice(0, w * h).to_byte_array())
 
 
 ## Shared per-pixel classifier/painter: each pixel is ocean, lake, river, or

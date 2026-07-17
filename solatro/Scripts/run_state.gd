@@ -34,6 +34,10 @@ extends Resource
 ## rewind a mistake (anti-cheat). Snapshots are "saveable" form — modifier self-cycles
 ## unlinked, scores packed to primitives — rebuilt to runtime by Game when pulled.
 @export var game_history : Array[GameData] = []
+## Snapshots the undo cap dropped from the front of game_history this show (E5-lite).
+## game_history_trimmed + game_history.size() = total actions committed — Game hashes that
+## sum for replay-stable prop sides (entity_side_for_row).
+@export var game_history_trimmed : int = 0
 ## Acts (submits) used in the in-progress show.
 @export var game_submits : int = 0
 ## A board-mutating button (Submit/Next) was pressed but its async resolution (scoring /

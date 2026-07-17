@@ -47,6 +47,7 @@ var new_data_card : Dictionary[CardData, CardVisual]
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
 	setup_gui()
+	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
 
 func setup_gui() -> void:
 	set_separation()
@@ -321,31 +322,22 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 				vbox.remove_child(child)
 				child.queue_free()
 				
-		# Map the main Zone/Type Control (Index 0)
-		var c: Control = vbox.get_child(0)
-		var connected_data: CardData = type[i]
-		ui_data[c] = connected_data
-		data_ui[connected_data] = c
-
-		if connected_data in data_card and is_instance_valid(data_card[connected_data]):
-			new_data_card[connected_data] = data_card[connected_data]
-			new_data_card[connected_data].control_anchor = c
-		else:
-			new_data_card[connected_data] = CardVisual.add_child_card_visual(
-				card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
-		# Map the individual Row Cards (Index 1 onwards)
+		# Map the main Zone/Type Control (Index 0), then the Row Cards (Index 1 onwards) —
+		# one bind path for both (E6)
+		_bind_slot(vbox.get_child(0) as Control, type[i])
 		for j in range(1, vbox.get_child_count()):
-			c = vbox.get_child(j)
-			connected_data = datas[i].datas[j-1]
-			ui_data[c] = connected_data
-			data_ui[connected_data] = c
+			_bind_slot(vbox.get_child(j) as Control, datas[i].datas[j-1])
 
-			if connected_data in data_card and is_instance_valid(data_card[connected_data]):
-				new_data_card[connected_data] = data_card[connected_data]
-				new_data_card[connected_data].control_anchor = c
-			else:
-				new_data_card[connected_data] = CardVisual.add_child_card_visual(
-					card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
+## Register one board control <-> CardData mapping and carry over (or create) its CardVisual.
+func _bind_slot(c: Control, connected_data: CardData) -> void:
+	ui_data[c] = connected_data
+	data_ui[connected_data] = c
+	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
+		new_data_card[connected_data] = data_card[connected_data]
+		new_data_card[connected_data].control_anchor = c
+	else:
+		new_data_card[connected_data] = CardVisual.add_child_card_visual(
+			card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 
 ## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
 ## (owner spec 2026-07-16): per zone, the type/zone headers first, then row 0 of every column,
@@ -495,18 +487,6 @@ func on_control_focus_entered(control:Control) -> void:
 	else:
 		hide_focus_info()
 
-	#var column_index := column_node.get_index()
-	#var zone_level : Control = column_node.get_parent()
-	#if zone_level == upper_zone_right:
-		#if row_index == 0:
-			#data_selected.emit(CardEnvironment.CURRENT.upper_zone_type[column_index])
-		#else:
-			#data_selected.emit(CardEnvironment.CURRENT.upper_zone[column_index].datas[row_index - 1])
-	#elif zone_level == lower_zone_right:
-		#if row_index == 0:
-			#data_selected.emit(CardEnvironment.CURRENT.lower_zone_type[column_index])
-		#else:
-			#data_selected.emit(CardEnvironment.CURRENT.lower_zone[column_index].datas[row_index - 1])
 	# resize zone control so it is possible to place card behind first card
 	if focused_control and focused_control.get_index() == 0:
 		focused_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
@@ -569,6 +549,7 @@ func _show_focus_info(control: Control, data: CardData) -> void:
 	_focus_info.show()
 	_focus_info.reset_size()
 	_position_focus_info()
+	set_process(true)  # keep the panel pinned to its anchor while visible
 
 ## Pin the panel beside its anchor control; flip left / lift up when it would leave the area.
 ## Global placement is safe every frame: the panel and the anchor both live in the scroll
@@ -596,6 +577,7 @@ func _process(_delta: float) -> void:
 
 func hide_focus_info() -> void:
 	_focus_info_anchor = null
+	set_process(false)  # nothing to pin while hidden
 	if not _focus_info or not is_instance_valid(_focus_info):
 		_focus_info = null
 		return

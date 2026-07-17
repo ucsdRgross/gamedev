@@ -47,7 +47,7 @@ func suite_name() -> String:
 # new suite (VISUAL LAYERS) waited for INTERACTION while INTERACTION still waited for it.
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
-#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN
+#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN  →  LEAK CANARY
 #
 # When you add a waiting suite: place it in this chain, pass the names of all suites that come
 # AFTER it to await_siblings_except(), and add its name to the excludes of every suite BEFORE it.
@@ -63,6 +63,13 @@ func await_siblings_except(exclude_names: Array[String]) -> void:
 		if suite and suite != self and suite.suite_name() not in exclude_names \
 				and not suite.finished:
 			await suite.suite_finished
+
+## Teardown discipline (see test_leak_canary.gd): CardData<->modifier backrefs are
+## RefCounted cycles Godot never collects — call this on any card array a test drops
+## (run-doc decks, TestDecks sources, crafted fixtures) or the cards leak until exit.
+func unlink_cards(cards: Array[CardData]) -> void:
+	for card in cards:
+		GameData.unlink_card_backrefs(card)
 
 func behavior_section(title: String) -> void:
 	_category = Category.BEHAVIOR

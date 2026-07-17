@@ -87,6 +87,8 @@ func make_game(rules: Array[CardData], upper: Array, lower: Array) -> Game:
 	return g
 
 func done(g: Game) -> void:
+	# Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier cycles.
+	g.state.unlink_modifier_backrefs()
 	CardEnvironment.CURRENT = null
 	g.free()
 
@@ -371,7 +373,7 @@ func run_booster_tests() -> void:
 	var all_valid := true
 	var no_lucky_extras := true
 	for i in 20:
-		var card := booster.create_one_choice()
+		var card : CardData = await booster.create_one_choice()
 		if not (card.rank is PipRankNumeral and card.rank.value >= 1 and card.rank.value <= 13 \
 				and card.suit is PipSuit and PipSuit.STANDARD.has(card.suit.get_script())):
 			all_valid = false

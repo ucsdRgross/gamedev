@@ -79,7 +79,7 @@ func test_describe_card() -> void:
 			"nameless type produces no blank modifier line")
 
 func test_choice_viewer_take_all() -> void:
-	var viewer := ChoiceViewer.add_to_scene(self, _card, 5, 0)
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 5, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame  # population is deferred one frame (fly-in fix)
 	var cards := 0

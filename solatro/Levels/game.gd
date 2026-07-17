@@ -39,6 +39,19 @@ var state : GameData = GameData.new():
 		state_bound.emit(value)
 
 var save_history : Array[GameData] = []
+## E5-lite undo caps. save_state() trims history to the newest `undo_cap` snapshots, so
+## memory and the per-action background-save payload stay bounded in long shows.
+##   MAX_UNDO_HISTORY — hard ceiling (memory / save-size); nothing may exceed it.
+##   undo_cap        — gameplay cap, deliberately smaller: play mods may raise it (up to
+##                     the max) so "gain more undos" is a grantable power. Plain var so
+##                     content can write `game.undo_cap`; resets with the Game instance.
+const MAX_UNDO_HISTORY := 100
+var undo_cap : int = 25
+## Snapshots dropped from the FRONT of save_history so far this show. Keeps
+## `history_trimmed + save_history.size()` equal to the total actions ever committed —
+## entity_side_for_row hashes that sum, so prop-side picks stay identical to the uncapped
+## behavior (and replay-stable: persisted in RunState alongside the history).
+var history_trimmed : int = 0
 
 ## Input lock across an async action. The setter announces flips so the view can disable
 ## controls; no view polling needed. Guarded so a redundant assignment doesn't re-emit.
@@ -157,6 +170,7 @@ func _start_fresh_show() -> void:
 # active flags WITHOUT re-firing on_active / on_deactive (effects are baked into the state).
 func _resume_show() -> void:
 	save_history = Main.save_info.game_history
+	history_trimmed = Main.save_info.game_history_trimmed
 	state = _runtime_state(save_history[-1])
 	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
 	# into the state being replaced). The run save stays authoritative: snapshots from before
@@ -248,9 +262,15 @@ func add_deck() -> void:
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
 	datas.shuffle()
+	# P1: on_append is a per-card broadcast — one full board walk per card appended. Skip
+	# the whole loop's dispatch when nothing on the board implements it (the common case;
+	# checked once up front — an on_append implementer can only appear mid-loop if one
+	# already existed to add it).
+	var broadcast := not _compare_implementers(&"on_append").is_empty()
 	for data in datas:
 		new_deck.append(data)
-		await run_all_mods(&"on_append", new_deck, data)
+		if broadcast:
+			await run_all_mods(&"on_append", new_deck, data)
 	datas.assign(new_deck)
 		
 ## Command (view-called): advance to the next round.
@@ -282,8 +302,13 @@ func _perform_next() -> void:
 ## RunManager._exit_tree.
 func save_state() -> void:
 	save_history.append(state.to_saveable())
+	var cap : int = clampi(undo_cap, 1, MAX_UNDO_HISTORY)
+	if save_history.size() > cap:
+		history_trimmed += save_history.size() - cap
+		save_history = save_history.slice(save_history.size() - cap)
 	if RunManager.run != null:
 		RunManager.run.game_history = save_history
+		RunManager.run.game_history_trimmed = history_trimmed
 		RunManager.run.game_submits = submits_used
 		# An action fully committed: nothing is mid-resolution anymore, so drop any replay
 		# marker (see _begin_action). Card moves land here too, harmlessly clearing it.
@@ -325,6 +350,13 @@ func undo() -> void:
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
+		# The outgoing live state is dropped here for good; its CardData<->modifier backrefs
+		# are RefCounted cycles Godot never collects (leak-canary discipline), so break them.
+		# Safe at this point: the game is quiescent (not processing) and the restored snapshot
+		# below carries its own duplicated cards. (The processing-time restore path,
+		# _restore_pre_act_board, deliberately does NOT unlink — mods still run against the
+		# doomed state through the unwind.)
+		state.unlink_modifier_backrefs()
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = _runtime_state(prev_game_data)
 		# The restored snapshot carries its own submits_used — refresh the Submit button label
@@ -399,19 +431,8 @@ func move_data_ontop_data(moving:CardData, dest:CardData, cards_in_stack: int = 
 	await move_stack(moving, cards_in_stack, Board.Anchor.on_top(dest), trigger_mods)
 
 func find_data_vec3(data:CardData) -> Vector3i:
-	var upper_type_index :=  state.upper_zone_type.find(data)
-	if upper_type_index > -1: return Vector3i(0,upper_type_index,-1)
-	var lower_type_index :=  state.lower_zone_type.find(data)
-	if lower_type_index > -1: return Vector3i(1,lower_type_index,-1)
-	for col : int in state.upper_zone.size():
-		var row := state.upper_zone[col].datas.find(data)
-		if row > -1:
-			return Vector3i(0,col,row)
-	for col : int in state.lower_zone.size():
-		var row := state.lower_zone[col].datas.find(data)
-		if row > -1:
-			return Vector3i(1,col,row)
-	return Vector3i.MIN
+	#same walk as Board.locate — keep ONE implementation (headers row -1, MIN off-board)
+	return Board.locate(state, data)
 
 func find_vec3_data(vec3:Vector3i) -> CardData:
 	#explicit bounds checks: Array.get() out of range pushes an engine error (S2)
@@ -427,20 +448,16 @@ func get_zone_from_vec3(vec3 : Vector3i) -> Array[ArrayCardData]:
 	return state.lower_zone 
 	
 func is_data_topmost(data:CardData) -> bool:
-	# zone/type header cards are topmost exactly when their column is empty
-	var col : int = state.upper_zone_type.find(data)
-	if col >= 0 and col < state.upper_zone.size():
-		return state.upper_zone[col].datas.size() == 0
-	col = state.lower_zone_type.find(data)
-	if col >= 0 and col < state.lower_zone.size():
-		return state.lower_zone[col].datas.size() == 0
+	#O(1) via the §5.4 position index (headers row -1, cards their row)
 	var vec3 := find_data_vec3(data)
 	if vec3 == Vector3i.MIN: return false
 	var zone := get_zone_from_vec3(vec3)
 	if vec3.y < 0 or vec3.y >= zone.size(): return false
 	var zone_col : ArrayCardData = zone[vec3.y]
-	if not zone_col or zone_col.datas.is_empty(): return false
-	return data == zone_col.datas[-1]
+	if not zone_col: return false
+	if vec3.z < 0: # zone/type header: topmost exactly when its column is empty
+		return zone_col.datas.is_empty()
+	return vec3.z == zone_col.datas.size() - 1 and data == zone_col.datas[-1]
 
 #spawns new CARD where deck is
 func draw_card() -> CardData:
@@ -531,6 +548,7 @@ func return_to_map() -> void:
 	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
+	Main.save_info.game_history_trimmed = 0
 	Main.save_info.game_submits = 0
 	game_ended.emit()
 
@@ -677,7 +695,8 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 ## Replay-stable 50/50 pick for a hoop/knife row side. Hashes only resume-persisted inputs
 ## (direction affects hook order, so it is data, not RNG).
 func entity_side_for_row(v: Vector3i) -> bool:
-	return hash([submits_used, save_history.size(), v.x, v.z]) & 1 == 0
+	# history_trimmed + size = total actions ever committed — invariant under the undo cap
+	return hash([submits_used, history_trimmed + save_history.size(), v.x, v.z]) & 1 == 0
 
 ## Every slot in v's row (fixed zone x + row z, across columns y), left-to-right or reversed.
 func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:

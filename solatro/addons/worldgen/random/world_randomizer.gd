@@ -133,7 +133,7 @@ static func step_params(step: String) -> Array:
 ## Debug: any tunable params not assigned to exactly one step. Print at startup if
 ## you add a new @export and forget to slot it into STEP_PARAMS.
 static func coverage_gaps() -> Array:
-	var assigned := {}
+	var assigned: Dictionary[String, bool] = {}
 	for s in STEP_PARAMS:
 		for p in STEP_PARAMS[s]:
 			assigned[p] = true
@@ -146,7 +146,7 @@ static func coverage_gaps() -> Array:
 ## name -> [lo, hi, is_int] for every randomizable WorldSettings parameter (range hint
 ## if present, else DEFAULT_RANGES). Params with neither are omitted.
 static func param_ranges() -> Dictionary:
-	var out := {}
+	var out: Dictionary[String, Array] = {}
 	var ws := WorldSettings.new()
 	for p in ws.get_property_list():
 		if (int(p.usage) & PROPERTY_USAGE_EDITOR) == 0:
@@ -180,7 +180,7 @@ static func _parse_range_hint(hint: String) -> Array:
 ## EXCLUDE), regardless of whether it has a predefined range. The canonical "save
 ## everything" set, so no finetuned value is silently dropped from a preset.
 static func tunable_params() -> Dictionary:
-	var out := {}
+	var out: Dictionary[String, bool] = {}
 	for p in WorldSettings.new().get_property_list():
 		if (int(p.usage) & PROPERTY_USAGE_EDITOR) == 0:
 			continue
@@ -265,15 +265,15 @@ static func load_bundle() -> Dictionary:
 ## PresetIO.load_ranges). Only params still in STEP_PARAMS survive (deleted climate/city
 ## params in old presets are dropped); values are rounded compact. Returns the bundle.
 static func export_bundle(loader: Callable) -> Dictionary:
-	var steps := {}
+	var steps: Dictionary[String, Dictionary] = {}
 	for step in STEP_PARAMS:
 		var raw = loader.call(step)
 		if typeof(raw) != TYPE_DICTIONARY or raw.is_empty():
 			continue
-		var whitelist := {}
+		var whitelist: Dictionary[String, bool] = {}
 		for p in step_params(step):
 			whitelist[p] = true
-		var kept := {}
+		var kept: Dictionary[String, Dictionary] = {}
 		for p in raw:
 			if whitelist.has(p) and raw[p] is Dictionary:
 				kept[p] = _compact_entry(raw[p])

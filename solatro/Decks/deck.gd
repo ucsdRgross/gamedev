@@ -39,7 +39,16 @@ func _card(suit: GDScript, rank: int) -> CardData:
 ## RULES 1 — the standard rules row: 5 upper adders, 6 lower adders, one each of
 ## grabber/placer/cascade-scorer, and the poker-hand evaluator. Random suits/ranks: rules
 ## cards never score as melds, so their pips are cosmetic.
-var rules1 : Array[CardData] = _build_rules1()
+## N6: every deck/rules member below is LAZY (built on first access, cached in the backing
+## var — reading the var inside its own getter bypasses the getter, no recursion). Deck.new()
+## therefore allocates nothing; a Game builds only the one deck it plays, and the picker
+## builds the rest only when it actually opens (get_deck_list touches them all).
+## Timing note: rules1/deck pips use random_standard() — WHICH global-RNG values they draw
+## now depends on first-access order. Cosmetic only (rules cards never score).
+var rules1 : Array[CardData]:
+	get:
+		if rules1.is_empty(): rules1 = _build_rules1()
+		return rules1
 func _build_rules1() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 5:
@@ -64,7 +73,10 @@ func _build_rules1() -> Array[CardData]:
 ## DECK 1 — smoke deck (8): every suit at ranks 1-2, all plain.
 ## Tests: the smallest all-suit board; each suit's props fire at least once with no skills
 ## in the way. Balance: baseline for "what does an empty-modifier run score".
-var deck1 : Array[CardData] = _build_deck1()
+var deck1 : Array[CardData]:
+	get:
+		if deck1.is_empty(): deck1 = _build_deck1()
+		return deck1
 func _build_deck1() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for rank : int in [1, 2]:
@@ -75,7 +87,10 @@ func _build_deck1() -> Array[CardData]:
 ## DECK 2 — rank spread (8): each suit once ascending 1-4, then once descending 4-1.
 ## Tests: mixed-rank melds and pip-count-driven prop volume (rank = spawn count) across
 ## every suit. Balance: contrasts low- vs high-pip versions of the same suit in one run.
-var deck2 : Array[CardData] = _build_deck2()
+var deck2 : Array[CardData]:
+	get:
+		if deck2.is_empty(): deck2 = _build_deck2()
+		return deck2
 func _build_deck2() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for i : int in ALL_SUITS.size():
@@ -88,7 +103,10 @@ func _build_deck2() -> Array[CardData]:
 ## StampRevealing, and TypeHeavy on all four suits, with two plain closers.
 ## Tests: every modifier surface (skill/stamp/type) rendering + scoring together.
 ## Balance: roughly half the deck modified, half plain.
-var deck3 : Array[CardData] = _build_deck3()
+var deck3 : Array[CardData]:
+	get:
+		if deck3.is_empty(): deck3 = _build_deck3()
+		return deck3
 func _build_deck3() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 2:
@@ -106,7 +124,10 @@ func _build_deck3() -> Array[CardData]:
 ## Tests: long runs, deck cycling, draw/discard volume, poker-hand evaluation with a real
 ## distribution. Balance: THE reference deck; no skills means no jump/spin reactions and
 ## maximum prop spawns (nothing suppressed).
-var deck4 : Array[CardData] = _build_deck4()
+var deck4 : Array[CardData]:
+	get:
+		if deck4.is_empty(): deck4 = _build_deck4()
+		return deck4
 func _build_deck4() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for suit : GDScript in ALL_SUITS:
@@ -118,7 +139,10 @@ func _build_deck4() -> Array[CardData]:
 ## (ExtraPoint, ExtraPoint+DoubleTrigger, 2x EchoingTrigger, plain).
 ## Tests: on_score / re-trigger interactions on identical cards where every score delta is
 ## attributable. Balance: how far double/echoing triggers snowball a flat deck.
-var deck5 : Array[CardData] = _build_deck5()
+var deck5 : Array[CardData]:
+	get:
+		if deck5.is_empty(): deck5 = _build_deck5()
+		return deck5
 func _build_deck5() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 3:
@@ -135,7 +159,10 @@ func _build_deck5() -> Array[CardData]:
 ## Tests: a whole deck of one board-mutating skill (eat interactions, activation order).
 ## Balance: worst-case skill density; also note every suit is fully suppressed here, so
 ## this deck should show ZERO props by design.
-var deck6 : Array[CardData] = _build_deck6()
+var deck6 : Array[CardData]:
+	get:
+		if deck6.is_empty(): deck6 = _build_deck6()
+		return deck6
 func _build_deck6() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 3:
@@ -149,7 +176,10 @@ func _build_deck6() -> Array[CardData]:
 ## closer), then the same shape x3 with StampRevealing layered on.
 ## Tests: stamp + trigger-skill stacking on identical hoop-1 cards; Revealing's info flow
 ## under heavy re-triggering. Balance: trigger deck with vs without a utility stamp.
-var deck7 : Array[CardData] = _build_deck7()
+var deck7 : Array[CardData]:
+	get:
+		if deck7.is_empty(): deck7 = _build_deck7()
+		return deck7
 func _build_deck7() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 3:
@@ -171,7 +201,10 @@ func _build_deck7() -> Array[CardData]:
 ## StampRevealing on the back half.
 ## Tests: Global's everywhere-active scope under double/echoing re-triggers (the loudest
 ## stamp interaction). Balance: direct A/B against deck7 — same skills, different stamp.
-var deck8 : Array[CardData] = _build_deck8()
+var deck8 : Array[CardData]:
+	get:
+		if deck8.is_empty(): deck8 = _build_deck8()
+		return deck8
 func _build_deck8() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 3:
@@ -194,7 +227,10 @@ func _build_deck8() -> Array[CardData]:
 ## Tests: Stone-type boards with mixed modifiers (the pre-2026-07-13 playtest deck).
 ## KNOWN QUIRK: every HOOP card here carries a skill, so hoops never spawn props with this
 ## deck (talented cards suppress their own suit) — kept as the regression example.
-var deck9 : Array[CardData] = _build_deck9()
+var deck9 : Array[CardData]:
+	get:
+		if deck9.is_empty(): deck9 = _build_deck9()
+		return deck9
 func _build_deck9() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 4:
@@ -211,7 +247,10 @@ func _build_deck9() -> Array[CardData]:
 ## DECK 10 — all-Stone core (12): 4 copies of deck9's three Stone cards only.
 ## Tests: a board where EVERY card is Stone-typed (type-interaction edge cases with no
 ## plain cards to hide behind). Balance: Stone density at its ceiling.
-var deck10 : Array[CardData] = _build_deck10()
+var deck10 : Array[CardData]:
+	get:
+		if deck10.is_empty(): deck10 = _build_deck10()
+		return deck10
 func _build_deck10() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 4:
@@ -226,7 +265,10 @@ func _build_deck10() -> Array[CardData]:
 ## actually spawn; nothing fully suppressed) and every row has both talents (hoops JUMP
 ## them, knives SPIN them) and plain cards (knives score them). Balance: a "normal" mixed
 ## board — ~1/3 talents — for tuning prop points against skill points.
-var deck11 : Array[CardData] = _build_deck11()
+var deck11 : Array[CardData]:
+	get:
+		if deck11.is_empty(): deck11 = _build_deck11()
+		return deck11
 func _build_deck11() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for suit : GDScript in ALL_SUITS:
@@ -242,7 +284,10 @@ func _build_deck11() -> Array[CardData]:
 ## PipSuit.STANDARD and has no other grant path — in-run acquisition is an open owner decision);
 ## exercises column_rise_path against normal row traffic. Balance: first read on whether
 ## FIREWORK_POINTS is worth a deck slot.
-var deck12 : Array[CardData] = _build_deck12()
+var deck12 : Array[CardData]:
+	get:
+		if deck12.is_empty(): deck12 = _build_deck12()
+		return deck12
 func _build_deck12() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 2:
@@ -258,7 +303,10 @@ func _build_deck12() -> Array[CardData]:
 ## Tests: Burning/Juggling stacking on repeat targets, the Burning spawn-count bonus
 ## feeding back into later fires, and StatusLayer rendering under many stacks. Balance:
 ## how fast a status engine snowballs when half the deck feeds it.
-var deck13 : Array[CardData] = _build_deck13()
+var deck13 : Array[CardData]:
+	get:
+		if deck13.is_empty(): deck13 = _build_deck13()
+		return deck13
 func _build_deck13() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 4:

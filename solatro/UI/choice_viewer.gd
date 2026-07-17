@@ -32,7 +32,9 @@ static func add_to_scene(parent:Node, create_one:Callable, choices:int, choose:i
 	data.create_one_choice = create_one
 	data.choose = choose
 	for i in choices:
-		var card_data : CardData = create_one.call()
+		# awaited: generators may be coroutines (BoosterTemplate awaits its pool
+		# broadcasts, E8); a plain sync callable resumes immediately
+		var card_data : CardData = await create_one.call()
 		if card_data: data.current_choices.append(card_data)
 	return add_choices_to_scene(parent, data)
 

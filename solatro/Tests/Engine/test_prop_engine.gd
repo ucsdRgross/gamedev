@@ -95,6 +95,8 @@ func spawner_of(origin: Vector3i, p: PropData) -> Array[PropSpawner]:
 	return [sp] as Array[PropSpawner]
 
 func done(g: Game) -> void:
+	# Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier cycles.
+	g.state.unlink_modifier_backrefs()
 	CardEnvironment.CURRENT = null
 	g.free()
 

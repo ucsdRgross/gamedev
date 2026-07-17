@@ -35,9 +35,19 @@ var focused : bool = false:
 @export var data : CardData:
 	set(value):
 		if data == value: return
+		#N9 idiom: this visual follows exactly ONE data — drop the old resource's
+		#connections on swap so it can't keep updating a re-purposed visual
+		if data:
+			if data.data_changed.is_connected(update_visual):
+				data.data_changed.disconnect(update_visual)
+			if data.stage_changed.is_connected(on_stage_changed):
+				data.stage_changed.disconnect(on_stage_changed)
 		data = value
+		if data:
+			data.data_changed.connect(update_visual)
+			data.stage_changed.connect(on_stage_changed)
 		update_visual()
-		
+
 		if current_context != DisplayContext.PLAY_AREA: return
 		if is_node_ready() and data:
 			on_stage_changed()
@@ -65,10 +75,6 @@ var show_front := false :
 		if value != show_front:
 			show_front = value
 			update_visual()
-
-#func set_flipped_instant(flip:bool) -> void:
-	#flipped = flip
-	#basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if flip else 1)))
 
 func update_visual() -> void:
 	# @onready polygon nodes only exist once ready — await BEFORE choosing the branch so the
@@ -129,8 +135,6 @@ func update_visual() -> void:
 			1)
 		type.show()
 
-#static var num_cards : int = 0
-#static var child_offset : Vector2 = Vector2(0, 55)
 var num : int = 0
 var move_tween : Tween
 var tilt_tween : Tween
@@ -160,20 +164,11 @@ static func add_child_card_visual(parent:Node,connected_data:CardData, context:D
 	return card
 
 func _ready() -> void:
-	#if not Engine.is_editor_hint(): data = null
 	type.hide()
 	rank.hide()
 	stamp.hide()
 	suit.hide()
 	art.hide()
-	#if not (data and data.stage == CardData.Stage.ZONE):
-		#front.frame = 3
-		##num_cards += 1
-		##num = num_cards
-	#else:
-		#front.frame = 0
-		##child_offset = Vector2(0,0)
-		#basis3d = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1))
 	status_layer = StatusLayer.new()
 	# Top-left of the card face in UNSCALED local coords (the root's `scale` applies card_scale,
 	# exactly like the polygon children) — using the scaled card_size here would double-apply it.
@@ -268,28 +263,22 @@ func _process(delta: float) -> void:
 var rot_delta : float
 var y_delta : float
 func delta_self_moving_logic(delta:float) -> void:
-	# Needs state check, if discard then discard animation first before free
+	# TODO(discard animation): needs a stage check — a card leaving to the discard pile
+	# should play a discard animation BEFORE this queue_free, not vanish instantly.
 	match current_context:
 		DisplayContext.PLAY_AREA:
-			if _game_view() and data not in _game_view().play_area.data_ui: queue_free()
+			#one lookup per frame, not two (N-E2)
+			var gv := _game_view()
+			if gv and data not in gv.play_area.data_ui: queue_free()
 		_:
 			if not Engine.is_editor_hint() and (not control_anchor or not is_instance_valid(control_anchor)): queue_free()
 	if (not (move_tween and move_tween.is_running())) and control_anchor:
-			#and data and (data.stage == data.Stage.PLAY or data.stage == data.Stage.ZONE)):		
 		var target : Vector2 = get_card_control_center(control_anchor)
 		if held:
 			#where card orients itself relative to mouse
 			var offset : int =  card_size.y/2 - card_separation/2
 			offset += (held - 1) * card_separation_custom
 			target = get_global_mouse_position() + Vector2(0, offset)
-		#if held or not bot_card:
-			#target = target_pos
-		#else:
-			#target = bot_card.global_position
-			#if not bot_card.is_zone:
-				#target += bot_card.child_offset.rotated(bot_card.global_rotation*1.75)
-			#y_delta += bot_card.y_delta * 0.5
-			
 		target.y -= y_delta
 		var move : Vector2 = target - global_position
 		# Only PLAY_AREA cards ease toward their slot — that smooths slot-to-slot moves and the
@@ -337,9 +326,7 @@ func delta_floating_anim(delta:float) -> void:
 	visual.position.y = lerpf(visual.position.y, bobbing, 10 * delta)
 
 func with_data(data:CardData) -> CardVisual:
-	self.data = data
-	data.data_changed.connect(update_visual)
-	data.stage_changed.connect(on_stage_changed)
+	self.data = data  # the setter wires data_changed/stage_changed (and unwires on swap)
 	return self
 
 func reset_tween(tween:Tween) -> void:
@@ -425,44 +412,6 @@ func anim_reset() -> void:
 	move_tween.tween_property(offset, "position:y", 0, delay * .4)
 	move_tween.tween_callback(func()->void: floating = true)
 
-#print(result.score_name, "\nscore: ", result.score)
-				##tween = create_tween().set_parallel(true)
-				##tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
-				#for c:Card in result.card_combo:
-					#var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-					#c.floating = false
-					#card_tween.tween_property(c.front, "position:y", -7 * 1.5, base_delay * .5)
-					#card_tween.tween_property(c.front, "position:y", -7, base_delay * .5)
-					#print('suit: ', c.data.suit.get_str(), c.data.suit.value, ' rank: ', c.data.rank.get_str(), c.data.rank.value)
-				#for c:Card in last_scored_cards:
-					#if c not in result.card_combo:
-						#var card_tween : Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-						#card_tween.tween_property(c.front, "position:y", 0, base_delay)
-						#card_tween.tween_callback(func()->void: c.floating = true)
-						##card_tween.tween_property(c, "floating", true, base_delay * .1)
-				#
-				##tween.tween_interval(score_delay)
-				#last_scored_cards = result.card_combo
-				#var combo_pos : Vector2 = Vector2.ZERO
-				#for card in result.card_combo:
-					#combo_pos += card.global_position
-				#combo_pos /= result.card_combo.size()
-				#var score_name_popup := TextPopup.new_popup(result.score_name, combo_pos)
-				#game_container.add_child(score_name_popup)
-				#
-				#row_add_score(row_to_score, result.score)
-				##var popup := (TEXT_POPUP.instantiate() as TextPopup).with(result.score_name, score_delay)
-				##popup.global_position = combo_pos
-				##add_child(popup)
-				#await get_tree().create_timer(base_delay).timeout
-				#for card in result.card_combo:
-					#await run_all_mods(&"on_score", card)
-				#await run_all_mods(&"on_after_score")
-				#
-				##await get_tree().create_timer(score_delay).timeout
-				#score_name_popup.queue_free()
-				#
-
 # --- EDITOR BAKE INSPECTOR UTILITIES ---
 @export_group("Mesh Generation Configuration")
 @export var target_polygon_node: Polygon2D
@@ -541,11 +490,14 @@ func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, s
 	# Merge everything into the primary polygon vertex buffer
 	var final_vertices := perimeter_vertices + internal_vertices
 	
-	# Helper lambda function to index points quickly inside the flat final array
+	# O(1) vertex index lookup (E11 — was a linear scan per corner, O(V^2) over the bake).
+	# Exact Vector2 keys are safe: every queried point is bit-identical to its grid_pts source.
+	var v_index : Dictionary[Vector2, int] = {}
+	for i in range(final_vertices.size()):
+		if final_vertices[i] not in v_index:
+			v_index[final_vertices[i]] = i
 	var get_v_idx := func(pos: Vector2) -> int:
-		for i in range(final_vertices.size()):
-			if final_vertices[i].is_equal_approx(pos): return i
-		return 0
+		return v_index.get(pos, 0)
 
 	# --- STEP 2: DIAMOND "X" TRIANGULATION ---
 	var center_counter := 0

@@ -148,7 +148,11 @@ func _on_save_button_pressed() -> void:
 	for card_control : Control in flow_container.get_children():
 		var data := (card_control.get_child(0) as Card).data
 		profile.write_card_data(data)
-	assert(ResourceSaver.save(profile, "user://soltaro_save.tres") == OK)
+	#never wrap the save in assert(): release builds strip asserts WITH their side
+	#effects, so the file would silently never be written in an export
+	var err := ResourceSaver.save(profile, "user://soltaro_save.tres")
+	if err != OK:
+		push_error("Deck Maker save failed: %s" % error_string(err))
 	print(ProjectSettings.globalize_path("user://soltaro_save.tres"))
 
 func _on_load_button_pressed() -> void:

@@ -37,25 +37,34 @@ func is_data_in_rules(data: CardData) -> bool:
 #(CardModifier.env/game accessors, PipComparator, UI) — not inside dispatch.
 func run_all_mods(function: StringName, ...params:Array) -> void:
 	#print(function)
-	for data in CardDataIterator.new(self):
-		#print(data)
-		# statuses join type/stamp as a SNAPSHOT copy (append_array) so a status removing
-		# itself mid-hook can't corrupt this walk. Statuses self-scope targeted hooks.
-		var mods : Array[CardModifier] = [data.type, data.stamp]
-		mods.append_array(data.statuses)
-		for mod : CardModifier in mods:
-			if mod and mod.has_method(function):
+	var triggered := false
+	# P1 gate: on a cacheable environment (Game — _revision_key non-empty) consult the SE1
+	# implementer cache first; when NOTHING on the board implements this hook the walk is a
+	# pure no-op scan, so skip it. Base envs (tests, map) return an empty key and always
+	# walk — building the list uncached would itself cost the walk being saved.
+	if _revision_key().is_empty() or not _compare_implementers(function).is_empty():
+		for data in CardDataIterator.new(self):
+			#print(data)
+			# statuses join type/stamp as a SNAPSHOT copy (append_array) so a status removing
+			# itself mid-hook can't corrupt this walk. Statuses self-scope targeted hooks.
+			var mods : Array[CardModifier] = [data.type, data.stamp]
+			mods.append_array(data.statuses)
+			for mod : CardModifier in mods:
+				if mod and mod.has_method(function):
+					triggered = true
+					note_processing()
+					await Callable(mod, function).callv(params)
+					await skill_active_check()
+			var skill : CardModifierSkill = data.skill
+			if skill and skill.has_method(function) and skill.active:
+				triggered = true
 				note_processing()
-				await Callable(mod, function).callv(params)
+				await Callable(skill, function).callv(params)
 				await skill_active_check()
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
-			note_processing()
-			await Callable(skill, function).callv(params)
-			await skill_active_check()
-	var passive_effects := &"on_anything"
-	if function != passive_effects:
-		await run_all_mods(passive_effects)
+	# P1 owner ruling (2026-07-16): the passive on_anything tail only runs when this event
+	# actually invoked a mod — if nothing ran, nothing could have changed.
+	if triggered and function != &"on_anything":
+		await run_all_mods(&"on_anything")
 
 #SE1: comparators run per card-compare, so the "which mods implement this hook" walk
 #is cached while the board hasn't mutated. Skills stay in the list regardless of
@@ -76,7 +85,7 @@ func _compare_implementers(function: StringName) -> Array:
 			_compare_cache_key = key
 		if _compare_cache.has(function):
 			return _compare_cache[function]
-	var impl := []
+	var impl : Array[CardModifier] = []
 	for data in CardDataIterator.new(self):
 		var mods : Array[CardModifier] = [data.type, data.stamp]
 		mods.append_array(data.statuses)

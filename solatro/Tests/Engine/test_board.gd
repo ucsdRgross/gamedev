@@ -66,6 +66,12 @@ func make_game() -> Game:
 	g.state = s
 	return g
 
+## Teardown discipline (see test_leak_canary.gd): break the CardData<->pip cycles
+## before dropping a fixture Game, or its cards leak until exit.
+func free_game(g: Game) -> void:
+	g.state.unlink_modifier_backrefs()
+	g.free()
+
 func validate_ok(g: Game, ctx: String) -> void:
 	var v := g.state.validate()
 	check(v.is_empty(), ctx + " -> validate()", str(v))
@@ -117,12 +123,15 @@ func run_locate_tests() -> void:
 	check(g.find_vec3_data(Vector3i(0, 0, 5)) == null, "out-of-range row -> null (S2)")
 	check(g.find_vec3_data(Vector3i(0, 1, -1)) == null, "negative row -> null (S2)")
 
-	#B4 regression: more columns than headers must not crash locate
+	#B4 regression: more columns than headers must not crash locate.
+	#Raw append = a mutation, so it bumps revision per the MUTATION GUIDELINES
+	#(the §5.4 position index and compare cache both key on it).
 	g.state.upper_zone.append(TestFactories.col([TestFactories.m_card(9, TestFactories.uc())]))
+	g.state.revision += 1
 	var extra := g.state.upper_zone[3].datas[0]
 	check(g.find_data_vec3(extra) == Vector3i(0, 3, 0),
 			"B4: locate works with more columns than headers")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -143,7 +152,7 @@ func run_topmost_tests() -> void:
 	check(not g.is_data_topmost(g.state.lower_zone_type[2]), "lower header, full column -> not")
 	check(not g.is_data_topmost(g.state.draw_deck[0]), "deck card is not topmost")
 	check(not g.is_data_topmost(TestFactories.m_card(1, 1)), "off-board card is not topmost")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -194,7 +203,7 @@ func run_cross_column_moves() -> void:
 	validate_ok(g, "after ColumnStart insert")
 
 	check(total_cards(g) == 19, "card count conserved through all moves")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -250,7 +259,7 @@ func run_same_column_moves() -> void:
 			"count -1 same column onto own stack -> rejected, board unchanged",
 			str(col_datas(g, 0, 0)))
 	validate_ok(g, "after same-column count -1")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -295,7 +304,7 @@ func run_degenerate_moves() -> void:
 	await g.move_stack(some_card, 1, null, false)
 	check(snap(g) == before2, "null anchor -> rejected, unchanged")
 	validate_ok(g, "after rejected moves")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -354,7 +363,7 @@ func run_event_tests() -> void:
 	validate_ok(g, "after ColumnEnd event move")
 
 	CardEnvironment.CURRENT = null
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -381,7 +390,7 @@ func run_draw_discard_tests() -> void:
 			and mid.stage == CardData.Stage.DISCARD,
 			"discard mid-stack card: removed, appended to discard, stage DISCARD")
 	validate_ok(g, "after discard")
-	g.free()
+	free_game(g)
 
 
 # ==============================================================================
@@ -433,4 +442,5 @@ func run_undo_duplicate_tests() -> void:
 			"mutating live state leaves the snapshot untouched")
 	var v := copy.validate()
 	check(v.is_empty(), "snapshot itself validates", str(v))
-	g.free()
+	copy.unlink_modifier_backrefs()  # the duplicate carries its own cycles
+	free_game(g)

@@ -13,24 +13,31 @@ var revision : int = 0:
 		revision = value
 		board_changed.emit()
 
+#scalar setters guard same-value writes (E10): each emission fans out to every HUD label,
+#and scoring passes re-assign these repeatedly with unchanged values
 @export_storage var goal : int = 100:
 	set(value):
+		if goal == value: return
 		goal = value
 		state_changed.emit()
 @export_storage var total_score : int = 0:
 	set(value):
+		if total_score == value: return
 		total_score = value
 		state_changed.emit()
 @export_storage var mult_score : int = 0:
 	set(value):
+		if mult_score == value: return
 		mult_score = value
 		state_changed.emit()
 @export_storage var col_total : int = 0:
 	set(value):
+		if col_total == value: return
 		col_total = value
 		state_changed.emit()
 @export_storage var row_total : int = 0:
 	set(value):
+		if row_total == value: return
 		row_total = value
 		state_changed.emit()
 ## Acts used this show. Lives ON the board state so every undo/history snapshot carries it:
@@ -102,7 +109,54 @@ func duplicate_state() -> GameData:
 	copy.scores_row_upper = duplicate_big_number_array(scores_row_upper)
 	copy.scores_row_lower = duplicate_big_number_array(scores_row_lower)
 	copy.scores_col = duplicate_big_number_array(scores_col)
+	#the position index must never travel with a copy (its keys are THIS state's card
+	#instances); the copy lazily rebuilds its own on first lookup
+	copy._pos_index = {}
+	copy._pos_index_revision = -1
 	return copy
+
+# ---------------------------------------------------------------------------
+# E4 / §5.4 position index: card -> board coordinate ((x, col, row); headers row -1),
+# rebuilt LAZILY whenever `revision` moved since the last build. Runtime only — not
+# @export*, so it never serializes; duplicate_state()/restore_runtime() reset it.
+# Correctness rides the MUTATION GUIDELINES bump-after-consistency rule — the exact
+# key the SE1 compare-mod cache already trusts, so a mutation that forgets its bump
+# was a bug before this index existed. The one mid-mutation refresh point is
+# Board.move_stack, which invalidates after its extraction so the post-extraction
+# anchor resolve sees current rows.
+# ---------------------------------------------------------------------------
+var _pos_index : Dictionary[CardData, Vector3i] = {}
+var _pos_index_revision : int = -1   # -1 = invalid (revision is never negative)
+
+## O(1) board position of a card; Vector3i.MIN when not on the board.
+func position_of(card: CardData) -> Vector3i:
+	if _pos_index_revision != revision:
+		_pos_index = _scan_positions()
+		_pos_index_revision = revision
+	return _pos_index.get(card, Vector3i.MIN)
+
+## Force the next position_of to rebuild (for lookups mid-mutation, before the bump).
+func invalidate_pos_index() -> void:
+	_pos_index_revision = -1
+
+## Full rescan of every board position. Write order is REVERSE lookup precedence
+## (upper types > lower types > upper cards > lower cards — later writes win), so a
+## duplicate-card state (I1 violation) resolves like the old linear locate did.
+func _scan_positions() -> Dictionary[CardData, Vector3i]:
+	var out : Dictionary[CardData, Vector3i] = {}
+	for c in lower_zone.size():
+		if not lower_zone[c]: continue
+		for r in lower_zone[c].datas.size():
+			if lower_zone[c].datas[r]: out[lower_zone[c].datas[r]] = Vector3i(1, c, r)
+	for c in upper_zone.size():
+		if not upper_zone[c]: continue
+		for r in upper_zone[c].datas.size():
+			if upper_zone[c].datas[r]: out[upper_zone[c].datas[r]] = Vector3i(0, c, r)
+	for c in lower_zone_type.size():
+		if lower_zone_type[c]: out[lower_zone_type[c]] = Vector3i(1, c, -1)
+	for c in upper_zone_type.size():
+		if upper_zone_type[c]: out[upper_zone_type[c]] = Vector3i(0, c, -1)
+	return out
 
 func all_card_datas() -> Array[CardData]:
 	var all : Array[CardData] = []
@@ -143,15 +197,31 @@ func validate() -> Array[String]:
 		for i in deck.size():
 			if not deck[i]:
 				violations.append("I3: %s index %d is null" % [deck_name, i])
-	#I1: every card lives in exactly one collection (no duplicates by identity)
-	var seen := {}
-	for card in all_card_datas():
-		if not card: continue
-		if seen.has(card):
-			violations.append("I1: card in two places: %s (also %s)" % [card, seen[card]])
-		seen[card] = true
+	#I1: every card lives in exactly one collection (no duplicates by identity).
+	#Walks the named containers (not all_card_datas) so the message can say WHERE the
+	#card also lives instead of a bare true.
+	var seen : Dictionary[CardData, String] = {}
+	for deck_name : String in ["draw_deck", "discard_deck", "rules_deck",
+			"upper_zone_type", "lower_zone_type"]:
+		for card : CardData in get(deck_name):
+			if not card: continue
+			if seen.has(card):
+				violations.append("I1: card in two places: %s (%s, also %s)" \
+						% [card, deck_name, seen[card]])
+			seen[card] = deck_name
+	for zone_name : String in ["upper_zone", "lower_zone"]:
+		for c in (get(zone_name) as Array[ArrayCardData]).size():
+			var col : ArrayCardData = get(zone_name)[c]
+			if not col: continue
+			for card in col.datas:
+				if not card: continue
+				var here := "%s col %d" % [zone_name, c]
+				if seen.has(card):
+					violations.append("I1: card in two places: %s (%s, also %s)" \
+							% [card, here, seen[card]])
+				seen[card] = here
 	#I5: stage matches location
-	var expected_stage := {}
+	var expected_stage : Dictionary[CardData, CardData.Stage] = {}
 	for card in draw_deck: expected_stage[card] = CardData.Stage.DRAW
 	for card in discard_deck: expected_stage[card] = CardData.Stage.DISCARD
 	for card in rules_deck: expected_stage[card] = CardData.Stage.RULES
@@ -167,6 +237,18 @@ func validate() -> Array[String]:
 			violations.append("I5: %s stage %s, expected %s" % [card,
 					CardData.Stage.find_key(card.stage),
 					CardData.Stage.find_key(expected_stage[card])])
+	#I4 (§5.4): the position index, when built for THIS revision, agrees with a rescan.
+	#Report-only like everything here — no rebuild, no invalidation.
+	if _pos_index_revision == revision:
+		var rescan := _scan_positions()
+		for card in rescan:
+			if _pos_index.get(card, Vector3i.MIN) != rescan[card]:
+				violations.append("I4: index says %s for %s, rescan says %s" \
+						% [_pos_index.get(card, Vector3i.MIN), card, rescan[card]])
+		for card in _pos_index:
+			if not rescan.has(card):
+				violations.append("I4: stale index entry %s for off-board %s" \
+						% [_pos_index[card], card])
 	#score arrays sized to the board
 	if scores_col and upper_zone and scores_col.size() < min(upper_zone.size(), lower_zone.size()):
 		violations.append("scores_col %d entries < %d paired columns" \
@@ -196,19 +278,27 @@ func unpack_scores() -> void:
 # the only thing ResourceSaver can't write; unlink for a save, relink after. The backref
 # always equals the owning card, so relinking is lossless. ZoneAdder.card_data is a plain
 # forward ref (no cycle) and is left intact.
+# The per-card halves are static and are THE single list of modifier slots — RunManager's
+# deck save/load paths call them too. Add any new modifier slot here and nowhere else.
+static func unlink_card_backrefs(card: CardData) -> void:
+	for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
+		if mod: mod.data = null
+	for st: CardModifierStatus in card.statuses:
+		st.data = null
+
+static func relink_card_backrefs(card: CardData) -> void:
+	for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
+		if mod: mod.data = card
+	for st: CardModifierStatus in card.statuses:
+		st.data = card
+
 func unlink_modifier_backrefs() -> void:
 	for card in all_card_datas():
-		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
-			if mod: mod.data = null
-		for st: CardModifierStatus in card.statuses:
-			st.data = null
+		unlink_card_backrefs(card)
 
 func relink_modifier_backrefs() -> void:
 	for card in all_card_datas():
-		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
-			if mod: mod.data = card
-		for st: CardModifierStatus in card.statuses:
-			st.data = card
+		relink_card_backrefs(card)
 
 ## An independent, disk-ready copy: modifier self-cycles unlinked and scores packed to
 ## primitives, so ResourceSaver can write it and a background thread can read it safely
@@ -228,6 +318,7 @@ func to_saveable() -> GameData:
 func restore_runtime() -> void:
 	relink_modifier_backrefs()
 	unpack_scores()
+	invalidate_pos_index()  # loaded/copied states rebuild their own index on first lookup
 
 # The mantissa / exponent columns of a BigNumber array as their own typed packed arrays.
 func _mantissas(src:Array[BigNumber]) -> PackedFloat64Array:
@@ -265,30 +356,22 @@ func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:
 	return new_a
 
 func print_board() -> void:
-	var s : String = "Upper Type,"
-	for c in upper_zone_type:
+	print(_zone_to_csv("Upper Type", upper_zone_type, upper_zone)
+			+ _zone_to_csv("Lower Type", lower_zone_type, lower_zone))
+
+#one zone's debug CSV: header row of type cards, then one row per stack depth (E7)
+func _zone_to_csv(label: String, types: Array[CardData], zone: Array[ArrayCardData]) -> String:
+	var s : String = label + ","
+	for c in types:
 		s += c.to_string() + ","
 	s += "\n"
-	var upper_col_sizes : Array = upper_zone.map(func(a:ArrayCardData)->int:return a.datas.size())
-	var rows : int = upper_col_sizes.max() if upper_col_sizes else 0
+	var col_sizes : Array = zone.map(func(a:ArrayCardData)->int:return a.datas.size())
+	var rows : int = col_sizes.max() if col_sizes else 0
 	for r in rows:
 		s += str(r) + ","
-		for col in upper_zone:
+		for col in zone:
 			if r < col.datas.size():
 				s += col.datas[r].to_string()
 			s += ","
 		s += "\n"
-	s += "Lower Type,"
-	for c in lower_zone_type:
-		s += c.to_string() + ","
-	s += "\n"
-	var lower_col_sizes : Array = lower_zone.map(func(a:ArrayCardData)->int:return a.datas.size())
-	rows = lower_col_sizes.max() if lower_col_sizes else 0
-	for r in rows:
-		s += str(r) + ","
-		for col in lower_zone:
-			if r < col.datas.size():
-				s += col.datas[r].to_string()
-			s += ","
-		s += "\n"
-	print(s)
+	return s
