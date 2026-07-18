@@ -13,6 +13,9 @@ const DECK_PICKER := preload("res://UI/deck_picker.tscn")
 var _deck : Deck = Deck.new()
 # Focus to restore on close (keyboard/controller flow back to the opening button).
 var _return_focus : Control = null
+# A pick built the rules list too (get_rules) — remember so _exit_tree unlinks it without
+# force-building it on a plain close.
+var _rules_built : bool = false
 
 static func add_to_scene(parent: Node) -> DeckPicker:
 	var picker : DeckPicker = DECK_PICKER.instantiate()
@@ -49,8 +52,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		_close()
 
 func _on_pick(cards: Array[CardData]) -> void:
+	_rules_built = true
 	deck_picked.emit(cards, _deck.get_rules())
 	queue_free()
+
+## The picker's Deck built every starter list lazily on open; they all drop with it — break
+## the CardData<->modifier cycles (leak-canary discipline). Safe for a picked deck too: the
+## deck_picked consumer (RunManager.new_run) deep-duplicated it during the emit above.
+func _exit_tree() -> void:
+	for entry : Dictionary in _deck.get_deck_list():
+		for card : CardData in entry["cards"] as Array[CardData]:
+			GameData.unlink_card_backrefs(card)
+	if _rules_built:
+		for card : CardData in _deck.get_rules():
+			GameData.unlink_card_backrefs(card)
 
 func _on_close_pressed() -> void:
 	_close()

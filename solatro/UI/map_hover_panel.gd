@@ -24,6 +24,10 @@ const HIDE_GRACE_MS := 350.0
 
 # Owns the listed booster-preview cards (the shared listing logic; see CardsViewer).
 var _cards : CardsViewer
+# The preview CardDatas currently listed. They are built fresh per hover and dropped on
+# clear — their CardData<->modifier backrefs are RefCounted cycles (leak-canary
+# discipline), so the panel unlinks them when they leave the list.
+var _preview_cards : Array[CardData] = []
 # A node is currently hovered (keeps the panel open regardless of cursor position).
 var _engaged : bool = false
 # msec timestamp to hide at; < 0 = not scheduled.
@@ -74,7 +78,9 @@ func _populate_cards(booster: BoosterTemplate) -> void:
 	if not _cards:
 		_cards = CardsViewer.new(cards_flow)
 	_cards.clear()  # a previous hover may have listed different cards
-	_cards.populate(await booster.get_possible_preview_cards(), _on_card_inspected)
+	_unlink_previews()
+	_preview_cards = await booster.get_possible_preview_cards()
+	_cards.populate(_preview_cards, _on_card_inspected)
 
 ## Inspector: hovering/focusing a preview card explains its parts via their own
 ## get_str/get_description.
@@ -112,3 +118,15 @@ func _clear_cards() -> void:
 	card_info.text = ""
 	card_info.visible = false
 	if _cards: _cards.clear()
+	_unlink_previews()
+
+## Break the dropped preview cards' modifier cycles (each preview card owns fresh pool
+## instances, so nothing live shares them).
+func _unlink_previews() -> void:
+	for card : CardData in _preview_cards:
+		GameData.unlink_card_backrefs(card)
+	_preview_cards = []
+
+## The panel can be freed with a population still listed (map scene rebuild on run loss).
+func _exit_tree() -> void:
+	_unlink_previews()

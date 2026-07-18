@@ -68,6 +68,22 @@ solver (~57% of the residual) stays GDScript per scope rules.
 
 ## Memory
 
+- **DONE 2026-07-18: comprehensive PRODUCTION leak canary** (the owner-endorsed item
+  below). Landed as SECTION 2 of test_leak_canary.gd ("PRODUCTION SESSION CANARY") — the
+  suite count stays 24 and the deadlock chain is untouched. Each cycle simulates a full
+  session: DeckPicker + DeckViewer open/close + Pick, RunManager.new_run, synthetic-map
+  traversal (MAP TRAVERSAL rig) + MapHoverPanel booster preview + take-all ChoiceViewer
+  confirm, a real GameView show (2 Nexts, grab/place, discard, Submit with real scoring
+  + props, UNDO across the Submit, redo), quit-mid-show -> resume, win exit_show
+  (return_to_map), a loss show + exit_show, clear_save. Asserts OBJECT_COUNT returns to
+  a post-warm-up baseline over 3 cycles. Writing it surfaced FIVE production leaks, all
+  FIXED (production files touched — see EFFICIENCY_AUDIT_TRACKER 2026-07-18):
+  Game.return_to_map (old run-deck copies + rules/zone headers), Game.exit_show loss
+  branch (whole doomed board), RunManager.clear_save (dropped run doc), DeckPicker
+  (lazily-built starter lists on close), MapHoverPanel (booster preview cards).
+  Validation: ALL 24 SUITES green (1291 checks, exit 0); full-run exit leak 699 -> 547;
+  isolated canary (leak_probe) still exactly 57 (its own deliberate fixture — the
+  session section attributes 0).
 - **OWNER-ENDORSED 2026-07-17: comprehensive PRODUCTION leak canary.** The current
   canary (test_leak_canary.gd) only covers bare Game build/teardown cycles — not the
   real game experience. What matters is leaks a PLAYER can accumulate (test-only leaks

@@ -540,6 +540,11 @@ func exit_show() -> void:
 		return_to_map()
 	else:
 		run_lost.emit()
+		# The run is over and this Game frees with its view; the whole board (duplicates of
+		# the now-discarded run doc) drops for good — break the CardData<->modifier cycles
+		# (leak-canary discipline). Safe: the loss handler already ran during the emit and
+		# nothing dispatches mods against this state again.
+		state.unlink_modifier_backrefs()
 
 func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
@@ -563,12 +568,24 @@ func return_to_map() -> void:
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
 	state.revision += 1
+	# The run doc's previous deck copies are replaced by the swept board below and drop for
+	# good — break their CardData<->modifier cycles (leak-canary discipline).
+	for card : CardData in Main.save_info.card_datas:
+		GameData.unlink_card_backrefs(card)
 	Main.save_info.card_datas = state.draw_deck
 	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
 	Main.save_info.game_submits = 0
+	# The rules deck + zone headers die with this Game (only draw_deck lives on in the run
+	# doc) — break their cycles too, or every completed show leaks them until exit.
+	for card : CardData in state.rules_deck:
+		GameData.unlink_card_backrefs(card)
+	for card : CardData in state.upper_zone_type:
+		GameData.unlink_card_backrefs(card)
+	for card : CardData in state.lower_zone_type:
+		GameData.unlink_card_backrefs(card)
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:

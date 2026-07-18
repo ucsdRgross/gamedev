@@ -322,3 +322,32 @@ Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion)
   scenes green (generate_up_to, graph_placement, biome_regions, biome_assign,
   graph_spec full 1500-fuzz 1860/1860, bake/node), no-dll fallback PASS, Solatro
   **ALL 23 SUITES: 1225 CHECKS PASSED, exit 0**.
+- **2026-07-18 PRODUCTION leak canary LANDED (owner-endorsed 2026-07-17,
+  PRODUCTION_LEAK_CANARY_HANDOFF.md):** test_leak_canary.gd grew SECTION 2, the
+  "PRODUCTION SESSION CANARY" (same suite, still last+alone - suite count stays 24, no
+  exclude-list changes). Each cycle simulates a full play session through the real
+  production objects: DeckPicker open (builds all starter lists) + DeckViewer inspect +
+  Pick; RunManager.new_run (frozen TestDecks); synthetic-map traversal (MAP TRAVERSAL
+  rig, no worldgen) + MapHoverPanel booster preview + take-all ChoiceViewer confirm
+  (deck grows); a real show WITH a GameView (2 Nexts, grab/place via try_grab/try_place,
+  discard_data, a Submit with real scoring + props, UNDO across the Submit - proves the
+  2026-07-17 Game.undo() unlink - then redo); quit-mid-show -> resume (save/load relink,
+  app-exit stand-in unlinks like E2E); win exit_show (return_to_map) AND a loss show +
+  exit_show; clear_save. Warm-up cycle first, _drain (0.25s + 2 settle frames) before
+  every count, print_orphan_nodes on failure; asserts OBJECT_COUNT returns to the
+  post-warm-up baseline over 3 cycles.
+  Writing it surfaced FIVE real production leaks, all FIXED (PRODUCTION FILES TOUCHED):
+  * Levels/game.gd return_to_map: the run doc's replaced deck copies + the dying
+    rules_deck / zone-header cards now unlink (every completed show leaked them);
+  * Levels/game.gd exit_show loss branch: unlinks the whole doomed board after
+    run_lost.emit();
+  * Scripts/run_manager.gd clear_save: unlinks the dropped run doc's card/rule decks
+    (idempotent - test paths that already unlinked are unaffected);
+  * UI/deck_picker.gd _exit_tree: unlinks every lazily-built starter list (+ rules when
+    a pick built them) - each picker open+close leaked ~250 cards' cycles;
+  * UI/map_hover_panel.gd: retains + unlinks its booster preview cards on clear/exit -
+    every booster-node hover leaked the preview graph.
+  _restore_pre_act_board stays linked BY DESIGN (untouched). Numbers: full-run exit leak
+  699 -> **547**; isolated canary via leak_probe still exactly **57** (its own deliberate
+  fixture - the session section attributes 0). Validation: two full headless runs,
+  **ALL 24 SUITES: 1291 CHECKS PASSED, exit 0** (second run exit 0, errors log empty).

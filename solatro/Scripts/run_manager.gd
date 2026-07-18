@@ -182,6 +182,14 @@ func _shutdown_saver() -> void:
 ## Discard the run: cancel any queued write, delete the run doc and the baked map. Called
 ## on loss and new_run.
 func clear_save() -> void:
+	# The dropped run doc's cards are CardData<->modifier RefCounted cycles Godot never
+	# collects (leak-canary discipline) — break them before the doc drops for good.
+	# Idempotent, so test paths that already unlinked are unaffected.
+	if run != null:
+		for card : CardData in run.card_datas:
+			GameData.unlink_card_backrefs(card)
+		for card : CardData in run.rule_datas:
+			GameData.unlink_card_backrefs(card)
 	run = null
 	if _saver_mutex != null:
 		_saver_mutex.lock()
