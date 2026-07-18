@@ -2,23 +2,27 @@ class_name RunManagerClass
 extends Node
 
 ## Autoload owning the current run: lifecycle (new/load/save/clear on user://run_save/),
-## and the fame/luck/goal balance formulas (DESIGN_DOC §15, no tips). Persistence follows
-## the SettingsManager ResourceSaver/Loader pattern.
+## and the fame/luck/goal balance formulas (SCORING_MATH_PLAN §15b; DESIGN_DOC §15, no
+## tips). Persistence follows the SettingsManager ResourceSaver/Loader pattern.
 
 const SAVE_DIR := "user://run_save"
 const RUN_PATH := "user://run_save/run.tres"
 ## WorldMap2D.bake_directory for the run's map (composite.png + graph.json live here).
 const MAP_BAKE_DIR := "user://run_save/map"
 
-# --- balance (tunable) ---------------------------------------------------------
-const BASE_GOAL := 100              # matches GameData.goal default
-const GOAL_GROWTH_PER_STEP := 1.15  # per progress rank along the lap
-const BOSS_MULT := 2.0              # lap-target anchor node
-const LAP_MULT := 2.5               # per completed lap (endless scaling)
-const OVERSCORE_RATE := 0.25        # how hard overscoring inflates future goals
-const OVERSCORE_EXP := 1.5          # >1 = accelerating (nonlinear requirement growth)
-const LUCK_CAP := 0.6               # max per-component chance in booster generation
-const FAME_HALF := 5000.0           # fame at which luck reaches half of LUCK_CAP
+# --- balance ---------------------------------------------------------------------
+# Every balance constant moved to Scripts/player_settings.gd "Balance" groups
+# (owner request 2026-07-17: all tunables in ONE place, live via SettingsManager).
+#const G0 := 130.0             # -> settings.goal_g0
+#const GOAL_ALPHA := 4.2       # -> settings.goal_alpha
+#const N0 := 20.0              # -> settings.goal_n0
+#const BOOSTER_YIELD := 5.0    # -> settings.booster_yield
+#const BOSS_MULT := 2.0        # -> settings.boss_mult
+#const LAP_MULT := 2.5         # -> settings.lap_mult
+#const BASE_GOAL := 100              # retired 2026-07: replaced by G0/N-hat curve (§15b)
+#const GOAL_GROWTH_PER_STEP := 1.15  # retired 2026-07
+#const LUCK_CAP := 0.6               # -> settings.luck_cap
+#const FAME_HALF := 5000.0           # -> settings.fame_half
 
 var run : RunState = null
 
@@ -103,7 +107,6 @@ func _build_payload() -> RunState:
 	p.current_node_id = run.current_node_id
 	p.lap = run.lap
 	p.fame = run.fame
-	p.overscore_ratio_sum = run.overscore_ratio_sum
 	p.traveled = run.traveled.duplicate()
 	p.pending_goal = run.pending_goal
 	p.pending_node_id = run.pending_node_id
@@ -191,26 +194,29 @@ func clear_save() -> void:
 		for file in map_dir.get_files():
 			map_dir.remove(file)
 
-## A won game feeds progression: FULL total_score (incl. overscore) becomes fame, and
-## the overscore ratio compounds into future goal requirements.
-func record_win(total_score: int, goal: int) -> void:
+## A won game feeds progression: FULL total_score becomes fame (overscore tax removed
+## 2026-07, SCORING_MATH_PLAN §8c′). The `_goal` parameter is kept so callers
+## (Game.exit_show) don't change signature.
+func record_win(total_score: int, _goal: int) -> void:
 	if run == null: return
 	run.fame += total_score
-	run.overscore_ratio_sum += maxf(0.0, float(total_score - goal)) / float(maxi(goal, 1))
 
-## Luck grows with fame on a saturating curve: 0 at no fame, LUCK_CAP/2 at FAME_HALF,
-## asymptote LUCK_CAP. Used as the per-component non-null chance in booster generation.
+## Luck grows with fame on a saturating curve: 0 at no fame, luck_cap/2 at fame_half,
+## asymptote luck_cap. Used as the per-component non-null chance in booster generation.
 func luck() -> float:
 	if run == null: return 0.0
-	return LUCK_CAP * float(run.fame) / (float(run.fame) + FAME_HALF)
+	var s : PlayerSettings = SettingsManager.settings
+	return s.luck_cap * float(run.fame) / (float(run.fame) + s.fame_half)
 
-## Fame requirement for a game node. `progress` = steps from the lap origin (forward lap:
-## depth; reversed lap: max_depth - depth). Overscoring past goals nonlinearly inflates
-## all future requirements; lap scaling is capped to avoid int overflow in endless mode.
-func goal_for(progress: int, lap: int, is_boss: bool) -> int:
-	var overscore_mult := pow(1.0 + OVERSCORE_RATE * (run.overscore_ratio_sum if run else 0.0), OVERSCORE_EXP)
-	var goal := BASE_GOAL * pow(GOAL_GROWTH_PER_STEP, progress) \
-		* pow(LAP_MULT, mini(lap, 30)) * overscore_mult
+## §15b goal curve. boosters_on_path = booster-role nodes between the lap origin and
+## this node (opportunities to grow, not purchases). Monotone clamp is applied by the
+## per-path baker (MapNodeRoles), not here. Lap scaling is capped to avoid int overflow
+## in endless mode.
+func goal_for(boosters_on_path: int, lap: int, is_boss: bool) -> int:
+	var s : PlayerSettings = SettingsManager.settings
+	var n_hat := s.goal_n0 + s.booster_yield * boosters_on_path
+	var goal := s.goal_g0 * pow(n_hat / s.goal_n0, s.goal_alpha) * s.difficulty \
+			* pow(s.lap_mult, mini(lap, 30))
 	if is_boss:
-		goal *= BOSS_MULT
+		goal *= s.boss_mult
 	return maxi(int(goal), 1)

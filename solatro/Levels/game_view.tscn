@@ -214,6 +214,17 @@ offset_bottom = 125.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
+[node name="Combo" type="Label" parent="SceneRoot/MultScore" unique_id=1333752683]
+visible = false
+layout_mode = 0
+offset_left = -77.0
+offset_top = 128.0
+offset_right = 204.0
+offset_bottom = 189.0
+text = "COMBO x1.0"
+label_settings = SubResource("LabelSettings_xc73h")
+horizontal_alignment = 1
+
 [node name="Total" type="Label" parent="SceneRoot" unique_id=949581822]
 unique_name_in_owner = true
 layout_mode = 0

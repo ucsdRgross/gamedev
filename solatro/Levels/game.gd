@@ -22,6 +22,8 @@ signal show_resolved(won: bool, score: int, goal: int)
 ## Undo pressed at the win/lose screen: the view dismisses the outcome overlay (the undo of
 ## the final Submit follows through the normal rebuild path).
 signal show_unresolved
+## A NEW combo class registered this act (§15a U grew — view pop + label refresh).
+signal combo_changed(count: int)
 
 #placeholder
 @export var deck : Deck = Deck.new()
@@ -122,6 +124,23 @@ func get_delay() -> float:
 		return 0.0
 	return super.get_delay() * maxf(s.compress_min_factor,
 			pow(s.compress_ratio, float(act_calls) / s.compress_step_calls))
+
+## Add a combo class key to this act's U set (SCORING_MATH_PLAN §15a). Returns true when
+## it was new. Empty keys never register (opt-out hook for engine mods).
+func register_combo(key: String) -> bool:
+	if key.is_empty() or state.combo_classes.has(key):
+		return false
+	state.combo_classes.append(key)
+	combo_changed.emit(state.combo_classes.size())
+	return true
+
+## Hook override (CardEnvironment): a mod handler actually ran — feed the act combo with
+## the mod's identity key (§15a mod-activation U). Only while an act is resolving
+## (_act_cancellable brackets exactly the on_run_scorer/on_next resolution window);
+## engine mods return "" from combo_key and never register.
+func _note_mod_fired(mod: CardModifier, function: StringName) -> void:
+	if not _act_cancellable: return
+	register_combo(mod.combo_key(function))
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
@@ -513,8 +532,8 @@ func _resolve_game() -> void:
 	_resolved = true
 	show_resolved.emit(_won, state.total_score, state.goal)
 
-# Leave the show (view-called from Continue): won games bank the fame (FULL score incl.
-# overscore) and hand back to the map, lost games end the run.
+# Leave the show (view-called from Continue): won games bank the FULL score as fame and
+# hand back to the map, lost games end the run.
 func exit_show() -> void:
 	if _won:
 		RunManager.record_win(state.total_score, state.goal)
@@ -571,10 +590,20 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
 	else:
 		score_zone = state.scores_col
+	var key := Scoring.class_key(result)
+	var counts_for_combo := not result.types.has(Scoring.MELD_TYPE.HIGH_CARD)  # beats a lone high card
+	var amount := result.score
+	# δ fallback (§15a, ships 1.0 = off): duplicate-CLASS melds score ×δ at accumulation.
+	# Decided BEFORE the class registers, so the FIRST meld of a class always pays full.
+	var delta : float = SettingsManager.settings.duplicate_class_scale
+	if counts_for_combo and delta < 1.0 and state.combo_classes.has(key):
+		amount = int(amount * delta)
 	if view: await view.animate_meld(result)
 	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
 	# animates the label. Must run headless too (feeds the packed save).
-	add_line_score(is_row, score_zone, index, result.score)
+	add_line_score(is_row, score_zone, index, amount)
+	if counts_for_combo:
+		register_combo(key)
 	if view: await view.show_meld_score(result)
 	await _run_score_effects(result)
 	if view: view.reset_meld(result)

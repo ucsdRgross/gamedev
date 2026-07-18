@@ -23,6 +23,11 @@ func get_delay() -> float:
 func note_processing(_weight := 1) -> void:
 	pass
 
+## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
+## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base environments.
+func _note_mod_fired(_mod: CardModifier, _function: StringName) -> void:
+	pass
+
 func get_card_collections() -> Array[Variant]:
 	return []
 
@@ -54,12 +59,14 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 					triggered = true
 					note_processing()
 					await Callable(mod, function).callv(params)
+					_note_mod_fired(mod, function)
 					await skill_active_check()
 			var skill : CardModifierSkill = data.skill
 			if skill and skill.has_method(function) and skill.active:
 				triggered = true
 				note_processing()
 				await Callable(skill, function).callv(params)
+				_note_mod_fired(skill, function)
 				await skill_active_check()
 	# P1 owner ruling (2026-07-16): the passive on_anything tail only runs when this event
 	# actually invoked a mod — if nothing ran, nothing could have changed.

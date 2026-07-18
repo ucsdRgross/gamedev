@@ -26,6 +26,13 @@ func with_data(data:CardData) -> CardModifier:
 
 func set_material(polygon2d:Polygon2D) -> void: polygon2d.material = null
 
+## Combo identity for SCORING_MATH_PLAN §15a mod-activation U. Default: one combo class per
+## modifier script, whatever hook fired. Overrides may return "" (opt this mod — or specific
+## hooks — out of combo) or append the hook to count hooks as separate classes.
+func combo_key(_hook: StringName = &"") -> String:
+	var script : Script = get_script()
+	return script.resource_path
+
 
 
 

@@ -79,6 +79,25 @@ class ScoreModel:
 		if types.has(MELD_TYPE.X_OF_KIND): return 1.0 + ESC_STEP * max(0, m - 2)
 		return 1.0 + ESC_STEP * (m - 1)
 
+## §15a combo identity: archetype + sub-hand size + copy count, with flush-variant
+## flags appended so straight flush / full flush / multi-flush stay distinct classes.
+## Rank and suit do NOT differentiate (pair of 2s == pair of 3s). Both copy_size AND
+## copies_count differentiate (owner ruling 2026-07-17): 1× pair ≠ 5× pair ≠ 10× pair,
+## pair ≠ trips ≠ quad, 5-straight ≠ 6-straight. MULTI is redundant with copies_count
+## and is not encoded separately.
+static func class_key(r: Result) -> String:
+	var arch := "HIGH"
+	if r.types.has(MELD_TYPE.FULL_HOUSE):    arch = "HOUSE"
+	elif r.types.has(MELD_TYPE.STRAIGHT):    arch = "STRAIGHT"
+	elif r.types.has(MELD_TYPE.X_OF_KIND):   arch = "XKIND"
+	elif r.types.has(MELD_TYPE.FLUSH):       arch = "FLUSH"   # pure flush, no structure
+	var key := "%s:%dx%d" % [arch, r.copy_size, r.copies_count]
+	if r.types.has(MELD_TYPE.ALL_SAME_SUIT):
+		key += ":FF"    # full flush / straight flush / flush five family
+	elif r.types.has(MELD_TYPE.FLUSH) and arch != "FLUSH":
+		key += ":MF"    # multi-flush of structural copies
+	return key
+
 class Result:
 	var name : String
 	var meld : Array[CardData]

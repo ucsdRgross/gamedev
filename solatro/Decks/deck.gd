@@ -12,10 +12,11 @@ class_name Deck
 ## its only grant path today.
 static var ALL_SUITS : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
 
-## The active playtest deck. deck11 keeps every suit spawnable (skill-less copies exist)
-## AND gives every suit talents to react to — hoops jump them, knives spin them.
+## The active playtest deck. deck14 is the 20-card start deck the §15b goal curve is
+## calibrated against (2026-07 scoring rework). deck11 (24 cards incl. talents) stays
+## available in the picker for prop/reaction playtests.
 func get_deck() -> Array[CardData]:
-	return deck11
+	return deck14
 
 func get_rules() -> Array[CardData]:
 	return rules1
@@ -24,7 +25,7 @@ func get_rules() -> Array[CardData]:
 func get_deck_list() -> Array[Dictionary]:
 	var list : Array[Dictionary] = []
 	var decks : Array = [deck1, deck2, deck3, deck4, deck5, deck6, deck7, deck8, deck9,
-			deck10, deck11, deck12, deck13]
+			deck10, deck11, deck12, deck13, deck14]
 	for i : int in decks.size():
 		list.append({"name": "Deck %d" % (i + 1), "cards": decks[i]})
 	return list
@@ -315,4 +316,19 @@ func _build_deck13() -> Array[CardData]:
 	for rank : int in [1, 2, 3, 4]:
 		out.append(_card(PipSuitHoop, rank))
 		out.append(_card(PipSuitKnife, rank))
+	return out
+
+## DECK 14 — 20-card START deck (2026-07 scoring rework, SCORING_MATH_PLAN §15b): ranks
+## 1–5 × 4 standard suits, no talents — the deck the goal curve (N0=20, G0, ALPHA) is
+## calibrated against. THE new-run default via get_deck(). (Named deck14, not the plan's
+## "deck12" — that slot was already the firework-access deck.)
+var deck14 : Array[CardData]:
+	get:
+		if deck14.is_empty(): deck14 = _build_deck14()
+		return deck14
+func _build_deck14() -> Array[CardData]:
+	var out : Array[CardData] = []
+	for suit : GDScript in ALL_SUITS:
+		for rank : int in range(1, 6):
+			out.append(_card(suit, rank))
 	return out

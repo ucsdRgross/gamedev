@@ -7,6 +7,9 @@ func get_description() -> String:
 	return "Score each row in lower board"
 func get_frame() -> int: return 7
 
+## Engine scorer machinery (§15a): never a combo class — a constant U baseline every act.
+func combo_key(_hook: StringName = &"") -> String: return ""
+
 func on_run_scorer() -> void:
 	if not game: return
 	var zone := game.state.lower_zone

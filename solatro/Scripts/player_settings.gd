@@ -102,3 +102,83 @@ signal settings_changed
 	set(value):
 		act_event_cap = value
 		settings_changed.emit()
+
+@export_group("Balance — act scoring (SCORING_MATH_PLAN §15a)")
+## §15a combo step: each distinct combo class this act adds this to the act multiplier
+## (combo = 1 + step·U). 0.1 shipped; 0.2 = twice as swingy.
+@export var combo_step : float = 0.1:
+	set(value):
+		combo_step = value
+		settings_changed.emit()
+
+## δ fallback lever (§15a): duplicate-CLASS melds score ×δ. 1.0 = off (ship default);
+## only lower during playtest if dump crushes everything.
+@export var duplicate_class_scale : float = 1.0:
+	set(value):
+		duplicate_class_scale = value
+		settings_changed.emit()
+
+## TEST variant (2026-07-17, unpriced): act payout = (R + C) × combo instead of
+## (R × C) × combo. Linearizes payout growth — re-fit goal_g0/goal_alpha (sim
+## `--final --additive`) before judging difficulty with this on. Ships OFF.
+@export var score_additive : bool = false:
+	set(value):
+		score_additive = value
+		settings_changed.emit()
+
+@export_group("Balance — goal curve (SCORING_MATH_PLAN §15b)")
+## Global goal multiplier (§15b "difficulty"): ±15% ≈ one persona band. THE dial for
+## run win-rate; default 1.0.
+@export var difficulty : float = 1.0:
+	set(value):
+		difficulty = value
+		settings_changed.emit()
+
+## Goal at the 20-card start deck (re-fit via `py solatro/tools/scoring_sim.py --final`).
+@export var goal_g0 : float = 130.0:
+	set(value):
+		goal_g0 = value
+		settings_changed.emit()
+
+## Power on N̂/N0 (log-fit of the §15b table): how hard goals ramp per booster crossed.
+@export var goal_alpha : float = 4.2:
+	set(value):
+		goal_alpha = value
+		settings_changed.emit()
+
+## Start-deck size the curve is anchored to (only meaningful alongside the start deck).
+@export var goal_n0 : float = 20.0:
+	set(value):
+		goal_n0 = value
+		settings_changed.emit()
+
+## Expected cards per booster-role node (dupes packs, 5 cards) — the N̂ growth per booster.
+@export var booster_yield : float = 5.0:
+	set(value):
+		booster_yield = value
+		settings_changed.emit()
+
+## Lap-target anchor (boss show) goal multiplier.
+@export var boss_mult : float = 2.0:
+	set(value):
+		boss_mult = value
+		settings_changed.emit()
+
+## Per completed lap goal multiplier (endless scaling — owner-required term, §15d knob).
+@export var lap_mult : float = 2.5:
+	set(value):
+		lap_mult = value
+		settings_changed.emit()
+
+@export_group("Balance — luck (booster generation)")
+## Max per-component non-null chance in booster generation (luck() asymptote).
+@export var luck_cap : float = 0.6:
+	set(value):
+		luck_cap = value
+		settings_changed.emit()
+
+## Fame at which luck() reaches half of luck_cap.
+@export var fame_half : float = 5000.0:
+	set(value):
+		fame_half = value
+		settings_changed.emit()

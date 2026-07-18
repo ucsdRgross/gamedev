@@ -17,4 +17,7 @@ func on_score(target: CardData) -> void:
 	if not game: return
 	var v := game.find_data_vec3(data)
 	if v == Vector3i.MIN: return
+	# §15a: self-register at the score seam (also reaches the dispatch hook via run_all_mods;
+	# register_combo is idempotent, so the double registration is harmless).
+	game.register_combo(combo_key())
 	game.add_line_score(false, game.state.scores_col, v.y, stacks)

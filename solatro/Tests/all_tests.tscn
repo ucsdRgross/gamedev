@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_iterator.tscn" id="5_0nmpq"]
 [ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_combo.tscn" id="24_combo"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
@@ -42,6 +43,8 @@ speed_base_delay = 0.1
 [node name="TestScore" parent="." unique_id=1772777320 instance=ExtResource("6_aoeg8")]
 
 [node name="TestActScore" parent="." unique_id=742109780 instance=ExtResource("7_actsc")]
+
+[node name="TestCombo" parent="." instance=ExtResource("24_combo")]
 
 [node name="TestGameData" parent="." unique_id=871797032 instance=ExtResource("13_gdata")]
 

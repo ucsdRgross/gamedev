@@ -7,6 +7,9 @@ func get_description() -> String:
 	return "Scores a hand with Poker rules"
 func get_frame() -> int: return 8
 
+## Engine scorer machinery (§15a): never a combo class — a constant U baseline every act.
+func combo_key(_hook: StringName = &"") -> String: return ""
+
 func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
 	if not game: return
 	var row_cards : Array[CardData] = []

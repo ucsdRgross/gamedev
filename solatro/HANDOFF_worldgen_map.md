@@ -36,9 +36,10 @@ history). All of that is **implemented**; remaining work is polish/tuning/follow
   booster node opens a take-all `ChoiceViewer` (all 5 cards added). Every card gets a base
   type; luck (from fame) upgrades stamp/skill/type odds. Hover panel previews possible
   contents with a per-card modifier inspector.
-- **Fame / luck / goals** (`Scripts/run_manager.gd`): win adds full `total_score` to fame;
-  overscore nonlinearly inflates future goals; luck (saturating curve of fame) biases
-  booster generation. Tunable const block at the top of `run_manager.gd`.
+- **Fame / luck / goals** (`Scripts/run_manager.gd`): win adds full `total_score` to fame
+  (overscore tax removed 2026-07, SCORING_MATH_PLAN §8c′); goals come from the §15b
+  N̂-curve; luck (saturating curve of fame) biases booster generation. All tunables live
+  in `Scripts/player_settings.gd` "Balance" groups.
 - **Endless laps**: end node = boss; win → summary popup → direction reverses on the same
   graph, goals rescale per lap, traveled history accumulates (gold).
 - **Menu** (`Levels/menu.gd`): Play unfolds New Run / Continue; New Run → `DeckPicker`

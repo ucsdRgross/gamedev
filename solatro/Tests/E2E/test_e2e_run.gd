@@ -165,7 +165,7 @@ func run_win_and_resume_scenario() -> void:
 	g2.exit_show()
 	check(ended.size() == 1, "leaving a won show hands back to the map")
 	check(loaded.fame == g2.state.total_score,
-			"Continue banks the FULL score (incl. overscore) as fame",
+			"Continue banks the FULL score as fame",
 			"fame %d, score %d" % [loaded.fame, g2.state.total_score])
 	check(total_zone_cards(g2) == 0 and g2.state.discard_deck.is_empty(),
 			"the board and discard pile are swept clean")

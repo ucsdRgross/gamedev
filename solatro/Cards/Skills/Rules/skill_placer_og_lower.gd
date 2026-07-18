@@ -7,6 +7,9 @@ func get_description() -> String:
 	return "Place stack in lower zone if top card ascends or descends in value and does not repeat suits"
 func get_frame() -> int: return 6
 
+## Engine rules machinery (§15a): never a combo class.
+func combo_key(_hook: StringName = &"") -> String: return ""
+
 func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if not (stack and target): return []
 	if not game: return []
