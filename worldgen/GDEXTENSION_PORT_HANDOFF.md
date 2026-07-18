@@ -5,9 +5,45 @@ efficiency audit took every behavior-identical GDScript win (P14 batch, measured
 the remaining generation time is pure-CPU GDScript hot loops that need native code.
 Owner-endorsed in `solatro/todo.md` §Performance.
 
-**STATUS: NOT STARTED — blocked on toolchain.** No C++ compiler / scons exists on this
-machine. The owner-facing setup steps are in `CPP_SETUP_FOR_OWNER.md` (same folder).
-Do not start until those tools are installed and `scons --version` + `cl` work in a shell.
+**STATUS: PHASE 1 (Rivers, item 1) DONE 2026-07-17.** Toolchain installed (MSVC 19.51
++ SCons 4.10). `worldgen_native/` GDExtension built and vendored; `fill_depressions`,
+`flow_accumulate_mfd`, `_box_blur`, `_dilate_lake` are native with GDScript fallbacks.
+A/B bit-identical on seeds 12356/777/424242 (`tests/native_ab_test.tscn`); fallback
+verified with dlls renamed away; all worldgen scenes + full Solatro suite (23 suites,
+1254 checks) green. Timing seed 12356 (addon_node_test, enabled-steps avg):
+**5287 -> 1829 ms**; Rivers_Only ~3.4 s -> **256 ms** (native fns run in 4-21 ms each,
+25-400x). Graph is now the top cost (933 ms, 51%) — items 2-4 below remain.
+Build notes: `worldgen_native/BUILD.md` (godot-cpp master pinned via 4.7 API dump —
+upstream has no 4.6/4.7 branch). Phase 2 (Graph/MapField) handoff:
+`GDEXTENSION_PHASE2_HANDOFF.md`.
+
+**PHASE 2 (Graph/MapField, item 2) DONE 2026-07-17.** Native `label_landmasses`,
+`map_distance_transform`, `poisson_land_samples` + `jittered_land_samples`,
+`measure_land` (profiling showed `_measure_land` was 113 ms — bigger than the three
+planned targets combined post-port; `_build_masks` left in GDScript at 15 ms).
+Poisson determinism solved by instantiating the ENGINE's own RandomNumberGenerator
+from godot-cpp (`Ref<RandomNumberGenerator>`), so the random sequence is identical
+by construction — no RNG reimplementation. A/B bit-identical on seeds
+12356/777/424242 incl. a confine_main variant (30 checks). Timing seed 12356
+(addon_node_test, enabled-steps avg): **1829 -> 1212 ms**; Graph 933 -> **383 ms**
+(remaining Graph cost is the solver — out of scope per Phase 2 handoff). Per-fn
+native-vs-gd ms: labels 1 vs 182, dt 2 vs 150, poisson 6 vs 139, measure 0 vs 107.
+Biomes (~300 ms, 25%) is now the top single step — Phase 3.
+
+**PHASE 3 (Biomes, item 3) + RIVERS RESIDUAL CLEANUP DONE 2026-07-18.** Native
+`biome_build_cells` (the entire warped Dial flood + orphan labeling + stats/adjacency
+of `BiomeRegions.build_cells`; paint_cells left in GDScript at 3 ms — RNG/dict-heavy
+and cheap). adj Dictionaries are built natively with the exact GDScript insertion
+order so `for nb in adj[c]` iteration downstream matches. Rivers residual: the five
+inline execute() loops were extracted into StepRivers methods with native twins —
+`river_downsample` / `river_seed_field` (humidity read via the engine's own
+Image.get_pixel from C++) / `river_depth_stamp` / `river_lake_surfaces` /
+`river_apply_water`. A/B gate now 48 checks x nothing-lost, 3 seeds, all
+bit-identical. Timing seed 12356 (addon_node_test, enabled-steps): **1212 -> 879 ms**
+(from 5287 pre-port); Biomes 300 -> **33 ms**, Rivers_Only 263 -> **63 ms**. Graph
+(~380-500 ms, run-to-run variance) is now ~57% of step time — all solver, which
+stays GDScript unless the owner approves a Phase 4 renegotiation. Remaining native
+candidates: map_painter `_paint` (Phase 4, owner-gated).
 
 ## Ground rules (same as all worldgen work)
 

@@ -279,3 +279,46 @@ Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion)
 - **2026-07-17 C++ port handoff written:** worldgen/GDEXTENSION_PORT_HANDOFF.md
   (implementation) + worldgen/CPP_SETUP_FOR_OWNER.md (owner's toolchain install steps).
   Port remains blocked until the owner installs VS Build Tools + scons.
+- **2026-07-17 worldgen C++ port, Phase 1 (Rivers) LANDED:** toolchain installed
+  (MSVC 19.51 + SCons 4.10); new `worldgen/worldgen_native/` GDExtension (godot-cpp
+  master pinned to the 4.7 API dump — upstream has no 4.7 branch). Native
+  `fill_depressions` / `flow_accumulate_mfd` / `box_blur` / `dilate_lake` with the
+  GDScript paths kept as automatic fallback (`GenerationStep._native` null check;
+  verified with dlls renamed away). Bit-identical A/B gate:
+  `worldgen/tests/native_ab_test.tscn` (seeds 12356/777/424242, zero byte diffs).
+  Timing seed 12356: enabled steps **5287 -> 1829 ms**, Rivers_Only ~3.4 s -> 256 ms.
+  Vendored here: `addons/worldgen/bin/` (gdextension + win64 debug/release dlls) plus
+  updated `core/world_gen_step.gd`, `core/steps/rivers.gd`. Validation: worldgen scenes
+  green (generate_up_to, graph_placement, biome_regions, biome_assign, graph_spec full
+  1500-fuzz 1860/1860, bake/node), Solatro **ALL 23 SUITES: 1254 CHECKS PASSED, exit 0**.
+- **2026-07-17 worldgen C++ port, Phase 2 (Graph/MapField) LANDED:** native
+  `label_landmasses` / `map_distance_transform` / `poisson_land_samples` +
+  `jittered_land_samples` / `measure_land` in `worldgen_native` (GDScript fallbacks
+  kept, `GenerationStep._native` null check). Poisson RNG determinism: the C++ side
+  instantiates the ENGINE's own RandomNumberGenerator (godot-cpp), so the random
+  sequence matches GDScript by construction. `_build_masks` left in GDScript
+  (profiled 15 ms); the Graph solver untouched (out of scope per Phase 2 handoff).
+  A/B gate extended to 30 checks x 3 seeds (labels/sizes/seeds/main_label,
+  measure_land, dt, poisson, poisson-confine_main, jittered) — all bit-identical.
+  Timing seed 12356 (addon_node_test): Graph **933 -> 383 ms**, enabled steps
+  **1829 -> 1212 ms**. Per-fn native-vs-gd: labels 1/182, dt 2/150, poisson 6/139,
+  measure 0/107 ms. Vendored here: `addons/worldgen/bin/` dlls +
+  `core/graph/graph_placement.gd`. Validation: worldgen scenes green
+  (generate_up_to, graph_placement, biome_regions, biome_assign, graph_spec full
+  1500-fuzz 1860/1860, bake/node), no-dll fallback PASS, Solatro
+  **ALL 23 SUITES: 1240 CHECKS PASSED, exit 0**. Next: Phase 3 (Biomes ~300 ms, 25%).
+- **2026-07-18 worldgen C++ port, Phase 3 (Biomes) + Rivers residual LANDED:** native
+  `biome_build_cells` (the whole warped Dial flood + orphan labeling + per-cell
+  stats/adjacency of BiomeRegions.build_cells; adj Dictionaries built with the exact
+  GDScript insertion order so downstream key iteration matches; paint_cells stays
+  GDScript at a measured 3 ms). Rivers: execute()'s five inline loops extracted into
+  StepRivers methods with native twins (`river_downsample`, `river_seed_field` —
+  humidity via the engine's own Image.get_pixel from C++ —, `river_depth_stamp`,
+  `river_lake_surfaces`, `river_apply_water`), GDScript fallbacks kept. A/B gate now
+  48 checks x 3 seeds, all bit-identical. Timing seed 12356 (addon_node_test):
+  Biomes **300 -> 33 ms**, Rivers_Only **263 -> 63 ms**, enabled-steps total
+  **879 ms** (was 5287 pre-port, 1212 after Phase 2). Vendored here: bin/ dlls +
+  `core/steps/rivers.gd` + `core/biomes/biome_regions.gd`. Validation: worldgen
+  scenes green (generate_up_to, graph_placement, biome_regions, biome_assign,
+  graph_spec full 1500-fuzz 1860/1860, bake/node), no-dll fallback PASS, Solatro
+  **ALL 23 SUITES: 1225 CHECKS PASSED, exit 0**.

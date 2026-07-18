@@ -108,6 +108,9 @@ class MapField extends RefCounted:
 		_dtds = maxi(1, downscale)
 		_dtw = int(ceil(float(w) / _dtds))
 		_dth = int(ceil(float(h) / _dtds))
+		if GenerationStep._native:
+			dt = GenerationStep._native.map_distance_transform(water, w, h, _dtds)
+			return
 		var n := _dtw * _dth
 		var to_water := PackedFloat32Array(); to_water.resize(n)
 		var to_land := PackedFloat32Array(); to_land.resize(n)
@@ -165,6 +168,22 @@ class MapField extends RefCounted:
 
 	## Flood-fill connected components of land; pick the largest as `main_label`.
 	func _label_landmasses() -> void:
+		if GenerationStep._native:
+			var res: Array = GenerationStep._native.label_landmasses(water, w, h)
+			label = res[0]
+			var counts: PackedInt32Array = res[1]
+			var seed_pts: PackedVector2Array = res[2]
+			sizes = {}
+			for id in range(counts.size()):
+				label_seed[id] = seed_pts[id]
+				sizes[id] = counts[id]
+				total_land += counts[id]
+			var best_n := -1
+			for id in sizes.keys():
+				if best_n < 0 or sizes[id] > sizes[best_n]:
+					best_n = id
+			main_label = best_n
+			return
 		label = PackedInt32Array()
 		label.resize(w * h)
 		label.fill(-1)
@@ -218,9 +237,21 @@ class MapField extends RefCounted:
 		samples = PackedVector2Array()
 		_shash = {}
 		if poisson:
-			_poisson_samples(_cs, seed_val)
+			if GenerationStep._native:
+				# label_seed.values() in label-id (insertion) order, as _poisson_samples reads it.
+				var seed_pts := PackedVector2Array()
+				for lab in label_seed.keys():
+					seed_pts.append(label_seed[lab])
+				samples = GenerationStep._native.poisson_land_samples(
+					label, blocked, w, h, main_label, confine_main, seed_pts, _cs, seed_val)
+			else:
+				_poisson_samples(_cs, seed_val)
 		else:
-			_jittered_samples(_cs, seed_val)
+			if GenerationStep._native:
+				samples = GenerationStep._native.jittered_land_samples(
+					label, blocked, w, h, main_label, confine_main, _cs, seed_val)
+			else:
+				_jittered_samples(_cs, seed_val)
 		sample_label = PackedInt32Array()
 		sample_label.resize(samples.size())
 		for idx in range(samples.size()):
@@ -370,12 +401,16 @@ class MapField extends RefCounted:
 		var hi := Vector2.ZERO
 		var sum := Vector2.ZERO
 		var n := 0
-		for y in range(h):
-			for x in range(w):
-				if _dom_cell(x, y):
-					lo.x = minf(lo.x, x); lo.y = minf(lo.y, y)
-					hi.x = maxf(hi.x, x); hi.y = maxf(hi.y, y)
-					sum += Vector2(x, y); n += 1
+		if GenerationStep._native:
+			var res: Array = GenerationStep._native.measure_land(label, w, h, main_label, confine_main)
+			lo = res[0]; hi = res[1]; sum = res[2]; n = res[3]
+		else:
+			for y in range(h):
+				for x in range(w):
+					if _dom_cell(x, y):
+						lo.x = minf(lo.x, x); lo.y = minf(lo.y, y)
+						hi.x = maxf(hi.x, x); hi.y = maxf(hi.y, y)
+						sum += Vector2(x, y); n += 1
 		if n == 0:
 			land_min = Vector2.ZERO; land_max = Vector2(w, h)
 			land_centroid = Vector2(w, h) * 0.5

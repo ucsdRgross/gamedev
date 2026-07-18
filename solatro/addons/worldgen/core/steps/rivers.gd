@@ -23,14 +23,9 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var s: int = maxi(1, settings.river_resolution_divisor)
 	var lw := w / s
 	var lh := h / s
-	var ln := lw * lh
 
 	# Downsample the eroded heightmap to the hydrology grid (point sample).
-	var lbase := PackedFloat32Array()
-	lbase.resize(ln)
-	for ly in range(lh):
-		for lx in range(lw):
-			lbase[(ly * lw) + lx] = gen.height_buffer[((ly * s) * w) + (lx * s)]
+	var lbase := _downsample_grid(gen.height_buffer, w, h, s, lw, lh)
 
 	# Smooth the HYDROLOGY GRID ONLY (not the final terrain): the gabor erosion
 	# leaves many 1-px pits/bumps that would otherwise each become a speck lake or
@@ -47,18 +42,8 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	# Per-cell rainfall (accumulation seed). Rivers source MULTIPLICATIVELY from
 	# wet AND high terrain, so a dry mountain spawns no river (not every mountain
 	# gets one) -- unlike erosion, which sources additively (every mountain erodes).
-	var inv_sea := 1.0 / maxf(1e-3, 1.0 - oth)
-	var seed := PackedFloat32Array()
-	seed.resize(ln)
-	for ly in range(lh):
-		for lx in range(lw):
-			var i := (ly * lw) + lx
-			if lbase[i] < oth:
-				continue  # ocean is a sink
-			var wet := hum_img.get_pixel(mini(lx * s, w - 1), mini(ly * s, h - 1)).r  # 0..1
-			var elev := clampf((lbase[i] - oth) * inv_sea, 0.0, 1.0)
-			seed[i] = pow(wet, settings.river_source_humidity_bias) \
-				* pow(elev, settings.river_source_elevation_bias) + 0.001
+	var seed := _seed_field(lbase, hum_img, w, h, s, lw, lh, oth,
+		settings.river_source_humidity_bias, settings.river_source_elevation_bias)
 
 	# Multiple-flow-direction accumulation: rivers can FORK on flats / at coasts
 	# (deltas, distributaries) instead of collapsing to one D8 path.
@@ -72,16 +57,81 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	# is a lone cell that already sits at a high log value, so it stamps a big
 	# disc). Width here ramps 0->1 from the river threshold to max flow and follows
 	# sqrt(discharge) -- the physical channel-width law -- so heads are ~0 px.
+	# Low-res river depth map (>0 = river) with convergence-based widening.
+	var depth_l := _depth_stamp(lbase, accum, lw, lh, oth,
+		settings.river_accum_threshold, settings.river_carve_depth, settings.river_width_gain)
+
+	# Low-res lake mask + FLAT per-basin surfaces at spill level (see _lake_surfaces).
+	var lres := _lake_surfaces(lbase, lfilled, lw, lh, oth,
+		settings.lake_min_depth, settings.lake_min_area, settings.lake_carve_depth)
+	var is_lake_l: PackedByteArray = lres[0]
+	var lake_surf_l: PackedFloat32Array = lres[1]
+
+	# Dilate the lake outward, propagating each basin's flat surface to new cells.
+	if settings.lake_width > 0:
+		var res := _dilate_lake(is_lake_l, lake_surf_l, lw, lh, settings.lake_width)
+		is_lake_l = res[0]
+		lake_surf_l = res[1]
+
+	# Apply to the full-resolution heightmap and collect the water network.
+	# height_buffer stays the terrain BED everywhere (carved for rivers, untouched
+	# floor for lakes); the WATER TOP goes into water_surface_buffer so 3D can mesh
+	# terrain and water as separate surfaces. Ocean is not recorded here (it is the
+	# implicit flat plane at oth).
+	gen.water_surface_buffer.fill(WorldGenerator.NO_WATER)
+	var applied := _apply_water(gen.height_buffer, gen.water_surface_buffer,
+		is_lake_l, lake_surf_l, depth_l, w, h, s, lw, lh, oth)
+	gen.height_buffer = applied[0]
+	gen.water_surface_buffer = applied[1]
+	gen.river_nodes = applied[2]
+	gen.lake_nodes = applied[3]
+	gen.river_set = applied[4]
+	gen.lake_set = applied[5]
+
+	gen._save_snapshot_bridge("Rivers_Only")
+
+## Point-sample downsample of the full-res heightmap to the hydrology grid.
+func _downsample_grid(hbuf: PackedFloat32Array, w: int, h: int, s: int, lw: int, lh: int) -> PackedFloat32Array:
+	if _native:
+		return _native.river_downsample(hbuf, w, h, s, lw, lh)
+	var lbase := PackedFloat32Array()
+	lbase.resize(lw * lh)
+	for ly in range(lh):
+		for lx in range(lw):
+			lbase[(ly * lw) + lx] = hbuf[((ly * s) * w) + (lx * s)]
+	return lbase
+
+## Rainfall seed field: wet^bias * elev^bias + 0.001 per land cell (0 in ocean).
+func _seed_field(lbase: PackedFloat32Array, hum_img: Image, w: int, h: int, s: int,
+		lw: int, lh: int, oth: float, hum_bias: float, elev_bias: float) -> PackedFloat32Array:
+	if _native:
+		return _native.river_seed_field(lbase, hum_img, w, h, s, lw, lh, oth, hum_bias, elev_bias)
+	var inv_sea := 1.0 / maxf(1e-3, 1.0 - oth)
+	var seed := PackedFloat32Array()
+	seed.resize(lw * lh)
+	for ly in range(lh):
+		for lx in range(lw):
+			var i := (ly * lw) + lx
+			if lbase[i] < oth:
+				continue  # ocean is a sink
+			var wet := hum_img.get_pixel(mini(lx * s, w - 1), mini(ly * s, h - 1)).r  # 0..1
+			var elev := clampf((lbase[i] - oth) * inv_sea, 0.0, 1.0)
+			seed[i] = pow(wet, hum_bias) * pow(elev, elev_bias) + 0.001
+	return seed
+
+## River depth map (>0 = river) with sqrt(discharge) widening (disc stamping).
+func _depth_stamp(lbase: PackedFloat32Array, accum: PackedFloat32Array, lw: int, lh: int,
+		oth: float, thr: float, carve_depth: float, width_gain: float) -> PackedFloat32Array:
+	if _native:
+		return _native.river_depth_stamp(lbase, accum, lw, lh, oth, thr, carve_depth, width_gain)
+	var ln := lw * lh
 	var max_accum := 0.0
 	for i in range(ln):
 		max_accum = maxf(max_accum, accum[i])
 	var lmax := log(1.0 + max_accum)
 	if lmax <= 0.0:
 		lmax = 1.0
-	var thr := settings.river_accum_threshold
 	var accum_span := maxf(1e-6, max_accum - thr)
-
-	# Low-res river depth map (>0 = river) with convergence-based widening.
 	var depth_l := PackedFloat32Array()
 	depth_l.resize(ln)
 	for ly in range(lh):
@@ -90,11 +140,11 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			if lbase[i] < oth or accum[i] < thr:
 				continue
 			var an := log(1.0 + accum[i]) / lmax  # 0..1, depth only
-			var carve := settings.river_carve_depth * an
+			var carve := carve_depth * an
 			# 0 at the source threshold, ->1 at the largest river; sqrt so width
 			# grows like channel width with discharge (tiny head, fat mouth).
 			var wfrac := sqrt(clampf((accum[i] - thr) / accum_span, 0.0, 1.0))
-			var rad := int(settings.river_width_gain * wfrac)
+			var rad := int(width_gain * wfrac)
 			for oy in range(-rad, rad + 1):
 				for ox in range(-rad, rad + 1):
 					if (ox * ox) + (oy * oy) > rad * rad:
@@ -106,20 +156,24 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 					var ni := (ny * lw) + nx
 					if lbase[ni] >= oth:
 						depth_l[ni] = maxf(depth_l[ni], carve)
+	return depth_l
 
-	# Low-res lake mask: cells the depression-fill raised above the terrain.
+## Lake mask (fill raised above terrain) + FLAT per-basin surfaces: label
+## connected basins, give every cell the spill level (basin MINIMUM filled
+## height) minus lake_carve_depth. Tiny basins below the area floor are dropped.
+## Returns [is_lake_l, lake_surf_l]. Computed before dilation so rim cells can't
+## lower the level.
+func _lake_surfaces(lbase: PackedFloat32Array, lfilled: PackedFloat32Array, lw: int, lh: int,
+		oth: float, lake_min_depth: float, lake_min_area: int, lake_carve_depth: float) -> Array:
+	if _native:
+		return _native.river_lake_surfaces(lbase, lfilled, lw, lh, oth, lake_min_depth, lake_min_area, lake_carve_depth)
+	var ln := lw * lh
 	var is_lake_l := PackedByteArray()
 	is_lake_l.resize(ln)
 	is_lake_l.fill(0)
 	for i in range(ln):
-		if lbase[i] >= oth and lfilled[i] - lbase[i] > settings.lake_min_depth:
+		if lbase[i] >= oth and lfilled[i] - lbase[i] > lake_min_depth:
 			is_lake_l[i] = 1
-
-	# FLAT lake surfaces: label connected basins and give every cell in a basin one
-	# elevation -- the spill level (the basin's MINIMUM filled height, where water
-	# escapes), minus lake_carve_depth -- instead of the per-cell epsilon-gradient
-	# fill (which made lake surfaces stepped). Computed before dilation so rim cells
-	# can't lower the level.
 	var lake_surf_l := PackedFloat32Array()
 	lake_surf_l.resize(ln)
 	var comp := PackedInt32Array()
@@ -154,31 +208,29 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 						stack.append(ni)
 		# Drop tiny basins (the gabor erosion's 1-px pits) below the area floor so
 		# they don't render as speck lakes; keep genuine, larger lakes.
-		if members.size() < settings.lake_min_area:
+		if members.size() < lake_min_area:
 			for m in members:
 				is_lake_l[m] = 0
 			continue
-		var surf := maxf(spill - settings.lake_carve_depth, oth + 0.004)
+		var surf := maxf(spill - lake_carve_depth, oth + 0.004)
 		for m in members:
 			lake_surf_l[m] = surf
+	return [is_lake_l, lake_surf_l]
 
-	# Dilate the lake outward, propagating each basin's flat surface to new cells.
-	if settings.lake_width > 0:
-		var res := _dilate_lake(is_lake_l, lake_surf_l, lw, lh, settings.lake_width)
-		is_lake_l = res[0]
-		lake_surf_l = res[1]
-
-	# Apply to the full-resolution heightmap and collect the water network.
-	# height_buffer stays the terrain BED everywhere (carved for rivers, untouched
-	# floor for lakes); the WATER TOP goes into water_surface_buffer so 3D can mesh
-	# terrain and water as separate surfaces. Ocean is not recorded here (it is the
-	# implicit flat plane at oth).
-	var fullbase := gen.height_buffer.duplicate()
-	gen.water_surface_buffer.fill(WorldGenerator.NO_WATER)
-	gen.river_nodes.clear()
-	gen.lake_nodes.clear()
-	# Fresh full-res presence masks (index y*w+x, 1 = river/lake). Built once here so the
-	# painter can test a pixel by index; PackedByteArray is COW so snapshots share cheaply.
+## Full-res apply: carve river channels into the bed, record water tops, node
+## lists and presence masks (index y*w+x, 1 = river/lake; PackedByteArray is COW
+## so snapshots share cheaply). `base` is the UNCARVED terrain; `wsurf` arrives
+## pre-filled with NO_WATER. Returns
+## [height, water_surface, river_nodes, lake_nodes, rmask, lmask].
+func _apply_water(base: PackedFloat32Array, wsurf: PackedFloat32Array,
+		is_lake_l: PackedByteArray, lake_surf_l: PackedFloat32Array, depth_l: PackedFloat32Array,
+		w: int, h: int, s: int, lw: int, lh: int, oth: float) -> Array:
+	if _native:
+		return _native.river_apply_water(base, wsurf, is_lake_l, lake_surf_l, depth_l, w, h, s, lw, lh, oth)
+	var height := base.duplicate()
+	var ws := wsurf.duplicate()
+	var river_nodes := PackedInt32Array()
+	var lake_nodes := PackedInt32Array()
 	var rmask := PackedByteArray()
 	var lmask := PackedByteArray()
 	rmask.resize(w * h)
@@ -189,24 +241,23 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 			var lc := (mini(y / s, lh - 1) * lw) + mini(x / s, lw - 1)
 			if is_lake_l[lc] == 1:
 				# Keep the real lake floor as the bed; water sits at the spill surface.
-				gen.water_surface_buffer[fi] = lake_surf_l[lc]
-				gen.lake_nodes.append(fi)
+				ws[fi] = lake_surf_l[lc]
+				lake_nodes.append(fi)
 				lmask[fi] = 1
 			elif depth_l[lc] > 0.0:
 				# Carve the channel; water fills it back up to (near) original grade.
-				gen.height_buffer[fi] = maxf(fullbase[fi] - depth_l[lc], oth + 0.004)
-				gen.water_surface_buffer[fi] = fullbase[fi]
-				gen.river_nodes.append(fi)
+				height[fi] = maxf(base[fi] - depth_l[lc], oth + 0.004)
+				ws[fi] = base[fi]
+				river_nodes.append(fi)
 				rmask[fi] = 1
-	gen.river_set = rmask
-	gen.lake_set = lmask
-
-	gen._save_snapshot_bridge("Rivers_Only")
+	return [height, ws, river_nodes, lake_nodes, rmask, lmask]
 
 ## Grow the lake mask outward by `r` rings; each newly added cell inherits the
 ## (flat) water surface of an adjacent lake cell so dilated borders stay level.
 ## Returns [mask, surface] (PackedArrays pass by value, so both are handed back).
 func _dilate_lake(mask: PackedByteArray, surf: PackedFloat32Array, w: int, h: int, r: int) -> Array:
+	if _native:
+		return _native.dilate_lake(mask, surf, w, h, r)
 	for _it in range(r):
 		var added := PackedInt32Array()
 		for y in range(h):
@@ -235,6 +286,8 @@ func _dilate_lake(mask: PackedByteArray, surf: PackedFloat32Array, w: int, h: in
 
 ## N-pass 3x3 box blur (edge-clamped). Used to smooth the hydrology grid only.
 func _box_blur(src: PackedFloat32Array, w: int, h: int, passes: int) -> PackedFloat32Array:
+	if _native:
+		return _native.box_blur(src, w, h, passes)
 	var a := src
 	for _p in range(passes):
 		var out := a.duplicate()

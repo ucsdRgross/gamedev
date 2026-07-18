@@ -35,6 +35,12 @@ static func build_cells(field, warp_bytes: PackedByteArray, humid_bytes: PackedB
 	var height_cost: float = opts.get("height_cost", 3.0)
 	var has_warp := warp_bytes.size() >= n
 
+	if GenerationStep._native:
+		var d: Dictionary = GenerationStep._native.biome_build_cells(heightb, waterm, labelm,
+			samples, field.sample_label, warp_bytes, humid_bytes, w, h, warp_amp, height_cost)
+		d["ms"] = Time.get_ticks_msec() - t0
+		return d
+
 	var best := PackedFloat32Array()
 	best.resize(n)
 	best.fill(INF)

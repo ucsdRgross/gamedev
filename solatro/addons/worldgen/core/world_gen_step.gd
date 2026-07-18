@@ -10,6 +10,12 @@ extends RefCounted
 func execute(_gen: WorldGenerator, _settings: WorldSettings) -> void:
 	pass
 
+## Cached instance of the optional C++ acceleration (worldgen_native GDExtension).
+## Null when the dll is missing or the platform is unsupported -- every call site
+## must keep the GDScript path as fallback. Outputs are bit-identical (verified by
+## tests/native_ab_test.tscn); see GDEXTENSION_PORT_HANDOFF.md.
+static var _native: Object = ClassDB.instantiate(&"WorldgenNative") if ClassDB.class_exists(&"WorldgenNative") else null
+
 ## Multiple-Flow-Direction (MFD) accumulation on a depression-filled surface.
 ## Each land cell distributes its (fully summed) flow to ALL strictly-lower
 ## neighbors, split by drop^exponent: a large exponent (~8) collapses to a single
@@ -24,6 +30,8 @@ func execute(_gen: WorldGenerator, _settings: WorldSettings) -> void:
 ## topological pass. O(n * 8). Returns total accumulated flow per cell.
 static func flow_accumulate_mfd(filled: PackedFloat32Array, seed: PackedFloat32Array,
 		w: int, h: int, oth: float, exponent: float) -> PackedFloat32Array:
+	if _native:
+		return _native.flow_accumulate_mfd(filled, seed, w, h, oth, exponent)
 	var n := w * h
 	var accum := seed.duplicate()
 	# Fixed 8-slot edge table per cell (each cell has <= 8 downhill neighbors).
@@ -103,6 +111,8 @@ static func flow_accumulate_mfd(filled: PackedFloat32Array, seed: PackedFloat32A
 ## gradient grows along the BFS from each outlet.
 const FILL_BUCKETS := 1024
 static func fill_depressions(H: PackedFloat32Array, w: int, h: int, oth: float) -> PackedFloat32Array:
+	if _native:
+		return _native.fill_depressions(H, w, h, oth)
 	var n := w * h
 	var W := PackedFloat32Array()
 	W.resize(n)

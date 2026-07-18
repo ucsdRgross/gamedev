@@ -21,11 +21,35 @@ native code. Port candidates, in impact order (from worldgen/UPSTREAM_EFFICIENCY
 Rules: land in the canonical worldgen project first, re-copy into `addons/worldgen/`
 here (never edit the vendored copy); keep outputs bit-identical or get owner approval.
 
-**BLOCKED 2026-07-17: no C++ toolchain on this machine.** Two docs now exist in the
-worldgen repo: `GDEXTENSION_PORT_HANDOFF.md` (full implementation handoff — candidates,
-bit-identical traps, fallback wiring, validation checklist) and `CPP_SETUP_FOR_OWNER.md`
-(the owner's one-time install steps: VS Build Tools 2022 C++ workload + `pip install
-scons` + verify). Port starts once the owner confirms `cl` / `scons --version` work.
+**PHASE 1 (Rivers) DONE 2026-07-17** — owner installed the toolchain; the rivers
+hot loops (`fill_depressions`, `flow_accumulate_mfd`, `_box_blur`, `_dilate_lake`) are
+now a `worldgen_native` GDExtension (worldgen repo, `worldgen_native/`; dlls vendored
+here in `addons/worldgen/bin/`). Bit-identical (A/B gate `tests/native_ab_test.tscn`,
+3 seeds, zero diffs) with the GDScript path kept as automatic fallback (verified with
+dlls renamed away). Measured seed 12356: Rivers_Only ~3.4 s -> 256 ms; enabled-steps
+total 5287 -> 1829 ms. Full Solatro suite green after vendoring (23 suites, 1254
+checks). NEXT candidates (unstarted): graph_placement.gd MapField (now ~51% of step
+time), biome_regions.gd, map_painter.gd — see `GDEXTENSION_PORT_HANDOFF.md`.
+
+**PHASE 2 (Graph/MapField) DONE 2026-07-17** — `_label_landmasses`, distance
+transform, Poisson/jittered land samples, and `_measure_land` are native (Poisson
+uses the engine's own RandomNumberGenerator from C++, so the sequence is identical
+by construction). Bit-identical (A/B gate extended to 30 checks, 3 seeds); GDScript
+fallback verified. Measured seed 12356: Graph 933 -> 383 ms; enabled-steps total
+1829 -> 1212 ms. Vendored here (`bin/` dlls + `core/graph/graph_placement.gd`),
+full suite green (23 suites, 1240 checks, exit 0). NEXT: biome_regions.gd (Biomes
+~300 ms, now the top step) — see `GDEXTENSION_PHASE2_HANDOFF.md` §Remaining phases.
+
+**PHASE 3 (Biomes) + RIVERS RESIDUAL DONE 2026-07-18** — `BiomeRegions.build_cells`
+(warped flood/orphans/stats/adjacency) native with GDScript-identical Dictionary
+insertion order; rivers.gd execute() loops extracted into methods with native twins
+(downsample / seed field / depth stamp / lake surfaces / full-res apply). All
+bit-identical (A/B gate now 48 checks x 3 seeds); fallback verified. Measured seed
+12356: Biomes 300 -> 33 ms, Rivers_Only 263 -> 63 ms, enabled-steps total **879 ms**
+(5287 before the port began). Vendored here (`bin/` dlls + `core/steps/rivers.gd` +
+`core/biomes/biome_regions.gd`), full suite green (23 suites, 1225 checks, exit 0).
+Remaining native candidate: map_painter `_paint` (Phase 4, owner-gated); the Graph
+solver (~57% of the residual) stays GDScript per scope rules.
 
 ## Testing / infrastructure
 

@@ -1,0 +1,5 @@
+# godot-cpp is a shallow clone, not vendored (see BUILD.md to restore it)
+godot-cpp/
+# MSVC build artifacts
+src/*.obj
+*.pdb
