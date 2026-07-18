@@ -41,9 +41,25 @@ Image.get_pixel from C++) / `river_depth_stamp` / `river_lake_surfaces` /
 `river_apply_water`. A/B gate now 48 checks x nothing-lost, 3 seeds, all
 bit-identical. Timing seed 12356 (addon_node_test, enabled-steps): **1212 -> 879 ms**
 (from 5287 pre-port); Biomes 300 -> **33 ms**, Rivers_Only 263 -> **63 ms**. Graph
-(~380-500 ms, run-to-run variance) is now ~57% of step time — all solver, which
-stays GDScript unless the owner approves a Phase 4 renegotiation. Remaining native
-candidates: map_painter `_paint` (Phase 4, owner-gated).
+(~290-720 ms, run-to-run variance) is now the top step. [CORRECTED 2026-07-18:
+profiling shows the residual is NOT the placement solver (place() = 2 ms) — it is
+`GraphDetail.compute_curves` A* edge routing, ~323 ms. See
+`GDEXTENSION_PHASE4_HANDOFF.md` for the routing + map_painter `_paint` targets;
+both owner-gated.]
+
+**NOISEBAKE (setup) DONE 2026-07-18.** Native `bake_multifractal` — the hand-rolled
+multifractal octave loop in `noise_baker.gd _multi` (peaks_ridge + peaks_billow; the
+other 6 maps already used FastNoiseLite's native get_image). GDScript still
+configures the FastNoiseLite (seed/type/freq/warp) and passes it in; C++ calls the
+ENGINE's own get_noise_2d per octave, so values are identical by construction.
+Bit-identical (A/B compares output image bytes, both variants, 3 seeds). Per-map
+speedup is ~2.4x only (the remaining cost is the ~5M engine get_noise_2d calls —
+that's the floor while staying engine-identical), but the threaded bake collapses
+to the slowest single map: setup NoiseBake **1153-2200 -> ~380 ms**. Enabled steps
+measured ~645 ms this run (Graph 286-724 ms run-to-run variance dominates — that is
+`GraphDetail.compute_curves` A* routing, not the solver; see
+`GDEXTENSION_PHASE4_HANDOFF.md`, owner-gated). Solatro suite: ALL 24 SUITES green
+(a new COMBO suite appeared upstream between runs — not worldgen-related).
 
 ## Ground rules (same as all worldgen work)
 

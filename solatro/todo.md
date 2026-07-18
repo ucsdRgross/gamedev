@@ -48,8 +48,18 @@ bit-identical (A/B gate now 48 checks x 3 seeds); fallback verified. Measured se
 12356: Biomes 300 -> 33 ms, Rivers_Only 263 -> 63 ms, enabled-steps total **879 ms**
 (5287 before the port began). Vendored here (`bin/` dlls + `core/steps/rivers.gd` +
 `core/biomes/biome_regions.gd`), full suite green (23 suites, 1225 checks, exit 0).
-Remaining native candidate: map_painter `_paint` (Phase 4, owner-gated); the Graph
-solver (~57% of the residual) stays GDScript per scope rules.
+Remaining native candidate: map_painter `_paint` (Phase 4, owner-gated); the rest
+of Graph stays GDScript pending owner sign-off (2026-07-18 profiling: it's the
+GraphDetail A* edge routing, ~323 ms — the placement solver itself is 2 ms).
+
+**NOISEBAKE DONE 2026-07-18** — native `bake_multifractal` (noise_baker.gd `_multi`
+octave loop; C++ calls the engine's own FastNoiseLite.get_noise_2d so values match
+by construction). Bit-identical on image bytes; setup NoiseBake ~2200 -> ~380 ms.
+Vendored here (bin/ dlls + core/noise_baker.gd); suite green (24 suites, 1243
+checks, exit 0). All that remains hot is GraphDetail.compute_curves A* routing
+(~323 ms; the placement solver is 2 ms) + map_painter _paint (~295 ms per paint,
+off-main-thread) — both owner-gated, handoff:
+`worldgen/GDEXTENSION_PHASE4_HANDOFF.md`.
 
 ## Testing / infrastructure
 

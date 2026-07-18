@@ -68,8 +68,8 @@ Everything that creates Nodes or RefCounted card graphs:
 
 - Full suite: `C:\richard\Godot_v4.7-stable_win64_console.exe --headless --path
   C:\richard\gamedev\solatro res://Tests/all_tests.tscn` — exit code = failure
-  count; bar is ALL suites green (24 if you add a suite — update the expected
-  count in any banner/docs). Check TOTALS vary run-to-run (data-dependent
+  count; bar is ALL suites green (count the run's own "ALL N SUITES" banner —
+  24 as of 2026-07-18 — and update any docs that state the number if you add one). Check TOTALS vary run-to-run (data-dependent
   suites); compare failure sets, not totals.
 - If "Could not find type X" cascades appear: stale global class cache — run once
   with `--import` first.

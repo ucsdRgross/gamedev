@@ -748,6 +748,55 @@ Array WorldgenNative::river_apply_water(const PackedFloat32Array &base, const Pa
 	return out;
 }
 
+// --- NoiseBake: twin of NoiseBaker._multi's octave/normalize loops -----------
+// The FastNoiseLite arrives fully configured from GDScript (seed, type,
+// frequency, FRACTAL_NONE, domain warp), and we call the ENGINE's own
+// get_noise_2d, so the noise values are identical by construction — this port
+// only removes the per-pixel GDScript overhead.
+Ref<Image> WorldgenNative::bake_multifractal(const Ref<FastNoiseLite> &noise, int64_t w, int64_t h,
+		int64_t octaves, double gain, double lacunarity, bool ridged, double offset) const {
+	FastNoiseLite *n = const_cast<FastNoiseLite *>(noise.ptr());
+	const int64_t np = w * h;
+	std::vector<float> vals(np);
+	double vmin = std::numeric_limits<double>::infinity();
+	double vmax = -std::numeric_limits<double>::infinity();
+	for (int64_t y = 0; y < h; y++) {
+		for (int64_t x = 0; x < w; x++) {
+			double freq_mul = 1.0;
+			double amp = 1.0;
+			double weight = 1.0;
+			double sum = 0.0;
+			for (int64_t o = 0; o < octaves; o++) {
+				const double nv = (double)n->get_noise_2d((double)x * freq_mul, (double)y * freq_mul); // -1..1
+				double sig;
+				if (ridged) {
+					sig = offset - std::fabs(nv);
+					sig = sig * sig;
+				} else {
+					sig = std::fabs(nv);
+				}
+				sum += sig * amp * weight;
+				// Multifractal modulation: next octave is gated by this octave's signal.
+				weight = gd_clampf(sig * 2.0, 0.0, 1.0);
+				amp *= gain;
+				freq_mul *= lacunarity;
+			}
+			vals[(y * w) + x] = (float)sum;
+			vmin = gd_minf(vmin, sum); // GDScript tracks the DOUBLE sum, not the f32 store
+			vmax = gd_maxf(vmax, sum);
+		}
+	}
+	const double span = gd_maxf(1e-6, vmax - vmin);
+	PackedByteArray bytes;
+	bytes.resize(np);
+	uint8_t *B = bytes.ptrw();
+	for (int64_t i = 0; i < np; i++) {
+		// GDScript roundi: round half away from zero.
+		B[i] = (uint8_t)(int64_t)std::round(gd_clampf(((double)vals[i] - vmin) / span, 0.0, 1.0) * 255.0);
+	}
+	return Image::create_from_data(w, h, false, Image::FORMAT_L8, bytes);
+}
+
 // --- Phase 3: BiomeRegions.build_cells twin (biome_regions.gd) ---------------
 // Warped multi-source Dial flood + orphan-islet labeling + per-cell stats and
 // adjacency. Returns the same Dictionary as the GDScript (minus "ms", which the
@@ -938,6 +987,7 @@ void WorldgenNative::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("river_depth_stamp", "lbase", "accum", "lw", "lh", "oth", "thr", "carve_depth", "width_gain"), &WorldgenNative::river_depth_stamp);
 	ClassDB::bind_method(D_METHOD("river_lake_surfaces", "lbase", "lfilled", "lw", "lh", "oth", "lake_min_depth", "lake_min_area", "lake_carve_depth"), &WorldgenNative::river_lake_surfaces);
 	ClassDB::bind_method(D_METHOD("river_apply_water", "base", "wsurf", "is_lake_l", "lake_surf_l", "depth_l", "w", "h", "s", "lw", "lh", "oth"), &WorldgenNative::river_apply_water);
+	ClassDB::bind_method(D_METHOD("bake_multifractal", "noise", "w", "h", "octaves", "gain", "lacunarity", "ridged", "offset"), &WorldgenNative::bake_multifractal);
 	ClassDB::bind_method(D_METHOD("biome_build_cells", "heightb", "water", "labels", "samples", "sample_label", "warp_bytes", "humid_bytes", "w", "h", "warp_amp", "height_cost"), &WorldgenNative::biome_build_cells);
 	ClassDB::bind_method(D_METHOD("jittered_land_samples", "labels", "blocked", "w", "h", "main_label", "confine_main", "cs", "seed_val"), &WorldgenNative::jittered_land_samples);
 }

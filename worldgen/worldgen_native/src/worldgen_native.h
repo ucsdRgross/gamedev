@@ -1,5 +1,6 @@
 #pragma once
 
+#include <godot_cpp/classes/fast_noise_lite.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
@@ -53,6 +54,10 @@ public:
 			const PackedByteArray &is_lake_l, const PackedFloat32Array &lake_surf_l,
 			const PackedFloat32Array &depth_l, int64_t w, int64_t h, int64_t s,
 			int64_t lw, int64_t lh, double oth) const;
+
+	// --- NoiseBake: the hand-rolled multifractal octave loop (noise_baker.gd _multi) ---
+	Ref<Image> bake_multifractal(const Ref<FastNoiseLite> &noise, int64_t w, int64_t h,
+			int64_t octaves, double gain, double lacunarity, bool ridged, double offset) const;
 
 	// --- Phase 3: BiomeRegions.build_cells (biome_regions.gd) ---
 	Dictionary biome_build_cells(const PackedFloat32Array &heightb, const PackedByteArray &water,

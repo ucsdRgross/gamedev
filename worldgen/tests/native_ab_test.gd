@@ -162,6 +162,29 @@ func _run_seed(sd: int) -> void:
 		"dilate_lake bit-identical (mask %d, surf %d bad) native %d ms vs gd %d ms" % [
 			_diff_bytes(dil_n[0], dil_g[0]), _diff_f32(dil_n[1], dil_g[1]), t1 - t0, t2 - t1])
 
+	# --- NoiseBake: _multi (ridge + billow variants; engine noise both ways) ---
+	t0 = Time.get_ticks_msec()
+	var mr_n: Image = NoiseBaker._multi(w, h, sd + ws.peaks_seed_offset, ws.ridge_frequency,
+		ws.peaks_octaves, ws.peaks_gain, ws.peaks_lacunarity, true, ws.ridge_offset,
+		ws.peaks_warp_amp, ws.peaks_warp_freq)
+	var mb_n: Image = NoiseBaker._multi(w, h, sd + ws.peaks_seed_offset + 57, ws.billow_frequency,
+		ws.peaks_octaves, ws.peaks_gain, ws.peaks_lacunarity, false, ws.ridge_offset,
+		ws.peaks_warp_amp, ws.peaks_warp_freq)
+	t1 = Time.get_ticks_msec()
+	GenerationStep._native = null
+	var mr_g := NoiseBaker._multi(w, h, sd + ws.peaks_seed_offset, ws.ridge_frequency,
+		ws.peaks_octaves, ws.peaks_gain, ws.peaks_lacunarity, true, ws.ridge_offset,
+		ws.peaks_warp_amp, ws.peaks_warp_freq)
+	var mb_g := NoiseBaker._multi(w, h, sd + ws.peaks_seed_offset + 57, ws.billow_frequency,
+		ws.peaks_octaves, ws.peaks_gain, ws.peaks_lacunarity, false, ws.ridge_offset,
+		ws.peaks_warp_amp, ws.peaks_warp_freq)
+	GenerationStep._native = native
+	t2 = Time.get_ticks_msec()
+	_check(mr_n.get_data() == mr_g.get_data() and mb_n.get_data() == mb_g.get_data()
+			and mr_n.get_format() == mr_g.get_format() and mb_n.get_format() == mb_g.get_format(),
+		"bake_multifractal bit-identical (ridge %s, billow %s) native %d ms vs gd %d ms" % [
+			mr_n.get_data() == mr_g.get_data(), mb_n.get_data() == mb_g.get_data(), t1 - t0, t2 - t1])
+
 	# --- Rivers residual: the extracted execute() loops (same input chain) ---
 	var riv := StepRivers.new()
 
