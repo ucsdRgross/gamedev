@@ -90,6 +90,9 @@ static func _multi(w: int, h: int, seed_v: int, base_freq: float, octaves: int, 
 	n.fractal_type = FastNoiseLite.FRACTAL_NONE  # we do the octave loop ourselves
 	_apply_warp(n, warp_amp, warp_freq)
 
+	if GenerationStep._native:
+		return GenerationStep._native.bake_multifractal(n, w, h, octaves, gain, lacunarity, ridged, offset)
+
 	var vals := PackedFloat32Array()
 	vals.resize(w * h)
 	var vmin := INF

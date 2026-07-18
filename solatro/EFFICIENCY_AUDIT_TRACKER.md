@@ -322,3 +322,16 @@ Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion)
   scenes green (generate_up_to, graph_placement, biome_regions, biome_assign,
   graph_spec full 1500-fuzz 1860/1860, bake/node), no-dll fallback PASS, Solatro
   **ALL 23 SUITES: 1225 CHECKS PASSED, exit 0**.
+- **2026-07-18 worldgen NoiseBake (setup) LANDED:** native `bake_multifractal` for
+  `noise_baker.gd _multi` (the hand-rolled multifractal loop behind peaks_ridge /
+  peaks_billow; the other 6 maps already used FastNoiseLite.get_image natively).
+  GDScript configures the FastNoiseLite and passes it in; C++ calls the engine's own
+  get_noise_2d per octave — identical values by construction, verified bit-identical
+  on output image bytes (both variants x 3 seeds in the A/B gate). Per-map ~2.4x
+  (floor = the ~5M engine noise calls), but the threaded bake totals to the slowest
+  single map: setup NoiseBake **~2200 -> ~380 ms** (dev box). Scene gates + no-dll
+  fallback green; vendored here (`bin/` dlls + `core/noise_baker.gd`); full suite
+  **ALL 24 SUITES: 1243 CHECKS PASSED, exit 0** (24th = the new COMBO suite, added
+  outside this work). Worldgen native totals now: setup ~380 ms + enabled steps
+  ~645-880 ms (was ~5287 + ~1150 pre-port); remaining time is the Graph solver
+  (owner-gated) and map_painter _paint (Phase 4, owner-gated).

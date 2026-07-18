@@ -63,10 +63,15 @@ by design (kill after the PASS lines). This is likely the same root cause as Sol
   parallel noise baking, COW PackedArray buffers/masks, texelFetch data textures,
   downscaled hydrology/distance grids, thread-safe pure-data graph placement.
 - Long-term GDExtension/C# candidates if generation time ever matters:
-  `rivers.gd` hydrology loops (DONE 2026-07-17 — `worldgen_native/` GDExtension,
-  bit-identical, 5287 -> 1829 ms; see GDEXTENSION_PORT_HANDOFF.md STATUS),
-  `graph_placement.gd` MapField, `biome_regions.gd` flood/voting,
-  painter/generator readback loops.
+  `rivers.gd` hydrology loops (DONE 2026-07-17), `graph_placement.gd` MapField
+  (DONE 2026-07-17), `biome_regions.gd` flood (DONE 2026-07-18), rivers execute()
+  residual loops (DONE 2026-07-18) — all in the `worldgen_native/` GDExtension,
+  bit-identical; enabled steps 5287 -> ~879 ms, see GDEXTENSION_PORT_HANDOFF.md
+  STATUS. `noise_baker.gd _multi` also native (DONE 2026-07-18; setup ~2200 ->
+  ~380 ms). Still GDScript (both owner-gated, see GDEXTENSION_PHASE4_HANDOFF.md):
+  `graph_detail.gd compute_curves` A* edge routing (~323 ms — profiled 2026-07-18;
+  the placement solver itself is only 2 ms) and `map_painter._paint` (~295 ms per
+  paint, off-main-thread).
 
 After landing any item: re-copy the addon into `solatro/addons/worldgen/` and tick
 P14 in Solatro's AUDIT_PROPOSALS_HANDOFF.md / EFFICIENCY_AUDIT_TRACKER.md.
