@@ -5,7 +5,18 @@ enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 
 # TODO(rarity/tags): Rarity above is carried by nothing yet. If modifiers grow
 # rarity/tags, expose them as abstract getters (like get_str/get_frame), not @export vars.
-@export_storage var data : CardData
+# Weak backref to the owning card. WEAK on purpose: card<->modifier was a RefCounted
+# CYCLE (Godot has no cycle collector), and manual unlink discipline at every drop site
+# kept failing. A WeakRef means the cycle never exists — a card graph dies when its last
+# external reference drops, no unlink needed. Not serialized (WeakRef can't be; saves
+# carry no backref, same as before). ⚠️ duplicate_deep does NOT remap a WeakRef: every
+# deep-copy site must relink its copies (GameData.relink_card_backrefs).
+var _data_ref : WeakRef = null
+var data : CardData:
+	set(value):
+		_data_ref = weakref(value) if value else null
+	get:
+		return _data_ref.get_ref() as CardData if _data_ref else null
 
 ## Current environment / game shortcuts so every modifier doesn't have to re-derive them.
 ## Read-only convenience: null when no environment / not in a game — always null-check.

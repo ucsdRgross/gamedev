@@ -78,6 +78,21 @@ off-main-thread) — both owner-gated, handoff:
 
 ## Memory
 
+- **DONE 2026-07-18 (later session): WEAKREF BACKREFS + LEAK SENTINEL** (both
+  workstreams of LEAK_PREVENTION_HANDOFF.md; full details in EFFICIENCY_AUDIT_TRACKER
+  same date). `CardModifier.data` is now a WeakRef-backed property — the card<->modifier
+  RefCounted cycle cannot exist, and the ENTIRE unlink-at-every-drop-site discipline
+  (production + test teardowns + TestSuite.unlink_cards) is deleted. GameData's
+  unlink/relink helpers remain for saves (backref-free on disk) and for RELINKING after
+  every deep copy (duplicate_deep does NOT remap WeakRefs — duplicate_state, add_deck,
+  new_run, deck_builder all relink; add any new deep-copy site to that list).
+  Benchmark gate passed: suite wall-time 75.1s -> ~72.5s (raw `.data` read is ~3x, but
+  invisible at suite level). Debug builds also run the Scripts/leak_sentinel.gd autoload
+  (knobs in player_settings.gd): quiescent-moment alive-vs-reachable card census that
+  push_errors a stage/modifier histogram naming any leak source; quiet under the test
+  runner. **Stale-number refresh: full-run exit leak is now 4** (the leak canary's own
+  deliberate stray-Node fixture; was 547), and the old accepted per-suite floor figures
+  below are obsolete — formerly-leaky suites probe at zero.
 - **DONE 2026-07-18: comprehensive PRODUCTION leak canary** (the owner-endorsed item
   below). Landed as SECTION 2 of test_leak_canary.gd ("PRODUCTION SESSION CANARY") — the
   suite count stays 24 and the deadlock chain is untouched. Each cycle simulates a full

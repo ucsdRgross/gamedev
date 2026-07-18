@@ -7,8 +7,7 @@ extends TestSuite
 # traversal order and live-mutation policy (B10). No player-visible rule lives here.
 
 var env : FakeEnvironment
-# Every card the suite ever builds — unlinked in one sweep at the end (teardown
-# discipline, see test_leak_canary.gd: the pip-suit backref is a RefCounted cycle).
+# Every card the suite ever builds.
 var _made : Array[CardData] = []
 
 func suite_name() -> String:
@@ -22,7 +21,6 @@ func _ready() -> void:
 	run_mixed_tests()
 	run_reuse_and_mutation_tests()
 	env.queue_free()
-	unlink_cards(_made)
 	finish()
 
 

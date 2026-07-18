@@ -62,8 +62,12 @@ func new_run(cards: Array[CardData], rules: Array[CardData]) -> RunState:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	run.world_seed = rng.randi_range(1, 2147483646)
+	# modifier .data backrefs are WeakRefs — duplicate_deep does not remap them, so the
+	# copied decks must be relinked to point their modifiers at the copies
 	run.card_datas = cards.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	run.rule_datas = rules.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	_relink_cards(run.card_datas)
+	_relink_cards(run.rule_datas)
 	mark_deck_dirty()
 	save_run()
 	return run
@@ -122,9 +126,10 @@ func _build_payload() -> RunState:
 	p.game_history_trimmed = run.game_history_trimmed
 	return p
 
-# Deep-copy a card array and unlink the modifier self-cycles → serialization-ready and
-# independent (the live cards keep their backrefs). The modifier slot list lives in
-# GameData's static per-card helpers so this path can't drift from the board save path.
+# Deep-copy a card array and null the modifier backrefs → serialization-ready and
+# independent (saved decks carry no backref; load_run relinks). The modifier slot list
+# lives in GameData's static per-card helpers so this path can't drift from the board
+# save path.
 func _to_saveable_cards(cards: Array[CardData]) -> Array[CardData]:
 	var out : Array[CardData] = cards.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for card in out:
@@ -182,14 +187,6 @@ func _shutdown_saver() -> void:
 ## Discard the run: cancel any queued write, delete the run doc and the baked map. Called
 ## on loss and new_run.
 func clear_save() -> void:
-	# The dropped run doc's cards are CardData<->modifier RefCounted cycles Godot never
-	# collects (leak-canary discipline) — break them before the doc drops for good.
-	# Idempotent, so test paths that already unlinked are unaffected.
-	if run != null:
-		for card : CardData in run.card_datas:
-			GameData.unlink_card_backrefs(card)
-		for card : CardData in run.rule_datas:
-			GameData.unlink_card_backrefs(card)
 	run = null
 	if _saver_mutex != null:
 		_saver_mutex.lock()

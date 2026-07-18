@@ -242,9 +242,7 @@ func settle(pa: PlayArea) -> void:
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
 	CardEnvironment.CURRENT = null
-	await get_tree().process_frame  # let the PlayArea actually free before the state unlinks
-	# Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier cycles.
-	g.state.unlink_modifier_backrefs()
+	await get_tree().process_frame  # let the PlayArea actually free before the Game does
 	g.free()
 
 func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
@@ -678,8 +676,6 @@ func test_game_view_deal_snapshot() -> void:
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
-	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
-	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -712,8 +708,6 @@ func test_end_screen_above_board() -> void:
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
-	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
-	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -736,16 +730,8 @@ func test_end_screen_above_board() -> void:
 	await _teardown_view(view, prev_run, prev_save_info)
 
 func _teardown_view(view: GameView, prev_run: RunState, prev_save_info: RunState) -> void:
-	# Teardown discipline (see test_leak_canary.gd): the Game frees with the view and the
-	# run doc drops with clear_save — break their CardData<->modifier cycles.
-	var doomed_state : GameData = view.game.state
-	var run : RunState = RunManager.run
 	view.queue_free()
 	await get_tree().process_frame
-	doomed_state.unlink_modifier_backrefs()
-	if run:
-		unlink_cards(run.card_datas)
-		unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()

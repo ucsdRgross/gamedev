@@ -64,9 +64,6 @@ func run_win_and_resume_scenario() -> void:
 	var deck_size := cards.size()
 	var rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(cards, rules)
-	# new_run deep-duplicated both decks into the run doc — the sources drop here.
-	unlink_cards(cards)
-	unlink_cards(rules)
 	Main.save_info = run
 	check(RunManager.has_save(), "starting a run immediately writes a resumable save")
 	run.pending_goal = 1     # the map node's fame requirement for this show
@@ -126,7 +123,6 @@ func run_win_and_resume_scenario() -> void:
 	RunManager._shutdown_saver()
 	RunManager.save_run()
 	remove_child(g)
-	g.state.unlink_modifier_backrefs()  # the quit show's live board drops here
 	g.free()
 	var loaded := RunManager.load_run()
 	Main.save_info = loaded
@@ -175,12 +171,8 @@ func run_win_and_resume_scenario() -> void:
 	check(Main.save_info.game_history.is_empty(),
 			"the finished show's history is dropped (Continue won't re-enter it)")
 	remove_child(g2)
-	g2.state.unlink_modifier_backrefs()
 	g2.free()
 	# Both run documents (the original and the reloaded one) drop when scenario 2 starts a
-	# fresh run — break their deck cycles now.
-	unlink_cards(run.card_datas); unlink_cards(run.rule_datas)
-	unlink_cards(loaded.card_datas); unlink_cards(loaded.rule_datas)
 
 
 # ==============================================================================
@@ -192,8 +184,6 @@ func run_loss_scenario() -> void:
 	var cards := TestDecks.seeded_deck()
 	var rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(cards, rules)
-	unlink_cards(cards)
-	unlink_cards(rules)
 	Main.save_info = run
 	run.pending_goal = 1000000000
 	run.pending_node_id = 1
@@ -219,7 +209,4 @@ func run_loss_scenario() -> void:
 	g.exit_show()
 	check(lost.size() == 1, "leaving a lost show ends the whole run")
 	remove_child(g)
-	g.state.unlink_modifier_backrefs()
 	g.free()
-	unlink_cards(run.card_datas)
-	unlink_cards(run.rule_datas)

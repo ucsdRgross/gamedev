@@ -269,11 +269,15 @@ func add_deck() -> void:
 	
 	#Array.duplicate(true) shares Resource elements; duplicate_deep actually copies the
 	#cards (with modifier backrefs remapped) so play never mutates the save's cards
+	#modifier .data backrefs are WeakRefs — duplicate_deep does not remap them, so every
+	#copied card must be relinked to point its modifiers at the copy
 	state.rules_deck = saved_rules.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for data in state.rules_deck:
+		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.RULES
 	state.draw_deck = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	for data in state.draw_deck:
+		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.DRAW
 	shuffle_deck(state.draw_deck)
 	state.revision += 1
@@ -369,13 +373,6 @@ func undo() -> void:
 	if save_history.size() > 1:
 		save_history.resize(save_history.size() - 1) # latest saved state will be current scene
 		var prev_game_data : GameData = save_history[-1]
-		# The outgoing live state is dropped here for good; its CardData<->modifier backrefs
-		# are RefCounted cycles Godot never collects (leak-canary discipline), so break them.
-		# Safe at this point: the game is quiescent (not processing) and the restored snapshot
-		# below carries its own duplicated cards. (The processing-time restore path,
-		# _restore_pre_act_board, deliberately does NOT unlink — mods still run against the
-		# doomed state through the unwind.)
-		state.unlink_modifier_backrefs()
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = _runtime_state(prev_game_data)
 		# The restored snapshot carries its own submits_used — refresh the Submit button label
@@ -540,11 +537,6 @@ func exit_show() -> void:
 		return_to_map()
 	else:
 		run_lost.emit()
-		# The run is over and this Game frees with its view; the whole board (duplicates of
-		# the now-discarded run doc) drops for good — break the CardData<->modifier cycles
-		# (leak-canary discipline). Safe: the loss handler already ran during the emit and
-		# nothing dispatches mods against this state again.
-		state.unlink_modifier_backrefs()
 
 func discard_data(data: CardData) -> void:
 	await run_all_mods(&"on_discard", data)
@@ -568,24 +560,12 @@ func return_to_map() -> void:
 	for data in state.draw_deck:
 		data.stage = CardData.Stage.DRAW
 	state.revision += 1
-	# The run doc's previous deck copies are replaced by the swept board below and drop for
-	# good — break their CardData<->modifier cycles (leak-canary discipline).
-	for card : CardData in Main.save_info.card_datas:
-		GameData.unlink_card_backrefs(card)
 	Main.save_info.card_datas = state.draw_deck
 	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
 	Main.save_info.game_submits = 0
-	# The rules deck + zone headers die with this Game (only draw_deck lives on in the run
-	# doc) — break their cycles too, or every completed show leaks them until exit.
-	for card : CardData in state.rules_deck:
-		GameData.unlink_card_backrefs(card)
-	for card : CardData in state.upper_zone_type:
-		GameData.unlink_card_backrefs(card)
-	for card : CardData in state.lower_zone_type:
-		GameData.unlink_card_backrefs(card)
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:

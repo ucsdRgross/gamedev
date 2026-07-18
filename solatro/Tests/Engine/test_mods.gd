@@ -87,8 +87,6 @@ func make_game(rules: Array[CardData], upper: Array, lower: Array) -> Game:
 	return g
 
 func done(g: Game) -> void:
-	# Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier cycles.
-	g.state.unlink_modifier_backrefs()
 	CardEnvironment.CURRENT = null
 	g.free()
 

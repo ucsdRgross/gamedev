@@ -40,6 +40,7 @@ func _on_continue() -> void:
 
 func enter_map() -> void:
 	switch_scene(map_scene)
+	LeakSentinel.request_check()  # quiescent moment: nothing resolving on the map
 
 func enter_game() -> void:
 	var new_view : GameView = GAME_VIEW.instantiate()
@@ -55,6 +56,7 @@ func game_ended() -> void:
 	if old_game is GameView:
 		old_game.queue_free()  # frees the view and its Game child together
 	map_scene.returned_from_game()
+	LeakSentinel.request_check()  # quiescent moment: the finished show just dropped
 
 ## Lost game = run over: discard the save, rebuild the map scene so the next run starts
 ## clean, and fall back to the menu.
@@ -69,6 +71,7 @@ func _on_run_lost() -> void:
 	if old_game is GameView:
 		old_game.queue_free()  # frees the view and its Game child together
 	menu_scene.refresh_continue()
+	LeakSentinel.request_check()  # quiescent moment: the lost run's whole graph just dropped
 
 func switch_scene(new_scene : Node) -> void:
 	if new_scene.is_inside_tree():

@@ -364,3 +364,48 @@ Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion)
   outside this work). Worldgen native totals now: setup ~380 ms + enabled steps
   ~645-880 ms (was ~5287 + ~1150 pre-port); remaining time is the Graph solver
   (owner-gated) and map_painter _paint (Phase 4, owner-gated).
+- **2026-07-18 (later session) WEAKREF BACKREFS + PLAYTEST LEAK SENTINEL LANDED**
+  (LEAK_PREVENTION_HANDOFF.md, both workstreams; the handoff is now historical):
+  `CardModifier.data` is a WeakRef-backed property (same name, ~every call site
+  untouched) — the CardData<->modifier RefCounted cycle can no longer exist, so the
+  ENTIRE per-drop-site unlink discipline was deleted (production and tests).
+  BENCHMARK GATE (required before landing): micro-bench 10M `mod.data` reads
+  2.03s -> 6.47s (~0.45 us/read of property+WeakRef overhead), but suite wall-time —
+  the actual gate — is unchanged-to-better: full all_tests 75.1s baseline -> 72.3-72.9s
+  after; SCORING/ACT SCORE/BOARD FUZZ/E2E/PROP ENGINE per-suite times all within noise
+  (several faster). PASSED.
+  PRODUCTION FILES TOUCHED:
+  * Cards/card_modifier.gd: `data` -> `_data_ref : WeakRef` + property (covers
+    skills/types/stamps + PipSuit + CardModifierStatus by inheritance);
+  * Cards/card_data.gd: debug-only `sentinel_registry` (weakref per card in `_init`);
+  * Scripts/game_data.gd: duplicate_state() now relinks its copy (duplicate_deep does
+    NOT remap a WeakRef — every deep-copy site must relink); unlink/relink helpers KEPT
+    (relink after copies/loads; unlink so saves carry no backref), comments rewritten;
+  * Levels/game.gd: add_deck relinks both copied decks; deleted the undo() /
+    exit_show-loss / return_to_map unlink blocks (_restore_pre_act_board comment kept);
+  * Scripts/run_manager.gd: new_run relinks the copied decks; clear_save unlink deleted;
+    _to_saveable_cards still nulls backrefs (saves stay backref-free);
+  * UI/deck_builder.gd: relinks its duplicated preview card;
+  * UI/deck_picker.gd: _exit_tree unlink deleted; UI/map_hover_panel.gd: unlink helper
+    deleted (plain list clear remains);
+  * Levels/main.gd + project.godot + Scripts/leak_sentinel.gd + player_settings.gd:
+    workstream B (below).
+  TEST SIDE: TestSuite.unlink_cards deleted + every per-suite teardown unlink swept
+  (15 files). test_leak_canary rewritten: clean cycles now free WITHOUT unlinking (the
+  tripwire proving the leak class is dead); the deliberate-leak proof abandons stray
+  Nodes instead of cards; new LEAK SENTINEL section drives LeakSentinel.tick() directly
+  (its one push_error in the log is deliberate). Canary counts prune the sentinel
+  registry via LeakSentinel.prune() (benign WeakRef growth).
+  WORKSTREAM B — Scripts/leak_sentinel.gd autoload (debug builds only): at quiescent
+  moments (map entry / show exit via Main hooks + a slow timer, never while
+  Game.processing) compares CardData alive (registry) vs reachable from legitimate
+  roots (run doc + RunManager save caches/payload + live Game state/history/fallback
+  deck + open DeckViewer/DeckPicker/MapHoverPanel/ChoiceViewer); sustained excess
+  (slack 8, 3 strikes) push_errors counts + a stage/modifier histogram naming the
+  source. Knobs in player_settings.gd (leak_sentinel_enabled/slack/strikes/interval);
+  quiet under the test runner (TestLog.begin sets LeakSentinel.test_mode).
+  NUMBERS: full-run exit leak 547 -> **4** (the canary's own deliberate stray-Node
+  fixture); isolated leak_probe runs now report NO leak warning at all for STATUSES,
+  BOARD, E2E RUN, UI PROPS, INTERACTION (LEAK CANARY's 57 fixture figure is gone with
+  the rewrite). Validation: two full headless runs, **ALL 24 SUITES green, exit 0**
+  (1312 / 1285 checks — totals vary, fuzz suites).

@@ -154,9 +154,7 @@ func slot(col: int) -> Vector3i:
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
 	CardEnvironment.CURRENT = null
-	await get_tree().process_frame  # let the PlayArea actually free before the state unlinks
-	# Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier cycles.
-	g.state.unlink_modifier_backrefs()
+	await get_tree().process_frame  # let the PlayArea actually free before the Game does
 	g.free()
 
 ## Live PropVisual children only (the layer also hosts the focus inspector panel).
@@ -941,8 +939,6 @@ func test_game_view_submit_with_props() -> void:
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
-	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
-	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -1006,12 +1002,8 @@ func test_game_view_submit_with_props() -> void:
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card is at rest after the whole submit (no stuck meld jump or spin)",
 			rest_detail[0])
-	var doomed_state := g.state   # the Game frees with the view; its board drops for good
 	view.queue_free()   # frees its Game child too
 	await get_tree().process_frame
-	doomed_state.unlink_modifier_backrefs()
-	unlink_cards(run.card_datas)   # the run doc drops with clear_save below
-	unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	# join any in-flight background save BEFORE clearing, then put reality back (E2E pattern)
 	RunManager._shutdown_saver()
@@ -1083,8 +1075,6 @@ func test_all_kinds_live_in_game_view() -> void:
 	var src_cards := TestDecks.minimal_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
-	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
-	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -1121,7 +1111,6 @@ func test_all_kinds_live_in_game_view() -> void:
 		cols.append(TestFactories.col(col_cards))
 	s.upper_zone_type = types
 	s.upper_zone = cols
-	g.state.unlink_modifier_backrefs()   # the bootstrap-dealt state drops on the swap below
 	g.state = s          # state_bound rebinds the view to the crafted board
 	g._begin_act()
 	var pa := view.play_area
@@ -1162,12 +1151,8 @@ func test_all_kinds_live_in_game_view() -> void:
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card returns to rest after the effects pass (no stuck jump/spin)",
 			rest_detail[0])
-	var doomed_state := g.state   # the Game frees with the view; the crafted board drops
 	view.queue_free()   # frees its Game child too
 	await get_tree().process_frame
-	doomed_state.unlink_modifier_backrefs()
-	unlink_cards(run.card_datas)   # the run doc drops with clear_save below
-	unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()

@@ -26,6 +26,7 @@ static var _started := false
 ## Open (truncate) both log files and set the terminal mode. Safe to call again — reopens fresh.
 static func begin(errors_only: bool) -> void:
 	terminal_errors_only = errors_only
+	LeakSentinel.test_mode = true  # suites abandon cards on purpose — keep the sentinel quiet
 	_all_file = FileAccess.open(ALL_PATH, FileAccess.WRITE)
 	_err_file = FileAccess.open(ERR_PATH, FileAccess.WRITE)
 	_started = true

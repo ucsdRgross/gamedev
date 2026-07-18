@@ -72,11 +72,7 @@ func make_game() -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
-## Teardown discipline (see test_leak_canary.gd): break the CardData<->modifier RefCounted
-## cycles before dropping the Game, or every fixture leaks until exit. History snapshots
-## are already in saveable (unlinked) form.
 func free_game(g: Game) -> void:
-	g.state.unlink_modifier_backrefs()
 	CardEnvironment.CURRENT = null
 	g.free()
 
@@ -262,10 +258,6 @@ func test_add_deck_relinks_suit_backrefs() -> void:
 	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
 			"deck size %d" % g.state.draw_deck.size())
 	Main.save_info = prev_save_info
-	# The fallback built the Game's own Deck resource's starter deck + rules — those source
-	# cards (not the duplicates on the board) carry their own cycles and drop with the Game.
-	for card : CardData in g.deck.get_deck() + g.deck.get_rules():
-		GameData.unlink_card_backrefs(card)
 	CardEnvironment.CURRENT = null
 	free_game(g)
 

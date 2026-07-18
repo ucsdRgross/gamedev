@@ -4,6 +4,15 @@ extends Resource
 signal data_changed
 signal stage_changed
 
+# LeakSentinel registry: every card ever built, held WEAKLY (debug builds only — zero
+# release cost). LeakSentinel prunes dead entries and compares the survivors against the
+# cards reachable from legitimate owners; see Scripts/leak_sentinel.gd.
+static var sentinel_registry : Array[WeakRef] = []
+
+func _init() -> void:
+	if OS.is_debug_build():
+		sentinel_registry.append(weakref(self))
+
 @export var suit: PipSuit:
 	set(value):
 		if suit and suit.data_changed.is_connected(_on_child_data_changed):

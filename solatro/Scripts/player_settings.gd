@@ -170,6 +170,30 @@ signal settings_changed
 		lap_mult = value
 		settings_changed.emit()
 
+@export_group("Leak sentinel (debug builds only)")
+## Master switch for the playtest leak sentinel (Scripts/leak_sentinel.gd): compares live
+## CardData against the cards reachable from legitimate owners at quiescent moments and
+## push_errors a source-naming histogram on sustained excess. No effect in release builds.
+@export var leak_sentinel_enabled : bool = true:
+	set(value):
+		leak_sentinel_enabled = value
+		settings_changed.emit()
+## Unreachable cards tolerated before a check counts as a strike (transient drops settle).
+@export var leak_sentinel_slack : int = 8:
+	set(value):
+		leak_sentinel_slack = value
+		settings_changed.emit()
+## Consecutive over-slack checks before the sentinel reports (one-off spikes stay quiet).
+@export var leak_sentinel_strikes : int = 3:
+	set(value):
+		leak_sentinel_strikes = value
+		settings_changed.emit()
+## Seconds between periodic sentinel checks (checks also run on map entry / show exit).
+@export var leak_sentinel_interval : float = 30.0:
+	set(value):
+		leak_sentinel_interval = value
+		settings_changed.emit()
+
 @export_group("Balance — luck (booster generation)")
 ## Max per-component non-null chance in booster generation (luck() asymptote).
 @export var luck_cap : float = 0.6:

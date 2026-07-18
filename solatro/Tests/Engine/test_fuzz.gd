@@ -16,11 +16,10 @@ const LOG_TAIL := 50
 
 var _rng := RandomNumberGenerator.new()
 var _log : Array[String] = []
-# The walk's current state, kept as a member so _ready can break the CardData<->pip-suit
-# RefCounted cycles at the end whichever way the walk exited (leak-canary discipline).
+# The walk's current state.
 var _s : GameData = null
-# Reusable off-board probe cards, one per site (fresh m_card per use leaked its suit cycle
-# 500+ times a run). Never board-inserted — every use is a deliberately rejected operation.
+# Reusable off-board probe cards, one per site.
+# Never board-inserted — every use is a deliberately rejected operation.
 var _stranger_probe := TestFactories.m_card(1, 1)
 var _stranger_moving := TestFactories.m_card(1, 1)
 var _stranger_anchor := TestFactories.m_card(1, 1)
@@ -37,11 +36,7 @@ func _ready() -> void:
 	_rng.seed = fuzz_seed
 	TestLog.line("seed: %d, iterations: %d" % [fuzz_seed, iterations])
 	run_random_walk()
-	if _s:
-		_s.unlink_modifier_backrefs()
-		_s = null
-	for stranger: CardData in [_stranger_probe, _stranger_moving, _stranger_anchor]:
-		GameData.unlink_card_backrefs(stranger)
+	_s = null
 	if _fail == 0:
 		TestLog.line("(fuzz seed %d)" % fuzz_seed)
 	finish()
@@ -220,7 +215,6 @@ func run_random_walk() -> void:
 					var last := zone(s, x).size() - 1
 					if zone(s, x)[last].datas.is_empty():
 						zone(s, x).remove_at(last)
-						GameData.unlink_card_backrefs(types[last])  # header leaves play for good
 						types.remove_at(last)
 						s.revision += 1
 						expected_total -= 1 #header leaves play entirely
@@ -232,7 +226,6 @@ func run_random_walk() -> void:
 					var idx := _rng.randi_range(0, zone(s, x).size() - 1)
 					var header := types[idx]
 					var orphans := Board.remove_column(s, zone(s, x), types, idx)
-					GameData.unlink_card_backrefs(header)  # header dropped inside remove_column
 					#header gone entirely; orphaned column cards leave play -> discard them
 					expected_total -= 1
 					for card in orphans:
@@ -273,7 +266,6 @@ func run_random_walk() -> void:
 		if i % 50 == 49:
 			var old := s
 			s = s.duplicate_state()
-			old.unlink_modifier_backrefs()  # the pre-hop state is dropped — break its cycles
 			_s = s
 			note("%d: duplicate_state hop" % i)
 			pos_mismatch = verify_positions(s)

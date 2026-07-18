@@ -130,6 +130,9 @@ func duplicate_state() -> GameData:
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
 	copy._pos_index_revision = -1
+	#modifier .data backrefs are WeakRefs, which duplicate_deep does NOT remap — the
+	#copied modifiers still point at THIS state's cards. Rebind them to the copies.
+	copy.relink_modifier_backrefs()
 	return copy
 
 # ---------------------------------------------------------------------------
@@ -291,10 +294,12 @@ func unpack_scores() -> void:
 	scores_row_lower = _unpack(packed_row_lower_mant, packed_row_lower_exp)
 	scores_col = _unpack(packed_col_mant, packed_col_exp)
 
-# Cyclic CardModifier.data self-references (card -> its modifier -> back to the card) are
-# the only thing ResourceSaver can't write; unlink for a save, relink after. The backref
-# always equals the owning card, so relinking is lossless. ZoneAdder.card_data is a plain
-# forward ref (no cycle) and is left intact.
+# CardModifier.data backrefs are WeakRefs (no RefCounted cycle — dropped card graphs
+# just die; the old per-drop-site unlink discipline is gone). These helpers remain for
+# two jobs: RELINK after any deep copy or load (duplicate_deep does not remap a WeakRef,
+# and saves carry no backref), and UNLINK on to_saveable copies so saved decks stay
+# backref-free. The backref always equals the owning card, so relinking is lossless.
+# ZoneAdder.card_data is a plain forward ref and is left intact.
 # The per-card halves are static and are THE single list of modifier slots — RunManager's
 # deck save/load paths call them too. Add any new modifier slot here and nowhere else.
 static func unlink_card_backrefs(card: CardData) -> void:
@@ -317,7 +322,7 @@ func relink_modifier_backrefs() -> void:
 	for card in all_card_datas():
 		relink_card_backrefs(card)
 
-## An independent, disk-ready copy: modifier self-cycles unlinked and scores packed to
+## An independent, disk-ready copy: modifier backrefs nulled (saves carry none) and scores packed to
 ## primitives, so ResourceSaver can write it and a background thread can read it safely
 ## (the copy is immutable — never mutated again). Rebuild a runtime GameData from it with
 ## duplicate_state() + restore_runtime().

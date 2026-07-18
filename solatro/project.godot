@@ -28,6 +28,7 @@ buses/default_bus_layout="res://Audio/default_bus_layout.tres"
 PseudoLocalisationCycler="*uid://cgwqytqq2t8ih"
 SettingsManager="*uid://0icgb7ix0tbx"
 RunManager="*res://Scripts/run_manager.gd"
+LeakSentinel="*res://Scripts/leak_sentinel.gd"
 
 [debug]
 

@@ -77,8 +77,6 @@ func _setup_view() -> void:
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
-	unlink_cards(src_cards)   # new_run deep-duplicated them; the sources drop here
-	unlink_cards(src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
@@ -94,16 +92,8 @@ func _setup_view() -> void:
 	await frames(2)
 
 func _teardown_view() -> void:
-	# Teardown discipline (see test_leak_canary.gd): the Game frees with the view and the
-	# run doc drops with clear_save — break their CardData<->modifier cycles.
-	var doomed_state : GameData = game.state
-	var run : RunState = RunManager.run
 	view.queue_free()   # frees its Game child too
 	await frames(1)
-	doomed_state.unlink_modifier_backrefs()
-	if run:
-		unlink_cards(run.card_datas)
-		unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	# join any in-flight background save BEFORE clearing, then put reality back
 	RunManager._shutdown_saver()

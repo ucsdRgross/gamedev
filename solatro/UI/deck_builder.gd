@@ -76,6 +76,8 @@ func add_mods() -> void:
 
 func _on_add_card_pressed() -> void:
 	var data : CardData = preview_card.data.duplicate_deep()
+	# modifier .data backrefs are WeakRefs — duplicate_deep does not remap them
+	GameData.relink_card_backrefs(data)
 	if rank_option_value.get_selected_id() == 0:
 		data.rank.with_random()
 	if suit_option_value.get_selected_id() == 0:

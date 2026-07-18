@@ -66,10 +66,7 @@ func make_game() -> Game:
 	g.state = s
 	return g
 
-## Teardown discipline (see test_leak_canary.gd): break the CardData<->pip cycles
-## before dropping a fixture Game, or its cards leak until exit.
 func free_game(g: Game) -> void:
-	g.state.unlink_modifier_backrefs()
 	g.free()
 
 func validate_ok(g: Game, ctx: String) -> void:
@@ -442,5 +439,4 @@ func run_undo_duplicate_tests() -> void:
 			"mutating live state leaves the snapshot untouched")
 	var v := copy.validate()
 	check(v.is_empty(), "snapshot itself validates", str(v))
-	copy.unlink_modifier_backrefs()  # the duplicate carries its own cycles
 	free_game(g)

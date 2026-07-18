@@ -64,13 +64,6 @@ func await_siblings_except(exclude_names: Array[String]) -> void:
 				and not suite.finished:
 			await suite.suite_finished
 
-## Teardown discipline (see test_leak_canary.gd): CardData<->modifier backrefs are
-## RefCounted cycles Godot never collects — call this on any card array a test drops
-## (run-doc decks, TestDecks sources, crafted fixtures) or the cards leak until exit.
-func unlink_cards(cards: Array[CardData]) -> void:
-	for card in cards:
-		GameData.unlink_card_backrefs(card)
-
 func behavior_section(title: String) -> void:
 	_category = Category.BEHAVIOR
 	TestLog.line("\n--- [BEHAVIOR] %s ---" % title)

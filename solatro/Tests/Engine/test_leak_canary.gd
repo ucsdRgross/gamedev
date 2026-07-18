@@ -1,14 +1,14 @@
 extends TestSuite
 # res://Tests/Engine/test_leak_canary.gd
 # ==============================================================================
-# MEMORY-LEAK CANARY (owner-approved 2026-07-17, AUDIT_PROPOSALS_HANDOFF.md
-# NEXT STEPS 3): CardData<->modifier backrefs are RefCounted CYCLES that Godot
-# never collects — any card built and dropped without unlink_card_backrefs leaks
-# until exit. This suite pins the containment discipline: build + tear down a
-# full headless Game N times and assert Performance.OBJECT_COUNT returns to
-# baseline. If a future card/modifier slot (or teardown path) breaks the cycle
-# discipline, the growth check fails here instead of silently inflating the
-# ~18k residual exit-leak figure.
+# MEMORY-LEAK CANARY (owner-approved 2026-07-17; reworked 2026-07-18 for the
+# weakref conversion): CardModifier.data backrefs are now WeakRefs, so the old
+# CardData<->modifier RefCounted cycle CANNOT exist — a dropped card graph just
+# dies, with no unlink discipline anywhere. This suite is the tripwire proving
+# that class of leak stays dead: build + tear down a full headless Game N times
+# WITH NO UNLINKING and assert Performance.OBJECT_COUNT returns to baseline.
+# If someone reintroduces a strong backref (or a new strong cycle), the growth
+# check fails here.
 #
 # ⚠️ Runs LAST and ALONE: OBJECT_COUNT is engine-global, so any concurrent suite
 # would make the numbers meaningless. See the SUITE ORDERING chain in
@@ -24,10 +24,10 @@ extends TestSuite
 # pack, a real show WITH a GameView (Nexts, grab/place, discard, Submit with real
 # scoring/props, undo across the Submit), quit-mid-show -> resume, the win path
 # (exit_show -> return_to_map) AND the loss path, then clear_save — and asserts
-# OBJECT_COUNT returns to a post-warm-up baseline. Test-only leaks are out of scope
-# (owner ruling); this section proves the PRODUCTION drop sites unlink their card
-# cycles (Game.undo, return_to_map, exit_show loss, RunManager.clear_save,
-# DeckPicker._exit_tree, MapHoverPanel previews).
+# OBJECT_COUNT returns to a post-warm-up baseline. This proves every PRODUCTION
+# drop site (Game.undo, return_to_map, exit_show loss, RunManager.clear_save,
+# DeckPicker close, MapHoverPanel previews) releases its card graphs — with the
+# weakref backrefs no unlink call exists anywhere in these paths.
 
 func suite_name() -> String:
 	return "LEAK CANARY"
@@ -43,25 +43,27 @@ const HOVER_PANEL_SCENE := preload("res://UI/map_hover_panel.tscn")
 const REAL_SETTINGS_PATH := "user://settings.tres"
 const REAL_SETTINGS_BAK := "user://settings.tres.testbak3"
 
+## LEAK SENTINEL section fixture: cards deliberately held alive-but-unreachable.
+var _sentinel_leaked : Array[CardData] = []
+
 func _ready() -> void:
 	await await_siblings_except([])
 	TestLog.line("============ LEAK CANARY TEST PASS ============")
 	implementation_section("REFCOUNT-CYCLE CANARY")
 
-	# 0. Prove the canary CAN catch the known pattern: build a fixture and drop it
-	# WITHOUT unlinking. The cycle keeps every CardData+modifier alive, so the
-	# global object count must NOT return to its prior level. (This deliberately
-	# leaks one small fixture for the rest of the process — done before the
-	# baseline snapshot so it can't pollute the growth check below.)
+	# 0. Prove the canary CAN catch a leak: deliberately abandon a few Nodes (never
+	# freed, never in the tree). A dropped CARD no longer leaks (weakref backrefs),
+	# so a stray Node is the representative leak class the sentinel/canary watch for.
+	# (This deliberately leaks the nodes for the rest of the process — done before
+	# the baseline snapshot so it can't pollute the growth check below.)
 	await _settle()
 	var before_leak := _object_count()
-	var leaked := _make_game()
-	CardEnvironment.CURRENT = null
-	leaked.free()  # frees the Game NODE; state's card cycles survive — that's the leak
-	leaked = null
+	for i in 4:
+		var stray := Node.new()
+		stray.set_meta(&"deliberate_canary_leak", true)
 	await _settle()
 	check_impl(_object_count() > before_leak,
-			"canary detects a deliberate drop-without-unlink leak",
+			"canary detects deliberately abandoned Nodes",
 			"before %d, after %d" % [before_leak, _object_count()])
 
 	# 1. Warm-up cycle: first build touches lazy one-time allocations (deck
@@ -109,6 +111,27 @@ func _ready() -> void:
 	if session_after > session_baseline:
 		print_orphan_nodes()
 
+	implementation_section("LEAK SENTINEL")
+	# The sentinel is quiet under the test runner (TestLog._started), so drive tick()
+	# directly: cards held alive but unreachable from any legitimate owner must raise the
+	# unreachable count, and enough over-slack ticks must fire the report (which resets
+	# the strike counter — that reset is the observable proof the report branch ran).
+	var n0 := LeakSentinel.tick()
+	for i : int in 20:
+		_sentinel_leaked.append(TestFactories.m_card(1, TestFactories.uc()))
+	var n1 := LeakSentinel.tick()
+	check_impl(n1 >= n0 + 20,
+			"the sentinel counts force-leaked linked cards as unreachable",
+			"before %d, after %d" % [n0, n1])
+	LeakSentinel._strikes = 0
+	for i : int in SettingsManager.settings.leak_sentinel_strikes:
+		LeakSentinel.tick()
+	# exactly `strikes` over-slack ticks reach the threshold on the last one, so the report
+	# fired and reset the counter; any other end state means the report branch never ran
+	check_impl(LeakSentinel._strikes == 0,
+			"enough over-slack checks fire the sentinel report (the push_error above is deliberate)")
+	_sentinel_leaked.clear()
+
 	SettingsManager.settings.base_delay = prev_delay
 	_restore_settings()
 	restore_real_save()
@@ -119,16 +142,18 @@ func _ready() -> void:
 func _object_count() -> int:
 	return int(Performance.get_monitor(Performance.OBJECT_COUNT))
 
-## Two idle frames so queued deletions/refcount releases settle before counting.
+## Two idle frames so queued deletions/refcount releases settle before counting. Also
+## prunes the sentinel registry: its per-card WeakRefs are benign growth that would
+## otherwise fail the object-count checks.
 func _settle() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
+	LeakSentinel.prune()
 
-## One full lifecycle with the documented teardown discipline: unlink every
-## card's modifier backrefs (breaking the RefCounted cycles), then free the Game.
+## One full lifecycle with NO unlinking — the weakref backrefs mean dropping the
+## Game must release every card and modifier on their own.
 func _clean_cycle() -> void:
 	var g := _make_game()
-	g.state.unlink_modifier_backrefs()
 	CardEnvironment.CURRENT = null
 	g.free()
 
@@ -164,8 +189,6 @@ func _session_cycle() -> void:
 	var cards := TestDecks.seeded_deck()
 	var rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(cards, rules)
-	unlink_cards(cards)
-	unlink_cards(rules)
 	Main.save_info = run
 
 	# --- 3. Map: enter (synthetic line graph, no world generation — the MAP TRAVERSAL rig
@@ -205,7 +228,7 @@ func _session_cycle() -> void:
 
 	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a Submit with real
 	# scoring (props spawn + finish inside the awaited resolution), UNDO across the Submit
-	# (proves the quiescent Game.undo() unlink), redo, quit-mid-show -> resume, win.
+	# (the quiescent Game.undo() drops the popped snapshot), redo, quit-mid-show -> resume, win.
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	seed(424242)
@@ -233,16 +256,11 @@ func _session_cycle() -> void:
 	await _settle()
 	await g.submit()
 
-	# Quit-mid-show -> resume. The unlinks below are the app-exit stand-in (a real quit
-	# ends the process, where the leak is moot) — same discipline as E2E's quit step.
+	# Quit-mid-show -> resume: the abandoned show's board drops with the view.
 	RunManager._shutdown_saver()
 	RunManager.save_run()
-	var doomed_state : GameData = g.state
 	view.queue_free()
 	await get_tree().process_frame
-	doomed_state.unlink_modifier_backrefs()
-	unlink_cards(run.card_datas)
-	unlink_cards(run.rule_datas)
 	CardEnvironment.CURRENT = null
 	var loaded := RunManager.load_run()
 	Main.save_info = loaded
@@ -261,14 +279,14 @@ func _session_cycle() -> void:
 	while g2.submits_used < Game.MAX_SUBMITS:
 		await g2.submit()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
-	g2.exit_show()   # win path: return_to_map banks the deck + unlinks rules/headers
+	g2.exit_show()   # win path: return_to_map banks the deck into the run doc
 	await _settle()
 	view2.queue_free()
 	await _settle()
 	CardEnvironment.CURRENT = null
 
 	# --- 5. The loss path: an unreachable goal, three empty submits, exit_show ends the
-	# run (the loss branch unlinks the whole doomed board).
+	# run (the whole doomed board drops with the view).
 	loaded.pending_goal = 1000000000
 	loaded.pending_node_id = 1
 	seed(31337)
@@ -285,7 +303,7 @@ func _session_cycle() -> void:
 	await _settle()
 	CardEnvironment.CURRENT = null
 
-	# --- 6. Run over: drop the save + run doc (clear_save unlinks it in production).
+	# --- 6. Run over: drop the save + run doc.
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	Main.save_info = RunState.new()
