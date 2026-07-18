@@ -12,11 +12,8 @@ extends Resource
 @export var current_node_id : int = -1
 ## Completed-tour counter; direction reverses each lap (see is_reversed).
 @export var lap : int = 0
-## Accumulated fame: the FULL total_score of every won game, overscore included.
+## Accumulated fame: the FULL total_score of every won game.
 @export var fame : int = 0
-## Σ overscore_i / goal_i across wins — nonlinearly inflates future fame requirements
-## (see RunManager.goal_for).
-@export var overscore_ratio_sum : float = 0.0
 ## The run deck (name matches old PlayerSave so Game.add_deck keeps working).
 @export var card_datas : Array[CardData]
 @export var rule_datas : Array[CardData]

@@ -8,8 +8,8 @@ extends TestSuite
 # never depend on — nor destroy — an actual run.
 #
 # CATEGORY MAP:
-#   BEHAVIOR — progression rules (lap direction, luck curve, goal scaling, overscore
-#     inflation, fame from wins) and the save/resume guarantees.
+#   BEHAVIOR — progression rules (lap direction, luck curve, §15b goal curve, fame from
+#     wins; overscore tax retired 2026-07) and the save/resume guarantees.
 #   IMPLEMENTATION — the packed-array score storage format; deep-copy/backref pins
 #     inside the disk tests (check_impl inline).
 # ==============================================================================
@@ -24,7 +24,6 @@ func _ready() -> void:
 	test_is_reversed()
 	test_luck_curve()
 	test_goal_scaling()
-	test_overscore_inflation()
 	test_record_win()
 	implementation_section("SCORE PACKING FORMAT")
 	test_scores_packing()
@@ -51,48 +50,51 @@ func test_is_reversed() -> void:
 
 func test_luck_curve() -> void:
 	var run := _fresh_run()
+	var s : PlayerSettings = SettingsManager.settings
 	check(RunManager.luck() == 0.0, "no fame -> no luck")
-	run.fame = int(RunManagerClass.FAME_HALF)
-	check(absf(RunManager.luck() - RunManagerClass.LUCK_CAP / 2.0) < 0.001,
-			"luck is half the cap at FAME_HALF", "luck=%f" % RunManager.luck())
+	run.fame = int(s.fame_half)
+	check(absf(RunManager.luck() - s.luck_cap / 2.0) < 0.001,
+			"luck is half the cap at fame_half", "luck=%f" % RunManager.luck())
 	var mid := RunManager.luck()
 	run.fame = 100_000_000
-	check(RunManager.luck() < RunManagerClass.LUCK_CAP, "luck never reaches the cap")
+	check(RunManager.luck() < s.luck_cap, "luck never reaches the cap")
 	check(RunManager.luck() > mid, "luck grows monotonically with fame")
 
+## §15b curve: G0·(N̂/N0)^ALPHA·difficulty·LAP^lap·BOSS^is_boss (boosters_on_path drives N̂).
 func test_goal_scaling() -> void:
 	var _run := _fresh_run()
+	var s : PlayerSettings = SettingsManager.settings
 	var g0 := RunManager.goal_for(0, 0, false)
-	check(g0 == RunManagerClass.BASE_GOAL, "lap 0 origin-adjacent goal = BASE_GOAL", "g=%d" % g0)
-	check(RunManager.goal_for(5, 0, false) > RunManager.goal_for(2, 0, false),
-			"goal grows with progress along the lap")
-	check(RunManager.goal_for(3, 1, false) > RunManager.goal_for(3, 0, false),
-			"goal grows with the lap counter (endless scaling)")
-	check(RunManager.goal_for(3, 0, true) == int(RunManager.goal_for(3, 0, false) * RunManagerClass.BOSS_MULT)
-			or RunManager.goal_for(3, 0, true) > RunManager.goal_for(3, 0, false),
-			"boss goal exceeds the normal goal at the same spot")
+	check(g0 == int(s.goal_g0 * s.difficulty),
+			"lap 0 zero-booster goal = goal_g0 x difficulty", "g=%d" % g0)
+	check(RunManager.goal_for(1, 0, false) > RunManager.goal_for(0, 0, false)
+			and RunManager.goal_for(2, 0, false) > RunManager.goal_for(1, 0, false)
+			and RunManager.goal_for(5, 0, false) > RunManager.goal_for(2, 0, false),
+			"goal grows strictly with boosters_on_path")
+	var lap0 := RunManager.goal_for(3, 0, false)
+	var lap1 := RunManager.goal_for(3, 1, false)
+	check(absf(float(lap1) / float(lap0) - s.lap_mult) < 0.01,
+			"each lap multiplies the goal by lap_mult", "%d -> %d" % [lap0, lap1])
+	check(RunManager.goal_for(3, 1000, false) == RunManager.goal_for(3, 30, false),
+			"lap scaling caps at 30 (overflow guard)")
+	var boss := RunManager.goal_for(3, 0, true)
+	check(absi(boss - int(lap0 * s.boss_mult)) <= 1,
+			"boss goal = boss_mult x the normal goal (within int rounding)",
+			"%d vs %d" % [boss, lap0])
 	check(RunManager.goal_for(20, 1000, true) > 0, "extreme laps stay positive (overflow cap)")
-
-func test_overscore_inflation() -> void:
-	var run := _fresh_run()
-	var base := RunManager.goal_for(4, 0, false)
-	RunManager.record_win(200, 100)  # overscore ratio 1.0
-	var once := RunManager.goal_for(4, 0, false)
-	check(once > base, "overscoring inflates future goals", "%d -> %d" % [base, once])
-	RunManager.record_win(200, 100)  # ratio sum 2.0
-	var twice := RunManager.goal_for(4, 0, false)
-	check(twice - once > once - base,
-			"inflation is nonlinear (accelerating)", "%d, %d, %d" % [base, once, twice])
-	run.overscore_ratio_sum = 0.0
-	RunManager.record_win(80, 100)  # under goal never happens in play, but must not deflate
-	check(RunManager.goal_for(4, 0, false) == base, "no overscore -> no inflation")
+	# difficulty is THE win-rate dial: scales every goal linearly. Shared settings resource —
+	# restore after.
+	var saved_difficulty : float = SettingsManager.settings.difficulty
+	SettingsManager.settings.difficulty = 2.0
+	check(absi(RunManager.goal_for(3, 0, false) - lap0 * 2) <= 1,
+			"difficulty scales every goal", "g=%d" % RunManager.goal_for(3, 0, false))
+	SettingsManager.settings.difficulty = saved_difficulty
 
 func test_record_win() -> void:
 	var run := _fresh_run()
 	RunManager.record_win(150, 100)
-	check(run.fame == 150, "fame gains the FULL score including overscore", "fame=%d" % run.fame)
-	check(absf(run.overscore_ratio_sum - 0.5) < 0.001,
-			"overscore ratio tracks overscore/goal", "sum=%f" % run.overscore_ratio_sum)
+	check(run.fame == 150, "fame gains the FULL score (overscore tax removed, §8c′)",
+			"fame=%d" % run.fame)
 
 # GameData score packing: the BigNumber score arrays flatten to PARALLEL typed packed
 # arrays (mantissa float + exponent int), not an Array[Array] of pairs. Pure in-memory —

@@ -44,15 +44,32 @@ var revision : int = 0:
 ## undoing across a Submit rewinds the act count together with the board (it used to be a
 ## Game-level counter that undo never touched — owner bug report 2026-07-12).
 @export_storage var submits_used : int = 0
+## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
+## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
+## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
+## submits_used lives here.
+@export_storage var combo_classes : Array[String] = []
 
-## One act's payout (DESIGN_DOC §2): the act's accumulated row and column totals multiply
-## into mult_score, which is added to total_score; the totals reset for the next act.
-## Note: an act with no scored columns (or rows) pays 0 — both sides must score.
+#const COMBO_STEP := 0.1   # moved to PlayerSettings.combo_step 2026-07-17 (all knobs in one place)
+
+## Current act multiplier: 1.0 + combo_step per distinct class scored this act (§15a).
+func combo_mult() -> float:
+	return 1.0 + SettingsManager.settings.combo_step * combo_classes.size()
+
+## One act's payout (DESIGN_DOC §2 + SCORING_MATH_PLAN §15a): the act's accumulated row and
+## column totals combine (R×C shipped; R+C when settings.score_additive — TEST variant,
+## goals must be re-fit) and multiply with the combo multiplier into mult_score, which is
+## added to total_score; the totals and combo set reset for the next act.
+## Note: under R×C an act with no scored columns (or rows) pays 0 — both sides must score.
 func apply_act_score() -> void:
-	mult_score = row_total * col_total
+	# §15a: round ONCE per act payout — combo applies to the combined R/C total, not per line.
+	var base : int = (row_total + col_total) if SettingsManager.settings.score_additive \
+			else (row_total * col_total)
+	mult_score = int(base * combo_mult())
 	total_score += mult_score
 	row_total = 0
 	col_total = 0
+	combo_classes.clear()   # U resets every act, alongside the gutters below
 	# Clear the per-row/col score gutters too, so the NEXT act starts from zero. Without this
 	# the BigNumber accumulators (scores_row_*/scores_col) keep growing and the next act's
 	# plus_equals stacks onto the previous act's values. The UI gutters resync from these

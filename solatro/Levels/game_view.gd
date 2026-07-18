@@ -36,6 +36,7 @@ var game : Game = null
 @onready var mult_label: Label = %MultScore
 @onready var col_label: Label = %MultScore/Col
 @onready var row_label: Label = %MultScore/Row
+@onready var combo_label: Label = %MultScore/Combo
 
 func _ready() -> void:
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
@@ -46,6 +47,7 @@ func _ready() -> void:
 	game.submit_label_changed.connect(_on_submit_label_changed)
 	game.show_resolved.connect(_on_show_resolved)
 	game.show_unresolved.connect(_on_show_unresolved)
+	game.combo_changed.connect(_on_combo_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
@@ -124,6 +126,25 @@ func _refresh_hud() -> void:
 	mult_label.text = str(state.mult_score)
 	col_label.text = str(state.col_total)
 	row_label.text = str(state.row_total)
+	var combo := state.combo_mult()
+	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
+	combo_label.visible = combo > 1.0   # owner ruling 2026-07-17: hidden at x1.0
+
+## A NEW combo class registered this act (§15a): refresh + pulse the combo label.
+## combo_classes.append() doesn't emit state_changed — this signal is the live path;
+## sync_scores()/state_changed re-run _refresh_hud after apply_act_score clears the set.
+var _combo_tween : Tween = null
+
+func _on_combo_changed(_count: int) -> void:
+	_refresh_hud()
+	# pulse: same shape as BigNumberLabel.anim_pop (UI/big_number_label.gd:21-26)
+	var delay := game.get_delay()
+	if _combo_tween and _combo_tween.is_running():
+		_combo_tween.custom_step(INF)
+	combo_label.pivot_offset = combo_label.size / 2.0
+	_combo_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE * 1.15, delay * .3)
+	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE, delay * .2)
 
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:

@@ -140,10 +140,11 @@ project — re-copy to update, never edit here). Around it sits a run/progressio
 ```
 RunManager (autoload, Scripts/run_manager.gd) — owns the current run + all persistence
  ├─ run : RunState (Scripts/run_state.gd, Resource) — the whole saved document:
- │    world_seed, current_node_id, lap, fame, overscore_ratio_sum, traveled edges,
+ │    world_seed, current_node_id, lap, fame, traveled edges,
  │    card_datas/rule_datas (run deck), pending_goal/pending_node_id (show being played),
  │    game_history: Array[GameData] (the in-progress show's FULL undo stack), game_submits
- ├─ balance formulas: goal_for(progress,lap,boss), record_win, luck()  (DESIGN_DOC §15)
+ ├─ balance formulas: goal_for(boosters_on_path,lap,boss), record_win, luck()
+ │    (SCORING_MATH_PLAN §15b; knobs live in player_settings.gd "Balance" groups)
  └─ background save queue: request_save() (coalesced, threaded) / save_run() (sync) /
 	  _build_payload() (independent copy) / _exit_tree() flush.  user://run_save/
 

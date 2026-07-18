@@ -8,6 +8,9 @@ extends CardModifierSkill
 
 @export_storage var card_data : CardData
 
+## Engine rules machinery (§15a): zone adders never count as a combo class.
+func combo_key(_hook: StringName = &"") -> String: return ""
+
 @abstract
 func card_data_to_add() -> CardData
 @abstract

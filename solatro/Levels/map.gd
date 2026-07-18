@@ -65,7 +65,8 @@ func _on_node_entered(node: WorldGraphNode) -> void:
 # A game node (or the boss anchor): stash the goal + node for Game._ready (persisted, so
 # a quit mid-show resumes into this game) and switch scenes.
 func _start_show(node: WorldGraphNode) -> void:
-	run.pending_goal = node.meta.get(MapNodeRoles.GOAL_KEY, RunManagerClass.BASE_GOAL)
+	run.pending_goal = node.meta.get(MapNodeRoles.GOAL_KEY,
+			maxi(int(SettingsManager.settings.goal_g0), 1))
 	run.pending_node_id = node.id
 	RunManager.save_run()
 	enter_game.emit()

@@ -12,4 +12,5 @@ func _init(c := 0, p := 1) -> void:
 	points = p
 
 func on_finish(_prop: PropData, g: Game) -> void:
+	g.register_combo(combo_key())   # §15a: prop score effects self-register at their seam
 	g.add_line_score(false, g.state.scores_col, col, points)

@@ -7,6 +7,9 @@ func get_description() -> String:
 	return "Pickup stack in lower zone if cards ascend or descend in value and do not repeat suits"
 func get_frame() -> int: return 5
 
+## Engine rules machinery (§15a): never a combo class.
+func combo_key(_hook: StringName = &"") -> String: return ""
+
 func on_can_grab_stack(target : CardData) -> Array[CardData]:
 	if not game: return []
 	var vec3 := game.find_data_vec3(target)

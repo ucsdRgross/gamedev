@@ -165,7 +165,13 @@ all cards are trying to do."
    - Open TODO from notes: check whether scoring should also scan the draw deck and
 	 discard pile 💭; "every 5 rows make row red / increase points by layer" 💭 → later
 	 matured into Performance Rings (below).
-3. **v3 — Combo/damage recontextualization (LATEST thinking, 📋 not built):** points
+3. **v3 — Combo/damage recontextualization (partially ✅ 2026-07-17):** the combo half
+   SHIPPED as the settled aggregation: **act payout = R × C × combo**, where
+   `combo = 1 + 0.1·U` and U = distinct combo classes scored this act (meld classes via
+   `Scoring.class_key` — archetype+size+copies, rank/suit-blind — plus first-activation
+   mod effects; lone high cards excluded; resets each act). Full math in
+   SCORING_MATH_PLAN §15a; δ duplicate-class lever ships off (1.0). The
+   damage/antagonist reframing below remains unbuilt 📋. Original idea: points
    reframed as *damage against an antagonist* (Slay-the-Spire/TCG enemy-health framing).
    Row and column scorers become a **combo system**: combo increments by 1 for each
    *unique effect triggered*; flat points come from card effects ("cards are ammo"),
@@ -322,7 +328,7 @@ The theme pivot arrives mid-notes and becomes the LATEST identity: 📋
 | Skills | **Feats** |
 | Cards without feats | **Prop cards** |
 | Scoring | **Exciting the audience** (cheering audio scales with score) |
-| Overscore bonus | **Tips** |
+| ~~Overscore bonus~~ | ~~**Tips**~~ (retired 2026-07 — overscore removed, SCORING_MATH_PLAN §8c′) |
 | Player | **The Ringmaster** |
 | Game laws / rules | **Conventions** (maybe) |
 | Active state | **Spotlight** |
@@ -625,8 +631,10 @@ assigns show/booster/anchor roles from the seed, shows launch `Game` with
 `RunManager.goal_for` fame requirements, booster nodes force-add 5-card packs
 (`ChoiceViewer` take-all; hover shows possible contents), runs persist to `user://run_save/`
 (RunState + map bake), and finishing a lap enters endless mode: the tour reverses
-end→start on the same map, goals scale per lap, traveled history accumulates. Overscore
-feeds fame AND nonlinearly ramps future requirements ✅; fame raises `RunManager.luck()`
+end→start on the same map, goals scale per lap, traveled history accumulates. Goals come
+from the map-structure curve `G0·(N̂/N0)^ALPHA·difficulty·BOSS·LAP^lap` (SCORING_MATH_PLAN
+§15b) baked per progress step with a monotone clamp ✅ 2026-07-17; the overscore tax is
+retired (§8c′) — wins bank the full score as fame, nothing else ✅; fame raises `RunManager.luck()`
 which gates stamp/skill/type rolls in packs ✅ (rarity tiers still 📋). Not built yet:
 tips, fog of war, hype/wagering, tour planning. 📋
 
