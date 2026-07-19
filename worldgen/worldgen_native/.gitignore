@@ -3,3 +3,6 @@ godot-cpp/
 # MSVC build artifacts
 src/*.obj
 *.pdb
+# SCons build database (machine-local state; currently still tracked -- ignoring
+# takes effect once it is untracked, e.g. removed via GitHub Desktop)
+.sconsign.dblite

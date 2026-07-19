@@ -1,5 +1,34 @@
 # Worldgen native port — Phase 4 handoff (Graph edge routing / map painting)
 
+**STATUS: DONE 2026-07-18 — both targets owner-approved and shipped.** Everything
+below is kept as the record of what was planned; see `GDEXTENSION_PORT_HANDOFF.md`
+STATUS for the as-built notes, measured before/after, and the gate results.
+What landed, against what this doc predicted:
+
+- **Target A** — ported as `route_edge`, at the suggested seam (per-edge loop,
+  route order and stamping stay in GDScript). Predicted ~10-30 ms; measured
+  **13-28 ms** from 270-478. The doc's warnings were the right ones: the heap
+  tie-breaks and neighbour order are exactly where bit-identity lives.
+  One correction to this doc: `_cell_cost` does NOT read `field.dt` — only
+  `field.height` / `field.water` (via is_land/height_at), so `route_edge` takes
+  just those two arrays.
+- **Target B** — ported as `paint_map`. The RGBA8 truncation warning was
+  accurate and reproduced by hand. One thing this doc did not flag: the band
+  `upper` values are GDScript floats, i.e. **doubles** — flattening them into a
+  PackedFloat32Array would silently move band edges. They are carried as
+  float64. Colors go through godot-cpp's `Color::lerp` rather than flattened
+  math, which is the "pass the engine object" trick applied at the type level.
+
+Follow-up review (same day) confirmed the port changes nothing observable, and in
+doing so uncovered that the committed debug images are machine-dependent and the
+graph is NOT stable across machines — see `DETERMINISM_FINDINGS.md`. That is a
+pre-existing GPU issue, unrelated to this phase, but it is the reason the debug
+PNGs must not be used as a cross-machine baseline.
+
+Original handoff follows.
+
+---
+
 Written 2026-07-18 for an agent with NO prior context. ⚠️ BOTH targets here are
 OWNER-GATED — confirm the owner wants them before writing code. Read
 `GDEXTENSION_PORT_HANDOFF.md` STATUS first (phases 1-3 + NoiseBake are DONE);

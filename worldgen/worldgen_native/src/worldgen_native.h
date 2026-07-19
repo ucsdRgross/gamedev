@@ -8,6 +8,11 @@
 #include <godot_cpp/variant/packed_float32_array.hpp>
 #include <godot_cpp/variant/packed_int32_array.hpp>
 #include <godot_cpp/variant/packed_vector2_array.hpp>
+#include <godot_cpp/variant/color.hpp>
+#include <godot_cpp/variant/packed_color_array.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
+#include <godot_cpp/variant/packed_vector4_array.hpp>
+#include <godot_cpp/variant/vector2.hpp>
 
 namespace godot {
 
@@ -65,6 +70,53 @@ public:
 			const PackedInt32Array &sample_label, const PackedByteArray &warp_bytes,
 			const PackedByteArray &humid_bytes, int64_t w, int64_t h,
 			double warp_amp, double height_cost) const;
+
+	// --- Phase 4A: GraphDetail._route (graph_detail.gd) — A* edge routing ---
+	PackedVector2Array route_edge(const PackedFloat32Array &height, const PackedByteArray &water,
+			int64_t w, int64_t h, const Vector2 &a, const Vector2 &b, bool water_mode,
+			double target_h, int64_t ds, const Dictionary &opts, const Dictionary &occ,
+			const Dictionary &node_occ, const Dictionary &excl) const;
+
+	// --- Phase 4B: WorldMapPainter._paint (map_painter.gd) — per-pixel classifier ---
+	PackedByteArray paint_map(const PackedFloat32Array &height, const PackedFloat32Array &wsurf,
+			const PackedByteArray &rmask, const PackedByteArray &lmask, const PackedInt32Array &bbuf,
+			int64_t w, int64_t h, double oth, bool paint_land, bool paint_water,
+			bool include_ocean, const Dictionary &pal) const;
+
+	// --- Determinism: CPU twins of the GPU heightmap shaders (see
+	// DETERMINISM_FINDINGS.md). These do NOT reproduce the GPU bit-for-bit --
+	// that is impossible across vendors, which is the whole problem. They are
+	// self-consistent on every machine, which is the actual requirement.
+	PackedFloat32Array terrain_landmass(const PackedByteArray &noise_l8,
+			const PackedByteArray &warpx_l8, const PackedByteArray &warpy_l8,
+			int64_t w, int64_t h, double island_radius, double land_contrast,
+			double edge_jag, double island_falloff) const;
+	// Twin of tectonic_blueprint + tectonic_deformation in ONE pass: both shaders
+	// recompute the same warped-Voronoi nearest plates, so the ids the blueprint
+	// packs into blue and the height the deform pass writes fall out together.
+	// Returns [PackedFloat32Array height, PackedInt32Array plate_ids].
+	Array terrain_tectonics(const PackedFloat32Array &height,
+			const PackedByteArray &warpx_l8, const PackedByteArray &warpy_l8,
+			const PackedVector4Array &plate_data, const PackedFloat32Array &plate_is_land,
+			int64_t w, int64_t h, int64_t plate_count, double warp_strength, double map_px,
+			double drift_intensity, double plate_move, double tectonic_band,
+			double land_rift_damping, double tectonic_height_cap) const;
+	PackedFloat32Array terrain_peaks(const PackedFloat32Array &height,
+			const PackedByteArray &ridge_l8, const PackedByteArray &billow_l8,
+			const PackedByteArray &detail_l8, const PackedByteArray &warpx_l8,
+			const PackedByteArray &warpy_l8, int64_t w, int64_t h,
+			double ocean_threshold, double boundary_radius, double edge_jag,
+			double peak_uplift, double highland_range, double peak_detail_strength,
+			double peak_billow_strength, double peak_height_cap,
+			double detail_min_elevation, double detail_falloff,
+			double boundary_falloff, double lowland_flatten) const;
+	// Returns [PackedFloat32Array eroded_height, PackedByteArray field_l8]; the
+	// second is the shader's output_mode 1 (0.5 + 0.5*ero) for the debug viewer.
+	Array terrain_erosion(const PackedFloat32Array &height, int64_t w, int64_t h,
+			int64_t octaves, double amplitude, double frequency, double gain,
+			double lacunarity, double branch_angle, double ridge_rounding,
+			double gully_rounding, double detail, double steepness_scale,
+			double min_elevation, double elevation_falloff) const;
 };
 
 } // namespace godot

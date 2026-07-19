@@ -409,3 +409,74 @@ Skipped per owner NO: P2 (skill_active_check batching), P9 (Deck Maker deletion)
   BOARD, E2E RUN, UI PROPS, INTERACTION (LEAK CANARY's 57 fixture figure is gone with
   the rewrite). Validation: two full headless runs, **ALL 24 SUITES green, exit 0**
   (1312 / 1285 checks — totals vary, fuzz suites).
+- **2026-07-18 worldgen C++ port, Phase 4 (Graph edge routing + map painting)
+  LANDED — the port is now COMPLETE:** owner approved both previously gated
+  targets (`GDEXTENSION_PHASE4_HANDOFF.md`). (A) native `route_edge` = the whole
+  of `GraphDetail._route` — A* over the downscaled cost grid, `_cell_cost`, the
+  binary heap, `_los_simplify`/`_segment_clear` and `_chaikin` — with
+  compute_curves' per-edge loop, ROUTE ORDER and occupancy stamping deliberately
+  left in GDScript. No RNG in that file, so bit-identity reduced to widths and
+  tie-breaks: all Vector2 geometry runs through godot-cpp's own Vector2 (real_t =
+  float32 in both languages), `gscore` narrows to float on store while the heap
+  keeps the un-narrowed double, and the heap sift comparisons (`<=` push, `<`
+  pop) plus the dy/dx neighbour order are verbatim. `occ`/`node_occ` are
+  flattened once per call into byte grids over the search box instead of a
+  Dictionary lookup per neighbour expansion. (B) native `paint_map` = the entire
+  `WorldMapPainter._paint` per-pixel classifier writing RGBA8 bytes directly.
+  **This reverses the old P14 "keep set_pixel, raw byte writes are ~3x slower"
+  finding** — that measured per-byte writes *from GDScript*; from C++ the raw
+  write is the fast path, and it reproduces set_pixel's
+  `uint8_t(CLAMP(c * 255.0, 0, 255))` TRUNCATION by hand. Band ramps are
+  flattened GDScript-side, with `upper` carried as **float64** (it is a GDScript
+  float, i.e. a double — float32 would silently move band edges) and colors going
+  through godot-cpp's `Color::lerp`. Verified bit-identical: A/B gate now **57
+  checks x 3 seeds, clean on the first run** (route_edge 478/270/402 ->
+  **22/13/28 ms**; paint_map land+water+composite 462/432/404 -> **10/9/11 ms**),
+  PLUS an independent cross-check — graph_placement_test run with and without the
+  dlls yields byte-identical debug images (**0/78 differ**) over the "huge"
+  preset, seeds 1-5 and all 20 fuzzed chaos specs, i.e. settings the A/B never
+  reaches. All scene gates green (graph_spec ran the FULL 1500-spec fuzz:
+  1860/1860); no-dll fallback verified. NUMBERS (dev box, seed 12356): Graph
+  286-724 -> **68 ms**; enabled steps 879 -> **593 ms** (5287 when the port
+  began); paint's two `_paint_task` passes ~295 -> **~7 ms** (deco 9 ms and merge
+  3 ms left alone, as the handoff advised). Vendored here (`bin/` dlls +
+  `core/graph/graph_detail.gd` + `painting/map_painter.gd`); full suite **ALL 24
+  SUITES: 1302 CHECKS PASSED, exit 0**. No native candidates remain from the
+  original list — setup NoiseBake (~380-520 ms, floored by engine get_noise_2d)
+  and the GPU steps are now the largest costs.
+  ENVIRONMENT GOTCHAS for the next agent: `worldgen_native/godot-cpp/` is
+  gitignored and was absent on this box (re-clone per BUILD.md, re-copy the
+  `api/` dumps); and the worldgen project had no `.godot/extension_list.cfg`, so
+  the dll silently failed to register until `--headless --import` was run once —
+  if the A/B reports "class not registered", that is why.
+
+- **2026-07-18 worldgen DETERMINISTIC TERRAIN port LANDED (all 4 GPU heightmap
+  steps -> CPU/C++) — closes the "same seed, different map on different machines"
+  OPEN RISK in `todo.md`:** this track plays by DIFFERENT RULES from the
+  performance phases above and the rest of this file — the contract is **NOT
+  bit-identity** with a GDScript/GPU twin. Reproducing a GPU's `pow`/`atan` from
+  C++ across vendors is the *problem*, not the standard. The contract is
+  (1) repeatable run-to-run and across renderers, (2) close to the old GPU look,
+  measured, (3) graph-stable, i.e. the land/water mask flip count. Native
+  `terrain_landmass`, `terrain_tectonics`, `terrain_peaks`, `terrain_erosion`;
+  `WorldSettings.deterministic_terrain` now defaults **true**. Notes: tectonics is
+  ONE CPU pass covering BOTH shaders (blueprint + deform recompute the same
+  warped-Voronoi nearest plates, so plate ids and height fall out together) and the
+  twin must read `gen.height_buffer` where the deform shader read
+  `viewport_texture("landmass")` — that viewport is never rendered on this path;
+  erosion likewise emits both shader outputs from one pass (the GPU needed two
+  flushes only because `output_mode` is a uniform).
+  NUMBERS — divergence (seeds 12356/777, full chain): max|d| 0.028/0.027,
+  mean|d| ~4e-4, **land/water mask flips 71 px = 0.027%**, and the flip count did
+  NOT compound across the four steps (75-77 px after Landmass alone). ACCEPTANCE:
+  `addon_bake_test` under OpenGL-Compatibility vs `forward_plus`/`d3d12` yields
+  byte-identical `graph.json` **and** byte-identical `land/water/composite.png` —
+  the PNGs previously differed between renderers. TIMING: Erosion is the one step
+  where CPU is real work — 1692 ms single-threaded, so it is row-parallelised
+  (pure per-pixel function of a read-only buffer, so thread count cannot change the
+  result; verified byte-identical to the serial run) -> **292 ms**; enabled steps
+  **2076 -> 527 ms**, at or below the old GPU cost. Gates green with the toggle in
+  BOTH positions plus the no-dll fallback; `graph_spec_test`'s 1500-spec fuzz was
+  not re-run to completion (35 min here) because it never constructs a
+  `WorldGenerator`. Vendored here (5 `.gd` + both dlls): **ALL 24 SUITES, 1291
+  CHECKS PASSED, exit 0**. Writeup: `worldgen/DETERMINISM_FINDINGS.md` §Option A.

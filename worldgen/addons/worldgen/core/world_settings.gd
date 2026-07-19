@@ -59,6 +59,16 @@ func map_diag() -> float:
 ## Sea level. Height below this is ocean. Also the reference the elevation gates,
 ## colorizer bands, and river normalization key off -- nudging it shifts a lot.
 @export var ocean_threshold: float = 0.38
+## Run the heightmap steps on the CPU (native) instead of the GPU shaders, so the
+## same seed yields the SAME map on every machine. The GPU path's output is
+## hardware/driver dependent -- it moves graph routes and node positions between
+## machines (see worldgen/DETERMINISM_FINDINGS.md). Requires the worldgen_native
+## dll; falls back to the GPU path without it. NOTE: CPU and GPU terrain are close
+## but NOT identical, so flipping this changed generated maps once.
+## All four heightmap steps (Landmass, Tectonics, PeaksAndValleys, Erosion) have
+## CPU twins as of 2026-07-18; measured full-chain divergence from the GPU path is
+## max|d|~0.028, land/water mask flips ~0.027% (see tests/deterministic_terrain_test).
+@export var deterministic_terrain: bool = true
 ## Central island-mask radius. Bigger = land reaches further from center (more land).
 @export var island_radius: float = 0.72
 ## Contrast applied around sea level: >1 pushes noise toward lowlands/highlands

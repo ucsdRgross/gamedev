@@ -387,3 +387,56 @@ func _run_seed(sd: int) -> void:
 			_diff_i32(cells_n.px_count, cells_g.px_count), _diff_f32(cells_n.sum_h, cells_g.sum_h),
 			_diff_f32(cells_n.sum_m, cells_g.sum_m), _diff_i32(cells_n.cell_label, cells_g.cell_label),
 			adj_ok, t1 - t0, t2 - t1])
+
+	# --- Phase 4A: GraphDetail.compute_curves (A* edge routing) ---------------
+	# Whole-step A/B: the per-edge loop, occupancy stamping and route ORDER stay
+	# GDScript both ways, so any divergence is _route's. Curves are compared as
+	# raw PackedVector2Array bytes.
+	var rfield := GraphPlacement.MapField.from_generator(_gen, ws.field_opts())
+	var spec := GraphSpec.build_nodes(ws.spec_cities, ws.spec_nodes_between_cities, 2, 5, sd)
+	var ctx = GraphPlacement.place(spec, rfield, ws, sd, ws.place_opts())["ctx"]
+	var ropts := ws.route_opts()
+	t0 = Time.get_ticks_msec()
+	var cur_n := GraphDetail.compute_curves(ctx, rfield, ropts)
+	t1 = Time.get_ticks_msec()
+	GenerationStep._native = null
+	var cur_g := GraphDetail.compute_curves(ctx, rfield, ropts)
+	GenerationStep._native = native
+	t2 = Time.get_ticks_msec()
+	var curve_bad := 0
+	if cur_n.size() != cur_g.size():
+		curve_bad = -1
+	else:
+		for i in range(cur_n.size()):
+			if int(cur_n[i][0]) != int(cur_g[i][0]) or int(cur_n[i][1]) != int(cur_g[i][1]) \
+					or _diff_v2(cur_n[i][2], cur_g[i][2]) != 0:
+				curve_bad += 1
+	_check(curve_bad == 0,
+		"route_edge bit-identical (%d curves, %d bad) native %d ms vs gd %d ms" % [
+			cur_n.size(), curve_bad, t1 - t0, t2 - t1])
+
+	# --- Phase 4B: WorldMapPainter._paint (per-pixel classifier) --------------
+	# All three layer variants (land / water+ocean / composite) over the real
+	# post-Biomes snapshot, compared as raw Image bytes -- which is also the gate
+	# on the RGBA8 truncation the native writer reproduces by hand.
+	await _gen.generate_up_to(WorldGenerator.GenStep.BIOMES)
+	var pdata: Dictionary = _gen.snapshots.get("Biomes", {})
+	var pcol := WorldHeightColorizer.make_default(oth, ws.mountain_threshold)
+	var pset := ws.active_biome_set()
+	t0 = Time.get_ticks_msec()
+	var land_n := WorldMapPainter.land_only_image(pdata, w, h, oth, pcol, pset)
+	var water_n := WorldMapPainter.water_only_image(pdata, w, h, oth, pcol, true)
+	var comp_n := WorldMapPainter.composite_image(pdata, w, h, oth, pcol, pset)
+	t1 = Time.get_ticks_msec()
+	GenerationStep._native = null
+	var land_g := WorldMapPainter.land_only_image(pdata, w, h, oth, pcol, pset)
+	var water_g := WorldMapPainter.water_only_image(pdata, w, h, oth, pcol, true)
+	var comp_g := WorldMapPainter.composite_image(pdata, w, h, oth, pcol, pset)
+	GenerationStep._native = native
+	t2 = Time.get_ticks_msec()
+	_check(land_n.get_data() == land_g.get_data() and water_n.get_data() == water_g.get_data()
+			and comp_n.get_data() == comp_g.get_data()
+			and land_n.get_format() == land_g.get_format(),
+		"paint_map bit-identical (land %s, water %s, composite %s) native %d ms vs gd %d ms" % [
+			land_n.get_data() == land_g.get_data(), water_n.get_data() == water_g.get_data(),
+			comp_n.get_data() == comp_g.get_data(), t1 - t0, t2 - t1])

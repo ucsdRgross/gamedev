@@ -14,6 +14,26 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var w := settings.map_width
 	var h := settings.map_height
 
+	# Deterministic path: one CPU pass yields both outputs (the GPU needs two
+	# flushes only because output_mode is a uniform). See DETERMINISM_FINDINGS.md.
+	if settings.deterministic_terrain and GenerationStep._native:
+		var res: Array = GenerationStep._native.terrain_erosion(
+			gen.height_buffer, w, h,
+			settings.erosion_octaves, settings.erosion_amplitude,
+			settings.erosion_frequency, settings.erosion_gain,
+			settings.erosion_lacunarity, deg_to_rad(settings.erosion_branch_angle_deg),
+			settings.erosion_ridge_rounding, settings.erosion_gully_rounding,
+			settings.erosion_detail, settings.erosion_steepness_scale,
+			settings.erosion_min_elevation, settings.erosion_elevation_falloff)
+		gen.height_buffer = res[0]
+		var fimg := Image.create_from_data(w, h, false, Image.FORMAT_L8, res[1])
+		gen.noise_maps["erosion_field"] = {
+			"img": fimg,
+			"tex": ImageTexture.create_from_image(fimg),
+		}
+		gen._save_snapshot_bridge("Erosion")
+		return
+
 	var mat := gen.get_material("erosion")
 	mat.set_shader_parameter("height_tex", gen.height_texture())
 	mat.set_shader_parameter("tex_size", Vector2(w, h))

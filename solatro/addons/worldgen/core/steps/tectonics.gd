@@ -8,6 +8,27 @@ extends GenerationStep
 ## The blueprint snapshot ("Tectonics_Debug") carries the plate-id field that
 ## the viewer turns into fault lines, plus the plate markers/vectors.
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
+	# Deterministic path: one CPU pass covers BOTH shaders, since the blueprint and
+	# the deform pass recompute the same warped-Voronoi nearest plates. Note the
+	# deform shader samples viewport_texture("landmass"); that viewport is never
+	# rendered here, so the twin reads gen.height_buffer instead. See
+	# worldgen/DETERMINISM_FINDINGS.md.
+	if settings.deterministic_terrain and GenerationStep._native:
+		var res: Array = GenerationStep._native.terrain_tectonics(
+			gen.height_buffer,
+			gen.noise_img("warp_x").get_data(),
+			gen.noise_img("warp_y").get_data(),
+			gen.plate_data, gen.plate_is_land,
+			settings.map_width, settings.map_height, settings.plate_count,
+			settings.warp_strength, float(settings.map_width),
+			settings.drift_intensity, settings.plate_move, settings.tectonic_band,
+			settings.land_rift_damping, settings.tectonic_height_cap)
+		gen.height_buffer = res[0]
+		gen.plate_id_buffer = res[1]
+		gen._save_snapshot_bridge("Tectonics_Debug")
+		gen._save_snapshot_bridge("Tectonics")
+		return
+
 	# --- Pass A: plate blueprint -------------------------------------------
 	var blue := gen.get_material("blueprint")
 	blue.set_shader_parameter("plate_count", settings.plate_count)

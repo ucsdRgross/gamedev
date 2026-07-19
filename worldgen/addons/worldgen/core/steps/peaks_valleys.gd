@@ -4,6 +4,26 @@ extends GenerationStep
 ## GPU: layers high-frequency ridged + detail noise onto land to build
 ## micro-topography (see peaks_and_valleys.gdshader).
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
+	# Deterministic path: same formula on the CPU. Reads height_buffer at float32
+	# instead of the GPU path's RGBAH half-float height_texture(), so it is
+	# slightly MORE precise -- a deliberate divergence.
+	if settings.deterministic_terrain and GenerationStep._native:
+		gen.height_buffer = GenerationStep._native.terrain_peaks(
+			gen.height_buffer,
+			gen.noise_img("peaks_ridge").get_data(),
+			gen.noise_img("peaks_billow").get_data(),
+			gen.noise_img("peaks_detail").get_data(),
+			gen.noise_img("warp_x").get_data(),
+			gen.noise_img("warp_y").get_data(),
+			settings.map_width, settings.map_height,
+			settings.ocean_threshold, settings.boundary_radius, settings.edge_jag,
+			settings.peak_uplift, settings.highland_range,
+			settings.peak_detail_strength, settings.peak_billow_strength,
+			settings.peak_height_cap, settings.peak_detail_min_elevation,
+			settings.peak_detail_falloff, settings.boundary_falloff,
+			settings.lowland_flatten)
+		gen._save_snapshot_bridge("PeaksAndValleys")
+		return
 	var mat := gen.get_material("peaks")
 	# Read the CPU height buffer (R channel = current height) rather than the deform
 	# viewport, so this step consumes whatever the previous ENABLED step produced --

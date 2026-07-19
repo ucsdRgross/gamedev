@@ -82,6 +82,11 @@ static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 	var bbuf: PackedInt32Array = data.get("biome_buffer", PackedInt32Array())
 	var has_biomes := bset != null and bbuf.size() >= w * h
 	var n_biomes := bset.biomes.size() if has_biomes else 0
+	if GenerationStep._native:
+		img.set_data(w, h, false, Image.FORMAT_RGBA8, GenerationStep._native.paint_map(
+			height, wsurf, rmask, lmask, bbuf, w, h, oth,
+			paint_land, paint_water, include_ocean, _palette(col, bset, has_biomes)))
+		return
 	for y in range(h):
 		for x in range(w):
 			var idx := (y * w) + x
@@ -112,3 +117,58 @@ static func _paint(img: Image, data: Dictionary, w: int, h: int, oth: float,
 				if not painted:
 					c = col.land_color(hv2)
 			img.set_pixel(x, y, c)
+
+
+## Flatten every band Resource the classifier can reach (the colorizer's own
+## ramp + one ramp per biome) into packed arrays for the native `paint_map`.
+## `WorldHeightBand.upper` is a GDScript float = DOUBLE, so uppers stay
+## float64 -- narrowing them to float32 would nudge band edges.
+static func _palette(col: WorldHeightColorizer, bset: WorldBiomeSet, has_biomes: bool) -> Dictionary:
+	var pal := {
+		"ocean": col.ocean_color,
+		"lake": col.lake_color,
+		"river_low": col.river_color_low,
+		"river_high": col.river_color_high,
+		"has_biomes": has_biomes,
+		"snow_line": bset.snow_line if has_biomes else 0.0,
+		"snow": bset.snow_color if has_biomes else Color(0, 0, 0, 0),
+	}
+	var land: Array = _flatten_bands(col.bands)
+	pal["land_upper"] = land[0]
+	pal["land_color"] = land[1]
+	pal["land_smooth"] = land[2]
+	# Per-biome slices: b_start[i] / b_count[i] index into the concatenated ramps.
+	# One entry per biome (count 0 = no bands), so ids stay array indices.
+	var b_start := PackedInt32Array()
+	var b_count := PackedInt32Array()
+	var b_upper := PackedFloat64Array()
+	var b_color := PackedColorArray()
+	var b_smooth := PackedByteArray()
+	if has_biomes:
+		for b: WorldBiome in bset.biomes:
+			var sub: Array = _flatten_bands(b.bands) if b != null else \
+				[PackedFloat64Array(), PackedColorArray(), PackedByteArray()]
+			b_start.append(b_upper.size())
+			b_count.append((sub[0] as PackedFloat64Array).size())
+			b_upper.append_array(sub[0])
+			b_color.append_array(sub[1])
+			b_smooth.append_array(sub[2])
+	pal["b_start"] = b_start
+	pal["b_count"] = b_count
+	pal["b_upper"] = b_upper
+	pal["b_color"] = b_color
+	pal["b_smooth"] = b_smooth
+	return pal
+
+
+## One band array -> [PackedFloat64Array uppers, PackedColorArray colors,
+## PackedByteArray smooth flags], in band order.
+static func _flatten_bands(bands: Array[WorldHeightBand]) -> Array:
+	var upper := PackedFloat64Array()
+	var cols := PackedColorArray()
+	var smooth := PackedByteArray()
+	for b: WorldHeightBand in bands:
+		upper.append(b.upper)
+		cols.append(b.color)
+		smooth.append(1 if b.smooth else 0)
+	return [upper, cols, smooth]

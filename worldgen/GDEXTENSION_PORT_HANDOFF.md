@@ -61,6 +61,71 @@ measured ~645 ms this run (Graph 286-724 ms run-to-run variance dominates — th
 `GDEXTENSION_PHASE4_HANDOFF.md`, owner-gated). Solatro suite: ALL 24 SUITES green
 (a new COMBO suite appeared upstream between runs — not worldgen-related).
 
+**PHASE 4 (Graph edge routing + map painting) DONE 2026-07-18.** Both owner-gated
+targets approved and ported. Native `route_edge` — the whole of `GraphDetail._route`
+(A* over the downscaled cost grid, `_cell_cost`, the binary heap, plus
+`_los_simplify`/`_segment_clear` and `_chaikin`), with compute_curves' per-edge
+loop, route ORDER and occupancy stamping left in GDScript. No RNG anywhere in the
+file, so bit-identity was purely widths + tie-breaks: all Vector2 geometry goes
+through godot-cpp's own Vector2 (real_t = float32 in BOTH languages, so
+distance_to/dot/lerp/length_squared match by construction), `gscore` narrows to
+float on store while the heap keeps the un-narrowed double, and the heap sift
+comparisons (`<=` push, `<` pop) + dy/dx neighbour order are copied verbatim. The
+one structural change: `occ`/`node_occ` are flattened once per call into byte grids
+over the search box (dict fallback for out-of-box cells) instead of a
+Dictionary.has() per neighbour expansion. Native `paint_map` — the entire per-pixel
+classifier of `WorldMapPainter._paint`, writing RGBA8 bytes directly; band ramps are
+flattened GDScript-side (`_palette`/`_flatten_bands`), with uppers carried as
+**float64** because `WorldHeightBand.upper` is a GDScript float (narrowing them
+would move band edges), and colors still going through godot-cpp's `Color::lerp`.
+The RGBA8 write reproduces set_pixel's `uint8_t(CLAMP(c * 255.0, 0, 255))`
+TRUNCATION by hand — the A/B compares Image bytes, which is the gate on it.
+A/B gate now 57 checks x 3 seeds, ALL bit-identical first run: route_edge
+478/270/402 -> **22/13/28 ms**, paint_map (land+water+composite) 462/432/404 ->
+**10/9/11 ms**. Independently confirmed by running graph_placement_test both ways
+(dlls renamed off) and hashing its 78 debug images: **0/78 differ** — covering the
+"huge" preset, seeds 1-5 and all 20 fuzzed chaos specs, i.e. settings the A/B does
+not reach. Timing seed 12356 (addon_node_test, enabled steps): **879 -> 593 ms**
+(from 5287 pre-port); Graph 286-724 -> **68 ms** (addon_bake 53 ms). Paint (off the
+main thread, so wall time on bakes/repaints, not gameplay frames): the two
+`_paint_task` passes ~295 -> **~7 ms**; deco (9 ms) and merge (3 ms) untouched as
+planned. Gates: generate_up_to, graph_placement, biome_regions, biome_assign,
+graph_spec (1860/1860, full 1500 fuzz), addon_bake, addon_node all green; fallback
+verified with both dlls renamed to `.off`.
+**DETERMINISM PORT (all 4 heightmap steps) DONE 2026-07-18.** Separate track from the
+performance phases above, and it plays by DIFFERENT RULES: the contract is *not*
+bit-identity with a GDScript/GPU twin (reproducing a GPU's `pow`/`atan` across vendors
+is the problem, not the standard) but repeatability + closeness. Native
+`terrain_landmass`, `terrain_tectonics` (both tectonic shaders in one pass, also emits
+`plate_id_buffer`), `terrain_peaks`, `terrain_erosion` (also emits the debug erosion
+field). `WorldSettings.deterministic_terrain` now defaults **true**. Full-chain CPU vs
+GPU: max|d|~0.028, mean|d|~4e-4, land/water mask flips **71 px (0.027%)** — the flip
+count did not compound across the four steps. Acceptance: `addon_bake_test` under
+OpenGL-Compatibility vs `forward_plus`/`d3d12` now yields byte-identical `graph.json`
+**and** byte-identical `land/water/composite.png` (the PNGs used to differ). All 8
+worldgen scenes green with the toggle in both positions; fallback verified with the
+dlls renamed to `.off`. Details + measurements: `DETERMINISM_FINDINGS.md` §Option A,
+task writeup: `DETERMINISM_PORT_HANDOFF.md`.
+
+⚠️ READ `DETERMINISM_FINDINGS.md` BEFORE USING THE DEBUG IMAGES AS A BASELINE. The
+committed `placement_debug/` + `biome_debug/` PNGs are **machine-dependent** — they
+came from the dev box and no machine here reproduces them, including the very commit
+that generated them. The cause was the four heightmap steps being GPU shaders read
+back at float32, so the same seed yielded a different map (and a **structurally
+different graph** — routes and node markers move) on different hardware. That is FIXED
+as of the determinism port above; but these particular PNGs predate it, so they remain
+a valid SAME-MACHINE regression check only. Images regenerated after the port ARE
+cross-machine comparable. That doc also proves every port in this file is
+behavior-neutral, and records two side findings: 7 of the 8 worldgen test scenes always
+exit 0 regardless of failures, and routing now has large unused quality headroom
+(`route_downscale`).
+
+NOTE for the next agent: `worldgen_native/godot-cpp/` is gitignored and was ABSENT
+on this box — re-cloned per BUILD.md and the `api/` dumps re-copied. Also, this
+project's `.godot/extension_list.cfg` did not exist, so the dll silently did not
+register until `--headless --import` was run once; if the A/B reports "class not
+registered", that is the cause, not a broken build.
+
 ## Ground rules (same as all worldgen work)
 
 - Land HERE (`C:\richard\gamedev\worldgen`) first, validate, then re-copy changed files

@@ -88,6 +88,9 @@ static func _stamp(occ: Dictionary, pts: PackedVector2Array, ds: int) -> void:
 ## far from the straight line and cells used by earlier routes act as IMAGINARY WALLS
 ## (extra cost) so the route stays near its line and never overlaps another curve.
 static func _route(field, a: Vector2, b: Vector2, water_mode: bool, target_h: float, ds: int, opts: Dictionary, occ: Dictionary = {}, node_occ: Dictionary = {}, excl: Dictionary = {}) -> PackedVector2Array:
+	if GenerationStep._native:
+		return GenerationStep._native.route_edge(field.height, field.water, field.w, field.h,
+			a, b, water_mode, target_h, ds, opts, occ, node_occ, excl)
 	var straight := PackedVector2Array([a, b])
 	var land_pen: float = opts.get("route_land_penalty", 8.0)     # cost of land for a ferry
 	var water_pen: float = opts.get("route_water_penalty", 8.0)   # cost of water for a land route

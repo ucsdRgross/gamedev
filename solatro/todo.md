@@ -61,6 +61,64 @@ checks, exit 0). All that remains hot is GraphDetail.compute_curves A* routing
 off-main-thread) — both owner-gated, handoff:
 `worldgen/GDEXTENSION_PHASE4_HANDOFF.md`.
 
+**PHASE 4 (Graph edge routing + map painting) DONE 2026-07-18** — owner approved
+BOTH gated targets. Native `route_edge` (the whole of `GraphDetail._route`: A*,
+`_cell_cost`, binary heap, LOS simplify + Chaikin; the per-edge loop, route order
+and occupancy stamping stay in GDScript) and native `paint_map` (the entire
+`WorldMapPainter._paint` per-pixel classifier, writing RGBA8 bytes directly —
+note this REVERSES item 4's "keep set_pixel in GDScript" caveat above: that
+finding was about per-byte writes *from GDScript*, which are ~3x slower; from C++
+the raw write is the fast path, and it reproduces set_pixel's truncation exactly).
+Band `upper` values are GDScript floats = doubles, so they cross the boundary as
+float64; colors go through godot-cpp's own `Color::lerp`. All bit-identical (A/B
+gate now 57 checks x 3 seeds, clean on the first run), plus an independent check:
+graph_placement_test run with and without the dlls produces byte-identical debug
+images (0/78 differ) across the "huge" preset, seeds 1-5 and 20 fuzzed specs.
+Fallback verified with dlls renamed away. Measured seed 12356: Graph 286-724 ->
+**68 ms**, enabled-steps total 879 -> **593 ms** (5287 before the port began);
+paint's two `_paint_task` passes ~295 -> **~7 ms** (deco 9 ms + merge 3 ms
+untouched, as planned). Vendored here (`bin/` dlls + `core/graph/graph_detail.gd`
++ `painting/map_painter.gd`), full suite green (24 suites, 1302 checks, exit 0).
+No native candidates remain from the original list — generation setup (NoiseBake
+~380-520 ms, floored by engine `get_noise_2d` calls) and the GPU steps are now
+the largest remaining costs.
+
+## CLOSED 2026-07-18: the same world_seed gives a DIFFERENT map on different machines
+
+Fixed by porting all four GPU heightmap steps to CPU/C++ in `worldgen_native`
+(`terrain_landmass`, `terrain_tectonics`, `terrain_peaks`, `terrain_erosion`);
+`WorldSettings.deterministic_terrain` now defaults **true**. Acceptance test:
+`addon_bake_test` baked under OpenGL-Compatibility vs `forward_plus`/`d3d12` produces
+byte-identical `graph.json` **and** byte-identical `land/water/composite.png` — the
+PNGs previously differed. Full-chain CPU-vs-GPU divergence: max|d|~0.028, mean|d|~4e-4,
+land/water mask flips 71 px (0.027%), and the flip count did not compound across the
+four steps. Maps changed appearance once, everywhere; that was accepted up front.
+Writeup: `worldgen/DETERMINISM_FINDINGS.md` §Option A.
+
+The original problem, kept for context:
+
+Found 2026-07-18 while reviewing the Phase 4 port (which is NOT the cause — it is
+proven behavior-neutral). Full evidence + options: `worldgen/DETERMINISM_FINDINGS.md`.
+
+The four heightmap steps (Landmass, Tectonics, Peaks, Erosion) are GPU shader passes
+read back at full float32; their output is hardware/driver dependent. Measured against
+the dev box's committed debug images, this is **not** merely cosmetic — graph edge
+routes and node markers land in different places (3.5% of pixels are structural
+changes, ~1800 route-line pixels relocated).
+
+Why it reaches players: `Scripts/Map/world_map_controller.gd:64` **generates the map at
+runtime on the player's machine** from `run.world_seed`, then bakes to `user://`. So:
+- seeds are not shareable between players — "try seed X" gives a different world;
+- a bug report's seed will not reproduce on a dev box;
+- if a player's local bake is ever lost/invalidated mid-run, the regenerated map can
+  differ from the one their run started on (node roles come from
+  `MapNodeRoles.assign(overlay, world_seed, run)` over the graph, so connections and
+  biomes shifting is a correctness issue, not just visual).
+
+Owner wanted, at minimum, identical graph node data (connections + biome) across
+machines. The fix taken was porting the 4 GPU steps to CPU/C++ (the map is only
+512x512 and all four are single-pass per-pixel shaders) — see the CLOSED note above.
+
 ## Testing / infrastructure
 
 - **Headless test hangs**: root-cause lead + workarounds in HEADLESS_TESTING.md
