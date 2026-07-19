@@ -6,7 +6,7 @@ extends GenerationStep
 func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	# Deterministic path: same formula on the CPU, so the map does not depend on
 	# the player's GPU/driver. Skips the SubViewport entirely (no flush, no frame
-	# waits). See worldgen/DETERMINISM_FINDINGS.md.
+	# waits). See worldgen/START_HERE.md "Determinism".
 	if settings.deterministic_terrain and GenerationStep._native:
 		gen.height_buffer = GenerationStep._native.terrain_landmass(
 			gen.noise_img("landmass").get_data(),

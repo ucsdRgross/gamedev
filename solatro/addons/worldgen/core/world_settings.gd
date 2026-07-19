@@ -62,7 +62,7 @@ func map_diag() -> float:
 ## Run the heightmap steps on the CPU (native) instead of the GPU shaders, so the
 ## same seed yields the SAME map on every machine. The GPU path's output is
 ## hardware/driver dependent -- it moves graph routes and node positions between
-## machines (see worldgen/DETERMINISM_FINDINGS.md). Requires the worldgen_native
+## machines (see worldgen/START_HERE.md "Determinism"). Requires the worldgen_native
 ## dll; falls back to the GPU path without it. NOTE: CPU and GPU terrain are close
 ## but NOT identical, so flipping this changed generated maps once.
 ## All four heightmap steps (Landmass, Tectonics, PeaksAndValleys, Erosion) have

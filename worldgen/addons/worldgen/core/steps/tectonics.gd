@@ -12,7 +12,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	# the deform pass recompute the same warped-Voronoi nearest plates. Note the
 	# deform shader samples viewport_texture("landmass"); that viewport is never
 	# rendered here, so the twin reads gen.height_buffer instead. See
-	# worldgen/DETERMINISM_FINDINGS.md.
+	# worldgen/START_HERE.md "Determinism".
 	if settings.deterministic_terrain and GenerationStep._native:
 		var res: Array = GenerationStep._native.terrain_tectonics(
 			gen.height_buffer,

@@ -1,6 +1,6 @@
 class_name FakeEnvironment
 extends CardEnvironment
-## Test harness environment (UNIT_TESTS_PLAN.md T-ENV).
+## Test harness environment (ARCHITECTURE_REVIEW.md §7).
 ## Add as a child node so _enter_tree sets CardEnvironment.CURRENT; remove/free to restore.
 ## Collections are plain vars the test fills before dispatching.
 

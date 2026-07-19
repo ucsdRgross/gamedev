@@ -3,7 +3,10 @@
 Companion to `DESIGN_DOC.md` (the organized record of your ideas). Everything in THIS file
 is my interpretation, recommendation, or invention — kept separate on purpose so it never
 contaminates the record of what you actually designed. Written 2026-07-05 against the
-current code (`ARCHITECTURE_REVIEW.md` state) and the worldgen addon.
+code of that date — implementation-status remarks (e.g. "fix N5 spotlight", "wire the
+worldgen map", §12 build-order steps 1–3) are OUTDATED: spotlight, the worldgen map/run
+layer, suit props, and the combo scoring formula have since shipped (see
+ARCHITECTURE_REVIEW.md). The design proposals themselves remain live material.
 
 ---
 

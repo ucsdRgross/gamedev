@@ -4,7 +4,7 @@ extends Node
 ## function twice on identical inputs -- once through the native dll, once by
 ## forcing the GDScript path (GenerationStep._native = null) -- and diffs the
 ## outputs element-by-element. ZERO tolerance (bit-identical) per
-## GDEXTENSION_PORT_HANDOFF.md. Inputs are real downscaled heightmaps generated
+## worldgen/START_HERE.md. Inputs are real downscaled heightmaps generated
 ## through the Erosion step at seed 12356 plus random seeds, so the compared
 ## grids exercise real coasts/basins, not synthetic noise.
 

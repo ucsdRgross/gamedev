@@ -18,7 +18,7 @@ extends TestSuite
 # CATEGORY MAP: all IMPLEMENTATION — object counts pin HOW memory behaves, not a
 # player-visible rule.
 #
-# SECTION 2 (owner-endorsed 2026-07-17, PRODUCTION_LEAK_CANARY_HANDOFF.md): the
+# SECTION 2 (owner-endorsed 2026-07-17, ARCHITECTURE_REVIEW.md §6): the
 # PRODUCTION SESSION CANARY simulates a real play session end-to-end per cycle —
 # DeckPicker/DeckViewer open+close, run start, map traversal + hover panel + booster
 # pack, a real show WITH a GameView (Nexts, grab/place, discard, Submit with real

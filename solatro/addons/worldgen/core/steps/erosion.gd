@@ -15,7 +15,7 @@ func execute(gen: WorldGenerator, settings: WorldSettings) -> void:
 	var h := settings.map_height
 
 	# Deterministic path: one CPU pass yields both outputs (the GPU needs two
-	# flushes only because output_mode is a uniform). See DETERMINISM_FINDINGS.md.
+	# flushes only because output_mode is a uniform). See worldgen/START_HERE.md "Determinism".
 	if settings.deterministic_terrain and GenerationStep._native:
 		var res: Array = GenerationStep._native.terrain_erosion(
 			gen.height_buffer, w, h,

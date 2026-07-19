@@ -13,7 +13,7 @@ func execute(_gen: WorldGenerator, _settings: WorldSettings) -> void:
 ## Cached instance of the optional C++ acceleration (worldgen_native GDExtension).
 ## Null when the dll is missing or the platform is unsupported -- every call site
 ## must keep the GDScript path as fallback. Outputs are bit-identical (verified by
-## tests/native_ab_test.tscn); see GDEXTENSION_PORT_HANDOFF.md.
+## tests/native_ab_test.tscn); see worldgen/START_HERE.md.
 static var _native: Object = ClassDB.instantiate(&"WorldgenNative") if ClassDB.class_exists(&"WorldgenNative") else null
 
 ## Multiple-Flow-Direction (MFD) accumulation on a depression-filled surface.

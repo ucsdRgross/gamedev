@@ -170,7 +170,7 @@ all cards are trying to do."
    `combo = 1 + 0.1·U` and U = distinct combo classes scored this act (meld classes via
    `Scoring.class_key` — archetype+size+copies, rank/suit-blind — plus first-activation
    mod effects; lone high cards excluded; resets each act). Full math in
-   SCORING_MATH_PLAN §15a; δ duplicate-class lever ships off (1.0). The
+   ARCHITECTURE_REVIEW §3a; δ duplicate-class lever ships off (1.0). The
    damage/antagonist reframing below remains unbuilt 📋. Original idea: points
    reframed as *damage against an antagonist* (Slay-the-Spire/TCG enemy-health framing).
    Row and column scorers become a **combo system**: combo increments by 1 for each
@@ -248,10 +248,10 @@ generator) — ref: "Correlated randomness in Slay the Spire 2" (Andy Tockman). 
    which conditions need spotlight and which don't (e.g. on-Next effects). This makes the
    always-active stamp less crucial.
 
-**Implementation state:** `CardModifier.is_active()` exists with `StampGlobal` /
-`StampRevealing` overrides 🔨 — but the base "active while topmost/unblocked" rule was
-never implemented (ARCHITECTURE_REVIEW N5), so ordinary cards' skills are currently inert.
-This is the top design-blocking bug.
+**Implementation state:** ✅ the base rule is implemented — a play card's modifiers are
+active while the card is topmost/unblocked (`CardModifier.is_active()`), with
+`StampRevealing` (active while covered) and `StampGlobal` (active from anywhere) as
+overrides. Ordinary cards' skills fire.
 
 **Presentation of activation:**
 - Cards with skills idly move and **peek over** the card blocking them; blocked active
@@ -328,7 +328,7 @@ The theme pivot arrives mid-notes and becomes the LATEST identity: 📋
 | Skills | **Feats** |
 | Cards without feats | **Prop cards** |
 | Scoring | **Exciting the audience** (cheering audio scales with score) |
-| ~~Overscore bonus~~ | ~~**Tips**~~ (retired 2026-07 — overscore removed, SCORING_MATH_PLAN §8c′) |
+| ~~Overscore bonus~~ | ~~**Tips**~~ (retired 2026-07 — overscore removed, ARCHITECTURE_REVIEW §3b) |
 | Player | **The Ringmaster** |
 | Game laws / rules | **Conventions** (maybe) |
 | Active state | **Spotlight** |
@@ -369,8 +369,8 @@ across the board and interact with other cards:
 3. Consequences noted: most feat cards should be *alive* in some way and somewhat
    individualized; cards dynamically **jump up through hoops and duck under knives**.
 
-**Locked & implemented (Suit-Props plan, Phases 0–6 ✅ — spec `SUIT_PROPS_PLAN.md`; live
-reference `PROPS_BUGFIX_HANDOFF.md`):**
+**Locked & implemented (Suit-Props plan, Phases 0–6 ✅ — live reference
+ARCHITECTURE_REVIEW §4; the full plan/spec is in git history):**
 - **Nominal suit subclasses, not ordinal.** Each suit is a `PipSuit` (a `CardModifier`)
   subclass — `PipSuitHoop/Knife/Ball/Fire/Firework` — with a palette/art index only; there is
   **no `value`** and no suit ordering. Construct the exact class (`PipSuitHoop.new()`, …) or
@@ -632,8 +632,8 @@ assigns show/booster/anchor roles from the seed, shows launch `Game` with
 (`ChoiceViewer` take-all; hover shows possible contents), runs persist to `user://run_save/`
 (RunState + map bake), and finishing a lap enters endless mode: the tour reverses
 end→start on the same map, goals scale per lap, traveled history accumulates. Goals come
-from the map-structure curve `G0·(N̂/N0)^ALPHA·difficulty·BOSS·LAP^lap` (SCORING_MATH_PLAN
-§15b) baked per progress step with a monotone clamp ✅ 2026-07-17; the overscore tax is
+from the map-structure curve `G0·(N̂/N0)^ALPHA·difficulty·BOSS·LAP^lap`
+(ARCHITECTURE_REVIEW §3b) baked per progress step with a monotone clamp ✅ 2026-07-17; the overscore tax is
 retired (§8c′) — wins bank the full score as fame, nothing else ✅; fame raises `RunManager.luck()`
 which gates stamp/skill/type rolls in packs ✅ (rarity tiers still 📋). Not built yet:
 tips, fog of war, hype/wagering, tour planning. 📋
@@ -888,7 +888,7 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | Deck viewer sorter | 📋 |
 | Deck viewer must show **effect order** even when the deck is randomized — an effect-viewer for skills only (could itself be a skill) | 💭 |
 | Deck Maker — create/save decks for testing | ✅ `deck_builder.gd` |
-| Save ability | ❌ not yet (`PlayerSave` never written to disk — review N10) |
+| Save ability | ✅ runs persist via `RunManager` to `user://run_save/` (incl. undo history; `PlayerSave` remains only as the Deck Maker profile container) |
 | Hidden-trigger stamp; deck triggers surfacing on the deck slot | 🔨 `StampRevealing`/`StampGlobal` exist; deck-slot visuals 📋 |
 | Only first poker hand scores | ✅ |
 | "Any card can be placed on this card" ability; Hippo card; elemental movement types | 🔨 resolver supports it; Hippo gutted; elementals 💭 |
@@ -896,13 +896,13 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | Check scoring in deck and discard | 💭 |
 | Add all cards to map | 🔨 map offers exist |
 
-### 25.2 Where the dream and the build currently disagree (from `ARCHITECTURE_REVIEW.md`)
-- **Spotlight default ("active while unblocked") is unimplemented (N5)** — most non-rule
-  card skills are inert today. This blocks nearly all of §14.1.
+### 25.2 Where the dream and the build currently disagree (updated 2026-07-19)
+- Spotlight default ("active while unblocked"): ✅ implemented (with Revealing/Global
+  overrides), so ordinary card skills fire.
 - Rule-deck-driven layout, input-as-cards, resolver-based legality, whole-board cascade
-  scoring, BigNumber, undo, deck/choice viewers, booster templates: ✅ all real.
-- Triangle map is built but the design has moved to the worldgen FTL map — porting the
-  map screen is the biggest open integration task.
-- Deterministic RNG streams (§6/§23) not yet implemented on the game side.
-- Card-pack mulligan flow, shop, economy, meta progression, leaders, acts, suit
-  projectiles, circus renames: not started.
+  scoring, BigNumber, undo, deck/choice viewers, booster templates, the worldgen FTL map
+  + run persistence, suit projectiles (props), combo scoring + goal curve: ✅ all real.
+- Deterministic RNG streams (§6/§23) not yet implemented on the game side (map/props are
+  deterministic; in-match RNG streams for seed sharing are not).
+- Card-pack mulligan flow, shop, economy, meta progression, leaders, acts, circus
+  renames, rarity tiers: not started.

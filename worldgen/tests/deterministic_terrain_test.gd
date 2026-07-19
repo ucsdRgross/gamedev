@@ -1,7 +1,7 @@
 extends Node
 
 ## Gate for the deterministic (CPU) heightmap path — see
-## worldgen/DETERMINISM_FINDINGS.md. Unlike native_ab_test, the contract here is
+## worldgen/START_HERE.md "Determinism". Unlike native_ab_test, the contract here is
 ## NOT "matches the GDScript/GPU twin": a GPU's pow/atan cannot be reproduced
 ## across vendors, which is the very problem this path exists to solve. What must
 ## hold is:

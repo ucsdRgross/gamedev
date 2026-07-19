@@ -1,5 +1,5 @@
 class_name TestFactories
-## Shared card factories for all test suites (see UNIT_TESTS_PLAN.md conventions).
+## Shared card factories for all test suites (see ARCHITECTURE_REVIEW.md §7 conventions).
 ## test_scoring.gd predates this file and keeps its local copies for now.
 
 static var _next_suit := 700  # unique suit ids so filler never forms accidental flushes

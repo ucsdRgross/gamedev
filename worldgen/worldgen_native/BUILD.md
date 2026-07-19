@@ -1,10 +1,13 @@
 # worldgen_native — build notes
 
-C++ GDExtension acceleration for the worldgen hot loops (see
-`../GDEXTENSION_PORT_HANDOFF.md`). Ships as
+C++ GDExtension acceleration for the worldgen hot loops (function inventory +
+contracts: `../START_HERE.md`). Ships as
 `addons/worldgen/bin/worldgen_native.windows.*.dll` + `worldgen.gdextension`,
 so the vendor-copy into Solatro carries it. GDScript fallbacks remain at every
 call site — the addon works with the dll deleted.
+
+Toolchain (installed 2026-07-17): Visual Studio Build Tools 2022 ("Desktop
+development with C++" workload) + `pip install scons` + git on PATH.
 
 ## Layout
 
@@ -22,12 +25,20 @@ call site — the addon works with the dll deleted.
 
 ```
 cd worldgen_native
-scons platform=windows target=template_debug
-scons platform=windows target=template_release
+python -m SCons platform=windows target=template_debug
+python -m SCons platform=windows target=template_release
 ```
 
-Output lands directly in `../addons/worldgen/bin/`. Editor + debug exports use
+(`scons` is often not on PATH — `python -m SCons` always works.) Output lands
+directly in `../addons/worldgen/bin/`. Editor + debug exports use
 template_debug; release exports use template_release (see `worldgen.gdextension`).
+
+Gotchas: if SCons says "up to date" for a file edited during a running build,
+delete `src/*.obj` and rebuild. If a scene reports "WorldgenNative class not
+registered", the project lacks `.godot/extension_list.cfg` — run
+`Godot --headless --path <project> --import` once. `SConstruct` pins
+`/fp:precise` / `-ffp-contract=off` deliberately (determinism) — never add
+`/fp:fast`.
 
 ## Bit-identical rule
 

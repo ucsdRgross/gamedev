@@ -17,7 +17,7 @@
 namespace godot {
 
 // Native ports of the worldgen GDScript hot loops. Each method must stay
-// BIT-IDENTICAL to its GDScript twin (see GDEXTENSION_PORT_HANDOFF.md):
+// BIT-IDENTICAL to its GDScript twin (see ../START_HERE.md):
 // GDScript does all arithmetic in 64-bit doubles and only narrows when
 // storing into PackedFloat32Array elements, so every expression here loads
 // elements to double, computes in double, and casts back to float on store.
@@ -84,7 +84,7 @@ public:
 			bool include_ocean, const Dictionary &pal) const;
 
 	// --- Determinism: CPU twins of the GPU heightmap shaders (see
-	// DETERMINISM_FINDINGS.md). These do NOT reproduce the GPU bit-for-bit --
+	// ../START_HERE.md "Determinism"). These do NOT reproduce the GPU bit-for-bit --
 	// that is impossible across vendors, which is the whole problem. They are
 	// self-consistent on every machine, which is the actual requirement.
 	PackedFloat32Array terrain_landmass(const PackedByteArray &noise_l8,

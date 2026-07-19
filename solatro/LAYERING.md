@@ -166,7 +166,7 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
 7. **`Background` is the last `SceneRoot` child, `visible=false`.** Unchanged — if ever enabled it
    paints over the entire board and HUD (there is no back layer). Left as-is.
 8. **`clip_contents=false` on the scroll but the play-area rect still clips props/cards**
-   (`PROPS_BUGFIX_HANDOFF.md` landmine 2). A split prop's back half rides the same content, so it
+   (ARCHITECTURE_REVIEW §4b landmine 2). A split prop's back half rides the same content, so it
    is subject to the same clip — a back half staged off the play-area rect edge would be invisible;
    keep it within the clipped rect.
 
