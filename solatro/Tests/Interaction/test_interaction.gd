@@ -26,9 +26,6 @@ const WATCHDOG_SECS := 10.0
 ## needs the Undo click to land DURING the resolution).
 const SLOW_DELAY := 0.4
 
-const REAL_SETTINGS_PATH := "user://settings.tres"
-const REAL_SETTINGS_BAK := "user://settings.tres.interbak"
-
 func suite_name() -> String:
 	return "INTERACTION"
 
@@ -47,8 +44,10 @@ func _ready() -> void:
 	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "E2E RUN", "LEAK CANARY"])
 	TestLog.line("============ INTERACTION TEST PASS ============")
 	backup_real_save()
-	_backup_settings()
-	var prev_delay : float = SettingsManager.settings.base_delay
+	# the shared park-the-file isolation (TestSuite): every knob write during this suite lands
+	# in a throwaway settings.tres, so even an abort can't strand the player's real knobs
+	backup_real_settings()
+	var settings_snapshot := snapshot_settings()
 	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	prev_run = RunManager.run
 	prev_save_info = Main.save_info
@@ -59,6 +58,7 @@ func _ready() -> void:
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
+	await test_auto_next_leaves_no_dead_controls()
 	behavior_section("TOUCHSCREEN (touch -> emulated mouse)")
 	await test_touch_taps_next_button()
 	behavior_section("UNDO DURING A RESOLVING SUBMIT (the real button)")
@@ -66,8 +66,8 @@ func _ready() -> void:
 	behavior_section("GAME OVER OVERLAY CONTRACT")
 	await test_game_over_interactivity()
 	await _teardown_view()
-	SettingsManager.settings.base_delay = prev_delay
-	_restore_settings()
+	restore_settings_snapshot(settings_snapshot)
+	restore_real_settings()
 	finish()
 
 # ==============================================================================
@@ -101,19 +101,6 @@ func _teardown_view() -> void:
 	restore_real_save()
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
-
-func _backup_settings() -> void:
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
-				ProjectSettings.globalize_path(REAL_SETTINGS_BAK))
-
-func _restore_settings() -> void:
-	if not FileAccess.file_exists(REAL_SETTINGS_BAK):
-		return
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_BAK),
-			ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 
 # ==============================================================================
 # INPUT SYNTHESIS — everything through Input.parse_input_event + flush, so the
@@ -248,6 +235,59 @@ func test_mouse_right_click_ungrabs() -> void:
 	check(not pa.selected_cards.is_empty(), "precondition: cards are held")
 	await mouse_click(center_of(control), MOUSE_BUTTON_RIGHT)
 	check(pa.selected_cards.is_empty(), "right-click cancels the held grab")
+
+## Owner bug report 2026-07-20: after every auto-Next one board card became completely
+## uninteractable (no hover, no highlight, no focus, no grab), and undo did not heal it —
+## only reloading the game did. Cause: the grab is still LIVE while patience-0 folds a Next
+## into `try_place`, so the board rebuilds underneath it; board controls are POOLED per slot,
+## so the `MOUSE_FILTER_IGNORE` that `grab_cards` put on the held card's control got rebound
+## to whatever card landed in that slot, and only `ungrab_cards` (which looks the control up
+## by the HELD card's new position) could ever undo it.
+## Contract asserted here: with nothing held, NO board control is left non-interactive.
+func test_auto_next_leaves_no_dead_controls() -> void:
+	var prev_max : int = SettingsManager.settings.patience_max
+	SettingsManager.settings.patience_max = 1
+	game.state.reset_patience(1)
+	# Craft one guaranteed-legal placement: the classic placer wants a topmost target one rank
+	# away with a different suit. Take lower col 0's top card, give col 1 a matching target.
+	pa.flush_rebuild()
+	var moving : CardData = game.state.lower_zone[0].datas[-1]
+	var target := TestFactories.m_card(moving.rank.value + 1, TestFactories.uc())
+	target.stage = CardData.Stage.PLAY
+	game.state.lower_zone[1].datas.append(target)
+	game.state.revision += 1
+	pa.flush_rebuild()
+	await frames(1)
+	var history_before : int = game.save_history.size()
+	# the real player path: select the card (grab), then select the target (place)
+	await view._on_data_selected(moving)
+	check(not pa.selected_cards.is_empty(), "precondition: the card is held")
+	await view._on_data_selected(target)
+	await frames(2)
+	pa.flush_rebuild()
+	check(game.save_history.size() == history_before + 1,
+			"precondition: the move + its auto-Next committed one step")
+	check(game.state.patience == SettingsManager.settings.patience_max,
+			"precondition: the auto-Next refilled patience", str(game.state.patience))
+	check(pa.selected_cards.is_empty(), "the grab is released across the auto-Next")
+	var dead : Array[String] = []
+	for control : Control in pa.ui_data:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+			dead.append(str(pa.ui_data[control]))
+	check(dead.is_empty(), "no board card is left uninteractable after an auto-Next",
+			"dead controls: %s" % [dead])
+	# ...and it stays healed through an undo (the pooled controls survive the rebuild)
+	game.undo()
+	pa.flush_rebuild()
+	await frames(1)
+	var dead_after_undo : Array[String] = []
+	for control : Control in pa.ui_data:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+			dead_after_undo.append(str(pa.ui_data[control]))
+	check(dead_after_undo.is_empty(), "undo does not resurrect a dead control",
+			"dead controls: %s" % [dead_after_undo])
+	SettingsManager.settings.patience_max = prev_max
+	pa.ungrab_cards()   # hermetic
 
 func test_keyboard_select_and_cancel() -> void:
 	var control := a_card_control()

@@ -611,14 +611,14 @@ in the notes (proxy for design recency).
    Steel Ball Run framing: cross the map building fame before the final city.
    - Small towns vs big cities have different score requirements.
    - **Overscoring ramps future requirements** — player balances declaring big
-     (fame wagering) vs the risk of failing the declared score.
+	 (fame wagering) vs the risk of failing the declared score.
    - Total fame improves rarity odds of card offers.
    - Finishing the final city wins and unlocks **endless mode** (repeat the final city
-     until you lose, guaranteed repeating choices between shows).
+	 until you lose, guaranteed repeating choices between shows).
    - Alternatives mused: no final city, circle the map; or must return to start; visited
-     points become revisitable after enough time passes. 💭
+	 points become revisitable after enough time passes. 💭
    - **Hype mechanic:** voluntarily double the fame required for the next show for better
-     goodies. 📋
+	 goodies. 📋
 
 **Implementation state:** the `worldgen` addon generates the seeded heightmap world
 (Landmass → Tectonics → Peaks&Valleys → Erosion → Rivers → Graph) with an interactive DAG

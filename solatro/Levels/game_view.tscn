@@ -123,6 +123,15 @@ offset_bottom = 226.0
 text = "Next Round
 "
 
+[node name="Patience" type="Label" parent="SceneRoot" unique_id=1267428030]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 45.0
+offset_top = 128.0
+offset_right = 245.0
+offset_bottom = 162.0
+text = "PATIENCE 3/3"
+
 [node name="Reroll" type="Button" parent="SceneRoot" unique_id=1219511678]
 visible = false
 layout_mode = 0

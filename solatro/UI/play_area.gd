@@ -332,6 +332,14 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 func _bind_slot(c: Control, connected_data: CardData) -> void:
 	ui_data[c] = connected_data
 	data_ui[connected_data] = c
+	# Interactivity is a FUNCTION OF THE CURRENT STATE, never a leftover. Board controls are
+	# POOLED per slot and rebound to whatever card lands there, so the MOUSE_FILTER_IGNORE
+	# grab_cards puts on a held card's control must be re-derived here — otherwise a rebuild
+	# that happens while a grab is live (auto-Next folds a Next into try_place) leaves the
+	# filter on a control that now belongs to a DIFFERENT card, which becomes permanently
+	# uninteractable and survives undo (owner bug report 2026-07-20).
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
+			else Control.MOUSE_FILTER_PASS
 	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 		new_data_card[connected_data] = data_card[connected_data]
 		new_data_card[connected_data].control_anchor = c

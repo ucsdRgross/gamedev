@@ -17,12 +17,14 @@ func get_possible_types() -> Array[CardModifierType]
 func get_frame() -> int: return 5
 
 ## Open this pack on a map node: show the generated cards in a take-all ChoiceViewer
-## (choose=0 = forced pickup; rerolls/extra picks come later from modifiers). The caller
-## wires the viewer's `confirmed` signal to actually add the cards to the deck.
+## (choose=0 = forced pickup; extra picks come later from modifiers) with the shared free-reroll
+## pool from settings. The caller wires the viewer's `confirmed` signal to actually add the cards
+## to the deck.
 func on_map_picked(parent: Node) -> ChoiceViewer:
 	var choices : int = get_frame()
 	var choose : int = 0
-	return await ChoiceViewer.add_to_scene(parent, create_one_choice, choices, choose)
+	var rerolls : int = SettingsManager.settings.booster_reroll_pool
+	return await ChoiceViewer.add_to_scene(parent, create_one_choice, choices, choose, rerolls)
 
 ## E8: one pool gather = call the pool getter, then AWAIT its on_get_possible_* broadcast,
 ## so async mods finish editing the pool BEFORE anything picks from or lists it (the old

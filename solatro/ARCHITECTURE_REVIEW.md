@@ -173,6 +173,13 @@ history stored in forward orientation).
   the pre-action board before awaiting; killed mid-resolution → `_resume_show` replays
   the action with input locked. Requires those actions stay deterministic (no RNG in
   scoring; draws come from the ordered deck). `save_state` clears the marker on commit.
+  ⚠️ **The patience auto-Next is the one case where the marker's board is NOT the Next's
+  real pre-action board** (§4e): the emptying move and its auto-Next commit as ONE snapshot,
+  so `_begin_action(&"on_next")` persists a history whose top is the board from before the
+  MOVE. A kill inside that span therefore resumes by replaying Next on the pre-move board —
+  the uncommitted move is lost (consistent with any other in-flight action) but the round
+  still advances. Narrow, accepted; do not "fix" it by committing the move separately
+  without re-deciding owner ruling A5 (that reintroduces the patience-0 undo state).
 - Per-act score gutters reset in `apply_act_score`; their labels only resync via
   `PlayArea.update_score_controls()` (the revision-bump rebuild does NOT touch them).
 - Loading `.tres` from `user://` can execute embedded script paths — standard Godot caveat.
@@ -189,6 +196,16 @@ history stored in forward orientation).
 - Card text surface is the **focus inspector panel** (permanent OverlayLayer child,
   re-pinned per frame); native tooltips were removed deliberately (they blocked clicks).
 - Board draw order is 100% structural (no z_index anywhere) — see LAYERING.md.
+- ⚠️ **Board controls are POOLED per slot** (`PlayArea.set_card_zone` creates/frees Controls
+  per column/row index and `_bind_slot` rebinds them to whatever CardData now occupies the
+  slot). Therefore **any per-card control property must be re-derived in `_bind_slot`, never
+  just set-and-later-unset.** `mouse_filter` broke this rule: `grab_cards` set
+  `MOUSE_FILTER_IGNORE` and only `ungrab_cards` cleared it — by the card's NEW position — so a
+  rebuild while a grab was live (auto-Next, §4e) stranded the filter on a control that then
+  belonged to a different card: one permanently uninteractable card per auto-Next, surviving
+  undo, healed only by a restart (owner bug 2026-07-20). Pinned by INTERACTION's
+  `test_auto_next_leaves_no_dead_controls`. Game also tells the view to `release_grab()`
+  before an auto-Next, so the board never mutates under a live grab in the first place.
 
 ---
 
@@ -212,6 +229,15 @@ container; I4 position index agrees with a full rescan; I5 no null entries.
   the coalesced PlayArea rebuild, keys the compare-implementer cache, AND invalidates the
   lazy position index (`position_of`) — a missed bump now returns STALE positions, not
   slow-but-correct scans.
+- `revision` is ALSO the change detector for commits (2026-07-20): `Game._last_saved_revision`
+  holds the revision the last committed snapshot carried, and `save_state()` RETURNS EARLY
+  when they match. So a legal-but-`OK_NOOP` placement pushes no undo entry ("an undo that
+  visually does nothing") and does not advance the committed-action count
+  `history_trimmed + save_history.size()` that `entity_side_for_row` hashes. The `state`
+  setter resets the baseline to -1 (a swapped-in state is uncommitted until proven otherwise);
+  `undo()`, `_restore_pre_act_board()` and `_resume_show()` re-baseline explicitly right after
+  assigning, because those boards ARE history's top. **A mutation that forgets its revision
+  bump now also loses its undo entry.**
 - Anything reading PlayArea's `ui_data`/`data_ui`/`data_card`/control tree calls
   `flush_rebuild()` first.
 - Statuses/mods must not call `move_data_*`/`discard_data` from hooks dispatched by
@@ -382,6 +408,60 @@ are PlayerSettings fractions of `get_delay()` — never wall-clock literals.
 
 ---
 
+## 4e. PATIENCE (idle-move pressure, 2026-07-20)
+
+"The audience won't watch you shuffle the board forever." Per-round counter on **GameData**
+(`patience`, `patience_seen_mods`) so undo/history/saves rewind it with the board.
+
+- **Spend point is `Game.try_place` ONLY** — never Submit/Next (owner ruling). A placement
+  that actually changed the board either HOLDS the counter (a qualifying modifier triggered)
+  or spends one; an `OK_NOOP` placement costs nothing (nothing changed → §2 detector).
+- **What "triggered" means:** `try_place` moves with `trigger_mods = false`, so the only
+  dispatch a placement performs is the legality query `on_can_place_stack`. That is why
+  `_note_mod_fired` fires from EVERY dispatch path (`return_first_*`, `run_card_mods`), not
+  just `run_all_mods` — ⚠️ landmine: those paths pass `feeds_combo = false`, so they inform
+  patience but must never register a §3a combo class. Keep that flag when adding a path.
+- Gating: the triggering card's stage must be enabled (`patience_influence_*`, default PLAY
+  only), the hook must not be in `patience_disabled_hooks`, and its `combo_key` must be
+  non-empty (engine mods opt out of combo AND patience together). With
+  `patience_track_uniques`, only the FIRST trigger of a key each round holds — repeats are
+  boring. Seen keys clear on Next, or after a Submit with `patience_reset_uniques_on_act`.
+- **0 auto-presses Next**, which refills to `patience_max`. The emptying move and its
+  auto-Next commit ONE snapshot together (owner ruling A5): patience 0 is never a playable
+  board, so undo lands before the move with patience intact and can't buy an extra action.
+- Raising `patience_max` mid-round also grants the LIVE counter (`patience_max_increased` →
+  `Game._on_patience_max_increased`); lowering it never takes any away (owner ruling A1).
+- Patience mutators deliberately do NOT bump `revision` (owner ruling A2 — patience only ever
+  moves alongside a real board change). The one exception is a Next on a board where nothing
+  moved: `_perform_next` bumps there so the refill still commits.
+- The auto-Next fires INSIDE `try_place`, i.e. while the player's grab is still live — Game
+  calls `view.release_grab()` first, and see the pooled-control landmine in §1.6.
+- View: `%Patience` label in `game_view.tscn` (owner tunes placement in the editor — never
+  create HUD elements in code), fed by `Game.patience_changed`. Card descriptions mark each
+  modifier `(seen)`/`(new)` inside a show while uniques are tracked (`ControlCard.describe_card`).
+- ⚠️ **Known commit gap:** `_perform_next`'s "nothing moved" revision bump is gated on the
+  PATIENCE COUNTER changing (`patience_before != state.patience`), not on the seen-set. So a
+  Next that only clears a non-empty seen-set — patience already full because every move that
+  round was interesting — on a board where `on_next` moved nothing commits nothing, and a
+  resume brings the stale seen-set back. Narrow (needs an inert `on_next`); widen the guard to
+  the seen-set size if it ever bites.
+- Suite: `Tests/Engine/test_patience.gd`.
+
+---
+
+## 4f. BOOSTER REROLLS (2026-07-20)
+
+`ChoiceViewer.Data.rerolls` is ONE shared free-reroll pool for the whole pack, seeded from
+`settings.booster_reroll_pool` by `BoosterTemplate.on_map_picked`. `ChoiceViewer.reroll(i)`
+re-calls the SAME generator (`create_one_choice`, awaited — it is a coroutine), replaces
+`current_choices[i]`, spends one charge, swaps that slot's `ControlCard` in place and grays
+every button out at zero. Generation is global-RNG, so a reroll needs no seed handling, and
+shown cards persist nothing until Confirm — no save wiring. Multi-modal: the buttons are focus
+stops and focus is restored after a swap (to the same slot, or Confirm once the pool empties).
+Covered by `Tests/UI/test_ui_viewers.gd`.
+
+---
+
 ## 5. UNDO & GAME-OVER CONTRACT
 
 Undo is live in every state; `Game.undo()` dispatches on three:
@@ -430,7 +510,8 @@ re-enable it); `enable_board_focus()` on dismissal.
 ## 7. TESTING
 
 Run: `Godot --headless --path solatro res://Tests/all_tests.tscn` — exit code = failure
-count; the bar is ALL suites green (count the run's own banner; 24 as of 2026-07-18).
+count; the bar is ALL suites green (count the run's own banner; 25 as of 2026-07-20 —
+PATIENCE joined, and it runs unordered like the other engine suites).
 Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** Never
 run headless while the owner's editor has the project open (see START_HERE.md).
 Environment traps (stale class cache, frame_post_draw, headless window size):
@@ -455,6 +536,18 @@ Conventions (formerly UNIT_TESTS_PLAN):
   `Tests/Support/test_factories.gd`; fake env: `Tests/Support/fake_environment.gd`.
 - Disk tests use `SolatroTest.backup_real_save()`/`restore_real_save()` — never a
   save-existence `[SKIP]` guard. Suites that touch settings back up `settings.tres`.
+  Settings isolation is TWO paired steps (`SettingsManager` writes `settings.tres` on EVERY
+  knob write, so a suite that scribbles on the live resource is editing the player's real file
+  line by line):
+  1. `backup_real_settings()` / `restore_real_settings()` PARK the real file for the suite's
+     duration, so every write lands in a throwaway and an aborted run can never strand the
+     player's knobs. The backup name is per-suite (`suite_name()`) and self-healing on the next
+     run — a single shared path would let concurrent suites swallow each other's parked file.
+  2. `snapshot_settings(prefix)` / `restore_settings_snapshot()` put the LIVE resource back for
+     later suites. ⚠️ **Scope the prefix to the knobs your suite owns** (`"patience_"`,
+     `"booster_"`): suites that don't `await_siblings_except` run CONCURRENTLY against ONE
+     shared PlayerSettings, so restoring a full snapshot stomps another suite's in-flight
+     knobs. Only a suite that waits for its siblings (INTERACTION) may snapshot everything.
 - Test speed: `all_tests.gd @export speed_base_delay` → `TestLog.speed_base_delay`;
   deliberately-slow sampling tests keep their own absolute delays (they need real
   frames).

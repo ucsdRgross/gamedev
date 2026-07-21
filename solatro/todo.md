@@ -46,6 +46,39 @@ regression-critical residue in ARCHITECTURE_REVIEW.md instead of keeping a log h
 - Win/lose screen font (226px) clips long "Fame +N" text. game.tscn grabs no initial
   focus (keyboard/controller players must click first).
 
+## Patience & rerolls (landed 2026-07-20 — owner playtest pending)
+
+- Tune `patience_max` (ships 3) and the per-stage `patience_influence_*` flags (ships PLAY
+  only); decide whether the legality query `on_can_place_stack` should count at all — if not,
+  add it to `patience_disabled_hooks` and re-tune what "interesting move" means. Full
+  behavior + the settings list: ARCHITECTURE_REVIEW §4e.
+- Rule cards that raise `patience_max` / grant patience: the grant path exists
+  (`patience_max_increased`), no content uses it yet.
+- Booster rerolls (§4f): pool ships at 5 (`booster_reroll_pool`); reroll-count modifiers
+  (the `luck()`-style content hook) not written yet.
+- Watch existing suites for auto-Next fallout: any test that makes 3+ boring moves in one
+  round now advances the round mid-test.
+- `patience_max` ships **3**, but the original spec asked for a default of **1** — confirm
+  which is intended before playtest conclusions (3 = three idle moves per round).
+- Comparator hooks now reach patience: `on_compare_ranks/suits` fire through
+  `return_first_compare_mod_result` during the placement legality query, so ANY board card
+  with a comparator modifier holds the counter (once per round under uniques). Decide whether
+  that is the intended "interesting move" bar or belongs in `patience_disabled_hooks`.
+- `Game._on_patience_max_increased` edits `state.patience` with no commit — a mid-round grant
+  is lost on quit and reverted by undo. Fine for a settings knob; revisit when a rule CARD
+  grants patience (that grant should ride a committed action).
+- `Game._ready` connects to `SettingsManager.settings.patience_max_increased` without the N9
+  reconnect idiom — the connection binds the settings resource that exists at show start. Only
+  matters if `SettingsManager.settings` is ever reassigned at runtime (its setter supports it).
+- Two known gaps documented in ARCHITECTURE_REVIEW: the auto-Next pending-action replay
+  caveat (§1.5) and the seen-set-only commit gap in `_perform_next` (§4e).
+- Test hygiene (partly done 2026-07-20): settings isolation now lives on `TestSuite`
+  (`backup_real_settings`/`restore_real_settings` + `snapshot_settings(prefix)`), used by
+  PATIENCE, UI VIEWERS and INTERACTION. UI PROPS, VISUAL LAYERS and LEAK CANARY still carry
+  their own copy-pasted `REAL_SETTINGS_PATH`/`REAL_SETTINGS_BAK` pair — migrate them onto the
+  shared helpers (that also frees the base const back to the obvious name; see the note on
+  `TestSuite.SETTINGS_FILE`).
+
 ## Design work not started (DESIGN_DOC pointers)
 
 - Entrance drop-down between acts (DESIGN_DOC §2) — decide + implement.

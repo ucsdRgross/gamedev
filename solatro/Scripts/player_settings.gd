@@ -170,6 +170,67 @@ signal settings_changed
 		lap_mult = value
 		settings_changed.emit()
 
+@export_group("Patience (idle-move pressure)")
+## Emitted when patience_max GROWS, with the increase. Owner ruling A1 (2026-07-20): raising the
+## cap also raises the LIVE counter by the same amount (a rule card granting patience takes effect
+## this round); lowering it does NOT touch the live counter. Game listens and edits state.patience.
+signal patience_max_increased(delta: int)
+
+## Idle card moves allowed per round before Next auto-fires. Also the value patience resets to.
+## Floored at 1 — a round must always allow at least one move.
+@export var patience_max : int = 3:
+	set(value):
+		var clamped : int = maxi(value, 1)
+		var delta : int = clamped - patience_max
+		patience_max = clamped
+		if delta > 0:
+			patience_max_increased.emit(delta)
+		settings_changed.emit()
+
+## Which card STAGES' triggered modifiers hold the countdown (a move that fires one of them was
+## interesting, so it costs no patience). Default: only cards in play on the board count.
+@export var patience_influence_play : bool = true:
+	set(value):
+		patience_influence_play = value
+		settings_changed.emit()
+@export var patience_influence_zone : bool = false:
+	set(value):
+		patience_influence_zone = value
+		settings_changed.emit()
+@export var patience_influence_draw : bool = false:
+	set(value):
+		patience_influence_draw = value
+		settings_changed.emit()
+@export var patience_influence_discard : bool = false:
+	set(value):
+		patience_influence_discard = value
+		settings_changed.emit()
+@export var patience_influence_rules : bool = false:
+	set(value):
+		patience_influence_rules = value
+		settings_changed.emit()
+
+## Track already-seen modifiers (like the combo class set): the SECOND time the same modifier
+## triggers this round it no longer holds patience. Off = every trigger holds.
+@export var patience_track_uniques : bool = true:
+	set(value):
+		patience_track_uniques = value
+		settings_changed.emit()
+
+## When the seen-set clears: false (default) = every Next, true = only after a Submit act.
+@export var patience_reset_uniques_on_act : bool = false:
+	set(value):
+		patience_reset_uniques_on_act = value
+		settings_changed.emit()
+
+## Hooks that never count toward patience even from an approved stage (e.g. add
+## &"on_can_place_stack" to stop the placement legality query itself from holding the counter).
+## Empty = every hook counts.
+@export var patience_disabled_hooks : Array[StringName] = []:
+	set(value):
+		patience_disabled_hooks = value
+		settings_changed.emit()
+
 @export_group("Leak sentinel (debug builds only)")
 ## Master switch for the playtest leak sentinel (Scripts/leak_sentinel.gd): compares live
 ## CardData against the cards reachable from legitimate owners at quiescent moments and
@@ -199,6 +260,13 @@ signal settings_changed
 @export var luck_cap : float = 0.6:
 	set(value):
 		luck_cap = value
+		settings_changed.emit()
+
+## Free rerolls a pack opening starts with — ONE shared pool across every shown card
+## (ChoiceViewer.Data.rerolls). Future reroll modifiers adjust the viewer's pool from here.
+@export var booster_reroll_pool : int = 5:
+	set(value):
+		booster_reroll_pool = maxi(value, 0)
 		settings_changed.emit()
 
 ## Fame at which luck() reaches half of luck_cap.

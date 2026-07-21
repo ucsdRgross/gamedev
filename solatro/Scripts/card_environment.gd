@@ -24,8 +24,14 @@ func note_processing(_weight := 1) -> void:
 	pass
 
 ## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
-## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base environments.
-func _note_mod_fired(_mod: CardModifier, _function: StringName) -> void:
+## combo (SCORING_MATH_PLAN §15a mod-activation U) and the patience counter. No-op in base
+## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods)
+## since 2026-07-20 — patience needs the placement legality query (on_can_place_stack) to count.
+## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class
+## (§15a), so the newly-notifying paths (comparators, legality queries, the prop tick's per-card
+## hooks) inform patience ONLY.
+func _note_mod_fired(_mod: CardModifier, _function: StringName,
+		_feeds_combo := true) -> void:
 	pass
 
 func get_card_collections() -> Array[Variant]:
@@ -106,7 +112,9 @@ func _compare_implementers(function: StringName) -> Array:
 func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
 	for mod : CardModifier in _compare_implementers(function):
 		if mod is CardModifierSkill and not (mod as CardModifierSkill).active: continue
-		return await Callable(mod, function).callv(params)
+		var result : float = await Callable(mod, function).callv(params)
+		_note_mod_fired(mod, function, false)
+		return result
 	return NAN
 
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
@@ -116,10 +124,12 @@ func return_first_data_array_result(function: StringName, ...params:Array) -> Ar
 		for mod : CardModifier in mods:
 			if mod and mod.has_method(function):
 				var result : Array[CardData] = await Callable(mod, function).callv(params)
+				_note_mod_fired(mod, function, false)
 				if result: return result
 		var skill : CardModifierSkill = data.skill
 		if skill and skill.has_method(function) and skill.active:
 			var result : Array[CardData] = await Callable(skill, function).callv(params)
+			_note_mod_fired(skill, function, false)
 			if result: return result
 	return []
 
@@ -147,10 +157,12 @@ func run_card_mods(card: CardData, function: StringName, ...params: Array) -> vo
 		if mod and mod.has_method(function):
 			note_processing()
 			await Callable(mod, function).callv(params)
+			_note_mod_fired(mod, function, false)
 	var skill : CardModifierSkill = card.skill
 	if skill and skill.active and skill.has_method(function):
 		note_processing()
 		await Callable(skill, function).callv(params)
+		_note_mod_fired(skill, function, false)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod)

@@ -49,6 +49,38 @@ var revision : int = 0:
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
 ## submits_used lives here.
 @export_storage var combo_classes : Array[String] = []
+## PATIENCE (2026-07-20) — "the audience won't watch you shuffle the board forever": idle card
+## moves tick this down; a move that triggers a qualifying card modifier holds it. At 0 the game
+## auto-presses Next, which resets it to settings.patience_max. Lives ON the board state (like
+## submits_used) so undo/history snapshots rewind it with the board.
+## NOTE (owner ruling A2, 2026-07-20): the patience mutators deliberately do NOT bump `revision`.
+## Patience only ever moves together with a real board change, so the change-detector that keys
+## Game.save_state() stays the single signal; a snapshot where ONLY patience differs cannot exist.
+## 0 = never seeded (a bare fixture, or a save written before patience existed): the first move
+## seeds it from settings. Every committed board otherwise carries at least 1 — see the auto-Next
+## rule in Game._spend_patience_for_move.
+@export_storage var patience : int = 0
+## combo_key set of modifiers the audience has already seen this round: a re-trigger of one of
+## these no longer holds patience (settings.patience_track_uniques). Cleared on Next, or after a
+## Submit when settings.patience_reset_uniques_on_act.
+@export_storage var patience_seen_mods : Array[String] = []
+
+## Spend one patience (a move the audience found boring). Floors at 0 — 0 is the auto-Next trip.
+func spend_patience() -> void:
+	patience = maxi(patience - 1, 0)
+
+## Refill patience for a new round. `max_val` is settings.patience_max (floored at 1 there).
+func reset_patience(max_val: int) -> void:
+	patience = maxi(max_val, 1)
+
+## Record a modifier's combo_key as "seen" this round (it stops holding patience from now on).
+func mark_seen(key: String) -> void:
+	if key.is_empty() or patience_seen_mods.has(key): return
+	patience_seen_mods.append(key)
+
+## Forget every seen modifier — a fresh audience (Next, or Submit per the tunable).
+func clear_seen() -> void:
+	patience_seen_mods.clear()
 
 #const COMBO_STEP := 0.1   # moved to PlayerSettings.combo_step 2026-07-17 (all knobs in one place)
 

@@ -22,8 +22,9 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
 
 1. **Never run headless Godot while the owner's editor has the project open** — the two
    instances starve each other. Check `Get-Process *odot*` + `MainWindowTitle`; never
-   kill a process with an editor window title. Preferred verification: add prints /
-   TestLog lines and ask the owner to run `Tests/all_tests.tscn` and the game. The open
+   kill a process with an editor window title. With the editor CLOSED, run the suite
+   yourself (see Environment facts) — that is the expected verification, not a handoff.
+   Only the *game* still needs the owner (an agent shouldn't play it). The open
    editor also LOCKS vendored dlls (copies fail) and rewrites `.tscn`/`project.godot` on
    disk — do scene/project edits with the editor closed, and re-read files from disk
    before diagnosing (the editor may have rewritten them).
@@ -124,9 +125,24 @@ C#/GDExtension migration candidates get flagged in comments, not converted ad ho
 
 ## Environment facts
 
-- Godot 4.7, `C:\Users\khanr\Desktop\Godot_v4.7-stable_win64.exe` (console variant also
-  on this box). Repo: `C:\Users\khanr\Documents\GitHub\gamedev` (docs mentioning
-  `C:\richard\gamedev` are from the owner's other machine — same repo).
+- Godot 4.7.1, `C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64.exe`. The console
+  variant (`Godot_v4.7.1-stable_win64_console.exe`) is the one whose stdout can be
+  redirected to a file — it must sit in the SAME folder as the main exe (it launches it
+  by name); a copy lives on the Desktop next to it. Repo:
+  `C:\Users\khanr\Documents\GitHub\gamedev` (docs mentioning `C:\richard\gamedev` are
+  from the owner's other machine — same repo).
 - Full suite: `Godot --headless --path solatro res://Tests/all_tests.tscn` — exit code =
   failure count. Logs: `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`.
+  **An agent may and should run this itself** whenever the owner's editor is closed
+  (verified 2026-07-20: clean self-terminating run, 25 suites / 0 failures, ~40 s; the
+  check total drifts between runs — judge by the suite count and the failure set).
+  ⚠️ **ALWAYS bound the launch with a hard timeout that KILLS, and grep the log for
+  `Parse Error` in the same command** — a parse error in `Tests/Support/test_base.gd` does
+  not fail the run, it makes it hang FOREVER (every suite degrades to plain `Node` and the
+  sibling-waiters never finish). There is no working pre-flight check: `--check-only`
+  false-positives on autoloads and `--import` misses script errors entirely. The exact
+  commands, the log signature, and how to kill it safely: **HEADLESS_TESTING.md §0a.**
+  A bare `& exe ...` / `WaitForExit` without a `Kill()` also leaves orphans that truncate
+  the next run's log. Read only the FAIL lines (`test_output_errors.log`, empty = green)
+  plus the final banner.
 - Scoring sim: `py solatro/tools/scoring_sim.py --final --q 0.35` (Python, safe anytime).

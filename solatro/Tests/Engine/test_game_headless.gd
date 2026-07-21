@@ -23,6 +23,7 @@ func _ready() -> void:
 	await test_command_guard_blocks_input()
 	await test_try_grab_returns_stack()
 	await test_try_place_moves_and_commits()
+	await test_noop_place_commits_nothing()
 	await test_undo_reverts_state_and_history()
 	await test_undo_rewinds_act_count()
 	await test_undo_cancels_resolving_submit()
@@ -132,6 +133,55 @@ func test_try_place_moves_and_commits() -> void:
 			"placed card now lives in lower col 1", str(g.find_data_vec3(top0)))
 	check(g.save_history.size() == history_before + 1, "legal place commits exactly one save")
 	check(g.state.validate().is_empty(), "board still validates after the move")
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+## A placer that also accepts the card DIRECTLY BENEATH the moving card as a target — the
+## legality query says yes, but Board resolves the move to OK_NOOP (nothing moves). The shipped
+## placer can't produce this (it demands a topmost target), so the case is staged here.
+class PlacerAcceptsOwnSpot extends CardModifierSkill:
+	func get_str() -> String: return "NoopPlacer"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+		if not (stack and target): return []
+		var g := CardEnvironment.get_current_game()
+		if not g: return []
+		var src := g.find_data_vec3(stack[0])
+		var dst := g.find_data_vec3(target)
+		# only the "dropped back onto its own position" case
+		if src == Vector3i.MIN or dst != src - Vector3i(0, 0, 1): return []
+		return stack
+
+## Task 1 (2026-07-20): a legal placement that moves nothing (Board.OK_NOOP — a stack dropped
+## back onto its own spot) must NOT push an undo entry, or Undo appears to do nothing. The
+## action count entity_side_for_row hashes must not advance either: it never was an action.
+func test_noop_place_commits_nothing() -> void:
+	var g := make_game()
+	g.state.rules_deck.append(rules_card(PlacerAcceptsOwnSpot.new()))
+	g.state.revision += 1
+	g.save_state()   # the committed baseline the no-op would duplicate
+	var history_before := g.save_history.size()
+	var actions_before := g.history_trimmed + g.save_history.size()
+	var top0 := lower(g, 0)[1]
+	var under0 := lower(g, 0)[0]
+	var placed := await g.try_place([top0] as Array[CardData], under0)
+	check(placed, "precondition: the no-op placement is reported legal")
+	check(g.save_history.size() == history_before,
+			"a no-op placement pushes NO undo entry", str(g.save_history.size()))
+	check(g.history_trimmed + g.save_history.size() == actions_before,
+			"the committed-action count does not advance on a no-op")
+	# a REAL move right after still commits, and undo lands on the pre-move board
+	var target := TestFactories.m_card(5, TestFactories.uc())
+	target.stage = CardData.Stage.PLAY
+	g.state.lower_zone[1].datas.append(target)
+	g.state.revision += 1
+	check(await g.try_place([top0] as Array[CardData], target), "the real move is accepted")
+	check(g.save_history.size() == history_before + 1, "a real move commits exactly one snapshot")
+	g.undo()
+	check(g.state.lower_zone[0].datas.size() == 2,
+			"undo restored the pre-move column", str(g.state.lower_zone[0].datas.size()))
 	CardEnvironment.CURRENT = null
 	free_game(g)
 

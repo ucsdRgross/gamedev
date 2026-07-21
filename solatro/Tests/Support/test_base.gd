@@ -120,6 +120,80 @@ func restore_real_save() -> void:
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_BAK),
 			ProjectSettings.globalize_path(REAL_RUN_PATH))
 
+## Settings isolation (2026-07-20). SettingsManager writes user://settings.tres on EVERY knob
+## write (on_settings_changed -> save_settings), so a suite that scribbles on the live
+## PlayerSettings is editing the player's real file line by line. Restoring the VALUES at the
+## end is not enough: a suite killed midway (or a crash) leaves the player's knobs on test
+## values. So park the real file aside for the duration — every write during the suite lands in
+## a throwaway settings.tres that restore deletes. Pair with snapshot_settings()/
+## restore_settings_snapshot(), which put the LIVE resource back for later suites in the run.
+## NOTE the deliberately un-obvious name: three older suites (UI PROPS, VISUAL LAYERS, LEAK
+## CANARY) still declare their own `REAL_SETTINGS_PATH`/`REAL_SETTINGS_BAK` pair, and GDScript
+## rejects a child const that shadows a parent's. Renaming here keeps them compiling; they can
+## migrate onto these helpers later (todo.md).
+const SETTINGS_FILE := "user://settings.tres"
+
+## Per-SUITE backup name. Suites that don't await_siblings_except run CONCURRENTLY, so a single
+## shared backup path would let one suite's park/restore swallow another's.
+func _settings_bak_path() -> String:
+	return "user://settings.tres.%s.testbak" % suite_name().to_lower().replace(" ", "_")
+
+func backup_real_settings() -> void:
+	# self-healing: a previously ABORTED run may have left the real file parked in this suite's
+	# backup, so put it back before parking again (else that run's throwaway becomes "real")
+	_move_settings_backup_home()
+	if FileAccess.file_exists(SETTINGS_FILE):
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(SETTINGS_FILE),
+				ProjectSettings.globalize_path(_settings_bak_path()))
+
+func restore_real_settings() -> void:
+	_move_settings_backup_home()
+
+# Drop whatever the suite wrote and move this suite's parked real file back over it.
+func _move_settings_backup_home() -> void:
+	var bak := _settings_bak_path()
+	if not FileAccess.file_exists(bak):
+		return
+	if FileAccess.file_exists(SETTINGS_FILE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_FILE))
+	DirAccess.rename_absolute(ProjectSettings.globalize_path(bak),
+			ProjectSettings.globalize_path(SETTINGS_FILE))
+
+## Current values of every knob whose name starts with `prefix`, so a suite can scribble on the
+## live settings and put them back without naming fields (a hand-listed restore silently leaks
+## whichever knob someone forgot into every later suite). Reference values are copied so the
+## snapshot can't alias them.
+## ⚠️ SCOPE THE PREFIX to the knobs your suite actually owns. The live PlayerSettings is SHARED
+## and concurrent suites interleave — restoring a full snapshot would stomp another suite's
+## in-flight knobs. "" (everything) is only safe for a suite that waits for its siblings.
+func snapshot_settings(prefix: String = "") -> Dictionary:
+	var out : Dictionary = {}
+	var s := SettingsManager.settings
+	for prop : Dictionary in s.get_property_list():
+		var usage : int = prop["usage"]
+		if not (usage & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (usage & PROPERTY_USAGE_STORAGE):
+			continue
+		var prop_name : String = prop["name"]
+		if not prop_name.begins_with(prefix):
+			continue
+		# copy reference values so the snapshot can't alias the live one (typed branches:
+		# duplicate() on an inferred Variant is a warnings-as-errors failure)
+		var value : Variant = s.get(prop_name)
+		if value is Array:
+			out[prop_name] = (value as Array).duplicate()
+		elif value is Dictionary:
+			out[prop_name] = (value as Dictionary).duplicate()
+		else:
+			out[prop_name] = value
+	return out
+
+## Put a snapshot_settings() capture back on the LIVE resource (later suites see the player's
+## values, not this suite's). Does not touch the file — restore_real_settings() does that.
+func restore_settings_snapshot(snap: Dictionary) -> void:
+	var s := SettingsManager.settings
+	for key : String in snap:
+		s.set(key, snap[key])
+
 ## Print the suite banner + per-category failure split, then signal the aggregate runner
 ## (all_tests.gd) that this suite is done.
 func finish() -> void:

@@ -37,6 +37,7 @@ var game : Game = null
 @onready var col_label: Label = %MultScore/Col
 @onready var row_label: Label = %MultScore/Row
 @onready var combo_label: Label = %MultScore/Combo
+@onready var patience_label: Label = %Patience
 
 func _ready() -> void:
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
@@ -48,6 +49,7 @@ func _ready() -> void:
 	game.show_resolved.connect(_on_show_resolved)
 	game.show_unresolved.connect(_on_show_unresolved)
 	game.combo_changed.connect(_on_combo_changed)
+	game.patience_changed.connect(_on_patience_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
@@ -129,6 +131,8 @@ func _refresh_hud() -> void:
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
 	combo_label.visible = combo > 1.0   # owner ruling 2026-07-17: hidden at x1.0
+	patience_label.text = TRANSLATION.find('GAME_PATIENCE') \
+			% [state.patience, maxi(SettingsManager.settings.patience_max, 1)]
 
 ## A NEW combo class registered this act (§15a): refresh + pulse the combo label.
 ## combo_classes.append() doesn't emit state_changed — this signal is the live path;
@@ -145,6 +149,21 @@ func _on_combo_changed(_count: int) -> void:
 	_combo_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE * 1.15, delay * .3)
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE, delay * .2)
+
+## Patience moved (spent on an idle move, or refilled by a new round): refresh + pulse the
+## counter, same shape as the combo label's feedback.
+var _patience_tween : Tween = null
+
+func _on_patience_changed(_current: int, _max_value: int) -> void:
+	_refresh_hud()
+	if not is_node_ready(): return
+	var delay := game.get_delay()
+	if _patience_tween and _patience_tween.is_running():
+		_patience_tween.custom_step(INF)
+	patience_label.pivot_offset = patience_label.size / 2.0
+	_patience_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_patience_tween.tween_property(patience_label, "scale", Vector2.ONE * 1.15, delay * .3)
+	_patience_tween.tween_property(patience_label, "scale", Vector2.ONE, delay * .2)
 
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
@@ -197,6 +216,12 @@ func _on_show_unresolved() -> void:
 # ==============================================================================
 # GAME -> VIEW PACED (injected view; Game calls `if view: await view.<m>()`)
 # ==============================================================================
+## Drop any live grab before the Game mutates the board underneath it (the auto-Next that
+## patience-0 folds into try_place). The player's selection can't survive a round change, and a
+## rebuild mid-grab is exactly what stranded held-card visual state before (see PlayArea._bind_slot).
+func release_grab() -> void:
+	play_area.ungrab_cards()
+
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
 	play_area.setup_gui()
