@@ -58,10 +58,25 @@ test('every parameter named in the plan is present', () => {
 });
 
 test('groups are stable and non-empty', () => {
+  // `recolor` is last because field order is the seed payload's order and appending is the
+  // only safe edit — see the header of params.js.
   assert.deepEqual(PARAM_GROUPS, [
     'structure', 'lightness', 'chroma', 'shift', 'background',
-    'neutrals', 'accents', 'hardware', 'quality', 'meta',
+    'neutrals', 'accents', 'hardware', 'quality', 'meta', 'recolor',
   ]);
+});
+
+test('the recolour parameters are present and appended after the palette ones', () => {
+  const names = PARAMS.map((p) => p.name);
+  const required = [
+    'recolor_mode', 'recolor_indexed_max', 'remap_match', 'remap_preserve_order',
+    'remap_overflow', 'quant_dither', 'quant_dither_strength', 'quant_lightness_weight',
+    'quant_downscale', 'gif_frame',
+  ];
+  for (const name of required) assert.ok(PARAM_BY_NAME.has(name), `missing parameter ${name}`);
+  // Every one of them sits after `seed`, so old PAL1 seeds still decode (§6).
+  const seedAt = names.indexOf('seed');
+  for (const name of required) assert.ok(names.indexOf(name) > seedAt, `${name} must be appended, not inserted`);
 });
 
 test('defaults normalise to themselves', () => {

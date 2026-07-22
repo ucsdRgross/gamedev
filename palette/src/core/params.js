@@ -155,6 +155,32 @@ export const PARAMS = [
 
   // --- Meta --------------------------------------------------------------
   i('seed', 'meta', 0, 65535, 12345, 'Feeds the xorshift128 PRNG used for jitter and randomisation.'),
+
+  // --- Reference recolouring (PLAN §19.1) ---------------------------------
+  // Appended after `seed` because field order is the seed payload's order and appending is
+  // the only safe edit. These change no colour in the palette — they decide how reference
+  // images are re-rendered into it — but they are seed-encoded like everything else, so a
+  // pasted seed reproduces the whole view and not just the swatches.
+  e('recolor_mode', 'recolor', ['auto', 'indexed', 'quantize'], 'auto',
+    'Indexed keeps one target colour per source colour (right for pixel art); quantize decides per pixel (right for photographs). Auto picks on the source colour count.'),
+  i('recolor_indexed_max', 'recolor', 2, 256, 256,
+    'Colour count at or below which auto chooses the indexed path.'),
+  e('remap_match', 'recolor', ['delta-e', 'lightness-rank', 'optimal'], 'delta-e',
+    'How the source palette is matched: nearest, by lightness rank, or the assignment minimising total distance without reusing a target.'),
+  b('remap_preserve_order', 'recolor', false,
+    'Force the mapping to be monotonic in lightness. What lets a palette with completely different hues still read correctly, because value structure is what the eye reads first.'),
+  e('remap_overflow', 'recolor', ['share', 'merge'], 'share',
+    'When the source has more colours than the target: share lets colours reuse a target, merge clusters the source down first.'),
+  e('quant_dither', 'recolor', ['none', 'floyd-steinberg', 'bayer4', 'bayer8'], 'floyd-steinberg',
+    'Error diffusion or ordered dithering when matching per pixel. Without it a smooth gradient bands.'),
+  f('quant_dither_strength', 'recolor', 0, 1, 0.05, 1,
+    'How hard the dither works. 0 is plain nearest-colour matching.'),
+  f('quant_lightness_weight', 'recolor', 0.25, 8, 0.05, 1,
+    'Weight on lightness versus chroma when matching. Above 1 protects the value structure and lets hue drift.'),
+  i('quant_downscale', 'recolor', 0, 256, 0,
+    'Shrink a source to this width before matching, to get a pixel-art result from a photograph. 0 leaves it alone.'),
+  i('gif_frame', 'recolor', 0, 63, 0,
+    'Which frame the still exports use. The animation itself is always recoloured whole, every frame.'),
 ];
 
 /** Parameter specs looked up by name. */

@@ -17,6 +17,7 @@ import { createHistory, cloneState } from './history.js';
 import { createIO, readSeedFromHash } from './io.js';
 import { createGallery } from './gallery.js';
 import { createPicker } from './picker.js';
+import { createRecolorGallery } from './recolor.js';
 import { sceneUsage } from '../scenes/usage.js';
 
 // Randomize varies the palette's look but leaves structure, hardware and quality alone,
@@ -81,6 +82,15 @@ function boot() {
     pickerReadout: $('picker-readout'),
     pickerSwatch: $('picker-swatch'),
     pickerScore: $('picker-score'),
+    tabRecolor: $('tab-recolor'),
+    recolor: $('recolor'),
+    recolorControls: $('recolor-controls'),
+    recolorList: $('recolor-list'),
+    recolorZoom: $('recolor-zoom'),
+    recolorPicker: $('recolor-picker'),
+    recolorRescan: $('recolor-rescan'),
+    recolorStatus: $('recolor-status'),
+    recolorPersistNote: $('recolor-persist-note'),
   };
 
   // ---- State ----------------------------------------------------------
@@ -208,21 +218,36 @@ function boot() {
     score: dom.pickerScore,
   }, { getUsage });
 
-  /** Switch the middle pane between the gallery and the picker. */
+  const recolor = createRecolorGallery({
+    container: dom.recolorList,
+    zoom: dom.recolorZoom,
+    picker: dom.recolorPicker,
+    rescan: dom.recolorRescan,
+    persistNote: dom.recolorPersistNote,
+  }, { onStatus: (text) => { dom.recolorStatus.textContent = text; } });
+
+  // The three views of the middle pane. Only one is built and animating at a time — the
+  // gallery, the picker and the recolour page are all expensive enough that leaving a
+  // hidden one running would be felt.
+  const TABS = [
+    { name: 'gallery', tab: dom.tabGallery, body: dom.gallery, controls: dom.galleryControls },
+    { name: 'picker', tab: dom.tabPicker, body: dom.picker, controls: dom.pickerControls },
+    { name: 'recolor', tab: dom.tabRecolor, body: dom.recolor, controls: dom.recolorControls },
+  ];
+
+  /** Switch the middle pane between the gallery, the picker and the recolour page. */
   function showTab(name) {
-    const onPicker = name === 'picker';
-    dom.tabGallery.classList.toggle('is-active', !onPicker);
-    dom.tabPicker.classList.toggle('is-active', onPicker);
-    dom.tabGallery.setAttribute('aria-selected', String(!onPicker));
-    dom.tabPicker.setAttribute('aria-selected', String(onPicker));
-    dom.gallery.hidden = onPicker;
-    dom.galleryControls.hidden = onPicker;
-    dom.picker.hidden = !onPicker;
-    dom.pickerControls.hidden = !onPicker;
-    picker.setActive(onPicker);
+    for (const t of TABS) {
+      const on = t.name === name;
+      t.tab.classList.toggle('is-active', on);
+      t.tab.setAttribute('aria-selected', String(on));
+      t.body.hidden = !on;
+      t.controls.hidden = !on;
+    }
+    picker.setActive(name === 'picker');
+    recolor.setActive(name === 'recolor');
   }
-  dom.tabGallery.addEventListener('click', () => showTab('gallery'));
-  dom.tabPicker.addEventListener('click', () => showTab('picker'));
+  for (const t of TABS) t.tab.addEventListener('click', () => showTab(t.name));
 
   // ---- Core loop ------------------------------------------------------
   /** Regenerate the palette from state and repaint every dependent view. */
@@ -232,6 +257,7 @@ function boot() {
     sliders.render(state.params);
     gallery.render(palette);
     picker.render(palette);
+    recolor.render(palette, state.params);
     io.updateSeed(palette.seed);
     renderMeta();
   }

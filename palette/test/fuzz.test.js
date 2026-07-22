@@ -105,9 +105,20 @@ test(`${CASES} randomised parameter sets produce well-formed palettes`, () => {
       }
     }
 
-    // Ordering invariants only hold where the output grid can express them; at 1 or 2
-    // bits per channel there are fewer legal colours than slots.
-    if (fineGrained && params.gamut_map_mode !== 'clip') {
+    // "The anchors are the extremes" is asserted only on the feasible cases, and only where
+    // the output grid is fine enough to express an ordering. Both restrictions are earned:
+    //
+    // - **Feasible only.** Repair may move an anchor off the extreme when the requested
+    //   constraints cannot all be met — an infeasible `min_delta_e` against a crowd of dark
+    //   slots pushed one dark anchor from a requested L of 0.10 to 0.46. That is repair
+    //   doing its job and saying so in `palette.warnings`, not the structure being wrong.
+    // - **Fine-grained only.** Near black one legal step outweighs the gap: a dark anchor
+    //   requested at L=0.026 quantises to #000600 (L=0.106) while a background requested
+    //   *above* it at L=0.070 quantises to #000000 (L=0).
+    //
+    // `generate.test.js` asserts the same thing on the achieved colours under default
+    // parameters, which is where the guarantee actually has to hold.
+    if (feasible && fineGrained && params.gamut_map_mode === 'chroma-reduce') {
       for (const e of palette.entries) {
         if (e === dark || e === light) continue;
         assert.ok(e.actual.L >= dark.actual.L, `${where()}: ${e.id} is darker than universal_dark`);

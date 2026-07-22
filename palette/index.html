@@ -47,6 +47,7 @@
         <div class="tabs" role="tablist">
           <button id="tab-gallery" class="tab is-active" role="tab" aria-selected="true">Gallery</button>
           <button id="tab-picker" class="tab" role="tab" aria-selected="false">Picker</button>
+          <button id="tab-recolor" class="tab" role="tab" aria-selected="false">Recolour</button>
         </div>
         <div id="gallery-controls" class="pane-head-controls">
           <select id="gallery-category" title="Filter scenes by category"></select>
@@ -76,6 +77,20 @@
           <button id="picker-export" class="btn btn-small" title="Export the current view as a high-resolution PNG">PNG</button>
           <button id="picker-sheet" class="btn btn-small" title="Export a contact sheet of all 15 arrangement layouts">Sheet</button>
         </div>
+        <div id="recolor-controls" class="pane-head-controls" hidden>
+          <select id="recolor-zoom" title="Zoom level">
+            <option value="1">1×</option>
+            <option value="2" selected>2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+          </select>
+          <label class="btn btn-small" title="Add PNG, JPEG or GIF reference images">
+            Add images…
+            <input id="recolor-picker" type="file" accept="image/png,image/jpeg,image/gif" multiple hidden />
+          </label>
+          <button id="recolor-rescan" class="btn btn-small" title="Re-read palette/reference/ — use this after copying files into the folder by hand">Rescan folder</button>
+          <span id="recolor-status" class="meta"></span>
+        </div>
       </div>
       <div id="gallery" class="scroll gallery-grid"></div>
       <div id="picker" class="scroll picker-body" hidden>
@@ -86,6 +101,14 @@
           <span id="picker-score" class="meta"></span>
         </div>
         <p class="picker-hint">Hover to read a colour, click to copy its hex. A map's position always means the same thing but may not reach every colour; a layout shows every colour but moves them when the palette changes.</p>
+      </div>
+      <div id="recolor" class="scroll recolor-body" hidden>
+        <p class="picker-hint">
+          Every reference image in the generated palette. Drop PNG, JPEG or GIF files anywhere here to add your own —
+          animations are recoloured in full and play back at their own speed.
+          <span id="recolor-persist-note" hidden>Running without the local server, so added images last for this session only.</span>
+        </p>
+        <div id="recolor-list" class="recolor-list"></div>
       </div>
     </section>
 

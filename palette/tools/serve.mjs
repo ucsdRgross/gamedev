@@ -7,16 +7,35 @@
 //   PUT    /api/saves/<name>   <- JSON body, writes saved/<name>.json
 //   DELETE /api/saves/<name>   -> removes saved/<name>.json
 //
+//   GET    /api/reference          -> ["file.png", ...]  (sorted list of image files)
+//   PUT    /api/reference/<file>   <- raw image bytes, writes reference/<file>
+//
+//   GET    /api/ping           -> { app: 'palette-creator', pid, port }
+//   POST   /api/shutdown       -> stops this server (loopback callers only)
+//
+// The last two exist so `start.cmd` can be double-clicked repeatedly: a second run finds
+// the first, asks it to stand down, and takes the port back. See `main()`.
+//
+// The reference folder is the user's own art library for the recolour gallery (PLAN §19.5).
+// It is read back through ordinary static hosting — `/reference/<file>` — so only listing
+// and writing need an endpoint.
+//
 // Everything else is served as a static file from the repo root. Path traversal is
 // refused: a resolved request path that escapes the root is a 403.
 
 import { createServer } from 'node:http';
-import { readFile, readdir, writeFile, unlink, stat } from 'node:fs/promises';
+import { readFile, readdir, writeFile, unlink, stat, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, extname, normalize, sep } from 'node:path';
+import { spawn } from 'node:child_process';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SAVES_DIR = join(ROOT, 'saved');
+const REFERENCE_DIR = join(ROOT, 'reference');
+
+/** Image types the reference folder accepts. Anything else is refused before it hits disk. */
+const REFERENCE_EXTS = ['.png', '.jpg', '.jpeg', '.gif'];
+const MAX_REFERENCE_BYTES = 16 << 20;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -25,6 +44,9 @@ const MIME = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
@@ -38,6 +60,19 @@ export function safeSaveName(raw) {
   return name;
 }
 
+/**
+ * Restrict a reference filename to a safe basename plus an allowed image extension.
+ * Deliberately built on `safeSaveName` rather than beside it — one traversal guard in the
+ * codebase, not two that can drift apart.
+ */
+export function safeReferenceName(raw) {
+  const file = String(raw || '').trim();
+  const ext = extname(file).toLowerCase();
+  if (!REFERENCE_EXTS.includes(ext)) return null;
+  const base = safeSaveName(file.slice(0, -ext.length));
+  return base ? `${base}${ext}` : null;
+}
+
 /** Send a JSON response with the given status. */
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
@@ -49,7 +84,7 @@ function sendJson(res, status, data) {
   res.end(body);
 }
 
-/** Read a full request body as a string, capped so a runaway upload can't exhaust memory. */
+/** Read a full request body as a Buffer, capped so a runaway upload can't exhaust memory. */
 function readBody(req, limit = 1 << 20) {
   return new Promise((resolvePromise, reject) => {
     let size = 0;
@@ -63,7 +98,7 @@ function readBody(req, limit = 1 << 20) {
       }
       chunks.push(c);
     });
-    req.on('end', () => resolvePromise(Buffer.concat(chunks).toString('utf8')));
+    req.on('end', () => resolvePromise(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
@@ -115,7 +150,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === 'PUT') {
     let body;
     try {
-      body = await readBody(req);
+      body = (await readBody(req)).toString('utf8');
       JSON.parse(body); // reject anything that is not valid JSON before it hits disk
     } catch {
       sendJson(res, 400, { error: 'body must be valid JSON' });
@@ -129,6 +164,61 @@ async function handleApi(req, res, pathname) {
   if (req.method === 'DELETE') {
     try {
       await unlink(file);
+      sendJson(res, 200, { ok: true, name });
+    } catch {
+      sendJson(res, 404, { error: 'not found' });
+    }
+    return true;
+  }
+
+  sendJson(res, 405, { error: 'method not allowed' });
+  return true;
+}
+
+/** Handle every /api/reference request; returns true if the request was an API call. */
+async function handleReferenceApi(req, res, pathname) {
+  if (pathname === '/api/reference' || pathname === '/api/reference/') {
+    if (req.method !== 'GET') {
+      sendJson(res, 405, { error: 'method not allowed' });
+      return true;
+    }
+    let files = [];
+    try {
+      files = (await readdir(REFERENCE_DIR)).filter((f) => REFERENCE_EXTS.includes(extname(f).toLowerCase()));
+    } catch {
+      files = []; // the folder simply does not exist yet
+    }
+    sendJson(res, 200, files.sort((a, b) => a.localeCompare(b)));
+    return true;
+  }
+
+  const name = safeReferenceName(decodeURIComponent(pathname.slice('/api/reference/'.length)));
+  if (!name) {
+    sendJson(res, 400, { error: 'invalid reference name' });
+    return true;
+  }
+
+  if (req.method === 'PUT') {
+    let body;
+    try {
+      body = await readBody(req, MAX_REFERENCE_BYTES);
+    } catch {
+      sendJson(res, 413, { error: 'image too large' });
+      return true;
+    }
+    if (!body.length) {
+      sendJson(res, 400, { error: 'empty body' });
+      return true;
+    }
+    await mkdir(REFERENCE_DIR, { recursive: true });
+    await writeFile(join(REFERENCE_DIR, name), body);
+    sendJson(res, 200, { ok: true, name });
+    return true;
+  }
+
+  if (req.method === 'DELETE') {
+    try {
+      await unlink(join(REFERENCE_DIR, name));
       sendJson(res, 200, { ok: true, name });
     } catch {
       sendJson(res, 404, { error: 'not found' });
@@ -172,13 +262,45 @@ async function handleStatic(req, res, pathname) {
   }
 }
 
-/** Build the HTTP server without binding it — the test harness listens on port 0. */
-export function createDevServer() {
+/** Only a caller on this machine may ask the server to stop. */
+function isLoopback(req) {
+  const addr = req.socket.remoteAddress || '';
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+}
+
+/**
+ * Build the HTTP server without binding it — the test harness listens on port 0.
+ * `onShutdown` is what `POST /api/shutdown` calls; without it the route does not exist,
+ * so a server embedded in a test cannot be told to stop.
+ */
+export function createDevServer({ onShutdown = null } = {}) {
   return createServer(async (req, res) => {
     try {
       const pathname = (req.url || '/').split('?')[0];
+      if (pathname === '/api/ping') {
+        sendJson(res, 200, { app: 'palette-creator', pid: process.pid, port: req.socket.localPort });
+        return;
+      }
+      if (pathname === '/api/shutdown') {
+        if (!onShutdown) {
+          sendJson(res, 404, { error: 'not found' });
+        } else if (req.method !== 'POST') {
+          sendJson(res, 405, { error: 'method not allowed' });
+        } else if (!isLoopback(req)) {
+          sendJson(res, 403, { error: 'forbidden' });
+        } else {
+          sendJson(res, 200, { ok: true, stopping: true });
+          // Reply first, then stand down, so the caller knows it was heard.
+          setTimeout(onShutdown, 20);
+        }
+        return;
+      }
       if (pathname === '/api/saves' || pathname.startsWith('/api/saves/')) {
         await handleApi(req, res, pathname);
+        return;
+      }
+      if (pathname === '/api/reference' || pathname.startsWith('/api/reference/')) {
+        await handleReferenceApi(req, res, pathname);
         return;
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -192,15 +314,102 @@ export function createDevServer() {
   });
 }
 
-/** Start listening. Only runs when invoked directly, not when imported by a test. */
-function main() {
-  const port = Number(process.env.PORT) || 5173;
-  const server = createDevServer();
-  server.listen(port, () => {
-    const addr = server.address();
-    const shown = typeof addr === 'object' && addr ? addr.port : port;
-    process.stdout.write(`palette dev server → http://localhost:${shown}\n`);
+/**
+ * Open a URL in the user's browser. Needed by `--open`, which is what lets `start.cmd` be a
+ * double-click rather than a command line (PLAN §19.5) — the server has to be listening
+ * before the browser asks for the page, so it opens from here rather than from the script.
+ */
+function openBrowser(url) {
+  const [cmd, args] = process.platform === 'win32'
+    ? ['cmd', ['/c', 'start', '', url]]
+    : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+  try {
+    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
+  } catch {
+    process.stdout.write('could not open a browser automatically\n');
+  }
+}
+
+/** Ask whoever holds a port to identify itself. `null` means nothing answered. */
+async function probe(port) {
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/ping`, { signal: AbortSignal.timeout(600) });
+    return res.ok ? await res.json() : {};
+  } catch {
+    return null;
+  }
+}
+
+/** Ask a previous instance to stand down, and wait for it to actually let go of the port. */
+async function replaceExisting(port) {
+  const existing = await probe(port);
+  if (existing?.app !== 'palette-creator') {
+    // Either the port is free, or something that is not us has it. Never kill a stranger's
+    // server just because it picked the same port — 5173 is a popular number. The listen
+    // retry below moves us out of the way instead.
+    return existing === null;
+  }
+  process.stdout.write(`replacing the palette server already on port ${port} (pid ${existing.pid})\n`);
+  try {
+    await fetch(`http://127.0.0.1:${port}/api/shutdown`, { method: 'POST', signal: AbortSignal.timeout(1000) });
+  } catch {
+    // An older build with no shutdown route. Fall through: the retry finds another port.
+  }
+  for (let i = 0; i < 20; i++) {
+    if (await probe(port) === null) return true;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return false;
+}
+
+/** Listen on `port`, stepping to the next one if something else already has it. */
+function listenFrom(server, port, attempts = 20) {
+  return new Promise((resolvePromise, reject) => {
+    let current = port;
+    let left = attempts;
+    const onError = (err) => {
+      if (err.code !== 'EADDRINUSE' || left-- <= 0) {
+        reject(err);
+        return;
+      }
+      current += 1;
+      server.listen(current);
+    };
+    server.on('error', onError);
+    server.once('listening', () => {
+      server.off('error', onError);
+      resolvePromise(current);
+    });
+    server.listen(current);
   });
+}
+
+/** Start listening. Only runs when invoked directly, not when imported by a test. */
+async function main() {
+  const port = Number(process.env.PORT) || 5173;
+
+  // `start.cmd` passes --replace, because being double-clicked again is how the app gets
+  // restarted. Without it a second run would just die on EADDRINUSE.
+  if (process.argv.includes('--replace')) await replaceExisting(port);
+
+  let server;
+  const stop = () => {
+    // `close` releases the listening socket at once — that is what the replacement waits
+    // for — but its callback only fires once every open connection has finished, and a
+    // keep-alive socket (the browser's, or the replacement's own probe, which `fetch`
+    // pools) would otherwise hold it open. `closeAllConnections` drops those; the timer is
+    // a backstop, because a process being replaced must not outlive the handover.
+    server.close(() => process.exit(0));
+    server.closeAllConnections?.();
+    setTimeout(() => process.exit(0), 500);
+  };
+  server = createDevServer({ onShutdown: stop });
+
+  const bound = await listenFrom(server, port);
+  const url = `http://localhost:${bound}`;
+  if (bound !== port) process.stdout.write(`port ${port} is taken by something else\n`);
+  process.stdout.write(`palette dev server → ${url}\n`);
+  if (process.argv.includes('--open')) openBrowser(url);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

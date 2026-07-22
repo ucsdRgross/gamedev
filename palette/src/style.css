@@ -282,6 +282,28 @@ input[type="file"] { font-size: 11px; color: var(--text-dim); width: 100%; }
 .picker-readout { font-family: var(--mono); font-size: 11px; color: var(--text-dim); min-height: 14px; }
 .picker-hint { font-size: 10px; color: var(--text-faint); margin: 0; }
 
+/* ---- Recolour gallery -------------------------------------------------- */
+.recolor-body { display: flex; flex-direction: column; gap: 8px; }
+.recolor-list { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+.recolor-list.is-dropping { outline: 2px dashed var(--accent, #7aa2f7); outline-offset: 4px; }
+.recolor-card {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--bg-2); padding: 8px;
+}
+.recolor-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.recolor-title { font-size: 12px; font-weight: 600; }
+.recolor-head .btn { margin-left: auto; }
+.recolor-pair { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.recolor-slot { display: flex; flex-direction: column; gap: 3px; }
+.recolor-slot-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint);
+}
+.recolor-canvas {
+  display: block; image-rendering: pixelated;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 3px;
+  max-width: 100%;
+}
+
 /* ---- I/O drawer ------------------------------------------------------- */
 .io-drawer { flex: 0 0 auto; border-top: 1px solid var(--line); background: var(--bg-2); }
 .io-drawer > summary {

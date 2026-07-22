@@ -936,19 +936,24 @@ count against `recolor_indexed_max`.
 
 ### 19.2 Formats
 
-PNG, JPEG and **GIF**. GIF is read as a **still image**: one frame is selected and
-recoloured, and output is written as PNG. Animated GIF output is deliberately out of scope
-for now — writing one needs an LZW *encoder* on top of the decoder, and it can be added
-later without disturbing anything here.
+PNG, JPEG and **GIF**.
 
-Reading a GIF at all still needs an LZW decoder, which is ours to write (no dependencies).
-Since decoding one frame and decoding all of them is nearly the same code, the decoder
-returns every frame and a `gif_frame` parameter selects which to use — `first` (default),
-`last`, or an index. That also means animated output is a small addition later rather than
-a rewrite.
+> **Changed 2026-07-22, by the repo owner, superseding what this section originally said.**
+> A GIF is recoloured **in its entirety and shown animated** — every frame, played back at
+> the source's own timing. The original decision (decode all frames, recolour and show only
+> one) is no longer the spec. `gif_frame` survives only for the *still* outputs that cannot
+> animate — the headless PNG renderer and single-frame export.
 
-The decoder lives in `src/core/` and is therefore usable from both the browser and
-`node --test`.
+Reading a GIF needs an LZW decoder, which is ours to write (no dependencies). The decoder
+returns **every** frame, already composited against its predecessor and disposal method, so
+a caller gets whole displayable frames rather than the sparse patches the file stores. Each
+frame carries its own delay.
+
+The decoder lives in `src/core/`, and so does the encoder that writes the recoloured
+animation back out as a GIF — LZW is pure arithmetic with no platform dependency, and having
+both means an encode/decode round trip is a test rather than an assumption.
+
+Both are therefore usable from the browser and from `node --test`.
 
 ### 19.3 The gallery page
 

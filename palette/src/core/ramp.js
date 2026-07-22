@@ -61,7 +61,11 @@ export function rampLightness(n, params, lMid, bounds) {
     const t = j / (n - 1);
     const eased = lerp(easeCurve(t, params.l_curve), t, params.dither_evenness);
     const L = low + eased * span;
-    out[j] = clamp(lerp(L, 0.5, params.l_range_compress), 0, 1);
+    // Re-clamp into the anchor window, not into [0,1]. `l_range_compress` pulls toward the
+    // mid grey, and when the anchors sit on one side of it — a "dark" anchor above 0.5, say
+    // — that pull can drag a ramp step straight past the anchor it is supposed to stay
+    // inside. Only the anchors may occupy the extremes (see generate.js).
+    out[j] = clamp(lerp(L, 0.5, params.l_range_compress), lo, hi);
   }
 
   // Heavy range compression (or a tiny step) can collapse several steps onto the same

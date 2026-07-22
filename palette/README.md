@@ -26,14 +26,20 @@ argument).
 
 ## Running it
 
+**Double-click `start.cmd`.** It boots the local server and opens the app in your browser —
+no command line needed for anything, including adding your own reference images.
+
+The rest is for working on the code.
+
 ```bash
 npm test
 ```
 
-176 tests: colour-space round-trips against published reference values, gamut mapping,
+276 tests: colour-space round-trips against published reference values, gamut mapping,
 bit-depth quantisation, generator invariants across every palette size from 4 to 64, seed
 round-trips, export round-trips, the dev-server API, the raster/analysis/dither modules, a
-34-scene smoke test, golden snapshots, and a 10,000-case fuzz. Takes about 4.5 minutes;
+34-scene smoke test, the picker layouts and colour-space maps, the recolour paths, the GIF
+codec, golden snapshots, and a 10,000-case fuzz. Takes about 6 minutes;
 `PALETTE_FUZZ_N=200 npm test` shortens the fuzz while iterating.
 
 ```bash
@@ -43,17 +49,20 @@ npm start
 Starts the dependency-free dev server (default `http://localhost:5173/`) and serves the
 browser app: live parameter sliders, a swatch grid with lock/override, undo/redo and a
 history strip, seed field with URL-hash sync, save/load against `saved/*.json`, all eight
-export formats, and the **34-scene test gallery** (category filter, colour-vision views,
-zoom, animation, drag-and-drop photo quantization).
+export formats, the **34-scene test gallery** (category filter, colour-vision views, zoom,
+animation, drag-and-drop photo quantization), the **artist's-palette picker** (colour-space
+maps by default, 15 arrangement layouts behind a selector), and the **recolour page** —
+every reference image re-rendered in the generated palette, animations included, playing.
 
 ```bash
 npm run render
 ```
 
-Writes labelled swatch sheets, export strips, a preset contact sheet, a budget sweep, and
-every gallery scene (per-scene PNGs plus per-category contact sheets, for two palettes) to
-`out/*.png` for direct inspection. These are meant to be looked at — a palette can pass
-every test and still be wrong.
+Writes labelled swatch sheets, export strips, a preset contact sheet, a budget sweep, every
+gallery scene (per-scene PNGs plus per-category contact sheets, for two palettes), the picker
+layouts and colour-space maps, and the recoloured reference images — including real animated
+GIFs in `out/recolor/` — to `out/` for direct inspection. These are meant to be looked at: a
+palette can pass every test and still be wrong.
 
 ```bash
 npm run build

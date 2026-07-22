@@ -15,6 +15,7 @@ const GROUP_LABELS = {
   hardware: 'Hardware / Output',
   quality: 'Quality Constraints',
   meta: 'Meta',
+  recolor: 'Reference Recolouring',
 };
 
 /** Format a numeric value for its spec (ints plain, floats to the step's precision). */

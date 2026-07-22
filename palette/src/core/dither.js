@@ -31,24 +31,39 @@ export function paletteLabs(paletteRgb) {
   return paletteRgb.map((c) => rgb8ToOklab(c));
 }
 
-/** Index of the perceptually nearest palette colour to an `[r,g,b]`. */
-export function nearestIndex(rgb8, labs) {
+/**
+ * Index of the perceptually nearest palette colour to an `[r,g,b]`.
+ *
+ * `lightnessWeight` scales the L term of the distance, which is `quant_lightness_weight`
+ * (PLAN §19.1): above 1 the match protects the value structure and lets hue drift, below 1
+ * it does the opposite. At 1 — the default, and what every scene uses — this is exactly
+ * ΔE_OK, so raising the knob is the only way to change existing behaviour.
+ */
+export function nearestIndex(rgb8, labs, lightnessWeight = 1) {
   const lab = rgb8ToOklab([clamp(rgb8[0], 0, 255), clamp(rgb8[1], 0, 255), clamp(rgb8[2], 0, 255)]);
   let best = 0;
   let bestD = Infinity;
   for (let i = 0; i < labs.length; i++) {
-    const d = deltaEOK(lab, labs[i]);
+    const d = lightnessWeight === 1 ? deltaEOK(lab, labs[i]) : weightedDelta(lab, labs[i], lightnessWeight);
     if (d < bestD) { bestD = d; best = i; }
   }
   return best;
 }
 
+/** ΔE_OK with the lightness axis scaled — the metric `quant_lightness_weight` selects. */
+function weightedDelta(a, b, w) {
+  const dL = (a[0] - b[0]) * w;
+  const da = a[1] - b[1];
+  const db = a[2] - b[2];
+  return 100 * Math.sqrt(dL * dL + da * da + db * db);
+}
+
 /** Map every pixel to its nearest palette colour with no dithering (a baseline). */
-export function quantizeRaster(source, paletteRgb) {
+export function quantizeRaster(source, paletteRgb, { lightnessWeight = 1 } = {}) {
   const labs = paletteLabs(paletteRgb);
   const out = new Raster(source.w, source.h, null);
   for (let i = 0; i < source.data.length; i += 3) {
-    const idx = nearestIndex([source.data[i], source.data[i + 1], source.data[i + 2]], labs);
+    const idx = nearestIndex([source.data[i], source.data[i + 1], source.data[i + 2]], labs, lightnessWeight);
     const c = paletteRgb[idx];
     out.data[i] = c[0]; out.data[i + 1] = c[1]; out.data[i + 2] = c[2];
   }
@@ -60,7 +75,7 @@ export function quantizeRaster(source, paletteRgb) {
  * classic behaviour) while the colour choice is perceptual, which keeps gradients smooth
  * without the hue drift naive RGB matching causes.
  */
-export function floydSteinberg(source, paletteRgb) {
+export function floydSteinberg(source, paletteRgb, { lightnessWeight = 1, strength = 1 } = {}) {
   const { w, h } = source;
   const labs = paletteLabs(paletteRgb);
   // Working buffer of floats so diffused error can push a pixel across a palette boundary.
@@ -74,11 +89,13 @@ export function floydSteinberg(source, paletteRgb) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 3;
       const cur = [buf[i], buf[i + 1], buf[i + 2]];
-      const idx = nearestIndex(cur, labs);
+      const idx = nearestIndex(cur, labs, lightnessWeight);
       const chosen = paletteRgb[idx];
       out.data[i] = chosen[0]; out.data[i + 1] = chosen[1]; out.data[i + 2] = chosen[2];
       for (let ch = 0; ch < 3; ch++) {
-        const err = cur[ch] - chosen[ch];
+        // `strength` scales how much error is passed on: 0 is plain nearest-colour, 1 the
+        // textbook filter. Anything above 1 amplifies error and is not offered.
+        const err = (cur[ch] - chosen[ch]) * strength;
         add(x + 1, y, ch, err, 7 / 16);
         add(x - 1, y + 1, ch, err, 3 / 16);
         add(x, y + 1, ch, err, 5 / 16);
@@ -94,7 +111,7 @@ export function floydSteinberg(source, paletteRgb) {
  * offset before matching, so flat regions between two palette levels resolve into a
  * stable checkerboard rather than a hard band. `strength` is the nudge amplitude in sRGB.
  */
-export function orderedDither(source, paletteRgb, { size = 4, strength = 48 } = {}) {
+export function orderedDither(source, paletteRgb, { size = 4, strength = 48, lightnessWeight = 1 } = {}) {
   const { w, h } = source;
   const matrix = size === 8 ? BAYER8 : BAYER4;
   const n = matrix.length;
@@ -106,7 +123,7 @@ export function orderedDither(source, paletteRgb, { size = 4, strength = 48 } = 
       const i = (y * w + x) * 3;
       const offset = (matrix[y % n][x % n] / denom - 0.5) * strength;
       const nudged = [source.data[i] + offset, source.data[i + 1] + offset, source.data[i + 2] + offset];
-      const c = paletteRgb[nearestIndex(nudged, labs)];
+      const c = paletteRgb[nearestIndex(nudged, labs, lightnessWeight)];
       out.data[i] = c[0]; out.data[i + 1] = c[1]; out.data[i + 2] = c[2];
     }
   }

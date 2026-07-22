@@ -7,26 +7,33 @@ If this file is missing or looks stale, rebuild it using the state-detection
 procedure in [PLAN.md](PLAN.md) §18. Verify with `npm test`, never by trusting
 that a file exists.
 
-## Resume here → task 5.1
+## Every phase in the plan is complete and gated.
 
-Phases 1–4b are complete and gated. **One further phase is specified and not started:**
+`npm test` is green at **281 tests** (~6 minutes; the 10,000-case fuzz dominates).
+**Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
+again is a **restart**: it takes the port back from the previous instance (ping + shutdown
+handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
+parameters, the 34-scene gallery, the picker (colour-space maps by default, the 15
+arrangement layouts behind the view selector), and the recolour page — whose **Rescan
+folder** button re-reads `reference/` so files copied in by hand appear without a restart.
 
-- **Phase 5 — reference recolouring** ([PLAN.md](PLAN.md) §19, design notes in
-  [ARCHITECTURE.md](ARCHITECTURE.md) §12). Recolour a folder of reference images into the
-  generated palette and show them all on one page.
+**The recolour gallery is lazy** (ARCHITECTURE §12.5): with a real library — the owner's is
+82 files, mostly large multi-frame GIFs at 1.3–1.9 s to decode each — a card decodes and
+recolours only when it scrolls on screen. Eager loading froze the page for two minutes. The
+visibility sweep measures against the `.scroll` pane and runs on a timeout, not an
+`IntersectionObserver`, so it works in a backgrounded tab and under headless verification.
+`npm run render` writes every preset, scene, layout, map and recoloured reference to `out/`,
+and prints the layout ranking, the map coverage figures and the recolour mode decisions.
+`npm run build` produces the 550 KB single-file `dist/palette_creator.html`.
 
-The delivery question ("no command line anywhere") **is settled**: option C, launcher as the
-normal path — see ARCHITECTURE §12.3, which also records the two image sources the UI has to
-handle and the degrade-in-standalone pattern to follow.
+**Before touching `src/core/recolor/` or `src/core/gif.js`, read
+[ARCHITECTURE.md](ARCHITECTURE.md) §12.5–12.6** — the assignment strategies, why frame
+coherence is not a `map`, the LZW performance trap that cost 76 seconds a frame, and the two
+generator/test bugs the phase surfaced.
 
-## Phases 1–4b are complete and gated.
-
-`npm test` is green at **228 tests** (~4.5 minutes; the 10,000-case fuzz dominates).
-`npm start` runs the app: parameters, the 34-scene gallery, and the picker — colour-space
-maps by default, the 15 arrangement layouts behind the view selector.
-`npm run render` writes every preset, scene, layout and map to `out/`, and prints the layout
-ranking and the map coverage figures. `npm run build` produces the 463 KB single-file
-`dist/palette_creator.html`, picker included.
+**Spec change, 2026-07-22, by the repo owner:** a GIF is recoloured **whole and shown
+animated**, superseding the original "single frame, no encoder" decision. PLAN §19.2 and
+ARCHITECTURE §12.1 are both marked where they changed.
 
 **Before touching `src/core/layout/`, read [ARCHITECTURE.md](ARCHITECTURE.md) §11** — it
 records what the ranking actually measured, the three dead ends that cost real time, why
@@ -150,16 +157,21 @@ it by forcing colours in; that is what the swatch strip is for.
 
 ## Phase 5 — Reference-image recolouring (PLAN §19)
 
-- [ ] **5.1 Image buffer contract** — recolour operates on `{ width, height, data }` RGB8 buffers in `src/core/`; no DOM, no Node built-ins, no file formats. Decoding stays at the edges (ARCHITECTURE §12.1).
-- [ ] **5.2 Indexed remap** — `src/core/recolor/indexed.js`: extract source colours, map source palette → target palette once, apply as a lookup. `remap_match` (delta-e / lightness-rank / optimal), `remap_preserve_order`, `remap_overflow`.
-- [ ] **5.3 Indexed tests** — output contains only target colours; **a source colour maps to the same target colour everywhere**; `remap_preserve_order` is genuinely monotonic in lightness. *Done when:* green.
-- [ ] **5.4 Quantize** — `src/core/recolor/quantize.js`: per-pixel nearest with `quant_dither` (none / floyd-steinberg / bayer4 / bayer8), `quant_dither_strength`, `quant_lightness_weight`, `quant_downscale`. Reuses `src/core/dither.js`.
-- [ ] **5.5 Quantize tests** — only target colours emitted; dithering deterministic; `quant_lightness_weight` demonstrably trades hue accuracy for value accuracy. *Done when:* green.
-- [ ] **5.6 Mode selection** — `recolor_mode` auto / indexed / quantize, `auto` deciding on the source's unique-colour count. Tested: pixel art picks indexed, a photograph picks quantize.
-- [ ] **5.7 GIF decoder** — `src/core/gif.js`: LZW decode, all frames returned, `gif_frame` selecting first/last/index. **Read-only and single-frame — no encoder** (decided 2026-07-22, PLAN §19.2). No dependencies (ARCHITECTURE §12.1).
-- [ ] **5.8 GIF tests** — an animated fixture decodes to the right frame count and dimensions; `gif_frame` selects the frame it claims to; a decoded frame recolours like any other image. *Done when:* green.
-- [ ] **5.9 Example references** — committed/generated example images including an animated GIF and a large-colour-count synthetic photograph, so the gallery is never empty and the tests have real data.
-- [ ] **5.10 Import without a command line** — double-clickable `start.cmd` boots the server and opens the browser; drag-and-drop plus a folder picker in the app; images persist to `palette/reference/` through a `GET/PUT /api/reference` endpoint reusing `safeSaveName`. Degrades to in-session-only in the standalone build, like the saves UI (ARCHITECTURE §12.3).
-- [ ] **5.11 Recolour gallery page** — every reference image together, user's and generated, original beside recoloured, with mode and unique-colour count, updating live with the palette.
-- [ ] **5.12 Parameters** — the §19.1 knobs into `params.js` so they are seed-encoded and slider-driven like everything else.
-- [ ] **5.13 GATE 5** — tests green against the committed examples; the gallery rendered and **read**; driven end to end in the browser with no command line.
+Two bugs surfaced here that are **not** in the recolour code — new parameters shifted the
+fuzz's random stream into corners it had never reached. `l_range_compress` could drag a ramp
+step past an anchor (fixed in `ramp.js`; no preset changed), and the fuzz's
+"anchors are the extremes" assertion was overreaching. ARCHITECTURE §12.6 has the numbers.
+
+- [x] **5.1 Image buffer contract** — `src/core/recolor/image.js`: `uniqueColors`, `countUniqueColors`, `mapColors`, `downscale`. The buffer **is a `Raster`** (`{ w, h, data }`), not the `{ width, height, data }` §12.1 described — a deliberate deviation so `dither.js`, the scenes, the exporters and the renderer all keep working without an adapter. Reasoning in ARCHITECTURE §12.5.
+- [x] **5.2 Indexed remap** — `src/core/recolor/indexed.js`. `delta-e` / `lightness-rank` / `optimal` (Jonker–Volgenant rectangular assignment, roles swapped on overflow so every target still appears), `remap_preserve_order` as a monotone dynamic program rather than a repair pass, `remap_overflow` share/merge with merge doing weighted k-means in OKLab.
+- [x] **5.3 Indexed tests** — `test/recolor-indexed.test.js` green (12 tests): only target colours, **a source colour maps to the same target everywhere** across every match × overflow combination, `remap_preserve_order` genuinely monotonic *with* a negative control proving unconstrained matching is not, no target reused while one is free, and the assignment solver checked against brute force over every injective mapping.
+- [x] **5.4 Quantize** — `src/core/recolor/quantize.js`, reusing `src/core/dither.js`, which gained an optional `lightnessWeight` and a Floyd–Steinberg `strength`. Both default to today's behaviour, so no scene moved.
+- [x] **5.5 Quantize tests** — `test/recolor-quantize.test.js` green (12 tests): only target colours from every dither mode, deterministic, strength 0 collapsing to plain nearest, and `quant_lightness_weight` asserted as a **trade** — value error must fall *and* chroma error must rise.
+- [x] **5.6 Mode selection** — `src/core/recolor/index.js`: `chooseMode` reports the mode, the colour count and the reason, so the gallery can show why. Tested both directions, including that the threshold is honoured when moved.
+- [x] **5.7 GIF codec** — `src/core/gif.js`: LZW decode **and encode**. Frames come out already composited against disposal and transparency, each with its own delay; `gif_frame` survives only for still exports. *(The "read-only, single-frame" decision was superseded by the repo owner.)*
+- [x] **5.8 GIF tests** — `test/gif.test.js` green (14 tests): a **hand-assembled** GIF whose LZW payload is written independently of our encoder, frame count/size/colours/delays, LZW round trips through dictionary growth and reset, animation round trips, and frame-coherent recolouring. Cross-checked at the gate against Chrome's own decoder — pixel-identical.
+- [x] **5.9 Example references** — `src/core/recolor/samples.js`: six deterministic images (sprite, tileset, portrait, landscape, torch animation, orbiting sphere) covering both modes in both still and animated form. Generated, not committed as blobs. `test/recolor-samples.test.js` green (6 tests), including byte-identical regeneration.
+- [x] **5.10 Import without a command line** — double-clickable `start.cmd` boots the server and opens the browser via `serve.mjs --open`; `--replace` makes a second double-click a restart (ping/shutdown handshake, loopback-only, never kills a stranger on the port). `GET/PUT/DELETE /api/reference` built on `safeReferenceName`, itself built on the existing `safeSaveName`. Drag-and-drop, a file picker, and a **Rescan folder** button. `test/serve.test.js` green (14 tests, including the two-process replace handshake end to end).
+- [x] **5.11 Recolour gallery page** — `src/ui/recolor.js` + a third tab. Every reference image, original beside recoloured, with origin, colour count, chosen mode and frame count. **Animations play**, both sides, on one shared timer that only advances visible cards. **Lazy**: a card fetches, decodes and recolours only when scrolled on screen — mandatory once the library is more than a handful of large GIFs (ARCHITECTURE §12.5). PNG export for stills, animated GIF for animations.
+- [x] **5.12 Parameters** — the ten §19.1 knobs appended to `params.js` after `seed`, so old PAL1 seeds still decode. Snapshots re-recorded after confirming all 20 presets' colours were byte-identical and only the seed string grew.
+- [x] **5.13 GATE 5** — `npm test` green (276, full fuzz). Rendered and **read** `out/recolor-sheet-{default,gameboy}.png`. Drove the whole page in-browser: 6 cards with correct modes and counts, both sides animating, drag-and-drop persisting through the API to `palette/reference/`, every recolour parameter reaching the output, GIF and PNG exports, and the standalone build. Reported to the user.

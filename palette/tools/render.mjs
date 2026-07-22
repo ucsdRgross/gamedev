@@ -5,7 +5,7 @@
 // Phase 1 output: a labelled swatch sheet per preset, the raw 1px export strips, a
 // contact sheet of every preset, and a size sweep of the defaults.
 
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Surface, readableOn, textWidth } from './surface.mjs';
@@ -20,6 +20,10 @@ import { Raster } from '../src/core/raster.js';
 import { rankLayouts } from '../src/core/layout/index.js';
 import { contactSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
 import { MAP_GEOMETRIES, buildMapSlices, mapFidelity } from '../src/core/layout/colorspace.js';
+import { builtinSamples } from '../src/core/recolor/samples.js';
+import { recolorFrames } from '../src/core/recolor/index.js';
+import { countUniqueColors } from '../src/core/recolor/image.js';
+import { encodeGif } from '../src/core/gif.js';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'out');
 const BG = [22, 22, 28];
@@ -175,6 +179,61 @@ function renderMaps(palette, tag) {
   });
 }
 
+/**
+ * Render the reference recolouring (PLAN §19.3): every built-in sample, original above
+ * recoloured, as one sheet per palette. Animations are laid out as filmstrips, because a
+ * PNG cannot animate — and written out as real animated GIFs beside the sheet, which is the
+ * form the app actually produces.
+ */
+function renderRecolor(palette, tag) {
+  const pad = 8;
+  const label = 8;
+  const scale = 2;
+  const samples = builtinSamples();
+  const rows = samples.map((s) => {
+    const result = recolorFrames(s.frames, palette, {});
+    // A still PNG cannot animate, so an animation becomes a filmstrip — capped, because a
+    // long one would set the width of the whole sheet and leave every other row in a desert
+    // of background. The real animations are written beside the sheet as GIFs.
+    const strip = (frames) => {
+      const shown = frames.slice(0, 8);
+      const first = shown[0].image;
+      const r = new Raster(first.w * shown.length + 2 * (shown.length - 1), first.h, BG);
+      shown.forEach((f, i) => r.blit(f.image, i * (first.w + 2), 0));
+      return r.scaled(scale);
+    };
+    return { sample: s, result, before: strip(s.frames), after: strip(result.frames) };
+  });
+
+  const width = pad * 2 + Math.max(...rows.map((r) => r.before.w));
+  const height = pad + rows.reduce((n, r) => n + label * 2 + r.before.h + r.after.h + pad * 2, 0);
+  const sheet = new Raster(width, height, BG);
+  let y = pad;
+  for (const row of rows) {
+    const unique = countUniqueColors(row.sample.frames[0].image);
+    sheet.text(`${row.sample.title.toUpperCase()}  ${unique} COLOURS  ${row.result.mode.toUpperCase()}`, pad, y, 1, INK);
+    y += label;
+    sheet.blit(row.before, pad, y);
+    y += row.before.h + 2;
+    sheet.blit(row.after, pad, y);
+    y += row.after.h + pad;
+
+    if (row.sample.kind === 'animated') {
+      writeFileSync(
+        join(OUT, 'recolor', `${tag}-${row.sample.id}.gif`),
+        encodeGif(row.result.frames, palette.entries.map((e) => e.rgb8)),
+      );
+    }
+  }
+  saveRaster(sheet, join(OUT, `recolor-sheet-${tag}.png`));
+  return rows.map((r) => ({
+    id: r.sample.id,
+    mode: r.result.mode,
+    unique: countUniqueColors(r.sample.frames[0].image),
+    frames: r.sample.frames.length,
+  }));
+}
+
 /** Render every preset, the contact sheet, and a size sweep of the defaults. */
 function main() {
   rmSync(OUT, { recursive: true, force: true });
@@ -234,6 +293,11 @@ function main() {
   const maps = renderMaps(pickerPalette, 'default48');
   renderMaps(generatePalette(presetParams('neon-cyberpunk')), 'neon');
 
+  // Reference recolouring: the same two palettes, so the sheets can be read side by side.
+  mkdirSync(join(OUT, 'recolor'), { recursive: true });
+  const recoloured = renderRecolor(generatePalette(defaultParams()), 'default');
+  renderRecolor(generatePalette(presetParams('gameboy')), 'gameboy');
+
   const strip = toPngStrip(generatePalette(defaultParams()), { cell: 1, height: 1 });
   console.log(`rendered ${PRESETS.length} presets and ${sizes.length} sizes to ${OUT}`);
   console.log(`rendered ${SCENES.length} scenes (×2 palettes) + ${CATEGORIES.length} category sheets`);
@@ -247,6 +311,11 @@ function main() {
     const slices = m.slices.map((s) => `s${s.saturation.toFixed(2)} ${s.shownCount}/${m.total} (dE ${s.fidelity.toFixed(1)})`).join('  ');
     console.log(`  ${m.geometry.padEnd(6)} union ${m.shownCount}/${m.total}   ${slices}`);
     if (m.missing.length) console.log(`         reached by no slice: ${m.missing.join(' ')}`);
+  }
+  console.log('reference recolouring (source colours -> chosen mode):');
+  for (const r of recoloured) {
+    const anim = r.frames > 1 ? `${r.frames} frames` : 'still';
+    console.log(`  ${r.id.padEnd(10)} ${String(r.unique).padStart(5)} colours  ${r.mode.padEnd(9)} ${anim}`);
   }
   console.log(`export strip sanity: ${strip.length} bytes`);
   const dirty = summary.filter(({ palette }) => palette.warnings.length);

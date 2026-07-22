@@ -17,8 +17,13 @@ else.
 
 ### Edits made to PLAN.md after it was written
 
-`palette/PLAN.md` started as a copy of the original planning document. Five changes
+`palette/PLAN.md` started as a copy of the original planning document. Six changes
 were made so the committed copy is self-contained and does not mislead:
+
+- **§19.2, GIF handling** — rewritten 2026-07-22 on the repo owner's instruction. A GIF is
+  now recoloured **whole and shown animated**, which reverses the "single frame, no encoder"
+  decision the section originally recorded (and which ARCHITECTURE §12.1 had agreed with).
+  The superseded text is marked in place rather than deleted.
 
 - **§16, the copy-paste handoff prompt** — rewritten. It pointed at an absolute path on
   the author's machine and named PLAN.md as the only document. Use the current version.
@@ -305,8 +310,10 @@ cd palette && npm run render
 Writes `out/presets/*.png` (labelled swatch sheets — role, hex, index), `out/strips/`
 (raw 1px export strips), `out/contact-sheet.png`, `out/size-sweep.png`, `out/sizes/*.png`,
 the gallery scenes (§10), the picker layouts — `out/layouts/<tag>/*.png` plus
-`out/layout-sheet-<tag>.png`, with the ranking printed to stdout — and the colour-space maps,
-`out/maps/<tag>-<geometry>.png`, with the coverage figures printed. **Read these images.**
+`out/layout-sheet-<tag>.png`, with the ranking printed to stdout — the colour-space maps,
+`out/maps/<tag>-<geometry>.png`, with the coverage figures printed, and the reference
+recolouring, `out/recolor-sheet-<tag>.png` plus real animated GIFs in `out/recolor/`.
+**Read these images.**
 They catch things tests do not: a palette can
 satisfy every invariant and still be ugly or off-brief. Both preset retunes in Phase 1
 came from looking at the contact sheet, not from a failing test.
@@ -729,10 +736,10 @@ Two things worth keeping:
 
 ---
 
-## 12. Phase 5 (reference recoloring) — design notes before building
+## 12. Phase 5 (reference recoloring) — built
 
-Spec is [PLAN.md](PLAN.md) §19. Nothing is built yet. What follows is the reasoning that
-should not have to be re-derived, and the decisions that are still open.
+Spec is [PLAN.md](PLAN.md) §19. What follows is the reasoning behind the shape it took;
+§12.5 records what the build actually settled.
 
 ### 12.1 Layering — where decoding is allowed to live
 
@@ -748,10 +755,12 @@ should not have to be re-derived, and the decisions that are still open.
   platform dependency, and putting it in `src/core/gif.js` means the browser and the tests
   share one implementation and a committed `.gif` fixture proves both.
 
-**Decided: GIF is read-only and single-frame** (PLAN §19.2). A GIF is recoloured as a still
-and written out as PNG; no LZW *encoder* is written. The decoder still returns all frames —
-that is nearly the same code as returning one — and `gif_frame` selects among them, so
-animated output can be added later as an addition rather than a rewrite.
+~~**Decided: GIF is read-only and single-frame**~~ — **superseded 2026-07-22 by the repo
+owner.** A GIF is recoloured *whole* and shown animated, so `src/core/gif.js` carries an LZW
+**encoder** as well as the decoder. Both are pure arithmetic and belong in core by the same
+argument that put the decoder there; having the pair also means the round trip is a test
+rather than a hope. `gif_frame` survives only for outputs that cannot animate — the headless
+PNG renderer and the single-frame export.
 
 ### 12.2 Why two modes is not a nicety
 
@@ -794,6 +803,25 @@ So there are two image sources and the UI must handle both without branching eve
 The gallery therefore reads from an in-memory list that is *seeded* from the server when
 one is present, not directly from the network.
 
+**`start.cmd` is a restart, not just a start.** Double-clicking it while it is already
+running must not fail on `EADDRINUSE` — that is how someone reloads after copying files into
+`reference/`. So the launcher passes `--replace`, and `serve.mjs` gained two routes for it:
+`GET /api/ping` (identifies the server — `{ app: 'palette-creator', pid, port }`) and
+`POST /api/shutdown` (loopback callers only, and only wired up in the standalone `main()`, so
+a server embedded in a test can never be told to stop). A `--replace` start pings the port,
+and *only if a palette server answers* asks it to stand down and waits for the socket to free
+— it never kills a stranger that merely picked 5173. The old process drops its keep-alive
+connections and exits, because a process being replaced must not outlive the handover.
+Belt and braces: if the port is held by something that is not us, `listenFrom` steps to the
+next port instead. The whole handshake is exercised end to end against two real child
+processes in `serve.test.js`.
+
+**Copying files in by hand needs no restart either.** The **Rescan folder** button re-lists
+`/api/reference` and reconciles: folder-origin cards are dropped and re-read wholesale (so a
+file deleted on disk disappears), while session-only drag-drops are left alone. Dropped files
+go through `PUT /api/reference` and then the same rescan, so a dropped file and a hand-copied
+one end up on identical footing.
+
 ### 12.4 Committed fixtures
 
 Generated reference images ship with the repo so the gallery is never empty and the tests
@@ -801,3 +829,108 @@ always have real data. They must include at least one **animated** GIF and one i
 large color count (a synthetic photograph), because those exercise the two modes and the
 frame-coherence requirement. Procedurally generated at build time is acceptable and
 preferable to binary blobs, provided the generator is deterministic.
+
+### 12.5 What the build settled
+
+| Module | Role |
+|---|---|
+| `recolor/image.js` | The buffer contract, `uniqueColors`, `countUniqueColors`, `mapColors`, `downscale` |
+| `recolor/indexed.js` | Source-palette → target-palette assignment, applied as a lookup |
+| `recolor/quantize.js` | The §19.1 knobs translated into `dither.js` calls |
+| `recolor/index.js` | `chooseMode`, `recolorImage`, `recolorFrames` |
+| `recolor/samples.js` | The six built-in reference images |
+| `gif.js` | LZW decode **and** encode, whole animations both ways |
+| `ui/recolor.js` | The gallery page, decoding at the edge, one timer for every animation |
+
+**The image buffer is a `Raster`, not a new type.** §12.1 above described it as
+`{ width, height, data }`; using `{ w, h, data }` instead is a deliberate deviation, because
+`dither.js` — which task 5.4 is required to reuse — already takes a Raster, as do the scenes,
+the PNG exporters and `tools/render.mjs`. A second image type differing in two property names
+would need an adapter at every boundary and buy nothing.
+
+**Four assignment strategies, one of which is a real optimisation.** `delta-e` is
+nearest-each. `lightness-rank` is positional on both palettes sorted by L. `optimal` is a
+rectangular assignment solved with the Jonker–Volgenant shortest-augmenting-path method, and
+when the source overflows the target the roles are **swapped** — every target claims a
+distinct source first, so the whole palette appears — with the leftovers taking their
+nearest. `remap_preserve_order` is a dynamic program over both palettes sorted by lightness,
+not a repair pass: `dp[j]` is the cheapest way to place the sources so far with the last at
+rank ≤ j (or < j when `optimal` forbids repeats). The solver is checked against brute force
+over every injective mapping on small matrices, which is the only way to know it is right.
+
+**Frame coherence is why `recolorFrames` is not a `map`.** Deciding per frame lets a colour
+whose share of the picture changes between frames land on a different target in each, which
+reads as the palette flickering. The mapping is built once from the frames' *combined*
+colours and then applied to each — the animated form of the property the indexed path exists
+to guarantee, asserted directly in `test/gif.test.js`.
+
+**The LZW encoder and decoder are verified against something other than each other.**
+`test/gif.test.js` decodes a GIF assembled byte by byte in the test file, whose LZW payload
+is written by an independent literal-code emitter — because testing a decoder only against
+its own encoder proves the pair agree, which is exactly what can be wrong while both are
+broken. (That fixture also documents a trap: a decoder grows its dictionary whether or not
+the encoder uses the new entries, so "literals only" does *not* keep the code width fixed —
+the fixture emits a clear code every two data codes to hold it.) The pair was then checked
+against **Chrome's own GIF decoder** in the browser: our encoder's output loaded as an
+`<img>` and drawn to a canvas came back pixel-identical to our decoder's, 0 of 768 pixels
+differing.
+
+**One performance trap in the decoder.** Finding the first character of a dictionary code by
+walking its prefix chain is O(string length) per code, which made decoding a 40,000-pixel
+frame take 76 seconds. `first[]` carries it forward as entries are added: 51 ms.
+
+**The gallery is lazy, and it has to be.** Six built-in samples hid a scaling problem the
+first cut walked straight into: a real reference library is not small. Measured on the
+owner's — 82 files, most 512×512 GIFs of 20–189 frames — decoding *one* takes 1.3–1.9 s, so
+loading them all up front froze the page for two minutes and re-recolouring them on every
+slider drag was worse. So a card is created from its filename alone and does its work —
+fetch, decode, recolour, paint — only when it scrolls into the viewport, and the animation
+timer only advances cards that are both visible and filled. Two traps this hit:
+
+- **The viewport is the `.scroll` pane, not the content list.** The list's own rect grows to
+  the full content height, so measuring visibility against *it* counts every card as on
+  screen and fetches the whole library at once — the exact thundering herd the laziness
+  exists to prevent. `viewport = container.closest('.scroll')`.
+- **Visibility is a rect sweep, not an `IntersectionObserver`.** IO delivers no callback when
+  the page is not being composited — a backgrounded tab, and headless verification — so a
+  gallery built on it silently loads nothing there. A `getBoundingClientRect` sweep on scroll
+  (coalesced through a `setTimeout`, because rAF is paused in a background tab too) is a few
+  rectangles and works everywhere.
+
+**Colours are counted across frames in place.** `recolorFrames` decides the mode and builds
+the indexed mapping from `uniqueColorsAcross(frames)`, which tallies every frame's pixels
+into one map without concatenating them — a 189-frame 512×512 GIF is 49 M pixels, and joining
+it into one buffer first would cost 147 MB for nothing. The mode is chosen from the union, so
+a colour that appears only in a late frame still counts (asserted in `gif.test.js`).
+
+**Reference images are generated, not committed.** `samples.js` produces six images from
+fixed seeds — flat pixel art and synthetic photographs, still and animated, covering both
+recolour paths in both forms. So the gallery is never empty, the standalone build has the
+same set as the served app, the tests have real data, and the repository holds no binary
+blobs. `palette/reference/` is for the *user's* images only.
+
+**The parameters are appended after `seed`.** Field order is the seed payload's order, so
+appending is the only safe edit (§6). The ten §19.1 knobs change no colour in the palette —
+they decide how reference images are re-rendered into it — but they are seed-encoded like
+everything else, so a pasted seed reproduces the whole view. Adding them lengthened every
+seed string; the golden snapshots were re-recorded after confirming that all 20 presets'
+**colours** were byte-identical and only the seed string had grown.
+
+### 12.6 Two bugs the phase surfaced
+
+Neither is in the recolour code; both were found because new parameters shifted the fuzz's
+random stream into corners it had not previously reached.
+
+- **`l_range_compress` could drag a ramp step past an anchor.** `rampLightness` clamped the
+  compressed value into `[0,1]` rather than into the anchor window, so when the anchors sat
+  on one side of mid grey — a "dark" anchor above 0.5 — the pull toward 0.5 escaped the
+  bound the function's own doc comment promises. Now clamped to `[lo, hi]`. No preset or
+  default palette changed; the snapshots confirm it.
+- **The fuzz's "anchors are the extremes" assertion was overreaching.** It is now asserted
+  only on the feasible cases, at fine bit depths, under `chroma-reduce`. Each restriction is
+  a measurement, not a shrug: repair legitimately moves an anchor when the constraints are
+  infeasible (a requested L of 0.10 became 0.46, with a warning saying so); near black one
+  legal step outweighs the gap (a dark anchor at L=0.026 quantises to #000600 = L 0.106
+  while a background requested *above* it quantises to #000000 = L 0); and `reduce-l-adjust`
+  moves lightness to reach the gamut by design. `generate.test.js` still asserts the
+  achieved ordering under default parameters, which is where it has to hold.
