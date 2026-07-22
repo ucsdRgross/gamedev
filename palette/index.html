@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pixel Palette Creator</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <h1>Pixel Palette Creator</h1>
+    </div>
+    <div class="topbar-controls">
+      <label class="seed-field">
+        <span>Seed</span>
+        <input id="seed-input" type="text" spellcheck="false" autocomplete="off"
+               placeholder="PAL1-…" />
+      </label>
+      <button id="seed-copy" class="btn" title="Copy seed to clipboard">Copy</button>
+      <span class="divider" role="separator"></span>
+      <button id="undo" class="btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button id="redo" class="btn" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+      <button id="randomize" class="btn btn-accent" title="Randomize, keeping locked colours">Randomize</button>
+    </div>
+  </header>
+
+  <main id="layout">
+    <!-- Parameters pane -->
+    <section id="params-pane" class="pane">
+      <div class="pane-head">
+        <h2>Parameters</h2>
+        <div class="pane-head-controls">
+          <select id="preset-select" title="Load a preset parameter set">
+            <option value="">Preset…</option>
+          </select>
+          <button id="reset-defaults" class="btn btn-small" title="Reset every parameter to its default">Defaults</button>
+        </div>
+      </div>
+      <div id="params" class="scroll"></div>
+    </section>
+
+    <!-- Gallery pane -->
+    <section id="gallery-pane" class="pane">
+      <div class="pane-head">
+        <h2>Gallery</h2>
+        <div class="pane-head-controls">
+          <select id="gallery-category" title="Filter scenes by category"></select>
+          <select id="gallery-view" title="Colour-vision view"></select>
+          <select id="gallery-zoom" title="Zoom level">
+            <option value="2">2×</option>
+            <option value="3" selected>3×</option>
+            <option value="4">4×</option>
+          </select>
+          <label class="toggle" title="Animate motion scenes">
+            <input id="gallery-animate" type="checkbox" checked /> anim
+          </label>
+        </div>
+      </div>
+      <div id="gallery" class="scroll gallery-grid"></div>
+    </section>
+
+    <!-- Palette + I/O pane -->
+    <section id="side-pane" class="pane">
+      <div class="pane-head">
+        <h2>Palette</h2>
+        <div class="pane-head-controls"><span id="palette-meta" class="meta"></span></div>
+      </div>
+      <div id="warnings" class="warnings" hidden></div>
+      <div id="swatches" class="scroll"></div>
+      <div id="history-wrap" class="history-wrap">
+        <span class="history-label">History</span>
+        <div id="history" class="history-strip"></div>
+      </div>
+      <details id="io-drawer" class="io-drawer" open>
+        <summary>Save &amp; Export</summary>
+        <div class="io-drawer-body">
+          <div class="io-row">
+            <select id="saves-select"><option value="">Load saved…</option></select>
+            <button id="save-delete" class="btn btn-small" title="Delete the selected save" disabled>Del</button>
+          </div>
+          <div class="io-row">
+            <input id="save-name" type="text" placeholder="name" spellcheck="false" />
+            <button id="save-btn" class="btn btn-small">Save</button>
+          </div>
+          <p id="saves-status" class="io-status"></p>
+          <div id="export-buttons" class="export-grid"></div>
+          <p id="export-status" class="io-status"></p>
+          <div class="io-row"><input id="import-file" type="file" accept=".json,application/json" /></div>
+          <p id="import-status" class="io-status"></p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>

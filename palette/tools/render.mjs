@@ -15,6 +15,8 @@ import { defaultParams } from '../src/core/params.js';
 import { toPngStrip } from '../src/core/export/png.js';
 import { rankReferences } from '../src/core/reference.js';
 import { writePNG } from './png.mjs';
+import { SCENES, CATEGORIES } from '../src/scenes/index.js';
+import { Raster } from '../src/core/raster.js';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'out');
 const BG = [22, 22, 28];
@@ -73,6 +75,68 @@ function contactRow(palette, label, width, rowHeight) {
   return s;
 }
 
+/** Write a Raster straight to a PNG file. */
+function saveRaster(raster, path) {
+  writePNG(path, raster.w, raster.h, raster.data);
+}
+
+/** Render one scene into a fresh scaled Raster. */
+function renderScene(scene, palette, scale, frame = 0) {
+  const r = new Raster(scene.width, scene.height);
+  scene.render(r, palette, { frame });
+  return scale > 1 ? r.scaled(scale) : r;
+}
+
+/**
+ * Compose a category's scenes into one readable contact sheet: each scene scaled up,
+ * three per row, titled with its id. This is the image to actually read at the gate.
+ */
+function sceneSheet(scenes, palette, scale) {
+  const label = 8;
+  const pad = 8;
+  const imgs = scenes.map((s) => renderScene(s, palette, scale));
+  const cols = Math.min(3, scenes.length);
+  const cellW = Math.max(...imgs.map((i) => i.w)) + pad;
+  const rows = Math.ceil(scenes.length / cols);
+  const rowH = [];
+  for (let r = 0; r < rows; r++) {
+    const rowImgs = imgs.slice(r * cols, r * cols + cols);
+    rowH.push(Math.max(...rowImgs.map((i) => i.h)) + label + pad);
+  }
+  const width = pad + cols * cellW;
+  const height = pad + 12 + rowH.reduce((a, b) => a + b, 0);
+  const sheet = new Raster(width, height, BG);
+  sheet.text((scenes[0].category).toUpperCase(), pad, 3, 1, INK);
+  let y = pad + 12;
+  imgs.forEach((img, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = pad + col * cellW;
+    const cy = y + rowH.slice(0, row).reduce((a, b) => a + b, 0);
+    sheet.text(scenes[i].id.toUpperCase().slice(0, Math.floor(cellW / 4)), x, cy, 1, DIM);
+    sheet.blit(img, x, cy + label);
+  });
+  return sheet;
+}
+
+/** Render every scene for a palette: per-scene PNGs plus per-category contact sheets. */
+function renderScenes(palette, tag) {
+  for (const scene of SCENES) {
+    saveRaster(renderScene(scene, palette, 3), join(OUT, 'scenes', tag, `${scene.id}.png`));
+  }
+  for (const cat of CATEGORIES) {
+    const scenes = SCENES.filter((s) => s.category === cat);
+    const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    saveRaster(sceneSheet(scenes, palette, 3), join(OUT, 'scene-sheets', `${tag}-${slug}.png`));
+  }
+  // A few frames of the animated scene, so motion is inspectable as a filmstrip.
+  const anim = SCENES.find((s) => s.animated);
+  if (anim) {
+    const frames = [0, Math.floor(anim.frames / 3), Math.floor((anim.frames * 2) / 3)];
+    frames.forEach((f) => saveRaster(renderScene(anim, palette, 3, f), join(OUT, 'scenes', tag, `${anim.id}-f${f}.png`)));
+  }
+}
+
 /** Render every preset, the contact sheet, and a size sweep of the defaults. */
 function main() {
   rmSync(OUT, { recursive: true, force: true });
@@ -118,8 +182,14 @@ function main() {
   });
   sizeSheet.save(join(OUT, 'size-sweep.png'));
 
+  // Gallery scenes: render for the defaults and for one vivid preset, so role usage is
+  // checked against very different palettes.
+  renderScenes(generatePalette(defaultParams()), 'default');
+  renderScenes(generatePalette(presetParams('neon-cyberpunk')), 'neon');
+
   const strip = toPngStrip(generatePalette(defaultParams()), { cell: 1, height: 1 });
   console.log(`rendered ${PRESETS.length} presets and ${sizes.length} sizes to ${OUT}`);
+  console.log(`rendered ${SCENES.length} scenes (×2 palettes) + ${CATEGORIES.length} category sheets`);
   console.log(`export strip sanity: ${strip.length} bytes`);
   const dirty = summary.filter(({ palette }) => palette.warnings.length);
   if (dirty.length) {

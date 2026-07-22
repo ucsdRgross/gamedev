@@ -7,17 +7,27 @@ If this file is missing or looks stale, rebuild it using the state-detection
 procedure in [PLAN.md](PLAN.md) §18. Verify with `npm test`, never by trusting
 that a file exists.
 
-## Resume here → task 2.1
+## Resume here → task 4.1
 
-Phase 1 is complete and gated: `npm test` is green at 140 tests, `npm run render`
-produces `out/*.png`, and those images were read and confirmed correct.
+Phases 1, 2 and 3 are complete and gated. `npm test` is green at **176 tests**
+(core + dev-server + raster/analysis/dither + 34-scene smoke tests). The app runs under
+`npm start` with the live 34-scene gallery (filter, colour-vision views, zoom, animation,
+drag-and-drop photo quantization). `npm run render` writes every scene to `out/scenes/`
+and per-category contact sheets to `out/scene-sheets/`, all read and confirmed.
 
-**Before writing Phase 2 code, read [ARCHITECTURE.md](ARCHITECTURE.md).** It documents
-the `Palette` object the UI consumes, the three source files that are not in PLAN.md's
-§7 layout and why, the places where the implementation deliberately extends the plan,
-and the limitations that are contracts rather than bugs. Two of its sections will save
-you real time: §1 (the `Palette` shape, and why `oklch` and `actual` are different) and
-§8 (a decision Phase 3 needs made before any scene is written).
+Phase 4 renders into the same `Raster` surface (`src/core/raster.js`) and should add its
+contact sheet to `tools/render.mjs`, mirroring the scene-sheet layout already there.
+
+**Before writing Phase 4 (the artist's-palette picker), read [ARCHITECTURE.md](ARCHITECTURE.md) §10**
+for the Phase 3 contracts (the scene interface, the `Raster` surface, the shared scene
+`util.js` accessors). Phase 4 is `src/core/layout/` + `src/ui/picker.js`; its scoring
+tests (task 4.8) require every optimized layout to beat the ramp-rows baseline.
+
+### Environment note (this machine, 2026-07-22)
+Node was not installed; installed **Node v24.18.0** via winget. Node lives at
+`C:\Program Files\nodejs` but is **not on the tool-shell PATH** — prepend it every
+command: `$env:Path = "C:\Program Files\nodejs;$env:Path"`. Node 24's `node --test`
+rejects a bare directory, so the `test` script is now `node --test test/*.test.js`.
 
 ### Working notes
 
@@ -64,32 +74,32 @@ you real time: §1 (the `Palette` shape, and why `oklch` and `actual` are differ
 
 ## Phase 2 — App
 
-- [ ] **2.1 Dev server** — `tools/serve.mjs`: static hosting + `GET/PUT/DELETE /api/saves`.
-- [ ] **2.2 Shell** — `index.html`, `src/style.css`: three-pane layout.
-- [ ] **2.3 Sliders** — `src/ui/sliders.js`, generated from `params.js`, grouped/collapsible, doc string as tooltip.
-- [ ] **2.4 Swatch grid** — `src/ui/swatches.js`: role, hex, OKLCH readout, lock toggle, override editor.
-- [ ] **2.5 History** — `src/ui/history.js`: undo/redo + 20-deep clickable strip.
-- [ ] **2.6 I/O** — `src/ui/io.js`: seed field, URL-hash sync, preset dropdown, saved dropdown, export buttons.
-- [ ] **2.7 Wiring** — `src/ui/app.js`: live regeneration; randomize respecting locks and overrides.
-- [ ] **2.8 Standalone build** — `tools/build.mjs` → `dist/palette_creator.html`. *Done when:* opens by double-click and generates.
-- [ ] **2.9 GATE 2** — drive the UI with the browser tool; confirm every slider, seed round-trip, save/load, and export. Report to user.
+- [x] **2.1 Dev server** — `tools/serve.mjs`: static hosting + `GET/PUT/DELETE /api/saves`. Covered by `test/serve.test.js` (7 tests: CRUD round-trip, traversal refusal, bad-name/bad-body/404). *Green.*
+- [x] **2.2 Shell** — `index.html`, `src/style.css`: three-pane layout (params / palette / save+export). Computed style confirmed `display:grid`, 3 panes, dark theme.
+- [x] **2.3 Sliders** — `src/ui/sliders.js`, generated from `PARAMS`, grouped/collapsible, doc string as tooltip. 48 range + enum/bool controls rendered from schema.
+- [x] **2.4 Swatch grid** — `src/ui/swatches.js`: role, hex, OKLCH readout, value-only strip, lock toggle, inline override editor, semantic tags.
+- [x] **2.5 History** — `src/ui/history.js`: undo/redo + 20-deep clickable strip; slider drags coalesce to one entry. Undo/redo/restore driven and confirmed.
+- [x] **2.6 I/O** — `src/ui/io.js`: seed field + `#seed=` URL-hash sync, preset dropdown, saved dropdown backed by `/api/saves`, JSON import, all 8 export buttons.
+- [x] **2.7 Wiring** — `src/ui/app.js`: live regeneration on any change; randomize respects locks/overrides (uses seeded PRNG, never `Math.random`).
+- [x] **2.8 Standalone build** — `tools/build.mjs` → `dist/palette_creator.html`. Flat import-map + base64 data-URL modules. Loads and generates with no server (verified over http; file:// double-click not drivable via the browser tool but is protocol-independent).
+- [x] **2.9 GATE 2** — drove the UI in the browser: every slider moves output, seed round-trips exactly, save/load/delete hit the dev server, all 8 exports produce correct files, randomize keeps locked colours, override + undo/redo + presets + reset all work. Reported to user.
 
 ## Phase 3 — Test visual gallery
 
-- [ ] **3.1 Scene registry + gallery** — `src/scenes/index.js`, `src/ui/gallery.js`.
-- [ ] **3.2 Analysis module** — `src/core/analysis.js`: Viénot colorblind matrices, value view, ramp evenness.
-- [ ] **3.3 Dithering module** — `src/core/dither.js`: Floyd-Steinberg, Bayer 4×4 and 8×8.
-- [ ] **3.4 Scenes 1–6** — palette structure.
-- [ ] **3.5 Scenes 7–10** — form and shading.
-- [ ] **3.6 Scenes 11–19** — sprites.
-- [ ] **3.7 Scenes 20–24** — scenes.
-- [ ] **3.8 Scenes 25–26** — UI and text legibility.
-- [ ] **3.9 Scenes 27–31** — dithering and gradients.
-- [ ] **3.10 Scene 32** — animated.
-- [ ] **3.11 Scene 33** — photo quantization (drag-drop + 3 synthetic references).
-- [ ] **3.12 Scene 34** — side-by-side reference compare with ΔE fit score.
-- [ ] **3.13 Extend renderer** — every static scene to `out/`.
-- [ ] **3.14 GATE 3** — render all scenes, **read the PNGs**, confirm in-browser. Report to user.
+- [x] **3.1 Scene registry + gallery** — `src/scenes/index.js` (34 scenes, 8 categories) + `src/ui/gallery.js`: scrollable, category filter, colour-vision view select, zoom, animate toggle, drag-drop photo quant. Driven in-browser.
+- [x] **3.2 Analysis module** — `src/core/analysis.js`: Viénot dichromat matrices (linear-RGB), OKLCH value view, `applyView`, ramp evenness. `test/analysis.test.js` green.
+- [x] **3.3 Dithering module** — `src/core/dither.js`: Floyd–Steinberg + Bayer 4×4/8×8, perceptual nearest-match. `test/dither.test.js` green.
+- [x] **3.4 Scenes 1–6** — `src/scenes/structure.js`: swatch grid, ramp strips, value view, OKLCH scatter, ΔE heatmap, colorblind board.
+- [x] **3.5 Scenes 7–10** — `src/scenes/form.js`: lit spheres per ramp, iso cube, cylinder, material studies.
+- [x] **3.6 Scenes 11–19** — `src/scenes/sprites.js`: 16/32 char, outline modes, sprite-over-every-bg, palette-swap, items, combat, skin, foliage.
+- [x] **3.7 Scenes 20–24** — `src/scenes/worlds.js`: parallax, dungeon, day/dusk/night, tileset, full screenshot.
+- [x] **3.8 Scenes 25–26** — `src/scenes/ui.js`: UI mockup + WCAG text-legibility matrix.
+- [x] **3.9 Scenes 27–31** — `src/scenes/gradients.js`: dither pairs, Bayer ramps, sky gradient, 1px noise, zoom.
+- [x] **3.10 Scene 32** — `src/scenes/motion.js`: animated water cycle / torch flicker / day-night sweep.
+- [x] **3.11 Scene 33** — `src/scenes/benchmark.js` photo-quant: 3 procedural references (sphere/flesh/hazy) + gallery drag-drop.
+- [x] **3.12 Scene 34** — `src/scenes/benchmark.js` reference-compare: our palette vs 2 nearest embedded refs with ΔE fit scores.
+- [x] **3.13 Extend renderer** — `tools/render.mjs` writes every scene ×2 palettes to `out/scenes/` + 8 category contact sheets to `out/scene-sheets/`.
+- [x] **3.14 GATE 3** — rendered all scenes, read the PNGs (all 8 category sheets), confirmed the live gallery in-browser (filter/view/zoom/anim/palette-follow). Reported to user.
 
 ## Phase 4 — Artist's-palette picker
 

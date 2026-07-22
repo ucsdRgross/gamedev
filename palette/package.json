@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Procedural pixel-art color palette generator in OKLCH space",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "start": "node tools/serve.mjs",
     "build": "node tools/build.mjs",
     "render": "node tools/render.mjs"

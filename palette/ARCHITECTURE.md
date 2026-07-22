@@ -6,8 +6,10 @@ later phases build on** and the **decisions that extend or reinterpret the plan*
 the reasoning, so the next person does not have to re-derive them or undo them by
 accident.
 
-Status: **Phase 1 (core) complete and gated.** Phases 2–4 not started.
-Task-by-task state is in [PROGRESS.md](PROGRESS.md).
+Status: **Phases 1 (core), 2 (app) and 3 (gallery) complete and gated.** Phase 4 (the
+artist's-palette picker) not started. Task-by-task state is in [PROGRESS.md](PROGRESS.md).
+Phase 2's contracts are in §9; Phase 3's (scene interface, `Raster`, scene `util.js`) are
+in §10.
 
 Everything needed to continue this build is inside the repository. No document here
 refers to a path outside it, to a machine-specific location, or to notes kept anywhere
@@ -126,14 +128,23 @@ writes PNGs with stored DEFLATE blocks specifically so it needs no `zlib`.
 | `presets.js` | 8 emulation + 12 mood parameter sets |
 | `reference.js` | 11 embedded real palettes, read-only, plus the ΔE fit score |
 | `export/` | `gpl pal hex lospec css json tres png` + `index.js` registry |
+| `analysis.js` | Viénot dichromat matrices, OKLCH value view, `applyView`, ramp evenness (Phase 3) |
+| `dither.js` | Floyd–Steinberg + Bayer 4×4/8×8, perceptual nearest-match (Phase 3) |
+| `raster.js` | DOM-free RGB8 pixel buffer + drawing primitives — the scene surface (Phase 3, §10) |
 
-### Three files the plan's §7 layout does not list
+Phase 2/3 also added `src/ui/` (`app sliders swatches history io gallery`), `src/scenes/`
+(`index util` + 8 category files, all DOM-free), `tools/serve.mjs`, and `tools/build.mjs`.
+All of these are in the plan's §7 layout except `src/scenes/util.js` and the file below.
+
+### Files the plan's §7 layout does not list
 
 | File | Why it exists |
 |---|---|
 | `src/core/rng.js` | The plan puts the xorshift128 PRNG in `generate.js`, but `hues.js` needs it and `generate.js` imports `hues.js`. Splitting it out avoids the cycle. `generate.js` re-exports `makeRng`. |
-| `src/core/pixelfont.js` | A 3×5 bitmap font. Needed by the headless renderer now and by gallery scene 26 (text legibility matrix) later, so it belongs in `core` rather than `tools`. Renderer-agnostic: `drawText` calls a `plot(x, y)` callback. |
-| `tools/surface.mjs` | An RGB pixel buffer with `rect`/`outline`/`text`/`blit`, backing `render.mjs`. **Phase 3 will need more than this** — see §8. |
+| `src/core/pixelfont.js` | A 3×5 bitmap font. Needed by the headless renderer and by gallery scene 26 (text legibility). Renderer-agnostic: `drawText` calls a `plot(x, y)` callback. |
+| `src/core/raster.js` | The pixel-buffer surface every scene draws into (§10). The plan assumed scenes take a `CanvasRenderingContext2D`; the narrow-interface option was taken instead. |
+| `src/scenes/util.js` | Semantic-role accessors (`role`, `rampOfRole`, `shade`, `anchorDark/Light`, …) so scenes address colour by meaning, not index. |
+| `tools/surface.mjs` | The Phase-1 swatch-sheet helper backing the *preset* sheets in `render.mjs`. Separate from `raster.js`, which backs the *scene* sheets — both small, different callers. |
 
 ---
 
@@ -278,7 +289,7 @@ packing limit at that contrast. This is art direction, not a workaround.
 cd palette && npm test
 ```
 
-Full suite: 140 tests, ~4.5 minutes. The 10,000-case fuzz dominates. While iterating:
+Full suite: 176 tests, ~4.5 minutes. The 10,000-case fuzz dominates. While iterating:
 
 ```bash
 cd palette && PALETTE_FUZZ_N=200 npm test
@@ -303,7 +314,11 @@ cd palette && UPDATE_SNAPSHOTS=1 npm test
 
 ---
 
-## 8. Starting Phase 2 and Phase 3
+## 8. Starting Phase 2 and Phase 3 *(historical — both are now built)*
+
+> Phases 2 and 3 are complete. This section is the original pre-build guidance; the
+> decisions it poses were resolved as recorded in **§9 (app)** and **§10 (gallery)** —
+> the narrow-interface `Raster` option was taken. Kept for the reasoning, not as a to-do.
 
 **Phase 2** is `tools/serve.mjs`, `index.html`, and `src/ui/`. Generate the sliders from
 `PARAMS` — do not hand-write them, the schema carries `group`, range, `step` and a
@@ -328,3 +343,159 @@ than a decoration.
 
 `src/core/analysis.js` and `src/core/dither.js` (tasks 3.2, 3.3) do not exist yet and
 several scenes depend on them. Build those first.
+
+---
+
+## 9. Phase 2 (the app) — how it is wired
+
+The UI is vanilla ES modules, no framework. One rule holds it together: **`src/ui/` owns
+the DOM, `src/core/` owns the colour**. Every UI module imports the same generator the
+tests exercise; none of them re-implements colour logic.
+
+### The one state object
+
+`src/ui/app.js` holds the entire UI state as `{ params, locks, overrides }` and nothing
+else. Everything visible is derived by one call — `generatePalette(params, {locks,
+overrides})` — on every change. There is no separate "current palette" state to keep in
+sync; `regenerate()` recomputes it and repaints the swatch grid, the sliders (re-synced
+so presets/seeds/undo move them), the seed field and the meta line. This is why the app
+has no stale-state bugs: there is only one source of truth and one derivation.
+
+Sub-modules are dumb views built once and fed the palette:
+
+| Module | Contract |
+|---|---|
+| `sliders.js` | `createSliders(el, {onChange})` → `{ render(params) }`. Built from `PARAMS`; never hand-written. |
+| `swatches.js` | `createSwatches(el, actions)` → `{ render(palette) }`. `actions` = toggleLock/setOverride/clearOverride/copy. |
+| `history.js` | `createHistory(el, {onRestore,onChange})` → push/replaceCurrent/undo/redo/canUndo/canRedo. |
+| `io.js` | `createIO(dom, actions)` → `{ updateSeed, refreshSaves }`. Owns seed field, URL hash, presets, saves, import, exports. |
+
+### Decisions Phase 3/4 should not re-litigate
+
+- **Locks vs overrides in the UI.** Both live in `state`, keyed by slot id. `toggleLock`
+  captures the *current* hex into `locks`; the override editor (the hex input, or the
+  `ovr` pill) writes an explicit hex into `overrides`. Loading a preset or resetting to
+  defaults clears both (a new structure has different slot ids); loading a seed or JSON
+  takes whatever they encode. Randomize keeps both — that is what "randomize respecting
+  locks" means — and deliberately skips `color_count`, ramp lengths, hardware and quality
+  params (`RANDOMIZE_SKIP` in `app.js`) so the slot grid stays stable and valid.
+
+- **Randomize uses the seeded PRNG.** Per the no-`Math.random` rule, randomize seeds
+  `makeRng` from `Date.now()` xored with a counter and draws every value from it. The
+  entropy is in the seed, not in the value stream.
+
+- **A slider drag is one history entry.** `sliders.js` fires `onChange(name, v,
+  {coalesce})`: the first `input` of a drag opens a new entry, every later `input` and the
+  closing `change` coalesce into it (`history.replaceCurrent`). Typing in the number box
+  or any discrete action pushes a fresh entry.
+
+- **The value-only strip** on each swatch is the neutral gray of the same OKLCH lightness
+  (`oklchToSrgb(L,0,0)`), not a luminance average — it is the perceptual value check, so
+  it must use L directly.
+
+### `tools/serve.mjs` — the saves API
+
+Dependency-free `node:http`. `GET/PUT/DELETE /api/saves[/name]`; everything else is a
+static file from the repo root with path-traversal refused. Save names are constrained to
+`[A-Za-z0-9 _-]{1,64}` (`safeSaveName`, exported and tested). PUT bodies must parse as
+JSON before they touch disk. The app writes the JSON exporter's output, so a saved file is
+a normal palette JSON that re-imports. `test/serve.test.js` boots it on port 0 and drives
+the real HTTP surface.
+
+### `tools/build.mjs` — the standalone inliner
+
+The "trivial inliner" is a **flat import map of base64 `data:` URLs**, not a nested
+bundle. It walks the module graph from `src/ui/app.js`, rewrites every *relative* import
+specifier to a bare key (`mod:src/core/oklch.js`), and emits each module once as a
+`data:text/javascript;base64,…` entry in a document-level `<script type="importmap">`.
+Bare specifiers resolve through the import map (relative specifiers cannot resolve against
+a `data:` URL, which is why the rewrite is mandatory), so the graph loads natively with no
+runtime and no per-level base64 blow-up. Result: `dist/palette_creator.html`, ~203 KB, 27
+modules. File-backed saves degrade gracefully there (the `/api/saves` fetch fails and the
+saves UI disables itself); seeds, export and import all work.
+
+**Verification gap to be honest about:** the browser tool used for GATE 2 blocks `file://`
+navigation, so the standalone was driven over `http://…/dist/palette_creator.html`, not by
+an actual double-click. The inlined graph is protocol-independent, but a real file:// open
+was not exercised end-to-end.
+
+---
+
+## 10. Phase 3 (the gallery) — contracts for Phase 4 and beyond
+
+### The scene interface (the ARCHITECTURE §8 decision, resolved)
+
+The narrow-interface option was taken. Every scene is:
+
+```js
+{ id, title, category, width, height, render(surface, palette, opts), animated?, frames? }
+```
+
+`surface` is a **`Raster`** (`src/core/raster.js`) — a DOM-free RGB8 pixel buffer with
+`set/get/rect/outline/line/disc/text/blit/scaled/toImageData/rows`. Scenes draw into a
+fresh `Raster(width, height)`; the browser gallery paints it to a `<canvas>` via
+`scaled(zoom).toImageData(ImageData)` + `putImageData`, and `tools/render.mjs` writes it
+to PNG via `writePNG(path, r.w, r.h, r.data)`. **This is the shared surface for any future
+headless-renderable visual** — the picker (Phase 4) should render into a `Raster` too.
+
+Two rules make the gallery a real test, not decoration, and both are load-bearing:
+
+1. **Scenes address colour through `src/scenes/util.js`**, never by palette index —
+   `role(palette, 'foliage')`, `rampOfRole`, `anchorDark/Light`, `shade(ramp, t)`,
+   `bgByDepth`, `neutrals`, `accents`. A scene that looks right on one palette then looks
+   right on all of them because it asked for *the foliage colour*, not *entry 7*.
+2. **The colour-vision view is a post-process**, not each scene's job. `applyView(raster,
+   view)` (analysis.js) transforms the finished buffer for `value`/`protan`/`deutan`/
+   `tritan`; scenes always draw in full colour. Scenes 3 (value) and 6 (colorblind board)
+   *additionally* draw their own comparisons, which is intentional, not duplication.
+
+### `analysis.js` and `dither.js`
+
+- Dichromat matrices are **Viénot 1999**, applied in **linear** sRGB (protan/deutan share
+  their first two rows by construction — that shared row *is* the confusion axis). The
+  value view is the neutral gray of the same OKLCH L, matching the swatch strip in the UI.
+- Dithering matches nearest colour by **ΔE_OK** (perceptual), not RGB distance; Floyd–
+  Steinberg diffuses error in sRGB (classic look), Bayer nudges by a threshold offset then
+  matches. Both are deterministic and emit only palette colours — asserted in tests.
+
+### Gallery quirks worth knowing
+
+- `gallery.js` coalesces redraws with `requestAnimationFrame`, so **a backgrounded/unfronted
+  tab does not repaint** (rAF is paused there). This is correct for real use but means
+  automated checks must front the tab first. Animation uses a separate `setInterval`.
+- Scene sizes are fixed per scene (designed for K=64 worst case); smaller palettes just use
+  fewer cells. The smoke test `test/scenes.test.js` renders all 34 across K=4..64 and every
+  preset, asserting no NaN/crash and a non-blank surface — run it after any scene edit.
+- `render.mjs` renders scenes for **two** palettes (`default` and `neon-cyberpunk`) into
+  `out/scenes/<tag>/` plus `out/scene-sheets/<tag>-<category>.png`. The category sheets are
+  the thing to actually read at the gate.
+
+---
+
+## 11. Starting Phase 4 (the artist's-palette picker) — for the next agent
+
+Phase 4 (PLAN §9, tasks 4.1–4.10) is `src/core/layout/` + `src/ui/picker.js`. Nothing in
+it is written yet. What already exists that you should build on, not reinvent:
+
+- **Render into a `Raster`** (`src/core/raster.js`), exactly like scenes — then the layout
+  variants render both in the browser picker and headlessly in `tools/render.mjs`. Add a
+  picker **contact sheet** to `render.mjs` mirroring `sceneSheet()` there, and read it at
+  the gate. `writePNG(path, r.w, r.h, r.data)` writes a Raster to PNG.
+- **Colour distance** is `deltaEOK(labA, labB)` on `entry.lab` (already on every Entry),
+  from `src/core/oklch.js`. The picker arranges `palette.entries`; a cell's colour is an
+  Entry, so use `entry.lab` for scoring and `entry.rgb8`/`entry.hex` for drawing.
+- **Determinism**: use `makeRng(seed)` from `src/core/rng.js` for annealing and any
+  stochastic layout — **never `Math.random`** (tested project-wide). Anneal from the
+  palette's own seed so a layout is reproducible.
+- **Scoring** (`score.js`, task 4.1): mean and worst neighbour ΔE over the grid adjacency,
+  plus the blob-sizing modes (default *perceptual isolation* — area grows with a colour's
+  mean ΔE to its nearest palette neighbours). The test bar (task 4.8) is concrete: full
+  coverage / no holes, annealing deterministic, and **every optimized variant must beat the
+  ramp-rows baseline** (variant 11) on mean-neighbour ΔE. Write that as a real assertion.
+- **UI**: `picker.js` is a new view. The layout is currently three panes (Parameters |
+  Gallery | Palette+I/O); add the picker either as a second tab on the gallery pane or a
+  toggle in its toolbar. It needs a variant selector, blob-size mode, hover readout, click-
+  to-copy, and high-res + contact-sheet PNG export (reuse the `download()` helper pattern in
+  `io.js`, and the picker renders its own Raster to export).
+- The picker consumes **only a `Palette`** (ARCHITECTURE §1). Don't reach into generation
+  internals; `palette.entries` + `entryFor` is the whole surface you need.
