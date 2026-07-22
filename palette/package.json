@@ -1,0 +1,16 @@
+{
+  "name": "palette-creator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Procedural pixel-art color palette generator in OKLCH space",
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node tools/serve.mjs",
+    "build": "node tools/build.mjs",
+    "render": "node tools/render.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
