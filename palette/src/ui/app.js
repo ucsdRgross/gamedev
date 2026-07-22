@@ -16,6 +16,8 @@ import { createSwatches } from './swatches.js';
 import { createHistory, cloneState } from './history.js';
 import { createIO, readSeedFromHash } from './io.js';
 import { createGallery } from './gallery.js';
+import { createPicker } from './picker.js';
+import { sceneUsage } from '../scenes/usage.js';
 
 // Randomize varies the palette's look but leaves structure, hardware and quality alone,
 // so the swatch grid stays stable (locked colours keep their slots) and stays valid.
@@ -62,6 +64,23 @@ function boot() {
     galleryView: $('gallery-view'),
     galleryZoom: $('gallery-zoom'),
     galleryAnimate: $('gallery-animate'),
+    galleryControls: $('gallery-controls'),
+    tabGallery: $('tab-gallery'),
+    tabPicker: $('tab-picker'),
+    picker: $('picker'),
+    pickerControls: $('picker-controls'),
+    pickerCanvas: $('picker-canvas'),
+    pickerView: $('picker-view'),
+    pickerLayoutControls: $('picker-layout-controls'),
+    pickerVariant: $('picker-variant'),
+    pickerBlob: $('picker-blob'),
+    pickerEdges: $('picker-edges'),
+    pickerScale: $('picker-scale'),
+    pickerExport: $('picker-export'),
+    pickerSheet: $('picker-sheet'),
+    pickerReadout: $('picker-readout'),
+    pickerSwatch: $('picker-swatch'),
+    pickerScore: $('picker-score'),
   };
 
   // ---- State ----------------------------------------------------------
@@ -165,6 +184,46 @@ function boot() {
     animate: dom.galleryAnimate,
   }, { getPalette: () => palette });
 
+  // Scene usage backs the picker's `usage` blob mode. It costs a full gallery render, so
+  // it is computed at most once per palette and only if that mode is actually selected.
+  let usageCache = { seed: null, counts: null };
+  const getUsage = () => {
+    if (!palette) return null;
+    if (usageCache.seed !== palette.seed) usageCache = { seed: palette.seed, counts: sceneUsage(palette) };
+    return usageCache.counts;
+  };
+
+  const picker = createPicker({
+    canvas: dom.pickerCanvas,
+    view: dom.pickerView,
+    layoutControls: dom.pickerLayoutControls,
+    variant: dom.pickerVariant,
+    blob: dom.pickerBlob,
+    edges: dom.pickerEdges,
+    scale: dom.pickerScale,
+    exportPng: dom.pickerExport,
+    exportSheet: dom.pickerSheet,
+    readout: dom.pickerReadout,
+    swatch: dom.pickerSwatch,
+    score: dom.pickerScore,
+  }, { getUsage });
+
+  /** Switch the middle pane between the gallery and the picker. */
+  function showTab(name) {
+    const onPicker = name === 'picker';
+    dom.tabGallery.classList.toggle('is-active', !onPicker);
+    dom.tabPicker.classList.toggle('is-active', onPicker);
+    dom.tabGallery.setAttribute('aria-selected', String(!onPicker));
+    dom.tabPicker.setAttribute('aria-selected', String(onPicker));
+    dom.gallery.hidden = onPicker;
+    dom.galleryControls.hidden = onPicker;
+    dom.picker.hidden = !onPicker;
+    dom.pickerControls.hidden = !onPicker;
+    picker.setActive(onPicker);
+  }
+  dom.tabGallery.addEventListener('click', () => showTab('gallery'));
+  dom.tabPicker.addEventListener('click', () => showTab('picker'));
+
   // ---- Core loop ------------------------------------------------------
   /** Regenerate the palette from state and repaint every dependent view. */
   function regenerate() {
@@ -172,6 +231,7 @@ function boot() {
     swatches.render(palette);
     sliders.render(state.params);
     gallery.render(palette);
+    picker.render(palette);
     io.updateSeed(palette.seed);
     renderMeta();
   }

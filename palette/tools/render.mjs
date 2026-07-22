@@ -17,6 +17,9 @@ import { rankReferences } from '../src/core/reference.js';
 import { writePNG } from './png.mjs';
 import { SCENES, CATEGORIES } from '../src/scenes/index.js';
 import { Raster } from '../src/core/raster.js';
+import { rankLayouts } from '../src/core/layout/index.js';
+import { contactSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
+import { MAP_GEOMETRIES, buildMapSlices, mapFidelity } from '../src/core/layout/colorspace.js';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'out');
 const BG = [22, 22, 28];
@@ -137,6 +140,41 @@ function renderScenes(palette, tag) {
   }
 }
 
+/**
+ * Render the picker: every layout variant at full size plus one contact sheet, ranked
+ * best mean-neighbour ΔE first. Returns the ranking so it can be printed.
+ */
+function renderLayouts(palette, tag) {
+  const ranked = rankLayouts(palette);
+  for (const layout of ranked) {
+    // Both edge treatments, because which one reads better is a judgement to make by eye.
+    saveRaster(layoutRaster(layout, palette, { scale: 6 }), join(OUT, 'layouts', tag, `${layout.id}.png`));
+    saveRaster(layoutRaster(layout, palette, { scale: 6, edges: 'shade' }), join(OUT, 'layouts', tag, `${layout.id}-shaded.png`));
+  }
+  saveRaster(contactSheet(ranked, palette, { scale: 3 }), join(OUT, `layout-sheet-${tag}.png`));
+  saveRaster(contactSheet(ranked, palette, { scale: 3, edges: 'shade' }), join(OUT, `layout-sheet-${tag}-shaded.png`));
+  return ranked;
+}
+
+/**
+ * Render the colour-space maps (PLAN §9.1): both geometries, every saturation slice, with
+ * the unreachable colours strip. Returns the coverage figures, which are the number GATE 4b
+ * is reported against — a map that claims full coverage is a map that has started cheating.
+ */
+function renderMaps(palette, tag) {
+  return MAP_GEOMETRIES.map((geometry) => {
+    const set = buildMapSlices(palette, { geometry });
+    saveRaster(mapSheet(set, palette, { columns: 2 }).raster, join(OUT, 'maps', `${tag}-${geometry}.png`));
+    return {
+      geometry,
+      shownCount: set.shownCount,
+      total: set.total,
+      slices: set.slices.map((s) => ({ saturation: s.saturation, shownCount: s.shownCount, fidelity: mapFidelity(s, palette) })),
+      missing: set.missing.map((i) => palette.entries[i].hex),
+    };
+  });
+}
+
 /** Render every preset, the contact sheet, and a size sweep of the defaults. */
 function main() {
   rmSync(OUT, { recursive: true, force: true });
@@ -187,9 +225,29 @@ function main() {
   renderScenes(generatePalette(defaultParams()), 'default');
   renderScenes(generatePalette(presetParams('neon-cyberpunk')), 'neon');
 
+  // Picker layouts: the defaults at a full budget, where arrangement actually matters.
+  const pickerPalette = generatePalette({ ...defaultParams(), color_count: 48 });
+  const ranked = renderLayouts(pickerPalette, 'default48');
+  renderLayouts(generatePalette(presetParams('neon-cyberpunk')), 'neon');
+
+  // Colour-space maps: the picker's default view, for the same two palettes.
+  const maps = renderMaps(pickerPalette, 'default48');
+  renderMaps(generatePalette(presetParams('neon-cyberpunk')), 'neon');
+
   const strip = toPngStrip(generatePalette(defaultParams()), { cell: 1, height: 1 });
   console.log(`rendered ${PRESETS.length} presets and ${sizes.length} sizes to ${OUT}`);
   console.log(`rendered ${SCENES.length} scenes (×2 palettes) + ${CATEGORIES.length} category sheets`);
+  console.log(`picker layouts ranked (K=${pickerPalette.entries.length}, mean / worst neighbour dE):`);
+  for (const l of ranked) {
+    const flag = l.optimized ? 'opt' : '   ';
+    console.log(`  ${flag} ${String(l.variant).padStart(2)}. ${l.title.padEnd(26)} ${l.score.mean.toFixed(3).padStart(7)} ${l.score.worst.toFixed(1).padStart(6)}`);
+  }
+  console.log(`colour-space maps (K=${pickerPalette.entries.length}, shown/total per slice, mean dE to the true colour):`);
+  for (const m of maps) {
+    const slices = m.slices.map((s) => `s${s.saturation.toFixed(2)} ${s.shownCount}/${m.total} (dE ${s.fidelity.toFixed(1)})`).join('  ');
+    console.log(`  ${m.geometry.padEnd(6)} union ${m.shownCount}/${m.total}   ${slices}`);
+    if (m.missing.length) console.log(`         reached by no slice: ${m.missing.join(' ')}`);
+  }
   console.log(`export strip sanity: ${strip.length} bytes`);
   const dirty = summary.filter(({ palette }) => palette.warnings.length);
   if (dirty.length) {

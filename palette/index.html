@@ -41,11 +41,14 @@
       <div id="params" class="scroll"></div>
     </section>
 
-    <!-- Gallery pane -->
+    <!-- Gallery / picker pane -->
     <section id="gallery-pane" class="pane">
       <div class="pane-head">
-        <h2>Gallery</h2>
-        <div class="pane-head-controls">
+        <div class="tabs" role="tablist">
+          <button id="tab-gallery" class="tab is-active" role="tab" aria-selected="true">Gallery</button>
+          <button id="tab-picker" class="tab" role="tab" aria-selected="false">Picker</button>
+        </div>
+        <div id="gallery-controls" class="pane-head-controls">
           <select id="gallery-category" title="Filter scenes by category"></select>
           <select id="gallery-view" title="Colour-vision view"></select>
           <select id="gallery-zoom" title="Zoom level">
@@ -57,8 +60,33 @@
             <input id="gallery-animate" type="checkbox" checked /> anim
           </label>
         </div>
+        <div id="picker-controls" class="pane-head-controls" hidden>
+          <select id="picker-view" title="Colour-space map (position is fixed) or arrangement layout (position is optimised)"></select>
+          <span id="picker-layout-controls" class="pane-head-controls" hidden>
+            <select id="picker-variant" title="Layout variant"></select>
+            <select id="picker-blob" title="How blob area is decided"></select>
+            <select id="picker-edges" title="How blob boundaries are drawn"></select>
+            <select id="picker-scale" title="Output pixels per layout cell">
+              <option value="3">3×</option>
+              <option value="4">4×</option>
+              <option value="6" selected>6×</option>
+              <option value="8">8×</option>
+            </select>
+          </span>
+          <button id="picker-export" class="btn btn-small" title="Export the current view as a high-resolution PNG">PNG</button>
+          <button id="picker-sheet" class="btn btn-small" title="Export a contact sheet of all 15 arrangement layouts">Sheet</button>
+        </div>
       </div>
       <div id="gallery" class="scroll gallery-grid"></div>
+      <div id="picker" class="scroll picker-body" hidden>
+        <canvas id="picker-canvas" class="picker-canvas"></canvas>
+        <div class="picker-status">
+          <span id="picker-swatch" class="picker-swatch"></span>
+          <span id="picker-readout" class="picker-readout"></span>
+          <span id="picker-score" class="meta"></span>
+        </div>
+        <p class="picker-hint">Hover to read a colour, click to copy its hex. A map's position always means the same thing but may not reach every colour; a layout shows every colour but moves them when the palette changes.</p>
+      </div>
     </section>
 
     <!-- Palette + I/O pane -->

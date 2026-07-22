@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "palette",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "palette", "start"],
+      "port": 5173,
+      "autoPort": true
+    }
+  ]
+}

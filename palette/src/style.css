@@ -39,6 +39,12 @@ body {
   overflow: hidden;
 }
 
+/* The tab switch toggles `hidden`, and every pane it hides carries a class that sets
+   `display` — an author rule, which beats the browser's `[hidden] { display: none }`
+   whatever the specificity. Without this the gallery and the picker are both laid out at
+   once and the second one is squeezed into whatever space is left. */
+[hidden] { display: none !important; }
+
 /* ---- Top bar ---------------------------------------------------------- */
 #topbar {
   display: flex;
@@ -248,6 +254,33 @@ input[type="file"] { font-size: 11px; color: var(--text-dim); width: 100%; }
   background: var(--bg); border-radius: 2px; max-width: 100%;
 }
 .scene-drop-hint { font-size: 9px; color: var(--accent); }
+
+/* ---- Gallery / picker tabs -------------------------------------------- */
+.tabs { display: flex; gap: 2px; }
+.tab {
+  font-family: var(--sans); font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  background: transparent; color: var(--text-faint);
+  border: none; border-bottom: 2px solid transparent;
+  padding: 2px 6px 3px; cursor: pointer;
+}
+.tab:hover { color: var(--text-dim); }
+.tab.is-active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ---- Picker ----------------------------------------------------------- */
+.picker-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.picker-canvas {
+  display: block; image-rendering: pixelated; cursor: crosshair;
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
+  max-width: 100%;
+}
+.picker-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.picker-swatch {
+  width: 16px; height: 16px; flex: 0 0 auto;
+  border: 1px solid var(--line-2); border-radius: 3px; background: transparent;
+}
+.picker-readout { font-family: var(--mono); font-size: 11px; color: var(--text-dim); min-height: 14px; }
+.picker-hint { font-size: 10px; color: var(--text-faint); margin: 0; }
 
 /* ---- I/O drawer ------------------------------------------------------- */
 .io-drawer { flex: 0 0 auto; border-top: 1px solid var(--line); background: var(--bg-2); }

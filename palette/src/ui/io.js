@@ -18,7 +18,7 @@ export function writeSeedToHash(seed) {
 }
 
 /** Trigger a browser download of a string or byte array. */
-function download(filename, data, mime, binary) {
+export function download(filename, data, mime, binary) {
   const blob = binary
     ? new Blob([data instanceof Uint8Array ? data : new Uint8Array(data)], { type: mime })
     : new Blob([data], { type: mime });

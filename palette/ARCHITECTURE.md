@@ -6,10 +6,10 @@ later phases build on** and the **decisions that extend or reinterpret the plan*
 the reasoning, so the next person does not have to re-derive them or undo them by
 accident.
 
-Status: **Phases 1 (core), 2 (app) and 3 (gallery) complete and gated.** Phase 4 (the
-artist's-palette picker) not started. Task-by-task state is in [PROGRESS.md](PROGRESS.md).
-Phase 2's contracts are in §9; Phase 3's (scene interface, `Raster`, scene `util.js`) are
-in §10.
+Status: **All four phases complete and gated.** Task-by-task state is in
+[PROGRESS.md](PROGRESS.md). Phase 2's contracts are in §9; Phase 3's (scene interface,
+`Raster`, scene `util.js`) are in §10; Phase 4's (the picker, and what its ranking actually
+measured) are in §11.
 
 Everything needed to continue this build is inside the repository. No document here
 refers to a path outside it, to a machine-specific location, or to notes kept anywhere
@@ -131,6 +131,7 @@ writes PNGs with stored DEFLATE blocks specifically so it needs no `zlib`.
 | `analysis.js` | Viénot dichromat matrices, OKLCH value view, `applyView`, ramp evenness (Phase 3) |
 | `dither.js` | Floyd–Steinberg + Bayer 4×4/8×8, perceptual nearest-match (Phase 3) |
 | `raster.js` | DOM-free RGB8 pixel buffer + drawing primitives — the scene surface (Phase 3, §10) |
+| `layout/` | The picker: grid topologies, the neighbour-ΔE objective, 15 layout variants, rendering (Phase 4, §11) |
 
 Phase 2/3 also added `src/ui/` (`app sliders swatches history io gallery`), `src/scenes/`
 (`index util` + 8 category files, all DOM-free), `tools/serve.mjs`, and `tools/build.mjs`.
@@ -145,6 +146,8 @@ All of these are in the plan's §7 layout except `src/scenes/util.js` and the fi
 | `src/core/raster.js` | The pixel-buffer surface every scene draws into (§10). The plan assumed scenes take a `CanvasRenderingContext2D`; the narrow-interface option was taken instead. |
 | `src/scenes/util.js` | Semantic-role accessors (`role`, `rampOfRole`, `shade`, `anchorDark/Light`, …) so scenes address colour by meaning, not index. |
 | `tools/surface.mjs` | The Phase-1 swatch-sheet helper backing the *preset* sheets in `render.mjs`. Separate from `raster.js`, which backs the *scene* sheets — both small, different callers. |
+| `src/core/layout/heap.js` | A binary min-heap. Capacity assignment and organic growth both need "cheapest pending item first" over ~10⁵ items and would be quadratic with a sorted array. |
+| `src/scenes/usage.js` | Per-entry pixel counts across the depictive scenes, backing the picker's `usage` blob mode. It lives in `scenes/` because `core/` may not import `scenes/` (§11). |
 
 ---
 
@@ -289,7 +292,7 @@ packing limit at that contrast. This is art direction, not a workaround.
 cd palette && npm test
 ```
 
-Full suite: 176 tests, ~4.5 minutes. The 10,000-case fuzz dominates. While iterating:
+Full suite: 209 tests, ~5 minutes. The 10,000-case fuzz dominates. While iterating:
 
 ```bash
 cd palette && PALETTE_FUZZ_N=200 npm test
@@ -300,8 +303,11 @@ cd palette && npm run render
 ```
 
 Writes `out/presets/*.png` (labelled swatch sheets — role, hex, index), `out/strips/`
-(raw 1px export strips), `out/contact-sheet.png`, `out/size-sweep.png`, and
-`out/sizes/*.png`. **Read these images.** They catch things tests do not: a palette can
+(raw 1px export strips), `out/contact-sheet.png`, `out/size-sweep.png`, `out/sizes/*.png`,
+the gallery scenes (§10), the picker layouts — `out/layouts/<tag>/*.png` plus
+`out/layout-sheet-<tag>.png`, with the ranking printed to stdout — and the colour-space maps,
+`out/maps/<tag>-<geometry>.png`, with the coverage figures printed. **Read these images.**
+They catch things tests do not: a palette can
 satisfy every invariant and still be ugly or off-brief. Both preset retunes in Phase 1
 came from looking at the contact sheet, not from a failing test.
 
@@ -472,30 +478,326 @@ Two rules make the gallery a real test, not decoration, and both are load-bearin
 
 ---
 
-## 11. Starting Phase 4 (the artist's-palette picker) — for the next agent
+## 11. Phase 4 (the picker) — what the ranking actually measured
 
-Phase 4 (PLAN §9, tasks 4.1–4.10) is `src/core/layout/` + `src/ui/picker.js`. Nothing in
-it is written yet. What already exists that you should build on, not reinvent:
+`src/core/layout/` + `src/ui/picker.js`. The picker consumes **only a `Palette`** (§1) and
+renders into a **`Raster`** (§10), so the browser view and `tools/render.mjs` draw the same
+pixels from the same code.
 
-- **Render into a `Raster`** (`src/core/raster.js`), exactly like scenes — then the layout
-  variants render both in the browser picker and headlessly in `tools/render.mjs`. Add a
-  picker **contact sheet** to `render.mjs` mirroring `sceneSheet()` there, and read it at
-  the gate. `writePNG(path, r.w, r.h, r.data)` writes a Raster to PNG.
-- **Colour distance** is `deltaEOK(labA, labB)` on `entry.lab` (already on every Entry),
-  from `src/core/oklch.js`. The picker arranges `palette.entries`; a cell's colour is an
-  Entry, so use `entry.lab` for scoring and `entry.rgb8`/`entry.hex` for drawing.
-- **Determinism**: use `makeRng(seed)` from `src/core/rng.js` for annealing and any
-  stochastic layout — **never `Math.random`** (tested project-wide). Anneal from the
-  palette's own seed so a layout is reproducible.
-- **Scoring** (`score.js`, task 4.1): mean and worst neighbour ΔE over the grid adjacency,
-  plus the blob-sizing modes (default *perceptual isolation* — area grows with a colour's
-  mean ΔE to its nearest palette neighbours). The test bar (task 4.8) is concrete: full
-  coverage / no holes, annealing deterministic, and **every optimized variant must beat the
-  ramp-rows baseline** (variant 11) on mean-neighbour ΔE. Write that as a real assertion.
-- **UI**: `picker.js` is a new view. The layout is currently three panes (Parameters |
-  Gallery | Palette+I/O); add the picker either as a second tab on the gallery pane or a
-  toggle in its toolbar. It needs a variant selector, blob-size mode, hover readout, click-
-  to-copy, and high-res + contact-sheet PNG export (reuse the `download()` helper pattern in
-  `io.js`, and the picker renders its own Raster to export).
-- The picker consumes **only a `Palette`** (ARCHITECTURE §1). Don't reach into generation
-  internals; `palette.entries` + `entryFor` is the whole surface you need.
+### The shape every variant shares
+
+A variant is a pure `(ctx) => Int32Array` — one palette-entry index per grid cell. The
+shared context carries the grid, the OKLab vectors, the ΔE matrix, the per-entry cell budget
+and a seeded PRNG, so a variant decides **arrangement** and nothing else:
+
+| Module | Role |
+|---|---|
+| `grid.js` | Four topologies (rect / torus / hex / disc), adjacency, positions, centroids |
+| `score.js` | The objective, `coverage`, the five blob modes, budget apportionment |
+| `assign.js` | Capacity assignment, run fills, `compactSwaps`, `ensureCoverage` |
+| `som.js` `anneal.js` `hilbert.js` `mds.js` `voronoi.js` `grow.js` `structural.js` `mesh.js` | The fifteen variants |
+| `render.js` | Labels → Raster, hit-testing, the layout contact sheet, the map slice sheet |
+| `index.js` | The registry, `buildLayout`, `rankLayouts`, the baseline constants |
+| `colorspace.js` | The §9.1 colour-space maps — *not* an arrangement variant, see below |
+
+**Coverage is structural, not checked-and-hoped.** `targetCounts` gives every colour at
+least one cell and `assignByCapacity` caps every colour at its budget, so "every colour
+appears" and "blob sizes follow the blob mode" both fall out of construction. The tests
+assert it anyway, for all 15 variants × 4 palette sizes × 5 blob modes.
+
+### Three findings that cost real time — do not re-derive them
+
+**1. A smooth colour field must not be committed cell-by-cell.** The obvious move for a SOM
+is "assign each cell to the entry its codebook vector is nearest to". It scores *terribly*
+(K=32: 5.95 versus 2.6 for the projection layouts). A trained map is a gradient, so a
+colour's nearest-cells form a wide band, not a patch, and the budget cap then sprays the
+overflow along the whole band. The fix is `territoryCentroids` — read each colour's
+territory off the map, take its centroid as a **site**, then assign cells by *distance on
+the grid*. The SOM keeps deciding what goes where; the blobs come out compact.
+
+**2. Batch SOM, not online.** A palette is a few dozen samples. The online rule spends its
+late, small-radius steps memorising individual colours and leaves the field speckled —
+measurably worse than the PCA projection it was initialised from, i.e. training actively
+made it worse. The batch update has no learning rate to decay and stays smooth.
+
+**3. Greedy capacity assignment strands cells, and adjacent swaps cannot rescue them.** The
+last cells placed take whatever budget is left, which marooned lone near-white cells inside
+dark blobs — visible on the contact sheet, and exactly what the picker exists to prevent.
+Strict-improvement swaps between *neighbours* can never fix it, because getting a cell home
+takes a chain of moves and every individual link scores worse. `relocateOutliers` lets the
+worst 2% of cells propose a swap with any cell on the grid. That one pass moved SOM-rect
+from 3.75 to 2.88 mean and its worst neighbour from 83.7 to 43.2.
+
+### The baseline bar, and why it is asserted over K ≥ 32
+
+Task 4.8 requires every optimized layout to beat the ramp-rows baseline. Measured, that
+claim is **true for K ≥ 32 and false below it** — and the reason is a property of the
+problem, not a weakness in the variants:
+
+```
+mean neighbour ΔE, default parameters      K8    K16   K24   K32   K48   K64
+  ramp-rows (baseline)                    1.43   2.20  2.82  3.84  6.09  7.28
+  best optimized variant                  1.75   2.10  2.43  2.57  2.84  3.02
+```
+
+Ramp-rows lays hue-ordered ramps as blocks, and **rectangles tile a rectangle perfectly**.
+With few colours the blocks are large and the ordering within a ramp is already near-minimal
+ΔE, so the baseline is essentially optimal — at K=8 nothing beats it. As the budget grows,
+the row banding forces unrelated hues together and it degrades badly, while the blob layouts
+barely move. `BASELINE_SIZES = [32, 48, 64]` encodes that, and the small-K behaviour is
+asserted in its own test rather than left as a silent gap.
+
+Two classifications follow from measurement, not intent:
+
+- **Hilbert (6) is `optimized: false`.** The plan specifies a boustrophedon fill, and a
+  serpentine turns every colour into a strip spanning the grid; strips lose to blocks on
+  perimeter no matter how good the 3-D ordering is. The ordering is fine — it is the 1-D
+  commit that costs it. The 2-D Hilbert traversal that *does* have that locality is what
+  seeds the annealer, where it works.
+- **Treemap (13) is `optimized: false` but ranks mid-table**, for the same tiling reason the
+  baseline does well. `optimized` marks what is held to the bar, not what scores well.
+
+**Cross-topology scores are not perfectly comparable.** A hex grid has six neighbours per
+cell and a torus has four everywhere (no boundary relief), so both are scored over more
+edges than a bounded rect grid. The ranking is still the honest single number PLAN §9 asks
+for, but a hex or torus variant is carrying a slightly harder scoring surface.
+
+### Rendering: optimise coarse, render fine
+
+Build cost scales worse than linearly with cell count — a 192×128 grid takes 4–14 seconds
+per variant, a 288×192 grid takes 12–46. So the arrangement is solved on a **96×64** grid
+(the slowest variant, toroidal SOM, builds in about a second) and the *image* is produced
+at display resolution by `render.js`:
+
+```
+coarse cells -> upsample by `scale` -> curvature flow -> paint
+```
+
+Painting cells as solid blocks gives blob edges that can only step along the cell grid,
+which reads as a staircase. The relaxation is a **mode filter** — each pixel takes the
+label most of its neighbourhood holds — which is discrete curvature flow: protrusions
+erode, notches fill, staircases become curves. Radius is deliberately small (2) with the
+pass count scaled to the upsample factor; a large radius costs (2r+1)² per pixel and buys
+nothing several cheap passes do not.
+
+Three things this has to respect:
+
+- **A blob may not be eroded below `AREA_FLOOR` of its area.** Smoothing can otherwise
+  erase a one-cell colour outright, and "every colour is somewhere" is the whole promise.
+  Each pass that shrinks a colour past the floor is reverted for that colour alone.
+- **`rectilinear` variants are not smoothed at all** (Hilbert, ramp-rows, spiral, treemap).
+  Their straight edges are the information; rounding a treemap's corners makes it wrong,
+  not prettier. This was visibly wrong before the flag existed.
+- **Disc layouts re-test their mask per output pixel**, so the rim is a true circle rather
+  than a staircase of cell corners.
+
+`renderLayout` returns the label map alongside the pixels, and `pickAt` reads *that* — so
+the hover readout matches the smoothed shape on screen, not the coarse grid under it.
+
+Grid resolution is the one knob that trades quality against build time. If the picker ever
+feels slow, lower `DEFAULT_SIZE`; if edges look soft, raise it and drop `scale` to match.
+Note that **mean-neighbour scores are not comparable across grid resolutions** — a finer
+grid has proportionally fewer boundary edges, so every score falls. Compare within a
+resolution only. `test/layout.test.js` pins its own small grid for exactly this reason.
+
+### Edge modes — no black outlines by default
+
+`edges` is `'none'` (default), `'shade'`, or `'seam'`. The default draws no outline at all:
+blob boundaries are defined by colour contrast, which is what the reference art this was
+modelled on does. `'shade'` is the pixel-artist move — the boundary is a darker,
+**hue-shifted** colour *taken from the palette itself* (midpoint, L −0.12, hue +20°, snapped
+to the nearest entry), so the outline reads as a shadow that belongs to the picture. Both
+are asserted to introduce no colour outside the palette. `'seam'` is the flat dark line,
+kept only for diagrams. `tools/render.mjs` writes both `none` and `shade` versions of every
+layout and both contact sheets, because which reads better is a judgement to make by eye.
+
+### Color-space maps vs. arrangement layouts (PLAN §9.1 vs §9.2)
+
+The reference tool this look was modelled on (`retroactive.me/post/palette-analysis/`)
+produces its hue-brightness rectangles and polar wheels by a **completely different
+mechanism** from the Phase 4 layouts, and it is worth being precise about which, because
+the two cannot be tuned into each other.
+
+**What the reference does.** Take a standard HSL picker geometry — x or angle = hue, y or
+radius = lightness, saturation fixed per slice — and for each output pixel compute the
+color that position represents, then paint the **nearest palette color** to it. That is
+all. Nothing is arranged, nothing is optimized, no cell grid exists.
+
+This was verified by prototyping it before committing to the design; it reproduces the
+reference panels closely, including the polar wheels.
+
+| | Color-space map (§9.1) | Arrangement layout (§9.2) |
+|---|---|---|
+| What decides position | Fixed — hue/lightness, as in any picker | The optimizer; moves when the palette changes |
+| Predictable | Yes — you know where to look | No — must be re-read each time |
+| Every color shown | **No.** Measured 43–46 of 48 per slice | **Yes**, guaranteed by construction |
+| Area per color | Its Voronoi cell in color space; can be a sliver | Controlled by the blob-size mode |
+| Edge quality | Exact and smooth at any resolution, free | Cell grid, needs upsampling + curvature flow |
+| Cost | One nearest-color search per pixel | Up to a second per build |
+
+**Why the map's edges are free and the layout's are not.** A map is evaluated per output
+pixel from a continuous function, so its region boundaries are exact wherever you sample
+them. A layout is a discrete assignment to cells, so its boundaries can only follow the
+cell grid, and everything in the rendering section above exists to hide that. Raising the
+map's resolution costs one linear pass; raising the layout's costs quadratically.
+
+**The coverage trade is the real decision, and it must not be papered over.** A map can
+simply fail to show a palette color — it is nobody's nearest neighbour. Do not "fix" that
+by forcing colors in; it would make position stop meaning what it says, which is the only
+thing the map has over the layouts. Report the count (`45/48`), report the union across
+slices, and let the arrangement layouts be the view that guarantees completeness.
+
+**No outlines, in either family.** `edges: 'none'` is the default and the maps never draw
+them at all. Verified rather than assumed: an `edges:'none'` render of a 48-color palette
+contains exactly 48 distinct colors and zero foreign pixels. If outlines are ever seen in
+output, the file being looked at is a `-shaded.png`, which `tools/render.mjs` writes beside
+every plain one.
+
+### Phase 4b — what the maps actually do (`colorspace.js`)
+
+`buildColorMap(palette, {geometry, saturation, size})` returns a label per pixel plus the
+coverage account; `buildMapSlices` runs the default four saturations and unions them;
+`mapSheet` in `render.js` composes them. Four decisions are worth not re-deriving:
+
+- **Hue spans an inclusive 0–360 across the rectangle**, so the leftmost and rightmost
+  columns are literally the same hue. The alternative (a half-open span, so the map tiles
+  seamlessly) makes "the edges are the same hue" true only in spirit and untestable as
+  written. The duplicated column is invisible; the assertion is exact.
+- **The wheel is white at the centre and black at the rim**, matching the rectangle's
+  top-to-bottom lightness. The consequence is that the outermost ring is nearly black over a
+  large area, because area grows as r² while lightness falls linearly. That is what
+  "radius = lightness" means, and warping the radius to even it out would cost the map the
+  one thing it has — a position that means exactly what it says.
+- **Coverage is counted by colour, not by slot.** A palette may hold the same hex twice
+  (`force_unique_hex` is best-effort, §6) and only the lower index can win a nearest-colour
+  tie, so counting slots would under-report what is visibly on screen.
+- **The sheet is composed in label space and painted once.** Slices and the swatch strip are
+  written into one `Int32Array`, `paintLabels` turns it into pixels, and the text is drawn
+  last over background pixels only. So hover, click-to-copy and export all read one buffer,
+  and no drawing step can introduce a colour that is not in the palette.
+
+**Measured coverage, default parameters at K=48** (`npm run render` prints this):
+
+```
+              union   s1.00   s0.70   s0.40   s0.12
+  rect        48/48   45/48   46/48   46/48   26/48     mean ΔE 10.2 / 7.6 / 5.7 / 4.9
+  polar       48/48   45/48   46/48   46/48   26/48     mean ΔE  9.6 / 7.2 / 5.4 / 4.6
+```
+
+A single slice reaches 45–46 of 48, as §9.1 predicts. **Four slices happen to reach
+everything for most palettes** — over a 200-case parameter fuzz only 13 left anything
+stranded, and never more than two colours. That is a measurement, not a guarantee: the strip
+still has to exist, and `test/colorspace.test.js` forces the case by building a single
+saturated slice rather than waiting for a palette that happens to fail.
+
+**The strip is labelled, not just drawn.** The colours no slice reaches are written into the
+sheet's label buffer, so they are hoverable and copyable exactly like the map itself. That is
+what makes the coverage trade acceptable: nothing is unreachable from the default view, and
+nothing had to be forced into the geometry to achieve it.
+
+**Cost:** about 130 ms to build all four slices at K=64 (a slice is one nearest-colour search
+per pixel, ~100 ms of which is the sRGB→OKLab conversion and is independent of K). Comparable
+to a layout build, and it is spent only while the picker tab is on screen. If it ever needs
+to be cheaper, lower `DEFAULT_MAP_SIZE` — the map is a continuous function, so resolution is
+a straight linear trade with no quality cliff.
+
+**A CSS bug this uncovered.** The tab switch toggles `hidden`, but every pane it hides
+carries a class that sets `display` — an author rule, which beats the browser's
+`[hidden] { display: none }` whatever the specificity. The gallery and the picker were both
+being laid out, and the second one was squeezed into what was left (46 px). `style.css` now
+carries an explicit `[hidden] { display: none !important; }`.
+
+### Picker UI notes
+
+The middle pane is now tabbed (Gallery | Picker), and the picker's own view selector chooses
+between the two families: **`map-rect` (the default), `map-polar`, and `layout`**. The
+variant / blob / edge / scale controls belong to the layout view and are hidden with it, so
+the default view carries one selector and a coverage readout and nothing else. Both families
+return `{ raster, labels, w, h }`, so hover, click-to-copy and export are one code path over
+`pickAt`. The PNG button exports whichever view is showing — a layout by scaling its cells
+up, a map by *sampling it finer*, because that is what a continuous function makes cheap.
+
+Two things worth keeping:
+
+- **The picker draws synchronously**, unlike `gallery.js` which coalesces through
+  `requestAnimationFrame`. That is why it renders correctly in a backgrounded tab where the
+  gallery does not (§10). Layout builds are deferred instead by `setActive(false)` — nothing
+  is rebuilt while the tab is hidden, and the palette change is applied on the way back in.
+- **`usage` blob mode** needs pixel counts from the gallery. `src/core/` may not import
+  `src/scenes/`, so `src/scenes/usage.js` measures it and `app.js` passes the counts in,
+  memoised per `palette.seed`. Layout code takes them as plain data and stays scene-free.
+
+---
+
+## 12. Phase 5 (reference recoloring) — design notes before building
+
+Spec is [PLAN.md](PLAN.md) §19. Nothing is built yet. What follows is the reasoning that
+should not have to be re-derived, and the decisions that are still open.
+
+### 12.1 Layering — where decoding is allowed to live
+
+`src/core/` may not import a Node built-in (§2), and that constraint decides the shape:
+
+- **Core takes pixels, not files.** The recolor functions operate on
+  `{ width, height, data }` RGB8 buffers — the same shape `Raster` already uses. They know
+  nothing about PNG, JPEG, GIF or the DOM, so `node --test` exercises the real algorithm.
+- **Decoding happens at the edge.** In the browser, PNG and JPEG decode for free through
+  `Image` + canvas. In tests there is no canvas, so a decoder is needed — but a test file
+  may import `node:zlib` freely, so a small test-only PNG decoder is fine.
+- **GIF is the exception and belongs in core.** LZW decode is pure arithmetic with no
+  platform dependency, and putting it in `src/core/gif.js` means the browser and the tests
+  share one implementation and a committed `.gif` fixture proves both.
+
+**Decided: GIF is read-only and single-frame** (PLAN §19.2). A GIF is recoloured as a still
+and written out as PNG; no LZW *encoder* is written. The decoder still returns all frames —
+that is nearly the same code as returning one — and `gif_frame` selects among them, so
+animated output can be added later as an addition rather than a rewrite.
+
+### 12.2 Why two modes is not a nicety
+
+Per-pixel nearest matching decides each pixel independently, so a single source color can
+resolve to different target colors in different places. On a photograph that is invisible
+and correct. On pixel art it shreds exactly what makes it good — outlines stop being one
+color, anti-aliasing seams break up, ramps lose continuity. The indexed path exists to make
+the mapping a property of the *color*, not of the pixel. Getting this wrong would produce
+output that passes every test and looks obviously bad, so the tests assert the property
+directly: **a source color must map to the same target color everywhere it appears.**
+
+`remap_preserve_order` (monotonic in lightness) is the knob that matters most in practice —
+it is what lets a palette with completely different hues still read correctly, because the
+value structure is what the eye reads first.
+
+### 12.3 The "no command line" constraint — options and the open decision
+
+This constrains delivery, not just UI. Three ways to satisfy it:
+
+| Option | Adding reference images | Cost |
+|---|---|---|
+| **A. Double-click launcher** (`start.cmd`) that boots `tools/serve.mjs` and opens the browser | Server reads `palette/reference/`, and the app can also write dropped files there via the existing saves-style API | Small; keeps saves, keeps the folder as the source of truth |
+| **B. Standalone `dist/palette_creator.html`**, opened by double-click | No server, so no folder access: images come in by drag-and-drop or a folder picker, and live only in the session unless re-added | Zero infrastructure, but nothing persists and the gallery is empty on each open |
+| **C. Both** — launcher as the normal path, standalone as the portable one | Folder when served, drag-and-drop when not | Two code paths in the image source |
+
+**Decided: C, with A as the normal path.** The reference folder persists and is git-tracked
+exactly like `palette/saved/` already is, and a `.cmd` that is double-clicked is not a
+command line. Option B alone cannot keep a library of reference images between sessions,
+which is most of the value.
+
+So there are two image sources and the UI must handle both without branching everywhere:
+
+- **Served** (`start.cmd` → `tools/serve.mjs`): `GET /api/reference` lists the folder,
+  `PUT` writes a dropped file into it. Mirrors the existing saves API, including the
+  `safeSaveName` path-traversal guard — reuse it, do not write a second one.
+- **Standalone** (`dist/palette_creator.html`): the fetch fails, the UI disables the
+  persist affordance and keeps drag-and-drop working in-session. This is exactly how the
+  saves UI already degrades (§9), so follow that pattern rather than inventing another.
+
+The gallery therefore reads from an in-memory list that is *seeded* from the server when
+one is present, not directly from the network.
+
+### 12.4 Committed fixtures
+
+Generated reference images ship with the repo so the gallery is never empty and the tests
+always have real data. They must include at least one **animated** GIF and one image with a
+large color count (a synthetic photograph), because those exercise the two modes and the
+frame-coherence requirement. Procedurally generated at build time is acceptable and
+preferable to binary blobs, provided the generator is deterministic.

@@ -537,7 +537,43 @@ Scrollable, filterable by category, rendered live from the current palette. Ever
 
 ## 9. Artist's-palette color picker
 
+The picker has **two families**, which solve the problem in opposite ways. §9.1 is the
+default view and the one that looks like a color picker; §9.2 is the optimizer.
+
+### 9.1 Color-space maps — the default view
+
+A standard color-picker geometry where **every pixel is painted with the nearest palette
+color** to the color that position represents. Nothing is arranged and nothing is
+optimized: position means exactly what it means in any other picker, so you always know
+where to look.
+
+Geometry is HSL, because that is what "white on one side, black on the other, hues through
+the middle" describes:
+
+- **Rectangular** — x = hue (0–360, so the left and right edges are the same hue and the
+  map wraps), y = lightness (white at the top edge, black at the bottom), saturation fixed
+  per slice.
+- **Polar** — angle = hue (wrapping is free), radius = lightness, saturation fixed per
+  slice. A round painter's wheel.
+- Several **saturation slices** shown together, as a palette's colors do not all live at
+  one saturation.
+
+Rendered per output pixel, so boundaries are exact and smooth at any resolution — there is
+no cell grid, no upsampling and no smoothing pass. **No outlines are drawn**, ever: regions
+meet directly and are read by color contrast alone.
+
+**The honest cost:** a color only appears where it is the nearest one, so a palette color
+whose neighbors crowd it out can occupy a sliver or be absent from a given slice entirely.
+Full coverage is *not* guaranteed and must not be faked. Each map reports how many palette
+colors it shows (e.g. `45/48`), and the union across slices is reported too.
+
+### 9.2 Arrangement layouts — the optimizer
+
 A separate generator solving a different problem: *it is hard to find the color you want when it is surrounded by colors significantly different from it.* Arranging the palette so neighbors are perceptually close is a **spatial optimization**, not color generation. Colors may repeat, and blobs vary in size.
+
+Unlike §9.1 these **guarantee every color appears** with a controllable area, but a color's
+position is not predictable — it moves when the palette changes. That is the trade: §9.1 is
+predictable but may hide a color; §9.2 shows everything but must be re-read each time.
 
 **Objective:** minimize mean `ΔE_OK` between spatially adjacent cells. Every variant reports that score plus a worst-neighbor score, so variants are **ranked objectively** instead of eyeballed.
 
@@ -652,6 +688,17 @@ Each phase ends runnable and verifiable.
 
 **Phase 4 — Picker.** All 15 layout variants, scoring, blob-sizing modes, contact sheet, interactive hover/click, high-res export.
 *Gate:* scoring tests pass; contact sheet rendered and inspected; ranked results reported back to you.
+
+**Phase 4b — Color-space maps (§9.1).** The rectangular and polar HSL maps, saturation
+slices, per-pixel rendering, no outlines, coverage reporting. This becomes the picker's
+default view; the §9.2 arrangement layouts stay as alternates.
+*Gate:* maps rendered and inspected against the reference look; coverage figures reported.
+
+**Phase 5 — Reference recoloring (§19).** Indexed remap and quantize, PNG/JPEG/GIF
+including animation, the all-references gallery page, and drag-and-drop image import with
+no command line anywhere.
+*Gate:* tests green against committed example images; the gallery rendered and inspected;
+driven in the browser end to end.
 
 ## 15. Verification
 
@@ -841,3 +888,96 @@ If `palette/PROGRESS.md` is missing or stale, rebuild it from observed reality r
 6. **Write the reconstructed `palette/PROGRESS.md`** with everything verified-complete checked off, then continue from the first unchecked task.
 
 Partial work inside a single task is safe to redo — tasks are sized so that restarting one costs little. When in doubt, redo the task rather than assume it finished.
+
+---
+
+# Part IV — Phase 5: reference-image recoloring
+
+## 19. Recoloring reference art
+
+The generator's real test is not a swatch sheet — it is whether the palette holds up on
+work an artist would recognise. Phase 5 takes a folder of reference images (expert pixel
+art, photographs, the user's own files) and re-renders every one of them in the generated
+palette, then shows them all together on one page: **a complete visual gallery of what the
+chosen palette looks like in practice.**
+
+### 19.1 Two modes, because one algorithm is wrong for half the inputs
+
+**Per-pixel nearest-color matching is the wrong algorithm for pixel art.** It decides each
+pixel independently, so one source color can land on different target colors in different
+places, which destroys outlines, anti-aliasing seams and ramp continuity — precisely the
+things that make expert pixel art good. Photographs are the opposite case and want exactly
+that per-pixel treatment.
+
+**Indexed remap** — for pixel art and anything with a small color count.
+1. Extract the source's own unique colors (typically 8–64).
+2. Map *source palette → target palette* as one assignment, decided once.
+3. Apply it as a lookup, so every instance of a source color becomes the same target color.
+
+The artist's structure survives intact. Parameters:
+- `remap_match` — `delta-e` (nearest in OKLab) | `lightness-rank` (sort both palettes by L
+  and match by position) | `optimal` (assignment minimizing total ΔE, no target reused
+  while unused ones remain).
+- `remap_preserve_order` — force the mapping to be monotonic in lightness, so the source's
+  value structure survives even when the hues are completely different. This is the knob
+  that makes a wildly different palette still read correctly.
+- `remap_overflow` — what to do when the source has more colors than the target: `share`
+  (nearest, reuse freely) | `merge` (cluster the source colors down first).
+
+**Quantize** — for photographs and anything with a large color count.
+- `quant_dither` — `none` | `floyd-steinberg` | `bayer4` | `bayer8`
+- `quant_dither_strength`
+- `quant_lightness_weight` — weight on L versus chroma in the match metric. Raising it
+  preserves the value structure at the cost of hue accuracy.
+- `quant_downscale` — optional pre-scale to a pixel-art resolution.
+
+`recolor_mode` is `auto` | `indexed` | `quantize`; `auto` picks by the source's unique-color
+count against `recolor_indexed_max`.
+
+### 19.2 Formats
+
+PNG, JPEG and **GIF**. GIF is read as a **still image**: one frame is selected and
+recoloured, and output is written as PNG. Animated GIF output is deliberately out of scope
+for now — writing one needs an LZW *encoder* on top of the decoder, and it can be added
+later without disturbing anything here.
+
+Reading a GIF at all still needs an LZW decoder, which is ours to write (no dependencies).
+Since decoding one frame and decoding all of them is nearly the same code, the decoder
+returns every frame and a `gif_frame` parameter selects which to use — `first` (default),
+`last`, or an index. That also means animated output is a small addition later rather than
+a rewrite.
+
+The decoder lives in `src/core/` and is therefore usable from both the browser and
+`node --test`.
+
+### 19.3 The gallery page
+
+One page showing **every reference image together** — the user's own files and the
+generated ones — each as original alongside recolored, with the mode and unique-color
+count. This is the "what does this palette actually look like" view, and it updates live
+with the palette like everything else.
+
+Generated references ship with the repo so the page is never empty and the tests always
+have something to assert on. The user's images are added without touching the command line
+(§19.5).
+
+### 19.4 Tests
+
+Tests must confirm recoloring genuinely works, on real image data rather than mocks:
+- Committed example reference images — including a GIF — that the tests decode and recolor.
+- Indexed remap: output contains **only** target-palette colors; a source color always maps
+  to the same target color everywhere; `remap_preserve_order` really is monotonic in L.
+- Quantize: output contains only target-palette colors; dithering is deterministic.
+- GIF: an animated fixture decodes to the right frame count and dimensions, and `gif_frame`
+  selects the frame it says it does.
+- Auto mode picks `indexed` for pixel art and `quantize` for a photograph.
+
+### 19.5 No command line
+
+**Everything must work without typing a command**, including adding reference images. This
+constrains delivery, not just UI:
+- Reference images are added by drag-and-drop or a folder picker in the app itself.
+- The recolor gallery, its parameters and its exports are all in the app.
+- Whatever starts the app must be double-clickable.
+
+See ARCHITECTURE §12 for the delivery options and the decision taken.
