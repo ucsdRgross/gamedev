@@ -19,7 +19,7 @@ import { makeRng } from './rng.js';
 import { buildHues, hueGapCenters, lerpHue } from './hues.js';
 import { allocate, buildSlots, effectiveHueCount } from './allocate.js';
 import { buildRamp, rampBounds, applyGlobalTemperature } from './ramp.js';
-import { gamutMap } from './gamut.js';
+import { gamutMap, gamutCusp } from './gamut.js';
 import { quantizeSrgb } from './quantize.js';
 import { repairPalette, residualViolations } from './repair.js';
 import { roleName, assignSemanticRoles } from './roles.js';
@@ -119,6 +119,26 @@ function applyAtmosphere(color, params) {
   return mixOklch(color, target, params.atmosphere_strength * 0.5);
 }
 
+/**
+ * How far `hue_lightness_follow: 1` pulls a hue's midtone toward its gamut cusp lightness.
+ * Capped below 1 so even full follow leaves a step of highlight headroom under the light
+ * anchor — the cusp for yellow/green sits ~0.9, and going all the way there would leave no
+ * room for a brighter step. Tuned by eye against the reference render and the crayon fit.
+ */
+const HUE_L_FOLLOW_GAIN = 0.6;
+
+/**
+ * Midtone lightness for a hue: `l_mid_base`, biased toward the lightness where that hue can
+ * actually hold chroma in sRGB (its gamut cusp). Yellow/green/cyan cusps sit high, so their
+ * ramps ride up into the saturated zone instead of going olive at mid grey; blue/red/purple
+ * cusps already sit near mid grey, so they barely move. `hue_lightness_follow` scales it.
+ */
+function hueMidLightness(params, hue) {
+  const cuspL = gamutCusp(hue).L;
+  const follow = params.hue_lightness_follow * HUE_L_FOLLOW_GAIN;
+  return params.l_mid_base + (cuspL - params.l_mid_base) * follow;
+}
+
 /** Compute the requested OKLCH for every slot, before gamut mapping. */
 function slotColors(params, plan, hues, rng) {
   const bounds = rampBounds(params);
@@ -132,7 +152,7 @@ function slotColors(params, plan, hues, rng) {
   const fg = [];
   const bg = [];
   for (let i = 0; i < plan.hueCount; i++) {
-    const lMid = clamp(params.l_mid_base + lVar[i], 0.05, 0.95);
+    const lMid = clamp(hueMidLightness(params, hues[i]) + lVar[i], 0.05, 0.95);
     const cBase = Math.max(0, params.chroma_base + cVar[i]);
     fg.push(buildRamp({
       hue: hues[i], steps: plan.fgLen[i], params, lMid, chromaBase: cBase, bounds,

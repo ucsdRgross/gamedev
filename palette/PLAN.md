@@ -345,6 +345,7 @@ Every parameter gets a slider (or dropdown/toggle), is encoded in the seed strin
 | `l_curve` | ease-dark / linear / ease-light / S-curve | Where steps cluster. Clustering in shadow gives rich darks; S-curve maximizes midtone separation. |
 | `l_range_compress` | 0–1 | Squeezes the palette toward mid-gray. High = foggy/washed/dreamlike. |
 | `l_variance_per_hue` | 0–0.15 | Lets hues sit at different lightnesses — real palettes don't put yellow and blue at the same L. |
+| `hue_lightness_follow` *(added post-plan, 2026-07-23)* | 0–1 | The **principled** form of the line above: biases each hue's midtone toward the lightness where that hue's chroma actually peaks in sRGB (its gamut cusp), so yellow/green/cyan ride up into the saturated zone instead of turning olive at a shared mid grey, while blue/red barely move. Default 0.5. Most presets pin it to 0 to preserve their originally-tuned look; the default palette, OKLAB Crayon, Neon Cyberpunk, Toxic Swamp and Sunset Desert use it. See ARCHITECTURE §3.8 and COLOR_GUIDE.md. |
 
 ### Chroma / saturation
 

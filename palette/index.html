@@ -146,6 +146,11 @@
           <p id="export-status" class="io-status"></p>
           <div class="io-row"><input id="import-file" type="file" accept=".json,application/json" /></div>
           <p id="import-status" class="io-status"></p>
+          <div class="io-row">
+            <button id="fit-image-btn" class="btn btn-small" title="Derive the parameters that best reproduce a reference palette image (a swatch strip, a lospec strip, or any art)">Fit to image…</button>
+          </div>
+          <input id="fit-image-file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+          <p id="fit-status" class="io-status"></p>
         </div>
       </details>
     </section>

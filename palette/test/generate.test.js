@@ -246,3 +246,24 @@ test('grayscale parameters produce a neutral palette without crashing', () => {
   assert.equal(p.entries.length, 16);
   for (const e of p.entries) assert.ok(e.actual.C < 0.08, `${e.id} chroma ${e.actual.C}`);
 });
+
+// The principled version of PLAN §5's note ("real palettes don't put yellow and blue at the
+// same L"): with hue_lightness_follow on, a yellow family rides up toward its high sRGB cusp
+// while blue stays near mid, so yellow's midtone is meaningfully lighter than blue's. At
+// follow=0 (all hues share l_mid_base) the two are within variance of each other.
+test('hue_lightness_follow lifts yellow above blue in lightness', () => {
+  const midL = (root, follow) => {
+    const p = generatePalette({
+      ...defaultParams(), color_count: 8, hue_count: 1, hue_scheme: 'analogous', hue_span: 0,
+      hue_jitter: 0, l_variance_per_hue: 0, root_hue: root, hue_lightness_follow: follow,
+    });
+    return p.entries.find((e) => e.role === 'fg_h0_mid').actual.L;
+  };
+  const yellowOff = midL(95, 0);
+  const blueOff = midL(255, 0);
+  assert.ok(Math.abs(yellowOff - blueOff) < 0.05, `follow=0 should match: ${yellowOff} vs ${blueOff}`);
+
+  const yellowOn = midL(95, 1);
+  const blueOn = midL(255, 1);
+  assert.ok(yellowOn > blueOn + 0.08, `follow=1 yellow ${yellowOn} should top blue ${blueOn}`);
+});

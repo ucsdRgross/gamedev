@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "palette",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/serve.mjs"],
+      "env": { "PORT": "5299" },
+      "port": 5299,
+      "url": "http://localhost:5299"
+    }
+  ]
+}

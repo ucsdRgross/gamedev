@@ -9,7 +9,7 @@ that a file exists.
 
 ## Every phase in the plan is complete and gated.
 
-`npm test` is green at **297 tests** (~6 minutes; the 10,000-case fuzz dominates).
+`npm test` is green at **305 tests** (~6 minutes; the 10,000-case fuzz dominates).
 **Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
 again is a **restart**: it takes the port back from the previous instance (ping + shutdown
 handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
@@ -84,6 +84,26 @@ in the user's home directory that npm walks up to and finds instead.
 Work done after the plan was complete, in response to the repo owner using the tool. Each is
 built, tested and documented; this is the list to extend when the next one lands.
 
+- **Hue-adaptive lightness — vivid yellows/greens/cyans.** The repo owner found yellow (and
+  the whole yellow→green→cyan arc) nearly unreachable via sliders/Randomize: those hues only
+  hold chroma at high sRGB lightness, but every hue was built around one global `l_mid_base`,
+  so they came out olive. New `hue_lightness_follow` parameter (default 0.5, on) biases each
+  hue's midtone toward its own sRGB gamut cusp lightness, reusing `gamutCusp` from `gamut.js`.
+  `src/core/generate.js` (the `hueMidLightness` helper). Most presets pin it to 0 (loop in
+  `presets.js`) so their looks are unchanged; the loud-colour ones opt in — OKLAB Crayon 0.975,
+  Neon Cyberpunk 0.7, Toxic Swamp 0.55, Sunset Desert 0.4 — so their yellows/greens read vivid.
+  Tests: `test/generate.test.js` (yellow-above-blue property); snapshots re-recorded (the other
+  presets' colours byte-identical, only seed strings grew); `feasibleParams` in `test/fuzz.test.js`
+  caps it at 0.6 for the strict canary. **`COLOR_GUIDE.md`** documents each hue's sRGB saturation
+  ceiling and the lightness it lives at, with recipes. Design notes: ARCHITECTURE §3.8, PLAN §5.
+- **Parameters from an image — the fitter.** Drop a palette image (swatch strip, lospec strip,
+  or any art) via the **Fit to image…** button and it searches the parameters that best
+  reproduce it. `src/core/fit.js` (`paletteFit`, `inferStructure`, `makeFitter`, `fitParams` —
+  a symmetric mean-nearest-ΔE objective + a seeded random-restart hill climb), wired in
+  `src/ui/io.js` (runs in rAF slices, applies like a preset) via the shared edge decoder
+  `src/ui/imagefile.js` and `recolor/swatches.js` extraction. Used offline to derive the new
+  **OKLAB Crayon** preset (fit ≈ 3.1 ΔE to the reference strip; strip also embedded in
+  `reference.js`). Tests: `test/fit.test.js`. Design notes: ARCHITECTURE §13.
 - **Recolour into an external palette.** Load a palette *image* (swatch strip, 1px lospec
   strip, or any art) and recolour reference images into it instead of the generated palette.
   `src/core/recolor/swatches.js` (extraction — a ≤2px strip is authoritative/every distinct

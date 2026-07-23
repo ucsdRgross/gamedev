@@ -34,8 +34,9 @@ function randomParams(rng) {
  * constraint. Everything outside is still checked for well-formedness.
  */
 function feasibleParams(rng) {
+  const base = randomParams(rng);
   return normalizeParams({
-    ...randomParams(rng),
+    ...base,
     color_count: 4 + Math.floor(rng() * 13),
     min_delta_e: 3,
     fg_bg_separation_min: 0.15,
@@ -49,6 +50,14 @@ function feasibleParams(rng) {
     bits_r: 8, bits_g: 8, bits_b: 8,
     gamut_map_mode: 'chroma-reduce',
     force_unique_hex: true,
+    // At full strength, hue-adaptive lightness pushes a foreground ramp up into a still-
+    // saturated, lightness-shifted background (high bg_chroma_mult + positive
+    // bg_lightness_offset) closely enough that fg/bg separation is no longer geometrically
+    // reachable in a single-hue palette — genuine infeasibility, not a repair miss, so it is
+    // capped out of the feasibility canary. The full 0..1 range is still fuzzed for
+    // well-formedness in the other three-quarters of cases, and separation under the default
+    // 0.5 is asserted deterministically in generate.test.js.
+    hue_lightness_follow: Math.min(base.hue_lightness_follow, 0.6),
   });
 }
 

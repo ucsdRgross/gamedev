@@ -229,6 +229,39 @@ CSS Color 4 accepts an early clipped result within 2.0 ΔE. This uses 0.1, becau
 fixed ΔE budget buys a large *angular* error at low chroma, and the generator's
 hue-shift invariants are asserted in degrees.
 
+### 3.8 Hue-adaptive midtone lightness (`hue_lightness_follow`, added 2026-07-23)
+
+The plan builds every foreground hue around one global `l_mid_base`. That is wrong for a
+whole arc of hues: in sRGB, yellow/yellow-green/green/cyan only hold chroma at high
+lightness (their gamut cusps sit at L ≈ 0.75–0.96), so requesting them at a shared mid grey
+and gamut-mapping the overflow away turns them **olive**. Blue/purple/red cusps already sit
+near mid grey (L ≈ 0.49–0.63) and are fine. PLAN §5 half-recognised this ("real palettes
+don't put yellow and blue at the same L") but implemented only *random* `l_variance_per_hue`.
+
+`slotColors` in `generate.js` now biases each hue's `lMid` toward `gamutCusp(hue).L`
+(reusing the cusp lookup already in `gamut.js`), scaled by `hue_lightness_follow` and a
+capped internal gain (`HUE_L_FOLLOW_GAIN`, 0.6, so even full follow leaves a highlight step
+of headroom under the light anchor). Because the target is *each hue's own* cusp, one knob
+self-corrects every hue by exactly the amount it needs — no per-hue parameters. It ships
+**on at 0.5 by default**, which changes the default palette (and is what makes yellows reach
+gold out of the box, including under Randomize). **Existing presets pin it to 0** via a loop
+in `presets.js`, so each reproduces its originally-approved snapshot byte-for-byte — *except*
+the ones whose intent is loud colour, which opt in with their own value: OKLAB Crayon (0.975),
+Neon Cyberpunk (0.7), Toxic Swamp (0.55), Sunset Desert (0.4). See `COLOR_GUIDE.md` for which
+hues the knob actually moves and by how much.
+
+Two consequences worth knowing:
+- **Seed strings grew** (one more field, appended per §6/§12.5). Preset *colours* are
+  byte-identical; only the seed field changed, and the golden snapshots were re-recorded on
+  that basis.
+- **The fuzz's feasibility canary needed a cap.** At full follow, a foreground ramp can ride
+  up into a still-saturated, lightness-shifted background (high `bg_chroma_mult` + positive
+  `bg_lightness_offset`) closely enough that fg/bg separation is no longer geometrically
+  reachable in a single-hue palette — genuine infeasibility, not a repair miss. `feasibleParams`
+  in `test/fuzz.test.js` caps `hue_lightness_follow` at 0.6 for the strict canary; the full
+  0–1 range is still fuzzed for well-formedness in the other three-quarters of cases. Same
+  class of adjustment as §12.7.
+
 ---
 
 ## 4. Performance
@@ -972,3 +1005,39 @@ random stream into corners it had not previously reached.
   while a background requested *above* it quantises to #000000 = L 0); and `reduce-l-adjust`
   moves lightness to reach the gamut by design. `generate.test.js` still asserts the
   achieved ordering under default parameters, which is where it has to hold.
+
+---
+
+## 13. Parameters from an image — the fitter (`fit.js`, added 2026-07-23)
+
+`src/core/fit.js` inverts the generator: given a list of target hexes it searches the
+parameter space for the set whose generated palette is perceptually closest. DOM-free and
+seeded (via `rng.js`, never `Math.random`), so `node --test` exercises the real search and
+the browser runs the same code.
+
+- **`paletteFit(candidate, target)`** is a symmetric mean-nearest ΔE in OKLab — `coverage`
+  (can the candidate express the target) + `fidelity` (does it waste colours), mean of the
+  two. It is the same measure `reference.js` scores embedded palettes with; that file keeps
+  its own tiny copy of `meanNearest` rather than importing `fit.js`, so it stays free of the
+  generator in its module graph.
+- **`inferStructure(target)`** guesses `color_count`, `hue_count` (greedy 35° hue clustering
+  of the chromatic colours), `fg_ramp_length` and `neutral_count`. The search tunes *colour*,
+  not structure, so a good guess here is what lets it converge. The crayon strip infers to
+  K=20 / 5 hues / fg-ramp 3 / 3 neutrals — a structure the allocator hits exactly.
+- **The search** is a random-restart hill climb. Restarts cycle the hue **scheme**
+  deterministically (a scheme is the one thing a continuous search cannot nudge its way into,
+  so every scheme gets a fair share of restarts); within a restart it perturbs 1–3 knobs by
+  gaussian noise scaled to their ranges, keeping strict improvements, with the step size
+  annealed down. ~6000 evals ≈ under a minute at small K.
+- **`makeFitter(target, opts)`** exposes the search as a resumable stepper (`step(n)`,
+  `bestScore`, `bestParams`, `done`). Core stays DOM-free; the UI (`io.js`) drives it in
+  `requestAnimationFrame` slices so a ~minute-long fit never freezes the page, showing
+  best-score-so-far, then applies the result exactly like a preset load. `fitParams` is the
+  one-call wrapper the tests and offline preset-derivation use.
+
+**How the OKLAB Crayon preset was made.** `fitParams` was run offline against the strip's
+20 colours (the target hexes are in `presets.js`), reaching a mean ΔE of ~3.1 — the fitted
+values were rounded and committed as the preset, and the strip itself embedded in
+`reference.js` so the reference-compare scene can score against it. The UI "Fit to image"
+button (`imagefile.js` decodes at the edge → `recolor/swatches.js` extracts → `fit.js`
+searches) is the same pipeline for any dropped image.

@@ -45,6 +45,9 @@ function boot() {
     exportStatus: $('export-status'),
     importFile: $('import-file'),
     importStatus: $('import-status'),
+    fitImageBtn: $('fit-image-btn'),
+    fitImageFile: $('fit-image-file'),
+    fitStatus: $('fit-status'),
     gallery: $('gallery'),
     galleryCategory: $('gallery-category'),
     galleryView: $('gallery-view'),
@@ -153,6 +156,11 @@ function boot() {
   const io = createIO(dom, {
     applyPreset: (id) => {
       state = { params: presetParams(id), locks: {}, overrides: {} };
+      regenerate();
+      commit(false);
+    },
+    applyParams: (params) => {
+      state = { params: normalizeParams(params), locks: {}, overrides: {} };
       regenerate();
       commit(false);
     },

@@ -138,6 +138,9 @@ export const PRESETS = [
       // magenta at the dark end. 95 keeps it red-through-gold.
       color_count: 32, hue_scheme: 'analogous', root_hue: 45, hue_span: 95,
       l_mid_base: 0.6, l_step: 0.15, chroma_base: 0.17, earthiness: 0.25,
+      // A little hue-adaptive lightness lets the gold end of the arc glow instead of
+      // sitting as dull ochre — the reds are unaffected (their cusp is already at mid L).
+      hue_lightness_follow: 0.4,
       highlight_hue_target: 75, highlight_shift_strength: 0.35,
       shadow_hue_target: 290, shadow_shift_strength: 0.45,
       global_temperature: 0.35, atmosphere_hue: 30, atmosphere_strength: 0.45,
@@ -170,6 +173,9 @@ export const PRESETS = [
     params: {
       color_count: 32, hue_scheme: 'analogous', root_hue: 100, hue_span: 120,
       l_mid_base: 0.45, l_step: 0.15, chroma_base: 0.2, chroma_falloff_dark: -0.05,
+      // The whole point is acid yellow-greens; at a flat mid grey they turn dull olive.
+      // Riding them toward their high-lightness cusp is what makes the swamp read toxic.
+      hue_lightness_follow: 0.55,
       earthiness: 0.3, temperature_split: 0.1,
       highlight_hue_target: 150, highlight_shift_strength: 0.4,
       shadow_hue_target: 40, shadow_shift_strength: 0.4,
@@ -187,6 +193,9 @@ export const PRESETS = [
       l_dark_anchor: 0.06, l_mid_base: 0.5, l_step: 0.18,
       chroma_base: 0.26, chroma_cap: 0.37, chroma_falloff_light: -0.05,
       chroma_falloff_dark: -0.03, earthiness: 0,
+      // Neon means every hue at full punch; the split-comp arc reaches into yellow-green,
+      // which needs high lightness to stay emissive rather than collapsing to olive.
+      hue_lightness_follow: 0.7,
       highlight_hue_target: 330, highlight_shift_strength: 0.3,
       shadow_hue_target: 265, shadow_shift_strength: 0.45,
       bg_chroma_mult: 0.25, bg_lightness_offset: -0.2,
@@ -315,7 +324,38 @@ export const PRESETS = [
       min_delta_e: 3, seed: 4747,
     },
   },
+  {
+    id: 'oklab-crayon',
+    name: 'OKLAB Crayon',
+    group: 'mood',
+    doc: 'Bright primary crayon set — five saturated hue families in light/mid/dark plus a neutral ramp. Derived by fitting the parameters to a reference strip (fit.js), which is why the yellow and green read as vivid gold and leaf rather than olive: hue_lightness_follow rides them up to where sRGB can hold the chroma.',
+    params: {
+      color_count: 20, hue_count: 5, hue_scheme: 'custom', root_hue: 242, hue_span: 337,
+      hue_jitter: 7.4, perceptual_hue_spacing: 0, fg_ramp_length: 3, neutral_count: 3,
+      accent_count: 0,
+      l_dark_anchor: 0.15, l_light_anchor: 0.997, l_mid_base: 0.626, l_step: 0.289,
+      l_curve: 'linear', l_range_compress: 0.34, l_variance_per_hue: 0.15,
+      hue_lightness_follow: 0.975,
+      chroma_base: 0.282, chroma_peak_l: 0.644, chroma_curve_width: 0.604,
+      chroma_falloff_light: 0.018, chroma_falloff_dark: 0.11, chroma_variance_per_hue: 0.085,
+      earthiness: 0.036, chroma_cap: 0.256,
+      highlight_hue_target: 84, highlight_shift_strength: 0.142,
+      shadow_hue_target: 118, shadow_shift_strength: 0.111, shift_model: 'relative-rotation',
+      global_temperature: 0.43, temperature_split: 0.978,
+      neutral_temperature: 355, neutral_chroma: 0, neutral_l_spread: 0.296,
+      min_delta_e: 4, seed: 12345,
+    },
+  },
 ];
+
+// Every preset here predates hue-adaptive lightness (`hue_lightness_follow`) and was tuned —
+// and its golden snapshot approved — without it. Pin it off on any preset that does not set
+// it explicitly, so each reproduces its originally-approved look byte-for-byte rather than
+// silently shifting when the feature shipped on-by-default. The default palette (no preset)
+// still gets the fix; a preset opts in by setting its own value (OKLAB Crayon uses 0.975).
+for (const preset of PRESETS) {
+  if (preset.params.hue_lightness_follow === undefined) preset.params.hue_lightness_follow = 0;
+}
 
 /** Presets looked up by id. */
 export const PRESET_BY_ID = new Map(PRESETS.map((p) => [p.id, p]));

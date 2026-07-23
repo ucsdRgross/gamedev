@@ -10,7 +10,7 @@ test('the plan\'s preset counts are present', () => {
   const emulation = PRESETS.filter((p) => p.group === 'emulation');
   const mood = PRESETS.filter((p) => p.group === 'mood');
   assert.equal(emulation.length, 8, 'expected 8 emulation-flavoured presets');
-  assert.equal(mood.length, 12, 'expected 12 mood presets');
+  assert.ok(mood.length >= 12, `expected at least the 12 plan mood presets, got ${mood.length}`);
   const ids = PRESETS.map((p) => p.id);
   assert.equal(new Set(ids).size, ids.length, 'preset ids must be unique');
   for (const p of PRESETS) {
@@ -83,7 +83,7 @@ test('monochrome preset really is monochrome and gameboy really is four greens',
 });
 
 test('reference palettes are well-formed and complete', () => {
-  assert.equal(REFERENCE_PALETTES.length, 11);
+  assert.equal(REFERENCE_PALETTES.length, 12);
   const ids = REFERENCE_PALETTES.map((r) => r.id);
   assert.equal(new Set(ids).size, ids.length);
   for (const ref of REFERENCE_PALETTES) {
@@ -111,7 +111,7 @@ test('a reference scores zero against itself and worse against others', () => {
 
 test('ranking orders references by fit and the gameboy preset ranks its namesake highly', () => {
   const ranked = rankReferences(paletteHexes(generatePalette(presetParams('gameboy'))));
-  assert.equal(ranked.length, 11);
+  assert.equal(ranked.length, 12);
   for (let i = 1; i < ranked.length; i++) assert.ok(ranked[i].score >= ranked[i - 1].score);
   assert.equal(ranked[0].id, 'gameboy', `closest reference was ${ranked[0].id}`);
 });

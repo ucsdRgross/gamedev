@@ -35,12 +35,12 @@ The rest is for working on the code.
 npm test
 ```
 
-297 tests: colour-space round-trips against published reference values, gamut mapping,
+305 tests: colour-space round-trips against published reference values, gamut mapping,
 bit-depth quantisation, generator invariants across every palette size from 4 to 64, seed
 round-trips, export round-trips, the dev-server API, the raster/analysis/dither modules, a
 34-scene smoke test, the picker layouts and colour-space maps, the recolour paths (indexed,
-quantize, external-palette extraction), the GIF codec, the Randomize exclusions, golden
-snapshots, and a 10,000-case fuzz. Takes about 6 minutes;
+quantize, external-palette extraction), the GIF codec, the **parameters-from-image fitter**,
+the Randomize exclusions, golden snapshots, and a 10,000-case fuzz. Takes about 6 minutes;
 `PALETTE_FUZZ_N=200 npm test` shortens the fuzz while iterating.
 
 ```bash
@@ -50,7 +50,9 @@ npm start
 Starts the dependency-free dev server (default `http://localhost:5173/`) and serves the
 browser app: live parameter sliders, a swatch grid with lock/override, undo/redo and a
 history strip, seed field with URL-hash sync, save/load against `saved/*.json`, all eight
-export formats, the **34-scene test gallery** (category filter, colour-vision views, zoom,
+export formats, a **Fit to image…** button (drop a palette image — a swatch strip, a lospec
+strip, or any art — and it searches the parameters that best reproduce it), the **34-scene
+test gallery** (category filter, colour-vision views, zoom,
 animation, drag-and-drop photo quantization), the **artist's-palette picker** (colour-space
 maps by default, 15 arrangement layouts behind a selector), and the **recolour page** —
 every reference image re-rendered in the generated palette, animations included, playing.
@@ -125,7 +127,8 @@ Two things worth knowing before you start:
 | `l_step` | Lightness jump per ramp step — **this is contrast** | **Small** (0.08–0.12) → soft painterly blendable · **large** (0.2+) → punchy, readable at 1×. Raise if shading is flat, lower if harsh. |
 | `l_curve` | Where ramp steps bunch up | `ease-dark` rich darks · `ease-light` rich highlights · `s-curve` max midtone form-reading · `linear` even. |
 | `l_range_compress` | Squeeze ramps toward mid-grey | **Toward 1** → foggy, washed, hazy, dreamlike, faded-photo. The atmosphere/distance knob; overdo it and it all goes flat grey. |
-| `l_variance_per_hue` | Different hues at different lightnesses | **Up** → natural variety · **0** → rigid systematic look. **Set to 0 to help freeze the palette.** |
+| `l_variance_per_hue` | Different hues at different lightnesses (random) | **Up** → natural variety · **0** → rigid systematic look. **Set to 0 to help freeze the palette.** |
+| `hue_lightness_follow` | Each hue sits where it can actually be saturated | **Up** → vivid gold/leaf-green/cyan (they ride to high lightness where sRGB holds their chroma) · **0** → every hue at the same midtone, so yellows/greens go olive. Raise if bright yellows/greens look muddy. Blues/reds barely move. |
 
 ### Chroma — saturation shaping
 
@@ -223,6 +226,11 @@ reference images are recoloured.
 | `gif_frame` | Which frame a *still* export uses | The animation is always recoloured whole; this only picks the frame for the single-image PNG. |
 
 ### Recipes — combinations that produce a look
+
+> **Chasing a specific vivid colour** (bright yellow, acid green, neon cyan)? See
+> [COLOR_GUIDE.md](COLOR_GUIDE.md) — every hue's saturation ceiling and the lightness it lives
+> at, plus the `root_hue` / `hue_lightness_follow` / `chroma_base` settings to reach it. Not all
+> hues are equally saturable, and the guide says which.
 
 - **Foggy distant background:** high `l_range_compress` (0.4+), high `atmosphere_strength`,
   low `bg_chroma_mult`, `atmosphere_hue` at your air colour, positive `bg_lightness_offset`.

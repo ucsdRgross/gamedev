@@ -21,7 +21,7 @@ import { recolorFrames } from '../core/recolor/index.js';
 import { extractPalette, externalPalette } from '../core/recolor/swatches.js';
 import { decodeGif, encodeGif } from '../core/gif.js';
 import { encodePngRgb } from '../core/export/png.js';
-import { Raster } from '../core/raster.js';
+import { decodeStillToRaster } from './imagefile.js';
 import { download } from './io.js';
 
 const MODE_LABELS = { indexed: 'indexed remap', quantize: 'per-pixel quantize' };
@@ -522,30 +522,4 @@ function isGif(bytes) {
 }
 
 /** Decode a PNG or JPEG through the browser and hand back an RGB Raster. */
-function decodeStill(bytes, name) {
-  return new Promise((resolvePromise, reject) => {
-    const url = URL.createObjectURL(new Blob([bytes]));
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const raster = new Raster(canvas.width, canvas.height, null);
-      for (let i = 0, p = 0; i < data.length; i += 4, p += 3) {
-        raster.data[p] = data[i];
-        raster.data[p + 1] = data[i + 1];
-        raster.data[p + 2] = data[i + 2];
-      }
-      URL.revokeObjectURL(url);
-      resolvePromise(raster);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error(`could not decode ${name}`));
-    };
-    img.src = url;
-  });
-}
+const decodeStill = decodeStillToRaster;

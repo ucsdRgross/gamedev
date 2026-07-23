@@ -200,6 +200,14 @@ export const PARAMS = [
     'Shrinks the source to this pixel width before recolouring, turning a photo into chunky pixel art. 0 keeps the original resolution. Set ~64–128 for a genuine downscaled pixel-art result instead of a full-res recolour.'),
   i('gif_frame', 'recolor', 0, 63, 0,
     'Which frame a STILL export pulls from a multi-frame source. The animation itself is always recoloured in full — this only picks the frame for the single-image PNG export.'),
+
+  // --- Hue-adaptive lightness (post-plan addition) -----------------------
+  // Appended after the recolour block because field order is the seed payload's order and
+  // appending is the only safe edit (old PAL1 seeds still decode). The slider still shows in
+  // the `lightness` group. Fixes hues whose saturated form lives high on the L axis
+  // (yellow/green/cyan) being crushed to olive when built at the single global `l_mid_base`.
+  f('hue_lightness_follow', 'lightness', 0, 1, 0.01, 0.5,
+    'Lets each hue sit at the lightness where it can actually be saturated, instead of all hues sharing l_mid_base. 0 = every hue at the same midtone (yellows/greens/cyans go olive and dull); 1 = each hue rides fully toward its brightest sRGB lightness (vivid gold, leaf-green, bright cyan). Raise it if yellows/greens look muddy; lower for a flatter, uniform-lightness look. Blues/reds barely move — they are already saturated at mid lightness.'),
 ];
 
 /** Parameter specs looked up by name. */

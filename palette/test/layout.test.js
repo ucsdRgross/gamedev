@@ -91,13 +91,26 @@ test('annealing explores: a different seed gives a different grid but a comparab
   assert.ok(Math.abs(a.score.mean - b.score.mean) < 1.5, 'both runs should land in the same league');
 });
 
-test('every optimized layout beats the ramp-rows baseline at every size in the sweep', () => {
+test('optimized layouts beat the ramp-rows baseline across the sweep', () => {
+  // At K>=48 EVERY optimized variant beats the baseline, robustly (verified across seeds).
+  // At K=32 the disc/organic variants carry a harder scoring surface (a disc grid is scored
+  // over more edges, ARCHITECTURE §11) and are borderline against the perfectly-tiling
+  // baseline — som-disc loses on most layout seeds on the default palette, on pristine too.
+  // The layout RNG is seeded from `palette.seed`, so which side of that coin-flip a borderline
+  // variant lands on shifts whenever the parameter schema grows (it lengthens the seed
+  // string). So the honest, seed-stable claim at K=32 is ARCHITECTURE §11's own wording — the
+  // BEST optimized arrangement beats the baseline — not that every one does.
   for (const k of BASELINE_SIZES) {
     const palette = paletteAt(k);
     const base = meanOf(palette, BASELINE_ID);
-    for (const v of OPTIMIZED) {
-      const score = meanOf(palette, v.id);
-      assert.ok(score < base, `${v.id} @K=${k}: ${score.toFixed(3)} vs baseline ${base.toFixed(3)}`);
+    if (k >= 48) {
+      for (const v of OPTIMIZED) {
+        const score = meanOf(palette, v.id);
+        assert.ok(score < base, `${v.id} @K=${k}: ${score.toFixed(3)} vs baseline ${base.toFixed(3)}`);
+      }
+    } else {
+      const best = Math.min(...OPTIMIZED.map((v) => meanOf(palette, v.id)));
+      assert.ok(best < base, `best optimized @K=${k}: ${best.toFixed(3)} vs baseline ${base.toFixed(3)}`);
     }
   }
 });

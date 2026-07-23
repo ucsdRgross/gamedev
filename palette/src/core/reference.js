@@ -115,6 +115,14 @@ export const REFERENCE_PALETTES = [
       '#68ACA9', '#387080', '#6E6962', '#93A167', '#6EAA78', '#557064', '#9D9F7F',
       '#7E9E99', '#5D6872', '#433455'],
   },
+  {
+    id: 'oklabcrayon',
+    name: 'OKLAB Crayon',
+    author: 'reference strip',
+    colors: ['#FFFFF6', '#FF907D', '#ED0003', '#880001', '#F0AF10', '#C46300', '#713500',
+      '#94D15C', '#40990E', '#215605', '#13CBFF', '#098AF4', '#014D8E', '#FE8FE0', '#D121AF',
+      '#770F63', '#BDBBBA', '#817E7D', '#464545', '#141414'],
+  },
 ];
 
 /** Reference palettes looked up by id. */

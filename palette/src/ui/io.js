@@ -4,6 +4,9 @@
 
 import { PRESETS } from '../core/presets.js';
 import { EXPORTERS, runExport } from '../core/export/index.js';
+import { makeFitter } from '../core/fit.js';
+import { extractPalette } from '../core/recolor/swatches.js';
+import { decodeStillToRaster } from './imagefile.js';
 
 /** Read a `PAL1-…` seed out of the URL hash (`#seed=…`), or null. */
 export function readSeedFromHash() {
@@ -106,6 +109,47 @@ export function createIO(dom, actions) {
       status(dom.importStatus, `Import failed: ${err.message}`, 'err');
     }
     dom.importFile.value = '';
+  });
+
+  // ---- Fit to image ---------------------------------------------------
+  // Decode an image at the edge, extract its palette, then search the generator's parameter
+  // space for the set that reproduces it (fit.js). The search is deterministic but takes a
+  // few seconds, so it runs in animation-frame slices to keep the page responsive, reporting
+  // best-score-so-far. When done, the fitted params are applied exactly like a preset.
+  dom.fitImageBtn?.addEventListener('click', () => dom.fitImageFile?.click());
+  dom.fitImageFile?.addEventListener('change', async () => {
+    const file = dom.fitImageFile.files?.[0];
+    if (!file) return;
+    dom.fitImageFile.value = '';
+    try {
+      status(dom.fitStatus, `Reading ${file.name}…`);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const raster = await decodeStillToRaster(bytes, file.name);
+      const target = extractPalette(raster).colors.map((c) => c.hex);
+      if (target.length < 2) {
+        status(dom.fitStatus, 'Need at least two colours to fit', 'err');
+        return;
+      }
+      // Fewer iterations for larger targets — each evaluation generates a whole palette, so
+      // cost grows with colour count. Keeps a big drop-in from running for minutes.
+      const iterations = Math.max(1500, Math.round(4000 * Math.min(1, 24 / target.length)));
+      const fitter = makeFitter(target, { iterations });
+      dom.fitImageBtn.disabled = true;
+      const tick = () => {
+        const t0 = performance.now();
+        while (!fitter.done && performance.now() - t0 < 25) fitter.step(10);
+        status(dom.fitStatus,
+          `Fitting ${target.length} colours… ${Math.round(fitter.progress * 100)}% · ΔE ${fitter.bestScore.toFixed(2)}`);
+        if (!fitter.done) { requestAnimationFrame(tick); return; }
+        actions.applyParams(fitter.bestParams);
+        dom.fitImageBtn.disabled = false;
+        status(dom.fitStatus, `Fitted ${target.length} colours · ΔE ${fitter.bestScore.toFixed(2)}`, 'ok');
+      };
+      requestAnimationFrame(tick);
+    } catch (err) {
+      dom.fitImageBtn.disabled = false;
+      status(dom.fitStatus, `Fit failed: ${err.message}`, 'err');
+    }
   });
 
   // ---- Saves (dev-server backed) --------------------------------------
