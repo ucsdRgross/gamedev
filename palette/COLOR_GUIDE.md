@@ -84,10 +84,25 @@ Single-hue palette placed exactly on the cusp — the surest way to a precise sw
 ```
 hue_count: 1     root_hue: <hue from the map>     l_mid_base: <cusp L from the map>
 chroma_base: 0.30     chroma_cap: 0.37     chroma_falloff_light: 0     earthiness: 0
+l_light_anchor: 1.0   l_step: 0.05   min_delta_e: 2
 ```
 
-Example — vivid chartreuse: `root_hue 110`, `l_mid_base 0.90`, the chroma settings above.
-Example — deep vivid violet: `root_hue 300`, `l_mid_base 0.55`.
+**That last line is not optional for the bright hues.** A ramp is clamped to fit *entirely*
+under `l_light_anchor` (minus a margin), so with the default anchor and a normal `l_step` a
+3-step ramp gets pushed down and the midtone lands near `L 0.74` no matter what you asked for.
+Raising the anchor and shrinking the step is what leaves room for the midtone to actually sit
+at `0.9`. Measured results with the recipe above:
+
+```
+chartreuse (h110, l_mid_base 0.96) -> #E0F400  L0.92 C0.210   (cusp C is 0.211)
+yellow     (h95,  l_mid_base 0.88) -> #F9E700  L0.91 C0.193
+green      (h142, l_mid_base 0.86) -> #7CFF60  L0.89 C0.230
+cyan       (h195, l_mid_base 0.90) -> #71FFF5  L0.92 C0.124
+magenta    (h330, l_mid_base 0.70) -> #FF51F8  L0.73 C0.271
+```
+
+Violet and indigo need none of this — their cusps sit at `L 0.48–0.55`, comfortably inside the
+default range, so `root_hue 300` + `l_mid_base 0.55` is enough.
 
 ### Softer / more natural
 
@@ -96,6 +111,70 @@ still reach a believable, painterly saturation without going full neon, and high
 (`chroma_falloff_light` > 0) reads as sunlight. This is where the default palette and most mood
 presets sit; **Neon Cyberpunk** (`follow 0.7`) and **Toxic Swamp** (`follow 0.55`) show the loud
 end.
+
+## Which colour goes where — layers
+
+The colour-space map answers *"where is this colour"*. It cannot answer *"which colour belongs
+in this job"*, because position there means hue and lightness and nothing else. That is what the
+**"which colours go where"** bands under the map are for — every entry, grouped by its layer,
+hoverable and click-to-copy exactly like the map itself.
+
+| Layer | Use it for | Notes |
+|---|---|---|
+| `anchor` (2) | Outlines, deepest shadow, extreme highlight | **Shared by everything** — the one set both foreground and background draw from |
+| `fg` | Characters, enemies, props, anything interactive | High chroma, long ramps |
+| `bg` | Terrain, parallax, scenery | Generated desaturated (`bg_chroma_mult`), lightness-offset, pulled toward `atmosphere_hue` |
+| `neutral` | Stone, metal, UI chrome | Shared; low chroma |
+| `neutral-warm` | Skin, wood, parchment | Only when `neutral_split` is on |
+| `accent` | UI alerts, FX, pickups | Highest chroma in the palette; use sparingly |
+| `bridge` | Transitions between adjacent ramps | Filler tier; safe anywhere |
+
+**Foreground and background are two designed sets, not one pool with a preference.** Backgrounds
+are deliberately desaturated and hue-shifted, and `fg_bg_separation_min` is a **hard constraint
+the repair pass enforces** between every fg/bg pair (PLAN §2.3) — that separation is the tool's
+primary readability mechanism. Painting a sprite in a background colour spends exactly the
+contrast you paid for, so **keep bg colours off your sprites and fg colours out of your
+backdrops.** Anchors and neutrals are the ones legitimately shared by both.
+
+If foregrounds still fail to read against a scene, raise `fg_bg_separation_min`; if the two sets
+feel too disconnected, lower it or raise `bg_chroma_mult`.
+
+### The by-context charts
+
+The bands above tell you *which* colours belong to a job, but they are a flat list — they lose
+the thing that makes the map readable, which is that similar colours sit next to each other. The
+**Map — by context** view fixes that: one row per context, each an ordinary hue×lightness map
+across the same four saturations, but with only that context's colours allowed to compete for a
+pixel. A colour keeps the position it has on the full map, so what you learn in one chart
+transfers to the others.
+
+| Context | Draws from | Why |
+|---|---|---|
+| **Everything** | the whole palette | the reference view |
+| **Sprites & props** | anchor · fg · bridge · neutral · neutral-warm | the foreground side plus the shared tiers |
+| **Backgrounds & terrain** | anchor · bg · bridge · neutral | the background side plus the shared tiers |
+| **Sky & atmosphere** | light anchor · the *lighter half* of bg and neutral | backgrounds are already pulled toward `atmosphere_hue`, so the aerial band is their light end — what a sky gradient is built from |
+| **UI & HUD** | anchor · neutral · neutral-warm · accent · the `ui_good`/`ui_bad`/`ui_neutral` roles | chrome plus signal; legibility first |
+| **FX & emissive** | accent · light anchor · the top half of every fg ramp · the `fire`/`gold`/`blood` roles | effects read as light sources, so they live at the bright end |
+
+Sprites and Backgrounds are near-complements **on purpose** — that is `fg_bg_separation_min`
+made visible. Put the two rows side by side and you can see the readability margin the generator
+bought you; if they look too similar, that constraint is set too low.
+
+A context is dropped rather than drawn when it holds fewer than three colours, or when its set is
+identical to one already shown (at K=8 there are no backgrounds at all, so "sprites" *is* the
+whole palette — drawing it twice would imply a distinction the palette does not have).
+
+### Why four saturation slices, and not a saturation slider
+
+The four slices (`1.0 / 0.7 / 0.4 / 0.12`) are **not** foreground-vs-background views. They exist
+because each map paints every pixel with the *nearest* palette colour, so a colour that is
+nearest to nothing at a given saturation simply never appears: one slice reaches ~45 of 48
+colours, the four together reach 48/48, and anything still unreached is drawn in the "no slice
+reaches" strip. They are a **coverage guarantee**, and that is why they are fixed rather than a
+slider — saturation is not something you are choosing here (every pixel resolves to a palette
+entry regardless), it is only the coordinate being searched. The question a slider *would* answer
+is better answered by the layer bands above.
 
 ---
 

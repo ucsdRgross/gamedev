@@ -10,9 +10,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_SATURATIONS, MAP_GEOMETRIES, buildColorMap, buildMapSlices, hslToSrgb,
-  mapFidelity, mapPickAt, mapSample,
+  mapFidelity, mapPickAt, mapSample, MAP_CONTEXTS, contextEntries, buildContextMaps,
 } from '../src/core/layout/colorspace.js';
-import { mapSheet, paintLabels, pickAt } from '../src/core/layout/render.js';
+import { contextSheet, layerBands, mapSheet, paintLabels, pickAt } from '../src/core/layout/render.js';
 import { generatePalette } from '../src/core/generate.js';
 import { presetParams } from '../src/core/presets.js';
 import { rgb8ToHex, srgbToRgb8 } from '../src/core/oklch.js';
@@ -230,6 +230,115 @@ test('the slice sheet draws every slice plus a strip of the colours no slice rea
     assert.ok(sheet.labels[i] >= -1 && sheet.labels[i] < palette.entries.length);
   }
   assert.equal(pickAt(sheet, -1, 0), -1);
+});
+
+test('layer bands group every entry under the job it is for', () => {
+  const palette = paletteAt(48);
+  const bands = layerBands(palette);
+  assert.ok(bands.length >= 4, `expected several layers, got ${bands.map((b) => b.id).join(',')}`);
+  // Every band is non-empty, every index is real, and no entry is claimed by two bands.
+  const seen = new Set();
+  for (const b of bands) {
+    assert.ok(b.entries.length > 0, `${b.id} band is empty`);
+    assert.ok(b.title && b.usage, `${b.id} needs a title and a usage note`);
+    for (const i of b.entries) {
+      assert.equal(palette.entries[i].layer, b.id, `entry ${i} is not a ${b.id}`);
+      assert.ok(!seen.has(i), `entry ${i} appears in two bands`);
+      seen.add(i);
+    }
+  }
+  // The bands must account for the whole palette — an artist looking for a colour's job must
+  // never find it missing from the guide.
+  assert.equal(seen.size, palette.entries.length, 'some entries belong to no band');
+  // Foreground and background are the pair the separation constraint exists for.
+  const ids = bands.map((b) => b.id);
+  assert.ok(ids.includes('fg') && ids.includes('bg'), 'fg and bg bands must both be present');
+});
+
+test('band swatches on the map sheet are hit-testable, not just drawn', () => {
+  const palette = paletteAt(24);
+  const set = buildMapSlices(palette, { geometry: 'rect', saturations: [1], size: SIZE });
+  const sheet = mapSheet(set, palette, { columns: 2 });
+  // Every entry is in some band, so after the bands are drawn every entry must be reachable
+  // by a hover — that is the whole point of composing them into the same label buffer.
+  for (let i = 0; i < palette.entries.length; i++) {
+    assert.ok(sheet.labels.includes(i), `entry ${i} (${palette.entries[i].layer}) is not hit-testable`);
+  }
+  // And the sheet grew to make room rather than overwriting the maps.
+  const withoutBands = SIZE.h;
+  assert.ok(sheet.h > withoutBands, 'sheet should have grown for the bands');
+});
+
+test('a context map paints only that context\'s colours, in the same geometry', () => {
+  const palette = paletteAt(48);
+  for (const context of MAP_CONTEXTS) {
+    const pool = contextEntries(palette, context);
+    if (pool.length < 3) continue;
+    const map = buildColorMap(palette, { geometry: 'rect', saturation: 1, size: SIZE, entries: pool });
+    const allowed = new Set(pool);
+    for (let i = 0; i < map.labels.length; i++) {
+      assert.ok(allowed.has(map.labels[i]), `${context.id}: painted entry ${map.labels[i]} outside its context`);
+    }
+    // Coverage is reported against the pool, not the whole palette.
+    assert.equal(map.total, pool.length);
+    assert.equal(map.shown.length + map.missing.length, pool.length);
+    // Restricting the pool must not move the geometry: the two side columns are still the
+    // same hue, which is what lets a colour keep its position across contexts.
+    for (let y = 0; y < map.h; y++) {
+      assert.equal(map.labels[y * map.w], map.labels[y * map.w + map.w - 1], `${context.id}: edges differ`);
+    }
+  }
+});
+
+test('sprites and scenery contexts are the two disjoint sides of the palette', () => {
+  const palette = paletteAt(48);
+  const byId = Object.fromEntries(MAP_CONTEXTS.map((c) => [c.id, contextEntries(palette, c)]));
+  const layersOf = (ids) => new Set(ids.map((i) => palette.entries[i].layer));
+  // The separation constraint is the point: no background colour is offered for sprites, and
+  // no foreground colour for scenery.
+  assert.ok(!layersOf(byId.sprites).has('bg'), 'sprites must not offer background colours');
+  assert.ok(!layersOf(byId.scenery).has('fg'), 'scenery must not offer foreground ramp colours');
+  // Both still get the shared tiers, or an artist could not outline anything.
+  for (const id of ['sprites', 'scenery']) assert.ok(layersOf(byId[id]).has('anchor'), `${id} needs the anchors`);
+  // Every context is a real subset of the palette, and `all` is the whole thing.
+  assert.equal(byId.all.length, palette.entries.length);
+  for (const c of MAP_CONTEXTS) {
+    assert.ok(byId[c.id].length <= palette.entries.length, `${c.id} is not a subset`);
+  }
+});
+
+test('buildContextMaps drops contexts that are too small or duplicated', () => {
+  // K=8 has no background rounds at all, so "sprites" is the whole palette and "sky" is
+  // barely anything — neither should be drawn as if it were a distinct view.
+  const small = buildContextMaps(paletteAt(8), { geometry: 'rect', saturations: [1], size: SIZE });
+  const ids = small.map((c) => c.context.id);
+  assert.ok(ids.includes('all'), 'the reference context should always survive');
+  assert.equal(new Set(small.map((c) => c.entries.join(','))).size, small.length, 'duplicate context sets drawn');
+  for (const c of small) assert.ok(c.entries.length >= 3, `${c.context.id} is too small to chart`);
+
+  // A full palette supports the distinct ones.
+  const big = buildContextMaps(paletteAt(48), { geometry: 'rect', saturations: [1], size: SIZE });
+  const bigIds = big.map((c) => c.context.id);
+  for (const id of ['all', 'sprites', 'scenery', 'ui', 'fx']) {
+    assert.ok(bigIds.includes(id), `K=48 should support the ${id} context`);
+  }
+});
+
+test('the context sheet is hit-testable and introduces no foreign colour', () => {
+  const palette = paletteAt(32);
+  const maps = buildContextMaps(palette, { geometry: 'rect', saturations: [1, 0.4], size: SIZE });
+  const sheet = contextSheet(maps, palette);
+  for (let i = 0; i < sheet.labels.length; i++) {
+    assert.ok(sheet.labels[i] >= -1 && sheet.labels[i] < palette.entries.length, `stray label ${sheet.labels[i]}`);
+  }
+  // The bands are on this sheet too, so every entry stays reachable by hover even if some
+  // context map does not happen to show it.
+  for (let i = 0; i < palette.entries.length; i++) {
+    assert.ok(sheet.labels.includes(i), `entry ${i} is not hit-testable on the context sheet`);
+  }
+  const drawn = rasterHexes(sheet.raster);
+  const allowed = new Set([...palette.entries.map((e) => e.hex), '#16161C', '#E1E1E8', '#80808C', '#E68C64']);
+  for (const hex of drawn) assert.ok(allowed.has(hex), `foreign pixel ${hex} on the context sheet`);
 });
 
 test('more saturation slices reach more of the palette', () => {

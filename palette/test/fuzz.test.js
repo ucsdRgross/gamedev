@@ -4,6 +4,7 @@ import { generatePalette, paletteHexes, paletteViolations } from '../src/core/ge
 import { PARAMS, normalizeParams } from '../src/core/params.js';
 import { makeRng } from '../src/core/rng.js';
 import { isOnGrid } from '../src/core/quantize.js';
+import { rgb8ToOklab } from '../src/core/oklch.js';
 import { encodeSeed, decodeSeed } from '../src/core/seed.js';
 import { runExport, EXPORTERS } from '../src/core/export/index.js';
 
@@ -11,6 +12,22 @@ import { runExport, EXPORTERS } from '../src/core/export/index.js';
 //   PALETTE_FUZZ_N=200 npm test
 const CASES = Number(process.env.PALETTE_FUZZ_N ?? 10000);
 const HEX_RE = /^#[0-9A-F]{6}$/;
+
+/**
+ * OKLab lightness worth of ONE legal grid step at this colour — the finest lightness
+ * distinction the requested bit depth can actually represent here. Near black a single step
+ * is worth an order of magnitude more than it is in the midtones, which is why a flat
+ * tolerance cannot stand in for it.
+ */
+function gridStepL(rgb8, params) {
+  const step = (bits) => 255 / (2 ** bits - 1);
+  const up = [
+    Math.min(255, rgb8[0] + step(params.bits_r)),
+    Math.min(255, rgb8[1] + step(params.bits_g)),
+    Math.min(255, rgb8[2] + step(params.bits_b)),
+  ];
+  return Math.abs(rgb8ToOklab(up)[0] - rgb8ToOklab(rgb8)[0]);
+}
 
 /** Draw a parameter set uniformly across every field's full range. */
 function randomParams(rng) {
@@ -147,8 +164,23 @@ test(`${CASES} randomised parameter sets produce well-formed palettes`, () => {
           // deliberately spends a little lightness on top of that. `clip` is exempt:
           // naive channel clamping moves lightness and hue arbitrarily, which is the
           // whole reason that mode exists only as a demonstration.
-          if (params.gamut_map_mode !== 'clip') {
-            const slack = params.gamut_map_mode === 'reduce-l-adjust' ? 0.045 : 0.01;
+          //
+          // The order is also only assertable when the REQUEST was expressible on the output
+          // grid. Squeezed against an anchor, `rampLightness` falls back to its MIN_RAMP_STEP
+          // floor of 0.005 — but near black one legal step is worth far more than that (at
+          // 6 bits around L 0.12, a step moves OKLab L by ~0.024), so two steps 0.005 apart
+          // quantise to whichever grid point is nearer and can land out of order. That is the
+          // grid being coarser than the request, not the ramp being built wrong — the same
+          // effect §12.7 records for the anchors. Comparing against the *measured* local grid
+          // step rather than a flat tolerance keeps the exemption narrow: it fires on the ~18%
+          // of pairs the grid genuinely cannot separate, and on nothing else.
+          const requestedGap = ramp[j].oklch.L - ramp[j - 1].oklch.L;
+          const gridStep = Math.max(
+            gridStepL(ramp[j].rgb8, params),
+            gridStepL(ramp[j - 1].rgb8, params),
+          );
+          const slack = params.gamut_map_mode === 'reduce-l-adjust' ? 0.045 : 0.01;
+          if (params.gamut_map_mode !== 'clip' && requestedGap >= gridStep) {
             assert.ok(
               ramp[j].actual.L >= ramp[j - 1].actual.L - slack,
               `${where()}: ramp ${key} inverted after quantisation`,

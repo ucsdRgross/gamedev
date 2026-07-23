@@ -262,6 +262,35 @@ Two consequences worth knowing:
   0–1 range is still fuzzed for well-formedness in the other three-quarters of cases. Same
   class of adjustment as §12.7.
 
+### 3.9 Two parameter ceilings raised, and what the fuzz said about it (2026-07-23)
+
+`l_mid_base` 0.80 → **0.92** and `l_variance_per_hue` 0.15 → **0.30**. The first was a real
+blocker: 0.80 made high-key palettes impossible and stopped a ramp being centred on the gamut
+cusp for the whole yellow→cyan arc (cusps at L 0.86–0.96). The second was measured — fitting real
+reference palettes pinned it at the old ceiling, i.e. it permitted less spread than hand-made
+palettes use. Two things to know:
+
+- **Param ranges are part of the seed contract.** `u16ToParam` decodes `min + (u/65535)·(max−min)`,
+  so changing a range reinterprets that field in every previously-saved `PAL1` string. Accepted
+  deliberately here (the repo owner's call); saved `.json`, presets and exports store real values
+  and are unaffected, and **no preset colour moved** — only seed strings changed. If a future
+  range change must not break seeds, `PAL2` with the old decoder retained is the path PLAN §6
+  anticipates.
+- **Raising `l_mid_base` alone does not lift the midtone.** `rampLightness` clamps a ramp to fit
+  *entirely* inside the anchor window, so with the default light anchor a 3-step ramp at a normal
+  `l_step` is pushed back down and the midtone lands near L 0.74 whatever you asked for. Reaching
+  the high cusps also needs `l_light_anchor` near 1.0 and a small `l_step` — the recipe and its
+  measured output are in `COLOR_GUIDE.md`.
+
+The widened ranges shifted the fuzz stream into one more corner: a background ramp squeezed
+against the dark anchor falls back to `MIN_RAMP_STEP` (0.005), but near black **one legal 6-bit
+step is worth ~0.024 of OKLab L** — five times the requested gap — so the two steps quantise to
+whichever grid point is nearer and can land out of order. The ramp-ordering assertion now compares
+the requested gap against the *measured* local grid step (`gridStepL` in `test/fuzz.test.js`)
+instead of a flat tolerance, so it exempts only the pairs the grid provably cannot separate (~18%)
+and still catches every real inversion. Asserting otherwise would be asserting that quantisation
+can represent a distinction it cannot.
+
 ---
 
 ## 4. Performance
@@ -744,6 +773,48 @@ saturated slice rather than waiting for a palette that happens to fail.
 sheet's label buffer, so they are hoverable and copyable exactly like the map itself. That is
 what makes the coverage trade acceptable: nothing is unreachable from the default view, and
 nothing had to be forced into the geometry to achieve it.
+
+**The "which colours go where" bands (added 2026-07-23).** `layerBands()` in `render.js` groups
+every entry by its `layer` and `mapSheet` draws them as labelled rows under the slices. This
+exists because the map answers *where a colour is* but cannot answer *what it is for* — position
+there means hue and lightness and nothing else, so an artist reading it has no way to tell a
+background colour from a foreground one. The bands are composed into the **same label buffer** as
+the maps, so they hover and click-to-copy through the one `pickAt` path rather than being a
+picture. Two properties are asserted in `colorspace.test.js`: the bands partition the palette
+exactly (every entry in exactly one band — an artist must never find a colour absent from the
+guide), and every entry is hit-testable on the finished sheet.
+
+The layer split is load-bearing, not labelling: `bg` is generated desaturated and pulled toward
+`atmosphere_hue`, and `fg_bg_separation_min` is a hard constraint repair enforces between the two
+sets (PLAN §2.3). The band captions say so, because "keep background colours off your sprites" is
+the actual usage rule that separation buys. Note the four saturation slices are **not** a
+foreground/background device — they are the coverage mechanism described above, and conflating
+the two is the misreading the bands exist to prevent.
+
+**The by-context maps (added 2026-07-23) — the bands' answer, given the map's readability.** The
+bands say *which* colours do a job but are a flat list, losing the one property that makes a map
+readable: similar colours adjacent, position meaning hue and lightness. So `buildColorMap` gained
+an `entries` pool — restrict which slots may be painted and the geometry is untouched, which
+turns the same machinery into a per-context chart where **a colour keeps the position it has on
+the full map**. `MAP_CONTEXTS` in `colorspace.js` defines six (everything, sprites, scenery, sky,
+UI, FX) as predicates over `entry.layer`, ramp position and `palette.semantics`, so they are
+derived from the generator's own structure rather than invented; `buildContextMaps` builds a
+slice set per context and `contextSheet` in `render.js` lays them out one row per context with
+the bands underneath. Four decisions worth keeping:
+
+- **Coverage is counted against the pool, not the palette.** A context chart cannot be blamed for
+  not showing a colour that does not belong in it, so `coverageOf` takes the pool. In practice
+  each context shows 100% of its own set — fewer candidates means every one wins some pixel.
+- **Sprites and scenery come out near-complementary, and that is the feature.** It is
+  `fg_bg_separation_min` made visible; the test asserts it directly (no `bg` offered for sprites,
+  no `fg` for scenery, both keeping the anchors).
+- **Contexts are dropped, not faked.** Under three colours, or a set identical to one already
+  shown, and the row is not drawn — at K=8 there are no background rounds, so "sprites" *is* the
+  whole palette and charting it twice would imply a distinction the palette does not have.
+- **Still one label buffer.** The rows and the bands are composed into the same `Int32Array`, so
+  hover and click-to-copy work everywhere on the sheet through the one `pickAt` path — verified
+  in-browser, where the same screen position reports a foreground colour on the sprites row and a
+  neutral on the scenery row.
 
 **Cost:** about 130 ms to build all four slices at K=64 (a slice is one nearest-colour search
 per pixel, ~100 ms of which is the sRGB→OKLab conversion and is independent of K). Comparable

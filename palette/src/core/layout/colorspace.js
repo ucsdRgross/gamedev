@@ -74,12 +74,18 @@ export function mapSample(geometry, x, y, w, h, saturation) {
  * `labels` is -1 outside the shape (the corners of a polar map) and a palette index
  * everywhere else — never an outline, because there are none.
  */
-export function buildColorMap(palette, { geometry = 'rect', saturation = 1, size = null } = {}) {
+export function buildColorMap(palette, {
+  geometry = 'rect', saturation = 1, size = null, entries = null,
+} = {}) {
   if (!MAP_GEOMETRIES.includes(geometry)) throw new Error(`unknown map geometry: ${geometry}`);
   const dims = size ?? DEFAULT_MAP_SIZE[geometry];
   const { w, h } = dims;
-  const labs = flatLabs(palette);
-  const k = palette.entries.length;
+  // `entries` restricts which palette slots may be painted — that is what turns this into a
+  // per-context chart. The geometry is untouched, so a colour sits in the same place it does
+  // on the full map; only the set competing for each pixel changes.
+  const pool = entries ?? palette.entries.map((_, i) => i);
+  const labs = flatLabs(palette, pool);
+  const k = pool.length;
   const labels = new Int32Array(w * h).fill(-1);
 
   for (let y = 0; y < h; y++) {
@@ -87,11 +93,13 @@ export function buildColorMap(palette, { geometry = 'rect', saturation = 1, size
       const hsl = mapSample(geometry, x, y, w, h, saturation);
       if (!hsl) continue;
       const lab = srgbToOklab(hslToSrgb(hsl.h, hsl.s, hsl.l));
-      labels[y * w + x] = nearestEntry(labs, k, lab[0], lab[1], lab[2]);
+      // nearestEntry indexes the pool; map it back to a real palette index so every label in
+      // the buffer means the same thing everywhere in the picker.
+      labels[y * w + x] = k ? pool[nearestEntry(labs, k, lab[0], lab[1], lab[2])] : -1;
     }
   }
 
-  return { geometry, saturation, w, h, labels, ...coverageOf(palette, labels) };
+  return { geometry, saturation, w, h, labels, pool, ...coverageOf(palette, labels, pool) };
 }
 
 /**
@@ -101,13 +109,128 @@ export function buildColorMap(palette, { geometry = 'rect', saturation = 1, size
  * set of colours no slice reaches. Those are what the slice sheet draws as a swatch strip
  * beside the maps, so nothing is unreachable from the default view.
  */
-export function buildMapSlices(palette, { geometry = 'rect', saturations = DEFAULT_SATURATIONS, size = null } = {}) {
-  const slices = saturations.map((saturation) => buildColorMap(palette, { geometry, saturation, size }));
+export function buildMapSlices(palette, {
+  geometry = 'rect', saturations = DEFAULT_SATURATIONS, size = null, entries = null,
+} = {}) {
+  const pool = entries ?? palette.entries.map((_, i) => i);
+  const slices = saturations.map((saturation) => buildColorMap(palette, { geometry, saturation, size, entries: pool }));
   const union = new Set();
   for (const slice of slices) for (const i of slice.shown) union.add(i);
   const shown = [...union].sort((a, b) => a - b);
-  const missing = palette.entries.map((_, i) => i).filter((i) => !union.has(i));
-  return { geometry, slices, shown, missing, shownCount: shown.length, total: palette.entries.length };
+  const missing = pool.filter((i) => !union.has(i));
+  return { geometry, slices, pool, shown, missing, shownCount: shown.length, total: pool.length };
+}
+
+/**
+ * The contexts a palette gets picked *for*, each as the subset of the palette that belongs in
+ * that job. Rendered as ordinary hue×lightness maps, so a colour keeps its position while the
+ * chart answers the question the full map cannot: **what may I use here?**
+ *
+ * The sets are derived from the generator's own structure rather than invented. `fg` and `bg`
+ * are two deliberately disjoint sets with `fg_bg_separation_min` enforced between them
+ * (PLAN §2.3), so the sprite and scenery charts are near-complements — that separation is the
+ * point, not an oversight. `anchor`, `neutral` and `bridge` are the genuinely shared tiers and
+ * appear in most contexts. Where a semantic role says more than a layer does (UI states, fire
+ * and gold for effects) the role is used, which is what `palette.semantics` is for.
+ *
+ * `includes(entry, facts)` receives palette-derived facts so a context can be relative to the
+ * palette (the aerial band is "the lighter half of the backgrounds", not a fixed lightness).
+ */
+export const MAP_CONTEXTS = [
+  {
+    id: 'all',
+    title: 'EVERYTHING',
+    usage: 'THE WHOLE PALETTE - THE REFERENCE VIEW',
+    includes: () => true,
+  },
+  {
+    id: 'sprites',
+    title: 'SPRITES & PROPS',
+    usage: 'CHARACTERS, ENEMIES, ITEMS - THE FOREGROUND SIDE',
+    includes: (e) => ['anchor', 'fg', 'bridge', 'neutral', 'neutral-warm'].includes(e.layer),
+  },
+  {
+    id: 'scenery',
+    title: 'BACKGROUNDS & TERRAIN',
+    usage: 'GROUND, WALLS, PARALLAX - KEEP THESE OFF SPRITES',
+    includes: (e) => ['anchor', 'bg', 'bridge', 'neutral'].includes(e.layer),
+  },
+  {
+    id: 'sky',
+    title: 'SKY & ATMOSPHERE',
+    usage: 'GRADIENTS, HAZE, DISTANCE - THE AERIAL BAND',
+    // Backgrounds are already pulled toward `atmosphere_hue`, so the aerial band is their
+    // lighter half plus the light anchor — what a sky gradient is actually built from.
+    includes: (e, f) => e.id === LIGHT_ANCHOR
+      || (['bg', 'neutral'].includes(e.layer) && e.actual.L >= f.bgMidL),
+  },
+  {
+    id: 'ui',
+    title: 'UI & HUD',
+    usage: 'PANELS, TEXT, BARS, ICONS - LEGIBILITY FIRST',
+    includes: (e, f) => ['anchor', 'neutral', 'neutral-warm', 'accent'].includes(e.layer)
+      || f.uiRoles.has(e.id),
+  },
+  {
+    id: 'fx',
+    title: 'FX & EMISSIVE',
+    usage: 'PARTICLES, GLOWS, MAGIC, FIRE - THE BRIGHT END',
+    // Effects read as light sources: the accents, the light anchor, the top half of every
+    // foreground ramp, and whatever the palette assigned to fire/gold.
+    includes: (e, f) => e.layer === 'accent'
+      || e.id === LIGHT_ANCHOR
+      || (e.layer === 'fg' && e.steps > 1 && e.step >= (e.steps - 1) / 2)
+      || f.fxRoles.has(e.id),
+  },
+];
+
+const LIGHT_ANCHOR = 'universal_light';
+
+/** Palette-derived facts the context predicates close over. */
+function contextFacts(palette) {
+  const bgL = palette.entries.filter((e) => e.layer === 'bg').map((e) => e.actual.L).sort((a, b) => a - b);
+  const sem = palette.semantics ?? {};
+  return {
+    bgMidL: bgL.length ? bgL[Math.floor(bgL.length / 2)] : 0,
+    uiRoles: new Set([sem.ui_good, sem.ui_bad, sem.ui_neutral].filter(Boolean)),
+    fxRoles: new Set([sem.fire, sem.gold, sem.blood].filter(Boolean)),
+  };
+}
+
+/** Palette entry indices belonging to one context. */
+export function contextEntries(palette, context) {
+  const facts = contextFacts(palette);
+  const out = [];
+  palette.entries.forEach((e, i) => { if (context.includes(e, facts)) out.push(i); });
+  return out;
+}
+
+/** Fewer colours than this and a chart is a couple of solid blocks, so it is not drawn. */
+const MIN_CONTEXT_COLOURS = 3;
+
+/**
+ * A slice set per context.
+ *
+ * Two contexts are dropped rather than drawn. **Too small** (under `MIN_CONTEXT_COLOURS`): at
+ * K=8 there are no backgrounds at all, so "sky" is one colour and charting it says nothing.
+ * **Duplicate**: a small palette may not reach the background rounds, which makes "sprites"
+ * literally the whole palette — drawing it twice under two headings would imply a distinction
+ * the palette does not have. First definition in `MAP_CONTEXTS` order wins.
+ */
+export function buildContextMaps(palette, {
+  geometry = 'rect', saturations = DEFAULT_SATURATIONS, size = null, contexts = MAP_CONTEXTS,
+} = {}) {
+  const seen = new Set();
+  return contexts
+    .map((context) => ({ context, entries: contextEntries(palette, context) }))
+    .filter((c) => {
+      if (c.entries.length < MIN_CONTEXT_COLOURS) return false;
+      const key = c.entries.join(',');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((c) => ({ ...c, ...buildMapSlices(palette, { geometry, saturations, size, entries: c.entries }) }));
 }
 
 /** Which palette entry is under a pixel of a map, or -1 outside its shape. */
@@ -119,12 +242,13 @@ export function mapPickAt(map, px, py) {
 }
 
 /** Palette entries as one flat Float64Array of OKLab triples — the inner loop's working set. */
-function flatLabs(palette) {
-  const out = new Float64Array(palette.entries.length * 3);
-  palette.entries.forEach((e, i) => {
-    out[i * 3] = e.lab[0];
-    out[i * 3 + 1] = e.lab[1];
-    out[i * 3 + 2] = e.lab[2];
+function flatLabs(palette, pool) {
+  const out = new Float64Array(pool.length * 3);
+  pool.forEach((entry, i) => {
+    const lab = palette.entries[entry].lab;
+    out[i * 3] = lab[0];
+    out[i * 3 + 1] = lab[1];
+    out[i * 3 + 2] = lab[2];
   });
   return out;
 }
@@ -153,13 +277,15 @@ function nearestEntry(labs, k, L, a, b) {
  * lower index can ever win the nearest-colour tie, so counting slots would under-report what
  * is visibly on screen.
  */
-function coverageOf(palette, labels) {
+function coverageOf(palette, labels, pool) {
   const hexes = new Set();
   for (let i = 0; i < labels.length; i++) if (labels[i] >= 0) hexes.add(palette.entries[labels[i]].hex);
   const shown = [];
   const missing = [];
-  palette.entries.forEach((e, i) => (hexes.has(e.hex) ? shown : missing).push(i));
-  return { shown, missing, shownCount: shown.length, total: palette.entries.length };
+  // Counted against the pool, not the whole palette: a context chart cannot be blamed for
+  // failing to show a colour that does not belong in that context.
+  for (const i of pool) (hexes.has(palette.entries[i].hex) ? shown : missing).push(i);
+  return { shown, missing, shownCount: shown.length, total: pool.length };
 }
 
 /**

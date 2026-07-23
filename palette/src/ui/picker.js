@@ -18,8 +18,10 @@
 
 import { VARIANTS, buildLayout, rankLayouts } from '../core/layout/index.js';
 import { BLOB_MODES } from '../core/layout/score.js';
-import { buildMapSlices, mapFidelity } from '../core/layout/colorspace.js';
-import { EDGE_MODES, contactSheet, mapSheet, renderLayout, pickAt } from '../core/layout/render.js';
+import { buildContextMaps, buildMapSlices, mapFidelity } from '../core/layout/colorspace.js';
+import {
+  EDGE_MODES, contactSheet, contextSheet, mapSheet, renderLayout, pickAt,
+} from '../core/layout/render.js';
 import { encodePngRgb } from '../core/export/png.js';
 import { download } from './io.js';
 
@@ -36,8 +38,13 @@ const EDGE_LABELS = { none: 'No outline', shade: 'Hue-shifted shade', seam: 'Dar
 const VIEWS = [
   ['map-rect', 'Map — hue × lightness'],
   ['map-polar', 'Map — colour wheel'],
+  ['map-context', 'Map — by context (sprites, scenery, UI…)'],
   ['layout', 'Arrangement layout'],
 ];
+
+// The by-context sheet draws one map per context per saturation, so its tiles are smaller than
+// the two-column default view — otherwise six rows of full-size maps is a very tall sheet.
+const CONTEXT_MAP_SIZE = { w: 168, h: 84 };
 
 const EXPORT_SCALE = 12; // high-resolution layout export: 12 output pixels per cell
 
@@ -71,9 +78,20 @@ export function createPicker(dom, { getUsage }) {
   /** Rebuild the current view if anything it depends on has changed. */
   function ensureRendered() {
     if (!palette || (!dirty && rendered)) return rendered;
-    rendered = view === 'layout' ? buildLayoutView() : buildMapView();
+    if (view === 'layout') rendered = buildLayoutView();
+    else if (view === 'map-context') rendered = buildContextView();
+    else rendered = buildMapView();
     dirty = false;
     return rendered;
+  }
+
+  /** One hue×lightness map per context, so each answers "what may I use for this job". */
+  function buildContextView() {
+    const maps = buildContextMaps(palette, { geometry: 'rect', size: CONTEXT_MAP_SIZE });
+    const out = contextSheet(maps, palette);
+    out.status = `${maps.length} contexts · `
+      + maps.map((m) => `${m.context.id} ${m.shownCount}/${m.total}`).join(' · ');
+    return out;
   }
 
   /** The default view: every saturation slice of one geometry, plus what none of them reach. */
@@ -165,6 +183,15 @@ export function createPicker(dom, { getUsage }) {
     if (view === 'layout') {
       const out = renderLayout(buildLayout(palette, { variant, blobMode, usage: getUsage?.() ?? null }), palette, { scale: EXPORT_SCALE, edges });
       savePng(`palette-${variant}`, out.raster);
+      return;
+    }
+    if (view === 'map-context') {
+      // Maps are continuous, so the export samples finer rather than scaling pixels up.
+      const maps = buildContextMaps(palette, {
+        geometry: 'rect',
+        size: { w: CONTEXT_MAP_SIZE.w * 2, h: CONTEXT_MAP_SIZE.h * 2 },
+      });
+      savePng('palette-map-context', contextSheet(maps, palette).raster);
       return;
     }
     const geometry = view === 'map-polar' ? 'polar' : 'rect';

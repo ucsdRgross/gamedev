@@ -26,6 +26,45 @@ const WARN_INK = [230, 140, 100];
 const SEAM = [18, 18, 22];
 const LABEL_H = 14;
 const STRIP_W = 78; // width reserved for the "no slice reaches" swatch strip
+const BAND_SWATCH = 20; // swatch size in the "which colours go where" layer bands
+const BAND_TITLE_H = 7; // one line of the 3x5 pixel font plus leading
+
+/**
+ * The palette's layers in the order an artist reaches for them, and what each is for.
+ *
+ * The colour-space map answers "where is this colour"; it cannot answer "which colour belongs
+ * in this job", because position there means hue/lightness and nothing else. The layers are
+ * not decoration: `bg` is generated desaturated and pulled toward `atmosphere_hue`, and
+ * `fg_bg_separation_min` is a hard constraint the repair pass enforces between the two sets
+ * (PLAN §2.3). Painting a sprite in a background colour spends exactly the readability that
+ * constraint bought. Anchors and neutrals are the ones legitimately shared by both.
+ *
+ * ASCII only — the pixel font draws anything else as a box glyph.
+ */
+const LAYER_GUIDE = [
+  ['anchor', 'ANCHOR', 'OUTLINES + TOP HIGHLIGHT, SHARED BY EVERYTHING'],
+  ['fg', 'FOREGROUND', 'CHARACTERS, ENEMIES, PROPS - HIGH CHROMA'],
+  ['bg', 'BACKGROUND', 'TERRAIN, PARALLAX, SCENERY - KEEP OFF SPRITES'],
+  ['neutral', 'NEUTRAL', 'STONE, METAL, UI CHROME'],
+  ['neutral-warm', 'NEUTRAL WARM', 'SKIN, WOOD, PARCHMENT'],
+  ['accent', 'ACCENT', 'UI POPS AND FX'],
+  ['bridge', 'BRIDGE', 'TRANSITIONS BETWEEN ADJACENT RAMPS'],
+];
+
+/**
+ * Palette entry indices grouped by layer, in artist-facing order, skipping layers this
+ * palette does not have. Drives the "which colours go where" bands under the map.
+ */
+export function layerBands(palette) {
+  return LAYER_GUIDE
+    .map(([id, title, usage]) => ({
+      id,
+      title,
+      usage,
+      entries: palette.entries.reduce((acc, e, i) => (e.layer === id ? (acc.push(i), acc) : acc), []),
+    }))
+    .filter((b) => b.entries.length > 0);
+}
 
 const SMOOTH_RADIUS = 2;
 const AREA_FLOOR = 0.35; // a blob may not be eroded below this fraction of its area
@@ -281,8 +320,13 @@ export function mapSheet(sliceSet, palette, {
   const cellH = sh + LABEL_H + pad;
   const stripW = sliceSet.missing.length ? STRIP_W * f : 0;
 
+  // "Which colours go where" bands sit under the slices: the map shows where a colour lives,
+  // these show what it is *for*, which is the question the geometry cannot answer.
+  const bands = layerBands(palette);
+  const bandsH = bandsHeight(bands, f);
+
   const w = pad + cols * cellW + stripW;
-  const h = pad + 22 + rows * cellH;
+  const h = pad + 22 + rows * cellH + bandsH;
   const labels = new Int32Array(w * h).fill(-1);
 
   // The sheet is composed in *label* space and painted once, so hover, click-to-copy and
@@ -302,8 +346,13 @@ export function mapSheet(sliceSet, palette, {
   });
 
   const strip = stripW
-    ? stripSwatches(labels, w, h, sliceSet.missing, w - stripW + pad, pad + 22, h - pad - 22, f)
+    ? stripSwatches(labels, w, h, sliceSet.missing, w - stripW + pad, pad + 22, pad + 22 + rows * cellH, f)
     : [];
+
+  // Band swatches are written into the same label buffer as everything else, so they hover
+  // and click-to-copy exactly like the map does.
+  const bandTop = pad + 22 + rows * cellH;
+  writeBandLabels(labels, w, bands, bandTop, pad, f);
 
   const sheet = paintLabels(labels, w, h, palette, background);
 
@@ -320,6 +369,92 @@ export function mapSheet(sliceSet, palette, {
     sheet.text('REACHES', w - stripW + pad, pad + 22 + 7 * f, f, WARN_INK);
     for (const s of strip) sheet.text(palette.entries[s.entry].hex.slice(1), s.x + s.size + 3 * f, s.y + Math.max(0, (s.size - 5 * f) >> 1), f, SHEET_DIM);
   }
+  drawBandText(sheet, bands, bandTop, pad, f);
+
+  return { raster: sheet, labels, w, h };
+}
+
+/** Vertical space the "which colours go where" bands need. */
+function bandsHeight(bands, f) {
+  return bands.length ? 16 * f + bands.length * (BAND_TITLE_H + BAND_SWATCH + 6) * f : 0;
+}
+
+/** Write the band swatches into a label buffer so they hit-test like the maps do. */
+function writeBandLabels(labels, w, bands, top, pad, f) {
+  const rowH = (BAND_TITLE_H + BAND_SWATCH + 6) * f;
+  const size = BAND_SWATCH * f;
+  bands.forEach((b, bi) => {
+    const y = top + 16 * f + bi * rowH + BAND_TITLE_H * f;
+    let x = pad;
+    for (const entry of b.entries) {
+      if (x + size > w - pad) break;
+      for (let py = y; py < y + size; py++) {
+        for (let px = x; px < x + size; px++) labels[py * w + px] = entry;
+      }
+      x += size + f;
+    }
+  });
+}
+
+/** Captions for the bands, drawn after painting so no text pixel claims a label. */
+function drawBandText(sheet, bands, top, pad, f) {
+  if (!bands.length) return;
+  const rowH = (BAND_TITLE_H + BAND_SWATCH + 6) * f;
+  sheet.text('WHICH COLOURS GO WHERE', pad, top + 5 * f, f, SHEET_INK);
+  bands.forEach((b, bi) => {
+    sheet.text(`${b.title} - ${b.usage}`, pad, top + 16 * f + bi * rowH, f, SHEET_DIM);
+  });
+}
+
+/**
+ * The by-context view: one row per context, the saturation slices across it, in the same
+ * hue×lightness style as the default map — because that spatial grouping (similar colours
+ * adjacent, position meaning hue and lightness) is exactly what makes a map readable. The only
+ * thing that changes per row is which colours are allowed to compete for a pixel, so a chart
+ * answers "what may I use *here*" while keeping every colour where you already expect it.
+ *
+ * Composed in label space like every other sheet, so hover and click-to-copy work throughout.
+ */
+export function contextSheet(contextMaps, palette, { pad = 10, scale = 1, background = SHEET_BG } = {}) {
+  const f = Math.max(1, scale | 0);
+  const mw = Math.max(...contextMaps.map((c) => Math.max(...c.slices.map((s) => s.w)))) * f;
+  const mh = Math.max(...contextMaps.map((c) => Math.max(...c.slices.map((s) => s.h)))) * f;
+  const nSat = Math.max(...contextMaps.map((c) => c.slices.length));
+  const rowTitleH = 18 * f;
+  const rowH = rowTitleH + mh + pad;
+
+  const bands = layerBands(palette);
+  const bandTop = pad + 22 + contextMaps.length * rowH;
+  const w = pad + nSat * (mw + pad);
+  const h = bandTop + bandsHeight(bands, f);
+  const labels = new Int32Array(w * h).fill(-1);
+
+  contextMaps.forEach((c, ci) => {
+    const oy = pad + 22 + ci * rowH + rowTitleH;
+    c.slices.forEach((s, si) => {
+      const ox = pad + si * (mw + pad);
+      for (let y = 0; y < mh; y++) {
+        const sy = Math.floor(y / f);
+        if (sy >= s.h) break;
+        for (let x = 0; x < mw; x++) {
+          const sx = Math.floor(x / f);
+          if (sx >= s.w) break;
+          labels[(oy + y) * w + ox + x] = s.labels[sy * s.w + sx];
+        }
+      }
+    });
+  });
+
+  writeBandLabels(labels, w, bands, bandTop, pad, f);
+  const sheet = paintLabels(labels, w, h, palette, background);
+
+  sheet.text(`${contextMaps[0]?.geometry.toUpperCase() ?? 'RECT'} MAPS BY CONTEXT - WHAT EACH JOB MAY USE`, pad, 6, f, SHEET_INK);
+  contextMaps.forEach((c, ci) => {
+    const y = pad + 22 + ci * rowH;
+    sheet.text(`${c.context.title}  (${c.total} COLOURS, ${c.shownCount} SHOWN)`, pad, y, f, SHEET_INK);
+    sheet.text(c.context.usage, pad, y + 7 * f, f, SHEET_DIM);
+  });
+  drawBandText(sheet, bands, bandTop, pad, f);
 
   return { raster: sheet, labels, w, h };
 }

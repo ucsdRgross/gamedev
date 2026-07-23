@@ -18,8 +18,8 @@ import { writePNG } from './png.mjs';
 import { SCENES, CATEGORIES } from '../src/scenes/index.js';
 import { Raster } from '../src/core/raster.js';
 import { rankLayouts } from '../src/core/layout/index.js';
-import { contactSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
-import { MAP_GEOMETRIES, buildMapSlices, mapFidelity } from '../src/core/layout/colorspace.js';
+import { contactSheet, contextSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
+import { MAP_GEOMETRIES, buildContextMaps, buildMapSlices, mapFidelity } from '../src/core/layout/colorspace.js';
 import { builtinSamples } from '../src/core/recolor/samples.js';
 import { recolorFrames } from '../src/core/recolor/index.js';
 import { countUniqueColors } from '../src/core/recolor/image.js';
@@ -166,6 +166,11 @@ function renderLayouts(palette, tag) {
  * is reported against — a map that claims full coverage is a map that has started cheating.
  */
 function renderMaps(palette, tag) {
+  // The by-context sheet: the same hue×lightness geometry per artistic context, so each chart
+  // answers "what may I use here" while a colour keeps the position it has on the full map.
+  const contexts = buildContextMaps(palette, { geometry: 'rect', size: { w: 168, h: 84 } });
+  saveRaster(contextSheet(contexts, palette).raster, join(OUT, 'maps', `${tag}-context.png`));
+
   return MAP_GEOMETRIES.map((geometry) => {
     const set = buildMapSlices(palette, { geometry });
     saveRaster(mapSheet(set, palette, { columns: 2 }).raster, join(OUT, 'maps', `${tag}-${geometry}.png`));
@@ -175,6 +180,7 @@ function renderMaps(palette, tag) {
       total: set.total,
       slices: set.slices.map((s) => ({ saturation: s.saturation, shownCount: s.shownCount, fidelity: mapFidelity(s, palette) })),
       missing: set.missing.map((i) => palette.entries[i].hex),
+      contexts: contexts.map((c) => ({ id: c.context.id, total: c.total, shownCount: c.shownCount })),
     };
   });
 }

@@ -7,13 +7,14 @@ gallery of test visuals, and exports to Godot, Aseprite, and the web.
 **Status: complete.** Generator, browser app, 34-scene test gallery, artist's-palette
 picker (colour-space maps + 15 arrangement layouts), and reference-image recolouring —
 including recolouring into your own external palette images — all built and gated
-(297 tests green).
+(311 tests green).
 
 | Document | What it is |
 |---|---|
 | [PLAN.md](PLAN.md) | The specification — colour theory, algorithms, formulas, task list |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | The `Palette` contract, design decisions, per-phase notes (§9 app, §10 gallery, §11 picker, §12 recolouring) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | The `Palette` contract, design decisions, per-phase notes (§9 app, §10 gallery, §11 picker, §12 recolouring, §13 fitter) |
 | [PROGRESS.md](PROGRESS.md) | Task-by-task state. Source of truth for what is done |
+| [COLOR_GUIDE.md](COLOR_GUIDE.md) | Where each hue lives in sRGB — saturation ceilings, the lightness each colour peaks at, and which layer to pick colours from |
 
 New to the project? Read PLAN.md for *what* is being built, then ARCHITECTURE.md for
 *how the built part works* and what the next phase has to build on. Everything you need
@@ -35,7 +36,7 @@ The rest is for working on the code.
 npm test
 ```
 
-305 tests: colour-space round-trips against published reference values, gamut mapping,
+311 tests: colour-space round-trips against published reference values, gamut mapping,
 bit-depth quantisation, generator invariants across every palette size from 4 to 64, seed
 round-trips, export round-trips, the dev-server API, the raster/analysis/dither modules, a
 34-scene smoke test, the picker layouts and colour-space maps, the recolour paths (indexed,
@@ -54,7 +55,7 @@ export formats, a **Fit to image…** button (drop a palette image — a swatch 
 strip, or any art — and it searches the parameters that best reproduce it), the **34-scene
 test gallery** (category filter, colour-vision views, zoom,
 animation, drag-and-drop photo quantization), the **artist's-palette picker** (colour-space
-maps by default, 15 arrangement layouts behind a selector), and the **recolour page** —
+maps by default, per-context maps, 15 arrangement layouts behind a selector), and the **recolour page** —
 every reference image re-rendered in the generated palette, animations included, playing.
 
 ```bash

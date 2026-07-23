@@ -70,16 +70,21 @@ export const PARAMS = [
     'Lightness of the universal darkest colour — outlines and deepest shadow. Raise for soft, faded, low-contrast darks; lower for inky high-contrast outlines. Too high makes outlines mushy; too low crushes shadow detail to black.'),
   f('l_light_anchor', 'lightness', 0.8, 1.0, 0.005, 0.95,
     'Lightness of the universal lightest colour — the brightness ceiling. Lower it for a dim, nocturnal, muted feel; keep it high (0.95+) for bright highlights and paper-white UI. Sets how far the value range can stretch at the top.'),
-  f('l_mid_base', 'lightness', 0.3, 0.8, 0.005, 0.56,
-    'Where foreground midtones sit — the overall light/dark master. Lower for a dark, moody, dungeon palette; raise for bright, airy daytime. Shifts the whole foreground up or down without moving the anchors.'),
+  // Ceiling raised 0.80 -> 0.92 (2026-07-23): 0.80 made high-key palettes impossible and
+  // blocked centring a ramp on the gamut cusp for the whole yellow->cyan arc, whose cusps
+  // sit at L 0.86-0.96 (see COLOR_GUIDE.md). Pastel Cozy already sat at 0.74.
+  f('l_mid_base', 'lightness', 0.3, 0.92, 0.005, 0.56,
+    'Where foreground midtones sit — the overall light/dark master. Lower for a dark, moody, dungeon palette; raise for bright, airy daytime. Above ~0.85 gives a high-key palette, and is what lets a single-hue ramp sit right on the brightest point of yellow/green/cyan. Shifts the whole foreground up or down without moving the anchors.'),
   f('l_step', 'lightness', 0.05, 0.4, 0.005, 0.15,
     'Lightness jump between adjacent ramp steps — this IS your contrast. Small (0.08–0.12) = soft, painterly, blendable shading; large (0.2+) = punchy, readable-at-1× steps. Raise if shading looks flat/muddy, lower if it looks harsh or posterised.'),
   e('l_curve', 'lightness', ['ease-dark', 'linear', 'ease-light', 's-curve'], 'linear',
     'Where the ramp bunches its steps. ease-dark packs them into the shadows (rich darks, few highlights); ease-light the opposite; s-curve spreads the midtones apart for maximum form-reading; linear is even. ease-dark for moody, s-curve for bold readable sprites.'),
   f('l_range_compress', 'lightness', 0, 1, 0.01, 0,
     'Squeezes every ramp toward mid-grey. 0 = full contrast; raise toward 1 for foggy, washed-out, hazy, dreamlike, faded-photo looks. The go-to for atmosphere and distance — overdo it and everything turns to flat grey.'),
-  f('l_variance_per_hue', 'lightness', 0, 0.15, 0.005, 0.04,
-    'Lets different hues sit at different lightnesses (real palettes never put yellow and blue at the same L). Raise for natural, hand-tuned variety; 0 for a rigid systematic look. Part of the palette\'s randomness — zero it (with hue_jitter and chroma_variance_per_hue) to freeze the palette.'),
+  // Ceiling raised 0.15 -> 0.30 (2026-07-23): fitting real reference palettes pinned this at
+  // its old maximum, i.e. the spread it allowed was less than hand-made palettes actually use.
+  f('l_variance_per_hue', 'lightness', 0, 0.3, 0.005, 0.04,
+    'Lets different hues sit at different lightnesses, at RANDOM (for the principled version, see hue_lightness_follow). Raise for natural, hand-tuned variety; 0 for a rigid systematic look. Part of the palette\'s randomness — zero it (with hue_jitter and chroma_variance_per_hue) to freeze the palette.'),
 
   // --- Chroma ------------------------------------------------------------
   f('chroma_base', 'chroma', 0, 0.37, 0.005, 0.145,

@@ -9,7 +9,7 @@ that a file exists.
 
 ## Every phase in the plan is complete and gated.
 
-`npm test` is green at **305 tests** (~6 minutes; the 10,000-case fuzz dominates).
+`npm test` is green at **311 tests** (~6 minutes; the 10,000-case fuzz dominates).
 **Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
 again is a **restart**: it takes the port back from the previous instance (ping + shutdown
 handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
@@ -84,6 +84,37 @@ in the user's home directory that npm walks up to and finds instead.
 Work done after the plan was complete, in response to the repo owner using the tool. Each is
 built, tested and documented; this is the list to extend when the next one lands.
 
+- **By-context colour-space maps** (`Map — by context` in the picker). The bands below say which
+  colours do which job but are a flat list; these give the same answer *with* the map's spatial
+  grouping. `buildColorMap` gained an `entries` pool so a map can be restricted to a subset
+  without touching the geometry — a colour keeps the position it has on the full map.
+  `MAP_CONTEXTS` + `buildContextMaps` (`colorspace.js`) define six contexts (everything, sprites,
+  scenery, sky/atmosphere, UI, FX) from `entry.layer`, ramp position and `palette.semantics`;
+  `contextSheet` (`render.js`) draws one row per context over the four saturations, bands beneath,
+  all in one label buffer so hover/copy work throughout. Coverage counts against the pool, and
+  contexts under 3 colours or duplicating an earlier set are dropped rather than drawn. Sprites
+  and scenery come out near-complementary — `fg_bg_separation_min` made visible, asserted as such.
+  Tests: `test/colorspace.test.js`. Usage table in `COLOR_GUIDE.md`; notes in ARCHITECTURE §11.
+- **"Which colours go where" bands in the picker.** The colour-space map shows where a colour
+  *is* but not what it is *for*, and the four saturation slices were being misread as a
+  foreground/background device (they are a coverage mechanism). `layerBands()` +
+  `mapSheet` in `src/core/layout/render.js` now draw every entry grouped by layer — anchor /
+  foreground / background / neutral / accent / bridge — with a caption saying what each is for,
+  composed into the same label buffer so they hover and copy through the one `pickAt` path.
+  Tests: `test/colorspace.test.js` (bands partition the palette exactly; every entry hit-testable).
+  Usage rules in `COLOR_GUIDE.md`; design notes ARCHITECTURE §11 (Phase 4b).
+- **Two parameter ceilings raised** (2026-07-23), both measured rather than guessed:
+  `l_mid_base` 0.80 → **0.92** (0.80 made high-key palettes impossible and blocked centring a ramp
+  on the gamut cusp for the whole yellow→cyan arc, cusps at L 0.86–0.96) and `l_variance_per_hue`
+  0.15 → **0.30** (fitting real reference palettes pinned it at the old ceiling). Seed payloads are
+  range-relative (`u16ToParam`), so this reinterprets those two fields in PAL1 seed strings saved
+  beforehand — accepted deliberately; saved `.json`, presets and exports store real values and are
+  unaffected. **No preset colour moved** (verified: only seed strings changed). Note raising
+  `l_mid_base` alone does *not* lift the midtone — a ramp is clamped to fit inside the anchor
+  window, so the high cusps also need `l_light_anchor` near 1.0 and a small `l_step`. The wider
+  stream also surfaced a ramp-ordering assertion that was too strict near black (one legal 6-bit
+  step there is worth ~0.024 of L, five times the `MIN_RAMP_STEP` gap a squeezed ramp requests);
+  it now compares against the measured local grid step (`gridStepL`). ARCHITECTURE §3.9.
 - **Hue-adaptive lightness — vivid yellows/greens/cyans.** The repo owner found yellow (and
   the whole yellow→green→cyan arc) nearly unreachable via sliders/Randomize: those hues only
   hold chroma at high sRGB lightness, but every hue was built around one global `l_mid_base`,

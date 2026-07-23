@@ -340,11 +340,11 @@ Every parameter gets a slider (or dropdown/toggle), is encoded in the seed strin
 |---|---|---|
 | `l_dark_anchor` | 0.02–0.30 | The universal dark. Too high and outlines go mushy; too low and shadow detail disappears. |
 | `l_light_anchor` | 0.80–1.00 | The universal light; the palette's brightness ceiling. |
-| `l_mid_base` | 0.30–0.80 | Where foreground midtones sit — the **darkness/brightness** master knob. |
+| `l_mid_base` | 0.30–0.92 *(max raised from 0.80, 2026-07-23)* | Where foreground midtones sit — the **darkness/brightness** master knob. The old 0.80 ceiling made high-key palettes impossible and blocked centring a ramp on the gamut cusp for the whole yellow→cyan arc (cusps at L 0.86–0.96). See COLOR_GUIDE.md. |
 | `l_step` | 0.05–0.40 | Lightness delta per ramp step. This *is* **contrast**: small = soft/painterly, large = punchy and readable at 1×. |
 | `l_curve` | ease-dark / linear / ease-light / S-curve | Where steps cluster. Clustering in shadow gives rich darks; S-curve maximizes midtone separation. |
 | `l_range_compress` | 0–1 | Squeezes the palette toward mid-gray. High = foggy/washed/dreamlike. |
-| `l_variance_per_hue` | 0–0.15 | Lets hues sit at different lightnesses — real palettes don't put yellow and blue at the same L. |
+| `l_variance_per_hue` | 0–0.30 *(max raised from 0.15, 2026-07-23)* | Lets hues sit at different lightnesses, at random — real palettes don't put yellow and blue at the same L. Fitting real reference palettes pinned this at the old 0.15 ceiling, i.e. it allowed less spread than hand-made palettes actually use. (The *principled* version of this is `hue_lightness_follow`.) |
 | `hue_lightness_follow` *(added post-plan, 2026-07-23)* | 0–1 | The **principled** form of the line above: biases each hue's midtone toward the lightness where that hue's chroma actually peaks in sRGB (its gamut cusp), so yellow/green/cyan ride up into the saturated zone instead of turning olive at a shared mid grey, while blue/red barely move. Default 0.5. Most presets pin it to 0 to preserve their originally-tuned look; the default palette, OKLAB Crayon, Neon Cyberpunk, Toxic Swamp and Sunset Desert use it. See ARCHITECTURE §3.8 and COLOR_GUIDE.md. |
 
 ### Chroma / saturation
