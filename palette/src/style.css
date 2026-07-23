@@ -125,6 +125,17 @@ select {
   padding: 5px 7px; max-width: 180px;
 }
 
+/* ---- Parameter hover tooltip ------------------------------------------ */
+.param-tip {
+  position: fixed; z-index: 50; pointer-events: none;
+  max-width: 320px; padding: 8px 10px;
+  background: var(--bg-3, #1b1b22); color: var(--text, #e6e6ee);
+  border: 1px solid var(--line-2, #3a3a46); border-radius: var(--radius, 6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-family: var(--sans); font-size: 12px; line-height: 1.45;
+}
+.ctrl-name { cursor: help; }
+
 /* ---- Parameter groups & sliders --------------------------------------- */
 .param-group { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
 .param-group > summary {
@@ -284,6 +295,12 @@ input[type="file"] { font-size: 11px; color: var(--text-dim); width: 100%; }
 
 /* ---- Recolour gallery -------------------------------------------------- */
 .recolor-body { display: flex; flex-direction: column; gap: 8px; }
+.recolor-target-swatches {
+  display: flex; flex-wrap: wrap; gap: 2px; min-height: 14px;
+}
+.recolor-target-swatch {
+  width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--line);
+}
 .recolor-list { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
 .recolor-list.is-dropping { outline: 2px dashed var(--accent, #7aa2f7); outline-offset: 4px; }
 .recolor-card {

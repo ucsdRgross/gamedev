@@ -382,6 +382,8 @@ Sub-modules are dumb views built once and fed the palette:
 | `swatches.js` | `createSwatches(el, actions)` → `{ render(palette) }`. `actions` = toggleLock/setOverride/clearOverride/copy. |
 | `history.js` | `createHistory(el, {onRestore,onChange})` → push/replaceCurrent/undo/redo/canUndo/canRedo. |
 | `io.js` | `createIO(dom, actions)` → `{ updateSeed, refreshSaves }`. Owns seed field, URL hash, presets, saves, import, exports. |
+| `randomize.js` | `randomizeParams(current, rng)` — DOM-free so it is testable; the Randomize skip rules live here (see below). |
+| `gallery.js` `picker.js` `recolor.js` | The three middle-pane tabs — 34-scene gallery (§10), picker (§11), reference recolouring (§12). |
 
 ### Decisions Phase 3/4 should not re-litigate
 
@@ -390,8 +392,16 @@ Sub-modules are dumb views built once and fed the palette:
   `ovr` pill) writes an explicit hex into `overrides`. Loading a preset or resetting to
   defaults clears both (a new structure has different slot ids); loading a seed or JSON
   takes whatever they encode. Randomize keeps both — that is what "randomize respecting
-  locks" means — and deliberately skips `color_count`, ramp lengths, hardware and quality
-  params (`RANDOMIZE_SKIP` in `app.js`) so the slot grid stays stable and valid.
+  locks" means.
+
+- **What Randomize rerolls lives in `src/ui/randomize.js`, not inline in `app.js`** — pulled
+  out so it is unit-testable (`test/randomize.test.js`), because `app.js` touches the DOM.
+  `randomizeParams(current, rng)` skips `color_count`, ramp lengths, hardware and quality
+  params (`RANDOMIZE_SKIP`, by name) so the slot grid stays stable and valid, **and the whole
+  `recolor` group** (`RANDOMIZE_SKIP_GROUP`, by *group*). Excluding the recolour params by
+  group rather than by name is deliberate: the repo owner was bitten by Randomize rerolling
+  their dither/downscale settings, which are output choices they set deliberately, and a
+  group rule means any recolour parameter added later is covered without touching this code.
 
 - **Randomize uses the seeded PRNG.** Per the no-`Math.random` rule, randomize seeds
   `makeRng` from `Date.now()` xored with a counter and draws every value from it. The
@@ -839,6 +849,7 @@ preferable to binary blobs, provided the generator is deterministic.
 | `recolor/quantize.js` | The §19.1 knobs translated into `dither.js` calls |
 | `recolor/index.js` | `chooseMode`, `recolorImage`, `recolorFrames` |
 | `recolor/samples.js` | The six built-in reference images |
+| `recolor/swatches.js` | Extract a palette from an image (the external-palette targets) |
 | `gif.js` | LZW decode **and** encode, whole animations both ways |
 | `ui/recolor.js` | The gallery page, decoding at the edge, one timer for every animation |
 
@@ -916,7 +927,34 @@ everything else, so a pasted seed reproduces the whole view. Adding them lengthe
 seed string; the golden snapshots were re-recorded after confirming that all 20 presets'
 **colours** were byte-identical and only the seed string had grown.
 
-### 12.6 Two bugs the phase surfaced
+### 12.6 Recolouring into an external palette
+
+The recolour target is normally the generated palette, but it can be a palette **extracted
+from an image** the user loads into `palettes/` (via `/api/palettes`, the same handler as
+`reference/`). `recolor/swatches.js` turns an image into a minimal palette object — just
+`entries[].{rgb8, lab, hex}`, which is all the recolour pipeline reads — and `ui/recolor.js`
+lets a **"Recolour into"** selector choose it. Three decisions worth keeping:
+
+- **Extraction has two paths, because a designed strip and a photo are different things.** A
+  strip ≤ 2px tall is authoritative — every distinct colour is a real entry, in left-to-right
+  order, nothing merged or dropped, white end-blocks kept (the repo owner's correction: "the
+  1 pixel strip won't have transition pixels, every color from it will be used"). Anything
+  taller is de-aliased: near-duplicates merge by a tight ΔE, and the thin blended edge pixels
+  are dropped by a coverage floor. The floor is calibrated for realistic wide-swatch strips;
+  a pathologically narrow-swatch strip can leak a seam, which is why the 1px form is the
+  documented clean input.
+- **This is the real answer to "stop the recolour changing when I tune."** An external
+  palette is a fixed object — it does not move when a slider moves — so the recolour holds
+  completely still. Verified in-browser: selecting an external target and then changing a
+  generated-palette slider leaves every recoloured card byte-for-byte identical. The recolour
+  pipeline itself has **no randomness** (no `Math.random`, no RNG anywhere in `recolor/`);
+  the only thing that ever moved a recolour was the generated palette underneath it.
+- **The selector reuses the lazy machinery.** External palettes are tiny, so they are
+  extracted eagerly (they drive the selector and the swatch preview), but the *cards* still
+  fill lazily and re-recolour into `currentTarget()` when scrolled into view. Switching target
+  marks every card stale; visible ones re-recolour at once, the rest when seen.
+
+### 12.7 Two bugs the phase surfaced
 
 Neither is in the recolour code; both were found because new parameters shifted the fuzz's
 random stream into corners it had not previously reached.

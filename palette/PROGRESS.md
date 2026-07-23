@@ -9,13 +9,25 @@ that a file exists.
 
 ## Every phase in the plan is complete and gated.
 
-`npm test` is green at **281 tests** (~6 minutes; the 10,000-case fuzz dominates).
+`npm test` is green at **297 tests** (~6 minutes; the 10,000-case fuzz dominates).
 **Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
 again is a **restart**: it takes the port back from the previous instance (ping + shutdown
 handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
 parameters, the 34-scene gallery, the picker (colour-space maps by default, the 15
-arrangement layouts behind the view selector), and the recolour page — whose **Rescan
-folder** button re-reads `reference/` so files copied in by hand appear without a restart.
+arrangement layouts behind the view selector), and the recolour page — whose **Rescan**
+button re-reads `reference/` and `palettes/` so files copied in by hand appear without a
+restart.
+
+**Recolour into an external palette (ARCHITECTURE §12.6).** Drop a palette image into
+`palettes/` (a swatch strip, a 1px lospec strip, or any art to borrow colours from) and pick
+it under **Recolour into** on the Recolour tab; `recolor/swatches.js` extracts it. A 1-or-2px
+strip is read as authoritative (every distinct colour, in order, white edges kept); taller
+images are de-aliased. An external palette does not move when the sliders do — the way to
+hold a recolour still while tuning. The recolour maths has no randomness of its own.
+
+**Every parameter's tooltip now says what/why/when/which-direction** (`params.js` doc
+strings, shown via a custom hover tooltip in `sliders.js`), and the README carries a full
+parameter reference with look-recipes and a "Freezing randomness / locking colours" section.
 
 **The recolour gallery is lazy** (ARCHITECTURE §12.5): with a real library — the owner's is
 82 files, mostly large multi-frame GIFs at 1.3–1.9 s to decode each — a card decodes and
@@ -24,12 +36,12 @@ visibility sweep measures against the `.scroll` pane and runs on a timeout, not 
 `IntersectionObserver`, so it works in a backgrounded tab and under headless verification.
 `npm run render` writes every preset, scene, layout, map and recoloured reference to `out/`,
 and prints the layout ranking, the map coverage figures and the recolour mode decisions.
-`npm run build` produces the 550 KB single-file `dist/palette_creator.html`.
+`npm run build` produces the ~590 KB single-file `dist/palette_creator.html`.
 
 **Before touching `src/core/recolor/` or `src/core/gif.js`, read
-[ARCHITECTURE.md](ARCHITECTURE.md) §12.5–12.6** — the assignment strategies, why frame
-coherence is not a `map`, the LZW performance trap that cost 76 seconds a frame, and the two
-generator/test bugs the phase surfaced.
+[ARCHITECTURE.md](ARCHITECTURE.md) §12.5–12.7** — the assignment strategies, why frame
+coherence is not a `map`, the LZW performance trap that cost 76 seconds a frame, external
+palette extraction, and the two generator/test bugs the phase surfaced.
 
 **Spec change, 2026-07-22, by the repo owner:** a GIF is recoloured **whole and shown
 animated**, superseding the original "single frame, no encoder" decision. PLAN §19.2 and
@@ -55,7 +67,7 @@ in the user's home directory that npm walks up to and finds instead.
 
 ### Working notes
 
-- `npm test` runs the full 10,000-case fuzz and takes about 3 minutes. While
+- `npm test` runs the full 10,000-case fuzz and takes about 6 minutes. While
   iterating, shorten it: `PALETTE_FUZZ_N=200 npm test`.
 - Golden snapshots live in `test/snapshots/`. When an algorithm change is
   intentional, review the diff and re-record with `UPDATE_SNAPSHOTS=1 npm test`.
@@ -64,6 +76,38 @@ in the user's home directory that npm walks up to and finds instead.
   Hand-writing the UI duplicates it and the seed codec will drift out of sync.
 - `npm run render` and **look at the output**. Both preset retunes in Phase 1 came
   from reading the contact sheet, not from a failing test.
+
+---
+
+## Post-plan enhancements (not in the §17 task list)
+
+Work done after the plan was complete, in response to the repo owner using the tool. Each is
+built, tested and documented; this is the list to extend when the next one lands.
+
+- **Recolour into an external palette.** Load a palette *image* (swatch strip, 1px lospec
+  strip, or any art) and recolour reference images into it instead of the generated palette.
+  `src/core/recolor/swatches.js` (extraction — a ≤2px strip is authoritative/every distinct
+  colour, taller images are de-aliased), `palettes/` folder + `/api/palettes` in
+  `tools/serve.mjs`, selector + swatch preview in `src/ui/recolor.js`. Tests:
+  `test/recolor-swatches.test.js`, `test/serve.test.js`. Design notes: ARCHITECTURE §12.6.
+  *This is also the way to hold a recolour perfectly still while tuning the palette.*
+- **Randomize leaves the recolour settings alone.** The Randomize button rerolled the
+  reference-recolouring parameters (dither, downscale, remap mode, …), which are output
+  settings, not palette look. `src/ui/randomize.js` (extracted from `app.js` to be testable)
+  now excludes the whole `recolor` group *by group*, so future recolour params are covered
+  automatically. Test: `test/randomize.test.js`.
+- **`start.cmd` is a restart.** A second double-click takes the port back from the previous
+  instance via a ping/shutdown handshake (`tools/serve.mjs`), and never touches a non-palette
+  server on the same port. Test: the two-process case in `test/serve.test.js`.
+- **The recolour gallery is lazy.** Cards fetch/decode/recolour only when scrolled on screen —
+  mandatory once the reference library is more than a handful of large GIFs. ARCHITECTURE §12.5.
+- **Every parameter documents itself.** `src/core/params.js` doc strings now say
+  what/why/when/which-direction, shown through a custom hover tooltip in `src/ui/sliders.js`
+  (native `title` truncated them). The README carries a full **Parameter reference** with
+  look-recipes and a "freezing randomness / locking colours" section.
+- **Two bugs the fuzz surfaced** while these landed: a lightness-compression escape past an
+  anchor (fixed in `ramp.js`, no palette changed) and an over-reaching fuzz assertion.
+  ARCHITECTURE §12.7.
 
 ---
 
@@ -160,7 +204,7 @@ it by forcing colours in; that is what the swatch strip is for.
 Two bugs surfaced here that are **not** in the recolour code — new parameters shifted the
 fuzz's random stream into corners it had never reached. `l_range_compress` could drag a ramp
 step past an anchor (fixed in `ramp.js`; no preset changed), and the fuzz's
-"anchors are the extremes" assertion was overreaching. ARCHITECTURE §12.6 has the numbers.
+"anchors are the extremes" assertion was overreaching. ARCHITECTURE §12.7 has the numbers.
 
 - [x] **5.1 Image buffer contract** — `src/core/recolor/image.js`: `uniqueColors`, `countUniqueColors`, `mapColors`, `downscale`. The buffer **is a `Raster`** (`{ w, h, data }`), not the `{ width, height, data }` §12.1 described — a deliberate deviation so `dither.js`, the scenes, the exporters and the renderer all keep working without an adapter. Reasoning in ARCHITECTURE §12.5.
 - [x] **5.2 Indexed remap** — `src/core/recolor/indexed.js`. `delta-e` / `lightness-rank` / `optimal` (Jonker–Volgenant rectangular assignment, roles swapped on overflow so every target still appears), `remap_preserve_order` as a monotone dynamic program rather than a repair pass, `remap_overflow` share/merge with merge doing weighted k-means in OKLab.

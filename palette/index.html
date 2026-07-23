@@ -78,17 +78,22 @@
           <button id="picker-sheet" class="btn btn-small" title="Export a contact sheet of all 15 arrangement layouts">Sheet</button>
         </div>
         <div id="recolor-controls" class="pane-head-controls" hidden>
+          <select id="recolor-target" title="Recolour into the generated palette, or an external palette image you loaded. An external palette does not change when you move the sliders."></select>
+          <label class="btn btn-small" title="Load a palette image (a swatch strip, a 1px lospec strip, or any image to borrow colours from) as a recolour target">
+            Add palette…
+            <input id="recolor-palette-picker" type="file" accept="image/png,image/jpeg,image/gif" multiple hidden />
+          </label>
           <select id="recolor-zoom" title="Zoom level">
             <option value="1">1×</option>
             <option value="2" selected>2×</option>
             <option value="3">3×</option>
             <option value="4">4×</option>
           </select>
-          <label class="btn btn-small" title="Add PNG, JPEG or GIF reference images">
+          <label class="btn btn-small" title="Add PNG, JPEG or GIF reference images to recolour">
             Add images…
             <input id="recolor-picker" type="file" accept="image/png,image/jpeg,image/gif" multiple hidden />
           </label>
-          <button id="recolor-rescan" class="btn btn-small" title="Re-read palette/reference/ — use this after copying files into the folder by hand">Rescan folder</button>
+          <button id="recolor-rescan" class="btn btn-small" title="Re-read palette/reference/ and palette/palettes/ — use this after copying files into either folder by hand">Rescan</button>
           <span id="recolor-status" class="meta"></span>
         </div>
       </div>
@@ -108,6 +113,7 @@
           animations are recoloured in full and play back at their own speed.
           <span id="recolor-persist-note" hidden>Running without the local server, so added images last for this session only.</span>
         </p>
+        <div id="recolor-target-swatches" class="recolor-target-swatches" title="Colours of the current recolour target"></div>
         <div id="recolor-list" class="recolor-list"></div>
       </div>
     </section>

@@ -18,6 +18,7 @@
 
 import { builtinSamples } from '../core/recolor/samples.js';
 import { recolorFrames } from '../core/recolor/index.js';
+import { extractPalette, externalPalette } from '../core/recolor/swatches.js';
 import { decodeGif, encodeGif } from '../core/gif.js';
 import { encodePngRgb } from '../core/export/png.js';
 import { Raster } from '../core/raster.js';
@@ -25,6 +26,7 @@ import { download } from './io.js';
 
 const MODE_LABELS = { indexed: 'indexed remap', quantize: 'per-pixel quantize' };
 const TICK_MS = 40;
+const GENERATED = 'generated'; // the target-selector value for the live generated palette
 
 /**
  * Build the recolour gallery. Returns `{ render(palette, params) }` for the app to call
@@ -46,6 +48,11 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
   // must measure against *that* rectangle — the list's own rect grows to the full content
   // height, which would count every card as on-screen and defeat the whole point.
   const viewport = dom.container.closest('.scroll') ?? dom.container;
+  // External target palettes, loaded from `palettes/` (or dropped in): id -> { name, palette }.
+  // The recolour target is either the live generated palette or one of these; an external one
+  // does not move when the sliders do, which is how a recolour is held still while tuning.
+  const targets = new Map();
+  let targetId = GENERATED;
   let palette = null;
   let params = {};
   let active = false;
@@ -54,6 +61,11 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
   let timer = null;
   let persist = true; // flipped off the first time the reference API is not there
   let sweepQueued = false;
+
+  /** The palette every card recolours into right now — generated, or a chosen external one. */
+  function currentTarget() {
+    return targetId === GENERATED ? palette : targets.get(targetId)?.palette ?? palette;
+  }
 
   /**
    * Read `palette/reference/` and make the gallery match it.
@@ -89,6 +101,111 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     dirty = true;
     rebuild();
     if (announce) onStatus?.(`folder rescanned — ${names.length} image${names.length === 1 ? '' : 's'}`);
+  }
+
+  /**
+   * Read `palette/palettes/`, extract a palette from each image, and rebuild the target
+   * selector. Like the reference library it is re-runnable, so palette images copied into the
+   * folder by hand appear on a rescan. Extraction happens here (not lazily) because a palette
+   * is tiny and its colours drive the selector and the preview immediately.
+   */
+  async function loadPaletteLibrary(announce = false) {
+    let names;
+    try {
+      const res = await fetch('/api/palettes', { cache: 'no-store' });
+      if (!res.ok) throw new Error(String(res.status));
+      names = await res.json();
+    } catch {
+      persist = false;
+      if (announce) onStatus?.('no palette folder to rescan — running without the local server');
+      updateTargetOptions();
+      return;
+    }
+    // Drop the folder-backed entries and re-read; session drops (no url) survive.
+    for (const [id, t] of [...targets]) if (t.origin === 'folder') targets.delete(id);
+    for (const name of names) {
+      try {
+        const res = await fetch(`/palettes/${encodeURIComponent(name)}`, { cache: 'no-store' });
+        await addPaletteSource(name, new Uint8Array(await res.arrayBuffer()), 'folder');
+      } catch {
+        onStatus?.(`could not read palette ${name}`);
+      }
+    }
+    updateTargetOptions();
+    if (announce) onStatus?.(`palettes rescanned — ${names.length}`);
+  }
+
+  /** Decode a palette image, extract its colours, and register it as a target. */
+  async function addPaletteSource(name, bytes, origin) {
+    const frames = await decodeBytes(bytes, name);
+    const extraction = extractPalette(frames[0].image);
+    if (!extraction.kept) throw new Error('no colours found');
+    const id = `pal:${name}`;
+    targets.set(id, { name, origin, palette: externalPalette(name, extraction), extraction });
+    return id;
+  }
+
+  /** Add dropped/picked palette images: persist to the folder if served, else keep for the session. */
+  async function addPalettes(files) {
+    const images = [...files].filter((f) => /\.(png|jpe?g|gif)$/i.test(f.name));
+    if (!images.length) { onStatus?.('no image files in that drop'); return; }
+    let lastId = null;
+    for (const file of images) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      try {
+        if (persist) {
+          try { await fetch(`/api/palettes/${encodeURIComponent(file.name)}`, { method: 'PUT', body: bytes }); }
+          catch { onStatus?.(`${file.name} added for this session only`); }
+        }
+        lastId = await addPaletteSource(file.name, bytes, persist ? 'folder' : 'session');
+      } catch (err) {
+        onStatus?.(`${file.name}: ${err.message}`);
+      }
+    }
+    // Select the palette just added — that is why someone added it.
+    if (lastId) targetId = lastId;
+    updateTargetOptions();
+    setTarget(targetId);
+    onStatus?.(`palette added: ${targets.get(lastId)?.name ?? ''}`);
+  }
+
+  /** Rebuild the target `<select>` and reflect the current choice. */
+  function updateTargetOptions() {
+    if (!dom.target) return;
+    const opts = [[GENERATED, 'Generated palette']];
+    for (const [id, t] of targets) opts.push([id, `${t.name} · ${t.palette.entries.length}`]);
+    if (!targets.has(targetId) && targetId !== GENERATED) targetId = GENERATED;
+    dom.target.innerHTML = '';
+    for (const [value, label] of opts) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = label;
+      o.selected = value === targetId;
+      dom.target.appendChild(o);
+    }
+    drawTargetSwatches();
+  }
+
+  /** Switch the recolour target and re-recolour the cards on screen. */
+  function setTarget(id) {
+    targetId = id;
+    drawTargetSwatches();
+    refresh();
+  }
+
+  /** Show the current target's colours as a little strip, so the choice is visible. */
+  function drawTargetSwatches() {
+    if (!dom.targetSwatches) return;
+    const target = currentTarget();
+    dom.targetSwatches.innerHTML = '';
+    if (!target) return;
+    for (const e of target.entries) {
+      const sw = document.createElement('span');
+      sw.className = 'recolor-target-swatch';
+      sw.style.background = e.hex;
+      sw.title = e.hex;
+      dom.targetSwatches.appendChild(sw);
+    }
   }
 
   /** Decode one file's bytes into frames. */
@@ -211,7 +328,8 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
 
   /** Fetch, decode and recolour one card — once, and only when it is on screen. */
   async function fill(card) {
-    if (card.busy || !palette) return;
+    const target = currentTarget();
+    if (card.busy || !target) return;
     if (card.frames && !card.stale) return;
     card.busy = true;
     try {
@@ -223,7 +341,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
           card.frames = await decodeBytes(new Uint8Array(await res.arrayBuffer()), card.source.title);
         }
       }
-      card.result = recolorFrames(card.frames, palette, recolorOptions(params));
+      card.result = recolorFrames(card.frames, target, recolorOptions(params));
       card.stale = false;
       paintCard(card);
     } catch (err) {
@@ -286,7 +404,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
   function exportResult(card) {
     const name = card.source.title.replace(/\.[^.]+$/, '');
     if (card.frames.length > 1) {
-      const bytes = encodeGif(card.result.frames, palette.entries.map((e) => e.rgb8));
+      const bytes = encodeGif(card.result.frames, currentTarget().entries.map((e) => e.rgb8));
       download(`${name}-recoloured.gif`, bytes, 'image/gif', true);
       return;
     }
@@ -334,7 +452,12 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     if (dom.picker.files?.length) addFiles(dom.picker.files);
     dom.picker.value = '';
   });
-  dom.rescan.addEventListener('click', () => loadServerLibrary(true));
+  dom.rescan.addEventListener('click', () => { loadServerLibrary(true); loadPaletteLibrary(); });
+  dom.target?.addEventListener('change', () => setTarget(dom.target.value));
+  dom.palettePicker?.addEventListener('change', () => {
+    if (dom.palettePicker.files?.length) addPalettes(dom.palettePicker.files);
+    dom.palettePicker.value = '';
+  });
   viewport.addEventListener('scroll', queueSweep, { passive: true });
   window.addEventListener('resize', queueSweep, { passive: true });
   dom.container.addEventListener('dragover', (e) => {
@@ -352,6 +475,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
   function render(nextPalette, nextParams) {
     palette = nextPalette;
     params = nextParams;
+    if (targetId === GENERATED) drawTargetSwatches();
     if (!active) {
       dirty = true;
       return;
@@ -373,6 +497,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
   }
 
   loadServerLibrary();
+  loadPaletteLibrary();
   return { render, setActive, addFiles };
 }
 

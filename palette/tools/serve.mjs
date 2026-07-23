@@ -9,16 +9,19 @@
 //
 //   GET    /api/reference          -> ["file.png", ...]  (sorted list of image files)
 //   PUT    /api/reference/<file>   <- raw image bytes, writes reference/<file>
+//   GET    /api/palettes           -> ["file.png", ...]  (sorted list of palette images)
+//   PUT    /api/palettes/<file>    <- raw image bytes, writes palettes/<file>
 //
 //   GET    /api/ping           -> { app: 'palette-creator', pid, port }
 //   POST   /api/shutdown       -> stops this server (loopback callers only)
 //
-// The last two exist so `start.cmd` can be double-clicked repeatedly: a second run finds
+// ping/shutdown exist so `start.cmd` can be double-clicked repeatedly: a second run finds
 // the first, asks it to stand down, and takes the port back. See `main()`.
 //
-// The reference folder is the user's own art library for the recolour gallery (PLAN §19.5).
-// It is read back through ordinary static hosting — `/reference/<file>` — so only listing
-// and writing need an endpoint.
+// `reference/` is the user's art library for the recolour gallery; `palettes/` is their
+// library of palette images to recolour *into* (PLAN §19.5). Both are read back through
+// ordinary static hosting — `/reference/<file>`, `/palettes/<file>` — so only listing and
+// writing need an endpoint, and one handler serves both folders.
 //
 // Everything else is served as a static file from the repo root. Path traversal is
 // refused: a resolved request path that escapes the root is a 403.
@@ -32,10 +35,21 @@ import { spawn } from 'node:child_process';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SAVES_DIR = join(ROOT, 'saved');
 const REFERENCE_DIR = join(ROOT, 'reference');
+const PALETTES_DIR = join(ROOT, 'palettes');
 
-/** Image types the reference folder accepts. Anything else is refused before it hits disk. */
-const REFERENCE_EXTS = ['.png', '.jpg', '.jpeg', '.gif'];
-const MAX_REFERENCE_BYTES = 16 << 20;
+/** Image types the reference and palette folders accept. Anything else is refused. */
+const IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.gif'];
+const MAX_IMAGE_BYTES = 16 << 20;
+
+/**
+ * The two image-asset folders behind their APIs. `reference/` holds images to recolour;
+ * `palettes/` holds palette images to recolour *into*. One handler serves both — they differ
+ * only in which folder they touch — so the path-traversal guard cannot drift between them.
+ */
+const ASSETS = {
+  '/api/reference': REFERENCE_DIR,
+  '/api/palettes': PALETTES_DIR,
+};
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -61,14 +75,14 @@ export function safeSaveName(raw) {
 }
 
 /**
- * Restrict a reference filename to a safe basename plus an allowed image extension.
+ * Restrict an image-asset filename to a safe basename plus an allowed image extension.
  * Deliberately built on `safeSaveName` rather than beside it — one traversal guard in the
  * codebase, not two that can drift apart.
  */
 export function safeReferenceName(raw) {
   const file = String(raw || '').trim();
   const ext = extname(file).toLowerCase();
-  if (!REFERENCE_EXTS.includes(ext)) return null;
+  if (!IMAGE_EXTS.includes(ext)) return null;
   const base = safeSaveName(file.slice(0, -ext.length));
   return base ? `${base}${ext}` : null;
 }
@@ -175,59 +189,61 @@ async function handleApi(req, res, pathname) {
   return true;
 }
 
-/** Handle every /api/reference request; returns true if the request was an API call. */
-async function handleReferenceApi(req, res, pathname) {
-  if (pathname === '/api/reference' || pathname === '/api/reference/') {
+/**
+ * Handle an image-asset request against one folder (reference images or palette images).
+ * `prefix` is the route base (`/api/reference`), `dir` the folder it maps to.
+ */
+async function handleAssetApi(req, res, pathname, prefix, dir) {
+  if (pathname === prefix || pathname === `${prefix}/`) {
     if (req.method !== 'GET') {
       sendJson(res, 405, { error: 'method not allowed' });
-      return true;
+      return;
     }
     let files = [];
     try {
-      files = (await readdir(REFERENCE_DIR)).filter((f) => REFERENCE_EXTS.includes(extname(f).toLowerCase()));
+      files = (await readdir(dir)).filter((f) => IMAGE_EXTS.includes(extname(f).toLowerCase()));
     } catch {
       files = []; // the folder simply does not exist yet
     }
     sendJson(res, 200, files.sort((a, b) => a.localeCompare(b)));
-    return true;
+    return;
   }
 
-  const name = safeReferenceName(decodeURIComponent(pathname.slice('/api/reference/'.length)));
+  const name = safeReferenceName(decodeURIComponent(pathname.slice(`${prefix}/`.length)));
   if (!name) {
-    sendJson(res, 400, { error: 'invalid reference name' });
-    return true;
+    sendJson(res, 400, { error: 'invalid image name' });
+    return;
   }
 
   if (req.method === 'PUT') {
     let body;
     try {
-      body = await readBody(req, MAX_REFERENCE_BYTES);
+      body = await readBody(req, MAX_IMAGE_BYTES);
     } catch {
       sendJson(res, 413, { error: 'image too large' });
-      return true;
+      return;
     }
     if (!body.length) {
       sendJson(res, 400, { error: 'empty body' });
-      return true;
+      return;
     }
-    await mkdir(REFERENCE_DIR, { recursive: true });
-    await writeFile(join(REFERENCE_DIR, name), body);
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, name), body);
     sendJson(res, 200, { ok: true, name });
-    return true;
+    return;
   }
 
   if (req.method === 'DELETE') {
     try {
-      await unlink(join(REFERENCE_DIR, name));
+      await unlink(join(dir, name));
       sendJson(res, 200, { ok: true, name });
     } catch {
       sendJson(res, 404, { error: 'not found' });
     }
-    return true;
+    return;
   }
 
   sendJson(res, 405, { error: 'method not allowed' });
-  return true;
 }
 
 /** Resolve a URL path to a file inside ROOT, or null if it escapes the root. */
@@ -299,9 +315,11 @@ export function createDevServer({ onShutdown = null } = {}) {
         await handleApi(req, res, pathname);
         return;
       }
-      if (pathname === '/api/reference' || pathname.startsWith('/api/reference/')) {
-        await handleReferenceApi(req, res, pathname);
-        return;
+      for (const [prefix, dir] of Object.entries(ASSETS)) {
+        if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+          await handleAssetApi(req, res, pathname, prefix, dir);
+          return;
+        }
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') {
         sendJson(res, 405, { error: 'method not allowed' });

@@ -173,6 +173,31 @@ test('reference API round-trips an image and serves it back statically', async (
   }
 });
 
+test('the palettes API is a second folder behind the same handler', async () => {
+  const { base, close } = await boot();
+  const name = `${TEST_NAME}.png`;
+  const PALETTES_DIR = join(ROOT, 'palettes');
+  const bytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 9, 9, 9]);
+  try {
+    const put = await fetch(`${base}/api/palettes/${name}`, { method: 'PUT', body: bytes });
+    assert.equal(put.status, 200);
+    assert.ok((await (await fetch(`${base}/api/palettes`)).json()).includes(name));
+
+    // Served statically from /palettes, exactly like /reference.
+    const got = await fetch(`${base}/palettes/${name}`);
+    assert.equal(got.status, 200);
+    assert.deepEqual([...new Uint8Array(await got.arrayBuffer())], [...bytes]);
+
+    // It is a distinct folder — a palette upload does not appear in the reference list.
+    assert.ok(!(await (await fetch(`${base}/api/reference`)).json()).includes(name));
+
+    assert.equal((await fetch(`${base}/api/palettes/${name}`, { method: 'DELETE' })).status, 200);
+  } finally {
+    try { await unlink(join(PALETTES_DIR, name)); } catch { /* already removed */ }
+    await close();
+  }
+});
+
 test('the reference API refuses a bad name and an empty body', async () => {
   const { base, close } = await boot();
   try {

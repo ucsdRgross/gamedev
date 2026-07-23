@@ -35,6 +35,8 @@ export function createSliders(container, { onChange }) {
   const controls = new Map(); // name -> { sync(v), markChanged(bool), el }
   container.innerHTML = '';
 
+  const tip = makeTooltip();
+
   for (const group of PARAM_GROUPS) {
     const specs = PARAMS.filter((p) => p.group === group);
     if (!specs.length) continue;
@@ -48,7 +50,7 @@ export function createSliders(container, { onChange }) {
     body.className = 'param-group-body';
     details.appendChild(body);
 
-    for (const spec of specs) body.appendChild(buildControl(spec, controls, onChange));
+    for (const spec of specs) body.appendChild(buildControl(spec, controls, onChange, tip));
     container.appendChild(details);
   }
 
@@ -69,8 +71,43 @@ function valueEquals(a, b) {
   return a === b;
 }
 
+/**
+ * A single shared hover tooltip. The parameter docs are two or three sentences — a native
+ * `title` truncates them and lags — so a custom element shows the full text, positioned
+ * beside the control and clamped to the viewport. One element for the whole panel.
+ */
+function makeTooltip() {
+  const el = document.createElement('div');
+  el.className = 'param-tip';
+  el.hidden = true;
+  document.body.appendChild(el);
+
+  const show = (anchor, text) => {
+    el.textContent = text;
+    el.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    // Prefer to the left of the params panel; fall back below the control if there is no room.
+    const w = Math.min(320, window.innerWidth - 24);
+    el.style.width = `${w}px`;
+    let left = r.right + 10;
+    if (left + w > window.innerWidth - 12) left = Math.max(12, r.left - w - 10);
+    el.style.left = `${left}px`;
+    const top = Math.min(r.top, window.innerHeight - el.offsetHeight - 12);
+    el.style.top = `${Math.max(12, top)}px`;
+  };
+  const hide = () => { el.hidden = true; };
+
+  /** Wire an element to show `text` on hover. */
+  return function attach(anchor, text) {
+    anchor.addEventListener('mouseenter', () => show(anchor, text));
+    anchor.addEventListener('mouseleave', hide);
+    // Hidden on any edit/scroll so it never sits stale over a moving control.
+    anchor.addEventListener('mousedown', hide);
+  };
+}
+
 /** Build the DOM for one parameter control and register its sync/mark hooks. */
-function buildControl(spec, controls, onChange) {
+function buildControl(spec, controls, onChange, tip) {
   const wrap = document.createElement('div');
   wrap.className = 'ctrl';
 
@@ -82,7 +119,7 @@ function buildControl(spec, controls, onChange) {
     const name = document.createElement('span');
     name.className = 'ctrl-name';
     name.textContent = spec.name;
-    name.title = spec.doc;
+    tip(name, spec.doc);
     label.append(box, name);
     wrap.appendChild(label);
     box.addEventListener('change', () => onChange(spec.name, box.checked));
@@ -98,7 +135,7 @@ function buildControl(spec, controls, onChange) {
   const name = document.createElement('span');
   name.className = 'ctrl-name';
   name.textContent = spec.name;
-  name.title = spec.doc;
+  tip(name, spec.doc);
   head.appendChild(name);
 
   if (spec.type === 'enum') {
@@ -132,7 +169,7 @@ function buildControl(spec, controls, onChange) {
   const range = document.createElement('input');
   range.type = 'range';
   range.min = spec.min; range.max = spec.max; range.step = spec.step;
-  range.title = spec.doc;
+  tip(range, spec.doc);
   wrap.appendChild(range);
 
   // A slider drag should be a single history step: the first `input` opens a new entry,

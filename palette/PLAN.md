@@ -16,6 +16,31 @@ Everything needed to build it is specified below — color theory, algorithms, f
 
 ---
 
+## Build status — this plan is fully implemented
+
+> **All phases in this document are built, tested and gated** (Phases 1–4 plus the two
+> follow-ons, 4b colour-space maps and 5 reference recolouring). This file remains the
+> **specification**; it is not a to-do list any more. Read it for *what* the tool is and
+> *why* each algorithm is the way it is.
+>
+> For a newcomer picking this up:
+> - **[PROGRESS.md](PROGRESS.md)** is the task-by-task record of what shipped, and the place
+>   to start. It also lists the **post-plan enhancements** that are not in the §17 task list
+>   below (external-palette recolouring, the double-click restart, the lazy recolour gallery,
+>   the per-parameter documentation, and the Randomize-excludes-recolour fix).
+> - **[ARCHITECTURE.md](ARCHITECTURE.md)** explains how the built code actually works and
+>   records the decisions and dead ends behind it (§9 app, §10 gallery, §11 picker, §12
+>   recolouring).
+> - Two places in this spec were changed after the fact by the repo owner and are marked
+>   inline where they occur: **§19.2** (a GIF is recoloured whole and shown animated, not as a
+>   single still) and the note beside it. The original text is struck through, not deleted.
+>
+> If you are adding a *new* feature, follow the existing conventions (§7 stack rules, the
+> `Palette` contract in ARCHITECTURE §1, tests written alongside code, no Node built-ins under
+> `src/core/`) and record it in PROGRESS.md's post-plan section.
+
+---
+
 # Part I — Design specification
 
 ## 1. Why OKLCH
