@@ -9,7 +9,7 @@ that a file exists.
 
 ## Every phase in the plan is complete and gated.
 
-`npm test` is green at **311 tests** (~6 minutes; the 10,000-case fuzz dominates).
+`npm test` is green at **370 tests** (~6 minutes; the 10,000-case fuzz dominates).
 **Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
 again is a **restart**: it takes the port back from the previous instance (ping + shutdown
 handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
@@ -252,13 +252,15 @@ built, tested and documented; this is the list to extend when the next one lands
 
 ## Phase 4b — Colour-space maps (PLAN §9.1)
 
-The default picker view. Standard HSL picker geometry, every pixel painted with the nearest
-palette colour. Rendered per output pixel, so edges are exact and smooth for free and there
-is no cell grid, no upsampling and no smoothing pass. **No outlines, ever.**
+The default picker view. A picker geometry, every pixel painted with the nearest palette colour.
+Rendered per output pixel, so edges are exact and smooth for free and there is no cell grid, no
+upsampling and no smoothing pass. **No outlines, ever.** Coloured in **OKHSL** since 2026-07-24
+(was plain HSL — see task 4c.9 and ARCHITECTURE §14.10).
 
-Measured coverage at K=48, both geometries: **45–46 of 48 per slice, 48/48 across the four
-default slices.** The per-slice shortfall is the design working as specified — do not "fix"
-it by forcing colours in; that is what the swatch strip is for.
+Measured coverage at K=48, both geometries: **17–45 of 48 per slice, 48/48 across the four
+default slices** (OKHSL figures; the low-saturation slice is where the perceptually-even
+projection differs most from the old HSL one). The per-slice shortfall is the design working as
+specified — do not "fix" it by forcing colours in; that is what the swatch strip is for.
 
 - [x] **4b.1 Colour-space sampling** — `src/core/layout/colorspace.js`: `hslToSrgb`, `mapSample`, `buildColorMap`, `buildMapSlices`, `mapPickAt`, `mapFidelity`. Hue spans an **inclusive** 0–360 across the rectangle so the two side columns are literally the same hue; the wheel is white at the centre and black at the rim. Coverage is counted by *colour*, not by slot. See ARCHITECTURE §11 "Phase 4b" for why each of those is the way it is.
 - [x] **4b.2 Map tests** — `test/colorspace.test.js` green (14 tests): HSL against its published definition, both geometries asserted literally (side columns identical, top row is white's nearest colour and bottom row is black's, the disc's corners unpainted, hue 0 up and clockwise), only palette colours emitted with a deliberately non-palette background to catch foreign pixels, `shown`/`missing` checked against the actual pixels, determinism, and resolution changing sampling without changing geometry.
@@ -286,3 +288,85 @@ step past an anchor (fixed in `ramp.js`; no preset changed), and the fuzz's
 - [x] **5.11 Recolour gallery page** — `src/ui/recolor.js` + a third tab. Every reference image, original beside recoloured, with origin, colour count, chosen mode and frame count. **Animations play**, both sides, on one shared timer that only advances visible cards. **Lazy**: a card fetches, decodes and recolours only when scrolled on screen — mandatory once the library is more than a handful of large GIFs (ARCHITECTURE §12.5). PNG export for stills, animated GIF for animations.
 - [x] **5.12 Parameters** — the ten §19.1 knobs appended to `params.js` after `seed`, so old PAL1 seeds still decode. Snapshots re-recorded after confirming all 20 presets' colours were byte-identical and only the seed string grew.
 - [x] **5.13 GATE 5** — `npm test` green (276, full fuzz). Rendered and **read** `out/recolor-sheet-{default,gameboy}.png`. Drove the whole page in-browser: 6 cards with correct modes and counts, both sides animating, drag-and-drop persisting through the API to `palette/reference/`, every recolour parameter reaching the output, GIF and PNG exports, and the standalone build. Reported to the user.
+
+## Phase 4c — The dithering reference (PLAN §9.3)
+
+The picker's fifth view. Every colour the palette can reach by **mixing** its own colours, plus a
+catalogue of every way to mix them. The reach map paints the real dither pattern per pixel, so the
+headline image is a literal bandless colormap made of nothing but palette colours.
+
+Measured, flat -> dithered -> theoretical floor (mean ΔE to colour space / share band-free; OKHSL
+geometry, 4c.8):
+
+```
+  default48 (K=48)   6.21   3%  ->   3.29  53%  ->   3.12  55%    10888 pairs, 206 triples, 88 quads
+  neon      (K=32)   6.95   3%  ->   2.02  69%  ->   1.45  78%     5671 pairs, 621 triples, 974 quads
+  gameboy   (K= 4)  14.64   0%  ->  11.96   2%  ->  11.85   3%       89 pairs
+```
+
+**Do not "improve" the coverage figures by forcing colours in** — the same rule as the maps
+(ARCHITECTURE §11). Game Boy reaching 2% is the correct answer for four greens, and the complete
+reference beside it, the reachable-region outline, and the suggested colours to add are what make it
+useful rather than merely low.
+
+- [x] **4c.1 Pattern registry** — `src/core/patterns.js`: every ordered pattern as an `n×n`
+  permutation of `0…n²−1`, so arity and ratio are free parameters of `patternTile`/`patternPatch`.
+  Bayer 2/4/8/16 (generated recursively), void-and-cluster blue noise 8/16, clustered-dot halftone
+  4/8, and six hand-placed artist patterns. `dither.js` now **derives** `BAYER4`/`BAYER8` from it
+  rather than keeping its own copies. `test/patterns.test.js` green (13 tests): every pattern a
+  true permutation, the generated Bayer matrices pinned against the literal published ones, exact
+  weight accounting per pattern per arity 2–4, seamless tiling, deterministic blue noise, and a
+  2×2 tile honestly reporting the three ratios it has when asked for seven.
+- [x] **4c.2 Reachable set** — `src/core/layout/reach.js`: `blendColor` (linear-light, see
+  ARCHITECTURE §14.1), exhaustive pairs at every sixteenth, gap-targeted triples/quads ranked by
+  what they unlock, dedupe by perceived colour keeping the *simplest* recipe, `buildColorIndex`
+  (k-d tree — the voxel grid was built first and lost, §14.3), `buildReachMap`/`buildReachSlices`
+  (same `mapSample` geometry as `colorspace.js`), `hullFloor`, `suggestColors`, `catalogueSections`.
+- [x] **4c.3 Sheet** — `ditherSheet` in `layout/render.js`: the reach map as a **comparison** (4c.7),
+  the coverage block, the gap report with suggested colours, then five catalogue sections
+  (every pattern, ramp blends, contrast blends, three- and four-colour blends, what multicolour
+  unlocks). Each patch drawn three ways — 1×, zoomed, and the flat optical average. Two buffers
+  beside the label buffer (`patches` for the recipe, `overlay` for the declared non-palette
+  exception — chips, references and the outline), both returned so the invariant is testable.
+- [x] **4c.4 Reach tests** — `test/reach.test.js` green (22 tests): the blend asserted against an
+  independently written linear-light average **with the sRGB and OKLab means as negative
+  controls**, the k-d tree against brute force on queries outside the data cloud, dithered coverage
+  never worse than flat across three presets, a greyscale palette still producing a sheet and
+  honest limits and useful suggestions, only palette colours outside the declared overlay, the
+  whole recipe reachable through `pickPatchAt`, the palette-agnostic OKHSL reference and the
+  outline-is-a-contour-not-a-fill checks (4c.7), determinism, and the roughness bands re-derived
+  from the measured ramp-step median rather than hard-coded.
+- [x] **4c.5 Picker integration** — a fifth view, `Dither — every colour you can reach by mixing`.
+  **Built on demand only**: it does not follow the palette, because a 1.1 s rebuild per slider
+  frame is unusable — a palette change marks it stale and offers **Rebuild** (ARCHITECTURE §14.8).
+  Hover reports the whole recipe (which colours, what ratio, which pattern, what it resolves to)
+  through the new `pickPatchAt`, falling back to the ordinary entry readout elsewhere; a click
+  copies the recipe rather than the resulting hex, which is a colour the palette does not contain.
+  No new parameters, so no seed string changed.
+- [x] **4c.6 Renderer** — `tools/render.mjs` writes `out/dither/{default48,neon,gameboy}.png` and
+  prints the coverage table above. Game Boy is in the set deliberately: it is where "try its best
+  even when a complete colormap is impossible" either holds up or does not.
+- [x] **4c.7 Map rework** (after reading the first render) — the single hatched 2×2 answered
+  *where* a colour was missing but not *what*, and the hatch destroyed the colour it marked. Now
+  each saturation is a **COMPLETE reference** (palette-agnostic true colormap, `buildReferenceSlice`)
+  beside the **REACHABLE** map (plain, no marks) and the same map **OUTLINED** (a one-pixel white
+  contour on the reachable side — selects the area without covering a colour). The whole thing is
+  drawn at **two resolutions**, 2× above standard, because the low-res map hid reachable colours.
+  ARCHITECTURE §14.9. `test/reach.test.js` gained a palette-agnostic-reference test and an
+  outline-is-a-contour-not-a-fill test; the greyscale honesty test now keys on `unreachable`.
+- [x] **4c.8 OKHSL geometry** (after reading the reference) — the COMPLETE reference banded because
+  HSL is not perceptually uniform. The dither view lays colour out in **OKHSL** (`src/core/okhsl.js`,
+  Ottosson's perceptual HSL — smooth lightness and hue, still full-gamut so no clipping holes). The
+  reachable map, its reference and the coverage samples share it, so the comparison stays exact.
+  Cusp solves are memoised per hue (`okhslCached`), so build cost barely moved. `test/okhsl.test.js`
+  green (6 tests: full-gamut coverage, endpoints, CIE-L\* evenness vs HSL, toe invertibility,
+  determinism). Coverage figures shifted (dither band-free 41% → 53% at K=48), documented in
+  ARCHITECTURE §14.5/§14.10. (4c.9 then moved the other picker maps to OKHSL too.)
+- [x] **4c.9 All picker maps on OKHSL** — 4c.8 left a colour sitting at a different position on
+  `map-rect`/`map-polar` (still HSL). Rather than live with that mismatch, `colorspace.js` moved to
+  OKHSL too (`buildColorMap` and `mapFidelity` via the shared `okhslCached`). Those maps already
+  matched colours by OKLab ΔE, so only the geometry changed: the projection is un-warped (region
+  area now tracks perceptual dominance) and every picker view shares one geometry. `hslToSrgb` stays
+  (tests + the OKHSL evenness negative control). `colorspace.test.js` needed no edits — every
+  assertion is geometry-only or self-consistent — but the coverage figures shifted (17–45/48 per
+  slice, was 26–46). ARCHITECTURE §9.1/§11/§14.10 updated.

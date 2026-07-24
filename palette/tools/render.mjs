@@ -18,7 +18,8 @@ import { writePNG } from './png.mjs';
 import { SCENES, CATEGORIES } from '../src/scenes/index.js';
 import { Raster } from '../src/core/raster.js';
 import { rankLayouts } from '../src/core/layout/index.js';
-import { contactSheet, contextSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
+import { contactSheet, contextSheet, ditherSheet, layoutRaster, mapSheet } from '../src/core/layout/render.js';
+import { buildReach } from '../src/core/layout/reach.js';
 import { MAP_GEOMETRIES, buildContextMaps, buildMapSlices, mapFidelity } from '../src/core/layout/colorspace.js';
 import { builtinSamples } from '../src/core/recolor/samples.js';
 import { recolorFrames } from '../src/core/recolor/index.js';
@@ -186,6 +187,22 @@ function renderMaps(palette, tag) {
 }
 
 /**
+ * Render the dithering reference (PLAN §9.3): what the palette can reach by mixing, and every
+ * way to mix it.
+ *
+ * The figures returned are what GATE 4c is reported against, and the two that matter are read
+ * together: `dithered` against `flat` is what dithering buys, and `dithered` against `floor` is
+ * whether any more of it is available. A view that claimed to reach everything would be a view
+ * that had started cheating, exactly as for the maps above.
+ */
+function renderDither(palette, tag) {
+  const reach = buildReach(palette);
+  const sheet = ditherSheet(reach);
+  saveRaster(sheet.raster, join(OUT, 'dither', `${tag}.png`));
+  return { tag, ...reach.stats, suggestions: reach.suggestions, hatched: sheet.overlayCount };
+}
+
+/**
  * Render the reference recolouring (PLAN §19.3): every built-in sample, original above
  * recoloured, as one sheet per palette. Animations are laid out as filmstrips, because a
  * PNG cannot animate — and written out as real animated GIFs beside the sheet, which is the
@@ -299,6 +316,16 @@ function main() {
   const maps = renderMaps(pickerPalette, 'default48');
   renderMaps(generatePalette(presetParams('neon-cyberpunk')), 'neon');
 
+  // The dithering reference: the same full-budget palette, plus a deliberately hard case.
+  // Game Boy is four colours of one hue, so it is where "try its best even when a complete
+  // colormap is impossible" either holds up or does not.
+  mkdirSync(join(OUT, 'dither'), { recursive: true });
+  const dither = [
+    renderDither(pickerPalette, 'default48'),
+    renderDither(generatePalette(presetParams('neon-cyberpunk')), 'neon'),
+    renderDither(generatePalette(presetParams('gameboy')), 'gameboy'),
+  ];
+
   // Reference recolouring: the same two palettes, so the sheets can be read side by side.
   mkdirSync(join(OUT, 'recolor'), { recursive: true });
   const recoloured = renderRecolor(generatePalette(defaultParams()), 'default');
@@ -323,6 +350,18 @@ function main() {
     const slices = m.slices.map((s) => `s${s.saturation.toFixed(2)} ${s.shownCount}/${m.total} (dE ${s.fidelity.toFixed(1)})`).join('  ');
     console.log(`  ${m.geometry.padEnd(6)} union ${m.shownCount}/${m.total}   ${slices}`);
     if (m.missing.length) console.log(`         reached by no slice: ${m.missing.join(' ')}`);
+  }
+  console.log('dithering reach (mean dE to colour space / share band-free, flat -> dithered -> best possible):');
+  for (const d of dither) {
+    const pc = (v) => `${String(Math.round(v * 100)).padStart(3)}%`;
+    console.log(`  ${d.tag.padEnd(10)} K=${String(d.k).padStart(2)}  ${d.distinct} reachable`
+      + `   flat ${d.flat.mean.toFixed(2)} ${pc(d.flat.within)}`
+      + ` -> dithered ${d.dithered.mean.toFixed(2)} ${pc(d.dithered.within)}`
+      + (d.floor ? ` -> floor ${d.floor.mean.toFixed(2)} ${pc(d.floor.within)}` : '')
+      + `   ${Object.entries(d.byArity).map(([a, n]) => `${n}x${a}`).join(' ')}`);
+    if (d.suggestions.length) {
+      console.log(`             add ${d.suggestions.map((s) => `${s.hex} (-> ${s.after.mean.toFixed(2)})`).join('  ')}`);
+    }
   }
   console.log('reference recolouring (source colours -> chosen mode):');
   for (const r of recoloured) {

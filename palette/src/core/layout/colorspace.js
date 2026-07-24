@@ -1,11 +1,19 @@
 // Colour-space maps (PLAN §9.1) — the picker's default view, and a completely different
 // mechanism from the arrangement layouts in this directory (ARCHITECTURE §11).
 //
-// Take a standard HSL picker geometry, work out which colour each output pixel *represents*,
-// and paint the nearest palette colour to it. Nothing is arranged and nothing is optimised,
-// so position means exactly what it means in any other colour picker: you always know where
-// to look. There is no cell grid, so boundaries are exact at whatever resolution the map is
-// sampled at — no upsampling, no curvature flow, and **no outlines, ever**.
+// Take a picker geometry, work out which colour each output pixel *represents*, and paint the
+// nearest palette colour to it. Nothing is arranged and nothing is optimised, so position means
+// exactly what it means in any other colour picker: you always know where to look. There is no
+// cell grid, so boundaries are exact at whatever resolution the map is sampled at — no upsampling,
+// no curvature flow, and **no outlines, ever**.
+//
+// The geometry is coloured in **OKHSL** (`okhsl.js`), not the plain HSL this started as — the
+// perceptual replacement HSL (ARCHITECTURE §14.10). It keeps HSL's full-gamut coverage (every
+// position is a real colour) but makes lightness and hue perceptually even, so a region's *area*
+// reflects how much perceptual colour space a palette colour actually owns rather than how much HSL
+// happens to stretch that hue. Every picker map — these and the dither reference — shares it, so a
+// colour keeps its position across all of them. (`hslToSrgb` stays exported: the tests check it, and
+// it is the negative control the OKHSL evenness tests measure against.)
 //
 // The honest cost is coverage: a colour only appears where it is some pixel's nearest
 // neighbour, so a colour hemmed in by its neighbours can occupy a sliver or be absent from a
@@ -14,6 +22,7 @@
 // the arrangement layouts.
 
 import { deltaEOK, normHue, srgbToOklab } from '../oklch.js';
+import { okhslCached } from '../okhsl.js';
 
 /** The two picker geometries: a hue×lightness rectangle and a round painter's wheel. */
 export const MAP_GEOMETRIES = ['rect', 'polar'];
@@ -43,7 +52,8 @@ export function hslToSrgb(h, s, l) {
 }
 
 /**
- * The HSL colour a map position represents, or `null` for pixels outside the shape.
+ * The colour a map position represents as `{ h, s, l }` coordinates (turned into a real colour by
+ * `okhslCached`), or `null` for pixels outside the shape. Pure geometry — colour-space-agnostic.
  *
  * **rect** — x is hue and y is lightness, white along the top edge and black along the
  * bottom. Hue spans the *inclusive* range 0–360, so the leftmost and rightmost columns are
@@ -92,7 +102,7 @@ export function buildColorMap(palette, {
     for (let x = 0; x < w; x++) {
       const hsl = mapSample(geometry, x, y, w, h, saturation);
       if (!hsl) continue;
-      const lab = srgbToOklab(hslToSrgb(hsl.h, hsl.s, hsl.l));
+      const lab = srgbToOklab(okhslCached(hsl.h, hsl.s, hsl.l));
       // nearestEntry indexes the pool; map it back to a real palette index so every label in
       // the buffer means the same thing everywhere in the picker.
       labels[y * w + x] = k ? pool[nearestEntry(labs, k, lab[0], lab[1], lab[2])] : -1;
@@ -300,7 +310,7 @@ export function mapFidelity(map, palette, step = 3) {
       const entry = map.labels[y * map.w + x];
       if (entry < 0) continue;
       const hsl = mapSample(map.geometry, x, y, map.w, map.h, map.saturation);
-      sum += deltaEOK(srgbToOklab(hslToSrgb(hsl.h, hsl.s, hsl.l)), palette.entries[entry].lab);
+      sum += deltaEOK(srgbToOklab(okhslCached(hsl.h, hsl.s, hsl.l)), palette.entries[entry].lab);
       n++;
     }
   }

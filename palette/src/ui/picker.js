@@ -19,8 +19,9 @@
 import { VARIANTS, buildLayout, rankLayouts } from '../core/layout/index.js';
 import { BLOB_MODES } from '../core/layout/score.js';
 import { buildContextMaps, buildMapSlices, mapFidelity } from '../core/layout/colorspace.js';
+import { buildReach } from '../core/layout/reach.js';
 import {
-  EDGE_MODES, contactSheet, contextSheet, mapSheet, renderLayout, pickAt,
+  EDGE_MODES, contactSheet, contextSheet, ditherSheet, mapSheet, renderLayout, pickAt, pickPatchAt,
 } from '../core/layout/render.js';
 import { encodePngRgb } from '../core/export/png.js';
 import { download } from './io.js';
@@ -39,6 +40,7 @@ const VIEWS = [
   ['map-rect', 'Map — hue × lightness'],
   ['map-polar', 'Map — colour wheel'],
   ['map-context', 'Map — by context (sprites, scenery, UI…)'],
+  ['dither', 'Dither — every colour you can reach by mixing'],
   ['layout', 'Arrangement layout'],
 ];
 
@@ -69,6 +71,11 @@ export function createPicker(dom, { getUsage }) {
   let blobMode = 'isolation';
   let edges = 'none';
   let scale = 6;
+  // The dither view is the one view that is NOT rebuilt when the palette moves. It costs about a
+  // second (enumerating tens of thousands of blends, then a k-d tree over them), which is fine
+  // once and unusable on every frame of a slider drag. So it is built when the view is opened,
+  // and a later palette change only offers a Rebuild button.
+  let ditherStale = false;
 
   fillSelect(dom.view, VIEWS);
   fillSelect(dom.variant, VARIANTS.map((v) => [v.id, `${v.n}. ${v.title}`]));
@@ -80,9 +87,29 @@ export function createPicker(dom, { getUsage }) {
     if (!palette || (!dirty && rendered)) return rendered;
     if (view === 'layout') rendered = buildLayoutView();
     else if (view === 'map-context') rendered = buildContextView();
+    else if (view === 'dither') rendered = buildDitherView();
     else rendered = buildMapView();
     dirty = false;
     return rendered;
+  }
+
+  /**
+   * Everything the palette can reach by mixing its own colours, plus every way to mix it.
+   *
+   * All the work is in `src/core/layout/reach.js`, so this is pixel-for-pixel what
+   * `npm run render` writes to `out/dither/`.
+   */
+  function buildDitherView() {
+    const reach = buildReach(palette);
+    const out = ditherSheet(reach);
+    const pct = (v) => `${Math.round(v * 100)}%`;
+    const { flat, dithered, floor, distinct, k } = reach.stats;
+    out.status = `flat ΔE ${flat.mean.toFixed(2)} (${pct(flat.within)} band-free)`
+      + ` → dithered ΔE ${dithered.mean.toFixed(2)} (${pct(dithered.within)})`
+      + (floor ? ` · best possible ≈ ${floor.mean.toFixed(2)} (${pct(floor.within)})` : '')
+      + ` · ${distinct} reachable colours from ${k}`;
+    ditherStale = false;
+    return out;
   }
 
   /** One hue×lightness map per context, so each answers "what may I use for this job". */
@@ -144,7 +171,45 @@ export function createPicker(dom, { getUsage }) {
     dom.swatch.style.background = 'transparent';
   }
 
+  /** Canvas coordinates for a pointer event, in the rendered sheet's own pixel space. */
+  function canvasPos(event) {
+    const rect = dom.canvas.getBoundingClientRect();
+    return [
+      ((event.clientX - rect.left) / rect.width) * rendered.w,
+      ((event.clientY - rect.top) / rect.height) * rendered.h,
+    ];
+  }
+
+  /**
+   * The dither recipe under the cursor, as text: which colours, in what ratio, in which pattern,
+   * and what it resolves to.
+   *
+   * This is what the label buffer alone cannot answer. A dithered area is two to four palette
+   * colours, so `pickAt` — one entry per pixel — reports whichever constituent that pixel happens
+   * to be, which is the least useful of the several true answers.
+   */
+  function recipeAt(event) {
+    if (!rendered?.patches || !palette) return null;
+    const patch = pickPatchAt(rendered, ...canvasPos(event));
+    if (!patch) return null;
+    if (patch.arity === 1) return { text: `${patch.hexes[0]} — palette colour, no dither needed`, hex: patch.hexes[0] };
+    const mix = patch.hexes
+      .map((hex, i) => `${Math.round((patch.weights[i] / 16) * 100)}% ${hex}`)
+      .join(' + ');
+    return {
+      text: `${mix} · ${patch.patternTitle} → reads as ${patch.hex} · ${patch.roughnessLabel.toLowerCase()}`,
+      hex: patch.hex,
+      copy: `${patch.hexes.join(' + ')} (${patch.weights.join(':')}, ${patch.pattern}) = ${patch.hex}`,
+    };
+  }
+
   dom.canvas.addEventListener('mousemove', (e) => {
+    const recipe = recipeAt(e);
+    if (recipe) {
+      dom.readout.textContent = recipe.text;
+      dom.swatch.style.background = recipe.hex;
+      return;
+    }
     const entry = entryAt(e);
     if (!entry) {
       clearReadout();
@@ -157,21 +222,41 @@ export function createPicker(dom, { getUsage }) {
   dom.canvas.addEventListener('mouseleave', clearReadout);
 
   dom.canvas.addEventListener('click', async (e) => {
-    const entry = entryAt(e);
-    if (!entry) return;
+    // On the dither view a click copies the whole recipe, not just the resulting hex — the hex
+    // on its own is a colour the palette does not contain, so it is the one thing that cannot
+    // be pasted anywhere useful.
+    const recipe = recipeAt(e);
+    const text = recipe ? (recipe.copy ?? recipe.hex) : entryAt(e)?.hex;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(entry.hex);
-      dom.readout.textContent = `copied ${entry.hex}`;
+      await navigator.clipboard.writeText(text);
+      dom.readout.textContent = `copied ${text}`;
     } catch {
-      dom.readout.textContent = `${entry.hex} (clipboard blocked)`;
+      dom.readout.textContent = `${text} (clipboard blocked)`;
     }
   });
 
   dom.view.addEventListener('change', () => {
     view = dom.view.value;
     dom.layoutControls.hidden = view !== 'layout';
+    syncRebuild();
     dirty = true;
     draw();
+  });
+
+  /** The Rebuild button belongs to the dither view, and only while it is out of date. */
+  function syncRebuild() {
+    if (!dom.rebuild) return;
+    dom.rebuild.hidden = view !== 'dither' || !ditherStale;
+  }
+
+  dom.rebuild?.addEventListener('click', () => {
+    dirty = true;
+    dom.score.textContent = 'rebuilding the reachable set…';
+    // A timeout rather than requestAnimationFrame, for the reason `exportSheet` below gives:
+    // rAF never fires in a backgrounded tab, and a rebuild that silently never happens is
+    // worse than one that skips a frame of feedback.
+    setTimeout(() => { draw(); syncRebuild(); });
   });
   dom.variant.addEventListener('change', () => { variant = dom.variant.value; dirty = true; draw(); });
   dom.blob.addEventListener('change', () => { blobMode = dom.blob.value; dirty = true; draw(); });
@@ -183,6 +268,12 @@ export function createPicker(dom, { getUsage }) {
     if (view === 'layout') {
       const out = renderLayout(buildLayout(palette, { variant, blobMode, usage: getUsage?.() ?? null }), palette, { scale: EXPORT_SCALE, edges });
       savePng(`palette-${variant}`, out.raster);
+      return;
+    }
+    if (view === 'dither') {
+      // Already at its natural resolution — the patches are pixel art and the maps are drawn as
+      // real dither patterns, so sampling finer would change the texture rather than sharpen it.
+      savePng('palette-dither-reference', ensureRendered().raster);
       return;
     }
     if (view === 'map-context') {
@@ -215,6 +306,14 @@ export function createPicker(dom, { getUsage }) {
   /** Note a new palette; the rebuild waits until the picker is actually on screen. */
   function render(next) {
     palette = next;
+    if (view === 'dither' && rendered) {
+      // Do not rebuild: mark it out of date and offer the button. Everything on screen still
+      // describes the previous palette, which the status line says.
+      ditherStale = true;
+      syncRebuild();
+      dom.score.textContent = 'palette changed — press Rebuild to re-measure';
+      return;
+    }
     dirty = true;
     draw();
   }

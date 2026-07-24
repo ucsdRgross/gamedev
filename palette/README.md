@@ -5,14 +5,14 @@ pixel-art palettes from 58 tunable parameters, proves they work by applying them
 gallery of test visuals, and exports to Godot, Aseprite, and the web.
 
 **Status: complete.** Generator, browser app, 34-scene test gallery, artist's-palette
-picker (colour-space maps + 15 arrangement layouts), and reference-image recolouring —
-including recolouring into your own external palette images — all built and gated
-(311 tests green).
+picker (colour-space maps + a dithering reference + 15 arrangement layouts), and
+reference-image recolouring — including recolouring into your own external palette images —
+all built and gated (370 tests green).
 
 | Document | What it is |
 |---|---|
 | [PLAN.md](PLAN.md) | The specification — colour theory, algorithms, formulas, task list |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | The `Palette` contract, design decisions, per-phase notes (§9 app, §10 gallery, §11 picker, §12 recolouring, §13 fitter) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | The `Palette` contract, design decisions, per-phase notes (§9 app, §10 gallery, §11 picker, §12 recolouring, §13 fitter, §14 dithering reference) |
 | [PROGRESS.md](PROGRESS.md) | Task-by-task state. Source of truth for what is done |
 | [COLOR_GUIDE.md](COLOR_GUIDE.md) | Where each hue lives in sRGB — saturation ceilings, the lightness each colour peaks at, and which layer to pick colours from |
 
@@ -36,12 +36,13 @@ The rest is for working on the code.
 npm test
 ```
 
-311 tests: colour-space round-trips against published reference values, gamut mapping,
+370 tests: colour-space round-trips against published reference values, gamut mapping,
 bit-depth quantisation, generator invariants across every palette size from 4 to 64, seed
 round-trips, export round-trips, the dev-server API, the raster/analysis/dither modules, a
-34-scene smoke test, the picker layouts and colour-space maps, the recolour paths (indexed,
-quantize, external-palette extraction), the GIF codec, the **parameters-from-image fitter**,
-the Randomize exclusions, golden snapshots, and a 10,000-case fuzz. Takes about 6 minutes;
+34-scene smoke test, the picker layouts and colour-space maps, the **dither patterns and the
+reachable-colour set**, the recolour paths (indexed, quantize, external-palette extraction), the
+GIF codec, the **parameters-from-image fitter**, the Randomize exclusions, golden snapshots, and
+a 10,000-case fuzz. Takes about 6 minutes;
 `PALETTE_FUZZ_N=200 npm test` shortens the fuzz while iterating.
 
 ```bash
@@ -55,8 +56,25 @@ export formats, a **Fit to image…** button (drop a palette image — a swatch 
 strip, or any art — and it searches the parameters that best reproduce it), the **34-scene
 test gallery** (category filter, colour-vision views, zoom,
 animation, drag-and-drop photo quantization), the **artist's-palette picker** (colour-space
-maps by default, per-context maps, 15 arrangement layouts behind a selector), and the **recolour page** —
-every reference image re-rendered in the generated palette, animations included, playing.
+maps by default, per-context maps, the **dithering reference**, and 15 arrangement layouts behind
+a selector), and the **recolour page** — every reference image re-rendered in the generated
+palette, animations included, playing.
+
+The dithering reference answers "am I missing this colour, or can I dither my way to it?" For each
+saturation it shows three maps side by side: the **complete** colormap (the true colours a perfect
+palette would reach, so you can see what's missing — a smooth, band-free OKHSL gradient), the
+**reachable** map — the nearest colour the
+palette can reach by **mixing**, drawn as the real dither pattern, so it is a literal bandless
+colormap made of nothing but palette colours — and the reachable map again with a **white outline**
+around the areas that are within a just-noticeable difference. The whole thing is drawn at two
+resolutions, a 2× view above the standard one, because the finer map resolves more colours and
+patterns. It reports how much of colour space dithering covers against the flat palette and against
+the theoretical best, and names the colours worth adding to close the rest. Under it is the
+catalogue: every pattern (Bayer 2/4/8/16, blue noise, halftone, checkerboard, lines, brick,
+stipple) at every ratio, the smooth pairs, the contrasting pairs, and the three- and four-colour
+blends — each shown at 1×, zoomed, and as the flat colour it averages to. Hover any patch for the
+recipe; click to copy it. It builds when you open it and offers **Rebuild** after a palette change
+rather than re-measuring on every slider drag.
 
 ```bash
 npm run render
@@ -64,7 +82,8 @@ npm run render
 
 Writes labelled swatch sheets, export strips, a preset contact sheet, a budget sweep, every
 gallery scene (per-scene PNGs plus per-category contact sheets, for two palettes), the picker
-layouts and colour-space maps, and the recoloured reference images — including real animated
+layouts and colour-space maps, the dithering reference (`out/dither/`, with its coverage table
+printed to stdout), and the recoloured reference images — including real animated
 GIFs in `out/recolor/` — to `out/` for direct inspection. These are meant to be looked at: a
 palette can pass every test and still be wrong.
 
@@ -277,7 +296,7 @@ can set your recolour options once and randomize the palette freely.
 
 | Path | Purpose |
 |---|---|
-| `src/core/` | DOM-free colour maths, generation, `raster`/`analysis`/`dither` — imported by both browser and Node |
+| `src/core/` | DOM-free colour maths, generation, `raster`/`analysis`/`dither`/`patterns` — imported by both browser and Node |
 | `src/core/export/` | Output format writers: gpl, pal, hex, lospec, css, json, tres, png |
 | `src/ui/` | Browser app: `app sliders swatches history io randomize gallery picker recolor` |
 | `src/scenes/` | The 34 gallery scenes (DOM-free) + `index` registry + `util` role accessors |

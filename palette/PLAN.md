@@ -27,7 +27,8 @@ Everything needed to build it is specified below — color theory, algorithms, f
 > - **[PROGRESS.md](PROGRESS.md)** is the task-by-task record of what shipped, and the place
 >   to start. It also lists the **post-plan enhancements** that are not in the §17 task list
 >   below (external-palette recolouring, the double-click restart, the lazy recolour gallery,
->   the per-parameter documentation, and the Randomize-excludes-recolour fix).
+>   the per-parameter documentation, the Randomize-excludes-recolour fix, and the **dithering
+>   reference** picker view of §9.3 — with the OKHSL geometry every picker map moved to alongside it).
 > - **[ARCHITECTURE.md](ARCHITECTURE.md)** explains how the built code actually works and
 >   records the decisions and dead ends behind it (§9 app, §10 gallery, §11 picker, §12
 >   recolouring).
@@ -574,7 +575,10 @@ optimized: position means exactly what it means in any other picker, so you alwa
 where to look.
 
 Geometry is HSL, because that is what "white on one side, black on the other, hues through
-the middle" describes:
+the middle" describes. *(Post-plan: the geometry moved from plain HSL to **OKHSL**, its
+perceptually-even, still-full-gamut replacement, so a region's area reflects perceptual
+dominance and the reference gradients do not band — see §9.3 and ARCHITECTURE §14.10. Every
+picker map shares it.)*
 
 - **Rectangular** — x = hue (0–360, so the left and right edges are the same hue and the
   map wraps), y = lightness (white at the top edge, black at the bottom), saturation fixed
@@ -624,6 +628,43 @@ predictable but may hide a color; §9.2 shows everything but must be re-read eac
 15. Delaunay mesh with barycentric blending, snapped to palette
 
 A contact sheet renders all variants together with their scores for at-a-glance comparison.
+
+### 9.3 Dithering reference — reachable-by-mixing *(post-plan addition)*
+
+Added after the original plan, at the repo owner's request. §9.1 and §9.2 both answer questions
+about the colours the palette **literally contains**; this third view answers the one an artist
+asks when a palette feels short: *is this colour actually missing, or can I dither my way to it?*
+Mixing two or more palette colours in one area produces a new perceived colour, so the set a
+palette can reach is far larger than the palette — and it is computable exactly.
+
+**The reach map** is a *comparison*, one row per saturation slice, in the same OKHSL geometry as
+§9.1:
+
+- **COMPLETE** — the true, palette-agnostic colormap at that saturation: what a perfect palette
+  would show. The reference the other panels are read against.
+- **REACHABLE** — every pixel painted with the actual *dither pattern* of the nearest
+  dither-reachable colour, so it is a literal **bandless colormap** made of nothing but palette
+  colours. Left plain, so any colour is pickable even where the palette is stretching to reach it.
+- **REACHABLE, OUTLINED** — the same map with a one-pixel outline around the regions within a
+  just-noticeable difference of their true colour. It *selects the available area* without covering
+  a colour, which a hatch could not. Unreachable regions are never faked as their nearest colour.
+
+Drawn at **two resolutions**, high above standard, because a finer map resolves more distinct
+blends and finer dither. Coverage is reported honestly — mean ΔE and band-free share for the flat
+palette, for dithering, and for the theoretical best any dithering of these colours could reach —
+and the colours worth **adding** to close the remaining gaps are named.
+
+**The catalogue** underneath is the comprehensive half: every ordered pattern (Bayer 2/4/8/16,
+void-and-cluster blue noise, clustered-dot halftone, and the hand-placed checkerboard, lines,
+brick and stipple) at every ratio it can express; the smooth adjacent-shade pairs; the contrasting
+pairs (included, not hidden — they reach colours nothing else does, labelled as texture); and the
+three- and four-colour blends. Each patch is shown three ways: at 1×, zoomed until the tile is
+legible, and as the flat colour it optically averages to (in **linear-light** sRGB — the physics of
+optical mixing, not a gamma- or OKLab-space average).
+
+Interactive like the other views: hover reads the whole recipe (which colours, what ratio, which
+pattern, the resulting hex, how cleanly it blends), click copies it. Built **on demand** — it does
+not follow the palette on every slider drag, but offers a Rebuild after a change.
 
 ## 10. Exports
 
@@ -715,10 +756,18 @@ Each phase ends runnable and verifiable.
 **Phase 4 — Picker.** All 15 layout variants, scoring, blob-sizing modes, contact sheet, interactive hover/click, high-res export.
 *Gate:* scoring tests pass; contact sheet rendered and inspected; ranked results reported back to you.
 
-**Phase 4b — Color-space maps (§9.1).** The rectangular and polar HSL maps, saturation
+**Phase 4b — Color-space maps (§9.1).** The rectangular and polar maps, saturation
 slices, per-pixel rendering, no outlines, coverage reporting. This becomes the picker's
 default view; the §9.2 arrangement layouts stay as alternates.
 *Gate:* maps rendered and inspected against the reference look; coverage figures reported.
+
+**Phase 4c — Dithering reference (§9.3, post-plan).** The reachable-by-mixing view: the
+comparison reach map (complete reference / reachable / outlined, two resolutions), the pattern
+and combination catalogue, honest coverage against the theoretical floor, and colour suggestions.
+Adds `src/core/patterns.js`, `src/core/layout/reach.js` and `src/core/okhsl.js` (the perceptual
+geometry every picker map then adopted).
+*Gate:* `npm test` green; `out/dither/` sheets rendered and read; driven in-browser; coverage
+reported back to you.
 
 **Phase 5 — Reference recoloring (§19).** Indexed remap and quantize, PNG/JPEG/GIF
 including animation, the all-references gallery page, and drag-and-drop image import with

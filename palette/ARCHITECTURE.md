@@ -120,6 +120,7 @@ writes PNGs with stored DEFLATE blocks specifically so it needs no `zlib`.
 | File | Role |
 |---|---|
 | `oklch.js` | Colour space conversions, `deltaEOK`, WCAG contrast, hex parse/format |
+| `okhsl.js` | OKHSL — Ottosson's perceptual HSL, the smooth full-gamut geometry every picker map uses (§14.10) |
 | `gamut.js` | Chroma-reduction gamut mapping (§2.4 of the plan), cusp lookup |
 | `quantize.js` | Per-channel bit depth, including `error-weighted` |
 | `hues.js` | Hue schemes, the perceptual-spacing warp, circular interpolation |
@@ -697,19 +698,24 @@ produces its hue-brightness rectangles and polar wheels by a **completely differ
 mechanism** from the Phase 4 layouts, and it is worth being precise about which, because
 the two cannot be tuned into each other.
 
-**What the reference does.** Take a standard HSL picker geometry — x or angle = hue, y or
-radius = lightness, saturation fixed per slice — and for each output pixel compute the
-color that position represents, then paint the **nearest palette color** to it. That is
-all. Nothing is arranged, nothing is optimized, no cell grid exists.
+**What the reference does.** Take a picker geometry — x or angle = hue, y or radius =
+lightness, saturation fixed per slice — and for each output pixel compute the color that
+position represents, then paint the **nearest palette color** to it. That is all. Nothing is
+arranged, nothing is optimized, no cell grid exists.
 
-This was verified by prototyping it before committing to the design; it reproduces the
-reference panels closely, including the polar wheels.
+This was verified by prototyping it before committing to the design; it reproduced the
+reference panels closely, including the polar wheels. The one deviation from that reference,
+made 2026-07-24, is the colour space: the geometry is coloured in **OKHSL** rather than the
+`retroactive.me` tool's plain HSL (§14.10), so it is perceptually even — a colour's *area* on
+the map reflects how much perceptual space it owns, not how much HSL stretches its hue. Position
+is still fixed and predictable; only the projection changed, and it now matches the OKLab ΔE the
+nearest-colour search already used.
 
 | | Color-space map (§9.1) | Arrangement layout (§9.2) |
 |---|---|---|
 | What decides position | Fixed — hue/lightness, as in any picker | The optimizer; moves when the palette changes |
 | Predictable | Yes — you know where to look | No — must be re-read each time |
-| Every color shown | **No.** Measured 43–46 of 48 per slice | **Yes**, guaranteed by construction |
+| Every color shown | **No.** Measured 17–45 of 48 per slice (union 48/48) | **Yes**, guaranteed by construction |
 | Area per color | Its Voronoi cell in color space; can be a sliver | Controlled by the blob-size mode |
 | Edge quality | Exact and smooth at any resolution, free | Cell grid, needs upsampling + curvature flow |
 | Cost | One nearest-color search per pixel | Up to a second per build |
@@ -755,15 +761,17 @@ coverage account; `buildMapSlices` runs the default four saturations and unions 
   last over background pixels only. So hover, click-to-copy and export all read one buffer,
   and no drawing step can introduce a colour that is not in the palette.
 
-**Measured coverage, default parameters at K=48** (`npm run render` prints this):
+**Measured coverage, default parameters at K=48** (`npm run render` prints this; OKHSL geometry
+since 2026-07-24 — the figures shifted from the old HSL ones, the low-saturation slice most,
+because the perceptually-even projection samples a different region there):
 
 ```
               union   s1.00   s0.70   s0.40   s0.12
-  rect        48/48   45/48   46/48   46/48   26/48     mean ΔE 10.2 / 7.6 / 5.7 / 4.9
-  polar       48/48   45/48   46/48   46/48   26/48     mean ΔE  9.6 / 7.2 / 5.4 / 4.6
+  rect        48/48   45/48   45/48   39/48   17/48     mean ΔE 8.1 / 6.1 / 5.4 / 4.7
+  polar       48/48   45/48   45/48   39/48   17/48     mean ΔE 7.8 / 6.0 / 5.2 / 4.6
 ```
 
-A single slice reaches 45–46 of 48, as §9.1 predicts. **Four slices happen to reach
+A single slice reaches 45 of 48, as §9.1 predicts. **Four slices happen to reach
 everything for most palettes** — over a 200-case parameter fuzz only 13 left anything
 stranded, and never more than two colours. That is a measurement, not a guarantee: the strip
 still has to exist, and `test/colorspace.test.js` forces the case by building a single
@@ -1210,3 +1218,232 @@ values were rounded and committed as the preset, and the strip itself embedded i
 `reference.js` so the reference-compare scene can score against it. The UI "Fit to image"
 button (`imagefile.js` decodes at the edge → `recolor/swatches.js` extracts → `fit.js`
 searches) is the same pipeline for any dropped image.
+
+---
+
+## 14. Phase 4c — the dithering reference (`patterns.js`, `layout/reach.js`, `okhsl.js`, added 2026-07-23)
+
+The picker's four earlier views all answer questions about the colours the palette **literally
+contains**. None answers the one an artist asks when a palette feels short: *is this colour
+actually missing, or can I dither my way to it?* `reach.js` computes the answer and the fifth
+picker view shows it, with a catalogue of every way to mix underneath.
+
+Spec is PLAN §9.3. What follows is the reasoning that should not be re-derived.
+
+### 14.1 Three decisions that decide whether the answer is honest
+
+**Optical mixing is linear-light.** A checkerboard of two colours averages *photons*, so a blend
+is the weighted mean of its constituents' **linear-light sRGB**, converted to OKLab afterwards
+(`blendColor`). Averaging in gamma-encoded sRGB comes out too dark and averaging in OKLab too
+light — both by several ΔE, both still "between" the two colours, and both would pass any test
+that only checks the blend sits between its constituents. `test/reach.test.js` asserts against an
+independently written linear average with those two wrong answers as explicit negative controls,
+because that is the only shape of test that catches it.
+
+**The pattern changes the texture, never the colour.** A blend is fully described by *which*
+entries and *what integer share of the tile* each takes; whether Bayer, halftone, blue noise or
+scanlines draws it changes only how it reads up close. So the reachable set is enumerated over
+(entries, weights) and the pattern is chosen for display — which keeps the search space fourteen
+times smaller than the obvious alternative, for exactly zero colours lost.
+
+**Coverage is reported, never faked** — the same rule the colour-space maps live under (§11).
+Regions no blend reaches are left outside the reachable-region outline (§14.9) and set beside the
+complete reference, not quietly passed off as whatever colour was nearest.
+
+### 14.2 One representation for every pattern
+
+`src/core/patterns.js` represents every ordered pattern as an `n×n` **permutation of 0…n²−1**.
+Bayer, clustered-dot halftone, void-and-cluster blue noise, scanlines, brick and the hand-placed
+checkerboards are then the same object with a different ordering, and arity and ratio fall out as
+free parameters of one function: a cell of rank `r` takes the colour whose cumulative share `r`
+falls inside. Ratios are exact — a whole number of cells — which is what lets a patch *claim* a
+blend colour rather than approximate one.
+
+The canonical denominator is **16**, the 4×4 tile an artist hand-places. Bigger tiles scale up by
+an integer factor; the 2×2 expresses quarters and **declines** anything finer rather than
+rounding, because rounding would silently change the colour the patch claims. `dither.js` now
+derives `BAYER4`/`BAYER8` from `bayerOrder` instead of keeping its own copies, so the reference
+view and the dithering the scenes and the recolour path actually perform cannot drift apart; the
+literal published matrices are pinned in `test/patterns.test.js`.
+
+### 14.3 A k-d tree, because the voxel grid loses — and why that is not obvious
+
+The reachable set runs to ~11,000 distinct colours at K=48 and the map is a quarter of a million
+pixels across its slices, so nearest-colour has to be indexed. **A uniform voxel grid with
+expanding-ring search was built first and is the wrong structure**, for a reason worth recording
+because the grid is the obvious choice:
+
+> The map deliberately samples the **whole** colour space (§14.10), including the saturated regions
+> no palette can reach, so a query is routinely tens of ΔE from the nearest blend. The ring search
+> then walks
+> out dozens of rings at O(r²) voxels each, almost all empty, before it finds anything to bound
+> with. Shrinking the cell to fix bucket density made it *worse*: 200k points went from 4.1 s to
+> 9.1 s.
+
+`buildColorIndex` is a flat-array k-d tree instead — exact, indifferent to how far the query is,
+and about 30× faster on the same work (200k-point floor estimate: 9.1 s → 0.24 s; a full
+`buildReach` at K=48: 1.15 s → 0.30 s). It is checked against brute force on queries deliberately
+placed outside the data cloud, which is the case the grid handled badly.
+
+### 14.4 Exhaustive pairs, targeted N-way
+
+K=64 gives 2,016 pairs but 41,664 triples and 635,376 quads *before* ratios, so the two arities
+cannot be treated the same way and pretending otherwise would mean showing neither properly.
+
+- **Pairs are exhaustive** — every pair at every sixteenth. High-contrast pairs are included, not
+  pruned: they reach colours nothing else does, and the catalogue labels them as texture rather
+  than hiding them.
+- **Triples and quads are generated where they can help**: find the sample points the pairs still
+  miss, take the palette colours nearest each, enumerate their N-way combinations, keep the ones
+  that measurably improve the nearest-reachable distance. A blind sweep spends all its time on
+  combinations landing where a pair already sits.
+
+**Measured, this usually finds very little, and that is the finding.** At K=48 the whole reachable
+set is 10,888 pairs but only 206 triples and 88 quads — after exhaustive pairs, three and four
+colours rarely reach anywhere new. The exception is high chroma: the neon preset yields 621
+triples and 974 quads, and its dithered mean (2.02) is still short of the floor (1.45), so at
+saturated palettes the arity-4 ceiling and the sixteenth ratio grid genuinely do leave something
+on the table. Raising either is the lever if that ever matters. (These counts are the OKHSL ones,
+§14.10 — the perceptually-even sample set surfaces somewhat more N-way blends than plain HSL did.)
+
+The catalogue is a **separate** generator (`catalogueSections`) for the same reason: the reach map
+only ever shows the blend that best reaches a colour, so it hides the fourteen patterns and dozen
+ratios that reach nearly the same place — which are exactly what someone choosing a texture wants
+to compare.
+
+### 14.5 The theoretical floor, and why no "% of optimal" is claimed
+
+`hullFloor` estimates the best any dithering could *ever* do, by densely sampling random convex
+combinations in linear-light sRGB (the reachable set is exactly that hull, whatever pattern or
+arity is used). It earns its ~600 ms twice: it tells an artist whether a gap is the *dithering's*
+fault or the *palette's* — the difference between "try another pattern" and "you need another
+colour" — and it is a self-check on §14.4's enumeration.
+
+**It is a Monte-Carlo estimate that converges downward** (default K=48: 50k trials → 3.41, 200k →
+3.20, 600k → 3.09), so it is an *upper bound* on the floor. That means the headroom it shows is
+understated and any fraction-of-optimal computed from it is overstated, which is why the sheet
+prints the three numbers side by side and labels the third `(EST.)` rather than deriving a
+percentage from them.
+
+Measured, default parameters (colour space sampled in OKHSL, §14.10):
+
+```
+                     flat palette        with dithering      best possible (est.)
+  default48 (K=48)   dE 6.21   3%        dE 3.29  53%        dE 3.12  55%
+  neon      (K=32)   dE 6.95   3%        dE 2.02  69%        dE 1.45  78%
+  gameboy   (K= 4)   dE 14.64  0%        dE 11.96  2%        dE 11.85  3%
+```
+
+Game Boy is the "try its best when a complete colormap is impossible" case: four greens reach 93
+distinct colours and a smooth green wedge, everything else is outside the outline, and the
+suggestions are a near-black, a near-white and a purple — extend the value range, then add a hue.
+
+### 14.6 The roughness bands are measured, not chosen
+
+A patch is labelled `BLENDS CLEANLY` / `READS AS TEXTURE` / `VISIBLE DITHER` by the max pairwise
+ΔE of its constituents. The boundaries come from the thing they have to classify correctly: two
+**adjacent steps of one ramp** are the canonical convincing blend, and across every palette size
+and the first twelve presets those sit at a median of **15.9 ΔE** (p25 15.1, p75 22.1). A first
+cut guessed 10, which filed the everyday case under "texture"; the test asserting that the ramp
+catalogue contains at least one cleanly-blending pair is what caught it, and it now re-derives the
+median from the palette rather than hard-coding the outcome.
+
+### 14.7 Two buffers beside the label buffer
+
+Every sheet in `layout/render.js` is composed in label space and painted once by `paintLabels`
+(§11), which is what guarantees no foreign colour. A dither patch is 2–4 entries and the label
+buffer holds one, so `ditherSheet` carries two more:
+
+- **`patches`** — a patch id per pixel into `patchTable`. Without it a hover reports whichever
+  constituent that pixel happens to be, which is the least useful of several true answers. With it
+  the readout is the whole recipe, and a click copies the recipe rather than the resulting hex —
+  the hex alone is a colour the palette does not contain, so it is the one thing that cannot be
+  pasted anywhere useful.
+- **`overlay`** — packed RGB applied *after* painting, holding the three kinds of pixel that are
+  deliberately not palette colours: the flat average chips, the palette-agnostic reference
+  colormaps (§14.9), and the white selection outline. It is **returned from `ditherSheet`, not just
+  consumed**, so the test can assert that every *labelled* pixel is a palette colour — the core
+  guarantee holds on the reachable maps and the catalogue, while the declared exception is visible
+  and bounded (it must stay under half the sheet) rather than able to spread.
+
+The chip beside each 1× tile is also the cheapest possible check on §14.1: a tile and its optical
+average should be indistinguishable at arm's length, so a wrong blend calculation is visible by eye
+on the rendered sheet in a way no assertion in the test file can be.
+
+**The reach map paints the actual dither**, not a flat approximation — each pixel takes the colour
+its blend's tile holds at that position. So the headline image is a literal bandless colormap made
+of nothing but palette colours, and the "only palette colours" invariant holds across it.
+
+### 14.9 The map is a comparison, and the first cut of it was wrong
+
+The headline started as a single 2×2 of reachable slices with a **diagonal hatch** over the
+unreachable regions. Read back after building, it did not answer the question it exists to answer:
+a hatch dense enough to be unmissable destroys the colour underneath, on a saturated slice most of
+the area is unreachable so there was nothing left to read, and — the real flaw — a hatch marks
+*where* a colour is missing but gives no idea *what* is missing. The rebuild (the repo owner's
+call) replaced all of that:
+
+- **A palette-agnostic COMPLETE reference sits beside every reachable slice** (`buildReferenceSlice`
+  — the true colour at each position, no palette involved; coloured in OKHSL per §14.10). This is
+  what makes "what is missing" legible: at Game Boy the reference is a full rainbow and the reachable
+  map is a narrow green wedge, so the gap is the picture. The reference is the same beside every
+  palette, which is the point.
+- **A white outline replaces the hatch** (`onReachBoundary`). It is one pixel on the *reachable*
+  side of the band-free boundary, so it selects the available area without covering a single colour
+  — an artist can still pick a colour from an unreachable region and see it, which the hatch
+  prevented. There is also a **plain** reachable map with no marks at all, so neither the outline
+  nor anything else is ever in the way. Both, not a toggle.
+- **Two resolutions, high above standard** (`MAP_TIERS`, 512×256 over 256×128). The low-resolution
+  map genuinely hid colours: the same nearest-colour query at 4× the pixels resolves finer dither
+  and lands on more distinct blends, which is visible immediately on the 2× tier. The high tier is
+  an exact double so the two read as one picture at two magnifications.
+
+Cost roughly doubled (≈1.1 s → ≈1.9 s at K=32) because the reachable maps are now built at two
+sizes; still on-demand only (§14.8), so it is paid once when the view is opened.
+
+### 14.10 The geometry is OKHSL, not HSL — a smooth reference has to be perceptual
+
+The reference colormap read back with visible banding, and the cause is the geometry: plain **HSL**
+lightness is not perceptually uniform and its saturation peaks in a hard ridge at l=0.5, so an even
+sweep of pixels is an uneven sweep of colour. The dither view therefore lays colour out in
+**OKHSL** (`okhsl.js`, Ottosson's perceptual HSL) instead — lightness runs through OKLab with the
+`toe` correction, hue is the OKLab hue angle. The result is a smooth, band-free gradient that still
+**covers the whole sRGB gamut** (s and l are normalised to the gamut boundary, so unlike raw OKLCH
+there are no holes to clip). The reachable map, its reference and the coverage samples all use it,
+so the three panels stay one geometry and the comparison is exact.
+
+Four things worth knowing:
+
+- **`okhsl.js` is a faithful transcription of a public-domain reference, not new maths.** The magic
+  numbers are the standard OKLab LMS→linear-sRGB matrix (reused from `oklch.js`) and Ottosson's
+  published cusp/mid fits — not free parameters. `test/okhsl.test.js` pins what they are *for*: full
+  gamut coverage (the load-bearing check — a wrong cusp fit pushes colours out of range), exact
+  white/black/grey endpoints, and a CIE-L\* measurement that OKHSL's lightness is markedly more even
+  than HSL's. CIE L\* (not OKLab L) is the yardstick, because OKHSL deliberately makes OKLab L
+  *non*-uniform via the toe — measuring evenness in OKLab L would be measuring the wrong axis.
+- **Every picker map moved to OKHSL with it** (`map-rect`/`map-polar` in `colorspace.js`, 2026-07-24),
+  so a colour keeps its position across all of them — the alternative was a view-to-view mismatch
+  with the dither map, since the reference *has* to be OKHSL to be smooth. Those maps already matched
+  colours perceptually (nearest by OKLab ΔE); only the geometry was HSL, so the switch un-warps the
+  projection (a region's area now reflects perceptual dominance) without changing the "predictable
+  position" property. The `retroactive.me` HSL replica (§9.1) was the thing traded away; it was worth
+  less than one consistent, honest geometry. Coverage figures shifted with the geometry (a
+  perceptually-even sample volume reads the palette as covering more — dither band-free at default
+  K=48 went 41% → 53%, and the map slice counts in §9.1/§11 were re-measured); the numbers in §14.5
+  are the OKHSL ones.
+- **A hue's cusp solve is the expensive part and depends only on the hue**, so it is memoised
+  (`HUE_CTX` in `reach.js`). A rectangle has at most a few hundred distinct hues however many pixels
+  it has, so the ~800k conversions a full sheet needs collapse to a few hundred cusp solves and the
+  build cost barely moved.
+- **The dark rim of the polar-style slices is gone here anyway** — the dither view only uses the
+  rectangle, so OKHSL's even lightness axis runs top (white) to bottom (black) with no radius warp
+  to reason about.
+
+### 14.8 Built on demand, and only on demand
+
+`buildReach` plus `ditherSheet` costs about 1.1 s at K=32. That is fine once and unusable on every
+frame of a slider drag, so the dither view is the one picker view that does **not** follow the
+palette: it builds when the view is opened, and a later palette change marks it stale, says so in
+the status line and offers a **Rebuild** button. Everything else in the picker still rebuilds
+eagerly. No parameters were added — view state is UI state, like `variant` and `blobMode` — so no
+seed string changed and no snapshot needed re-recording.

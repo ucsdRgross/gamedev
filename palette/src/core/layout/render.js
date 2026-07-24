@@ -18,6 +18,12 @@
 
 import { oklabToOklch, oklchToOklab, deltaEOK } from '../oklch.js';
 import { Raster } from '../raster.js';
+import { patternPatch } from '../patterns.js';
+import { DEFAULT_SATURATIONS as DEFAULT_MAP_SATS } from './colorspace.js';
+import {
+  BANDING_DE, buildReachSlices, buildReferenceSlice, catalogueSections, patternWeights,
+  preferredPattern, roughnessBand,
+} from './reach.js';
 
 const SHEET_BG = [22, 22, 28];
 const SHEET_INK = [225, 225, 232];
@@ -476,6 +482,436 @@ function stripSwatches(labels, w, h, missing, x, y, bottom, f) {
     out.push({ entry, x, y: sy, size });
   });
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// The dither reference sheet
+// ---------------------------------------------------------------------------
+
+const PATCH_FLAT = 24; // the 1x tile — what it looks like at the size it will be used
+const PATCH_ZOOM = 32; // the same tile magnified until the pattern is legible
+const PATCH_CHIP = 12; // the flat optical average, for checking the 1x tile against
+const PATCH_GAP = 2;
+const PATCH_W = PATCH_FLAT + PATCH_GAP + PATCH_ZOOM + PATCH_GAP + PATCH_CHIP;
+const PATCH_H = PATCH_ZOOM;
+const CELL_GAP = 6;
+const ROW_LABEL_H = 8;
+const SECTION_HEAD_H = 18;
+
+/**
+ * The reach map is drawn at two resolutions, high above standard, because the same query at more
+ * pixels resolves finer dither patterns and lands on more distinct blends — the low-resolution
+ * map genuinely hides colours the palette can reach. The high tier is an exact 2× of the standard
+ * tile so the two read as the same picture at two magnifications.
+ */
+const MAP_TIERS = [
+  { id: 'hi', size: { w: 512, h: 256 }, title: 'HIGH RESOLUTION 2X - FINER DITHER, MORE DISTINCT COLOURS', reference: false },
+  { id: 'lo', size: { w: 256, h: 128 }, title: 'STANDARD RESOLUTION - COMPLETE COLORMAP REFERENCE BESIDE WHAT THIS PALETTE REACHES', reference: true },
+];
+const MAP_LABEL_H = 9; // one caption line above each map panel
+const MAP_TIER_HEAD = 11; // the tier heading
+
+/**
+ * Colours the reach-map overlay draws in, none of them palette colours — which is exactly why
+ * they live in the declared `overlay` layer (see the `ditherSheet` doc). White for the outline
+ * because it reads as a selection marquee over the mid-saturated boundary it traces, and it never
+ * obscures a colour: it is one pixel on the *reachable* side, so every colour stays pickable
+ * underneath, which is the whole reason it replaced the hatch.
+ */
+const REACH_OUTLINE = [245, 245, 250];
+
+/** Advance per character of the 3×5 pixel font at scale 1 — glyph plus its 1px spacing. */
+const GLYPH_ADVANCE = 4;
+
+/** Width a caption will occupy, so the sheet can be sized to hold it instead of clipping it. */
+function textWidth(str, scale = 1) {
+  return String(str).length * GLYPH_ADVANCE * scale;
+}
+
+/**
+ * The dithering reference view (PLAN §9.3): everything this palette can reach by mixing, and
+ * every way to mix it.
+ *
+ * Two halves, answering two different questions.
+ *
+ * **The reach map** is the headline, and it is drawn as a *comparison* rather than a single
+ * picture, because the one question it has to answer — is a colour missing, or can I dither to it?
+ * — is only answerable against a reference. So each saturation slice appears as up to three panels
+ * side by side:
+ *
+ *   * **COMPLETE** — the true, palette-agnostic colormap at that saturation: what a perfect palette
+ *     would show. This is the reference the other two are read against.
+ *   * **REACHABLE** — every pixel painted with the *dither pattern* of the nearest reachable blend,
+ *     so it is a literal bandless colormap made of nothing but palette colours. Left plain, with no
+ *     marks at all, so any colour on it can be picked even where the palette is stretching to reach
+ *     it.
+ *   * **REACHABLE, OUTLINED** — the same map with a white contour around the regions that are
+ *     within a just-noticeable difference of their true colour. The outline *selects the available
+ *     area* without covering a single colour, which the old diagonal hatch could not do.
+ *
+ * The whole map is drawn at two resolutions, high above standard, because the same nearest-colour
+ * query at more pixels resolves finer dither and lands on more distinct blends — the low-resolution
+ * map genuinely hides colours the palette can reach.
+ *
+ * **The catalogue** is the comprehensive half: every pattern, every ratio, the smooth pairs, the
+ * contrasting pairs and the three- and four-colour blends, each drawn three ways — at 1×, zoomed
+ * until the tile is legible, and as the flat colour it optically averages to.
+ *
+ * Composed in label space like every other sheet in this file, so hover, click-to-copy and export
+ * are the one `pickAt` path. Two buffers ride alongside it:
+ *
+ *   * `patches` — a patch id per pixel into `patchTable`, so a hover can report the whole recipe
+ *     (which colours, what ratio, which pattern) instead of just the one colour under the cursor.
+ *     A dither patch is 2–4 entries and the label buffer only holds one; this is that gap closed.
+ *   * `overlay` — packed RGB, applied *after* `paintLabels`. It holds the three kinds of pixel that
+ *     are deliberately **not** palette colours: the flat average chips, the palette-agnostic
+ *     reference colormaps, and the white selection outline. Keeping them in one declared layer is
+ *     what lets the test assert that every *other* pixel is a palette colour, so the exception is
+ *     visible and bounded rather than able to spread.
+ */
+export function ditherSheet(reach, {
+  pad = 10, background = SHEET_BG, sections = null,
+} = {}) {
+  const { palette, stats } = reach;
+  const cat = sections ?? catalogueSections(reach);
+
+  // Build the reachable maps once per tier; plain and outlined share the same computed slice.
+  const tierData = MAP_TIERS.map((tier) => ({
+    tier,
+    slices: buildReachSlices(reach, { geometry: 'rect', size: tier.size }).slices,
+    refs: tier.reference
+      ? DEFAULT_MAP_SATS.map((saturation) => buildReferenceSlice({ saturation, size: tier.size }))
+      : null,
+  }));
+
+  // --- the captions, built before measuring so the sheet is wide enough for them ------------
+  const pct = (v) => `${Math.round(v * 100)}%`;
+  const title = 'DITHER REFERENCE - EVERY COLOUR THIS PALETTE CAN REACH BY MIXING';
+  const headLines = [
+    ['', SHEET_DIM],
+    [`FLAT PALETTE      MEAN dE ${stats.flat.mean.toFixed(2)}   BAND-FREE ${pct(stats.flat.within)}`, SHEET_DIM],
+    [`WITH DITHERING    MEAN dE ${stats.dithered.mean.toFixed(2)}   BAND-FREE ${pct(stats.dithered.within)}`, SHEET_INK],
+    stats.floor
+      ? [`BEST POSSIBLE     MEAN dE ${stats.floor.mean.toFixed(2)}   BAND-FREE ${pct(stats.floor.within)}`
+        + '   (EST. - THE LIMIT OF THESE COLOURS AT ANY PATTERN AND ANY ARITY)', SHEET_DIM]
+      : null,
+    [`${stats.distinct} DISTINCT REACHABLE COLOURS FROM ${stats.k} - `
+      + Object.entries(stats.byArity).map(([a, n]) => `${n} x${a}-WAY`).join(', '), SHEET_DIM],
+    ['WHITE OUTLINE = REACHABLE WITHIN 2 dE. COMPARE "REACHABLE" AGAINST "COMPLETE" TO SEE WHAT IS MISSING', SHEET_DIM],
+  ].filter(Boolean);
+
+  // Columns per tier: a reference tier gets COMPLETE + REACHABLE + OUTLINED, the high-res tier
+  // just the two reachable maps (its reference is the standard tier's, one scroll away).
+  const colsOf = (tier) => (tier.reference ? 3 : 2);
+  const tierWidth = (tier) => colsOf(tier) * (tier.size.w + pad) - pad;
+  const tierHeight = (tier) => MAP_TIER_HEAD + DEFAULT_MAP_SATS.length * (MAP_LABEL_H + tier.size.h + pad);
+
+  // --- measure --------------------------------------------------------------
+  const cellW = PATCH_W + CELL_GAP;
+  const widest = Math.max(...cat.map((s) => Math.max(...s.rows.map((r) => r.cells.length), 0)), 1);
+  // The captions are as much a part of the sheet as the pictures. Measuring them here rather
+  // than trusting them to fit is what stops a note being silently cut off at the right edge —
+  // which is exactly what happened the first time this was rendered and read.
+  const captions = [title, ...headLines.map(([s]) => s), ...cat.flatMap((s) => [s.title, s.note, ...s.rows.map((r) => r.label)])];
+  const w = Math.max(
+    pad * 2 + Math.max(...MAP_TIERS.map(tierWidth)),
+    pad * 2 + widest * cellW,
+    pad * 2 + Math.max(...captions.map((s) => textWidth(s))),
+  );
+
+  const headH = 8 + headLines.length * 7 + 4; // title plus the coverage block
+  const mapsH = MAP_TIERS.reduce((a, t) => a + tierHeight(t) + pad, 0);
+  const gapsH = 18 + (reach.suggestions.length ? PATCH_FLAT + 14 : 8);
+  const sectionH = (s) => SECTION_HEAD_H + 8 + s.rows.reduce((a, r) => a + ROW_LABEL_H + PATCH_H + CELL_GAP, 0) + pad;
+  const h = pad + headH + mapsH + gapsH + cat.reduce((a, s) => a + sectionH(s), 0) + pad;
+
+  const labels = new Int32Array(w * h).fill(-1);
+  const patches = new Int32Array(w * h).fill(-1);
+  const overlay = new Int32Array(w * h).fill(-1);
+  const patchTable = [];
+  const tiles = new Map(); // blend id -> the pattern tile that draws it
+  let unreachable = 0; // reach-map pixels a blend cannot bring within the banding threshold
+
+  /** Paint one reachable slice at (ox, oy); `outline` adds the selection contour. */
+  const paintReach = (slice, ox, oy, outline) => {
+    for (let sy = 0; sy < slice.h; sy++) {
+      for (let sx = 0; sx < slice.w; sx++) {
+        const p = sy * slice.w + sx;
+        const id = slice.ids[p];
+        if (id < 0) continue;
+        const at = (oy + sy) * w + ox + sx;
+        // Paint the *dither*, not a flat approximation: the palette colour this blend's tile
+        // holds at this position. So the map is the real thing, made of palette colours only.
+        const tile = tileFor(tiles, reach.blends[id]);
+        labels[at] = tile.entries[tile.slots[(sy % tile.n) * tile.n + (sx % tile.n)]];
+        patches[at] = patchIdFor(patchTable, reach, id);
+        if (outline && onReachBoundary(slice, sx, sy)) overlay[at] = pack(REACH_OUTLINE);
+      }
+    }
+  };
+
+  /** Paint a palette-agnostic reference colormap into the overlay at (ox, oy). */
+  const paintReference = (ref, ox, oy) => {
+    for (let sy = 0; sy < ref.h; sy++) {
+      for (let sx = 0; sx < ref.w; sx++) {
+        const c = ref.rgb[sy * ref.w + sx];
+        if (c >= 0) overlay[(oy + sy) * w + ox + sx] = c;
+      }
+    }
+  };
+
+  // --- the reach map --------------------------------------------------------
+  const mapLabels = []; // {text, x, y} captions drawn after painting
+  let y = pad + headH;
+  for (const { tier, slices, refs } of tierData) {
+    mapLabels.push({ text: tier.title, x: pad, y, ink: SHEET_INK });
+    const rowW = tier.size.w + pad;
+    slices.forEach((slice, i) => {
+      const rowTop = y + MAP_TIER_HEAD + i * (MAP_LABEL_H + tier.size.h + pad);
+      let col = 0;
+      const place = (label) => {
+        const ox = pad + col * rowW;
+        mapLabels.push({ text: label, x: ox, y: rowTop, ink: SHEET_DIM });
+        col += 1;
+        return { ox, oy: rowTop + MAP_LABEL_H };
+      };
+      const flat = stats.flatBySlice[i];
+      if (refs) {
+        const ref = place(`SAT ${slice.saturation.toFixed(2)}  COMPLETE - THE REFERENCE`);
+        paintReference(refs[i], ref.ox, ref.oy);
+      }
+      const plain = place(`SAT ${slice.saturation.toFixed(2)}  REACHABLE  ${pct(flat.within)} -> ${pct(slice.within)} BAND-FREE`);
+      paintReach(slice, plain.ox, plain.oy, false);
+      const outlined = place(`SAT ${slice.saturation.toFixed(2)}  REACHABLE - OUTLINED`);
+      paintReach(slice, outlined.ox, outlined.oy, true);
+      if (tier.id === 'lo') {
+        for (let p = 0; p < slice.error.length; p++) if (slice.ids[p] >= 0 && slice.error[p] > BANDING_DE) unreachable++;
+      }
+    });
+    y += tierHeight(tier) + pad;
+  }
+
+  // --- the gap report -------------------------------------------------------
+  const gapsTop = y;
+  const suggestionX = (i) => pad + i * (PATCH_FLAT + 96);
+  reach.suggestions.forEach((s, i) => {
+    fillRect(overlay, w, suggestionX(i), gapsTop + 18, PATCH_FLAT, PATCH_FLAT, pack(s.rgb8));
+  });
+  y += gapsH;
+
+  // --- the catalogue --------------------------------------------------------
+  const sectionTops = [];
+  for (const section of cat) {
+    sectionTops.push(y);
+    let ry = y + SECTION_HEAD_H + 8;
+    for (const row of section.rows) {
+      row.cells.forEach((cellData, i) => {
+        drawPatch(
+          { labels, patches, overlay, w },
+          cellData,
+          pad + i * cellW,
+          ry + ROW_LABEL_H,
+          patchIdForCell(patchTable, reach, cellData),
+        );
+      });
+      ry += ROW_LABEL_H + PATCH_H + CELL_GAP;
+    }
+    y += sectionH(section);
+  }
+
+  // --- paint ----------------------------------------------------------------
+  const sheet = paintLabels(labels, w, h, palette, background);
+  for (let i = 0; i < overlay.length; i++) {
+    if (overlay[i] < 0) continue;
+    const p = i * 3;
+    sheet.data[p] = (overlay[i] >> 16) & 255;
+    sheet.data[p + 1] = (overlay[i] >> 8) & 255;
+    sheet.data[p + 2] = overlay[i] & 255;
+  }
+
+  // --- text (last, over background pixels only, ASCII only) -----------------
+  sheet.text(title, pad, 6, 1, SHEET_INK);
+  headLines.forEach(([str, ink], n) => { if (str) sheet.text(str, pad, 6 + (n + 1) * 7, 1, ink); });
+  for (const m of mapLabels) sheet.text(m.text, m.x, m.y, 1, m.ink);
+
+  sheet.text(unreachable
+    ? 'WHERE "REACHABLE" IS DARKER THAN "COMPLETE" AND OUTSIDE THE OUTLINE, NO BLEND REACHES THAT COLOUR AT ALL'
+    : 'EVERY SAMPLED COLOUR IS REACHABLE WITHIN 2 dE - THE OUTLINE ENCLOSES THE WHOLE MAP', pad, gapsTop, 1, unreachable ? WARN_INK : SHEET_DIM);
+  if (reach.suggestions.length) {
+    sheet.text('ADD ONE OF THESE TO CLOSE THE REST:', pad, gapsTop + 9, 1, SHEET_INK);
+    reach.suggestions.forEach((s, i) => {
+      const x = suggestionX(i) + PATCH_FLAT + 4;
+      sheet.text(s.hex, x, gapsTop + 22, 1, SHEET_INK);
+      sheet.text(`dE ${stats.dithered.mean.toFixed(2)} -> ${s.after.mean.toFixed(2)}`, x, gapsTop + 31, 1, SHEET_DIM);
+    });
+  } else {
+    sheet.text('NO COLOUR WORTH ADDING - WHAT REMAINS IS OUTSIDE ANY REACHABLE RANGE', pad, gapsTop + 9, 1, SHEET_DIM);
+  }
+
+  cat.forEach((section, si) => {
+    const top = sectionTops[si];
+    sheet.text(section.title, pad, top + 2, 1, SHEET_INK);
+    sheet.text(section.note, pad, top + 10, 1, SHEET_DIM);
+    let ry = top + SECTION_HEAD_H + 8;
+    for (const row of section.rows) {
+      sheet.text(row.label, pad, ry, 1, SHEET_DIM);
+      ry += ROW_LABEL_H + PATCH_H + CELL_GAP;
+    }
+  });
+
+  // `overlay` is returned, not just consumed: it *is* the declaration of where non-palette
+  // colours are allowed, so `test/reach.test.js` can assert that every pixel outside it is a
+  // palette colour. An undeclared exception is one that spreads. `unreachable` counts the
+  // standard-tier pixels no blend brings within the banding threshold — zero on a palette that
+  // covers colour space, which is what the greyscale honesty test keys on.
+  return { raster: sheet, labels, patches, patchTable, overlay, w, h, tierData, unreachable };
+}
+
+/** The tile that draws a blend, cached per blend so a map pixel is one array lookup. */
+function tileFor(cache, blend) {
+  const hit = cache.get(blend.id);
+  if (hit) return hit;
+  const pattern = preferredFor(blend);
+  const scaled = patternWeights(pattern, blend.weights);
+  const made = {
+    n: pattern.n,
+    entries: blend.entries,
+    slots: patternPatch(pattern, scaled, pattern.n, pattern.n),
+  };
+  cache.set(blend.id, made);
+  return made;
+}
+
+/**
+ * A blend's display pattern.
+ *
+ * Catalogue cells arrive with one already chosen (the PATTERNS section deliberately shows the
+ * same colours in fourteen different ones); everything else falls back to `preferredPattern`, so
+ * the "smallest tile that expresses these weights exactly" rule lives in `reach.js` alone.
+ */
+function preferredFor(blend) {
+  return blend.pattern ?? preferredPattern(blend.weights);
+}
+
+/** Register a blend in the patch table once, returning its row index. */
+function patchIdFor(table, reach, blendId) {
+  const blend = reach.blends[blendId];
+  if (blend.patchId === undefined) {
+    // eslint-disable-next-line no-param-reassign
+    blend.patchId = table.length;
+    table.push(rowFor(reach, blend));
+  }
+  return blend.patchId;
+}
+
+function patchIdForCell(table, reach, cellData) {
+  table.push(rowFor(reach, cellData));
+  return table.length - 1;
+}
+
+function rowFor(reach, blend) {
+  return {
+    entries: [...blend.entries],
+    weights: [...blend.weights],
+    pattern: preferredFor(blend).id,
+    patternTitle: preferredFor(blend).title,
+    hex: blend.hex,
+    rgb8: blend.rgb8,
+    arity: blend.entries.length,
+    roughness: blend.roughness,
+    roughnessLabel: roughnessBand(blend.roughness).label,
+    hexes: blend.entries.map((e) => reach.palette.entries[e].hex),
+  };
+}
+
+/**
+ * One catalogue patch: the tile at 1×, the same tile magnified until the pattern is legible, and
+ * the flat colour it optically averages to.
+ *
+ * The chip is the part that earns its keep. A 1× tile and its average *should* be
+ * indistinguishable at arm's length, so putting them side by side makes a wrong blend
+ * calculation immediately visible by eye — which is the one thing no assertion in the test file
+ * can check for you.
+ */
+function drawPatch(buffers, cell, x, y, patchId) {
+  const { labels, patches, overlay, w } = buffers;
+  const pattern = preferredFor(cell);
+  const scaled = patternWeights(pattern, cell.weights);
+  const { n } = pattern;
+
+  // 1x — the tile repeated at the size it would actually be used.
+  const flat = patternPatch(pattern, scaled, PATCH_FLAT, PATCH_FLAT);
+  const flatTop = y + ((PATCH_H - PATCH_FLAT) >> 1);
+  for (let py = 0; py < PATCH_FLAT; py++) {
+    for (let px = 0; px < PATCH_FLAT; px++) {
+      const at = (flatTop + py) * w + x + px;
+      labels[at] = cell.entries[flat[py * PATCH_FLAT + px]];
+      patches[at] = patchId;
+    }
+  }
+
+  // Zoomed — one tile blown up to fill the block, so the pattern itself is readable.
+  const zoom = Math.max(1, Math.floor(PATCH_ZOOM / n));
+  const side = n * zoom;
+  const zx = x + PATCH_FLAT + PATCH_GAP;
+  const zy = y + ((PATCH_H - side) >> 1);
+  const tile = patternPatch(pattern, scaled, n, n);
+  for (let py = 0; py < side; py++) {
+    for (let px = 0; px < side; px++) {
+      const at = (zy + py) * w + zx + px;
+      labels[at] = cell.entries[tile[((py / zoom) | 0) * n + ((px / zoom) | 0)]];
+      patches[at] = patchId;
+    }
+  }
+
+  // The flat optical average — the one non-palette colour, in the overlay layer.
+  const cx = x + PATCH_FLAT + PATCH_GAP + PATCH_ZOOM + PATCH_GAP;
+  const cy = y + ((PATCH_H - PATCH_CHIP) >> 1);
+  fillRect(overlay, w, cx, cy, PATCH_CHIP, PATCH_CHIP, pack(cell.rgb8));
+  for (let py = 0; py < PATCH_CHIP; py++) {
+    for (let px = 0; px < PATCH_CHIP; px++) patches[(cy + py) * w + cx + px] = patchId;
+  }
+}
+
+function fillRect(buffer, w, x, y, rw, rh, value) {
+  for (let py = y; py < y + rh; py++) {
+    for (let px = x; px < x + rw; px++) buffer[py * w + px] = value;
+  }
+}
+
+function pack(rgb) {
+  return (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+}
+
+/**
+ * Whether a slice pixel sits on the boundary of the reachable region: itself within the banding
+ * threshold, with at least one in-shape 4-neighbour outside it (or at the very edge of the shape).
+ *
+ * Drawing the contour on the *reachable* side means the outline hugs the available area from
+ * inside, so it never lands on — and never hides — an unreachable colour the artist might still
+ * want to pick from.
+ */
+function onReachBoundary(slice, sx, sy) {
+  const { w, h, error, ids } = slice;
+  const at = sy * w + sx;
+  if (ids[at] < 0 || error[at] > BANDING_DE) return false;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nx = sx + dx;
+    const ny = sy + dy;
+    if (nx < 0 || ny < 0 || nx >= w || ny >= h) return true; // the shape's own edge
+    const ni = ny * w + nx;
+    if (ids[ni] < 0 || error[ni] > BANDING_DE) return true; // borders unreachable / outside
+  }
+  return false;
+}
+
+/** The recipe under a pixel of a rendered dither sheet, or null. */
+export function pickPatchAt(rendered, px, py) {
+  const x = Math.floor(px);
+  const y = Math.floor(py);
+  if (!rendered.patches || x < 0 || y < 0 || x >= rendered.w || y >= rendered.h) return null;
+  const id = rendered.patches[y * rendered.w + x];
+  return id >= 0 ? rendered.patchTable[id] : null;
 }
 
 /**

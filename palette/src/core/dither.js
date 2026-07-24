@@ -5,26 +5,23 @@
 
 import { rgb8ToOklab, deltaEOK, clamp } from './oklch.js';
 import { Raster } from './raster.js';
+import { bayerOrder } from './patterns.js';
 
-/** 4×4 Bayer threshold matrix, values 0–15. */
-export const BAYER4 = [
-  [0, 8, 2, 10],
-  [12, 4, 14, 6],
-  [3, 11, 1, 9],
-  [15, 7, 13, 5],
-];
+/** A flat rank array from `patterns.js` as the square matrix this module's callers expect. */
+function bayerMatrix(n) {
+  const flat = bayerOrder(n);
+  return Array.from({ length: n }, (_, y) => Array.from({ length: n }, (_, x) => flat[y * n + x]));
+}
 
-/** 8×8 Bayer threshold matrix, values 0–63. */
-export const BAYER8 = [
-  [0, 32, 8, 40, 2, 34, 10, 42],
-  [48, 16, 56, 24, 50, 18, 58, 26],
-  [12, 44, 4, 36, 14, 46, 6, 38],
-  [60, 28, 52, 20, 62, 30, 54, 22],
-  [3, 35, 11, 43, 1, 33, 9, 41],
-  [51, 19, 59, 27, 49, 17, 57, 25],
-  [15, 47, 7, 39, 13, 45, 5, 37],
-  [63, 31, 55, 23, 61, 29, 53, 21],
-];
+/**
+ * 4×4 and 8×8 Bayer threshold matrices, values 0–15 and 0–63.
+ *
+ * Derived from `patterns.js` rather than written out, so the reference view's patterns and the
+ * dithering the scenes and the recolour path actually use can never drift apart. The literal
+ * published matrices are asserted against these in `test/patterns.test.js`.
+ */
+export const BAYER4 = bayerMatrix(4);
+export const BAYER8 = bayerMatrix(8);
 
 /** Precompute OKLab for every palette colour so matching is one loop of ΔE. */
 export function paletteLabs(paletteRgb) {
