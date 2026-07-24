@@ -84,6 +84,22 @@ in the user's home directory that npm walks up to and finds instead.
 Work done after the plan was complete, in response to the repo owner using the tool. Each is
 built, tested and documented; this is the list to extend when the next one lands.
 
+- **Context-aware recolouring** (2026-07-23, `src/core/recolor/context.js`). Recolouring was
+  layer-blind — it read `rgb8 / lab / hex` and discarded `entry.layer` even when the target was
+  the generated palette — so a source *background* colour routinely landed on a target
+  *foreground* slot and `fg_bg_separation_min` did not survive. `recolor_context`
+  (`off` | `suggest` | `manual`) restricts each source colour to the target pool that matches its
+  job, via `RECOLOR_CONTEXTS` — a **strictly disjoint** partition of `layer`, unlike the picker's
+  deliberately overlapping `MAP_CONTEXTS`, which measurably does not work for this. Applied as a
+  surcharge on the ΔE cost matrix, so `delta-e`, `optimal` and the monotone `preserve_order`
+  program all honour it unchanged. `remap_context_bias` (0 = off, 1 = hard pool) exposes the
+  fidelity trade; `remap_context_order` decides whether context combines with `preserve_order` or
+  yields to it. **Off by default and byte-identical to the old behaviour when off**, asserted.
+  Measured with oracle labels: cases collapsing fg/bg separation below 2 ΔE go **12/16 → 0/16**,
+  cross-assignments 19% → 0%, at +18% fidelity cost. **Source-context inference was measured and
+  is weak** (only 23% of 264 real reference images have an identifiable backdrop) — it is a
+  starting point a human corrects, not an authority, and ARCHITECTURE §12.8 records exactly how
+  weak so nobody re-derives it. Tests: `test/recolor-context.test.js`.
 - **By-context colour-space maps** (`Map — by context` in the picker). The bands below say which
   colours do which job but are a flat list; these give the same answer *with* the map's spatial
   grouping. `buildColorMap` gained an `entries` pool so a map can be restricted to a subset

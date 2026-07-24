@@ -213,6 +213,18 @@ export const PARAMS = [
   // (yellow/green/cyan) being crushed to olive when built at the single global `l_mid_base`.
   f('hue_lightness_follow', 'lightness', 0, 1, 0.01, 0.5,
     'Lets each hue sit at the lightness where it can actually be saturated, instead of all hues sharing l_mid_base. 0 = every hue at the same midtone (yellows/greens/cyans go olive and dull); 1 = each hue rides fully toward its brightest sRGB lightness (vivid gold, leaf-green, bright cyan). Raise it if yellows/greens look muddy; lower for a flatter, uniform-lightness look. Blues/reds barely move — they are already saturated at mid lightness.'),
+
+  // --- Context-aware recolouring (ARCHITECTURE §12.8) ---------------------
+  // Appended for the same append-only reason as everything above. They show in the `recolor`
+  // panel (sliders group by `group`, not by position) but sit last in the seed payload.
+  // Every default here reproduces the layer-blind behaviour exactly, so wiring this up
+  // changes no existing recolour.
+  e('recolor_context', 'recolor', ['off', 'suggest', 'manual'], 'off',
+    'Makes the indexed remap aware of what each colour is FOR, so a source background lands on a target BACKGROUND colour instead of wherever the nearest match happens to be. off = purely colorimetric (the original behaviour). suggest = infer every source colour\'s job from its shape and spread. manual = the same, but your own per-colour assignments win. Turn it on when recoloured art loses the separation between its sprites and its scenery; the inference is a guess, so expect to correct it on busy illustrations that have no clear background.'),
+  b('remap_context_order', 'recolor', true,
+    'What happens when remap_preserve_order and recolor_context are both on. On, they combine — the mapping stays monotonic in lightness AND respects the context pools. Off, preserve_order wins outright and context is ignored for that image. Turn it off if forcing both at once flattens the result; the two constraints together can leave the assignment very little room.'),
+  f('remap_context_bias', 'recolor', 0, 1, 0.05, 1,
+    'How hard recolor_context pushes. 0 = no effect at all (identical to off); 1 = a hard restriction, a colour never leaves its own pool; in between = a preference, crossed only when the colour match is much better the other way. 1 gives the strongest foreground/background separation but can flatten dithered texture and force odd hues — drop to about 0.2-0.4 on tile and terrain art, which keeps the texture and still buys most of the separation.'),
 ];
 
 /** Parameter specs looked up by name. */

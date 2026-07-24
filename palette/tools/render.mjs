@@ -191,13 +191,13 @@ function renderMaps(palette, tag) {
  * PNG cannot animate — and written out as real animated GIFs beside the sheet, which is the
  * form the app actually produces.
  */
-function renderRecolor(palette, tag) {
+function renderRecolor(palette, tag, options = {}) {
   const pad = 8;
   const label = 8;
   const scale = 2;
   const samples = builtinSamples();
   const rows = samples.map((s) => {
-    const result = recolorFrames(s.frames, palette, {});
+    const result = recolorFrames(s.frames, palette, options);
     // A still PNG cannot animate, so an animation becomes a filmstrip — capped, because a
     // long one would set the width of the whole sheet and leave every other row in a desert
     // of background. The real animations are written beside the sheet as GIFs.
@@ -303,6 +303,12 @@ function main() {
   mkdirSync(join(OUT, 'recolor'), { recursive: true });
   const recoloured = renderRecolor(generatePalette(defaultParams()), 'default');
   renderRecolor(generatePalette(presetParams('gameboy')), 'gameboy');
+  // The same palette with context awareness on, so the two sheets can be read against each
+  // other. Whether the trade it makes (ARCHITECTURE §12.8: separation bought with fidelity) is
+  // worth it on a given image is a judgement by eye, and this is what there is to judge.
+  renderRecolor(generatePalette(defaultParams()), 'default-context', {
+    recolorContext: 'suggest', contextBias: 1,
+  });
 
   const strip = toPngStrip(generatePalette(defaultParams()), { cell: 1, height: 1 });
   console.log(`rendered ${PRESETS.length} presets and ${sizes.length} sizes to ${OUT}`);

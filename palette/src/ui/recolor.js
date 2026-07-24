@@ -513,6 +513,9 @@ function recolorOptions(params) {
     ditherStrength: params.quant_dither_strength ?? 1,
     lightnessWeight: params.quant_lightness_weight ?? 1,
     downscaleTo: params.quant_downscale ?? 0,
+    recolorContext: params.recolor_context ?? 'off',
+    contextOrder: params.remap_context_order ?? true,
+    contextBias: params.remap_context_bias ?? 1,
   };
 }
 

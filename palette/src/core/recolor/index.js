@@ -6,12 +6,39 @@
 // dithering instead. The unique-colour count separates them cleanly, so `auto` counts.
 
 import { Raster } from '../raster.js';
+import { sourceContexts, targetPools } from './context.js';
 import { countUniqueColors, uniqueColorsAcross } from './image.js';
 import { buildIndexedMapping, recolorIndexed } from './indexed.js';
 import { recolorQuantize } from './quantize.js';
 
 /** How a source image is recoloured. */
 export const RECOLOR_MODES = ['auto', 'indexed', 'quantize'];
+
+/** Whether the indexed remap knows what each colour is for, and where it gets that from. */
+export const RECOLOR_CONTEXT_MODES = ['off', 'suggest', 'manual'];
+
+/**
+ * Work out the context inputs for one recolour, or `null` if it is not context-aware.
+ *
+ * Returns null — meaning "run exactly as before" — whenever the feature is off, the bias is
+ * zero, or the **target has no layers** (a palette extracted from an image is just colours,
+ * ARCHITECTURE §12.6, so there is no structure to map onto).
+ *
+ * `images` is every frame, not one: the contexts have to be decided across the whole
+ * animation for the same reason the mapping is, or a colour changes job between frames.
+ */
+function contextInputs(images, palette, {
+  recolorContext = 'off', contextBias = 1, contextOverrides = null, preserveOrder = false,
+  contextOrder = true,
+} = {}) {
+  if (recolorContext === 'off' || contextBias <= 0) return null;
+  // `remap_context_order` off means preserve_order wins outright and context stands down.
+  if (preserveOrder && !contextOrder) return null;
+  const pools = targetPools(palette.entries);
+  if (!pools) return null;
+  const overrides = recolorContext === 'manual' ? contextOverrides : null;
+  return { pools, contexts: sourceContexts(images, overrides), contextBias };
+}
 
 /**
  * Which mode `auto` would choose, and why. Split out so the decision can be shown in the
@@ -33,18 +60,31 @@ function decideMode(unique, { mode = 'auto', indexedMax = 256 } = {}) {
  * Recolour one image into a palette. Returns
  * `{ image, mode, unique, reason }` plus whatever the chosen path reports.
  */
-export function recolorImage(image, palette, {
-  mode = 'auto', indexedMax = 256,
-  match = 'delta-e', preserveOrder = false, overflow = 'share',
-  dither = 'floyd-steinberg', ditherStrength = 1, lightnessWeight = 1, downscaleTo = 0,
-} = {}) {
+export function recolorImage(image, palette, options = {}) {
+  const {
+    mode = 'auto', indexedMax = 256,
+    match = 'delta-e', preserveOrder = false, overflow = 'share',
+    dither = 'floyd-steinberg', ditherStrength = 1, lightnessWeight = 1, downscaleTo = 0,
+  } = options;
   const chosen = chooseMode(image, { mode, indexedMax });
-  const result = chosen.mode === 'indexed'
-    ? recolorIndexed(image, palette.entries, { match, preserveOrder, overflow })
-    : recolorQuantize(image, palette.entries, {
-      dither, strength: ditherStrength, lightnessWeight, downscaleTo,
-    });
-  return { ...result, ...chosen };
+  if (chosen.mode !== 'indexed') {
+    return {
+      ...recolorQuantize(image, palette.entries, {
+        dither, strength: ditherStrength, lightnessWeight, downscaleTo,
+      }),
+      ...chosen,
+    };
+  }
+  // Context is an indexed-path feature only. The photo path decides every pixel on its own,
+  // so there is no per-colour decision for a context to steer (ARCHITECTURE §12.2).
+  const ctx = contextInputs([image], palette, options);
+  return {
+    ...recolorIndexed(image, palette.entries, {
+      match, preserveOrder, overflow, ...(ctx ?? {}),
+    }),
+    ...chosen,
+    context: ctx ? { applied: true, bias: ctx.contextBias } : { applied: false },
+  };
 }
 
 /**
@@ -65,10 +105,16 @@ export function recolorFrames(frames, palette, options = {}) {
 
   if (chosen.mode === 'indexed') {
     const { match = 'delta-e', preserveOrder = false, overflow = 'share' } = options;
-    const lookup = buildIndexedMapping(colors, palette.entries, { match, preserveOrder, overflow });
+    // Decided once over every frame, exactly like the mapping itself — a colour that changes
+    // context between frames would change target between frames.
+    const ctx = contextInputs(frames.map((f) => f.image), palette, options);
+    const lookup = buildIndexedMapping(colors, palette.entries, {
+      match, preserveOrder, overflow, ...(ctx ?? {}),
+    });
     const rgbs = palette.entries.map((e) => e.rgb8);
     return {
       ...chosen,
+      context: ctx ? { applied: true, bias: ctx.contextBias } : { applied: false },
       frames: frames.map((f) => ({ ...f, image: applyMapping(f.image, lookup, rgbs) })),
     };
   }

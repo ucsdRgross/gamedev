@@ -1077,6 +1077,104 @@ random stream into corners it had not previously reached.
   moves lightness to reach the gamut by design. `generate.test.js` still asserts the
   achieved ordering under default parameters, which is where it has to hold.
 
+### 12.8 Context-aware recolouring (`recolor/context.js`, added 2026-07-23)
+
+Recolouring was **purely colorimetric and layer-blind**: the pipeline read `entries[].rgb8 /
+lab / hex` and nothing else, so even when the target was the generated palette — which carries
+`layer` on every entry — that was discarded. A source *background* colour therefore landed
+wherever the ΔE happened to be smallest, which is regularly a target *foreground* slot, and
+`fg_bg_separation_min` (the one hard constraint repair enforces between the two sets, PLAN
+§2.3) did not survive the trip.
+
+`recolor_context` fixes that for the **indexed path only**. It is **off by default**; every
+default in the block reproduces the old mapping byte for byte, asserted directly.
+
+**What was measured before any of it was built**, because half of the idea does not work:
+
+- **Source-context inference is not reliable, and shipping it as an authority would be
+  dishonest.** Over the 264 decodable pixel-art PNGs in `reference/`, only **23%** have an
+  identifiable flat backdrop; **33% have none at all** (median border share 0.32). A finished
+  illustration frequently has no foreground/background distinction to find — in
+  `sunset-default.png` the entire frame is sky. Signal AUCs for bg vs fg are weak
+  individually: border share 0.77, own-border 0.73, coverage 0.68, edginess 0.27. Chroma looks
+  perfect (AUC 0.000) but that number is **circular** — the ground truth came from our own
+  generator, which *defines* `bg` as desaturated, so it says nothing about a stranger's image.
+  Outline detection ("darkest colour abuts the most others") is right **33%** of the time. The
+  animation signal is degenerate: 84–97% of pixels in real GIFs are static, so static-vs-moving
+  finds *the moving element*, not the background.
+- **So the inference is a starting point, not an authority.** The repo owner's call was to
+  apply it to every image rather than abstain on the unclear ones, and accept that some come
+  out wrong — a partly-assigned image would mix two mapping regimes in one picture. `manual`
+  mode lets per-colour overrides win. Do not "improve" this into a confident classifier; the
+  ceiling was measured and it is low.
+
+**The target side is where the value is, and `MAP_CONTEXTS` is the wrong tool for it.**
+`RECOLOR_CONTEXTS` is a **strictly disjoint** partition of `layer`, deliberately unlike the
+picker's `MAP_CONTEXTS` (§11), which overlap on purpose so a *chart* shows a colour everywhere
+it is usable. Here an overlap silently destroys the guarantee: if a source-fg and a source-bg
+colour can both reach the same shared neutral, they still collide. Measured over 16
+scene×palette pairs with oracle source labels:
+
+```
+                              separation   collapsed<2ΔE   cross-assign   fidelity cost
+source art                      6.04 ΔE          —              —              —
+layer-blind (the old default)   3.21 ΔE        12/16           19%          5.16 ΔE
+oracle + MAP_CONTEXTS pools     3.54 ΔE        10/16            0%          5.92 ΔE
+oracle + RECOLOR_CONTEXTS       10.29 ΔE        0/16            0%          6.07 ΔE
+```
+
+The overlapping pools recover almost none of the lost separation. The disjoint ones recover
+all of it, at **+18% fidelity cost** — colours land further from where they would naturally go,
+which is the trade `remap_context_bias` exposes rather than hides.
+
+**Context is a surcharge on the cost matrix, not a separate per-pool assignment.** That is the
+decision that keeps it orthogonal: `applyContextPenalty` adds a penalty to out-of-pool entries
+of the one source-major matrix, so `delta-e`, `optimal` **and** the monotone
+`remap_preserve_order` dynamic program all honour the pools without any of them learning what
+a pool is. Consequences worth knowing:
+
+- **`bias` 0 is exactly the old behaviour**, which is what makes the feature safe to leave
+  wired up while off; **1** is `HARD_PENALTY` (1000, far beyond any real ΔE — `deltaEOK` is
+  reported ×100); in between is `bias × SOFT_PENALTY` (25), a genuine preference crossed only
+  when the match is much better the other way.
+- **The soft range must be scaled to ΔE, and the first cut got this wrong.** Interpolating
+  straight to `HARD_PENALTY` made bias 0.2 a 200 ΔE surcharge — already unpayable, since black
+  to white is only 100 — so **every setting from 0.2 to 1.0 produced byte-identical output**.
+  The knob was a placebo and every unit test still passed; it was caught by sweeping the knob
+  and looking at the images. `SOFT_PENALTY` is 25 because that is where the real trade-offs sit
+  (cross-pool ΔE gains measured at ~9 on the built-in samples), which spreads the transition
+  across the middle of the knob's range instead of saturating at 0.2.
+  `test/recolor-context.test.js` now asserts an intermediate bias produces a mapping that is
+  neither the off one nor the hard one — the only shape of test that catches this.
+- **At bias 1 the pools visibly cost texture, and that is the trade, not a bug.** On the
+  built-in tileset the grass tile loses its two-tone dither and flattens, and the water tile
+  goes magenta, because several source colours classify into one context whose pool cannot
+  express them all. `out/recolor-sheet-default-context.png` is rendered beside the plain sheet
+  so this is judged by eye rather than by the ΔE number. **Around 0.2–0.4 keeps the texture and
+  still buys most of the separation** — worth reaching for on tile and terrain art.
+- **The penalty is finite, not `Infinity`.** The Hungarian solver subtracts duals from costs
+  and `Infinity - Infinity` is `NaN`, which would corrupt the assignment silently instead of
+  failing loudly.
+- **`lightness-rank` is a no-op for context**, exactly as it already is for `preserveOrder` —
+  it is positional and never consults the cost matrix, so there is nothing to act on.
+- **`remap_context_order`** decides what happens when `remap_preserve_order` is also on: on,
+  the two combine (monotonic in L *and* pool-respecting); off, preserve-order wins outright and
+  context stands down for that image. Both constraints at once leaves the assignment very
+  little room, which is why it is a toggle and not a decision made for the user.
+- **An external target palette falls back to the blind path.** A palette extracted from an
+  image is deliberately just colours (§12.6), so `targetPools` returns **null** rather than
+  five empty pools — which would penalise every target equally and change nothing but the
+  numbers. A context whose pool is empty is likewise left alone.
+- **Contexts are decided once across every frame**, like the mapping itself. Deciding per frame
+  would let a colour whose share of the picture changes between frames change *job* between
+  frames, which is the animated form of the flicker the indexed path exists to prevent.
+
+**The parameters were appended** after `hue_lightness_follow` per the append-only rule (§6).
+Byte 1 of a `PAL1` payload is `PARAMS.length`, so every seed string changed — 69 → 72 fields.
+Verified before re-recording the snapshots, exactly as §12.5 did for the previous append: **no
+preset colour moved** (0 of 21) and **every previously-saved seed still decodes to identical
+colours**, because the decoder fills missing trailing fields with defaults.
+
 ---
 
 ## 13. Parameters from an image — the fitter (`fit.js`, added 2026-07-23)

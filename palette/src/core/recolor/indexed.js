@@ -8,6 +8,7 @@
 // asserted directly in the tests: a source colour maps to the same target colour everywhere.
 
 import { deltaEOK, rgb8ToOklab } from '../oklch.js';
+import { applyContextPenalty } from './context.js';
 import { mapColors, uniqueColors } from './image.js';
 
 /** How the source palette is matched to the target palette. */
@@ -25,9 +26,12 @@ const MERGE_ITERATIONS = 12;
  */
 export function recolorIndexed(image, entries, {
   match = 'delta-e', preserveOrder = false, overflow = 'share',
+  contexts = null, pools = null, contextBias = 0,
 } = {}) {
   const { colors } = uniqueColors(image);
-  const mapping = buildIndexedMapping(colors, entries, { match, preserveOrder, overflow });
+  const mapping = buildIndexedMapping(colors, entries, {
+    match, preserveOrder, overflow, contexts, pools, contextBias,
+  });
   const rgbs = entries.map((t) => t.rgb8);
   return {
     image: mapColors(image, (key) => rgbs[mapping.get(key)]),
@@ -44,6 +48,7 @@ export function recolorIndexed(image, entries, {
  */
 export function buildIndexedMapping(colors, entries, {
   match = 'delta-e', preserveOrder = false, overflow = 'share',
+  contexts = null, pools = null, contextBias = 0,
 } = {}) {
   const k = entries.length;
   if (!k) throw new Error('recolorIndexed: the target palette is empty');
@@ -55,7 +60,16 @@ export function buildIndexedMapping(colors, entries, {
     ? groups.map((g) => ({ lab: g.lab, count: g.count }))
     : colors.map((c) => ({ lab: rgb8ToOklab(c.rgb), count: c.count }));
 
-  const assignment = assign(src, entries, { match, preserveOrder });
+  // One context id per assignment row. Under `merge` a row is a cluster of source colours,
+  // so it takes the context most of its *pixels* voted for — the cluster is one colour by
+  // then and can only have one job.
+  const srcContexts = contexts && contextBias > 0
+    ? (groups ? groups.map((g) => majorityContext(g.keys, colors, contexts)) : colors.map((c) => contexts.get(c.key)))
+    : null;
+
+  const assignment = assign(src, entries, {
+    match, preserveOrder, srcContexts, pools, contextBias,
+  });
 
   const out = new Map();
   if (groups) {
@@ -68,15 +82,37 @@ export function buildIndexedMapping(colors, entries, {
   return out;
 }
 
+/** The context each source colour of a merged cluster voted for, weighted by pixel count. */
+function majorityContext(keys, colors, contexts) {
+  const byKey = new Map(colors.map((c) => [c.key, c.count]));
+  const votes = new Map();
+  for (const key of keys) {
+    const id = contexts.get(key);
+    if (id === undefined) continue;
+    votes.set(id, (votes.get(id) ?? 0) + (byKey.get(key) ?? 0));
+  }
+  let best;
+  let bestV = -1;
+  // Ties break on the context id so the result is a property of the image alone.
+  for (const [id, v] of [...votes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    if (v > bestV) { bestV = v; best = id; }
+  }
+  return best;
+}
+
 /** One target index per source colour, by the chosen strategy. */
-function assign(src, entries, { match, preserveOrder }) {
+function assign(src, entries, { match, preserveOrder, srcContexts, pools, contextBias }) {
   const labs = entries.map((t) => t.lab);
 
   // `lightness-rank` is positional by construction, so it is already monotonic in L —
-  // `preserveOrder` has nothing left to enforce and is deliberately a no-op for it.
+  // `preserveOrder` has nothing left to enforce and is deliberately a no-op for it. It never
+  // consults the cost matrix either, so context has nothing to act on and is a no-op too.
   if (match === 'lightness-rank') return byLightnessRank(src, labs);
 
-  const cost = costMatrix(src, labs);
+  // Context is a surcharge on the one cost matrix every remaining strategy reads, so
+  // `delta-e`, `optimal` and the monotone dynamic program all honour the pools without any
+  // of them knowing what a pool is.
+  const cost = applyContextPenalty(costMatrix(src, labs), srcContexts, pools, labs.length, contextBias);
   if (preserveOrder) {
     // The constraint subsumes the strategy: a minimum-cost *monotone* mapping is a single
     // global optimisation either way. What still differs is reuse — `optimal` keeps its
