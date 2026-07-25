@@ -2,14 +2,14 @@
 
 Paste-able briefing for an agent with **no prior context**. Read this, then
 [UX_PLAN.md](UX_PLAN.md) (the task tracker), then the two files named in "Read before you
-touch X" below. Everything is in `C:\richard\gamedev\palette`.
+touch X" below. Everything is in the `palette/` directory of this repository.
 
 ---
 
 ## 1. What the project is
 
 A dependency-free, procedural **pixel-art colour palette generator** written in vanilla ES
-modules. It turns 72 parameters into a structurally-sound palette in OKLCH space, proves the
+modules. It turns 79 parameters into a structurally-sound palette in OKLCH space, proves the
 palette works by drawing it into a gallery of test scenes, recolours real reference art into
 it, and exports to Godot / Aseprite / the web.
 
@@ -26,9 +26,9 @@ it, and exports to Godot / Aseprite / the web.
 |---|---|
 | `src/core/` | DOM-free colour maths, generation, analysis, dithering, layout, recolour. Imported by the browser, `node --test` and the headless renderer alike |
 | `src/core/export/` | Output writers: gpl, pal, hex, lospec, css, json, tres, png |
-| `src/ui/` | Browser app modules (`app sliders swatches history io saves start randomize gallery hero picker recolor variants sizes strip`) |
-| `src/scenes/` | The 34 gallery scenes (DOM-free) + registry + semantic role accessors |
-| `test/` | `node --test` suite (411 tests) and golden snapshots |
+| `src/ui/` | Browser app modules (`app sliders swatches history io saves start compare wheel randomize gallery hero picker recolor variants sizes strip`) |
+| `src/scenes/` | The 36 gallery scenes (DOM-free) + registry + semantic role accessors |
+| `test/` | `node --test` suite (460 tests) and golden snapshots |
 | `tools/` | Dev server, single-file build, headless renderer, PNG codec |
 | `saved/` `reference/` `palettes/` | User saves; reference images to recolour; palette images to recolour into |
 | `out/` `dist/` | Rendered PNGs and the standalone build (gitignored) |
@@ -62,7 +62,8 @@ export PATH="/c/Program Files/nodejs:$PATH"          # bash
 - **Run npm from `palette/`**, never from the user's home directory: there is an unrelated
   `package.json` above it that npm will find instead.
 - `npm test` runs a 10,000-case fuzz and takes ~6 minutes. While iterating:
-  `PALETTE_FUZZ_N=200 npm test` (~17 s, still 411 tests).
+  `PALETTE_FUZZ_N=200 npm test` (~65 s, still 460 tests — the fit tests now run three
+  seeds each, which is most of that minute).
 - Run the app: `npm start` (port 5173), or `PORT=5299 node tools/serve.mjs --replace` if you
   want a port that will not collide with the user's own instance. Double-clicking `start.cmd`
   is the user's way in; a second double-click is a restart (ping/shutdown handshake).
@@ -74,21 +75,20 @@ export PATH="/c/Program Files/nodejs:$PATH"          # bash
 
 ## 3. Where the work stands
 
-`npm test` **green at 437** (was 370 at the start of the phase). `npm run build` green.
-U1–U3 are committed (`3942c4b`); **U4 and U5 are in the working tree, uncommitted**. The user
-has not asked for commits; do not commit unless asked.
+`npm test` **green at 460** (was 370 at the start of the phase). `npm run build` green.
+U1–U3 are committed (`3942c4b`); **U4, U5 and U6 are in the working tree, uncommitted**. The
+user has not asked for commits; do not commit unless asked.
 
-Phases **U1–U5 are done**. **U6 and U7 are not started.** One piece of U5 is deliberately
-outstanding: shift-click a library card to send it to Compare, which cannot exist until U6.2
-builds Compare. Full detail, including per-task done-when conditions, is in UX_PLAN.md; the
-running notes at the bottom of that file record what was built and what surprised.
+Phases **U1–U6 are done**, with nothing outstanding. **U7 is not started.** Full detail,
+including per-task done-when conditions, is in UX_PLAN.md; the running notes at the bottom of
+that file record what was built and what surprised.
 
 ### What U1–U3 added (so you do not re-derive it)
 
 **New core modules** (all DOM-free, all tested):
 
-- `src/core/paramui.js` — `PARAM_UI` (label / hint / low / high / enum option labels for all 72
-  parameters) and `BASIC_PARAMS`. Deliberately **separate from `params.js`**, which is
+- `src/core/paramui.js` — `PARAM_UI` (label / hint / low / high / enum option labels for every
+  parameter) and `BASIC_PARAMS`. Deliberately **separate from `params.js`**, which is
   seed-critical: wording gets edited often, and a stray edit in `params.js` silently
   reinterprets every `PAL1-` seed ever pasted. `params.js` merges it in via `withUi`.
 - `src/core/preview.js` — `sweepValues` / `paramSweep` / `sweepPalettes` / `sizeSweep`. "What
@@ -160,6 +160,32 @@ Vary and Before buttons, change notes, history persistence), `layout/render.js`
    mean chroma of the coloured entries spans 0.036–0.166, so bands drawn for the 0–0.37 range
    would call every palette "mid" and nothing "vivid".
 
+### What U6 added
+
+- **`fit.js`**: the hue-wrap bug is fixed (`isAngularParam`), the search re-tuned with an
+  annealed single-knob jump (`JUMP_RATE = 0.2`, measured over eight seeds), and the thresholds
+  re-baselined as a mean over three seeds plus a per-seed ceiling. New options `from`, `fixed`,
+  `onProgress`, `keepLooking(n)`, and a returned `diff`. **`from` makes restart 0 the caller's
+  own parameters untouched**, so a fit from your palette can only improve on it.
+- **`src/core/morph.js`** — `morphParams` / `morphSnapPoints`. Numbers travel, angles take the
+  short way, enums *and `seed`* snap at 0.5.
+- **`src/ui/compare.js`** — the Compare tab. A is a snapshot; B can be a preset, a save, a
+  pasted seed, pasted colours, a loaded palette image, or **live** (tracks the sliders).
+- **`src/ui/wheel.js`** — the hue wheel: click to pin, drag to move, click a pin to remove,
+  and "take the palette's hues".
+- **`params.js`** grew for the first time this phase: `custom_hue_count` + `custom_hue_1..6`
+  appended after `remap_context_bias`, plus `CUSTOM_HUE_PARAMS` and `customHues()`.
+
+**Three traps U6 hit:**
+
+1. **A drag commits on every `pointermove`**, so testing "did the pointer move?" against the
+   pin's *current* position calls every drag a click — the wheel deleted pins instead of
+   moving them. Compare against where the press began.
+2. **An external palette has no semantic roles**, so no gallery scene can draw it. Compare
+   shows a large strip for a colours-only side rather than inventing a role mapping.
+3. **A pinned hue needs three separate exemptions** in `hues.js` — from the perceptual warp,
+   from the jitter, and from the separation pass — or it is not actually pinned.
+
 **Three calibrations that are easy to get wrong again:**
 
 1. `describePalette` says "around `root_hue`", not the circular mean of the chromatic entries
@@ -193,33 +219,22 @@ Vary and Before buttons, change notes, history persistence), `layout/render.js`
 
 ---
 
-## 5. Open issue you will trip over: the fitter's hue-wrap bug
+## 5. Resolved: the fitter's hue-wrap bug (fixed in U6.1)
 
-`src/core/fit.js:111` decides which parameters wrap at 360° with
-`name === 'root_hue' || name.endsWith('_hue') || name.endsWith('_hue_target')`.
-That test wrongly catches **`l_variance_per_hue`** and **`chroma_variance_per_hue`**, which are
-not angles: a small negative step becomes 359.98 and then clamps to the parameter's *maximum*.
+`src/core/fit.js` used to decide which parameters wrap at 360° by suffix, which wrongly caught
+**`l_variance_per_hue`** and **`chroma_variance_per_hue`** — a small negative step became 359.98
+and then clamped to the parameter's *maximum*. That accidental "jump to an extreme" was
+load-bearing exploration, and the fit thresholds had been tuned around it against a single seed.
 
-The same bug was fixed in `src/ui/randomize.js` (it made a "gentle" variation slam per-hue
-variance to its ceiling) by listing the real angles explicitly — `ANGULAR_PARAMS` /
-`isAngularParam` in `src/core/params.js`, with two tests pinning it.
+**Fixed 2026-07-24.** `fit.js` now uses `isAngularParam`; the exploration it lost is replaced by
+an explicit annealed jump (one knob per candidate, rate 0.2 falling to 0 across each restart);
+and the thresholds are a mean over three seeds plus a per-seed ceiling. The full eight-seed
+table is in UX_PLAN's U6 note.
 
-**It is still present in `fit.js` on purpose.** The accidental jump-to-an-extreme is
-load-bearing exploration for that search, and both thresholds in `test/fit.test.js` are tuned
-around it. Measured over five RNG seeds (lower is better; the tests use seed 3, in bold):
-
-| variant | recovery target, 3000 iters | crayon target, 4000 iters |
-|---|---|---|
-| as committed (buggy wrap) | 3.50 3.73 **3.10** 3.69 4.64 | 5.15 3.74 **4.11** 4.58 4.13 |
-| wrap fixed, no compensation | (seed 3 → 4.33) | 5.42 4.53 **6.17** 4.38 3.82 |
-| wrap fixed + 12% uniform jumps | 3.90 3.85 **4.37** 3.08 3.93 | 4.70 5.54 **3.46** 7.07 4.64 |
-
-Fix it in **U6.1**, where the fitter is being reworked anyway: correct the wrap, re-tune the
-search (an annealed jump rate is the promising direction — bold early in a restart, none at the
-end), and re-baseline the test thresholds against a multi-seed benchmark instead of one seed.
-Related: PROGRESS.md says `l_variance_per_hue`'s ceiling was raised 0.15 → 0.30 because fitting
-real palettes "pinned it at the old ceiling" — that evidence is suspect, since this bug pinned
-it there by construction.
+**Still worth knowing:** PROGRESS.md records that `l_variance_per_hue`'s ceiling was raised
+0.15 → 0.30 because fitting real palettes "pinned it at the old ceiling". That evidence remains
+suspect — the bug pinned it there by construction — so the raised ceiling has never actually
+been justified by a clean measurement. Re-deriving it is a loose end nobody has picked up.
 
 ---
 

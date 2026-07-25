@@ -6,6 +6,7 @@
 // that pins the six sRGB primaries/secondaries to evenly spaced positions instead.
 
 import { rgb8ToOklch, hueDelta, normHue } from './oklch.js';
+import { customHues } from './params.js';
 
 /** OKLCH hue angles of the six sRGB primaries and secondaries, in ascending order. */
 export const HUE_LANDMARKS = [
@@ -47,11 +48,26 @@ function schemePoles(scheme, root) {
   }
 }
 
+/**
+ * The `custom` scheme's angles: the pinned hues, exactly as pinned.
+ *
+ * Pins are absolute — `root_hue` deliberately does not rotate them, because a pin that moved
+ * when another knob was touched would not be a pin. When the palette wants more hue families
+ * than have been pinned, the extras go into the widest gaps between the pins (`hueGapCenters`,
+ * the same rule accents use to fill holes), which keeps them as far from the chosen hues, and
+ * from each other, as the circle allows.
+ */
+function customAngles(pins, n, root, span) {
+  if (!pins.length) return Array.from({ length: n }, (_, i) => root + (i * span) / n);
+  if (n <= pins.length) return pins.slice(0, n);
+  return [...pins, ...hueGapCenters(pins, n - pins.length)];
+}
+
 /** Base hue angles for a scheme before warping and jitter. */
-function schemeAngles(scheme, n, root, span) {
+function schemeAngles(scheme, n, root, span, pins = []) {
   if (n <= 0) return [];
   if (scheme === 'even') return Array.from({ length: n }, (_, i) => root + (i * 360) / n);
-  if (scheme === 'custom') return Array.from({ length: n }, (_, i) => root + (i * span) / n);
+  if (scheme === 'custom') return customAngles(pins, n, root, span);
   if (scheme === 'analogous') {
     if (n === 1) return [root];
     return Array.from({ length: n }, (_, i) => root + (i / (n - 1) - 0.5) * span);
@@ -70,20 +86,28 @@ function schemeAngles(scheme, n, root, span) {
   return out;
 }
 
-/** Push hues apart until no two are closer than `minGap` degrees. */
-function separate(hues, minGap) {
+/**
+ * Push hues apart until no two are closer than `minGap` degrees.
+ *
+ * The first `locked` entries never move: those are hues the user pinned by hand, and a pin
+ * that gets nudged is not a pin. Two pins closer than `minGap` are therefore left as they
+ * were asked for — the near-duplicate is the user's decision to make.
+ */
+function separate(hues, minGap, locked = 0) {
   if (hues.length < 2) return hues;
   const out = hues.slice();
   for (let pass = 0; pass < 24; pass++) {
     let moved = false;
     for (let a = 0; a < out.length; a++) {
       for (let b = a + 1; b < out.length; b++) {
+        if (a < locked && b < locked) continue; // two pins: neither may move
         const d = hueDelta(out[a], out[b]);
         if (Math.abs(d) < minGap) {
           const push = (minGap - Math.abs(d)) / 2 + 0.01;
           const sign = d === 0 ? 1 : Math.sign(d);
-          out[a] = normHue(out[a] - sign * push);
-          out[b] = normHue(out[b] + sign * push);
+          // Against a pin the free hue takes the whole push, so the pin stays put.
+          if (a >= locked) out[a] = normHue(out[a] - sign * (b < locked ? push * 2 : push));
+          if (b >= locked) out[b] = normHue(out[b] + sign * (a < locked ? push * 2 : push));
           moved = true;
         }
       }
@@ -100,11 +124,20 @@ function separate(hues, minGap) {
 export function buildHues(params, hueCount, rng) {
   const n = Math.max(0, hueCount | 0);
   if (n === 0) return [];
-  const raw = schemeAngles(params.hue_scheme, n, params.root_hue, params.hue_span);
+  const pins = customHues(params);
+  const raw = schemeAngles(params.hue_scheme, n, params.root_hue, params.hue_span, pins);
   const w = params.perceptual_hue_spacing;
-  const warped = raw.map((a) => (w > 0 ? lerpHue(normHue(a), perceptualToHue(a), w) : normHue(a)));
-  const jittered = warped.map((h) => normHue(h + (rng() * 2 - 1) * params.hue_jitter));
-  return separate(jittered, n > 1 ? Math.min(8, 300 / n) : 0);
+  // Pinned hues are left where they were put. The perceptual warp exists to space *generated*
+  // angles evenly to the eye; applying it to an angle somebody chose by eye moves it off the
+  // colour they picked, which is the one thing pinning is for.
+  const pinned = pins.length ? Math.min(pins.length, n) : 0;
+  const warped = raw.map((a, i) => (
+    w > 0 && i >= pinned ? lerpHue(normHue(a), perceptualToHue(a), w) : normHue(a)
+  ));
+  const jittered = warped.map((h, i) => (
+    i < pinned ? h : normHue(h + (rng() * 2 - 1) * params.hue_jitter)
+  ));
+  return separate(jittered, n > 1 ? Math.min(8, 300 / n) : 0, pinned);
 }
 
 /** Centres of the `count` largest gaps in a hue set — where accents can fill holes. */

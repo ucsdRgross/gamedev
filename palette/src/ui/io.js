@@ -126,28 +126,35 @@ export function createIO(dom, { store, ...actions }) {
 
   /**
    * Search for the parameters that reproduce `target` (an array of hexes), reporting progress.
-   * Shared by "Fit to image…" and the Start tab's pasted colours: both end up with a list of
-   * colours and the same question about it.
+   * Shared by "Fit to image…", the Start tab's pasted colours and Compare's "how to get
+   * there": all three end up with a list of colours and the same question about it.
+   *
+   * `from` starts the search at an existing parameter set, which changes what the answer
+   * *means* — without it the fitter reports "here is a palette like that", with it "here is
+   * what to change about yours". Compare needs the second one.
    */
-  function fitTo(target) {
+  function fitTo(target, { from = null, fixed = [], label = '', onDone = null } = {}) {
     if (!Array.isArray(target) || target.length < 2) {
       status(dom.fitStatus, 'Need at least two colours to fit', 'err');
+      onDone?.(null);
       return;
     }
     // Fewer iterations for larger targets — each evaluation generates a whole palette, so
     // cost grows with colour count. Keeps a big drop-in from running for minutes.
     const iterations = Math.max(1500, Math.round(4000 * Math.min(1, 24 / target.length)));
-    const fitter = makeFitter(target, { iterations });
+    const fitter = makeFitter(target, { iterations, from, fixed });
+    const what = label || `${target.length} colours`;
     if (dom.fitImageBtn) dom.fitImageBtn.disabled = true;
     const tick = () => {
       const t0 = performance.now();
       while (!fitter.done && performance.now() - t0 < 25) fitter.step(10);
       status(dom.fitStatus,
-        `Fitting ${target.length} colours… ${Math.round(fitter.progress * 100)}% · ΔE ${fitter.bestScore.toFixed(2)}`);
+        `${what}… ${Math.round(fitter.progress * 100)}% · ΔE ${fitter.bestScore.toFixed(2)}`);
       if (!fitter.done) { requestAnimationFrame(tick); return; }
       actions.applyParams(fitter.bestParams);
       if (dom.fitImageBtn) dom.fitImageBtn.disabled = false;
-      status(dom.fitStatus, `Fitted ${target.length} colours · ΔE ${fitter.bestScore.toFixed(2)}`, 'ok');
+      status(dom.fitStatus, `${what} · ΔE ${fitter.bestScore.toFixed(2)}`, 'ok');
+      onDone?.(fitter);
     };
     requestAnimationFrame(tick);
   }

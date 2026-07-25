@@ -233,7 +233,42 @@ const SCHEMA = [
     'What happens when remap_preserve_order and recolor_context are both on. On, they combine — the mapping stays monotonic in lightness AND respects the context pools. Off, preserve_order wins outright and context is ignored for that image. Turn it off if forcing both at once flattens the result; the two constraints together can leave the assignment very little room.'),
   f('remap_context_bias', 'recolor', 0, 1, 0.05, 1,
     'How hard recolor_context pushes. 0 = no effect at all (identical to off); 1 = a hard restriction, a colour never leaves its own pool; in between = a preference, crossed only when the colour match is much better the other way. 1 gives the strongest foreground/background separation but can flatten dithered texture and force odd hues — drop to about 0.2-0.4 on tile and terrain art, which keeps the texture and still buys most of the separation.'),
+
+  // --- Custom hue pins (UX_PLAN U6.3) -------------------------------------
+  // Appended, like everything above, because field order is the seed payload's order.
+  // `custom_hue_count` defaults to 0, so every seed written before these existed decodes to
+  // "no pins" and the `custom` scheme keeps its old even-spread behaviour exactly.
+  //
+  // The pinned angles are ABSOLUTE and `root_hue` does not rotate them: a pin means that
+  // exact hue, and a pin that moved when you touched another knob would not be a pin. Use one
+  // of the other schemes when you want the whole set to rotate together.
+  i('custom_hue_count', 'structure', 0, 6, 0,
+    'How many hue families you are choosing by hand, with hue_scheme set to custom. 0 leaves the custom scheme as it was — an even spread across hue_span. Above 0, that many pinned angles are used exactly, and if hue_count asks for more families than you pinned, the extras are placed in the widest gaps between your pins. The way to reproduce a specific palette\'s hues rather than approximate them with a scheme.'),
+  f('custom_hue_1', 'structure', 0, 360, 1, 0,
+    'The first pinned hue angle, used when hue_scheme is custom and custom_hue_count is 1 or more. Absolute: root_hue does not rotate it.'),
+  f('custom_hue_2', 'structure', 0, 360, 1, 60,
+    'The second pinned hue angle, used when custom_hue_count is 2 or more. Absolute: root_hue does not rotate it.'),
+  f('custom_hue_3', 'structure', 0, 360, 1, 120,
+    'The third pinned hue angle, used when custom_hue_count is 3 or more. Absolute: root_hue does not rotate it.'),
+  f('custom_hue_4', 'structure', 0, 360, 1, 180,
+    'The fourth pinned hue angle, used when custom_hue_count is 4 or more. Absolute: root_hue does not rotate it.'),
+  f('custom_hue_5', 'structure', 0, 360, 1, 240,
+    'The fifth pinned hue angle, used when custom_hue_count is 5 or more. Absolute: root_hue does not rotate it.'),
+  f('custom_hue_6', 'structure', 0, 360, 1, 300,
+    'The sixth pinned hue angle, used when custom_hue_count is 6. Absolute: root_hue does not rotate it.'),
 ];
+
+/** The pinned-hue parameter names, in order — `custom_hue_1` … `custom_hue_6`. */
+export const CUSTOM_HUE_PARAMS = Array.from({ length: 6 }, (_, i) => `custom_hue_${i + 1}`);
+
+/**
+ * The hue angles the user has pinned, honoured only by the `custom` scheme.
+ * Returns `[]` when nothing is pinned, which is what keeps every pre-U6 seed unchanged.
+ */
+export function customHues(params) {
+  const n = Math.max(0, Math.min(CUSTOM_HUE_PARAMS.length, Math.round(Number(params?.custom_hue_count) || 0)));
+  return CUSTOM_HUE_PARAMS.slice(0, n).map((name) => Number(params[name]) || 0);
+}
 
 /**
  * Attach the presentation metadata from `paramui.js` to a spec. Missing entries fall back to

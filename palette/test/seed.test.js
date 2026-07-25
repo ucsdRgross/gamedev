@@ -4,6 +4,7 @@ import { encodeSeed, decodeSeed, slotIdsFor, SEED_VERSION } from '../src/core/se
 import { PARAMS, defaultParams, normalizeParams, paramToU16 } from '../src/core/params.js';
 import { generatePalette, paletteHexes } from '../src/core/generate.js';
 import { makeRng } from '../src/core/rng.js';
+import { presetParams } from '../src/core/presets.js';
 
 /** A deterministic random parameter set covering every field. */
 function randomParams(rng) {
@@ -126,4 +127,19 @@ test('whitespace and case in the prefix are tolerated', () => {
   const seed = encodeSeed(defaultParams());
   assert.deepEqual(decodeSeed(`  ${seed}  `).params, decodeSeed(seed).params);
   assert.deepEqual(decodeSeed(seed.replace('PAL1', 'pal1')).params, decodeSeed(seed).params);
+});
+
+test('a seed written before the custom hue pins existed decodes to the same palette', () => {
+  // Recorded from the `nes` preset before U6.3 appended `custom_hue_count` and the six pins.
+  // This is the append-only guarantee stated as a fact rather than as an intention: the whole
+  // point of appending is that a seed anybody pasted last month still means what it meant.
+  const OLD_NES = 'PAL1-AUgzM4AAAAARx9VVAACAAFVVgABVVQAAAABbbb__Zzl8VwABAAAiIoN1iIhjjl3eSIgzMwAA1_9AAB64'
+    + 'xxwmZgACAACAAL__VVVd3kzNnHFZmSZmo45MzQAAf_9mZgABj1xJJEkkSSQAAgAAVVVzM0zNAAEETQAA__8AAAAAAAAAAf__GMYAAAAAAAAAAAAB__8AAA';
+  const decoded = decodeSeed(OLD_NES);
+  const fromSeed = generatePalette(decoded.params, { locks: decoded.locks, overrides: decoded.overrides });
+  const fromPreset = generatePalette(presetParams('nes'));
+  assert.deepEqual(paletteHexes(fromSeed), paletteHexes(fromPreset));
+  // The missing trailing fields come back as their defaults, and the default is "no pins".
+  assert.equal(decoded.params.custom_hue_count, 0);
+  assert.equal(decoded.params.custom_hue_2, 60);
 });

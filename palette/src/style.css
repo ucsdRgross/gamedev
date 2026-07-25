@@ -442,6 +442,64 @@ input[type="file"] { font-size: 11px; color: var(--text-dim); width: 100%; }
 .start-paste-side .btn { text-align: left; }
 #start-paste-preview .start-card-strip { margin-top: 0; height: 14px; }
 
+/* ---- Hue wheel (U6.3) ------------------------------------------------- */
+.wheel-pop {
+  position: fixed; z-index: 60; width: 244px; padding: 10px;
+  background: var(--bg-2); border: 1px solid var(--line-2);
+  border-radius: var(--radius); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+.wheel-canvas { display: block; margin: 0 auto; cursor: crosshair; touch-action: none; }
+.wheel-note { font-size: 10.5px; line-height: 1.45; color: var(--text-dim); margin: 6px 0 8px; }
+.wheel-note.is-warning { color: var(--warn); }
+.wheel-actions { display: flex; gap: 6px; }
+.wheel-actions .btn { flex: 1 1 0; text-align: center; }
+
+/* ---- Compare (U6.2) --------------------------------------------------- */
+.compare-body { display: flex; flex-direction: column; gap: 12px; padding: 12px 14px; }
+.compare-pair { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.compare-side {
+  flex: 1 1 300px; min-width: 260px;
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 8px;
+}
+.compare-scene {
+  display: block; width: 100%; height: auto; image-rendering: pixelated;
+  border-radius: 2px; background: var(--bg);
+}
+.compare-strip { display: flex; height: 12px; margin-top: 6px; border-radius: 2px; overflow: hidden; }
+.compare-strip i { flex: 1 1 0; min-width: 1px; }
+/* Colours with no palette behind them get no scene, so the strip carries the whole side. */
+.compare-strip.is-tall { height: 92px; flex-wrap: wrap; }
+.compare-strip.is-tall i { flex: 1 1 12%; min-width: 12%; height: 50%; }
+.compare-label { font-size: 12px; color: var(--text); margin-top: 5px; }
+.compare-desc { font-size: 10.5px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
+.compare-paste-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#compare-paste {
+  flex: 1 1 240px; padding: 5px 8px; font-family: var(--mono); font-size: 11.5px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line-2); border-radius: var(--radius);
+}
+.compare-report { font-size: 11.5px; }
+.compare-distance { margin: 0 0 6px; color: var(--accent-2); font-family: var(--mono); font-size: 11px; }
+.compare-diff { list-style: none; margin: 0; padding: 0; }
+.compare-diff li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0; border-bottom: 1px solid var(--line); color: var(--text-dim);
+}
+.compare-take {
+  margin-left: auto; padding: 1px 7px; font-size: 10px; cursor: pointer;
+  background: var(--bg-3); color: var(--text-dim);
+  border: 1px solid var(--line-2); border-radius: 3px;
+}
+.compare-take:hover { background: var(--accent); color: #0b1220; border-color: var(--accent); }
+.compare-morph {
+  border-top: 1px solid var(--line); padding-top: 10px;
+  display: flex; flex-direction: column; gap: 6px; max-width: 420px;
+}
+.compare-morph-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.compare-morph-head .btn { margin-left: auto; }
+#compare-morph { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
 /* ---- Pinned hero (U4.1 / U4.3) ---------------------------------------- */
 /* `flex: 0 0 auto` above the `.scroll` grid is the whole feature: the hero keeps its height
    while the gallery below it takes the rest and scrolls under it. */

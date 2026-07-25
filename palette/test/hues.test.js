@@ -119,3 +119,66 @@ test('gap centres land in the largest holes', () => {
   assert.notEqual(two[0], two[1]);
   assert.deepEqual(hueGapCenters([], 2).length, 2);
 });
+
+// --- Custom hue pins (UX_PLAN U6.3) ---------------------------------------
+// The contract is that a pin is honoured exactly: not warped by the perceptual spacing, not
+// moved by the jitter, and not pushed by the separation pass. Everything else about the
+// `custom` scheme has to keep working for palettes that pin nothing, or every seed written
+// before pins existed would decode to a different palette.
+
+const pinned = (angles, extra = {}) => ({
+  ...defaultParams(),
+  hue_scheme: 'custom',
+  custom_hue_count: angles.length,
+  ...Object.fromEntries(angles.map((a, i) => [`custom_hue_${i + 1}`, a])),
+  ...extra,
+});
+
+test('pinning nothing leaves the custom scheme exactly as it was', () => {
+  const before = buildHues({ ...defaultParams(), hue_scheme: 'custom' }, 5, makeRng(7));
+  const after = buildHues(pinned([]), 5, makeRng(7));
+  assert.deepEqual(after, before);
+  assert.equal(defaultParams().custom_hue_count, 0, 'no pins is the default, so old seeds decode unchanged');
+});
+
+test('pinned hues come out exactly as pinned', () => {
+  const hues = buildHues(pinned([10, 200, 330]), 3, makeRng(1));
+  assert.deepEqual(hues.map((h) => Math.round(h * 1000) / 1000), [10, 200, 330]);
+});
+
+test('a pin survives the jitter and the perceptual warp that would otherwise move it', () => {
+  // Both are cranked to the settings that move a generated angle furthest.
+  const hues = buildHues(pinned([10, 200, 330], { hue_jitter: 30, perceptual_hue_spacing: 1 }), 3, makeRng(4));
+  assert.deepEqual(hues.map((h) => Math.round(h * 1000) / 1000), [10, 200, 330]);
+});
+
+test('extra hue families land in the gaps between the pins, and never on them', () => {
+  const pins = [0, 30, 60];
+  const hues = buildHues(pinned(pins, { hue_jitter: 0 }), 6, makeRng(2));
+  assert.equal(hues.length, 6);
+  assert.deepEqual(hues.slice(0, 3).map(Math.round), pins, 'the pins stay put and stay first');
+  for (const extra of hues.slice(3)) {
+    for (const pin of pins) {
+      assert.ok(Math.abs(hueDelta(extra, pin)) > 8, `extra hue ${extra} sits on pin ${pin}`);
+    }
+  }
+  // The pins are crowded into a 60° arc, so the extras must be out in the empty 300°.
+  assert.ok(hues.slice(3).every((h) => h > 60 && h < 360), `extras should fill the hole: ${hues}`);
+});
+
+test('asking for fewer families than are pinned uses the first of them', () => {
+  assert.deepEqual(buildHues(pinned([10, 200, 330]), 2, makeRng(1)).map(Math.round), [10, 200]);
+  assert.deepEqual(buildHues(pinned([10, 200, 330]), 1, makeRng(1)).map(Math.round), [10]);
+});
+
+test('two pins closer than the separation floor are left where they were asked for', () => {
+  // The user pinning two near-identical hues is a decision, not a mistake to correct.
+  const hues = buildHues(pinned([100, 103]), 2, makeRng(1));
+  assert.deepEqual(hues.map((h) => Math.round(h * 1000) / 1000), [100, 103]);
+});
+
+test('pins are absolute — root_hue does not rotate them', () => {
+  const at0 = buildHues(pinned([10, 200], { root_hue: 0 }), 2, makeRng(1));
+  const at180 = buildHues(pinned([10, 200], { root_hue: 180 }), 2, makeRng(1));
+  assert.deepEqual(at180, at0);
+});

@@ -457,6 +457,31 @@ export const PARAM_UI = {
     hint: '0.2–0.4 keeps dithered texture on tile art; 1 is a hard rule',
     low: 'a mild preference', high: 'a hard rule',
   },
+
+  // Custom hue pins (U6.3). Only bite when the scheme is “Chosen by hand”.
+  custom_hue_count: {
+    label: 'Hues chosen by hand',
+    hint: 'with the scheme set to “Chosen by hand”: how many angles you are pinning yourself',
+    low: 'none — an even spread', high: 'six pinned by hand',
+  },
+  custom_hue_1: {
+    label: 'Pinned hue 1', hint: 'the first hand-picked hue angle', low: 'red', high: 'red again',
+  },
+  custom_hue_2: {
+    label: 'Pinned hue 2', hint: 'the second hand-picked hue angle', low: 'red', high: 'back to red',
+  },
+  custom_hue_3: {
+    label: 'Pinned hue 3', hint: 'the third hand-picked hue angle', low: 'red', high: 'round to red',
+  },
+  custom_hue_4: {
+    label: 'Pinned hue 4', hint: 'the fourth hand-picked hue angle', low: 'red', high: 'the whole way round',
+  },
+  custom_hue_5: {
+    label: 'Pinned hue 5', hint: 'the fifth hand-picked hue angle', low: 'red', high: 'all the way round',
+  },
+  custom_hue_6: {
+    label: 'Pinned hue 6', hint: 'the sixth hand-picked hue angle', low: 'red', high: 'right round to red',
+  },
 };
 
 /**

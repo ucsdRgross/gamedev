@@ -11,9 +11,10 @@
 // `fidelity` asks whether it wastes colours the target has no use for; `score` is their mean.
 
 import { generatePalette, paletteHexes } from './generate.js';
-import { defaultParams, normalizeParams, PARAM_BY_NAME } from './params.js';
+import { defaultParams, normalizeParams, PARAM_BY_NAME, isAngularParam } from './params.js';
 import { makeRng } from './rng.js';
 import { hexToRgb8, rgb8ToOklab, deltaEOK } from './oklch.js';
+import { paramDiff } from './describe.js';
 
 /** Mean of the smallest deltaE from each colour in `from` to any colour in `to` (OKLab). */
 export function meanNearest(from, to) {
@@ -101,99 +102,183 @@ const SEARCH_FLOATS = [
 const SCHEMES = ['analogous', 'even', 'custom', 'complementary', 'split-comp'];
 const SHIFT_MODELS = ['per-family', 'relative-rotation', 'global-attractor'];
 
-/** Perturb one numeric parameter by gaussian noise scaled to its range, staying in bounds. */
-function jitterParam(params, name, rng, scale) {
+/**
+ * Perturb one numeric parameter, staying in bounds.
+ *
+ * Two moves. The usual one is a gaussian step scaled to the parameter's range — a hill climb.
+ * With probability `jump` the value is instead **resampled uniformly across its whole range**,
+ * which is how the search crosses a valley rather than walking down into one and stopping.
+ *
+ * The jump move is not decoration; it replaces something that used to happen by accident.
+ * Until this was fixed the wrap test was `name.endsWith('_hue')`, which caught
+ * `l_variance_per_hue` and `chroma_variance_per_hue` — neither of which is an angle. A small
+ * negative step on those wrapped to 359.98 and then clamped to the parameter's *maximum*, so
+ * the search had a hidden "jump to an extreme" move on exactly two knobs, and the old fit
+ * thresholds were tuned around it. Measured over five seeds and two targets, removing the bug
+ * without replacing it regressed both fits; an explicit annealed jump on *every* knob beats
+ * the accident (see UX_PLAN's U6 note for the numbers).
+ */
+function jitterParam(params, name, rng, scale, jump = 0) {
   const spec = PARAM_BY_NAME.get(name);
   if (!spec || spec.type === 'enum' || spec.type === 'bool') return;
   const span = spec.max - spec.min;
-  const g = (rng() + rng() + rng() - 1.5) * 2; // ~N(0,1)
-  let v = params[name] + g * scale * span;
-  if (name === 'root_hue' || name.endsWith('_hue') || name.endsWith('_hue_target')) {
-    v = ((v % 360) + 360) % 360; // hues wrap
+  let v;
+  if (jump > 0 && rng() < jump) {
+    v = spec.min + rng() * span;
   } else {
-    v = Math.min(spec.max, Math.max(spec.min, v));
+    const g = (rng() + rng() + rng() - 1.5) * 2; // ~N(0,1)
+    v = params[name] + g * scale * span;
   }
+  // Only real angles wrap. `hue_span` is a width and the two `*_per_hue` variances are
+  // spreads; all three clamp, or a step off the bottom lands at the top.
+  if (isAngularParam(name)) v = ((v % 360) + 360) % 360;
+  else v = Math.min(spec.max, Math.max(spec.min, v));
   if (spec.type === 'int') v = Math.round(v);
   params[name] = v;
 }
 
 /**
- * A fresh candidate for restart `r`: defaults + inferred structure + an enum draw. The
- * scheme is chosen by restart index (not at random) so every hue scheme gets a fair share
- * of restarts to hill-climb from — the scheme is the one knob a continuous search cannot
- * nudge its way into, so it must be seeded across the whole run rather than gambled on.
+ * A fresh candidate for restart `r`: a base (defaults + inferred structure, or the caller's
+ * `from`) plus an enum draw and a broad jitter. The scheme is chosen by restart index (not at
+ * random) so every hue scheme gets a fair share of restarts to hill-climb from — the scheme is
+ * the one knob a continuous search cannot nudge its way into, so it must be seeded across the
+ * whole run rather than gambled on.
+ *
+ * Restart 0 with a `from` base is returned **untouched**. That is what makes "improve what I
+ * have" safe: the search starts by evaluating the palette you already had, so it can only
+ * report something at least as good.
  */
-function seedCandidate(structure, rng, r) {
-  const p = { ...defaultParams(), ...structure };
-  p.hue_scheme = SCHEMES[r % SCHEMES.length];
-  p.shift_model = SHIFT_MODELS[Math.floor(r / SCHEMES.length) % SHIFT_MODELS.length];
-  for (const name of SEARCH_FLOATS) jitterParam(p, name, rng, 0.5);
+function seedCandidate(base, rng, r, { fixed = new Set(), keepEnums = false, searchable = SEARCH_FLOATS } = {}) {
+  const p = { ...base };
+  if (r === 0 && keepEnums) return p;
+  if (!keepEnums || r > 0) {
+    if (!fixed.has('hue_scheme')) p.hue_scheme = SCHEMES[r % SCHEMES.length];
+    if (!fixed.has('shift_model')) p.shift_model = SHIFT_MODELS[Math.floor(r / SCHEMES.length) % SHIFT_MODELS.length];
+  }
+  for (const name of searchable) jitterParam(p, name, rng, 0.5);
   return p;
 }
+
+// How often a candidate contains a jump rather than only steps, at the start of a restart.
+// Annealed to zero by the end of each restart: bold while there is budget left to recover
+// from a bad landing, pure hill-climbing when there is not.
+//
+// 0.2 was measured, not guessed. Over eight RNG seeds and two targets (see UX_PLAN's U6 note
+// for the table) rates of 0, 0.2 and 0.35 give recovery means of 4.24 / 4.26 / 4.30 — a wash —
+// while the crayon fit goes 3.86 / 3.82 / 4.05. The real gain at 0.2 is in the spread: the
+// crayon fit ranges 3.29–4.08 with jumps and 2.41–4.95 without, and a search whose worst case
+// is bounded beats one that is sometimes lucky.
+const JUMP_RATE = 0.2;
 
 /**
  * Resumable fitter, so a caller (the UI) can run the search in slices without freezing.
  * `step(n)` runs up to `n` evaluations and returns `{ done, bestScore }`; `bestParams` and
  * `bestScore` are always readable. The whole run is a random-restart hill climb: from each
  * start it perturbs a shrinking subset of knobs and keeps only strict improvements.
+ *
+ * Options (UX_PLAN U6.1):
+ *   `from`       start from these parameters instead of defaults + inferred structure. The
+ *                first candidate is then exactly `from`, so the result is never worse than
+ *                what the caller already had, and the caller's structure is respected rather
+ *                than overwritten by `inferStructure`.
+ *   `fixed`      names the search must never touch — the parts of the palette already
+ *                decided. "Match these colours, but keep my 32 slots and my hue scheme" is
+ *                the normal way to want a fit, and without this it was unsayable.
+ *   `onProgress` called with `{ progress, bestScore, params }` whenever the best improves, so
+ *                a UI can show the palette getting closer instead of a number going down.
+ *   `keepLooking(n)` add `n` more evaluations to a finished run, keeping the best so far.
  */
-export function makeFitter(targetHexes, { seed = 1, iterations = 6000, restarts = 10 } = {}) {
+export function makeFitter(targetHexes, {
+  seed = 1, iterations = 6000, restarts = 10, from = null, fixed = [], onProgress = null,
+} = {}) {
   const rng = makeRng(seed);
   const targetLab = targetHexes.map((h) => rgb8ToOklab(hexToRgb8(h)));
   const structure = inferStructure(targetHexes);
+  const fixedSet = new Set(fixed);
+  const searchable = SEARCH_FLOATS.filter((n) => !fixedSet.has(n));
+  // Fixed at construction so `keepLooking` extends the run with more restarts of the same
+  // length, rather than silently stretching every remaining one.
   const budgetPer = Math.max(1, Math.floor(iterations / restarts));
+  const base = from ? normalizeParams(from) : { ...defaultParams(), ...structure };
+  const seedOpts = { fixed: fixedSet, keepEnums: Boolean(from), searchable };
 
+  let total = iterations;
   let restartIndex = 0;
-  let bestParams = seedCandidate(structure, rng, restartIndex);
+  let bestParams = seedCandidate(base, rng, restartIndex, seedOpts);
   let bestScore = scoreParams(bestParams, targetLab);
   let cur = bestParams;
   let curScore = bestScore;
   let done = 0;
   let sinceRestart = 0;
 
+  /** Record a new best and tell the caller, if it asked. */
+  function improve(params, score) {
+    bestScore = score;
+    bestParams = params;
+    onProgress?.({ progress: done / total, bestScore, params: normalizeParams(params) });
+  }
+
   const fitter = {
-    total: iterations,
+    get total() { return total; },
     get bestScore() { return bestScore; },
     get bestParams() { return normalizeParams(bestParams); },
-    get progress() { return done / iterations; },
-    get done() { return done >= iterations; },
+    /** What the search changed, biggest move first — the "how to get there" list. */
+    get diff() { return paramDiff(normalizeParams(base), normalizeParams(bestParams)); },
+    get progress() { return done / total; },
+    get done() { return done >= total; },
+    /**
+     * Keep looking: extend a finished (or unfinished) run by `extra` evaluations. The best so
+     * far is kept, so this only ever improves — "not quite" should cost one more click, not a
+     * restart from nothing.
+     */
+    keepLooking(extra) {
+      total += Math.max(0, Math.floor(extra));
+      return fitter;
+    },
     step(n) {
-      const end = Math.min(iterations, done + n);
+      const end = Math.min(total, done + n);
       while (done < end) {
         done++;
         sinceRestart++;
         if (sinceRestart >= budgetPer) { // next restart, cycling schemes deterministically
           restartIndex++;
-          cur = seedCandidate(structure, rng, restartIndex);
+          cur = seedCandidate(base, rng, restartIndex, seedOpts);
           curScore = scoreParams(cur, targetLab);
           sinceRestart = 0;
-          if (curScore < bestScore) { bestScore = curScore; bestParams = cur; }
+          if (curScore < bestScore) improve(cur, curScore);
           continue;
         }
-        // Anneal the perturbation: bold early in a restart, fine near the end.
+        // Anneal both moves together: bold early in a restart, fine near the end.
         const t = sinceRestart / budgetPer;
         const scale = 0.28 * (1 - t) + 0.015;
+        const jump = JUMP_RATE * (1 - t);
         const cand = { ...cur };
         const k = 1 + Math.floor(rng() * 3); // perturb 1..3 knobs at a time
+        // At most one knob may jump per candidate. Letting all three roll independently makes
+        // a majority of candidates a scramble rather than a move, which throws away the local
+        // information the hill climb is built on.
+        const jumpAt = rng() < jump ? Math.floor(rng() * k) : -1;
         for (let j = 0; j < k; j++) {
-          jitterParam(cand, SEARCH_FLOATS[Math.floor(rng() * SEARCH_FLOATS.length)], rng, scale);
+          jitterParam(cand, searchable[Math.floor(rng() * searchable.length)], rng, scale, j === jumpAt ? 1 : 0);
         }
         const s = scoreParams(cand, targetLab);
         if (s < curScore) {
           cur = cand;
           curScore = s;
-          if (s < bestScore) { bestScore = s; bestParams = cand; }
+          if (s < bestScore) improve(cand, s);
         }
       }
       return { done: fitter.done, bestScore };
     },
   };
+  if (!searchable.length) throw new Error('every searchable parameter is fixed — nothing to fit');
   return fitter;
 }
 
 /**
  * Fit a parameter set to a target palette in one call. Returns the best params found (as a
- * normalised set the UI can load like a preset), the achieved fit and the eval count.
+ * normalised set the UI can load like a preset), the achieved fit, the eval count, and the
+ * ordered list of what it changed from the starting point.
  */
 export function fitParams(targetHexes, opts = {}) {
   const fitter = makeFitter(targetHexes, opts);
@@ -205,5 +290,6 @@ export function fitParams(targetHexes, opts = {}) {
     coverage: fit.coverage,
     fidelity: fit.fidelity,
     iterations: fitter.total,
+    diff: fitter.diff,
   };
 }

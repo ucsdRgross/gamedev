@@ -58,8 +58,13 @@ export function createStart(dom, { store, actions }) {
   let built = false;
   let pasted = [];
 
-  /** One clickable palette card: a scene in it, its colours, and what it is called. */
-  function card(palette, { title, subtitle = '', onClick, onDelete } = {}) {
+  /**
+   * One clickable palette card: a scene in it, its colours, and what it is called.
+   * `onCompare` (shift-click) sends it to the Compare view instead of loading it — the
+   * ordinary question about a card you are hovering is "is this better than what I have?",
+   * and taking it to find out loses what you had.
+   */
+  function card(palette, { title, subtitle = '', onClick, onCompare, onDelete } = {}) {
     const el = document.createElement('div');
     el.className = 'start-card';
     const canvas = document.createElement('canvas');
@@ -76,8 +81,11 @@ export function createStart(dom, { store, actions }) {
       sub.textContent = subtitle;
       el.appendChild(sub);
     }
-    el.title = describePalette(palette);
-    el.addEventListener('click', onClick);
+    el.title = describePalette(palette) + (onCompare ? '\nShift-click to compare against this instead of taking it.' : '');
+    el.addEventListener('click', (e) => {
+      if (onCompare && e.shiftKey) { onCompare(); return; }
+      onClick();
+    });
     if (onDelete) {
       const del = document.createElement('button');
       del.className = 'start-card-del';
@@ -117,6 +125,7 @@ export function createStart(dom, { store, actions }) {
       dom.presets.appendChild(card(generatePalette(params), {
         title: preset.name,
         onClick: () => actions.applyParams(params, `Preset “${preset.name}”`),
+        onCompare: () => actions.compareWith(`preset:${preset.id}`),
       }));
     }
   }
@@ -153,6 +162,7 @@ export function createStart(dom, { store, actions }) {
       }), {
         title: name,
         onClick: () => actions.loadSave(name),
+        onCompare: () => actions.compareWith(`save:${name}`),
         onDelete: async () => {
           try { await store.remove(name); } catch { /* the rebuild below shows the truth */ }
           buildSaves();
@@ -176,6 +186,7 @@ export function createStart(dom, { store, actions }) {
         title: entry.name || 'untitled',
         subtitle: entry.at ? new Date(entry.at).toLocaleTimeString() : '',
         onClick: () => actions.loadSeed(entry.seed),
+        onCompare: () => actions.compareWith(`seed:${entry.seed}`),
       }));
     }
   }

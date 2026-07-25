@@ -246,6 +246,16 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     for (const fn of sourceListeners) fn(listSources());
   }
 
+  /** The external palettes loaded here, for anything else that wants to compare against one. */
+  function listTargets() {
+    return [...targets].map(([id, t]) => ({ id, name: t.name, count: t.palette.entries.length }));
+  }
+
+  /** One external palette by id, or null. */
+  function readTarget(id) {
+    return targets.get(id) || null;
+  }
+
   /** The reference images available right now: `{ id, title, origin }`, in gallery order. */
   function listSources() {
     return sources.map((s) => ({ id: s.id, title: s.title, origin: s.origin }));
@@ -549,7 +559,10 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
 
   loadServerLibrary();
   loadPaletteLibrary();
-  return { render, setActive, addFiles, addTarget, listSources, framesFor, onSourcesChange };
+  return {
+    render, setActive, addFiles, addTarget, listTargets, readTarget,
+    listSources, framesFor, onSourcesChange,
+  };
 }
 
 /** The §19.1 parameters, translated into what `recolorFrames` takes. */

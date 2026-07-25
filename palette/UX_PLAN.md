@@ -125,13 +125,15 @@ Shared machinery the later phases lean on. All the computation is core; only dra
 
 ## Phase U6 — Inversion tools · items 10, 3, 9
 
-- [ ] **U6.1** Fitter upgrades in `src/core/fit.js`: `from` (start at current params),
+- [x] **U6.1** Fitter upgrades in `src/core/fit.js`: `from` (start at current params),
       `fixed` (names never perturbed), `onProgress` best-so-far palette, resumable "keep
       looking", and a returned parameter diff. *Done when* `test/fit.test.js` covers each.
-- [ ] **U6.2** **Compare** mode: pin A, choose B (save, preset, external palette image, pasted
+      **Includes the hue-wrap fix**, the re-tuned search and multi-seed thresholds.
+- [x] **U6.2** **Compare** mode: pin A, choose B (save, preset, external palette image, pasted
       hexes, seed); aligned side-by-side; difference report from U2.2; "how to get there" via
       U6.1 seeded from A; **morph slider** A→B (numeric lerp, enums snap at 50%).
-- [ ] **U6.3** Custom hue pins: append-only `custom_hue_count` + `custom_hue_1..6`, honoured
+      U5.2's shift-click-a-card-to-Compare landed here too, as planned.
+- [x] **U6.3** Custom hue pins: append-only `custom_hue_count` + `custom_hue_1..6`, honoured
       by `hues.js`; wheel UI with draggable pins and seeding from the current palette. The
       existing `custom` scheme keeps working (an even spread when no pins are set).
 
@@ -326,7 +328,74 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     tiles, a 10-colour Lospec dump becomes a recolour target, an 8-colour paste fits at ΔE 5.8,
     and with `fetch` stubbed to fail the store falls back to `localStorage` and round-trips.
 
-### Open note for U6.1 — the fitter's own hue-wrap bug (measured, deliberately deferred)
+- **2026-07-24 — U6 done. `npm test` green at 460**; `npm run build` green (92 modules).
+  Snapshots re-recorded **deliberately** — see the append note below. U5.2's deferred
+  shift-click-to-Compare is now done, so nothing is outstanding from U5 either.
+  - **The hue-wrap bug is fixed and the search re-tuned.** `fit.js` now uses `isAngularParam`,
+    so `l_variance_per_hue` and `chroma_variance_per_hue` clamp like the spreads they are. The
+    accidental "jump to an extreme" that removal cost is replaced by a deliberate one: with
+    probability `JUMP_RATE × (1 − t)` a candidate resamples **one** knob uniformly instead of
+    stepping it, annealed to zero by the end of each restart. At most one knob jumps per
+    candidate — letting all three roll independently makes a majority of candidates a scramble
+    and throws away the local information a hill climb runs on.
+  - **Re-baselined over eight seeds, not one** (that single-seed threshold is what made the
+    bug load-bearing in the first place). Means, jump rate down the left:
+
+    | rate | recovery (3000) | crayon (4000) |
+    |---|---|---|
+    | 0 (wrap fixed, no jump) | **4.24** | 3.86 (range 2.41–4.95) |
+    | 0.2 | 4.26 | **3.82** (range 3.29–4.08) |
+    | 0.35 | 4.30 | 4.05 |
+    | 0.5 | 4.00 | 4.09 |
+
+    Recovery is a wash across every rate — the spread between seeds (±1.0) dwarfs it. The
+    crayon fit is where the jump earns its place, and the gain is in the **range** rather than
+    the mean: a worst case of 4.08 instead of 4.95. `test/fit.test.js` now asserts a mean over
+    three seeds plus a per-seed ceiling, which is what was actually being promised all along.
+  - Fitter options: `from`, `fixed`, `onProgress`, `keepLooking(n)` and a returned `diff`.
+    **`from` makes restart 0 the caller's own parameters untouched**, so a fit from your
+    current palette can only report something at least as good as what you had — a property
+    the test pins, and the thing that makes Compare's "how to get there" trustworthy.
+  - **The schema grew for the first time this phase.** `custom_hue_count` + `custom_hue_1..6`
+    are appended after `remap_context_bias`; `custom_hue_count` defaults to 0, so every seed
+    written before them decodes to "no pins" and the `custom` scheme keeps its old even
+    spread. The snapshot diff is exactly one line per preset (the seed string, 10 base64 chars
+    longer, everything before it byte-identical) and `default-sizes.json` did not change at
+    all — no colour moved. `test/seed.test.js` now hard-codes a pre-U6 `nes` seed and asserts
+    it still generates the identical palette.
+  - **A pin is honoured exactly**, which took three separate exemptions in `hues.js`: pinned
+    angles skip the perceptual warp (it exists to space *generated* angles evenly, and applying
+    it to an angle somebody chose moves it off the colour they picked), skip the jitter, and
+    are locked against the separation pass. Two pins closer than the minimum gap are left where
+    they were asked for — the near-duplicate is the user's decision. Extra hue families beyond
+    the pins land in the widest gaps via `hueGapCenters`.
+  - Pins are **absolute**: `root_hue` does not rotate them, deliberately, because a pin that
+    moved when you touched another knob would not be a pin. That is the one place the "root_hue
+    rotates every hue together" invariant is broken, and it is written into the parameter doc.
+  - New `src/core/morph.js` (`morphParams`, `morphSnapPoints`): numbers travel, angles take the
+    short way round, enums and bools snap at 0.5 — and so does **`seed`**, though it is an
+    integer, because walking it re-rolls the jitter at every step and turns a morph into a
+    shimmer. `src/ui/compare.js` and `src/ui/wheel.js` are the views.
+  - **Two things that bit.**
+    (1) *Click-versus-drag on the wheel.* A drag commits on every `pointermove`, so by the time
+    the release arrives the pin is already under the pointer — comparing the two called every
+    drag a click and **deleted** the pin instead of moving it. The test is against where the
+    pin was when the press began.
+    (2) *An external palette has no semantic roles*, so the gallery scenes cannot draw it —
+    there is no entry to look `foliage` up in. A colours-only side of Compare shows a large
+    strip instead of inventing a mapping and presenting the result as a preview.
+  - Verified live on :59669: Compare pins A on entry, reports ΔE and 14 ranked parameter rows
+    (+32 counted), the morph visibly steps between 49% and 51% where the enums snap, B set to
+    "the palette you have" tracks the sliders (ΔE 0.00 → 2.31 as a knob moved), "how to get
+    there" from A to 8 pasted colours reached ΔE 5.77, a pasted `PAL1-` string is read as a
+    seed rather than as colours, shift-clicking a preset card compares instead of taking it,
+    and on the wheel a click pins, a drag moves and a click removes — round-tripping through
+    the seed with the palette's hues coming out exactly as pinned.
+
+### Open note for U6.1 — the fitter's own hue-wrap bug — RESOLVED 2026-07-24
+
+Fixed, re-tuned and re-baselined in U6.1; the note below is kept as the record of what was
+measured before, because the numbers are the reason the fix took the shape it did.
 
 `src/core/fit.js:111` still uses the `name.endsWith('_hue')` test that U3 fixed elsewhere, so
 its search wraps `l_variance_per_hue` and `chroma_variance_per_hue` to 359.98 → clamp to max.

@@ -56,6 +56,8 @@
           <button id="tab-gallery" class="tab is-active" role="tab" aria-selected="true">Gallery</button>
           <button id="tab-variants" class="tab" role="tab" aria-selected="false"
                   title="A dozen variations of this palette — click one to take it">Variants</button>
+          <button id="tab-compare" class="tab" role="tab" aria-selected="false"
+                  title="Pin this palette and hold it against another — what differs, and how to get there">Compare</button>
           <button id="tab-picker" class="tab" role="tab" aria-selected="false">Picker</button>
           <button id="tab-recolor" class="tab" role="tab" aria-selected="false">Recolour</button>
         </div>
@@ -77,6 +79,11 @@
           <label class="toggle" title="Animate motion scenes">
             <input id="gallery-animate" type="checkbox" checked /> anim
           </label>
+        </div>
+        <div id="compare-controls" class="pane-head-controls" hidden>
+          <button id="compare-pin" class="btn btn-small" title="Pin the palette you have now as A">Pin current as A</button>
+          <select id="compare-source" title="What to hold it against"></select>
+          <span id="compare-status" class="meta"></span>
         </div>
         <div id="picker-controls" class="pane-head-controls" hidden>
           <select id="picker-view" title="Colour-space map (position is fixed) or arrangement layout (position is optimised)"></select>
@@ -195,6 +202,36 @@
         </p>
         <div id="variants-grid" class="variants-grid"></div>
       </div>
+      <div id="compare" class="scroll compare-body" hidden>
+        <div class="compare-pair">
+          <div id="compare-a" class="compare-side"></div>
+          <div id="compare-b" class="compare-side"></div>
+        </div>
+        <div class="compare-paste-row">
+          <input id="compare-paste" type="text" spellcheck="false"
+                 placeholder="…or paste hex codes to compare against" />
+          <button id="compare-how" class="btn btn-small" disabled
+                  title="Search for what to change about A to reach B — the fitter, started at A instead of from nothing">How to get there</button>
+          <button id="compare-take-all" class="btn btn-small" disabled title="Load B outright">Take B</button>
+        </div>
+        <div id="compare-report" class="compare-report"></div>
+        <div id="compare-morph-row" class="compare-morph" hidden>
+          <div class="compare-morph-head">
+            <span class="compare-label">Morph A → B</span>
+            <span id="compare-morph-value" class="meta">0%</span>
+            <span id="compare-morph-note" class="meta"></span>
+            <button id="compare-take-morph" class="btn btn-small" title="Load the palette at this point on the morph">Take this</button>
+          </div>
+          <input id="compare-morph" type="range" min="0" max="100" step="1" value="0" />
+          <canvas id="compare-morph-scene" class="compare-scene"></canvas>
+          <div id="compare-morph-strip"></div>
+        </div>
+        <p class="picker-hint">
+          Numbers travel and enums snap at the halfway mark, so a morph that jumps rather than
+          slides was separated by a scheme, not by a knob — and you can see which part of the
+          picture moved.
+        </p>
+      </div>
       <div id="picker" class="scroll picker-body" hidden>
         <canvas id="picker-canvas" class="picker-canvas"></canvas>
         <div class="picker-status">
@@ -222,6 +259,8 @@
         <div class="pane-head-controls">
           <span id="palette-meta" class="meta"></span>
           <select id="swatch-arrange" title="How the swatches are grouped — the same colours, ordered for a different question"></select>
+          <button id="wheel-btn" class="btn btn-small"
+                  title="Pick the palette's hues on a colour wheel instead of by angle">Hues</button>
           <button id="sizes-btn" class="btn btn-small"
                   title="Compare this palette at 8, 16, 24, 32, 48 and 64 colours — click one to use it">Sizes</button>
         </div>

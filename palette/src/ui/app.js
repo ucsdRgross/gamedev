@@ -22,7 +22,9 @@ import { createHero } from './hero.js';
 import { createPicker } from './picker.js';
 import { createRecolorGallery } from './recolor.js';
 import { createSizeSweep } from './sizes.js';
+import { createHueWheel } from './wheel.js';
 import { createStart } from './start.js';
+import { createCompare } from './compare.js';
 import { createSaveStore, recordRing } from './saves.js';
 import { describePalette, paramDiff, summarizeDiff, autoName } from '../core/describe.js';
 import { sceneUsage } from '../scenes/usage.js';
@@ -45,6 +47,7 @@ function boot() {
     desc: $('palette-desc'),
     changeNote: $('change-note'),
     sizesBtn: $('sizes-btn'),
+    wheelBtn: $('wheel-btn'),
     seedInput: $('seed-input'),
     seedCopy: $('seed-copy'),
     undo: $('undo'),
@@ -106,6 +109,25 @@ function boot() {
     variantsStrength: $('variants-strength'),
     variantsScene: $('variants-scene'),
     variantsMore: $('variants-more'),
+    tabCompare: $('tab-compare'),
+    compare: $('compare'),
+    compareControls: $('compare-controls'),
+    compareA: $('compare-a'),
+    compareB: $('compare-b'),
+    comparePin: $('compare-pin'),
+    compareSource: $('compare-source'),
+    compareStatus: $('compare-status'),
+    compareReport: $('compare-report'),
+    comparePaste: $('compare-paste'),
+    compareHow: $('compare-how'),
+    compareTakeAll: $('compare-take-all'),
+    compareTakeMorph: $('compare-take-morph'),
+    compareMorphRow: $('compare-morph-row'),
+    compareMorph: $('compare-morph'),
+    compareMorphValue: $('compare-morph-value'),
+    compareMorphNote: $('compare-morph-note'),
+    compareMorphScene: $('compare-morph-scene'),
+    compareMorphStrip: $('compare-morph-strip'),
     tabPicker: $('tab-picker'),
     picker: $('picker'),
     pickerControls: $('picker-controls'),
@@ -378,6 +400,41 @@ function boot() {
       pickImage: () => io.pickImage(),
       useAsTarget: (palette) => recolor.addTarget(palette),
       onPicked: (tab) => showTab(tab),
+      // Shift-click a card (UX_PLAN U5.2, finally possible now U6.2 exists): hold it against
+      // what you have instead of taking it, which is the question you actually had.
+      compareWith: (source) => {
+        showTab('compare');
+        compare.setB(source);
+      },
+    },
+  });
+
+  const compare = createCompare({
+    a: dom.compareA,
+    b: dom.compareB,
+    pinA: dom.comparePin,
+    source: dom.compareSource,
+    status: dom.compareStatus,
+    report: dom.compareReport,
+    pasteB: dom.comparePaste,
+    howTo: dom.compareHow,
+    takeAll: dom.compareTakeAll,
+    takeMorph: dom.compareTakeMorph,
+    morphRow: dom.compareMorphRow,
+    morph: dom.compareMorph,
+    morphValue: dom.compareMorphValue,
+    morphNote: dom.compareMorphNote,
+    morphScene: dom.compareMorphScene,
+    morphStrip: dom.compareMorphStrip,
+  }, {
+    actions: {
+      getState: () => state,
+      applyParams: (params, source) => applyParamSet(params, source),
+      fitTo: (hexes, opts) => io.fitTo(hexes, opts),
+      listSaves: () => store.list(),
+      readSave: (name) => store.read(name),
+      listExternal: () => recolor.listTargets(),
+      readExternal: (id) => recolor.readTarget(id),
     },
   });
 
@@ -398,6 +455,7 @@ function boot() {
     { name: 'start', tab: dom.tabStart, body: dom.start, controls: dom.startControls },
     { name: 'gallery', tab: dom.tabGallery, body: dom.gallery, controls: dom.galleryControls },
     { name: 'variants', tab: dom.tabVariants, body: dom.variants, controls: dom.variantsControls },
+    { name: 'compare', tab: dom.tabCompare, body: dom.compare, controls: dom.compareControls },
     { name: 'picker', tab: dom.tabPicker, body: dom.picker, controls: dom.pickerControls },
     { name: 'recolor', tab: dom.tabRecolor, body: dom.recolor, controls: dom.recolorControls },
   ];
@@ -414,6 +472,7 @@ function boot() {
     start.setActive(name === 'start');
     hero.setActive(name === 'gallery');
     variants.setActive(name === 'variants');
+    compare.setActive(name === 'compare');
     picker.setActive(name === 'picker');
     recolor.setActive(name === 'recolor');
   }
@@ -442,6 +501,8 @@ function boot() {
     variants.render(palette);
     picker.render(palette);
     recolor.render(palette, src.params);
+    compare.render();
+    wheel.refresh();
     if (!transient) { io.updateSeed(palette.seed); recordSettled(); }
     renderMeta(src.params);
   }
@@ -482,6 +543,25 @@ function boot() {
     onPick: (size) => {
       setParam('color_count', size);
       noteChange(`Colour count → ${size}`);
+    },
+  });
+
+  const wheel = createHueWheel({
+    button: dom.wheelBtn,
+    getState: () => state,
+    getPalette: () => palette,
+    // `source` is null mid-drag: the pin coalesces into one history entry, exactly as a
+    // slider drag does, so dragging a pin around the wheel is one undo and not forty.
+    setParams: (patch, source) => {
+      const next = { ...state.params };
+      for (const [name, value] of Object.entries(patch)) {
+        const spec = PARAM_BY_NAME.get(name);
+        next[name] = spec ? coerceParam(spec, value) : value;
+      }
+      state = { ...state, params: next };
+      regenerate();
+      commit(source === null);
+      if (source) noteChange(source);
     },
   });
 

@@ -152,8 +152,12 @@ test('presentation metadata does not touch the seed payload', () => {
   // index of every parameter must be exactly what the schema declared.
   const names = PARAMS.map((p) => p.name);
   assert.equal(names[0], 'color_count');
-  assert.equal(names[names.length - 1], 'remap_context_bias');
+  // Update this ONLY when appending deliberately. It last moved when the custom hue pins
+  // (U6.3) were appended after `remap_context_bias`; everything before them is untouched,
+  // which is what keeps every `PAL1-` seed ever pasted decoding to the same palette.
+  assert.equal(names[names.length - 1], 'custom_hue_6');
   assert.equal(names.indexOf('seed'), 57);
+  assert.equal(names.indexOf('remap_context_bias'), names.indexOf('custom_hue_count') - 1);
 });
 
 test('defaults normalise to themselves', () => {
