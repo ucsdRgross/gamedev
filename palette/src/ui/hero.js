@@ -23,6 +23,7 @@ import { applyViewSpec } from '../core/analysis.js';
 import { SCENES, SCENE_BY_ID } from '../scenes/index.js';
 import { recolorFrames } from '../core/recolor/index.js';
 import { recolorOptions } from './recolor.js';
+import { option } from './dom.js';
 
 /** What the hero opens on: the crowded world mockup, the scene closest to a real screen. */
 const DEFAULT_SCENE = 'world-screen';
@@ -70,10 +71,7 @@ export function createHero(dom, { refs } = {}) {
         group.label = s.category;
         dom.scene.appendChild(group);
       }
-      const o = document.createElement('option');
-      o.value = s.id;
-      o.textContent = s.title;
-      group.appendChild(o);
+      group.appendChild(option(s.id, s.title));
     }
     dom.scene.value = SCENE_BY_ID.has(scene) ? scene : DEFAULT_SCENE;
     scene = dom.scene.value;
@@ -214,16 +212,8 @@ export function createHero(dom, { refs } = {}) {
   refs?.onSourcesChange((sources) => {
     if (dom.art) {
       dom.art.innerHTML = '';
-      const head = document.createElement('option');
-      head.value = '';
-      head.textContent = `Pin reference art… (${sources.length})`;
-      dom.art.appendChild(head);
-      for (const s of sources) {
-        const o = document.createElement('option');
-        o.value = s.id;
-        o.textContent = s.title;
-        dom.art.appendChild(o);
-      }
+      dom.art.appendChild(option('', `Pin reference art… (${sources.length})`));
+      for (const s of sources) dom.art.appendChild(option(s.id, s.title));
     }
     const known = new Set(sources.map((s) => s.id));
     const wanted = art.filter((id) => known.has(id) && !loaded.has(id) && !loading.has(id));

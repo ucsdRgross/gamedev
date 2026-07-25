@@ -16,6 +16,7 @@ import { makeRng } from '../core/rng.js';
 import { describePalette } from '../core/describe.js';
 import { varyParams, randomizeParams, VARY_STRENGTHS } from './randomize.js';
 import { stripElement, drawScene, drawContextMaps } from './strip.js';
+import { fillSelect } from './dom.js';
 
 const TILES = 11; // plus the current palette, which is always tile zero
 
@@ -148,14 +149,3 @@ export function createVariants(dom, { getState, onAdopt }) {
   };
 }
 
-/** Fill a `<select>` from `[value, label]` pairs. */
-function fillSelect(el, pairs) {
-  if (!el) return;
-  el.innerHTML = '';
-  for (const [value, label] of pairs) {
-    const o = document.createElement('option');
-    o.value = value;
-    o.textContent = label;
-    el.appendChild(o);
-  }
-}

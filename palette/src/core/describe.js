@@ -15,6 +15,7 @@
 
 import { PARAMS, PARAM_BY_NAME, BASIC_PARAM_NAMES, optionLabel } from './params.js';
 import { rampsOf } from './analysis.js';
+import { meanHue } from './oklch.js';
 
 const BASICS = new Set(BASIC_PARAM_NAMES);
 
@@ -39,19 +40,6 @@ export function hueName(h) {
 
 /** Mean of an array, or 0 for an empty one. */
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-
-/** Circular mean of hue angles in degrees. */
-function meanHue(hs) {
-  if (!hs.length) return 0;
-  let x = 0;
-  let y = 0;
-  for (const h of hs) {
-    x += Math.cos((h * Math.PI) / 180);
-    y += Math.sin((h * Math.PI) / 180);
-  }
-  const a = (Math.atan2(y, x) * 180) / Math.PI;
-  return ((a % 360) + 360) % 360;
-}
 
 /** Pick the band a value falls in from `[[limit, word], …]`, last word as the fallback. */
 function band(value, table) {

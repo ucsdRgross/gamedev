@@ -128,7 +128,8 @@ writes PNGs with stored DEFLATE blocks specifically so it needs no `zlib`.
 | `allocate.js` | Budget → structure. Derived hue count, the twelve rounds, deepening |
 | `repair.js` | Distance / separation / uniqueness constraints |
 | `roles.js` | Stable slot naming, semantic role assignment |
-| `params.js` | The 58-parameter schema. **Single source of truth** |
+| `params.js` | The 79-parameter schema. **Single source of truth**, and append-only: the index of a field *is* its position in the `PAL1-` seed payload |
+| `paramui.js` | The label / hint / end-label / option-label text for every parameter, merged onto the schema by `params.js`. Deliberately a separate file: wording is edited constantly and `params.js` is where a stray edit silently reinterprets every seed ever pasted |
 | `seed.js` | `PAL1` encode/decode |
 | `generate.js` | The pipeline, in the fixed order of plan §2.7 |
 | `presets.js` | 8 emulation + 12 mood parameter sets |
@@ -138,10 +139,21 @@ writes PNGs with stored DEFLATE blocks specifically so it needs no `zlib`.
 | `dither.js` | Floyd–Steinberg + Bayer 4×4/8×8, perceptual nearest-match (Phase 3) |
 | `raster.js` | DOM-free RGB8 pixel buffer + drawing primitives — the scene surface (Phase 3, §10) |
 | `layout/` | The picker: grid topologies, the neighbour-ΔE objective, 15 layout variants, rendering (Phase 4, §11) |
+| `recolor/` | Reference-image recolouring: the indexed remap, the per-pixel path, palette extraction, context inference (§12) |
+| `fit.js` | Parameters from an image — the search that inverts the generator (§13) |
+| `preview.js` | Parameter sweeps ("what does this knob do", as five palettes), plus `paramEffect`/`findClamp`: whether a control changes anything from where it sits, and what is holding it down if not |
+| `describe.js` | The palette in one line of English, `paramDiff`/`summarizeDiff` for explaining a jump, and `autoName` for one-click Keep |
+| `colornames.js` | 111 named colours, `nearestName`, and an honest procedural description when nothing is within ΔE 5 |
+| `arrange.js` | Regrouping the swatches (Grid / Ramps / by lightness / by hue). The invariant is conservation: every mode returns every entry exactly once |
+| `morph.js` | Interpolating one parameter set toward another — numbers travel, angles take the short way, enums and `seed` snap at halfway |
+| `hexlist.js` `library.js` | Parsing pasted colours, and the save-name rules plus the autosave ring |
+| `diagnose.js` | The report card's measurements, each with candidate fixes that are generated and re-measured before being offered (U7.1) |
+| `additions.js` | The dither reference's gap analysis at a configuration the palette pane can afford, plus the one edit that turns a suggestion into a locked slot |
 
-Phase 2/3 also added `src/ui/` (`app sliders swatches history io gallery`), `src/scenes/`
-(`index util` + 8 category files, all DOM-free), `tools/serve.mjs`, and `tools/build.mjs`.
-All of these are in the plan's §7 layout except `src/scenes/util.js` and the file below.
+Phase 2/3 added `src/ui/` and `src/scenes/` (`index util usage` + 9 category files, all
+DOM-free), `tools/serve.mjs`, and `tools/build.mjs`; the usability phase (see
+[UX_PLAN.md](UX_PLAN.md)) added the core modules listed above and roughly doubled `src/ui/`.
+All of these are in the plan's §7 layout except `src/scenes/util.js` and the files below.
 
 ### Files the plan's §7 layout does not list
 
@@ -441,12 +453,16 @@ Sub-modules are dumb views built once and fed the palette:
 
 | Module | Contract |
 |---|---|
-| `sliders.js` | `createSliders(el, {onChange})` → `{ render(params) }`. Built from `PARAMS`; never hand-written. |
-| `swatches.js` | `createSwatches(el, actions)` → `{ render(palette) }`. `actions` = toggleLock/setOverride/clearOverride/copy. |
-| `history.js` | `createHistory(el, {onRestore,onChange})` → push/replaceCurrent/undo/redo/canUndo/canRedo. |
-| `io.js` | `createIO(dom, actions)` → `{ updateSeed, refreshSaves }`. Owns seed field, URL hash, presets, saves, import, exports. |
-| `randomize.js` | `randomizeParams(current, rng)` — DOM-free so it is testable; the Randomize skip rules live here (see below). |
-| `gallery.js` `picker.js` `recolor.js` | The three middle-pane tabs — 34-scene gallery (§10), picker (§11), reference recolouring (§12). |
+| `sliders.js` | `createSliders(el, {onChange, toolbar, getState})` → `{ render(params), markStuck, clearStuck }`. Built from `PARAMS`; never hand-written. |
+| `swatches.js` | `createSwatches(el, actions, {modeSelect, pinned})` → `{ render(palette), highlight(ids) }`. `actions` = toggleLock/setOverride/clearOverride/copy/editColor/nudge/clearPins. |
+| `history.js` | `createHistory(el, {onRestore,onChange})` → push/replaceCurrent/undo/redo/canUndo/canRedo/serialize/restore. |
+| `io.js` | `createIO(dom, actions)` → `{ updateSeed, refreshSaves, loadSave, save, fitTo, pickImage }`. Owns the seed field, URL hash, presets, saves, import and exports. The last four are returned so the Start tab drives the same code paths instead of copying them. |
+| `saves.js` | `createSaveStore()` → one interface over two backends: the dev server's `saved/` folder when one answers, `localStorage` when it does not. `where()` reports which, and the difference is stated rather than hidden. |
+| `randomize.js` | `randomizeParams(current, rng)` and `varyParams(current, rng, {strength})` — DOM-free so they are testable; the Randomize skip rules live here (see below). |
+| `dom.js` | `option(value, label)` / `fillSelect(el, pairs)`. The one place a `<select>` gets filled, so the next tab does not invent an eighth way to do it. |
+| `strip.js` | Shared drawing — palette strips, scene thumbnails, context-map thumbnails — used by the slider sweeps, the variant grid and the Start tab. |
+| `gallery.js` `picker.js` `recolor.js` `variants.js` `compare.js` `start.js` | The six middle-pane tabs: 36-scene gallery (§10) with `hero.js` pinned above it, picker (§11), reference recolouring (§12), the variant grid, Compare and the Start screen. Only one is built and animating at a time. |
+| `report.js` `suggest.js` `coloredit.js` `sizes.js` `wheel.js` | The palette pane's tools: the report card over `core/diagnose.js`, "colours worth adding" over `core/additions.js`, the OKLCH swatch editor, the size sweep and the hue wheel. |
 
 ### Decisions Phase 3/4 should not re-litigate
 

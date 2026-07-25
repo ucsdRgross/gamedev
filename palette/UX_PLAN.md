@@ -15,7 +15,7 @@ Not in scope (not approved): 12, 16, 23, 24, 25, 29, 30.
 ## The goal, restated as an acceptance test
 
 > Sit down with a look in mind, and reach it by **picking and steering** rather than by
-> reading 72 tooltips and dragging sliders one at a time.
+> reading 79 tooltips and dragging sliders one at a time.
 
 ## Hard constraints (inherited — do not break)
 
@@ -139,18 +139,18 @@ Shared machinery the later phases lean on. All the computation is core; only dra
 
 ## Phase U7 — Correctness surface · items 14, 35, 15, 20, 8
 
-- [ ] **U7.1** `src/core/diagnose.js`: near-duplicate pairs, value holes, hue gaps, unused
+- [x] **U7.1** `src/core/diagnose.js`: near-duplicate pairs, value holes, hue gaps, unused
       colours (`sceneUsage` counts passed in), CVD collisions, contrast failures,
       requested-vs-achieved divergence — each with a machine-readable suggested fix.
-- [ ] **U7.2** Report card in the palette pane rendering U7.1, each finding with a one-click
+- [x] **U7.2** Report card in the palette pane rendering U7.1, each finding with a one-click
       fix that applies the parameter change or highlights the swatches.
-- [ ] **U7.3** Silent no-op detection (item 35): when a parameter move produces an identical
+- [x] **U7.3** Silent no-op detection (item 35): when a parameter move produces an identical
       palette, mark the control "clamped".
-- [ ] **U7.4** Dither reference's "colours worth adding" surfaced in the palette pane, with
+- [x] **U7.4** Dither reference's "colours worth adding" surfaced in the palette pane, with
       "add as a locked slot".
-- [ ] **U7.5** Semantic names in the CSS export (`--color-foliage-mid`), role comments plus
+- [x] **U7.5** Semantic names in the CSS export (`--color-foliage-mid`), role comments plus
       the `PAL1-` seed in `.gpl`/`.hex`. Snapshot review required.
-- [ ] **U7.6** Direct colour editing: OKLCH mini-editor on a swatch, arrow-key nudge,
+- [x] **U7.6** Direct colour editing: OKLCH mini-editor on a swatch, arrow-key nudge,
       eyedropper from any loaded reference image, pinned-colours list with "clear all".
 
 ---
@@ -391,6 +391,104 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     seed rather than as colours, shift-clicking a preset card compares instead of taking it,
     and on the wheel a click pins, a drag moves and a click removes — round-tripping through
     the seed with the palette's hues coming out exactly as pinned.
+
+- **2026-07-24 — U7 done. `npm test` green at 493** (was 460); `npm run build` green
+  (97 modules); `npm run render` green; **snapshots untouched** — nothing in this phase moves a
+  colour. Every phase of the UX plan is now complete.
+  - **The rule the whole phase turns on: a fix is a claim that has been tested.** Every check in
+    `src/core/diagnose.js` exposes a `metric` measurable on *any* palette plus a list of
+    candidate patches, and a candidate is attached to a finding only after being **generated and
+    re-measured**. "Raise the minimum distance to 5.5" is therefore a measurement, not a
+    plausible-sounding suggestion; a check with no candidate that works says so and offers the
+    swatches instead. `test/diagnose.test.js` re-derives that property independently of the
+    code that produces it. The same discipline runs through `findClamp` (U7.3), which names a
+    culprit only after changing it visibly revives the dead control.
+  - **A fix has to remove a quarter of the problem** (`FIX_GAIN = 0.75`). Measured over the
+    presets, a merely-strictly-better bar offered "raise the lightness step" against eight
+    colour-vision collisions on the strength of removing one — a palette-wide change sold as a
+    fix for something it barely touches.
+  - **Thresholds were measured against the twenty-one presets, not chosen**, because a
+    diagnostic that fires on everything is noise. The numbers are written beside each constant;
+    the ones that changed a design decision: the closest pair in a preset sits at a **median ΔE
+    of 4.05** (i.e. exactly on the default `min_delta_e`, because repair puts it there), so the
+    absolute near-duplicate floor is 2.5 and fires only on a palette whose own minimum was
+    turned down. The largest gap in a preset's value ladder has a **median of 0.12 and a p75 of
+    0.18** once the anchors are excluded, so a hole is `max(0.12, 3 × the average step)` and is
+    size-aware. A hue gap needs to be **both** over 90° **and** twice the palette's other gaps —
+    a four-family preset's widest gap runs 46–102°, so 90° alone calls ordinary palettes faulty,
+    and the ratio test is what separates "a hue is missing" from "this palette covers a
+    deliberately narrow arc". Colour-vision collisions are gated at ΔE ≥ 10 → under 3, and
+    capped at two findings: the median preset has two and the p75 has six.
+  - Result: four presets come back completely clean, the worst reports eight findings, and the
+    whole card is 11–120 ms. Roughly two thirds of findings carry a verified fix.
+  - **Three traps worth not re-deriving.**
+    (1) *Fourteen parameters legitimately change no colour.* The whole `recolor` group is
+    seed-encoded so a pasted seed reproduces the view, but it decides how images are re-rendered,
+    not what the palette holds. Measuring those against the palette reports fourteen dead sliders
+    that are working exactly as documented, which is how a warning stops being read —
+    `decidesColor()` exempts them, and a test asserts the exemption is *true* rather than
+    convenient.
+    (2) *A dead control is sometimes held down by two knobs at once.* `custom_hue_1` does nothing
+    until `hue_scheme` is Custom **and** `custom_hue_count` is above zero; naming either alone
+    sends somebody to a knob that changes nothing. `findClamp` searches singles first, then pairs
+    of gates (enums, bools, small counts) under a generation budget. It also has to reach
+    outside the parameter's own group — `dither_evenness` (quality) is held down by `l_curve`
+    (lightness), two panels away.
+    (3) *The palette pane ran out of height.* The report card and the suggestion list together
+    crushed the swatch grid to 16 px and pushed the export drawer 44 px off the bottom of the
+    pane. The fix is structural rather than cosmetic: the report card is a `<details>` that is
+    **closed by default** (its summary line — "6 findings · 5 medium · 1 low" — *is* the report
+    card at a glance, and whether it is open is remembered), both lists are capped and scroll,
+    `#swatches` has a one-row floor, and the export drawer is now shrinkable because its body
+    already scrolled at 42vh. Worst case on a 720 px-tall window with everything expanded is now
+    5 px rather than 148.
+  - `suggestAdditions` (`src/core/additions.js`) is the picker's own gap analysis at a
+    configuration the palette pane can afford: dropping the 400,000-trial hull estimate takes it
+    from ~800 ms to ~200 ms and **changes none of the suggestions**, because they are computed
+    from the residual coverage and not from the floor — pinned by a test. `addColorSlot` raises
+    `color_count` by one and locks the suggestion into whichever *new* slot is nearest it, and
+    returns null at 64 rather than quietly replacing an existing colour.
+  - Exports: `.gpl` and `.hex` carry the `PAL1-` seed and the semantic assignments as comments
+    (the colour lines are untouched, so both still round-trip), and the CSS gains a third block
+    naming each semantic role's whole ramp — `--pal-foliage-mid` is item 20's own example, and
+    it is the name a stylesheet actually wants to write. `parseHex` now strips trailing `//`
+    comments, which is what lets a hex list stay one colour per line and still say what each
+    colour is for.
+  - Verified live on :5299, not only in tests: the report card's Fix button removed the value
+    hole it named and the summary went 6 findings → 5; Show flagged exactly the two slots a
+    finding named and toggled off again; Look found three additions in 216 ms and Add put
+    `#8454B0` into `bridge_0` at 33 colours; the OKLCH editor reported the sRGB edge at C 0.247
+    and warned when the slider asked for 0.400; arrow keys nudged a swatch through L, hue and
+    chroma while keeping focus across the grid rebuild; Clear all released both pins and restored
+    the generated colour; and moving `chroma_cap` with `chroma_base` below it produced
+    "clamped by Saturation" with the verified value in the tooltip.
+
+- **2026-07-24 — cross-phase consistency pass.** Each phase was written by a different agent,
+  so the whole project was read for drift once U7 landed. `npm test` still green at 493,
+  `npm run build` and `npm run render` green, snapshots untouched, and the app re-driven
+  afterwards.
+  - **Code.** `layout/reach.js` exported a `rampsOf` that collided by name with `analysis.js`'s
+    while returning something else entirely (slot *indices*, any layer with more than one step,
+    versus entry objects from the foreground and background layers) — renamed `rampIndices`,
+    with a comment saying which to reach for and why both exist. `clamp` had a second
+    implementation in `layout/render.js` and `meanHue` a second one in `layout/structural.js`;
+    both now come from `oklch.js`, where `meanHue` also gained the warning about what it is bad
+    for. New `src/ui/dom.js` (`option` / `fillSelect`) replaced two byte-identical private
+    `fillSelect` copies and seven hand-rolled `<option>` loops — nine modules had each invented
+    their own way to fill a dropdown, which is what a UI grown one tab at a time looks like.
+  - **Docs.** README, ARCHITECTURE §2 and §9, PROGRESS and HANDOFF were all still describing the
+    tool as it was *before* U1: 58 parameters (79), 34 scenes (36), 370 tests (493), a `src/ui/`
+    list missing half the app, "the three middle-pane tabs" (six), and a standalone build that
+    "cannot save" (U5 gave it a `localStorage` backend). The README's "Running it" section now
+    describes what the app actually is — Start, Variants, Compare, the hero, the report card,
+    the colour editor — rather than only the sliders it opened with. PROGRESS says plainly that
+    it covers the original build and points at this file for the rest.
+  - **Deliberately not changed.** The three `create*` signatures in `src/ui/` (`(dom, opts)`,
+    `(container, actions, opts)`, and popovers that build their own element) are a real pattern
+    rather than drift — the shape follows whether the module is handed elements or makes them.
+    `src/scenes/util.js` keeps its own role accessors. The historical numbers in PLAN.md,
+    IMPROVEMENTS.md and the dated notes above were left alone: they are records of what was
+    true when they were written, and rewriting them would destroy the only evidence of it.
 
 ### Open note for U6.1 — the fitter's own hue-wrap bug — RESOLVED 2026-07-24
 

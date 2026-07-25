@@ -267,6 +267,34 @@
       </div>
       <p id="palette-desc" class="palette-desc" title="What this palette is, read off the colours it produced"></p>
       <div id="warnings" class="warnings" hidden></div>
+      <!-- The report card: the faults the generator is not required to prevent, each with the
+           knob that moves it. Every fix has been generated and re-measured before it is
+           offered — see src/core/diagnose.js. -->
+      <!-- Closed by default: the summary line IS the report card at a glance, and the pane's
+           height belongs to the swatches. Whether it is open is remembered. -->
+      <details id="report" class="report">
+        <summary class="report-head">
+          <span class="report-title"
+                title="Near-duplicates, holes in the value ladder, hue gaps, colours no scene uses, colour-vision collisions, contrast failures, and colours sRGB could not give you">Report card</span>
+          <span id="report-summary" class="meta"></span>
+        </summary>
+        <div id="report-list" class="report-list"></div>
+      </details>
+      <!-- What the dither reference says is missing (U7.4 — item 15), surfaced where the
+           decision is made rather than two tabs deep behind a Rebuild button. -->
+      <div id="suggest" class="suggest">
+        <div class="report-head">
+          <span class="report-title"
+                title="The colours that would most close the gaps this palette cannot dither its way across">Colours worth adding</span>
+          <button id="suggest-run" class="btn btn-small"
+                  title="Work out which colours this palette cannot reach, even by mixing its own — about a fifth of a second">Look</button>
+          <span id="suggest-note" class="meta"></span>
+        </div>
+        <div id="suggest-list" class="suggest-list"></div>
+      </div>
+      <!-- Which colours are being held by hand (U7.6 — item 8): a lock is invisible unless you
+           scan every card, so the count is stated and releasing them all is one click. -->
+      <div id="pinned" class="pinned-row" hidden></div>
       <div id="swatches" class="scroll"></div>
       <div id="history-wrap" class="history-wrap">
         <span class="history-label">History</span>

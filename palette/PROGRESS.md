@@ -1,7 +1,10 @@
 # Build Progress
 
-Source of truth for what is done. Check off each task **the moment its "done when"
-condition is actually met** — a green test, not a written file.
+Source of truth for what is done **in the original build**. Check off each task **the moment
+its "done when" condition is actually met** — a green test, not a written file.
+
+The usability phase built on top of it keeps its own tracker, [UX_PLAN.md](UX_PLAN.md)
+(U1–U7, all complete); anything this file does not mention is recorded there.
 
 If this file is missing or looks stale, rebuild it using the state-detection
 procedure in [PLAN.md](PLAN.md) §18. Verify with `npm test`, never by trusting
@@ -9,11 +12,12 @@ that a file exists.
 
 ## Every phase in the plan is complete and gated.
 
-`npm test` is green at **370 tests** (~6 minutes; the 10,000-case fuzz dominates).
+`npm test` is green at **493 tests** (~6 minutes; the 10,000-case fuzz dominates) — 370 of
+them at the end of this build, the rest added by the usability phase.
 **Double-click `start.cmd`** to run the app — no command line anywhere. Double-clicking it
 again is a **restart**: it takes the port back from the previous instance (ping + shutdown
 handshake in `serve.mjs`; never touches a non-palette server on the same port). It serves the
-parameters, the 34-scene gallery, the picker (colour-space maps by default, the 15
+parameters, the 36-scene gallery, the picker (colour-space maps by default, the 15
 arrangement layouts behind the view selector), and the recolour page — whose **Rescan**
 button re-reads `reference/` and `palettes/` so files copied in by hand appear without a
 restart.

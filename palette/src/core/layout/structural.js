@@ -6,7 +6,7 @@
 // field beats it, because you can *predict* where a colour will be. Ramp-rows is the
 // explicit baseline the optimized layouts have to beat.
 
-import { oklchToOklab } from '../oklch.js';
+import { oklchToOklab, meanHue } from '../oklch.js';
 import { assignByCapacity, ensureCoverage, fillRuns, spiralOrder } from './assign.js';
 
 const WHEEL_BANDS = 3;
@@ -31,17 +31,6 @@ function rampGroups(palette) {
   });
   out.sort((a, b) => a.hue - b.hue || a.light - b.light);
   return out;
-}
-
-/** Circular mean of hue angles in degrees. */
-function meanHue(hues) {
-  let x = 0;
-  let y = 0;
-  for (const h of hues) {
-    x += Math.cos((h * Math.PI) / 180);
-    y += Math.sin((h * Math.PI) / 180);
-  }
-  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
 /**

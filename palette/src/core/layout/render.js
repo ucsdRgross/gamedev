@@ -16,7 +16,7 @@
 // staircases become curves. Small radius, iterated — a big radius costs (2r+1)² per pixel
 // and buys nothing a few more cheap passes do not.
 
-import { oklabToOklch, oklchToOklab, deltaEOK } from '../oklch.js';
+import { oklabToOklch, oklchToOklab, deltaEOK, clamp } from '../oklch.js';
 import { Raster } from '../raster.js';
 import { patternPatch } from '../patterns.js';
 import { DEFAULT_SATURATIONS as DEFAULT_MAP_SATS } from './colorspace.js';
@@ -330,10 +330,6 @@ function shadeBetween(cache, palette, a, b) {
   }
   cache.set(key, best.rgb8);
   return best.rgb8;
-}
-
-function clamp(v, lo, hi) {
-  return v < lo ? lo : v > hi ? hi : v;
 }
 
 /**

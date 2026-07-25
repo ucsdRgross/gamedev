@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import {
   BANDING_DE, BLEND_DENOM, blendColor, buildColorIndex, buildReach, buildReachMap,
   buildReachSlices, buildReferenceSlice, catalogueSections, colorSpaceSamples, entryLinears,
-  patternWeights, patternsFor, preferredPattern, rampsOf, recipeText, roughnessBand,
+  patternWeights, patternsFor, preferredPattern, rampIndices, recipeText, roughnessBand,
 } from '../src/core/layout/reach.js';
 import { ditherSheet, pickPatchAt } from '../src/core/layout/render.js';
 import { hslToSrgb, mapSample } from '../src/core/layout/colorspace.js';
@@ -270,9 +270,9 @@ test('the catalogue covers every pattern, both roughness extremes, and 3- and 4-
   }
 });
 
-test('rampsOf finds the ramps without importing the scene helpers', () => {
+test('rampIndices finds the ramps without importing the scene helpers', () => {
   const palette = paletteAt(32);
-  const ramps = rampsOf(palette);
+  const ramps = rampIndices(palette);
   assert.ok(ramps.length > 0);
   for (const ramp of ramps) {
     assert.ok(ramp.entries.length >= 2);
@@ -374,7 +374,7 @@ test('the roughness bands sit where the measured ramp steps put them', () => {
   // that caught the first, guessed, boundary of 10.
   const palette = paletteAt(32);
   const steps = [];
-  for (const ramp of rampsOf(palette)) {
+  for (const ramp of rampIndices(palette)) {
     for (let i = 1; i < ramp.entries.length; i++) {
       steps.push(dist(palette.entries[ramp.entries[i]].lab, palette.entries[ramp.entries[i - 1]].lab) * 100);
     }

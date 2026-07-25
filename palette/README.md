@@ -1,19 +1,22 @@
 # Pixel-Art Palette Creator
 
 Procedural retro palette generator in OKLCH space. Generates structurally-sound
-pixel-art palettes from 58 tunable parameters, proves they work by applying them to a
+pixel-art palettes from 79 tunable parameters, proves they work by applying them to a
 gallery of test visuals, and exports to Godot, Aseprite, and the web.
 
-**Status: complete.** Generator, browser app, 34-scene test gallery, artist's-palette
+**Status: complete.** Generator, browser app, 36-scene test gallery, artist's-palette
 picker (colour-space maps + a dithering reference + 15 arrangement layouts), and
 reference-image recolouring — including recolouring into your own external palette images —
-all built and gated (370 tests green).
+all built and gated. The usability phase on top of it (variants, compare, the start screen,
+one-click keep, the hue wheel, the report card) is complete too: **493 tests green**.
 
 | Document | What it is |
 |---|---|
 | [PLAN.md](PLAN.md) | The specification — colour theory, algorithms, formulas, task list |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The `Palette` contract, design decisions, per-phase notes (§9 app, §10 gallery, §11 picker, §12 recolouring, §13 fitter, §14 dithering reference) |
-| [PROGRESS.md](PROGRESS.md) | Task-by-task state. Source of truth for what is done |
+| [PROGRESS.md](PROGRESS.md) | Task-by-task state of the original build. Source of truth for what is done |
+| [UX_PLAN.md](UX_PLAN.md) | The same, for the usability phase (U1–U7) — what each one changed and what surprised |
+| [IMPROVEMENTS.md](IMPROVEMENTS.md) | The usefulness audit that phase implements — 35 numbered items |
 | [COLOR_GUIDE.md](COLOR_GUIDE.md) | Where each hue lives in sRGB — saturation ceilings, the lightness each colour peaks at, and which layer to pick colours from |
 
 New to the project? Read PLAN.md for *what* is being built, then ARCHITECTURE.md for
@@ -36,13 +39,15 @@ The rest is for working on the code.
 npm test
 ```
 
-370 tests: colour-space round-trips against published reference values, gamut mapping,
+493 tests: colour-space round-trips against published reference values, gamut mapping,
 bit-depth quantisation, generator invariants across every palette size from 4 to 64, seed
 round-trips, export round-trips, the dev-server API, the raster/analysis/dither modules, a
-34-scene smoke test, the picker layouts and colour-space maps, the **dither patterns and the
+36-scene smoke test, the picker layouts and colour-space maps, the **dither patterns and the
 reachable-colour set**, the recolour paths (indexed, quantize, external-palette extraction), the
-GIF codec, the **parameters-from-image fitter**, the Randomize exclusions, golden snapshots, and
-a 10,000-case fuzz. Takes about 6 minutes;
+GIF codec, the **parameters-from-image fitter**, the Randomize exclusions, the parameter metadata,
+the sweeps and dead-control detection, the palette description and colour names, the arrangement
+and morph invariants, the **diagnostics and every fix they offer**, golden snapshots, and a
+10,000-case fuzz. Takes about 6 minutes;
 `PALETTE_FUZZ_N=200 npm test` shortens the fuzz while iterating.
 
 ```bash
@@ -53,12 +58,39 @@ Starts the dependency-free dev server (default `http://localhost:5173/`) and ser
 browser app: live parameter sliders, a swatch grid with lock/override, undo/redo and a
 history strip, seed field with URL-hash sync, save/load against `saved/*.json`, all eight
 export formats, a **Fit to image…** button (drop a palette image — a swatch strip, a lospec
-strip, or any art — and it searches the parameters that best reproduce it), the **34-scene
-test gallery** (category filter, colour-vision views, zoom,
+strip, or any art — and it searches the parameters that best reproduce it), the **36-scene
+test gallery** (category filter, colour-vision views including side-by-side pairs, zoom,
 animation, drag-and-drop photo quantization), the **artist's-palette picker** (colour-space
 maps by default, per-context maps, the **dithering reference**, and 15 arrangement layouts behind
 a selector), and the **recolour page** — every reference image re-rendered in the generated
 palette, animations included, playing.
+
+The point of the app, though, is to reach a look by **picking and steering** rather than by
+reading tooltips and dragging sliders one at a time, so most of it is not sliders:
+
+- **Start** — every route into a palette as pictures: mood chips, the 21 presets as thumbnails,
+  the palettes you kept, the ones you merely passed through, and a box to paste hexes into. It
+  opens by itself only for a genuine first-time visitor.
+- **Variants** — a dozen live variations of the palette you have, each drawn as its six context
+  colour-space maps. Click one to take it and the next dozen re-centre on that; ten clicks get
+  somewhere no amount of dragging will. **Vary** in the topbar is the same move for one step.
+- **Compare** — pin A, hold it against a preset, a save, a seed, a palette image or pasted
+  colours. It reports the ranked parameter differences, morphs A→B on a slider (numbers travel,
+  enums snap at the halfway mark), and runs the fitter *from A* to answer "how do I get there".
+- **Gallery hero** — one scene and any reference art you pin, held above the grid so there is
+  always a real picture on screen while you tune.
+- Every slider carries a plain-English name, a one-line hint, named ends, and a **five-palette
+  sweep on hover**; the panel filters to Basics, to what you have changed, or to a search. A
+  control that is moved and changes nothing says **clamped**, and will go and find which other
+  parameter is holding it down.
+- **Keep** saves in one click under a name read off the colours; **Freeze** stops the palette
+  wobbling while you work; **Before** shows the previous palette in every view.
+- The palette pane holds the **report card** — near-duplicates, holes in the value ladder, hue
+  gaps, colour-vision collisions, contrast failures and colours sRGB could not give you, each
+  with a one-click fix that has been generated and re-measured before being offered — a
+  **Hues** wheel with draggable pins, **Sizes**, and **colours worth adding** from the dither
+  reference. Any swatch opens an OKLCH editor with the live sRGB edge and an eyedropper, or
+  takes arrow-key nudges directly.
 
 The dithering reference answers "am I missing this colour, or can I dither my way to it?" For each
 saturation it shows three maps side by side: the **complete** colormap (the true colours a perfect
@@ -74,7 +106,8 @@ catalogue: every pattern (Bayer 2/4/8/16, blue noise, halftone, checkerboard, li
 stipple) at every ratio, the smooth pairs, the contrasting pairs, and the three- and four-colour
 blends — each shown at 1×, zoomed, and as the flat colour it averages to. Hover any patch for the
 recipe; click to copy it. It builds when you open it and offers **Rebuild** after a palette change
-rather than re-measuring on every slider drag.
+rather than re-measuring on every slider drag. Its gap analysis is also surfaced in the palette
+pane under **Colours worth adding**, where one click adds the suggestion as a locked slot.
 
 ```bash
 npm run render
@@ -92,8 +125,11 @@ npm run build
 ```
 
 Inlines the whole app into one double-clickable `dist/palette_creator.html` (a flat import
-map of base64 data-URL modules — no bundler). Seeds and export/import work there; the
-file-backed save API does not (there is no server behind it).
+map of base64 data-URL modules — no bundler). Seeds, export/import and **Keep** all work
+there: with no server behind it the save store falls back to `localStorage`, and which of the
+two is in use is always stated ("kept in `saved/`" and "kept in this browser" are different
+promises). What the standalone file cannot do is read the `reference/` and `palettes/` folders,
+so reference images have to be dropped in each session.
 
 ```js
 import { generatePalette, paletteHexes } from './src/core/generate.js';
@@ -296,10 +332,10 @@ can set your recolour options once and randomize the palette freely.
 
 | Path | Purpose |
 |---|---|
-| `src/core/` | DOM-free colour maths, generation, `raster`/`analysis`/`dither`/`patterns` — imported by both browser and Node |
+| `src/core/` | DOM-free colour maths, generation, `raster`/`analysis`/`dither`/`patterns`, and the answer-shaped modules the app leans on — `preview` (sweeps, dead controls), `describe`, `colornames`, `arrange`, `morph`, `diagnose`, `additions` — imported by both browser and Node |
 | `src/core/export/` | Output format writers: gpl, pal, hex, lospec, css, json, tres, png |
-| `src/ui/` | Browser app: `app sliders swatches history io randomize gallery picker recolor` |
-| `src/scenes/` | The 34 gallery scenes (DOM-free) + `index` registry + `util` role accessors |
+| `src/ui/` | Browser app: `app dom sliders swatches history io saves start compare wheel randomize gallery hero picker recolor variants sizes strip report suggest coloredit imagefile` |
+| `src/scenes/` | The 36 gallery scenes (DOM-free) + `index` registry + `util` role accessors + `usage` pixel counts |
 | `test/` | `node --test` suite and golden snapshots |
 | `tools/` | Dev server, standalone build, headless renderer, PNG codec, drawing surfaces |
 | `src/core/recolor/` | Reference-image recolouring: indexed remap, quantize, GIF codec, palette extraction |

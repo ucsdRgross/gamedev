@@ -11,6 +11,7 @@ import { decodeSeed } from '../core/seed.js';
 import { presetParams, PRESETS } from '../core/presets.js';
 import { parseJson } from '../core/export/json.js';
 import { makeRng } from '../core/rng.js';
+import { paramEffect } from '../core/preview.js';
 import { randomizeParams, varyParams } from './randomize.js';
 import { createVariants } from './variants.js';
 import { createSliders } from './sliders.js';
@@ -25,6 +26,9 @@ import { createSizeSweep } from './sizes.js';
 import { createHueWheel } from './wheel.js';
 import { createStart } from './start.js';
 import { createCompare } from './compare.js';
+import { createReport } from './report.js';
+import { createSuggest } from './suggest.js';
+import { createColorEditor } from './coloredit.js';
 import { createSaveStore, recordRing } from './saves.js';
 import { describePalette, paramDiff, summarizeDiff, autoName } from '../core/describe.js';
 import { sceneUsage } from '../scenes/usage.js';
@@ -41,8 +45,15 @@ function boot() {
     paramsToolbar: $('params-toolbar'),
     swatches: $('swatches'),
     swatchArrange: $('swatch-arrange'),
+    pinned: $('pinned'),
     history: $('history'),
     warnings: $('warnings'),
+    report: $('report'),
+    reportSummary: $('report-summary'),
+    reportList: $('report-list'),
+    suggestRun: $('suggest-run'),
+    suggestNote: $('suggest-note'),
+    suggestList: $('suggest-list'),
     meta: $('palette-meta'),
     desc: $('palette-desc'),
     changeNote: $('change-note'),
@@ -184,11 +195,24 @@ function boot() {
     getState: () => state,
     onChange: (name, value, opts = {}) => {
       const spec = PARAM_BY_NAME.get(name);
+      const before = currentHexes().join();
       state.params = { ...state.params, [name]: spec ? coerceParam(spec, value) : value };
       regenerate();
       commit(opts.coalesce);
+      noteSilentMove(name, before !== currentHexes().join());
     },
   });
+
+  const setOverride = (id, hex, coalesce = false) => {
+    state.overrides = { ...state.overrides, [id]: hex };
+    regenerate();
+    commit(coalesce);
+  };
+  const clearOverride = (id) => {
+    const n = { ...state.overrides }; delete n[id]; state.overrides = n;
+    regenerate();
+    commit(false);
+  };
 
   const swatches = createSwatches(dom.swatches, {
     toggleLock: (id) => {
@@ -199,20 +223,31 @@ function boot() {
       regenerate();
       commit(false);
     },
-    setOverride: (id, hex) => {
-      state.overrides = { ...state.overrides, [id]: hex };
-      regenerate();
-      commit(false);
-    },
-    clearOverride: (id) => {
-      const n = { ...state.overrides }; delete n[id]; state.overrides = n;
-      regenerate();
-      commit(false);
-    },
+    setOverride,
+    clearOverride,
     copy: async (hex) => {
       try { await navigator.clipboard.writeText(hex); } catch { /* clipboard blocked */ }
     },
-  }, { modeSelect: dom.swatchArrange });
+    editColor: (entry, anchor) => colorEditor.open(entry, anchor),
+    nudge: (entry, ev) => colorEditor.nudge(entry, ev),
+    // Releasing every pin at once (U7.6 — item 8): locks and overrides are invisible until you
+    // scan every card, so the list that counts them also has to be able to undo them.
+    clearPins: () => {
+      state = { ...state, locks: {}, overrides: {} };
+      colorEditor.close();
+      regenerate();
+      commit(false);
+      noteChange('Cleared every locked and overridden colour');
+    },
+  }, { modeSelect: dom.swatchArrange, pinned: dom.pinned });
+
+  const colorEditor = createColorEditor({
+    setOverride,
+    clearOverride,
+    // The eyedropper's fallback samples the reference images the recolour gallery has decoded,
+    // rather than fetching and decoding a second copy of every one of them.
+    refs: { listSources: (...a) => recolor.listSources(...a), framesFor: (...a) => recolor.framesFor(...a) },
+  });
 
   const history = createHistory(dom.history, {
     onRestore: (snapshot) => { state = cloneState(snapshot); regenerate(); persistHistory(); },
@@ -276,6 +311,44 @@ function boot() {
     noteChange(summary ? `${source} — ${summary}` : `${source} — nothing changed`);
   }
 
+  // ---- Dead controls (UX_PLAN U7.3 — item 35) --------------------------
+  // The trigger is the moment it actually goes wrong: a control was moved and every colour
+  // stayed where it was. `paramEffect` then confirms it properly — a *tenth of the range* in
+  // both directions, so a step too fine for the seed's own resolution is not called clamped —
+  // and the badge on the control offers to go and find what is holding it down.
+  //
+  // On a settle rather than immediately: mid-drag every frame would pay for four extra palette
+  // generations, and the interesting question is only ever about where the drag stopped.
+  const STUCK_SETTLE_MS = 250;
+  let stuckTimer = null;
+  function noteSilentMove(name, changedSomething) {
+    clearTimeout(stuckTimer);
+    if (changedSomething) {
+      sliders.markStuck(name, null);
+      return;
+    }
+    stuckTimer = setTimeout(() => {
+      try {
+        const effect = paramEffect(state.params, name, { locks: state.locks, overrides: state.overrides });
+        sliders.markStuck(name, effect.applies ? effect : null);
+      } catch { /* never let a diagnosis break an edit */ }
+    }, STUCK_SETTLE_MS);
+  }
+
+  /** Merge a patch of parameter values into the state as one history step. */
+  function applyPatch(patch, source) {
+    const next = { ...state.params };
+    for (const [name, value] of Object.entries(patch)) {
+      const spec = PARAM_BY_NAME.get(name);
+      next[name] = spec ? coerceParam(spec, value) : value;
+    }
+    const summary = summarizeDiff(paramDiff(state.params, next, NOTABLE), 3);
+    state = { ...state, params: next };
+    regenerate();
+    commit(false);
+    if (source) noteChange(summary ? `${source} — ${summary}` : source);
+  }
+
   /** Set one parameter (used by views outside the slider panel, like the size sweep). */
   function setParam(name, value) {
     const spec = PARAM_BY_NAME.get(name);
@@ -334,6 +407,37 @@ function boot() {
     if (usageCache.seed !== palette.seed) usageCache = { seed: palette.seed, counts: sceneUsage(palette) };
     return usageCache.counts;
   };
+
+  // The report card sits under the warnings in the palette pane. It borrows the same usage
+  // counts the picker uses; `usageOf` re-counts them for a candidate palette, which is what
+  // lets the unused-colour check prove its own fix rather than assert it.
+  const report = createReport({
+    root: dom.report,
+    summary: dom.reportSummary,
+    list: dom.reportList,
+  }, {
+    getPalette: () => palette,
+    getUsage,
+    usageOf: (p) => sceneUsage(p),
+    applyFix: (patch, label) => applyPatch(patch, label),
+    highlight: (ids) => swatches.highlight(ids),
+  });
+
+  const suggest = createSuggest({
+    run: dom.suggestRun,
+    note: dom.suggestNote,
+    list: dom.suggestList,
+  }, {
+    getState: () => state,
+    getPalette: () => palette,
+    // One step: the colour count goes up by one and the new slot is locked to the suggestion.
+    onAdd: (grown, hex) => {
+      state = { params: normalizeParams(grown.params), locks: grown.locks, overrides: state.overrides };
+      regenerate();
+      commit(false);
+      noteChange(`Added ${hex} as a locked slot (${grown.slotId}) — ${state.params.color_count} colours`);
+    },
+  });
 
   const picker = createPicker({
     canvas: dom.pickerCanvas,
@@ -496,6 +600,9 @@ function boot() {
     palette = generatePalette(src.params, { locks: src.locks, overrides: src.overrides });
     swatches.render(palette);
     sliders.render(src.params);
+    // Every "clamped" badge was measured against the parameter set that has just been replaced,
+    // so it is cleared here and re-established by `noteSilentMove` if it still holds.
+    sliders.clearStuck();
     gallery.render(palette);
     hero.render(palette, src.params);
     variants.render(palette);
@@ -503,6 +610,9 @@ function boot() {
     recolor.render(palette, src.params);
     compare.render();
     wheel.refresh();
+    report.schedule();
+    suggest.invalidate();
+    colorEditor.refresh(palette);
     if (!transient) { io.updateSeed(palette.seed); recordSettled(); }
     renderMeta(src.params);
   }

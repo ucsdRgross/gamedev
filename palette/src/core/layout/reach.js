@@ -885,12 +885,17 @@ export function buildReachSlices(reach, { geometry = 'rect', saturations = DEFAU
 // ---------------------------------------------------------------------------
 
 /**
- * The palette's ramps: entries sharing a layer and a hue family, in lightness-step order.
+ * The palette's ramps as **slot indices**: entries sharing a layer and a hue family, in
+ * lightness-step order, keeping only the runs with something to dither between.
  *
- * Derived from `step`/`steps` on the entries rather than from `src/scenes/util.js`, because
- * `src/core/` may not import `src/scenes/` (ARCHITECTURE §11).
+ * Deliberately not `rampsOf` from `analysis.js`, and named apart from it so the difference
+ * cannot be missed. That one returns the entries themselves and covers the foreground and
+ * background layers, which is what a description or an arrangement wants; this one returns
+ * indices, because every blend in this file is expressed as indices into the palette, and it
+ * takes *any* layer with more than one step — a neutral run dithers as readily as a hue ramp
+ * does, and the catalogue would be lying if it left those out.
  */
-export function rampsOf(palette) {
+export function rampIndices(palette) {
   const groups = new Map();
   palette.entries.forEach((e, i) => {
     if (e.steps <= 1) return;
@@ -973,7 +978,7 @@ export function catalogueSections(reach, { ratios = CATALOGUE_RATIOS, maxRows = 
   });
 
   // --- RAMP BLENDS ---------------------------------------------------------
-  const ramps = rampsOf(palette).slice(0, maxRows);
+  const ramps = rampIndices(palette).slice(0, maxRows);
   if (ramps.length) {
     sections.push({
       id: 'ramps',

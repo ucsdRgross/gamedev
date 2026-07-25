@@ -23,6 +23,7 @@ import { decodeGif, encodeGif } from '../core/gif.js';
 import { encodePngRgb } from '../core/export/png.js';
 import { decodeStillToRaster } from './imagefile.js';
 import { download } from './io.js';
+import { option } from './dom.js';
 
 const MODE_LABELS = { indexed: 'indexed remap', quantize: 'per-pixel quantize' };
 const TICK_MS = 40;
@@ -197,9 +198,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     if (!targets.has(targetId) && targetId !== GENERATED) targetId = GENERATED;
     dom.target.innerHTML = '';
     for (const [value, label] of opts) {
-      const o = document.createElement('option');
-      o.value = value;
-      o.textContent = label;
+      const o = option(value, label);
       o.selected = value === targetId;
       dom.target.appendChild(o);
     }

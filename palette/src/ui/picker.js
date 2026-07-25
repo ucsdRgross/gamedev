@@ -25,6 +25,7 @@ import {
 } from '../core/layout/render.js';
 import { encodePngRgb } from '../core/export/png.js';
 import { download } from './io.js';
+import { fillSelect } from './dom.js';
 
 const BLOB_LABELS = {
   isolation: 'Perceptual isolation',
@@ -325,17 +326,6 @@ export function createPicker(dom, { getUsage }) {
   }
 
   return { render, setActive };
-}
-
-/** Fill a `<select>` from `[value, label]` pairs. */
-function fillSelect(el, pairs) {
-  el.innerHTML = '';
-  for (const [value, label] of pairs) {
-    const o = document.createElement('option');
-    o.value = value;
-    o.textContent = label;
-    el.appendChild(o);
-  }
 }
 
 /** Encode a Raster as a PNG and hand it to the browser as a download. */

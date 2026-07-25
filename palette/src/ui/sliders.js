@@ -13,7 +13,7 @@
 import {
   PARAMS, PARAM_GROUPS, BASIC_PARAM_NAMES, defaultParams, optionLabel,
 } from '../core/params.js';
-import { sweepPalettes } from '../core/preview.js';
+import { sweepPalettes, findClamp } from '../core/preview.js';
 import { stripElement } from './strip.js';
 
 const GROUP_LABELS = {
@@ -87,7 +87,7 @@ export function createSliders(container, { onChange, toolbar, getState }) {
     details.appendChild(body);
 
     for (const spec of specs) {
-      const wrap = buildControl(spec, controls, onChange, defaults);
+      const wrap = buildControl(spec, controls, onChange, defaults, getState);
       // One hover surface per control: the whole row shows the name, the documentation and
       // the sweep. Attaching to the label and the slider separately meant two floating
       // panels fighting over the same corner of the screen.
@@ -136,7 +136,20 @@ export function createSliders(container, { onChange, toolbar, getState }) {
     applyFilter();
   }
 
-  return { render };
+  return {
+    render,
+    /**
+     * Mark (or unmark) a control as one that just did nothing (UX_PLAN U7.3 — item 35).
+     * `effect` is a `paramEffect` result; passing null takes the mark off.
+     */
+    markStuck(name, effect) {
+      controls.get(name)?.markStuck?.(effect);
+    },
+    /** Take every mark off — the parameter set they were measured against has been replaced. */
+    clearStuck() {
+      for (const c of controls.values()) c.markStuck?.(null);
+    },
+  };
 }
 
 /** The filter row above the panel: search, Basics/All, only-changed, reset-all. */
@@ -326,30 +339,93 @@ function makeHint(spec) {
   return hint;
 }
 
+/**
+ * The "this control just did nothing" badge (UX_PLAN U7.3 — item 35).
+ *
+ * Two states, and the difference matters. *At its limit* is the user's own doing and needs no
+ * explanation. **Clamped** means the value moved and the palette did not, which is the case
+ * that leaves somebody dragging a dead slider wondering what is broken — so that badge is a
+ * button, and pressing it goes and finds which other parameter is holding this one down.
+ *
+ * The search is `findClamp`, which verifies its answer rather than inferring it, and can take
+ * up to a second. It runs behind a `setTimeout` so the "looking…" state is painted first.
+ */
+function makeStuckBadge(spec, getState) {
+  const badge = document.createElement('button');
+  badge.className = 'ctrl-stuck';
+  badge.hidden = true;
+  let searched = null; // the parameter set the last search was run against
+
+  badge.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const state = getState?.();
+    if (!state?.params || searched === state.params) return;
+    searched = state.params;
+    badge.textContent = 'looking…';
+    setTimeout(() => {
+      let found = null;
+      try {
+        found = findClamp(state.params, spec.name, { locks: state.locks || {}, overrides: state.overrides || {} });
+      } catch { /* a diagnosis must never break the panel */ }
+      if (!found) {
+        badge.textContent = 'clamped';
+        badge.title = 'Moving this changes no colour, and no single other parameter on its own'
+          + ' brings it back — read the hint above for what it depends on';
+        return;
+      }
+      const names = found.set.map((s) => s.label).join(' and ');
+      badge.textContent = `clamped by ${names}`;
+      badge.title = `This does nothing until ${found.set.map((s) => `${s.name} moves (${s.value} works)`).join(' and ')}`
+        + ' — checked by moving each one and watching whether this control came back to life';
+    }, 0);
+  });
+
+  return {
+    badge,
+    set(effect) {
+      if (!effect || effect.moves) {
+        badge.hidden = true;
+        searched = null;
+        return;
+      }
+      badge.hidden = false;
+      const limit = effect.atMin || effect.atMax;
+      badge.textContent = limit ? 'at its limit' : 'clamped';
+      badge.title = limit
+        ? 'This is already at the end of its own range'
+        : 'Moving this changed no colour at all — click to find out what is holding it down';
+      badge.disabled = Boolean(limit);
+    },
+  };
+}
+
 /** Build the DOM for one parameter control and register its sync/mark hooks. */
-function buildControl(spec, controls, onChange, defaults) {
+function buildControl(spec, controls, onChange, defaults, getState) {
   const wrap = document.createElement('div');
   wrap.className = 'ctrl';
+  const stuck = makeStuckBadge(spec, getState);
 
   if (spec.type === 'bool') {
     const label = document.createElement('label');
     label.className = 'ctrl-bool';
     const box = document.createElement('input');
     box.type = 'checkbox';
-    label.append(box, makeName(spec, onChange, defaults));
+    label.append(box, makeName(spec, onChange, defaults), stuck.badge);
     wrap.appendChild(label);
     if (spec.hint) wrap.appendChild(makeHint(spec));
     box.addEventListener('change', () => onChange(spec.name, box.checked));
     controls.set(spec.name, {
       sync: (v) => { box.checked = Boolean(v); },
       markChanged: (c) => wrap.classList.toggle('changed', c),
+      markStuck: (e) => { stuck.set(e); wrap.classList.toggle('is-stuck', Boolean(e) && !e.moves); },
     });
     return wrap;
   }
 
   const head = document.createElement('div');
   head.className = 'ctrl-head';
-  head.appendChild(makeName(spec, onChange, defaults));
+  head.append(makeName(spec, onChange, defaults), stuck.badge);
 
   if (spec.type === 'enum') {
     wrap.appendChild(head);
@@ -375,6 +451,7 @@ function buildControl(spec, controls, onChange, defaults) {
     controls.set(spec.name, {
       sync: (v) => { sel.value = v; syncHint(v); },
       markChanged: (c) => wrap.classList.toggle('changed', c),
+      markStuck: (e) => { stuck.set(e); wrap.classList.toggle('is-stuck', Boolean(e) && !e.moves); },
     });
     return wrap;
   }
@@ -424,6 +501,7 @@ function buildControl(spec, controls, onChange, defaults) {
       if (document.activeElement !== num) num.value = fmt(spec, v);
     },
     markChanged: (c) => wrap.classList.toggle('changed', c),
+    markStuck: (e) => { stuck.set(e); wrap.classList.toggle('is-stuck', Boolean(e) && !e.moves); },
   });
   return wrap;
 }

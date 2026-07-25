@@ -17,8 +17,9 @@ it, and exports to Godot / Aseprite / the web.
 - **The app is a static page** (`index.html` + `src/`) served by a tiny dev server
   (`tools/serve.mjs`). `npm run build` inlines the whole thing into one double-clickable
   `dist/palette_creator.html`.
-- The original build is **complete and gated**; the work in progress is a **UX phase** that
-  makes the tool faster to *use*. That phase is the job.
+- The original build is **complete and gated**, and so is the **UX phase** built on top of it
+  (U1–U7, see UX_PLAN.md) — the phase that made the tool faster to *use*. There is no phase in
+  progress: this file is now a briefing on a finished tool.
 
 ### Layout
 
@@ -26,9 +27,9 @@ it, and exports to Godot / Aseprite / the web.
 |---|---|
 | `src/core/` | DOM-free colour maths, generation, analysis, dithering, layout, recolour. Imported by the browser, `node --test` and the headless renderer alike |
 | `src/core/export/` | Output writers: gpl, pal, hex, lospec, css, json, tres, png |
-| `src/ui/` | Browser app modules (`app sliders swatches history io saves start compare wheel randomize gallery hero picker recolor variants sizes strip`) |
-| `src/scenes/` | The 36 gallery scenes (DOM-free) + registry + semantic role accessors |
-| `test/` | `node --test` suite (460 tests) and golden snapshots |
+| `src/ui/` | Browser app modules (`app dom sliders swatches history io saves start compare wheel randomize gallery hero picker recolor variants sizes strip report suggest coloredit imagefile`) |
+| `src/scenes/` | The 36 gallery scenes (DOM-free) + registry + semantic role accessors + `usage` pixel counts |
+| `test/` | `node --test` suite (493 tests) and golden snapshots |
 | `tools/` | Dev server, single-file build, headless renderer, PNG codec |
 | `saved/` `reference/` `palettes/` | User saves; reference images to recolour; palette images to recolour into |
 | `out/` `dist/` | Rendered PNGs and the standalone build (gitignored) |
@@ -75,13 +76,16 @@ export PATH="/c/Program Files/nodejs:$PATH"          # bash
 
 ## 3. Where the work stands
 
-`npm test` **green at 460** (was 370 at the start of the phase). `npm run build` green.
-U1–U3 are committed (`3942c4b`); **U4, U5 and U6 are in the working tree, uncommitted**. The
-user has not asked for commits; do not commit unless asked.
+`npm test` **green at 493** (was 370 at the start of the phase). `npm run build` and
+`npm run render` green; snapshots untouched since U6.
 
-Phases **U1–U6 are done**, with nothing outstanding. **U7 is not started.** Full detail,
-including per-task done-when conditions, is in UX_PLAN.md; the running notes at the bottom of
-that file record what was built and what surprised.
+**Every phase is done — U1 through U7, with nothing outstanding.** U1–U6 are committed
+(`3942c4b`, `16a0e62`, `db6b7a1` — note the last is labelled "ux phase 7" but is in fact U6);
+**U7 and the cross-phase consistency pass are in the working tree, uncommitted**. The user has
+not asked for commits; do not commit unless asked.
+
+Full detail, including per-task done-when conditions, is in UX_PLAN.md; the running notes at
+the bottom of that file record what was built and what surprised.
 
 ### What U1–U3 added (so you do not re-derive it)
 
@@ -196,6 +200,44 @@ Vary and Before buttons, change notes, history persistence), `layout/render.js`
 3. Hue names are calibrated to **OKLCH** angles (red 29°, yellow 110°, green 142°, cyan 195°,
    blue 264°, magenta 328°), not the HSL angles those names have elsewhere.
 
+### What U7 added
+
+- **`src/core/diagnose.js`** — the report card's measurements: near-duplicates, holes in the
+  value ladder, hue gaps, colours no scene draws, colour-vision collisions, contrast failures,
+  and chroma the generator asked for and sRGB would not give. Each check is a `metric` plus
+  candidate parameter patches, and **a candidate is offered only after being generated and
+  re-measured** — and only if it removes at least a quarter of the problem. `entryDivergence`
+  is also used by the swatch card to flag a clipped colour.
+- **`src/core/preview.js`** grew `paramEffect` (does moving this control change anything from
+  where it sits?) and `findClamp` (which other parameter — or *pair* of parameters — is holding
+  it down, verified by moving them and watching the control come back to life). `decidesColor`
+  exempts the whole `recolor` group, which changes no palette colour by design.
+- **`src/core/additions.js`** — the dither reference's gap analysis at a configuration the
+  palette pane can afford, and `addColorSlot`, which raises `color_count` by one and locks a
+  suggestion into the new slot nearest it.
+- **New UI:** `src/ui/report.js` (the report card), `src/ui/suggest.js` (colours worth adding),
+  `src/ui/coloredit.js` (the OKLCH swatch editor, arrow-key nudge, eyedropper) and
+  `src/ui/dom.js` (`option`/`fillSelect`, so a `<select>` is filled one way).
+- **Exports** carry the `PAL1-` seed and the semantic assignments as comments in `.gpl` and
+  `.hex`, and the CSS names each semantic role's whole ramp (`--pal-foliage-mid`).
+
+**Three traps U7 hit:** the whole `recolor` parameter group would otherwise be reported as
+fourteen dead sliders; a dead control is sometimes held down by *two* knobs at once
+(`custom_hue_1` needs `hue_scheme: custom` **and** `custom_hue_count > 0`); and the two new
+palette-pane blocks crushed the swatch grid to 16 px before the report card was made a
+collapsed `<details>` and both lists were capped.
+
+### The cross-phase consistency pass (2026-07-24)
+
+Done after U7, since each phase was written by a different agent. What changed:
+`layout/reach.js`'s `rampsOf` is now `rampIndices` — it collided by name with the one in
+`analysis.js` while returning something else entirely; `clamp` and `meanHue` had second
+implementations inside core and now come from `oklch.js`; `src/ui/dom.js` replaced seven
+hand-rolled `<option>` loops and two byte-identical `fillSelect` copies; and README,
+ARCHITECTURE §2/§9, PROGRESS and this file were brought back in line with the code (the
+parameter count, the scene count, the test count, the module lists, and the standalone
+build's save behaviour were all describing the tool as it was before U1).
+
 ---
 
 ## 4. Hard constraints — do not break these
@@ -240,36 +282,36 @@ been justified by a clean measurement. Re-deriving it is a loose end nobody has 
 
 ## 6. What to do next
 
-Work **U6 → U7** in order; each phase's tasks and done-when conditions are in
-UX_PLAN.md. Summary:
+**Nothing is outstanding.** Every phase in PLAN.md and every phase in UX_PLAN.md is done and
+gated. What is left is a short list of loose ends nobody has picked up, none of them blocking:
 
-- **U6 — Inversion tools.** Fitter upgrades (`from`, `fixed`, `onProgress`, resumable
-  "keep looking", returned diff) **plus the hue-wrap fix above**; Compare A/B with a difference
-  report, a morph slider and "how to get there"; custom hue pins as seven append-only
-  parameters (`custom_hue_count`, `custom_hue_1..6`) honoured by `hues.js`.
-  Two carried-over hooks: U5.2's **shift-click a library card → send it to Compare** belongs
-  here, and `io.js` already exposes `fitTo(hexes)` so a pasted or saved palette can seed the
-  search without another copy of the fit loop.
-  Note `hue_scheme: 'custom'` currently just spreads hues evenly over `hue_span` — there is no
-  way to specify custom hues at all today.
-- **U7 — Correctness surface.** `diagnose.js` (near-duplicates, value holes, hue gaps, unused
-  colours via `sceneUsage`, CVD collisions, contrast failures, requested-vs-achieved
-  divergence) rendered as a report card where each finding applies its own fix; clamp / no-op
-  detection on sliders; the dither reference's "colours worth adding" surfaced; semantic names
-  in exports; an OKLCH swatch editor with an eyedropper.
+- **`l_variance_per_hue`'s raised ceiling has never been justified by a clean measurement**
+  (§5 above). It went 0.15 → 0.30 on evidence the fitter's hue-wrap bug manufactured. Re-derive
+  it now that the bug is fixed, and lower it again if the evidence does not hold up.
+- **Seven items from IMPROVEMENTS.md were not approved for this phase** (12, 16, 23, 24, 25,
+  29, 30) — among them hardware depth as one dropdown instead of three sliders, more export
+  targets, exporting the gallery as a PNG, and a keyboard map. They are still good ideas; they
+  were scope, not rejection.
+- **The gallery still repaints on `requestAnimationFrame`**, so it draws nothing in a hidden or
+  headless tab. Fine in a real window, and the reason the hero uses `setTimeout` instead — but
+  it does mean the gallery cannot be verified headlessly.
 
-### Working rules for this phase
+### Working rules for this project
 
 - Put new logic in `src/core/` with a test in `test/`; keep `src/ui/` to presentation.
-- After each phase: run `PALETTE_FUZZ_N=200 npm test`, check the app boots, **tick the boxes in
-  UX_PLAN.md and append a running note** saying what changed, what surprised you, and anything
+- After each piece of work: run `PALETTE_FUZZ_N=200 npm test`, check the app boots, and
+  **append a running note to UX_PLAN.md** saying what changed, what surprised you, and anything
   the next agent must read first. That file is the memory of this phase.
 - Match the surrounding comment style: comments say **why**, not what. Several files open with
   a paragraph explaining the design decision behind them; keep that up.
+- **Measure, do not guess.** Thresholds in this codebase are calibrated against the twenty-one
+  presets and the number is written down beside the constant; a suggested fix is generated and
+  re-measured before it is offered. That is the house style, and it is why the tool can be
+  trusted when it says something is wrong.
 - Verify in the running app, not only in tests. `PORT=5299 node tools/serve.mjs --replace` and
   drive it, or `npm run render` and look at the PNGs.
 
 ### The one-line goal, to check any decision against
 
-> Sit down with a look in mind, and reach it by **picking and steering** — not by reading 72
+> Sit down with a look in mind, and reach it by **picking and steering** — not by reading 79
 > tooltips and dragging sliders one at a time.

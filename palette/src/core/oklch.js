@@ -172,3 +172,22 @@ export function hueDelta(from, to) {
 export function normHue(h) {
   return ((h % 360) + 360) % 360;
 }
+
+/**
+ * Circular mean of hue angles, in degrees; 0 for an empty list.
+ *
+ * Averaging angles arithmetically puts the mean of 350° and 10° at 180°, the opposite side of
+ * the wheel, so it is done as the direction of the summed unit vectors. Note what this is *not*
+ * good for: over a wide fan of hues it lands on an angle the palette may not contain at all,
+ * which is why `describePalette` names `root_hue` instead of calling this.
+ */
+export function meanHue(hues) {
+  if (!hues.length) return 0;
+  let x = 0;
+  let y = 0;
+  for (const h of hues) {
+    x += Math.cos(h * RAD);
+    y += Math.sin(h * RAD);
+  }
+  return normHue(Math.atan2(y, x) * DEG);
+}

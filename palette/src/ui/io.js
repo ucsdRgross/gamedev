@@ -8,6 +8,7 @@ import { makeFitter } from '../core/fit.js';
 import { extractPalette } from '../core/recolor/swatches.js';
 import { isSaveName } from '../core/library.js';
 import { decodeStillToRaster } from './imagefile.js';
+import { option } from './dom.js';
 
 /** Read a `PAL1-…` seed out of the URL hash (`#seed=…`), or null. */
 export function readSeedFromHash() {
@@ -52,12 +53,7 @@ function status(el, text, tone = '') {
  */
 export function createIO(dom, { store, ...actions }) {
   // ---- Presets --------------------------------------------------------
-  for (const preset of PRESETS) {
-    const o = document.createElement('option');
-    o.value = preset.id;
-    o.textContent = preset.name;
-    dom.presetSelect.appendChild(o);
-  }
+  for (const preset of PRESETS) dom.presetSelect.appendChild(option(preset.id, preset.name));
   dom.presetSelect.addEventListener('change', () => {
     if (dom.presetSelect.value) {
       actions.applyPreset(dom.presetSelect.value);
@@ -185,11 +181,7 @@ export function createIO(dom, { store, ...actions }) {
       const names = await store.list();
       const current = dom.savesSelect.value;
       dom.savesSelect.innerHTML = '<option value="">Load saved…</option>';
-      for (const name of names) {
-        const o = document.createElement('option');
-        o.value = name; o.textContent = name;
-        dom.savesSelect.appendChild(o);
-      }
+      for (const name of names) dom.savesSelect.appendChild(option(name, name));
       if (names.includes(current)) dom.savesSelect.value = current;
       dom.saveDelete.disabled = !dom.savesSelect.value;
       // Where a save goes is a different promise in each backend, so it is always stated.

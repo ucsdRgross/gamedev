@@ -14,6 +14,7 @@ import { generatePalette, paletteHexes } from '../src/core/generate.js';
 import { defaultParams } from '../src/core/params.js';
 import { presetParams, PRESETS } from '../src/core/presets.js';
 import { rgb8ToHex } from '../src/core/oklch.js';
+import { rampsOf } from '../src/core/analysis.js';
 
 const SIZES = [4, 5, 12, 16, 33, 64];
 
@@ -61,6 +62,55 @@ test('CSS custom properties carry every slot and every semantic role', () => {
     assert.equal(vars[`pal-${role.replace(/_/g, '-')}`], byId.get(id), role);
   }
   assert.ok(toCss(p, { prefix: 'x', selector: '.pal' }).startsWith('.pal {'));
+});
+
+// ---- Traceability and semantic names in exports (U7.5 — item 20) ----------
+
+test('a .gpl carries its seed and its semantic roles as comments', () => {
+  const p = generatePalette({ ...defaultParams(), color_count: 24 });
+  const text = toGpl(p, { name: 'Traceable' });
+  assert.ok(text.includes(p.seed), 'the seed must survive the export');
+  for (const [role, id] of Object.entries(p.semantics)) {
+    assert.ok(text.includes(`#   ${role} = ${id}`), `missing semantic role ${role}`);
+  }
+  // The added header must not disturb what a .gpl reader sees.
+  const parsed = parseGpl(text);
+  assert.equal(parsed.name, 'Traceable');
+  assert.deepEqual(parsed.colors, paletteHexes(p));
+  assert.deepEqual(parsed.names, p.entries.map((e) => e.role));
+});
+
+test('a .hex list annotates each colour and still parses as a plain list', () => {
+  const p = generatePalette({ ...defaultParams(), color_count: 16 });
+  const text = toHex(p);
+  assert.ok(text.includes(p.seed));
+  for (const e of p.entries) assert.ok(text.includes(`${e.hex}  // ${e.role}`), e.role);
+  for (const [role, id] of Object.entries(p.semantics)) {
+    const entry = p.entries.find((e) => e.id === id);
+    const line = text.split('\n').find((l) => l.startsWith(`${entry.hex}  //`));
+    assert.ok(line.includes(role), `${role} should be named on ${id}`);
+  }
+  assert.deepEqual(parseHex(text), paletteHexes(p));
+  // A trailing comment is stripped, a whole-line comment is skipped, and rubbish still throws.
+  assert.deepEqual(parseHex('// header\n#AABBCC // note\n\nDDEEFF\n'), ['#AABBCC', '#DDEEFF']);
+  assert.throws(() => parseHex('#12345 // note'), /bad hex line/);
+});
+
+test("the CSS export names each semantic role's whole ramp", () => {
+  const p = generatePalette({ ...defaultParams(), color_count: 32 });
+  const vars = parseCss(toCss(p));
+  const ramps = rampsOf(p);
+  let named = 0;
+  for (const [role, id] of Object.entries(p.semantics)) {
+    const ramp = ramps.find((r) => r.entries.some((e) => e.id === id));
+    if (!ramp) continue; // a role on a neutral, an accent or an anchor has no ramp to name
+    named++;
+    for (const entry of ramp.entries) {
+      const step = entry.role.slice(entry.role.lastIndexOf('_') + 1);
+      assert.equal(vars[`pal-${role.replace(/_/g, '-')}-${step}`], entry.hex, `${role}-${step}`);
+    }
+  }
+  assert.ok(named >= 4, `expected several ramped roles, got ${named}`);
 });
 
 test('JSON round-trips colours, parameters, locks and overrides', () => {

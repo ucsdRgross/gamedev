@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { PARAM_BY_NAME, defaultParams } from '../src/core/params.js';
 import {
   sweepValues, valueLabel, paramSweep, sweepPalettes, sizeSweep, SIZE_SWEEP,
+  paramEffect, findClamp, decidesColor, FRAMING_PARAMS,
 } from '../src/core/preview.js';
+import { PARAMS } from '../src/core/params.js';
+import { generatePalette, paletteHexes } from '../src/core/generate.js';
 
 test('a float sweep spans the whole range, in order', () => {
   const spec = PARAM_BY_NAME.get('chroma_base');
@@ -74,6 +77,94 @@ test('the size sweep offers the sizes palettes are actually made at', () => {
   for (const step of steps) assert.equal(step.palette.entries.length, step.value);
   assert.equal(steps.filter((s) => s.current).length, 1);
   assert.equal(steps.find((s) => s.current).value, 32);
+});
+
+// ---- Dead controls (U7.3 — item 35) ---------------------------------------
+
+test('a parameter that moves the palette is not called clamped', () => {
+  const params = defaultParams();
+  for (const name of ['chroma_base', 'l_step', 'root_hue', 'color_count', 'hue_scheme', 'seed']) {
+    const effect = paramEffect(params, name);
+    assert.ok(effect.applies, `${name} decides colour`);
+    assert.ok(effect.moves, `${name} should change the palette`);
+    assert.ok(effect.up || effect.down, name);
+  }
+});
+
+test('a control whose effect is being swallowed is called clamped, and only then', () => {
+  const params = defaultParams();
+  // `chroma_cap` is a ceiling well above where `chroma_base` sits, so it decides nothing.
+  const capped = paramEffect(params, 'chroma_cap');
+  assert.equal(capped.moves, false);
+  // Raise the master saturation into it and the same control comes back to life.
+  const biting = paramEffect({ ...params, chroma_base: 0.37 }, 'chroma_cap');
+  assert.equal(biting.moves, true);
+});
+
+test('the end of a range is reported as its own thing, not as a hidden constraint', () => {
+  const spec = PARAM_BY_NAME.get('chroma_base');
+  const atFloor = paramEffect({ ...defaultParams(), chroma_base: spec.min }, 'chroma_base');
+  assert.equal(atFloor.atMin, true);
+  assert.equal(atFloor.atMax, false);
+  assert.equal(atFloor.down, false, 'there is nowhere below the minimum to go');
+});
+
+test('the recolour parameters are exempt: they decide no palette colour by design', () => {
+  const params = defaultParams();
+  const recolour = PARAMS.filter((p) => p.group === 'recolor');
+  assert.ok(recolour.length >= 10, 'the recolour block should be substantial');
+  for (const spec of recolour) {
+    assert.equal(decidesColor(spec.name), false, spec.name);
+    // …and the claim is true: changing one really does leave every colour alone.
+    const other = spec.type === 'enum' ? spec.options.find((o) => o !== params[spec.name])
+      : spec.type === 'bool' ? !params[spec.name] : spec.max;
+    assert.deepEqual(
+      paletteHexes(generatePalette({ ...params, [spec.name]: other })),
+      paletteHexes(generatePalette(params)),
+      `${spec.name} must not move a palette colour`,
+    );
+    // The check reports them as live rather than as clamped, so the panel says nothing.
+    assert.equal(paramEffect(params, spec.name).applies, false, spec.name);
+  }
+});
+
+test('findClamp names a culprit only when changing it revives the control', () => {
+  const params = defaultParams();
+  const found = findClamp(params, 'chroma_cap');
+  assert.ok(found, 'something must be holding the chroma ceiling down');
+  assert.deepEqual(found.set.map((s) => s.name), ['chroma_base']);
+  // The claim is verifiable: with the culprit at that value, the control moves again.
+  const released = { ...params, [found.set[0].name]: found.set[0].value };
+  assert.equal(paramEffect(released, 'chroma_cap').moves, true);
+});
+
+test('findClamp finds a pair when one knob alone is not enough', () => {
+  // A pinned hue does nothing until the scheme is `custom` AND a pin count has been set —
+  // naming either one on its own would send somebody to a knob that changes nothing.
+  const params = defaultParams();
+  assert.equal(paramEffect(params, 'custom_hue_1').moves, false);
+  const found = findClamp(params, 'custom_hue_1');
+  assert.ok(found, 'the pair should be found');
+  assert.deepEqual(found.set.map((s) => s.name).sort(), ['custom_hue_count', 'hue_scheme']);
+  const released = { ...params };
+  for (const s of found.set) released[s.name] = s.value;
+  assert.equal(paramEffect(released, 'custom_hue_1').moves, true);
+});
+
+test('findClamp reaches outside the parameter group', () => {
+  // `dither_evenness` (quality) blends the lightness curve toward linear, so with `l_curve`
+  // already linear it does nothing — a culprit two panels away from the control it holds.
+  const params = defaultParams();
+  assert.equal(paramEffect(params, 'dither_evenness').moves, false);
+  const found = findClamp(params, 'dither_evenness');
+  assert.deepEqual(found?.set.map((s) => s.name), ['l_curve']);
+});
+
+test('every framing parameter is a real parameter that decides colour', () => {
+  for (const name of FRAMING_PARAMS) {
+    assert.ok(PARAM_BY_NAME.has(name), `${name} is not in the schema`);
+    assert.equal(decidesColor(name), true, name);
+  }
 });
 
 test('values are labelled at a sensible precision', () => {

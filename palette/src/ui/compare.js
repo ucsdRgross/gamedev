@@ -28,6 +28,7 @@ import { paletteFit } from '../core/fit.js';
 import { parseHexList, hexListPalette } from '../core/hexlist.js';
 import { PARAM_BY_NAME } from '../core/params.js';
 import { stripElement, drawScene } from './strip.js';
+import { option } from './dom.js';
 
 /** The scene both sides are drawn in. A crowded one, so the difference has room to show. */
 const SCENE = 'screenshot';
@@ -316,12 +317,7 @@ export function createCompare(dom, { actions }) {
     for (const [label, options] of groups) {
       const group = document.createElement('optgroup');
       group.label = label;
-      for (const [value, text] of options) {
-        const o = document.createElement('option');
-        o.value = value;
-        o.textContent = text;
-        group.appendChild(o);
-      }
+      for (const [value, text] of options) group.appendChild(option(value, text));
       dom.source.appendChild(group);
     }
     if (chosenSource) dom.source.value = chosenSource;

@@ -4,6 +4,7 @@
 // headless renderer unchanged — the gallery just puts their Raster output on screen.
 
 import { SCENES, CATEGORIES } from '../scenes/index.js';
+import { option } from './dom.js';
 import { applyViewSpec, VIEWS, VIEW_PAIRS, viewParts } from '../core/analysis.js';
 import { Raster } from '../core/raster.js';
 import { floydSteinberg, orderedDither } from '../core/dither.js';
@@ -80,9 +81,7 @@ export function createGallery(dom, { getPalette }) {
 
   // Category filter.
   dom.category.innerHTML = '';
-  for (const c of ['All', ...CATEGORIES]) {
-    const o = document.createElement('option'); o.value = c; o.textContent = c; dom.category.appendChild(o);
-  }
+  for (const c of ['All', ...CATEGORIES]) dom.category.appendChild(option(c, c));
   // View selector: the single views first, then the side-by-side pairs. The pairs are what
   // catch a collision — two colours that merge under deutan are obvious beside the original
   // and invisible when the comparison has to be made from memory two seconds apart.
@@ -90,9 +89,7 @@ export function createGallery(dom, { getPalette }) {
   for (const [label, list] of [['One view', VIEWS], ['Side by side', VIEW_PAIRS]]) {
     const group = document.createElement('optgroup');
     group.label = label;
-    for (const v of list) {
-      const o = document.createElement('option'); o.value = v; o.textContent = viewLabel(v); group.appendChild(o);
-    }
+    for (const v of list) group.appendChild(option(v, viewLabel(v)));
     dom.view.appendChild(group);
   }
 

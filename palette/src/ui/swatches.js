@@ -7,6 +7,7 @@ import { oklchToSrgb, srgbToRgb8, rgb8ToHex } from '../core/oklch.js';
 import { colorLabel } from '../core/colornames.js';
 import { arrangeEntries, ARRANGEMENTS } from '../core/arrange.js';
 import { rampEvenness } from '../core/analysis.js';
+import { entryDivergence } from '../core/diagnose.js';
 
 const HEX_RE = /^#?[0-9a-fA-F]{6}$/;
 
@@ -29,14 +30,17 @@ function valueHex(entry) {
  * `modeSelect` is the optional arrangement selector (UX_PLAN U4.5): the same colours grouped
  * as ramps, or sorted by lightness or hue. Regrouping is a view — `arrangeEntries` in core
  * guarantees every colour is still shown exactly once — so the grid rebuilds from it directly.
+ * `pinned` is the "3 locked, 1 overridden — clear all" line (U7.6): a lock is invisible unless
+ * you scan every card, which is how palettes end up with pins nobody remembers setting.
  */
-export function createSwatches(container, actions, { modeSelect } = {}) {
+export function createSwatches(container, actions, { modeSelect, pinned } = {}) {
   container.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'swatch-grid';
   container.appendChild(grid);
   let mode = 'slot';
   let last = null;
+  let flagged = []; // slot ids the report card has asked to point at
 
   if (modeSelect) {
     modeSelect.innerHTML = '';
@@ -55,9 +59,46 @@ export function createSwatches(container, actions, { modeSelect } = {}) {
     });
   }
 
+  /**
+   * The pinned-colours line: how many colours are being held, and one button to release them.
+   * Clicking the count flags them in the grid, which is the only way to find a lock set
+   * twenty edits ago without reading every card.
+   */
+  function renderPinned(palette) {
+    if (!pinned) return;
+    const locked = palette.entries.filter((e) => e.locked);
+    const overridden = palette.entries.filter((e) => e.overridden);
+    const all = [...new Set([...locked, ...overridden])];
+    pinned.hidden = all.length === 0;
+    if (!all.length) return;
+    pinned.innerHTML = '';
+    const count = document.createElement('button');
+    count.className = 'pinned-count';
+    count.textContent = [
+      locked.length ? `${locked.length} locked` : '',
+      overridden.length ? `${overridden.length} overridden` : '',
+    ].filter(Boolean).join(' · ');
+    count.title = 'Show which colours are being held';
+    count.addEventListener('click', () => {
+      const on = flagged.length !== all.length;
+      flagged = on ? all.map((e) => e.id) : [];
+      applyFlags();
+    });
+    const clear = document.createElement('button');
+    clear.className = 'btn btn-small';
+    clear.textContent = 'Clear all';
+    clear.title = 'Release every locked and overridden colour, letting the generator decide them again';
+    clear.addEventListener('click', () => actions.clearPins());
+    pinned.append(count, clear);
+  }
+
   /** Redraw the grid from a freshly generated palette. */
   function render(palette) {
     last = palette;
+    renderPinned(palette);
+    // The grid is thrown away and rebuilt on every edit, so a card being nudged with the arrow
+    // keys would lose focus after the first press and the second would go nowhere.
+    const focused = document.activeElement?.closest?.('.swatch')?.dataset.slot;
     container.innerHTML = '';
     const bySlot = semanticsBySlot(palette.semantics);
     const groups = arrangeEntries(palette, mode);
@@ -65,16 +106,18 @@ export function createSwatches(container, actions, { modeSelect } = {}) {
     // the markup — and the CSS grid it relies on — is exactly what it was before U4.5.
     if (groups.length === 1 && !groups[0].title) {
       container.appendChild(fill(document.createElement('div'), groups[0].entries, bySlot));
-      return;
+    } else {
+      for (const group of groups) {
+        const head = document.createElement('div');
+        head.className = 'swatch-group-head';
+        head.append(text('span', 'swatch-group-title', group.title));
+        const note = groupNote(group, mode);
+        if (note) head.append(text('span', 'swatch-group-note', note));
+        container.append(head, fill(document.createElement('div'), group.entries, bySlot));
+      }
     }
-    for (const group of groups) {
-      const head = document.createElement('div');
-      head.className = 'swatch-group-head';
-      head.append(text('span', 'swatch-group-title', group.title));
-      const note = groupNote(group, mode);
-      if (note) head.append(text('span', 'swatch-group-note', note));
-      container.append(head, fill(document.createElement('div'), group.entries, bySlot));
-    }
+    applyFlags();
+    if (focused) container.querySelector(`.swatch[data-slot="${focused}"]`)?.focus({ preventScroll: true });
   }
 
   /** Fill one grid element with swatch cards. */
@@ -84,7 +127,33 @@ export function createSwatches(container, actions, { modeSelect } = {}) {
     return el;
   }
 
-  return { render };
+  /**
+   * Point at the slots a report-card finding names (UX_PLAN U7.2).
+   *
+   * The flag is re-applied after every rebuild rather than being set once on the DOM: the grid
+   * is thrown away and rebuilt whenever the palette or the arrangement changes, and a finding
+   * that stopped pointing at anything the moment a slider moved would be useless in the one
+   * situation it exists for — watching whether the fix worked.
+   */
+  function applyFlags() {
+    const wanted = new Set(flagged);
+    let first = null;
+    for (const card of container.querySelectorAll('.swatch')) {
+      const on = wanted.has(card.dataset.slot);
+      card.classList.toggle('is-flagged', on);
+      if (on && !first) first = card;
+    }
+    first?.scrollIntoView({ block: 'nearest' });
+  }
+
+  return {
+    render,
+    /** Flag these slot ids, or clear the flags when given nothing. */
+    highlight(ids) {
+      flagged = ids || [];
+      applyFlags();
+    },
+  };
 }
 
 /** A `<span>`-ish element with a class and text. */
@@ -115,6 +184,7 @@ function groupNote(group, mode) {
 function buildSwatch(entry, semanticNames, actions) {
   const card = document.createElement('div');
   card.className = 'swatch';
+  card.dataset.slot = entry.id;
   if (entry.overridden) card.classList.add('overridden');
   else if (entry.fixed) card.classList.add('fixed');
 
@@ -150,9 +220,27 @@ function buildSwatch(entry, semanticNames, actions) {
     if (entry.overridden) actions.clearOverride(entry.id);
     else actions.setOverride(entry.id, entry.hex);
   });
-  pills.append(lock, over);
+  // The OKLCH editor (U7.6 — item 8). Separate from `ovr`, which pins the colour as it is:
+  // this one opens the axes, the sRGB edge and the eyedropper, and pins whatever comes out.
+  const edit = document.createElement('span');
+  edit.className = 'pill';
+  edit.textContent = 'edit';
+  edit.title = 'Open the OKLCH editor — lightness, chroma, hue, the sRGB edge and an eyedropper';
+  edit.addEventListener('click', (e) => {
+    e.stopPropagation();
+    actions.editColor(entry, card);
+  });
+  pills.append(lock, over, edit);
   color.appendChild(pills);
   card.appendChild(color);
+
+  // Arrow keys nudge the colour once the card has focus: up/down lightness, left/right hue,
+  // alt for chroma, shift for a bigger step. The fastest edit is the one that needs no dialogue.
+  card.tabIndex = 0;
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { actions.editColor(entry, card); e.preventDefault(); return; }
+    if (actions.nudge(entry, e)) e.preventDefault();
+  });
 
   // Body: role, editable hex, OKLCH readout, semantic tags.
   const body = document.createElement('div');
@@ -187,6 +275,20 @@ function buildSwatch(entry, semanticNames, actions) {
   oklch.className = 'swatch-oklch';
   const { L, C, h } = entry.actual;
   oklch.textContent = `L ${L.toFixed(3)}  C ${C.toFixed(3)}  H ${h.toFixed(0)}°`;
+
+  // What was asked for versus what sRGB could give (UX_PLAN U7.2 — item 14, last row). The
+  // sliders keep showing the request and the swatch shows the result, and until now nothing
+  // connected the two: this is the answer to "why will this colour not get any more saturated".
+  const diverged = entryDivergence(entry);
+  if (diverged) {
+    oklch.classList.add('is-clipped');
+    oklch.title = `Requested C ${diverged.requested.toFixed(3)} — ${diverged.note}.`
+      + ' sRGB has no more chroma at that hue and lightness.';
+    const mark = document.createElement('span');
+    mark.className = 'swatch-clip';
+    mark.textContent = '↓C';
+    oklch.appendChild(mark);
+  }
 
   const tags = document.createElement('div');
   tags.className = 'swatch-tags';
