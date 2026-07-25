@@ -22,7 +22,9 @@
       <span class="divider" role="separator"></span>
       <button id="undo" class="btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="redo" class="btn" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
-      <button id="randomize" class="btn btn-accent" title="Randomize, keeping locked colours">Randomize</button>
+      <button id="before-after" class="btn" title="Show the palette as it was one step ago — click again to come back" disabled>Before</button>
+      <button id="vary" class="btn btn-accent" title="A variation of this palette — the same character, moved. Hold Shift for a bolder one">Vary</button>
+      <button id="randomize" class="btn" title="Randomize every look parameter, keeping locked colours">Randomize</button>
     </div>
   </header>
 
@@ -38,6 +40,8 @@
           <button id="reset-defaults" class="btn btn-small" title="Reset every parameter to its default">Defaults</button>
         </div>
       </div>
+      <div id="params-toolbar" class="param-toolbar"></div>
+      <div id="change-note" class="change-note" hidden></div>
       <div id="params" class="scroll"></div>
     </section>
 
@@ -46,8 +50,15 @@
       <div class="pane-head">
         <div class="tabs" role="tablist">
           <button id="tab-gallery" class="tab is-active" role="tab" aria-selected="true">Gallery</button>
+          <button id="tab-variants" class="tab" role="tab" aria-selected="false"
+                  title="A dozen variations of this palette — click one to take it">Variants</button>
           <button id="tab-picker" class="tab" role="tab" aria-selected="false">Picker</button>
           <button id="tab-recolor" class="tab" role="tab" aria-selected="false">Recolour</button>
+        </div>
+        <div id="variants-controls" class="pane-head-controls" hidden>
+          <select id="variants-strength" title="How far the variations wander from the palette you have"></select>
+          <select id="variants-scene" title="What each tile shows — the context colour-space maps, or one gallery scene"></select>
+          <button id="variants-more" class="btn btn-small" title="Draw another dozen variations">More</button>
         </div>
         <div id="gallery-controls" class="pane-head-controls">
           <select id="gallery-category" title="Filter scenes by category"></select>
@@ -99,6 +110,17 @@
         </div>
       </div>
       <div id="gallery" class="scroll gallery-grid"></div>
+      <div id="variants" class="scroll variants-body" hidden>
+        <p class="picker-hint">
+          Every tile is a variation of the palette you have — the first one <em>is</em> the palette you have.
+          Click any tile to take it; the next dozen are then variations of that. Ten clicks will get you
+          somewhere no amount of slider-dragging will.
+          Each tile shows the palette's <strong>context colour-space maps</strong> — everything, sprites,
+          scenery, sky, UI and FX, each at full saturation — so you are comparing whole palettes in every
+          job they do, not one scene's worth of slots.
+        </p>
+        <div id="variants-grid" class="variants-grid"></div>
+      </div>
       <div id="picker" class="scroll picker-body" hidden>
         <canvas id="picker-canvas" class="picker-canvas"></canvas>
         <div class="picker-status">
@@ -123,8 +145,13 @@
     <section id="side-pane" class="pane">
       <div class="pane-head">
         <h2>Palette</h2>
-        <div class="pane-head-controls"><span id="palette-meta" class="meta"></span></div>
+        <div class="pane-head-controls">
+          <span id="palette-meta" class="meta"></span>
+          <button id="sizes-btn" class="btn btn-small"
+                  title="Compare this palette at 8, 16, 24, 32, 48 and 64 colours — click one to use it">Sizes</button>
+        </div>
       </div>
+      <p id="palette-desc" class="palette-desc" title="What this palette is, read off the colours it produced"></p>
       <div id="warnings" class="warnings" hidden></div>
       <div id="swatches" class="scroll"></div>
       <div id="history-wrap" class="history-wrap">

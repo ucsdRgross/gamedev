@@ -20,15 +20,26 @@ function renderOk(scene, palette, frame = 0) {
   return surface;
 }
 
-test('the registry has 34 scenes with unique ids and valid dimensions', () => {
-  assert.equal(SCENES.length, 34);
-  assert.equal(SCENE_BY_ID.size, 34);
+test('the registry has 36 scenes with unique ids and valid dimensions', () => {
+  assert.equal(SCENES.length, 36);
+  assert.equal(SCENE_BY_ID.size, 36);
   assert.ok(CATEGORIES.length >= 6);
   for (const s of SCENES) {
     assert.ok(typeof s.render === 'function', `${s.id} has a render fn`);
     assert.ok(s.width > 0 && s.height > 0, `${s.id} has positive dimensions`);
     assert.ok(s.title && s.category, `${s.id} has title and category`);
   }
+});
+
+test('the composed mockups are a real low-res screen, not a test card', () => {
+  const mockups = SCENES.filter((s) => s.category === 'Mockup');
+  assert.ok(mockups.length >= 1);
+  for (const s of mockups) {
+    assert.equal(s.width, 256, `${s.id} is 256 wide`);
+    assert.equal(s.height, 192, `${s.id} is 192 tall`);
+  }
+  // The mockups lead the registry: the gallery opens on them and the hero defaults to one.
+  assert.equal(SCENES[0].category, 'Mockup');
 });
 
 test('every scene renders across the palette size range', () => {

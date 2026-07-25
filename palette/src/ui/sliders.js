@@ -1,8 +1,20 @@
 // Parameter controls, generated entirely from the PARAMS schema (PLAN §5). The schema
 // is the single source of truth — hand-writing controls here would drift out of sync
-// with the seed codec's field order. Each control's tooltip is the schema doc string.
+// with the seed codec's field order.
+//
+// What a control shows (UX_PLAN U1): the human-readable `label`, a one-line `hint`, and —
+// for a numeric parameter — what each *end* of its range means. A slider whose two ends are
+// named does not need its documentation read, which is the whole point; the full `doc` string
+// is still one hover away, under the raw parameter name so it stays greppable.
+//
+// The panel toolbar filters rather than reorganises: search, Basics/All, and "only changed".
+// Nothing is ever removed from the panel — every parameter is always one click from view.
 
-import { PARAMS, PARAM_GROUPS, defaultParams } from '../core/params.js';
+import {
+  PARAMS, PARAM_GROUPS, BASIC_PARAM_NAMES, defaultParams, optionLabel,
+} from '../core/params.js';
+import { sweepPalettes } from '../core/preview.js';
+import { stripElement } from './strip.js';
 
 const GROUP_LABELS = {
   structure: 'Structure',
@@ -18,6 +30,8 @@ const GROUP_LABELS = {
   recolor: 'Reference Recolouring',
 };
 
+const BASICS = new Set(BASIC_PARAM_NAMES);
+
 /** Format a numeric value for its spec (ints plain, floats to the step's precision). */
 function fmt(spec, v) {
   if (spec.type === 'int') return String(Math.round(v));
@@ -29,13 +43,23 @@ function fmt(spec, v) {
  * Build the parameter panel once and return a controller.
  * `onChange(name, value, opts)` fires on every edit; `render(params)` re-syncs every
  * control to a parameter set (used after presets, seeds, undo and randomize).
+ * `toolbar` is the element the filter row is built into (optional).
  */
-export function createSliders(container, { onChange }) {
+export function createSliders(container, { onChange, toolbar, getState }) {
   const defaults = defaultParams();
   const controls = new Map(); // name -> { sync(v), markChanged(bool), el }
+  const rows = []; // { spec, wrap, group } — everything the filter walks
+  const groupEls = new Map(); // group -> { details, body, count }
+  const changed = new Set();
+  let filter = { text: '', basics: false, changedOnly: false };
   container.innerHTML = '';
 
-  const tip = makeTooltip();
+  const tip = makeTooltip(getState);
+
+  /** Reset a list of parameters to their defaults as one history step. */
+  function resetNames(names) {
+    names.forEach((name, idx) => onChange(name, defaults[name], { coalesce: idx > 0 }));
+  }
 
   for (const group of PARAM_GROUPS) {
     const specs = PARAMS.filter((p) => p.group === group);
@@ -44,25 +68,121 @@ export function createSliders(container, { onChange }) {
     details.className = 'param-group';
     details.open = group === 'structure' || group === 'lightness' || group === 'chroma';
     const summary = document.createElement('summary');
-    summary.textContent = GROUP_LABELS[group] || group;
+    const title = document.createElement('span');
+    title.textContent = GROUP_LABELS[group] || group;
+    const reset = document.createElement('button');
+    reset.className = 'group-reset';
+    reset.textContent = '↺';
+    reset.title = `Reset every ${GROUP_LABELS[group] || group} parameter to its default`;
+    // A button inside <summary> would otherwise toggle the disclosure as well.
+    reset.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      resetNames(specs.map((s) => s.name));
+    });
+    summary.append(title, reset);
     details.appendChild(summary);
     const body = document.createElement('div');
     body.className = 'param-group-body';
     details.appendChild(body);
 
-    for (const spec of specs) body.appendChild(buildControl(spec, controls, onChange, tip));
+    for (const spec of specs) {
+      const wrap = buildControl(spec, controls, onChange, defaults);
+      // One hover surface per control: the whole row shows the name, the documentation and
+      // the sweep. Attaching to the label and the slider separately meant two floating
+      // panels fighting over the same corner of the screen.
+      tip.attach(wrap, spec);
+      body.appendChild(wrap);
+      rows.push({ spec, wrap, group });
+    }
     container.appendChild(details);
+    groupEls.set(group, { details, body });
+  }
+
+  if (toolbar) buildToolbar(toolbar, filter, applyFilter, () => resetNames(PARAMS.map((p) => p.name)));
+
+  /** Show or hide each control for the current filter, then hide the empty groups. */
+  function applyFilter() {
+    const q = filter.text.trim().toLowerCase();
+    const shownPerGroup = new Map();
+    for (const { spec, wrap, group } of rows) {
+      const hay = `${spec.label} ${spec.name} ${spec.hint} ${spec.doc}`.toLowerCase();
+      const show = (!q || hay.includes(q))
+        && (!filter.basics || BASICS.has(spec.name))
+        && (!filter.changedOnly || changed.has(spec.name));
+      wrap.hidden = !show;
+      if (show) shownPerGroup.set(group, (shownPerGroup.get(group) || 0) + 1);
+    }
+    const filtering = Boolean(q) || filter.basics || filter.changedOnly;
+    for (const [group, { details }] of groupEls) {
+      const n = shownPerGroup.get(group) || 0;
+      details.hidden = n === 0;
+      // While a filter is on, a collapsed group would hide its own matches.
+      if (filtering && n > 0) details.open = true;
+    }
   }
 
   /** Re-sync every control and flag those that differ from their default. */
   function render(params) {
+    // Every sweep was computed against the previous parameters, so it is now stale.
+    tip.invalidate();
+    changed.clear();
     for (const [name, c] of controls) {
       c.sync(params[name]);
-      c.markChanged(!valueEquals(params[name], defaults[name]));
+      const isChanged = !valueEquals(params[name], defaults[name]);
+      if (isChanged) changed.add(name);
+      c.markChanged(isChanged);
     }
+    applyFilter();
   }
 
   return { render };
+}
+
+/** The filter row above the panel: search, Basics/All, only-changed, reset-all. */
+function buildToolbar(toolbar, filter, applyFilter, resetAll) {
+  toolbar.innerHTML = '';
+
+  const search = document.createElement('input');
+  search.type = 'search';
+  search.className = 'param-search';
+  search.placeholder = 'Search parameters…';
+  search.spellcheck = false;
+  search.title = 'Filter by name, label, hint or documentation — try "shadow" or "contrast"';
+  search.addEventListener('input', () => { filter.text = search.value; applyFilter(); });
+
+  const basics = toggleButton('Basics', 'Show only the parameters that decide most of the look', (on) => {
+    filter.basics = on;
+    applyFilter();
+  });
+  const changedOnly = toggleButton('Changed', 'Show only the parameters that differ from their default — what makes this palette what it is', (on) => {
+    filter.changedOnly = on;
+    applyFilter();
+  });
+
+  const help = document.createElement('span');
+  help.className = 'param-toolbar-hint';
+  help.textContent = 'alt-click a name to reset it';
+  help.title = 'Alt-click any parameter name to put it back to its default; ↺ on a group header resets the whole group';
+  help.addEventListener('click', (ev) => { if (ev.altKey) resetAll(); });
+
+  toolbar.append(search, basics, changedOnly, help);
+}
+
+/** A small two-state button; `onToggle(on)` fires on every press. */
+function toggleButton(text, title, onToggle) {
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-small toggle-btn';
+  btn.textContent = text;
+  btn.title = title;
+  btn.setAttribute('aria-pressed', 'false');
+  btn.addEventListener('click', () => {
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.classList.toggle('is-on', on);
+    onToggle(on);
+  });
+  return btn;
 }
 
 /** Loose equality that treats 0.1 and 0.1000001 (float step noise) as equal. */
@@ -71,22 +191,43 @@ function valueEquals(a, b) {
   return a === b;
 }
 
+// How long the pointer has to rest on a control before its sweep is generated. A sweep is
+// five whole palettes; sliding the pointer down the panel should not build sixty of them.
+const PREVIEW_DELAY_MS = 160;
+const PREVIEW_STEPS = 5;
+
 /**
- * A single shared hover tooltip. The parameter docs are two or three sentences — a native
- * `title` truncates them and lags — so a custom element shows the full text, positioned
- * beside the control and clamped to the viewport. One element for the whole panel.
+ * The single floating panel a control shows on hover (UX_PLAN U2.4). It carries three things,
+ * in increasing order of usefulness:
+ *
+ *   1. the raw parameter name — the panel shows a human label, but the name is what appears
+ *      in the README, in seeds and in the source, so it must stay findable;
+ *   2. the full `doc` string, which a native `title` would truncate and delay;
+ *   3. **the sweep** — the palette this parameter produces at five points across its range,
+ *      with the current one marked. This is the part that makes reading (1) and (2) optional.
+ *
+ * The sweep needs the live parameter set, so the panel is built with a `getState` accessor
+ * rather than being handed values; it is cached per parameter and thrown away on any edit.
  */
-function makeTooltip() {
+function makeTooltip(getState) {
   const el = document.createElement('div');
   el.className = 'param-tip';
   el.hidden = true;
+  const head = document.createElement('b');
+  head.className = 'param-tip-name';
+  const body = document.createElement('span');
+  const sweepBox = document.createElement('div');
+  sweepBox.className = 'param-sweep';
+  el.append(head, body, sweepBox);
   document.body.appendChild(el);
 
-  const show = (anchor, text) => {
-    el.textContent = text;
-    el.hidden = false;
+  const cache = new Map(); // parameter name -> built sweep element
+  let timer = null;
+  let shownFor = null;
+
+  /** Position the panel beside `anchor`, clamped to the viewport. */
+  const place = (anchor) => {
     const r = anchor.getBoundingClientRect();
-    // Prefer to the left of the params panel; fall back below the control if there is no room.
     const w = Math.min(320, window.innerWidth - 24);
     el.style.width = `${w}px`;
     let left = r.right + 10;
@@ -95,19 +236,98 @@ function makeTooltip() {
     const top = Math.min(r.top, window.innerHeight - el.offsetHeight - 12);
     el.style.top = `${Math.max(12, top)}px`;
   };
-  const hide = () => { el.hidden = true; };
 
-  /** Wire an element to show `text` on hover. */
-  return function attach(anchor, text) {
-    anchor.addEventListener('mouseenter', () => show(anchor, text));
-    anchor.addEventListener('mouseleave', hide);
-    // Hidden on any edit/scroll so it never sits stale over a moving control.
-    anchor.addEventListener('mousedown', hide);
+  /** The five-strip sweep for one parameter, built once per parameter set. */
+  const buildSweep = (spec) => {
+    if (cache.has(spec.name)) return cache.get(spec.name);
+    const box = document.createElement('div');
+    const state = getState?.();
+    if (!state?.params) return box;
+    let steps = [];
+    try {
+      steps = sweepPalettes(state.params, spec.name, PREVIEW_STEPS, {
+        locks: state.locks || {},
+        overrides: state.overrides || {},
+      });
+    } catch {
+      return box; // a preview must never be the thing that breaks the panel
+    }
+    for (const step of steps) {
+      const row = document.createElement('div');
+      row.className = `sweep-row${step.current ? ' is-current' : ''}`;
+      const label = document.createElement('span');
+      label.className = 'sweep-label';
+      label.textContent = step.label;
+      row.append(label, stripElement(step.hexes, { className: 'sweep-strip' }));
+      box.appendChild(row);
+    }
+    cache.set(spec.name, box);
+    return box;
+  };
+
+  const show = (anchor, spec) => {
+    shownFor = spec.name;
+    head.textContent = spec.name;
+    body.textContent = spec.doc;
+    sweepBox.innerHTML = '';
+    el.hidden = false;
+    place(anchor);
+    // The text appears immediately; the sweep arrives a moment later so that skimming the
+    // panel costs nothing.
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (shownFor !== spec.name || el.hidden) return;
+      sweepBox.appendChild(buildSweep(spec));
+      place(anchor);
+    }, PREVIEW_DELAY_MS);
+  };
+
+  const hide = () => {
+    clearTimeout(timer);
+    shownFor = null;
+    el.hidden = true;
+  };
+
+  return {
+    /** Wire a control row to show its documentation and sweep on hover. */
+    attach(anchor, spec) {
+      anchor.addEventListener('mouseenter', () => show(anchor, spec));
+      anchor.addEventListener('mouseleave', hide);
+      // Hidden on any edit/scroll so it never sits stale over a moving control.
+      anchor.addEventListener('mousedown', hide);
+    },
+    /** Drop every cached sweep — they were computed against the old parameter set. */
+    invalidate() {
+      cache.clear();
+      hide();
+    },
   };
 }
 
+/** The label element: human name, alt-click to reset to default. */
+function makeName(spec, onChange, defaults) {
+  const name = document.createElement('span');
+  name.className = 'ctrl-name';
+  name.textContent = spec.label;
+  name.title = spec.name;
+  name.addEventListener('click', (ev) => {
+    if (!ev.altKey) return;
+    ev.preventDefault();
+    onChange(spec.name, defaults[spec.name], { coalesce: false });
+  });
+  return name;
+}
+
+/** The one-line "what it does" under a control. */
+function makeHint(spec) {
+  const hint = document.createElement('div');
+  hint.className = 'ctrl-hint';
+  hint.textContent = spec.hint;
+  return hint;
+}
+
 /** Build the DOM for one parameter control and register its sync/mark hooks. */
-function buildControl(spec, controls, onChange, tip) {
+function buildControl(spec, controls, onChange, defaults) {
   const wrap = document.createElement('div');
   wrap.className = 'ctrl';
 
@@ -116,12 +336,9 @@ function buildControl(spec, controls, onChange, tip) {
     label.className = 'ctrl-bool';
     const box = document.createElement('input');
     box.type = 'checkbox';
-    const name = document.createElement('span');
-    name.className = 'ctrl-name';
-    name.textContent = spec.name;
-    tip(name, spec.doc);
-    label.append(box, name);
+    label.append(box, makeName(spec, onChange, defaults));
     wrap.appendChild(label);
+    if (spec.hint) wrap.appendChild(makeHint(spec));
     box.addEventListener('change', () => onChange(spec.name, box.checked));
     controls.set(spec.name, {
       sync: (v) => { box.checked = Boolean(v); },
@@ -132,11 +349,7 @@ function buildControl(spec, controls, onChange, tip) {
 
   const head = document.createElement('div');
   head.className = 'ctrl-head';
-  const name = document.createElement('span');
-  name.className = 'ctrl-name';
-  name.textContent = spec.name;
-  tip(name, spec.doc);
-  head.appendChild(name);
+  head.appendChild(makeName(spec, onChange, defaults));
 
   if (spec.type === 'enum') {
     wrap.appendChild(head);
@@ -144,13 +357,23 @@ function buildControl(spec, controls, onChange, tip) {
     sel.className = 'enum-select';
     for (const opt of spec.options) {
       const o = document.createElement('option');
-      o.value = opt; o.textContent = opt;
+      o.value = opt;
+      o.textContent = optionLabel(spec, opt);
       sel.appendChild(o);
     }
     wrap.appendChild(sel);
-    sel.addEventListener('change', () => onChange(spec.name, sel.value));
+    // The chosen option's own explanation, rather than a generic hint: for an enum, "what
+    // does this setting do" is answered per option, not per parameter.
+    const hint = makeHint(spec);
+    wrap.appendChild(hint);
+    const syncHint = (v) => {
+      const optText = optionLabel(spec, v);
+      const dash = optText.indexOf('—');
+      hint.textContent = dash >= 0 ? optText.slice(dash + 1).trim() : spec.hint;
+    };
+    sel.addEventListener('change', () => { syncHint(sel.value); onChange(spec.name, sel.value); });
     controls.set(spec.name, {
-      sync: (v) => { sel.value = v; },
+      sync: (v) => { sel.value = v; syncHint(v); },
       markChanged: (c) => wrap.classList.toggle('changed', c),
     });
     return wrap;
@@ -165,12 +388,24 @@ function buildControl(spec, controls, onChange, tip) {
   valWrap.appendChild(num);
   head.appendChild(valWrap);
   wrap.appendChild(head);
+  if (spec.hint) wrap.appendChild(makeHint(spec));
 
   const range = document.createElement('input');
   range.type = 'range';
   range.min = spec.min; range.max = spec.max; range.step = spec.step;
-  tip(range, spec.doc);
   wrap.appendChild(range);
+
+  // What the two ends mean, which is what stops the doc string being mandatory reading.
+  if (spec.lowLabel || spec.highLabel) {
+    const ends = document.createElement('div');
+    ends.className = 'ctrl-ends';
+    const lo = document.createElement('span');
+    lo.textContent = spec.lowLabel || '';
+    const hi = document.createElement('span');
+    hi.textContent = spec.highLabel || '';
+    ends.append(lo, hi);
+    wrap.appendChild(ends);
+  }
 
   // A slider drag should be a single history step: the first `input` opens a new entry,
   // every later `input` and the closing `change` coalesce into it.

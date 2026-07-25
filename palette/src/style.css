@@ -90,6 +90,7 @@ body {
 .btn:disabled { opacity: 0.4; cursor: default; }
 .btn-small { padding: 4px 9px; font-size: 12px; }
 .btn-accent { background: var(--accent); color: #0b1220; border-color: var(--accent); font-weight: 600; }
+.btn.is-on { background: var(--warn); color: #241a05; border-color: var(--warn); font-weight: 600; }
 .btn-accent:hover:not(:disabled) { background: #86b7ff; border-color: #86b7ff; }
 
 /* ---- Layout ----------------------------------------------------------- */
@@ -151,9 +152,42 @@ select {
 .param-group[open] > summary::before { transform: rotate(90deg); }
 .param-group-body { padding: 6px 10px 10px; }
 
+.param-group > summary > span:first-child { flex: 1; }
+.group-reset {
+  font-family: var(--sans); font-size: 12px; line-height: 1;
+  background: transparent; color: var(--text-faint);
+  border: 1px solid transparent; border-radius: 4px; padding: 2px 5px; cursor: pointer;
+}
+.group-reset:hover { color: var(--text); border-color: var(--line-2); background: var(--bg-3); }
+
+/* ---- Parameter panel toolbar ------------------------------------------ */
+.param-toolbar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.param-search {
+  flex: 1 1 120px; min-width: 90px;
+  font-family: var(--sans); font-size: 12px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line-2); border-radius: var(--radius); padding: 4px 7px;
+}
+.toggle-btn.is-on { background: var(--accent); color: #0b1220; border-color: var(--accent); }
+.param-toolbar-hint { flex-basis: 100%; font-size: 10px; color: var(--text-faint); }
+
 .ctrl { margin: 9px 0; }
+.ctrl[hidden] { display: none; }
 .ctrl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
 .ctrl-name { font-size: 12px; color: var(--text); cursor: help; }
+.ctrl-hint { font-size: 10.5px; line-height: 1.35; color: var(--text-dim); margin: 0 0 4px; }
+.ctrl-ends {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 10px; color: var(--text-faint); margin-top: -2px;
+}
+.ctrl-ends span:last-child { text-align: right; }
+.param-tip-name {
+  display: block; font-family: var(--mono); font-size: 11px;
+  color: var(--accent-2); margin-bottom: 4px;
+}
 .ctrl-val { font-family: var(--mono); font-size: 11px; color: var(--accent-2); }
 .ctrl-val input {
   width: 66px; font-family: var(--mono); font-size: 11px; text-align: right;
@@ -165,6 +199,85 @@ select {
 .ctrl-bool { display: flex; align-items: center; gap: 8px; }
 .ctrl-bool input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
 .ctrl.changed .ctrl-name::after { content: "•"; color: var(--warn); margin-left: 4px; }
+
+/* ---- Variant grid ----------------------------------------------------- */
+.variants-body { padding: 10px 12px; }
+.variants-grid {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.variant-tile {
+  padding: 6px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.variant-tile:hover { border-color: var(--accent); background: var(--bg-3); }
+.variant-tile.is-current { border-color: var(--accent-2); cursor: default; }
+.variant-tile.is-current:hover { background: var(--bg-2); }
+.variant-scene {
+  display: block; width: 100%; height: auto;
+  image-rendering: pixelated; border-radius: 3px;
+}
+.variant-strip { display: flex; height: 10px; margin-top: 5px; border-radius: 2px; overflow: hidden; }
+.variant-strip i { flex: 1 1 0; min-width: 1px; }
+.variant-caption {
+  margin-top: 4px; font-size: 10.5px; color: var(--text-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.variant-tile.is-current .variant-caption { color: var(--accent-2); }
+
+/* ---- Hover sweep (preview strips under the docs) ----------------------- */
+.param-sweep { margin-top: 8px; }
+.param-sweep:empty { margin-top: 0; }
+.sweep-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+.sweep-row.is-current .sweep-label { color: var(--accent-2); font-weight: 600; }
+.sweep-row.is-current .mini-strip,
+.sweep-row.is-current .sweep-strip { outline: 1px solid var(--accent-2); }
+.sweep-label {
+  flex: 0 0 62px; text-align: right;
+  font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-strip, .sweep-strip, .size-strip {
+  display: flex; flex: 1 1 auto; height: 14px;
+  border-radius: 2px; overflow: hidden; min-width: 0;
+}
+.mini-strip i, .sweep-strip i, .size-strip i { flex: 1 1 0; min-width: 1px; }
+
+/* ---- "What just changed" note ----------------------------------------- */
+.change-note {
+  padding: 6px 10px; border-bottom: 1px solid var(--line);
+  background: var(--bg-2); color: var(--text-dim);
+  font-size: 11px; line-height: 1.4;
+}
+
+/* ---- Palette description ---------------------------------------------- */
+.palette-desc {
+  margin: 0; padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px; line-height: 1.45; color: var(--text-dim);
+}
+
+/* ---- Colour-count sweep popover --------------------------------------- */
+.size-pop {
+  position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 24px);
+  padding: 8px; background: var(--panel); color: var(--text);
+  border: 1px solid var(--line-2); border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.size-pop-title {
+  font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.size-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 4px; margin-bottom: 4px; cursor: pointer;
+  background: var(--bg-2); color: var(--text);
+  border: 1px solid transparent; border-radius: 4px;
+}
+.size-row:hover { border-color: var(--line-2); background: var(--bg-3); }
+.size-row.is-current { border-color: var(--accent); }
+.size-label { flex: 0 0 22px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.size-scene { flex: 0 0 auto; width: 80px; height: auto; image-rendering: pixelated; border-radius: 2px; }
 
 /* ---- Swatch grid ------------------------------------------------------ */
 #swatches { display: block; }
@@ -186,6 +299,8 @@ select {
 .swatch-color { height: 46px; width: 100%; position: relative; cursor: pointer; }
 .swatch-value { position: absolute; top: 0; right: 0; width: 22px; height: 100%; border-left: 1px solid rgba(0,0,0,0.25); }
 .swatch-body { padding: 5px 6px 6px; }
+.swatch-name { font-size: 10.5px; color: var(--accent-2); margin-top: 1px; }
+.swatch-name.is-described { color: var(--text-faint); font-style: italic; }
 .swatch-role { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .swatch-hex {
   font-family: var(--mono); font-size: 11px; color: var(--text);

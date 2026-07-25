@@ -113,6 +113,38 @@ export function paintLabels(labels, w, h, palette, background = SHEET_BG) {
   return raster;
 }
 
+/**
+ * A compact grid of context maps with no captions — the thumbnail form of `contextSheet`.
+ *
+ * The variant grid has to show what a palette *is* in every job it will be used for, twelve
+ * palettes at a time. The full sheet (six contexts × four saturations, plus bands and text) is
+ * far too much at that size; a single gallery scene is far too little, because one scene
+ * exercises a handful of slots and says nothing about the rest. One map per context at the
+ * **top saturation** is the middle: every context, and within it every colour that context can
+ * reach, in a picture small enough to repeat a dozen times.
+ *
+ * `contextMaps` should come from `buildContextMaps(..., { saturations: [1] })`; only the first
+ * slice of each context is drawn, so passing more saturations just wastes work.
+ */
+export function contextThumbSheet(contextMaps, palette, {
+  columns = 3, gap = 2, background = SHEET_BG,
+} = {}) {
+  const maps = contextMaps.map((m) => m.slices?.[0]).filter(Boolean);
+  if (!maps.length) return new Raster(1, 1, background);
+  const cols = Math.max(1, Math.min(columns, maps.length));
+  const rows = Math.ceil(maps.length / cols);
+  const { w, h } = maps[0];
+  const sheet = new Raster(cols * w + (cols - 1) * gap, rows * h + (rows - 1) * gap, background);
+  maps.forEach((map, i) => {
+    sheet.blit(
+      paintLabels(map.labels, map.w, map.h, palette, background),
+      (i % cols) * (w + gap),
+      Math.floor(i / cols) * (h + gap),
+    );
+  });
+  return sheet;
+}
+
 /** Render a layout straight to a Raster, for callers that only want the pixels. */
 export function layoutRaster(layout, palette, opts = {}) {
   return renderLayout(layout, palette, opts).raster;

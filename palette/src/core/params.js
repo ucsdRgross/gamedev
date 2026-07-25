@@ -5,6 +5,8 @@
 // decodable (the decoder fills missing trailing fields with defaults); reordering
 // or removing entries silently reinterprets every seed ever pasted.
 
+import { PARAM_UI, BASIC_PARAMS } from './paramui.js';
+
 /**
  * @typedef {Object} ParamSpec
  * @property {string} name
@@ -16,6 +18,11 @@
  * @property {string[]} [options]
  * @property {*} default
  * @property {string} doc
+ * @property {string} label     human-readable name shown on the control (from paramui.js)
+ * @property {string} hint      one line under the control: what it does, in the user's terms
+ * @property {string} [lowLabel]  what the low end of a numeric range means
+ * @property {string} [highLabel] what the high end means
+ * @property {Object<string,string>} [optionLabels] enum value -> what picking it does
  */
 
 const f = (name, group, min, max, step, def, doc) => ({
@@ -33,10 +40,11 @@ const b = (name, group, def, doc) => ({ name, group, type: 'bool', default: def,
  * Ordered parameter schema; index in this array is the seed-payload field order.
  *
  * Every `doc` string is written as **what it does · when to reach for it · which way to push
- * it for a given look** — it is the hover tooltip, so it has to earn the hover. The README's
- * "Parameter reference" carries the longer worked examples.
+ * it for a given look** — it is the long-form hover text. The short, human-readable name the
+ * panel actually shows (`label`, `hint`, end labels, enum option labels) lives in
+ * `paramui.js` and is merged in below; see the note there for why it is a separate file.
  */
-export const PARAMS = [
+const SCHEMA = [
   // --- Structure ---------------------------------------------------------
   i('color_count', 'structure', 4, 64, 32,
     'How many colours the palette has in total. More = richer shading and variety; fewer = a tighter retro feel (4 Game Boy, 16 CGA, 32 Endesga, 64 AAP-64). If colours look muddy or redundant you have too many for the hue count — lower this, or raise hue_count.'),
@@ -227,8 +235,52 @@ export const PARAMS = [
     'How hard recolor_context pushes. 0 = no effect at all (identical to off); 1 = a hard restriction, a colour never leaves its own pool; in between = a preference, crossed only when the colour match is much better the other way. 1 gives the strongest foreground/background separation but can flatten dithered texture and force odd hues — drop to about 0.2-0.4 on tile and terrain art, which keeps the texture and still buys most of the separation.'),
 ];
 
+/**
+ * Attach the presentation metadata from `paramui.js` to a spec. Missing entries fall back to
+ * the raw name, so a newly added parameter still shows up in the panel (and the test that
+ * demands a real label fails, which is the point).
+ */
+function withUi(spec) {
+  const ui = PARAM_UI[spec.name] || {};
+  const out = { ...spec, label: ui.label || spec.name, hint: ui.hint || '' };
+  if (ui.low) out.lowLabel = ui.low;
+  if (ui.high) out.highLabel = ui.high;
+  if (spec.type === 'enum') out.optionLabels = ui.options || {};
+  return out;
+}
+
+/** The schema the app sees: the seed contract plus its human-readable presentation. */
+export const PARAMS = SCHEMA.map(withUi);
+
 /** Parameter specs looked up by name. */
 export const PARAM_BY_NAME = new Map(PARAMS.map((p) => [p.name, p]));
+
+/** The subset of parameters the panel's Basics view shows, in display order. */
+export const BASIC_PARAM_NAMES = BASIC_PARAMS.filter((n) => PARAM_BY_NAME.has(n));
+
+/** The label for one enum option, falling back to the raw value. */
+export function optionLabel(spec, value) {
+  return spec.optionLabels?.[value] || value;
+}
+
+/**
+ * The parameters that are angles on the hue circle, where 359° and 1° are neighbours and a
+ * search or a variation should wrap rather than clamp.
+ *
+ * Listed explicitly rather than matched by suffix. `l_variance_per_hue` and
+ * `chroma_variance_per_hue` both end in `_hue` and are **not** angles — wrapping them sent a
+ * small negative step to 359.98, which then clamped to the parameter's maximum, so a gentle
+ * variation could slam the per-hue variance to its ceiling. `hue_span` is a width, not a
+ * position, and clamps too.
+ */
+export const ANGULAR_PARAMS = new Set([
+  'root_hue', 'highlight_hue_target', 'shadow_hue_target', 'atmosphere_hue', 'neutral_temperature',
+]);
+
+/** True when a parameter is an angle that should wrap at 360 instead of clamping. */
+export function isAngularParam(name) {
+  return ANGULAR_PARAMS.has(name);
+}
 
 /** Distinct group names in schema order, for building the UI panels. */
 export const PARAM_GROUPS = [...new Set(PARAMS.map((p) => p.group))];

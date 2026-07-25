@@ -11,9 +11,17 @@ import { uiScenes } from './ui.js';
 import { gradientScenes } from './gradients.js';
 import { motionScenes } from './motion.js';
 import { benchmarkScenes } from './benchmark.js';
+import { mockupScenes } from './mockup.js';
 
-/** Every gallery scene, in display order. */
+/**
+ * Every gallery scene, in display order.
+ *
+ * The composed mockups come first on purpose: they are the closest thing here to the picture
+ * the palette is actually for, so they are what the gallery should open on and what the
+ * pinned hero shows by default (UX_PLAN U4.1/U4.2). The diagnostic scenes follow.
+ */
 export const SCENES = [
+  ...mockupScenes,
   ...structureScenes,
   ...formScenes,
   ...spriteScenes,

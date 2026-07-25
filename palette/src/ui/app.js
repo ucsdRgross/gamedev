@@ -8,10 +8,11 @@
 import { generatePalette } from '../core/generate.js';
 import { defaultParams, normalizeParams, coerceParam, PARAM_BY_NAME } from '../core/params.js';
 import { decodeSeed } from '../core/seed.js';
-import { presetParams } from '../core/presets.js';
+import { presetParams, PRESETS } from '../core/presets.js';
 import { parseJson } from '../core/export/json.js';
 import { makeRng } from '../core/rng.js';
-import { randomizeParams } from './randomize.js';
+import { randomizeParams, varyParams } from './randomize.js';
+import { createVariants } from './variants.js';
 import { createSliders } from './sliders.js';
 import { createSwatches } from './swatches.js';
 import { createHistory, cloneState } from './history.js';
@@ -19,20 +20,33 @@ import { createIO, readSeedFromHash } from './io.js';
 import { createGallery } from './gallery.js';
 import { createPicker } from './picker.js';
 import { createRecolorGallery } from './recolor.js';
+import { createSizeSweep } from './sizes.js';
+import { describePalette, paramDiff, summarizeDiff } from '../core/describe.js';
 import { sceneUsage } from '../scenes/usage.js';
+
+// A change smaller than 1.5% of a parameter's range is not what the user is looking at. Every
+// user-facing summary filters at this threshold, or a variation (which nudges forty knobs)
+// reads as "+34 more" and hides the two changes that did the work.
+const NOTABLE = { minMagnitude: 0.015 };
 
 function boot() {
   const $ = (id) => document.getElementById(id);
   const dom = {
     params: $('params'),
+    paramsToolbar: $('params-toolbar'),
     swatches: $('swatches'),
     history: $('history'),
     warnings: $('warnings'),
     meta: $('palette-meta'),
+    desc: $('palette-desc'),
+    changeNote: $('change-note'),
+    sizesBtn: $('sizes-btn'),
     seedInput: $('seed-input'),
     seedCopy: $('seed-copy'),
     undo: $('undo'),
     redo: $('redo'),
+    beforeAfter: $('before-after'),
+    vary: $('vary'),
     randomize: $('randomize'),
     resetDefaults: $('reset-defaults'),
     presetSelect: $('preset-select'),
@@ -55,6 +69,13 @@ function boot() {
     galleryAnimate: $('gallery-animate'),
     galleryControls: $('gallery-controls'),
     tabGallery: $('tab-gallery'),
+    tabVariants: $('tab-variants'),
+    variants: $('variants'),
+    variantsControls: $('variants-controls'),
+    variantsGrid: $('variants-grid'),
+    variantsStrength: $('variants-strength'),
+    variantsScene: $('variants-scene'),
+    variantsMore: $('variants-more'),
     tabPicker: $('tab-picker'),
     picker: $('picker'),
     pickerControls: $('picker-controls'),
@@ -89,6 +110,8 @@ function boot() {
   let state = { params: defaultParams(), locks: {}, overrides: {} };
   let palette = null;
   let randomCounter = 0;
+  let lastCommitted = null; // baseline for "what changed" labels on history entries
+  let showingBefore = false; // the Before/After button is holding a past palette on screen
 
   // Seed the initial state from the URL hash, if present.
   const hashSeed = readSeedFromHash();
@@ -103,6 +126,9 @@ function boot() {
 
   // ---- Sub-controllers ------------------------------------------------
   const sliders = createSliders(dom.params, {
+    toolbar: dom.paramsToolbar,
+    // The hover sweeps generate real palettes from the live state, pinned colours included.
+    getState: () => state,
     onChange: (name, value, opts = {}) => {
       const spec = PARAM_BY_NAME.get(name);
       state.params = { ...state.params, [name]: spec ? coerceParam(spec, value) : value };
@@ -136,46 +162,91 @@ function boot() {
   });
 
   const history = createHistory(dom.history, {
-    onRestore: (snapshot) => { state = cloneState(snapshot); regenerate(); },
+    onRestore: (snapshot) => { state = cloneState(snapshot); regenerate(); persistHistory(); },
     onChange: () => {
       dom.undo.disabled = !history.canUndo();
       dom.redo.disabled = !history.canRedo();
+      if (dom.beforeAfter) dom.beforeAfter.disabled = !history.previous();
+      persistHistory();
     },
   });
+
+  // ---- History persistence (UX_PLAN U3.3) ------------------------------
+  // A hundred steps in memory is still one reload away from nothing, and the palette worth
+  // keeping is routinely three reloads back. Written on a timer so a slider drag does not
+  // serialise the whole strip on every frame.
+  const HISTORY_KEY = 'palette.history.v1';
+  let persistTimer = null;
+  function persistHistory() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.serialize())); } catch { /* full or blocked */ }
+    }, 400);
+  }
 
   /** Load a `PAL1-…` seed into state; returns false (leaving state untouched) on error. */
   function loadSeed(str) {
     try {
       const decoded = decodeSeed(str);
+      const summary = summarizeDiff(paramDiff(state.params, decoded.params, NOTABLE), 3);
       state = { params: decoded.params, locks: decoded.locks, overrides: decoded.overrides };
       regenerate();
       commit(false);
+      noteChange(summary ? `Seed loaded — ${summary}` : 'Seed loaded');
       return true;
     } catch { return false; }
   }
 
+  /**
+   * Show a one-line "what just changed" note above the panel (UX_PLAN U2.5 — item 34).
+   * A preset, a fit or a pasted seed is otherwise an opaque jump: this says which knobs moved
+   * and by how much, so the jump teaches the parameters instead of hiding them.
+   */
+  function noteChange(text) {
+    if (!dom.changeNote) return;
+    dom.changeNote.textContent = text || '';
+    dom.changeNote.hidden = !text;
+  }
+
+  /** Replace the whole parameter set, reporting what it changed. */
+  function applyParamSet(params, source) {
+    const next = normalizeParams(params);
+    // Taken before the state moves — `commit` resets the baseline the labels are measured on.
+    const summary = summarizeDiff(paramDiff(state.params, next, NOTABLE), 3);
+    state = { params: next, locks: {}, overrides: {} };
+    regenerate();
+    commit(false);
+    noteChange(summary ? `${source} — ${summary}` : `${source} — nothing changed`);
+  }
+
+  /** Set one parameter (used by views outside the slider panel, like the size sweep). */
+  function setParam(name, value) {
+    const spec = PARAM_BY_NAME.get(name);
+    state = { ...state, params: { ...state.params, [name]: spec ? coerceParam(spec, value) : value } };
+    regenerate();
+    commit(false);
+  }
+
   const io = createIO(dom, {
     applyPreset: (id) => {
-      state = { params: presetParams(id), locks: {}, overrides: {} };
-      regenerate();
-      commit(false);
+      const preset = PRESETS.find((p) => p.id === id);
+      applyParamSet(presetParams(id), `Preset “${preset?.name || id}”`);
     },
-    applyParams: (params) => {
-      state = { params: normalizeParams(params), locks: {}, overrides: {} };
-      regenerate();
-      commit(false);
-    },
+    applyParams: (params) => applyParamSet(params, 'Fitted parameters'),
     loadSeed,
     loadJson: (text) => {
       try {
         const parsed = parseJson(text);
+        const next = normalizeParams(parsed.params);
+        const summary = summarizeDiff(paramDiff(state.params, next, NOTABLE), 3);
         state = {
-          params: normalizeParams(parsed.params),
+          params: next,
           locks: parsed.locks || {},
           overrides: parsed.overrides || {},
         };
         regenerate();
         commit(false);
+        noteChange(summary ? `Loaded palette — ${summary}` : 'Loaded palette');
         return true;
       } catch { return false; }
     },
@@ -227,16 +298,27 @@ function boot() {
     targetSwatches: dom.recolorTargetSwatches,
   }, { onStatus: (text) => { dom.recolorStatus.textContent = text; } });
 
-  // The three views of the middle pane. Only one is built and animating at a time — the
-  // gallery, the picker and the recolour page are all expensive enough that leaving a
-  // hidden one running would be felt.
+  const variants = createVariants({
+    grid: dom.variantsGrid,
+    strength: dom.variantsStrength,
+    scene: dom.variantsScene,
+    more: dom.variantsMore,
+  }, {
+    getState: () => state,
+    onAdopt: (params) => applyParamSet(params, 'Variation taken'),
+  });
+
+  // The four views of the middle pane. Only one is built and animating at a time — the
+  // gallery, the variants, the picker and the recolour page are all expensive enough that
+  // leaving a hidden one running would be felt.
   const TABS = [
     { name: 'gallery', tab: dom.tabGallery, body: dom.gallery, controls: dom.galleryControls },
+    { name: 'variants', tab: dom.tabVariants, body: dom.variants, controls: dom.variantsControls },
     { name: 'picker', tab: dom.tabPicker, body: dom.picker, controls: dom.pickerControls },
     { name: 'recolor', tab: dom.tabRecolor, body: dom.recolor, controls: dom.recolorControls },
   ];
 
-  /** Switch the middle pane between the gallery, the picker and the recolour page. */
+  /** Switch the middle pane between the gallery, the variants, the picker and the recolour. */
   function showTab(name) {
     for (const t of TABS) {
       const on = t.name === name;
@@ -245,33 +327,55 @@ function boot() {
       t.body.hidden = !on;
       t.controls.hidden = !on;
     }
+    variants.setActive(name === 'variants');
     picker.setActive(name === 'picker');
     recolor.setActive(name === 'recolor');
   }
   for (const t of TABS) t.tab.addEventListener('click', () => showTab(t.name));
 
   // ---- Core loop ------------------------------------------------------
-  /** Regenerate the palette from state and repaint every dependent view. */
-  function regenerate() {
-    palette = generatePalette(state.params, { locks: state.locks, overrides: state.overrides });
+  /**
+   * Regenerate the palette and repaint every dependent view.
+   *
+   * `src` is normally the live state; the Before/After button passes a past snapshot with
+   * `transient`, which repaints everything **without** touching the seed field, the URL hash
+   * or the history — looking at where you were must not count as going there.
+   */
+  function regenerate(src = state, { transient = false } = {}) {
+    // Any real change leaves the Before/After view — otherwise the button would still claim
+    // to be showing the past while the user edits the present.
+    if (!transient && showingBefore) exitBefore();
+    palette = generatePalette(src.params, { locks: src.locks, overrides: src.overrides });
     swatches.render(palette);
-    sliders.render(state.params);
+    sliders.render(src.params);
     gallery.render(palette);
+    variants.render(palette);
     picker.render(palette);
-    recolor.render(palette, state.params);
-    io.updateSeed(palette.seed);
-    renderMeta();
+    recolor.render(palette, src.params);
+    if (!transient) io.updateSeed(palette.seed);
+    renderMeta(src.params);
   }
 
-  /** Record the current state in history — coalescing into the last entry mid-drag. */
+  /**
+   * Record the current state in history — coalescing into the last entry mid-drag — with a
+   * label saying what moved, so the strip is a list of decisions rather than of thumbnails.
+   */
   function commit(coalesce) {
-    if (coalesce) history.replaceCurrent(state, currentHexes());
-    else history.push(state, currentHexes());
+    // The baseline is the last *pushed* entry, not the last call: during a drag every frame
+    // coalesces into one entry, and its label should describe the whole drag.
+    const label = summarizeDiff(paramDiff(lastCommitted?.params, state.params, NOTABLE), 2);
+    if (coalesce) {
+      history.replaceCurrent(state, currentHexes(), label);
+    } else {
+      history.push(state, currentHexes(), label);
+      lastCommitted = cloneState(state);
+    }
   }
 
-  /** Update the palette-count readout and the warnings panel. */
-  function renderMeta() {
+  /** Update the palette-count readout, the plain-English description and the warnings. */
+  function renderMeta(params = state.params) {
     dom.meta.textContent = `${palette.entries.length} colours · ${palette.plan.hueCount} hues`;
+    if (dom.desc) dom.desc.textContent = describePalette(palette, params);
     if (palette.warnings.length) {
       dom.warnings.hidden = false;
       dom.warnings.innerHTML = `<strong>${palette.warnings.length} constraint warning(s):</strong>`
@@ -282,13 +386,68 @@ function boot() {
     }
   }
 
+  createSizeSweep({
+    button: dom.sizesBtn,
+    getState: () => state,
+    onPick: (size) => {
+      setParam('color_count', size);
+      noteChange(`Colour count → ${size}`);
+    },
+  });
+
   // ---- Top-bar actions ------------------------------------------------
-  dom.randomize.addEventListener('click', () => {
+  /** A fresh RNG for a button press — never the same variation twice in a row. */
+  function pressRng() {
     randomCounter += 1;
-    const rng = makeRng((Date.now() ^ Math.imul(randomCounter, 2654435761)) & 0xffff);
-    state = { params: randomizeParams(state.params, rng), locks: state.locks, overrides: state.overrides };
+    return makeRng((Date.now() ^ Math.imul(randomCounter, 2654435761)) & 0xffff);
+  }
+
+  // Vary is the everyday button: the same palette, moved. Randomize (below) is the "I have
+  // nothing yet, surprise me" button, and stays exactly as it was.
+  dom.vary?.addEventListener('click', (e) => {
+    const strength = e.shiftKey ? 'wild' : 'moderate';
+    const before = state.params;
+    const next = varyParams(before, pressRng(), { strength });
+    // The summary is taken against the pre-vary parameters: `commit` moves the baseline, so
+    // reading it afterwards would always report nothing.
+    const summary = summarizeDiff(paramDiff(before, next, NOTABLE), 2);
+    state = { params: next, locks: state.locks, overrides: state.overrides };
     regenerate();
     commit(false);
+    noteChange(`${e.shiftKey ? 'Bold' : 'Gentle'} variation — ${summary || 'a new seed only'}`);
+  });
+
+  dom.randomize.addEventListener('click', () => {
+    state = { params: randomizeParams(state.params, pressRng()), locks: state.locks, overrides: state.overrides };
+    regenerate();
+    commit(false);
+    noteChange('Randomized every look parameter');
+  });
+
+  // Before / After (item 22): show the previous palette everywhere while it is on, without
+  // committing anything. An on-screen toggle rather than a held key, so it is discoverable.
+  /** Put the button back to "Before" without repainting. */
+  function exitBefore() {
+    showingBefore = false;
+    if (!dom.beforeAfter) return;
+    dom.beforeAfter.classList.remove('is-on');
+    dom.beforeAfter.textContent = 'Before';
+    dom.beforeAfter.title = 'Show the palette as it was one step ago — click again to come back';
+  }
+
+  dom.beforeAfter?.addEventListener('click', () => {
+    if (showingBefore) {
+      exitBefore();
+      regenerate();
+      return;
+    }
+    const prev = history.previous();
+    if (!prev) return;
+    showingBefore = true;
+    dom.beforeAfter.classList.add('is-on');
+    dom.beforeAfter.textContent = 'After';
+    dom.beforeAfter.title = 'Showing the previous palette — click to come back';
+    regenerate(prev, { transient: true });
   });
 
   dom.resetDefaults.addEventListener('click', () => {
@@ -320,8 +479,20 @@ function boot() {
   });
 
   // ---- First paint ----------------------------------------------------
+  // A URL seed always wins — it is an explicit request for a specific palette. Otherwise the
+  // last session's history is restored, so closing the tab is no longer a way to lose work.
+  let restored = null;
+  if (!hashSeed) {
+    try {
+      const saved = localStorage.getItem(HISTORY_KEY);
+      if (saved) restored = history.restore(JSON.parse(saved));
+    } catch { /* unusable store: fall through to a clean start */ }
+  }
+  if (restored) state = cloneState(restored);
   regenerate();
-  history.push(state, currentHexes());
+  if (!restored) history.push(state, currentHexes(), 'start');
+  lastCommitted = cloneState(state);
+  if (dom.beforeAfter) dom.beforeAfter.disabled = !history.previous();
   io.refreshSaves();
 }
 

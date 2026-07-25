@@ -4,6 +4,7 @@
 
 import { semanticsBySlot } from '../core/roles.js';
 import { oklchToSrgb, srgbToRgb8, rgb8ToHex } from '../core/oklch.js';
+import { colorLabel } from '../core/colornames.js';
 
 const HEX_RE = /^#?[0-9a-fA-F]{6}$/;
 
@@ -49,10 +50,14 @@ function buildSwatch(entry, semanticNames, actions) {
   else if (entry.fixed) card.classList.add('fixed');
 
   // Colour block with a value-only strip and the lock / override pills.
+  // What to call this colour — a name when one is genuinely close, a plain description
+  // otherwise (UX_PLAN U2.5, item 21). "the dusty rose one" is how palettes get discussed.
+  const named = colorLabel(entry.hex);
+
   const color = document.createElement('div');
   color.className = 'swatch-color';
   color.style.background = entry.hex;
-  color.title = `${entry.hex} — click to copy`;
+  color.title = `${named.label} · ${entry.hex} — click to copy`;
   const value = document.createElement('div');
   value.className = 'swatch-value';
   value.style.background = valueHex(entry);
@@ -102,6 +107,13 @@ function buildSwatch(entry, semanticNames, actions) {
   hex.addEventListener('change', commitHex);
   hex.addEventListener('keydown', (e) => { if (e.key === 'Enter') hex.blur(); });
 
+  const colorName = document.createElement('div');
+  colorName.className = `swatch-name${named.named ? '' : ' is-described'}`;
+  colorName.textContent = named.label;
+  colorName.title = named.named
+    ? `Nearest named colour: ${named.label}`
+    : 'No named colour is close enough, so this describes it instead';
+
   const oklch = document.createElement('div');
   oklch.className = 'swatch-oklch';
   const { L, C, h } = entry.actual;
@@ -116,7 +128,7 @@ function buildSwatch(entry, semanticNames, actions) {
     tags.appendChild(t);
   }
 
-  body.append(role, hex, oklch, tags);
+  body.append(role, colorName, hex, oklch, tags);
   card.appendChild(body);
   return card;
 }

@@ -4,6 +4,8 @@ import {
   PARAMS,
   PARAM_BY_NAME,
   PARAM_GROUPS,
+  BASIC_PARAM_NAMES,
+  optionLabel,
   defaultParams,
   normalizeParams,
   coerceParam,
@@ -11,6 +13,7 @@ import {
   u16ToParam,
   snapParams,
 } from '../src/core/params.js';
+import { PARAM_UI, BASIC_PARAMS } from '../src/core/paramui.js';
 
 test('schema is well-formed and covers the documented parameter set', () => {
   assert.ok(PARAMS.length >= 50, `expected ~50+ parameters, got ${PARAMS.length}`);
@@ -77,6 +80,79 @@ test('the recolour parameters are present and appended after the palette ones', 
   // Every one of them sits after `seed`, so old PAL1 seeds still decode (§6).
   const seedAt = names.indexOf('seed');
   for (const name of required) assert.ok(names.indexOf(name) > seedAt, `${name} must be appended, not inserted`);
+});
+
+// --- Presentation metadata (UX_PLAN U1) -----------------------------------
+// The panel shows `label`/`hint`/end labels instead of the raw snake_case key, so a missing
+// or duplicated one is a user-visible defect, not a cosmetic slip.
+
+test('every parameter has a human-readable label and hint', () => {
+  for (const p of PARAMS) {
+    assert.ok(p.label && p.label !== p.name, `${p.name} needs a label that is not its raw name`);
+    assert.ok(p.hint && p.hint.length > 8, `${p.name} needs a one-line hint`);
+    assert.ok(!/_/.test(p.label), `${p.name} label "${p.label}" still looks like an identifier`);
+  }
+});
+
+test('labels are unique, so no two controls read the same', () => {
+  const seen = new Map();
+  for (const p of PARAMS) {
+    assert.ok(!seen.has(p.label), `label "${p.label}" is used by both ${seen.get(p.label)} and ${p.name}`);
+    seen.set(p.label, p.name);
+  }
+});
+
+test('every numeric parameter says what its two ends mean', () => {
+  for (const p of PARAMS) {
+    if (p.type !== 'float' && p.type !== 'int') continue;
+    assert.ok(p.lowLabel, `${p.name} needs a lowLabel`);
+    assert.ok(p.highLabel, `${p.name} needs a highLabel`);
+    assert.notEqual(p.lowLabel, p.highLabel, `${p.name} ends read the same`);
+  }
+});
+
+test('every enum option is named in plain language', () => {
+  for (const p of PARAMS) {
+    if (p.type !== 'enum') continue;
+    for (const opt of p.options) {
+      const label = optionLabel(p, opt);
+      assert.notEqual(label, opt, `${p.name}.${opt} has no label`);
+      assert.ok(label.length > opt.length, `${p.name}.${opt} label should explain, not restate`);
+    }
+  }
+});
+
+test('the UI metadata map covers the schema exactly', () => {
+  const names = new Set(PARAMS.map((p) => p.name));
+  for (const name of Object.keys(PARAM_UI)) {
+    assert.ok(names.has(name), `PARAM_UI has an entry for unknown parameter "${name}"`);
+  }
+  for (const name of names) {
+    assert.ok(PARAM_UI[name], `PARAM_UI is missing "${name}"`);
+  }
+});
+
+test('Basics is a real, strict subset of the parameters', () => {
+  assert.ok(BASIC_PARAMS.length >= 8 && BASIC_PARAMS.length <= 14, 'Basics should stay small');
+  assert.equal(new Set(BASIC_PARAMS).size, BASIC_PARAMS.length, 'no duplicates in Basics');
+  for (const name of BASIC_PARAMS) {
+    assert.ok(PARAM_BY_NAME.has(name), `Basics names an unknown parameter "${name}"`);
+  }
+  assert.deepEqual(BASIC_PARAM_NAMES, BASIC_PARAMS);
+  assert.ok(BASIC_PARAMS.length < PARAMS.length, 'Basics must be a strict subset');
+  // The README's "set the big movers first" list, which is what Basics exists to surface.
+  for (const name of ['hue_scheme', 'root_hue', 'color_count', 'l_mid_base', 'chroma_base']) {
+    assert.ok(BASIC_PARAMS.includes(name), `Basics must include the big mover ${name}`);
+  }
+});
+
+test('presentation metadata does not touch the seed payload', () => {
+  // Field order is the payload order; labels are attached after the array is built, so the
+  // index of every parameter must be exactly what the schema declared.
+  const names = PARAMS.map((p) => p.name);
+  assert.equal(names[0], 'color_count');
+  assert.equal(names[names.length - 1], 'remap_context_bias');
+  assert.equal(names.indexOf('seed'), 57);
 });
 
 test('defaults normalise to themselves', () => {
