@@ -26,7 +26,7 @@ it, and exports to Godot / Aseprite / the web.
 |---|---|
 | `src/core/` | DOM-free colour maths, generation, analysis, dithering, layout, recolour. Imported by the browser, `node --test` and the headless renderer alike |
 | `src/core/export/` | Output writers: gpl, pal, hex, lospec, css, json, tres, png |
-| `src/ui/` | Browser app modules (`app sliders swatches history io randomize gallery picker recolor variants sizes strip`) |
+| `src/ui/` | Browser app modules (`app sliders swatches history io saves start randomize gallery hero picker recolor variants sizes strip`) |
 | `src/scenes/` | The 34 gallery scenes (DOM-free) + registry + semantic role accessors |
 | `test/` | `node --test` suite (411 tests) and golden snapshots |
 | `tools/` | Dev server, single-file build, headless renderer, PNG codec |
@@ -74,13 +74,14 @@ export PATH="/c/Program Files/nodejs:$PATH"          # bash
 
 ## 3. Where the work stands
 
-`npm test` **green at 411** (was 370 at the start of the phase). `npm run build` green.
-**Nothing is committed** — the whole phase is in the working tree. The user has not asked for
-commits; do not commit unless asked.
+`npm test` **green at 437** (was 370 at the start of the phase). `npm run build` green.
+U1–U3 are committed (`3942c4b`); **U4 and U5 are in the working tree, uncommitted**. The user
+has not asked for commits; do not commit unless asked.
 
-Phases **U1, U2, U3 are done**. **U4, U5, U6, U7 are not started.** Full detail, including
-per-task done-when conditions, is in UX_PLAN.md; the running notes at the bottom of that file
-record what was built and what surprised.
+Phases **U1–U5 are done**. **U6 and U7 are not started.** One piece of U5 is deliberately
+outstanding: shift-click a library card to send it to Compare, which cannot exist until U6.2
+builds Compare. Full detail, including per-task done-when conditions, is in UX_PLAN.md; the
+running notes at the bottom of that file record what was built and what surprised.
 
 ### What U1–U3 added (so you do not re-derive it)
 
@@ -107,6 +108,57 @@ Changed / resets), `swatches.js` (colour names), `history.js` (100 deep, labels,
 serialize/restore), `randomize.js` (`varyParams`, `paramDistance`), `app.js` (variants tab,
 Vary and Before buttons, change notes, history persistence), `layout/render.js`
 (`contextThumbSheet`), `index.html`, `style.css`.
+
+### What U4 added
+
+- `src/core/arrange.js` — `arrangeEntries(palette, mode)` regroups the swatches as Grid /
+  Ramps / by lightness / by hue. The invariant the tests pin is **conservation**: every mode
+  returns every entry exactly once.
+- `analysis.js` — `applyViewSpec` / `viewParts` / `VIEW_PAIRS`. `'color|deutan'` renders both
+  views into one raster side by side, so the gallery paints a pair like any single view.
+- `src/ui/hero.js` — the pinned block above the gallery grid: a selectable scene at its own
+  zoom, plus a row of real reference art recoloured live beside its original. Prefs persist
+  under `palette.hero.v1`.
+- `recolor.js` gained `listSources` / `framesFor` / `onSourcesChange` so the hero borrows the
+  reference library instead of fetching and decoding the same files a second time.
+- `params.js` gained `FREEZE_PARAMS`; the topbar **Freeze** button zeroes all three.
+
+**Three traps U4 hit — read before touching the hero or the gallery:**
+
+1. **`requestAnimationFrame` does not fire when the page is not being composited.** The hero
+   coalesces with `setTimeout`, matching `recolor.js`. The gallery still uses rAF, so it draws
+   nothing in a hidden/headless tab — expected, not a bug in a real window.
+2. **The reference library arrives in stages.** `onSourcesChange` fires first with only the
+   built-ins. Pruning pinned art against that partial list deletes every folder pin.
+3. **Freeze cannot be detected by value alone** — a preset that is already unjittered would
+   otherwise leave the button on, holding the previous palette's values.
+
+### What U5 added
+
+- `src/ui/saves.js` — the save **store**, with two backends behind one interface: the dev
+  server's `saved/` folder when one answers, `localStorage` when it does not. Saving used to
+  be disabled outright without a server, so the standalone build could not keep anything.
+  `where()` reports which backend is live; that difference is never hidden.
+- `autoName` in `describe.js` and `src/core/library.js` (`SAVE_NAME_RE`, `isSaveName`,
+  `toSaveName`, `pushAutosave`) — one-click **Keep** with a name read off the colours, and the
+  autosave ring.
+- `src/core/hexlist.js` — `parseHexList` / `hexListPalette`.
+- `src/ui/start.js` — the **Start tab**: mood chips, the preset thumbnail grid, the kept
+  library, the "recently passed through" ring, and the paste field. Opens by default only for
+  a genuinely first-time visitor.
+- `io.js` now returns `loadSave` / `save` / `fitTo` / `pickImage`; the Start tab calls those
+  rather than owning copies. `recolor.js` gained `addTarget(palette)` for pasted colours.
+
+**Three traps U5 hit:**
+
+1. **The library rebuild is re-entrant** — Keep rebuilds it while the previous read is still
+   in flight. Clear-then-append-after-await shows every save twice; `buildSaves` carries a
+   generation counter.
+2. **"First visit" is not "no localStorage."** The seed is mirrored into the URL hash, so a
+   plain reload always carries one. The test is no restored history *and* no hash seed.
+3. **`autoName` cannot reuse `describePalette`'s bands.** Measured over all 21 presets the
+   mean chroma of the coloured entries spans 0.036–0.166, so bands drawn for the 0–0.37 range
+   would call every palette "mid" and nothing "vivid".
 
 **Three calibrations that are easy to get wrong again:**
 
@@ -173,24 +225,16 @@ it there by construction.
 
 ## 6. What to do next
 
-Work **U4 → U5 → U6 → U7** in order; each phase's tasks and done-when conditions are in
+Work **U6 → U7** in order; each phase's tasks and done-when conditions are in
 UX_PLAN.md. Summary:
 
-- **U4 — Seeing it.** Pinned hero scene above the gallery that never scrolls away while
-  tuning; 1× zoom (the gallery currently starts at 2×); new composed 256×192 mockup scenes
-  (HUD + tilemap + character + text at three sizes + inventory); a pinned row of **real**
-  reference art recoloured into the palette; side-by-side colour-vision views; a Ramps view in
-  the palette pane (built on `rampsOf()` in `analysis.js`); a Freeze toggle that zeroes
-  `hue_jitter` / `l_variance_per_hue` / `chroma_variance_per_hue`.
-- **U5 — Keeping and starting.** One-click **Keep** with an auto-generated name; a visual
-  library of saves; persistence and an autosave ring; a preset thumbnail grid; a dismissible
-  start screen with mood chips; `parseHexList` paste ingestion. Context: `saved/` is **empty**
-  while `saved_palettes.txt.txt` in the project root holds a hand-pasted seed — the save path
-  is losing to a text file, and that is the problem U5 exists to fix.
 - **U6 — Inversion tools.** Fitter upgrades (`from`, `fixed`, `onProgress`, resumable
   "keep looking", returned diff) **plus the hue-wrap fix above**; Compare A/B with a difference
   report, a morph slider and "how to get there"; custom hue pins as seven append-only
   parameters (`custom_hue_count`, `custom_hue_1..6`) honoured by `hues.js`.
+  Two carried-over hooks: U5.2's **shift-click a library card → send it to Compare** belongs
+  here, and `io.js` already exposes `fitTo(hexes)` so a pasted or saved palette can seed the
+  search without another copy of the fit loop.
   Note `hue_scheme: 'custom'` currently just spreads hues evenly over `hue_span` — there is no
   way to specify custom hues at all today.
 - **U7 — Correctness surface.** `diagnose.js` (near-duplicates, value holes, hue gaps, unused

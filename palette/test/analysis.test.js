@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  simulateColorblind, toValue, viewColor, applyView, rampEvenness, rampsOf, VIEWS,
+  simulateColorblind, toValue, viewColor, applyView, applyViewSpec, viewParts,
+  rampEvenness, rampsOf, VIEWS, VIEW_PAIRS,
 } from '../src/core/analysis.js';
 import { rgb8ToOklch, deltaERgb8 } from '../src/core/oklch.js';
 import { Raster } from '../src/core/raster.js';
@@ -58,6 +59,35 @@ test('applyView returns the same raster for color and a new one otherwise', () =
   assert.equal(v.w, 3);
   const px = v.get(1, 1);
   assert.ok(Math.abs(px[0] - px[1]) <= 1, 'value view pixel is neutral');
+});
+
+test('a paired view is the same picture twice, gutter between, in the order named', () => {
+  const r = new Raster(4, 3, [200, 40, 40]);
+  r.set(0, 0, [10, 220, 30]); // something asymmetric, so a mirrored blit would be caught
+  assert.deepEqual(viewParts('color|deutan'), ['color', 'deutan']);
+  const pair = applyViewSpec(r, 'color|deutan', { gap: 2 });
+  assert.equal(pair.w, 4 * 2 + 2);
+  assert.equal(pair.h, 3);
+  const deutan = applyView(r, 'deutan');
+  for (let y = 0; y < r.h; y++) {
+    for (let x = 0; x < r.w; x++) {
+      assert.deepEqual(pair.get(x, y), r.get(x, y), `left half is the untouched picture at ${x},${y}`);
+      assert.deepEqual(pair.get(x + r.w + 2, y), deutan.get(x, y), `right half is the deutan view at ${x},${y}`);
+    }
+  }
+});
+
+test('applyViewSpec falls back to applyView for a single name', () => {
+  const r = new Raster(3, 3, [200, 40, 40]);
+  assert.equal(applyViewSpec(r, 'color'), r, 'colour alone is still the identity');
+  assert.equal(applyViewSpec(r, 'value').w, 3, 'a single view is not widened');
+  // Every offered pair must name views the transform actually knows.
+  for (const spec of VIEW_PAIRS) {
+    const parts = viewParts(spec);
+    assert.equal(parts.length, 2, `${spec} is a pair`);
+    for (const p of parts) assert.ok(VIEWS.includes(p), `${spec} names the known view ${p}`);
+    assert.equal(parts[0], 'color', `${spec} shows the real colours on the left`);
+  }
 });
 
 test('rampEvenness scores a perfectly even ramp near 1 and a lumpy one lower', () => {

@@ -6,7 +6,7 @@
 // delegated to src/core, so the same generator the tests exercise runs here unchanged.
 
 import { generatePalette } from '../core/generate.js';
-import { defaultParams, normalizeParams, coerceParam, PARAM_BY_NAME } from '../core/params.js';
+import { defaultParams, normalizeParams, coerceParam, PARAM_BY_NAME, FREEZE_PARAMS } from '../core/params.js';
 import { decodeSeed } from '../core/seed.js';
 import { presetParams, PRESETS } from '../core/presets.js';
 import { parseJson } from '../core/export/json.js';
@@ -18,10 +18,13 @@ import { createSwatches } from './swatches.js';
 import { createHistory, cloneState } from './history.js';
 import { createIO, readSeedFromHash } from './io.js';
 import { createGallery } from './gallery.js';
+import { createHero } from './hero.js';
 import { createPicker } from './picker.js';
 import { createRecolorGallery } from './recolor.js';
 import { createSizeSweep } from './sizes.js';
-import { describePalette, paramDiff, summarizeDiff } from '../core/describe.js';
+import { createStart } from './start.js';
+import { createSaveStore, recordRing } from './saves.js';
+import { describePalette, paramDiff, summarizeDiff, autoName } from '../core/describe.js';
 import { sceneUsage } from '../scenes/usage.js';
 
 // A change smaller than 1.5% of a parameter's range is not what the user is looking at. Every
@@ -35,6 +38,7 @@ function boot() {
     params: $('params'),
     paramsToolbar: $('params-toolbar'),
     swatches: $('swatches'),
+    swatchArrange: $('swatch-arrange'),
     history: $('history'),
     warnings: $('warnings'),
     meta: $('palette-meta'),
@@ -46,6 +50,8 @@ function boot() {
     undo: $('undo'),
     redo: $('redo'),
     beforeAfter: $('before-after'),
+    keep: $('keep'),
+    freeze: $('freeze'),
     vary: $('vary'),
     randomize: $('randomize'),
     resetDefaults: $('reset-defaults'),
@@ -62,7 +68,31 @@ function boot() {
     fitImageBtn: $('fit-image-btn'),
     fitImageFile: $('fit-image-file'),
     fitStatus: $('fit-status'),
+    tabStart: $('tab-start'),
+    start: $('start'),
+    startControls: $('start-controls'),
+    startMoods: $('start-moods'),
+    startPresets: $('start-presets'),
+    startSaves: $('start-saves'),
+    startSavesNote: $('start-saves-note'),
+    startRecent: $('start-recent'),
+    startRecentWrap: $('start-recent-wrap'),
+    startPaste: $('start-paste'),
+    startPasteNote: $('start-paste-note'),
+    startPastePreview: $('start-paste-preview'),
+    startPasteFit: $('start-paste-fit'),
+    startPasteTarget: $('start-paste-target'),
+    startFromImage: $('start-from-image'),
     gallery: $('gallery'),
+    hero: $('hero'),
+    heroBody: $('hero-body'),
+    heroCanvas: $('hero-canvas'),
+    heroScene: $('hero-scene'),
+    heroZoom: $('hero-zoom'),
+    heroArt: $('hero-art'),
+    heroArtRow: $('hero-art-row'),
+    heroOriginal: $('hero-original'),
+    heroToggle: $('hero-toggle'),
     galleryCategory: $('gallery-category'),
     galleryView: $('gallery-view'),
     galleryZoom: $('gallery-zoom'),
@@ -112,6 +142,7 @@ function boot() {
   let randomCounter = 0;
   let lastCommitted = null; // baseline for "what changed" labels on history entries
   let showingBefore = false; // the Before/After button is holding a past palette on screen
+  let frozen = null; // the values Freeze is holding at zero, or null when not frozen
 
   // Seed the initial state from the URL hash, if present.
   const hashSeed = readSeedFromHash();
@@ -159,7 +190,7 @@ function boot() {
     copy: async (hex) => {
       try { await navigator.clipboard.writeText(hex); } catch { /* clipboard blocked */ }
     },
-  });
+  }, { modeSelect: dom.swatchArrange });
 
   const history = createHistory(dom.history, {
     onRestore: (snapshot) => { state = cloneState(snapshot); regenerate(); persistHistory(); },
@@ -189,6 +220,7 @@ function boot() {
     try {
       const decoded = decodeSeed(str);
       const summary = summarizeDiff(paramDiff(state.params, decoded.params, NOTABLE), 3);
+      exitFreeze();
       state = { params: decoded.params, locks: decoded.locks, overrides: decoded.overrides };
       regenerate();
       commit(false);
@@ -213,6 +245,9 @@ function boot() {
     const next = normalizeParams(params);
     // Taken before the state moves — `commit` resets the baseline the labels are measured on.
     const summary = summarizeDiff(paramDiff(state.params, next, NOTABLE), 3);
+    // A wholesale replacement ends the freeze even when the new set is itself unjittered:
+    // the values Freeze is holding belonged to the palette that just went away.
+    exitFreeze();
     state = { params: next, locks: {}, overrides: {} };
     regenerate();
     commit(false);
@@ -227,7 +262,13 @@ function boot() {
     commit(false);
   }
 
+  // Saves go to the dev server's `saved/` folder when there is one and to `localStorage`
+  // when there is not, so Keep works in the standalone build too (UX_PLAN U5.3).
+  const store = createSaveStore();
+
   const io = createIO(dom, {
+    store,
+    onSaved: () => start.refresh(),
     applyPreset: (id) => {
       const preset = PRESETS.find((p) => p.id === id);
       applyParamSet(presetParams(id), `Preset “${preset?.name || id}”`);
@@ -239,6 +280,7 @@ function boot() {
         const parsed = parseJson(text);
         const next = normalizeParams(parsed.params);
         const summary = summarizeDiff(paramDiff(state.params, next, NOTABLE), 3);
+        exitFreeze();
         state = {
           params: next,
           locks: parsed.locks || {},
@@ -298,6 +340,47 @@ function boot() {
     targetSwatches: dom.recolorTargetSwatches,
   }, { onStatus: (text) => { dom.recolorStatus.textContent = text; } });
 
+  // The hero is pinned above the gallery grid, so it is the one picture that survives a
+  // slider drag. It borrows the recolour gallery's library rather than fetching its own.
+  const hero = createHero({
+    root: dom.hero,
+    body: dom.heroBody,
+    canvas: dom.heroCanvas,
+    scene: dom.heroScene,
+    zoom: dom.heroZoom,
+    art: dom.heroArt,
+    artRow: dom.heroArtRow,
+    original: dom.heroOriginal,
+    collapse: dom.heroToggle,
+    view: dom.galleryView, // the hero follows the gallery's colour-vision view
+  }, { refs: recolor });
+
+  const start = createStart({
+    moods: dom.startMoods,
+    presets: dom.startPresets,
+    saves: dom.startSaves,
+    savesNote: dom.startSavesNote,
+    recent: dom.startRecent,
+    recentWrap: dom.startRecentWrap,
+    pasteInput: dom.startPaste,
+    pasteNote: dom.startPasteNote,
+    pastePreview: dom.startPastePreview,
+    pasteFit: dom.startPasteFit,
+    pasteTarget: dom.startPasteTarget,
+    fromImage: dom.startFromImage,
+  }, {
+    store,
+    actions: {
+      applyParams: (params, source) => applyParamSet(params, source),
+      loadSave: (name) => io.loadSave(name),
+      loadSeed,
+      fitTo: (hexes) => io.fitTo(hexes),
+      pickImage: () => io.pickImage(),
+      useAsTarget: (palette) => recolor.addTarget(palette),
+      onPicked: (tab) => showTab(tab),
+    },
+  });
+
   const variants = createVariants({
     grid: dom.variantsGrid,
     strength: dom.variantsStrength,
@@ -312,6 +395,7 @@ function boot() {
   // gallery, the variants, the picker and the recolour page are all expensive enough that
   // leaving a hidden one running would be felt.
   const TABS = [
+    { name: 'start', tab: dom.tabStart, body: dom.start, controls: dom.startControls },
     { name: 'gallery', tab: dom.tabGallery, body: dom.gallery, controls: dom.galleryControls },
     { name: 'variants', tab: dom.tabVariants, body: dom.variants, controls: dom.variantsControls },
     { name: 'picker', tab: dom.tabPicker, body: dom.picker, controls: dom.pickerControls },
@@ -327,6 +411,8 @@ function boot() {
       t.body.hidden = !on;
       t.controls.hidden = !on;
     }
+    start.setActive(name === 'start');
+    hero.setActive(name === 'gallery');
     variants.setActive(name === 'variants');
     picker.setActive(name === 'picker');
     recolor.setActive(name === 'recolor');
@@ -345,14 +431,18 @@ function boot() {
     // Any real change leaves the Before/After view — otherwise the button would still claim
     // to be showing the past while the user edits the present.
     if (!transient && showingBefore) exitBefore();
+    // Likewise the freeze: the moment anything puts a non-zero spread back, the palette is
+    // not frozen any more, whichever path did it.
+    if (!transient && frozen && FREEZE_PARAMS.some((n) => src.params[n] !== 0)) exitFreeze();
     palette = generatePalette(src.params, { locks: src.locks, overrides: src.overrides });
     swatches.render(palette);
     sliders.render(src.params);
     gallery.render(palette);
+    hero.render(palette, src.params);
     variants.render(palette);
     picker.render(palette);
     recolor.render(palette, src.params);
-    if (!transient) io.updateSeed(palette.seed);
+    if (!transient) { io.updateSeed(palette.seed); recordSettled(); }
     renderMeta(src.params);
   }
 
@@ -450,6 +540,86 @@ function boot() {
     regenerate(prev, { transient: true });
   });
 
+  // Keep (item 6): save in one click, with a name read off the colours. The dialogue that
+  // used to be in the way is why `saved/` is empty and a text file in the project root is
+  // holding pasted seeds — a decision demanded at the moment of *keeping* something is a
+  // decision that stops people keeping things. The name is renameable afterwards, forever.
+  // Seeds kept this session, so a second click on an unchanged palette reports the name it
+  // already has instead of filing "Grey 32 2" beside an identical "Grey 32".
+  const keptSeeds = new Map();
+
+  dom.keep?.addEventListener('click', async () => {
+    const already = keptSeeds.get(palette.seed);
+    if (already) {
+      noteChange(`Already kept as “${already}”`);
+      return;
+    }
+    let taken = [];
+    try { taken = await store.list(); } catch { /* a fresh store lists nothing */ }
+    const name = autoName(palette, state.params, { taken });
+    const saved = await io.save(name);
+    if (saved) keptSeeds.set(palette.seed, saved);
+    noteChange(saved ? `Kept as “${saved}” — rename it in Save & Export` : 'Could not keep this one');
+  });
+
+  // The autosave ring (item 26): the palettes you sat with, whether or not you kept them.
+  // Recorded on a delay so a slider drag does not fill the ring with the twelve palettes it
+  // passed through on the way — what is worth remembering is where you *stopped*.
+  let ringTimer = null;
+  function recordSettled() {
+    clearTimeout(ringTimer);
+    ringTimer = setTimeout(() => {
+      if (!palette) return;
+      recordRing({
+        seed: palette.seed,
+        name: autoName(palette, state.params),
+        params: state.params,
+        at: Date.now(),
+      });
+    }, 4000);
+  }
+
+  // Freeze (item 33): zero the three random spreads so the palette stops moving underneath
+  // the knob being turned. It is a real parameter change — it is in the seed, in the history
+  // and in the exported palette — but the previous values are remembered so it is one click
+  // back. Anything that puts a non-zero value back (a preset, a seed, an undo, or dragging
+  // one of the three sliders by hand) ends the freeze, because the remembered values no
+  // longer belong to the palette on screen; `regenerate` notices that centrally.
+
+  /** Put the Freeze button back to its off state without touching any parameter. */
+  function exitFreeze() {
+    frozen = null;
+    if (!dom.freeze) return;
+    dom.freeze.classList.remove('is-on');
+    dom.freeze.textContent = 'Freeze';
+  }
+
+  dom.freeze?.addEventListener('click', () => {
+    if (frozen) {
+      const restore = frozen;
+      exitFreeze();
+      state = { ...state, params: { ...state.params, ...restore } };
+      regenerate();
+      commit(false);
+      noteChange('Unfrozen — the hue jitter and per-hue variances are back');
+      return;
+    }
+    frozen = Object.fromEntries(FREEZE_PARAMS.map((n) => [n, state.params[n]]));
+    // Already at zero: freezing would be a no-op, and a button that claims to have done
+    // something it did not is worse than one that says so.
+    if (FREEZE_PARAMS.every((n) => state.params[n] === 0)) {
+      noteChange('Already frozen — jitter and both per-hue variances are zero');
+      frozen = null;
+      return;
+    }
+    state = { ...state, params: { ...state.params, ...Object.fromEntries(FREEZE_PARAMS.map((n) => [n, 0])) } };
+    dom.freeze.classList.add('is-on');
+    dom.freeze.textContent = 'Frozen';
+    regenerate();
+    commit(false);
+    noteChange('Frozen — every other slider now moves only what it says it moves');
+  });
+
   dom.resetDefaults.addEventListener('click', () => {
     state = { params: defaultParams(), locks: {}, overrides: {} };
     regenerate();
@@ -494,6 +664,11 @@ function boot() {
   lastCommitted = cloneState(state);
   if (dom.beforeAfter) dom.beforeAfter.disabled = !history.previous();
   io.refreshSaves();
+
+  // A first-time visitor opens on Start; anyone returning to work — a restored session or a
+  // shared seed — opens where they left off. It is a tab, so it is dismissed by clicking
+  // another one, and it never stands between anybody and the tool (UX_PLAN U5.5).
+  showTab(!restored && !hashSeed ? 'start' : 'gallery');
 }
 
 /** Minimal HTML escape for warning strings shown in the panel. */

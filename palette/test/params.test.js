@@ -12,6 +12,7 @@ import {
   paramToU16,
   u16ToParam,
   snapParams,
+  FREEZE_PARAMS,
 } from '../src/core/params.js';
 import { PARAM_UI, BASIC_PARAMS } from '../src/core/paramui.js';
 
@@ -210,4 +211,19 @@ test('u16 payload values stay inside 16 bits', () => {
     const u = paramToU16(p, v);
     assert.ok(Number.isInteger(u) && u >= 0 && u <= 65535, `${p.name} produced ${u}`);
   }
+});
+
+test('the freeze set names the palette\'s randomness, and every one of it can reach zero', () => {
+  assert.equal(FREEZE_PARAMS.length, 3);
+  for (const name of FREEZE_PARAMS) {
+    const spec = PARAM_BY_NAME.get(name);
+    assert.ok(spec, `${name} is a real parameter`);
+    assert.equal(spec.type, 'float', `${name} is a numeric spread`);
+    assert.equal(spec.min, 0, `${name} can be frozen to zero`);
+    assert.ok(spec.default > 0, `${name} is on by default, or freezing would do nothing`);
+  }
+  // Freezing must be reachable exactly through the seed grid, or a frozen palette would
+  // still wobble by a fraction of a step.
+  const frozen = snapParams({ ...defaultParams(), ...Object.fromEntries(FREEZE_PARAMS.map((n) => [n, 0])) });
+  for (const name of FREEZE_PARAMS) assert.equal(frozen[name], 0, name);
 });

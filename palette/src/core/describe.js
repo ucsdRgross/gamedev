@@ -122,6 +122,53 @@ export function describePalette(palette, params = null) {
   return parts.join(' · ');
 }
 
+// Name words, deliberately not the description's words (UX_PLAN U5.1 — item 6). "dark-key,
+// balanced" is the right way to *describe* a palette and a terrible way to *call* one: a name
+// has to be short, has to sound like a thing, and has to survive being read in a list of
+// twenty. So the same measurements get a second, friendlier vocabulary.
+// Calibrated against what the generator actually produces, not against the 0..0.37 chroma
+// range: measured over all twenty-one presets the mean chroma of the coloured entries spans
+// 0.036 (Monochrome Ink) to 0.166 (OKLab Crayon), so bands drawn at 0.22 would mean every
+// palette ever made was called "mid" and nothing was ever called vivid.
+const NAME_KEY = [[0.35, 'midnight'], [0.47, 'dusk'], [0.62, 'mid'], [0.75, 'bright'], [1, 'pale']];
+const NAME_SAT = [[0.05, 'grey'], [0.08, 'muted'], [0.11, ''], [0.14, 'rich'], [1, 'vivid']];
+
+/**
+ * A name for a palette nobody wants to name (UX_PLAN U5.1).
+ *
+ * Keeping a palette must cost one click, and a dialogue asking "what shall we call it?" is
+ * the reason `saved/` is empty while a text file in the project root holds pasted seeds. So
+ * the name is read off the colours — "Muted teal 16", "Neon magenta 32" — and renamed later
+ * if it ever matters. `taken` disambiguates with a trailing number rather than overwriting,
+ * because the whole point is that nothing is ever lost by pressing the button.
+ *
+ * The result always satisfies the save-name rule (letters, digits, spaces; 64 max).
+ */
+export function autoName(palette, params = null, { taken = [] } = {}) {
+  const entries = palette.entries;
+  const chromatic = entries.filter((e) => e.actual.C > 0.03);
+  const fg = entries.filter((e) => e.layer === 'fg');
+  const key = band(mean((fg.length ? fg : entries).map((e) => e.actual.L)), NAME_KEY);
+  const sat = chromatic.length ? band(mean(chromatic.map((e) => e.actual.C)), NAME_SAT) : 'grey';
+  // The saturation word wins when there is one, because "neon" says more about a palette than
+  // "bright" does; a palette of unremarkable saturation falls back to its key.
+  const words = [sat || key];
+  // A palette called grey does not then get named after a hue: the whole claim being made is
+  // that it has not got one, and "Grey azure 12" contradicts itself in three words.
+  if (chromatic.length && sat !== 'grey') {
+    const centre = params ? Number(params.root_hue) : meanHue(chromatic.map((e) => e.actual.h));
+    words.push(hueName(centre));
+  }
+  words.push(String(entries.length));
+  const base = words.join(' ').replace(/^./, (c) => c.toUpperCase()).slice(0, 60);
+  if (!taken.includes(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base} ${n}`;
+    if (!taken.includes(candidate)) return candidate;
+  }
+  return base;
+}
+
 /** Two parameter values equal for diff purposes (float step noise ignored). */
 function same(a, b) {
   if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) < 1e-6;

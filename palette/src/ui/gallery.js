@@ -4,11 +4,18 @@
 // headless renderer unchanged — the gallery just puts their Raster output on screen.
 
 import { SCENES, CATEGORIES } from '../scenes/index.js';
-import { applyView, VIEWS } from '../core/analysis.js';
+import { applyViewSpec, VIEWS, VIEW_PAIRS, viewParts } from '../core/analysis.js';
 import { Raster } from '../core/raster.js';
 import { floydSteinberg, orderedDither } from '../core/dither.js';
 
 const VIEW_LABELS = { color: 'Colour', value: 'Value', protan: 'Protan', deutan: 'Deutan', tritan: 'Tritan' };
+
+/** The label for a view spec; a pair reads as "Colour + deutan" (UX_PLAN U4.4). */
+function viewLabel(spec) {
+  const parts = viewParts(spec);
+  if (parts.length < 2) return VIEW_LABELS[spec] || spec;
+  return parts.map((p, i) => (i ? VIEW_LABELS[p].toLowerCase() : VIEW_LABELS[p])).join(' + ');
+}
 
 /** Paint a Raster onto a canvas at an integer zoom with crisp nearest-neighbour pixels. */
 function paint(canvas, raster, zoom) {
@@ -76,10 +83,17 @@ export function createGallery(dom, { getPalette }) {
   for (const c of ['All', ...CATEGORIES]) {
     const o = document.createElement('option'); o.value = c; o.textContent = c; dom.category.appendChild(o);
   }
-  // View selector.
+  // View selector: the single views first, then the side-by-side pairs. The pairs are what
+  // catch a collision — two colours that merge under deutan are obvious beside the original
+  // and invisible when the comparison has to be made from memory two seconds apart.
   dom.view.innerHTML = '';
-  for (const v of VIEWS) {
-    const o = document.createElement('option'); o.value = v; o.textContent = VIEW_LABELS[v]; dom.view.appendChild(o);
+  for (const [label, list] of [['One view', VIEWS], ['Side by side', VIEW_PAIRS]]) {
+    const group = document.createElement('optgroup');
+    group.label = label;
+    for (const v of list) {
+      const o = document.createElement('option'); o.value = v; o.textContent = viewLabel(v); group.appendChild(o);
+    }
+    dom.view.appendChild(group);
   }
 
   // Build one card per scene.
@@ -131,7 +145,7 @@ export function createGallery(dom, { getPalette }) {
       raster = new Raster(scene.width, scene.height);
       scene.render(raster, palette, { frame });
     }
-    paint(canvas, applyView(raster, view), zoom);
+    paint(canvas, applyViewSpec(raster, view), zoom);
   }
 
   /** Which cards are visible under the current category filter. */

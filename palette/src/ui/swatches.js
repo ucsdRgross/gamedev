@@ -5,6 +5,8 @@
 import { semanticsBySlot } from '../core/roles.js';
 import { oklchToSrgb, srgbToRgb8, rgb8ToHex } from '../core/oklch.js';
 import { colorLabel } from '../core/colornames.js';
+import { arrangeEntries, ARRANGEMENTS } from '../core/arrange.js';
+import { rampEvenness } from '../core/analysis.js';
 
 const HEX_RE = /^#?[0-9a-fA-F]{6}$/;
 
@@ -23,23 +25,90 @@ function valueHex(entry) {
 /**
  * Build the swatch grid and return a controller.
  * Actions: `toggleLock(id)`, `setOverride(id, hex)`, `clearOverride(id)`, `copy(hex)`.
+ *
+ * `modeSelect` is the optional arrangement selector (UX_PLAN U4.5): the same colours grouped
+ * as ramps, or sorted by lightness or hue. Regrouping is a view — `arrangeEntries` in core
+ * guarantees every colour is still shown exactly once — so the grid rebuilds from it directly.
  */
-export function createSwatches(container, actions) {
+export function createSwatches(container, actions, { modeSelect } = {}) {
   container.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'swatch-grid';
   container.appendChild(grid);
+  let mode = 'slot';
+  let last = null;
+
+  if (modeSelect) {
+    modeSelect.innerHTML = '';
+    for (const [id, label, hint] of ARRANGEMENTS) {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = label;
+      o.title = hint;
+      modeSelect.appendChild(o);
+    }
+    modeSelect.value = mode;
+    modeSelect.addEventListener('change', () => {
+      mode = modeSelect.value;
+      modeSelect.title = ARRANGEMENTS.find(([id]) => id === mode)?.[2] || '';
+      if (last) render(last);
+    });
+  }
 
   /** Redraw the grid from a freshly generated palette. */
   function render(palette) {
-    grid.innerHTML = '';
+    last = palette;
+    container.innerHTML = '';
     const bySlot = semanticsBySlot(palette.semantics);
-    for (const entry of palette.entries) {
-      grid.appendChild(buildSwatch(entry, bySlot.get(entry.id) || [], actions));
+    const groups = arrangeEntries(palette, mode);
+    // One flat run with no heading is the plain grid: draw it straight into the container so
+    // the markup — and the CSS grid it relies on — is exactly what it was before U4.5.
+    if (groups.length === 1 && !groups[0].title) {
+      container.appendChild(fill(document.createElement('div'), groups[0].entries, bySlot));
+      return;
+    }
+    for (const group of groups) {
+      const head = document.createElement('div');
+      head.className = 'swatch-group-head';
+      head.append(text('span', 'swatch-group-title', group.title));
+      const note = groupNote(group, mode);
+      if (note) head.append(text('span', 'swatch-group-note', note));
+      container.append(head, fill(document.createElement('div'), group.entries, bySlot));
     }
   }
 
+  /** Fill one grid element with swatch cards. */
+  function fill(el, entries, bySlot) {
+    el.className = 'swatch-grid';
+    for (const entry of entries) el.appendChild(buildSwatch(entry, bySlot.get(entry.id) || [], actions));
+    return el;
+  }
+
   return { render };
+}
+
+/** A `<span>`-ish element with a class and text. */
+function text(tag, className, content) {
+  const el = document.createElement(tag);
+  el.className = className;
+  el.textContent = content;
+  return el;
+}
+
+/**
+ * The number worth printing beside a group heading.
+ *
+ * For a ramp that is its evenness: a ramp whose steps are unevenly spaced in lightness is
+ * the thing the Ramps view exists to make visible, and the eye is poor at judging it from
+ * four swatches. `rampEvenness` is the same metric the analysis and the dither reference use.
+ */
+function groupNote(group, mode) {
+  if (mode !== 'ramps' || group.entries.length < 2) return '';
+  const { evennessL, meanL } = rampEvenness(group.entries);
+  const steps = `${group.entries.length} steps · ΔL ${meanL.toFixed(3)}`;
+  // Two steps have exactly one gap, so "100% even" would be true of every two-step ramp
+  // and would mean nothing. Evenness is only reported where there is something to compare.
+  return group.entries.length < 3 ? steps : `${steps} · ${Math.round(evennessL * 100)}% even`;
 }
 
 /** Build one swatch card. */

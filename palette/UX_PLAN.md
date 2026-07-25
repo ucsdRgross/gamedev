@@ -92,32 +92,34 @@ Shared machinery the later phases lean on. All the computation is core; only dra
 
 ## Phase U4 — Seeing it · items 4, 18, 19, 7, 33
 
-- [ ] **U4.1** Pinned hero scene above the gallery, always visible while tuning; selectable
+- [x] **U4.1** Pinned hero scene above the gallery, always visible while tuning; selectable
       scene; 1× zoom added to the gallery zoom options.
-- [ ] **U4.2** Larger composed mockup scene(s) (256×192: HUD + tilemap + character + text at
+- [x] **U4.2** Larger composed mockup scene(s) (256×192: HUD + tilemap + character + text at
       three sizes + inventory) added to `src/scenes/`. *Done when* `test/scenes.test.js`
       passes for the new scenes and `npm run render` writes them.
-- [ ] **U4.3** Real-art hero set: a pinned row of recoloured reference images at the top of
+- [x] **U4.3** Real-art hero set: a pinned row of recoloured reference images at the top of
       the Gallery tab (reuses the recolour engine), user-selectable, with the original
       available side by side.
-- [ ] **U4.4** Colour-vision side-by-side view option (colour + deutan, colour + value).
-- [ ] **U4.5** Ramp view toggle in the palette pane (Grid / Ramps / by lightness / by hue),
+- [x] **U4.4** Colour-vision side-by-side view option (colour + deutan, colour + value).
+- [x] **U4.5** Ramp view toggle in the palette pane (Grid / Ramps / by lightness / by hue),
       built on `rampsOf()`.
-- [ ] **U4.6** **Freeze** toggle in the topbar: zeroes `hue_jitter`, `l_variance_per_hue`,
+- [x] **U4.6** **Freeze** toggle in the topbar: zeroes `hue_jitter`, `l_variance_per_hue`,
       `chroma_variance_per_hue` and restores them on release.
 
 ## Phase U5 — Keeping and starting · items 6, 26, 27, 11
 
-- [ ] **U5.1** One-click **Keep**: auto-named save (`autoName(palette, params)` in core, from
+- [x] **U5.1** One-click **Keep**: auto-named save (`autoName(palette, params)` in core, from
       hue/count/key), no dialogue, rename later.
-- [ ] **U5.2** Saved-palette **library grid** (swatch strip + scene thumbnail per save), click
+- [x] **U5.2** Saved-palette **library grid** (swatch strip + scene thumbnail per save), click
       to load, shift-click to send to Compare. The existing `<select>` stays.
-- [ ] **U5.3** History and library persistence across reloads; rolling autosave of accepted
+      *Shift-click → Compare is the one part still outstanding: there is nothing to send to
+      until **U6.2** builds Compare, and it lands there.*
+- [x] **U5.3** History and library persistence across reloads; rolling autosave of accepted
       palettes.
-- [ ] **U5.4** Preset **thumbnail grid** (additive — the preset `<select>` stays).
-- [ ] **U5.5** Additive **start screen**: mood chips → preset + variant grid, "start from an
+- [x] **U5.4** Preset **thumbnail grid** (additive — the preset `<select>` stays).
+- [x] **U5.5** Additive **start screen**: mood chips → preset + variant grid, "start from an
       image", "paste hexes". Dismissible and never blocks the existing paths.
-- [ ] **U5.6** Paste ingestion: `parseHexList()` in core (accepts `#aabbcc`, `aabbcc`,
+- [x] **U5.6** Paste ingestion: `parseHexList()` in core (accepts `#aabbcc`, `aabbcc`,
       comma/space/newline separated, lospec dumps); a paste field that can create a
       compare/recolour target or feed the fitter.
 
@@ -229,6 +231,100 @@ Append here as work lands: what changed, what surprised, what the next agent mus
   - `paramDiff` gained `minMagnitude` (the app filters user-facing summaries at 1.5% of range)
     and now scores a `seed` change as magnitude 0 — a reroll is not a described change, and
     its 0–65535 range made it outrank everything real.
+
+- **2026-07-24 — U4 done. `npm test` green at 422**; `npm run build` green (85 modules);
+  snapshots untouched.
+  - **U4.2 was already in the tree** — `src/scenes/mockup.js` and its `scenes.test.js`
+    assertions landed with the U1–U3 commit but the box was never ticked. Verified rather than
+    rebuilt: 36 scenes, `npm run render` writes `world-screen`/`menu-screen` for every preset,
+    and both PNGs were looked at.
+  - New core, both DOM-free and tested: `applyViewSpec`/`viewParts`/`VIEW_PAIRS` in
+    `analysis.js` (a pipe-separated spec renders its views side by side into one raster, so the
+    gallery paints a pair exactly like a single view), and `src/core/arrange.js`
+    (`arrangeEntries(palette, mode)` → `[{ key, title, entries }]` for Grid / Ramps / by
+    lightness / by hue). `FREEZE_PARAMS` joined `params.js`.
+  - **The arrangement invariant is conservation**, and that is what the tests pin: every mode
+    returns every entry exactly once, at every size and for every preset. A swatch quietly
+    dropped from a view is a colour the user stops checking.
+  - New `src/ui/hero.js`: the pinned block above the gallery grid (`flex: 0 0 auto` above the
+    `.scroll` — that one line *is* the feature). It holds a selectable scene at its own zoom
+    **and** a row of real reference art recoloured live, each beside its original. It follows
+    the gallery's colour-vision selector, so the pair views apply to the hero too. Scene, zoom,
+    pins and the collapse state persist under `palette.hero.v1`.
+  - `recolor.js` now exports its library: `listSources` / `framesFor` / `onSourcesChange`, with
+    decoded frames cached **on the source** instead of on the card. The hero borrows it rather
+    than fetching for itself — on a folder of 512×512 GIFs a second decode is over a second of
+    stall — and recolour cards now survive a zoom-driven rebuild without re-decoding.
+  - **Three things that bit, worth not re-deriving.**
+    (1) *`requestAnimationFrame` does not fire when the page is not being composited.* The
+    hero's repaint is a `setTimeout`, matching the reasoning already written into `recolor.js`;
+    with rAF the one picture that is meant to always be on screen was the only blank one under
+    headless verification. The gallery still uses rAF and is therefore not verifiable in a
+    hidden tab — pre-existing, and fine in a real window.
+    (2) *The reference library arrives in stages.* `onSourcesChange` fires immediately with the
+    built-ins and again when the folder listing lands. Pruning pins against that first partial
+    list silently deleted every folder pin on reload. The hero now keeps `art` as a wish list
+    and renders from what has actually loaded, so a pin survives the gap.
+    (3) *Freeze cannot be detected by value alone.* Exiting the freeze when a parameter goes
+    non-zero covers a manual slider drag and an undo, but a preset that is itself unjittered
+    (Game Boy DMG) left the button reading "Frozen" while holding the *previous* palette's
+    values. Wholesale replacements — preset, seed, JSON, fit — call `exitFreeze()` explicitly.
+  - Verified live on :59669, not only in tests: hero paints 512×384 at 2× and 1028×384 under
+    `color|deutan`; all four arrangements show 32 of 32 swatches; every colour in the
+    recoloured 256×256 `doom-knight-default.png` is a palette colour (zero strays); Freeze
+    round-trips the seed byte-for-byte; a pinned folder image survives a reload.
+
+- **2026-07-24 — U5 done. `npm test` green at 437**; `npm run build` green (89 modules);
+  snapshots untouched. **One piece is deliberately outstanding**: U5.2's shift-click-to-Compare,
+  because Compare does not exist until U6.2. Everything else in U5 is on screen and driven.
+  - **The diagnosis in the handoff was right, and it was only half the story.** `saved/` was
+    empty partly because saving demanded a name up front, and partly because saving *did not
+    work at all* without the dev server — the standalone build, which is the whole point of
+    `npm run build`, had its save button disabled. Both are fixed: `src/ui/saves.js` is a store
+    with two backends behind one interface (the `saved/` folder when a server answers,
+    `localStorage` when it does not), and which one is in use is always stated rather than
+    hidden — "kept in saved/" and "kept in this browser" are different promises.
+  - New core: `autoName` in `describe.js`, `src/core/library.js` (`SAVE_NAME_RE` / `isSaveName`
+    / `toSaveName` / `pushAutosave`), `src/core/hexlist.js` (`parseHexList` / `hexListPalette`).
+  - **`autoName`'s bands had to be re-measured, not reused.** The description's vocabulary is
+    wrong for a name ("Dark-key balanced 32" is not a thing anyone calls a palette), and more
+    importantly `describePalette`'s chroma bands run to 0.22+ while the generator's actual mean
+    chroma over all 21 presets spans **0.036 to 0.166**. Reusing them would have named every
+    palette ever made "mid" and nothing "vivid". The name bands are calibrated to what the
+    generator produces; the table is in `describe.js` with the measurement written down.
+  - **`parseHexList`'s one real decision**: a *bare* token must be 6 or 8 digits, and the
+    3-digit CSS shorthand is accepted only with a `#`. Without that rule, pasting prose yields
+    a palette — `add`, `bee`, `cab`, `dad`, `fad`, `fee` are all valid 3-digit hex. It is a
+    floor and not a guarantee, and the test says so: `decade` and `facade` really are hex, and
+    accepting bare 6-digit tokens is exactly what makes a Lospec dump parse.
+  - New `src/ui/start.js` — the **Start tab**, holding every route into a palette as pictures:
+    13 mood chips (a chip applies its preset and hands straight over to the variant grid, so
+    the next move is picking rather than reading 72 knobs), the 21-preset thumbnail grid, the
+    kept-palette library, the "recently passed through" ring, and the paste field. It opens by
+    default only for a genuinely first-time visitor — no restored history and no `#seed=` — so
+    it never gets between anybody and their work. It is a tab, so dismissing it is clicking
+    another one.
+  - `io.js` now returns `loadSave` / `save` / `fitTo` / `pickImage`, and the Start tab calls
+    *those* rather than reimplementing them: one save path, one fit path, one status line. The
+    fit search was factored out of the image-picker handler so pasted colours reach it too.
+  - **Two things that bit.**
+    (1) *The library rebuild is re-entrant.* Keep triggers a rebuild while the previous one is
+    still reading save files; clearing the container at the top and appending after the awaits
+    showed every save twice. `buildSaves` now carries a generation counter and reads in
+    parallel.
+    (2) *"First visit" is not "no localStorage".* The seed is mirrored into the URL hash, so a
+    plain reload always carries one and the start screen would never have opened. The test for
+    a first-time visitor is no restored history **and** no hash seed.
+  - The autosave ring records on a 4-second settle, not on every change: what is worth
+    remembering is where you *stopped*, not the twelve palettes a slider drag passed through.
+    Entries are keyed by seed, so an undo or a reload moves a palette to the front rather than
+    filling the ring with twelve records of one palette.
+  - Verified live on :59669: Keep names and saves in one click ("Bright red 32"), a second
+    click on the same palette says "Already kept as …" instead of filing a duplicate, three
+    rapid Keeps produce three cards and three files with no duplicates, the library card loads
+    and its × deletes (checked against `/api/saves`), a mood chip lands on Variants with 12
+    tiles, a 10-colour Lospec dump becomes a recolour target, an 8-colour paste fits at ΔE 5.8,
+    and with `fetch` stubbed to fail the store falls back to `localStorage` and round-trips.
 
 ### Open note for U6.1 — the fitter's own hue-wrap bug (measured, deliberately deferred)
 

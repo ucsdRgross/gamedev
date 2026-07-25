@@ -32,6 +32,10 @@ const GENERATED = 'generated'; // the target-selector value for the live generat
  * Build the recolour gallery. Returns `{ render(palette, params) }` for the app to call
  * after every regeneration, `{ setActive(bool) }` so it can idle while hidden, and
  * `{ addFiles(fileList) }` for the drop target and the file picker.
+ *
+ * It also owns the reference **library** — the built-ins, the folder listing and whatever was
+ * dropped in — so `listSources` / `framesFor` / `onSourcesChange` hand that library to the
+ * pinned hero row (UX_PLAN U4.3) rather than making it fetch and decode the same files again.
  */
 export function createRecolorGallery(dom, { onStatus } = {}) {
   // The in-memory library the gallery draws from — seeded from the server when one is
@@ -99,6 +103,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
       });
     }
     dirty = true;
+    announceSources();
     rebuild();
     if (announce) onStatus?.(`folder rescanned — ${names.length} image${names.length === 1 ? '' : 's'}`);
   }
@@ -169,6 +174,21 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     onStatus?.(`palette added: ${targets.get(lastId)?.name ?? ''}`);
   }
 
+  /**
+   * Register an externally-built palette as a recolour target and select it — the route in
+   * for pasted colours (UX_PLAN U5.6), which arrive as an external palette rather than a file.
+   */
+  function addTarget(palette, name = palette?.name || 'pasted') {
+    if (!palette?.entries?.length) return null;
+    const id = `ext:${name}`;
+    targets.set(id, { name, origin: 'session', palette });
+    targetId = id;
+    updateTargetOptions();
+    setTarget(id);
+    onStatus?.(`recolour target: ${name} · ${palette.entries.length} colours`);
+    return id;
+  }
+
   /** Rebuild the target `<select>` and reflect the current choice. */
   function updateTargetOptions() {
     if (!dom.target) return;
@@ -215,6 +235,41 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
       : [{ image: await decodeStill(bytes, name), delayMs: 0 }];
   }
 
+  // --- The library, as seen from outside (UX_PLAN U4.3) ------------------
+  // The hero row pins one or two of these images above the gallery. It asks here rather than
+  // fetching for itself so a file is fetched and decoded once — on a library of 512×512 GIFs
+  // that is seconds of work, and doing it twice would be felt.
+  const sourceListeners = [];
+
+  /** Tell anyone watching that the set of reference images has changed. */
+  function announceSources() {
+    for (const fn of sourceListeners) fn(listSources());
+  }
+
+  /** The reference images available right now: `{ id, title, origin }`, in gallery order. */
+  function listSources() {
+    return sources.map((s) => ({ id: s.id, title: s.title, origin: s.origin }));
+  }
+
+  /** Register a callback for when the library changes (the folder listing arrives late). */
+  function onSourcesChange(fn) {
+    sourceListeners.push(fn);
+    fn(listSources());
+  }
+
+  /**
+   * Decoded frames for one source, fetched on demand and cached **on the source** — so a card
+   * rebuilt by a zoom change, and the hero showing the same image, both reuse one decode.
+   */
+  async function framesFor(id) {
+    const source = sources.find((s) => s.id === id);
+    if (!source) throw new Error(`no such reference image: ${id}`);
+    if (source.frames) return source.frames;
+    const res = await fetch(source.url, { cache: 'force-cache' });
+    source.frames = await decodeBytes(new Uint8Array(await res.arrayBuffer()), source.title);
+    return source.frames;
+  }
+
   /** Add dropped or picked files, persisting them to the folder when a server is present. */
   async function addFiles(files) {
     const images = [...files].filter((f) => /\.(png|jpe?g|gif)$/i.test(f.name));
@@ -246,7 +301,7 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
       }
     }
     if (persist) await loadServerLibrary();
-    else { dirty = true; rebuild(); }
+    else { dirty = true; announceSources(); rebuild(); }
     onStatus?.(`${added} image${added === 1 ? '' : 's'} added`);
   }
 
@@ -334,12 +389,8 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
     card.busy = true;
     try {
       if (!card.frames) {
-        card.frames = card.source.frames ?? null;
-        if (!card.frames) {
-          card.meta.textContent = `${card.source.origin} · loading…`;
-          const res = await fetch(card.source.url, { cache: 'force-cache' });
-          card.frames = await decodeBytes(new Uint8Array(await res.arrayBuffer()), card.source.title);
-        }
+        if (!card.source.frames) card.meta.textContent = `${card.source.origin} · loading…`;
+        card.frames = await framesFor(card.source.id);
       }
       card.result = recolorFrames(card.frames, target, recolorOptions(params));
       card.stale = false;
@@ -498,11 +549,11 @@ export function createRecolorGallery(dom, { onStatus } = {}) {
 
   loadServerLibrary();
   loadPaletteLibrary();
-  return { render, setActive, addFiles };
+  return { render, setActive, addFiles, addTarget, listSources, framesFor, onSourcesChange };
 }
 
 /** The §19.1 parameters, translated into what `recolorFrames` takes. */
-function recolorOptions(params) {
+export function recolorOptions(params) {
   return {
     mode: params.recolor_mode ?? 'auto',
     indexedMax: params.recolor_indexed_max ?? 256,

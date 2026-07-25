@@ -23,6 +23,8 @@
       <button id="undo" class="btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="redo" class="btn" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
       <button id="before-after" class="btn" title="Show the palette as it was one step ago — click again to come back" disabled>Before</button>
+      <button id="keep" class="btn" title="Keep this palette. It is named for you and saved at once — rename it later if it turns out to matter">Keep</button>
+      <button id="freeze" class="btn" title="Stop the palette wobbling: zero the hue jitter and the two per-hue variances, so every other slider moves only what it says it moves. Click again to put them back">Freeze</button>
       <button id="vary" class="btn btn-accent" title="A variation of this palette — the same character, moved. Hold Shift for a bolder one">Vary</button>
       <button id="randomize" class="btn" title="Randomize every look parameter, keeping locked colours">Randomize</button>
     </div>
@@ -49,12 +51,15 @@
     <section id="gallery-pane" class="pane">
       <div class="pane-head">
         <div class="tabs" role="tablist">
+          <button id="tab-start" class="tab" role="tab" aria-selected="false"
+                  title="Where to begin: moods, presets, palettes you kept, and pasted colours">Start</button>
           <button id="tab-gallery" class="tab is-active" role="tab" aria-selected="true">Gallery</button>
           <button id="tab-variants" class="tab" role="tab" aria-selected="false"
                   title="A dozen variations of this palette — click one to take it">Variants</button>
           <button id="tab-picker" class="tab" role="tab" aria-selected="false">Picker</button>
           <button id="tab-recolor" class="tab" role="tab" aria-selected="false">Recolour</button>
         </div>
+        <div id="start-controls" class="pane-head-controls" hidden></div>
         <div id="variants-controls" class="pane-head-controls" hidden>
           <select id="variants-strength" title="How far the variations wander from the palette you have"></select>
           <select id="variants-scene" title="What each tile shows — the context colour-space maps, or one gallery scene"></select>
@@ -64,6 +69,7 @@
           <select id="gallery-category" title="Filter scenes by category"></select>
           <select id="gallery-view" title="Colour-vision view"></select>
           <select id="gallery-zoom" title="Zoom level">
+            <option value="1">1×</option>
             <option value="2">2×</option>
             <option value="3" selected>3×</option>
             <option value="4">4×</option>
@@ -109,6 +115,74 @@
           <span id="recolor-status" class="meta"></span>
         </div>
       </div>
+      <!-- Start: every way into a palette, as pictures. Additive — the preset and saves
+           dropdowns, the seed field and Fit to image all still work exactly as before. -->
+      <div id="start" class="scroll start-body" hidden>
+        <section class="start-section">
+          <div class="start-head"><h3>What is it for?</h3>
+            <span class="meta">a mood, then a dozen variations of it</span></div>
+          <div id="start-moods" class="mood-row"></div>
+        </section>
+
+        <section class="start-section">
+          <div class="start-head"><h3>Paste colours you already have</h3>
+            <span id="start-paste-note" class="meta"></span></div>
+          <div class="start-paste">
+            <textarea id="start-paste" rows="3" spellcheck="false"
+                      placeholder="#1a1c2c #5d275d #b13e53 …"></textarea>
+            <div class="start-paste-side">
+              <div id="start-paste-preview"></div>
+              <button id="start-paste-fit" class="btn btn-small" disabled
+                      title="Search the generator for the parameters that best reproduce these colours">Fit a palette to these</button>
+              <button id="start-paste-target" class="btn btn-small" disabled
+                      title="Recolour the reference images into these colours instead of the generated palette">Use as a recolour target</button>
+              <button id="start-from-image" class="btn btn-small"
+                      title="Pick an image and fit a palette to the colours in it">Start from an image…</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="start-section">
+          <div class="start-head"><h3>Kept</h3><span id="start-saves-note" class="meta"></span></div>
+          <div id="start-saves" class="start-grid"></div>
+        </section>
+
+        <section id="start-recent-wrap" class="start-section" hidden>
+          <div class="start-head"><h3>Recently passed through</h3>
+            <span class="meta">kept for you, not by you — the last dozen palettes you sat with</span></div>
+          <div id="start-recent" class="start-grid"></div>
+        </section>
+
+        <section class="start-section">
+          <div class="start-head"><h3>Presets</h3>
+            <span class="meta">the same list as the dropdown, as pictures</span></div>
+          <div id="start-presets" class="start-grid"></div>
+        </section>
+      </div>
+
+      <!-- The pinned hero: one scene and any reference art you pin, always on screen while
+           you tune. Outside the scrolling grid on purpose — that is the whole point. -->
+      <div id="hero" class="hero">
+        <div class="hero-bar">
+          <span class="hero-label">Pinned</span>
+          <select id="hero-scene" title="Which scene stays pinned above the gallery"></select>
+          <select id="hero-zoom" title="How big the pinned scene is drawn">
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+          </select>
+          <select id="hero-art" title="Pin a real reference image, recoloured into this palette — the honest test a generated scene cannot give you"></select>
+          <label class="toggle" title="Show each pinned image beside its original">
+            <input id="hero-original" type="checkbox" checked /> original
+          </label>
+          <button id="hero-toggle" class="btn btn-small" title="Hide the pinned pictures and give the whole pane to the gallery">Hide</button>
+        </div>
+        <div id="hero-body" class="hero-body">
+          <canvas id="hero-canvas" class="hero-canvas"></canvas>
+          <div id="hero-art-row" class="hero-art-row" hidden></div>
+        </div>
+      </div>
       <div id="gallery" class="scroll gallery-grid"></div>
       <div id="variants" class="scroll variants-body" hidden>
         <p class="picker-hint">
@@ -147,6 +221,7 @@
         <h2>Palette</h2>
         <div class="pane-head-controls">
           <span id="palette-meta" class="meta"></span>
+          <select id="swatch-arrange" title="How the swatches are grouped — the same colours, ordered for a different question"></select>
           <button id="sizes-btn" class="btn btn-small"
                   title="Compare this palette at 8, 16, 24, 32, 48 and 64 colours — click one to use it">Sizes</button>
         </div>

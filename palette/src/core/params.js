@@ -282,6 +282,16 @@ export function isAngularParam(name) {
   return ANGULAR_PARAMS.has(name);
 }
 
+/**
+ * The three parameters that make the palette wobble (UX_PLAN U4.6 — item 33).
+ *
+ * Every one of them is a *random* spread applied per hue, so touching any unrelated knob can
+ * re-roll which hue got which wobble and shift colours the user had already settled. Zeroing
+ * all three freezes the palette: from then on a slider moves what it says it moves and nothing
+ * else. Each has a minimum of 0, so freezing is always representable — a test pins that.
+ */
+export const FREEZE_PARAMS = ['hue_jitter', 'l_variance_per_hue', 'chroma_variance_per_hue'];
+
 /** Distinct group names in schema order, for building the UI panels. */
 export const PARAM_GROUPS = [...new Set(PARAMS.map((p) => p.group))];
 

@@ -32,6 +32,34 @@ const DICHROMAT = {
 /** The colour-vision views the gallery offers, in display order. */
 export const VIEWS = ['color', 'value', 'protan', 'deutan', 'tritan'];
 
+/**
+ * The paired views (UX_PLAN U4.4 — item 7): the same picture rendered twice, side by side.
+ *
+ * Switching a single view back and forth asks the eye to hold the first picture in memory
+ * while it looks at the second, which is exactly the comparison people are bad at. Two colours
+ * that collapse to one grey are obvious when the colour and the value versions are ten pixels
+ * apart, and invisible when they are two seconds apart.
+ */
+export const VIEW_PAIRS = ['color|value', 'color|deutan', 'color|protan', 'color|tritan'];
+
+/** The component views of a spec: `'color|deutan'` → `['color', 'deutan']`. */
+export function viewParts(spec) {
+  return String(spec || 'color').split('|').filter(Boolean);
+}
+
+/**
+ * Apply a view spec to a raster. A plain name behaves exactly like `applyView`; a
+ * pipe-separated spec returns its views laid out left to right with a gutter between them,
+ * so the result is one picture the gallery can paint like any other.
+ */
+export function applyViewSpec(raster, spec, { gap = 2, gapColor = [18, 18, 24] } = {}) {
+  const parts = viewParts(spec);
+  if (parts.length < 2) return applyView(raster, parts[0]);
+  const out = new Raster(raster.w * parts.length + gap * (parts.length - 1), raster.h, gapColor);
+  parts.forEach((v, i) => out.blit(applyView(raster, v), i * (raster.w + gap), 0));
+  return out;
+}
+
 /** Simulate how a dichromat (`protan`/`deutan`/`tritan`) sees an `[r,g,b]` colour. */
 export function simulateColorblind(rgb8, type) {
   const m = DICHROMAT[type];

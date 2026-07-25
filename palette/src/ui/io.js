@@ -6,6 +6,7 @@ import { PRESETS } from '../core/presets.js';
 import { EXPORTERS, runExport } from '../core/export/index.js';
 import { makeFitter } from '../core/fit.js';
 import { extractPalette } from '../core/recolor/swatches.js';
+import { isSaveName } from '../core/library.js';
 import { decodeStillToRaster } from './imagefile.js';
 
 /** Read a `PAL1-…` seed out of the URL hash (`#seed=…`), or null. */
@@ -44,10 +45,12 @@ function status(el, text, tone = '') {
 
 /**
  * Wire the I/O panel. `actions` supplies the app callbacks:
- *   loadSeed(str), applyPreset(id), loadJson(text), getPalette(), getSaveName().
- * Returns `{ updateSeed(seed), refreshSaves() }` for the app to call after regeneration.
+ *   loadSeed(str), applyPreset(id), applyParams(params), loadJson(text), getPalette(),
+ *   getSaveName(), onSaved(name). `store` is the save store from `saves.js`.
+ * Returns `{ updateSeed, refreshSaves, loadSave, save, fitTo, pickImage }` — the last four so
+ * the Start tab drives the same code paths rather than its own copies of them.
  */
-export function createIO(dom, actions) {
+export function createIO(dom, { store, ...actions }) {
   // ---- Presets --------------------------------------------------------
   for (const preset of PRESETS) {
     const o = document.createElement('option');
@@ -116,7 +119,40 @@ export function createIO(dom, actions) {
   // space for the set that reproduces it (fit.js). The search is deterministic but takes a
   // few seconds, so it runs in animation-frame slices to keep the page responsive, reporting
   // best-score-so-far. When done, the fitted params are applied exactly like a preset.
-  dom.fitImageBtn?.addEventListener('click', () => dom.fitImageFile?.click());
+  /** Open the image picker — also the Start tab's "start from an image". */
+  function pickImage() {
+    dom.fitImageFile?.click();
+  }
+
+  /**
+   * Search for the parameters that reproduce `target` (an array of hexes), reporting progress.
+   * Shared by "Fit to image…" and the Start tab's pasted colours: both end up with a list of
+   * colours and the same question about it.
+   */
+  function fitTo(target) {
+    if (!Array.isArray(target) || target.length < 2) {
+      status(dom.fitStatus, 'Need at least two colours to fit', 'err');
+      return;
+    }
+    // Fewer iterations for larger targets — each evaluation generates a whole palette, so
+    // cost grows with colour count. Keeps a big drop-in from running for minutes.
+    const iterations = Math.max(1500, Math.round(4000 * Math.min(1, 24 / target.length)));
+    const fitter = makeFitter(target, { iterations });
+    if (dom.fitImageBtn) dom.fitImageBtn.disabled = true;
+    const tick = () => {
+      const t0 = performance.now();
+      while (!fitter.done && performance.now() - t0 < 25) fitter.step(10);
+      status(dom.fitStatus,
+        `Fitting ${target.length} colours… ${Math.round(fitter.progress * 100)}% · ΔE ${fitter.bestScore.toFixed(2)}`);
+      if (!fitter.done) { requestAnimationFrame(tick); return; }
+      actions.applyParams(fitter.bestParams);
+      if (dom.fitImageBtn) dom.fitImageBtn.disabled = false;
+      status(dom.fitStatus, `Fitted ${target.length} colours · ΔE ${fitter.bestScore.toFixed(2)}`, 'ok');
+    };
+    requestAnimationFrame(tick);
+  }
+
+  dom.fitImageBtn?.addEventListener('click', pickImage);
   dom.fitImageFile?.addEventListener('change', async () => {
     const file = dom.fitImageFile.files?.[0];
     if (!file) return;
@@ -125,41 +161,21 @@ export function createIO(dom, actions) {
       status(dom.fitStatus, `Reading ${file.name}…`);
       const bytes = new Uint8Array(await file.arrayBuffer());
       const raster = await decodeStillToRaster(bytes, file.name);
-      const target = extractPalette(raster).colors.map((c) => c.hex);
-      if (target.length < 2) {
-        status(dom.fitStatus, 'Need at least two colours to fit', 'err');
-        return;
-      }
-      // Fewer iterations for larger targets — each evaluation generates a whole palette, so
-      // cost grows with colour count. Keeps a big drop-in from running for minutes.
-      const iterations = Math.max(1500, Math.round(4000 * Math.min(1, 24 / target.length)));
-      const fitter = makeFitter(target, { iterations });
-      dom.fitImageBtn.disabled = true;
-      const tick = () => {
-        const t0 = performance.now();
-        while (!fitter.done && performance.now() - t0 < 25) fitter.step(10);
-        status(dom.fitStatus,
-          `Fitting ${target.length} colours… ${Math.round(fitter.progress * 100)}% · ΔE ${fitter.bestScore.toFixed(2)}`);
-        if (!fitter.done) { requestAnimationFrame(tick); return; }
-        actions.applyParams(fitter.bestParams);
-        dom.fitImageBtn.disabled = false;
-        status(dom.fitStatus, `Fitted ${target.length} colours · ΔE ${fitter.bestScore.toFixed(2)}`, 'ok');
-      };
-      requestAnimationFrame(tick);
+      fitTo(extractPalette(raster).colors.map((c) => c.hex));
     } catch (err) {
-      dom.fitImageBtn.disabled = false;
+      if (dom.fitImageBtn) dom.fitImageBtn.disabled = false;
       status(dom.fitStatus, `Fit failed: ${err.message}`, 'err');
     }
   });
 
-  // ---- Saves (dev-server backed) --------------------------------------
-  let savesAvailable = true;
-
+  // ---- Saves -----------------------------------------------------------
+  // Backed by the store (`saves.js`), which is the dev server's `saved/` folder when there is
+  // one and `localStorage` when there is not. The panel used to disable itself outright
+  // without a server, which meant the standalone build — the whole point of `npm run build` —
+  // could not keep a palette at all.
   async function refreshSaves() {
     try {
-      const res = await fetch('/api/saves');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const names = await res.json();
+      const names = await store.list();
       const current = dom.savesSelect.value;
       dom.savesSelect.innerHTML = '<option value="">Load saved…</option>';
       for (const name of names) {
@@ -169,65 +185,71 @@ export function createIO(dom, actions) {
       }
       if (names.includes(current)) dom.savesSelect.value = current;
       dom.saveDelete.disabled = !dom.savesSelect.value;
-    } catch {
-      savesAvailable = false;
-      dom.savesSelect.innerHTML = '<option value="">(dev server only)</option>';
-      dom.savesSelect.disabled = true;
-      dom.saveBtn.disabled = true;
-      dom.saveDelete.disabled = true;
-      status(dom.savesStatus, 'File saves need `npm start`; use Export/Import here.');
+      // Where a save goes is a different promise in each backend, so it is always stated.
+      if (!dom.savesStatus.textContent) status(dom.savesStatus, `Saves go to ${store.where()}.`);
+    } catch (err) {
+      status(dom.savesStatus, `Could not read saves: ${err.message}`, 'err');
     }
   }
 
-  dom.savesSelect.addEventListener('change', async () => {
-    dom.saveDelete.disabled = !dom.savesSelect.value;
-    if (!dom.savesSelect.value) return;
+  /** Load one save by name, reporting into the panel. Shared with the Start tab's library. */
+  async function loadSave(name) {
     try {
-      const res = await fetch(`/api/saves/${encodeURIComponent(dom.savesSelect.value)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      const ok = actions.loadJson(text);
+      const ok = actions.loadJson(await store.read(name));
       if (ok) {
-        dom.saveName.value = dom.savesSelect.value;
-        status(dom.savesStatus, `Loaded "${dom.savesSelect.value}"`, 'ok');
+        dom.saveName.value = name;
+        dom.savesSelect.value = name;
+        dom.saveDelete.disabled = false;
+        status(dom.savesStatus, `Loaded "${name}"`, 'ok');
       } else {
         status(dom.savesStatus, 'That save is not a valid palette', 'err');
       }
+      return ok;
     } catch (err) {
       status(dom.savesStatus, `Load failed: ${err.message}`, 'err');
+      return false;
     }
-  });
+  }
 
-  dom.saveBtn.addEventListener('click', async () => {
-    if (!savesAvailable) return;
-    const name = dom.saveName.value.trim();
-    if (!/^[A-Za-z0-9 _-]{1,64}$/.test(name)) {
+  /**
+   * Write the current palette under `name`. Returns the name on success, null on failure.
+   * The one-click Keep button and the named Save button both come through here.
+   */
+  async function save(name) {
+    if (!isSaveName(name)) {
       status(dom.savesStatus, 'Name: letters, numbers, space, - and _ (max 64)', 'err');
-      return;
+      return null;
     }
     try {
-      const body = runExport('json', actions.getPalette(), { name });
-      const res = await fetch(`/api/saves/${encodeURIComponent(name)}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await store.write(name, runExport('json', actions.getPalette(), { name }));
       await refreshSaves();
       dom.savesSelect.value = name;
+      dom.saveName.value = name;
       dom.saveDelete.disabled = false;
-      status(dom.savesStatus, `Saved "${name}"`, 'ok');
+      status(dom.savesStatus, `Saved "${name}" to ${store.where()}`, 'ok');
+      actions.onSaved?.(name);
+      return name;
     } catch (err) {
       status(dom.savesStatus, `Save failed: ${err.message}`, 'err');
+      return null;
     }
+  }
+
+  dom.savesSelect.addEventListener('change', () => {
+    dom.saveDelete.disabled = !dom.savesSelect.value;
+    if (dom.savesSelect.value) loadSave(dom.savesSelect.value);
   });
+
+  dom.saveBtn.addEventListener('click', () => save(dom.saveName.value.trim()));
 
   dom.saveDelete.addEventListener('click', async () => {
     const name = dom.savesSelect.value;
     if (!name) return;
     try {
-      const res = await fetch(`/api/saves/${encodeURIComponent(name)}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await store.remove(name);
       await refreshSaves();
       status(dom.savesStatus, `Deleted "${name}"`, 'ok');
+      actions.onSaved?.(name);
     } catch (err) {
       status(dom.savesStatus, `Delete failed: ${err.message}`, 'err');
     }
@@ -240,5 +262,5 @@ export function createIO(dom, actions) {
     writeSeedToHash(seed);
   }
 
-  return { updateSeed, refreshSaves };
+  return { updateSeed, refreshSaves, loadSave, save, fitTo, pickImage };
 }
