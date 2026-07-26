@@ -1,7 +1,7 @@
 {
   "format": "pixel-palette/1",
   "name": "Pixel Palette",
-  "seed": "PAL1-AU9VVZ__AAAJPwAAAACAAFVVAAAAAEAAAACAAIAAcYyOoAADAAAAAP_______wAAAAD__1R7__8442Zm6qpZmQACAAC5mb__OOOVVQeuFVVzMyZmJxxMzQAAf_9mZgABj1z_______8AAgAARERzM0zNAAEImQAB__8AAgAAAAEAAf__GMYAAAAA__8AAAAATM3VVQAAN3dd3n3dp9LjjQAA",
+  "seed": "PAL1-AU9VVZ__AAAJPwAAAACAAFVVAAAAAEAAAACAAIAAcYyOoAADAAAAAP_______wAAAAD__1R7__8442Zm6qpZmQACAAC5mb__KqsAAAeuFVVzMyZmJxxMzQAAf_9mZgABj1z_______8AAgAARERzM0zNAAEImQAB__8AAgAAAAEAAf__GMYAAAAA__8AAAAATM3VVQAAN3dd3n3dp9LjjQAA",
   "params": {
     "color_count": 24,
     "hue_count": 5,
@@ -38,8 +38,8 @@
     "shift_direction": "shortest",
     "global_temperature": 0.45000381475547413,
     "temperature_split": 0.7499961852445258,
-    "bg_chroma_mult": 0.299995422293431,
-    "bg_lightness_offset": 0.050002288853284504,
+    "bg_chroma_mult": 0.2500068665598535,
+    "bg_lightness_offset": -0.3,
     "bg_hue_shift": 0.029999237048905166,
     "atmosphere_hue": 29.998626688029297,
     "atmosphere_strength": 0.4500038147554742,
@@ -87,15 +87,15 @@
   "overrides": {},
   "semantics": {
     "foliage": "fg_h2_0",
-    "skin": "bg_h0_0",
+    "skin": "fg_h0_2",
     "stone": "bg_h3_0",
-    "metal": "bg_h4_0",
+    "metal": "bg_h2_0",
     "wood": "fg_h1_0",
     "water": "fg_h3_1",
-    "fire": "fg_h0_2",
+    "fire": "accent_0",
     "blood": "fg_h0_0",
     "gold": "fg_h1_2",
-    "sky": "bg_h2_0",
+    "sky": "fg_h3_2",
     "ui_good": "fg_h2_1",
     "ui_bad": "fg_h0_1",
     "ui_neutral": "bg_h1_0"
@@ -430,16 +430,16 @@
       "id": "bg_h0_0",
       "role": "bg_h0_mid",
       "layer": "bg",
-      "hex": "#C17D79",
+      "hex": "#4E1F1E",
       "rgb": [
-        193,
-        125,
-        121
+        78,
+        31,
+        30
       ],
       "oklch": {
-        "L": 0.65928,
-        "C": 0.08554,
-        "h": 23.325
+        "L": 0.30823,
+        "C": 0.07144,
+        "h": 23.387
       },
       "locked": false,
       "overridden": false
@@ -449,16 +449,16 @@
       "id": "bg_h1_0",
       "role": "bg_h1_mid",
       "layer": "bg",
-      "hex": "#DAB07F",
+      "hex": "#694A24",
       "rgb": [
-        218,
-        176,
-        127
+        105,
+        74,
+        36
       ],
       "oklch": {
-        "L": 0.7835,
-        "C": 0.08097,
-        "h": 70.516
+        "L": 0.43462,
+        "C": 0.06803,
+        "h": 69.901
       },
       "locked": false,
       "overridden": false
@@ -468,16 +468,16 @@
       "id": "bg_h2_0",
       "role": "bg_h2_mid",
       "layer": "bg",
-      "hex": "#B8C796",
+      "hex": "#515C38",
       "rgb": [
-        184,
-        199,
-        150
+        81,
+        92,
+        56
       ],
       "oklch": {
-        "L": 0.80565,
-        "C": 0.06822,
-        "h": 121.76
+        "L": 0.45538,
+        "C": 0.05656,
+        "h": 122.486
       },
       "locked": false,
       "overridden": false
@@ -487,16 +487,16 @@
       "id": "bg_h3_0",
       "role": "bg_h3_mid",
       "layer": "bg",
-      "hex": "#91B2B1",
+      "hex": "#274C4C",
       "rgb": [
-        145,
-        178,
-        177
+        39,
+        76,
+        76
       ],
       "oklch": {
-        "L": 0.73882,
-        "C": 0.03593,
-        "h": 194.122
+        "L": 0.38915,
+        "C": 0.0425,
+        "h": 195.547
       },
       "locked": false,
       "overridden": false
@@ -506,16 +506,16 @@
       "id": "bg_h4_0",
       "role": "bg_h4_mid",
       "layer": "bg",
-      "hex": "#A17494",
+      "hex": "#381731",
       "rgb": [
-        161,
-        116,
-        148
+        56,
+        23,
+        49
       ],
       "oklch": {
-        "L": 0.61453,
-        "C": 0.07162,
-        "h": 337.43
+        "L": 0.26428,
+        "C": 0.06545,
+        "h": 335.946
       },
       "locked": false,
       "overridden": false
