@@ -168,4 +168,3 @@ static func _get_suit_objects(suit: PipSuit) -> Array[PipSuit]:
 	# TODO(multi-suit): expand a MultiSuit into all its allowed sub-suits here.
 	results.append(suit)
 	return results
-

@@ -18,7 +18,7 @@ const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
 const COLOR_PICKER_SHADER = preload("res://Assets/color_picker.tres")
 ## Palette colour by suit index; 5th (Firework) is placeholder art. TODO real Firework art.
-const PALETTE : Array[int] = [8, 11, 14, 2, 6]
+const PALETTE : Array[int] = [6, 11, 8, 2, 14]
 
 ## 0..4 — art/palette slot ONLY, never orderable.
 @abstract func get_suit_index() -> int
