@@ -1,0 +1,562 @@
+{
+  "format": "pixel-palette/1",
+  "name": "Pixel Palette",
+  "seed": "PAL1-AU9VVZ__AAAJPwAAAACAAFVVAAAAAEAAAACAAIAAcYyOoAADAAAAAP_______wAAAAD__1R7__8442Zm6qpZmQACAAC5mb__OOOVVQeuFVVzMyZmJxxMzQAAf_9mZgABj1z_______8AAgAARERzM0zNAAEImQAB__8AAgAAAAEAAf__GMYAAAAA__8AAAAATM3VVQAAN3dd3n3dp9LjjQAA",
+  "params": {
+    "color_count": 24,
+    "hue_count": 5,
+    "hue_scheme": "even",
+    "root_hue": 13.002517738612953,
+    "hue_span": 0,
+    "hue_jitter": 0,
+    "perceptual_hue_spacing": 0.5000076295109483,
+    "fg_ramp_length": 3,
+    "bg_ramp_length": 1,
+    "neutral_count": 0,
+    "accent_count": 1,
+    "tier_priority": "standard",
+    "l_dark_anchor": 0.1600021362630655,
+    "l_light_anchor": 0.9000015259021897,
+    "l_mid_base": 0.5750005340657665,
+    "l_step": 0.24499809262226296,
+    "l_curve": "s-curve",
+    "l_range_compress": 0,
+    "l_variance_per_hue": 0,
+    "chroma_base": 0.37,
+    "chroma_peak_l": 0.9000000000000001,
+    "chroma_curve_width": 1,
+    "chroma_falloff_light": -0.1,
+    "chroma_falloff_dark": -0.1,
+    "chroma_variance_per_hue": 0.15,
+    "earthiness": 0.3300068665598535,
+    "chroma_cap": 0.37,
+    "highlight_hue_target": 79.9981689173724,
+    "highlight_shift_strength": 0.4,
+    "shadow_hue_target": 330.00137331197067,
+    "shadow_shift_strength": 0.3499961852445258,
+    "shift_model": "per-family",
+    "shift_direction": "shortest",
+    "global_temperature": 0.45000381475547413,
+    "temperature_split": 0.7499961852445258,
+    "bg_chroma_mult": 0.299995422293431,
+    "bg_lightness_offset": 0.050002288853284504,
+    "bg_hue_shift": 0.029999237048905166,
+    "atmosphere_hue": 29.998626688029297,
+    "atmosphere_strength": 0.4500038147554742,
+    "fg_bg_separation_min": 0.14999618524452582,
+    "neutral_temperature": 54.99839780270085,
+    "neutral_chroma": 0.0180004577706569,
+    "neutral_split": false,
+    "neutral_l_spread": 0.29999694819562067,
+    "accent_chroma_boost": 0.06,
+    "accent_hue_mode": "spectral-gap",
+    "accent_l": 0.6800030518043794,
+    "bits_r": 8,
+    "bits_g": 8,
+    "bits_b": 8,
+    "quantize_mode": "error-weighted",
+    "gamut_map_mode": "chroma-reduce",
+    "min_delta_e": 4,
+    "min_anchor_contrast": 10.000076295109483,
+    "dither_evenness": 0.30000762951094834,
+    "force_unique_hex": true,
+    "seed": 2201,
+    "recolor_mode": "indexed",
+    "recolor_indexed_max": 256,
+    "remap_match": "optimal",
+    "remap_preserve_order": false,
+    "remap_overflow": "merge",
+    "quant_dither": "floyd-steinberg",
+    "quant_dither_strength": 1,
+    "quant_lightness_weight": 0.9999885557335775,
+    "quant_downscale": 0,
+    "gif_frame": 0,
+    "hue_lightness_follow": 1,
+    "recolor_context": "off",
+    "remap_context_order": false,
+    "remap_context_bias": 0.30000762951094834,
+    "custom_hue_count": 5,
+    "custom_hue_1": 0,
+    "custom_hue_2": 77.9986266880293,
+    "custom_hue_3": 132.0027466239414,
+    "custom_hue_4": 176.99794003204394,
+    "custom_hue_5": 236.00091554131382,
+    "custom_hue_6": 319.99816891737237
+  },
+  "locks": {},
+  "overrides": {},
+  "semantics": {
+    "foliage": "fg_h2_0",
+    "skin": "bg_h0_0",
+    "stone": "bg_h3_0",
+    "metal": "bg_h4_0",
+    "wood": "fg_h1_0",
+    "water": "fg_h3_1",
+    "fire": "fg_h0_2",
+    "blood": "fg_h0_0",
+    "gold": "fg_h1_2",
+    "sky": "bg_h2_0",
+    "ui_good": "fg_h2_1",
+    "ui_bad": "fg_h0_1",
+    "ui_neutral": "bg_h1_0"
+  },
+  "warnings": [],
+  "colors": [
+    {
+      "index": 0,
+      "id": "universal_dark",
+      "role": "universal_dark",
+      "layer": "anchor",
+      "hex": "#1A0318",
+      "rgb": [
+        26,
+        3,
+        24
+      ],
+      "oklch": {
+        "L": 0.15945,
+        "C": 0.05736,
+        "h": 331.247
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 1,
+      "id": "fg_h0_0",
+      "role": "fg_h0_shadow",
+      "layer": "fg",
+      "hex": "#70002E",
+      "rgb": [
+        112,
+        0,
+        46
+      ],
+      "oklch": {
+        "L": 0.34979,
+        "C": 0.14024,
+        "h": 6.8
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 2,
+      "id": "fg_h0_1",
+      "role": "fg_h0_mid",
+      "layer": "fg",
+      "hex": "#EC0037",
+      "rgb": [
+        236,
+        0,
+        55
+      ],
+      "oklch": {
+        "L": 0.59574,
+        "C": 0.23987,
+        "h": 21.699
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 3,
+      "id": "fg_h0_2",
+      "role": "fg_h0_light",
+      "layer": "fg",
+      "hex": "#FFB6A3",
+      "rgb": [
+        255,
+        182,
+        163
+      ],
+      "oklch": {
+        "L": 0.84001,
+        "C": 0.08967,
+        "h": 35.148
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 4,
+      "id": "fg_h1_0",
+      "role": "fg_h1_shadow",
+      "layer": "fg",
+      "hex": "#572F00",
+      "rgb": [
+        87,
+        47,
+        0
+      ],
+      "oklch": {
+        "L": 0.34915,
+        "C": 0.08012,
+        "h": 62.32
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 5,
+      "id": "fg_h1_1",
+      "role": "fg_h1_mid",
+      "layer": "fg",
+      "hex": "#A57500",
+      "rgb": [
+        165,
+        117,
+        0
+      ],
+      "oklch": {
+        "L": 0.59563,
+        "C": 0.12339,
+        "h": 79.946
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 6,
+      "id": "fg_h1_2",
+      "role": "fg_h1_light",
+      "layer": "fg",
+      "hex": "#FFBE1C",
+      "rgb": [
+        255,
+        190,
+        28
+      ],
+      "oklch": {
+        "L": 0.83891,
+        "C": 0.1678,
+        "h": 82.753
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 7,
+      "id": "fg_h2_0",
+      "role": "fg_h2_shadow",
+      "layer": "fg",
+      "hex": "#00481C",
+      "rgb": [
+        0,
+        72,
+        28
+      ],
+      "oklch": {
+        "L": 0.3509,
+        "C": 0.09761,
+        "h": 149.584
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 8,
+      "id": "fg_h2_1",
+      "role": "fg_h2_mid",
+      "layer": "fg",
+      "hex": "#3E9600",
+      "rgb": [
+        62,
+        150,
+        0
+      ],
+      "oklch": {
+        "L": 0.59525,
+        "C": 0.18288,
+        "h": 137.71
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 9,
+      "id": "fg_h2_2",
+      "role": "fg_h2_light",
+      "layer": "fg",
+      "hex": "#B4DE00",
+      "rgb": [
+        180,
+        222,
+        0
+      ],
+      "oklch": {
+        "L": 0.84005,
+        "C": 0.20464,
+        "h": 122.379
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 10,
+      "id": "fg_h3_0",
+      "role": "fg_h3_shadow",
+      "layer": "fg",
+      "hex": "#2C00A8",
+      "rgb": [
+        44,
+        0,
+        168
+      ],
+      "oklch": {
+        "L": 0.35041,
+        "C": 0.21851,
+        "h": 275.982
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 11,
+      "id": "fg_h3_1",
+      "role": "fg_h3_mid",
+      "layer": "fg",
+      "hex": "#009192",
+      "rgb": [
+        0,
+        145,
+        146
+      ],
+      "oklch": {
+        "L": 0.59491,
+        "C": 0.10142,
+        "h": 195.633
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 12,
+      "id": "fg_h3_2",
+      "role": "fg_h3_light",
+      "layer": "fg",
+      "hex": "#00EAD4",
+      "rgb": [
+        0,
+        234,
+        212
+      ],
+      "oklch": {
+        "L": 0.84132,
+        "C": 0.14987,
+        "h": 182.959
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 13,
+      "id": "fg_h4_0",
+      "role": "fg_h4_shadow",
+      "layer": "fg",
+      "hex": "#500066",
+      "rgb": [
+        80,
+        0,
+        102
+      ],
+      "oklch": {
+        "L": 0.32011,
+        "C": 0.15655,
+        "h": 316.381
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 14,
+      "id": "fg_h4_1",
+      "role": "fg_h4_mid",
+      "layer": "fg",
+      "hex": "#B71BC7",
+      "rgb": [
+        183,
+        27,
+        199
+      ],
+      "oklch": {
+        "L": 0.56491,
+        "C": 0.25198,
+        "h": 323.641
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 15,
+      "id": "fg_h4_2",
+      "role": "fg_h4_light",
+      "layer": "fg",
+      "hex": "#F598FF",
+      "rgb": [
+        245,
+        152,
+        255
+      ],
+      "oklch": {
+        "L": 0.80933,
+        "C": 0.17022,
+        "h": 323.467
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 16,
+      "id": "bridge_0",
+      "role": "bridge_0",
+      "layer": "bridge",
+      "hex": "#C55D00",
+      "rgb": [
+        197,
+        93,
+        0
+      ],
+      "oklch": {
+        "L": 0.59586,
+        "C": 0.15596,
+        "h": 50.708
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 17,
+      "id": "bg_h0_0",
+      "role": "bg_h0_mid",
+      "layer": "bg",
+      "hex": "#C17D79",
+      "rgb": [
+        193,
+        125,
+        121
+      ],
+      "oklch": {
+        "L": 0.65928,
+        "C": 0.08554,
+        "h": 23.325
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 18,
+      "id": "bg_h1_0",
+      "role": "bg_h1_mid",
+      "layer": "bg",
+      "hex": "#DAB07F",
+      "rgb": [
+        218,
+        176,
+        127
+      ],
+      "oklch": {
+        "L": 0.7835,
+        "C": 0.08097,
+        "h": 70.516
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 19,
+      "id": "bg_h2_0",
+      "role": "bg_h2_mid",
+      "layer": "bg",
+      "hex": "#B8C796",
+      "rgb": [
+        184,
+        199,
+        150
+      ],
+      "oklch": {
+        "L": 0.80565,
+        "C": 0.06822,
+        "h": 121.76
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 20,
+      "id": "bg_h3_0",
+      "role": "bg_h3_mid",
+      "layer": "bg",
+      "hex": "#91B2B1",
+      "rgb": [
+        145,
+        178,
+        177
+      ],
+      "oklch": {
+        "L": 0.73882,
+        "C": 0.03593,
+        "h": 194.122
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 21,
+      "id": "bg_h4_0",
+      "role": "bg_h4_mid",
+      "layer": "bg",
+      "hex": "#A17494",
+      "rgb": [
+        161,
+        116,
+        148
+      ],
+      "oklch": {
+        "L": 0.61453,
+        "C": 0.07162,
+        "h": 337.43
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 22,
+      "id": "accent_0",
+      "role": "accent_0",
+      "layer": "accent",
+      "hex": "#EC6F00",
+      "rgb": [
+        236,
+        111,
+        0
+      ],
+      "oklch": {
+        "L": 0.67982,
+        "C": 0.17983,
+        "h": 49.957
+      },
+      "locked": false,
+      "overridden": false
+    },
+    {
+      "index": 23,
+      "id": "universal_light",
+      "role": "universal_light",
+      "layer": "anchor",
+      "hex": "#ECDCC2",
+      "rgb": [
+        236,
+        220,
+        194
+      ],
+      "oklch": {
+        "L": 0.90061,
+        "C": 0.0388,
+        "h": 80.014
+      },
+      "locked": false,
+      "overridden": false
+    }
+  ]
+}
