@@ -1,4 +1,4 @@
-extends Node2D
+extends SnapshotScene
 # res://Tests/Visual/fx_snapshot.gd
 # ==============================================================================
 # FX SNAPSHOTS — the visual half of the FX test plan.
@@ -18,12 +18,18 @@ extends Node2D
 # explicit run rather than something that breaks CI-style headless invocations.
 #
 # Determinism: the RNG is seeded and each attachment's clock is DRIVEN BY HAND to a fixed time
-# rather than left to accumulate from real frame deltas, so two runs of an unchanged shader
-# produce identical images and a diff means a real change.
+# rather than left to accumulate from real frame deltas, so two runs of an unchanged shader produce
+# identical images and a diff means a real change.
+#
+# ⚠ ONE EXCEPTION, measured 2026-07-27: `02_fire_rotation` is NOT reproducible — two consecutive runs
+# of identical code differ by ~11k pixels, all of them inside the ROTATED panels (the 0-degree panel
+# is stable). Every other shot is byte-identical across runs. So that shot is for EYE review ("are
+# the flames upright, are the pixels square"), and a pixel diff of it means nothing. If it ever needs
+# to be diffable, start at what varies per run for a rotated host only — `fx_bayer(FRAGCOORD.xy)` is
+# screen-space, so a sub-pixel placement difference moves every band edge.
 # ==============================================================================
 
 const OUT_DIR := "user://fx_snapshots"
-const RNG_SEED := 20260727
 
 ## Where each shot's clock is parked. Not zero: at t = 0 every noise term is at its starting
 ## value and the flames look artificially uniform.
@@ -34,16 +40,7 @@ const SHOT_TIME := 3.7
 const ZOOM_MAX := 5.0
 
 func _ready() -> void:
-	seed(RNG_SEED)
-	DisplayServer.window_set_size(Vector2i(1280, 760))
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
-	# A dark backdrop: the effects are transparent overlays, and on the default clear colour the
-	# darkest bands of the ramp are invisible.
-	var bg := ColorRect.new()
-	bg.color = Color(0.09, 0.09, 0.12)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	if not begin(OUT_DIR, Vector2i(1280, 760)): return
 	await _run()
 	get_tree().quit()
 
@@ -146,11 +143,12 @@ func _fire_wrap() -> Array[Case]:
 ## one side only (that is how a hoop's back-arc flames stay behind the card it is threading).
 func _shapes() -> Array[Case]:
 	var out : Array[Case] = []
-	# The REAL prop bodies, read off the visuals rather than retyped: the hoop's art is a
-	# foreshortened OVAL (much taller than wide), so a hardcoded square here would have hidden the
-	# fact that SHAPE_RING was a circle of the body's half-WIDTH and sat the flames inside the arc.
-	var ring_body := _body_of(HoopVisual.new())
-	var blade_body := _body_of(KnifeVisual.new())
+	# The REAL prop bodies, derived from the same art the kinds derive theirs from rather than
+	# retyped: the hoop's art is a foreshortened OVAL (much taller than wide), so a hardcoded square
+	# here would have hidden that SHAPE_RING was a circle of the body's half-WIDTH, sitting the
+	# flames deep inside the arc.
+	var ring_body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
+	var blade_body := PropVisual.art_size_for(KnifeVisual.SHEET)
 	out.append(_case("ring", ring_body, FxAttachment.Shape.RING, FxAttachment.Half.WHOLE,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
 	out.append(_case("blade", blade_body, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
@@ -162,13 +160,6 @@ func _shapes() -> Array[Case]:
 			FxAttachment.Half.FRONT,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
 	return out
-
-## A prop kind's authored body footprint. The visual is built only to be asked and then released —
-## these are Nodes, and an orphan Node is a leak the suite's canary would report.
-func _body_of(vis: PropVisual) -> Vector2:
-	var body := vis.body_size
-	vis.free()
-	return body
 
 ## The pattern must read as a CLOSED LOOP: a tall arc peaking above the card's top edge and a
 ## shallow return across the card's centre, roughly half the balls travelling each way.
@@ -283,7 +274,7 @@ func _card_case(label: String, requests: Array[FxRequest]) -> Case:
 func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var holder := Node2D.new()
 	add_child(holder)
-	var size := get_viewport_rect().size
+	var size := canvas()
 	var step := size.x / float(cases.size())
 	var zoom := _zoom_for(cases, step)
 	var probes : Array[_Probe] = []
@@ -325,7 +316,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		att._phase = case.phase if case.phase >= 0.0 else 0.13
 		att._push_live(0.0)
 		att.set_process(false)
-		_label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
+		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
 		for id : StringName in att._fx:
 			var m := (att._fx[id].quad as MeshInstance2D).material as ShaderMaterial
 			print("  [", file_name, "/", case.label, "] zoom=", zoom, " ", id,
@@ -337,14 +328,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 					" u_top_fraction=", m.get_shader_parameter("u_top_fraction"),
 					" u_return_height=", m.get_shader_parameter("u_return_height"),
 					" u_extent=", m.get_shader_parameter("u_extent"))
-	_label(holder, "%s — %s" % [file_name, caption], Vector2(size.x * 0.5, 30.0))
-	# Two frames: one to apply the uniforms written above, one to be sure it has been drawn.
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
-	var path := "%s/%s.png" % [OUT_DIR, file_name]
-	img.save_png(path)
-	print("wrote ", ProjectSettings.globalize_path(path))
+	var img : Image = await capture(file_name, caption)
 	for probe : _Probe in probes: _report(img, probe)
 	holder.queue_free()
 	await get_tree().process_frame
@@ -378,75 +362,36 @@ class _Probe:
 	var zoom : float = 1.0
 	var expected : PackedVector2Array = PackedVector2Array()
 
-## Ball pixels are the only warm colour on screen (the ghost is blue-grey, the crosses green, the
-## backdrop neutral), so classifying by hue alone separates them with no radius or centre guessing.
-static func _is_ball(c: Color) -> bool:
-	return c.r > 0.45 and c.r > c.b * 1.6 and c.g > c.b
+## How far out, in ART UNITS, the probe is willing to look for a ball before calling it missing.
+const PROBE_REACH := 24.0
 
 ## Print, per expected ball, how far the nearest RENDERED ball pixel actually is — in art units, the
-## units the spec is written in. `--` means nothing warm was found within the search window at all.
+## units the spec is written in. Sub-unit offsets are agreement (the search finds the nearest EDGE
+## pixel of a ball, not its centre, so it reads a whole radius pessimistically).
 func _report(img: Image, probe: _Probe) -> void:
-	# The captured image is the WINDOW, while the layout above is in CANVAS units
-	# (window/stretch/mode = canvas_items), so every conversion goes through this ratio.
-	var to_img := float(img.get_width()) / get_viewport_rect().size.x
-	var reach := int(ceilf(24.0 * probe.zoom * to_img))
+	var to_img := to_image_scale(img)
+	var art_to_img := probe.zoom * to_img
+	var reach := int(ceilf(PROBE_REACH * art_to_img))
 	for i : int in probe.expected.size():
 		var want : Vector2 = (probe.origin + probe.expected[i] * probe.zoom) * to_img
-		var best := Vector2.ZERO
-		var best_d := 1e9
-		for dy : int in range(-reach, reach + 1):
-			for dx : int in range(-reach, reach + 1):
-				var at := Vector2i(int(want.x) + dx, int(want.y) + dy)
-				if at.x < 0 or at.y < 0 or at.x >= img.get_width() or at.y >= img.get_height():
-					continue
-				if not _is_ball(img.get_pixelv(at)): continue
-				var d := Vector2(at) - want
-				if d.length_squared() < best_d:
-					best_d = d.length_squared()
-					best = d
-		var off := best / (probe.zoom * to_img)   # back into art units
-		if best_d > 1e8:
-			print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
-					" -> NO BALL within ", 24.0, " art units")
-		else:
-			print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
-					" -> nearest rendered ball offset by art (%.1f, %.1f)" % [off.x, off.y])
+		var hit := PixelProbe.nearest(img, want, reach, PixelProbe.is_warm)
+		var off : Vector2 = (hit[&"offset"] as Vector2) / art_to_img
+		var found := "nearest rendered ball offset by art (%.1f, %.1f)" % [off.x, off.y] \
+				if hit[&"found"] else "NO BALL within %.0f art units" % PROBE_REACH
+		print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
+				" -> ", found)
 
-## TEST-ONLY ORACLE. A second, independent implementation of the ball path, in GDScript, used
-## ONLY to draw the expected positions into the snapshot. Duplicating the motion maths is
-## forbidden in production code — that is exactly the bug fx_common.gdshaderinc exists to prevent
-## — but an oracle that agrees with the shader by construction would check nothing. It is
-## deliberately transcribed from the SPEC, not from the shader.
+## The expected ball positions for every juggling request in this case, from the SHARED spec oracle
+## (PixelProbe.ball_positions — one transcription, also used by the asserting PIXELS suite, and
+## deliberately NOT derived from the shader).
 func _oracle(case: Case) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for req : FxRequest in case.requests:
 		if req.phase_period <= 0.0 or req.shader != FxJuggle.JUGGLE_SHADER: continue
-		var n : float = req.live[&"u_count"]
-		var span : float = req.live[&"u_span"]
-		var h_top : float = req.live[&"u_arc_height"]
-		var h_bot : float = req.live[&"u_return_height"]
-		var f : float = case.style_top_fraction
-		var phase : float = case.phase if case.phase >= 0.0 else 0.13
-		for i : int in int(ceilf(n)):
-			var u := fposmod(phase + float(i) / n, 1.0)
-			if u < f:
-				var a := u / f
-				out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a), -h_top * sin(a * PI)))
-			else:
-				var a := (u - f) / (1.0 - f)
-				out.append(Vector2(span * 0.5 * (2.0 * a - 1.0), -h_bot * sin(a * PI)))
+		out.append_array(PixelProbe.ball_positions(req.live[&"u_count"],
+				case.phase if case.phase >= 0.0 else 0.13, req.live[&"u_span"],
+				req.live[&"u_arc_height"], req.live[&"u_return_height"], case.style_top_fraction))
 	return out
-
-## Centred caption. Plain Label, no theme — this scene is a diagnostic, not UI, so its strings are
-## deliberately literal rather than localized.
-func _label(parent: Node, text: String, at: Vector2) -> void:
-	var lab := Label.new()
-	lab.text = text
-	lab.add_theme_color_override("font_color", Color(0.75, 0.78, 0.85))
-	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lab.size = Vector2(400, 20)
-	lab.position = at - Vector2(200, 10)
-	parent.add_child(lab)
 
 ## The host's silhouette, drawn as a plain outline so the effect can be judged against the shape
 ## it is supposed to be decorating.

@@ -75,25 +75,35 @@ func is_active() -> bool:
 # SkillHungryHippo still reference card_shake in comments and want it back when a
 # visual-feedback pass happens.
 
+## Size of ONE frame of a uniform sprite sheet, in source texels — DERIVED from the image, never
+## retyped next to it, so re-exporting art at a different resolution cannot leave a hardcoded number
+## lying. THE definition of sheet geometry for the whole project: cards frame sheets through
+## update_polygon_uv_frame below, props through PropVisual._draw_frame, and both come here.
+static func frame_size(source_sheet: Texture2D, h_frame: int, v_frame: int) -> Vector2:
+	return source_sheet.get_size() / Vector2(float(h_frame), float(v_frame))
+
+## Source rect of one frame — the same window update_polygon_uv_frame maps UVs into, as a Rect2 for
+## the `draw_texture_rect_region` callers (prop art).
+static func frame_rect(source_sheet: Texture2D, h_frame: int, v_frame: int,
+		target_frame: int) -> Rect2:
+	var size := frame_size(source_sheet, h_frame, v_frame)
+	return Rect2(Vector2(float(target_frame % h_frame), float(target_frame / h_frame)) * size, size)
+
 ## Robust runtime UV framing method that automatically adapts to ANY texture size
 static func update_polygon_uv_frame(polygon2d: Polygon2D, source_sheet: Texture2D, h_frame: int, v_frame: int, target_frame: int) -> void:
 	if not polygon2d or polygon2d.polygon.is_empty():
 		return
-		
+
 	if polygon2d.texture != source_sheet:
 		polygon2d.texture = source_sheet
-		
-	# 1. Dynamically read the incoming texture sizing
-	var sheet_size := source_sheet.get_size()
-	var frame_w := sheet_size.x / h_frame
-	var frame_h := sheet_size.y / v_frame
-	
-	# 2. Find row, column, and pixel offset positions for the new layout
-	var col := target_frame % h_frame
-	var row := target_frame / h_frame
-	var u_left := col * frame_w
-	var v_top := row * frame_h
-	
+
+	# The frame's pixel window in the sheet (frame_rect above is the one definition of this maths).
+	var src := frame_rect(source_sheet, h_frame, v_frame, target_frame)
+	var frame_w := src.size.x
+	var frame_h := src.size.y
+	var u_left := src.position.x
+	var v_top := src.position.y
+
 	var base_points := polygon2d.polygon
 	var shifted_uvs := PackedVector2Array()
 	shifted_uvs.resize(base_points.size())

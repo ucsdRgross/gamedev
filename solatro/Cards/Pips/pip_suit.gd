@@ -10,12 +10,12 @@ extends CardModifier
 ## themselves, but the seam stays for future dynamic suits.
 signal data_changed
 
-const SUIT_TEXTURE : Texture2D = preload("res://Assets/suit_pips.png")   # 8x8 frames
+## The suit pip sheet. Also drawn by the Ball and Fire PROPS (ball_visual.gd / fire_visual.gd) — the
+## props ARE their suits' pips — so both go through these constants and the frame SIZE is derived
+## from the image by CardModifier.frame_size rather than written down anywhere.
+const SUIT_TEXTURE : Texture2D = preload("res://Assets/suit_pips.png")
 const SUIT_TEXTURE_H_FRAMES : int = 8
 const SUIT_TEXTURE_V_FRAMES : int = 8
-## One pip frame in source texels. Public because the Ball and Fire PROPS draw the very same frames
-## (ball_visual.gd / fire_visual.gd) and must size their art off the same number.
-const SUIT_FRAME_PX := Vector2(8, 8)
 const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")     # 13x13 frames
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13

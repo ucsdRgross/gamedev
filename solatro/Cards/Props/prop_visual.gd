@@ -90,10 +90,16 @@ const AUTHORED_CARD_SCALE := 2.5
 ## Drawn size per SOURCE TEXEL of prop art. A card draws its own pixel art one texel per UNSCALED
 ## unit and is then scaled by `card_scale`; a prop is scaled by `card_scale /
 ## AUTHORED_CARD_SCALE` — so a prop texel is the same size on screen as a card texel only when the
-## prop draws its frame at `frame_px * AUTHORED_CARD_SCALE`. Every kind sizes its art through this
-## constant and never with raw pixel numbers, so all of the game's pixel art stays ONE pixel size
-## at every card_scale setting (owner 2026-07-27).
+## prop draws its frame at `frame_px * AUTHORED_CARD_SCALE`. Every kind sizes its art through
+## art_size_for() below and never with raw pixel numbers, so all of the game's pixel art stays ONE
+## pixel size at every card_scale setting (owner 2026-07-27).
 const ART_PIXEL_SCALE := AUTHORED_CARD_SCALE
+
+## The `art_size` a sheet's frames want: its frame size (read FROM the image) at the game's one pixel
+## size. Kinds call this in `_init` instead of writing their frame dimensions out, so nothing has to
+## be kept in sync with the art files by hand.
+static func art_size_for(sheet: Texture2D, h_frames: int = 1, v_frames: int = 1) -> Vector2:
+	return CardModifier.frame_size(sheet, h_frames, v_frames) * ART_PIXEL_SCALE
 
 ## True while the art is mirrored (the prop is heading right). Only meaningful with face_travel on;
 ## _process redraws every frame, so setting it needs no explicit invalidation.
@@ -168,6 +174,13 @@ func _draw() -> void:
 func _draw_body() -> void:
 	draw_circle(Vector2.ZERO, art_size.x * 0.5, color)
 
+## THE textured body: one frame of a uniform sheet, centred and drawn at `art_size`. Every textured
+## kind's `_draw_body` is a single call to this — the framing maths is CardModifier's (cards use the
+## same definition) and the mirroring is _draw_art's, so a kind contributes only its sheet and frame.
+func _draw_frame(sheet: Texture2D, h_frames : int = 1, v_frames : int = 1, frame : int = 0) -> void:
+	_draw_art(self, sheet, CardModifier.frame_rect(sheet, h_frames, v_frames, frame),
+			Rect2(-art_size * 0.5, art_size))
+
 ## Draw one sprite frame, mirrored when the art faces the other way (face_travel). `into` is the
 ## canvas ISSUING the command — self for a whole body, the half node for a split half (the same
 ## rule as _draw_back). `dest` is in prop-local units, so callers size it off `art_size`.
@@ -183,13 +196,6 @@ func _draw_art(into: CanvasItem, sheet: Texture2D, src: Rect2, dest: Rect2) -> v
 	into.draw_texture_rect_region(sheet, dest, src)
 	if flipped:
 		into.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-## Source rect of one frame of a uniform sprite sheet — the draw_texture_rect_region twin of
-## CardModifier.update_polygon_uv_frame's UV window, so a prop frames a shared sheet (the suit pips)
-## exactly the way a card does.
-static func sheet_frame(sheet: Texture2D, h_frames: int, v_frames: int, frame: int) -> Rect2:
-	var frame_px := sheet.get_size() / Vector2(float(h_frames), float(v_frames))
-	return Rect2(Vector2(float(frame % h_frames), float(frame / h_frames)) * frame_px, frame_px)
 
 # --- front/back split (structural layering, LAYERING.md) ----------------------
 ## A split prop (e.g. the hoop) renders as TWO nodes that BRACKET the card it currently occupies in

@@ -551,6 +551,15 @@ eased data values are pushed per frame. Player-facing knobs (`fx_transition_frac
 photosensitivity control, and flicker/pulse are separate levers so they can be reduced without
 dimming everything.
 
+**Shader pixels are covered TWO ways now.** The **PIXELS** suite (`Tests/Visual/test_pixels.gd`, in
+all_tests) renders the real effects into a SubViewport and ASSERTS on the image — the fire draws and
+draws upward, its hottest band is a tall spine and not a wide slab (the onion/rows discriminator; a
+"core hotter than rim" check does NOT discriminate, verified by mutation), every ball lands on the
+shared spec oracle at 1/3/8/50, a ball shades into 3+ tones with an off-centre highlight, the hoop
+halves reassemble pixel-for-pixel, and a prop texel matches a card texel at three card scales. It
+FAILS rather than skips under a dummy renderer, which is why the suite runs windowed (§7). The
+snapshot harness below stays for the judgements a number cannot make.
+
 **Shader pixels need the SNAPSHOT harness, not the headless suite.** `--headless` uses the dummy
 renderer and never compiles a shader program, so a GLSL error, an inverted sign, an upside-down
 flame or an effect that draws nothing all pass it silently — the first snapshot run caught four
@@ -597,6 +606,12 @@ pixels back, or the last column lands off the right edge.
   forces (~1.0 art unit per pixel) the old 0.5-unit crosses and outlines lost half their lines, so
   "does the ball sit on its cross" could not be judged at all. Every width in `_Ghost` is now a
   multiple of the shot's art-units-per-pixel.
+
+Every shot is byte-reproducible across runs **except `02_fire_rotation`** (measured: two consecutive
+runs of identical code differ by ~11k pixels, all inside the ROTATED panels; the 0° panel is stable).
+Review that one by eye — flames upright, pixels square — and do not read anything into a pixel diff
+of it. Both harnesses share `Tests/Visual/snapshot_scene.gd` (`SnapshotScene`), which owns the
+backdrop, the canvas-units rule, the captions and the capture.
 
 Covered by `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT"), the FX section of
 `Tests/UI/test_visual_layers.gd`, and `Tests/Visual/fx_snapshot.gd`.
@@ -707,9 +722,12 @@ re-enable it); `enable_board_focus()` on dismissal.
 
 ## 7. TESTING
 
-Run: `Godot --headless --path solatro res://Tests/all_tests.tscn` — exit code = failure
-count; the bar is ALL suites green (count the run's own banner; 26 as of 2026-07-27 —
-PATIENCE and FX ATTACHMENT joined, and both run unordered like the other engine suites).
+Run: `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
+(changed 2026-07-27: the PIXELS suite renders real effects and asserts on the image, and a
+dummy renderer cannot compile a shader — headless it FAILS with an explanation rather than
+skipping, per the owner's rule that tests must run properly rather than be skipped). Exit code
+= failure count; the bar is ALL suites green (count the run's own banner; 27 as of 2026-07-27 —
+PATIENCE, FX ATTACHMENT and PIXELS joined, and all run unordered like the other engine suites).
 Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** Never
 run headless while the owner's editor has the project open (see START_HERE.md).
 Environment traps (stale class cache, frame_post_draw, headless window size):

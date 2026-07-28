@@ -1,4 +1,4 @@
-extends Node2D
+extends SnapshotScene
 # res://Tests/Visual/prop_art_snapshot.gd
 # ==============================================================================
 # PROP ART SNAPSHOTS — the visual half of "props draw real sprites".
@@ -26,13 +26,7 @@ const OUT_DIR := "user://prop_art_snapshots"
 const SCALES : Array[float] = [1.5, 2.5, 4.0]
 
 func _ready() -> void:
-	DisplayServer.window_set_size(Vector2i(1280, 800))
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
-	var bg := ColorRect.new()
-	bg.color = Color(0.09, 0.09, 0.12)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	if not begin(OUT_DIR, Vector2i(1280, 800)): return
 	await _shot_kinds()
 	await _shot_pixel_scale()
 	await _shot_facing()
@@ -49,14 +43,15 @@ func _shot_kinds() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
 	var kinds : Array[GDScript] = [HoopVisual, KnifeVisual, BallVisual, FireVisual, FireworkVisual]
-	var step := _canvas().x / float(kinds.size())
+	var step := canvas().x / float(kinds.size())
 	for i : int in kinds.size():
-		var at := Vector2(step * (float(i) + 0.5), _canvas().y * 0.48)
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.48)
 		_card_ghost(holder, at, 2.5)
-		var vis : PropVisual = _place(holder, kinds[i].new() as PropVisual, at, 2.5)
-		_label(holder, "%s  art %.0fx%.0f" % [kinds[i].get_global_name(), vis.art_size.x,
-				vis.art_size.y], Vector2(at.x, _canvas().y * 0.94))
-	await _write("10_prop_kinds", "every kind at card_scale 2.5, over a card outline")
+		var vis := kinds[i].new() as PropVisual
+		_place(holder, vis, at, 2.5)
+		label(holder, "%s  art %.0fx%.0f" % [kinds[i].get_global_name(), vis.art_size.x,
+				vis.art_size.y], Vector2(at.x, canvas().y * 0.94))
+	await capture("10_prop_kinds", "every kind at card_scale 2.5, over a card outline")
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -66,10 +61,10 @@ func _shot_kinds() -> void:
 func _shot_pixel_scale() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
-	var step := _canvas().x / float(SCALES.size())
+	var step := canvas().x / float(SCALES.size())
 	for i : int in SCALES.size():
 		var s : float = SCALES[i]
-		var at := Vector2(step * (float(i) + 0.5), _canvas().y * 0.45)
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.45)
 		_card_ghost(holder, at, s)
 		# The card's own pip, drawn exactly as CardVisual does it: an 8x8 frame across an 8x8
 		# unscaled polygon, the whole card then scaled by card_scale.
@@ -81,8 +76,8 @@ func _shot_pixel_scale() -> void:
 		holder.add_child(pip)
 		# The prop, scaled the way PropLayer scales it.
 		_place(holder, BallVisual.new(), at + offset, s)
-		_label(holder, "card_scale %.1f — pip | prop" % s, Vector2(at.x, _canvas().y * 0.94))
-	await _write("11_prop_pixel_scale", "one pixel size for all art: the two squares must match")
+		label(holder, "card_scale %.1f — pip | prop" % s, Vector2(at.x, canvas().y * 0.94))
+	await capture("11_prop_pixel_scale", "one pixel size for all art: the two squares must match")
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -93,13 +88,13 @@ func _shot_facing() -> void:
 	add_child(holder)
 	var flips : Array[bool] = [false, true]
 	for i : int in flips.size():
-		var at := Vector2(_canvas().x * (0.25 + 0.5 * float(i)), _canvas().y * 0.45)
+		var at := Vector2(canvas().x * (0.25 + 0.5 * float(i)), canvas().y * 0.45)
 		var knife := KnifeVisual.new()
 		knife.flipped = flips[i]
 		_place(holder, knife, at, 10.0)   # blown up: the blade is only 12x5 texels
-		_label(holder, "flipped = %s (heading %s)" % [flips[i], "right" if flips[i] else "left"],
-				Vector2(at.x, _canvas().y * 0.94))
-	await _write("12_prop_facing", "the knife mirrors L<->R; its top edge stays its top edge")
+		label(holder, "flipped = %s (heading %s)" % [flips[i], "right" if flips[i] else "left"],
+				Vector2(at.x, canvas().y * 0.94))
+	await capture("12_prop_facing", "the knife mirrors L<->R; its top edge stays its top edge")
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -110,19 +105,19 @@ func _shot_hoop_halves() -> void:
 	add_child(holder)
 	var labels : Array[String] = ["whole ring", "back half (far side)", "front half (near side)",
 			"both halves together"]
-	var step := _canvas().x / float(labels.size())
+	var step := canvas().x / float(labels.size())
 	for i : int in labels.size():
-		var at := Vector2(step * (float(i) + 0.5), _canvas().y * 0.45)
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.45)
 		var hoop := HoopVisual.new()
 		_place(holder, hoop, at, 2.0)
 		if i > 0:
 			# Split active: the body stops drawing and the bracket nodes take over. They live under
 			# CardLayer in the game, so the harness parents and places them itself.
 			hoop.set_split_active(true)
-			if i != 2: _place_half(holder, hoop.ensure_back(), at, 2.0)
-			if i != 1: _place_half(holder, hoop.ensure_front(), at, 2.0)
-		_label(holder, labels[i], Vector2(at.x, _canvas().y * 0.94))
-	await _write("13_hoop_halves", "back + front are the full frame split at its vertical diameter")
+			if i != 2: _place(holder, hoop.ensure_back(), at, 2.0)
+			if i != 1: _place(holder, hoop.ensure_front(), at, 2.0)
+		label(holder, labels[i], Vector2(at.x, canvas().y * 0.94))
+	await capture("13_hoop_halves", "back + front are the full frame split at its vertical diameter")
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -135,24 +130,26 @@ func _shot_recolour() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
 	var suits : Array[GDScript] = PipSuit.STANDARD
-	var step := _canvas().x / float(suits.size())
+	var step := canvas().x / float(suits.size())
+	var pip_px := CardModifier.frame_size(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+			PipSuit.SUIT_TEXTURE_V_FRAMES)
 	for i : int in suits.size():
 		var suit : PipSuit = suits[i].new() as PipSuit
 		var rank := PipRankNumeral.new().with_value(7) as PipRankNumeral
-		var at := Vector2(step * (float(i) + 0.5), _canvas().y * 0.4)
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.4)
 		# Suit pip: set_texture frames it AND clears the material (its own colours).
-		var pip := _quad(holder, PipSuit.SUIT_FRAME_PX, at + Vector2(-70.0, 0.0), 6.0)
+		var pip := _quad(holder, pip_px, at + Vector2(-70.0, 0.0), 6.0)
 		suit.set_texture(pip)
 		# Rank pip: same 8x8 polygon, framed by the RANK, recoloured by the suit.
-		var rank_pip := _quad(holder, PipSuit.SUIT_FRAME_PX, at, 6.0)
+		var rank_pip := _quad(holder, pip_px, at, 6.0)
 		rank.set_texture(rank_pip)
 		suit.set_material(rank_pip)
 		# Card art: the 32x32 art frame for this suit and rank, also recoloured.
 		var art := _quad(holder, Vector2(32, 32), at + Vector2(90.0, 0.0), 2.5)
 		suit.set_art_texture(art, rank)
-		_label(holder, "%s — pip | rank | art" % suit.get_str(),
-				Vector2(at.x, _canvas().y * 0.94))
-	await _write("14_recolour", "suit pip keeps its own colours; rank + art take the suit's")
+		label(holder, "%s — pip | rank | art" % suit.get_str(),
+				Vector2(at.x, canvas().y * 0.94))
+	await capture("14_recolour", "suit pip keeps its own colours; rank + art take the suit's")
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -170,18 +167,13 @@ func _quad(holder: Node2D, size_px: Vector2, at: Vector2, zoom: float) -> Polygo
 
 # ----------------------------------------------------------------- the harness
 
-## One prop, scaled the way PropLayer scales it every frame (card_scale / AUTHORED_CARD_SCALE).
-func _place(holder: Node2D, vis: PropVisual, at: Vector2, card_scale: float) -> PropVisual:
-	vis.position = at
-	vis.scale = Vector2.ONE * (card_scale / PropVisual.AUTHORED_CARD_SCALE)
-	holder.add_child(vis)
-	return vis
-
-## One bracket half, placed by hand — in the game PropLayer mirrors the prop's transform onto it.
-func _place_half(holder: Node2D, half: Node2D, at: Vector2, card_scale: float) -> void:
-	half.position = at
-	half.scale = Vector2.ONE * (card_scale / PropVisual.AUTHORED_CARD_SCALE)
-	holder.add_child(half)
+## Place a prop — or one of its bracket halves — scaled the way PropLayer scales it every frame
+## (card_scale / AUTHORED_CARD_SCALE). Halves are placed by hand here; in the game PropLayer mirrors
+## the prop's transform onto them.
+func _place(holder: Node2D, node: Node2D, at: Vector2, card_scale: float) -> void:
+	node.position = at
+	node.scale = Vector2.ONE * (card_scale / PropVisual.AUTHORED_CARD_SCALE)
+	holder.add_child(node)
 
 ## A card's footprint at this card_scale, so prop size is judged against a card and not guessed.
 func _card_ghost(holder: Node2D, at: Vector2, card_scale: float) -> void:
@@ -189,36 +181,6 @@ func _card_ghost(holder: Node2D, at: Vector2, card_scale: float) -> void:
 	ghost.body = CardVisual.CARD_SIZE * card_scale
 	ghost.position = at
 	holder.add_child(ghost)
-
-## The layout space. NOT the window size: `window/stretch/mode` is `canvas_items`, so the canvas has
-## its own resolution and the captured image is that canvas scaled to the window — laying out
-## against window pixels put the last column off the right edge of the very first run.
-func _canvas() -> Vector2:
-	return get_viewport_rect().size
-
-## Wait for the frame to actually reach the screen, then capture it.
-func _write(file_name: String, caption: String) -> void:
-	_label(self, "%s — %s" % [file_name, caption], Vector2(_canvas().x * 0.5, 30.0))
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
-	var path := "%s/%s.png" % [OUT_DIR, file_name]
-	img.save_png(path)
-	print("wrote ", ProjectSettings.globalize_path(path))
-	# The caption is parented to self (it must not vanish with the shot's holder), so clear it here.
-	for child in get_children():
-		if child is Label: child.queue_free()
-
-## Centred caption. Plain Label, no theme — a diagnostic, so its strings are deliberately literal
-## rather than localized.
-func _label(parent: Node, text: String, at: Vector2) -> void:
-	var lab := Label.new()
-	lab.text = text
-	lab.add_theme_color_override("font_color", Color(0.75, 0.78, 0.85))
-	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lab.size = Vector2(400, 20)
-	lab.position = at - Vector2(200, 10)
-	parent.add_child(lab)
 
 ## A card's outline plus its centre line — the reference every prop is judged against.
 class _Ghost extends Node2D:
@@ -231,7 +193,6 @@ class _Ghost extends Node2D:
 class _Pip extends Node2D:
 	var frame : int = 0
 	func _draw() -> void:
-		var src := PropVisual.sheet_frame(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+		var src := CardModifier.frame_rect(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
 				PipSuit.SUIT_TEXTURE_V_FRAMES, frame)
-		draw_texture_rect_region(PipSuit.SUIT_TEXTURE,
-				Rect2(-PipSuit.SUIT_FRAME_PX * 0.5, PipSuit.SUIT_FRAME_PX), src)
+		draw_texture_rect_region(PipSuit.SUIT_TEXTURE, Rect2(-src.size * 0.5, src.size), src)

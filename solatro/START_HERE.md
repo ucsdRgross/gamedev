@@ -47,7 +47,11 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
    WeakRefs — ARCHITECTURE_REVIEW §6).
 8. **Tests:** TestSuite pattern, never `Decks/deck.gd` in tests (use TestDecks — frozen
    replay contracts), mind the DEADLOCK RULE, `await` every coroutine test, compare
-   failure SETS not check totals. Full suite green after every landed step.
+   failure SETS not check totals. Full suite green after every landed step, and the suite
+   runs **WINDOWED** now (no `--headless` — see Environment facts). **A test that cannot run
+   under the current renderer FAILS with the reason; it never skips** (owner 2026-07-27:
+   "prioritize running all tests properly over skipping them"). A skipped check is
+   indistinguishable from a passing one in a log.
 9. `addons/worldgen/` is **vendored** — never edit it here. Land changes in the
    `worldgen` project, validate there, re-copy changed files (never its README), run
    `--import`, then the full suite. See `../worldgen/START_HERE.md`.
@@ -132,7 +136,9 @@ C#/GDExtension migration candidates get flagged in comments, not converted ad ho
   by name); a copy lives on the Desktop next to it. Repo:
   `C:\Users\khanr\Documents\GitHub\gamedev` (docs mentioning `C:\richard\gamedev` are
   from the owner's other machine — same repo).
-- Full suite: `Godot --headless --path solatro res://Tests/all_tests.tscn` — exit code =
+- Full suite: `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no
+  `--headless`** since 2026-07-27 (the PIXELS suite asserts on rendered pixels; headless it
+  fails loudly instead of skipping — HEADLESS_TESTING.md §0). Exit code =
   failure count. Logs: `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`.
   **An agent may and should run this itself** whenever the owner's editor is closed
   (verified 2026-07-20: clean self-terminating run, 25 suites / 0 failures, ~40 s; the

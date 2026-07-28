@@ -4,6 +4,10 @@ Last consolidated 2026-07-19. Done-work history lives in git; current-state fact
 ARCHITECTURE_REVIEW.md. Add new items here; delete items when they land (record the
 regression-critical residue in ARCHITECTURE_REVIEW.md instead of keeping a log here).
 
+**⚠ The suite runs WINDOWED now** (`Godot --path solatro res://Tests/all_tests.tscn`, no
+`--headless`): the new PIXELS suite asserts on rendered pixels and FAILS rather than skips under a
+dummy renderer. HEADLESS_TESTING.md §0.
+
 **The three things actually waiting on someone (2026-07-27):** ⬜ the **universal palette** feature
 (plan it from [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md), owner rules on its approval lines first)
 · ⬜ **owner playtest** of the shader FX (FX_SHADER_PLAN §10, 17 steps) · ⬜ **delete

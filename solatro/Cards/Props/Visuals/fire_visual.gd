@@ -9,12 +9,11 @@ extends PropVisual
 const FRAME := 3
 
 func _init() -> void:
-	art_size = PipSuit.SUIT_FRAME_PX * ART_PIXEL_SCALE
+	art_size = art_size_for(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+			PipSuit.SUIT_TEXTURE_V_FRAMES)
 	body_size = art_size
 	arc_height = 24.0
 
 func _draw_body() -> void:
-	_draw_art(self, PipSuit.SUIT_TEXTURE,
-			sheet_frame(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
-					PipSuit.SUIT_TEXTURE_V_FRAMES, FRAME),
-			Rect2(-art_size * 0.5, art_size))
+	_draw_frame(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+			PipSuit.SUIT_TEXTURE_V_FRAMES, FRAME)

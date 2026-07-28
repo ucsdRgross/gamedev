@@ -5,13 +5,32 @@ Applies to Godot 4.7.1 (`C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64.exe`; 
 `_console` variant, which is the redirectable one, must live in the same folder as the
 main exe — it launches it by name) and both projects (`solatro`, `worldgen`).
 
-## 0. The Solatro suite runs fine headless — agents should run it
+## 0. ⚠ THE SOLATRO SUITE NOW RUNS **WINDOWED**, NOT HEADLESS (changed 2026-07-27)
 
-Re-verified 2026-07-20: `--headless res://Tests/all_tests.tscn` completed in ~40 s,
-quit itself, 25 suites / 0 failures (check TOTALS drift run-to-run — 1332 and 1367 both
-seen on 2026-07-20; the suite COUNT and the failure set are the stable signals, never the
-check total). Two launch gotchas, both cost time
-that day:
+**Run it with NO `--headless`:**
+
+```bash
+timeout 500 "$GODOT_CONSOLE" --path solatro res://Tests/all_tests.tscn > /tmp/run.log 2>&1; echo "exit: $?"
+```
+
+It still quits itself (`close_when_done`) and still exits with the failure count, so it is
+just as scriptable as before — it needs a GPU, and ~60 s rather than ~40 s.
+
+**Why:** the suite gained a **PIXELS** suite (`Tests/Visual/test_pixels.gd`) that renders the
+real effects into a SubViewport and asserts on the image — flames point up, the hottest band
+is a spine and not a slab, every ball sits on its independent oracle, a ball shades into 3+
+tones with an off-centre highlight, the hoop's halves reassemble the whole ring, a prop texel
+matches a card texel at three card scales. **A dummy renderer cannot compile a shader**, so
+headless it reports a FAILURE telling you to re-run windowed — it never skips (owner
+2026-07-27: *"prioritize running all tests properly over skipping them, even if that means all
+tests never run headless anymore"*). A skipped pixel check looks exactly like a passing one in
+a log, which is how four real render bugs survived a green suite.
+
+Headless is still fine (and faster) for `--import`, for compile/parse checks, and when you only
+care about the 26 renderer-independent suites — just expect exit code 1 from PIXELS and read
+the rest of the log normally.
+
+Two launch gotchas, both cost time on 2026-07-20:
 
 - Invoke it so you WAIT for the process (PowerShell `Start-Process ... -PassThru` +
   `WaitForExit(ms)`); a plain call operator (`& $exe ...`) can hand back control while
@@ -62,7 +81,7 @@ So catch it **in the same command as the run**: bound it, then grep the log. Bas
 (`timeout` is present at `/usr/bin/timeout`; exit 124 = it was killed):
 
 ```bash
-timeout 300 "$GODOT_CONSOLE" --headless --path <proj> res://Tests/all_tests.tscn > /tmp/run.log 2>&1
+timeout 500 "$GODOT_CONSOLE" --path <proj> res://Tests/all_tests.tscn > /tmp/run.log 2>&1   # NO --headless, see §0
 echo "exit: $?  (0 = green, 124 = HUNG, other = failure count)"
 grep -n "Parse Error" /tmp/run.log | head    # non-empty ⇒ a script did not compile
 ```
@@ -91,14 +110,18 @@ nothing for 9+ minutes — they are parked on the first GPU `flush()` await
 - Consequences: every worldgen scene that generates a world (generate_up_to,
   graph_placement, biome_*, addon_*) MUST run windowed:
   `Godot --path <project> res://tests/<scene>.tscn` (no `--headless`).
-- Solatro suite status (investigated 2026-07-17, same day): the hang did NOT reproduce
-  — 6 consecutive full headless runs (23 suites) all exited cleanly by themselves,
-  ~20 s each, exit 0. Code audit backs it up: nothing in `Scripts/` or `Tests/` awaits
-  `frame_post_draw`; the only awaiters are the vendored worldgen `flush()` paths, which
-  no Solatro test touches. RunManager's saver thread is properly joined in
-  `_exit_tree`. Treat the historical "hangs after the final banner" as either fixed by
-  the audit-era changes or an environment fluke; if it recurs, capture it with
-  `--verbose` before killing.
+- Solatro suite status (investigated 2026-07-17): the hang did NOT reproduce — 6 consecutive
+  full headless runs (23 suites) all exited cleanly by themselves, ~20 s each, exit 0.
+  RunManager's saver thread is properly joined in `_exit_tree`. Treat the historical "hangs
+  after the final banner" as either fixed by the audit-era changes or an environment fluke;
+  if it recurs, capture it with `--verbose` before killing.
+- **Solatro DOES await `frame_post_draw` now** (changed 2026-07-27), in the PIXELS suite and in
+  the two snapshot scenes — so headless they would hang exactly like worldgen's. All three
+  therefore CHECK `DisplayServer.get_name()` first: PIXELS reports a failure telling you to
+  re-run windowed, and the snapshot scenes `push_error` + quit. **Never "fix" a new visual test
+  by making it skip under headless** — the owner's rule is to run it properly instead (§0).
+  Measured before the guards existed: a headless snapshot run sat past a 2-minute timeout having
+  written nothing, while stale PNGs from an earlier windowed run sat on disk looking like output.
 - Workaround if it ever recurs: the suite prints its final banner and results BEFORE
   any hang; read `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log` and kill
   the process. Exit code (when it does exit) = failure count.
