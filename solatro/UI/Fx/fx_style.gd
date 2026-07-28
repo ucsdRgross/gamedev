@@ -27,8 +27,12 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var inner_alpha : float = 0.5
 
 @export_group("Tendril shape")
-## Flame length in art units, before the per-tendril variation.
-@export var height : float = 14.0
+## Flame length in art units, before the per-tendril variation (which only ever SHORTENS a tendril,
+## so this is a true ceiling). For a CARD-hosted effect the budget is half the default card
+## separation — `CardVisual.CARD_SEPARATION * 0.5` = 7 — so the flames never reach the card behind
+## and cover it (owner 2026-07-28). Prop-hosted styles are in PROP art units (screen pixels at the
+## default card_scale, ~2.5x smaller), so their number is not the same number.
+@export var height : float = 7.0
 ## How ragged the crown is: 0 = every tendril the same length, 1 = wildly uneven.
 @export_range(0.0, 1.0, 0.01) var height_var : float = 0.45
 ## Share of its comb cell each flame fills — gaps versus touching neighbours.
@@ -102,15 +106,38 @@ extends Resource
 ## Width of the juggling loop, and the height of its tall throw arc at ONE ball. The arc grows
 ## with log(n) so more balls fit without bunching.
 @export var ball_span : float = 30.0
-@export var ball_arc_height : float = 37.5
+@export var ball_arc_height : float = 32.0
+## CEILING on the TOPMOST BALL, measured from the host's centre — the ball's radius comes out of it,
+## so this is where the drawn pixels stop, not where a centre does. On a card the budget is half a
+## card plus half the default separation — `(50 + 14) * 0.5` = 32: the pattern still peaks above the
+## card's top edge (ruling 13) but never far enough to cover the card behind (owner 2026-07-28).
+## Growth with the count runs into this; the balls' 1/sqrt(n) shrink is what makes room past it.
+## Bounds the BALLS only — a lit ball's plume is deliberately outside the budget (owner 2026-07-28).
+@export var ball_arc_max : float = 32.0
 ## The shallow return arc — the "flat part", a small upward arc rather than a straight line.
 @export var ball_return_height : float = 6.0
 ## Share of the cycle spent on the tall arc. > 0.5 means longer hang time, which is what real
 ## juggling looks like: the throw takes longer than the carry.
 @export_range(0.2, 0.8, 0.01) var ball_top_fraction : float = 0.6
-## Seconds for one full loop at ONE ball, as a fraction of the live get_delay(). The pattern
-## quickens with the count on top of this (owner ruling 12).
-@export var ball_period_fraction : float = 1.2
+## Seconds for one full loop at ONE ball. REAL seconds, not a fraction of get_delay(): juggling
+## speed is an ART decision, and `base_delay` is a player speed knob that goes down to 0.1 — where
+## the old fraction made a whole cycle 0.12 s and the balls were a blur (owner report 2026-07-28).
+## Act compression still quickens the pattern, because the clock feeding it is already pacing-scaled
+## (FxAttachment.pacing) — this is only what one loop costs at rest. The pattern also quickens with
+## the count on top of this (owner ruling 12).
+@export var ball_period_secs : float = 1.2
+## Deceleration into the top of the throw and acceleration out of it: 1 = constant speed around the
+## loop, higher makes the ball linger at the apex. The carry (the lowest arc) is never warped —
+## nothing is falling there. See fx_arc_ease in fx_common.gdshaderinc.
+@export_range(1.0, 3.0, 0.05) var ball_gravity : float = 1.6
+## The loop is a LADDER of arcs, not one throw and one carry: as the ball count rises, lanes appear
+## between the top and bottom arcs at evenly spaced heights and the balls travel those too (owner
+## 2026-07-28). `per_count` is how fast lanes are added (a lane per `log(n) * this`), `max` is the
+## ceiling — which is also the shader's cost ceiling, since the nearest-ball lookup does a fixed
+## amount of work PER ARC. Both are always rounded to an EVEN arc count, or the loop would not close
+## in x. 2 = the original two-arc pattern.
+@export_range(0.0, 4.0, 0.05) var ball_arcs_per_count : float = 1.2
+@export_range(2, 8, 2) var ball_arcs_max : int = 8
 ## Ball spin rate, and how much the count raises it (owner ruling 25).
 @export var ball_spin : float = 2.0
 @export var ball_spin_per_count : float = 0.35
@@ -173,6 +200,11 @@ func apply(mat: ShaderMaterial) -> void:
 	# Ball geometry the juggle shader reads statically; the count-dependent halves of these
 	# (radius, arc height, spin) are recomputed live and pushed with the rest of FxRequest.live.
 	mat.set_shader_parameter(&"u_top_fraction", ball_top_fraction)
+	# Pushed to the BALL and the BALL-FIRE materials alike (both shaders declare it): the plume's
+	# timing has to match its ball's exactly, or the flame slides off.
+	mat.set_shader_parameter(&"u_ball_gravity", ball_gravity)
+	# u_ball_arcs is NOT here: it depends on the ball COUNT, so it rides in FxJuggle.geometry with the
+	# other count-derived values, which is also what guarantees both quads are handed the same one.
 	mat.set_shader_parameter(&"u_lit", ball_lit)
 	mat.set_shader_parameter(&"u_shade", ball_shade)
 	mat.set_shader_parameter(&"u_gloss", ball_gloss)

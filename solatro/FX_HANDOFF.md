@@ -10,6 +10,7 @@ lands on this map instead of on stale instructions.
 
 | What you came here for | Where it lives now |
 |---|---|
+| **Any visual-effects work at all** | **[VFX.md](VFX.md)** — the entry point: map, runbook, backlog, known bugs |
 | The FX rules, contracts and every trap already paid for | **ARCHITECTURE_REVIEW.md §4g** |
 | Prop/pip art: one pixel size, mirror-not-rotate, the hoop's split, what gets recoloured | **ARCHITECTURE_REVIEW.md §4h** |
 | How to run the snapshot harnesses, and the shot lists | ARCHITECTURE_REVIEW.md §4g (shader) and §4h (prop art) |

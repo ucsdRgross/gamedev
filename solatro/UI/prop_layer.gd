@@ -83,12 +83,20 @@ func current_tick_seconds() -> float:
 	var game := _game()
 	return game.get_delay() * SettingsManager.settings.prop_tick_fraction if game else 0.0
 
-## Seconds for a short prop flourish (fade/poof): a FRACTION of the live get_delay, so every
-## animation respects the global pacing and the act compression — nothing runs on a fixed
-## wall-clock length (owner spec 2026-07-16).
+## The shortest a despawn flourish may be, in REAL seconds. These are decorations — nothing awaits
+## them, unlike the tick-synced animations — and `base_delay` is a player speed knob that goes as low
+## as 0.1, where a 0.12 fraction is 12 ms: under one frame, so the prop blinked out instead of
+## poofing (owner report 2026-07-28). The fraction still governs everywhere above the floor, so
+## pacing and compression are unchanged at normal speeds.
+const MIN_FLOURISH_SECS := 0.12
+
+## Seconds for a short prop flourish (the ballistic poof): a FRACTION of the live get_delay, so
+## every animation respects the global pacing and the act compression — nothing runs on a fixed
+## wall-clock length (owner spec 2026-07-16) — but never so short it cannot be seen.
 func _anim_secs(fraction: float) -> float:
 	var game := _game()
-	return (game.get_delay() if game else SettingsManager.settings.base_delay) * fraction
+	var secs : float = (game.get_delay() if game else SettingsManager.settings.base_delay) * fraction
+	return maxf(secs, MIN_FLOURISH_SECS)
 
 func _process(delta: float) -> void:
 	# EVERY visual follows the live board every frame — staged trains and mid-leg waits
@@ -282,11 +290,19 @@ func _repin(vis: PropVisual) -> void:
 ## into the current separation strip (norm_to_strip clamps, so max spread is exactly one card
 ## even if the separation setting overshoots) and the whole offset scales by the live card_scale.
 func _live_lane_offset(vis: PropVisual) -> Vector2:
-	if not vis.has_formation_point: return Vector2.ZERO
-	var pt := vis.formation_point
-	var y := PropFormationSet.norm_to_strip(pt.y, SettingsManager.settings.card_separation_scale) \
-			if vis.formation_spread else pt.y
-	return Vector2(pt.x, y) * SettingsManager.settings.card_scale
+	var out := Vector2.ZERO
+	if vis.has_formation_point:
+		var pt := vis.formation_point
+		var y := PropFormationSet.norm_to_strip(pt.y, SettingsManager.settings.card_separation_scale) \
+				if vis.formation_spread else pt.y
+		out = Vector2(pt.x, y) * SettingsManager.settings.card_scale
+	# Kinds a card jumps INTO ride one card-jump above the slot centre, so a jumped card's centre
+	# and the ring's centre are the same point. Folded into the LANE OFFSET rather than into
+	# _slot_point: this is the one value already applied to every point a prop travels through
+	# (staged, target, repin) and already re-derived live, so the rise follows card_scale for free.
+	if vis.rides_card_jump:
+		out.y -= CardVisual.card_jump_rise_play
+	return out
 
 ## Follow the live SETTINGS the way _repin follows the live board: re-derive the pixel lane
 ## offset each frame and shift the whole leg by the delta. Changing card separation mid-run now
@@ -294,7 +310,8 @@ func _live_lane_offset(vis: PropVisual) -> Vector2:
 ## settings signal — and changing card scale rescales the offsets (owner report 2026-07-15:
 ## offsets captured at spawn ignored both).
 func _refresh_lane_offset(vis: PropVisual) -> void:
-	if not vis.has_formation_point: return
+	# No has_formation_point early-out: the offset also carries the card-jump rise, which a kind can
+	# have with no formation at all. The delta check below is the real early-out.
 	var live := _live_lane_offset(vis)
 	if live.is_equal_approx(vis.lane_offset): return
 	var shift := live - vis.lane_offset
@@ -320,14 +337,16 @@ func _drive_exiting(delta: float) -> void:
 		var span := current_tick_seconds() * vis.span_ticks
 		vis.t += (delta / span) if span > 0.0 else 1.0
 		vis.position = vis.travel_curve(vis.from, vis.target, minf(vis.t, 1.0))
+		# Fade ALONG the leg, not after it. The void point is a card-width past the last slot and
+		# the play-area rect clips there, so a fade that started on arrival played entirely
+		# off-screen and the prop just blinked out (owner report 2026-07-28). Driven here rather
+		# than tweened so it stays in lockstep with the leg at any pacing, and _update_back_halves
+		# mirrors the alpha onto a split prop's halves for free.
+		var share := SettingsManager.settings.prop_exit_fade_share
+		vis.modulate.a = clampf((1.0 - vis.t) / maxf(share, 0.01), 0.0, 1.0)
 		if vis.t >= 1.0:
 			_exiting.remove_at(i)
-			# vis stays a child of this layer through the fade, so _update_back_halves keeps
-			# mirroring the fade onto the back node; free both together when it lands.
-			var tw := vis.create_tween()
-			tw.tween_property(vis, "modulate:a", 0.0,
-					_anim_secs(SettingsManager.settings.prop_fade_fraction))
-			tw.tween_callback(_free_visual.bind(vis))
+			_free_visual(vis)
 
 ## Start ONE data tick's animation and return immediately; the Game runs the events phase in
 ## parallel and awaits `tick_done` afterwards (§1.3 SYNC). `live` = all live props (post-move),
@@ -501,9 +520,11 @@ func _prune_done(live: Array) -> void:
 		var vis : PropVisual = _visuals[prop]
 		_visuals.erase(prop)
 		if is_instance_valid(vis):
+			# Ends IN PLACE, like the ballistic poof, so it shares that length (and its floor) —
+			# the exit-leg fade above is the other case: a prop that ends by LEAVING.
 			var tw := vis.create_tween()
 			tw.tween_property(vis, "modulate:a", 0.0,
-					_anim_secs(SettingsManager.settings.prop_fade_fraction))
+					_anim_secs(SettingsManager.settings.prop_poof_fraction))
 			tw.tween_callback(_free_visual.bind(vis))
 
 # --- coordinate mapping (content-local, scroll-invariant) ---------------------

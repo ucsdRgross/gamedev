@@ -146,9 +146,37 @@ func test_balls_uncapped() -> void:
 	check(is_equal_approx(one[&"u_ball_radius"],
 			maxf(style.ball_radius / sqrt(1.0), style.ball_radius_min)),
 			"the shrink is area-preserving (1/sqrt n)")
-	check(lots[&"u_arc_height"] > one[&"u_arc_height"],
-			"the throw arc grows taller to hold more balls")
+	# The arc grows with the count (ruling 13) but is CEILINGED at `ball_arc_max`, because the pattern
+	# may not reach far enough above the card to cover the card behind it (owner 2026-07-28) — past
+	# the ceiling the balls' own 1/sqrt(n) shrink is what makes room. So the contract is now
+	# "never shrinks, never exceeds the ceiling, and does grow somewhere below it".
+	check(lots[&"u_arc_height"] >= one[&"u_arc_height"]
+			and lots[&"u_arc_height"] <= style.ball_arc_max + 0.001,
+			"the throw arc grows with the count but never past its ceiling",
+			"1 ball %.1f, 50 balls %.1f, ceiling %.1f"
+			% [one[&"u_arc_height"], lots[&"u_arc_height"], style.ball_arc_max])
+	var tall := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+	tall.ball_arc_max = 1e9   # ceiling lifted: the growth underneath it must still be there
+	check(FxJuggle.geometry(50, tall)[&"u_arc_height"]
+			> FxJuggle.geometry(1, tall)[&"u_arc_height"],
+			"and it is a real growth curve, not a constant — it is only the ceiling that flattens it")
 	check(lots[&"u_ball_spin"] > one[&"u_ball_spin"], "and the balls spin faster")
+	# The ARC LADDER (owner 2026-07-28): lanes appear between the throw and the carry as the count
+	# rises, rather than one arc growing without limit. Always EVEN — arcs alternate direction, so an
+	# odd count would leave the loop open in x — and capped, because the shader's nearest-ball lookup
+	# does a fixed amount of work per arc.
+	check(FxJuggle.arcs(1, style) == 2, "one ball is the plain throw-and-carry: 2 arcs",
+			str(FxJuggle.arcs(1, style)))
+	check(FxJuggle.arcs(50, style) > FxJuggle.arcs(1, style),
+			"more balls means more arcs to travel through",
+			"1 ball %d, 50 balls %d" % [FxJuggle.arcs(1, style), FxJuggle.arcs(50, style)])
+	var odd_arcs : Array[int] = []
+	for n : int in [1, 2, 3, 5, 8, 13, 21, 50, 200, 500]:
+		var a := FxJuggle.arcs(n, style)
+		if a % 2 != 0 or a < 2 or a > style.ball_arcs_max: odd_arcs.append(n)
+	check(odd_arcs.is_empty(),
+			"the arc count is always EVEN and inside [2, ball_arcs_max], at every ball count",
+			"broken at counts %s" % str(odd_arcs))
 	check(FxJuggle.period(50, style) < FxJuggle.period(1, style),
 			"the pattern quickens with the count")
 

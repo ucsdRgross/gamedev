@@ -81,10 +81,20 @@ var ambient : bool = true
 ## a paused SceneTree — the classic "paused game with a still-flickering fire" bug.
 var _time : float = 0.0
 
+# --- per-HOST randomness (owner 2026-07-28: effects must not sync up across cards) --------------
+## This host's random seed, pushed to EVERY quad it owns rather than rolled per quad: the balls and
+## the flames riding them have to agree on it, and two hosts must not share it. Every phase in both
+## shaders — tendril sway, flicker, the whole-effect pulse, ball spin — is keyed on it.
+var _seed : float = randf() * 100.0
+## Which way this host's juggling pattern runs. Balls ALTERNATE around this (`fx_ball_dir`), so this
+## is really "which way does ball 0 set off", and it is a coin flip per host.
+var _ball_dir : float = 1.0 if randf() < 0.5 else -1.0
+
 var _fx : Dictionary[StringName, Effect] = {}
 ## ONE phase clock for the whole host, shared by every effect that declares a period — which is
-## what welds a ball's flame to its ball rather than letting the two drift apart.
-var _phase : float = 0.0
+## what welds a ball's flame to its ball rather than letting the two drift apart. Starts at a RANDOM
+## point in the cycle: from zero, every card that started juggling with the same count moved as one.
+var _phase : float = randf()
 var _lag : Vector2 = Vector2.ZERO
 var _lag_vel : Vector2 = Vector2.ZERO
 var _last_pos : Vector2 = Vector2.ZERO
@@ -230,8 +240,10 @@ func _make_quad(req: FxRequest) -> MeshInstance2D:
 	# every card. The per-node state is the ShaderMaterial's uniform set, not the Shader.
 	mat.shader = req.shader
 	quad.material = mat
-	# A stable per-host seed, so two burning cards side by side do not flicker in lockstep.
-	mat.set_shader_parameter(&"u_seed", randf() * 100.0)
+	# The HOST's seed and direction, not this quad's: two burning cards side by side must not flicker
+	# in lockstep, and the two quads of ONE juggling host must agree exactly (a ball and its flame).
+	mat.set_shader_parameter(&"u_seed", _seed)
+	mat.set_shader_parameter(&"u_ball_dir", _ball_dir)
 	return quad
 
 ## Size the quad to bound the host AT EVERY ROTATION plus the effect's reach, or its edge clips.

@@ -32,6 +32,7 @@ func _ready() -> void:
 	await _shot_facing()
 	await _shot_hoop_halves()
 	await _shot_recolour()
+	await _shot_hoop_alignment()
 	get_tree().quit()
 
 # ------------------------------------------------------------------ the shots
@@ -164,6 +165,47 @@ func _quad(holder: Node2D, size_px: Vector2, at: Vector2, zoom: float) -> Polygo
 	poly.scale = Vector2.ONE * zoom
 	holder.add_child(poly)
 	return poly
+
+## THE JUMP-THROUGH: a card jumps INTO the hoop, so the ring rides one card-jump above the slot
+## centre and a jumped card's centre is the ring's centre (owner 2026-07-28). Left panel is the card
+## at rest with the ring already up at travel height; right panel is the same card mid-jump, where
+## the two centres coincide and the ring frames it. The green cross is that shared centre — in the
+## right-hand panel it must pass through the middle of BOTH the card outline and the ring.
+func _shot_hoop_alignment() -> void:
+	var holder := Node2D.new()
+	add_child(holder)
+	var scales : Array[float] = [2.5, 4.0]
+	var step := canvas().x / float(scales.size() * 2)
+	for i : int in scales.size():
+		var s : float = scales[i]
+		# The rise PropLayer applies, from the card's own constant — the one number both sides read.
+		var rise := Vector2(0.0, -CardVisual.CARD_JUMP_RISE * s)
+		for jumped : bool in [false, true] as Array[bool]:
+			var col := i * 2 + (1 if jumped else 0)
+			var slot_at := Vector2(step * (float(col) + 0.5), canvas().y * 0.45)
+			_card_ghost(holder, slot_at + (rise if jumped else Vector2.ZERO), s)
+			var hoop := HoopVisual.new()
+			_place(holder, hoop, slot_at + rise, s)
+			_mark(holder, slot_at + rise, Color(0.4, 1.0, 0.6))
+			label(holder, "card_scale %.1f — card %s" % [s, "JUMPED" if jumped else "at rest"],
+					Vector2(slot_at.x, canvas().y * 0.94))
+	await capture("15_hoop_alignment", "the ring rides at card-jump height; a jumped card's centre "
+			+ "is the ring's centre")
+	holder.queue_free()
+	await get_tree().process_frame
+
+## A cross at the height both the ring and a jumped card centre on.
+func _mark(holder: Node2D, at: Vector2, col: Color) -> void:
+	var m := _Mark.new()
+	m.position = at
+	m.color = col
+	holder.add_child(m)
+
+class _Mark extends Node2D:
+	var color : Color = Color.WHITE
+	func _draw() -> void:
+		draw_line(Vector2(-70.0, 0.0), Vector2(70.0, 0.0), color, 1.0)
+		draw_line(Vector2(0.0, -10.0), Vector2(0.0, 10.0), color, 1.0)
 
 # ----------------------------------------------------------------- the harness
 

@@ -50,25 +50,47 @@ static func geometry(stacks: int, style: FxStyle) -> Dictionary[StringName, floa
 	# stream, which is the honest way to show 200 of them.
 	geo[&"u_ball_radius"] = maxf(style.ball_radius / sqrt(n), style.ball_radius_min)
 	# The throw arc gets TALLER to hold more balls without bunching (owner ruling 13); log, not
-	# linear, or 50 balls would throw the arc off the top of the screen. The return arc stays
-	# shallow — it is the "flat part", riding across the card's centre.
-	geo[&"u_arc_height"] = style.ball_arc_height * (1.0 + log(n) * 0.35)
+	# linear, or 50 balls would throw the arc off the top of the screen. CAPPED at ball_arc_max: the
+	# pattern may peak above the card's top edge but not far enough to cover the card behind it
+	# (owner 2026-07-28) — past the cap, the balls' own shrink is what makes room. The return arc
+	# stays shallow — it is the "flat part", riding across the card's centre.
+	# The ceiling applies to the drawn BALL, not its centre, so the radius comes out of the budget —
+	# otherwise the topmost ball overshoots by its own radius.
+	geo[&"u_arc_height"] = minf(style.ball_arc_height * (1.0 + log(n) * 0.35),
+			maxf(style.ball_arc_max - geo[&"u_ball_radius"], 0.0))
 	geo[&"u_return_height"] = style.ball_return_height
 	# Balls spin, and spin faster at higher counts (owner ruling 25).
 	geo[&"u_ball_spin"] = style.ball_spin * (1.0 + log(n) * style.ball_spin_per_count)
+	geo[&"u_ball_arcs"] = float(arcs(stacks, style))
 	return geo
+
+## How many ARCS the loop is made of at this ball count. Lanes appear between the throw and the carry
+## as the count rises (owner 2026-07-28) so the balls have more of the space to travel through
+## instead of one arc getting ever taller. ALWAYS EVEN — arcs alternate direction, so an odd count
+## would leave the loop open in x — and capped by the style, which is also the shader's cost ceiling
+## (the nearest-ball lookup does fixed work per arc).
+##
+## ⚠ This is an INTEGER and it steps: the arc count changing IS a change of path, so the pattern
+## re-shapes when a stack crosses a lane boundary. That is the one place ruling 16's "no visual
+## jumps" does not hold — the alternative is interpolating between two different path topologies.
+static func arcs(stacks: int, style: FxStyle) -> int:
+	var n := float(maxi(stacks, 1))
+	var lanes := 1 + int(floorf(log(n) * style.ball_arcs_per_count))
+	return clampi(lanes * 2, 2, style.ball_arcs_max - (style.ball_arcs_max % 2))
 
 ## Seconds for one full loop. The pattern QUICKENS with the count (owner ruling 12) — but note
 ## this fights the taller arc physically, since a higher throw means a longer flight, so the
 ## coefficient stays small. Most of the added busyness is free anyway: n balls on one loop of
 ## period T already cross any point at rate n/T.
 ##
-## Expressed in BASE seconds, not live ones: the attachment's clock is already pacing-scaled, so
-## deriving the period from the compressed delay too would speed the pattern up twice over.
+## REAL seconds from the style, NOT scaled by `base_delay`. The attachment's clock is already
+## pacing-scaled, so act compression still quickens the loop; folding the player's global speed knob
+## in on top of that made the whole cycle 0.12 s at base_delay 0.1 and the balls unreadable (owner
+## report 2026-07-28). How fast juggling looks is an art decision, not a consequence of how fast the
+## player set the game's step.
 static func period(stacks: int, style: FxStyle) -> float:
 	var n := float(maxi(stacks, 1))
-	var base := SettingsManager.settings.base_delay * style.ball_period_fraction
-	return maxf(base / (1.0 + log(n) * 0.20), 0.05)
+	return maxf(style.ball_period_secs / (1.0 + log(n) * 0.20), 0.05)
 
 ## The per-ball fire levels as a 1xN data texture, or null when no ball is alight.
 ##

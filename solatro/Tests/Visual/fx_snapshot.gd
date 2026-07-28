@@ -61,9 +61,15 @@ func _run() -> void:
 			_ball_path())
 	await _shot("05c_ball_sphere", "ONE ball, big to small: banded curvature + on-surface highlight",
 			_ball_sphere())
+	await _shot("05d_ball_gravity", "the throw's easing: ball_gravity 1.0 / 1.6 / 2.4, evenly spaced "
+			+ "in TIME — higher bunches them at the apex", _ball_gravity())
+	await _shot("05e_ball_arcs", "the ARC LADDER: 2 / 4 / 6 / 8 arcs at one ball count — lanes fill "
+			+ "in evenly between the carry and the throw", _ball_arcs())
 	await _shot("06_ball_fire", "per-ball fire: 5 balls, 2 lit at different levels", _ball_fire())
 	await _shot("07_transition", "a stack change mid-ease: fractional counts 1.0 -> 4.0",
 			_transition())
+	await _shot("08_focus_highlight", "host modulate 1.0 vs the card's focus highlight — the "
+			+ "effects must brighten WITH their host (ruling 10)", _focus_highlight())
 
 # ------------------------------------------------------------------ the shots
 
@@ -168,6 +174,12 @@ func _balls() -> Array[Case]:
 	for n : int in [1, 3, 8, 50]:
 		out.append(_card_case("%d balls" % n, FxJuggle.requests(n, PackedInt32Array(),
 				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)))
+	# The same count with the host's coin landing the other way: every ball mirrors, so this is the
+	# other half of what a board actually shows.
+	var flipped := _card_case("8 balls, host flipped", FxJuggle.requests(8, PackedInt32Array(),
+			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
+	flipped.ball_dir = -1.0
+	out.append(flipped)
 	return out
 
 ## One ball, stepped around the whole cycle. Laying the loop out phase by phase is the only way to
@@ -203,6 +215,56 @@ func _ball_sphere() -> Array[Case]:
 				style, StatusJuggling.BALL_FIRE_STYLE))
 		case.phase = 0.3
 		out.append(case)
+	return out
+
+## GRAVITY on the throw. Eight balls are spaced evenly in TIME around the loop, so where they end up
+## in SPACE is a direct read of the easing: at 1.0 they are evenly spread along the arc, and as it
+## rises they bunch toward the apex (slow there) and thin out at the ends (fast there). The oracle
+## crosses come from the same spec, so the balls must stay on them at every value.
+func _ball_gravity() -> Array[Case]:
+	var out : Array[Case] = []
+	for g : float in [1.0, 1.6, 2.4]:
+		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+		style.ball_gravity = g
+		var case := _card_case("gravity %.1f" % g, FxJuggle.requests(8, PackedInt32Array(),
+				style, StatusJuggling.BALL_FIRE_STYLE))
+		case.style_gravity = g
+		out.append(case)
+	return out
+
+## THE ARC LADDER. The ball count is held FIXED and the arc count forced, so the only variable is the
+## ladder itself: at 2 it is the original throw-and-carry, and each step adds lanes at evenly spaced
+## heights between them. Balls are spread around the whole loop, so a taller ladder spreads them over
+## more of the space instead of stacking them on one arc. The oracle crosses come from the same spec,
+## so they must stay on the balls at every rung.
+func _ball_arcs() -> Array[Case]:
+	var out : Array[Case] = []
+	for arcs : int in [2, 4, 6, 8]:
+		var reqs := FxJuggle.requests(12, PackedInt32Array(), StatusJuggling.JUGGLE_STYLE,
+				StatusJuggling.BALL_FIRE_STYLE)
+		# Forced rather than reached by ball count: the count also changes radius, span and speed,
+		# and this shot is about the ladder alone.
+		for req : FxRequest in reqs: req.live[&"u_ball_arcs"] = float(arcs)
+		out.append(_card_case("%d arcs" % arcs, reqs))
+	return out
+
+## Ruling 10 — a highlighted card highlights its effects too. Both shaders overwrite COLOR, so the
+## modulate the renderer folds into it has to be captured and multiplied back or the highlight stops
+## at the card's own art. The right-hand panels are the same effects under CardVisual's own focus
+## modulate; they must be visibly brighter, not identical.
+func _focus_highlight() -> Array[Case]:
+	var out : Array[Case] = []
+	var highlight := Color(1.825, 1.825, 1.825)
+	for lit : bool in [false, true]:
+		var fire := _card_case("fire, %s" % ("FOCUSED" if lit else "plain"),
+				[FxFire.request(&"fire", 6, StatusBurning.CARD_FIRE_STYLE)] as Array[FxRequest])
+		fire.modulate = highlight if lit else Color.WHITE
+		out.append(fire)
+		var balls := _card_case("balls, %s" % ("FOCUSED" if lit else "plain"),
+				FxJuggle.requests(5, PackedInt32Array(), StatusJuggling.JUGGLE_STYLE,
+						StatusJuggling.BALL_FIRE_STYLE))
+		balls.modulate = highlight if lit else Color.WHITE
+		out.append(balls)
 	return out
 
 ## Fire is PER BALL, at the ball's OWN level. Exactly two plumes here, welded to balls 0 and 3,
@@ -252,12 +314,24 @@ class Case:
 	var rotation : float = 0.0
 	## Phase override for the path trace, or -1 to use the shot's shared phase.
 	var phase : float = -1.0
-	## The style's ball_top_fraction, carried so the oracle reads the same split the shader does.
+	## The style's ball_top_fraction and ball_gravity, carried so the oracle reads the same split and
+	## the same throw easing the shader was handed.
 	var style_top_fraction : float = 0.6
+	var style_gravity : float = 1.0
+	## The host's base ball direction, PINNED rather than left to its per-host coin flip — a snapshot
+	## whose pattern mirrors at random cannot be diffed, and the oracle has to be told the same value.
+	var ball_dir : float = 1.0
+	## Host modulate, for the focus-highlight case (ruling 10): the effects must brighten with their
+	## host, which they cannot do if a shader overwrites the modulate the renderer folded into COLOR.
+	var modulate : Color = Color.WHITE
 
 func _case(label: String, body: Vector2, shape: FxAttachment.Shape, half: FxAttachment.Half,
 		requests: Array[FxRequest]) -> Case:
 	var c := Case.new()
+	# Read off the live style, never retyped: the oracle has to be told the same path parameters the
+	# shader was handed, and a stale copy here would read as a shader bug.
+	c.style_top_fraction = StatusJuggling.JUGGLE_STYLE.ball_top_fraction
+	c.style_gravity = StatusJuggling.JUGGLE_STYLE.ball_gravity
 	c.label = label
 	c.body = body
 	c.shape = shape
@@ -300,9 +374,20 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 			probe.zoom = zoom
 			probe.expected = ghost.balls
 			probes.append(probe)
+		# The modulate goes on a PARENT of the attachment, so it reaches the effects the way a card's
+		# does — down the tree, not through a uniform. Added AFTER the ghost: the reference geometry
+		# has to stay UNDER the effects, or the oracle crosses paint over the very balls they are
+		# there to be compared against (which is exactly what happened the first time this node was
+		# inserted, and it read as the balls having vanished).
+		var host := Node2D.new()
+		host.modulate = case.modulate
+		slot.add_child(host)
 		var att := FxAttachment.new()
 		att.configure(case.body, true, case.shape, case.half, false)
-		slot.add_child(att)
+		host.add_child(att)
+		# BEFORE sync: the quads read the host's direction as they are built, unlike the clock, which
+		# is pushed afterwards.
+		att._ball_dir = case.ball_dir
 		att.sync(case.requests)
 		# Park the clock by hand: driving it from real frame deltas would make every run differ,
 		# and a snapshot that changes on its own cannot be diffed.
@@ -390,7 +475,8 @@ func _oracle(case: Case) -> PackedVector2Array:
 		if req.phase_period <= 0.0 or req.shader != FxJuggle.JUGGLE_SHADER: continue
 		out.append_array(PixelProbe.ball_positions(req.live[&"u_count"],
 				case.phase if case.phase >= 0.0 else 0.13, req.live[&"u_span"],
-				req.live[&"u_arc_height"], req.live[&"u_return_height"], case.style_top_fraction))
+				req.live[&"u_arc_height"], req.live[&"u_return_height"], case.style_top_fraction,
+				case.style_gravity, case.ball_dir, req.live[&"u_ball_arcs"]))
 	return out
 
 ## The host's silhouette, drawn as a plain outline so the effect can be judged against the shape

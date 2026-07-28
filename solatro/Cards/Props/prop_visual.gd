@@ -26,6 +26,12 @@ extends Node2D
 ## Peak of the parabolic hump travel_curve adds to a leg (ballistic ball/fire arcs). 0 = a
 ## straight line — ONE shared movement function for every kind; only this shape knob differs.
 @export var arc_height : float = 0.0
+## This kind is something a card JUMPS INTO (the hoop), so it rides one card-jump higher than the
+## slot centre and the two CENTRES coincide while the card is up. The height itself is the CARD's
+## (`CardVisual.card_jump_rise_play`) — the one number both sides read, applied by PropLayer through
+## the same live lane offset that carries formations, so it rescales with card_scale like everything
+## else. OFF for kinds that pass over a card rather than around it.
+@export var rides_card_jump : bool = false
 
 ## Fire carried by this prop (PropData.fire_stacks), drawn by the shader FX below. The setter
 ## resyncs the effect, so a prop catching fire mid-flight lights up without waiting for a respawn.

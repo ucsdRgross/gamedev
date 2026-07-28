@@ -551,17 +551,24 @@ func test_hoop_split_multi_column() -> void:
 		var ok := await run_tick(pl, [p], [p], [], [])
 		check(ok, "hoop spawn tick completes (separation %.1f)" % sep_scale)
 		var vis : PropVisual = pl._visuals.get(p)
-		check(vis != null and vis.lane_offset == Vector2.ZERO,
-				"a hoop takes NO formation offset even with an authored set (separation %.1f)" % sep_scale,
-				str(vis.lane_offset) if vis else "no visual")
+		# A hoop still takes no FORMATION offset — its whole lane offset is the card-jump rise, the
+		# one thing it does ride (owner 2026-07-28: the card jumps INTO the ring, so the two centres
+		# must coincide). Anything else here would be a formation leaking in.
+		var jump_rise := Vector2(0.0, -CardVisual.card_jump_rise_play)
+		check(vis != null and vis.lane_offset.is_equal_approx(jump_rise),
+				"a hoop's only offset is the card-jump rise, never a formation (separation %.1f)"
+				% sep_scale, str(vis.lane_offset) if vis else "no visual")
 		for _i in 6:
 			await get_tree().process_frame
 		var occ_vis : CardVisual = pa.data_card.get(occupied)
+		# The ring rides at the height a JUMPED card's centre reaches — that is the alignment the
+		# whole feature is: card centre + jump rise == ring centre.
 		check(vis != null and occ_vis != null
-				and (vis.global_position - occ_vis.global_position).length() < 4.0,
-				"the parked hoop threads the occupied card's visual CENTER (separation %.1f)" % sep_scale,
+				and (vis.global_position - (occ_vis.global_position + jump_rise)).length() < 4.0,
+				"the parked hoop is centred where the card's centre lands once it jumps "
+				+ "(separation %.1f)" % sep_scale,
 				"%s vs %s" % [vis.global_position if vis else Vector2.INF,
-				occ_vis.global_position if occ_vis else Vector2.INF])
+				(occ_vis.global_position + jump_rise) if occ_vis else Vector2.INF])
 		check(vis != null and vis._split_active
 				and vis.back_node != null and vis.front_node != null,
 				"the parked hoop splits over its card (separation %.1f)" % sep_scale)

@@ -18,17 +18,40 @@ extends RefCounted
 ## Where every ball of a `n`-ball pattern sits, in ART UNITS relative to the host's centre.
 ## Transcribed from the spec: a closed loop of a tall arc (share `f` of the cycle, +x -> -x) and a
 ## shallow return (-x -> +x). Ball i is at cycle position `phase + i / n` — index IS identity.
+##
+## `g` is the throw's GRAVITY ease: how far through the tall arc in time maps to how far along it in
+## space as `0.5 + 0.5 * sign(d) * |d|^g` about the apex (d = 2a - 1), so the ball lingers at the
+## top. 1 = constant speed. The CARRY is never eased.
+##
+## `dir` is the host's base direction: EVEN balls travel it, ODD balls travel the mirror image, so
+## neighbouring balls cross. Written from those descriptions, not from fx_common.gdshaderinc — the
+## point of an oracle is that it could disagree.
+## `arcs` is the LADDER: the loop is that many arcs chained end to end, heights running evenly from
+## `h_top` down to `h_bot`, alternating direction (even arcs run +x to -x). The tall arc takes
+## `f * 2 / arcs` of the cycle and the rest split what is left evenly. Every arc but the LOWEST is
+## gravity-eased. 2 arcs is the original throw-and-carry pattern.
 static func ball_positions(n: float, phase: float, span: float, h_top: float, h_bot: float,
-		f: float) -> PackedVector2Array:
+		f: float, g: float = 1.0, dir: float = 1.0, arcs: float = 2.0) -> PackedVector2Array:
 	var out := PackedVector2Array()
+	var a_count := maxf(arcs, 2.0)
+	var top_share := f * 2.0 / a_count
+	var rest := (1.0 - top_share) / (a_count - 1.0)
 	for i : int in int(ceilf(n)):
 		var u := fposmod(phase + float(i) / n, 1.0)
-		if u < f:
-			var a := u / f
-			out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a), -h_top * sin(a * PI)))
-		else:
-			var a := (u - f) / (1.0 - f)
-			out.append(Vector2(span * 0.5 * (2.0 * a - 1.0), -h_bot * sin(a * PI)))
+		var mirror := dir if i % 2 == 0 else -dir
+		# Which arc of the ladder, and how far along it in TIME.
+		var arc := 0.0
+		var a := u / top_share
+		if u >= top_share:
+			var k := minf(floorf((u - top_share) / rest), a_count - 2.0)
+			arc = k + 1.0
+			a = ((u - top_share) - k * rest) / rest
+		if g > 1.0 and arc < a_count - 1.5:
+			var d := 2.0 * a - 1.0
+			a = 0.5 + 0.5 * signf(d) * pow(absf(d), g)
+		var height := lerpf(h_top, h_bot, arc / (a_count - 1.0))
+		var sweep := 1.0 if int(arc) % 2 == 0 else -1.0
+		out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a) * sweep * mirror, -height * sin(a * PI)))
 	return out
 
 ## Ball pixels are the only WARM colour in these shots (the reference outlines are blue-grey, the

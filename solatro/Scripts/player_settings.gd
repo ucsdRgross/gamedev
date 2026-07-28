@@ -56,10 +56,14 @@ signal settings_changed
 @export_group("Animation flourishes (fractions of get_delay)")
 ## Every flourish length is a FRACTION of the live get_delay() — so all animations respect the
 ## global pacing (and the act compression below) and can never run longer than the delay allows.
-## Despawn/void-exit fade length.
-@export var prop_fade_fraction : float = 0.15:
+## Share of a void-exit's LEG spent fading out (1 = it fades the whole way off the board). NOT a
+## fraction of get_delay like its neighbours: the fade has to happen WHILE the prop is still
+## crossing the last visible strip. It used to be a short tween that started only once the prop had
+## already reached its void point, which the play-area rect clips — so props read as vanishing
+## rather than leaving (owner report 2026-07-28).
+@export_range(0.05, 1.0, 0.05) var prop_exit_fade_share : float = 1.0:
 	set(value):
-		prop_fade_fraction = value
+		prop_exit_fade_share = value
 		settings_changed.emit()
 ## Ballistic poof (scale-up + fade in place at the target) length.
 @export var prop_poof_fraction : float = 0.12:

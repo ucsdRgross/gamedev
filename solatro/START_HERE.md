@@ -12,6 +12,7 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
 |---|---|
 | [START_HERE.md](START_HERE.md) | This file — rules, workflow, learnings. |
 | [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, undo §5, memory §6, testing §7, owner rulings §8). |
+| [VFX.md](VFX.md) | **Visual effects: read FIRST for any fire / juggling / prop-art / FX-shader work.** The map, the runbook, the open backlog and the known bugs. (The rules themselves live in ARCHITECTURE_REVIEW §4g/§4h; VFX.md points at them.) |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no z_index). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps on this machine. READ BEFORE DEBUGGING A "HANGING" TEST. |
 | [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md) | The scoping brief for the ONE open feature (the universal palette, T21) — audit done, decisions listed. Whoever picks it up writes the plan from this. |

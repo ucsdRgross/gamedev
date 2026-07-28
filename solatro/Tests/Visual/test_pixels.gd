@@ -60,6 +60,8 @@ func _ready() -> void:
 	await test_ball_reads_as_a_sphere()
 	await test_hoop_halves_reassemble()
 	await test_one_pixel_size_for_all_art()
+	await test_effects_take_their_host_modulate()
+	await test_balls_alternate_directions()
 	finish()
 
 ## The guard. A dummy renderer cannot compile a shader or rasterize a triangle, so every check below
@@ -144,10 +146,34 @@ func test_fire_bands_are_onion_shells() -> void:
 	# bands flat, so this picks out exactly one band rather than a gradient's crest.
 	var core := PixelProbe.bounds(img, area, func(c: Color) -> bool:
 			return PixelProbe.is_opaque(c) and c.get_luminance() >= hottest - 0.02)
-	check(core.size.y > core.size.x,
-			"the hottest band is a TALL SPINE up the flame's core, not a wide slab on its base",
-			"hottest band is %d x %d px (w x h) — wider than tall means the colours are stacked in "
-			% [core.size.x, core.size.y] + "rows")
+	var flame := PixelProbe.bounds(img, area, PixelProbe.is_opaque)
+	check(float(core.size.x) < float(flame.size.x) * 0.6,
+			"the hottest band is a narrow CORE, not a slab lying across the flame's whole width",
+			"hottest band is %d px wide inside a %d px flame (%.0f%%)"
+			% [core.size.x, flame.size.x, 100.0 * float(core.size.x)
+			/ maxf(float(flame.size.x), 1.0)])
+	# THE discriminator — and it took three tries, so here is why this one and not the others.
+	# Both layouts vary along BOTH axes, so neither "the core is narrow" nor "a horizontal cut crosses
+	# several bands" separates them (each was mutation-tested and each passed with the ROW formula
+	# restored: rows divide by `top`, which is itself x-dependent). And "the hot band reaches up the
+	# flame" is no longer true even of a correct onion, now that a card's flame is only half a
+	# card-separation tall (owner 2026-07-28).
+	#
+	# What actually differs is WHERE the bands converge. Row-layered contours are the outline scaled
+	# VERTICALLY, so they all pinch at the two BASE CORNERS and the hot end lies along the base.
+	# Onion contours are scaled copies about the core, so they run up toward the TIP and the hot end
+	# is the axis. So: compare a point on the axis near the tip against one out at the shoulder near
+	# the base. Onion ⇒ the tip point is hotter. Rows ⇒ the shoulder point is, by a mile.
+	var tip := Vector2i(flame.position.x + flame.size.x / 2,
+			flame.position.y + int(float(flame.size.y) * 0.2))
+	var shoulder := Vector2i(flame.position.x + int(float(flame.size.x) * 0.85),
+			flame.end.y - int(float(flame.size.y) * 0.15))
+	var tip_lum := _peak_luminance(img, Rect2i(tip - Vector2i.ONE, Vector2i(3, 3)))
+	var shoulder_lum := _peak_luminance(img, Rect2i(shoulder - Vector2i.ONE, Vector2i(3, 3)))
+	check(tip_lum > shoulder_lum,
+			"the flame is hottest along its CORE toward the tip, not out along its base",
+			"core-near-tip luminance %.3f vs shoulder-near-base %.3f — the shoulder winning is what "
+			% [tip_lum, shoulder_lum] + "vertically stacked rows look like")
 
 ## Every ball, at every count, sits where the INDEPENDENT oracle says. This is the check that would
 ## have caught a real path bug — and the one whose earlier disagreement turned out to be the harness
@@ -155,26 +181,31 @@ func test_fire_bands_are_onion_shells() -> void:
 func test_balls_sit_on_their_oracle() -> void:
 	behavior_section("BALLS SIT ON THEIR SPEC POSITIONS")
 	var style := StatusJuggling.JUGGLE_STYLE
-	for n : int in [1, 3, 8, 50]:
-		var geo := FxJuggle.geometry(n, style)
-		var phase := 0.13
-		_host_balls(n, style, phase)
-		var img := await _shoot()
-		var expected := PixelProbe.ball_positions(float(n), phase, geo[&"u_span"],
-				geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction)
-		var worst := 0.0
-		var missing := 0
-		for p : Vector2 in expected:
-			var want := Vector2(VP_SIZE, VP_SIZE) * 0.5 + p * _zoom
-			var hit := PixelProbe.nearest(img, want, int(ceilf(BALL_TOLERANCE * _zoom)) + 2,
-					PixelProbe.is_warm)
-			if not hit[&"found"]:
-				missing += 1
-				continue
-			worst = maxf(worst, (hit[&"offset"] as Vector2).length() / _zoom)
-		check(missing == 0 and worst <= BALL_TOLERANCE,
-				"%d balls all render within %.1f art units of the spec" % [n, BALL_TOLERANCE],
-				"%d missing, worst offset %.2f art units" % [missing, worst])
+	# BOTH directions: a host's base direction is a coin flip, and the whole pattern mirrors with it,
+	# so checking only +1 would leave half the possible boards unverified.
+	for dir : float in [1.0, -1.0] as Array[float]:
+		for n : int in [1, 3, 8, 50]:
+			var geo := FxJuggle.geometry(n, style)
+			var phase := 0.13
+			_host_balls(n, style, phase, dir)
+			var img := await _shoot()
+			var expected := PixelProbe.ball_positions(float(n), phase, geo[&"u_span"],
+					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+					style.ball_gravity, dir, geo[&"u_ball_arcs"])
+			var worst := 0.0
+			var missing := 0
+			for p : Vector2 in expected:
+				var want := Vector2(VP_SIZE, VP_SIZE) * 0.5 + p * _zoom
+				var hit := PixelProbe.nearest(img, want, int(ceilf(BALL_TOLERANCE * _zoom)) + 2,
+						PixelProbe.is_warm)
+				if not hit[&"found"]:
+					missing += 1
+					continue
+				worst = maxf(worst, (hit[&"offset"] as Vector2).length() / _zoom)
+			check(missing == 0 and worst <= BALL_TOLERANCE,
+					"%d balls all render within %.1f art units of the spec (direction %+.0f)"
+					% [n, BALL_TOLERANCE, dir],
+					"%d missing, worst offset %.2f art units" % [missing, worst])
 
 ## A ball must read as a SPHERE, not a disc (owner 2026-07-27): banded curvature plus a highlight
 ## sitting ON the surface. Measurable form: at least three distinct tones inside one ball (a flat
@@ -265,13 +296,16 @@ func _host_fire(body: Vector2, stacks: int, style: FxStyle) -> void:
 	_park(att, 0.0)
 
 ## The juggling pattern at a fixed phase, with no ball on fire (this suite is about the balls).
-func _host_balls(n: int, style: FxStyle, phase: float) -> void:
+func _host_balls(n: int, style: FxStyle, phase: float, dir: float = 1.0) -> void:
 	var geo := FxJuggle.geometry(n, style)
 	_zoom_to_fit(geo[&"u_arc_height"] + geo[&"u_ball_radius"] + 4.0)
 	var att := FxAttachment.new()
 	att.configure(CardVisual.CARD_SIZE, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			false)
 	_place(att, 1.0)
+	# Pin the host's direction BEFORE sync: the quads read it as they are built, so setting it after
+	# (the way the clock is parked) would leave the material on the random value this host rolled.
+	att._ball_dir = dir
 	att.sync(FxJuggle.requests(n, PackedInt32Array(), style, StatusJuggling.BALL_FIRE_STYLE))
 	_park(att, phase)
 
@@ -296,6 +330,100 @@ func _plain_fire_style() -> FxStyle:
 	style.desync = 0.0
 	return style
 
+## Balls ALTERNATE direction (owner 2026-07-28) — the oracle check above cannot prove that on its
+## own, since an oracle that mirrored the wrong balls would agree with a shader that did the same.
+## Two independent statements instead:
+##
+## 1. An ODD ball is where it is BECAUSE it is mirrored — so the place it would occupy if it were
+##    NOT mirrored (its reflection) must be empty. That is the difference between alternating and
+##    all-one-way, stated without assuming which side of the card anything lands on.
+## 2. Flipping the host's coin reflects the WHOLE pattern, not one ball.
+func test_balls_alternate_directions() -> void:
+	behavior_section("BALLS ALTERNATE DIRECTION, AND THE HOST PICKS A SIDE")
+	var style := StatusJuggling.JUGGLE_STYLE
+	var geo := FxJuggle.geometry(2, style)
+	var phase := 0.15
+	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
+	var reach := int(ceilf(BALL_TOLERANCE * _zoom)) + 2
+	_host_balls(2, style, phase, 1.0)
+	var img := await _shoot()
+	var expected := PixelProbe.ball_positions(2.0, phase, geo[&"u_span"], geo[&"u_arc_height"],
+			geo[&"u_return_height"], style.ball_top_fraction, style.ball_gravity, 1.0,
+			geo[&"u_ball_arcs"])
+	var here := PixelProbe.nearest(img, mid + expected[1] * _zoom, reach, PixelProbe.is_warm)
+	var reflection := Vector2(-expected[1].x, expected[1].y)
+	var there := PixelProbe.nearest(img, mid + reflection * _zoom, reach, PixelProbe.is_warm)
+	# Through typed locals: a Dictionary lookup is a Variant, and `check()` takes a bool.
+	var found_here : bool = here[&"found"]
+	var found_there : bool = there[&"found"]
+	check(found_here and not found_there,
+			"ball 1 rides the MIRROR of ball 0's direction — its un-mirrored spot is empty",
+			"at its alternating spot: %s; at its un-mirrored spot: %s" % [found_here, found_there])
+	# Reflect the whole pattern by flipping the host's coin. Compared as a MIDPOINT (position + end),
+	# whose reflection about the stage centre is 2*VP_SIZE - it.
+	var plus := PixelProbe.bounds(img, Rect2i(Vector2i.ZERO, img.get_size()), PixelProbe.is_warm)
+	_host_balls(2, style, phase, -1.0)
+	var flipped_img := await _shoot()
+	var minus := PixelProbe.bounds(flipped_img, Rect2i(Vector2i.ZERO, flipped_img.get_size()),
+			PixelProbe.is_warm)
+	var want_sum := 2 * VP_SIZE - (plus.position.x + plus.end.x)
+	check(absf(float(minus.position.x + minus.end.x) - float(want_sum)) <= 2.0 * _zoom,
+			"the host's direction flips the WHOLE pattern, not just one ball",
+			"dir +1 spans x %d..%d, dir -1 spans %d..%d (expected midpoint sum %d, got %d)"
+			% [plus.position.x, plus.end.x, minus.position.x, minus.end.x, want_sum,
+			minus.position.x + minus.end.x])
+
+## Ruling 10 — the focus highlight reaches the EFFECTS, not just the card art. A card is highlighted
+## by its `modulate`, which the renderer folds into COLOR before the fragment function; both FX
+## shaders used to OVERWRITE COLOR, so a selected card lit up while its fire and balls did not
+## (owner report 2026-07-28). The same multiply is what makes a prop's exit fade carry its flames.
+##
+## Stated as pixels: render each effect twice, once plain and once under the card's own highlight
+## modulate, and require the highlighted one to come out BRIGHTER. Alpha is checked the same way
+## (halved modulate → less coverage), which is the fade half of the same mechanism.
+func test_effects_take_their_host_modulate() -> void:
+	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
+	# The literal CardVisual.focused writes; if that changes, this check should move with it.
+	var highlight := Color(1.825, 1.825, 1.825)
+	for kind : String in ["fire", "balls"] as Array[String]:
+		var plain := await _shoot_modulated(kind, Color.WHITE)
+		var lit := await _shoot_modulated(kind, highlight)
+		var area := Rect2i(Vector2i.ZERO, plain.get_size())
+		# MEAN, not peak: both effects already reach near-white at their hottest, and an 8-bit target
+		# clamps there — so the peak barely moves under a highlight even when everything else does.
+		var plain_lum := _mean_luminance(plain, area)
+		var lit_lum := _mean_luminance(lit, area)
+		check(plain_lum > 0.0 and lit_lum > plain_lum * 1.05,
+				"%s brightens when its host is highlighted" % kind,
+				"mean luminance %.3f plain vs %.3f highlighted" % [plain_lum, lit_lum])
+		var faded := await _shoot_modulated(kind, Color(1.0, 1.0, 1.0, 0.35))
+		var solid_px := PixelProbe.count(plain, area, PixelProbe.is_opaque)
+		var faded_px := PixelProbe.count(faded, area, PixelProbe.is_opaque)
+		check(faded_px < solid_px,
+				"%s fades with its host's alpha (a leaving prop takes its effects with it)" % kind,
+				"%d opaque pixels at alpha 1.0 vs %d at 0.35" % [solid_px, faded_px])
+
+## One effect on a host carrying `tint`, for the modulate check. The modulate goes on a PARENT of the
+## attachment, exactly as a card's does (CardVisual sets it on the root, FX hangs off Offset).
+func _shoot_modulated(kind: String, tint: Color) -> Image:
+	var host := Node2D.new()
+	host.modulate = tint
+	_place(host, 1.0)
+	var att := FxAttachment.new()
+	att.configure(CardVisual.CARD_SIZE, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+			false)
+	host.add_child(att)
+	if kind == "fire":
+		_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + StatusBurning.CARD_FIRE_STYLE.height)
+		att.sync([FxFire.request(&"fire", 6, _plain_fire_style())] as Array[FxRequest])
+	else:
+		var style := StatusJuggling.JUGGLE_STYLE
+		var geo := FxJuggle.geometry(3, style)
+		_zoom_to_fit(geo[&"u_arc_height"] + geo[&"u_ball_radius"] + 4.0)
+		att.sync(FxJuggle.requests(3, PackedInt32Array(), style, StatusJuggling.BALL_FIRE_STYLE))
+	_park(att, 0.13)
+	return await _shoot()
+
 func _place(node: Node2D, node_scale: float) -> void:
 	node.scale = Vector2.ONE * node_scale
 	_stage.add_child(node)
@@ -315,6 +443,20 @@ func _shoot() -> Image:
 
 ## The highest luminance among the drawn pixels — "how far up the heat ramp did this effect get",
 ## since the ramp runs deep red to white.
+## Mean luminance over the DRAWN pixels only — how bright the effect is overall, which is what a
+## highlight moves. (The peak barely moves: both effects already hit the ramp's white end, and the
+## render target clamps there.) Zero when nothing was drawn.
+func _mean_luminance(img: Image, area: Rect2i) -> float:
+	var total := 0.0
+	var lit := 0
+	for y : int in range(area.position.y, area.end.y):
+		for x : int in range(area.position.x, area.end.x):
+			var c := img.get_pixel(x, y)
+			if not PixelProbe.is_opaque(c): continue
+			total += c.get_luminance()
+			lit += 1
+	return total / float(lit) if lit > 0 else 0.0
+
 func _peak_luminance(img: Image, area: Rect2i) -> float:
 	var best := 0.0
 	for y : int in range(area.position.y, area.end.y):

@@ -380,24 +380,42 @@ func test_prop_visual_lifecycle() -> void:
 		# ([[running-godot-scenes]]): after the last tick the board can still be settling and
 		# _repin chases the live slot for a frame or two. Poll briefly for the position to settle,
 		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
-		var want := pl.to_local(pa.slot_center_global(p.at))
+		# Slot centre PLUS this kind's lane offset — for the hoop that is the card-jump rise it now
+		# rides at (owner 2026-07-28), so the bare slot centre is no longer where it parks.
+		var want := pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		var w := 0.0
 		while (vis.position - want).length() >= 1.0 and w < 1.0:
 			await get_tree().process_frame
 			w += get_process_delta_time()
-			want = pl.to_local(pa.slot_center_global(p.at))
+			want = pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		check((vis.position - want).length() < 1.0,
-				"the visual lands on its slot's center",
+				"the visual lands on its slot's center (plus its own lane offset)",
 				"pos %s vs want %s | anchor %s from %s target %s t %.2f/%.2f" %
 				[vis.position, want, vis.anchor_coord, vis.from, vis.target, vis.t, vis.t_goal])
-	# final tick: route exhausted -> done -> the visual exits into the void and frees itself
+	# final tick: route exhausted -> done -> the visual exits into the void and frees itself.
+	# Slow the tick down FIRST: the fade below is sampled per frame, and at this suite's fast delay a
+	# single frame can cover the whole exit leg (delta/span > 1) — the same overshoot test_slow_props
+	# slows down for. Restored right after.
+	var fast := SettingsManager.settings.base_delay
+	SettingsManager.settings.base_delay = 0.4
 	p.done = true
 	ok = await run_tick(pl, [p], [], [], [])
 	check(ok, "the despawn tick completes")
+	# The exit fade must run WHILE the prop is still crossing, not after it lands: its void point is
+	# a card-width past the last slot, and the play-area rect clips there — so a fade that only
+	# started on arrival played entirely off-screen and the prop read as vanishing (owner report
+	# 2026-07-28). Sample the alpha over the leg and require it to be well down before t reaches 1.
+	var faded_in_flight := 1.0
 	var waited := 0.0
 	while prop_visual_count(pl) > 0 and waited < WATCHDOG_SECS:
+		if is_instance_valid(vis) and vis.t < 1.0:
+			faded_in_flight = minf(faded_in_flight, vis.modulate.a)
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+	SettingsManager.settings.base_delay = fast
+	check(faded_in_flight < 0.6,
+			"an exiting prop fades along its leg, not after it has already left the view",
+			"alpha never fell below %.2f while it was still travelling" % faded_in_flight)
 	check(prop_visual_count(pl) == 0,
 			"a finished prop's visual frees itself — none stranded after the run")
 	check_impl(pl._visuals.is_empty(), "the PropData -> visual map is emptied (no leak)")

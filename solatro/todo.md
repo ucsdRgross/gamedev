@@ -14,6 +14,9 @@ dummy renderer. HEADLESS_TESTING.md §0.
 FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes (their residue is already folded into
 ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else below is unscheduled backlog.
 
+**Anything visual-effects — fire, juggling, prop art, the FX shaders — starts at
+[VFX.md](VFX.md)**, which carries that whole backlog and its known bugs.
+
 ## Architecture / engine (unscheduled)
 
 - D6 command-log undo — the real fix for per-action deep-copy cost (E5); eliminates
@@ -56,58 +59,11 @@ ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else belo
 - Win/lose screen font (226px) clips long "Fame +N" text. game.tscn grabs no initial
   focus (keyboard/controller players must click first).
 
-## Shader FX (landed 2026-07-27 — owner playtest pending; see ARCHITECTURE_REVIEW §4g)
+## Visual effects — fire, juggling, prop art, the FX shaders
 
-- **Picking this up? ARCHITECTURE_REVIEW §4g/§4h are the contract** (rules, snapshot commands, every
-  trap already paid for). T1–T14 and T17–T20 (ball positions, spherical balls, onion-layered fire,
-  adjustable heights) all landed 2026-07-27 and are verified on a GPU. **The only feature work left
-  is T21, the universal palette — write the plan from
-  [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md), get the approval lines ruled on, then build.**
-- The "ball positions are broken at low counts" bug was the SNAPSHOT HARNESS re-enabling the clock it
-  had parked, not the shader (ARCHITECTURE_REVIEW §4g keeps the trap; the story is in git).
-- **Prop and pip ART landed the same day** (real hoop/knife art, ball+fire props drawing their suits'
-  pips, one pixel size for all art, mirror-instead-of-rotate facing, suit pips keeping their own
-  colours): rules in ARCHITECTURE_REVIEW §4h, visual check via
-  `res://Tests/Visual/prop_art_snapshot.tscn`. Still placeholder: **FireworkVisual has no art**.
-- **⬜ FX COLOURS ARE OFF-PALETTE — known, and it is T21's job, not a bug to chase.** Measured
-  2026-07-27: `Shaders/Styles/fire_ramp.png` contains **64 distinct colours, none of which is a
-  CircusCrayon entry**, and the ball colours are hand-picked (nearest-entry distances 40–80). They
-  were tuned to look like fire, so nothing looks broken — but a palette swap will not move them.
-  Card/prop/pip ART is already on-palette; only the shader FX (ramp, ball tones, ember gradient) and
-  ~20 scattered `Color(...)` literals are not. Two mechanisms also GENERATE in-between colours (the
-  ramp generator's COLD→HOT row interpolation, and `juggle.gdshader`'s `mix(shade, lit, …)` sphere
-  banding), so on-palette endpoints will not be enough — band colours must be SAMPLED from an ordered
-  role list. Full numbers and the decisions this forces: **PALETTE_PLAN_BRIEF §2.3 / §4.4**.
-
-- **⬜ OWNER VERIFICATION, in-game (T15) — the one thing blocking "done".** The agent-side checks are
-  all green (headless suite + GPU snapshots), but nobody has PLAYED it. The 17-step walk is
-  **FX_SHADER_PLAN.md §10** — one copy, deliberately not restated here. Steps 13–17 cover this
-  session's work (onion shells, spherical balls, the real hoop/knife art, one pixel size, the pip
-  recolour split) and include the two calls that are the owner's to make: the hoop's on-screen size
-  and whether banded ball shading reads better than the old two-tone.
-- **The numbers to settle by eye**, all single tunables: `FxFire.FX_MAX_TENDRILS` (12),
-  `FxStyle.level_ref` (120 card / 60 prop / 40 ball), `settings.fx_transition_fraction` (0.6),
-  `ParticleEngine.MAX_PARTICLES` (1024), `FxStyle.ember_rate_max` (24/s), ball spin base and
-  its per-count coefficient, and the ~35 art levers in the `Shaders/Styles/*.tres` presets — now
-  including `onion_power` / `onion_rise` (shell thickness and how much the tip cools) and
-  `ball_bands` / `ball_light` / `ball_light_z` / `ball_spec` (the sphere's tones, light and highlight).
-- **Prop art SIZES are the owner's call now that they are real.** The hoop draws at 80×180 screen px
-  at default `card_scale` (a card is 95×125), which is the size the 32×72 art implies at one pixel
-  size for all art. If it reads too big, the lever is that kind's `art_size` in `_init` — but keep it
-  a multiple of `PropVisual.ART_PIXEL_SCALE`, or its pixels stop matching the cards'.
-- **Fill rate is the one unmeasured risk** and it needs a real GPU to measure: 20 burning cards on
-  the board, then 50 in the deck viewer, read the frame time. If it measures badly, spend the
-  levers in this order — raise `FxStyle.pixel` (chunkier FX pixels is a LOOK change, not a
-  capability loss) → drop `fx_fbm` to one octave → cap `FxStyle.height` to shrink the quads → and
-  only then reconsider one-quad-per-effect. Do not start by cutting features.
-- **Motion lag is tier 1** (one spring). The 8-sample position history that gives a real S-curve
-  is only worth building if a single arc reads flat — show the owner tier 1 first.
-- `Shaders/Styles/` now holds FxStyle presets AND `ember.tres` (a ParticleSpec), which makes the
-  folder name wrong. Everything lives in ONE place, which is what the ruling asked for; renaming
-  the tree to `res://Fx/` is a separate mechanical change.
-- `FxAttachment.measure_silhouette` samples the card's authored/baked outline once. Live per-frame
-  BONE deformation from the star rig is not tracked — re-call it if anything ever re-bakes a card
-  shape at runtime.
+**Moved: the whole VFX backlog and its known bugs now live in [VFX.md](VFX.md) §6/§7.** That file is
+the entry point for any visual-effects work — link it and say what you want changed. Keeping the
+list here as well is exactly the two-places drift this repo's doc hygiene forbids.
 
 ## Patience & rerolls (landed 2026-07-20 — owner playtest pending)
 

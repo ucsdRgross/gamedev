@@ -6,6 +6,11 @@ const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
 const CARD_SIZE := Vector2(38,50)
 const CARD_SEPARATION : int = 14
+## How far anim_jump lifts a card, in UNSCALED units. Shared, not a literal inside the animation:
+## props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide —
+## `PropVisual.rides_card_jump` reads `jump_rise_play` for that. Change it here and the ring
+## follows; hardcode it in either place and the card jumps through the side of the hoop.
+const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 
 @export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
 
@@ -26,6 +31,11 @@ static var card_separation_play : int:
 static var card_separation_play_custom : int:
 	get():
 		return card_separation_play * SettingsManager.settings.card_separation_scale
+## CARD_JUMP_RISE in SCREEN pixels — the jump lives on `offset`, inside the card root's card_scale,
+## so anything outside the card (PropLayer) has to scale it the same way to line up.
+static var card_jump_rise_play : float:
+	get():
+		return CARD_JUMP_RISE * SettingsManager.settings.card_scale
 
 var focused : bool = false:
 	set(value):
@@ -400,7 +410,7 @@ func anim_jump() -> float:
 	var s := SettingsManager.settings
 	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	move_tween.tween_callback(func()->void: floating = false)
-	move_tween.tween_property(offset, "position:y", -CARD_SIZE.y / 5.0,
+	move_tween.tween_property(offset, "position:y", -CARD_JUMP_RISE,
 			delay * s.card_jump_raise_fraction)
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15,
 			delay * s.card_jump_pulse_fraction)

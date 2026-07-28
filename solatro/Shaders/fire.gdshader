@@ -93,6 +93,16 @@ uniform float u_noise_amp = 0.5;
 uniform float u_noise_scale = 0.35;
 uniform float u_noise_scroll = 18.0;
 uniform float u_top_fraction : hint_range(0.2, 0.8) = 0.6;
+// The ball path's gravity ease. Read here as well as in juggle.gdshader — the plume quad and the
+// ball quad MUST agree on the timing or a flame slides off its ball; FxStyle pushes one value to
+// both, exactly as it does for the span and the arc heights.
+uniform float u_ball_gravity : hint_range(1.0, 3.0) = 1.0;
+// The host's ±1 base direction — same source, same reason: the plume has to be mirrored exactly as
+// its ball is (see fx_ball_pos).
+uniform float u_ball_dir = 1.0;
+// How many arcs the ball loop is made of. Same source again: the plume has to be on the same ladder
+// as its ball, or a lit ball's flame ends up hanging on a lane the ball is not on.
+uniform float u_ball_arcs = 2.0;
 // The WHOLE palette: u = heat, v = stack level. Colour-per-stack is one texture coordinate
 // (owner ruling 14), the band count is however many hard columns the image has rather than a
 // fixed 4, and frost or poison is a different .tres rather than a code path.
@@ -210,7 +220,12 @@ float emit_half_width() {
 float tendril(float cell, float cells, float seed, float x, float rise, float w) {
 	float half_w = (w / cells) * 0.5 * u_base_width;
 	float xc = ((cell + 0.5) / cells - 0.5) * w;
+	// TWO independent randoms per tendril, both folded through the HOST's seed so no two hosts run
+	// the same crown even on identical parameters (owner 2026-07-28). `ph` offsets its phase; `rate`
+	// varies its sway SPEED — a shared speed makes a row of tendrils read as one sheet sliding side
+	// to side however their phases are scattered, which is not "swaying in different directions".
 	float ph = fx_hash11(seed + u_seed) * TAU * u_desync;
+	float rate = mix(1.0, 0.55 + 0.9 * fx_hash11(seed * 7.31 + u_seed + 41.0), u_desync);
 
 	// The NEWEST tendril occupies a partial cell, so ramp its height by the fraction: it grows out
 	// of the surface instead of sliding in from the edge. Cell boundaries move continuously as
@@ -222,7 +237,9 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	float h = u_height
 		* mix(1.0, 0.55 + 0.45 * fx_value_noise(vec2(seed * 3.7 + u_seed,
 				u_time * u_flicker_speed)), u_height_var)
-		* (1.0 + u_pulse_amp * sin(u_time * u_pulse_speed))
+		// The whole-effect breath carries the HOST's phase too, or every burning card on the board
+		// breathes in unison.
+		* (1.0 + u_pulse_amp * sin(u_time * u_pulse_speed + fx_hash11(u_seed) * TAU))
 		* grow;
 	if (rise >= h) return 0.0;
 	float k = clamp(rise / h, 0.0, 1.0);              // 0 at the base, 1 at the tip
@@ -231,7 +248,7 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	// and only the TIP moves: skew (systematic outward fan — ruling 1's "angle skew as spread"),
 	// sway (oscillating drift), wave (snaking), wind, and the motion lag.
 	float drift = u_skew * (xc / max(w * 0.5, 1e-4)) * k
-		+ sin(u_time * u_sway_speed + ph) * u_sway_amp * k * k
+		+ sin(u_time * u_sway_speed * rate + ph) * u_sway_amp * k * k
 		+ sin(rise * u_wave_freq - u_time * u_wave_speed + ph) * u_wave_amp * k
 		+ (u_wind.x + u_lag.x * u_lag_amount) * k * k;
 
@@ -275,6 +292,12 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 }
 
 void fragment() {
+	// The host's MODULATE, which the renderer folds into COLOR before this function runs. Every
+	// path below OVERWRITES COLOR, which silently threw it away: the focus highlight (owner ruling
+	// 10) and a prop's fade never reached the flames, so a selected card lit up while its fire did
+	// not, and an exiting prop's fire stayed at full alpha (owner report 2026-07-28). Captured
+	// here, multiplied back in at the end.
+	vec4 tint = COLOR;
 	vec2 p = fx_local(UV, u_extent, u_pixel);
 	float heat = 0.0;
 	float alpha_mul = 1.0;
@@ -309,11 +332,12 @@ void fragment() {
 		// plume is welded to the ball rather than following it a frame later.
 		float n = max(u_count, 1.0);
 		float id;
-		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height, u_top_fraction, id);
+		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height, u_top_fraction,
+				u_ball_gravity, u_ball_dir, u_ball_arcs, id);
 		float lvl = texelFetch(u_ball_fire, ivec2(int(id), 0), 0).r;
 		if (lvl > 0.0) {
-			vec2 c = fx_ball_at(u_phase + id / n, u_span, u_arc_height, u_return_height,
-					u_top_fraction);
+			vec2 c = fx_ball_pos(id, n, u_phase, u_span, u_arc_height, u_return_height,
+					u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs);
 			float rise = (c.y - p.y) + u_ball_radius; // from just under the ball, so no seam
 			if (rise > 0.0) heat = tendril(0.0, 1.0, id, p.x - c.x, rise, u_ball_radius * 3.0);
 			level = lvl;                              // the BALL's level, not the card's
@@ -327,7 +351,10 @@ void fragment() {
 	if (heat <= 0.0) {
 		COLOR = vec4(0.0);
 	} else {
-		heat *= mix(1.0, 0.7 + 0.6 * fx_fbm(vec2(p.x, p.y - u_time * u_noise_scroll)
+		// The turbulence scrolls UP, with the flame. Art y is NEGATIVE upward, so a feature held at a
+		// fixed noise coordinate sits at `p.y = y_noise - t * scroll` — MINUS made the grain drift
+		// DOWNWARD, which read as the fire falling (owner report 2026-07-28). PLUS carries it up.
+		heat *= mix(1.0, 0.7 + 0.6 * fx_fbm(vec2(p.x, p.y + u_time * u_noise_scroll)
 				* u_noise_scale + u_seed), u_noise_amp);
 		heat *= u_intensity;
 		heat += (fx_bayer(FRAGCOORD.xy) - 0.5) * u_dither * 0.15;
@@ -335,6 +362,6 @@ void fragment() {
 		vec4 col = texture(u_ramp, vec2(clamp(heat, 0.0, 1.0), clamp(level, 0.0, 1.0)));
 		col.rgb *= u_brightness;
 		col.a *= u_opacity * alpha_mul;
-		COLOR = col;
+		COLOR = col * tint;
 	}
 }

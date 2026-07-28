@@ -370,7 +370,12 @@ never serialized); a quit mid-act replays the act from the pre-act board.
 4. **`tick_done` is a persistent signal** — await only while `view.prop_tick_pending()`.
 5. Per-show counters undo must rewind live on GameData (see §3a).
 6. Despawn is kind-dependent: route travelers exit one slot pitch along their travel line
-   (re-pinned, never a fixed-pixel tween); ballistic props poof in place.
+   (re-pinned, never a fixed-pixel tween); ballistic props poof in place. **The exit fade runs
+   ALONG the leg** (`prop_exit_fade_share`, alpha driven from `t` in `_drive_exiting`), never as
+   a tween after arrival — the void point is past the clipping rect (landmine 2), so a fade that
+   started there played entirely off-screen and the prop read as vanishing. **In-place flourishes
+   have a real-seconds floor** (`PropLayer.MIN_FLOURISH_SECS`): nothing awaits them, and at
+   `base_delay = 0.1` a 0.12 fraction is 12 ms — under one frame.
 7. Props with `ticks_per_slot > 1` move CONTINUOUSLY via `span_ticks`/`t_goal` ratchet.
 8. The focus inspector panel is a permanent prop_layer child — keep it
    `MOUSE_FILTER_IGNORE`/`FOCUS_NONE` + the addon meta; never reparent under controls.
@@ -378,6 +383,13 @@ never serialized); a quit mid-act replays the act from the pre-act board.
    time floors get_delay() at 0.2s (zero-duration looping tweens trip Godot's guard).
 10. Only talents jump/spin (reaction hooks key on `card.skill`); an all-talent suit
     spawns nothing (suppression) — deck9/deck10 show zero hoops BY CONSTRUCTION.
+11. **The hoop rides ONE CARD-JUMP above its slot centre** (`PropVisual.rides_card_jump` →
+    `CardVisual.card_jump_rise_play`, applied through the live lane offset), so a card that
+    jumps lands its centre exactly in the ring — the card jumps INTO the hoop (owner
+    2026-07-28). `CardVisual.CARD_JUMP_RISE` is the ONE source of that number: `anim_jump`
+    tweens it and PropLayer reads it. Hardcode it in either place and the card jumps through
+    the side of the ring. So a hoop's resting position is NOT its bare slot centre — tests that
+    assert a landing point must add the visual's own `lane_offset`.
 
 ### 4c. Formations & knobs
 
@@ -464,6 +476,10 @@ Covered by `Tests/UI/test_ui_viewers.gd`.
 
 ## 4g. VISUAL EFFECTS — the shader FX layer (2026-07-27)
 
+**Picking up visual-effects work? Start at [VFX.md](VFX.md)** — the map, the runbook, the open
+backlog and the known bugs. This section is the CONTRACT it sends you to; the two are not copies of
+each other.
+
 Status effects render as pixel-art shader quads. `res://Shaders/` holds the programs and the
 style/spec `.tres` presets; `res://UI/Fx/` holds the code. **Draw placement and the
 no-rotating-grid rule live in [LAYERING.md](LAYERING.md)** — this section is the contract.
@@ -516,6 +532,57 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `ball_shade → ball_lit`, with a half-vector threshold (`ball_spec`) for a highlight that sits on
   the surface. A straight two-tone split plus a dot reads flat however it is coloured. The spin
   rotates the LIGHT (the shading frame) after quantization — never the grid.
+- **⚠ A shader that writes `COLOR` must multiply the MODULATE back in.** The renderer folds a
+  CanvasItem's modulate into `COLOR` before `fragment()` runs, so overwriting `COLOR` silently
+  discards it: the focus highlight stopped at the card's own art (ruling 10 quietly unimplemented)
+  and an exiting prop's flames stayed opaque while the prop faded. Both shaders now capture
+  `vec4 tint = COLOR;` first and end with `COLOR = col * tint;`. Any new effect shader must too —
+  the PIXELS suite asserts it for fire and balls.
+- **The ball period is REAL SECONDS** (`FxStyle.ball_period_secs`), not a fraction of `base_delay`.
+  Act compression still quickens the pattern, because the clock feeding `_phase` is already
+  pacing-scaled — multiplying by `base_delay` as well made one whole cycle 0.12 s at the owner's
+  0.1 speed setting and the balls unreadable. How fast juggling LOOKS is an art decision; how fast
+  the game STEPS is the player's.
+- **Every effect must be DESYNCED from every other host.** `FxAttachment` rolls a per-HOST `_seed`
+  (pushed to every quad it owns, never per-quad — the balls and the flames riding them must agree),
+  a per-host `_ball_dir`, and a RANDOM starting `_phase`. Any new motion term has to fold the seed in
+  or it runs in lockstep across the board: that is what the tendril sway PHASE **and rate**, the
+  whole-effect pulse, and the ball spin all do (owner 2026-07-28 — the spin was keyed on the ball
+  index alone, so every card's ball 0 turned together, and `_phase` starting at 0 meant two cards
+  with the same count juggled as one).
+- **Balls ALTERNATE direction** (`fx_ball_dir`): even indices ride the host's own `u_ball_dir`, odd
+  ones the mirror, so neighbours cross instead of trooping round together — and the host's direction
+  is a coin flip, so ball 0 sets off left on one card and right on the next. `fx_ball_pos` (index in,
+  position out) is the ONE place the mirror is applied; call sites pass an index, never a cycle
+  position, so a plume cannot end up on the mirror image of its ball. `fx_nearest_ball` recovers once
+  per direction group — 2 arcs × 2 directions × 2 bracketing integers = 8 evaluations, still no loop
+  over the count, and a ball is always found by the branch matching its own direction.
+- **Turbulence scrolls UP.** Art y is negative upward, so the noise sample is `p.y + t·scroll`;
+  minus (the original) drifted the grain DOWNWARD and read as the fire falling.
+- **Nothing may reach more than half a card separation past its host** — that is what keeps the card
+  behind visible (owner 2026-07-28). Card fire: `height` = `CARD_SEPARATION * 0.5` = 7. Juggling:
+  `ball_arc_max` = 32 = half a card plus half a separation, measured to the topmost ball's EDGE
+  (the radius comes out of the budget), which also ceilings the count-driven arc growth. Prop-hosted
+  styles are in PROP art units (≈2.5× smaller than a card's), so the same rule is a different number
+  there. A lit ball's PLUME is explicitly out of the budget (owner).
+- **The ball loop is an ARC LADDER, not one throw and one carry.** Lanes appear between the two as
+  the count rises (`FxJuggle.arcs`, tunable via `ball_arcs_per_count` / `ball_arcs_max`), at evenly
+  spaced heights from the throw down to the carry, and the balls travel all of them — so a bigger
+  count spreads them through the space instead of stretching one arc (owner 2026-07-28). Every arc
+  starts and ends at `(±span/2, 0)`, which is what lets any number of them chain into one closed
+  loop; they ALTERNATE direction, so **the count must be even** or the loop would not close in x.
+  Gravity eases every arc except the lowest. The arc count is where the shader's cost now lives —
+  `fx_nearest_ball` does fixed work PER ARC (bounded by `FX_MAX_ARCS`), still never per ball.
+  ⚠ It is an integer and it STEPS: crossing a lane boundary re-shapes the path, the one place
+  ruling 16's "no visual jumps" does not hold.
+- **Gravity on the throw is a time warp, and it must stay INVERTIBLE.** `fx_arc_ease` maps time
+  along the tall arc to distance along it as `0.5 + 0.5·sign(d)·|d|^g` about the apex, so the ball
+  decelerates into the top of the throw and accelerates out (`FxStyle.ball_gravity`; 1 = the old
+  constant speed). The path itself is unchanged — the eased value drives BOTH axes. The exponent
+  form was chosen because `fx_nearest_ball` recovers a ball index from a fragment's x in closed
+  form, which needs this mapping inverted analytically (`fx_arc_ease_inv`, exponent `1/g`); a
+  smoothstep or a sine ease would have no closed-form inverse and would break the no-loop lookup
+  that makes unlimited balls free. The CARRY is never eased — nothing is falling there.
 - **`@tool` hosts:** `CardVisual` and `PropVisual` both run in the editor. FX construction is
   guarded by `Engine.is_editor_hint()` and sets no `owner`, or the editor would save FX nodes into
   `card_visual.tscn`.
@@ -582,7 +649,9 @@ after ANY shader edit; it writes PNGs to `user://fx_snapshots/`
 (`%APPDATA%\Godot\app_userdata\Solatro\…`). It is deliberately not in `all_tests.tscn`. Shots:
 `00_tendril_count` (geometry only, countable — and the onion shells), `00b_ogee_profile`,
 `01_fire_ladder`, `02_fire_rotation`, `03_fire_wrap`, `04_shapes` (the real prop bodies), `05_balls`,
-`05b_ball_path`, `05c_ball_sphere`, `06_ball_fire`, `07_transition`.
+`05b_ball_path`, `05c_ball_sphere`, `05d_ball_gravity` (the throw's easing — the balls bunch at the
+apex as it rises), `05e_ball_arcs` (the arc ladder at one ball count), `06_ball_fire`,
+`07_transition`, `08_focus_highlight` (ruling 10).
 The ball shots carry an independent GDScript **oracle** — crosses drawn where the spec says each
 ball should be — and the harness then MEASURES ITS OWN CAPTURE, printing per ball how far the
 nearest rendered ball is from its expected position in ART UNITS (`PROBE` lines). Read those
@@ -602,6 +671,9 @@ pixels back, or the last column lands off the right edge.
   capture then advance `_phase`/`_time` by real deltas, and every ball renders ~0.15 of a cycle past
   the phase the oracle and the debug print were told about. **Disable the process LAST.** This, not
   `fx_nearest_ball`, was the "ball positions disagree at low counts" bug.
+- Reference geometry is added to a slot BEFORE the effects so the effects draw on top. Inserting a
+  node between them (the modulate host, when the focus-highlight shot was added) put the oracle
+  crosses OVER the balls and read exactly like the balls had stopped rendering.
 - Reference geometry drawn at sub-pixel widths is DROPPED by the rasterizer. At the zoom a ball quad
   forces (~1.0 art unit per pixel) the old 0.5-unit crosses and outlines lost half their lines, so
   "does the ball sit on its cross" could not be judged at all. Every width in `_Ghost` is now a
@@ -619,6 +691,9 @@ Covered by `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT"), the FX section of
 ---
 
 ## 4h. PIXEL ART — one pixel size, and how each surface gets its colour (2026-07-27)
+
+**Picking up prop/pip art work? Start at [VFX.md](VFX.md)**; this section is the contract it sends
+you to.
 
 **ONE PIXEL SIZE FOR ALL ART** (owner). A card draws its own art one texel per UNSCALED unit and is
 then scaled by `card_scale`; a prop is scaled by `card_scale / PropVisual.AUTHORED_CARD_SCALE`. So a
@@ -670,8 +745,8 @@ whatever it touches to ONE colour. Therefore:
 
 Visual checks: `Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn` (windowed, needs a
 GPU) writes `user://prop_art_snapshots/` — every kind over a card outline, the pip-vs-prop pixel-size
-comparison at three `card_scale`s, the mirror, the hoop halves reassembling the whole ring, and the
-recolour split per suit.
+comparison at three `card_scale`s, the mirror, the hoop halves reassembling the whole ring, the
+recolour split per suit, and the hoop/jumped-card centre alignment (`15_hoop_alignment`).
 
 ---
 

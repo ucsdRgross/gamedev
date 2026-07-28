@@ -102,30 +102,33 @@ These are the real decisions. Recommend a default for each; the owner rules per 
    but typo-prone and invisible to autocomplete; a resource with one named `@export_range(0,31)` per
    role is inspector-friendly and compile-checked but needs an edit to add a role. *(Recommend:
    named exports for the fixed set, since the role list is small and stable.)*
+   Input: named exports since it might allow visualizing color in editor while choosing int
 2. **What is the role list?** Enumerate it in the plan — one row per role with what it colours. Derive
    it from §2.3, not from imagination. Suits alone are 5; fire needs an ordered ramp; balls need
-   3 + however many bands.
+   3 + however many bands. Input: yes
 3. **Ordered ramps: how is a heat ramp expressed as roles?** An `Array[StringName]` of roles from
    core to rim? A separate `PaletteRamp` resource? And is `fire_ramp.png` (a) regenerated at build
    time from roles, (b) built at load into an `ImageTexture`, or (c) replaced by sampling the palette
    texture directly in the shader with a role-index array uniform? *(Recommend (b): no build step, no
    new shader plumbing, and a palette swap recolours fire the moment `palette_changed` fires.)*
+   Input: No palette swapping at runtime, we can simulate that with different status effect with its own palette. Should still have large color ramp for increasing intensity, but ramp should still be preset. Choose whatever option is fastest and allows most in tune editing. I think PaletteRamp makes most sense, since it can be reusable for other effects. For example, ramp could have 10 colors, and fire ramp can focus on window of 3 and move through the ramp when intensity increases.
 4. **Banding must sample, not lerp** (§2.3). Confirm the owner wants band colours to be exact palette
    entries — it changes how the balls look (three chosen tones instead of an even ramp), so it is a
-   LOOK decision, not just an architecture one.
+   LOOK decision, not just an architecture one. Input: Yes exact colors from palette. blending can create unpredictable and bad looking colors
 5. **How strictly universal?** Does "every colour" include UI chrome, map, debug/editor tools, and the
    `@tool` formation editor, or only in-game art? *(Recommend: art + UI chrome in scope; debug and
-   editor-only tools explicitly out, and say so in the doc so the next person does not "finish" it.)*
+   editor-only tools explicitly out, and say so in the doc so the next person does not "finish" it.)* Input: only in game art during play. Debug and tests are whatever.
 6. **Enforcement.** Is there a test that FAILS on a new hardcoded `Color(...)` in the view layer, or
    is this convention-only? A grep-based test is cheap and is the only thing that stops re-drift.
-   *(Recommend: a test with an explicit allowlist.)*
+   *(Recommend: a test with an explicit allowlist.)* Input: Sure let's fail some tests, but only as warnings, not true errors that means something needs to be fixed, just that something in scene is still a placeholder.
 7. **What happens to a role whose index is out of range** after a palette shrinks (32 → 16)? Clamp,
    push_error, or refuse to load? *(Recommend: `push_error` + clamp — never a silent wrong colour,
-   never a crash on load.)*
+   never a crash on load.)* Input: yes, but I have already decided palette will never be smaller than 32 so this step may be unnecessary for this plan.
 8. **`@tool` safety.** `PaletteManager` is an autoload; the formation editor and both FX hosts are
    `@tool` scripts that run with no autoloads in some contexts. What is the fallback — a static
    default, or does every call site null-check? *(This is the most likely source of an editor-only
    crash; ARCHITECTURE_REVIEW §4g's "both FX hosts are `@tool`" trap is the precedent.)*
+   Input: Autoload seems kind of overkill and has bad code smell? Can't everything be static instead? Don't expect colors or ramps to change at runtime. If I remember correctly formation editor exports to a statis resource that gets used by anything, we can do same thing here. Null check every time seems overkill, should never be null if stuff is working right, if its null and I get runtime error that means immediate need to fix, final product should have no null.
 
 ---
 

@@ -14,6 +14,9 @@ const FRAMES := 3
 func _init() -> void:
 	art_size = art_size_for(SHEET, FRAMES)
 	body_size = art_size
+	# The card JUMPS THROUGH this one, so the ring rides at the height a jumped card's centre
+	# reaches and the two centres line up (owner 2026-07-28).
+	rides_card_jump = true
 	# face_travel stays OFF: left/right here is the ring's DEPTH (far/near side), not a heading, so
 	# mirroring for travel would swap which arc the card threads behind.
 
