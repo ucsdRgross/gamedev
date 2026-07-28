@@ -24,7 +24,20 @@ extends Node2D
 ## straight line — ONE shared movement function for every kind; only this shape knob differs.
 @export var arc_height : float = 0.0
 
-var fire_tips : int = 0                  ## flame ticks overlaid on any kind (PropData.fire_stacks)
+## Fire carried by this prop (PropData.fire_stacks), drawn by the shader FX below. The setter
+## resyncs the effect, so a prop catching fire mid-flight lights up without waiting for a respawn.
+var fire_stacks : int = 0:
+	set(value):
+		if fire_stacks == value: return
+		fire_stacks = value
+		_sync_fx()
+
+## Shader effects for this prop — built at runtime, never authored into a scene. Split props get
+## one attachment per HALF instead of one on the body, so the ring's back-arc flames sit behind
+## the occupied card exactly as its back arc does.
+var fx : FxAttachment
+var fx_back : FxAttachment
+var fx_front : FxAttachment
 
 # --- interpolation state, OWNED by PropLayer._process (never locks in a duration) ---
 var from : Vector2
@@ -131,7 +144,6 @@ func _draw() -> void:
 	# nodes, so it always draws the whole body. Non-split props always draw their whole body here.
 	if not has_back_half() or Engine.is_editor_hint() or not _split_active:
 		_draw_body()
-	_draw_fire_tips()
 
 ## Full-shape body — subclasses override with a kind-distinct primitive at `art_size`. For split
 ## props this is used for the editor preview (and the non-split default draw); the runtime split
@@ -163,6 +175,7 @@ func set_split_active(active: bool) -> void:
 	if _split_active == active: return
 	_split_active = active
 	queue_redraw()
+	_sync_fx()   # the flames follow the body: whole-prop quad off, bracketed halves on
 
 ## The arc drawn BEHIND the occupied card. Called from a half node's _draw, so it must issue its
 ## draw_* commands on `into` (the half node), NOT on self — drawing on a node outside its own
@@ -206,13 +219,45 @@ class _PropHalf extends Node2D:
 	func _process(_d: float) -> void:
 		queue_redraw()
 
-## Small flame ticks fanned above the body, one per stack (shared across all kinds).
-func _draw_fire_tips() -> void:
-	if fire_tips <= 0: return
-	var flame := Color(1.0, 0.55, 0.1)
-	var top := -art_size.y * 0.5
-	for i in fire_tips:
-		var x := (i - (fire_tips - 1) * 0.5) * 4.0
-		var tip := Vector2(x, top - 5.0)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(x - 2.0, top), Vector2(x + 2.0, top), tip]), flame)
+# --- shader FX ----------------------------------------------------------------
+## Which silhouette this kind's effects decorate. A blade and a card are both boxes; the hoop
+## overrides to a ring. Adding a kind is one override here and one branch in the shader.
+func fx_shape() -> FxAttachment.Shape:
+	return FxAttachment.Shape.BOX
+
+## Build this prop's FX attachments. Runtime only and OWNERLESS: this script is @tool and the
+## formation editor instantiates PropVisuals live, where there is no game to read a pacing from
+## and any owned child would be written into a scene on disk.
+func _ready() -> void:
+	if Engine.is_editor_hint(): return
+	fx = _make_fx(self, FxAttachment.Half.WHOLE)
+	if has_back_half():
+		# The halves hang off the BRACKET nodes, so each half's flames inherit that half's place
+		# in CardLayer's order — which is the whole point of the bracket.
+		fx_back = _make_fx(ensure_back(), FxAttachment.Half.BACK)
+		fx_front = _make_fx(ensure_front(), FxAttachment.Half.FRONT)
+	_sync_fx()
+
+## One attachment, added LAST under `host` so it draws above that host's own art.
+func _make_fx(host: Node2D, half: FxAttachment.Half) -> FxAttachment:
+	var att := FxAttachment.new()
+	att.name = "Fx"
+	att.configure(body_size, face_travel, fx_shape(), half)
+	host.add_child(att)
+	return att
+
+## Point every attachment at this prop's current fire, and show whichever set matches the split
+## state — the same rule _draw uses, so the flames are never on a body that is not drawn.
+func _sync_fx() -> void:
+	if not fx: return
+	var whole : Array[FxRequest] = []
+	if fire_stacks > 0: whole.append(FxFire.request(&"fire", fire_stacks, PROP_FIRE_STYLE))
+	var split := has_back_half() and _split_active
+	fx.visible = not split
+	fx.sync(whole)
+	for half : FxAttachment in [fx_back, fx_front]:
+		if not half: continue
+		half.visible = split
+		half.sync(whole)
+
+const PROP_FIRE_STYLE := preload("res://Shaders/Styles/fire_prop.tres")

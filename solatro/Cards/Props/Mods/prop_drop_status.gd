@@ -11,8 +11,14 @@ func _init(script: GDScript = null, react := PropData.Reaction.JUGGLE) -> void:
 	status_script = script
 	reaction = react
 
-func on_pass_card(_prop: PropData, _g: Game, card: CardData) -> void:
-	card.add_status(CardModifierStatus.stacked(status_script, 1))
+func on_pass_card(prop: PropData, _g: Game, card: CardData) -> void:
+	var status := CardModifierStatus.stacked(status_script, 1)
+	# Hand the dropped status whatever the prop was carrying BEFORE it lands, so per-stack
+	# provenance survives the drop: a burning Ball prop used to leave its fire on the floor here.
+	# Note this grants no Burning to the card — a burning ball landing raises that card's
+	# StatusJuggling and nothing else (owner ruling 17).
+	status.on_dropped_by(prop)
+	card.add_status(status)
 
 func reaction_for(_prop: PropData, _card: CardData) -> int:
 	return reaction

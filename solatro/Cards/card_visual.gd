@@ -87,6 +87,13 @@ func update_visual() -> void:
 		# Statuses show only on the card's front face.
 		status_layer.visible = show_front and data != null
 		if status_layer.visible: status_layer.refresh(data)
+	if fx:
+		# FX draws OUTSIDE the silhouette, so it would leak a face-down card's statuses unless
+		# gated — a hidden card must reveal zero information (owner ruling 23). This is the one
+		# deliberate exception to "no visual jumps": show_front flips at the basis3d midpoint,
+		# when the card is edge-on and a sliver, so the cut is invisible.
+		fx.visible = show_front and data != null
+		fx.sync(_fx_requests())
 	if show_front and data:
 		if data.rank:
 			data.rank.set_texture(rank)
@@ -135,6 +142,16 @@ func update_visual() -> void:
 			1)
 		type.show()
 
+## Every visual effect this card's statuses ask for, in status order (later draws on top). Generic
+## by construction: CardVisual never names an effect — statuses declare their own via fx_request(),
+## exactly as they declare their own icon via draw_icon.
+func _fx_requests() -> Array[FxRequest]:
+	var reqs : Array[FxRequest] = []
+	if not data: return reqs
+	for status : CardModifierStatus in data.statuses:
+		reqs.append_array(status.fx_request())
+	return reqs
+
 var num : int = 0
 var move_tween : Tween
 var tilt_tween : Tween
@@ -152,6 +169,9 @@ var hover : bool = false
 ## Phase 5 status icons — created at runtime (no .tscn slot) so a status_pips.png asset isn't
 ## required; sits in the card's top-left corner and rides the offset like the polygons.
 var status_layer : StatusLayer
+## Shader effects for this card's statuses — created at runtime like status_layer, and a child of
+## OFFSET rather than of `visual` (see _ready).
+var fx : FxAttachment
 
 
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
@@ -178,6 +198,28 @@ func _ready() -> void:
 	# (props/overlay), the global-z trap — see LAYERING.md.
 	visual.add_child(status_layer)
 	status_layer.refresh(data)
+	# FX hangs off OFFSET, never off `visual`: `visual` carries the basis3d flip, which squashes
+	# its basis to ZERO at edge-on (:66-71), and the effects' quads must never inherit a singular
+	# matrix. Added after `visual`, so it draws above the card's own face while the whole
+	# CardVisual subtree stays one unit in CardLayer's draw order. Runtime-only and OWNERLESS,
+	# exactly like status_layer: this script is @tool, and an owned child would be written into
+	# card_visual.tscn by the editor.
+	if not Engine.is_editor_hint():
+		fx = FxAttachment.new()
+		fx.name = "Fx"
+		# Motion effects (embers, the cape) only on the board: they exist for cards that travel
+		# and are dropped, and the deck viewer — 50+ cards, all showing their statuses — is the
+		# densest screen in the game. The flames and balls themselves are identical everywhere.
+		fx.configure(CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+				current_context == DisplayContext.PLAY_AREA)
+		offset.add_child(fx)
+		# Measure the real card outline ONCE: the star rig bakes a deformed silhouette into the
+		# face polygons, and flames should hug that rather than the nominal 38x50 rectangle. Dirty
+		# by nature — nothing re-bakes a card's shape at runtime — so re-call this if that ever
+		# changes rather than sampling the polygon every frame.
+		fx.measure_silhouette(type.polygon)
+		fx.visible = show_front and data != null
+		fx.sync(_fx_requests())
 	SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()
 	match data.previous_stage:

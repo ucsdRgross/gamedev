@@ -17,6 +17,10 @@ func _init() -> void:
 func has_back_half() -> bool:
 	return true
 
+## The ring's silhouette is a circle, so its flames sit on the arc rather than on a bounding box.
+func fx_shape() -> FxAttachment.Shape:
+	return FxAttachment.Shape.RING
+
 ## Full ring — used for the @tool formation-editor preview (at runtime the two arcs draw split
 ## onto the bracket nodes instead).
 func _draw_body() -> void:

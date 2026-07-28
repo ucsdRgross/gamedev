@@ -46,6 +46,9 @@ var new_data_card : Dictionary[CardData, CardVisual]
 
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
+	# Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on
+	# the first card that catches fire mid-act.
+	FxAttachment.warm(overlay_layer)
 	setup_gui()
 	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
 

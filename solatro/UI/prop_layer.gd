@@ -484,7 +484,7 @@ func _make_visual(prop: PropData, at: Vector2) -> PropVisual:
 		3: vis = FireVisual.new()
 		4: vis = FireworkVisual.new()
 		_: vis = HoopVisual.new()
-	vis.fire_tips = prop.fire_stacks
+	vis.fire_stacks = prop.fire_stacks
 	vis.position = at
 	# Live art scale from frame one (re-written every frame in _process; see AUTHORED_CARD_SCALE).
 	vis.scale = Vector2.ONE * (SettingsManager.settings.card_scale / PropVisual.AUTHORED_CARD_SCALE)

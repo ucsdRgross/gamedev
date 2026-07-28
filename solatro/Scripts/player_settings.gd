@@ -36,6 +36,23 @@ signal settings_changed
 		prop_tick_fraction = value
 		settings_changed.emit()
 
+@export_group("Visual effects")
+## How long a status's visual effect takes to grow into a stack change, as a fraction of ONE PROP
+## TICK. The owner's metric is "fast enough before the next status effect gets applied", and
+## statuses land on prop ticks — so this is derived from the live tick, never a wall-clock number.
+## Below 1.0 a change always completes with margin, at any pacing, under any compression.
+@export var fx_transition_fraction : float = 0.6:
+	set(value):
+		fx_transition_fraction = value
+		settings_changed.emit()
+## Master effect strength: multiplies every effect's brightness and reaches ZERO for a "reduce
+## effects" accessibility setting. Flicker and pulse are separate levers in FxStyle so
+## photosensitivity can be addressed without dimming the whole board.
+@export_range(0.0, 2.0, 0.05) var fx_intensity : float = 1.0:
+	set(value):
+		fx_intensity = value
+		settings_changed.emit()
+
 @export_group("Animation flourishes (fractions of get_delay)")
 ## Every flourish length is a FRACTION of the live get_delay() — so all animations respect the
 ## global pacing (and the act compression below) and can never run longer than the delay allows.

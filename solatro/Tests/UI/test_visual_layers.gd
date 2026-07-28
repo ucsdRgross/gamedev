@@ -52,6 +52,7 @@ func _ready() -> void:
 	await test_normal_prop_above_cards()
 	await test_held_card_above_resting()
 	await test_status_above_face()
+	await test_fx_inside_its_host()
 	await test_overlay_above_everything()
 	behavior_section("HOOP PASSES THROUGH A CARD (front/back split)")
 	await test_hoop_back_half_interleaves()
@@ -361,6 +362,42 @@ func test_status_above_face() -> void:
 			"StatusLayer renders above the card's Art (and every face polygon)",
 			"status %d vs art %d" % [status_rank, art_rank])
 	check_impl(vis.status_layer.z_index == 0, "StatusLayer carries no z_index (last-child order)")
+	await cleanup(g, pa)
+
+## Shader FX is a CHILD of its host: above the card's own face, but still inside the CardVisual
+## subtree, so a card that overlaps this one paints over the flames too (owner ruling 2). That is
+## also why CardLayer must stay strictly CardVisuals — nothing else is ever inserted into it.
+func test_fx_inside_its_host() -> void:
+	var g := make_board_game(2)
+	var pa := make_play_area()
+	await settle(pa)
+	var card := g.state.upper_zone[0].datas[0]
+	card.add_status(CardModifierStatus.stacked(StatusBurning, 3))
+	var vis : CardVisual = pa.data_card.get(card)
+	await get_tree().process_frame
+	check(vis != null and vis.fx != null, "a burning card builds an FX attachment")
+	check(vis.fx.get_parent() == vis.offset,
+			"parented to Offset, never to Visual (which carries the basis3d squash)")
+	check(vis.fx.get_child_count() == 1, "one quad for its one effect",
+			str(vis.fx.get_child_count()))
+	var order := dump_draw_order("burning card", vis)
+	check(draw_rank(order, vis.fx) > draw_rank(order, vis.visual),
+			"the FX draws above the card's own art",
+			"fx %d vs visual %d" % [draw_rank(order, vis.fx), draw_rank(order, vis.visual)])
+	for node : Node in pa.card_layer.get_children():
+		check_impl(node is CardVisual or node is Node2D,
+				"CardLayer holds no FX node of its own — FX rides inside its host")
+	for entry : Dictionary in dump_draw_order("board with FX", pa):
+		var item := entry["node"] as CanvasItem
+		if item: check_impl(item.z_index == 0, "every board CanvasItem stays at z_index 0")
+	# Ruling 23: a face-down card must leak nothing, and FX draws OUTSIDE the silhouette.
+	# Checked WITHOUT awaiting a frame: delta_floating_anim rewrites basis3d every frame, which
+	# recomputes show_front from the card's actual facing — so a frame later it is legitimately
+	# front again. What matters is that the gate applies the moment the facing changes.
+	vis.show_front = false
+	check(not vis.fx.visible, "a face-down card hides its effects entirely")
+	vis.show_front = true
+	check(vis.fx.visible, "and flipping back restores them")
 	await cleanup(g, pa)
 
 ## The OverlayLayer (focus inspector) renders above every card and prop.

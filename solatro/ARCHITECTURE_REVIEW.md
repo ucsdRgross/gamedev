@@ -462,6 +462,108 @@ Covered by `Tests/UI/test_ui_viewers.gd`.
 
 ---
 
+## 4g. VISUAL EFFECTS — the shader FX layer (2026-07-27)
+
+Status effects render as pixel-art shader quads. `res://Shaders/` holds the programs and the
+style/spec `.tres` presets; `res://UI/Fx/` holds the code. **Draw placement and the
+no-rotating-grid rule live in [LAYERING.md](LAYERING.md)** — this section is the contract.
+
+**The emitter/effect contract.** Emitters (a card silhouette, a ring, a blade, a juggled ball) are
+shapes on screen; effects (fire today, frost later) decorate them; emitters NEST — a card's
+Juggling status produces ball emitters, and a ball is itself an emitter fire can decorate. Adding
+an effect is one `.gdshader` + one `FxStyle` preset. Adding a prop shape is one branch in
+`shape_radius` plus one `fx_shape()` override. Neither touches the other.
+
+**Statuses declare their own FX** via `CardModifierStatus.fx_request() -> Array[FxRequest]`,
+mirroring `draw_icon`. `FxAttachment` renders requests and never learns which effects exist, so a
+new visual status is a new class and nothing else. `StatusJuggling` returns TWO (its balls, and
+the fire riding them), which keeps the dependency inside the one class that owns both.
+
+**Rules that prevent regressions:**
+
+- **Shared `Shader`, per-node `ShaderMaterial`.** Never `.duplicate()` a shader — that recompiles
+  the program per card. `FxAttachment.warm()` pays every first-use compile up front.
+- **The clock is script-driven**, accumulated as `delta * FxAttachment.pacing()`. Never the shader
+  built-in `TIME`: it is wall-clock, ignores the act-compression ramp, and keeps running through a
+  paused SceneTree. Transition length is `delay * prop_tick_fraction * fx_transition_fraction`,
+  re-derived live from the Game (never through `play_area.prop_layer` — a viewer card has none and
+  must ease exactly like a board card).
+- **`u_count` is a FLOAT.** It partitions the emitting width into n cells, so an integer step from
+  3 to 4 re-partitions the width and teleports every existing flame. Tweening the stack count is
+  not enough; the count itself has to be continuous. Reaching zero FADES before the quad is freed.
+- **Nothing ever freezes** for grabbed / held / hovered / mid-move / mid-flip. Pacing only scales
+  the clock, never zeroes it.
+- **One shared phase clock per host.** The balls quad and the ball-fire quad read the same
+  `_phase` and the same geometry from one `FxJuggle.geometry()` call, and both call
+  `fx_ball_at` from `fx_common.gdshaderinc`. Two copies of the arc maths is the bug that makes
+  flames trail their balls by a frame — the shared include prevents it structurally.
+- **Guard the noise.** `fire.gdshader` early-outs on `heat <= 0.0` before `fx_fbm`. Most fragments
+  in a quad are empty and fbm is seven taps; this one branch is the biggest saving in the shader
+  and the easiest to drop in a refactor.
+- **The quad is sized to the host's DIAGONAL** when the host can rotate (a 38×50 card is 62×62 at
+  45°, and `anim_spin_start` turns it through every angle). Pinned hosts skip that ~1.6× fill.
+- **`@tool` hosts:** `CardVisual` and `PropVisual` both run in the editor. FX construction is
+  guarded by `Engine.is_editor_hint()` and sets no `owner`, or the editor would save FX nodes into
+  `card_visual.tscn`.
+
+**`StatusJuggling.ball_fire` — the invariant.** `ball_fire.size() == stacks`, ALWAYS. A ball's
+flame is the BALL's own effect at the level it was spawned with; it is never read from the card's
+`StatusBurning`, and a burning card does not light its balls. **Ball index is ball identity**
+(ball i renders at `phase + i/n`): append on add, remove from the END — removing from the middle
+re-indexes every later ball and makes flames jump between them. Four touch points:
+
+1. `PropDropStatus.on_pass_card` → `status.on_dropped_by(prop)` carries the prop's `fire_stacks`.
+2. `CardData.add_status` merges via `merge_from`, which CONCATENATES the levels as the stacks add.
+3. The `stacks` setter calls `fit_to_stacks()`, truncating from the end.
+4. `fire_levels()` re-fits on READ, so a save written before `ball_fire` existed loads correctly
+   (no migration file). Writes go through the `ball_fire` setter, which emits `data_changed` —
+   only the `stacks` setter used to, so a ball catching fire without the count changing would
+   never refresh the visual.
+
+**`ParticleEngine` is the game's ONE particle path** (`UI/Fx/particle_engine.gd`, the
+`ParticleLayer` node). Shared infrastructure that outlives this feature: every particle from any
+source is spawned through `emit()`/`spawn()` and simulated in one O(n) pass over a fixed-size ring
+buffer of `PackedFloat32Array`s under `MAX_PARTICLES`, rendered by ONE `MultiMeshInstance2D`
+written as a single `multimesh.buffer` assignment. Do not add a `CPUParticles2D`/`GPUParticles2D`
+anywhere else. Particles are **world-space by design**: an emitter moving, despawning or being
+freed never moves or removes what it already emitted, so emitters own no particles and have
+nothing to release. `ParticleEngine.CURRENT` may be null (a viewer has no play area) — `spawn()`
+no-ops rather than crashing, and "no engine" is a supported state.
+
+**Tuning.** ~35 art levers per effect live in `FxStyle` `.tres` presets under `Shaders/Styles/`,
+written to a material ONCE; only the clock, the host rotation, the lag vector, the phase and the
+eased data values are pushed per frame. Player-facing knobs (`fx_transition_fraction`,
+`fx_intensity`) live in `player_settings.gd`; `fx_intensity` reaches zero as a genuine
+photosensitivity control, and flicker/pulse are separate levers so they can be reduced without
+dimming everything.
+
+**Shader pixels need the SNAPSHOT harness, not the headless suite.** `--headless` uses the dummy
+renderer and never compiles a shader program, so a GLSL error, an inverted sign, an upside-down
+flame or an effect that draws nothing all pass it silently — the first snapshot run caught four
+real bugs the green suite had not:
+
+- `QuadMesh` is a 3-D primitive whose +Y is UP, so `(UV - 0.5) * extent` inverts y against Godot's
+  2-D convention and **every effect rendered mirrored**. `fx_local()` owns that flip now; effects
+  must go through it rather than quantizing UV themselves.
+- Clamping the tendril's `u` to ±1 made `u_merge` a **silent no-op** (a neighbour is by definition
+  sampled at |u| > 1, so it always evaluated to exactly zero).
+- The comb spanned `u_body.x` — the UNROTATED width — leaving a third of a 90°-rotated card's edge
+  bare. `emit_half_width()` handles it.
+- The rotated-box contour used a fixed-point iteration that only converges for an unrotated
+  rectangle, and returned a slanted base at 90°. `box_contour()` walks the convex hull instead.
+  Note it must be UNROLLED: a dynamically indexed local array compiled without complaint on GLES3
+  and returned garbage.
+
+Run `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` (windowed, needs a GPU) after ANY
+shader edit; it writes PNGs to `user://fx_snapshots/`. It is deliberately not in `all_tests.tscn`.
+The ball shots carry an independent GDScript **oracle** — crosses drawn where the spec says each
+ball should be — so a disagreement is visible without measuring pixels.
+
+Covered by `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT"), the FX section of
+`Tests/UI/test_visual_layers.gd`, and `Tests/Visual/fx_snapshot.gd`.
+
+---
+
 ## 5. UNDO & GAME-OVER CONTRACT
 
 Undo is live in every state; `Game.undo()` dispatches on three:
@@ -510,8 +612,8 @@ re-enable it); `enable_board_focus()` on dismissal.
 ## 7. TESTING
 
 Run: `Godot --headless --path solatro res://Tests/all_tests.tscn` — exit code = failure
-count; the bar is ALL suites green (count the run's own banner; 25 as of 2026-07-20 —
-PATIENCE joined, and it runs unordered like the other engine suites).
+count; the bar is ALL suites green (count the run's own banner; 26 as of 2026-07-27 —
+PATIENCE and FX ATTACHMENT joined, and both run unordered like the other engine suites).
 Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** Never
 run headless while the owner's editor has the project open (see START_HERE.md).
 Environment traps (stale class cache, frame_post_draw, headless window size):
@@ -578,6 +680,52 @@ Standing owner rulings:
   fire ONLY from automated moves (TypeInput).
 - The Deck Maker (`UI/deck_builder.gd`) is kept for a future refactor despite being
   orphaned.
+
+Visual-effects rulings (2026-07-26/27 — the spec §4g implements; do not redesign around them):
+
+1. Fire tips always point generally UPWARDS, allowing some angle skew as spread.
+2. Fire paints props and cards but, just like props, shows only BETWEEN cards — a card with FX
+   does not show it where it is covered.
+3. A burning card does not mean its balls are burning, except when it is spawning burning balls.
+   **Each individual ball can be burning or not.**
+4. No small tendril cap — either raise it to ~50 or abandon the cap and have fire increase in
+   INTENSITY per stack. (Implemented as the latter.)
+5. Balls ideally have NO stack limit; if one were forced, balls shrink as the count rises to fit
+   the limited space.
+6. Delete `PropVisual._draw_fire_tips()` once shader fire ships. (Done.)
+7. FX is shared across all views — what it looks like on the board is what it looks like
+   everywhere else.
+8. One resource and shared location for all visual-effect tuning, rather than hunting shader by
+   shader.
+9. Embers must not follow a flaming object that leaves the area — so, particles.
+10. Allow the focus highlight on effects.
+11. Balls all pass IN FRONT of the card, one layer, no depth split.
+12. The pattern speeds up as ball count rises.
+13. The loop is centred on the card: the bottom arc rides the card's centre, the top arc peaks
+    above the card.
+14. Flame colour shifts with stack count.
+15. "No burning object, just overlay" — fire never tints or chars its host.
+16. Stack increases and decreases transition SMOOTHLY; no jump in visuals.
+17. A burning ball does not transfer its status effect to the card — no hand-off flourish, and no
+    `StatusBurning` is granted by a landing ball.
+18. Any view that shows cards shows their status effects; a status should not be hidden behind
+    selecting and reading a description.
+19. `FX_LEVEL_REF` is "a high number like 100+", as long as it stays tunable.
+20. Balls do NOT shift colour with count.
+21. Ball fire and card fire are SEPARATE effects — a ball's flame level comes from the BALL, never
+    from the card's Burning.
+22. Transition speed metric: fast enough to finish before the next status effect can be applied.
+23. A card flipped face-down hides its status effects — a hidden card reveals zero information.
+24. Juggling keeps happening while the card is moving; no freezing ever, on any effect.
+25. Balls spin, faster as stacks increase. No trails — too noisy.
+
+- **Universal VFX rule (2026-07-27): no VFX pixel grid ever rotates** — fire, balls, particles, or
+  anything added later. Mechanically: **quantize first, rotate after.** Snap the sample point to
+  the grid in the quad's own world-aligned space and let every rotation act on the
+  already-quantized coordinate. Rotating a frame BEFORE quantizing rotates the grid (diagonal
+  pixels — never); rotating AFTER moves content through a fixed grid (chunky pixels that stay
+  square while the thing they depict turns — always). This extends to `ParticleEngine`: the
+  MultiMesh transform carries position and uniform scale only, never per-instance rotation.
 
 Sharp edges:
 - `stage` does triple duty: logical location, animation origin (`previous_stage`), S6

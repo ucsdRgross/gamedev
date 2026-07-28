@@ -1,0 +1,51 @@
+class_name FxRequest
+extends RefCounted
+## One visual effect a host is asked to render: which shader draws it, how far past the host's
+## silhouette it reaches, and the live per-frame uniform values. Statuses build these in
+## CardModifierStatus.fx_request(), mirroring the draw_icon idiom — so FxAttachment never learns
+## which effects exist and adding a visual status is a new class, not an edit to the FX layer.
+
+## Stable key for this effect on its host. FxAttachment keys its quads by it, so a request that
+## keeps its id across a refresh RETUNES its quad instead of rebuilding it (and its material).
+var id : StringName = &""
+
+## The compiled shader that draws this effect, SHARED across every host. Never duplicated — a
+## duplicated Shader recompiles per card; the per-node state is the ShaderMaterial, not the Shader.
+var shader : Shader = null
+
+## The static art levers, written to the material once on creation and on style swap.
+var style : FxStyle = null
+
+## Which emitter this effect decorates: an FxAttachment.Mode value. Typed as int rather than as
+## the enum so FxRequest and FxAttachment do not reference each other's class_names in a cycle.
+var mode : int = 0
+
+## How far the effect reaches BEYOND the host's silhouette, in art units. Sizes the quad together
+## with the host's body, so a taller flame gets a taller quad instead of clipping at its edge.
+var reach : float = 0.0
+
+## Data-derived FLOAT uniforms (u_count, u_level, u_intensity, u_height, ...). These are EASED:
+## when the data changes, the effect slides from its old values to the new ones over one
+## transition, so a stack change never makes the visuals jump (owner ruling 16). Everything here
+## must therefore be continuously meaningful — the stack count included, which is why the shader
+## takes it as a float.
+var live : Dictionary[StringName, float] = {}
+
+## Seconds for one cycle of this effect's phase clock, or 0 for effects that have no phase. The
+## ATTACHMENT owns the clock, not the request: a card's balls and the fire riding those balls must
+## read the SAME phase, and two independently advanced phases would drift apart within seconds.
+var phase_period : float = 0.0
+
+## Data-derived uniforms that must be applied WHOLE (ints, textures, vectors) — anything a lerp
+## would make meaningless. Written when the data changes and not eased.
+var snap : Dictionary[StringName, Variant] = {}
+
+## Build a request inline. Keeps status fx_request() overrides to a single expression.
+static func make(effect_id: StringName, effect_shader: Shader, effect_style: FxStyle,
+		effect_reach: float) -> FxRequest:
+	var req := FxRequest.new()
+	req.id = effect_id
+	req.shader = effect_shader
+	req.style = effect_style
+	req.reach = effect_reach
+	return req

@@ -46,6 +46,57 @@ regression-critical residue in ARCHITECTURE_REVIEW.md instead of keeping a log h
 - Win/lose screen font (226px) clips long "Fame +N" text. game.tscn grabs no initial
   focus (keyboard/controller players must click first).
 
+## Shader FX (landed 2026-07-27 — owner playtest pending; see ARCHITECTURE_REVIEW §4g)
+
+- **Picking this up? Read [FX_HANDOFF.md](FX_HANDOFF.md) first** — state, open bugs, the exact
+  commands, and the traps already paid for. New owner requirements (spherical balls, onion-layered
+  fire, adjustable heights, and a universal palette system) are T17–T21 in FX_SHADER_PLAN.md §7.
+- **⚠ OPEN BUG — ball positions disagree with the spec at LOW ball counts.** Run
+  `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` and look at `05_balls.png` and
+  `05b_ball_path.png`: the green crosses are an independent GDScript oracle transcribed from the
+  spec, and at 50 balls the balls sit on them while at 1 ball the rendered ball is nowhere near
+  its cross. The uniforms reaching the material are all correct (verified by the harness's own
+  print: phase 0.13, count 1, span 30.4, arc 37.5, return 6, top_fraction 0.6), and the call sites
+  of `fx_ball_at` pass their arguments in the declared order — so the fault is inside
+  `fx_nearest_ball` / the `juggle.gdshader` fragment, most likely in the index recovery when
+  `count` is 1 (every candidate wraps to the same index, so a wrong branch cannot be caught by
+  disagreement between candidates). **Fire is unaffected**; this is balls only. Start from
+  `05b_ball_path.png`, which traces one ball around the whole cycle phase by phase.
+- Once that is fixed, re-check `06_ball_fire.png`: whether the plumes are welded to their balls
+  cannot be judged while the balls themselves are misplaced.
+
+- **Owner verification, in-game.** Shader pixels are not headless-testable — the dummy renderer
+  never compiles a program — so nothing below has been seen running. Walk: 1/3/40 Burning stacks
+  on a card (one full-width triangle → three tendrils → a fierce sheet, never 40 slivers);
+  the same 1 stack on a knife (honestly small, still a triangle); a burning card partly behind
+  another (flames cut exactly where it is covered, never painted over the card in front); the
+  deck viewer (identical, scaled); a fast drag then stop (flames trail, whip past, settle — and no
+  jitter when idle); 5 balls with 2 lit (exactly 2 plumes, welded, at every speed and under
+  compression) while a burning card with unlit balls shows NO ball fire; balls spinning out of
+  sync; the closed loop peaking above the card's top edge and returning across its centre; adding
+  and removing stacks one at a time (nothing jumps, the last one fades); flipping face-down
+  (everything disappears); 50 juggling stacks (balls shrink, arc grows, frame rate unchanged);
+  dragging a burning card (embers stay where they were dropped); a burning hoop threading a card
+  (flames upright, back-arc flames behind the card, card still passes through); focusing a burning
+  card (card and flames brighten together); undo mid-act (everything clears, embers finish).
+- **The numbers to settle by eye**, all single tunables: `FxFire.FX_MAX_TENDRILS` (12),
+  `FxStyle.level_ref` (120 card / 60 prop / 40 ball), `settings.fx_transition_fraction` (0.6),
+  `ParticleEngine.MAX_PARTICLES` (1024), `FxStyle.ember_rate_max` (24/s), ball spin base and
+  its per-count coefficient, and the ~35 art levers in the `Shaders/Styles/*.tres` presets.
+- **Fill rate is the one unmeasured risk** and it needs a real GPU to measure: 20 burning cards on
+  the board, then 50 in the deck viewer, read the frame time. If it measures badly, spend the
+  levers in this order — raise `FxStyle.pixel` (chunkier FX pixels is a LOOK change, not a
+  capability loss) → drop `fx_fbm` to one octave → cap `FxStyle.height` to shrink the quads → and
+  only then reconsider one-quad-per-effect. Do not start by cutting features.
+- **Motion lag is tier 1** (one spring). The 8-sample position history that gives a real S-curve
+  is only worth building if a single arc reads flat — show the owner tier 1 first.
+- `Shaders/Styles/` now holds FxStyle presets AND `ember.tres` (a ParticleSpec), which makes the
+  folder name wrong. Everything lives in ONE place, which is what the ruling asked for; renaming
+  the tree to `res://Fx/` is a separate mechanical change.
+- `FxAttachment.measure_silhouette` samples the card's authored/baked outline once. Live per-frame
+  BONE deformation from the star rig is not tracked — re-call it if anything ever re-bakes a card
+  shape at runtime.
+
 ## Patience & rerolls (landed 2026-07-20 — owner playtest pending)
 
 - Tune `patience_max` (ships 3) and the per-stage `patience_influence_*` flags (ships PLAY

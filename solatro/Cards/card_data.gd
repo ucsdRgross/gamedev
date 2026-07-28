@@ -86,7 +86,10 @@ func with_stamp(stamp:CardModifier) -> CardData:
 func add_status(status: CardModifierStatus) -> void:
 	for existing: CardModifierStatus in statuses:
 		if existing.can_merge_with(status):
-			existing.stacks += status.stacks   # setter emits data_changed
+			# Not `stacks +=`: a status carrying per-stack data must extend it in the SAME
+			# operation, which is what merge_from exists for. The stacks setter still emits
+			# data_changed.
+			existing.merge_from(status)
 			return
 	if status.data != null and status.data != self:
 		status = status.duplicate() as CardModifierStatus

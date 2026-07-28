@@ -78,6 +78,51 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
 
 ---
 
+## Shader FX is a CHILD of its host (2026-07-27)
+
+Status effects (fire, juggled balls) render as shader quads on an `FxAttachment`, and it is a
+**child of the host**, never a board-level layer:
+
+```
+CardVisual
+├─ Offset
+│  ├─ Visual  (Type / Rank / Suit / Stamp / Art / StatusLayer)
+│  └─ Fx      ← FxAttachment, added AFTER Visual: draws above the card's own face
+```
+
+Godot draws a parent before its children and a whole subtree before the next sibling, so this
+gives every requirement at once with no coordination between systems:
+
+- draws over its own card (later child than `Visual`);
+- **is occluded by the cards that overlap it** — card *and* FX draw before the next CardVisual in
+  CardLayer, so a later card paints over both (owner ruling 2);
+- exists in **every view** that shows a card (deck viewer, pack preview, map) for free, since the
+  FX is part of the card;
+- rides the jump, the card's scale and the focus-highlight `modulate` by inheritance.
+
+**`CardLayer` stays strictly CardVisuals** (plus the hoop half-nodes it already brackets). No FX
+node is ever inserted into it, and no `z_index` is touched anywhere — this is pure parent/child
+nesting, the most structural ordering primitive there is.
+
+Three rules that are load-bearing:
+
+- **Parent to `Offset`, never to `Visual`.** `Visual` carries the `basis3d` flip, which squashes
+  its basis to ZERO at edge-on; an FX quad there would inherit a singular matrix.
+- **Never `top_level = true`.** `set_as_top_level` re-attaches the item to the canvas root for
+  *rendering*, not just for transforms — it would leave the draw order entirely and break the
+  occlusion rule above. The quad cancels its inherited *rotation* instead (see below).
+- **The quad holds still; the silhouette turns inside it.** `FxAttachment` sets
+  `rotation = -parent.global_rotation` and passes that rotation to the shader as `u_shape_rot`.
+  Flames are gravity-aligned, and this is what stops the FX pixel grid shearing against them.
+
+**Split props inherit the split for free.** A hoop gets one attachment per `_PropHalf` bracket
+node instead of one on its body, so the ring's back-arc flames sit behind the occupied card
+exactly as its back arc does; a `u_half` uniform masks each half's emitters.
+
+**`ParticleLayer`** (`ParticleEngine`) is a plain `Node2D` sibling in TopLevelVBox, between
+`PropLayer` and `OverlayLayer`. Its particles are world debris with no host to be occluded by, so
+the ruling-2 logic does not apply to them.
+
 ## Every moment the order can change
 
 - **Board rebuild** (`board_changed` → `queue_rebuild` → `set_card_zones_visuals` →
@@ -182,3 +227,9 @@ CardLayer → PropLayer → OverlayLayer sibling order; CardVisuals row-major; a
 all cards; a held card above resting cards; StatusLayer above the face; the overlay above
 everything; and the hoop's **back half below its occupied card and above the row above, front
 half in front** (the card passes through the ring).
+
+It also asserts the FX placement above: a burning card's `FxAttachment` is a child of `Offset`,
+draws above the card's own `Visual`, carries no `z_index`, and disappears entirely when the card
+turns face-down. `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT") covers the rest of the FX
+contract standalone — no board and no game, which is the same thing that makes the effects
+identical in every view.

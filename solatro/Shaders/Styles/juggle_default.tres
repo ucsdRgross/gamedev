@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FxStyle" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+
+[resource]
+script = ExtResource("1_fxstyle")
+pixel = 1.0
+ball_radius = 3.0
+ball_radius_min = 1.0
+ball_span = 30.4
+ball_arc_height = 37.5
+ball_return_height = 6.0
+ball_top_fraction = 0.6
+ball_period_fraction = 1.2
+ball_spin = 2.0
+ball_spin_per_count = 0.35
+ball_lit = Color(1, 0.82, 0.35, 1)
+ball_shade = Color(0.72, 0.45, 0.12, 1)
+ball_gloss = Color(1, 0.98, 0.85, 1)
+opacity = 1.0
