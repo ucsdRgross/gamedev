@@ -1,6 +1,6 @@
 [gd_resource type="VisualShader" format=3 uid="uid://nme8n2abyqji"]
 
-[ext_resource type="Texture2D" uid="uid://df04bywrhiuov" path="res://Assets/CircusCamping.png" id="1_qsgdn"]
+[ext_resource type="Texture2D" uid="uid://fltq1addh8no" path="res://Assets/CircusCrayon.png" id="1_qsgdn"]
 
 [sub_resource type="VisualShaderNodeTexture" id="VisualShaderNodeTexture_ttgoy"]
 output_port_for_preview = 0
@@ -18,7 +18,7 @@ hint = 2
 [sub_resource type="VisualShaderNodeIntParameter" id="VisualShaderNodeIntParameter_ss1qu"]
 parameter_name = "num_colors"
 default_value_enabled = true
-default_value = 24
+default_value = 32
 
 [sub_resource type="VisualShaderNodeFloatOp" id="VisualShaderNodeFloatOp_0ncq2"]
 default_input_values = [0, 0.0, 1, 0.5]
