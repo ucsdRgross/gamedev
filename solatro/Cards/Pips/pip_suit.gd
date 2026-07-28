@@ -13,11 +13,17 @@ signal data_changed
 const SUIT_TEXTURE : Texture2D = preload("res://Assets/suit_pips.png")   # 8x8 frames
 const SUIT_TEXTURE_H_FRAMES : int = 8
 const SUIT_TEXTURE_V_FRAMES : int = 8
+## One pip frame in source texels. Public because the Ball and Fire PROPS draw the very same frames
+## (ball_visual.gd / fire_visual.gd) and must size their art off the same number.
+const SUIT_FRAME_PX := Vector2(8, 8)
 const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")     # 13x13 frames
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
 const COLOR_PICKER_SHADER = preload("res://Assets/color_picker.tres")
-## Palette colour by suit index; 5th (Firework) is placeholder art. TODO real Firework art.
+## Palette index per suit, for the polygons that are RECOLOURED (rank pips and card art — both drawn
+## as single-colour silhouettes shared by every suit). The suit PIP itself is not in that list: its
+## frames are painted in the palette already, so it draws its own colours (owner 2026-07-27).
+## 5th (Firework) is placeholder art. TODO real Firework art.
 const PALETTE : Array[int] = [30, 11, 8, 2, 14]
 
 ## 0..4 — art/palette slot ONLY, never orderable.
@@ -28,11 +34,17 @@ const PALETTE : Array[int] = [30, 11, 8, 2, 14]
 
 func get_frame() -> int: return get_suit_index()
 
+## The suit PIP draws the sheet's own colours: suit_pips.png is authored in the palette (each frame
+## already shaded with its suit's ramp), so recolouring it would flatten that shading to one flat
+## index. Material explicitly cleared, not left alone — these polygons are POOLED and reused across
+## cards, so a stale ShaderMaterial from a previous binding would otherwise survive.
 func set_texture(polygon2d:Polygon2D) -> void:
 	CardModifier.update_polygon_uv_frame(
 		polygon2d, SUIT_TEXTURE, SUIT_TEXTURE_H_FRAMES, SUIT_TEXTURE_V_FRAMES, get_suit_index())
-	set_material(polygon2d)
+	polygon2d.material = null
 
+## Recolour `polygon2d` to this suit's palette entry — for the SUIT-AGNOSTIC art it shares with
+## every other suit (the rank pip and the card art), never for the suit pip itself.
 func set_material(polygon2d:Polygon2D) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = COLOR_PICKER_SHADER

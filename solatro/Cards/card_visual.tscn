@@ -462,17 +462,10 @@ _data = {
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0xvu6"]
 shader = ExtResource("8_uqrsc")
 shader_parameter/color_x = 8
-shader_parameter/num_colors = 20
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_v4ikb"]
-shader = ExtResource("8_uqrsc")
-shader_parameter/color_x = 8
-shader_parameter/num_colors = 20
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dmau8"]
 shader = ExtResource("8_uqrsc")
 shader_parameter/color_x = 8
-shader_parameter/num_colors = 20
 
 [node name="CardVisual" type="Node2D" unique_id=758458623 groups=["CardVisual"]]
 scale = Vector2(3, 3)
@@ -513,7 +506,6 @@ internal_vertex_count = 1
 
 [node name="Suit" type="Polygon2D" parent="Offset/Visual" unique_id=655054366]
 visible = false
-material = SubResource("ShaderMaterial_v4ikb")
 position = Vector2(12, -17)
 texture = ExtResource("10_2gib3")
 skeleton = NodePath("../Skeleton2D")

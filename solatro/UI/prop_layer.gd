@@ -369,10 +369,10 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 			vis.anchor_coord = anchor
 			vis.anchor_point = _slot_point(anchor)
 		if vis.face_travel and prop.route.size() >= 2:
-			# Point directional art down the travel axis from the start (retarget only
-			# rotates on a real move, and the staged pose is stationary).
+			# Face directional art down the travel axis from the start (retarget only flips
+			# on a real move, and the staged pose is stationary).
 			var dir := _slot_point(prop.route[1]) - _slot_point(prop.route[0])
-			if dir.length() > 1.0: vis.rotation = dir.angle()
+			if absf(dir.x) > 1.0: vis.flipped = dir.x > 0.0
 	for entry: Array in relocated:
 		var moved : PropData = entry[0]
 		if moved in _visuals:

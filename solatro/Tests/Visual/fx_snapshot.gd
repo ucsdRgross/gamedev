@@ -62,6 +62,8 @@ func _run() -> void:
 	await _shot("05_balls", "juggling 1 / 3 / 8 / 50 balls", _balls())
 	await _shot("05b_ball_path", "ONE ball traced around the cycle: phase 0 .. 0.875",
 			_ball_path())
+	await _shot("05c_ball_sphere", "ONE ball, big to small: banded curvature + on-surface highlight",
+			_ball_sphere())
 	await _shot("06_ball_fire", "per-ball fire: 5 balls, 2 lit at different levels", _ball_fire())
 	await _shot("07_transition", "a stack change mid-ease: fractional counts 1.0 -> 4.0",
 			_transition())
@@ -144,18 +146,29 @@ func _fire_wrap() -> Array[Case]:
 ## one side only (that is how a hoop's back-arc flames stay behind the card it is threading).
 func _shapes() -> Array[Case]:
 	var out : Array[Case] = []
-	var ring := _case("ring", Vector2(18, 18), FxAttachment.Shape.RING, FxAttachment.Half.WHOLE,
-			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)])
-	out.append(ring)
-	out.append(_case("blade", Vector2(20, 8), FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+	# The REAL prop bodies, read off the visuals rather than retyped: the hoop's art is a
+	# foreshortened OVAL (much taller than wide), so a hardcoded square here would have hidden the
+	# fact that SHAPE_RING was a circle of the body's half-WIDTH and sat the flames inside the arc.
+	var ring_body := _body_of(HoopVisual.new())
+	var blade_body := _body_of(KnifeVisual.new())
+	out.append(_case("ring", ring_body, FxAttachment.Shape.RING, FxAttachment.Half.WHOLE,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
-	out.append(_case("ring BACK half", Vector2(18, 18), FxAttachment.Shape.RING,
+	out.append(_case("blade", blade_body, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
+	out.append(_case("ring BACK half", ring_body, FxAttachment.Shape.RING,
 			FxAttachment.Half.BACK,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
-	out.append(_case("ring FRONT half", Vector2(18, 18), FxAttachment.Shape.RING,
+	out.append(_case("ring FRONT half", ring_body, FxAttachment.Shape.RING,
 			FxAttachment.Half.FRONT,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
 	return out
+
+## A prop kind's authored body footprint. The visual is built only to be asked and then released —
+## these are Nodes, and an orphan Node is a leak the suite's canary would report.
+func _body_of(vis: PropVisual) -> Vector2:
+	var body := vis.body_size
+	vis.free()
+	return body
 
 ## The pattern must read as a CLOSED LOOP: a tall arc peaking above the card's top edge and a
 ## shallow return across the card's centre, roughly half the balls travelling each way.
@@ -176,6 +189,28 @@ func _ball_path() -> Array[Case]:
 		var case := _card_case("phase %.3f" % ph, FxJuggle.requests(1, PackedInt32Array(),
 				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 		case.phase = ph
+		out.append(case)
+	return out
+
+## Is a ball a SPHERE? Only a BIG one can answer: at the shipped radius a ball is 6 art units across
+## and any shading reads as "a warm blob". So the pattern is collapsed to almost nothing (the quad is
+## sized by the arc height, which is what holds the zoom down) and the radius swept from huge to the
+## 1-pixel floor. What to look for: bands that CURVE around the light with a bent terminator, a
+## highlight sitting on the surface rather than centred, and a ball that is still legible at r = 1.
+func _ball_sphere() -> Array[Case]:
+	var out : Array[Case] = []
+	for radius : float in [14.0, 7.0, 3.0, 1.0]:
+		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+		style.ball_radius = radius
+		style.ball_radius_min = radius
+		# Park the ball at the top of the throw and flatten the loop, so the quad is small and the
+		# zoom can be large. Geometry only — none of it touches the shading under test.
+		style.ball_span = 1.0
+		style.ball_arc_height = 1.0
+		style.ball_return_height = 1.0
+		var case := _card_case("r = %.0f" % radius, FxJuggle.requests(1, PackedInt32Array(),
+				style, StatusJuggling.BALL_FIRE_STYLE))
+		case.phase = 0.3
 		out.append(case)
 	return out
 
@@ -251,6 +286,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var size := get_viewport_rect().size
 	var step := size.x / float(cases.size())
 	var zoom := _zoom_for(cases, step)
+	var probes : Array[_Probe] = []
 	for i : int in cases.size():
 		var case : Case = cases[i]
 		var slot := Node2D.new()
@@ -263,18 +299,32 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		var ghost := _Ghost.new()
 		ghost.body = case.body
 		ghost.ring = case.shape == FxAttachment.Shape.RING
+		ghost.px = 1.0 / maxf(zoom, 0.01)
 		slot.add_child(ghost)
 		ghost.balls = _oracle(case)
+		if not ghost.balls.is_empty():
+			var probe := _Probe.new()
+			probe.label = case.label
+			probe.origin = slot.position
+			probe.zoom = zoom
+			probe.expected = ghost.balls
+			probes.append(probe)
 		var att := FxAttachment.new()
 		att.configure(case.body, true, case.shape, case.half, false)
 		slot.add_child(att)
 		att.sync(case.requests)
 		# Park the clock by hand: driving it from real frame deltas would make every run differ,
 		# and a snapshot that changes on its own cannot be diffed.
-		att.set_process(false)
+		#
+		# ⚠ ORDER MATTERS, and getting it wrong is what a whole debugging pass mistook for a shader
+		# bug: `_push_live` ENDS with `set_process(not _fx.is_empty())`, so disabling the process
+		# BEFORE pushing silently re-enables it, the two frames awaited below then advance `_phase`
+		# and `_time` by real deltas, and every ball ends up ~0.15 of a cycle past the phase the
+		# oracle (and the print below) were told about. Disable the process LAST.
 		att._time = SHOT_TIME
 		att._phase = case.phase if case.phase >= 0.0 else 0.13
 		att._push_live(0.0)
+		att.set_process(false)
 		_label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
 		for id : StringName in att._fx:
 			var m := (att._fx[id].quad as MeshInstance2D).material as ShaderMaterial
@@ -295,6 +345,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var path := "%s/%s.png" % [OUT_DIR, file_name]
 	img.save_png(path)
 	print("wrote ", ProjectSettings.globalize_path(path))
+	for probe : _Probe in probes: _report(img, probe)
 	holder.queue_free()
 	await get_tree().process_frame
 
@@ -310,6 +361,56 @@ func _zoom_for(cases: Array[Case], step: float) -> float:
 		for req : FxRequest in case.requests:
 			widest = maxf(widest, case.body.length() + (req.reach + FxAttachment.FX_MARGIN) * 2.0)
 	return minf(ZOOM_MAX, step * 0.98 / widest)
+
+# ------------------------------------------------------ measuring the capture, not eyeballing it
+# The oracle CROSSES are drawn at 0.5 art units of width, which at the zooms a ball quad forces
+# (~1.0) rounds to half a pixel — Godot drops those lines, so half of every cross is missing from
+# the PNG and "does the ball sit on its cross" cannot be judged by eye at all. Two sessions of
+# ball-position debugging were spent measuring the images by hand instead. So the harness now
+# measures ITSELF: it converts each expected position into image pixels, finds the rendered ball
+# nearest to it, and prints the disagreement in ART UNITS. That is the number to read.
+
+## One case's expectation, kept until the frame has been captured.
+class _Probe:
+	var label : String = ""
+	## Slot origin in CANVAS units, and the slot's art-unit-to-canvas blow-up.
+	var origin : Vector2 = Vector2.ZERO
+	var zoom : float = 1.0
+	var expected : PackedVector2Array = PackedVector2Array()
+
+## Ball pixels are the only warm colour on screen (the ghost is blue-grey, the crosses green, the
+## backdrop neutral), so classifying by hue alone separates them with no radius or centre guessing.
+static func _is_ball(c: Color) -> bool:
+	return c.r > 0.45 and c.r > c.b * 1.6 and c.g > c.b
+
+## Print, per expected ball, how far the nearest RENDERED ball pixel actually is — in art units, the
+## units the spec is written in. `--` means nothing warm was found within the search window at all.
+func _report(img: Image, probe: _Probe) -> void:
+	# The captured image is the WINDOW, while the layout above is in CANVAS units
+	# (window/stretch/mode = canvas_items), so every conversion goes through this ratio.
+	var to_img := float(img.get_width()) / get_viewport_rect().size.x
+	var reach := int(ceilf(24.0 * probe.zoom * to_img))
+	for i : int in probe.expected.size():
+		var want : Vector2 = (probe.origin + probe.expected[i] * probe.zoom) * to_img
+		var best := Vector2.ZERO
+		var best_d := 1e9
+		for dy : int in range(-reach, reach + 1):
+			for dx : int in range(-reach, reach + 1):
+				var at := Vector2i(int(want.x) + dx, int(want.y) + dy)
+				if at.x < 0 or at.y < 0 or at.x >= img.get_width() or at.y >= img.get_height():
+					continue
+				if not _is_ball(img.get_pixelv(at)): continue
+				var d := Vector2(at) - want
+				if d.length_squared() < best_d:
+					best_d = d.length_squared()
+					best = d
+		var off := best / (probe.zoom * to_img)   # back into art units
+		if best_d > 1e8:
+			print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
+					" -> NO BALL within ", 24.0, " art units")
+		else:
+			print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
+					" -> nearest rendered ball offset by art (%.1f, %.1f)" % [off.x, off.y])
 
 ## TEST-ONLY ORACLE. A second, independent implementation of the ball path, in GDScript, used
 ## ONLY to draw the expected positions into the snapshot. Duplicating the motion maths is
@@ -354,21 +455,35 @@ class _Ghost extends Node2D:
 	var ring : bool = false
 	## Independent expected ball positions, drawn as crosses.
 	var balls : PackedVector2Array = PackedVector2Array()
+	## ART UNITS PER SCREEN PIXEL for this slot (1 / the shot's zoom). Every line width below is a
+	## multiple of it, so the outline and the crosses are always ~2 px thick on screen. Fixed 0.5-unit
+	## widths were sub-pixel at the zoom a ball quad forces (~1.0) and Godot DROPPED them: half of
+	## every cross and both horizontal edges of the outline were simply missing from the PNG, which
+	## is what made "does the ball sit on its cross" unjudgeable and sent the last pass measuring
+	## pixels by hand.
+	var px : float = 1.0
 	func _draw() -> void:
 		var col := Color(0.45, 0.5, 0.6)
 		if ring:
-			draw_arc(Vector2.ZERO, body.x * 0.5, 0.0, TAU, 32, col, 0.6, true)
+			# An ELLIPSE inscribed in the body, not a circle of its half-width: the hoop's art is a
+			# foreshortened oval, and the reference has to be the shape the shader claims to hug.
+			var pts := PackedVector2Array()
+			for i : int in 33:
+				var a := TAU * float(i) / 32.0
+				pts.append(Vector2(cos(a) * body.x * 0.5, sin(a) * body.y * 0.5))
+			draw_polyline(pts, col, 2.0 * px)
 		else:
-			draw_rect(Rect2(-body * 0.5, body), col, false, 0.6)
+			draw_rect(Rect2(-body * 0.5, body), col, false, 2.0 * px)
 		# A centre line: the juggling loop's shallow return arc is specified to ride the card's
 		# CENTRE, and that is impossible to eyeball without it.
 		draw_line(Vector2(-body.x * 0.5, 0.0), Vector2(body.x * 0.5, 0.0),
-				Color(0.35, 0.4, 0.5, 0.7), 0.4)
+				Color(0.35, 0.4, 0.5, 0.7), 1.5 * px)
 		# The oracle: where the balls are SUPPOSED to be. A cross that does not sit on a ball is a
 		# disagreement between the shader and the spec, readable at a glance and with no pixel
 		# measuring — which is what this harness could not do before and cost a long debugging
 		# detour.
 		for b : Vector2 in balls:
 			var c := Color(0.4, 1.0, 0.6)
-			draw_line(b - Vector2(2.0, 0.0), b + Vector2(2.0, 0.0), c, 0.5)
-			draw_line(b - Vector2(0.0, 2.0), b + Vector2(0.0, 2.0), c, 0.5)
+			var arm := maxf(2.5, 4.0 * px)
+			draw_line(b - Vector2(arm, 0.0), b + Vector2(arm, 0.0), c, 1.5 * px)
+			draw_line(b - Vector2(0.0, arm), b + Vector2(0.0, arm), c, 1.5 * px)

@@ -61,9 +61,9 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
    │  │     │       jump/drag/float. The card passes THROUGH the ring.
    │  │     ├─ PropLayer (Node2D, z 0)              [later sibling than CardLayer → above ALL cards]
    │  │     │   └─ PropVisual per live prop (order = add/tree order)
-   │  │     │       └─ _draw(): non-split → whole body here (above all cards); split (hoop) →
-   │  │     │          only _draw_fire_tips() here, both arcs drawn by its two _PropHalf nodes
-   │  │     │          bracketing the occupied card in CardLayer (above)
+   │  │     │       └─ _draw(): non-split → whole body here (above all cards); split (hoop) while
+   │  │     │          over a card → nothing here, both arcs drawn by its two _PropHalf nodes
+   │  │     │          bracketing the occupied card in CardLayer (above); off-card → whole body here
    │  │     └─ OverlayLayer (Node2D, z 0)           [LAST sibling → always on top of the board]
    │  │        ├─ Focus inspector panel (PanelContainer)   — no z; tree order
    │  │        └─ Score TextPopup (Node2D, transient)      — no z; tree order
@@ -202,9 +202,12 @@ the ruling-2 logic does not apply to them.
    it as two `_PropHalf` nodes that BRACKET the occupied card in CardLayer (back just below, front
    just above), so the card passes through the ring and the front stays behind the row below.
    Non-split props still draw their whole body on the PropVisual (above all cards).
+   Since the real hoop art landed (2026-07-27) the halves are the sheet's LEFT and RIGHT arcs — the
+   ring is a foreshortened oval, so left is its far side and right its near side (ARCHITECTURE_REVIEW
+   §4h). The bracket mechanism is unchanged; only which pixels each half draws moved.
 5. **Scattered absolute-z constants (cards 1..N, props 100, popup 100, panel 300, status 1).**
    ✅ **All removed.** The whole board draw path is tree/sibling structure; the only new named
-   constants are the hoop's art geometry (`RING_SEGMENTS/RING_WIDTH/SPLIT_TOP/SPLIT_BOTTOM`),
+   constants are the hoop's art geometry (`HoopVisual.SHEET`/`FRAME_PX` — the sheet's frame size),
    which are draw parameters, not layer numbers.
 6. **Score popup and props shared z 100 on different parents.** ✅ The popup is an OverlayLayer
    child (last sibling), unambiguously above every prop.

@@ -38,6 +38,13 @@ extends Resource
 ## outline inflects and turns in. Together they are the arch — see tendril() in fire.gdshader.
 @export_range(0.2, 3.0, 0.01) var ogee_point : float = 1.0
 @export_range(0.2, 3.0, 0.01) var ogee_flare : float = 0.35
+## The ONION SHELLS (owner 2026-07-27: "each layer wraps around the other, like actual candle
+## lights"). Heat is distance ACROSS the flame relative to its own half-width at that height, so
+## every colour band is a scaled copy of the outline. `power` shapes the shells — below 1 fattens
+## the hot core, above 1 thins it to a filament — and `rise` is the WEAK height term that cools the
+## tip. Height must stay the secondary term: leading with it is what stacked the colours in rows.
+@export_range(0.25, 4.0, 0.01) var onion_power : float = 1.0
+@export_range(0.0, 1.0, 0.01) var onion_rise : float = 0.35
 ## How far the flame base sinks INTO the body, which is what guarantees no seam at the contour.
 @export var sink : float = 2.0
 ## 3-tap max so neighbouring tendrils fuse into a sheet instead of showing a V-notch between
@@ -112,6 +119,15 @@ extends Resource
 @export var ball_lit : Color = Color(1.0, 0.82, 0.35)
 @export var ball_shade : Color = Color(0.72, 0.45, 0.12)
 @export var ball_gloss : Color = Color(1.0, 0.98, 0.85)
+## SPHERE shading (owner 2026-07-27: "balls need to be spherical"). `bands` is how many hard tones
+## the curvature is quantized into, spanning shade -> lit; `light` is the direction the light comes
+## from in ART space (-y is UP, as everywhere else in 2-D) and `light_z` how head-on it is; `spec`
+## is the highlight threshold — higher is a tighter dot. The spin rotates this whole frame, so the
+## bands and the highlight sweep round the ball as it rolls.
+@export_range(2, 8, 1) var ball_bands : int = 3
+@export var ball_light : Vector2 = Vector2(-0.45, -0.6)
+@export_range(0.05, 2.0, 0.01) var ball_light_z : float = 0.65
+@export_range(0.5, 0.999, 0.001) var ball_spec : float = 0.965
 
 @export_group("Embers")
 ## Embers per second from a SINGLE host, however many stacks it carries — a per-source ceiling so
@@ -133,6 +149,8 @@ func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_base_width", base_width)
 	mat.set_shader_parameter(&"u_ogee_point", ogee_point)
 	mat.set_shader_parameter(&"u_ogee_flare", ogee_flare)
+	mat.set_shader_parameter(&"u_onion_power", onion_power)
+	mat.set_shader_parameter(&"u_onion_rise", onion_rise)
 	mat.set_shader_parameter(&"u_sink", sink)
 	mat.set_shader_parameter(&"u_merge", 1 if merge else 0)
 	mat.set_shader_parameter(&"u_sway_amp", sway_amp)
@@ -158,3 +176,7 @@ func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_lit", ball_lit)
 	mat.set_shader_parameter(&"u_shade", ball_shade)
 	mat.set_shader_parameter(&"u_gloss", ball_gloss)
+	mat.set_shader_parameter(&"u_ball_bands", ball_bands)
+	mat.set_shader_parameter(&"u_ball_light", ball_light)
+	mat.set_shader_parameter(&"u_ball_light_z", ball_light_z)
+	mat.set_shader_parameter(&"u_ball_spec", ball_spec)

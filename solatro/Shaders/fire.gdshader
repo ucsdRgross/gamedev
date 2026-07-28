@@ -71,6 +71,11 @@ uniform float u_base_width : hint_range(0.1, 2.0) = 1.0;
 // shoulders bulge further out before the curve turns in toward the point.
 uniform float u_ogee_point : hint_range(0.2, 3.0) = 1.0;
 uniform float u_ogee_flare : hint_range(0.2, 3.0) = 0.35;
+// The ONION shells (see tendril()): power shapes them (< 1 fattens the core, > 1 thins it to a
+// filament), rise is the WEAK height term that cools the tip. Height must never be the main term —
+// that is what stacked the colours in rows instead of wrapping them.
+uniform float u_onion_power : hint_range(0.25, 4.0) = 1.0;
+uniform float u_onion_rise : hint_range(0.0, 1.0) = 0.35;
 uniform float u_sink = 2.0;
 uniform int u_merge = 0;
 uniform float u_sway_amp = 0.35;
@@ -100,7 +105,14 @@ uniform float u_dither = 0.0;
 // adding a prop shape is one branch here and touches nothing else.
 float shape_radius(float a) {
 	float th = a - u_shape_rot;                       // rotate the LOOKUP, never the pixel grid
-	if (u_shape == SHAPE_RING) return u_body.x * 0.5;
+	if (u_shape == SHAPE_RING) {
+		// An ELLIPSE, not a circle: the hoop's art is a foreshortened ring (32x72 texels), so a
+		// circle of its half-WIDTH would sit the flames deep inside the real arc. r = ab / |(b·dx,
+		// a·dy)|, which collapses back to the radius when the body is square.
+		vec2 h = max(u_body * 0.5, vec2(1e-4));
+		vec2 d = vec2(sin(th), -cos(th));
+		return (h.x * h.y) / max(length(vec2(h.y * d.x, h.x * d.y)), 1e-4);
+	}
 	if (u_shape == SHAPE_RADII) {
 		float t = (th / TAU + 1.0) * float(RADII);
 		int i0 = int(floor(t)) % RADII;
@@ -162,9 +174,12 @@ float box_contour(float x, float sgn) {
 // deformation; if deep stars must be hugged, raise the iteration count.
 float contour_y(float x, float sgn) {
 	if (u_shape == SHAPE_RING) {
-		float r = u_body.x * 0.5;
-		float d = r * r - x * x;
-		return d <= 0.0 ? sgn * 1e9 : sgn * sqrt(d);
+		// Exact for the ellipse of shape_radius. Rotation is ignored here (the ring kinds never
+		// turn — a hoop's directional art mirrors, it does not rotate), which is the same
+		// assumption the circle this replaced already made.
+		vec2 h = max(u_body * 0.5, vec2(1e-4));
+		float d = 1.0 - (x * x) / (h.x * h.x);
+		return d <= 0.0 ? sgn * 1e9 : sgn * h.y * sqrt(d);
 	}
 	if (u_shape == SHAPE_BOX) return box_contour(x, sgn);
 	float y = sgn * u_body.y * 0.5;
@@ -241,7 +256,22 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	float dome = pow(max(1.0 - pow(abs(u), u_ogee_point), 0.0), u_ogee_flare);
 	float top = h * dome;
 	if (rise >= top) return 0.0;
-	return (1.0 - rise / max(top, 1e-4)) * (0.6 + 0.4 * dome);
+
+	// ONION SHELLS, not stacked rows (owner 2026-07-27: "each layer wraps around the other, like
+	// actual candle lights"). Heat is how far ACROSS the flame this fragment is, measured against
+	// the flame's own half-width AT THIS HEIGHT — so every iso-heat contour is a scaled copy of the
+	// outline, hottest along the core and coolest at the rim, exactly like a candle. Height is only
+	// a weak secondary term (u_onion_rise); making heat a function of height ALONE is what produced
+	// horizontal stripes stacked up the flame.
+	//
+	// The half-width comes from inverting the same ogee the outline uses: the outline is
+	// dome(u) = (1 - |u|^p)^f, so its half-width at normalized height k is (1 - k^(1/f))^(1/p).
+	// One arch, read two ways — the shape cannot drift from its own shells.
+	float half_at_k = pow(max(1.0 - pow(k, 1.0 / max(u_ogee_flare, 1e-3)), 0.0),
+			1.0 / max(u_ogee_point, 1e-3));
+	float across = clamp(abs(u) / max(half_at_k, 1e-3), 0.0, 1.0);
+	// u_onion_power shapes the shells: below 1 fattens the core, above 1 thins it to a filament.
+	return pow(1.0 - across, u_onion_power) * (1.0 - u_onion_rise * k);
 }
 
 void fragment() {

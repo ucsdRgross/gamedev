@@ -502,6 +502,20 @@ the fire riding them), which keeps the dependency inside the one class that owns
   and the easiest to drop in a refactor.
 - **The quad is sized to the host's DIAGONAL** when the host can rotate (a 38×50 card is 62×62 at
   45°, and `anim_spin_start` turns it through every angle). Pinned hosts skip that ~1.6× fill.
+  Props pass `host_rotates = false` — **no prop rotates any more**; directional art mirrors instead
+  (see §4h) — so they all keep the cheaper box bound.
+- **Fire is ONION-SHELLED, never row-layered** (owner 2026-07-27: *"each layer wraps around the
+  other, like actual candle lights"*). `heat` is distance ACROSS the flame relative to the flame's
+  own half-width AT THAT HEIGHT, so every iso-heat contour is a scaled copy of the outline and each
+  colour wraps the one inside it. Height is only the weak secondary term (`onion_rise`); leading
+  with height is what stacked the colours into horizontal stripes. The half-width comes from
+  INVERTING the same ogee the outline uses — one arch read two ways, so the shells cannot drift from
+  the silhouette.
+- **Balls are SPHERES.** The fragment is lifted onto the hemisphere (`z = sqrt(1 - |nd|²)`) and shaded
+  by that normal, then the Lambert term is QUANTIZED into `ball_bands` hard tones spanning
+  `ball_shade → ball_lit`, with a half-vector threshold (`ball_spec`) for a highlight that sits on
+  the surface. A straight two-tone split plus a dot reads flat however it is coloured. The spin
+  rotates the LIGHT (the shading frame) after quantization — never the grid.
 - **`@tool` hosts:** `CardVisual` and `PropVisual` both run in the editor. FX construction is
   guarded by `Engine.is_editor_hint()` and sets no `owner`, or the editor would save FX nodes into
   `card_visual.tscn`.
@@ -554,13 +568,95 @@ real bugs the green suite had not:
   Note it must be UNROLLED: a dynamically indexed local array compiled without complaint on GLES3
   and returned garbage.
 
-Run `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` (windowed, needs a GPU) after ANY
-shader edit; it writes PNGs to `user://fx_snapshots/`. It is deliberately not in `all_tests.tscn`.
+Run `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` (windowed, needs a GPU, self-quits)
+after ANY shader edit; it writes PNGs to `user://fx_snapshots/`
+(`%APPDATA%\Godot\app_userdata\Solatro\…`). It is deliberately not in `all_tests.tscn`. Shots:
+`00_tendril_count` (geometry only, countable — and the onion shells), `00b_ogee_profile`,
+`01_fire_ladder`, `02_fire_rotation`, `03_fire_wrap`, `04_shapes` (the real prop bodies), `05_balls`,
+`05b_ball_path`, `05c_ball_sphere`, `06_ball_fire`, `07_transition`.
 The ball shots carry an independent GDScript **oracle** — crosses drawn where the spec says each
-ball should be — so a disagreement is visible without measuring pixels.
+ball should be — and the harness then MEASURES ITS OWN CAPTURE, printing per ball how far the
+nearest rendered ball is from its expected position in ART UNITS (`PROBE` lines). Read those
+numbers; do not measure the PNGs by hand, which is how two passes reached wrong conclusions.
+
+Two GLSL/harness facts worth not rediscovering: **`return` is illegal in a Godot `fragment()`
+processor** ("Using 'return' in the 'fragment' processor function is incorrect"), so a temporary debug
+override has to be an `if` that assigns `COLOR` after the real body; and **snapshot layout must be in
+CANVAS units** (`get_viewport_rect().size`), because `window/stretch/mode = canvas_items` means the
+captured image is the canvas scaled to the window — convert by `img.get_width() / that` when reading
+pixels back, or the last column lands off the right edge.
+
+**Two harness traps, both of which masqueraded as shader bugs (2026-07-27):**
+
+- `FxAttachment._push_live()` ENDS with `set_process(not _fx.is_empty())`. Parking the clock by
+  calling `set_process(false)` BEFORE the push silently re-enables it, the frames awaited before the
+  capture then advance `_phase`/`_time` by real deltas, and every ball renders ~0.15 of a cycle past
+  the phase the oracle and the debug print were told about. **Disable the process LAST.** This, not
+  `fx_nearest_ball`, was the "ball positions disagree at low counts" bug.
+- Reference geometry drawn at sub-pixel widths is DROPPED by the rasterizer. At the zoom a ball quad
+  forces (~1.0 art unit per pixel) the old 0.5-unit crosses and outlines lost half their lines, so
+  "does the ball sit on its cross" could not be judged at all. Every width in `_Ghost` is now a
+  multiple of the shot's art-units-per-pixel.
 
 Covered by `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT"), the FX section of
 `Tests/UI/test_visual_layers.gd`, and `Tests/Visual/fx_snapshot.gd`.
+
+---
+
+## 4h. PIXEL ART — one pixel size, and how each surface gets its colour (2026-07-27)
+
+**ONE PIXEL SIZE FOR ALL ART** (owner). A card draws its own art one texel per UNSCALED unit and is
+then scaled by `card_scale`; a prop is scaled by `card_scale / PropVisual.AUTHORED_CARD_SCALE`. So a
+prop texel matches a card texel on screen only when the prop draws its frame at
+`frame_px * PropVisual.ART_PIXEL_SCALE` (= `AUTHORED_CARD_SCALE`, and derived from it rather than
+retyped). **Every kind sizes `art_size` through that constant, never with raw pixel numbers** — that
+is what keeps all of the game's art at one pixel size at every `card_scale`.
+
+**Directional prop art MIRRORS, it never rotates.** Every directional sheet is authored pointing
+LEFT; heading right draws the same frame flipped left↔right so its top stays its top (a 180° turn
+would carry top and bottom around with it). `PropVisual.face_travel` opts a kind in, `flipped` is the
+live state, and `_draw_art()` applies it as a DRAW transform — never a negative node scale, because
+`FxAttachment` is a child of the prop and the FX pixel grid must not move.
+
+**Where prop art comes from:**
+
+| Kind | Sheet | Notes |
+|---|---|---|
+| Hoop | `Assets/hoop_prop.png` | 3×(32×72) frames — full, back half, front half. Only the FULL frame is sampled; the halves are source rects of it (owner preference), so the three cannot drift. |
+| Knife | `Assets/knife_prop.png` | one 12×5 frame, tip toward −x; `face_travel` on. |
+| Ball / Fire | `Assets/suit_pips.png` frames 2 / 3 | the props ARE their suits' pips — one drawing for the suit and the prop it launches. |
+| Firework | none yet | still a placeholder polygon (`color`); no art authored. |
+
+**The hoop's split axis is now VERTICAL** (it was the horizontal diameter): the art is a
+foreshortened oval, so its LEFT arc is the ring's far side (it carries the shading) and renders
+behind the occupied card, its RIGHT arc the near side, in front. That matches `fire.gdshader`'s
+`u_half` split (BACK keeps `p.x <= 0`) exactly, so a burning hoop's back-arc flames stay behind the
+card too. `SHAPE_RING` is an **ellipse** from `u_body`, not a circle of its half-width — a circle sat
+the flames deep inside an 80×180 arc.
+
+**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** `Assets/color_picker.tres` replaces a
+polygon's RGB with a palette entry while the polygon's texture supplies the alpha, so it flattens
+whatever it touches to ONE colour. Therefore:
+
+- The **suit pip** draws the sheet's own colours — `suit_pips.png` is authored in the palette, each
+  frame already shaded with its suit's ramp. `PipSuit.set_texture()` CLEARS the material (these
+  polygons are pooled and reused, so a stale material from a previous binding would survive).
+- The **rank pip** and the **card art** are shared by every suit, so they are recoloured to
+  `PipSuit.PALETTE[suit]`.
+- `num_colors` is no longer stamped into `card_visual.tscn`; it comes from the shader default, which
+  must match the palette image's width (`Assets/CircusCrayon.png`, 32×1). Removing that duplication
+  for good is T21's `PaletteManager` ([PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)) — until then, a
+  palette of a different width means editing the shader default.
+- **FX colour is NOT on the palette yet** and a palette swap will not touch it: the fire ramp is a
+  baked 64-colour PNG with zero palette entries in it, and the ball colours are hand-picked. That is
+  T21's last migration step, and it has a look change in it (band colours must be SAMPLED from an
+  ordered role list, not lerped between two — both the ramp generator and `juggle.gdshader`'s sphere
+  banding currently interpolate). Measured numbers: PALETTE_PLAN_BRIEF §2.3.
+
+Visual checks: `Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn` (windowed, needs a
+GPU) writes `user://prop_art_snapshots/` — every kind over a card outline, the pip-vs-prop pixel-size
+comparison at three `card_scale`s, the mirror, the hoop halves reassembling the whole ring, and the
+recolour split per suit.
 
 ---
 

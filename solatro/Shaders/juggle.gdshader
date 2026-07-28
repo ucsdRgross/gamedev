@@ -28,6 +28,14 @@ uniform float u_ball_spin = 2.0;     // GDScript already raised this for the cou
 // ===== STATIC — written once from FxStyle =====================================================
 uniform float u_pixel = 1.0;
 uniform float u_top_fraction : hint_range(0.2, 0.8) = 0.6;
+// SPHERE shading (owner 2026-07-27: "balls need to be spherical"). bands = how many hard tones the
+// terminator is quantized into; light is the direction it comes from in ART space (so -y is UP,
+// like everywhere else in 2-D), light_z is how head-on it is, and spec is the threshold that sets
+// how big the highlight is (higher = tighter). All four are FxStyle levers — nothing baked.
+uniform int u_ball_bands : hint_range(2, 8) = 3;
+uniform vec2 u_ball_light = vec2(-0.45, -0.6);
+uniform float u_ball_light_z : hint_range(0.05, 2.0) = 0.65;
+uniform float u_ball_spec : hint_range(0.5, 0.999) = 0.965;
 // FLAT colours: balls do NOT ride the stack ramp (owner ruling 20). Their count already reads
 // through size and speed, so a third channel would be redundant.
 uniform vec4 u_lit : source_color = vec4(1.0, 0.82, 0.35, 1.0);
@@ -51,15 +59,29 @@ void fragment() {
 	} else {
 		vec2 d = p - fx_ball_at(u_phase + id / n, u_span, u_arc_height, u_return_height,
 				u_top_fraction);
-		// SPIN (owner ruling 25): rotate the ball's own SHADING frame — after quantizing, never
-		// before, so the pixel grid stays square. A per-ball phase keeps them from turning in
-		// unison, and the off-centre gloss dot is what actually reads as rolling: a symmetric
-		// two-tone split looks identical every half turn. No trails — ruled too noisy.
+		// A SPHERE, not a disc. Lift the fragment onto the hemisphere it would sit on — z from the
+		// unit disc, so the normal carries the curvature — and shade by that normal. The Lambert
+		// term's iso-lines on a sphere are closed curves AROUND the light, so quantizing it gives
+		// bands that follow the curvature and a terminator that bends; a straight two-tone split
+		// reads flat however it is coloured.
+		vec2 nd = d / max(r, 1e-4);
+		vec3 nrm = vec3(nd, sqrt(max(1.0 - dot(nd, nd), 0.0)));
+		// SPIN (owner ruling 25): the ball's SHADING FRAME turns — the light direction rotates,
+		// AFTER the fragment was snapped to the grid, so the pixel grid itself never rotates
+		// (§0b universal rule). A per-ball phase keeps them from turning in unison. No trails —
+		// ruled too noisy.
 		float sp = u_ball_spin * u_time + fx_hash11(id) * TAU;
-		vec2 q = vec2(cos(sp) * d.x - sin(sp) * d.y, sin(sp) * d.x + cos(sp) * d.y);
-		bool rim = (sqrt(d2) > r - 1.0) || (q.y > r * 0.35);
-		bool gloss = length(q + vec2(0.3, 0.3) * r) < r * 0.3;
-		vec4 col = gloss ? u_gloss : (rim ? u_shade : u_lit);   // hard steps, no antialiasing
+		vec2 lit_dir = vec2(cos(sp) * u_ball_light.x - sin(sp) * u_ball_light.y,
+				sin(sp) * u_ball_light.x + cos(sp) * u_ball_light.y);
+		vec3 lgt = normalize(vec3(lit_dir, u_ball_light_z));
+		// Hard bands, no antialiasing: floor to a band index, then span shade -> lit across them so
+		// the brightest band IS u_lit and the dark side IS u_shade, at any band count.
+		float bands = float(max(u_ball_bands, 2));
+		float step_i = min(floor(clamp(dot(nrm, lgt), 0.0, 1.0) * bands), bands - 1.0);
+		vec4 col = mix(u_shade, u_lit, step_i / (bands - 1.0));
+		// The highlight sits ON the surface: a half-vector threshold puts it where the sphere would
+		// actually catch the light, off-centre and tightening toward the pole as u_ball_spec rises.
+		if (dot(nrm, normalize(lgt + vec3(0.0, 0.0, 1.0))) > u_ball_spec) col = u_gloss;
 		col.a *= u_opacity;
 		COLOR = col;
 	}

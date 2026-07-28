@@ -14,7 +14,7 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
 | [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, undo §5, memory §6, testing §7, owner rulings §8). |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no z_index). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps on this machine. READ BEFORE DEBUGGING A "HANGING" TEST. |
-| [FX_HANDOFF.md](FX_HANDOFF.md) | **Shader FX: read FIRST if picking up visual-effects work.** State, open bugs, how to run the snapshot harness, traps already paid for. |
+| [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md) | The scoping brief for the ONE open feature (the universal palette, T21) — audit done, decisions listed. Whoever picks it up writes the plan from this. |
 | [todo.md](todo.md) | Open backlog. |
 | [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (owner's ideas). |
 | [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / historical-reference quarry. |

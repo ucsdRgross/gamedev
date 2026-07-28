@@ -4,21 +4,24 @@ extends Node2D
 ## The view-side twin of a PropData: pure draw + trajectory params, NO CardData/PropData
 ## retention (SUIT_PROPS_PLAN §4.3). PropLayer owns the interpolation state (from/target/t)
 ## and drives `position` every frame; this class only says how a prop LOOKS and the SHAPE of
-## its path. Placeholder art draws to exactly `art_size`, so real textures later swap in by
-## matching the same footprint.
+## its path. Art draws to exactly `art_size`, which every textured kind derives from its sheet's
+## frame size times ART_PIXEL_SCALE — never a raw pixel number (see that constant).
 
 @export var art_size : Vector2 = Vector2(16, 16)
 ## The prop's on-screen BODY footprint in unscaled pixels — filled in MANUALLY per kind next to
 ## its art (the same way CardVisual.CARD_SIZE is hardcoded), NOT derived from drawing code.
 ## PropLayer's split/bracket logic rect-tests this against card footprints: a prop is "over"
 ## whatever its body COVERS, never just the point under its center (a ring hanging between two
-## cards covers both). Placeholder: mirrors each kind's placeholder art_size until real art lands.
+## cards covers both). Every kind currently sets it equal to its `art_size` — the drawn footprint IS
+## the body — but they stay separate knobs so a kind with lots of empty margin can claim less.
 @export var body_size : Vector2 = Vector2(16, 16)
-## Kind-colored placeholder fill; subclasses override.
+## Kind-colored fill for the kinds still drawn as a primitive (firework); textured kinds ignore it.
 @export var color : Color = Color.WHITE
-## Rotate the whole visual to point along its current travel direction (set by retarget). ON for
-## directional art like the knife blade (its tip is drawn toward +x, so travelling left flips it);
-## OFF for radially symmetric kinds (hoop/ball) that shouldn't spin as they change rows.
+## MIRROR the art left↔right to face its travel direction (set by retarget). Every directional prop
+## sheet is authored pointing LEFT, and a prop heading right is that art FLIPPED — never rotated: a
+## turn would carry its top and bottom around with it, and the art's top must stay its top (owner
+## 2026-07-27). OFF for the kinds with no heading — ball/fire (radially symmetric) and the hoop,
+## whose two halves are a DEPTH split (far/near side of the ring), not a direction.
 @export var face_travel : bool = false
 ## Peak of the parabolic hump travel_curve adds to a leg (ballistic ball/fire arcs). 0 = a
 ## straight line — ONE shared movement function for every kind; only this shape knob differs.
@@ -84,6 +87,18 @@ var has_formation_point : bool = false
 ## formation editor applies the same rule to its preview (preview_scale stands in for card_scale).
 const AUTHORED_CARD_SCALE := 2.5
 
+## Drawn size per SOURCE TEXEL of prop art. A card draws its own pixel art one texel per UNSCALED
+## unit and is then scaled by `card_scale`; a prop is scaled by `card_scale /
+## AUTHORED_CARD_SCALE` — so a prop texel is the same size on screen as a card texel only when the
+## prop draws its frame at `frame_px * AUTHORED_CARD_SCALE`. Every kind sizes its art through this
+## constant and never with raw pixel numbers, so all of the game's pixel art stays ONE pixel size
+## at every card_scale setting (owner 2026-07-27).
+const ART_PIXEL_SCALE := AUTHORED_CARD_SCALE
+
+## True while the art is mirrored (the prop is heading right). Only meaningful with face_travel on;
+## _process redraws every frame, so setting it needs no explicit invalidation.
+var flipped : bool = false
+
 ## Begin a fresh travel from the current position to `point`, spread over `ticks` data ticks;
 ## t restarts so the live per-frame drive re-times it against the current tick duration.
 ## anchor_coord deliberately persists — a void exit keeps riding its last slot; callers that
@@ -96,8 +111,10 @@ func retarget(point: Vector2, ticks : float = 1.0) -> void:
 	t_goal = 1.0 / span_ticks
 	if face_travel:
 		var dir := target - from
-		if dir.length() > 1.0:
-			rotation = dir.angle()
+		# Only the horizontal sense matters: the art mirrors, it never turns, so a leg with no x
+		# travel (a ballistic drop, a stationary staged pose) keeps the facing it already had.
+		if absf(dir.x) > 1.0:
+			flipped = dir.x > 0.0
 
 ## Instant reposition for teleports — never lerp across the board; flash to signal the jump.
 func relocate_to(point: Vector2) -> void:
@@ -145,11 +162,34 @@ func _draw() -> void:
 	if not has_back_half() or Engine.is_editor_hint() or not _split_active:
 		_draw_body()
 
-## Full-shape body — subclasses override with a kind-distinct primitive at `art_size`. For split
-## props this is used for the editor preview (and the non-split default draw); the runtime split
-## is drawn by _draw_back()/_draw_front() onto the two half nodes.
+## Full-shape body — subclasses override with their sprite (or a kind-distinct primitive) at
+## `art_size`. For split props this is used for the editor preview (and the non-split default
+## draw); the runtime split is drawn by _draw_back()/_draw_front() onto the two half nodes.
 func _draw_body() -> void:
 	draw_circle(Vector2.ZERO, art_size.x * 0.5, color)
+
+## Draw one sprite frame, mirrored when the art faces the other way (face_travel). `into` is the
+## canvas ISSUING the command — self for a whole body, the half node for a split half (the same
+## rule as _draw_back). `dest` is in prop-local units, so callers size it off `art_size`.
+##
+## The mirror is a DRAW transform, never a negative node scale: FxAttachment is a child of this
+## node, so scaling the node would mirror its shader quads too — and the FX pixel grid is not
+## allowed to move (FX_SHADER_PLAN §0b, universal rule).
+func _draw_art(into: CanvasItem, sheet: Texture2D, src: Rect2, dest: Rect2) -> void:
+	if flipped:
+		# Mirror about the prop's own origin, which every kind centres its art on, so the art's
+		# top and bottom stay exactly where they were.
+		into.draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	into.draw_texture_rect_region(sheet, dest, src)
+	if flipped:
+		into.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+## Source rect of one frame of a uniform sprite sheet — the draw_texture_rect_region twin of
+## CardModifier.update_polygon_uv_frame's UV window, so a prop frames a shared sheet (the suit pips)
+## exactly the way a card does.
+static func sheet_frame(sheet: Texture2D, h_frames: int, v_frames: int, frame: int) -> Rect2:
+	var frame_px := sheet.get_size() / Vector2(float(h_frames), float(v_frames))
+	return Rect2(Vector2(float(frame % h_frames), float(frame / h_frames)) * frame_px, frame_px)
 
 # --- front/back split (structural layering, LAYERING.md) ----------------------
 ## A split prop (e.g. the hoop) renders as TWO nodes that BRACKET the card it currently occupies in
@@ -242,7 +282,9 @@ func _ready() -> void:
 func _make_fx(host: Node2D, half: FxAttachment.Half) -> FxAttachment:
 	var att := FxAttachment.new()
 	att.name = "Fx"
-	att.configure(body_size, face_travel, fx_shape(), half)
+	# host_rotates = false for EVERY prop: directional art mirrors instead of turning (face_travel),
+	# so no prop silhouette ever leaves its box and none of them pays the circumscribed quad bound.
+	att.configure(body_size, false, fx_shape(), half)
 	host.add_child(att)
 	return att
 

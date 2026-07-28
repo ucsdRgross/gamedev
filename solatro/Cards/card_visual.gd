@@ -100,8 +100,9 @@ func update_visual() -> void:
 			rank.show()
 		else: rank.hide()
 		if data.suit:
+			# The pip keeps its OWN colours (set_texture clears the material); only the suit-agnostic
+			# art — the rank pip here, the card art below — is recoloured to the suit's palette entry.
 			data.suit.set_texture(suit)
-			data.suit.set_material(suit)
 			data.suit.set_material(rank)
 			suit.show()
 		else:

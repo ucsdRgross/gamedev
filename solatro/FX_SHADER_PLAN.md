@@ -11,20 +11,25 @@ verification script.
 
 ## HANDOFF — read this first if you just picked this up
 
-**Status:** design closed, **nothing implemented yet.** No file in §3 exists. Every open design
-question has been ruled by the owner (§0b, 25 rulings); what is left is coding plus six numbers
-to find by eye. Start at **T1** in §7.
+**Status (2026-07-27): BUILT.** T1–T14 and T17–T20 are done, verified on a GPU, full suite green.
+What remains is **T21** (the universal palette — start from
+[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md), it is its own feature), **T15** (the owner plays §10),
+then **T16** (which deletes this file).
 
-**Read in this order, then start:**
+**This document is now the SPEC AND THE RATIONALE, not the instructions.** The living contract — the
+rules that prevent regressions, the snapshot commands, and every trap paid for — is
+**ARCHITECTURE_REVIEW §4g** (FX) and **§4h** (pixel art / recolouring). Read those to WORK on the
+feature; read this to find out WHY something is the way it is, or to check a ruling.
 
-1. This handoff block.
+**If you are picking this up, read in this order:**
+
+1. This block, then ARCHITECTURE_REVIEW §4g and §4h.
 2. **§0b — the 25 owner rulings.** They are the spec. Several contradict the "obvious" way to
    build this; the section implementing each one says why. Do not redesign around them; if one
    seems wrong, ask the owner, do not quietly work around it.
-3. **§7 — the task board.** Every task lists its files, its done-when, and its gotcha.
+3. **§7 — the task board**, for what is left and for what each finished task actually settled.
 4. **§1 and §2 — the two ideas everything rests on.** If you only remember two things: the
    effect is never a material on the host, and an FX node is a *child of* its host. Both have alternatives that look easier and are wrong for reasons recorded there.
-5. The section your current task points at.
 
 **Project rules that override anything in this doc** — read
 [START_HERE.md](START_HERE.md) before your first commit:
@@ -1331,38 +1336,44 @@ that bites.
 
 ### Phase F — added 2026-07-27 (owner, after seeing the first snapshots)
 
-Full context and the audit behind these: **[FX_HANDOFF.md](FX_HANDOFF.md)** §3–§5.
+T17–T20 landed 2026-07-27; their contracts live in **ARCHITECTURE_REVIEW §4g**. T21's audit and the
+decisions it still needs are in **[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)**.
 
-- [ ] **T17 · Fix ball positions at low counts** ⚠ BUG, do this first
-  **Read:** FX_HANDOFF.md §3.1 — it lists what has already been ruled out.
-  **Files:** `Shaders/fx_common.gdshaderinc` (`fx_nearest_ball`), `Shaders/juggle.gdshader`.
-  **Done when:** in `05_balls.png` and `05b_ball_path.png` every ball sits on its oracle cross at
-  1, 3, 8 and 50 balls.
-  **⚠** Judge by the crosses. Do not measure pixel positions out of the PNGs.
+- [x] **T17 · Fix ball positions at low counts** — 2026-07-27. **It was the HARNESS, not the
+  shader.** `fx_nearest_ball` and `fx_ball_at` were correct at every count; nothing in
+  `Shaders/` changed. `FxAttachment._push_live()` ends with `set_process(not _fx.is_empty())`, so
+  `fx_snapshot.gd` disabling the process BEFORE its push silently re-enabled it, and the two frames
+  awaited before the capture advanced `_phase` by ~0.15 of a cycle past the phase the oracle (and
+  the debug print the last pass trusted) used. Fixed by disabling the process LAST.
+  The harness now also (a) draws every reference line at a width scaled to the shot's zoom — at
+  ~1 art unit per pixel the old 0.5-unit crosses lost half their lines to the rasterizer, which is
+  why this could not be judged by eye — and (b) MEASURES ITS OWN CAPTURE, printing `PROBE` lines
+  with each ball's disagreement in art units. Every ball at 1 / 3 / 8 / 50 now lands within 0.6 art
+  units (sub-pixel) of its oracle position.
 
-- [ ] **T18 · Spherical balls**
-  **Read:** FX_HANDOFF.md §4.1.
-  **Build:** shading that reads as a SPHERE — a curvature-following terminator and concentric hard
-  bands, not a straight two-tone split with a dot. Band count and light direction as `FxStyle`
-  levers. Spin still rotates only the shading frame, after quantization.
-  **Done when:** a single large ball in `05_balls.png` reads as a sphere, and still does at the
-  1-pixel floor.
+- [x] **T18 · Spherical balls** — 2026-07-27. `juggle.gdshader` lifts the fragment onto the
+  hemisphere (`z = sqrt(1 - |nd|²)`) and shades by that normal: the Lambert term is quantized into
+  `u_ball_bands` hard tones spanning `ball_shade → ball_lit`, and a half-vector threshold
+  (`u_ball_spec`) puts the highlight ON the surface. The spin rotates the LIGHT — the shading frame
+  — after quantization, so the grid never turns. Levers: `ball_bands`, `ball_light`, `ball_light_z`,
+  `ball_spec`. New shot **`05c_ball_sphere`** (r = 14 / 7 / 3 / 1) — a big ball reads as a sphere and
+  the 1-unit floor still shades.
 
-- [ ] **T19 · Onion-layered fire (not row-layered)**
-  **Read:** FX_HANDOFF.md §4.2 — this changes how `heat` is computed, not the palette.
-  **Build:** heat as distance from the flame's CORE normalized by the local half-width, so an
-  iso-heat contour is a scaled copy of the outline and each colour wraps the one inside it, like a
-  candle flame. Height becomes a weak secondary term.
-  **Done when:** with noise off in `00_tendril_count.png`, the bands are nested arch-shaped shells
-  rather than horizontal stripes. Flame height stays a `.tres` lever throughout (T20).
+- [x] **T19 · Onion-layered fire (not row-layered)** — 2026-07-27. `tendril()`'s heat is now
+  `pow(1 - across, u_onion_power) * (1 - u_onion_rise * k)`, where `across = |u| / half_at_k` and
+  `half_at_k` INVERTS the same ogee the outline uses — so every iso-heat contour is a scaled copy of
+  the outline and each colour wraps the one inside it. Height is the weak secondary term only.
+  Verified in `00_tendril_count.png` (noise off): pale core spine, wrapped by orange, then red at
+  the rim, converging at the tip — no horizontal stripes.
 
-- [ ] **T20 · Every effect's height stays adjustable**
-  A constraint on T18/T19, not separate work: fire length (`height`), ball size (`ball_radius`),
-  throw arc (`ball_arc_height`) and return arc (`ball_return_height`) all stay `FxStyle` levers.
-  Nothing added for spheres or onion shells may bake a size in.
+- [x] **T20 · Every effect's height stays adjustable** — 2026-07-27. Nothing added by T18/T19 bakes
+  a size: the four new ball levers are shading-only and the two onion levers are unitless shape
+  exponents. `height`, `ball_radius`, `ball_arc_height`, `ball_return_height` are untouched
+  `FxStyle` levers, and `Shaders/Styles/*.tres` remains the single place FX tuning lives.
 
 - [ ] **T21 · Universal palette system** — NEEDS ITS OWN PLAN DOC FIRST
-  **Read:** FX_HANDOFF.md §5, which has the audit of what exists today.
+  **Read:** [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md) — the audit is done and the open decisions
+  are listed there; that file IS this task's starting point.
   A project-wide system (like `ParticleEngine`, it outlives this feature): a `Palette` resource
   wrapping the `Nx1` image, a `PaletteRoles` resource mapping semantic ROLE names to indices, and
   a `PaletteManager` autoload so `num_colors` comes from the texture width instead of being
@@ -1396,7 +1407,8 @@ Append a line per session so the next person knows where things stand.
 | Date | Tasks done | State / next step | Notes for the next person |
 |---|---|---|---|
 | 2026-07-26 | — | Plan written and fully ruled; nothing implemented. Next: **T1**. | 25 owner rulings in §0b are the spec. Risk is concentrated in T7 (save data) and T11a (shared particle infrastructure). |
-| 2026-07-27 (2) | — | Snapshot harness added and four render bugs fixed; ogee profile landed. Next agent: **read [FX_HANDOFF.md](FX_HANDOFF.md) first**, then T17. | Owner added T17–T21. Ball positions are broken at low counts (T17) and instrumented with an oracle. Do NOT delete this file — it is untracked, so `rm` is unrecoverable; a previous session lost it that way. |
+| 2026-07-27 (2) | — | Snapshot harness added and four render bugs fixed; ogee profile landed. | Owner added T17–T21. (This row's warning that the file was untracked is now stale — the owner committed it in `22f2aac "VFX plan"`, so git has it.) |
+| 2026-07-27 (3) | T17, T18, T19, T20 (+ prop/pip ART) | Implemented; full suite green (26 suites / 0 failures); all verified on a GPU. Next: **T21** (needs its own plan doc + owner approval), then **T15**, then T16. | T17 was a HARNESS bug, not a shader one — see its board entry; no `Shaders/fx_common.gdshaderinc` change was needed and the previous "already ruled out" list was reasoning from a print taken before the drift. The snapshot harness now measures its own capture (`PROBE` lines, art units) — trust those, never a by-eye read of the PNGs. Also landed this session, outside this plan: the owner's real hoop/knife prop art, ball+fire props drawing their suits' pips, one-pixel-size scaling (`PropVisual.ART_PIXEL_SCALE`), mirror-instead-of-rotate facing, suit pips keeping their own colours, `SHAPE_RING` as an ellipse, and `Tests/Visual/prop_art_snapshot.tscn`. All of it is written up in ARCHITECTURE_REVIEW §4g/§4h. |
 | 2026-07-27 | T1–T14 | Implemented; full suite green (26 suites). Next: **T15** (owner walks §10), then T16. | Docs pass for LAYERING/ARCHITECTURE_REVIEW/todo is already written — only "delete this file" is outstanding, and it is BLOCKED on owner review. ⚠ This file was never committed; do not `rm` it assuming git has it. Deviations from the plan, all commented in code: shape enum is BOX/RING/RADII (a blade and an undeformed card are both boxes) with a test reading the constants out of the shader; the lag spring gained a restoring term (§4f's version has no force returning the flames upright, so `_lag` drifts permanently); `fire_tips` renamed `fire_stacks` (§12.4). Shader PIXELS are still unverified — see the snapshot harness in §9. |
 
 ---
@@ -1517,6 +1529,25 @@ bounded by a killing timeout and grepped for `Parse Error` — HEADLESS_TESTING.
     **through** the ring, and the ring's back-arc flames are behind the card.
 11. Focus a burning card → the card and its flames brighten together (ruling 10).
 12. Undo mid-act → flames, balls and props all clear; embers finish their lifetime and vanish.
+
+**Added 2026-07-27 with T17–T20 and the prop/pip art pass** (this list is the ONE copy — todo.md
+points here rather than restating it):
+
+13. Look INTO a flame → the colours are nested **shells wrapping each other**, pale core through to a
+    dark rim, following the flame's outline and converging at the tip. NOT horizontal stripes stacked
+    up the flame (owner: "like actual candle lights").
+14. Watch a juggled ball closely → it reads as a **sphere**: bands that curve around the light with a
+    bent terminator, and a highlight sitting on the surface rather than a dot in the middle. At 50
+    balls, where each is ~1 px, they should still read as lit specks and not flicker.
+15. **Hoop and knife are real art now.** A knife crossing the row left-to-right vs right-to-left → the
+    same blade **mirrored**, its top edge still on top (never rotated 180°). A hoop threading a card →
+    the card passes between its left (shaded, far) and right (bright, near) arcs.
+16. **One pixel size for all art.** Compare a ball prop against the Ball pip on a card — the pixels
+    should be the same size. Change `card_scale` in settings and check they stay matched. Then say
+    whether the hoop's on-screen size is right: it is 80×180 px at default scale against a 95×125
+    card, which is what the art implies at matched pixel size.
+17. Look at a card face → the **suit pip keeps its own multi-tone colours** while the rank pip and the
+    card art are flat in that suit's colour.
 
 ---
 
