@@ -170,44 +170,50 @@ float fx_arc_weight(float j, float arcs, float h_top, float h_bot, float f) {
 	return (j < 0.5) ? w * (max(f, 0.05) / 0.5) : w;
 }
 
-float fx_arc_total(float arcs, float h_top, float h_bot, float f) {
+// THE LADDER, RESOLVED ONCE PER FRAGMENT — where every arc starts in the cycle and how much of the
+// cycle it owns. `start[k]` and `share[k]` are zero past the live arc count.
+//
+// ⚠ THIS EXISTS FOR ONE REASON: EVERY NUMBER IN IT DEPENDS ONLY ON UNIFORMS. Nothing about the
+// ladder varies across a quad, yet the shape of the old code re-derived it constantly —
+// `fx_arc_span` summed the whole ladder and then walked it, `fx_ball_at` did the same, and
+// `fx_nearest_ball` called the first once per arc and the second twice per arc. At the 8-arc ceiling
+// that was ~384 `fx_arc_weight` evaluations per fragment, each carrying a `sqrt`, plus the `pow` in
+// the ease — pure overhead with no visual contribution (FX_HANDOFF §1b.1, measured 2026-07-30).
+// Filling this table costs 8 of them, and every lookup below reads it instead.
+//
+// The shares are NORMALIZED here, so callers never divide by the total again.
+void fx_arc_ladder(float arcs, float h_top, float h_bot, float f,
+		out float start[FX_MAX_ARCS], out float share[FX_MAX_ARCS]) {
 	float total = 0.0;
 	for (int k = 0; k < FX_MAX_ARCS; k++) {
-		if (float(k) >= arcs) break;
-		total += fx_arc_weight(float(k), arcs, h_top, h_bot, f);
+		share[k] = (float(k) < arcs) ? fx_arc_weight(float(k), arcs, h_top, h_bot, f) : 0.0;
+		total += share[k];
 	}
-	return max(total, 1e-5);
-}
-
-// Where arc `j` starts in the cycle, and how much of the cycle it spans.
-vec2 fx_arc_span(float j, float arcs, float h_top, float h_bot, float f) {
-	float total = fx_arc_total(arcs, h_top, h_bot, f);
-	float start = 0.0;
-	for (int k = 0; k < FX_MAX_ARCS; k++) {
-		if (float(k) >= j || float(k) >= arcs) break;
-		start += fx_arc_weight(float(k), arcs, h_top, h_bot, f) / total;
-	}
-	return vec2(start, fx_arc_weight(j, arcs, h_top, h_bot, f) / total);
-}
-
-vec2 fx_ball_at(float s, float span, float h_top, float h_bot, float f, float g, float arcs) {
-	float A = max(arcs, 2.0);
-	float u = fract(s);
-	// Which arc, and how far along it in TIME. Walked rather than solved: the shares are no longer
-	// uniform (fx_arc_weight), and the walk is bounded by FX_MAX_ARCS, so it is still O(1).
-	float total = fx_arc_total(A, h_top, h_bot, f);
-	float j = A - 1.0;
-	float a = 0.0;
+	total = max(total, 1e-5);
 	float acc = 0.0;
 	for (int k = 0; k < FX_MAX_ARCS; k++) {
+		share[k] /= total;
+		start[k] = acc;
+		acc += share[k];
+	}
+}
+
+// Where a ball sitting at cycle position `s` is, given an already-resolved ladder. The walk that
+// finds which arc `s` falls on is now pure comparisons against `start`/`share` — no weights, no
+// sqrt — which is the whole of the saving.
+vec2 fx_ball_at_ladder(float s, float span, float h_top, float h_bot, float g, float arcs,
+		float start[FX_MAX_ARCS], float share[FX_MAX_ARCS]) {
+	float A = max(arcs, 2.0);
+	float u = fract(s);
+	float j = A - 1.0;
+	float a = 0.0;
+	for (int k = 0; k < FX_MAX_ARCS; k++) {
 		if (float(k) >= A) break;
-		float share = fx_arc_weight(float(k), A, h_top, h_bot, f) / total;
-		if (u < acc + share || float(k) >= A - 1.0) {
+		if (u < start[k] + share[k] || float(k) >= A - 1.0) {
 			j = float(k);
-			a = (u - acc) / max(share, 1e-5);
+			a = (u - start[k]) / max(share[k], 1e-5);
 			break;
 		}
-		acc += share;
 	}
 	a = clamp(a, 0.0, 1.0);
 	// The gravity ease is applied to EVERY arc, the carry included (2026-07-29). Exempting the
@@ -241,14 +247,42 @@ float fx_ball_dir(float i, float dir) {
 // sites pass an INDEX rather than a cycle position so the mirror cannot be forgotten at one of them
 // — a ball drawn on one side with its flame on the other is exactly the drift this include exists
 // to prevent.
-vec2 fx_ball_pos(float i, float n, float phase, float span, float h_top, float h_bot, float f,
-		float g, float dir, float arcs) {
-	vec2 q = fx_ball_at(phase + i / n, span, h_top, h_bot, f, g, arcs);
+vec2 fx_ball_pos_ladder(float i, float n, float phase, float span, float h_top, float h_bot,
+		float g, float dir, float arcs, float start[FX_MAX_ARCS], float share[FX_MAX_ARCS]) {
+	vec2 q = fx_ball_at_ladder(phase + i / n, span, h_top, h_bot, g, arcs, start, share);
 	q.x *= fx_ball_dir(i, dir);
 	return q;
 }
 
-// Squared distance from `p` to the NEAREST ball, with that ball's index in `id`.
+// The same thing for a caller that wants ONE ball and has no ladder to hand — it builds one. Both
+// shaders use this exactly once per fragment, to re-derive the centre of the ball the lookup picked.
+vec2 fx_ball_pos(float i, float n, float phase, float span, float h_top, float h_bot, float f,
+		float g, float dir, float arcs) {
+	float start[FX_MAX_ARCS];
+	float share[FX_MAX_ARCS];
+	fx_arc_ladder(max(arcs, 2.0), h_top, h_bot, f, start, share);
+	return fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, arcs, start, share);
+}
+
+// IS THIS FRAGMENT ANYWHERE NEAR THE PATTERN AT ALL? The whole loop lives in a box: x within half a
+// span plus a ball, y between the top of the tallest arc and the bottom of the carry (art y is
+// negative upward, and every arc starts and ends at y = 0).
+//
+// The quads are far bigger than that box — a card's ball quad is ~112 art units across for a ~33
+// unit pattern, because a quad is sized as the host's body plus the effect's reach on EVERY side —
+// so most of a ball quad's fragments are empty space between the pattern and the quad edge, and
+// every one of them used to pay for the full closed-form lookup. This is the same shape of saving as
+// fire.gdshader's "guard the noise" branch (§4g: the single biggest one in that shader).
+//
+// `margin` is what the caller draws BEYOND a ball: 0 for the balls themselves, a flame's height for
+// the plumes riding them.
+bool fx_balls_near(vec2 p, float margin, float span, float h_top, float radius) {
+	float reach = radius + margin;
+	return abs(p.x) <= span * 0.5 + reach && p.y <= reach && p.y >= -(h_top + reach);
+}
+
+// Squared distance from `p` to the nearest ball, with that ball's index in `id` and the fire level
+// it carries in `level`.
 //
 // Ball counts are uncapped (owner ruling 5), and a shader loop always needs a constant bound — so
 // there is no loop over the count. Both arcs are monotonic in x, so from a fragment's x you can
@@ -259,19 +293,37 @@ vec2 fx_ball_pos(float i, float n, float phase, float span, float h_top, float h
 //
 // `n` may be fractional (a stack count mid-transition), so indices are wrapped into
 // [0, ceil(n)) — without that the newest ball ghosts at the seam.
+//
+// ⚠ `lit_only` IS THE FIX FOR "a lit ball's plume disappears and comes back" (owner report,
+// FX_HANDOFF §2). A plume is drawn high above its ball, and up there the NEAREST ball can easily be a
+// different one — so fire, which resolves one ball per fragment and marches with it, kept picking an
+// unlit neighbour and drawing nothing at all where a plume belonged. With `lit_only` an unlit
+// candidate is simply skipped, and because the candidates come from the fragment's OWN column (the
+// arc inversion at this x), the ball whose plume this is stays in the set. `levels` is the per-ball
+// fire texture — one texel per ball, r = its own level — and it is NEVER sampled while `lit_only` is
+// 0, which is what lets juggle.gdshader pass a texture it does not have.
+//
+// What is lost is occlusion: an unlit ball no longer hides a lit one's plume passing behind it. That
+// is the trade the owner pre-ruled (§2) — an unlit ball is dark because it emits nothing, and the
+// occlusion it bought was costing real plumes.
 float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, float h_bot,
-		float f, float g, float dir, float arcs, out float id) {
+		float f, float g, float dir, float arcs, sampler2D levels, int lit_only,
+		out float id, out float level) {
 	float count = max(ceil(n), 1.0);
 	float A = max(arcs, 2.0);
 	float best = 1e9;
 	id = 0.0;
+	level = 0.0;
+	// THE HOIST: one ladder for every arc and every candidate below (fx_arc_ladder).
+	float start[FX_MAX_ARCS];
+	float share[FX_MAX_ARCS];
+	fx_arc_ladder(A, h_top, h_bot, f, start, share);
 	// Still NO loop over the ball count — the work is set by the ARC LADDER, which is bounded by
 	// FX_MAX_ARCS: arcs x 2 directions x 2 bracketing integers. Two arcs is 8 evaluations, the
 	// eight-arc ceiling is 32, and 5 balls cost exactly what 500 do either way.
 	for (int arc = 0; arc < FX_MAX_ARCS; arc++) {
 		if (float(arc) >= A) break;
 		float j = float(arc);
-		vec2 sp = fx_arc_span(j, A, h_top, h_bot, f); // (start of this arc in the cycle, its share)
 		float sweep = (mod(j, 2.0) < 1.0) ? 1.0 : -1.0;
 		// ONE direction group: every ball on a host now travels that host's `dir` (fx_ball_dir). The
 		// second group this loop used to run existed for the per-ball mirror and is gone with it,
@@ -284,12 +336,19 @@ float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, flo
 		// what the index is spaced in. Every arc is eased now, so every arc inverts the same way —
 		// still monotonic, so the two bracketing integers are still the two nearest on this arc.
 		float at = fx_arc_ease_inv(ax, g);
-		float m = (sp.x + at * sp.y - phase) * n;
+		float m = (start[arc] + at * share[arc] - phase) * n;
 		for (int k = 0; k < 2; k++) {                // floor and ceil — a fixed 2, not a cap
 			float i = mod(floor(m) + float(k), count);
-			vec2 d = p - fx_ball_pos(i, n, phase, span, h_top, h_bot, f, g, dir, A);
+			// An unlit candidate is not a candidate at all when the caller asked for lit balls only.
+			float lvl = 0.0;
+			if (lit_only == 1) {
+				lvl = texelFetch(levels, ivec2(int(i), 0), 0).r;
+				if (lvl <= 0.0) continue;
+			}
+			vec2 d = p - fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, A, start,
+					share);
 			float dd = dot(d, d);
-			if (dd < best) { best = dd; id = i; }
+			if (dd < best) { best = dd; id = i; level = lvl; }
 		}
 	}
 	return best;

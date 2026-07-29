@@ -157,7 +157,7 @@ func test_balls_uncapped() -> void:
 			"the throw arc grows with the count but never past its ceiling",
 			"1 ball %.1f, 50 balls %.1f, ceiling %.1f"
 			% [one[&"u_arc_height"], lots[&"u_arc_height"], style.ball_arc_max])
-	var tall := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+	var tall := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
 	tall.ball_arc_max = 1e9   # ceiling lifted: the growth underneath it must still be there
 	check(FxJuggle.geometry(50, tall)[&"u_arc_height"]
 			> FxJuggle.geometry(1, tall)[&"u_arc_height"],

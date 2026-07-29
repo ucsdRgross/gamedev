@@ -44,10 +44,18 @@ func _run() -> void:
 	await _row("card fire x%d" % HOSTS, floor_ms, StatusBurning.CARD_FIRE_STYLE, _card_case)
 	await _row("prop fire (hoop) x%d" % HOSTS, floor_ms, PropVisual.PROP_FIRE_STYLE, _hoop_case)
 	await _row("prop fire (knife) x%d" % HOSTS, floor_ms, PropVisual.PROP_FIRE_STYLE, _knife_case)
-	await _row("ball fire x%d" % HOSTS, floor_ms, StatusJuggling.BALL_FIRE_STYLE, _balls_case)
+	# ⚠ The two juggling quads are priced SEPARATELY. One row for both hid which of them was
+	# expensive — FxJuggle.requests() builds the balls quad AND the ball-fire quad, and they have
+	# different reaches, different pixel sizes and different shaders (FX_HANDOFF §1).
+	await _row("juggle balls x%d" % HOSTS, floor_ms, StatusJuggling.BALL_FIRE_STYLE,
+			_balls_case.bind(&"balls"))
+	await _row("ball fire x%d" % HOSTS, floor_ms, StatusJuggling.BALL_FIRE_STYLE,
+			_balls_case.bind(&"ball_fire"))
+	await _row("juggle both x%d" % HOSTS, floor_ms, StatusJuggling.BALL_FIRE_STYLE,
+			_balls_case.bind(&""))
 
 ## One host kind, priced against the empty scene.
-func _row(label: String, floor_ms: float, style: FxStyle, build: Callable) -> void:
+func _row(label: String, floor_ms: float, style: FxFireStyle, build: Callable) -> void:
 	var ms := await _measure(label, build.bind(style))
 	print("  -> %-28s %6.2f ms of a 16.67 ms frame (%.0f%%)"
 			% [label, ms - floor_ms, 100.0 * (ms - floor_ms) / 16.67])
@@ -82,7 +90,7 @@ func _measure(label: String, build: Callable) -> float:
 # ------------------------------------------------------------------ the cases
 
 ## Burning cards at the size the board draws them (CardVisual's own scale), tiled across the window.
-func _card_case(holder: Node2D, style: FxStyle) -> void:
+func _card_case(holder: Node2D, style: FxFireStyle) -> void:
 	for i : int in HOSTS:
 		var host := _slot(holder, i, PropVisual.AUTHORED_CARD_SCALE)
 		var att := FxAttachment.new()
@@ -93,14 +101,14 @@ func _card_case(holder: Node2D, style: FxStyle) -> void:
 
 ## Burning hoops — the worst case in the game for the march, because the ring is the tallest body
 ## and its mask is a texture tap rather than an analytic test.
-func _hoop_case(holder: Node2D, style: FxStyle) -> void:
+func _hoop_case(holder: Node2D, style: FxFireStyle) -> void:
 	_sprite_case(holder, style, HoopVisual.SHEET, HoopVisual.FRAMES)
 
-func _knife_case(holder: Node2D, style: FxStyle) -> void:
+func _knife_case(holder: Node2D, style: FxFireStyle) -> void:
 	_sprite_case(holder, style, KnifeVisual.SHEET, 1)
 
 ## A sprite-masked prop, at the scale PropLayer draws props at.
-func _sprite_case(holder: Node2D, style: FxStyle, sheet: Texture2D, frames: int) -> void:
+func _sprite_case(holder: Node2D, style: FxFireStyle, sheet: Texture2D, frames: int) -> void:
 	var size := PropVisual.art_size_for(sheet, frames)
 	for i : int in HOSTS:
 		var host := _slot(holder, i, 1.0)
@@ -111,7 +119,15 @@ func _sprite_case(holder: Node2D, style: FxStyle, sheet: Texture2D, frames: int)
 		att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
 
 ## Juggling cards with every ball alight — the ball-fire quad is the biggest one the game builds.
-func _balls_case(holder: Node2D, style: FxStyle) -> void:
+##
+## `only` picks ONE of the two quads FxJuggle declares (&"balls" or &"ball_fire"); empty keeps both,
+## which is what a real juggling card draws. Pricing them apart is the only way to know which one a
+## change moved.
+##
+## ⚠ `only` comes LAST because `_row` binds the style on top of the bind below: chained
+## `Callable.bind` puts the OUTERMOST bind's arguments first, so a case's own arguments trail the
+## style rather than leading it.
+func _balls_case(holder: Node2D, style: FxFireStyle, only: StringName) -> void:
 	var levels := PackedInt32Array([4, 4, 4, 4, 4])
 	for i : int in HOSTS:
 		var host := _slot(holder, i, PropVisual.AUTHORED_CARD_SCALE)
@@ -119,7 +135,13 @@ func _balls_case(holder: Node2D, style: FxStyle) -> void:
 		att.configure(CardVisual.CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 				false)
 		host.add_child(att)
-		att.sync(FxJuggle.requests(5, levels, StatusJuggling.JUGGLE_STYLE, style))
+		var reqs := FxJuggle.requests(5, levels, StatusJuggling.JUGGLE_STYLE, style)
+		if only != &"":
+			var one : Array[FxRequest] = []
+			for req : FxRequest in reqs:
+				if req.id == only: one.append(req)
+			reqs = one
+		att.sync(reqs)
 
 ## One host's place in the grid. Hosts are allowed to OVERLAP — a real board's quads do, and
 ## overlap is exactly the fill this bench is trying to price.

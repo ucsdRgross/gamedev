@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="ParticleSpec" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ParticleSpec" format=3 uid="uid://cnjrwftijabob"]
 
-[ext_resource type="Script" path="res://UI/Fx/particle_spec.gd" id="1_spec"]
+[ext_resource type="Script" uid="uid://dykyx85ny05bq" path="res://UI/Fx/particle_spec.gd" id="1_spec"]
 [ext_resource type="Resource" path="res://Assets/Palette/ramp_ember.tres" id="2_ramp"]
 
 [resource]
@@ -9,7 +9,6 @@ lifetime = 1.0
 lifetime_var = 0.45
 speed = 6.5
 speed_var = 0.55
-spread = 0.6
 gravity = Vector2(0, -5.6)
 drag = 1.7
 size_start = 1.0

@@ -18,7 +18,7 @@ const FX_MAX_TENDRILS := 12
 ## The fire request for `stacks` stacks in `style`. Surplus stacks are spent on intensity, height
 ## and merging instead of on more tendrils, all logarithmically: 100 stacks should look
 ## terrifying, not 100 times brighter than one stack.
-static func request(id: StringName, stacks: int, style: FxStyle) -> FxRequest:
+static func request(id: StringName, stacks: int, style: FxFireStyle) -> FxRequest:
 	var live := stacks_live(stacks, style)
 	# The flames' own length is exactly how far past the silhouette the quad must reach — the mask
 	# model bounds a flame at exactly `height`, in every column on every shape, so this is a true
@@ -35,7 +35,7 @@ const FIRE_SHADER := preload("res://Shaders/fire.gdshader")
 ## The data-derived uniforms for a stack count: everything that changes when the count does, and
 ## nothing that changes per frame. Kept separate from request() so a host can refresh a live
 ## effect's numbers without rebuilding its quad.
-static func stacks_live(stacks: int, style: FxStyle) -> Dictionary[StringName, float]:
+static func stacks_live(stacks: int, style: FxFireStyle) -> Dictionary[StringName, float]:
 	var count := maxi(stacks, 1)
 	var over := overflow(count)
 	var live : Dictionary[StringName, float] = {}
@@ -53,13 +53,13 @@ static func overflow(stacks: int) -> float:
 
 ## Whether the tendrils fuse into a sheet. On once they are carrying more than their share; off
 ## below that, because the 3-tap max triples the tendril evaluations — the shader's main cost.
-static func merged(stacks: int, style: FxStyle) -> bool:
+static func merged(stacks: int, style: FxFireStyle) -> bool:
 	return style.merge or overflow(stacks) > 1.5
 
 ## Where a stack count sits on the palette ramp's v axis (owner ruling 14: colour shifts with the
 ## count). Logarithmic, so the colour CRAWLS rather than saturating at three stacks: at a
 ## reference of ~120 most of the ramp is spent on the first ~20 stacks — where the game actually
 ## lives — while a difference stays visible all the way up.
-static func level(stacks: int, style: FxStyle) -> float:
+static func level(stacks: int, style: FxFireStyle) -> float:
 	var ref := maxf(style.level_ref, 2.0)
 	return clampf(log(float(maxi(stacks, 1))) / log(ref), 0.0, 1.0)

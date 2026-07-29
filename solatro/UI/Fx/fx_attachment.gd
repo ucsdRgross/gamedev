@@ -349,19 +349,23 @@ func _make_quad(req: FxRequest) -> MeshInstance2D:
 ## The quad stays world-aligned while the host turns INSIDE it, so a rotating host's bound is its
 ## CIRCUMSCRIBED extent — its diagonal — not its box: a 38x50 card is 62x62 at 45 degrees, and
 ## anim_spin_start turns it through every angle. Pinned hosts skip that ~1.6x fill cost.
+##
+## ⚠ It takes BOTH a turning host and an effect that turns with it (`FxRequest.rotates_with_host`).
+## A juggling pattern does not turn with its card, so it keeps the box bound even on a card that
+## spins through every angle — ~22 % of that quad's fill, for free (FX_HANDOFF §1b.3).
 func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
-	var bound := Vector2.ONE * body.length() if rotates else body
+	var bound := Vector2.ONE * body.length() if rotates and req.rotates_with_host else body
 	var extent := bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
 	(quad.mesh as QuadMesh).size = extent
 	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
 	var mat := quad.material as ShaderMaterial
 	mat.set_shader_parameter(&"u_extent", extent)
-	# An effect that draws ON another effect is handed the PARTNER's lattice too, computed the same
-	# way from the partner's reach — that is what lets the ball-fire plume snap to the exact centre
-	# the ball was drawn at (FxRequest.partner_reach).
-	if req.partner_reach >= 0.0:
+	# An effect that draws ON another effect is handed the PARTNER's lattice too — read off the
+	# partner's ACTUAL quad, never recomputed, which is what lets the ball-fire plume snap to the
+	# exact centre the ball was drawn at (FxRequest.partner_id).
+	if req.partner_id != &"" and _fx.has(req.partner_id):
 		mat.set_shader_parameter(&"u_partner_extent",
-				bound + Vector2.ONE * (req.partner_reach + FX_MARGIN) * 2.0)
+				(_fx[req.partner_id].quad.mesh as QuadMesh).size)
 		mat.set_shader_parameter(&"u_partner_pixel", req.partner_pixel)
 
 ## Write the STATIC half of an effect's uniforms: its style's ~35 art levers plus the host facts
@@ -431,12 +435,17 @@ func _ember_origin(fx: Effect, vals: Dictionary[StringName, float], balls: bool)
 	var top : float = vals.get(&"u_arc_height", 0.0)
 	var bottom : float = vals.get(&"u_return_height", 0.0)
 	var arcs : float = vals.get(&"u_ball_arcs", 2.0)
+	# The path's timing, out of the SAME eased values the shader was handed this frame
+	# (FxJuggle.geometry). It used to come off `fx.req.style` — but the style of a BALL-FIRE request is
+	# a FIRE style, so the embers were placed with the fire style's idea of the path while the balls
+	# flew on the juggle style's. Two copies again; there is one now.
+	var f : float = vals.get(&"u_top_fraction", 0.6)
+	var g : float = vals.get(&"u_ball_gravity", 1.0)
 	var i : int = fx.req.lit[randi() % fx.req.lit.size()]
-	var style := fx.req.style
 	# The EASED geometry and the host's own phase and direction — the same numbers the shader was
 	# handed this frame, so the ember leaves the ball where the ball was actually drawn.
 	var at := FxJuggle.ball_pos(float(i), maxf(count, 1.0), _phase, span, top, bottom,
-			style.ball_top_fraction, style.ball_gravity, _ball_dir, arcs)
+			f, g, _ball_dir, arcs)
 	# Off the TOP of the ball, where its plume sits — never its centre, which is inside the ball.
 	return at + Vector2(0.0, -radius - randf() * height)
 

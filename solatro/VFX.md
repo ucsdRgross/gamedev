@@ -124,15 +124,21 @@ actually cost time.
 
 ## 5. Adding an effect, a prop kind, or a lever
 
-- **A new effect** = one `.gdshader` + one `FxStyle` preset + a status that returns an `FxRequest`
-  from `fx_request()`. `FxAttachment` never learns effect names.
+- **A new effect** = one `.gdshader` + one **`FxStyle` SUBCLASS** carrying that effect's levers + a
+  `.tres` of it + a status that returns an `FxRequest` from `fx_request()`. `FxAttachment` never
+  learns effect names — it only ever touches the base (`apply()`, `opacity`, `brightness`, `ember`).
+  - ⚠ **Do not add your knobs to `FxStyle` itself.** The base is the shared half only. A knob on the
+    base is a knob every other effect's inspector shows and every other effect's material is handed —
+    which is exactly the confusion, and the per-material waste, the subclasses exist to end
+    (2026-07-31; `FxStyle`'s own doc comment has the measurements).
+- **A new lever on an existing effect** = an `@export` on `FxFireStyle` / `FxJuggleStyle`, one
+  `set_shader_parameter` in that class's `apply()`, one uniform. Never a literal in the shader.
 - **A new prop shape** = usually NOTHING. A textured kind overrides `measure_fx_silhouette()` to
   hand `FxAttachment` its sheet, and the fire shader reads that art's own alpha as its mask. Only a
   kind with no texture at all (a deformed card) needs a `mask()` branch and an `fx_shape()` override.
 - **A new prop kind's art** = a sheet, `art_size = art_size_for(SHEET, …)` in `_init` (never a raw
   pixel number), and a `_draw_frame` call. §4h explains why.
-- **A new lever** = an `@export` on `FxStyle`, one `set_shader_parameter` in `apply()`, one uniform.
-  Never a literal in the shader: `Shaders/Styles/*.tres` is the single tuning home.
+  `Shaders/Styles/*.tres` is the single tuning home.
 - **A new motion term** must fold in the host's seed, or every card on the board runs it in lockstep.
 
 ---
@@ -236,17 +242,34 @@ columns** — that instrument reported two rejected builds as successes.
 
 - **✅ MEASURED 2026-07-30 — `Tests/Visual/fx_cost.tscn`, 20 burning hosts each, Intel UHD.** Card
   fire 1.53 ms, hoop 1.21 ms, knife 0.36 ms — all comfortable against a 16.7 ms frame. **Ball fire is
-  28.5 ms and always was** (26.6 ms before this work): see §7.8, which is now the biggest open
-  performance item in the layer. Its three levers are in FX_HANDOFF §1.
+  28.5 ms and always was** (26.6 ms before the mask model): the biggest number in the layer.
+- **✅ THE THREE LEVERS WERE TAKEN, 2026-07-31 — the juggling layer is ~2.4x cheaper on the GPU.**
+  Re-measured on a **GTX 1070**, NOT the Intel UHD above, so read the ratios rather than the
+  absolutes. The bench now prices the two juggling quads separately, and this machine's driver does
+  implement `viewport_get_measured_render_time_gpu`, so the GPU column means something here.
+
+  | 20 hosts, GTX 1070 | before | after | GPU timer, before → after |
+  |---|---|---|---|
+  | juggle balls | 1.28 ms | 0.52 ms | 1.458 → 0.446 |
+  | ball fire | 1.68 ms | 0.69 ms | 1.863 → 0.670 |
+  | juggle both | 2.37 ms | 1.20 ms | 2.539 → 1.062 |
+
+  What did it: (1) **hoisting the ladder** — `fx_arc_ladder` resolves every arc's start and share
+  ONCE per fragment, where `fx_nearest_ball` re-derived them ~384 times, each carrying a `sqrt`;
+  (2) **`fx_balls_near`**, one box test that rejects the empty majority of a ball quad before the
+  lookup is paid for; (3) **the box quad bound** — `FxRequest.rotates_with_host = false` on both
+  juggling quads, since the pattern provably does not turn with its host (`05f_ball_rotation` is the
+  proof), which is ~22 % of their fill. ⚠ **The Intel UHD figure has NOT been re-measured, and it is
+  the number that matters if the game targets laptops.**
   - ⚠ **THE OLD LEVER ORDER WAS WRONG AND IS WITHDRAWN.** It began "raise `FxStyle.pixel`, chunkier
     FX pixels is a LOOK change not a capability loss" — but `fx_local()` quantizes a COORDINATE
     inside the fragment shader, so the quad's screen footprint is unchanged and **the shader still
     runs once per screen pixel**. Chunkier pixels help warp coherence and texture-cache hits a
-    little; they do not cut the fragment count at all. What actually works: hoist the `O(arcs²)`
-    loop-invariant arc maths out of `fx_nearest_ball` → early-out cheaply before the ball lookup →
-    shrink the QUADS (a ball quad does not need the circumscribed bound, because the juggling
-    pattern does not rotate with its host) → drop `fx_fbm` to one octave → and only then reconsider
-    features. **Do not start by cutting features.**
+    little; they do not cut the fragment count at all. **Do not start by cutting features.**
+  - **What is left, in order:** the quads are still sized as body-plus-reach on EVERY side, so a
+    33-unit-wide pattern gets a 112x125 quad — shrinking that to the effect's own box is worth
+    another ~25 %, and the attempt, with the trap that stopped it, is written up on
+    `FxRequest.reach` and in FX_HANDOFF §1. Then `fx_fbm` at one octave. Only then features.
 - **⬜ Still unmeasured: 50 burning cards in the DECK VIEWER**, the densest screen in the game. The
   bench takes a `HOSTS` constant; raise it and re-run.
 
@@ -296,14 +319,13 @@ Nothing here is secretly broken — each is understood, and each is either accep
    `fire.gdshader`). The FX ATTACHMENT suite reads the constants out of the shader source and asserts
    the mapping — keep that test alive if you add a shape. It also asserts that `u_mode` never comes
    BACK: one code path for every host is the point of the mask model.
-8. **⚠ BALL FIRE COSTS 28.5 ms PER FRAME for 20 juggling cards** (measured 2026-07-30, integrated
-   graphics — see §6.3). That is nearly two whole 60 fps frames, and it is **pre-existing**: the
-   shipped contour build measured 26.6 ms on the same bench, so the mask model added ~2 ms to an
-   already-broken number rather than causing it. The cost is `fx_nearest_ball` running over a quad
-   sized by the ARC HEIGHT (~380 screen px square per card) — the lookup is O(1) in the ball count,
-   but it is not cheap, and the quad is enormous compared to the few balls in it. Nobody has hit this
-   in play because 20 simultaneously-juggling cards has not happened. Cheapest first swing: raise
-   `fire_ball.tres`'s `pixel` (0.8 today), which cuts the fragment count quadratically.
+8. **✅ MOSTLY FIXED 2026-07-31 — ball fire cost 28.5 ms per frame for 20 juggling cards** (measured
+   2026-07-30, integrated graphics). It was **pre-existing**: the shipped contour build measured
+   26.6 ms on the same bench, so the mask model added ~2 ms to an already-broken number rather than
+   causing it. The cost was `fx_nearest_ball` — `O(arcs²)` in `sqrt`-carrying arc weights, none of
+   which varied across a fragment — run over a quad sized by the ARC HEIGHT on every side, nine
+   tenths of which no ball could ever occupy. §6.3 has the three levers that took it, the new table,
+   and what is left. ⚠ **Re-measured on a GTX 1070, not on the Intel UHD the 28.5 came from.**
 9. **⚠ `all_tests.tscn`'s `speed_base_delay` DECIDES WHETHER SOME UI CHECKS CAN PASS AT ALL, and the
    editor drops it (2026-07-30).** The committed scene sets `speed_base_delay = 0.1`; the script's
    own default is 0.01, and re-saving the scene in the editor wrote the property out entirely, so the

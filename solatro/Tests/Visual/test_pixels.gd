@@ -198,7 +198,7 @@ func test_fire_bands_are_onion_shells() -> void:
 func test_every_upward_surface_burns() -> void:
 	behavior_section("EVERY UPWARD-FACING SURFACE BURNS, AND NO FLAME LEAPS THE HOLE")
 	var body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
-	var style : FxStyle = PropVisual.PROP_FIRE_STYLE
+	var style : FxFireStyle = PropVisual.PROP_FIRE_STYLE
 	_zoom_to_fit(body.y * 0.5 + style.height * (1.0 + style.height_var) + 4.0)
 	var att := FxAttachment.new()
 	att.configure(body, false, FxAttachment.Shape.SPRITE, FxAttachment.Half.WHOLE, false)
@@ -283,7 +283,7 @@ func test_balls_sit_on_their_oracle() -> void:
 ## two-tone split has two), and the brightest tone is OFF CENTRE — a centred dot is a disc's gloss.
 func test_ball_reads_as_a_sphere() -> void:
 	behavior_section("BALLS ARE SPHERICAL")
-	var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+	var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
 	style.ball_radius = 12.0
 	style.ball_radius_min = 12.0
 	style.ball_span = 1.0
@@ -358,7 +358,7 @@ func test_one_pixel_size_for_all_art() -> void:
 # ----------------------------------------------------------------- the stage
 
 ## Fire off `style` at `stacks`, on a host of `body` art units — the same FxAttachment a card builds.
-func _host_fire(body: Vector2, stacks: int, style: FxStyle) -> void:
+func _host_fire(body: Vector2, stacks: int, style: FxFireStyle) -> void:
 	_zoom_to_fit(body.y * 0.5 + style.height * (1.0 + style.height_var) + 4.0)
 	var att := FxAttachment.new()
 	att.configure(body, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE, false)
@@ -368,7 +368,7 @@ func _host_fire(body: Vector2, stacks: int, style: FxStyle) -> void:
 	_park(att, 0.0)
 
 ## The juggling pattern at a fixed phase, with no ball on fire (this suite is about the balls).
-func _host_balls(n: int, style: FxStyle, phase: float, dir: float = 1.0) -> void:
+func _host_balls(n: int, style: FxJuggleStyle, phase: float, dir: float = 1.0) -> void:
 	var geo := FxJuggle.geometry(n, style)
 	_zoom_to_fit(geo[&"u_arc_height"] + geo[&"u_ball_radius"] + 4.0)
 	var att := FxAttachment.new()
@@ -401,8 +401,8 @@ func _park(att: FxAttachment, phase: float) -> void:
 
 ## Fire with every source of raggedness off: this suite measures geometry and band structure, and
 ## noise/flicker/dither only make both harder to state.
-func _plain_fire_style() -> FxStyle:
-	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxStyle
+func _plain_fire_style() -> FxFireStyle:
+	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
 	style.height_var = 0.0
 	style.noise_amp = 0.0
 	style.dither = 0.0
@@ -424,7 +424,7 @@ func _plain_fire_style() -> FxStyle:
 ##    (owner report). Checked on the oracle, which is what the render is pinned to above.
 func test_balls_alternate_directions() -> void:
 	behavior_section("BALLS CROSS VIA THE ARC LADDER, AND THE HOST PICKS A SIDE")
-	var style : FxStyle = StatusJuggling.JUGGLE_STYLE
+	var style : FxJuggleStyle = StatusJuggling.JUGGLE_STYLE
 	var geo := FxJuggle.geometry(2, style)
 	var phase := 0.15
 	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
@@ -463,7 +463,7 @@ func test_balls_alternate_directions() -> void:
 ## was total — and require both directions to be present. A per-ball mirror makes every one of these
 ## unanimous, which is what left half the pattern empty.
 func _check_directions_split() -> void:
-	var style : FxStyle = StatusJuggling.JUGGLE_STYLE
+	var style : FxJuggleStyle = StatusJuggling.JUGGLE_STYLE
 	for count : int in [2, 4, 6]:
 		var geo := FxJuggle.geometry(count, style)
 		if not is_equal_approx(geo[&"u_ball_arcs"], float(count)): continue

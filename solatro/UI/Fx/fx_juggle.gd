@@ -11,14 +11,17 @@ const JUGGLE_SHADER := preload("res://Shaders/juggle.gdshader")
 
 ## Ball count is genuinely UNCAPPED (owner ruling 5): the shader's closed-form lookup has no loop
 ## over it, so 500 balls cost what 5 do. What scales with the count is size, arc height and speed.
-static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxStyle,
-		fire_style: FxStyle) -> Array[FxRequest]:
+static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggleStyle,
+		fire_style: FxFireStyle) -> Array[FxRequest]:
 	var out : Array[FxRequest] = []
 	if stacks <= 0: return out
 	var geo := geometry(stacks, balls_style)
 	var reach : float = geo[&"u_arc_height"] + geo[&"u_ball_radius"]
-
 	var balls := FxRequest.make(&"balls", JUGGLE_SHADER, balls_style, reach)
+	# The pattern does NOT turn with its host (owner 2026-07-30), so this quad keeps the cheap box
+	# bound even on a spinning card — see FxRequest.rotates_with_host. Both quads of the pair must
+	# say the same thing, or their lattices differ and the plume anchors off its ball.
+	balls.rotates_with_host = false
 	balls.live = geo
 	balls.phase_period = period(stacks, balls_style)
 	out.append(balls)
@@ -33,15 +36,20 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxStyle
 	# and everything above that mask — march, anchor, comb, ogee, onion shells, ramp — is literally
 	# the same code a card runs (owner 2026-07-30).
 	fire.shape = FxAttachment.Shape.BALLS
+	# Its mask is the BALLS, and `mask_level`'s ball branch returns before `u_shape_rot` is ever read
+	# — so this quad does not turn with the host either, and must match the balls quad exactly.
+	fire.rotates_with_host = false
 	# The plume anchors to the ball centre the BALLS quad drew, so it must snap on the BALLS quad's
-	# lattice — a different reach and a different `pixel` from this quad's.
-	fire.partner_reach = reach
+	# lattice — a different extent and a different `pixel` from this quad's. Named, so the attachment
+	# reads that quad's real size rather than rebuilding it here (FxRequest.partner_id).
+	fire.partner_id = balls.id
 	fire.partner_pixel = balls_style.pixel
 	fire.live = geo.duplicate()
-	# THE COMB, at ball pitch (FX_HANDOFF §1.4b). The one comb divides `u_emit_width` into `u_count`
-	# cells, so one cell per ball WIDTH is emit_width = a diameter at a count of one. Dividing the
-	# quad into `n` cells instead — the silhouette rule — would put a ~30-unit cell against a ball of
-	# radius ~1.3 and let a single flame straddle the whole pattern.
+	# ONE FLAME PER BALL, as wide as its ball. `u_emit_width` is a DIAMETER: a ball's arch is anchored
+	# to the ball's own centre, so this is the flame's width and nothing else. A comb across the quad
+	# would put a ~30-unit cell against a ball of radius ~1.3 and let one flame straddle the pattern —
+	# and, being anchored to the quad while the ball travels, would blink the plume in and out
+	# (FX_HANDOFF §2).
 	fire.live[&"u_count"] = 1.0
 	fire.live[&"u_emit_width"] = geo[&"u_ball_radius"] * 2.0
 	# The BALL COUNT is its own uniform now that `u_count` means tendrils: the mask needs it to find
@@ -58,7 +66,7 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxStyle
 	return out
 
 ## The pattern's geometry at a given ball count — the single source both quads read.
-static func geometry(stacks: int, style: FxStyle) -> Dictionary[StringName, float]:
+static func geometry(stacks: int, style: FxJuggleStyle) -> Dictionary[StringName, float]:
 	var n := float(maxi(stacks, 1))
 	var geo : Dictionary[StringName, float] = {}
 	geo[&"u_count"] = n
@@ -77,6 +85,14 @@ static func geometry(stacks: int, style: FxStyle) -> Dictionary[StringName, floa
 	geo[&"u_arc_height"] = minf(style.ball_arc_height * (1.0 + log(n) * 0.35),
 			maxf(style.ball_arc_max - geo[&"u_ball_radius"], 0.0))
 	geo[&"u_return_height"] = style.ball_return_height
+	# THE PATH'S TIMING, HANDED TO BOTH QUADS FROM ONE PLACE. These used to ride in `FxStyle.apply()`,
+	# which meant the ball-fire quad read them off the FIRE style (`fire_ball.tres`) while the balls
+	# read them off the JUGGLE style — two resources that had to agree about the same path, with
+	# nothing checking that they did, and a plume sliding off its ball if they ever drifted. They
+	# agreed only because both were left at their script defaults. The juggle style owns the path, so
+	# it owns these; the same reason `u_ball_arcs` is here rather than in apply().
+	geo[&"u_top_fraction"] = style.ball_top_fraction
+	geo[&"u_ball_gravity"] = style.ball_gravity
 	# Balls spin, and spin faster at higher counts (owner ruling 25).
 	geo[&"u_ball_spin"] = style.ball_spin * (1.0 + log(n) * style.ball_spin_per_count)
 	geo[&"u_ball_arcs"] = float(arcs(stacks, style))
@@ -91,7 +107,7 @@ static func geometry(stacks: int, style: FxStyle) -> Dictionary[StringName, floa
 ## ⚠ This is an INTEGER and it steps: the arc count changing IS a change of path, so the pattern
 ## re-shapes when a stack crosses a lane boundary. That is the one place ruling 16's "no visual
 ## jumps" does not hold — the alternative is interpolating between two different path topologies.
-static func arcs(stacks: int, style: FxStyle) -> int:
+static func arcs(stacks: int, style: FxJuggleStyle) -> int:
 	var n := float(maxi(stacks, 1))
 	var lanes := 1 + int(floorf(log(n) * style.ball_arcs_per_count))
 	return clampi(lanes * 2, 2, style.ball_arcs_max - (style.ball_arcs_max % 2))
@@ -106,7 +122,7 @@ static func arcs(stacks: int, style: FxStyle) -> int:
 ## in on top of that made the whole cycle 0.12 s at base_delay 0.1 and the balls unreadable (owner
 ## report 2026-07-28). How fast juggling looks is an art decision, not a consequence of how fast the
 ## player set the game's step.
-static func period(stacks: int, style: FxStyle) -> float:
+static func period(stacks: int, style: FxJuggleStyle) -> float:
 	var n := float(maxi(stacks, 1))
 	return maxf(style.ball_period_secs / (1.0 + log(n) * 0.20), 0.05)
 
@@ -176,7 +192,7 @@ static func ball_pos(i: float, n: float, phase: float, span: float, h_top: float
 ## texture — one texel per ball, r = that ball's own normalized level. Built when the status
 ## changes and NEVER per frame.
 static func fire_texture(stacks: int, levels: PackedInt32Array,
-		style: FxStyle) -> ImageTexture:
+		style: FxFireStyle) -> ImageTexture:
 	var n := maxi(stacks, 1)
 	var any := false
 	var img := Image.create(n, 1, false, Image.FORMAT_RGBA8)

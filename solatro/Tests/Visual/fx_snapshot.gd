@@ -65,7 +65,11 @@ func _run() -> void:
 			+ "in TIME — higher bunches them at the apex", _ball_gravity())
 	await _shot("05e_ball_arcs", "the ARC LADDER: 2 / 4 / 6 / 8 arcs at one ball count — lanes fill "
 			+ "in evenly between the carry and the throw", _ball_arcs())
+	await _shot("05f_ball_rotation", "host rotated 0 / 30 / 45 / 90 deg — the PATTERN must not turn "
+			+ "with it: balls stay on the (world-upright) oracle crosses", _ball_rotation())
 	await _shot("06_ball_fire", "per-ball fire: 5 balls, 2 lit at different levels", _ball_fire())
+	await _shot("06b_ball_fire_cycle", "the SAME two lit balls of six, stepped around the cycle — "
+			+ "TWO plumes in every panel, or a lit ball is being suppressed", _ball_fire_cycle())
 	await _shot("07_transition", "a stack change mid-ease: fractional counts on a FLAT host and on "
 			+ "a CURVED one — the ring panels are where the anchor could pop", _transition())
 	await _shot("08_focus_highlight", "host modulate 1.0 vs the card's focus highlight — the "
@@ -79,7 +83,7 @@ func _run() -> void:
 ## off-by-one (or an off-by-two) in the comb is invisible underneath them.
 func _tendril_count() -> Array[Case]:
 	var out : Array[Case] = []
-	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxStyle
+	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
 	style.height_var = 0.0
 	style.noise_amp = 0.0
 	style.dither = 0.0
@@ -101,7 +105,7 @@ func _ogee_profile() -> Array[Case]:
 	# and the outline — the only thing this shot is about — stops being legible.
 	var pairs : Array[Vector2] = [Vector2(2.0, 1.0), Vector2(1.0, 0.35), Vector2(0.5, 0.35)]
 	for pair : Vector2 in pairs:
-		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxStyle
+		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
 		style.ogee_point = pair.x
 		style.ogee_flare = pair.y
 		style.height_var = 0.0
@@ -213,7 +217,7 @@ func _ball_path() -> Array[Case]:
 func _ball_sphere() -> Array[Case]:
 	var out : Array[Case] = []
 	for radius : float in [14.0, 7.0, 3.0, 1.0]:
-		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
 		style.ball_radius = radius
 		style.ball_radius_min = radius
 		# Park the ball at the top of the throw and flatten the loop, so the quad is small and the
@@ -234,7 +238,7 @@ func _ball_sphere() -> Array[Case]:
 func _ball_gravity() -> Array[Case]:
 	var out : Array[Case] = []
 	for g : float in [1.0, 1.6, 2.4]:
-		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxStyle
+		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
 		style.ball_gravity = g
 		var case := _card_case("gravity %.1f" % g, FxJuggle.requests(8, PackedInt32Array(),
 				style, StatusJuggling.BALL_FIRE_STYLE))
@@ -256,6 +260,26 @@ func _ball_arcs() -> Array[Case]:
 		# and this shot is about the ladder alone.
 		for req : FxRequest in reqs: req.live[&"u_ball_arcs"] = float(arcs)
 		out.append(_card_case("%d arcs" % arcs, reqs))
+	return out
+
+## THE JUGGLING HALF OF `02_fire_rotation`, and the gap that let §4 go unverified: there was no
+## rotated juggling shot anywhere. Fire and juggling answer a turning host DIFFERENTLY, and both
+## answers are on purpose:
+##  * fire follows its host's silhouette (the mask is the art) while keeping its flames upright;
+##  * the juggling pattern does not turn at all — *"juggle effect doesn't rotate with card"* (owner
+##    2026-07-30). `juggle.gdshader` never reads `u_shape_rot` and `FxAttachment._push_live`
+##    counter-rotates the quad, so the loop holds still in world space, centred on the card.
+##
+## The oracle crosses are drawn WORLD-UPRIGHT here (`_Ghost.ball_rot`), which is what makes the shot
+## self-verifying: the balls must sit on their crosses at every angle, on a card outline that is
+## visibly tilted underneath them. A ball following its card would leave every cross behind.
+func _ball_rotation() -> Array[Case]:
+	var out : Array[Case] = []
+	for deg : int in [0, 30, 45, 90]:
+		var case := _card_case("%d deg" % deg, FxJuggle.requests(5, PackedInt32Array([3, 0, 0, 3, 0]),
+				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
+		case.rotation = deg_to_rad(float(deg))
+		out.append(case)
 	return out
 
 ## Ruling 10 — a highlighted card highlights its effects too. Both shaders overwrite COLOR, so the
@@ -289,6 +313,25 @@ func _ball_fire() -> Array[Case]:
 	out.append(_card_case("card fire + lit balls", _stacked_case()))
 	return out
 
+## THE REGRESSION GUARD FOR "a lit ball's plume disappears and comes back" (owner report,
+## FX_HANDOFF §2). The bug was PHASE-DEPENDENT — an unlit ball drifting into the column above a lit
+## one won the one-ball-per-fragment lookup and forced the fragment dark — so a single frame could
+## never have caught it, which is exactly how it got past `06_ball_fire`.
+##
+## The owner's own repro: six balls, two of them alight, watched across the cycle. What to look for,
+## by EYE: **exactly two plumes in every panel**, on the same two balls (0 and 3), with the other four
+## balls bare. A panel showing one plume, or none, is the bug back.
+func _ball_fire_cycle() -> Array[Case]:
+	var out : Array[Case] = []
+	var levels := PackedInt32Array([6, 0, 0, 6, 0, 0])
+	for step : int in 6:
+		var ph := float(step) / 6.0
+		var case := _card_case("phase %.2f" % ph, FxJuggle.requests(6, levels,
+				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
+		case.phase = ph
+		out.append(case)
+	return out
+
 ## The stacking case from the design: card fire under the balls, ball fire over them.
 func _stacked_case() -> Array[FxRequest]:
 	var reqs : Array[FxRequest] = []
@@ -317,7 +360,7 @@ func _transition() -> Array[Case]:
 
 ## A fire request pinned to a FRACTIONAL tendril count — the state an easing stack change is in
 ## between two whole numbers, which is the only state a jump can hide in.
-func _counted(style: FxStyle, count: float) -> FxRequest:
+func _counted(style: FxFireStyle, count: float) -> FxRequest:
 	var live : Dictionary[StringName, float] = FxFire.stacks_live(4, style)
 	live[&"u_count"] = count
 	var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
@@ -496,6 +539,10 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		var ghost := _ghost_for(case, zoom)
 		slot.add_child(ghost)
 		ghost.balls = _oracle(case)
+		# The crosses are pinned to WORLD up, not to the tilted host: the pattern does not turn with
+		# its card, so an oracle drawn in the slot's rotated frame would sit where the balls are
+		# NOT — and the probe below reads the same unrotated positions.
+		ghost.ball_rot = -case.rotation
 		if not ghost.balls.is_empty():
 			var probe := _Probe.new()
 			probe.label = case.label
@@ -613,6 +660,9 @@ class _Ghost extends Node2D:
 	var art_size : Vector2 = Vector2.ZERO
 	## Independent expected ball positions, drawn as crosses.
 	var balls : PackedVector2Array = PackedVector2Array()
+	## Rotation applied to the CROSSES only, cancelling the slot's — the juggling pattern holds
+	## still in world space while its host turns, so its oracle has to as well.
+	var ball_rot : float = 0.0
 	## ART UNITS PER SCREEN PIXEL for this slot (1 / the shot's zoom). Every line width below is a
 	## multiple of it, so the outline and the crosses are always ~2 px thick on screen. Fixed 0.5-unit
 	## widths were sub-pixel at the zoom a ball quad forces (~1.0) and Godot DROPPED them: half of
@@ -635,6 +685,10 @@ class _Ghost extends Node2D:
 		# disagreement between the shader and the spec, readable at a glance and with no pixel
 		# measuring — which is what this harness could not do before and cost a long debugging
 		# detour.
+		# Pinned to WORLD up, cancelling the slot's rotation: the pattern does not turn with its
+		# host, so on a tilted card the crosses belong upright — which is what makes the rotation
+		# shot self-verifying rather than merely pretty.
+		draw_set_transform(Vector2.ZERO, ball_rot, Vector2.ONE)
 		for b : Vector2 in balls:
 			var c := Color(0.4, 1.0, 0.6)
 			var arm := maxf(2.5, 4.0 * px)

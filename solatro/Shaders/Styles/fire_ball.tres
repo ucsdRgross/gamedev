@@ -1,20 +1,19 @@
-[gd_resource type="Resource" script_class="FxStyle" format=3 uid="uid://c7rbibl64t2p1"]
+[gd_resource type="Resource" script_class="FxFireStyle" format=3 uid="uid://c7rbibl64t2p1"]
 
-[ext_resource type="Script" uid="uid://c46nbffok8q0y" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+[ext_resource type="Script" uid="uid://tyyc75tbdqvs" path="res://UI/Fx/fx_fire_style.gd" id="1_fxstyle"]
 [ext_resource type="Resource" path="res://Assets/Palette/ramp_fire.tres" id="2_ramp"]
-[ext_resource type="Resource" path="res://Shaders/Styles/ember_prop.tres" id="3_ember"]
+[ext_resource type="Resource" uid="uid://cnjrwftijabob" path="res://Shaders/Styles/ember_prop.tres" id="3_ember"]
 
 [resource]
 script = ExtResource("1_fxstyle")
-pixel = 0.8
 dither = 0.2
 skew = 0.1
 height = 6.0
 height_var = 0.35
 base_width = 2.0
-merge = true
 ogee_flare = 0.4
 sink = 1.0
+merge = true
 sway_amp = 0.25
 sway_speed = 5.5
 flicker_speed = 2.6
@@ -24,5 +23,6 @@ noise_scroll = 22.0
 ramp_source = ExtResource("2_ramp")
 ramp_edges = PackedFloat32Array()
 level_ref = 40.0
+pixel = 0.8
 ember_rate_max = 12.0
 ember = ExtResource("3_ember")

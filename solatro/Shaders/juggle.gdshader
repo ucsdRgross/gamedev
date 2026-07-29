@@ -61,6 +61,12 @@ uniform float u_ball_spec : hint_range(0.5, 0.999) = 0.965;
 // colors"). A texture rather than a vec4 array because a dynamically indexed array returned garbage
 // on GLES3 once already (ARCHITECTURE_REVIEW §4g).
 uniform sampler2D u_ball_tones : source_color, filter_nearest, repeat_disable;
+// NEVER SAMPLED HERE. `fx_nearest_ball` takes the per-ball fire levels so that FIRE can resolve the
+// nearest LIT ball (FX_HANDOFF §2); the balls themselves do not care which of them is alight, so
+// this quad passes `lit_only = 0` and the texture is never read. It is declared because GLSL has no
+// optional parameters and there is exactly ONE nearest-ball function — a second copy of that lookup
+// is precisely the drift this include exists to prevent.
+uniform sampler2D u_ball_fire : filter_nearest, repeat_disable, hint_default_black;
 uniform vec4 u_gloss : source_color = vec4(1.0, 0.98, 0.85, 1.0);
 uniform float u_opacity = 1.0;
 
@@ -71,22 +77,34 @@ void fragment() {
 	vec4 tint = COLOR;
 	vec2 p = fx_local(UV, u_extent, u_pixel);
 	float n = max(u_count, 1.0);
-	float id;
-	fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
-			u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, id);
-	// The centre is SNAPPED to the pixel lattice before anything is measured from it, so the disc
-	// test and the shading agree and every ball rasterizes symmetrically (fx_pixel_snap). The
-	// distance from fx_nearest_ball is deliberately recomputed here rather than reused: testing
-	// against the unsnapped centre and shading from the snapped one is what would leave a ragged
-	// edge pixel.
-	vec2 centre = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height, u_return_height,
-			u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs), u_extent, u_pixel);
-	vec2 d = p - centre;
-	float d2 = dot(d, d);
-
-	// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in
-	// place rather than popping into the pattern, and the loop's spacing absorbs the rest.
-	float r = u_ball_radius * ((id >= floor(n)) ? fract(n) : 1.0);
+	float id = 0.0;
+	// Far from any ball until proven otherwise, which is what the guard below leaves behind.
+	vec2 d = vec2(1e9);
+	float d2 = 1e9;
+	float r = 0.0;
+	// THE EMPTY MAJORITY, REJECTED FIRST (FX_HANDOFF §1b.2). The quad is sized as the host's body
+	// plus the pattern's reach on EVERY side, so most of it is empty space no ball can ever occupy —
+	// a card's ball quad is ~112 art units across for a ~33 unit pattern — and every one of those
+	// fragments used to pay for the full closed-form lookup. One box test replaces it.
+	// (`return` is not allowed in a Godot fragment processor, hence the wrap rather than an exit.)
+	if (fx_balls_near(p, 0.0, u_span, u_arc_height, u_ball_radius)) {
+		float lvl;
+		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
+				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 0, id, lvl);
+		// The centre is SNAPPED to the pixel lattice before anything is measured from it, so the disc
+		// test and the shading agree and every ball rasterizes symmetrically (fx_pixel_snap). The
+		// distance from fx_nearest_ball is deliberately recomputed here rather than reused: testing
+		// against the unsnapped centre and shading from the snapped one is what would leave a ragged
+		// edge pixel.
+		vec2 centre = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height,
+				u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
+				u_extent, u_pixel);
+		d = p - centre;
+		d2 = dot(d, d);
+		// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in
+		// place rather than popping into the pattern, and the loop's spacing absorbs the rest.
+		r = u_ball_radius * ((id >= floor(n)) ? fract(n) : 1.0);
+	}
 
 	if (d2 > r * r || r <= 0.0) {
 		COLOR = vec4(0.0);

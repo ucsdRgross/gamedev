@@ -1,10 +1,9 @@
-[gd_resource type="Resource" script_class="FxStyle" format=3 uid="uid://dupqpni0mexms"]
+[gd_resource type="Resource" script_class="FxJuggleStyle" format=3 uid="uid://dupqpni0mexms"]
 
-[ext_resource type="Script" uid="uid://c46nbffok8q0y" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+[ext_resource type="Script" uid="uid://c3npeajan7xfl" path="res://UI/Fx/fx_juggle_style.gd" id="1_fxstyle"]
 [ext_resource type="Resource" path="res://Assets/Palette/ramp_ball.tres" id="2_tones"]
 
 [resource]
 script = ExtResource("1_fxstyle")
-ramp_edges = null
 ball_span = 30.4
 ball_tones = ExtResource("2_tones")

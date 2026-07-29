@@ -579,26 +579,41 @@ the fire riding them), which keeps the dependency inside the one class that owns
     card runs. `FxRequest.shape` is how ball fire says "my mask is the balls, not the card I ride on".
   - **`mask()` returns the LEVEL of the surface it hit**, which is ruling 21 as one rule instead of
     two code paths: a silhouette answers `u_level`, a ball answers its own texel from `u_ball_fire`.
-    `MASK_DARK` is solid-but-unlit — an unlit ball occludes and emits nothing (ruling 3). ⚠ Dark is
-    its own sentinel and NOT "level 0": the ramp coordinate is logarithmic, so a one-stack card sits
-    at exactly 0 and must still burn.
+    ⚠ **`MASK_DARK` IS GONE (2026-07-31).** It was solid-but-unlit, so an unlit ball occluded without
+    emitting (ruling 3) — and it was half of why a lit ball's plume disappeared and came back: an
+    unlit ball won the one-ball-per-fragment lookup, the march reported "solid, emits nothing", and
+    the fragment was forced dark. Fire resolves the nearest **LIT** ball now (`lit_only` in
+    `fx_nearest_ball`), so an unlit ball is never the answer here and the sentinel has no producer
+    left. Ruling 3 still holds where it matters — an unlit ball emits nothing and is dark because of
+    it; what was given up is its occlusion of a plume passing behind it, which the owner pre-ruled as
+    the cheaper of the two (FX_HANDOFF §2).
   - **The nearest ball is resolved ONCE per fragment and handed to every mask lookup.** The
     closed-form ball lookup is by far the most expensive thing in the file and a march never leaves
     its column, so re-running it at every march step would cost more than the whole rest of the
     shader.
-- **ONE COMB, pitched by `u_emit_width`, with no shape branch.** The pitch is `u_emit_width /
-  u_count`. A silhouette leaves the uniform at 0 and the shader derives the width from the host's
-  bounding box AT THE LIVE ROTATION — a uniform cannot carry that, and a 90-degree-rotated card
-  combed across its unrotated width left a third of its edge bare. BALLS supply one ball's
-  **DIAMETER**, so the comb tiles the quad at ball pitch and each ball catches roughly one cell;
-  dividing the quad into `n` cells instead would put a ~30-unit cell against a ball of radius ~1.3
-  and let one flame straddle the whole pattern. `u_count` therefore means TENDRILS on every quad, and
-  the ball count rides as its own uniform.
-  - ⚠ **A ball straddles the tiling, and `merge` + `base_width` is what closes it.** Measured on
-    `06_ball_fire`: at `base_width 1.3` with merge off, a lit ball's plume stood visibly BESIDE its
-    ball, offset by up to half a cell. `fire_ball.tres` is `merge = true, base_width = 2.0` for that
-    reason — the same outcome the deleted `radius * 3` special case produced, reached by data rather
-    than by a code path. Re-check that panel if either number moves.
+- **ONE COMB across the host's silhouette — and ONE FLAME PER BALL, anchored to the ball.** The comb
+  divides the host's bounding box AT THE LIVE ROTATION into `u_count` cells (a uniform cannot carry
+  that width: a 90-degree-rotated card combed across its unrotated width left a third of its edge
+  bare). `u_count` means TENDRILS on every quad, and the ball count rides as its own uniform.
+  - ⚠ **A BALL IS NOT A CELL OF THAT COMB, and pretending it was is the whole of FX_HANDOFF §2**
+    (fixed 2026-07-31). `u_emit_width` used to TILE the comb at ball pitch, on the reasoning that
+    each ball would catch roughly one cell. But a comb is anchored to the QUAD and **a ball moves**:
+    which cell a ball caught changed as it flew, so its flame changed identity (and with it its
+    desync phase and flicker), and it thinned to nothing whenever the ball crossed a cell boundary,
+    where the arch's own outline is zero. Worse, `tendril`'s grow-in ramp — `(id >= floor(cells)) ?
+    fract(cells) : 1.0`, which is a SPANNING comb's rule and only a spanning comb's — read `cells = 1`
+    on the tiled ball comb and multiplied the flame height by **zero** for every cell past the first:
+    a ball's plume died the moment it travelled right of the quad's centre and came back when it
+    crossed to the left. That is the owner's *"fire on balls sometimes disappears, then reappears
+    later"*, and `06b_ball_fire_cycle` is the shot that shows it (a single frame never could).
+    A ball's arch is anchored to the ball's own snapped centre now, `u_emit_width` is just how wide
+    it is (one diameter), and `grow`/`fan` are passed in by the caller rather than derived from a
+    comb the ball is not in.
+  - ⚠ **`fire_ball.tres`'s `merge = true` and `base_width = 2.0` were workarounds for that straddle**
+    — with the plume beside its ball, merge fused the two half-cells and a double-wide base covered
+    the gap. Both are now inert or overwide: merge is skipped for balls (a ball has no neighbouring
+    cell to fuse with) and `base_width 2.0` makes a flame twice its ball's width. They are ART
+    numbers, so they are left for the owner rather than retuned here.
 - **The mask MIRRORS with the art.** `FxAttachment.flipped` tracks `PropVisual.face_travel`, because
   the mask IS the drawing now — a blade heading right would otherwise emit off the outline it no
   longer has. One sign, re-pushed only when it actually changes.
@@ -759,8 +774,15 @@ freed never moves or removes what it already emitted, so emitters own no particl
 nothing to release. `ParticleEngine.CURRENT` may be null (a viewer has no play area) — `spawn()`
 no-ops rather than crashing, and "no engine" is a supported state.
 
-**Tuning.** ~35 art levers per effect live in `FxStyle` `.tres` presets under `Shaders/Styles/`,
-written to a material ONCE; only the clock, the host rotation, the lag vector, the phase and the
+**Tuning.** ~35 art levers per effect live in `.tres` presets under `Shaders/Styles/`, written to a
+material ONCE. **One class per EFFECT, not one class for all of them** (2026-07-31): `FxStyle` is the
+shared half — `pixel`, `brightness`, `opacity`, the embers, and a virtual `apply()` — and
+`FxFireStyle` / `FxJuggleStyle` carry their own knobs and override `apply()`. A flag on one fat class
+was tried first and reverted: the inspector filter needs a per-kind name table as soon as there is a
+third effect, and one shared `apply()` pushes every kind's parameters at every material (measured:
+~140 bytes per unused parameter, per MATERIAL — so the waste scales with hosts on screen, not with
+the number of styles). `FxRequest.style` is still the base, so nothing in the attachment layer knows
+which effect it is carrying; only the clock, the host rotation, the lag vector, the phase and the
 eased data values are pushed per frame. Player-facing knobs (`fx_transition_fraction`,
 `fx_intensity`) live in `player_settings.gd`; `fx_intensity` reaches zero as a genuine
 photosensitivity control, and flicker/pulse are separate levers so they can be reduced without

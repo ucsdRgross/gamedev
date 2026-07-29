@@ -65,16 +65,19 @@ const int SHAPE_BALLS = 3;
 const int RADII = 32;
 
 // What mask_level answers. A value >= 0 is a SOLID surface and the value itself is the fire level it
-// emits; MASK_DARK is solid but emits nothing — which is what keeps an unlit ball occluding without
-// lighting (owner ruling 3) — and MASK_EMPTY is no art at all.
+// emits; MASK_EMPTY is no art at all.
 //
-// Dark is its own sentinel rather than "level 0" because level 0 is a perfectly good FIRE: the ramp
-// coordinate is logarithmic, so a one-stack card sits at exactly 0 and must still burn.
+// ⚠ THERE IS NO LONGER A "SOLID BUT DARK" ANSWER (2026-07-30). An unlit ball used to return one, so
+// that it occluded without lighting (owner ruling 3) — and that is exactly what made a LIT ball's
+// plume disappear and come back (FX_HANDOFF §2): the unlit ball won the one-per-fragment lookup, the
+// march reported "solid, emits nothing", and the fragment was forced dark. Fire now resolves the
+// nearest LIT ball (`lit_only` in fx_nearest_ball), so an unlit ball is never the answer here at
+// all. Ruling 3 still holds where it matters — an unlit ball emits nothing, and is dark because of
+// it — and what was given up is only its occlusion of a plume passing behind it, which the owner
+// pre-ruled as the cheaper of the two.
 const float MASK_EMPTY = -1.0;
-const float MASK_DARK = -0.5;
 
-bool mask_solid(float m) { return m > -0.75; }
-bool mask_lit(float m) { return m >= 0.0; }
+bool mask_solid(float m) { return m >= 0.0; }
 // A march that found nothing. Larger than any quad, so every comparison against it fails.
 const float NO_SURFACE = 1e9;
 // The loop bound the march needs (GLSL cannot loop to a runtime count). The march is bounded in ART
@@ -87,7 +90,7 @@ uniform int u_shape = 0;
 uniform int u_half = 0;              // split props: 0 whole, 1 back arc only, 2 front arc only
 uniform vec2 u_extent = vec2(64.0);  // the quad's size in art units; UV maps across exactly this
 // The BALL quad's lattice (SHAPE_BALLS only), so a plume snaps to the centre its ball was drawn at
-// rather than to this quad's own grid. Pushed from FxRequest.partner_reach / partner_pixel.
+// rather than to this quad's own grid. Pushed from FxRequest.partner_id / partner_pixel.
 uniform vec2 u_partner_extent = vec2(64.0);
 uniform float u_partner_pixel = 1.0;
 uniform vec2 u_body = vec2(38.0, 50.0);
@@ -100,14 +103,14 @@ uniform float u_intensity = 1.0;     // surplus stacks push heat UP the ramp ins
                                      // tendrils (owner ruling 4)
 uniform vec2 u_lag = vec2(0.0);      // the host's motion, normalized — the cape
 uniform float u_radii[RADII];        // deformable card silhouette
-// THE COMB'S PITCH SOURCE, in art units — one comb for every shape, no modes (§1.4b).
+// SHAPE_BALLS only: the width of ONE ball's flame, in art units — a ball's DIAMETER, so a plume is
+// exactly as wide as the ball it stands on.
 //
-// The pitch is `u_emit_width / u_count`. A SILHOUETTE leaves this at 0 and the shader derives the
-// width from the host's own bounding box AT THE LIVE ROTATION, which a uniform cannot do: a card
-// turned 90 degrees is 50 units wide, not 38, and combing its rotated silhouette across the
-// unrotated width left a third of the top edge bare. BALLS supply one ball's DIAMETER, so the comb
-// tiles the quad at ball pitch and each ball catches roughly one cell — the outcome the deleted
-// `radius * 3` special case produced, reached by the general rule instead.
+// ⚠ It is NOT a comb pitch any more (2026-07-30). It used to make the comb TILE the quad at ball
+// pitch, on the reasoning that each ball would then catch roughly one cell — but a comb is anchored
+// to the QUAD and a ball MOVES, so which cell a ball caught changed as it flew, and cells past the
+// first zeroed the flame outright (see `tendril`). A ball's flame is anchored to the ball now, and
+// this is only how wide it is. Every other shape combs its own silhouette and leaves this at 0.
 uniform float u_emit_width = 0.0;
 // SPRITE kinds: the art's own sheet, and the frame to read out of it. This is what retires the
 // baked per-column profile — a mask sampled live cannot go stale when its host turns, and it is the
@@ -212,7 +215,7 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 	if (u_shape == SHAPE_BALLS) {
 		vec2 d = p - ball;
 		if (dot(d, d) > u_ball_radius * u_ball_radius) return MASK_EMPTY;
-		return (ball_level > 0.0) ? ball_level : MASK_DARK;
+		return ball_level;
 	}
 	float c = cos(u_shape_rot);
 	float s = sin(u_shape_rot);
@@ -286,10 +289,22 @@ float surface_below(vec2 p, float reach, vec2 ball, float ball_level, out float 
 
 // ===== THE CROWN ================================================================================
 
-// Heat contributed by one tendril at (x, rise). `id`/`cells` place it in the comb and desync it;
-// `pitch` is the cell width and `xc` its centre, both already resolved by the caller so the comb
-// has exactly one definition.
-float tendril(float id, float cells, float pitch, float xc, float w, float x, float rise) {
+// Heat contributed by one tendril at (x, rise). `id` places it in the comb and desyncs it; `pitch`
+// is the cell width and `xc` its centre; `grow` is how much of its full height it has grown to; and
+// `fan` is how far OUT it stands, normalized to [-1, 1], which is the only thing the outward skew
+// reads. All four are resolved by the caller, so the comb has exactly one definition and a ball —
+// whose flame is anchored to the ball rather than to a cell of a comb — goes through the same code.
+//
+// ⚠ `grow` AND `fan` USED TO BE DERIVED HERE, FROM `cells` AND `w`, AND BOTH WERE WRONG FOR A BALL.
+// A ball's comb is TILED — `cells` is 1 because a cell is one ball wide, not because there is one
+// tendril — so `(id >= floor(cells)) ? fract(cells) : 1.0` returned fract(1.0) = 0 for every cell
+// past the first, and every ball right of the quad's centre had its flame's height multiplied by
+// ZERO. That is the whole of the owner's *"fire on balls sometimes disappears, then reappears
+// later"* (FX_HANDOFF §2): a ball's plume died the moment it travelled right of centre and came back
+// when it crossed to the left. `fan` was `xc / (w * 0.5)` with `w` the emit width, which for a ball
+// is one DIAMETER — so a ball 15 units out was fanned as if it stood 11 cell-widths off centre and
+// its tip was flung clean outside its own arch.
+float tendril(float id, float grow, float pitch, float xc, float fan, float x, float rise) {
 	float half_w = pitch * 0.5 * u_base_width;
 	// TWO independent randoms per tendril, both folded through the HOST's seed so no two hosts run
 	// the same crown even on identical parameters (owner 2026-07-28). `ph` offsets its phase; `rate`
@@ -297,13 +312,6 @@ float tendril(float id, float cells, float pitch, float xc, float w, float x, fl
 	// to side however their phases are scattered, which is not "swaying in different directions".
 	float ph = fx_hash11(id + u_seed) * TAU * u_desync;
 	float rate = mix(1.0, 0.55 + 0.9 * fx_hash11(id * 7.31 + u_seed + 41.0), u_desync);
-
-	// The NEWEST tendril occupies a partial cell, so ramp its height by the fraction: it grows out
-	// of the surface instead of sliding in from the edge. Cell boundaries move continuously as
-	// `cells` changes, so the established flames only shuffle rather than teleport — which is what
-	// makes a stack change smooth (owner ruling 16). Tweening the stack count alone is NOT enough;
-	// the count itself has to be continuous.
-	float grow = (id >= floor(cells)) ? fract(cells) : 1.0;
 
 	float h = u_height
 		* mix(1.0, 0.55 + 0.45 * fx_value_noise(vec2(id * 3.7 + u_seed,
@@ -318,7 +326,7 @@ float tendril(float id, float cells, float pitch, float xc, float w, float x, fl
 	// Everything that displaces the spine grows with height, so the base stays planted on the body
 	// and only the TIP moves: skew (systematic outward fan — ruling 1's "angle skew as spread"),
 	// sway (oscillating drift), wave (snaking), wind, and the motion lag.
-	float drift = u_skew * (xc / max(w * 0.5, 1e-4)) * k
+	float drift = u_skew * fan * k
 		+ sin(u_time * u_sway_speed * rate + ph) * u_sway_amp * k * k
 		+ sin(rise * u_wave_freq - u_time * u_wave_speed + ph) * u_wave_amp * k
 		+ (u_wind.x + u_lag.x * u_lag_amount) * k * k;
@@ -372,9 +380,17 @@ float tendril(float id, float cells, float pitch, float xc, float w, float x, fl
 // every arch identical and costs 21 ms on a board of hoops. Nothing here is ever tilted or sheared:
 // `rise` is a WORLD-vertical distance and the ogee is evaluated in world x, so a flame on a steep
 // flank is still a flame pointing straight up, only a shorter one where its base is higher.
+//
+// The NEWEST tendril occupies a partial cell, so its height is ramped by the fraction: it grows out
+// of the surface instead of sliding in from the edge. Cell boundaries move continuously as `cells`
+// changes, so the established flames only shuffle rather than teleport — which is what makes a stack
+// change smooth (owner ruling 16). Tweening the stack count alone is NOT enough; the count itself
+// has to be continuous. ⚠ This is a SPANNING comb's rule and only a spanning comb's: it is meaningful
+// exactly because the last cell is the newest one.
 float tendril_at(float id, float cells, float pitch, float w, vec2 p, float floor_y) {
 	float xc = (id + 0.5) * pitch - w * 0.5;
-	return tendril(id, cells, pitch, xc, w, p.x, floor_y - p.y);
+	float grow = (id >= floor(cells)) ? fract(cells) : 1.0;
+	return tendril(id, grow, pitch, xc, xc / max(w * 0.5, 1e-4), p.x, floor_y - p.y);
 }
 
 void fragment() {
@@ -393,43 +409,76 @@ void fragment() {
 	// mask_level). A no-op for every other shape.
 	vec2 ball = vec2(1e9);
 	float ball_level = 0.0;
+	float ball_id = 0.0;
+	// Whether this fragment can draw anything at all. Only the ball shape can answer no — and when it
+	// does, the march below is skipped entirely, which is the whole point (`return` is not allowed in
+	// a Godot fragment processor, so it is a flag).
+	bool alive = true;
 	if (u_shape == SHAPE_BALLS) {
-		float id;
+		// THE EMPTY MAJORITY, REJECTED FIRST (FX_HANDOFF §1b.2), with a margin for what this quad
+		// draws BEYOND a ball: one flame's height, plus the erosion the base sinks by. Below the
+		// pattern is rejected too — the march only ever walks DOWN, away from every ball.
+		alive = fx_balls_near(p, u_height + max(u_sink, 0.0), u_span, u_arc_height, u_ball_radius);
+	}
+	if (alive && u_shape == SHAPE_BALLS) {
+		// THE NEAREST LIT BALL (the second half of FX_HANDOFF §2). Resolving the nearest ball of
+		// any kind cost plumes too: high above ball A the nearest ball is often a different ball B,
+		// and if B was unlit the march reported "solid, emits nothing" and forced the fragment dark —
+		// an unlit ball actively suppressing a lit one's plume wherever it won the lookup. An unlit
+		// ball is not on fire and has nothing this quad can draw, so it is not a candidate at all.
 		fx_nearest_ball(p, u_ball_count, u_phase, u_span, u_arc_height, u_return_height,
-				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, id);
+				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 1, ball_id,
+				ball_level);
+		// No lit ball anywhere near this column: there is nothing for the march to find.
+		alive = ball_level > 0.0;
 		// SNAPPED on the BALL quad's lattice, not this quad's: the two have different reaches and
 		// different `pixel`, so snapping here with u_extent/u_pixel would anchor the plume up to half
 		// a pixel off its ball and jitter as the ball travelled.
-		ball = fx_pixel_snap(fx_ball_pos(id, u_ball_count, u_phase, u_span, u_arc_height,
-				u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
-				u_partner_extent, u_partner_pixel);
-		ball_level = texelFetch(u_ball_fire, ivec2(int(id), 0), 0).r;
+		if (alive) ball = fx_pixel_snap(fx_ball_pos(ball_id, u_ball_count, u_phase, u_span,
+				u_arc_height, u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir,
+				u_ball_arcs), u_partner_extent, u_partner_pixel);
 	}
 
-	// ONE COMB FOR EVERY SHAPE (§1.4b). `u_emit_width` supplies the pitch where the host knows it
-	// (balls: one diameter, so the comb tiles the quad at ball pitch); a silhouette leaves it 0 and
-	// the width comes from its own bounding box at the LIVE rotation, which no uniform can carry.
-	bool tiled = u_emit_width > 0.0;
-	float w = tiled ? u_emit_width : 2.0 * body_half_width();
+	// THE COMB: `u_count` cells across the host's own width, one tendril standing in each. The width
+	// is the host's bounding box AT THE LIVE ROTATION, which no uniform can carry — a card turned 90
+	// degrees is 50 units wide, not 38.
+	float w = 2.0 * body_half_width();
 	float cells = max(u_count, 1.0);
 	float pitch = max(w / cells, 1e-4);
-	float id = floor((p.x + w * 0.5) / pitch);
-	// A SPANNING comb owns exactly `cells` cells and no more, so the outermost flames are not
-	// duplicated past the host's edge; a TILED one repeats forever at its pitch, which is what lets
-	// balls anywhere in the quad catch a cell.
-	if (!tiled) id = clamp(id, 0.0, ceil(cells) - 1.0);
+	// The comb owns exactly `cells` cells and no more, so the outermost flames are not duplicated
+	// past the host's edge.
+	float id = clamp(floor((p.x + w * 0.5) / pitch), 0.0, ceil(cells) - 1.0);
 
-	// THIS COLUMN'S FLOOR — one down-march, shared by every tendril that reaches this fragment.
+	// THIS COLUMN'S FLOOR — one down-march, shared by every tendril that reaches this fragment. Not
+	// walked at all on a fragment the ball guard already rejected: that march is ~20 mask lookups,
+	// and it is the cost §1b.2 exists to skip.
 	float floor_level = MASK_EMPTY;
-	float floor_y = surface_below(p, u_height, ball, ball_level, floor_level) + u_sink;
-	// A surface that is solid but DARK still ends the march, and still stops the flame: an unlit ball
-	// is not on fire and its column has nothing to burn (owner ruling 3).
-	if (floor_y < NO_SURFACE && mask_lit(floor_level) && p.y <= floor_y) {
+	float floor_y = NO_SURFACE;
+	if (alive) floor_y = surface_below(p, u_height, ball, ball_level, floor_level) + u_sink;
+	if (floor_y < NO_SURFACE && mask_solid(floor_level) && p.y <= floor_y) {
 		level = floor_level;
-		heat = tendril_at(id, cells, pitch, w, p, floor_y);
-		if (u_merge == 1) {                           // neighbours fuse, no V-notch between them
-			heat = max(heat, tendril_at(id - 1.0, cells, pitch, w, p, floor_y));
-			heat = max(heat, tendril_at(id + 1.0, cells, pitch, w, p, floor_y));
+		if (u_shape == SHAPE_BALLS) {
+			// ONE FLAME PER BALL, ANCHORED TO THAT BALL — not a cell of a comb the ball happens to be
+			// standing in (FX_HANDOFF §2, root cause). A ball travels; a comb anchored to the QUAD does
+			// not, so a ball drifted through cells as it flew: its flame changed identity (and with it
+			// its desync phase and its flicker), it thinned to nothing whenever the ball crossed a cell
+			// boundary — where the arch's own outline is zero — and every cell past the first zeroed
+			// the flame outright through `grow`. Anchoring the arch to the ball's OWN snapped centre
+			// makes the plume a property of the ball, which is what ruling 21 says it is.
+			//
+			// `u_emit_width` is one ball DIAMETER, so a ball's flame is exactly as wide as its ball.
+			// The fan is measured across the PATTERN, so the outermost balls lean outward like the
+			// outermost tendrils of a crown do — one diameter would have fanned a ball 15 units out as
+			// if it stood 11 cell-widths off centre and flung its tip outside its own arch.
+			// No merge: balls do not have neighbours in a comb to fuse with.
+			heat = tendril(ball_id, 1.0, max(u_emit_width, 1e-4), ball.x,
+					clamp(ball.x / max(u_span * 0.5, 1e-4), -1.0, 1.0), p.x, floor_y - p.y);
+		} else {
+			heat = tendril_at(id, cells, pitch, w, p, floor_y);
+			if (u_merge == 1) {                       // neighbours fuse, no V-notch between them
+				heat = max(heat, tendril_at(id - 1.0, cells, pitch, w, p, floor_y));
+				heat = max(heat, tendril_at(id + 1.0, cells, pitch, w, p, floor_y));
+			}
 		}
 	}
 	// Where the flame overlays the body it is drawn at u_inner_alpha. Every shipped style now sets

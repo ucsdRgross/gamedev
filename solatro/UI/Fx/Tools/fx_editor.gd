@@ -5,6 +5,10 @@ extends Node2D
 ## the real shaders react (owner 2026-07-28: *"a way to visualize fire and juggling purely in editor
 ## for debugging purposes, similar to formation editor, so I can fine tune parameters"*).
 ##
+## "React" means WITHIN A QUARTER SECOND, without reopening the scene: the tool polls every resource
+## it previews and rebuilds when one has moved (see `WATCH_SECS` — a custom resource does not announce
+## its own edits, and the export setters below only fire when a resource is ASSIGNED).
+##
 ## Every subject is on screen at once: a burning card, a juggling card, and the REAL prop visuals
 ## (hoop, knife, ball, fire) each carrying fire on their own silhouette — the hoop as an ellipse,
 ## the knife as its little box — because a style tuned on a card reads differently on a prop, whose
@@ -43,12 +47,33 @@ var _dirty := true
 var _hosts : Array[Node2D] = []
 var _particles : ParticleEngine = null
 
+# --- LIVE RESOURCE WATCH -------------------------------------------------------------------------
+## How often the tool re-reads the resources it is previewing, in seconds.
+##
+## ⚠ THIS EXISTS BECAUSE A CUSTOM RESOURCE DOES NOT TELL ANYONE IT CHANGED (owner 2026-07-31:
+## *"changing vfx parameters in editor does not update in real time, requiring closing scene and
+## reopening each time"*). `Resource.changed` is only emitted by `emit_changed()`, which built-in
+## resources call from their setters and a script's `@export var` does NOT — so editing `height` on
+## `fire_card.tres`, or an entry inside its `PaletteRamp`, moved nothing on screen. The `_touch()`
+## setters above only fire when the export is ASSIGNED a different resource, which is not what
+## tuning looks like.
+##
+## Polling rather than 35 hand-written `emit_changed()` setters across FxStyle, ParticleSpec and
+## PaletteRamp: one place, and it cannot go stale when a knob is added. A quarter second reads as
+## instant while dragging a slider, and the scan is a few dozen `Object.get()` calls over six
+## resources — free next to the shaders it is previewing.
+const WATCH_SECS := 0.25
+
+var _watch_wait := 0.0
+## Every inspector-visible value of every previewed resource, as of the last rebuild.
+var _watched : Array = []
+
 @export_group("Fire")
 ## The card-hosted flame — the resource you actually tune. Edit it and the preview re-pushes.
-@export var fire_style : FxStyle = preload("res://Shaders/Styles/fire_card.tres"):
+@export var fire_style : FxFireStyle = preload("res://Shaders/Styles/fire_card.tres"):
 	set(v): fire_style = v; _touch()
 ## The PROP-hosted flame, in prop art units. Every prop on the right uses this one.
-@export var prop_fire_style : FxStyle = preload("res://Shaders/Styles/fire_prop.tres"):
+@export var prop_fire_style : FxFireStyle = preload("res://Shaders/Styles/fire_prop.tres"):
 	set(v): prop_fire_style = v; _touch()
 ## Burning stacks. The interesting values are 1 (a single flame), 12 (the crown is full —
 ## FxFire.FX_MAX_TENDRILS) and 40+ (past the auto-merge threshold, overflow > 1.5).
@@ -56,10 +81,10 @@ var _particles : ParticleEngine = null
 	set(v): fire_stacks = v; _touch()
 
 @export_group("Juggling")
-@export var juggle_style : FxStyle = preload("res://Shaders/Styles/juggle_default.tres"):
+@export var juggle_style : FxJuggleStyle = preload("res://Shaders/Styles/juggle_default.tres"):
 	set(v): juggle_style = v; _touch()
 ## The fire that rides the balls — a different style from the card's, in PROP art units.
-@export var ball_fire_style : FxStyle = preload("res://Shaders/Styles/fire_ball.tres"):
+@export var ball_fire_style : FxFireStyle = preload("res://Shaders/Styles/fire_ball.tres"):
 	set(v): ball_fire_style = v; _touch()
 ## Watch 2, 4 and 6 especially: those are the counts where the ball count equals the ARC count, and
 ## where a per-ball direction mirror would send every ball the same way (fixed 2026-07-28).
@@ -82,6 +107,18 @@ var _particles : ParticleEngine = null
 ## Art units between subjects.
 @export_range(30.0, 200.0, 1.0) var spacing : float = 70.0:
 	set(v): spacing = v; _touch()
+## TURN EVERY HOST, to see how each effect handles a rotated host (owner 2026-07-30). Two different
+## answers are correct here, and this is how you tell them apart:
+##  * FIRE turns WITH its host — the mask is the art, and the march is world-down, so the flames stay
+##    upright and their pixels stay square while the silhouette under them tilts (ruling 1).
+##  * JUGGLING does NOT turn at all: *"juggle effect doesn't rotate with card"* (owner 2026-07-30).
+##    The pattern is defined in the quad's own space and `juggle.gdshader` never reads `u_shape_rot`,
+##    while `FxAttachment._push_live` counter-rotates the quad — so the balls hold their loop, upright
+##    and centred on the card, at every angle. This slider is here to PROVE that, not to fix it.
+## In both cases the FX pixel grid must stay world-aligned: diagonal pixels anywhere means someone
+## rotated a UV before quantizing it (the universal rule, fx_common.gdshaderinc §0b).
+@export_range(-180.0, 180.0, 1.0) var host_rotation : float = 0.0:
+	set(v): host_rotation = v; _touch()
 ## Body outlines, so you can see where a flame's base sits relative to its silhouette.
 @export var show_outlines : bool = true:
 	set(v): show_outlines = v; queue_redraw()
@@ -98,6 +135,27 @@ var _particles : ParticleEngine = null
 ## balls use the prop-scaled `ember_prop.tres`.
 @export var show_embers : bool = true:
 	set(v): show_embers = v; _touch()
+## THE EMBER TUNABLES, one click away (owner 2026-07-30: *"only see show embers in editor and not the
+## tunables"*). These are the same `ParticleSpec` resources `FxStyle.ember` points at — expand one and
+## every ember knob (lifetime, speed, spread, gravity, drag, sizes, `ramp_source`, `ramp_alphas`) is
+## editable while the preview is on screen. Editing the resource retunes the running game, because the
+## style points at this same object.
+##
+## Two of them because embers are SPLIT PER HOST SCALE exactly as the fire styles are: a prop draws at
+## ~2.5x smaller art units, so the card's ember is far too big beside a knife.
+##
+## ⚠ HOW MANY embers per second is NOT here — that is `FxStyle.ember_rate_max` on the fire style
+## above (fire_card / fire_prop / fire_ball), because a rate belongs to the fire that throws them, not
+## to the particle. Setting a spec to null disables that fire's embers entirely.
+##
+## ⚠ These MIRROR `FxStyle.ember` (`_mirror_ember_specs`) — they are a window onto the resource each
+## fire is really throwing, not an override. Assigning a different spec HERE is snapped back on the
+## next rebuild; point a fire at a different ember on the fire style, where that decision lives.
+@export var card_ember_spec : ParticleSpec = preload("res://Shaders/Styles/ember.tres"):
+	set(v): card_ember_spec = v; _touch()
+## Props AND balls: `ember_prop.tres` is the one both use, and the PROP style is the one shown here.
+@export var prop_ember_spec : ParticleSpec = preload("res://Shaders/Styles/ember_prop.tres"):
+	set(v): prop_ember_spec = v; _touch()
 
 @export_group("Clock")
 ## Speed the effect clock up or down. 0 FREEZES the animation on the current frame, which is how you
@@ -111,6 +169,12 @@ func _ready() -> void:
 	set_process(true)
 
 func _process(delta : float) -> void:
+	# The resources are polled BEFORE the rebuild check, so an inspector edit lands on this frame
+	# rather than on the next tick.
+	_watch_wait += delta
+	if _watch_wait >= WATCH_SECS:
+		_watch_wait = 0.0
+		if _fingerprint() != _watched: _touch()
 	if _dirty:
 		_dirty = false
 		_rebuild()
@@ -128,6 +192,43 @@ func _set_clock(running : bool) -> void:
 	for fx : FxAttachment in _attachments():
 		fx.process_mode = Node.PROCESS_MODE_INHERIT if running else Node.PROCESS_MODE_DISABLED
 
+## Every inspector-visible value of every resource this preview reads, flattened into one array. Two
+## of these compare unequal exactly when something the owner edited would change what is on screen.
+##
+## Nested resources are followed (an `FxStyle` holds a `PaletteRamp` and a `ParticleSpec`, and a
+## `ParticleSpec` holds another ramp), because the VALUE of a resource property is the object
+## identity — it does not change when the entries inside it do, and editing a ramp's entries is
+## exactly the case that used to need a scene reload.
+##
+## `PROPERTY_USAGE_EDITOR` is the filter, which is the same thing as "is in the inspector": it keeps
+## the plain script vars out, and those include `FxStyle._ramp_tex` — a cache this function itself
+## invalidates, which would otherwise make every poll look like a change and rebuild forever.
+func _fingerprint() -> Array:
+	var out : Array = []
+	for res : Resource in [fire_style, prop_fire_style, juggle_style, ball_fire_style,
+			card_ember_spec, prop_ember_spec]:
+		_read_into(res, out, 2)
+	return out
+
+func _read_into(res : Resource, out : Array, depth : int) -> void:
+	if not res or depth <= 0:
+		out.append(null)
+		return
+	for prop : Dictionary in res.get_property_list():
+		var usage : int = prop["usage"]
+		if not (usage & PROPERTY_USAGE_EDITOR): continue
+		var key : StringName = prop["name"]
+		var value : Variant = res.get(key)
+		# ⚠ COPY THE REFERENCE TYPES. `Array` and `Dictionary` are references in GDScript, so storing
+		# one stores a window onto the live value — and an entry edited IN PLACE (which is what
+		# `PaletteRamp.indices` gets when a colour is retuned) then compares equal to itself for ever.
+		# Measured: the fire ramp was the one thing the watch could not see. `Packed*` arrays are value
+		# types and copy on assignment, so they need nothing.
+		if value is Array: value = (value as Array).duplicate()
+		elif value is Dictionary: value = (value as Dictionary).duplicate()
+		out.append(value)                # the identity too, so SWAPPING a nested ramp registers
+		if value is Resource: _read_into(value as Resource, out, depth - 1)
+
 func _attachments() -> Array[FxAttachment]:
 	var out : Array[FxAttachment] = []
 	for host : Node2D in _hosts:
@@ -141,9 +242,24 @@ func _attachments() -> Array[FxAttachment]:
 
 ## Tear the preview down and build it again. Cheap, and it keeps the tool honest: there is no
 ## incremental state to go stale against an inspector edit.
+##
+## The CLOCKS AND THE SEEDS SURVIVE (`_keep_time` / `_keep_phase` / `_seed_for`), which matters now
+## that this runs four times a second while a slider is dragged: a fresh `FxAttachment` rolls a random
+## seed and a random phase, so an un-preserved rebuild teleported every ball and re-scattered every
+## tendril on each edit — the effect flickering rather than the parameter changing. Held steady, a
+## drag reads as the one thing that actually moved.
 func _rebuild() -> void:
+	_keep_time.clear()
+	_keep_phase.clear()
 	for host : Node2D in _hosts:
-		if is_instance_valid(host): host.queue_free()
+		if not is_instance_valid(host): continue
+		for child : Node in host.get_children():
+			var fx := child as FxAttachment
+			if not fx: continue
+			_keep_time.append(fx._time)
+			_keep_phase.append(fx._phase)
+			break
+		host.queue_free()
 	_hosts.clear()
 	if is_instance_valid(_particles): _particles.queue_free()
 	_particles = null
@@ -156,12 +272,48 @@ func _rebuild() -> void:
 		_particles.name = "Particles"
 		add_child(_particles)
 
+	_mirror_ember_specs()
+	_drop_ramp_caches()
 	var slot := 0
 	slot = _add_card_fire(slot)
 	slot = _add_juggler(slot)
 	for kind : GDScript in [HoopVisual, KnifeVisual, BallVisual, FireVisual]:
 		slot = _add_prop(slot, kind)
+	# AFTER the build, and from the resources as they now are: a rebuild must not look like another
+	# change, or the poll would rebuild on every tick for ever.
+	_watched = _fingerprint()
 	queue_redraw()
+
+## Show the ember spec each fire is ACTUALLY throwing — a mirror of `FxStyle.ember`, not an override.
+##
+## ⚠ It used to write the other way (`fire_style.ember = card_ember_spec`), and that was fine only
+## while nothing else moved. Now that the tool rebuilds four times a second, a write-through means the
+## tool would stamp its own value back over any edit the owner made to `FxStyle.ember` on the `.tres`
+## itself, within a quarter second, silently — and the editor might then SAVE that. The exports are a
+## window onto the resource: expand one and every ember knob is there, which is what they were added
+## for. To point a fire at a DIFFERENT ember, set it on the fire style, where that decision lives.
+func _mirror_ember_specs() -> void:
+	# Assigned only when it actually differs: every one of these setters calls _touch().
+	if fire_style and card_ember_spec != fire_style.ember:
+		card_ember_spec = fire_style.ember
+	# Props and balls share one prop-scaled spec by convention; the PROP style is the one shown.
+	if prop_fire_style and prop_ember_spec != prop_fire_style.ember:
+		prop_ember_spec = prop_fire_style.ember
+
+## Force every cached ramp texture to be rebuilt.
+##
+## ⚠ WITHOUT THIS, EDITING A COLOUR CHANGES NOTHING ON SCREEN. `FxStyle` compiles `ramp_source` into
+## one `ImageTexture` on first use and drops that cache only from its OWN setters — so retuning the
+## style re-reads it, but editing an entry INSIDE the `PaletteRamp` (which is where fire's colours
+## actually live) leaves the stale texture in place for the rest of the session. Re-assigning each
+## ramp property to itself runs the setter, which is the only invalidation these resources have.
+## `ParticleSpec._gradient` is the same story for embers.
+func _drop_ramp_caches() -> void:
+	for style : FxFireStyle in [fire_style, prop_fire_style, ball_fire_style]:
+		if style: style.ramp_source = style.ramp_source
+	if juggle_style: juggle_style.ball_tones = juggle_style.ball_tones
+	for spec : ParticleSpec in [card_ember_spec, prop_ember_spec]:
+		if spec: spec.ramp_source = spec.ramp_source
 
 ## A card-sized box carrying the card fire style.
 func _add_card_fire(slot : int) -> int:
@@ -210,17 +362,43 @@ func _spawn_host(at_x : float, body : Vector2, shape : FxAttachment.Shape,
 		reqs : Array[FxRequest]) -> Node2D:
 	var host := Node2D.new()
 	host.position = Vector2(at_x, 0.0)
+	# The whole host turns, art and all — the attachment reads `parent.global_rotation` every frame
+	# and cancels it, which is the thing the knob is here to show.
+	host.rotation = deg_to_rad(host_rotation)
 	add_child(host)                     # NO owner — see the header
 	var fx := FxAttachment.new()
 	fx.name = "Fx"
-	# host_rotates false: nothing spins in here, so the quads keep the cheaper box bound — the same
-	# bound every prop gets, since no prop rotates any more (§4g).
-	fx.configure(body, false, shape, FxAttachment.Half.WHOLE, true)
+	# `host_rotates` decides the QUAD BOUND, not whether anything turns: a turning host needs the
+	# circumscribed (diagonal) bound or its fire clips at the quad edge. Nothing spins while the knob
+	# is at zero, so the preview keeps the cheaper box bound there — the same bound every prop gets,
+	# since no prop rotates any more (§4g).
+	fx.configure(body, not is_zero_approx(host_rotation), shape, FxAttachment.Half.WHOLE, true)
 	host.add_child(fx)
+	# THE SEED BEFORE `sync`, THE CLOCKS AFTER — per-host randomness is read when the quads are BUILT
+	# (§4.4), while the clock is only ever pushed. This slot's seed is rolled once for the whole
+	# session, so a rebuild does not re-scatter the crown that is being tuned.
+	var slot := _hosts.size()
+	fx._seed = _seed_for(slot)
 	fx.sync(reqs)
+	if slot < _keep_time.size():
+		fx._time = _keep_time[slot]
+		fx._phase = _keep_phase[slot]
+		fx._push_live(0.0)
 	host.set_meta(&"body", body)
 	_hosts.append(host)
 	return host
+
+## This slot's random seed, rolled once and reused for every rebuild — the per-host random that keeps
+## two cards from flickering in lockstep is exactly what must NOT change when a slider moves.
+func _seed_for(slot : int) -> float:
+	while _seeds.size() <= slot:
+		_seeds.append(randf() * 100.0)
+	return _seeds[slot]
+
+## Preserved across a rebuild: one entry per host slot, in build order.
+var _seeds : PackedFloat32Array = PackedFloat32Array()
+var _keep_time : PackedFloat32Array = PackedFloat32Array()
+var _keep_phase : PackedFloat32Array = PackedFloat32Array()
 
 ## Slot centres, laid out symmetrically about the origin.
 func _x(slot : int) -> float:
@@ -233,15 +411,21 @@ func _draw() -> void:
 	draw_rect(Rect2(-half, -spacing * 1.6, half * 2.0, spacing * 3.2),
 			PaletteDB.color(backdrop_index), true)
 	var px := 1.0 / maxf(zoom, 0.01)
+	# The reference geometry TURNS WITH ITS HOST, or the rotation knob would show every flame leaning
+	# off a card face that stayed square — the tool lying about the very thing it was added to show.
+	var rot := deg_to_rad(host_rotation)
 	if show_card_face:
 		var face := PaletteDB.color(card_face_index)
 		for host : Node2D in _hosts:
 			if not is_instance_valid(host) or not host.get_meta(&"card", false): continue
 			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
-			draw_rect(Rect2(host.position - body * 0.5, body), face, true)
+			draw_set_transform(host.position, rot, Vector2.ONE)
+			draw_rect(Rect2(-body * 0.5, body), face, true)
 	if show_outlines:
 		var line := PaletteDB.color(PaletteDB.ROLES.suit_knife)
 		for host : Node2D in _hosts:
 			if not is_instance_valid(host): continue
 			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
-			draw_rect(Rect2(host.position - body * 0.5, body), line, false, px)
+			draw_set_transform(host.position, rot, Vector2.ONE)
+			draw_rect(Rect2(-body * 0.5, body), line, false, px)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
