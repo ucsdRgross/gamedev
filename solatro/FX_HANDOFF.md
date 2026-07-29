@@ -1,19 +1,202 @@
-# FX_HANDOFF.md — live handoff, updated 2026-07-31
+# FX_HANDOFF.md — live handoff, updated 2026-07-29
 
 **Read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW **§4g** first** (the map and the contract).
 
-The previous edition of this file was the owner's review of the MASK build: five items, §1–§5.
-**Four of them are done and one was accepted as-is.** This edition records what was done, what it
-measured, and the two things still open — the owner's playtest, and a re-measure on the slow machine.
-**§6 is written to be handed to whoever has that machine: run steps, the numbers to collect, and the
-fixes to apply in order if they fail.** Delete this file once §7 is empty.
+⚠ **START AT §0. THE FIRE MODEL IS BEING REPLACED.** The owner has chosen a cheaper, generic,
+noise-based fire — no lanes, no tendrils, no ogee, no onion shells — and §0 is the spec for it.
+Everything from §1 to §7 describes the build being retired: **read it as the record of what was
+learned and what must not be broken, not as a description of what to keep.** **§8 is the live list**;
+§9 is the cost attribution that justifies §0, and §11 is the runbook.
+
+Sections are numbered in reading order. If you add one, keep it that way — an earlier edition had
+§6.-1 and put §7b before §7a, and it cost a reader real time.
 
 ⚠ **The owner will run the `simplify` skill over the unpushed commits.** Land behaviour first; do not
 pre-emptively restructure for tidiness.
 
-⚠ **All numbers below were measured on a GTX 1070.** The 28.5 ms that started §1 came from an Intel
-UHD, and the two machines are ~12x apart. **Ratios transfer; absolutes do not.** If the game targets
-laptops, the Intel number is still the number, and nobody has taken it since the fix.
+⚠ **NUMBERS: §1's are a GTX 1070; everything in §6 and §9 is the owner's Intel UHD** (driver
+31.0.101.2135, gl_compatibility), which is the real target. The two are ~2x apart on these rows, NOT
+the ~12x an earlier edition of this file assumed. Ratios transfer; absolutes do not.
+
+---
+
+## 0. ⬜ THE NEXT BUILD — THE FIRE MODEL THE OWNER HAS CHOSEN
+
+Owner, 2026-07-29: *"Fire effect no longer has tendrils at all, just average fire shader effects like
+moving noise instead... just increasing shader params as intensity/stacks increase, no more individual
+tendrils, make sure all params have scaling ratios as stacks increase"* — and *"should still be form
+fitting to any shape and rotation. Do this for all current fire effects card prop ball."*
+
+**The rationale is the owner's and it is an ART call**: tendril count only reads at single-digit
+stacks, after which the ladder stops adding tendrils and the other parameters carry the intensity — so
+the tendrils were never doing much work. ⚠ **Do not sell this as a performance win on its own: §9
+measures the tendril math at 4 %.** What it buys is the RIGHT to stop marching, and that is 1.7x. The
+two changes are worthless apart and compound together — §9 is the whole argument, read it first.
+
+### 0a. What goes, what stays
+
+| GOES | STAYS, and why |
+|---|---|
+| the COMB / lanes (`w`, `cells`, `pitch`, `id`) | the MASK (`mask_level`) — it is what makes fire form-fitting |
+| `tendril()` / `tendril_at()` | `u_pixel` quantization + the world-aligned grid |
+| the OGEE arch (`ogee_point`, `ogee_flare`, `base_width`) | the PaletteRamp (`u_ramp`) — see 0e |
+| the ONION shells (`onion_power`, `onion_rise`) | `u_sink` (erosion into the art) and `u_inner_alpha` |
+| `merge`, `desync`, `sway_*`, `wave_*`, `height_var` | `u_time` (paced, pausable — NEVER built-in `TIME`) |
+| the DOWN-MARCH (`surface_below`) | `u_lag` (the cape), `u_level`, `u_intensity`, `u_brightness` |
+
+### 0b. The model, in four lines
+
+```
+cover(p) = fraction of N fixed taps BELOW p, within reach, that land inside the mask   // §9
+rise     = (1.0 - cover) * reach                     // height above the surface, no search
+n        = noise(p * scale + vec2(0, u_time * scroll) + u_seed)     // RISING, world-aligned
+heat     = clamp(aperture(cover, rise) * n, 0, 1)  ->  COLOR = texture(u_ramp, vec2(heat, u_level))
+```
+
+`cover` replaces the march AND the tendril in one move: it is both "where is the surface" and "how far
+above it am I", to the resolution the noise actually needs. **§9 measured 4 taps at 1.7x and 8 at
+1.16x — start at 4 and let the owner look.**
+
+### 0c. Why it is still form-fitting and rotation-proof — the two properties that must not regress
+
+- **FORM-FITTING IS FREE, AND STRICTLY BETTER THAN TODAY.** `cover` is sampled from the mask itself, so
+  fire hugs whatever `mask_level` answers — card, deformed card, blade, ring, ball. Three §1 properties
+  that currently need argument fall out by construction: **every upward-facing surface burns** (the
+  hoop's inner-bottom arc is just more body below a fragment), **no flame leaps the hole** (no tap
+  reaches further than `reach`), and **the corner chamfer disappears** (§7's bug — there is no angular
+  surface-finding left to miss a vertex).
+- **ROTATION-PROOF IS NOT AUTOMATIC — KEEP THE RULE.** Owner ruling 1: flames point WORLD-UP on a
+  spinning host. The taps must step WORLD-DOWN and only the mask LOOKUP may rotate (`u_shape_rot`),
+  exactly as `surface_below` does today. The noise must be sampled in the same world-aligned, already
+  quantized `p` — **never rotate a coordinate before quantizing it** (fx_common §0b) or the pixels go
+  diagonal, which is the universal rule this whole layer is built on.
+
+### 0d. Scaling with stacks — one place, and every knob needs a ratio
+
+`FxFire.stacks_live()` is the ONE mapping from stack count to uniforms, and it stays that. Today:
+
+```
+u_count     = min(count, FX_MAX_TENDRILS)        # RETIRE the cap; see the warning below
+u_intensity = intensity * (1 + log(over) * 0.45)
+u_height    = height    * (1 + log(over) * 0.30)
+u_level     = level(count, style)
+```
+
+**Every new noise knob needs its own ratio here** — aperture, noise scale, scroll speed, and whatever
+else the look ends up needing. Two hard constraints:
+
+- ⚠ **KEEP `u_count`, AS AN INTENSITY.** It stops meaning "how many tendrils" but `FxAttachment
+  ._emit_embers` reads it as the ember RATE (`sources = vals.get(&"u_count")`). Retire
+  `FX_MAX_TENDRILS` as a tendril cap, not the uniform.
+- ⚠ **EVERY SCALED VALUE MUST BE CONTINUOUS IN THE STACK COUNT** (owner ruling 16: a stack change eases,
+  it never jumps). That is why `u_count` is a float today. A knob that steps at integer stacks will
+  make the whole effect pop, and `FxAttachment._eased` can only tween what is continuous.
+
+### 0e. The owner's references — what transfers, and what will break this project
+
+| reference | take | ⚠ do NOT take |
+|---|---|---|
+| **Yui Kinomoto** — `noise = UV.y * (((UV.y + aperture) * fire_noise - aperture) * 75.0)` | **THE CORE IDEA, and the single most useful line the owner sent.** A vertical ramp times noise, thresholded to alpha, with `aperture` opening the flame out. **The adaptation IS the design: replace `UV.y` with `cover` from 0b** and a quad-shaped fire becomes a shape-fitting one. | `UV.y` itself — UV is the QUAD, so it would burn a rectangle, not the host |
+| **the tri-colour layered version** — two noise layers at different speeds, `tri_color_mix` | **two noise layers at different speeds** is cheap and is what makes noise read as fire rather than as static | `tri_color_mix` and the hardcoded `source_color` uniforms — `u_ramp` already does layered colour, per stack level, and ON PALETTE. Hardcoded colours FAIL `tools/palette_conformance.py` and the PALETTE suite |
+| **the Balatro-style fractal one** — 5 iterations of `sin`/`cos`/`length` per fragment | the LOOK is worth studying | ⚠ **THE COST MODEL IS THE OPPOSITE OF WHAT §9 SAYS WE NEED.** That is dozens of transcendentals per fragment, on a shader whose whole budget is per-fragment work times a 3.8x-overdraw fill, on an Intel UHD. It would undo every gain in §6a several times over. Look at it; do not port it |
+
+⚠ **All three references use `TIME`.** It is forbidden here — it ignores the act compression ramp and
+keeps running through a paused tree. `u_time` exists for exactly that.
+
+#### The reference code worth keeping
+
+**The one line the whole design turns on** (Fire Shader by Yui Kinomoto @arlez80, MIT):
+
+```glsl
+// original — UV.y is the QUAD, so this burns a rectangle
+float fire_noise = texture( noise_tex, UV + TIME * fire_speed ).r;
+float noise = UV.y * ( ( ( UV.y + fire_aperture ) * fire_noise - fire_aperture ) * 75.0 );
+ALPHA = clamp( noise, 0.0, 1.0 ) * fire_alpha;
+```
+
+**The adaptation, and it is the entire port:**
+
+```glsl
+// ours — `cover` comes from the MASK (0b), so the same maths burns the HOST's shape
+float n     = fx_fbm(p * u_noise_scale + vec2(0.0, u_time * u_noise_scroll) + u_seed);
+float shape = cover * (((cover + u_aperture) * n - u_aperture) * u_fire_gain);
+heat        = clamp(shape, 0.0, 1.0);
+```
+
+`cover` is 1 at the surface and falls to 0 at full reach, which is exactly the role `UV.y` plays after
+flipping — so the aperture term, the gain and the feel of the original all carry over unchanged. That
+substitution is the whole reason this reference is the right one to start from.
+
+**The second idea worth keeping** — two noise layers at different speeds (from the tri-colour
+reference). Cheap, and it is what stops noise reading as static:
+
+```glsl
+float n = 0.5 * (noise(uv + t * speed) + noise(uv + t * speed * 1.5));
+```
+
+**From the Balatro-style one, keep NOTHING as code** — see the table above. Its 5-iteration
+trig loop per fragment is the exact cost profile §9 says this project cannot afford.
+
+#### 0e.1 The noise source — there IS a sensible default, and one thing to measure
+
+**Default: ONE seamless tiling FBM texture.** Value or Perlin FBM, ~3 octaves baked in, **R8**
+(single channel — nothing here reads colour from noise), 128² or 256², `filter_nearest`,
+`repeat_enable`. Godot's `NoiseTexture2D` + `FastNoiseLite` with `seamless = true` generates it at
+import; no hand-authored asset needed.
+
+**Do NOT build a noise-TYPE system.** A `noise_kind` enum means a per-fragment branch and a parameter
+explosion, for a choice that gets made once. Instead **`@export var noise_tex : Texture2D` on
+`FxFireStyle`**, so the owner can swap the resource in the FX editor and A/B it live (the editor's
+resource watch already re-reads styles four times a second, §5) — the texture is tunable, the code
+is not.
+
+Why baked octaves are the right call here: `fx_fbm` pays for its 3 octaves **per fragment, every
+frame**, while a baked texture pays once at import. And there is a hard ceiling on useful detail —
+`p` is quantized to `u_pixel` before anything samples it, so **octaves finer than one FX pixel cannot
+be seen and are pure waste.** Size the texture so its finest octave lands near `u_pixel`, and stop.
+
+⚠ **MEASURE texture-vs-`fx_fbm` before committing, and do not assume the texture wins.** It trades 7
+hash+lerp ALU taps for one memory fetch, and this is an Intel UHD with shared memory bandwidth — the
+result is genuinely not obvious. `fx_cost.tscn` answers it in one run. ⚠ Also check the TILING PERIOD
+by eye at the shipped `noise_scale`: a nearest-filtered scrolling texture repeats visibly if the
+period lands near the flame height, which is a look bug no number will catch.
+
+### 0f. Cascading consequences — every file that has to move
+
+Enumerated from the source, not guessed (`grep -rlniE "tendril|ogee|onion|\bcomb\b"`):
+
+| file | what happens |
+|---|---|
+| `Shaders/fire.gdshader` | the rewrite |
+| `UI/Fx/fx_fire_style.gd` | **13 of 38 exports retire** (`height_var`, `base_width`, `ogee_point`, `ogee_flare`, `onion_power`, `onion_rise`, `merge`, `sway_amp/speed`, `wave_amp/freq/speed`, `desync`); noise knobs replace them |
+| `UI/Fx/fx_fire.gd` | `stacks_live` (0d), and `FX_MAX_TENDRILS` retires as a cap |
+| `Shaders/Styles/fire_card.tres`, `fire_prop.tres`, `fire_ball.tres` | migrate + **RETUNE — this is the owner's art pass and an agent cannot do it**. ⚠ Migration recipe and its traps are in §5b |
+| `UI/Fx/fx_juggle.gd` | the ball-fire request's `u_emit_width` / `partner_pixel` were a COMB fix (§2). With no comb, **the entire §2 bug class is deleted by construction** — one flame per ball becomes "noise over the ball mask". Re-derive rather than port |
+| `UI/Fx/fx_attachment.gd` | `_emit_embers` reads `u_count`, `_ember_origin` reads `u_height` — both must still resolve |
+| `Tests/Visual/test_pixels.gd` | ⚠ **the ONION section dies whole** — both base-row checks and the narrow-CORE check are claims about a model that will not exist. §0c's list is what replaces them: form-fitting, every upward surface, no leaping the hole, tips up under rotation |
+| `Tests/Visual/fx_snapshot.gd` | `00_tendril_count` and `00b_ogee_profile` become meaningless; `01_fire_ladder` should become the STACK-SCALING ladder that proves 0d |
+| `Tests/UI/test_fx_attachment.gd` | references the comb |
+| `Tests/Visual/fx_cost.gd` | re-measure every row; §6a and §9 are the baselines to beat |
+| `UI/Fx/Tools/fx_editor.gd` | `fire_stacks` stays and is the knob that proves 0d; its doc comments name tendrils |
+| `VFX.md`, `ARCHITECTURE_REVIEW.md` §4g, `FX_SHADER_PLAN.md`, `todo.md` | all describe the retired model |
+
+### 0g. What must NOT break — the rulings this rewrite still owes
+
+Every one of these was paid for once already; none of them is negotiable without the owner.
+
+1. **Flames point world-up on a rotated host** (ruling 1) — §0c.
+2. **Every upward-facing surface burns, and no flame leaps a hole** (§1) — free from `cover`, but the
+   `PIXELS` suite must still assert it on the RING.
+3. **A stack change eases, never jumps** (ruling 16) — §0d.
+4. **Per-ball lit state** (rulings 3 / 21): each ball burns or does not, independently.
+5. **The host's modulate reaches the fire** (ruling 10) — the `tint` capture at the top of `fragment()`,
+   or a focus-highlighted card lights up while its fire does not.
+6. **`fx_intensity` still scales everything to zero** — a photosensitivity control, not a taste one.
+7. **On-palette colour** — `u_ramp` only; `palette_conformance.py` and the PALETTE suite enforce it.
+8. **The pixel grid stays world-aligned and square at every angle** (fx_common §0b).
+9. **`body_near()`'s early-out survives the rewrite** — it is 2.1x (§6a) and it is easy to lose in a
+   rewrite. Its `tall` margin is derived from `height`/`height_var`; re-derive it from whatever the new
+   reach is.
 
 ---
 
@@ -234,14 +417,139 @@ FxFireStyle in the current scope"* on every file at once.
 
 ---
 
-## 6. ⬜ HANDOFF TO THE SLOW MACHINE — the one job an agent cannot do from here
+## 6. ✅ MEASURED ON THE SLOW MACHINE — and it found the number nobody was looking for
 
-Everything in §1 was measured on a **GTX 1070**. The number that decides whether this ships is the
-one from the **Intel UHD laptop** (or whatever the real target is), and it has not been taken since
-the fix. This section is written to be handed over whole: run §6a, read §6b, and if — and only if —
-the numbers fail, work §6c **in order**, re-measuring after each step.
+**Taken 2026-07-29 on the owner's box: Intel UHD Graphics, driver 31.0.101.2135, Godot 4.7.1,
+gl_compatibility.** Suite green first (28 suites, exit 0). **Read the GPU-TIMER column below** — the
+old note that `viewport_get_measured_render_time_gpu` returns a flat 0.0 on this driver is WRONG and
+has been corrected in `fx_cost.gd`; it works, and the wall-clock column swings ~50 % run to run on
+this box while the timer holds to ~3 %.
 
-### 6a. What to run there, in this order
+| GPU timer, ms/frame | 20 hosts | 50 hosts (deck viewer) |
+|---|---|---|
+| empty scene | 0.003 | 0.004 |
+| card fire (BOX) | 2.05–2.16 | 3.90 |
+| **card fire (DEFORMED — what a real card is)** | **4.11 at rest, 4.90 warped** | **12.08** |
+| prop fire (hoop) | 2.07 | 4.86 |
+| prop fire (knife) | 0.29–0.33 | 0.61 |
+| juggle balls | 0.93 | 1.96 |
+| ball fire | 1.84 | 4.27 |
+| **juggle both** | **2.68–2.79** | **6.42** |
+
+### 6a. ✅ THE PERF WORK LANDED — 2.1x on a burning screen, and off-screen is now genuinely free
+
+| Full window, 78 cards, GPU timer | before | **after** |
+|---|---|---|
+| 78 burning cards, edge to edge | 16.13 | **7.61** (2.1x) |
+| 78 burning AND juggling, 5 lit balls each | 26.15 | **16.84** (1.55x) |
+| the same 78 plus **3x more OFF-SCREEN** (312 hosts), WALL clock | 24.70 | **18.33 — the same as 78** |
+
+**Two changes, and BOTH are provably pixel-identical** (`py solatro/tools/snapshot_diff.py`: all 18
+snapshot panels byte-for-byte unchanged, suite green at 28 suites / exit 0):
+
+1. **`body_near()` in `fire.gdshader` — the empty majority, rejected first.** `fx_balls_near`'s lever
+   (§1b.2) generalised to every other shape. One box test against the body's world-aligned bound at
+   the live rotation, before the ~20-lookup march. **It cannot change a pixel**: every fragment it
+   rejects is one where `surface_below` could not have found a surface within reach. Worth the whole
+   2.1x on burning cards, because an 84.8² quad around a 38x50 card is mostly empty and every empty
+   fragment used to walk the full march to find nothing.
+2. **`FxAttachment._on_screen()` — an off-screen host stops UPLOADING.** Godot culls the quads, so the
+   GPU never cared; nothing culled `_push_live`, which is ~15 `set_shader_parameter` calls per quad
+   per frame. 234 invisible hosts were costing **~6.4 ms of pure CPU** — more than the whole visible
+   board's GPU time. ⚠ The CLOCKS still advance unconditionally; only the upload is skipped, or a
+   scroll would teleport every ball as its card came back into view.
+
+⚠ **NEITHER CHANGE HELPED THE JUGGLING LAYER'S GPU COST, AND THAT IS NOW THE DOMINANT HALF.** Asked
+directly (owner, 2026-07-29: *"did we find any ways to save ball juggling time?"*) — **no.** Measured
+before and after, 20 hosts, GPU timer: `juggle balls` 0.93 → 0.90, `ball fire` 1.84 → 1.82,
+`juggle both` 2.7 → 2.7. All inside run-to-run noise, and it is structural, not an accident:
+
+- `body_near()` sits in the **`else` of `if (u_shape == SHAPE_BALLS)`**. The ball-fire quad IS
+  `SHAPE_BALLS`, so it kept `fx_balls_near` — which already did exactly this job (§1b.2). There was
+  nothing left to reject.
+- `juggle.gdshader` is a **separate shader with no march at all**, so none of §9's analysis touches it.
+
+Only the off-screen skip helped juggling, and only on the CPU — where it helps MOST, since a juggling
+host carries two quads to a burning card's one.
+
+⚠ **And yes, this box is much slower than the machine §1 was measured on: `juggle both x20` is 1.06 ms
+on the GTX 1070 against 2.71 here — ~2.5x.** That ratio holds across the rows and is the reason §1's
+absolutes cannot be used for a ship decision.
+
+**What is actually left for juggling**, in order:
+1. **§0 covers two thirds of it already.** `ball fire` is 1.82 of the 2.71 and it is the FIRE shader
+   wearing `SHAPE_BALLS` — so the noise rewrite lands on `fire_ball.tres` like any other fire style.
+   Do not plan separate ball work before §0.
+2. **§6f.1's quad extent** (`FxRequest.min_half`) — ~25 % of the juggling layer, written once and
+   REVERTED for displacing balls on a rotated host. Its trap, and the reproducibility question that
+   was never settled, are in §1b.
+3. The balls quad itself (0.90) is already cheap after §1's three levers. Leave it.
+
+**The remaining worst case is 16.8 ms — one frame at 60 fps** for a window packed edge to edge where
+EVERY one of 78 cards is both burning and juggling five lit balls. Burning-only is 7.6 ms (43 %).
+⚠ **Ask whether that saturated case is reachable in play at all** before spending anything more.
+
+⚠ **Lever B was MEASURED AND NOT SHIPPED.** `fx_cost`'s `BOX-BOUND quads` row prices its ceiling:
+16.84 → 15.46, i.e. **1.16x, not the 1.6x predicted before lever A landed** — A had already taken the
+march cost out of exactly the fragments B would remove. Against that, B resizes a live quad, which
+moves the FX pixel lattice, and a card's tilt juice turns it by up to 10 degrees on every move — so
+it risks shimmer on every card that moves, for 14 %. **Not worth it as designed.** If it is revisited,
+quantize the bound (box up to ~15 degrees, diagonal beyond) so the tilt juice never triggers a switch.
+
+⚠ **The juggling layer is now the dominant half**: 16.84 total against 7.61 for burning alone. The
+next real lever is §1b.1's quad extent on the ball quads, with its trap.
+
+### 6b. ⚠ HOST COUNT IS THE WRONG AXIS — the bound is the WINDOW
+
+Owner 2026-07-29: *"cards off screen don't affect performance right? if true we only need to limit
+performance to worst case in one window."* **Correct, and now proven** — `fx_cost` has the rows:
+
+| Full window, board scale, GPU timer | ms | verdict |
+|---|---|---|
+| **78 burning cards, edge to edge** | **16.13** | 96 % of a 60 fps frame |
+| **78 burning AND juggling cards** | **26.15** | **150 % — 37 fps** |
+| the same 78, plus **3x as many parked OFF-SCREEN** (312 hosts) | **25.60** | **identical: off-screen is FREE** |
+
+4x the hosts for the same cost. The fire shader is FRAGMENT-BOUND and Godot culls canvas items
+outside the viewport, so a 200-card deck with 78 on screen costs what those 78 cost. **Every "x20 /
+x50" row below is therefore a proxy, not a budget.** The budget is the row above, and the worst
+window the game can build misses it by 1.5x.
+
+⚠ **And that reframes what is worth fixing.** Fragment count, not lookup cost, is the multiplier:
+
+- **FILL.** A 38x50 card gets an **84.8 x 84.8** quad — `body.length()` (the 62.4 diagonal, because a
+  card CAN spin) plus reach on all four sides. That is **3.8x the card's own area**, so a packed
+  window draws the fire shader ~3.8 times over. Most of those fragments are empty quad corners that
+  still run the whole march.
+- **MARCH LENGTH.** Every surviving fragment walks up to `u_height / u_pixel` ~ 20 mask lookups.
+- **LOOKUP COST.** RADII vs BOX is 1.9x — real, but the SMALLEST of the three, and the only one §10
+  was about.
+
+### 6c. The per-host verdict, in three lines
+
+1. **JUGGLING IS FINE.** 20 juggling cards with every ball alight is ~2.7 ms — the worst case in the
+   game, at the owner's ~2 ms target and 0.13 ms per card against a 0.2 ms budget. §1's work landed.
+2. **THE PROPS ARE FINE.** Hoops are the dearest at 2.07 ms for 20, and nothing regressed.
+3. ⚠ **BURNING CARDS ARE NOT, AND THE OLD TABLE WAS MEASURING THE WRONG SHAPE.** `fx_cost` built its
+   card row as a `Shape.BOX`. A real board card is not one — `CardVisual` hands its attachment the
+   star rig's outline, so it takes the **RADII** branch of `mask_level`, which costs an `atan`, a
+   table index and a lerp on **every step of the down-march** where the box is one ray/rect exit.
+   Priced apart on the new row: **the branch alone is ~1.9x the box (2.13 → 4.11)** and the corner
+   warp adds fill on top (→ 4.90). At deck-viewer density it is **12.1 ms, 80 % of a 60 fps frame,
+   for the fire alone.** This cost has been there the whole time; only the row is new.
+
+### 6d. ⚠ SUPERSEDED BY §0 — kept only because the reasoning still applies to the mask
+
+1. **`radii_reach` OUT OF THE MARCH.** The march never leaves its column but does move in y, so the
+   angle changes at every step and the `atan` cannot simply be hoisted. What CAN be: the RADII mask
+   is a star, and a star's boundary in a column is one y per x — the same closed form the box branch
+   gets. Worth measuring before designing.
+2. §6e below, unchanged, for the juggling layer — which no longer needs it.
+
+⚠ **Judge any of these by EYE on `fx_snapshot` before believing the number.** Two rejected builds
+came from approximating the mask.
+
+### 6e. How the numbers above were taken
 
 ```bash
 # 1. Sanity: the suite must be green BEFORE you trust any number. Windowed, ~60-85 s.
@@ -269,28 +577,16 @@ change.
 ⚠ **A Godot run that prints nothing and never exits has failed to parse its main script.** Redirect
 to a file and read the FIRST lines; piping to `tail` shows you nothing until exit, which never comes.
 
-### 6b. What the numbers have to say
-
-`fx_cost.tscn` prints one row per host kind, as a delta against an empty scene, for **20 hosts**.
-Copy the whole table into this file when you have it. The rows that matter:
-
-| Row | GTX 1070 today | What it means |
-|---|---|---|
-| `juggle both x20` | 1.20 ms | 20 juggling cards, 5 balls each, ALL lit — the worst case in the game |
-| `juggle balls` / `ball fire` | 0.52 / 0.69 ms | which of the two quads is expensive, if it is |
-| `card fire` / `prop fire` | 0.45–0.51 ms | untouched by this work; a regression here means something else broke |
+Raise `HOSTS` in `Tests/Visual/fx_cost.gd` from 20 to 50 for the deck-viewer column and re-run.
 
 - **The owner's target is ALL FX on screen ≤ ~2 ms, i.e. ~0.2 ms per juggling card.**
-- **Read the GPU-timer column if it is non-zero.** `viewport_get_measured_render_time_gpu` is
-  unimplemented on the Intel driver and prints a flat `0.000` there — if so, the wall-clock delta is
-  all you have, and it includes ~0.4 ms of CPU (20 attachments pushing uniforms for 2 quads each)
-  that no shader change can remove. Say which column you used when you report.
-- **Also raise `HOSTS` in `Tests/Visual/fx_cost.gd` to 50 and re-run.** That is the DECK VIEWER, the
-  densest screen in the game, and nobody has ever measured it.
-- ⚠ 20 juggling cards with every ball lit may never happen in play. If 3–5 cards are comfortable,
-  say so — that is a legitimate answer and it changes what is worth doing below.
+- ⚠ 20 juggling cards with every ball lit may never happen in play. If 3–5 cards are comfortable
+  that is a legitimate answer, and it changes what is worth doing.
+- ⚠ **The GTX 1070 and this Intel UHD are ~2x apart on these rows, not the ~12x the old note in this
+  file assumed.** `juggle both x20` is 1.06 on the 1070 and 2.68–2.79 here. Ratios still transfer
+  better than absolutes, but the gap is much smaller than anyone had written down.
 
-### 6c. If it is still too slow — the fixes, in order, cheapest and safest first
+### 6f. If the juggling layer ever needs it again — the older levers, in order
 
 1. **THE QUAD EXTENT — worth ~25 %, and the work is already written.** The quads are sized as
    body-plus-reach on EVERY side, so a 33-unit-wide juggling pattern gets a 112x125 quad. §1b has the
@@ -318,22 +614,142 @@ fire by eye, never by counting columns — that instrument reported two rejected
 
 ---
 
-## 7. What is LEFT
+## 7. ✅ DONE — the fire WARPS with the card now
+
+Owner 2026-07-29: *"card visual has bones and a default running animation which can heavily distort
+the edges of the card... I don't see the fire effect warping with the card during playtesting."*
+
+**The cause was that the silhouette was measured ONCE, at rest.** `CardVisual._ready` called
+`fx.measure_silhouette(type.polygon)` — the REST vertices of the baked grid — and nothing ever
+re-read it. The card's face polygons are skinned to a 16-arm star rig whose animation is on
+**autoplay**, so the drawing moved every frame while the mask stayed a 38x50 rectangle. Rotation- and
+mask-proofing could not have helped: neither one is a *deformation*.
+
+- **THE RIG IS NOW THE SOURCE.** `_bind_rig` caches `Bone_Center` and its 16 arms; `_rig_outline`
+  composes their tips from the bones' OWN local transforms every frame and `FxAttachment
+  .track_outline` re-resolves the radius table the RADII mask already reads. No shader change: the
+  32-entry table was always the right carrier, it was simply never refreshed.
+  - ⚠ **Local transforms, NEVER `global_position`.** The rig hangs under `visual`, which carries the
+    basis3d flip — a basis that goes SINGULAR edge-on — and the bob. Ruling 1 keeps both off the
+    effects, and going through globals would collapse a flipping card's silhouette to a line and take
+    its flames with it.
+- **THE RAYS ARE RESOLVED, NOT BUCKETED.** `measure_silhouette`'s angular histogram + neighbour-max
+  gap fill inflates a 16-point star by up to ~5 art units between a corner and the edge sample beside
+  it — a lump of flame standing off the card. `measure_outline` intersects each of the 32 rays with
+  the ONE outline segment spanning its angle, in a single merged walk (32 + n steps, not 32 * n),
+  which is what makes it cheap enough to run on every card every frame. It takes an ORDERED outline;
+  unordered points still belong in `measure_silhouette`.
+- **THE QUAD GROWS WITH THE WARP** (`_radii_max`), or a stretched corner's flames clip on the quad
+  edge they were built inside; and **`u_body` is now the DEFORMED width**, because that is what the
+  comb divides — at the authored width the outermost tendril stops short of the corner that moved.
+- **Early-out on an unmoved outline**, so a settled card pays the walk and no upload.
+
+**The regression guard is `fx_snapshot`'s new `02b_card_warp`**: corners at +0 / 10 / 25 / 45 %, with
+the outline the attachment was handed drawn underneath. One glance — every flame base must sit on the
+drawn outline, corners included. Verified: the top edge's flames follow the concave dip, and the
+stretched corners carry their own flames.
+
+**The FX editor has the knob**: `corner_warp` in the **Stage** group, beside `Host rotation`, driving
+`CardVisual.star_outline` — the cards' own shape, not a copy. The face and the outline warp with it,
+so the tool cannot lie about what is bent.
+
+⚠ **IT DOES NOT REACH THE PROPS, and that is deliberate.** A prop's mask IS its drawing's alpha
+(`Shape.SPRITE`); there is no outline to stretch, and no prop deforms in the game. Warping one would
+need a warp term in `fire.gdshader`'s SPRITE branch — a shader change and an owner call, not a tool
+one. Said plainly on the export.
+
+---
+
+## 8. What is LEFT
 
 | | Item |
 |---|---|
-| ⬜ **Blocking "done"** | **Owner playtest (T15)** — nobody has PLAYED any of this. The 17-step walk is FX_SHADER_PLAN §10. No agent can do it. |
-| ⬜ **Owner's hardware** | **§6 — re-run `fx_cost.tscn` on the slow machine.** Every number above is a GTX 1070; §6 is written to be handed over whole. |
-| ⬜ Perf | §6c, in order: the quad extent (~25 %, with its trap in §1b), then `fx_fbm`, then the arc count. Also the still-unmeasured **50 burning cards in the DECK VIEWER** (`fx_cost.gd` takes a `HOSTS` constant — raise it and re-run). |
-| ⬜ Accepted | §3 (sliced tendrils on curves). |
-| ⬜ **One FAILING check, and it is an ART CALL** | `PIXELS: the flame is hottest along its CORE toward the tip` fails against the card-fire tuning saved on 2026-07-31 (tip 0.066 vs shoulder 0.107). Not a code regression — reverting the `.tres` files alone turns it green with every code change in place. `onion_rise = 1.0` is the biggest cause (heat goes to zero at the tip by construction), but at 0.35 the two sample points TIE, so `onion_power 0.7` + `base_width 2.0` + `ogee_point 0.2` have flattened the discriminator too. Either the tuning moves or that check does — the owner's call, and the check took three tries to make discriminating, so do not weaken it casually. |
-| ⬜ Art calls only the owner can make | `fire_ball.tres`'s `merge` / `base_width` (§2); the fire ramp's ENDS (entry 0 makes a 1-stack flame near-black, entry 19 puts neutral grey at the white-hot end — one-line edits to `Assets/Palette/ramp_fire.tres`); prop art SIZES; flame `height` per style; `level_ref`. |
+| ⬜ **THE NEXT BUILD** | **§0 — the noise fire.** Spec, references, stack scaling, the 13-file consequence list and the 9 rulings it still owes. Two open questions before anyone starts: **tap count (4 or 6)** and **whether the cheap-mask work rides along** (it roughly doubles the win but is the half that changes the silhouette). |
+| ⬜ **Blocking "done"** | **Owner playtest (T15)** — nobody has PLAYED any of this. The 17-step walk is FX_SHADER_PLAN §10. No agent can do it. ⚠ Worth doing on the CURRENT build anyway: it is the only way to learn whether the saturated window in §6b is reachable in play, which decides how much of §0's perf argument matters. |
+| ✅ **Perf** | **2.1x on a burning screen, and off-screen hosts are now free on CPU as well as GPU** — §6a, both changes pixel-identical. The worst window the game can build is 16.8 ms, exactly one 60 fps frame; burning-only is 7.6 ms. |
+| ⬜ Perf, what is left | ⚠ **First ask whether a window where all 78 cards burn AND juggle is reachable in play.** If it is: **the juggling layer is the dominant half (9.1 of 16.8 ms) and NOTHING this pass did touched it** — §6a explains why, and lists its three remaining levers (most of which §0 absorbs). Lever B measured at 1.16x and rejected. |
+| ⬜ **A DIAGNOSED BUG — but §0 DELETES IT** | ⚠ Do not fix this separately; §0c retires the mechanism. Kept for the diagnosis only. **Fire licks DOWN the side of a card from each top corner** (owner report, 2026-07-29 screenshot). Not the fire model — the SILHOUETTE. A uniform-angle radius table cannot represent a sharp vertex: a 38x50 card's corner sits at 37.23 deg, the 32 rays sample at multiples of 11.25, so the corner falls BETWEEN two samples and the lerp cuts straight across it. **Measured: the corner is chamfered IN by 2.32 art units** (the mask reaches \|x\| 16.70 at the top row instead of 19.00), and that chamfer is a genuine upward-facing slope — so the march finds it and stands flames on it, correctly. There is also a +0.28 outward bulge along the edges below it. Reproduced against the BOX card, which has a clean corner. **This is PRE-EXISTING**: cards have taken the RADII branch since `measure_silhouette` was first wired up; the warp work only made it visible. ⚠ **More rays barely helps** — the chamfer converges slowly on a sharp vertex: 32 rays -2.32, 64 rays -1.41, 128 rays -0.56, at 128 floats per material per quad per host. The fix is a different REPRESENTATION, and the two candidates are in §10. |
+| ⬜ Accepted — **and §0 likely deletes it too** | §3 (sliced tendrils on curves): a flame's top could sit below its own base where the ring falls away steeply, because each column's arch was anchored to its own surface. With no arch there is nothing to slice — but VERIFY it on the ring rather than assuming, because a `cover` that is per-column has the same shape of hazard. |
+| ✅ The onion check | WAS failing against the 2026-07-31 card-fire tuning. **The CHECK was wrong, not the tuning** (owner: *"if it's caused by me adjusting parameters then it wasn't a good test in the first place"*). "Core-near-tip beats shoulder-near-base" is not a structural claim: heat is `(1 - across)^power * (1 - rise * k)`, so `onion_rise = 1.0` cools the tip to zero BY CONSTRUCTION — a legitimate art setting no correct onion can win against. Replaced with two claims read off the flame's BASE row, where `k ~ 0` and the rise term drops out of both models: it must cross several shells rather than sit in one flat band, and the heat must fall halfway before the rim rather than holding peak out to the corner (rows pinch every contour into the two base corners). **Mutation-tested**: with `heat = 1 - rise/(h*dome)` restored, the base row comes back a single flat band (0.286 across all 152 px) and the section goes red. Suite green, 28 suites, exit 0. |
+| ⬜ Art calls only the owner can make | ⚠ **The `.tres` RETUNE in §0f is the big one and only the owner can do it.** Also: the fire ramp's ENDS (entry 0 makes a 1-stack flame near-black, entry 19 puts neutral grey at the white-hot end — one-line edits to `Assets/Palette/ramp_fire.tres`); prop art SIZES; flame `height` per style; `level_ref`. |
 | ⬜ Known limitation | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
 | ⬜ Deferred by the owner | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
 
 ---
 
-## 8. Runbook
+## 9. WHERE THE COST ACTUALLY IS — four attribution runs, and they settle two design questions
+
+All on the same 78-card full-screen burning row, GPU timer, everything else held constant:
+
+| what was changed | ms | vs shipped |
+|---|---|---|
+| **shipped today** (march, up to 35 steps at `pixel` 0.4) | **7.61** | — |
+| every TENDRIL computation deleted (ogee, onion, sway, wave, fan, drift, merge, 4 `pow`s) | 7.29 | **-4 %** |
+| the march replaced by **8 shifted mask taps** | 6.36 | -16 % |
+| the march replaced by **4 shifted mask taps** | 4.46 | **-41 %** |
+| the march replaced by a CONSTANT (zero mask lookups) | 2.17 | -71 % |
+
+**The cost is `mask_level` CALL COUNT x cost per call. Nothing else in this shader matters.** It is
+linear at ~0.48 ms per tap per full screen, and the shipped march behaves like ~11 effective taps —
+its early `return` helps less than it looks, because a GPU warp runs until EVERY lane exits and in
+the empty band above the flames no lane ever hits.
+
+Two conclusions, and they are the opposite of what each change looks like on its own:
+
+1. ⚠ **DROPPING TENDRILS SAVES NOTHING BY ITSELF — 4 %.** And it would likely cost more than it saves:
+   `fx_fbm` is guarded behind `heat > 0` (the single biggest saving in the file), and a fire whose look
+   IS moving noise evaluates noise across the whole band rather than only where a tendril put heat.
+2. ✅ **BUT IT IS WHAT MAKES THE MARCH REPLACEABLE, AND THAT IS WORTH 1.7x.** A shifted-mask
+   accumulation — *"how much body is below me within reach"*, fixed tap count, no early-out, no
+   divergence — needs FEW taps to look right only if nothing downstream needs a precise surface
+   height. Tendrils do: at `pixel` 0.4 the arch springs from a surface located to 0.4 art units, which
+   is ~11 taps. Noise does not: 4 taps over a 14-unit reach is 3.5-unit resolution, and noise shaping
+   hides the banding. **The two decisions are worthless apart and compound together.**
+
+⚠ **THE COMB IS NOT THE COST, AND DELETING IT BUYS NOTHING** (owner asked, 2026-07-29; verified in the
+source). `w` / `cells` / `pitch` / `id` are built at `fire.gdshader:479-484` and read at exactly three
+places — the `tendril_at` calls — so the comb does go when tendrils do. But it is a floor, a clamp and
+two divides, and **not one of the shader's `mask_level` calls is in it**: they are all inside
+`surface_below` (296, 301, 312) plus the single inner-alpha test (523). Lanes never caused a lookup.
+What costs is the PRECISION the tendril needs from the march — at `pixel` 0.4 over a 14-unit reach,
+locating the surface is ~35 steps worst case and ~11 effective.
+
+⚠ **Keep `u_count` when the comb goes.** `FxAttachment._emit_embers` reads it as the ember rate, so it
+has to survive as an INTENSITY value even with nothing left to partition.
+
+It also fixes three things for free: multiple surfaces per column stop being a special case (§1's
+whole requirement falls out of the accumulation), nothing can leap a hole (no tap reaches further than
+`reach`), and there is no angular surface-finding left to chamfer a corner (§7).
+
+⚠ **And the SECOND factor is still open**: each tap on the RADII branch carries an `atan`, which is
+why a card's mask is 1.9x a box's. Cutting taps AND making each tap cheaper (§10 E, or a column-height
+table) multiply — 4 cheap taps would approach the 2.17 floor.
+
+## 10. The levers, ordered by win x safety — and the correction that produced this order
+
+⚠ **An earlier edition of this section offered TWO options and implied that was the space.** It was
+not, and the framing was wrong: it only considered the MASK REPRESENTATION, which §6b shows is the
+smallest of the three multipliers. The list below is the actual space. **A, B and C need no mask
+change at all**, and between them they are worth more than any redesign.
+
+| | Lever | Worth | Visual risk |
+|---|---|---|---|
+| **A** | **REJECT THE EMPTY QUAD FIRST.** One box test — is this fragment within `height + sink` above the body's bound? — before the march, exactly what `fx_balls_near` does for the juggling quads (§1b.2). The empty corners of an 84.8² quad currently run ~20 mask lookups to find nothing. | large | **NONE** — a pure early-out; the rejected fragments already draw nothing |
+| **B** | **THE DIAGONAL BOUND ONLY WHILE THE CARD IS ACTUALLY TURNED.** `_size_quad` takes `body.length()` because a card *can* spin — but `anim_spin` is rare and `u_shape_rot` is ~0 the rest of the time. A live bound is 60.2x72.4 against 84.8², i.e. **0.61x the fill on every burning card.** | ~1.6x | low — the lattice changes when the bound does, so check for jitter as a spin starts |
+| **C** | **THE QUAD IS BODY-PLUS-REACH ON EVERY SIDE**, including below, where a card's fire never goes. §1b's `min_half`, and its trap was the JUGGLE quads on a rotated host, not this one. | ~1.3x | low, but re-read §1b first |
+| **D** | **COLUMN HEIGHT FIELD.** The march exists to find the top surface in a column; for a card that is a 1-D function of x, so ~20 lookups collapse to 1–2. ⚠ It does NOT generalise — the hoop has two surfaces in one column and §1 exists for that — so it is a per-shape path, which brushes the owner's *"fire should be unified and identical in how it treats everything"*. And a WARPED card has two surfaces per column near the spikes, so it needs two entries. | very large | medium |
+| **E** | **BOX TEST + RADIAL SCALE.** Divide `q` by a smooth per-angle scale, then test `abs(q) <= h`. Fixes §7's corner chamfer EXACTLY (a scale field has no vertex to miss, and the rig's deformation IS a radial stretch). Costs about what RADII costs today. | fixes correctness, not speed | low |
+| **F** | **UNWARP ONCE, MARCH IN REST SPACE.** Every mask test becomes the two-comparison box: the whole 1.9x. ⚠ APPROXIMATION — world-down is not exactly down in rest space, so the march drifts across columns on a strongly warped card, and approximating the mask is what produced the two rejected builds. | 1.9x | **high** |
+
+**Recommended order: A, then B, re-measure §6b after each, and only then decide between D and E+C.**
+A and B are non-visual and together should be worth ~2.5x on the number that is 1.5x over budget.
+
+⚠ **Do NOT just raise `RADII`.** The numbers are in §7: it converges far too slowly on a sharp vertex
+to be worth the uniform bytes (32 → -2.32, 64 → -1.41, 128 → -0.56 art units).
+
+---
+
+## 11. Runbook
 
 `Godot` below is the console build — on this box
 `C:\richard\Godot_v4.7.1-stable_win64_console.exe`, run from `C:\richard\gamedev`.
@@ -344,10 +760,28 @@ Godot --path solatro res://Tests/Visual/fx_snapshot.tscn   # after ANY shader ed
 Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn
 Godot --path solatro res://Tests/Visual/fx_cost.tscn       # ms/frame per host kind — not a test
 py solatro/tools/palette_conformance.py
+py solatro/tools/snapshot_diff.py save                     # stash the PNGs you trust as a baseline
+py solatro/tools/snapshot_diff.py diff                     # re-run fx_snapshot, then prove nothing moved
 ```
 
-Last full run (2026-07-31): **28 suites, exit 0** (the check COUNT varies run to run — BOARD FUZZ is
-randomised; what must hold is 28 suites and exit 0).
+**For a change that must not alter the picture, `snapshot_diff.py` is the instrument, not your eye.**
+"Judge fire by EYE" is right for a change that is SUPPOSED to look different; an optimisation's only
+honest claim is byte-identical, and an eye is far too generous for that. Both §6a changes were
+landed on it.
+
+Last full run (2026-07-29, Intel UHD box): **28 suites, exit 0**, all checks passed (the check COUNT
+varies run to run — BOARD FUZZ is randomised; what must hold is 28 suites and exit 0).
+
+⚠ **LEAK CANARY is mildly FLAKY** — it failed once in four consecutive runs of an unchanged build
+with `growth 2` and two stray `/Fx` Node2Ds, and passed the other three. Zero tolerance and a
+deferred-free path; re-run before believing it.
+
+⚠ **`Godot_*_console.exe` must sit NEXT TO the real `Godot_*.exe`** or it exits 255 with *"Main
+executable ... not found"* and no other clue. On this box the real one is on the Desktop.
+
+⚠ **DO NOT round-trip a source file through PowerShell `Get-Content | Set-Content`.** PS 5.1 reads as
+ANSI and every `⚠`, `§` and `—` in these heavily-commented files comes back mangled. `git checkout --`
+the file and re-edit.
 
 **Judge fire by EYE, never by counting columns** — that instrument reported two rejected builds as
 successes. `py <scratch>/crop.py <png> <out> x y w h scale` (PIL, nearest-neighbour) is how these were

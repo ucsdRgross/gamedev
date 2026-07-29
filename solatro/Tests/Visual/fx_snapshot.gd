@@ -53,7 +53,9 @@ func _run() -> void:
 	await _shot("01_fire_ladder", "Burning 1 / 3 / 12 / 40 / 200 stacks", _fire_ladder())
 	await _shot("02_fire_rotation", "host rotated 0 / 30 / 45 / 90 deg — flames stay vertical",
 			_fire_rotation())
-	await _shot("03_surfaces", "several surfaces under one comb: 1 / 2 / 4 / 12 tendrils over a "
+	await _shot("02b_card_warp", "the card DEFORMS: corners stretched +0 / 10 / 25 / 45 % — every "
+			+ "flame base must sit on the drawn outline, corners included", _card_warp())
+	await _shot("03_surfaces","several surfaces under one comb: 1 / 2 / 4 / 12 tendrils over a "
 			+ "RING — both arcs alight, and no flame ever leaps the hole", _surfaces())
 	await _shot("04_shapes", "ring / blade / split-prop halves", _shapes())
 	await _shot("05_balls", "juggling 1 / 3 / 8 / 50 balls", _balls())
@@ -137,6 +139,27 @@ func _fire_rotation() -> Array[Case]:
 		var case := _card_case("%d deg" % deg,
 				[FxFire.request(&"fire", 5, StatusBurning.CARD_FIRE_STYLE)])
 		case.rotation = deg_to_rad(float(deg))
+		out.append(case)
+	return out
+
+## THE DEFORMING CARD (owner 2026-07-29: *"I don't see fire effect warping with the card during
+## playtesting"*). A card is skinned to a star rig whose animation is on AUTOPLAY, so its top edge is
+## never where the authored 38x50 rectangle says it is — and a silhouette baked once at rest left the
+## flames standing on a shape the card no longer had.
+##
+## Each panel stretches the four CORNERS further out, exactly as the rig does, and the outline drawn
+## under the flames is the SAME one the attachment was handed. So the check is one glance and needs
+## no measuring: **every flame base must sit on the drawn outline**, including out on the corners that
+## moved. A flame hanging in the air off a stretched corner, or a corner left bare, is the bug.
+##
+## The last panel is deliberately past what the rig can reach: the failure it guards against is the
+## quad clipping its own flames, and that shows up first at the extreme.
+func _card_warp() -> Array[Case]:
+	var out : Array[Case] = []
+	for warp : float in [0.0, 0.1, 0.25, 0.45]:
+		var case := _card_case("corners +%d%%" % roundi(warp * 100.0),
+				[FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)])
+		case.outline = CardVisual.star_outline(CardVisual.CARD_SIZE, warp)
 		out.append(case)
 	return out
 
@@ -444,6 +467,10 @@ class Case:
 	var half : FxAttachment.Half = FxAttachment.Half.WHOLE
 	var requests : Array[FxRequest] = []
 	var rotation : float = 0.0
+	## The host's DEFORMED outline, walked once around the shape, or empty for an undeformed host.
+	## Set means the attachment takes the radius-table mask and the ghost draws the star rather than
+	## the box — so the panel shows whether the flames stand on the shape the card actually has.
+	var outline : PackedVector2Array = PackedVector2Array()
 	## SPRITE cases: the sheet the mask is read out of, and how many frames it holds. Set means the
 	## harness both hands the attachment its real art AND draws that art as the reference — an
 	## outline cannot show a HOLE, and the hole is the whole point of §1.
@@ -496,6 +523,7 @@ func _sprite_case(label: String, sheet: Texture2D, frames: int, half: FxAttachme
 func _ghost_for(case: Case, zoom: float) -> _Ghost:
 	var ghost := _Ghost.new()
 	ghost.body = case.body
+	ghost.outline = case.outline
 	ghost.sheet = case.sheet
 	ghost.frames = case.frames
 	if case.sheet: ghost.art_size = PropVisual.art_size_for(case.sheet, case.frames)
@@ -512,6 +540,8 @@ func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
 		att.measure_sprite_silhouette(case.sheet,
 				CardModifier.frame_rect(case.sheet, case.frames, 1, 0),
 				PropVisual.art_size_for(case.sheet, case.frames))
+	elif not case.outline.is_empty():
+		att.measure_outline(case.outline)
 	# BEFORE sync: the quads read the host's direction as they are built, unlike the clock, which is
 	# pushed afterwards.
 	att._ball_dir = case.ball_dir
@@ -658,6 +688,9 @@ class _Ghost extends Node2D:
 	var sheet : Texture2D = null
 	var frames : int = 1
 	var art_size : Vector2 = Vector2.ZERO
+	## A DEFORMED host draws its real outline, or the panel would show flames standing off a box the
+	## card is not — which is the exact class of tool lie this harness exists to avoid.
+	var outline : PackedVector2Array = PackedVector2Array()
 	## Independent expected ball positions, drawn as crosses.
 	var balls : PackedVector2Array = PackedVector2Array()
 	## Rotation applied to the CROSSES only, cancelling the slot's — the juggling pattern holds
@@ -675,6 +708,10 @@ class _Ghost extends Node2D:
 		if sheet:
 			draw_texture_rect_region(sheet, Rect2(-art_size * 0.5, art_size),
 					CardModifier.frame_rect(sheet, frames, 1, 0))
+		elif not outline.is_empty():
+			var loop := outline.duplicate()
+			loop.append(loop[0])
+			draw_polyline(loop, col, 2.0 * px)
 		else:
 			draw_rect(Rect2(-body * 0.5, body), col, false, 2.0 * px)
 		# A centre line: the juggling loop's shallow return arc is specified to ride the card's

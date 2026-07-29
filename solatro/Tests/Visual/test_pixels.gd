@@ -159,28 +159,65 @@ func test_fire_bands_are_onion_shells() -> void:
 			"hottest band is %d px wide inside a %d px flame (%.0f%%)"
 			% [core.size.x, flame.size.x, 100.0 * float(core.size.x)
 			/ maxf(float(flame.size.x), 1.0)])
-	# THE discriminator — and it took three tries, so here is why this one and not the others.
+	# THE discriminator — and it took FOUR tries, so here is why this one and not the others.
+	#
 	# Both layouts vary along BOTH axes, so neither "the core is narrow" nor "a horizontal cut crosses
 	# several bands" separates them (each was mutation-tested and each passed with the ROW formula
 	# restored: rows divide by `top`, which is itself x-dependent). And "the hot band reaches up the
 	# flame" is no longer true even of a correct onion, now that a card's flame is only half a
 	# card-separation tall (owner 2026-07-28).
 	#
-	# What actually differs is WHERE the bands converge. Row-layered contours are the outline scaled
-	# VERTICALLY, so they all pinch at the two BASE CORNERS and the hot end lies along the base.
-	# Onion contours are scaled copies about the core, so they run up toward the TIP and the hot end
-	# is the axis. So: compare a point on the axis near the tip against one out at the shoulder near
-	# the base. Onion ⇒ the tip point is hotter. Rows ⇒ the shoulder point is, by a mile.
-	var tip := Vector2i(flame.position.x + flame.size.x / 2,
-			flame.position.y + int(float(flame.size.y) * 0.2))
-	var shoulder := Vector2i(flame.position.x + int(float(flame.size.x) * 0.85),
-			flame.end.y - int(float(flame.size.y) * 0.15))
-	var tip_lum := _peak_luminance(img, Rect2i(tip - Vector2i.ONE, Vector2i(3, 3)))
-	var shoulder_lum := _peak_luminance(img, Rect2i(shoulder - Vector2i.ONE, Vector2i(3, 3)))
-	check(tip_lum > shoulder_lum,
-			"the flame is hottest along its CORE toward the tip, not out along its base",
-			"core-near-tip luminance %.3f vs shoulder-near-base %.3f — the shoulder winning is what "
-			% [tip_lum, shoulder_lum] + "vertically stacked rows look like")
+	# ⚠ THE THIRD TRY — "the core near the TIP is hotter than the shoulder near the base" — WAS NOT A
+	# STRUCTURAL CLAIM AT ALL, and it failed the moment the owner tuned `onion_rise` to 1.0. Heat is
+	# `(1 - across)^power * (1 - rise * k)`: at rise = 1 the tip cools to zero BY CONSTRUCTION, which
+	# is a legitimate art setting (a candle's tip IS its coolest part), and no amount of correct onion
+	# layering can win that comparison. A check a shipped tuning can turn red is measuring the tuning,
+	# not the model. This one is invariant to every knob in the style, and that is the point.
+	#
+	# What is structural is WHERE THE SHELLS SIT ALONG THE BASE, because `k` is ~0 there and the rise
+	# term drops out of both models:
+	#   * onion  — `across` is |u| over the local half-width, which at the base IS the full half-width.
+	#     The shells are therefore spread EVENLY across the base: heat falls off from the core all the
+	#     way out to the rim.
+	#   * rows   — heat is `rise / top(x)`, and `rise` is ~0 along the base, so the base is at peak heat
+	#     across essentially its whole width. Every contour pinches into the two BASE CORNERS, so the
+	#     entire fall-off is crammed into the last pixel or two before the rim.
+	# So the base row is read twice: it must cross SEVERAL shells at all, and the heat must have fallen
+	# halfway well before the rim rather than holding peak out to the corner.
+	#
+	# MUTATION-TESTED, 2026-07-29: with `heat = 1 - rise/(h*dome)` — the row formula — restored in
+	# `fire.gdshader`, the base row comes back a single flat band (luminance 0.286 across all 152 px)
+	# and the first of the two goes red on its own; the narrow-CORE check above goes red with it
+	# (152 px of 152). Both survive the tuning that killed the previous discriminator.
+	var base_row := flame.end.y - 2
+	var lo := 1.0
+	var hi := 0.0
+	var left := -1
+	var right := -1
+	for x : int in range(flame.position.x, flame.end.x):
+		var c := img.get_pixel(x, base_row)
+		if not PixelProbe.is_opaque(c): continue
+		if left < 0: left = x
+		right = x
+		lo = minf(lo, c.get_luminance())
+		hi = maxf(hi, c.get_luminance())
+	check(left >= 0 and hi - lo > 0.05,
+			"the flame's BASE row crosses several shells rather than sitting in one flat band",
+			"base row spans luminance %.3f..%.3f over x %d..%d" % [lo, hi, left, right])
+	if left < 0 or hi - lo <= 0.05: return
+	# The outermost pixel still in the hot half, measured from the row's own centre.
+	var centre := 0.5 * float(left + right)
+	var half := maxf(0.5 * float(right - left), 1.0)
+	var reach := 0.0
+	for x : int in range(left, right + 1):
+		var c := img.get_pixel(x, base_row)
+		if not PixelProbe.is_opaque(c) or c.get_luminance() < 0.5 * (lo + hi): continue
+		reach = maxf(reach, absf(float(x) - centre))
+	check(reach < half * 0.75,
+			"the shells are spread ACROSS the flame's base, not crowded into its corners",
+			"heat is still in its hot half %.0f%% of the way out to the rim — a base that stays at "
+			% (100.0 * reach / half) + "peak until the very corner is what vertically stacked rows "
+			+ "look like")
 
 ## THE CLAIM §1 EXISTS FOR: fire finds EVERY upward-facing surface in the art, not just the topmost
 ## one in each column (FX_HANDOFF §1.1). The hoop is the counterexample the owner named — its ring

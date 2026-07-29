@@ -184,6 +184,67 @@ var status_layer : StatusLayer
 ## OFFSET rather than of `visual` (see _ready).
 var fx : FxAttachment
 
+# --- THE STAR RIG, AS THE FX SEE IT ---------------------------------------------------------------
+## The rig's root and its arm bones, in the order the bake laid them down — which walks once around
+## the card (top edge left to right, then right, bottom, left). That order IS `FxAttachment
+## .measure_outline`'s contract, and it is what makes the outline resolvable in one pass.
+var _rig_root : Bone2D = null
+var _rig_arms : Array[Bone2D] = []
+## The arm tips in the card's own art units, rebuilt in place each frame — never reallocated, since
+## this runs on every card on the board.
+var _rig_outline_buf : PackedVector2Array = PackedVector2Array()
+
+## A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, as the 16
+## points the star rig hands over and IN THE ORDER it hands them over: one walk around the shape,
+## corner first, then the three interior points of that edge.
+##
+## The interior points stay on the rest edge, so the box becomes a STAR rather than simply growing —
+## which is the deformation the rig makes, and `card_visual.tscn`'s autoplay animation peaks around
+## warp 0.25. It lives here, on the class that owns the rig, because three separate places need to
+## stand a card up without one: the FX editor's warp slider, `fx_snapshot`'s warp panel and
+## `fx_cost`'s deformed-card row. A private copy in any of them is a copy that can drift from the rig.
+static func star_outline(body: Vector2, warp: float) -> PackedVector2Array:
+	var h := body * 0.5
+	var corners : Array[Vector2] = [Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y),
+			Vector2(-h.x, h.y)]
+	var out := PackedVector2Array()
+	for i : int in 4:
+		var from : Vector2 = corners[i]
+		var to : Vector2 = corners[(i + 1) % 4]
+		out.append(from * (1.0 + warp))
+		for step : int in [1, 2, 3]:
+			out.append(from.lerp(to, float(step) * 0.25))
+	return out
+
+## Find the rig once. Absent (a stripped card in a test, or art without a skeleton) simply means the
+## caller falls back to the baked polygon.
+func _bind_rig() -> void:
+	_rig_root = get_node_or_null("Offset/Visual/Skeleton2D/Bone_Center") as Bone2D
+	if not _rig_root: return
+	for child : Node in _rig_root.get_children():
+		var bone := child as Bone2D
+		if bone: _rig_arms.append(bone)
+	_rig_outline_buf.resize(_rig_arms.size())
+
+## The rig's arm tips, in the card's UNSCALED art space.
+##
+## ⚠ Composed from the bones' own local transforms, NOT from `global_position`: the rig hangs under
+## `visual`, which carries the basis3d flip (a basis that goes SINGULAR edge-on) and the bob. Neither
+## may reach the effects — ruling 1 — and going through globals would fold both in, so a flipping
+## card's silhouette would collapse to a line and take its flames with it.
+func _rig_outline() -> PackedVector2Array:
+	var root := _rig_root.transform
+	for i : int in _rig_arms.size():
+		_rig_outline_buf[i] = root * _rig_arms[i].position
+	return _rig_outline_buf
+
+## Hand the DEFORMED outline to the effects. Every frame, because the rig's animation is on autoplay
+## and a card is never actually at rest; the attachment early-outs when nothing moved, so a settled
+## card costs the walk below and no upload.
+func _track_fx_outline() -> void:
+	if not fx or _rig_arms.is_empty(): return
+	fx.track_outline(_rig_outline())
+
 
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
@@ -224,11 +285,12 @@ func _ready() -> void:
 		fx.configure(CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 				current_context == DisplayContext.PLAY_AREA)
 		offset.add_child(fx)
-		# Measure the real card outline ONCE: the star rig bakes a deformed silhouette into the
-		# face polygons, and flames should hug that rather than the nominal 38x50 rectangle. Dirty
-		# by nature — nothing re-bakes a card's shape at runtime — so re-call this if that ever
-		# changes rather than sampling the polygon every frame.
-		fx.measure_silhouette(type.polygon)
+		# The real card outline, taken from the STAR RIG rather than from the rest polygon: the rig
+		# is what deforms the card, it runs on autoplay, and a silhouette baked once left the flames
+		# standing on a shape the card no longer had. Re-read every frame by _track_fx_outline.
+		_bind_rig()
+		if _rig_arms.is_empty(): fx.measure_silhouette(type.polygon)
+		else: fx.measure_outline(_rig_outline())
 		fx.visible = show_front and data != null
 		fx.sync(_fx_requests())
 	SettingsManager.settings_changed.connect(recalculate_size)
@@ -312,6 +374,7 @@ func get_control_center(control:Control) -> Vector2:
 func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
 	if floating: delta_floating_anim(delta)
+	_track_fx_outline()
 
 var rot_delta : float
 var y_delta : float

@@ -119,6 +119,21 @@ var _watched : Array = []
 ## rotated a UV before quantizing it (the universal rule, fx_common.gdshaderinc §0b).
 @export_range(-180.0, 180.0, 1.0) var host_rotation : float = 0.0:
 	set(v): host_rotation = v; _touch()
+## WARP EVERY CARD HOST, to see whether the fire follows a card that is no longer a rectangle (owner
+## 2026-07-29: *"I don't see fire effect warping with the card during playtesting"*).
+##
+## The number is how far the four CORNERS stretch outward, as a fraction of their rest reach; the
+## edge points stay where they are, which is what turns the box into a star. That is the deformation
+## the shipped card rig actually makes — `card_visual.tscn`'s autoplay animation peaks around 0.25 —
+## and the outline this builds has the same 16 points in the same order the rig hands over, so what
+## the slider shows is the shipped path and not a preview of its own.
+##
+## ⚠ IT DOES NOT REACH THE PROPS, and that is not an oversight. A prop's mask IS its drawing's alpha
+## (`Shape.SPRITE`), which has no outline to stretch — and no prop deforms in the game, so a knob that
+## bent one here would be the tool showing something that cannot happen. Warping a sprite mask would
+## take a warp term in `fire.gdshader`'s SPRITE branch; that is a shader change, not a tool one.
+@export_range(0.0, 0.5, 0.01) var corner_warp : float = 0.0:
+	set(v): corner_warp = v; _touch()
 ## Body outlines, so you can see where a flame's base sits relative to its silhouette.
 @export var show_outlines : bool = true:
 	set(v): show_outlines = v; queue_redraw()
@@ -320,8 +335,14 @@ func _add_card_fire(slot : int) -> int:
 	var reqs : Array[FxRequest] = []
 	if fire_stacks > 0 and fire_style:
 		reqs.append(FxFire.request(&"fire", fire_stacks, fire_style))
-	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs).set_meta(&"card", true)
+	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs,
+			_card_outline(card_body)).set_meta(&"card", true)
 	return slot + 1
+
+## The card silhouette at the current `corner_warp` — CardVisual's own rig shape, never a copy of it,
+## so the tool cannot show a deformation the cards do not have.
+func _card_outline(body : Vector2) -> PackedVector2Array:
+	return CardVisual.star_outline(body, corner_warp)
 
 ## A card-sized box carrying the juggling pair, exactly as StatusJuggling declares them: the balls,
 ## and the fire riding whichever balls are alight.
@@ -332,7 +353,8 @@ func _add_juggler(slot : int) -> int:
 		for i : int in ball_count:
 			levels.append(lit_level if i < lit_balls else 0)
 		reqs = FxJuggle.requests(ball_count, levels, juggle_style, ball_fire_style)
-	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs).set_meta(&"card", true)
+	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs,
+			_card_outline(card_body)).set_meta(&"card", true)
 	return slot + 1
 
 ## A REAL PropVisual, drawing its real art, with fire on its own MASK — the sheet's own alpha, so
@@ -358,8 +380,11 @@ func _add_prop(slot : int, kind : GDScript) -> int:
 
 ## One preview host: a Node2D standing in for a CardVisual / PropVisual's Offset, carrying a real
 ## FxAttachment configured the way its host would configure it.
+##
+## `outline` is the host's DEFORMED silhouette, if it has one — the card hosts hand over the same
+## 16-point walk a CardVisual's rig does, which is what makes the warp knob exercise the shipped path.
 func _spawn_host(at_x : float, body : Vector2, shape : FxAttachment.Shape,
-		reqs : Array[FxRequest]) -> Node2D:
+		reqs : Array[FxRequest], outline : PackedVector2Array = PackedVector2Array()) -> Node2D:
 	var host := Node2D.new()
 	host.position = Vector2(at_x, 0.0)
 	# The whole host turns, art and all — the attachment reads `parent.global_rotation` every frame
@@ -374,6 +399,9 @@ func _spawn_host(at_x : float, body : Vector2, shape : FxAttachment.Shape,
 	# since no prop rotates any more (§4g).
 	fx.configure(body, not is_zero_approx(host_rotation), shape, FxAttachment.Half.WHOLE, true)
 	host.add_child(fx)
+	# BEFORE `sync`: the outline decides the shape the quads are built for, and the quad bound a
+	# stretched corner needs.
+	if not outline.is_empty(): fx.measure_outline(outline)
 	# THE SEED BEFORE `sync`, THE CLOCKS AFTER — per-host randomness is read when the quads are BUILT
 	# (§4.4), while the clock is only ever pushed. This slot's seed is rolled once for the whole
 	# session, so a rebuild does not re-scatter the crown that is being tuned.
@@ -420,12 +448,19 @@ func _draw() -> void:
 			if not is_instance_valid(host) or not host.get_meta(&"card", false): continue
 			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
 			draw_set_transform(host.position, rot, Vector2.ONE)
-			draw_rect(Rect2(-body * 0.5, body), face, true)
+			# The WARPED face, for the same reason the reference geometry turns with its host: a
+			# square face under a star-shaped flame base would read as the effect misbehaving.
+			draw_colored_polygon(_card_outline(body), face)
 	if show_outlines:
 		var line := PaletteDB.color(PaletteDB.ROLES.suit_knife)
 		for host : Node2D in _hosts:
 			if not is_instance_valid(host): continue
 			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
 			draw_set_transform(host.position, rot, Vector2.ONE)
-			draw_rect(Rect2(-body * 0.5, body), line, false, px)
+			if host.get_meta(&"card", false):
+				var loop := _card_outline(body)
+				loop.append(loop[0])
+				draw_polyline(loop, line, px)
+			else:
+				draw_rect(Rect2(-body * 0.5, body), line, false, px)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

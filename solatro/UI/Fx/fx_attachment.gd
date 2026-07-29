@@ -151,6 +151,19 @@ var _art_size : Vector2 = Vector2.ONE
 ## into a blob or beat against the grid depending on phase. Must match RADII in fire.gdshader.
 const RADII := 32
 
+## The widest entry in `_radii`, in art units — half the CIRCUMSCRIBED extent of the silhouette as it
+## is RIGHT NOW. `_size_quad` bounds a rotating host's quad with it, so a deformed card's stretched
+## corner cannot push its flames past the quad edge.
+var _radii_max : float = 0.0
+## The deformed outline's tight half-extents. Pushed as `u_body` on the RADII quads, because that is
+## what the comb divides — a corner stretched 5 units out of the nominal 38x50 has no cell over it
+## otherwise, and the outermost tendril's arch stops short of the very corner that moved.
+var _radii_half : Vector2 = Vector2.ZERO
+## Scratch for `_fill_radii_from_outline`, allocated once: this runs per frame on every card on the
+## board, and a fresh table per card per frame is exactly the churn it must not add.
+var _next := PackedFloat32Array()
+var _angles := PackedFloat32Array()
+
 ## Measure the host's real outline into the radius table, so flames hug a deformed card instead of
 ## its nominal rectangle. Behind a dirty flag by contract: the caller decides when the silhouette
 ## changed, because sampling a polygon every frame for a shape that almost never moves is exactly
@@ -163,6 +176,7 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 	if points.size() <= 8:
 		shape = Shape.BOX
 		_radii = PackedFloat32Array()
+		_radii_max = 0.0
 		_restyle()
 		return
 	_radii.resize(RADII)
@@ -178,8 +192,121 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 		for i : int in RADII:
 			if _radii[i] > 0.0: continue
 			_radii[i] = maxf(_radii[(i + RADII - 1) % RADII], _radii[(i + 1) % RADII])
+	_radii_max = 0.0
+	for r : float in _radii: _radii_max = maxf(_radii_max, r)
+	_radii_half = body * 0.5
 	shape = Shape.RADII
 	_restyle()
+
+# --- THE DEFORMING SILHOUETTE (owner 2026-07-29) --------------------------------------------------
+#
+# A card is NOT the 38x50 rectangle it is authored as: its face polygons are skinned to a star rig
+# whose arms stretch the corners out and pull them back every frame, and the shipped animation is on
+# AUTOPLAY. `measure_silhouette` above bakes the REST outline once, so the flames stood on a shape
+# the card no longer had — the fire held still while the card's top edge moved under it, which is
+# exactly the report ("fire effect doesn't warp with the card").
+#
+# The fix is to re-read the rig, not to make the shader guess: the rig IS the deformation, and the
+# radius table the mask already uses is exactly the right shape to carry it. Pixels distort and leave
+# the grid where a corner stretches, which the owner ruled acceptable here — the card's own art
+# already does the same thing under the same rig.
+
+## Bind the silhouette to an ORDERED outline and switch the mask to the radius table. The setup call:
+## `track_outline` is the per-frame one.
+##
+## ⚠ `outline` must run ONCE around the silhouette so its points' angles increase monotonically —
+## which is what a rig walked edge by edge gives. That contract is what lets each of the 32 rays be
+## resolved by one segment intersection in a single merged walk (32 + n steps, not 32 * n), and it is
+## the whole reason this is cheap enough to run every frame on every card on the board. Unordered
+## points — a triangulated `Polygon2D`, say — belong in `measure_silhouette`, which buckets instead.
+func measure_outline(outline: PackedVector2Array) -> void:
+	if outline.size() < 3:
+		shape = Shape.BOX
+		_radii = PackedFloat32Array()
+		_radii_max = 0.0
+		_restyle()
+		return
+	_fill_radii_from_outline(outline)
+	shape = Shape.RADII
+	_restyle()
+
+## Re-read the deformed outline and push it to the live quads. Called every frame by a host whose rig
+## moves; a no-op on the frames where it did not, which is most of them once the card settles.
+##
+## Only `u_radii` and `u_body` reach the GPU — never the ~35 static style levers `_restyle` pushes.
+## The quads are re-sized too, because a stretched corner reaches further than the rest bound they
+## were built for and would clip against their own edge.
+func track_outline(outline: PackedVector2Array) -> void:
+	if shape != Shape.RADII or outline.size() < 3: return
+	if not _fill_radii_from_outline(outline): return
+	for id : StringName in _fx:
+		var fx : Effect = _fx[id]
+		# A request may override the host's shape (ball fire rides the BALLS, not the card it is on),
+		# and those quads read neither table.
+		if fx.req.shape >= 0 and fx.req.shape != int(Shape.RADII): continue
+		var mat := fx.quad.material as ShaderMaterial
+		mat.set_shader_parameter(&"u_radii", _radii)
+		mat.set_shader_parameter(&"u_body", _radii_half * 2.0)
+		_size_quad(fx.quad, fx.req)
+
+## Resolve `outline` into the radius table. Returns whether anything actually moved — the early-out
+## that keeps a still card free.
+##
+## Each ray is intersected with the ONE outline segment that spans its angle, so the table is the
+## exact star rather than an angular histogram of it: bucketing 16 arms into 32 slots and filling the
+## gaps with a neighbour's maximum inflates the shape by up to ~5 art units between a corner and the
+## edge sample beside it, which reads as a lump of flame standing off the card.
+func _fill_radii_from_outline(outline: PackedVector2Array) -> bool:
+	var n := outline.size()
+	_angles.resize(n)
+	# The walk has to START at the lowest angle, or the two sequences cannot advance together: an
+	# outline ordered around the shape is monotonic in angle only up to ONE wrap, and this is where
+	# that wrap is cut.
+	var start := 0
+	for i : int in n:
+		_angles[i] = fposmod(atan2(outline[i].x, -outline[i].y), TAU)
+		if _angles[i] < _angles[start]: start = i
+	_next.resize(RADII)
+	var half := Vector2.ZERO
+	for p : Vector2 in outline:
+		half = Vector2(maxf(half.x, absf(p.x)), maxf(half.y, absf(p.y)))
+	var j := 0
+	var top := 0.0
+	for k : int in RADII:
+		var a := float(k) * TAU / float(RADII)
+		while j < n - 1 and _angles[(start + j + 1) % n] <= a: j += 1
+		var i0 := (start + j) % n
+		var i1 := (start + j + 1) % n
+		# Outside the monotonic run at either end is the CLOSING segment, from the last point back to
+		# the first — the one the wrap cut in half.
+		if a < _angles[i0] or (j >= n - 1 and a >= _angles[i1]):
+			i0 = (start + n - 1) % n
+			i1 = start
+		_next[k] = _ray_hit(a, outline[i0], outline[i1])
+		top = maxf(top, _next[k])
+	var moved := _radii.size() != RADII or not is_equal_approx(top, _radii_max) \
+			or not half.is_equal_approx(_radii_half)
+	if not moved:
+		for k : int in RADII:
+			# A twentieth of an art unit is well under one FX pixel, so anything below it cannot move
+			# a rendered flame and is not worth an upload.
+			if absf(_next[k] - _radii[k]) > 0.05:
+				moved = true
+				break
+	if not moved: return false
+	_radii = _next.duplicate()
+	_radii_max = top
+	_radii_half = half
+	return true
+
+## How far the ray at angle `a` (from straight up) reaches before it crosses segment p->q, in art
+## units. Zero where the segment is edge-on to the ray, which leaves the previous entry standing.
+func _ray_hit(a: float, p: Vector2, q: Vector2) -> float:
+	var d := Vector2(sin(a), -cos(a))
+	var s := q - p
+	var den := d.cross(s)
+	if absf(den) < 1e-6: return p.length()
+	return maxf(p.cross(s) / den, 0.0)
 
 ## Point this attachment at a SPRITE's own sheet, so the fire shader reads the drawing's ALPHA as its
 ## mask, and tighten `body` to the art.
@@ -353,8 +480,13 @@ func _make_quad(req: FxRequest) -> MeshInstance2D:
 ## ⚠ It takes BOTH a turning host and an effect that turns with it (`FxRequest.rotates_with_host`).
 ## A juggling pattern does not turn with its card, so it keeps the box bound even on a card that
 ## spins through every angle — ~22 % of that quad's fill, for free (FX_HANDOFF §1b.3).
+## ⚠ A DEFORMED host is bounded by its LIVE reach, not by its authored box. The star rig stretches a
+## card's corners ~5 art units past the 38x50 it is authored as, and a quad built for the rest pose
+## clips the flames standing on the part that moved.
 func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
-	var bound := Vector2.ONE * body.length() if rotates and req.rotates_with_host else body
+	var bound := body
+	if rotates and req.rotates_with_host:
+		bound = Vector2.ONE * maxf(body.length(), _radii_max * 2.0)
 	var extent := bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
 	(quad.mesh as QuadMesh).size = extent
 	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
@@ -378,7 +510,10 @@ func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
 	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
 	mat.set_shader_parameter(&"u_shape", req.shape if req.shape >= 0 else int(shape))
 	mat.set_shader_parameter(&"u_half", int(half))
-	mat.set_shader_parameter(&"u_body", body)
+	# The DEFORMED width where the rig holds one: `u_body` is what the comb divides, so a restyle
+	# must not stamp the authored rectangle back over the shape the card currently has.
+	mat.set_shader_parameter(&"u_body",
+			_radii_half * 2.0 if shape == Shape.RADII and _radii_half != Vector2.ZERO else body)
 	if not _radii.is_empty(): mat.set_shader_parameter(&"u_radii", _radii)
 	if _art:
 		mat.set_shader_parameter(&"u_art", _art)
@@ -497,6 +632,23 @@ func _update_lag(delta: float) -> void:
 	_lag_vel += ((target - _lag) * LAG_STIFFNESS - _lag_vel * LAG_DAMPING) * delta
 	_lag = (_lag + _lag_vel * delta).limit_length(LAG_MAX)
 
+## Whether any of this host's quads can reach the screen this frame.
+##
+## Measured in VIEWPORT space (`get_global_transform_with_canvas`), which is the only space that
+## already accounts for the play area's scroll, the camera and every parent transform — a card
+## scrolled out of the play area is off screen even though its global position never moved.
+##
+## ⚠ GENEROUS BY DESIGN. The margin is the largest quad this host owns, at this host's own scale, so
+## a quad whose centre is off screen while its flames are not still gets its uniforms. Being wrong in
+## this direction costs a few uploads; being wrong in the other freezes an effect in view.
+func _on_screen() -> bool:
+	var reach := 0.0
+	for id : StringName in _fx:
+		reach = maxf(reach, (_fx[id].quad.mesh as QuadMesh).size.length())
+	var scaled := reach * maxf(global_scale.x, global_scale.y) * 0.5
+	var at := get_global_transform_with_canvas().origin
+	return get_viewport_rect().grow(scaled).has_point(at)
+
 ## Push the handful of genuinely per-frame uniforms, advance each effect's ease, and release any
 ## effect whose fade has finished.
 func _push_live(scaled_delta: float) -> void:
@@ -514,6 +666,16 @@ func _push_live(scaled_delta: float) -> void:
 	for id : StringName in _fx:
 		period = maxf(period, _fx[id].req.phase_period)
 	if period > 0.0: _phase = fmod(_phase + scaled_delta / period, 1.0)
+	# ⚠ AN OFF-SCREEN HOST STILL PAYS FOR ITS UNIFORMS, and that is the one way an invisible card is
+	# NOT free. Godot culls the QUADS — measured 2026-07-29, 312 hosts with 78 on screen cost the same
+	# GPU time as the 78 alone — but nothing culls this function, and it is ~15 `set_shader_parameter`
+	# calls per quad per frame. On that run the 234 invisible hosts added ~7 ms of pure CPU: more than
+	# the whole visible board's GPU cost.
+	#
+	# The CLOCKS above are advanced first and unconditionally — they are a few floats, and freezing
+	# them would teleport every ball the moment a scroll brought its card back into view. What is
+	# skipped is only the UPLOAD, which nobody can see the result of.
+	if not _on_screen(): return
 	var done : Array[StringName] = []
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]

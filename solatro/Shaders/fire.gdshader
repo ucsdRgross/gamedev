@@ -248,6 +248,37 @@ float body_half_width() {
 	return h.x * abs(cos(u_shape_rot)) + h.y * abs(sin(u_shape_rot));
 }
 
+// The body's WORLD-ALIGNED half-extent at the live rotation — `body_half_width` on both axes.
+vec2 body_bound() {
+	vec2 h = u_body * 0.5;
+	float c = abs(cos(u_shape_rot));
+	float s = abs(sin(u_shape_rot));
+	return vec2(h.x * c + h.y * s, h.x * s + h.y * c);
+}
+
+// THE EMPTY MAJORITY, REJECTED FIRST — `fx_balls_near`'s lever (FX_HANDOFF §1b.2), now for every
+// other shape, and it is the largest single saving in this file.
+//
+// ⚠ THE QUAD IS SIZED FOR THE WORST CASE AND THE FRAGMENT IS NOT. A quad is the host's CIRCUMSCRIBED
+// bound plus reach on all four sides — 84.8 x 84.8 for a 38x50 card, because a card CAN spin — so a
+// card that is not currently turned leaves most of its quad empty, and every one of those empty
+// fragments still walked the whole ~20-lookup march to find nothing. Below the body nothing can burn
+// at all, because the march only ever walks DOWN.
+//
+// It CANNOT change a pixel: every fragment it rejects is one where `surface_below` could not have
+// found a surface within reach anyway. That is the whole reason to prefer this to shrinking the quad
+// — shrinking moves the pixel lattice, and this does not touch it.
+//
+// ⚠ CONSERVATIVE ON EVERY AXIS, deliberately. `tall` is the tallest a flame can be — `height` at full
+// `height_var`, plus the erosion its base sinks by — and it is the SIDEWAYS margin too, because sway,
+// fan and the cape all push a tip out of its own cell and none of them can push it further sideways
+// than the flame is long. Tightening this is how you clip a flame off the edge of a card.
+bool body_near(vec2 p) {
+	vec2 b = body_bound();
+	float tall = u_height * (1.0 + u_height_var) + max(u_sink, 0.0);
+	return abs(p.x) <= b.x + tall && p.y <= b.y && p.y >= -b.y - tall;
+}
+
 // THE DOWN-MARCH. Walk DOWN from `p` in FX-pixel steps until the mask is hit, and return the top of
 // that surface run (art y is positive DOWN), or NO_SURFACE within `reach`. `level` comes back as
 // what that surface emits.
@@ -419,6 +450,9 @@ void fragment() {
 		// draws BEYOND a ball: one flame's height, plus the erosion the base sinks by. Below the
 		// pattern is rejected too — the march only ever walks DOWN, away from every ball.
 		alive = fx_balls_near(p, u_height + max(u_sink, 0.0), u_span, u_arc_height, u_ball_radius);
+	} else {
+		// The same rejection for every other shape — see body_near.
+		alive = body_near(p);
 	}
 	if (alive && u_shape == SHAPE_BALLS) {
 		// THE NEAREST LIT BALL (the second half of FX_HANDOFF §2). Resolving the nearest ball of
@@ -484,7 +518,9 @@ void fragment() {
 	// Where the flame overlays the body it is drawn at u_inner_alpha. Every shipped style now sets
 	// that to 1.0 — fire BLOCKS what it covers (owner 2026-07-29: seeing the art through the flame
 	// "looks very bad"). How far the flames come down over the art is u_sink's job, not the alpha's.
-	if (mask_solid(mask_level(p, ball, ball_level))) alpha_mul = u_inner_alpha;
+	// Guarded by `alive` too: a rejected fragment cannot reach a non-zero `heat`, and `alpha_mul` is
+	// only ever read where heat is non-zero — so this is one more mask lookup the empty majority skips.
+	if (alive && mask_solid(mask_level(p, ball, ball_level))) alpha_mul = u_inner_alpha;
 	// Split props: keep only the emitters belonging to this half, so a hoop's back-arc flames sit
 	// behind the occupied card exactly as its back arc does.
 	if (u_half == 1 && p.x > 0.0) heat = 0.0;
