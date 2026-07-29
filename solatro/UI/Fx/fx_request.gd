@@ -17,9 +17,12 @@ var shader : Shader = null
 ## The static art levers, written to the material once on creation and on style swap.
 var style : FxStyle = null
 
-## Which emitter this effect decorates: an FxAttachment.Mode value. Typed as int rather than as
-## the enum so FxRequest and FxAttachment do not reference each other's class_names in a cycle.
-var mode : int = 0
+## Which SHAPE this effect's mask is, overriding the host's own: an FxAttachment.Shape value, or -1
+## for "whatever the host is". Ball fire is the one user — its mask is the BALLS, not the card it
+## rides on — which is what lets the fire shader have no emitter modes at all (owner 2026-07-30,
+## *"no special ball case"*). Typed as int rather than as the enum so FxRequest and FxAttachment do
+## not reference each other's class_names in a cycle.
+var shape : int = -1
 
 ## How far the effect reaches BEYOND the host's silhouette, in art units. Sizes the quad together
 ## with the host's body, so a taller flame gets a taller quad instead of clipping at its edge.
@@ -40,6 +43,11 @@ var phase_period : float = 0.0
 ## Data-derived uniforms that must be applied WHOLE (ints, textures, vectors) — anything a lerp
 ## would make meaningless. Written when the data changes and not eased.
 var snap : Dictionary[StringName, Variant] = {}
+
+## BALLS mode: which ball indices are actually alight. The shader reads the same fact per fragment out
+## of `u_ball_fire`, but a TEXTURE cannot be sampled from GDScript cheaply and embers are spawned from
+## GDScript — so the indices ride along in the form the emitter needs, built where the texture is.
+var lit : PackedInt32Array = PackedInt32Array()
 
 ## The PARTNER effect's pixel lattice, for an effect drawn ON another effect's output rather than on
 ## the host: the ball-fire plume anchors to a ball centre that the BALL quad snapped to ITS grid

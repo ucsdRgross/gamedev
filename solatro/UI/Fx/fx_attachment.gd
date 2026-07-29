@@ -25,19 +25,15 @@ static func settings() -> PlayerSettings:
 	if not _editor_settings: _editor_settings = PlayerSettings.new()
 	return _editor_settings
 
-## Emitter modes, mirroring the constants in fire.gdshader. GDScript and GLSL cannot share an
-## enum, so the mapping exists twice and can drift silently — the FX ATTACHMENT suite asserts it.
-enum Mode { SILHOUETTE = 0, BALLS = 1 }
-
-## Silhouette kinds, mirroring fire.gdshader the same way. A card and a blade are BOTH boxes;
-## only a deformed card needs the 32-tap radius table, so it is its own kind rather than every
-## card paying for a silhouette lookup it does not use.
-enum Shape { BOX = 0, RING = 1, RADII = 2, PROFILE = 3 }
-
-## Columns in the sprite top-edge profile. Must match PROFILE in fire.gdshader.
-const PROFILE := 32
-## Sentinel for a column with no art in it. Must match PROFILE_EMPTY in fire.gdshader.
-const PROFILE_EMPTY := 1.0e8
+## Shape kinds, mirroring the constants in fire.gdshader. GDScript and GLSL cannot share an enum,
+## so the mapping exists twice and can drift silently — the FX ATTACHMENT suite asserts it.
+##
+## A card is a BOX and a deformed one needs the 32-tap radius table, so that is its own kind rather
+## than every card paying for a lookup it does not use. Every TEXTURED kind is a SPRITE and answers
+## with its own alpha — which is the only representation that knows a hoop has a hole in it. BALLS
+## is a shape too, not a mode: the fire shader treats a juggled ball exactly like a card
+## (owner 2026-07-30, *"no special ball case"*).
+enum Shape { BOX = 0, RADII = 1, SPRITE = 2, BALLS = 3 }
 
 ## Split-prop halves: which side of the silhouette this quad is allowed to emit from.
 enum Half { WHOLE = 0, BACK = 1, FRONT = 2 }
@@ -84,6 +80,15 @@ var rotates : bool = true
 ## Which silhouette the effects decorate, and (for a split prop) which half this attachment emits.
 var shape : Shape = Shape.BOX
 var half : Half = Half.WHOLE
+
+## Whether the host's ART is currently MIRRORED (PropVisual.face_travel mirrors a blade to face its
+## travel). The mask IS the art now, so it has to mirror with it or a blade heading right emits off
+## the outline it no longer has. One sign, re-pushed only when it actually changes.
+var flipped : bool = false:
+	set(value):
+		if flipped == value: return
+		flipped = value
+		_restyle()
 
 ## Whether this host runs the MOTION effects — embers and the cape. Both exist for a board where
 ## cards travel and are dropped; in a static grid like the deck viewer neither earns its cost, and
@@ -135,8 +140,11 @@ func configure(body_size: Vector2, host_rotates := true, host_shape := Shape.BOX
 
 ## The card silhouette's reach at each of RADII angles, or empty while the host is a plain box.
 var _radii := PackedFloat32Array()
-## SHAPE_PROFILE: the sprite's top edge per column (measure_sprite_silhouette).
-var _profile := PackedFloat32Array()
+## SHAPE_SPRITE: the sheet the mask is read out of, the frame inside it in NORMALIZED uv, and the
+## size that frame is drawn at (centred on the host's origin). Set by measure_sprite_silhouette.
+var _art : Texture2D = null
+var _art_rect : Vector4 = Vector4(0.0, 0.0, 1.0, 1.0)
+var _art_size : Vector2 = Vector2.ONE
 
 ## Entries in the radius table. 32, NOT 16: the star rig deforming a card goes up to 16 arms, and
 ## 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either smooth
@@ -173,21 +181,40 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 	shape = Shape.RADII
 	_restyle()
 
-## Measure a SPRITE's real top edge into a per-column PROFILE, and tighten `body` to the art.
+## Point this attachment at a SPRITE's own sheet, so the fire shader reads the drawing's ALPHA as its
+## mask, and tighten `body` to the art.
 ##
-## Two bugs this fixes, both reported 2026-07-29 and both caused by treating a prop's FRAME as its
-## body:
-##  * A frame is mostly transparent padding — the ball pip is a small blob in an 8x8 cell — so the
-##    comb spanned blank columns and put flames in empty space beside the drawing.
-##  * The polar radius table has almost no angular resolution across a wide flat edge, so the base
-##    rose and sank at random along the knife's perfectly flat top.
-## A column profile is exact on flat edges and carries an explicit "no art here" sentinel, so both
-## go away by construction.
+## The mask itself is sampled LIVE in the shader — nothing about the outline is baked here, which is
+## what lets a host turn without going stale, and what lets a shape with a HOLE in it (the hoop) be
+## represented at all. What is measured here is only the art's tight bounding box, and only because a
+## frame is mostly transparent padding: the ball pip is a small blob in an 8x8 cell, so a comb spanning
+## the frame put flames in empty space beside the drawing (owner report 2026-07-29).
 ##
-## `src` is the frame's rect in sheet pixels; `size` is the art units that frame is drawn at. Called
-## ONCE per prop — a sheet never changes at runtime.
+## `src` is the frame's rect in sheet pixels; `size` is the art units that frame is drawn at.
+##
+## ⚠ CACHED PER FRAME RECT, and that is not an optimization — it is a HITCH FIX. The scan is
+## `Image.get_pixel` over the frame (2304 calls for one hoop frame) on top of a `Texture2D.get_image`
+## decode, and it runs once per ATTACHMENT: a split prop has three (whole, back, front), so every
+## hoop that spawned paid for the same 32x72 frame three times, on the frame it appeared. That was
+## enough to make `test_ui_props`'s per-arrival pulse poll miss its peak. A sheet never changes at
+## runtime, so one entry per frame rect serves the whole run.
+static var _sprite_cache : Dictionary[String, Array] = {}
+
 func measure_sprite_silhouette(sheet: Texture2D, src: Rect2, size: Vector2) -> void:
 	if not sheet: return
+	var key := "%s|%s|%s" % [sheet.resource_path, src, size]
+	if _sprite_cache.has(key):
+		var hit : Array = _sprite_cache[key]
+		if hit.is_empty():
+			shape = Shape.BOX                              # nothing drawn: leave it a box
+			return
+		body = hit[0]
+		_art = sheet
+		_art_rect = hit[1]
+		_art_size = size
+		shape = Shape.SPRITE
+		_restyle()
+		return
 	var img := sheet.get_image()
 	if not img: return
 	var x0 := int(src.position.x)
@@ -199,37 +226,31 @@ func measure_sprite_silhouette(sheet: Texture2D, src: Rect2, size: Vector2) -> v
 	var max_x := -1
 	var min_y := h
 	var max_y := -1
-	# Topmost opaque texel per source column, or -1 for an empty column.
-	var tops : PackedInt32Array = PackedInt32Array()
-	tops.resize(w)
-	tops.fill(-1)
 	for x : int in w:
 		for y : int in h:
 			if img.get_pixel(x0 + x, y0 + y).a <= 0.0: continue
-			if tops[x] < 0: tops[x] = y
 			min_x = mini(min_x, x)
 			max_x = maxi(max_x, x)
 			min_y = mini(min_y, y)
 			max_y = maxi(max_y, y)
 	if max_x < 0:
+		_sprite_cache[key] = []
 		shape = Shape.BOX                              # nothing drawn: leave it a box
 		return
-	# The art's tight box becomes the BODY, so every contour, the comb width and the quad bound are
-	# measured against the drawing rather than the padding around it.
+	# The art's tight box becomes the BODY, so the comb width and the quad bound are measured against
+	# the drawing rather than the padding around it.
 	var texel := size / Vector2(float(w), float(h))
 	body = Vector2(float(max_x - min_x + 1), float(max_y - min_y + 1)) * texel
-	# Sample the column tops across the tight box, in prop-local art units (y negative upward).
-	_profile.resize(PROFILE)
-	var span := float(max_x - min_x + 1)
-	for i : int in PROFILE:
-		var col := min_x + int(floorf((float(i) + 0.5) / float(PROFILE) * span))
-		var top : int = tops[clampi(col, 0, w - 1)]
-		if top < 0:
-			_profile[i] = PROFILE_EMPTY
-			continue
-		# Texel top edge, relative to the tight box's centre.
-		_profile[i] = (float(top) - float(min_y)) * texel.y - body.y * 0.5
-	shape = Shape.PROFILE
+	# The FRAME, in normalized sheet uv, plus the size it is drawn at. Deliberately the whole frame
+	# and not the tight box: the art is drawn centred on the host's origin, and the tight box is not
+	# centred on it, so mapping through the tight box would slide the whole mask sideways.
+	var sheet_size := Vector2(float(img.get_width()), float(img.get_height()))
+	_art = sheet
+	_art_rect = Vector4(src.position.x / sheet_size.x, src.position.y / sheet_size.y,
+			src.size.x / sheet_size.x, src.size.y / sheet_size.y)
+	_art_size = size
+	_sprite_cache[key] = [body, _art_rect]
+	shape = Shape.SPRITE
 	_restyle()
 
 ## Ratio of the base delay to the LIVE delay: 1.0 at rest, above 1 as act compression speeds
@@ -349,12 +370,17 @@ func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
 	var mat := quad.material as ShaderMaterial
 	if req.style: req.style.apply(mat)
-	mat.set_shader_parameter(&"u_mode", req.mode)
-	mat.set_shader_parameter(&"u_shape", int(shape))
+	# A request may override the host's shape — that is how ball fire says "my mask is the balls, not
+	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
+	mat.set_shader_parameter(&"u_shape", req.shape if req.shape >= 0 else int(shape))
 	mat.set_shader_parameter(&"u_half", int(half))
 	mat.set_shader_parameter(&"u_body", body)
 	if not _radii.is_empty(): mat.set_shader_parameter(&"u_radii", _radii)
-	if not _profile.is_empty(): mat.set_shader_parameter(&"u_profile", _profile)
+	if _art:
+		mat.set_shader_parameter(&"u_art", _art)
+		mat.set_shader_parameter(&"u_art_rect", _art_rect)
+		mat.set_shader_parameter(&"u_art_size", _art_size)
+		mat.set_shader_parameter(&"u_art_flip", -1.0 if flipped else 1.0)
 	# The player's master effect strength, on top of the style's own brightness — so a "reduce
 	# effects" setting reaches every effect without editing a single .tres, and reaching zero
 	# turns the board's FX off entirely (a genuine photosensitivity control, not a taste one).
@@ -375,19 +401,44 @@ const EMBER_PER_STACK := 3.0
 ## height. That is an APPROXIMATION of "from the flame tips" and deliberately so: real tip
 ## positions are computed in the shader, and mirroring tendril() in GDScript to find them would be
 ## exactly the duplicated-motion bug the shared include exists to prevent.
-func _emit_embers(fx: Effect, scaled_delta: float) -> void:
+##
+## BALL fire is the exception, and it has to be: the host is the CARD, so the host's top edge would
+## pour embers off the card while the flames are out on the balls (owner 2026-07-29 wanted embers on
+## *props and balls* too). Those spawn on a randomly chosen ALIGHT ball, whose position comes from
+## FxJuggle.ball_pos — the one script-side copy of the path, and the one this may call.
+func _emit_embers(fx: Effect, scaled_delta: float, vals: Dictionary[StringName, float]) -> void:
 	var style := fx.req.style
 	if not ambient or not style or not style.ember or fx.fade >= 0.0: return
-	var count : float = fx.req.live.get(&"u_count", 0.0)
-	var rate := minf(count * EMBER_PER_STACK, style.ember_rate_max)
+	# A ball effect's sources are the LIT balls, not the ball count: an unlit ball is not on fire and
+	# has nothing to throw (ruling 3 — each individual ball burns or does not).
+	var balls := fx.req.shape == Shape.BALLS
+	var sources : float = float(fx.req.lit.size()) if balls else vals.get(&"u_count", 0.0)
+	var rate := minf(sources * EMBER_PER_STACK, style.ember_rate_max)
 	if rate <= 0.0: return
 	fx.emit_debt += rate * scaled_delta
 	while fx.emit_debt >= 1.0:
 		fx.emit_debt -= 1.0
-		var height : float = fx.req.live.get(&"u_height", 0.0)
-		var local := Vector2(randf_range(-body.x, body.x) * 0.5,
-				-body.y * 0.5 - randf() * height)
-		ParticleEngine.spawn(style.ember, to_global(local), 1)
+		ParticleEngine.spawn(style.ember, to_global(_ember_origin(fx, vals, balls)), 1)
+
+## Where one ember is born, in the host's local art units.
+func _ember_origin(fx: Effect, vals: Dictionary[StringName, float], balls: bool) -> Vector2:
+	var height : float = vals.get(&"u_height", 0.0)
+	if not balls:
+		return Vector2(randf_range(-body.x, body.x) * 0.5, -body.y * 0.5 - randf() * height)
+	var radius : float = vals.get(&"u_ball_radius", 0.0)
+	var count : float = vals.get(&"u_ball_count", 1.0)
+	var span : float = vals.get(&"u_span", 0.0)
+	var top : float = vals.get(&"u_arc_height", 0.0)
+	var bottom : float = vals.get(&"u_return_height", 0.0)
+	var arcs : float = vals.get(&"u_ball_arcs", 2.0)
+	var i : int = fx.req.lit[randi() % fx.req.lit.size()]
+	var style := fx.req.style
+	# The EASED geometry and the host's own phase and direction — the same numbers the shader was
+	# handed this frame, so the ember leaves the ball where the ball was actually drawn.
+	var at := FxJuggle.ball_pos(float(i), maxf(count, 1.0), _phase, span, top, bottom,
+			style.ball_top_fraction, style.ball_gravity, _ball_dir, arcs)
+	# Off the TOP of the ball, where its plume sits — never its centre, which is inside the ball.
+	return at + Vector2(0.0, -radius - randf() * height)
 
 ## Re-apply every live effect's static uniforms. Connected to settings_changed, because the
 ## fx_intensity master knob is a PLAYER setting and must reach effects already on screen.
@@ -463,10 +514,12 @@ func _push_live(scaled_delta: float) -> void:
 		mat.set_shader_parameter(&"u_shape_rot", rot)
 		mat.set_shader_parameter(&"u_lag", lag_norm)
 		if fx.req.phase_period > 0.0: mat.set_shader_parameter(&"u_phase", _phase)
-		_emit_embers(fx, scaled_delta)
+		# Eased FIRST, then emitted from: a ball ember has to be born on the ball this frame DRAWS,
+		# and mid-transition the eased geometry is not the request's target geometry.
 		var vals := _eased(fx)
 		for key : StringName in vals:
 			mat.set_shader_parameter(key, vals[key])
+		_emit_embers(fx, scaled_delta, vals)
 		if fx.fade >= 0.0:
 			fx.fade = minf(fx.fade + step, 1.0)
 			var base : float = fx.req.style.opacity if fx.req.style else 1.0

@@ -53,8 +53,8 @@ func _run() -> void:
 	await _shot("01_fire_ladder", "Burning 1 / 3 / 12 / 40 / 200 stacks", _fire_ladder())
 	await _shot("02_fire_rotation", "host rotated 0 / 30 / 45 / 90 deg — flames stay vertical",
 			_fire_rotation())
-	await _shot("03_fire_wrap", "u_wrap 0 / 0.35 / 0.7 / 1.0 — tips vertical at every value",
-			_fire_wrap())
+	await _shot("03_surfaces", "several surfaces under one comb: 1 / 2 / 4 / 12 tendrils over a "
+			+ "RING — both arcs alight, and no flame ever leaps the hole", _surfaces())
 	await _shot("04_shapes", "ring / blade / split-prop halves", _shapes())
 	await _shot("05_balls", "juggling 1 / 3 / 8 / 50 balls", _balls())
 	await _shot("05b_ball_path", "ONE ball traced around the cycle: phase 0 .. 0.875",
@@ -66,10 +66,11 @@ func _run() -> void:
 	await _shot("05e_ball_arcs", "the ARC LADDER: 2 / 4 / 6 / 8 arcs at one ball count — lanes fill "
 			+ "in evenly between the carry and the throw", _ball_arcs())
 	await _shot("06_ball_fire", "per-ball fire: 5 balls, 2 lit at different levels", _ball_fire())
-	await _shot("07_transition", "a stack change mid-ease: fractional counts 1.0 -> 4.0",
-			_transition())
+	await _shot("07_transition", "a stack change mid-ease: fractional counts on a FLAT host and on "
+			+ "a CURVED one — the ring panels are where the anchor could pop", _transition())
 	await _shot("08_focus_highlight", "host modulate 1.0 vs the card's focus highlight — the "
 			+ "effects must brighten WITH their host (ruling 10)", _focus_highlight())
+	await _shot_embers()
 
 # ------------------------------------------------------------------ the shots
 
@@ -135,36 +136,45 @@ func _fire_rotation() -> Array[Case]:
 		out.append(case)
 	return out
 
-## wrap slides the flame base from the top contour to the bottom one. At 1.0 the card is engulfed
-## and EVERY tip is still vertical — that is the claim this shot exists to falsify.
-func _fire_wrap() -> Array[Case]:
+## MULTIPLE SURFACES UNDER ONE COMB — the behaviour that replaced the deleted `03_fire_wrap`
+## (FX_HANDOFF §1.3), on the shape that has it: the ring holds its outer top arc high up and the
+## upward-facing inner arc at the bottom of its hole far below, in the SAME columns.
+##
+## The comb is swept from one tendril to twelve, so the panels show what happens as cells get
+## narrower over a shape whose surfaces are at wildly different heights.
+##
+## What to look for, by EYE:
+##  * every panel lights BOTH surfaces — the outer arc and the floor of the hole;
+##  * the hole's MIDDLE stays empty at every count. A flame bridging the two arcs would be the
+##    ENORMOUS FLAME the owner forbade, and the model makes it impossible: a flame is exactly
+##    `height` long, and the two arcs are 170 art units apart.
+func _surfaces() -> Array[Case]:
 	var out : Array[Case] = []
-	for wrap : float in [0.0, 0.35, 0.7, 1.0]:
-		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxStyle
-		style.wrap = wrap
-		out.append(_card_case("wrap %.2f" % wrap, [FxFire.request(&"fire", 6, style)]))
+	for n : int in [1, 2, 4, 12]:
+		var live : Dictionary[StringName, float] = FxFire.stacks_live(n, PropVisual.PROP_FIRE_STYLE)
+		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, PropVisual.PROP_FIRE_STYLE,
+				live[&"u_height"])
+		req.live = live
+		out.append(_sprite_case("%d tendrils" % n, HoopVisual.SHEET, HoopVisual.FRAMES,
+				FxAttachment.Half.WHOLE, [req]))
 	return out
 
-## A ring's flames sit on the arc, a blade's on its box, and a split prop's halves each emit from
-## one side only (that is how a hoop's back-arc flames stay behind the card it is threading).
+## THE SHOT §1 IS ABOUT. Every panel is the REAL art with the REAL mask read out of its alpha, so
+## what is on screen is exactly what a prop shows.
+##
+## What to look for, by EYE (never by counting columns — that is what reported two rejected builds as
+## successes): flames on EVERY upward-facing surface, the hoop's inner-bottom arc included, with no
+## bare arc anywhere along the ring; every tip vertical; and no flame bridging the hole.
 func _shapes() -> Array[Case]:
 	var out : Array[Case] = []
-	# The REAL prop bodies, derived from the same art the kinds derive theirs from rather than
-	# retyped: the hoop's art is a foreshortened OVAL (much taller than wide), so a hardcoded square
-	# here would have hidden that SHAPE_RING was a circle of the body's half-WIDTH, sitting the
-	# flames deep inside the arc.
-	var ring_body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
-	var blade_body := PropVisual.art_size_for(KnifeVisual.SHEET)
-	out.append(_case("ring", ring_body, FxAttachment.Shape.RING, FxAttachment.Half.WHOLE,
+	out.append(_sprite_case("ring", HoopVisual.SHEET, HoopVisual.FRAMES, FxAttachment.Half.WHOLE,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
-	out.append(_case("blade", blade_body, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+	out.append(_sprite_case("blade", KnifeVisual.SHEET, 1, FxAttachment.Half.WHOLE,
 			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
-	out.append(_case("ring BACK half", ring_body, FxAttachment.Shape.RING,
-			FxAttachment.Half.BACK,
-			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
-	out.append(_case("ring FRONT half", ring_body, FxAttachment.Shape.RING,
-			FxAttachment.Half.FRONT,
-			[FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
+	out.append(_sprite_case("ring BACK half", HoopVisual.SHEET, HoopVisual.FRAMES,
+			FxAttachment.Half.BACK, [FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
+	out.append(_sprite_case("ring FRONT half", HoopVisual.SHEET, HoopVisual.FRAMES,
+			FxAttachment.Half.FRONT, [FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
 	return out
 
 ## The pattern must read as a CLOSED LOOP: a tall arc peaking above the card's top edge and a
@@ -289,17 +299,96 @@ func _stacked_case() -> Array[FxRequest]:
 
 ## Mid-ease frames. A fractional count is the whole mechanism behind "no visual jumps": the newest
 ## tendril must GROW OUT of the surface while the established ones only shuffle.
+##
+## The RING panels are the ones to read for the ANCHOR's own stability (FX_HANDOFF §1.4a). Cell
+## boundaries slide continuously as `u_count` eases, so the three columns the anchor is sampled at
+## slide with them — and on a CURVED host each of those columns sits at a different height, so an
+## anchor that popped between frames would show here as a flame jumping. A flat card cannot show it:
+## its top edge is the same height everywhere, so its anchor is constant by construction.
 func _transition() -> Array[Case]:
 	var out : Array[Case] = []
-	for n : float in [1.0, 1.5, 2.5, 3.4, 4.0]:
-		var live : Dictionary[StringName, float] = FxFire.stacks_live(4,
-				StatusBurning.CARD_FIRE_STYLE)
-		live[&"u_count"] = n
-		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, StatusBurning.CARD_FIRE_STYLE,
-				live[&"u_height"])
-		req.live = live
-		out.append(_card_case("count %.1f" % n, [req]))
+	for n : float in [1.6, 2.5, 3.4] as Array[float]:
+		out.append(_card_case("card %.1f" % n,
+				[_counted(StatusBurning.CARD_FIRE_STYLE, n)]))
+	for n : float in [1.6, 2.5, 3.4] as Array[float]:
+		out.append(_sprite_case("ring %.1f" % n, HoopVisual.SHEET, HoopVisual.FRAMES,
+				FxAttachment.Half.WHOLE, [_counted(PropVisual.PROP_FIRE_STYLE, n)]))
 	return out
+
+## A fire request pinned to a FRACTIONAL tendril count — the state an easing stack change is in
+## between two whole numbers, which is the only state a jump can hide in.
+func _counted(style: FxStyle, count: float) -> FxRequest:
+	var live : Dictionary[StringName, float] = FxFire.stacks_live(4, style)
+	live[&"u_count"] = count
+	var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
+	req.live = live
+	return req
+
+## EMBERS, from every fire that throws them (owner 2026-07-29: *"all fire effects should leave embers
+## like card is currently. dont see embers on props or balls"*). A burning card, a burning hoop, a
+## burning knife and a pair of lit balls, side by side.
+##
+## ⚠ THE ONE SHOT THAT RUNS LIVE, and the second one that is NOT REPRODUCIBLE. Embers are particles:
+## they are spawned at random points at random times and then simulated forward, so there is nothing
+## to park a clock at — a single frame of a fresh attachment has emitted nothing at all. Every other
+## shot drives its clock by hand for exactly the reason this one cannot.
+##
+## What to look for, by EYE: embers over ALL FOUR hosts, each sized to its own host (the card's are
+## the big ones — `ember.tres`; the prop and ball ones are `ember_prop.tres`), and the ball embers
+## leaving the BALLS rather than pouring off the card's top edge, which is where a host-relative
+## spawn would have put them.
+const EMBER_SECS := 1.4
+
+func _shot_embers() -> void:
+	var holder := Node2D.new()
+	add_child(holder)
+	var size := canvas()
+	# label, body, shape, requests — the four ember sources the owner named, in one row.
+	var cases : Array[Case] = [
+		_card_case("card fire", [FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)]),
+		_sprite_case("burning hoop", HoopVisual.SHEET, HoopVisual.FRAMES, FxAttachment.Half.WHOLE,
+				[FxFire.request(&"fire", 8, PropVisual.PROP_FIRE_STYLE)]),
+		_sprite_case("burning knife", KnifeVisual.SHEET, 1, FxAttachment.Half.WHOLE,
+				[FxFire.request(&"fire", 8, PropVisual.PROP_FIRE_STYLE)]),
+		_card_case("balls 0+3 lit", FxJuggle.requests(5, PackedInt32Array([4, 0, 0, 12, 0]),
+				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)),
+	]
+	var step := size.x / float(cases.size())
+	var zoom := _zoom_for(cases, step)
+	# ONE engine for the whole row, scaled with the cases: a spec's sizes are in the ENGINE's units,
+	# so an unscaled engine would draw every ember at a sub-pixel speck against blown-up hosts.
+	# Positions still land correctly wherever it sits — emit() converts through to_local.
+	var engine := ParticleEngine.new()
+	engine.scale = Vector2.ONE * zoom
+	holder.add_child(engine)
+	var atts : Array[FxAttachment] = []
+	for i : int in cases.size():
+		var case : Case = cases[i]
+		var slot := Node2D.new()
+		slot.position = Vector2(step * (i + 0.5), size.y * 0.6)
+		slot.scale = Vector2.ONE * zoom
+		holder.add_child(slot)
+		var ghost := _ghost_for(case, zoom)
+		slot.add_child(ghost)
+		# ambient TRUE — the one place it is, and the whole point: `_emit_embers` early-outs on it,
+		# because the motion effects are for a board, not for a viewer full of static cards.
+		atts.append(_attach_for(case, slot, true))
+		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
+	# Let it actually burn. Real frame deltas, because that is what drives both the emitters and the
+	# engine's own simulation pass.
+	var elapsed := 0.0
+	while elapsed < EMBER_SECS:
+		elapsed += await _tick()
+	await capture("09_embers", "EMBERS from every fire — card / hoop / knife / lit balls, run live "
+			+ "for %.1f s (NOT reproducible: see the comment)" % EMBER_SECS)
+	for att : FxAttachment in atts: att.set_process(false)
+	holder.queue_free()
+	await get_tree().process_frame
+
+## One frame of real time, and how long it took.
+func _tick() -> float:
+	await get_tree().process_frame
+	return get_process_delta_time()
 
 # ----------------------------------------------------------------- the harness
 
@@ -312,6 +401,11 @@ class Case:
 	var half : FxAttachment.Half = FxAttachment.Half.WHOLE
 	var requests : Array[FxRequest] = []
 	var rotation : float = 0.0
+	## SPRITE cases: the sheet the mask is read out of, and how many frames it holds. Set means the
+	## harness both hands the attachment its real art AND draws that art as the reference — an
+	## outline cannot show a HOLE, and the hole is the whole point of §1.
+	var sheet : Texture2D = null
+	var frames : int = 1
 	## Phase override for the path trace, or -1 to use the shot's shared phase.
 	var phase : float = -1.0
 	## The style's ball_top_fraction and ball_gravity, carried so the oracle reads the same split and
@@ -343,6 +437,44 @@ func _card_case(label: String, requests: Array[FxRequest]) -> Case:
 	return _case(label, CardVisual.CARD_SIZE, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			requests)
 
+## A case whose mask is a real sheet's ALPHA — every prop kind. The body is derived from the same
+## art the kind derives its own from rather than retyped, so a panel here cannot disagree with what
+## the game draws.
+func _sprite_case(label: String, sheet: Texture2D, frames: int, half: FxAttachment.Half,
+		requests: Array[FxRequest]) -> Case:
+	var c := _case(label, PropVisual.art_size_for(sheet, frames), FxAttachment.Shape.SPRITE, half,
+			requests)
+	c.sheet = sheet
+	c.frames = frames
+	return c
+
+## The host's reference drawing for one case — its real art for a sprite kind, a plain outline
+## otherwise, so the effect can be judged against the shape it is supposed to be decorating.
+func _ghost_for(case: Case, zoom: float) -> _Ghost:
+	var ghost := _Ghost.new()
+	ghost.body = case.body
+	ghost.sheet = case.sheet
+	ghost.frames = case.frames
+	if case.sheet: ghost.art_size = PropVisual.art_size_for(case.sheet, case.frames)
+	ghost.px = 1.0 / maxf(zoom, 0.01)
+	return ghost
+
+## Build one case's attachment, including handing a sprite kind its REAL sheet — the mask is that
+## art's alpha now, so a panel that skipped this would be decorating a plain box.
+func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
+	var att := FxAttachment.new()
+	att.configure(case.body, true, case.shape, case.half, ambient)
+	host.add_child(att)
+	if case.sheet:
+		att.measure_sprite_silhouette(case.sheet,
+				CardModifier.frame_rect(case.sheet, case.frames, 1, 0),
+				PropVisual.art_size_for(case.sheet, case.frames))
+	# BEFORE sync: the quads read the host's direction as they are built, unlike the clock, which is
+	# pushed afterwards.
+	att._ball_dir = case.ball_dir
+	att.sync(case.requests)
+	return att
+
 ## Lay the cases out across the viewport, drive every clock to the SAME fixed time, wait for the
 ## frame to actually reach the screen, then capture it.
 func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
@@ -361,10 +493,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		holder.add_child(slot)
 		# The host's own silhouette, so "flush with the top edge" and "behind the card" are
 		# judgeable rather than guesses about empty space.
-		var ghost := _Ghost.new()
-		ghost.body = case.body
-		ghost.ring = case.shape == FxAttachment.Shape.RING
-		ghost.px = 1.0 / maxf(zoom, 0.01)
+		var ghost := _ghost_for(case, zoom)
 		slot.add_child(ghost)
 		ghost.balls = _oracle(case)
 		if not ghost.balls.is_empty():
@@ -382,13 +511,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		var host := Node2D.new()
 		host.modulate = case.modulate
 		slot.add_child(host)
-		var att := FxAttachment.new()
-		att.configure(case.body, true, case.shape, case.half, false)
-		host.add_child(att)
-		# BEFORE sync: the quads read the host's direction as they are built, unlike the clock, which
-		# is pushed afterwards.
-		att._ball_dir = case.ball_dir
-		att.sync(case.requests)
+		var att := _attach_for(case, host, false)
 		# Park the clock by hand: driving it from real frame deltas would make every run differ,
 		# and a snapshot that changes on its own cannot be diffed.
 		#
@@ -483,7 +606,11 @@ func _oracle(case: Case) -> PackedVector2Array:
 ## it is supposed to be decorating.
 class _Ghost extends Node2D:
 	var body : Vector2 = Vector2.ZERO
-	var ring : bool = false
+	## A SPRITE case draws its real art instead of an outline: the mask is that art's alpha now, and
+	## an outline cannot show the HOLE whose inner-bottom arc §1 exists to light.
+	var sheet : Texture2D = null
+	var frames : int = 1
+	var art_size : Vector2 = Vector2.ZERO
 	## Independent expected ball positions, drawn as crosses.
 	var balls : PackedVector2Array = PackedVector2Array()
 	## ART UNITS PER SCREEN PIXEL for this slot (1 / the shot's zoom). Every line width below is a
@@ -495,14 +622,9 @@ class _Ghost extends Node2D:
 	var px : float = 1.0
 	func _draw() -> void:
 		var col := Color(0.45, 0.5, 0.6)
-		if ring:
-			# An ELLIPSE inscribed in the body, not a circle of its half-width: the hoop's art is a
-			# foreshortened oval, and the reference has to be the shape the shader claims to hug.
-			var pts := PackedVector2Array()
-			for i : int in 33:
-				var a := TAU * float(i) / 32.0
-				pts.append(Vector2(cos(a) * body.x * 0.5, sin(a) * body.y * 0.5))
-			draw_polyline(pts, col, 2.0 * px)
+		if sheet:
+			draw_texture_rect_region(sheet, Rect2(-art_size * 0.5, art_size),
+					CardModifier.frame_rect(sheet, frames, 1, 0))
 		else:
 			draw_rect(Rect2(-body * 0.5, body), col, false, 2.0 * px)
 		# A centre line: the juggling loop's shallow return arc is specified to ride the card's

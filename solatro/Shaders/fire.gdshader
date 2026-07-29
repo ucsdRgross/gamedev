@@ -1,13 +1,49 @@
 shader_type canvas_item;
 render_mode blend_mix, unshaded;
-// Pixelated fire as a decorator over a SHAPE. The quad is world-aligned and the silhouette turns
-// inside it (u_shape_rot), so flames rise in world space however the host is rotated — a knife
-// spinning to face travel must not spin its flames (owner ruling 1).
+// Pixelated fire as a decorator over a SHAPE — RAISE THE MASK (owner design, 2026-07-30).
 //
-// Tips point up BY CONSTRUCTION: the emitting width is combed into exactly u_count cells and each
-// tendril rises straight up from the contour beneath it. Nothing ever has to bend a flame back
-// toward vertical, because none ever leaves it — and the comb is O(1), so 3 tendrils and 300 cost
-// the same (owner ruling 4: no small cap).
+// THE MODEL: the fire region is the art's MASK RAISED by an arch-shaped amount, minus the mask.
+//
+//     floor(x) = the surface this column stands on, eroded by `sink`   — ONE down-march
+//     top(x)   = floor(x) - h * dome(u(x))                             — the ogee, art y up = minus
+//     fire(p)  = top(p.x) <= p.y <= floor(p.x)
+//
+// What that buys, and each line is a bug the per-column CONTOUR model it replaces actually had:
+//  * EVERY upward-facing surface burns, anywhere in the art. The test is local and vertical, so the
+//    hoop's inner-bottom arc — the inside of the hole, which faces up — lights from the same code
+//    that lights the outer top arc. A contour can only ever return the topmost surface in a column,
+//    which is why "the top half of the image" was never a definition of where fire sits.
+//  * ONE TENDRIL PER SURFACE, and it falls out rather than being arranged: a cell spanning the ring
+//    holds the outer arc high up and the inner arc far below, and each column simply grows a flame
+//    on the surface it has (owner: *"1 tendril on top and 1 on bottom"*).
+//  * NO ENORMOUS FLAME, structurally: a flame is exactly `h` long in every column on every shape, so
+//    one can never leap the hole in a ring.
+//  * TIPS POINT UP BY CONSTRUCTION — because the march is WORLD-down, not because of any per-shape
+//    branch (owner ruling 1). A spinning knife rotates only the mask LOOKUP.
+//  * Shape following is IN the shader, so nothing is baked at _ready and nothing can go stale when a
+//    host turns.
+//
+// ⚠ THE ANCHOR AND THE DRAPE ARE DELIBERATELY ABSENT, and this is the owner's pre-ruled fallback
+// rather than an omission (FX_HANDOFF §1.4a: *"If not possible without performance drop, then dont
+// do engulf trick with height checking and just stick with mask shifting to find bases"*). The
+// design called for the arch to be anchored ONCE per cell, at the highest surface in it, which needs
+// three more down-marches — and those marches have to start above the whole shape, because an anchor
+// that depended on the fragment's own height would differ down a column and tear the flame.
+//
+// MEASURED, 20 burning hosts, Intel UHD, Tests/Visual/fx_cost.tscn (2026-07-30):
+//     hoop   0.67 ms shipped contour ->  1.21 ms mask shift -> 22.52 ms with the anchor
+//     card   1.13 ms                 ->  1.53 ms            ->  1.81 ms
+//     knife  0.64 ms                 ->  0.36 ms            ->  0.62 ms
+// The anchor costs 21 ms on the one shape it exists for — more than a whole 60 fps frame, for 20
+// props and nothing else on screen. So it is dropped WHOLE, not approximated at reduced sample
+// counts, which is what produced the two builds the owner rejected. What goes with it is ENGULF: a
+// flame no longer drapes down to a lower surface in its own cell. Every other §1 property survives,
+// because every one of them comes from the mask and not from the anchor.
+//
+// There is no ball special case (owner 2026-07-30: *"fire effect should be unified and identical in
+// how it treats everything"*). A ball is a SHAPE whose mask is the union of the discs; the march,
+// the comb, the ogee, the onion shells and the ramp above it are literally the same code for a card,
+// a knife, a hoop and a ball.
 //
 // This shader is NEVER a material on the host. A ShaderMaterial on a CardVisual polygon is clipped
 // to that polygon's UV rect (fire could not rise above the card) and inherits the card's rotation,
@@ -15,31 +51,42 @@ render_mode blend_mix, unshaded;
 
 #include "res://Shaders/fx_common.gdshaderinc"
 
-// Emitter modes. Mirrored by FxAttachment.Mode — the mapping is asserted by the FX ATTACHMENT
-// suite, since GDScript and GLSL cannot share an enum.
-const int MODE_SILHOUETTE = 0;
-const int MODE_BALLS = 1;
-
-// Silhouette kinds. Mirrored by FxAttachment.Shape, asserted by the same test. A card and a blade
-// are BOTH boxes; only a deformed card needs the radius table, so it is its own kind rather than
-// every card paying for a 32-tap silhouette it does not use.
+// Shape kinds. Mirrored by FxAttachment.Shape — the mapping is asserted by the FX ATTACHMENT suite,
+// since GDScript and GLSL cannot share an enum. A card and a blade are NOT both boxes any more: a
+// blade is a SPRITE and answers with its own alpha, which is what lets fire find the real drawing.
 const int SHAPE_BOX = 0;
-const int SHAPE_RING = 1;
-const int SHAPE_RADII = 2;
-// A SPRITE's real top edge, one sample per column (FxAttachment.measure_sprite_silhouette).
-const int SHAPE_PROFILE = 3;
+const int SHAPE_RADII = 1;
+const int SHAPE_SPRITE = 2;
+const int SHAPE_BALLS = 3;
 
 // Number of entries in the deformable-card radius table. 32, NOT 16: the star rig goes up to 16
 // arms, and 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either
 // smooth into a blob or beat against the grid depending on phase.
 const int RADII = 32;
 
+// What mask_level answers. A value >= 0 is a SOLID surface and the value itself is the fire level it
+// emits; MASK_DARK is solid but emits nothing — which is what keeps an unlit ball occluding without
+// lighting (owner ruling 3) — and MASK_EMPTY is no art at all.
+//
+// Dark is its own sentinel rather than "level 0" because level 0 is a perfectly good FIRE: the ramp
+// coordinate is logarithmic, so a one-stack card sits at exactly 0 and must still burn.
+const float MASK_EMPTY = -1.0;
+const float MASK_DARK = -0.5;
+
+bool mask_solid(float m) { return m > -0.75; }
+bool mask_lit(float m) { return m >= 0.0; }
+// A march that found nothing. Larger than any quad, so every comparison against it fails.
+const float NO_SURFACE = 1e9;
+// The loop bound the march needs (GLSL cannot loop to a runtime count). The march is bounded in ART
+// UNITS by the flame's own height and breaks out long before this — at the shipped numbers that is
+// ~21 steps on a card and ~41 on a prop at 200 stacks — so this is only the compiler's constant.
+const int MARCH_MAX = 64;
+
 // ===== LIVE — pushed every frame by FxAttachment ==============================================
-uniform int u_mode = 0;
 uniform int u_shape = 0;
 uniform int u_half = 0;              // split props: 0 whole, 1 back arc only, 2 front arc only
 uniform vec2 u_extent = vec2(64.0);  // the quad's size in art units; UV maps across exactly this
-// The BALL quad's lattice (BALLS mode only), so a plume snaps to the centre its ball was drawn at
+// The BALL quad's lattice (SHAPE_BALLS only), so a plume snaps to the centre its ball was drawn at
 // rather than to this quad's own grid. Pushed from FxRequest.partner_reach / partner_pixel.
 uniform vec2 u_partner_extent = vec2(64.0);
 uniform float u_partner_pixel = 1.0;
@@ -53,18 +100,27 @@ uniform float u_intensity = 1.0;     // surplus stacks push heat UP the ramp ins
                                      // tendrils (owner ruling 4)
 uniform vec2 u_lag = vec2(0.0);      // the host's motion, normalized — the cape
 uniform float u_radii[RADII];        // deformable card silhouette
-// SHAPE_PROFILE: the sprite's top edge in art units, sampled evenly across u_body.x. A column with
-// no art at all carries PROFILE_EMPTY, and nothing is emitted there.
+// THE COMB'S PITCH SOURCE, in art units — one comb for every shape, no modes (§1.4b).
 //
-// Why a per-COLUMN profile and not the polar radius table: a 32-bucket POLAR table has almost no
-// angular resolution across a wide flat edge, so contour_y stepped between buckets as x moved and
-// the flame bases rose and sank at random along a surface that is perfectly flat (owner report
-// 2026-07-29). A column profile is exact on flat edges by construction.
-const int PROFILE = 32;
-const float PROFILE_EMPTY = 1e8;
-uniform float u_profile[PROFILE];
-// Balls mode only. Shared with juggle.gdshader from ONE computation in FxAttachment, so a plume
-// can never trail its ball by a frame.
+// The pitch is `u_emit_width / u_count`. A SILHOUETTE leaves this at 0 and the shader derives the
+// width from the host's own bounding box AT THE LIVE ROTATION, which a uniform cannot do: a card
+// turned 90 degrees is 50 units wide, not 38, and combing its rotated silhouette across the
+// unrotated width left a third of the top edge bare. BALLS supply one ball's DIAMETER, so the comb
+// tiles the quad at ball pitch and each ball catches roughly one cell — the outcome the deleted
+// `radius * 3` special case produced, reached by the general rule instead.
+uniform float u_emit_width = 0.0;
+// SPRITE kinds: the art's own sheet, and the frame to read out of it. This is what retires the
+// baked per-column profile — a mask sampled live cannot go stale when its host turns, and it is the
+// only representation that knows a ring has a HOLE in it.
+uniform sampler2D u_art : filter_nearest, repeat_disable, hint_default_transparent;
+uniform vec4 u_art_rect = vec4(0.0, 0.0, 1.0, 1.0);   // the frame, in normalized sheet UV
+uniform vec2 u_art_size = vec2(32.0);                 // the size that frame is DRAWN at, centred
+// -1 while the host's art is MIRRORED (PropVisual.face_travel). The mask is the art, so it mirrors
+// with it — a blade heading right would otherwise emit off the outline it no longer has.
+uniform float u_art_flip = 1.0;
+// SHAPE_BALLS only. Shared with juggle.gdshader from ONE computation in FxJuggle, so a plume can
+// never trail its ball by a frame.
+uniform float u_ball_count = 1.0;
 uniform float u_phase = 0.0;
 uniform float u_span = 30.0;
 uniform float u_arc_height = 37.5;
@@ -77,7 +133,6 @@ uniform sampler2D u_ball_fire : filter_nearest, repeat_disable, hint_default_bla
 
 // ===== STATIC — written once from FxStyle ======================================================
 uniform float u_pixel = 1.0;
-uniform float u_wrap : hint_range(0.0, 1.0) = 0.0;
 uniform float u_skew : hint_range(0.0, 1.0) = 0.15;
 uniform float u_inner_alpha : hint_range(0.0, 1.0) = 0.5;
 uniform float u_height = 14.0;
@@ -92,6 +147,9 @@ uniform float u_ogee_flare : hint_range(0.2, 3.0) = 0.35;
 // that is what stacked the colours in rows instead of wrapping them.
 uniform float u_onion_power : hint_range(0.25, 4.0) = 1.0;
 uniform float u_onion_rise : hint_range(0.0, 1.0) = 0.35;
+// How far INTO the art the fire is allowed, in art units — an EROSION of the mask, not an offset
+// added to a contour: the base is the surface plus this, and a fragment already inside the art is
+// lit only while it is within this of the surface above it.
 uniform float u_sink = 2.0;
 uniform int u_merge = 0;
 uniform float u_sway_amp = 0.35;
@@ -127,148 +185,128 @@ uniform float u_brightness = 1.0;
 uniform float u_opacity = 1.0;
 uniform float u_dither = 0.0;
 
-// Silhouette reach along the ray at angle `a` measured from straight up. One branch per kind:
-// adding a prop shape is one branch here and touches nothing else.
-float shape_radius(float a) {
-	float th = a - u_shape_rot;                       // rotate the LOOKUP, never the pixel grid
-	if (u_shape == SHAPE_RING) {
-		// An ELLIPSE, not a circle: the hoop's art is a foreshortened ring (32x72 texels), so a
-		// circle of its half-WIDTH would sit the flames deep inside the real arc. r = ab / |(b·dx,
-		// a·dy)|, which collapses back to the radius when the body is square.
-		vec2 h = max(u_body * 0.5, vec2(1e-4));
-		vec2 d = vec2(sin(th), -cos(th));
-		return (h.x * h.y) / max(length(vec2(h.y * d.x, h.x * d.y)), 1e-4);
-	}
-	if (u_shape == SHAPE_RADII) {
-		float t = (th / TAU + 1.0) * float(RADII);
-		int i0 = int(floor(t)) % RADII;
-		return mix(u_radii[i0], u_radii[(i0 + 1) % RADII], fract(t));
-	}
-	vec2 h = u_body * 0.5;                            // box: ray/rect exit
-	vec2 d = vec2(sin(th), -cos(th));
-	return min(h.x / max(abs(d.x), 1e-4), h.y / max(abs(d.y), 1e-4));
+// ===== THE MASK =================================================================================
+
+// Deformable-card reach along the ray at angle `a` from straight up, in the ART's own frame (the
+// caller has already rotated the lookup, so this never touches u_shape_rot).
+float radii_reach(float a) {
+	float t = (a / TAU + 1.0) * float(RADII);
+	int i0 = int(floor(t)) % RADII;
+	return mix(u_radii[i0], u_radii[(i0 + 1) % RADII], fract(t));
 }
 
-// Exact top (sgn -1) or bottom (sgn +1) contour of the ROTATED BOX at horizontal position x.
+// THE MASK: the LEVEL of the surface at `p`, or MASK_EMPTY where there is no art.
 //
-// A box is convex with four corners, so its contour is the upper (or lower) hull: walk the four
-// edges and keep the extreme y among those that span x. Exact at EVERY angle — the fixed-point
-// iteration below converges in one step only for an UNROTATED rectangle, and at 90 degrees it
-// returned a visibly slanted base for what should be a flat edge (caught by the rotation
-// snapshot). Cards and blades are both boxes, so this is the common path, and it is cheaper than
-// the two shape_radius taps it replaces.
-// One edge of the hull: if edge a->b spans x, fold its y at x into `best`.
-float box_edge(float x, vec2 a, vec2 b, float sgn, float best) {
-	float dx = b.x - a.x;
-	if (abs(dx) < 1e-5) return best;           // a vertical edge spans no x range
-	float t = (x - a.x) / dx;
-	if (t < 0.0 || t > 1.0) return best;       // this edge does not cover x
-	float y = a.y + (b.y - a.y) * t;
-	return (sgn < 0.0) ? min(best, y) : max(best, y);
-}
-
-float box_contour(float x, float sgn) {
-	vec2 h = u_body * 0.5;
+// One function, a branch per shape, so adding a prop kind is one branch and touches nothing else.
+// Analytic for the kinds that have it; an ALPHA SAMPLE of the sheet for sprite kinds, which is what
+// lets a mask know about the hoop's hole and retires the baked per-column profile.
+//
+// ⚠ ROTATION ROTATES THE LOOKUP, NEVER THE PIXEL GRID (universal rule): `p` arrives already
+// quantized in the quad's world-aligned space and only the lookup turns into the art's frame.
+//
+// `ball` / `ball_level` are the fragment's own nearest ball, resolved ONCE per fragment by the
+// caller and passed down. The closed-form ball lookup is by far the most expensive thing in this
+// file, and a march never leaves its column, so re-running it at every step of a march would cost
+// more than the whole rest of the shader. Ignored by every other kind.
+float mask_level(vec2 p, vec2 ball, float ball_level) {
+	if (u_shape == SHAPE_BALLS) {
+		vec2 d = p - ball;
+		if (dot(d, d) > u_ball_radius * u_ball_radius) return MASK_EMPTY;
+		return (ball_level > 0.0) ? ball_level : MASK_DARK;
+	}
 	float c = cos(u_shape_rot);
 	float s = sin(u_shape_rot);
-	// Corners in the same frame shape_radius works in: local (lx, ly) maps to
-	// (lx*c - ly*s, lx*s + ly*c), and "up" is negative y.
-	vec2 p0 = vec2( h.x * c - h.y * s,  h.x * s + h.y * c);
-	vec2 p1 = vec2(-h.x * c - h.y * s, -h.x * s + h.y * c);
-	// Unrolled, with no local array: a dynamically indexed local array is not reliable across
-	// GLES3 drivers, and this one compiled without complaint and then returned garbage (the fire
-	// vanished entirely — again caught by the snapshot, not by any headless check).
-	// Sentinel is OPPOSITE the search direction: the top contour is a MIN over edges, so it must
-	// start at +1e9. Starting it at sgn * 1e9 made min() keep the sentinel forever and the fire
-	// disappeared completely. If no edge covers x the sentinel survives, which parks the base far
-	// enough away that no tendril reaches — the correct answer for "off the end of the shape".
-	float best = -sgn * 1e9;
-	best = box_edge(x, p0, p1, sgn, best);
-	best = box_edge(x, p1, -p0, sgn, best);
-	best = box_edge(x, -p0, -p1, sgn, best);
-	best = box_edge(x, -p1, p0, sgn, best);
-	return best;
+	vec2 q = vec2(p.x * c + p.y * s, -p.x * s + p.y * c);
+	if (u_shape == SHAPE_BOX) {
+		vec2 h = u_body * 0.5;
+		return (abs(q.x) <= h.x && abs(q.y) <= h.y) ? u_level : MASK_EMPTY;
+	}
+	if (u_shape == SHAPE_RADII) {
+		return (length(q) <= radii_reach(atan(q.x, -q.y))) ? u_level : MASK_EMPTY;
+	}
+	// SPRITE: the drawing's own alpha, read at the point the art is actually drawn at. `u_art_size`
+	// is the WHOLE frame centred on the host's origin — deliberately not the tight body box, which
+	// is not centred on it and would slide the mask sideways.
+	vec2 t = vec2(q.x * u_art_flip, q.y) / max(u_art_size, vec2(1e-4)) + 0.5;
+	if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) return MASK_EMPTY;
+	float a = texture(u_art, u_art_rect.xy + t * u_art_rect.zw).a;
+	return (a > 0.5) ? u_level : MASK_EMPTY;
 }
 
-// Contour y at horizontal position x, top side (sgn -1) or bottom (sgn +1).
+// Half the art's WORLD-ALIGNED width at the live rotation — the span the comb divides.
 //
-// A polar radius table is not directly invertible for a vertical line, so this is a fixed-point
-// iteration. Exact for the ring, and it converges in ONE step for a rectangle (the top edge is
-// flat, so the first angle is already the answer). A DEEPLY star-deformed card is not near-convex
-// and a vertical line can cross its outline three times; there the iteration settles on the
-// convex-hull contour, so flames bridge across a notch instead of dipping into it. Fine for mild
-// deformation; if deep stars must be hugged, raise the iteration count.
-float contour_y(float x, float sgn) {
-	if (u_shape == SHAPE_RING) {
-		// Exact for the ellipse of shape_radius. Rotation is ignored here (the ring kinds never
-		// turn — a hoop's directional art mirrors, it does not rotate), which is the same
-		// assumption the circle this replaced already made.
-		vec2 h = max(u_body * 0.5, vec2(1e-4));
-		float d = 1.0 - (x * x) / (h.x * h.x);
-		return d <= 0.0 ? sgn * 1e9 : sgn * h.y * sqrt(d);
-	}
-	if (u_shape == SHAPE_BOX) return box_contour(x, sgn);
-	if (u_shape == SHAPE_PROFILE) {
-		// The BOTTOM contour stays the body box: only `wrap` reads it, and no sprite kind wraps.
-		if (sgn > 0.0) return u_body.y * 0.5;
-		float t = clamp((x / max(u_body.x, 1e-4)) + 0.5, 0.0, 0.9999) * float(PROFILE);
-		int i0 = int(floor(t));
-		int i1 = min(i0 + 1, PROFILE - 1);
-		float a = u_profile[i0];
-		float b = u_profile[i1];
-		// Never interpolate INTO an empty column — that would drag a flame base out over blank art.
-		if (a >= PROFILE_EMPTY) return PROFILE_EMPTY;
-		if (b >= PROFILE_EMPTY) return a;
-		return mix(a, b, fract(t));
-	}
-	float y = sgn * u_body.y * 0.5;
-	for (int it = 0; it < 2; it++) {
-		float a = atan(x, -y);
-		y = -shape_radius(a) * cos(a);
-	}
-	return y;
-}
-
-// Half the silhouette's HORIZONTAL reach at the current rotation — the width the comb spans.
-//
-// Not u_body.x * 0.5: that is the UNROTATED width, so a card turned 90 degrees (which
+// Not `u_body.x * 0.5`: that is the UNROTATED width, so a card turned 90 degrees (which
 // anim_spin_start does every revolution) had its 50-unit-wide silhouette combed across only 38
 // units, leaving a third of the top edge bare and the flames off-centre. Caught by the rotation
-// snapshot. The deformable table keeps the nominal width — it is already an approximation, and
-// the alternative is a 32-tap max per fragment.
-float emit_half_width() {
-	if (u_shape == SHAPE_RING) return u_body.x * 0.5;
-	if (u_shape == SHAPE_RADII) return u_body.x * 0.5;
-	// PROFILE: u_body is already the art's TIGHT bounds, so the comb spans the drawing and not the
-	// frame's transparent padding — which is what put flames in blank space beside the blade.
-	if (u_shape == SHAPE_PROFILE) return u_body.x * 0.5;
+// snapshot. This is the one thing about the comb that a uniform cannot carry, which is why
+// `u_emit_width` is an override rather than the only source.
+float body_half_width() {
 	vec2 h = u_body * 0.5;
 	return h.x * abs(cos(u_shape_rot)) + h.y * abs(sin(u_shape_rot));
 }
 
+// THE DOWN-MARCH. Walk DOWN from `p` in FX-pixel steps until the mask is hit, and return the top of
+// that surface run (art y is positive DOWN), or NO_SURFACE within `reach`. `level` comes back as
+// what that surface emits.
+//
+// ⚠ DOWN IS WORLD-DOWN, ALWAYS, independent of the host's rotation. That is the whole of why a
+// spinning knife's flames stay upright (owner ruling 1), and it is free: `p` is already in the
+// world-aligned quad space, so only the mask LOOKUP rotates.
+//
+// A fragment already INSIDE the art walks UP instead, at most `u_sink` far: that is what `sink`
+// means now — an EROSION of the mask — so fire reaches exactly `sink` into the art and no further,
+// rather than filling every solid pixel below the surface.
+float surface_below(vec2 p, float reach, vec2 ball, float ball_level, out float level) {
+	level = MASK_EMPTY;
+	float step = max(u_pixel, 0.05);
+	float here = mask_level(p, ball, ball_level);
+	if (mask_solid(here)) {
+		int up = int(ceil(max(u_sink, 0.0) / step));
+		for (int i = 1; i <= MARCH_MAX; i++) {
+			if (i > up) break;
+			if (!mask_solid(mask_level(vec2(p.x, p.y - float(i) * step), ball, ball_level))) {
+				level = here;
+				return p.y - float(i - 1) * step;
+			}
+		}
+		return NO_SURFACE;
+	}
+	int n = int(ceil(max(reach, 0.0) / step));
+	for (int i = 1; i <= MARCH_MAX; i++) {
+		if (i > n) break;
+		float y = p.y + float(i) * step;
+		float l = mask_level(vec2(p.x, y), ball, ball_level);
+		if (mask_solid(l)) {
+			level = l;
+			return y;
+		}
+	}
+	return NO_SURFACE;
+}
 
-// Heat contributed by one tendril at (x, rise). `cell`/`cells` place it in the comb; `seed`
-// desyncs it (for balls the cell is always 0 but each ball needs its own phase, so the two are
-// separate arguments).
-float tendril(float cell, float cells, float seed, float x, float rise, float w) {
-	float half_w = (w / cells) * 0.5 * u_base_width;
-	float xc = ((cell + 0.5) / cells - 0.5) * w;
+// ===== THE CROWN ================================================================================
+
+// Heat contributed by one tendril at (x, rise). `id`/`cells` place it in the comb and desync it;
+// `pitch` is the cell width and `xc` its centre, both already resolved by the caller so the comb
+// has exactly one definition.
+float tendril(float id, float cells, float pitch, float xc, float w, float x, float rise) {
+	float half_w = pitch * 0.5 * u_base_width;
 	// TWO independent randoms per tendril, both folded through the HOST's seed so no two hosts run
 	// the same crown even on identical parameters (owner 2026-07-28). `ph` offsets its phase; `rate`
 	// varies its sway SPEED — a shared speed makes a row of tendrils read as one sheet sliding side
 	// to side however their phases are scattered, which is not "swaying in different directions".
-	float ph = fx_hash11(seed + u_seed) * TAU * u_desync;
-	float rate = mix(1.0, 0.55 + 0.9 * fx_hash11(seed * 7.31 + u_seed + 41.0), u_desync);
+	float ph = fx_hash11(id + u_seed) * TAU * u_desync;
+	float rate = mix(1.0, 0.55 + 0.9 * fx_hash11(id * 7.31 + u_seed + 41.0), u_desync);
 
 	// The NEWEST tendril occupies a partial cell, so ramp its height by the fraction: it grows out
 	// of the surface instead of sliding in from the edge. Cell boundaries move continuously as
 	// `cells` changes, so the established flames only shuffle rather than teleport — which is what
 	// makes a stack change smooth (owner ruling 16). Tweening the stack count alone is NOT enough;
 	// the count itself has to be continuous.
-	float grow = (cell >= floor(cells)) ? fract(cells) : 1.0;
+	float grow = (id >= floor(cells)) ? fract(cells) : 1.0;
 
 	float h = u_height
-		* mix(1.0, 0.55 + 0.45 * fx_value_noise(vec2(seed * 3.7 + u_seed,
+		* mix(1.0, 0.55 + 0.45 * fx_value_noise(vec2(id * 3.7 + u_seed,
 				u_time * u_flicker_speed)), u_height_var)
 		// The whole-effect breath carries the HOST's phase too, or every burning card on the board
 		// breathes in unison.
@@ -304,8 +342,7 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	// blunts the tip, u_ogee_flare (= 1/a) controls how far the shoulders bulge before turning in.
 	// A parabola (the old dome) is the degenerate case with no inflection at all.
 	float dome = pow(max(1.0 - pow(abs(u), u_ogee_point), 0.0), u_ogee_flare);
-	float top = h * dome;
-	if (rise >= top) return 0.0;
+	if (rise >= h * dome) return 0.0;
 
 	// ONION SHELLS, not stacked rows (owner 2026-07-27: "each layer wraps around the other, like
 	// actual candle lights"). Heat is how far ACROSS the flame this fragment is, measured against
@@ -324,25 +361,20 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	return pow(1.0 - across, u_onion_power) * (1.0 - u_onion_rise * k);
 }
 
-// One tendril standing on the contour, measured from the base under ITS OWN CELL CENTRE.
+// One tendril of the comb, standing on whatever its column is over.
 //
-// ⚠ Not from the base under the FRAGMENT. Sampling the contour per fragment shears every flame along
-// the surface it stands on: on a curve — the hoop's ring is the visible case — the base drops away
-// across a single cell, so the tendril's arch is squashed flatter and flatter as the contour steepens
-// (owner report 2026-07-29: *"tendrils become flatter as they curve around hoop top ... tendrils
-// should be equally long no matter where base location is"*). One base per tendril makes every flame
-// the same undistorted arch wherever it is planted, like candles standing on a curved cake.
+// `floor_y` is this COLUMN's base, already found and eroded by the caller — it depends on the
+// fragment alone, never on the cell, so it is computed ONCE per fragment rather than once per
+// tendril (which would otherwise triple with `merge` on).
 //
-// WRAP still slides that base from the TOP contour down to the BOTTOM one, so the same comb gives
-// both "flames on top" and "engulfed" — and it still never tilts a flame.
-float tendril_on_contour(float id, float cells, vec2 p, float w) {
-	float xc = ((id + 0.5) / cells - 0.5) * w;
-	float top = contour_y(xc, -1.0);
-	if (top >= PROFILE_EMPTY) return 0.0;             // no art under this tendril: no flame
-	float base = mix(top, contour_y(xc, 1.0), u_wrap) + u_sink;
-	float rise = base - p.y;                          // > 0 means above this tendril's base
-	if (rise <= 0.0) return 0.0;
-	return tendril(id, cells, id, p.x, rise, w);
+// So the arch RIDES the surface it stands on: on a slope its outline slopes with it. That is the
+// trade the fallback makes (see the header) — the alternative was the per-cell anchor, which keeps
+// every arch identical and costs 21 ms on a board of hoops. Nothing here is ever tilted or sheared:
+// `rise` is a WORLD-vertical distance and the ogee is evaluated in world x, so a flame on a steep
+// flank is still a flame pointing straight up, only a shorter one where its base is higher.
+float tendril_at(float id, float cells, float pitch, float w, vec2 p, float floor_y) {
+	float xc = (id + 0.5) * pitch - w * 0.5;
+	return tendril(id, cells, pitch, xc, w, p.x, floor_y - p.y);
 }
 
 void fragment() {
@@ -354,54 +386,60 @@ void fragment() {
 	vec4 tint = COLOR;
 	vec2 p = fx_local(UV, u_extent, u_pixel);
 	float heat = 0.0;
-	float alpha_mul = 1.0;
 	float level = u_level;
+	float alpha_mul = 1.0;
 
-	if (u_mode == MODE_SILHOUETTE) {
-		float w = emit_half_width() * 2.0;
-		float n = max(u_count, 1.0);
-		if (abs(p.x) <= w * 0.5) {
-			float id = min(floor((p.x / w + 0.5) * n), ceil(n) - 1.0);
-			heat = tendril_on_contour(id, n, p, w);
-			if (u_merge == 1) {                       // neighbours fuse, no V-notch between them
-				heat = max(heat, tendril_on_contour(id - 1.0, n, p, w));
-				heat = max(heat, tendril_on_contour(id + 1.0, n, p, w));
-			}
-			// Where the flame overlays the body it is drawn at u_inner_alpha. Every shipped style
-			// now sets that to 1.0 — fire BLOCKS what it covers (owner 2026-07-29: seeing the art
-			// through the flame "looks very bad"). How far the flames come down over the art is
-			// u_sink's job, not the alpha's: lift the base and there is nothing to see through.
-			if (p.y > contour_y(p.x, -1.0)) alpha_mul = u_inner_alpha;
-		}
-		// Split props: keep only the emitters belonging to this half, so a hoop's back-arc flames
-		// sit behind the occupied card exactly as its back arc does.
-		if (u_half == 1 && p.x > 0.0) heat = 0.0;
-		if (u_half == 2 && p.x <= 0.0) heat = 0.0;
-	} else {
-		// BALLS: the SAME closed-form lookup juggle.gdshader uses, from the same include, so the
-		// plume is welded to the ball rather than following it a frame later.
-		float n = max(u_count, 1.0);
+	// The fragment's own nearest ball, resolved ONCE and handed to every mask lookup below (see
+	// mask_level). A no-op for every other shape.
+	vec2 ball = vec2(1e9);
+	float ball_level = 0.0;
+	if (u_shape == SHAPE_BALLS) {
 		float id;
-		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height, u_top_fraction,
-				u_ball_gravity, u_ball_dir, u_ball_arcs, id);
-		float lvl = texelFetch(u_ball_fire, ivec2(int(id), 0), 0).r;
-		if (lvl > 0.0) {
-			// SNAPPED on the BALL quad's lattice, not this quad's: the two have different reaches
-			// and different `pixel`, so snapping here with u_extent/u_pixel would anchor the plume
-			// up to half a pixel off its ball and jitter as the ball travelled.
-			vec2 c = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height,
-					u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
-					u_partner_extent, u_partner_pixel);
-			// The plume sits ON TOP of the ball, not around it. Measured from the ball's TOP
-			// (art y is negative upward, so that is c.y - radius) sunk by u_sink so there is no
-			// seam where the two meet. It used to start at the ball's BOTTOM (+ radius), which
-			// wrapped the whole ball in flame and hid it completely (owner report 2026-07-29) —
-			// the same "fire is an overlay, never a replacement" rule the card obeys (ruling 15).
-			float rise = (c.y - p.y) - u_ball_radius + u_sink;
-			if (rise > 0.0) heat = tendril(0.0, 1.0, id, p.x - c.x, rise, u_ball_radius * 3.0);
-			level = lvl;                              // the BALL's level, not the card's
+		fx_nearest_ball(p, u_ball_count, u_phase, u_span, u_arc_height, u_return_height,
+				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, id);
+		// SNAPPED on the BALL quad's lattice, not this quad's: the two have different reaches and
+		// different `pixel`, so snapping here with u_extent/u_pixel would anchor the plume up to half
+		// a pixel off its ball and jitter as the ball travelled.
+		ball = fx_pixel_snap(fx_ball_pos(id, u_ball_count, u_phase, u_span, u_arc_height,
+				u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
+				u_partner_extent, u_partner_pixel);
+		ball_level = texelFetch(u_ball_fire, ivec2(int(id), 0), 0).r;
+	}
+
+	// ONE COMB FOR EVERY SHAPE (§1.4b). `u_emit_width` supplies the pitch where the host knows it
+	// (balls: one diameter, so the comb tiles the quad at ball pitch); a silhouette leaves it 0 and
+	// the width comes from its own bounding box at the LIVE rotation, which no uniform can carry.
+	bool tiled = u_emit_width > 0.0;
+	float w = tiled ? u_emit_width : 2.0 * body_half_width();
+	float cells = max(u_count, 1.0);
+	float pitch = max(w / cells, 1e-4);
+	float id = floor((p.x + w * 0.5) / pitch);
+	// A SPANNING comb owns exactly `cells` cells and no more, so the outermost flames are not
+	// duplicated past the host's edge; a TILED one repeats forever at its pitch, which is what lets
+	// balls anywhere in the quad catch a cell.
+	if (!tiled) id = clamp(id, 0.0, ceil(cells) - 1.0);
+
+	// THIS COLUMN'S FLOOR — one down-march, shared by every tendril that reaches this fragment.
+	float floor_level = MASK_EMPTY;
+	float floor_y = surface_below(p, u_height, ball, ball_level, floor_level) + u_sink;
+	// A surface that is solid but DARK still ends the march, and still stops the flame: an unlit ball
+	// is not on fire and its column has nothing to burn (owner ruling 3).
+	if (floor_y < NO_SURFACE && mask_lit(floor_level) && p.y <= floor_y) {
+		level = floor_level;
+		heat = tendril_at(id, cells, pitch, w, p, floor_y);
+		if (u_merge == 1) {                           // neighbours fuse, no V-notch between them
+			heat = max(heat, tendril_at(id - 1.0, cells, pitch, w, p, floor_y));
+			heat = max(heat, tendril_at(id + 1.0, cells, pitch, w, p, floor_y));
 		}
 	}
+	// Where the flame overlays the body it is drawn at u_inner_alpha. Every shipped style now sets
+	// that to 1.0 — fire BLOCKS what it covers (owner 2026-07-29: seeing the art through the flame
+	// "looks very bad"). How far the flames come down over the art is u_sink's job, not the alpha's.
+	if (mask_solid(mask_level(p, ball, ball_level))) alpha_mul = u_inner_alpha;
+	// Split props: keep only the emitters belonging to this half, so a hoop's back-arc flames sit
+	// behind the occupied card exactly as its back arc does.
+	if (u_half == 1 && p.x > 0.0) heat = 0.0;
+	if (u_half == 2 && p.x <= 0.0) heat = 0.0;
 
 	// GUARD THE NOISE. Most fragments in the quad are empty, and fx_fbm is seven hash+lerp taps —
 	// running it unconditionally triples the shader's cost for pixels that draw nothing. This one

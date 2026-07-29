@@ -513,26 +513,114 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `_phase` and the same geometry from one `FxJuggle.geometry()` call, and both call
   `fx_ball_at` from `fx_common.gdshaderinc`. Two copies of the arc maths is the bug that makes
   flames trail their balls by a frame — the shared include prevents it structurally.
-- **ONE BASE PER TENDRIL, from its own cell centre** (`tendril_on_contour`, 2026-07-29). Sampling the
-  contour per FRAGMENT shears every flame along the surface it stands on: across one cell on a curve
-  the base drops away, squashing that tendril's arch flatter as the contour steepens — visible all
-  round the hoop's ring. One base per tendril makes every flame the same undistorted arch wherever it
-  is planted. The cost is that bases no longer form a continuous line on a CURVE, which is what
-  `merge` + `base_width > 1` is for: measured on the ring, 88 columns of art with 12 gap columns and
-  a largest gap of 4 px, versus separate candles without it. On a FLAT host (card, blade) every base
-  is identical and the skirt is one continuous mass — measured 1 segment at the base at 12 and 40
-  stacks.
-- **A SPRITE's silhouette is a per-column PROFILE, not the polar radius table** (`Shape.PROFILE`,
-  `measure_sprite_silhouette`). Two bugs, one cause — treating a prop's FRAME as its body:
-  a frame is mostly transparent padding, so the comb spanned blank columns and put flames in empty
-  space beside the blade; and a 32-bucket POLAR table has almost no angular resolution across a wide
-  flat edge, so the base rose and sank at random along the knife's perfectly flat top. The profile
-  samples the topmost opaque texel per column, carries an explicit `PROFILE_EMPTY` sentinel so a
-  tendril over blank art emits nothing, and TIGHTENS `body` to the art's bounding box so the comb,
-  the contours and the quad bound all measure the drawing. Measured after: 0 px of flame overhang
-  past the art on all three sprite props, and 2 px of base variation across the knife's flat top.
-  The hoop keeps `Shape.RING` — an analytic ellipse is a better fit and the back/front split keys on
-  it.
+- **FIRE IS THE ART'S MASK, RAISED — and that is the whole emitter** (owner design 2026-07-30,
+  "raise the mask"; it replaces the contour/skirt model whole). Per fragment:
+
+  ```
+  floor(x) = the surface this column stands on, eroded by `sink`   — ONE down-march
+  top(x)   = floor(x) - height * dome(u(x))                        — the ogee, art y up = minus
+  fire(p)  = top(p.x) <= p.y <= floor(p.x)
+  ```
+
+  Everything the old model needed a special case for falls out of that:
+  - **EVERY upward-facing surface burns, anywhere in the art.** The test is local and vertical, so
+    the hoop's inner-bottom arc — the floor of the ring's hole, which faces up — lights from the same
+    code that lights the outer top arc. A per-column CONTOUR can only ever return the topmost surface
+    in a column, and the skirt's angular cut discarded the rest by construction: *"having it check
+    the top half of the image is insufficient because what if there are also top sections in other
+    parts of the image, like bottom top of the hoop"* (owner). **"The surface faces up" is the
+    definition; "the top half of the image" never was.** Pinned by
+    `test_pixels.test_every_upward_surface_burns`, which fails against everything shipped before it.
+  - **1 STACK = 1 TENDRIL PER SURFACE**, with no segment finder and no second mechanism: each column
+    simply grows a flame on whatever it has, so a ring gets one crown on its top arc and another on
+    its inner-bottom arc.
+  - **NO ENORMOUS FLAME** (owner: *"no enormous flame allowed"*), structurally: a flame is exactly
+    `height` long in every column on every shape, so one can never leap the hole in a ring. The same
+    PIXELS check asserts the hole's middle stays empty.
+  - **TIPS POINT UP BY CONSTRUCTION** (ruling 1) — because the march is WORLD-down, not because of
+    any per-shape branch. A rotating host turns only the mask LOOKUP (the no-rotating-grid rule).
+  - **Shape following is IN the shader.** Nothing is baked at `_ready`, so a host that turns cannot
+    emit off a stale outline — *"which has chance to fail if object rotates maybe"* (owner).
+  - `sink` is now an **EROSION of the mask**, not an offset added to a contour: the base is the
+    surface plus `sink`, and a fragment already inside the art is lit only while it is within `sink`
+    of the surface above it. Same knob, same meaning, honest implementation.
+- **⚠ THE PER-CELL ANCHOR WAS MEASURED AND DROPPED — the owner's pre-ruled fallback, not an
+  omission.** The design also called for the arch to be anchored ONCE per cell at the highest surface
+  in it (three more down-marches, and they must start above the whole shape: an anchor that depended
+  on the fragment's own height would differ down a column and tear the flame). Measured on the target
+  integrated GPU with `Tests/Visual/fx_cost.tscn`, 20 burning hosts:
+
+  | ×20 hosts | shipped contour | mask shift | mask + anchor |
+  |---|---|---|---|
+  | hoop | 0.67 ms | 1.21 ms | **22.52 ms** |
+  | card | 1.13 ms | 1.53 ms | 1.81 ms |
+  | knife | 0.64 ms | 0.36 ms | 0.62 ms |
+
+  21 ms on the one shape it exists for — more than a whole 60 fps frame, for 20 props and nothing
+  else on screen. Owner ruling given in advance: *"If not possible without performance drop, then
+  dont do engulf trick with height checking and just stick with mask shifting to find bases."* So it
+  is dropped WHOLE rather than approximated at reduced sample counts, which is what produced the two
+  builds the owner rejected. **What goes with it is ENGULF** — a flame no longer drapes down to a
+  lower surface in its own cell — and the arch now RIDES the surface it stands on, so on a steep flank
+  it is shorter. Nothing is ever tilted or sheared: `rise` is a world-vertical distance and the ogee
+  is evaluated in world x. **Do not re-propose the anchor without a new measurement.**
+- **`mask()` IS THE ONE EXTENSION POINT: one branch per shape, and BALLS is one of them.** Analytic
+  for the kinds that have it (`SHAPE_BOX`, `SHAPE_RADII`, `SHAPE_BALLS` — a card should not pay a
+  texture tap for a step function); an **ALPHA SAMPLE of the sheet** for `SHAPE_SPRITE`, which is
+  every textured prop kind, the hoop included. The sprite mask is what retires `Shape.PROFILE` and
+  its baked per-column table, and it is the only representation that knows a ring has a HOLE.
+  `measure_sprite_silhouette` survives only to tighten `body` to the art's bounding box — a frame is
+  mostly transparent padding, and a comb spanning the frame put flames in empty space beside the
+  blade.
+  - **NO BALL SPECIAL CASE. `u_mode` and `MODE_BALLS` are deleted** (owner 2026-07-30: *"fire effect
+    should be unified and identical in how it treats everything, so no special ball case"*). A ball
+    is a `Shape` whose mask is the union of the discs, positioned from the same `fx_ball_pos` in the
+    include, and the march / comb / ogee / onion shells / ramp above it are literally the same code a
+    card runs. `FxRequest.shape` is how ball fire says "my mask is the balls, not the card I ride on".
+  - **`mask()` returns the LEVEL of the surface it hit**, which is ruling 21 as one rule instead of
+    two code paths: a silhouette answers `u_level`, a ball answers its own texel from `u_ball_fire`.
+    `MASK_DARK` is solid-but-unlit — an unlit ball occludes and emits nothing (ruling 3). ⚠ Dark is
+    its own sentinel and NOT "level 0": the ramp coordinate is logarithmic, so a one-stack card sits
+    at exactly 0 and must still burn.
+  - **The nearest ball is resolved ONCE per fragment and handed to every mask lookup.** The
+    closed-form ball lookup is by far the most expensive thing in the file and a march never leaves
+    its column, so re-running it at every march step would cost more than the whole rest of the
+    shader.
+- **ONE COMB, pitched by `u_emit_width`, with no shape branch.** The pitch is `u_emit_width /
+  u_count`. A silhouette leaves the uniform at 0 and the shader derives the width from the host's
+  bounding box AT THE LIVE ROTATION — a uniform cannot carry that, and a 90-degree-rotated card
+  combed across its unrotated width left a third of its edge bare. BALLS supply one ball's
+  **DIAMETER**, so the comb tiles the quad at ball pitch and each ball catches roughly one cell;
+  dividing the quad into `n` cells instead would put a ~30-unit cell against a ball of radius ~1.3
+  and let one flame straddle the whole pattern. `u_count` therefore means TENDRILS on every quad, and
+  the ball count rides as its own uniform.
+  - ⚠ **A ball straddles the tiling, and `merge` + `base_width` is what closes it.** Measured on
+    `06_ball_fire`: at `base_width 1.3` with merge off, a lit ball's plume stood visibly BESIDE its
+    ball, offset by up to half a cell. `fire_ball.tres` is `merge = true, base_width = 2.0` for that
+    reason — the same outcome the deleted `radius * 3` special case produced, reached by data rather
+    than by a code path. Re-check that panel if either number moves.
+- **The mask MIRRORS with the art.** `FxAttachment.flipped` tracks `PropVisual.face_travel`, because
+  the mask IS the drawing now — a blade heading right would otherwise emit off the outline it no
+  longer has. One sign, re-pushed only when it actually changes.
+- **Embers come off EVERY fire, and their spec is split per host scale** (owner 2026-07-29: *"all
+  fire effects should leave embers like card is currently"*). `ember.tres` is card-sized;
+  `ember_prop.tres` serves props AND balls — ParticleEngine is a board-level node, so a spec's sizes
+  and speeds are SCREEN units and the card's ember is ~2.5x too big beside a knife. Data, not a code
+  path: there is no per-host scaling anywhere in the emitter.
+  - **BALL embers spawn on the BALL, and that is why `FxJuggle.ball_pos` exists.** The host of ball
+    fire is the CARD, so the host-top-edge spawn every other effect uses would pour embers off the
+    card while the flames are out on the balls. Embers are PARTICLES — spawned by GDScript into
+    world space — so the shader cannot answer "where is the burning ball" at all. `ball_pos` is
+    therefore the ONE script-side copy of the path, and nothing else may call it. The drift is pinned
+    rather than warned about: `test_ball_pos_matches_the_oracle` holds it to `PixelProbe.ball_positions`
+    (transcribed from the spec, not from the include), which `test_pixels.gd` holds to the rendered
+    frame — so disagreeing with `juggle.gdshader` fails headless in milliseconds.
+  - The sources are the LIT balls, not the ball count (`FxRequest.lit`, built beside the fire
+    texture from the same levels). An unlit ball is not on fire and has nothing to shed (ruling 3).
+  - `fx_snapshot`'s `09_embers` is the visual proof, and it is the one shot that RUNS LIVE: particles
+    are spawned at random times and simulated forward, so there is no clock to park and a single
+    frame of a fresh attachment has emitted nothing. Like `02_fire_rotation` it is for EYE review, not
+    for diffing.
 - **Fire is OPAQUE over its host; `sink` is the knob for how much art it covers.** Every shipped
   style sets `inner_alpha = 1.0` (owner 2026-07-29: seeing the card through the flame "looks very
   bad"). `FxStyle.sink` is how far the base goes DOWN into the art — positive sinks it in and
@@ -743,7 +831,9 @@ Run `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` (windowed, needs 
 after ANY shader edit; it writes PNGs to `user://fx_snapshots/`
 (`%APPDATA%\Godot\app_userdata\Solatro\…`). It is deliberately not in `all_tests.tscn`. Shots:
 `00_tendril_count` (geometry only, countable — and the onion shells), `00b_ogee_profile`,
-`01_fire_ladder`, `02_fire_rotation`, `03_fire_wrap`, `04_shapes` (the real prop bodies), `05_balls`,
+`01_fire_ladder`, `02_fire_rotation`, `03_surfaces` (several surfaces under one comb, on the RING —
+both arcs alight, the hole's middle empty), `04_shapes` (the real prop ART, masked from its own
+alpha), `05_balls`,
 `05b_ball_path`, `05c_ball_sphere`, `05d_ball_gravity` (the throw's easing — the balls bunch at the
 apex as it rises), `05e_ball_arcs` (the arc ladder at one ball count), `06_ball_fire`,
 `07_transition`, `08_focus_highlight` (ruling 10).
@@ -1032,7 +1122,14 @@ Standing owner rulings:
 
 Visual-effects rulings (2026-07-26/27 — the spec §4g implements; do not redesign around them):
 
-1. Fire tips always point generally UPWARDS, allowing some angle skew as spread.
+1. Fire tips always point generally UPWARDS, allowing some angle skew as spread. **Reaffirmed for
+   CURVED hosts (2026-07-30)** after two rejected builds: the answer to a hoop's bare flanks is NOT
+   to tilt the flames along the normal, and NOT to shear their bases along the contour. *"I want
+   version that covers hoop top completely with tendrils always pointing up. This may require base of
+   fire to be able to spread out/sticky against any surface, not just flat bottom."* Coverage is the
+   BASE's job. **Satisfied 2026-07-30 by the MASK model** (§4g): the base is now whatever surface a
+   column's down-march lands on, so it sticks to any surface by construction — and the march being
+   WORLD-down is what makes "tips point up" structural rather than a per-shape branch.
 2. Fire paints props and cards but, just like props, shows only BETWEEN cards — a card with FX
    does not show it where it is covered.
 3. A burning card does not mean its balls are burning, except when it is spawning burning balls.

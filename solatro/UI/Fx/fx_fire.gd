@@ -20,7 +20,9 @@ const FX_MAX_TENDRILS := 12
 ## terrifying, not 100 times brighter than one stack.
 static func request(id: StringName, stacks: int, style: FxStyle) -> FxRequest:
 	var live := stacks_live(stacks, style)
-	# The flames' own length is exactly how far past the silhouette the quad must reach.
+	# The flames' own length is exactly how far past the silhouette the quad must reach — the mask
+	# model bounds a flame at exactly `height`, in every column on every shape, so this is a true
+	# bound and not an estimate.
 	var req := FxRequest.make(id, FIRE_SHADER, style, live[&"u_height"])
 	req.live = live
 	# A lerp between "merged" and "not merged" means nothing, so the sheet snaps on. It only ever

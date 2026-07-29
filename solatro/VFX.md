@@ -36,7 +36,7 @@ ARCHITECTURE_REVIEW, the latter wins.
 | Path | What |
 |---|---|
 | `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at` / `fx_ball_pos` / `fx_nearest_ball` / the arc ladder). Included by both shaders so the maths cannot exist twice. |
-| `Shaders/fire.gdshader` | Fire, in two modes: SILHOUETTE (a host's outline) and BALLS (a plume per lit ball). |
+| `Shaders/fire.gdshader` | Fire. ONE path for every host: it raises the art's MASK by an ogee arch and subtracts the mask. `mask()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
 | `Shaders/juggle.gdshader` | The juggled balls. |
 | `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`). Colours point at `Assets/Palette/` ramps (§4i). **The single place FX tuning lives** (owner ruling 8). |
 | `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads, owns the clock, the per-host randomness, the lag spring. |
@@ -80,6 +80,15 @@ far the nearest rendered ball is from where the independent oracle says it shoul
 units**. Empty output = every ball agrees to under 2 units. **Read the numbers — do not measure the
 PNGs by hand.** Two separate debugging passes did and both reached wrong conclusions.
 
+**The GPU cost bench — after anything that changes how much work a fragment does.** It prints
+milliseconds per frame for 20 burning hosts of each kind, against an empty scene. Not a test; it
+asserts nothing. This is what answered "does the per-cell anchor fit" with a number (§4g) and what
+turned up the ball-fire figure in §7.
+
+```bash
+timeout 600 "/c/Users/khanr/Desktop/Godot_v4.7.1-stable_win64_console.exe" --path solatro res://Tests/Visual/fx_cost.tscn 2>&1 | grep -E "ms/frame|->"
+```
+
 **Prop-art snapshots — after any change to prop art, `art_size`, or the facing rule.**
 
 ```bash
@@ -117,7 +126,9 @@ actually cost time.
 
 - **A new effect** = one `.gdshader` + one `FxStyle` preset + a status that returns an `FxRequest`
   from `fx_request()`. `FxAttachment` never learns effect names.
-- **A new prop shape** = one branch in `shape_radius()` + one `fx_shape()` override.
+- **A new prop shape** = usually NOTHING. A textured kind overrides `measure_fx_silhouette()` to
+  hand `FxAttachment` its sheet, and the fire shader reads that art's own alpha as its mask. Only a
+  kind with no texture at all (a deformed card) needs a `mask()` branch and an `fx_shape()` override.
 - **A new prop kind's art** = a sheet, `art_size = art_size_for(SHEET, …)` in `_init` (never a raw
   pixel number), and a `_draw_frame` call. §4h explains why.
 - **A new lever** = an `@export` on `FxStyle`, one `set_shader_parameter` in `apply()`, one uniform.
@@ -164,12 +175,42 @@ Ordered roughly by what a session should pick up first.
 
 ### 6.2b Open after the 2026-07-28/29 tuning review
 
-**⬜ HOOP FIRE IS THE OPEN PROBLEM — two attempts rejected by the owner. The diagnosis, the owner's
-preference ranking and the suggested direction are in [FX_HANDOFF.md](FX_HANDOFF.md) §1. Start
-there, not here.**
+**✅ THE FIRE EMITTER WAS REPLACED — "RAISE THE MASK" LANDED 2026-07-30.** The contour model was
+wrong at the root: it knew one top contour per column, so a shape with two upward-facing surfaces in
+one column — the hoop's inner-bottom arc — could only ever light the upper one. Fire is now the art's
+MASK raised by the ogee and minus the mask, which lights every upward-facing surface anywhere in the
+art, makes the tendril count per SURFACE, and moves shape-following into the shader so nothing is
+baked at `_ready`. **The contract is ARCHITECTURE_REVIEW §4g**; the rejected techniques and why are
+in git history (FX_HANDOFF.md §1.5, deleted with the file).
 
-**⬜ EMBERS ON EVERY FIRE, not just the card** — props and balls carry no ember spec today; the two
-real obstacles (ball spawn position, prop-scale spec) are in FX_HANDOFF §2.
+Deleted with it: the skirt (`u_skirt` / `skirt_var` / `skirt_freq`), `u_wrap`, `u_mode` /
+`MODE_BALLS` and the whole ball branch, `Shape.PROFILE` / `u_profile`, `Shape.RING`, `contour_y` /
+`box_contour` / `emit_half_width`. The hoop is a SPRITE now — an analytic ellipse cannot represent a
+hole.
+
+⚠ **Two things the owner asked for that are NOT in it, both deliberate and both stated:**
+
+1. **ENGULF is gone.** It was to come from a per-cell ANCHOR (the arch anchored once at the cell's
+   highest surface, every column draping down to its own floor). Measured at **21 ms extra for 20
+   burning hoops** on integrated graphics — more than a whole 60 fps frame. The owner pre-ruled the
+   fallback for exactly this outcome, so the plain mask shift ships and the anchor is dropped whole.
+   Numbers and the ruling: §4g.
+2. Consequently the arch **rides** the surface it stands on, so flames on a steep flank are shorter
+   than flames on the apex. Tips still point straight up everywhere.
+
+**What to look at, by EYE:** `fx_snapshot`'s new `03_surfaces` (1/2/4/12 tendrils over the ring —
+both arcs alight, the hole's middle always empty), `04_shapes`, `07_transition`'s RING panels (the
+comb easing over a curved host), and `prop_art_snapshot`'s `17_prop_fire` at real size. **Never count
+columns** — that instrument reported two rejected builds as successes.
+
+- **✅ FIXED — hoop fire left the ring's flanks bare.** Superseded twice: first by a SKIRT (2026-07-30,
+  now deleted), then properly by the mask model above. The skirt covered the outer arc by ANGLE and
+  could never reach an upward surface elsewhere in the art; the mask reaches all of them.
+- **✅ FIXED — embers only came off the card (2026-07-30).** Props and balls now carry
+  `ember_prop.tres` (the card's spec is in screen units and ~2.5x too big beside a knife), and ball
+  embers spawn on the LIT BALLS via `FxJuggle.ball_pos` — the one script-side copy of the path, pinned
+  to the independent oracle by `test_ball_pos_matches_the_oracle`. New shot: `fx_snapshot` `09_embers`,
+  the only one that runs live. See ARCHITECTURE_REVIEW §4g.
 
 
 - **✅ FIXED — balls all travelled the same way below ~10.** The per-ball direction mirror cancelled
@@ -193,12 +234,21 @@ real obstacles (ball spawn position, prop-scale spec) are in FX_HANDOFF §2.
 
 ### 6.3 Measurements nobody has taken
 
-- **⬜ Fill rate — the one unmeasured risk**, and it needs a real GPU: 20 burning cards on the board,
-  then 50 in the deck viewer; read the frame time. Then again at 8 arcs with many juggling cards,
-  which is where this feature's cost now lives (§7.2). If it measures badly, spend the levers in this
-  order — raise `FxStyle.pixel` (chunkier FX pixels is a LOOK change, not a capability loss) → drop
-  `fx_fbm` to one octave → cap `FxStyle.height` to shrink the quads → and only then reconsider
-  one-quad-per-effect. **Do not start by cutting features.**
+- **✅ MEASURED 2026-07-30 — `Tests/Visual/fx_cost.tscn`, 20 burning hosts each, Intel UHD.** Card
+  fire 1.53 ms, hoop 1.21 ms, knife 0.36 ms — all comfortable against a 16.7 ms frame. **Ball fire is
+  28.5 ms and always was** (26.6 ms before this work): see §7.8, which is now the biggest open
+  performance item in the layer. Its three levers are in FX_HANDOFF §1.
+  - ⚠ **THE OLD LEVER ORDER WAS WRONG AND IS WITHDRAWN.** It began "raise `FxStyle.pixel`, chunkier
+    FX pixels is a LOOK change not a capability loss" — but `fx_local()` quantizes a COORDINATE
+    inside the fragment shader, so the quad's screen footprint is unchanged and **the shader still
+    runs once per screen pixel**. Chunkier pixels help warp coherence and texture-cache hits a
+    little; they do not cut the fragment count at all. What actually works: hoist the `O(arcs²)`
+    loop-invariant arc maths out of `fx_nearest_ball` → early-out cheaply before the ball lookup →
+    shrink the QUADS (a ball quad does not need the circumscribed bound, because the juggling
+    pattern does not rotate with its host) → drop `fx_fbm` to one octave → and only then reconsider
+    features. **Do not start by cutting features.**
+- **⬜ Still unmeasured: 50 burning cards in the DECK VIEWER**, the densest screen in the game. The
+  bench takes a `HOSTS` constant; raise it and re-run.
 
 ### 6.4 Deferred by design
 
@@ -242,9 +292,44 @@ Nothing here is secretly broken — each is understood, and each is either accep
    screen pixels at the default `card_scale` (≈2.5× smaller). "Half a card separation" is therefore a
    different NUMBER in `fire_prop.tres` than in `fire_card.tres`. Ball-fire plumes are deliberately
    outside the budget entirely (owner).
-7. **Two GDScript↔GLSL enum mirrors can drift silently** (`FxAttachment.Mode` / `.Shape` against the
-   constants in `fire.gdshader`). The FX ATTACHMENT suite reads the constants out of the shader
-   source and asserts the mapping — keep that test alive if you add a mode or a shape.
+7. **A GDScript↔GLSL enum mirror can drift silently** (`FxAttachment.Shape` against the constants in
+   `fire.gdshader`). The FX ATTACHMENT suite reads the constants out of the shader source and asserts
+   the mapping — keep that test alive if you add a shape. It also asserts that `u_mode` never comes
+   BACK: one code path for every host is the point of the mask model.
+8. **⚠ BALL FIRE COSTS 28.5 ms PER FRAME for 20 juggling cards** (measured 2026-07-30, integrated
+   graphics — see §6.3). That is nearly two whole 60 fps frames, and it is **pre-existing**: the
+   shipped contour build measured 26.6 ms on the same bench, so the mask model added ~2 ms to an
+   already-broken number rather than causing it. The cost is `fx_nearest_ball` running over a quad
+   sized by the ARC HEIGHT (~380 screen px square per card) — the lookup is O(1) in the ball count,
+   but it is not cheap, and the quad is enormous compared to the few balls in it. Nobody has hit this
+   in play because 20 simultaneously-juggling cards has not happened. Cheapest first swing: raise
+   `fire_ball.tres`'s `pixel` (0.8 today), which cuts the fragment count quadratically.
+9. **⚠ `all_tests.tscn`'s `speed_base_delay` DECIDES WHETHER SOME UI CHECKS CAN PASS AT ALL, and the
+   editor drops it (2026-07-30).** The committed scene sets `speed_base_delay = 0.1`; the script's
+   own default is 0.01, and re-saving the scene in the editor wrote the property out entirely, so the
+   suite silently dropped to 0.01. **PROVEN, not inferred:** restoring only that one property — with
+   every other change in place and the test edit below reverted — turned a reproducible failure into
+   a green run. `test_ui_props`'s per-arrival pulse check polls once per frame for
+   a tween phase `delay * card_jump_pulse_fraction` long — **30 ms at 0.1 (two frames, observable),
+   3 ms at 0.01 (unobservable)** — so it began failing deterministically with nothing about the game
+   changed. It cost five bisects, a wall-clock A/B and an `--max-fps 60` run to find, because a
+   `git stash` A/B restores the committed 0.1 for the baseline half and hands the "before" build a
+   different speed knob than the "after" one. ⚠ **Check `git diff Tests/all_tests.tscn` before
+   trusting any A/B of an animated suite.**
+   - `test_reactions_drive_card_pose` now raises `base_delay` to 0.4 for its own duration (the idiom
+     `test_slow_props_move_continuously` beside it already used), so it no longer depends on the
+     global knob either way.
+   - The general rule: **a check that polls for a transient must be slower than a frame, or it is
+     measuring the frame budget rather than the behaviour.** Grep the UI suites for `WATCHDOG_SECS`
+     polls before trusting a similar failure.
+10. **✅ FIXED 2026-07-30 — `PIXELS / the highlight sits OFF-CENTRE` had a RANDOM INPUT.** It failed
+   intermittently (4.5 px against an 8 px bound) because `FxAttachment._seed` is rolled with `randf()`
+   per host, the seed drives the ball's SPIN, and the spin rotates the shading frame the highlight
+   sits in — so some runs put the highlight near the ball's centre through no fault of the shader.
+   The suite pinned `_ball_dir` for exactly this reason and not `_seed`. Every attachment the PIXELS
+   suite builds now sets `att._seed = SEED` BEFORE `sync()` (the per-host randomness is read when the
+   quads are BUILT — §4.4). **A rendering test with a random input is not a test**; if you add a shot
+   to that suite, pin the seed.
 
 ---
 

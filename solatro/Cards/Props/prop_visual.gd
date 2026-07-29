@@ -127,6 +127,9 @@ func retarget(point: Vector2, ticks : float = 1.0) -> void:
 		# travel (a ballistic drop, a stationary staged pose) keeps the facing it already had.
 		if absf(dir.x) > 1.0:
 			flipped = dir.x > 0.0
+			# The flames read the ART's own alpha as their mask, so they have to mirror with it.
+			for att : FxAttachment in [fx, fx_back, fx_front]:
+				if att: att.flipped = flipped
 
 ## Instant reposition for teleports — never lerp across the board; flash to signal the jump.
 func relocate_to(point: Vector2) -> void:
@@ -277,11 +280,10 @@ class _PropHalf extends Node2D:
 func fx_shape() -> FxAttachment.Shape:
 	return FxAttachment.Shape.BOX
 
-## Point an attachment at this kind's REAL outline. Default: nothing, so the kind keeps whatever
-## `fx_shape()` said. Textured kinds override it to measure their sprite's alpha, because a frame is
-## mostly padding and emitting off the frame's box leaves the flames hanging in the air above the
-## drawing (FxAttachment.measure_sprite_silhouette). The hoop does NOT override it — its ellipse is
-## both a better fit and what the back/front split keys on.
+## Point an attachment at this kind's REAL art. Default: nothing, so the kind keeps whatever
+## `fx_shape()` said. EVERY textured kind overrides it, the hoop included: the fire shader reads the
+## sheet's own ALPHA as its mask, which is what lets it find the drawing inside a mostly-transparent
+## frame and, on the hoop, the upward-facing surface at the bottom of the RING's hole.
 func measure_fx_silhouette(att: FxAttachment) -> void:
 	pass
 

@@ -15,9 +15,16 @@ FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes (their residue is 
 ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else below is unscheduled backlog.
 
 **Anything visual-effects — fire, juggling, prop art, the FX shaders — starts at
-[VFX.md](VFX.md)**, which carries that whole backlog and its known bugs. **Two FX items are handed
-off to a fresh agent in [FX_HANDOFF.md](FX_HANDOFF.md): hoop/curved-surface fire (two rejected
-attempts) and embers on every fire rather than only the card.**
+[VFX.md](VFX.md)**, which carries that whole backlog and its known bugs. **The fire emitter was
+REPLACED on 2026-07-30 — "raise the mask" (owner design): fire is the art's own mask raised by the
+ogee, so every upward-facing surface burns, the hoop's inner-bottom arc included.** Contract:
+ARCHITECTURE_REVIEW §4g. Embers on every fire shipped with it. All three await the owner's eye.
+
+⚠ **Two things to tell the owner about that build**, both stated rather than hidden:
+- **ENGULF is not in it.** The per-cell anchor it needed measured 21 ms extra for 20 burning hoops
+  on integrated graphics; the owner pre-ruled that fallback, so the plain mask shift ships.
+- **Ball fire costs 28.5 ms per frame for 20 juggling cards** — pre-existing (26.6 ms before this
+  work), newly MEASURED, and now the biggest performance item in the FX layer. VFX.md §7.8.
 
 ## Architecture / engine (unscheduled)
 

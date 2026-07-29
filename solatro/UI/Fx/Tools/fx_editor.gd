@@ -93,7 +93,9 @@ var _particles : ParticleEngine = null
 	set(v): show_card_face = v; queue_redraw()
 @export_range(0, 255, 1) var card_face_index : int = 19:
 	set(v): card_face_index = v; queue_redraw()
-## Embers are spawned by the card fire only (`FxStyle.ember`), through the real ParticleEngine.
+## Embers, through the real ParticleEngine. EVERY fire that carries an `FxStyle.ember` throws them —
+## the card, the props and the lit balls (owner 2026-07-29). Card fire uses `ember.tres`; props and
+## balls use the prop-scaled `ember_prop.tres`.
 @export var show_embers : bool = true:
 	set(v): show_embers = v; _touch()
 
@@ -181,9 +183,9 @@ func _add_juggler(slot : int) -> int:
 	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs).set_meta(&"card", true)
 	return slot + 1
 
-## A REAL PropVisual, drawing its real art, with fire on its own silhouette (the hoop's is an
-## ellipse, not a box). PropVisual._ready early-returns in the editor, so the attachment is built
-## here instead — with the prop's own `body_size` and `fx_shape()`, the same values it would use.
+## A REAL PropVisual, drawing its real art, with fire on its own MASK — the sheet's own alpha, so
+## the hoop burns inside its hole as well as on top. PropVisual._ready early-returns in the editor,
+## so the attachment is built here instead, with the same values that host would use.
 func _add_prop(slot : int, kind : GDScript) -> int:
 	var prop := kind.new() as PropVisual
 	if not prop: return slot

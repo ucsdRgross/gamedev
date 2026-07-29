@@ -36,6 +36,12 @@ const ZOOM := 4.0
 ## shot fits itself with _zoom_to_fit.
 var _zoom := ZOOM
 
+## The per-host random seed every shot pins, so the images are REPRODUCIBLE. `_seed` drives flame
+## flicker, the whole-effect pulse and the ball spin — and the spin rotates the shading frame the
+## highlight sits in, so an unpinned seed makes "the highlight is off-centre" a coin flip. Any value
+## works; this one is simply a value that is the same every run.
+const SEED := 12.5
+
 ## Ball agreement tolerance in ART UNITS. `nearest` finds a ball's EDGE pixel, so anything under the
 ## ball's own radius is agreement; 2.0 is comfortably inside that at every count and still catches
 ## the ~5-unit-and-up disagreements a real path bug produces.
@@ -56,6 +62,7 @@ func _ready() -> void:
 	_build_stage()
 	await test_fire_draws_upright()
 	await test_fire_bands_are_onion_shells()
+	await test_every_upward_surface_burns()
 	await test_balls_sit_on_their_oracle()
 	await test_ball_reads_as_a_sphere()
 	await test_hoop_halves_reassemble()
@@ -175,6 +182,70 @@ func test_fire_bands_are_onion_shells() -> void:
 			"core-near-tip luminance %.3f vs shoulder-near-base %.3f — the shoulder winning is what "
 			% [tip_lum, shoulder_lum] + "vertically stacked rows look like")
 
+## THE CLAIM §1 EXISTS FOR: fire finds EVERY upward-facing surface in the art, not just the topmost
+## one in each column (FX_HANDOFF §1.1). The hoop is the counterexample the owner named — its ring
+## has TWO upward-facing surfaces in the same column, the outer top arc and the inner arc at the
+## BOTTOM of the hole, and a per-column contour can only ever return the first.
+##
+## Stated as pixels: inside the ring's HOLE, sitting on its lower inner arc, there must be flame. The
+## old model could not put a single lit pixel there, by construction — its skirt's `a < PI/2` cut
+## discarded that surface and `contour_y` never saw it. So this check is the discriminator, and it is
+## a real one: it fails against everything that shipped before 2026-07-30.
+##
+## AND THE INVARIANT THAT BOUNDS IT: no flame may LEAP the hole. A tendril anchored on the outer arc
+## reaching down to the inner one would fill the ring solid — the "enormous flame" the owner
+## forbade — so the hole's MIDDLE, a flame-length clear of both surfaces, must stay empty.
+func test_every_upward_surface_burns() -> void:
+	behavior_section("EVERY UPWARD-FACING SURFACE BURNS, AND NO FLAME LEAPS THE HOLE")
+	var body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
+	var style : FxStyle = PropVisual.PROP_FIRE_STYLE
+	_zoom_to_fit(body.y * 0.5 + style.height * (1.0 + style.height_var) + 4.0)
+	var att := FxAttachment.new()
+	att.configure(body, false, FxAttachment.Shape.SPRITE, FxAttachment.Half.WHOLE, false)
+	_place(att, 1.0)
+	att.measure_sprite_silhouette(HoopVisual.SHEET,
+			CardModifier.frame_rect(HoopVisual.SHEET, HoopVisual.FRAMES, 1, 0), body)
+	att._seed = SEED
+	att.sync([FxFire.request(&"fire", 4, style)] as Array[FxRequest])
+	_park(att, 0.0)
+	var img := await _shoot()
+	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
+	# The hole is the ring minus its wall. Measured off the art itself rather than typed in: the wall
+	# is a uniform inset of the outer ellipse (see the sheet), so the hole's half-height is the body's
+	# minus that inset, and the band just above the hole's floor is where the inner flames live.
+	var wall := body.x * 0.5 - _hole_half_width(body)
+	var hole_bottom := body.y * 0.5 - wall
+	var inner := Rect2i(
+			Vector2i(int(mid.x - body.x * 0.15), int(mid.y + (hole_bottom - style.height) * _zoom)),
+			Vector2i(int(body.x * 0.3 * _zoom), int(style.height * _zoom)))
+	check(PixelProbe.count(img, inner, PixelProbe.is_opaque) > 0,
+			"the ring's INNER-BOTTOM arc — an upward surface no contour can reach — is alight",
+			"0 lit pixels in the hole's floor band %s; this is the exact bug §1 replaced the contour "
+			% inner + "model to fix, so a zero here means the mask is not being marched")
+	# The hole's middle: further than a flame is long from either surface, so nothing may reach it.
+	var clear := Rect2i(Vector2i(int(mid.x - body.x * 0.1), int(mid.y - body.y * 0.1)),
+			Vector2i(int(body.x * 0.2 * _zoom), int(body.y * 0.2 * _zoom)))
+	check(PixelProbe.count(img, clear, PixelProbe.is_opaque) == 0,
+			"and the middle of the hole is EMPTY — no flame leaps from one arc to the other",
+			"%d lit pixels in the ring's hollow: a tendril has bridged two separate surfaces, which "
+			% PixelProbe.count(img, clear, PixelProbe.is_opaque)
+			+ "is the ENORMOUS FLAME a bounded flame length makes impossible")
+
+## Half the width of the hoop's HOLE, in art units, read off the sheet's alpha — never typed in, so
+## this cannot drift from the drawing the mask is sampled out of.
+func _hole_half_width(body: Vector2) -> float:
+	var img := HoopVisual.SHEET.get_image()
+	var src := CardModifier.frame_rect(HoopVisual.SHEET, HoopVisual.FRAMES, 1, 0)
+	var y := int(src.position.y + src.size.y * 0.5)
+	var first := -1
+	var last := -1
+	for x : int in int(src.size.x):
+		if img.get_pixel(int(src.position.x) + x, y).a > 0.0: continue
+		if first < 0: first = x
+		last = x
+	if first < 0: return 0.0
+	return float(last - first + 1) * 0.5 * (body.x / src.size.x)
+
 ## Every ball, at every count, sits where the INDEPENDENT oracle says. This is the check that would
 ## have caught a real path bug — and the one whose earlier disagreement turned out to be the harness
 ## re-enabling the clock it had parked, so the tolerance is in art units and stated.
@@ -292,6 +363,7 @@ func _host_fire(body: Vector2, stacks: int, style: FxStyle) -> void:
 	var att := FxAttachment.new()
 	att.configure(body, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE, false)
 	_place(att, 1.0)
+	att._seed = SEED
 	att.sync([FxFire.request(&"fire", stacks, style)] as Array[FxRequest])
 	_park(att, 0.0)
 
@@ -303,8 +375,16 @@ func _host_balls(n: int, style: FxStyle, phase: float, dir: float = 1.0) -> void
 	att.configure(CardVisual.CARD_SIZE, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			false)
 	_place(att, 1.0)
-	# Pin the host's direction BEFORE sync: the quads read it as they are built, so setting it after
-	# (the way the clock is parked) would leave the material on the random value this host rolled.
+	# Pin the host's randomness BEFORE sync: the quads read `_seed` and `_ball_dir` as they are BUILT,
+	# unlike the clock, which is pushed afterwards (VFX.md §4.4).
+	#
+	# ⚠ THE SEED MATTERS AS MUCH AS THE DIRECTION, and leaving it random is what made
+	# `test_ball_reads_as_a_sphere` fail intermittently. The seed drives the ball's SPIN, the spin
+	# rotates the shading frame, and that frame decides where the highlight sits — so a seed that
+	# happened to roll the highlight near the ball's centre failed the "highlight is off-centre"
+	# assertion through no fault of the shader (measured 4.5 px against an 8 px bound, 2026-07-30).
+	# A rendering test with a random input is not a test.
+	att._seed = SEED
 	att._ball_dir = dir
 	att.sync(FxJuggle.requests(n, PackedInt32Array(), style, StatusJuggling.BALL_FIRE_STYLE))
 	_park(att, phase)
@@ -441,6 +521,7 @@ func _shoot_modulated(kind: String, tint: Color) -> Image:
 	att.configure(CardVisual.CARD_SIZE, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			false)
 	host.add_child(att)
+	att._seed = SEED
 	if kind == "fire":
 		_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + StatusBurning.CARD_FIRE_STYLE.height)
 		att.sync([FxFire.request(&"fire", 6, _plain_fire_style())] as Array[FxRequest])

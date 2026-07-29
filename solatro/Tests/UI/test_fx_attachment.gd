@@ -29,6 +29,8 @@ func _ready() -> void:
 	test_no_tendril_growth_past_budget()
 	test_balls_uncapped()
 	test_quads_share_geometry()
+	test_ball_pos_matches_the_oracle()
+	test_lit_balls_are_the_ember_sources()
 	test_per_ball_levels()
 	test_status_declares_own_fx()
 	await test_quad_construction()
@@ -189,7 +191,9 @@ func test_quads_share_geometry() -> void:
 	check(reqs.size() == 2, "a lit ball adds the ball-fire quad", str(reqs.size()))
 	var balls := reqs[0]
 	var fire := reqs[1]
-	var shared : Array[StringName] = [&"u_count", &"u_span", &"u_arc_height", &"u_return_height",
+	# u_count is deliberately NOT here any more: on the balls quad it is the ball count, on the fire
+	# quad it is the TENDRIL count (one per ball width). The ball count agreement is asserted below.
+	var shared : Array[StringName] = [&"u_span", &"u_arc_height", &"u_return_height",
 			&"u_ball_radius"]
 	for key : StringName in shared:
 		var a : float = balls.live[key]
@@ -197,7 +201,58 @@ func test_quads_share_geometry() -> void:
 		check(a == b, "both quads agree on %s" % key, "%f vs %f" % [a, b])
 	check(balls.phase_period == fire.phase_period and balls.phase_period > 0.0,
 			"and on one shared phase clock", str(balls.phase_period))
-	check(fire.mode == FxAttachment.Mode.BALLS, "the fire quad runs in BALLS mode")
+	check(fire.shape == FxAttachment.Shape.BALLS,
+			"the fire quad's MASK is the balls, not the card it rides on — a shape, never a mode")
+	check(fire.live[&"u_ball_count"] == balls.live[&"u_count"],
+			"and it is told the ball count separately, now that u_count means TENDRILS",
+			"%f vs %f" % [fire.live[&"u_ball_count"], balls.live[&"u_count"]])
+	check(is_equal_approx(fire.live[&"u_emit_width"], 2.0 * fire.live[&"u_ball_radius"]),
+			"the comb's pitch is one ball DIAMETER, so each ball catches roughly one cell (§1.4b)",
+			"%f for radius %f" % [fire.live[&"u_emit_width"], fire.live[&"u_ball_radius"]])
+
+## THE PIN ON THE SECOND COPY OF THE PATH. `FxJuggle.ball_pos` exists only because embers are
+## particles — they are spawned by GDScript into world space, so the shader cannot answer "where is
+## the burning ball". Two copies of motion maths is the §4g bug class, so this holds it to the
+## INDEPENDENT oracle (PixelProbe.ball_positions, transcribed from the spec, not from the include),
+## which test_pixels.gd in turn holds to the rendered frame. Agreement is therefore transitive: this
+## drifting from juggle.gdshader fails here, headless, in milliseconds.
+func test_ball_pos_matches_the_oracle() -> void:
+	behavior_section("SCRIPT-SIDE BALL POSITIONS MATCH THE ORACLE")
+	var style := StatusJuggling.JUGGLE_STYLE
+	var worst := 0.0
+	# Every axis the path branches on: the arc ladder steps with the count, the sweep alternates per
+	# arc, and the host's direction is a coin flip that mirrors the whole pattern.
+	for dir : float in [1.0, -1.0] as Array[float]:
+		for n : int in [1, 2, 3, 8, 50]:
+			for phase : float in [0.0, 0.13, 0.5, 0.87] as Array[float]:
+				var geo := FxJuggle.geometry(n, style)
+				var want := PixelProbe.ball_positions(float(n), phase, geo[&"u_span"],
+						geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+						style.ball_gravity, dir, geo[&"u_ball_arcs"])
+				for i : int in want.size():
+					var got := FxJuggle.ball_pos(float(i), float(n), phase, geo[&"u_span"],
+							geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+							style.ball_gravity, dir, geo[&"u_ball_arcs"])
+					worst = maxf(worst, (got - want[i]).length())
+	check(worst < 0.01, "every ball position agrees with the oracle to within 0.01 art units",
+			"worst disagreement %.4f" % worst)
+
+## Which balls throw embers is the LIT set, never the ball count: an unlit ball is not on fire and
+## has nothing to shed (ruling 3). Built beside the fire texture so the emitter and the shader cannot
+## disagree about which balls are burning.
+func test_lit_balls_are_the_ember_sources() -> void:
+	behavior_section("ONLY ALIGHT BALLS THROW EMBERS")
+	var reqs := FxJuggle.requests(4, PackedInt32Array([0, 3, 0, 7]),
+			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)
+	check(reqs.size() == 2, "a lit ball adds the ball-fire quad", str(reqs.size()))
+	check(reqs[1].lit == PackedInt32Array([1, 3]),
+			"the ball-fire request carries exactly the alight indices", str(reqs[1].lit))
+	# A ball that is merely PRESENT contributes nothing — the negative case is the whole point.
+	var dark := FxJuggle.requests(4, PackedInt32Array(), StatusJuggling.JUGGLE_STYLE,
+			StatusJuggling.BALL_FIRE_STYLE)
+	check(dark.size() == 1, "and no lit ball means no ball-fire quad at all", str(dark.size()))
+	check(StatusJuggling.BALL_FIRE_STYLE.ember != null and PropVisual.PROP_FIRE_STYLE.ember != null,
+			"ball and prop fire both carry an ember spec (owner 2026-07-29: embers on EVERY fire)")
 
 ## Owner rulings 3 and 21: fire is PER BALL, at the BALL's own level, and a burning card with
 ## unlit balls shows no ball fire at all. The negative case is the point.
@@ -314,20 +369,19 @@ func test_enum_mirror() -> void:
 	implementation_section("GDSCRIPT/GLSL ENUM MIRROR")
 	var src := FileAccess.get_file_as_string("res://Shaders/fire.gdshader")
 	var pairs : Dictionary[String, int] = {
-		"MODE_SILHOUETTE": FxAttachment.Mode.SILHOUETTE,
-		"MODE_BALLS": FxAttachment.Mode.BALLS,
 		"SHAPE_BOX": FxAttachment.Shape.BOX,
-		"SHAPE_RING": FxAttachment.Shape.RING,
 		"SHAPE_RADII": FxAttachment.Shape.RADII,
-		"SHAPE_PROFILE": FxAttachment.Shape.PROFILE,
+		"SHAPE_SPRITE": FxAttachment.Shape.SPRITE,
+		"SHAPE_BALLS": FxAttachment.Shape.BALLS,
 	}
 	for key : String in pairs:
 		check(src.contains("const int %s = %d;" % [key, pairs[key]]),
 				"fire.gdshader's %s matches the GDScript enum" % key)
-	check(src.contains("const int PROFILE = %d;" % FxAttachment.PROFILE),
-			"fire.gdshader's PROFILE column count matches the GDScript constant")
 	check(src.contains("const int RADII = %d;" % FxAttachment.RADII),
 			"and the radius table length matches on both sides")
+	# The emitter MODES are gone, not renamed: a ball is a Shape whose mask is the discs, and one
+	# code path serves every host (owner 2026-07-30). Re-adding a mode is the regression to catch.
+	check(not src.contains("u_mode"), "the fire shader has no emitter MODE left at all")
 
 # ------------------------------------------------------------------- helpers
 

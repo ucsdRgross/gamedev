@@ -497,6 +497,18 @@ func test_teleport_blinks() -> void:
 	await cleanup(g, pa)
 
 func test_reactions_drive_card_pose() -> void:
+	# ⚠ SLOW THE ANIMATIONS DOWN FOR THIS TEST, exactly as test_slow_props_move_continuously does.
+	#
+	# The pulse below is a TWEEN PHASE, `delay * card_jump_pulse_fraction` long. At the suite's shared
+	# `TestLog.speed_base_delay` of 0.01 that is NINE MILLISECONDS — shorter than one 60 fps frame —
+	# so "poll until scale.x > 1.05" was really asking a once-per-frame sampler to land inside a
+	# sub-frame window. It passed only by luck of phase, and any change to the frame budget (a
+	# cheaper or costlier shader anywhere in the process is enough) flips it deterministically:
+	# measured 2026-07-30, 601 samples over 10 s all reading exactly 1.0 while `anim_jump` was
+	# provably being called with the right card. At 0.4 the pulse spans ~7 frames and the check
+	# measures the behaviour it claims to.
+	var fast := SettingsManager.settings.base_delay
+	SettingsManager.settings.base_delay = 0.4
 	var g := make_board_game(2)
 	var pa := make_play_area()
 	await settle(pa)
@@ -557,6 +569,7 @@ func test_reactions_drive_card_pose() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	check(rested, "the card resets to rest once no prop is over it")
+	SettingsManager.settings.base_delay = fast
 	await cleanup(g, pa)
 
 ## Sample the RAW global position EVERY frame of a row prop's whole flight — staging, sweep,

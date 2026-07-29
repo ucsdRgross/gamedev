@@ -23,9 +23,12 @@ func _init() -> void:
 func has_back_half() -> bool:
 	return true
 
-## The ring's silhouette is an oval, so its flames sit on the arc rather than on a bounding box.
-func fx_shape() -> FxAttachment.Shape:
-	return FxAttachment.Shape.RING
+## The ring is the shape the whole mask model exists for: its art has a HOLE, so one column holds TWO
+## upward-facing surfaces — the outer top arc, and the inner arc at the bottom of the hole. Only the
+## sheet's own alpha can express that; the analytic ellipse this used to declare could not, which is
+## why fire never reached inside the ring (FX_HANDOFF §1.1).
+func measure_fx_silhouette(att: FxAttachment) -> void:
+	att.measure_sprite_silhouette(SHEET, CardModifier.frame_rect(SHEET, FRAMES, 1, 0), art_size)
 
 ## Full ring — the @tool formation-editor preview and every frame the prop is not over a card (at
 ## runtime the two arcs draw split onto the bracket nodes instead).

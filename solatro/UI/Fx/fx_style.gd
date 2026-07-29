@@ -18,9 +18,6 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var dither : float = 0.0
 
 @export_group("Coverage")
-## Slides the flame base from the host's TOP contour (0, fire sits on top) to its BOTTOM contour
-## (1, the host is engulfed). Tips stay vertical at every value — this never tilts a flame.
-@export_range(0.0, 1.0, 0.01) var wrap : float = 0.0
 ## Outward lean of the crown: tendrils fan away from centre in proportion to how far out they
 ## sit (owner ruling 1's "some angle skew as spread").
 @export_range(0.0, 1.0, 0.01) var skew : float = 0.15
@@ -65,6 +62,7 @@ extends Resource
 ## 3-tap max so neighbouring tendrils fuse into a sheet instead of showing a V-notch between
 ## them. Off by default: it triples the tendril evaluations. Density turns it on automatically.
 @export var merge : bool = false
+
 
 @export_group("Motion")
 ## The tip drifts side to side.
@@ -215,6 +213,12 @@ var _tones_tex : ImageTexture = null
 ## one blazing card cannot consume the engine's global particle cap.
 @export var ember_rate_max : float = 24.0
 ## The particle kind embers spawn. Null disables them, which is what viewer styles use.
+##
+## SPLIT PER HOST SCALE, exactly as the fire styles are: `ember.tres` is card-sized, `ember_prop.tres`
+## is the same ember for props and for balls. ParticleEngine is a board-level node, so a spec's sizes
+## and speeds are SCREEN units — but a prop draws at `card_scale / PropVisual.AUTHORED_CARD_SCALE`, so
+## the card's ember is ~2.5x too big beside a knife and its plume overshoots the prop entirely. That
+## is data, not a code path: there is no per-host scaling anywhere in the emitter.
 @export var ember : ParticleSpec = null
 
 ## The heat/level ramp texture, built from `ramp_source` on first use and cached. Null ramp means the
@@ -243,7 +247,6 @@ func ball_bands() -> int:
 func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_pixel", pixel)
 	mat.set_shader_parameter(&"u_dither", dither)
-	mat.set_shader_parameter(&"u_wrap", wrap)
 	mat.set_shader_parameter(&"u_skew", skew)
 	mat.set_shader_parameter(&"u_inner_alpha", inner_alpha)
 	mat.set_shader_parameter(&"u_height", height)
