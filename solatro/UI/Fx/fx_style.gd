@@ -7,7 +7,7 @@ extends Resource
 ## frame.
 ##
 ## ⚠ THIS CLASS IS THE SHARED HALF ONLY. The knobs of an actual effect live in a SUBCLASS —
-## `FxFireStyle` for the tendrils, `FxJuggleStyle` for the balls — and a `.tres` is one of those, never
+## `FxFireStyle` for the fire, `FxJuggleStyle` for the balls — and a `.tres` is one of those, never
 ## a bare `FxStyle`.
 ##
 ## WHY SUBCLASSES AND NOT ONE CLASS WITH A `kind` FLAG (owner 2026-07-31: *"both fire and ball effects

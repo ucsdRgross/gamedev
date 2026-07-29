@@ -16,15 +16,25 @@ ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else belo
 
 **Anything visual-effects — fire, juggling, prop art, the FX shaders — starts at
 [VFX.md](VFX.md)**, which carries that whole backlog and its known bugs. **The fire emitter was
-REPLACED on 2026-07-30 — "raise the mask" (owner design): fire is the art's own mask raised by the
-ogee, so every upward-facing surface burns, the hoop's inner-bottom arc included.** Contract:
-ARCHITECTURE_REVIEW §4g. Embers on every fire shipped with it. All three await the owner's eye.
+REPLACED again on 2026-07-29 — the NOISE FIRE (owner design): no tendrils, no comb, no ogee, no
+onion shells. Fire is a cover field sampled from the art's own mask and carved by scrolling noise,
+and every parameter ramps continuously with the stack count.** Contract: ARCHITECTURE_REVIEW §4g;
+the whole record, including what only the owner can decide, is FX_HANDOFF §0.
 
-⚠ **Two things to tell the owner about that build**, both stated rather than hidden:
-- **ENGULF is not in it.** The per-cell anchor it needed measured 21 ms extra for 20 burning hoops
-  on integrated graphics; the owner pre-ruled that fallback, so the plain mask shift ships.
-- **Ball fire costs 28.5 ms per frame for 20 juggling cards** — pre-existing (26.6 ms before this
-  work), newly MEASURED, and now the biggest performance item in the FX layer. VFX.md §7.8.
+⬜ **THE TWO REMAINING FX TASKS ARE FX_HANDOFF §0c/§0d** (owner: *"our last tasks will be making fire vfx
+show behind the art and saving juggling performance"*). ⚠ Read §0c first: `inner_alpha` and `z_index`
+are NOT ruled out — the first attempt failed on a QUANTIZATION detail, and the one-line experiment to
+try before any layering change is named there. For the second, re-run the two levers whose blocker an
+unrelated fix removed. §0e explains `cover_taps`.
+
+⚠ **Three things to tell the owner about that build**, all stated rather than hidden:
+- **It is 1.93x faster on a burning screen and 1.40x on the worst window the game can build**
+  (GTX 1070, before/after in one session). Off-screen hosts are still exactly free.
+- **The three fire `.tres` were MIGRATED, not TUNED.** Only `noise_scale` was re-derived, because
+  the retired build's value was ~6x too fine for a model where the noise IS the shape. **The art
+  pass is the owner's and it is the biggest thing waiting.**
+- **Fire still licks down a card's top corners, and this rewrite did NOT fix it.** The chamfer is in
+  the RADII mask, not the flame model, so any correct model stands fire on it. FX_HANDOFF §8.
 
 ## Architecture / engine (unscheduled)
 

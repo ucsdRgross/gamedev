@@ -89,16 +89,20 @@ void fragment() {
 	// (`return` is not allowed in a Godot fragment processor, hence the wrap rather than an exit.)
 	if (fx_balls_near(p, 0.0, u_span, u_arc_height, u_ball_radius)) {
 		float lvl;
+		// ⚠ THE CENTRE COMES BACK FROM THE LOOKUP. It used to be re-derived with `fx_ball_pos`,
+		// which builds a whole second arc ladder (8 `sqrt` plus a normalize) and walks it again —
+		// per fragment, for a ball this call had already positioned. Same arithmetic, same bits,
+		// one evaluation (FX_HANDOFF §1b.1's hoist, finished 2026-07-29).
+		vec2 raw;
 		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
-				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 0, id, lvl);
+				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 0, id, lvl,
+				raw);
 		// The centre is SNAPPED to the pixel lattice before anything is measured from it, so the disc
 		// test and the shading agree and every ball rasterizes symmetrically (fx_pixel_snap). The
 		// distance from fx_nearest_ball is deliberately recomputed here rather than reused: testing
 		// against the unsnapped centre and shading from the snapped one is what would leave a ragged
 		// edge pixel.
-		vec2 centre = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height,
-				u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
-				u_extent, u_pixel);
+		vec2 centre = fx_pixel_snap(raw, u_pixel);
 		d = p - centre;
 		d2 = dot(d, d);
 		// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in

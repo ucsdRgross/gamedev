@@ -75,8 +75,14 @@ var _watched : Array = []
 ## The PROP-hosted flame, in prop art units. Every prop on the right uses this one.
 @export var prop_fire_style : FxFireStyle = preload("res://Shaders/Styles/fire_prop.tres"):
 	set(v): prop_fire_style = v; _touch()
-## Burning stacks. The interesting values are 1 (a single flame), 12 (the crown is full —
-## FxFire.FX_MAX_TENDRILS) and 40+ (past the auto-merge threshold, overflow > 1.5).
+## Burning stacks — AND THE KNOB THAT PROVES THE STACK RATIOS (FxFireStyle's "Stack scaling"
+## group). Every fire parameter ramps continuously from here, so drag it and watch: nothing may
+## jump, and every knob must be visibly doing something by 40.
+##
+## The interesting values are 1 (every ratio is inert — `log(1) = 0`, so this is the base style
+## exactly), 12 and 40 (where the game lives) and 200 (the ceiling the ramps must still look
+## sane at). There is no tendril budget any more and no auto-merge threshold; those were the
+## interesting numbers of the retired comb model.
 @export_range(0, 200, 1) var fire_stacks : int = 12:
 	set(v): fire_stacks = v; _touch()
 
@@ -260,8 +266,8 @@ func _attachments() -> Array[FxAttachment]:
 ##
 ## The CLOCKS AND THE SEEDS SURVIVE (`_keep_time` / `_keep_phase` / `_seed_for`), which matters now
 ## that this runs four times a second while a slider is dragged: a fresh `FxAttachment` rolls a random
-## seed and a random phase, so an un-preserved rebuild teleported every ball and re-scattered every
-## tendril on each edit — the effect flickering rather than the parameter changing. Held steady, a
+## seed and a random phase, so an un-preserved rebuild teleported every ball and re-rolled the
+## fire noise on each edit — the effect flickering rather than the parameter changing. Held steady, a
 ## drag reads as the one thing that actually moved.
 func _rebuild() -> void:
 	_keep_time.clear()

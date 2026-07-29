@@ -24,36 +24,45 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	balls.rotates_with_host = false
 	balls.live = geo
 	balls.phase_period = period(stacks, balls_style)
-	out.append(balls)
 
 	# The ball-fire quad exists only while a ball is actually alight. A card with StatusBurning
 	# and unlit balls shows NO ball fire — the negative case is the point of ruling 3.
 	var fire_tex := fire_texture(stacks, levels, fire_style)
-	if not fire_tex: return out
+	if not fire_tex:
+		out.append(balls)
+		return out
+	# ⚠ `+ sink` for the same reason `FxFire.request` carries it: the cover ladder is measured from
+	# `p.y - sink`, so a plume reaches `height + sink` above its ball and a quad sized for `height`
+	# alone cuts the top off square (owner report 2026-07-29, *"fire is clipped at edges"*).
 	var fire := FxRequest.make(&"ball_fire", FxFire.FIRE_SHADER, fire_style,
-			reach + fire_style.height)
+			reach + fire_style.height + maxf(fire_style.sink, 0.0))
 	# The fire shader has no emitter modes: a ball is a SHAPE whose mask is the union of the discs,
-	# and everything above that mask — march, anchor, comb, ogee, onion shells, ramp — is literally
-	# the same code a card runs (owner 2026-07-30).
+	# and everything above that mask — the cover field, the noise and the ramp — is literally the
+	# same code a card runs (owner 2026-07-30).
 	fire.shape = FxAttachment.Shape.BALLS
 	# Its mask is the BALLS, and `mask_level`'s ball branch returns before `u_shape_rot` is ever read
 	# — so this quad does not turn with the host either, and must match the balls quad exactly.
 	fire.rotates_with_host = false
 	# The plume anchors to the ball centre the BALLS quad drew, so it must snap on the BALLS quad's
-	# lattice — a different extent and a different `pixel` from this quad's. Named, so the attachment
-	# reads that quad's real size rather than rebuilding it here (FxRequest.partner_id).
+	# lattice — the same origin, but possibly a different `pixel`. ⚠ The partner's EXTENT is no longer
+	# part of this: the lattice is anchored on the host's origin, so two quads of different sizes
+	# centred on the same host share it exactly (fx_common §pixel grid).
 	fire.partner_id = balls.id
 	fire.partner_pixel = balls_style.pixel
 	fire.live = geo.duplicate()
-	# ONE FLAME PER BALL, as wide as its ball. `u_emit_width` is a DIAMETER: a ball's arch is anchored
-	# to the ball's own centre, so this is the flame's width and nothing else. A comb across the quad
-	# would put a ~30-unit cell against a ball of radius ~1.3 and let one flame straddle the pattern —
-	# and, being anchored to the quad while the ball travels, would blink the plume in and out
-	# (FX_HANDOFF §2).
-	fire.live[&"u_count"] = 1.0
-	fire.live[&"u_emit_width"] = geo[&"u_ball_radius"] * 2.0
-	# The BALL COUNT is its own uniform now that `u_count` means tendrils: the mask needs it to find
-	# which ball a fragment is over.
+	# ⚠ ONE FLAME PER BALL IS NOT ARRANGED ANY MORE — IT FALLS OUT (2026-07-29). The retired build
+	# had to say so explicitly, with a `u_emit_width` that tiled a comb at ball pitch and then, when
+	# that turned out to BE the "fire on balls disappears and reappears" bug, with an arch anchored
+	# to the ball's own centre. The noise fire has no comb and no arch: the cover field is sampled
+	# from the ball MASK, and its taps step straight down, so a fragment only lights while a ball is
+	# directly below it within reach. A plume is exactly as wide as its ball and exactly where its
+	# ball is, by construction — the whole of FX_HANDOFF §2's bug class is deleted rather than fixed.
+	#
+	# `u_count` is the ember RATE and nothing else here (the shader does not read it); ball fire
+	# counts its LIT balls instead, in FxAttachment._emit_embers, so this value is never used for
+	# balls. It is set anyway so the live dictionary has the same shape on every fire request.
+	fire.live[&"u_count"] = geo[&"u_count"]
+	# The BALL COUNT is its own uniform: the mask needs it to find which ball a fragment is over.
 	fire.live[&"u_ball_count"] = geo[&"u_count"]
 	# A ball's flame level comes from the TEXTURE, per ball. The card's stack level is deliberately
 	# absent: ball fire and card fire are separate effects (owner ruling 21).
@@ -62,7 +71,17 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	fire.snap[&"u_ball_fire"] = fire_tex
 	fire.lit = lit_balls(stacks, levels)
 	fire.phase_period = balls.phase_period
+	# ⚠ THE PLUMES GO IN BEFORE THE BALLS, AND THE ORDER IS THE WHOLE MECHANISM (owner 2026-07-29:
+	# *"fire not behind props and balls?"*). `FxAttachment.sync` builds quads in this order and they
+	# are siblings at equal z, so tree order decides: fire first means **every ball draws OVER every
+	# plume**, lit or not.
+	#
+	# That also hands back the one thing FX_HANDOFF §2 traded away. `inner_alpha = 0` only hides a
+	# plume where the MASK is solid, and the mask resolves the nearest LIT ball — so a plume passing
+	# an UNLIT ball painted straight over it. Tree order does not care which balls are alight, so the
+	# occlusion is back for free, without reviving `MASK_DARK` or the bug that came with it.
 	out.append(fire)
+	out.append(balls)
 	return out
 
 ## The pattern's geometry at a given ball count — the single source both quads read.

@@ -1,5 +1,13 @@
 # FX_SHADER_PLAN.md — pixelated fire + juggling balls as composable shader overlays
 
+⚠ **THE FIRE HALF OF THIS PLAN IS SUPERSEDED — TWICE (last on 2026-07-29).** §4c's comb of ogee
+tendrils was replaced first by "raise the mask" and then by the **noise fire**: a cover field
+sampled from the art's mask and carved by scrolling noise, with no comb, no tendril, no ogee and no
+onion shells. **The live description is FX_HANDOFF §0 and the contract is ARCHITECTURE_REVIEW §4g.**
+Everything below is the ORIGINAL design record — read it for the owner rulings recorded verbatim
+(they all still hold) and for §10's 17-step playtest walk, which is still the acceptance test and
+still nobody has run it. Do not implement from §4c.
+
 Plan for the two requested shaders (fire tendrils, juggling balls), the "always on top no
 matter the host's rotation/scale/shape" requirement, applying both to props (hoop/knife), and
 the **effect-stacking model** (burning balls). Written to the workflow in

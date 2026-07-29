@@ -6,15 +6,33 @@
 // world-aligned space, and let every rotation act on the ALREADY-QUANTIZED coordinate. Rotating a
 // frame before quantizing rotates the grid and yields diagonal pixels; rotating after moves
 // CONTENT through a fixed grid, which is what keeps the pixels square while the thing they depict
-// turns. Never rotate UV before fx_quantize.
+// turns. Never rotate UV before fx_local's quantization.
 
 // --- pixel grid -------------------------------------------------------------------------------
-// `grid` = extent / pixel, where pixel is ART UNITS PER FX PIXEL — a free per-material knob, since
-// mixed densities across hosts are wanted. Quantize in LOCAL space, never SCREEN_UV: that would
-// lock the chunkiness to the window rather than to the art.
-vec2 fx_quantize(vec2 uv, vec2 grid) {
-	return (floor(uv * grid) + 0.5) / grid;
-}
+// THE FX PIXEL GRID IS ANCHORED ON THE HOST'S ORIGIN, and that is the whole contract. `pixel` is
+// ART UNITS PER FX PIXEL — a free per-material knob, since mixed densities across hosts are wanted.
+// Quantize in LOCAL space, never SCREEN_UV: that would lock the chunkiness to the window rather
+// than to the art.
+//
+// ⚠ IT USED TO BE ANCHORED ON THE QUAD'S EDGE, AND THAT WAS A BUG WITH TWO FACES (owner report
+// 2026-07-29: *"changing height of fire effect causes effect to jitter left and right, becoming
+// misaligned with art and causing subpixel gaps where fire effect and art connects"*).
+//
+// The old form was `(fx_quantize(uv, extent / pixel) - 0.5) * extent`, whose cell centres land at
+// `(k + 0.5) * pixel - extent/2`. The grid's PHASE is therefore `-extent/2 mod pixel` — so:
+//  * **any change to the quad's size slides the whole grid sideways.** `FxRequest.reach` is
+//    `height + sink`, so dragging `height` in the FX editor swept the lattice left and right under
+//    the art. That is the jitter, exactly.
+//  * **the grid was never aligned to the ART's pixels in the first place**, except by luck. A card's
+//    own texels sit on integers about its origin; the FX grid sat on an offset of half a quad. Hence
+//    the sub-pixel seam where flame met host.
+// Anchoring on the origin fixes both at once: cell boundaries fall on multiples of `pixel` measured
+// from the host's centre, which is exactly where the art's own texels are, and NOTHING about the
+// quad can move them. It is also the reason FX_HANDOFF §6a's lever B was rejected ("resizing a live
+// quad moves the FX pixel lattice") — that objection is now void.
+//
+// ⚠ The two forms agree wherever `extent / (2 * pixel)` happens to be a whole number, which is why
+// this survived so long: every snapshot panel that used a round extent looked identical.
 
 // UV -> local ART COORDINATES, snapped to the effect's pixel grid. Every effect starts here.
 //
@@ -28,39 +46,39 @@ vec2 fx_quantize(vec2 uv, vec2 grid) {
 // The flip happens AFTER quantization, so the grid is only mirrored — never rotated, never
 // resampled — and the universal quantize-first-rotate-after rule still holds.
 vec2 fx_local(vec2 uv, vec2 extent, float pixel) {
-	vec2 grid = max(extent / max(pixel, 0.01), vec2(1.0));
-	vec2 p = (fx_quantize(uv, grid) - 0.5) * extent;
-	return vec2(p.x, -p.y);
+	float cell = max(pixel, 0.01);
+	vec2 s = (uv - 0.5) * extent;              // continuous, origin-centred, still pre-flip
+	vec2 q = (floor(s / cell) + 0.5) * cell;   // the ONE lattice, anchored on the origin
+	return vec2(q.x, -q.y);
 }
 
 // Snap an ART-SPACE point onto the SAME pixel lattice fx_local() hands fragments back on.
 //
-// Why balls need this: fx_local quantizes to a grid anchored on the QUAD, while a ball's centre
-// moves continuously along its arc. The disc test is therefore rasterized at an arbitrary sub-pixel
-// phase, so a ball is not symmetric — measured on 05c_ball_sphere, the same ball's row widths ran
-// 31/44/…/87 down one half and 87/…/34/9 down the other — and the phase changes as it travels, so
-// the silhouette wobbles frame to frame. Snapping the CENTRE (owner 2026-07-28: the centre only, not
-// the radius) makes every ball rasterize at phase zero: a stable, symmetric circle that translates in
-// whole pixels, which is what pixel art does.
+// Why balls need this: a ball's centre moves continuously along its arc, so without this the disc
+// test is rasterized at an arbitrary sub-pixel phase — measured on 05c_ball_sphere, the same ball's
+// row widths ran 31/44/…/87 down one half and 87/…/34/9 down the other — and the phase changes as it
+// travels, so the silhouette wobbles frame to frame. Snapping the CENTRE (owner 2026-07-28: the
+// centre only, not the radius) makes every ball rasterize at phase zero: a stable, symmetric circle
+// that translates in whole pixels, which is what pixel art does.
 //
-// ⚠ Both the ball quad AND the ball-fire quad must snap, with the same extent and pixel, or a plume
-// anchors half a pixel off its ball — the drift this include exists to prevent (§4g).
+// ⚠ IT TAKES NO EXTENT ANY MORE, and that is the point. The lattice is anchored on the host's origin,
+// so two quads of DIFFERENT sizes centred on the same host share it exactly — which is what lets a
+// plume snap to the centre its ball was drawn at. It used to need the partner quad's extent for
+// precisely the reason the grid was broken, and `u_partner_extent` went with it. The partner's
+// `pixel` still matters, because that is a real per-material choice.
 //
-// ⚠ The Y FLIP MUST BE UNDONE, and this is not pedantry — it was measured. fx_local quantizes and
-// THEN negates y, so the art-space y lattice is {extent.y/2 - (j+0.5)·cell}, while x sits on
-// {(k+0.5)·cell - extent.x/2}. Those two sets coincide only when extent/pixel is a whole number, and
-// it generally is not (a card's ball quad is 62.4 art units at pixel 1.0). Snapping y with the x
-// formula therefore lands BETWEEN lattice rows: the first attempt at this left the ball's row widths
-// running 28/41/…/84 down the top and 84/…/34/15 up the bottom, i.e. still not symmetric.
-vec2 fx_pixel_snap(vec2 p, vec2 extent, float pixel) {
-	vec2 grid = max(extent / max(pixel, 0.01), vec2(1.0));
-	vec2 cell = extent / grid;
-	float x = (floor((p.x + extent.x * 0.5) / cell.x) + 0.5) * cell.x - extent.x * 0.5;
-	// Back into the pre-flip frame, snap there, then flip again — the same order fx_local uses.
-	float q = extent.y * 0.5 - p.y;
-	float y = extent.y * 0.5 - (floor(q / cell.y) + 0.5) * cell.y;
+// ⚠ The Y FLIP MUST BE UNDONE, and this is not pedantry — it was measured. `fx_local` quantizes and
+// THEN negates y, so a point handed back in that frame has to be flipped into the pre-flip frame,
+// snapped there, and flipped again. Snapping y with the x formula lands BETWEEN lattice rows: the
+// first attempt at this left the ball's row widths running 28/41/…/84 down the top and 84/…/34/15 up
+// the bottom, i.e. still not symmetric.
+vec2 fx_pixel_snap(vec2 p, float pixel) {
+	float cell = max(pixel, 0.01);
+	float x = (floor(p.x / cell) + 0.5) * cell;
+	float y = -(floor(-p.y / cell) + 0.5) * cell;
 	return vec2(x, y);
 }
+
 
 // --- noise ------------------------------------------------------------------------------------
 float fx_hash11(float n) { return fract(sin(n * 127.1) * 43758.5453); }
@@ -254,15 +272,12 @@ vec2 fx_ball_pos_ladder(float i, float n, float phase, float span, float h_top, 
 	return q;
 }
 
-// The same thing for a caller that wants ONE ball and has no ladder to hand — it builds one. Both
-// shaders use this exactly once per fragment, to re-derive the centre of the ball the lookup picked.
-vec2 fx_ball_pos(float i, float n, float phase, float span, float h_top, float h_bot, float f,
-		float g, float dir, float arcs) {
-	float start[FX_MAX_ARCS];
-	float share[FX_MAX_ARCS];
-	fx_arc_ladder(max(arcs, 2.0), h_top, h_bot, f, start, share);
-	return fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, arcs, start, share);
-}
+// ⚠ THERE IS DELIBERATELY NO LADDER-FREE `fx_ball_pos` ANY MORE (2026-07-29). It existed so a
+// caller with no ladder to hand could ask for one ball's position, and BOTH shaders called it
+// exactly once per fragment — to re-derive the centre of the ball `fx_nearest_ball` had just
+// positioned. That is a second full `fx_arc_ladder` (8 `sqrt` plus a normalizing pass) and a second
+// walk, per fragment, on both juggling quads, for a number the lookup already had. The lookup
+// returns it now (`out vec2 pos`), and the convenience wrapper is gone so it cannot come back.
 
 // IS THIS FRAGMENT ANYWHERE NEAR THE PATTERN AT ALL? The whole loop lives in a box: x within half a
 // span plus a ball, y between the top of the tallest arc and the bottom of the carry (art y is
@@ -306,14 +321,23 @@ bool fx_balls_near(vec2 p, float margin, float span, float h_top, float radius) 
 // What is lost is occlusion: an unlit ball no longer hides a lit one's plume passing behind it. That
 // is the trade the owner pre-ruled (§2) — an unlit ball is dark because it emits nothing, and the
 // occlusion it bought was costing real plumes.
+//
+// ⚠ `pos` IS THE WINNING BALL'S CENTRE, AND RETURNING IT IS A FREE PERFORMANCE WIN (FX_HANDOFF
+// §1b.1's hoist, finished 2026-07-29). This function already evaluates `fx_ball_pos_ladder` for
+// every candidate — the winner's value was simply thrown away, and both call sites then re-derived
+// it with `fx_ball_pos`, which BUILDS A WHOLE SECOND ARC LADDER (8 `sqrt` plus a normalizing pass)
+// and walks it again, per fragment, on both juggling quads. Same function, same arguments, same
+// bits; one evaluation instead of two. ⚠ It is UNSNAPPED — the caller owns the snap, because the
+// two quads snap on DIFFERENT lattices (fx_pixel_snap).
 float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, float h_bot,
 		float f, float g, float dir, float arcs, sampler2D levels, int lit_only,
-		out float id, out float level) {
+		out float id, out float level, out vec2 pos) {
 	float count = max(ceil(n), 1.0);
 	float A = max(arcs, 2.0);
 	float best = 1e9;
 	id = 0.0;
 	level = 0.0;
+	pos = vec2(1e9);
 	// THE HOIST: one ladder for every arc and every candidate below (fx_arc_ladder).
 	float start[FX_MAX_ARCS];
 	float share[FX_MAX_ARCS];
@@ -345,10 +369,11 @@ float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, flo
 				lvl = texelFetch(levels, ivec2(int(i), 0), 0).r;
 				if (lvl <= 0.0) continue;
 			}
-			vec2 d = p - fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, A, start,
+			vec2 at = fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, A, start,
 					share);
+			vec2 d = p - at;
 			float dd = dot(d, d);
-			if (dd < best) { best = dd; id = i; level = lvl; }
+			if (dd < best) { best = dd; id = i; level = lvl; pos = at; }
 		}
 	}
 	return best;

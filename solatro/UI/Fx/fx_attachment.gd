@@ -104,7 +104,7 @@ var _time : float = 0.0
 # --- per-HOST randomness (owner 2026-07-28: effects must not sync up across cards) --------------
 ## This host's random seed, pushed to EVERY quad it owns rather than rolled per quad: the balls and
 ## the flames riding them have to agree on it, and two hosts must not share it. Every phase in both
-## shaders — tendril sway, flicker, the whole-effect pulse, ball spin — is keyed on it.
+## shaders — the fire's noise offset, the whole-effect pulse, ball spin — is keyed on it.
 var _seed : float = randf() * 100.0
 ## Which way this host's juggling pattern runs. Balls ALTERNATE around this (`fx_ball_dir`), so this
 ## is really "which way does ball 0 set off", and it is a coin flip per host.
@@ -157,7 +157,7 @@ const RADII := 32
 var _radii_max : float = 0.0
 ## The deformed outline's tight half-extents. Pushed as `u_body` on the RADII quads, because that is
 ## what the comb divides — a corner stretched 5 units out of the nominal 38x50 has no cell over it
-## otherwise, and the outermost tendril's arch stops short of the very corner that moved.
+## otherwise, and the fire stops short of the very corner that moved.
 var _radii_half : Vector2 = Vector2.ZERO
 ## Scratch for `_fill_radii_from_outline`, allocated once: this runs per frame on every card on the
 ## board, and a fresh table per card per frame is exactly the churn it must not add.
@@ -195,6 +195,11 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 	_radii_max = 0.0
 	for r : float in _radii: _radii_max = maxf(_radii_max, r)
 	_radii_half = body * 0.5
+	# ⚠ THE TABLE IS A RADIAL SCALE, NOT A RADIUS — the same contract `_fill_radii_from_outline`
+	# writes, and it has to be converted HERE too or this path feeds the shader radii it will read as
+	# scales. See that function for why the shader wants scales at all (the corner chamfer).
+	for i : int in RADII:
+		_radii[i] /= maxf(_rect_radius(float(i) * TAU / float(RADII), _radii_half), 1e-4)
 	shape = Shape.RADII
 	_restyle()
 
@@ -282,8 +287,21 @@ func _fill_radii_from_outline(outline: PackedVector2Array) -> bool:
 		if a < _angles[i0] or (j >= n - 1 and a >= _angles[i1]):
 			i0 = (start + n - 1) % n
 			i1 = start
-		_next[k] = _ray_hit(a, outline[i0], outline[i1])
-		top = maxf(top, _next[k])
+		# ⚠ THE TABLE HOLDS A RADIAL SCALE, NOT A RADIUS — this is the fix for "fire licks DOWN the
+		# side of a card from each top corner" (owner, twice). Storing `r(a)` means the shader has to
+		# interpolate a function with a CORNER in it, and no interpolation between two rays can
+		# reproduce a vertex: at 32 rays a 38x50 card's corner (37.23 deg, sampled at multiples of
+		# 11.25) came out chamfered by 2.32 art units, and a chamfer is a real upward-facing slope, so
+		# fire stood on it — correctly, which is why more rays only ever made it smaller.
+		#
+		# Dividing by the REST rectangle's radius at the same angle turns the table into `1.0`
+		# everywhere on an undeformed card, so the shader's test becomes the EXACT box and the corner
+		# is exact too. A deformation shows up as a smooth field near 1 with no vertex in it, which is
+		# the one thing that interpolates well. (FX_HANDOFF §10 E, taken.)
+		var hit := _ray_hit(a, outline[i0], outline[i1])
+		_next[k] = hit / maxf(_rect_radius(a, half), 1e-4)
+		# `top` stays a real RADIUS: it sizes the quad, which knows nothing about scales.
+		top = maxf(top, hit)
 	var moved := _radii.size() != RADII or not is_equal_approx(top, _radii_max) \
 			or not half.is_equal_approx(_radii_half)
 	if not moved:
@@ -298,6 +316,14 @@ func _fill_radii_from_outline(outline: PackedVector2Array) -> bool:
 	_radii_max = top
 	_radii_half = half
 	return true
+
+## How far the ray at angle `a` (from straight up) reaches before it leaves the REST rectangle of
+## half-extent `half` — the denominator that turns the measured radius into a scale. Exactly the
+## closed form `mask_level`'s box branch tests against, so an undeformed outline divides out to 1.0
+## at every ray and the two branches agree to the bit.
+func _rect_radius(a: float, half: Vector2) -> float:
+	var d := Vector2(sin(a), -cos(a))
+	return minf(half.x / maxf(absf(d.x), 1e-9), half.y / maxf(absf(d.y), 1e-9))
 
 ## How far the ray at angle `a` (from straight up) reaches before it crosses segment p->q, in art
 ## units. Zero where the segment is edge-on to the ray, which leaves the previous entry standing.
@@ -492,12 +518,18 @@ func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
 	var mat := quad.material as ShaderMaterial
 	mat.set_shader_parameter(&"u_extent", extent)
-	# An effect that draws ON another effect is handed the PARTNER's lattice too — read off the
-	# partner's ACTUAL quad, never recomputed, which is what lets the ball-fire plume snap to the
-	# exact centre the ball was drawn at (FxRequest.partner_id).
-	if req.partner_id != &"" and _fx.has(req.partner_id):
-		mat.set_shader_parameter(&"u_partner_extent",
-				(_fx[req.partner_id].quad.mesh as QuadMesh).size)
+	# An effect that draws ON another effect is handed the PARTNER's PIXEL, so the ball-fire plume
+	# snaps on the lattice its ball was drawn on (FxRequest.partner_id).
+	#
+	# ⚠ The partner's EXTENT is no longer part of this, and that is a simplification the pixel-grid
+	# fix bought: the lattice is anchored on the host's ORIGIN now, so two quads of different sizes
+	# centred on the same host share it exactly and only `pixel` can differ. It used to need the
+	# partner's live quad size, which is also why resizing a quad moved the grid.
+	# ⚠ Pushed UNCONDITIONALLY, and not gated on the partner's quad existing. It used to read the
+	# partner's live size out of `_fx`, which made this depend on BUILD ORDER — and the ball-fire quad
+	# is built BEFORE the balls quad now, so that gate would have silently skipped it (FxJuggle
+	# .requests puts the plumes in first so the balls draw over them).
+	if req.partner_id != &"":
 		mat.set_shader_parameter(&"u_partner_pixel", req.partner_pixel)
 
 ## Write the STATIC half of an effect's uniforms: its style's ~35 art levers plus the host facts
@@ -538,7 +570,7 @@ const EMBER_PER_STACK := 3.0
 ##
 ## Spawn position is a random point along the host's top edge, scattered upward by the flame
 ## height. That is an APPROXIMATION of "from the flame tips" and deliberately so: real tip
-## positions are computed in the shader, and mirroring tendril() in GDScript to find them would be
+## tips are carved by noise in the shader, and mirroring that in GDScript to find them would be
 ## exactly the duplicated-motion bug the shared include exists to prevent.
 ##
 ## BALL fire is the exception, and it has to be: the host is the CARD, so the host's top edge would
@@ -642,6 +674,18 @@ func _update_lag(delta: float) -> void:
 ## a quad whose centre is off screen while its flames are not still gets its uniforms. Being wrong in
 ## this direction costs a few uploads; being wrong in the other freezes an effect in view.
 func _on_screen() -> bool:
+	# ⚠ NEVER CULL IN THE EDITOR — it FROZE THE TUNING TOOL (owner report 2026-07-29: *"card fire not
+	# animating in fx editor... juggling balls not animating either, just static"*). Both spaces this
+	# reads belong to the running game: `get_viewport_rect()` is the editor WINDOW rather than the 2D
+	# view, and `get_global_transform_with_canvas()` carries the editor's own pan and zoom — so a host
+	# the user has scrolled or zoomed lands "off screen", its uploads stop, and every effect on it
+	# sticks on the last frame it was told about. ⚠ The CLOCKS keep running (they are advanced above
+	# this call, unconditionally), which is exactly why it reads as FROZEN rather than as stopped, and
+	# why nothing about it looks like a clock bug.
+	#
+	# There is nothing to save here either: this cull exists for a board of 78 hosts, and
+	# `fx_editor.tscn` has six.
+	if Engine.is_editor_hint(): return true
 	var reach := 0.0
 	for id : StringName in _fx:
 		reach = maxf(reach, (_fx[id].quad.mesh as QuadMesh).size.length())

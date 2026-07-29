@@ -35,7 +35,7 @@ const OUT_DIR := "user://fx_snapshots"
 ## value and the flames look artificially uniform.
 const SHOT_TIME := 3.7
 
-## Largest art-unit-to-pixel blow-up. Cards are 38x50 art units; at 1:1 a tendril is a few pixels
+## Largest art-unit-to-pixel blow-up. Cards are 38x50 art units; at 1:1 a whole flame is a few pixels
 ## and nothing is reviewable. Each shot may use LESS than this — see _zoom_for.
 const ZOOM_MAX := 5.0
 
@@ -46,16 +46,17 @@ func _ready() -> void:
 
 ## Every shot, in order. Each returns the cases it wants laid out across one screen.
 func _run() -> void:
-	await _shot("00_tendril_count", "GEOMETRY ONLY (no noise/flicker/dither): 1 / 2 / 4 / 8 / 12 "
-			+ "tendrils — count them", _tendril_count())
-	await _shot("00b_ogee_profile", "the arch profile: (ogee_point, ogee_flare) pairs",
-			_ogee_profile())
-	await _shot("01_fire_ladder", "Burning 1 / 3 / 12 / 40 / 200 stacks", _fire_ladder())
+	await _shot("00_cover_field", "GEOMETRY ONLY (noise_amp 0, no dither): the COVER FIELD at 2 / 3 "
+			+ "/ 4 / 6 / 8 taps — the bands are the tap ladder, and 4 is what ships", _cover_field())
+	await _shot("00b_aperture", "the shape knobs: (aperture, fire_gain) pairs at full noise",
+			_aperture_profile())
+	await _shot("01_fire_ladder", "THE STACK RATIOS: Burning 1 / 3 / 12 / 40 / 200 stacks — every "
+			+ "knob ramps, nothing jumps", _fire_ladder())
 	await _shot("02_fire_rotation", "host rotated 0 / 30 / 45 / 90 deg — flames stay vertical",
 			_fire_rotation())
 	await _shot("02b_card_warp", "the card DEFORMS: corners stretched +0 / 10 / 25 / 45 % — every "
 			+ "flame base must sit on the drawn outline, corners included", _card_warp())
-	await _shot("03_surfaces","several surfaces under one comb: 1 / 2 / 4 / 12 tendrils over a "
+	await _shot("03_surfaces","several surfaces in one COLUMN: 1 / 4 / 40 / 200 stacks over a "
 			+ "RING — both arcs alight, and no flame ever leaps the hole", _surfaces())
 	await _shot("04_shapes", "ring / blade / split-prop halves", _shapes())
 	await _shot("05_balls", "juggling 1 / 3 / 8 / 50 balls", _balls())
@@ -80,50 +81,75 @@ func _run() -> void:
 
 # ------------------------------------------------------------------ the shots
 
-## Pure geometry: every source of raggedness turned off, so the tendrils are identical and can
-## simply be COUNTED. Noise, flicker and dither all make the crown look busier than it is, and an
-## off-by-one (or an off-by-two) in the comb is invisible underneath them.
-func _tendril_count() -> Array[Case]:
+## THE COVER FIELD, NAKED — `noise_amp = 0` and no dither, so what is on screen is the tap ladder
+## and nothing else. Cover is read off the FIRST tap that lands inside the mask, so it steps once per
+## tap: at `n` taps the flame is `n` visible horizontal bands, the lowest flush with the card's top
+## edge and the highest at exactly `height` above it.
+##
+## ⚠ THIS SHOT IS THE COST KNOB, NOT A LOOK KNOB. The shader is `mask_level` call count times cost
+## per call and nothing else (FX_HANDOFF §9), so these panels are 2x to 4x apart in price. **4 is
+## what ships.** What to look for: whether the banding at 4 is still visible once `noise_amp` is
+## turned back up — if it is not, 6 and 8 are pure waste, which is the whole bet the noise model
+## makes.
+##
+## The replacement for `00_tendril_count`, which counted a comb that no longer exists.
+func _cover_field() -> Array[Case]:
 	var out : Array[Case] = []
-	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
-	style.height_var = 0.0
-	style.noise_amp = 0.0
-	style.dither = 0.0
-	style.sway_amp = 0.0
-	style.desync = 0.0
-	for n : int in [1, 2, 4, 8, 12]:
-		var live : Dictionary[StringName, float] = FxFire.stacks_live(n, style)
-		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
-		req.live = live
-		out.append(_card_case("n = %d" % n, [req]))
-	return out
-
-## The tendril's ARCH, isolated. Two big tendrils, no noise or flicker, so the OUTLINE is the only
-## thing on screen: an ogee has near-vertical sides where it springs off the body, a bulge, an
-## inflection, then a sharp point — a dome or a plain triangle is a failure, not a variation.
-func _ogee_profile() -> Array[Case]:
-	var out : Array[Case] = []
-	# Three, not five: the quad is sized to the flame HEIGHT, so more panels means a smaller zoom
-	# and the outline — the only thing this shot is about — stops being legible.
-	var pairs : Array[Vector2] = [Vector2(2.0, 1.0), Vector2(1.0, 0.35), Vector2(0.5, 0.35)]
-	for pair : Vector2 in pairs:
+	for taps : int in [2, 3, 4, 6, 8]:
 		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
-		style.ogee_point = pair.x
-		style.ogee_flare = pair.y
-		style.height_var = 0.0
+		style.cover_taps = taps
 		style.noise_amp = 0.0
 		style.dither = 0.0
-		style.sway_amp = 0.0
-		style.desync = 0.0
+		# The RAW ladder is the whole point of this shot, so the phase dither that hides it in every
+		# shipped style is off here — and only here.
+		style.cover_dither = 0.0
+		style.height = 20.0
+		var live : Dictionary[StringName, float] = FxFire.stacks_live(6, style)
+		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
+		req.live = live
+		out.append(_card_case("%d taps" % taps, [req]))
+	return out
+
+## THE TWO SHAPE KNOBS, at full noise — because that is the only state they mean anything in. The
+## flame is `cover * (((cover + aperture) * noise - aperture) * gain)`, so:
+##  * **aperture** is a CUT: at average noise the value is zero at `cover = aperture`, so it is the
+##    cover threshold below which nothing burns. LOW leaves a solid body of fire filling its whole
+##    reach; HIGH eats the flame back toward its base.
+##  * **gain** is contrast on what survives. Low is a soft gradient over the whole flame; high slams
+##    it to the hot end and leaves a thin cool rim.
+## They are not interchangeable and the panels have to show that: **0.10/4.0 is a solid bright
+## block, 0.35/2.2 is the shipped ragged flame, 0.90/1.2 is a few flecks at the base.** If every
+## panel looks the same, the noise is not reaching the shaping term.
+##
+## ⚠ THE APERTURE'S DIRECTION WAS DOCUMENTED BACKWARDS in the first build of this shot, and this
+## panel is what caught it — which is the entire reason it exists.
+##
+## The replacement for `00b_ogee_profile`, which isolated an arch that no longer exists.
+func _aperture_profile() -> Array[Case]:
+	var out : Array[Case] = []
+	# Three, not five: the quad is sized to the flame HEIGHT, so more panels means a smaller zoom
+	# and the texture — the only thing this shot is about — stops being legible.
+	var pairs : Array[Vector2] = [Vector2(0.1, 4.0), Vector2(0.35, 2.2), Vector2(0.9, 1.2)]
+	for pair : Vector2 in pairs:
+		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
+		style.aperture = pair.x
+		style.fire_gain = pair.y
 		style.height = 26.0
 		var live : Dictionary[StringName, float] = FxFire.stacks_live(2, style)
 		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
 		req.live = live
-		out.append(_card_case("point %.2f / flare %.2f" % [pair.x, pair.y], [req]))
+		out.append(_card_case("aperture %.2f / gain %.1f" % [pair.x, pair.y], [req]))
 	return out
 
-## The headline check: one stack is ONE full-width triangle flush with the card's top edge, three
-## are three, and a huge count fuses into a fiercer sheet instead of sprouting slivers.
+## THE STACK RATIOS, WHICH ARE THE HEADLINE OF THE NOISE BUILD (owner 2026-07-29: *"make sure all
+## params have scaling ratios as stacks increase"*). Every knob with a ratio in `FxFireStyle`'s
+## "Stack scaling" group is driven from this one slider, in `FxFire.stacks_live`.
+##
+## What must be true across the five panels, and each is a separate way for the ramps to be wrong:
+##  * the flame gets TALLER, HOTTER (further up the ramp) and MORE SOLID as the count rises;
+##  * the grain gets COARSER rather than merely denser — `noise_scale_ratio` is negative for that;
+##  * **nothing jumps.** At 1 stack every ratio is inert by construction (`log(1) = 0`), so panel one
+##    is the base style exactly, and the rest must read as one continuous progression.
 func _fire_ladder() -> Array[Case]:
 	var out : Array[Case] = []
 	for stacks : int in [1, 3, 12, 40, 200]:
@@ -163,26 +189,30 @@ func _card_warp() -> Array[Case]:
 		out.append(case)
 	return out
 
-## MULTIPLE SURFACES UNDER ONE COMB — the behaviour that replaced the deleted `03_fire_wrap`
+## MULTIPLE SURFACES IN ONE COLUMN — the behaviour that replaced the deleted `03_fire_wrap`
 ## (FX_HANDOFF §1.3), on the shape that has it: the ring holds its outer top arc high up and the
 ## upward-facing inner arc at the bottom of its hole far below, in the SAME columns.
 ##
-## The comb is swept from one tendril to twelve, so the panels show what happens as cells get
-## narrower over a shape whose surfaces are at wildly different heights.
+## ⚠ IT STOPPED BEING A SPECIAL CASE (2026-07-29). The retired build had to argue that a comb cell
+## spanning the ring grew one tendril on each arc; the cover field simply asks "how far above the
+## nearest surface BELOW me am I", which every fragment in the hole answers with the inner arc and
+## every fragment above the ring answers with the outer one. The stack sweep is kept because it is
+## still the state space that matters — the ratios now change the flame's height and grain, and the
+## ring is where a too-tall flame would first bridge something it must not.
 ##
 ## What to look for, by EYE:
 ##  * every panel lights BOTH surfaces — the outer arc and the floor of the hole;
-##  * the hole's MIDDLE stays empty at every count. A flame bridging the two arcs would be the
-##    ENORMOUS FLAME the owner forbade, and the model makes it impossible: a flame is exactly
-##    `height` long, and the two arcs are 170 art units apart.
+##  * the hole's MIDDLE stays empty at every count, at 200 included. A flame bridging the two arcs
+##    would be the ENORMOUS FLAME the owner forbade, and it is impossible by construction: no tap
+##    reaches further than `height`, and the two arcs are 170 art units apart.
 func _surfaces() -> Array[Case]:
 	var out : Array[Case] = []
-	for n : int in [1, 2, 4, 12]:
+	for n : int in [1, 4, 40, 200]:
 		var live : Dictionary[StringName, float] = FxFire.stacks_live(n, PropVisual.PROP_FIRE_STYLE)
 		var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, PropVisual.PROP_FIRE_STYLE,
 				live[&"u_height"])
 		req.live = live
-		out.append(_sprite_case("%d tendrils" % n, HoopVisual.SHEET, HoopVisual.FRAMES,
+		out.append(_sprite_case("%d stacks" % n, HoopVisual.SHEET, HoopVisual.FRAMES,
 				FxAttachment.Half.WHOLE, [req]))
 	return out
 
@@ -363,14 +393,18 @@ func _stacked_case() -> Array[FxRequest]:
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 	return reqs
 
-## Mid-ease frames. A fractional count is the whole mechanism behind "no visual jumps": the newest
-## tendril must GROW OUT of the surface while the established ones only shuffle.
+## Mid-ease frames — owner ruling 16, "a stack change eases, it never jumps".
 ##
-## The RING panels are the ones to read for the ANCHOR's own stability (FX_HANDOFF §1.4a). Cell
-## boundaries slide continuously as `u_count` eases, so the three columns the anchor is sampled at
-## slide with them — and on a CURVED host each of those columns sits at a different height, so an
-## anchor that popped between frames would show here as a flame jumping. A flat card cannot show it:
-## its top edge is the same height everywhere, so its anchor is constant by construction.
+## ⚠ WHAT IS IN FLIGHT CHANGED WITH THE MODEL (2026-07-29). It used to be ONE number: a fractional
+## `u_count` grew the newest tendril out of the surface while the established ones shuffled. There
+## are no tendrils and the shader does not read `u_count` at all; what eases now is the whole
+## "Stack scaling" group at once — reach, aperture, gain, intensity, grain and scroll — so this shot
+## pins every one of them between two whole counts, exactly as `FxAttachment._eased` holds them
+## mid-tween.
+##
+## The RING panels are still the ones to read hardest: a curved host puts each column's surface at a
+## different height, so a knob that moved discontinuously shows up there first as a flame jumping
+## rather than sliding. A flat card can hide it — its top edge is the same height everywhere.
 func _transition() -> Array[Case]:
 	var out : Array[Case] = []
 	for n : float in [1.6, 2.5, 3.4] as Array[float]:
@@ -381,11 +415,24 @@ func _transition() -> Array[Case]:
 				FxAttachment.Half.WHOLE, [_counted(PropVisual.PROP_FIRE_STYLE, n)]))
 	return out
 
-## A fire request pinned to a FRACTIONAL tendril count — the state an easing stack change is in
-## between two whole numbers, which is the only state a jump can hide in.
+## A fire request pinned BETWEEN two whole stack counts — the state an easing stack change is in,
+## and the only state a jump can hide in.
+##
+## Every live uniform is lerped, not just one, because every one of them now carries a stack ratio.
+## That is the same interpolation `FxAttachment._eased` runs; doing it here is what makes the panel
+## a picture of a real mid-tween frame rather than of a state the game never reaches.
 func _counted(style: FxFireStyle, count: float) -> FxRequest:
-	var live : Dictionary[StringName, float] = FxFire.stacks_live(4, style)
-	live[&"u_count"] = count
+	var lo : Dictionary[StringName, float] = FxFire.stacks_live(int(floorf(count)), style)
+	var hi : Dictionary[StringName, float] = FxFire.stacks_live(int(ceilf(count)), style)
+	var t := count - floorf(count)
+	var live : Dictionary[StringName, float] = {}
+	for key : StringName in lo:
+		# Typed locals, not a `hi.get(...)` inline: a Dictionary lookup is a Variant, and `lerpf`
+		# refuses one under this project's warnings-as-errors — which fails at PARSE time, so the scene
+		# loads without its script and the run hangs with an empty log (FX_HANDOFF §11's first trap).
+		var a : float = lo[key]
+		var b : float = hi[key] if hi.has(key) else a
+		live[key] = lerpf(a, b, t)
 	var req := FxRequest.make(&"fire", FxFire.FIRE_SHADER, style, live[&"u_height"])
 	req.live = live
 	return req

@@ -513,14 +513,39 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `_phase` and the same geometry from one `FxJuggle.geometry()` call, and both call
   `fx_ball_at` from `fx_common.gdshaderinc`. Two copies of the arc maths is the bug that makes
   flames trail their balls by a frame — the shared include prevents it structurally.
-- **FIRE IS THE ART'S MASK, RAISED — and that is the whole emitter** (owner design 2026-07-30,
-  "raise the mask"; it replaces the contour/skirt model whole). Per fragment:
+- **FIRE IS A COVER FIELD OVER THE ART'S MASK, CARVED BY NOISE — and that is the whole emitter**
+  (owner design 2026-07-29: *"no more individual tendrils, just average fire shader effects like
+  moving noise"*; it replaces the tendril/comb/ogee/onion build whole, which had itself replaced the
+  contour/skirt model). Per fragment:
 
   ```
-  floor(x) = the surface this column stands on, eroded by `sink`   — ONE down-march
-  top(x)   = floor(x) - height * dome(u(x))                        — the ogee, art y up = minus
-  fire(p)  = top(p.x) <= p.y <= floor(p.x)
+  cover(p) = 1 - (first of `cover_taps` taps below p to land inside the mask - 1) / cover_taps
+  n        = two scrolling noise layers, in the SAME world-aligned, already-quantized p
+  heat     = clamp(cover * (((cover + aperture) * n - aperture) * gain) * intensity, 0, 1)
   ```
+
+  `cover` is 1 at the surface and steps to 0 at exactly `height` above it, which is the role `UV.y`
+  plays in the owner's reference (Fire Shader by Yui Kinomoto @arlez80, MIT) — substituting the
+  MASK-derived cover for the QUAD's `UV.y` is the entire port, and it is what turns a shader that
+  burns a rectangle into one that burns the host's own shape.
+
+  - ⚠ **IT IS THE FIRST HIT, NOT THE COUNT OF HITS.** Counting how many taps are inside measures
+    SOLID MASS below, which collapses on anything thin: a 4-unit knife under a 10-unit reach can
+    never put more than one tap of four inside itself. Distance-to-surface costs the same `min` per
+    tap and makes a blade and a card burn identically at their surfaces.
+  - ⚠ **THE COST OF THIS SHADER IS `mask_level` CALL COUNT TIMES COST PER CALL, AND NOTHING ELSE.**
+    Measured on the shipped build: dead linear at **+0.076 ms per tap** per full screen of burning
+    cards, over a fixed ~0.29 ms of fill, noise and ramp (GTX 1070). `cover_taps` is 4. Every future
+    decision about this shader is a decision about tap count. FX_HANDOFF §0b and §9.
+  - **The two changes were worthless apart.** Dropping tendrils alone was worth 4 %; replacing the
+    march alone was impossible while a tendril needed the surface located to 0.4 art units (~11
+    effective taps). Together they measured **1.93x on a burning screen and 1.40x on the worst window
+    the game can build**.
+  - **EVERY KNOB RAMPS WITH THE STACK COUNT**, continuously, from `log(stacks)` — reach, aperture,
+    gain, intensity, grain and scroll — and the RATIOS are exported on `FxFireStyle` so they are art
+    rather than code. `FxFire.stacks_live()` is the one place it happens. Ruling 16 (a stack change
+    eases, never jumps) is pinned by `test_every_fire_knob_ramps_with_stacks`, which walks all 200
+    counts one at a time **and fails when a new knob is added without a ratio**.
 
   Everything the old model needed a special case for falls out of that:
   - **EVERY upward-facing surface burns, anywhere in the art.** The test is local and vertical, so
@@ -531,21 +556,36 @@ the fire riding them), which keeps the dependency inside the one class that owns
     parts of the image, like bottom top of the hoop"* (owner). **"The surface faces up" is the
     definition; "the top half of the image" never was.** Pinned by
     `test_pixels.test_every_upward_surface_burns`, which fails against everything shipped before it.
-  - **1 STACK = 1 TENDRIL PER SURFACE**, with no segment finder and no second mechanism: each column
-    simply grows a flame on whatever it has, so a ring gets one crown on its top arc and another on
-    its inner-bottom arc.
+  - **MULTIPLE SURFACES IN ONE COLUMN STOP BEING A SPECIAL CASE**, with no segment finder and no
+    second mechanism: every fragment in the ring's hole answers with the inner arc and every fragment
+    above the ring answers with the outer one, from the same three lines.
   - **NO ENORMOUS FLAME** (owner: *"no enormous flame allowed"*), structurally: a flame is exactly
     `height` long in every column on every shape, so one can never leap the hole in a ring. The same
     PIXELS check asserts the hole's middle stays empty.
-  - **TIPS POINT UP BY CONSTRUCTION** (ruling 1) — because the march is WORLD-down, not because of
-    any per-shape branch. A rotating host turns only the mask LOOKUP (the no-rotating-grid rule).
+  - **NO ENORMOUS FLAME**, structurally: no tap reaches further than `height`, so nothing can leap
+    the hole in a ring. Verified by eye at 200 stacks as well as by the PIXELS check.
+  - **TIPS POINT UP BY CONSTRUCTION** (ruling 1) — because the taps step WORLD-down, not because of
+    any per-shape branch. A rotating host turns only the mask LOOKUP (the no-rotating-grid rule), and
+    the noise is sampled in the SAME already-quantized `p`, so the grain never goes diagonal either.
+  - ✅ **THE CORNER CHAMFER IS FIXED, and the fix was in the MASK — `u_radii` HOLDS A RADIAL SCALE,
+    NOT A RADIUS.** "Fire licks down the side of a card from each top corner" was never the fire
+    model: 32 uniform-angle rays cannot represent a 37.23-degree vertex, the lerp cut a real
+    2.32-unit chamfer, and a chamfer IS an upward-facing slope — so every correct model stood fire on
+    it. ⚠ **The ray table was EXACT at every ray all along** (measured: worst error 0.000 art units),
+    which is what ruled out `measure_outline` and pointed at the interpolation. Dividing by the rest
+    rectangle's radius makes the table 1.0 on an undeformed card, so `mask_level` lands on the exact
+    BOX branch, corners included, and a deformation becomes a smooth field near 1 with no vertex in
+    it. Cheaper than the radius form too. ⚠ **Three places share this contract**: `radii_scale` in the
+    shader, `_fill_radii_from_outline` and `measure_silhouette` on the script side. (FX_HANDOFF §10 E,
+    taken; the two dead ends — more rays, and interpolating `1/r` — are recorded in the shader.)
   - **Shape following is IN the shader.** Nothing is baked at `_ready`, so a host that turns cannot
     emit off a stale outline — *"which has chance to fail if object rotates maybe"* (owner).
   - `sink` is now an **EROSION of the mask**, not an offset added to a contour: the base is the
     surface plus `sink`, and a fragment already inside the art is lit only while it is within `sink`
     of the surface above it. Same knob, same meaning, honest implementation.
-- **⚠ THE PER-CELL ANCHOR WAS MEASURED AND DROPPED — the owner's pre-ruled fallback, not an
-  omission.** The design also called for the arch to be anchored ONCE per cell at the highest surface
+- **⚠ HISTORY, KEPT FOR THE MEASUREMENT: THE PER-CELL ANCHOR WAS MEASURED AND DROPPED.** There is no
+  arch left for it to anchor, so it is moot — but the 21 ms it cost is still the price of the only
+  correct cross-column anchoring, and *"an anchor ships measured or not at all"* is a standing rule. The design also called for the arch to be anchored ONCE per cell at the highest surface
   in it (three more down-marches, and they must start above the whole shape: an anchor that depended
   on the fragment's own height would differ down a column and tear the flame). Measured on the target
   integrated GPU with `Tests/Visual/fx_cost.tscn`, 20 burning hosts:
@@ -560,10 +600,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
   else on screen. Owner ruling given in advance: *"If not possible without performance drop, then
   dont do engulf trick with height checking and just stick with mask shifting to find bases."* So it
   is dropped WHOLE rather than approximated at reduced sample counts, which is what produced the two
-  builds the owner rejected. **What goes with it is ENGULF** — a flame no longer drapes down to a
-  lower surface in its own cell — and the arch now RIDES the surface it stands on, so on a steep flank
-  it is shorter. Nothing is ever tilted or sheared: `rise` is a world-vertical distance and the ogee
-  is evaluated in world x. **Do not re-propose the anchor without a new measurement.**
+  builds the owner rejected. **Do not re-propose the anchor without a new measurement.**
 - **`mask()` IS THE ONE EXTENSION POINT: one branch per shape, and BALLS is one of them.** Analytic
   for the kinds that have it (`SHAPE_BOX`, `SHAPE_RADII`, `SHAPE_BALLS` — a card should not pay a
   texture tap for a step function); an **ALPHA SAMPLE of the sheet** for `SHAPE_SPRITE`, which is
@@ -574,8 +611,8 @@ the fire riding them), which keeps the dependency inside the one class that owns
   blade.
   - **NO BALL SPECIAL CASE. `u_mode` and `MODE_BALLS` are deleted** (owner 2026-07-30: *"fire effect
     should be unified and identical in how it treats everything, so no special ball case"*). A ball
-    is a `Shape` whose mask is the union of the discs, positioned from the same `fx_ball_pos` in the
-    include, and the march / comb / ogee / onion shells / ramp above it are literally the same code a
+    is a `Shape` whose mask is the union of the discs, positioned from the same `fx_nearest_ball` in
+    the include, and the cover field, the noise and the ramp above it are literally the same code a
     card runs. `FxRequest.shape` is how ball fire says "my mask is the balls, not the card I ride on".
   - **`mask()` returns the LEVEL of the surface it hit**, which is ruling 21 as one rule instead of
     two code paths: a silhouette answers `u_level`, a ball answers its own texel from `u_ball_fire`.
@@ -591,29 +628,32 @@ the fire riding them), which keeps the dependency inside the one class that owns
     closed-form ball lookup is by far the most expensive thing in the file and a march never leaves
     its column, so re-running it at every march step would cost more than the whole rest of the
     shader.
-- **ONE COMB across the host's silhouette — and ONE FLAME PER BALL, anchored to the ball.** The comb
-  divides the host's bounding box AT THE LIVE ROTATION into `u_count` cells (a uniform cannot carry
-  that width: a 90-degree-rotated card combed across its unrotated width left a third of its edge
-  bare). `u_count` means TENDRILS on every quad, and the ball count rides as its own uniform.
-  - ⚠ **A BALL IS NOT A CELL OF THAT COMB, and pretending it was is the whole of FX_HANDOFF §2**
-    (fixed 2026-07-31). `u_emit_width` used to TILE the comb at ball pitch, on the reasoning that
-    each ball would catch roughly one cell. But a comb is anchored to the QUAD and **a ball moves**:
-    which cell a ball caught changed as it flew, so its flame changed identity (and with it its
-    desync phase and flicker), and it thinned to nothing whenever the ball crossed a cell boundary,
-    where the arch's own outline is zero. Worse, `tendril`'s grow-in ramp — `(id >= floor(cells)) ?
-    fract(cells) : 1.0`, which is a SPANNING comb's rule and only a spanning comb's — read `cells = 1`
-    on the tiled ball comb and multiplied the flame height by **zero** for every cell past the first:
-    a ball's plume died the moment it travelled right of the quad's centre and came back when it
-    crossed to the left. That is the owner's *"fire on balls sometimes disappears, then reappears
-    later"*, and `06b_ball_fire_cycle` is the shot that shows it (a single frame never could).
-    A ball's arch is anchored to the ball's own snapped centre now, `u_emit_width` is just how wide
-    it is (one diameter), and `grow`/`fan` are passed in by the caller rather than derived from a
-    comb the ball is not in.
-  - ⚠ **`fire_ball.tres`'s `merge = true` and `base_width = 2.0` were workarounds for that straddle**
-    — with the plume beside its ball, merge fused the two half-cells and a double-wide base covered
-    the gap. Both are now inert or overwide: merge is skipped for balls (a ball has no neighbouring
-    cell to fuse with) and `base_width 2.0` makes a flame twice its ball's width. They are ART
-    numbers, so they are left for the owner rather than retuned here.
+- **THERE IS NO COMB, AND ONE FLAME PER BALL FALLS OUT RATHER THAN BEING ARRANGED** (2026-07-29).
+  The retired build divided the host's bounding box at the live rotation into `u_count` cells and
+  stood one arch in each. That is deleted, and with it the entire bug class of FX_HANDOFF §2:
+  - ⚠ **A BALL USED TO BE TREATED AS A CELL OF THAT COMB, and that was the whole of the owner's
+    *"fire on balls sometimes disappears, then reappears later"*.** `u_emit_width` tiled the comb at
+    ball pitch, on the reasoning that each ball would catch roughly one cell — but a comb is anchored
+    to the QUAD and **a ball moves**, so which cell a ball caught changed as it flew: its flame
+    changed identity (and with it its phase and flicker), thinned to nothing at every cell boundary,
+    and `tendril`'s grow-in ramp (a SPANNING comb's rule, read on a TILED comb) multiplied its height
+    by **zero** for every cell past the first. `06b_ball_fire_cycle` is the shot that shows it; a
+    single frame never could.
+  - **Now**: the cover field samples the ball MASK and its taps step straight down, so a fragment
+    lights only while a ball is directly below it within reach. A plume is exactly as wide as its
+    ball and exactly where its ball is, **by construction**. `u_emit_width`, `merge` and `base_width`
+    are all deleted, so `fire_ball.tres`'s workarounds for the straddle went with them.
+  - ⚠ **A BALL'S COLUMN IS SOLVED, NOT SAMPLED, and this is the juggling layer's biggest lever.** A
+    disc has a closed form for "where is my surface in this column" — one `sqrt` — so the ball-fire
+    quad pays ZERO mask lookups where every other shape pays `cover_taps + 1`. It is not a second
+    model: it answers which tap of the SAME ladder lands inside first by solving for the index, and
+    quantizes to the same levels. **It was not optional** — the fixed ladder is a win where the
+    retired march was long and a LOSS where it was short, and `fx_balls_near` had already made it
+    short on balls, so the first build of the rewrite measured the juggling layer *slower*.
+  - ⚠ **THE BALL POSITION IS RETURNED BY THE LOOKUP** (`fx_nearest_ball`'s `out vec2 pos`). It used
+    to be re-derived by `fx_ball_pos`, which builds a whole second arc ladder (8 `sqrt` plus a
+    normalize) and walks it again, per fragment, on BOTH juggling quads — for a ball the lookup had
+    already positioned. `fx_ball_pos` is deleted so it cannot come back.
 - **The mask MIRRORS with the art.** `FxAttachment.flipped` tracks `PropVisual.face_travel`, because
   the mask IS the drawing now — a blade heading right would otherwise emit off the outline it no
   longer has. One sign, re-pushed only when it actually changes.
@@ -641,29 +681,28 @@ the fire riding them), which keeps the dependency inside the one class that owns
   bad"). `FxStyle.sink` is how far the base goes DOWN into the art — positive sinks it in and
   guarantees no seam, 0 plants it on the contour, negative lifts it clear so the flames cover
   nothing. Reach for `sink`, never for the alpha.
-- **⚠ `base_width` MUST exceed 1.0 or every tendril is an island.** A tendril's dome reaches exactly
-  zero at its cell boundary, and so does its neighbour's — so at `base_width = 1.0` there is a
-  guaranteed hairline of zero heat at every seam, at every height, which the ramp's transparent cut
-  widens into a visible gap. Measured at 12 stacks: 13 separate segments with 1–9 px between them
-  right down to the base. **`u_merge` cannot fix it** — `max(0, 0)` is still 0 — which is why the
-  40-stack panel showed the seams even with auto-merge on. At 1.3 the domes overlap, the seam lands
-  where the dome is well above the cut, the base fuses into one mass, and the outermost tendrils
-  cover the host's full width (measured: 0–1 px uncovered, was visibly short). Merge then does what
-  its docs claim. Owner ruling 2026-07-28.
-- **Guard the noise.** `fire.gdshader` early-outs on `heat <= 0.0` before `fx_fbm`. Most fragments
-  in a quad are empty and fbm is seven taps; this one branch is the biggest saving in the shader
-  and the easiest to drop in a refactor.
+- ⚠ **HISTORY: `base_width` HAD TO EXCEED 1.0 OR EVERY TENDRIL WAS AN ISLAND.** Kept because it is
+  the sharpest example of why the retired model needed so many knobs: a tendril's dome reached
+  exactly zero at its cell boundary and so did its neighbour's, so at 1.0 there was a guaranteed
+  hairline of zero heat at every seam, which the ramp's transparent cut widened into a visible gap
+  (13 separate segments at 12 stacks) — and `u_merge` could not fix it, because `max(0, 0)` is still
+  0. The noise fire has no cells and no seams, and `base_width` is deleted.
+- **Guard the noise.** `fire.gdshader` rejects on GEOMETRY — `cover <= 0` or eroded-away — before it
+  evaluates any noise at all. Most fragments in a quad have no body below them, and the noise is the
+  second most expensive thing in the file; this one branch is the biggest saving after the tap count
+  and the easiest to drop in a refactor. It is sound because the shaped value's ceiling is
+  `cover * cover * gain`, which is zero exactly when cover is, whatever the noise says.
 - **The quad is sized to the host's DIAGONAL** when the host can rotate (a 38×50 card is 62×62 at
   45°, and `anim_spin_start` turns it through every angle). Pinned hosts skip that ~1.6× fill.
   Props pass `host_rotates = false` — **no prop rotates any more**; directional art mirrors instead
   (see §4h) — so they all keep the cheaper box bound.
-- **Fire is ONION-SHELLED, never row-layered** (owner 2026-07-27: *"each layer wraps around the
-  other, like actual candle lights"*). `heat` is distance ACROSS the flame relative to the flame's
-  own half-width AT THAT HEIGHT, so every iso-heat contour is a scaled copy of the outline and each
-  colour wraps the one inside it. Height is only the weak secondary term (`onion_rise`); leading
-  with height is what stacked the colours into horizontal stripes. The half-width comes from
-  INVERTING the same ogee the outline uses — one arch read two ways, so the shells cannot drift from
-  the silhouette.
+- **COLOUR COMES FROM `heat` THROUGH THE RAMP, and there are no shells any more** (2026-07-29). The
+  retired model made `heat` the distance ACROSS a flame relative to its own half-width at that
+  height, so every iso-heat contour was a scaled copy of the arch — candle-like, and it needed the
+  arch to exist. `heat` is now the shaped cover-times-noise value, so the bands follow the noise:
+  hottest where cover is high and the noise is bright, falling to the ramp's transparent cut at the
+  ragged outer edge. The one rule that survives unchanged is that the RAMP owns every colour
+  (ruling 14, §4i) — the shader never writes an RGB of its own.
 - **A ball's CENTRE is snapped to the pixel lattice** (`fx_pixel_snap`, 2026-07-28). `fx_local`
   quantizes to a grid anchored on the QUAD while the ball centre moves continuously, so without this
   every ball rasterizes at an arbitrary sub-pixel phase: measured on `05c_ball_sphere`, one ball's row
@@ -705,8 +744,8 @@ the fire riding them), which keeps the dependency inside the one class that owns
 - **Every effect must be DESYNCED from every other host.** `FxAttachment` rolls a per-HOST `_seed`
   (pushed to every quad it owns, never per-quad — the balls and the flames riding them must agree),
   a per-host `_ball_dir`, and a RANDOM starting `_phase`. Any new motion term has to fold the seed in
-  or it runs in lockstep across the board: that is what the tendril sway PHASE **and rate**, the
-  whole-effect pulse, and the ball spin all do (owner 2026-07-28 — the spin was keyed on the ball
+  or it runs in lockstep across the board: that is what the fire's NOISE OFFSET, the whole-effect
+  pulse, and the ball spin all do (owner 2026-07-28 — the spin was keyed on the ball
   index alone, so every card's ball 0 turned together, and `_phase` starting at 0 meant two cards
   with the same count juggled as one).
 - **Balls cross because the ARC LADDER alternates, NOT because of a per-ball mirror** (fixed
@@ -790,8 +829,8 @@ dimming everything.
 
 **Shader pixels are covered TWO ways now.** The **PIXELS** suite (`Tests/Visual/test_pixels.gd`, in
 all_tests) renders the real effects into a SubViewport and ASSERTS on the image — the fire draws and
-draws upward, its hottest band is a tall spine and not a wide slab (the onion/rows discriminator; a
-"core hotter than rim" check does NOT discriminate, verified by mutation), every ball lands on the
+draws upward, the fire is a BOUNDED, UPWARD-COOLING, FORM-FITTING cover field (the three properties
+of the noise model a bug can actually break — see below), every ball lands on the
 shared spec oracle at 1/3/8/50, a ball shades into 3+ tones with an off-centre highlight, the hoop
 halves reassemble pixel-for-pixel, and a prop texel matches a card texel at three card scales. It
 FAILS rather than skips under a dummy renderer, which is why the suite runs windowed (§7). The
@@ -840,10 +879,14 @@ real bugs the green suite had not:
 - `QuadMesh` is a 3-D primitive whose +Y is UP, so `(UV - 0.5) * extent` inverts y against Godot's
   2-D convention and **every effect rendered mirrored**. `fx_local()` owns that flip now; effects
   must go through it rather than quantizing UV themselves.
-- Clamping the tendril's `u` to ±1 made `u_merge` a **silent no-op** (a neighbour is by definition
-  sampled at |u| > 1, so it always evaluated to exactly zero).
-- The comb spanned `u_body.x` — the UNROTATED width — leaving a third of a 90°-rotated card's edge
-  bare. `emit_half_width()` handles it.
+- ⚠ **A FIXED TAP LADDER IS NOT UNIFORMLY CHEAPER THAN A MARCH.** It is a win where the march was
+  long and a LOSS where it was short — measured, when the noise fire's first build made the juggling
+  layer *slower* because `fx_balls_near` had already made the ball march 1–2 steps. Where the mask
+  has a closed form, solve for the tap index instead (`cover_below`'s `SHAPE_BALLS` branch).
+- ⚠ **A PIXEL CHECK PINNED TO A UNIFORM RATHER THAN TO WHAT WAS DRAWN FAILS A CORRECT SHADER.** The
+  new "heat falls off with height" check was pinned at 60 % of `height` and read an empty row: the
+  aperture legitimately leaves the upper half of the reach dark at flat noise. It measures against
+  the flame's own extent now.
 - The rotated-box contour used a fixed-point iteration that only converges for an unrotated
   rectangle, and returned a slanted base at 90°. `box_contour()` walks the convex hull instead.
   Note it must be UNROLLED: a dynamically indexed local array compiled without complaint on GLES3
@@ -852,10 +895,11 @@ real bugs the green suite had not:
 Run `Godot --path solatro res://Tests/Visual/fx_snapshot.tscn` (windowed, needs a GPU, self-quits)
 after ANY shader edit; it writes PNGs to `user://fx_snapshots/`
 (`%APPDATA%\Godot\app_userdata\Solatro\…`). It is deliberately not in `all_tests.tscn`. Shots:
-`00_tendril_count` (geometry only, countable — and the onion shells), `00b_ogee_profile`,
-`01_fire_ladder`, `02_fire_rotation`, `03_surfaces` (several surfaces under one comb, on the RING —
-both arcs alight, the hole's middle empty), `04_shapes` (the real prop ART, masked from its own
-alpha), `05_balls`,
+`00_cover_field` (the tap ladder naked, at 2/3/4/6/8 taps — ⚠ and it is the shader's whole cost
+curve), `00b_aperture` (the two shape knobs at full noise), `01_fire_ladder` (**the STACK RATIOS** —
+1/3/12/40/200, and nothing may jump), `02_fire_rotation`, `02b_card_warp`, `03_surfaces` (several
+surfaces in one COLUMN, on the RING — both arcs alight, the hole's middle empty at every count),
+`04_shapes` (the real prop ART, masked from its own alpha), `05_balls`,
 `05b_ball_path`, `05c_ball_sphere`, `05d_ball_gravity` (the throw's easing — the balls bunch at the
 apex as it rises), `05e_ball_arcs` (the arc ladder at one ball count), `06_ball_fire`,
 `07_transition`, `08_focus_highlight` (ruling 10).

@@ -35,8 +35,8 @@ ARCHITECTURE_REVIEW, the latter wins.
 
 | Path | What |
 |---|---|
-| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at` / `fx_ball_pos` / `fx_nearest_ball` / the arc ladder). Included by both shaders so the maths cannot exist twice. |
-| `Shaders/fire.gdshader` | Fire. ONE path for every host: it raises the art's MASK by an ogee arch and subtracts the mask. `mask()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
+| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at_ladder` / `fx_ball_pos_ladder` / `fx_nearest_ball` / the arc ladder). Included by both shaders so the maths cannot exist twice. |
+| `Shaders/fire.gdshader` | Fire. ONE path for every host: a COVER FIELD sampled from the art's MASK, carved by two layers of scrolling noise (2026-07-29 — the tendril/comb/ogee/onion build is retired). `mask_level()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
 | `Shaders/juggle.gdshader` | The juggled balls. |
 | `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`). Colours point at `Assets/Palette/` ramps (§4i). **The single place FX tuning lives** (owner ruling 8). |
 | `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads, owns the clock, the per-host randomness, the lag spring. |
@@ -166,10 +166,12 @@ Ordered roughly by what a session should pick up first.
   which is what the 32×72 art implies at one pixel size for all art. The lever is that kind's
   `art_size` in `_init` — keep it a multiple of `PropVisual.ART_PIXEL_SCALE` or its pixels stop
   matching the cards'.
-- **The rest of the numbers to settle by eye**, all single tunables: `FxFire.FX_MAX_TENDRILS` (12),
-  `FxStyle.level_ref` (120 card / 60 prop / 40 ball), `settings.fx_transition_fraction` (0.6),
-  `ParticleEngine.MAX_PARTICLES` (1024), `FxStyle.ember_rate_max` (24/s), ball spin base and its
-  per-count coefficient, `onion_power` / `onion_rise` (shell thickness, how much the tip cools),
+- **The rest of the numbers to settle by eye**, all single tunables: `FxFireStyle.cover_taps` (4 —
+  ⚠ and it is the shader's whole cost curve, +0.076 ms per tap on a full burning screen),
+  `aperture` / `fire_gain` (the flame's shape), the six **stack ratios** (how fast each knob ramps
+  with the count — FX_HANDOFF §0d), `FxStyle.level_ref` (120 card / 60 prop / 40 ball),
+  `settings.fx_transition_fraction` (0.6), `ParticleEngine.MAX_PARTICLES` (1024),
+  `FxStyle.ember_rate_max` (24/s), ball spin base and its per-count coefficient,
   `ball_bands` / `ball_light` / `ball_light_z` / `ball_spec` (the sphere's tones, light, highlight).
 
 ### 6.2 The one open feature
@@ -204,10 +206,21 @@ hole.
 2. Consequently the arch **rides** the surface it stands on, so flames on a steep flank are shorter
    than flames on the apex. Tips still point straight up everywhere.
 
-**What to look at, by EYE:** `fx_snapshot`'s new `03_surfaces` (1/2/4/12 tendrils over the ring —
-both arcs alight, the hole's middle always empty), `04_shapes`, `07_transition`'s RING panels (the
-comb easing over a curved host), and `prop_art_snapshot`'s `17_prop_fire` at real size. **Never count
-columns** — that instrument reported two rejected builds as successes.
+**✅ AND THEN THE EMITTER ITSELF WAS REPLACED — THE NOISE FIRE LANDED 2026-07-29.** Owner: *"Fire
+effect no longer has tendrils at all, just average fire shader effects like moving noise instead...
+make sure all params have scaling ratios as stacks increase"*. The mask stayed; what sits on it is
+now a COVER FIELD (how far above the nearest surface below me am I, in `cover_taps` fixed lookups)
+carved by two layers of scrolling noise, with every knob ramping continuously from one stack.
+**Measured 1.93x on a burning screen and 1.40x on the worst window the game can build** (GTX 1070);
+the whole record, including what only the owner can decide, is **FX_HANDOFF §0**. Deleted with it:
+the comb, `tendril()`, the ogee arch, the onion shells, `merge`, `desync`, the sway/wave motion,
+`height_var`, `base_width` and `FX_MAX_TENDRILS`.
+
+**What to look at, by EYE:** `fx_snapshot`'s `00_cover_field` (the tap ladder naked), `00b_aperture`,
+`01_fire_ladder` (the STACK RATIOS — nothing may jump), `03_surfaces` (1/4/40/200 stacks over the
+ring — both arcs alight, the hole's middle always empty at every count), `04_shapes`,
+`02_fire_rotation`, and `prop_art_snapshot`'s `17_prop_fire` at real size. **Never count columns** —
+that instrument reported two rejected builds as successes.
 
 - **✅ FIXED — hoop fire left the ring's flanks bare.** Superseded twice: first by a SKIRT (2026-07-30,
   now deleted), then properly by the mask model above. The skirt covered the outer arc by ANGLE and
@@ -232,8 +245,33 @@ columns** — that instrument reported two rejected builds as successes.
 - **⬜ `fx_editor.tscn` unverified inside the editor.** Its non-editor paths were smoke-run with a
   GPU; the `Engine.is_editor_hint()` branches (no autoloads, ownerless rebuild) are unproven until
   the owner opens the scene. First thing to report if it misbehaves.
-- **⬜ `base_width` is now 1.3** on all three fire styles — that is what closed the per-tendril seams
-  and the edge coverage (§4g). If the crown now reads too solid, that number is the lever.
+- **⬜ THE THREE FIRE `.tres` WERE MIGRATED, NOT TUNED (2026-07-29).** The retired knobs were dropped
+  and the new ones given plausible starting values; only `noise_scale` was actually re-derived, and
+  only because the retired build's value was ~6x too fine for a model where the noise IS the shape
+  (it read as one-pixel static). **This is the biggest thing waiting on the owner** — FX_HANDOFF §0f.
+- **✅ FIXED — fire no longer licks down a card's top corners.** The chamfer was in the RADII MASK,
+  not the fire: 32 uniform-angle rays cannot represent a 37.23-degree vertex, and a chamfer is a real
+  upward-facing slope. ⚠ **The ray table was exact all along (worst error 0.000 art units), so the
+  whole fault was interpolating a function with a CORNER in it.** `u_radii` holds a RADIAL SCALE
+  against the rest rectangle now, so the mask test is the exact box at rest. FX_HANDOFF §0g.
+- **⬜ THE TWO REMAINING FX TASKS ARE FX_HANDOFF §0c/§0d** — read it before writing either.
+  (1) **fire must RENDER BEHIND the art.** `inner_alpha = 0` only makes the flame transparent over the
+  mask, which is not the same thing, and the seam gives it away. ⚠ **The cause is that the cut tests
+  the QUANTIZED position**, so it is a 2.5-screen-pixel staircase against a `Polygon2D`'s
+  screen-pixel edge — which means the cheapest fix may be an UNQUANTIZED cut (one line, untried), not
+  a layering change. Three routes are weighed in §0c. (2) **juggling performance**: the layer is 1.94
+  of 2.58 ms, and ⚠ two levers were rejected for a blocker that no longer exists. §0e explains
+  `cover_taps`.
+- **⚠ `fire_prop.tres` KEEPS GETTING CLOBBERED** by the editor whenever an agent edits
+  `fx_fire_style.gd` with the FX editor open — three times in one pass. `git diff Shaders/Styles/`
+  before believing anything, and see FX_HANDOFF §0g for how to tell clobbering from real tuning.
+- **✅ FIXED, and worth knowing about because they hid in the same place (FX_HANDOFF §0g)**: the FX
+  styles' `pixel` was never the game's one pixel size (fire was 2.5x finer than a card's art and
+  5.5x finer than a prop's); the dither was indexed per SCREEN pixel, printing a checkerboard inside
+  every FX block; the fire quad budgeted `height` while the cover ladder reaches `height + sink`, so
+  flames clipped; the flame's base could never be opaque, at any setting; and `FxAttachment
+  ._on_screen()` froze every effect in the FX EDITOR, because both spaces it reads belong to the
+  running game.
 - **⬜ The ball highlight is a quantized ellipse** at small radii: ~5x7 FX pixels at r=14, so its
   flanks show dead-straight runs. That is pixel-art resolution, not a defect — the levers if it
   should read rounder are `ball_spec` (a tighter dot) or a smaller `pixel` on the juggle style.

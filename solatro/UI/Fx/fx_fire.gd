@@ -4,30 +4,30 @@ extends RefCounted
 ## How a fire stack count becomes fire. One place, shared by every host that can burn — a card's
 ## StatusBurning, a prop's fire_stacks, a juggled ball's own level — so a knife and a card at the
 ## same stack count show the same fire, only sized differently.
-
-## How many flames still read as DISTINCT. One tendril budget for EVERY host: flame width scales
-## with the host exactly like flame height, so the same count fits everywhere and a small object
-## simply gets a small version of the same fire (owner correction 2026-07-26). Deriving the count
-## from the host's width instead gave a knife fewer, relatively FATTER flames, which distorts the
-## proportions the linear scaling exists to preserve.
 ##
-## This is not a stack cap — no cap exists anywhere in the pipeline (owner ruling 4). Past this
-## many stacks the fire gets FIERCER rather than sprouting more slivers.
-const FX_MAX_TENDRILS := 12
+## ⚠ THERE IS NO TENDRIL BUDGET ANY MORE. `FX_MAX_TENDRILS` was a cap on how many flames a crown
+## grew before surplus stacks were spent on intensity instead; with the comb retired (2026-07-29)
+## there is nothing to count, and every knob now ramps continuously from ONE stack rather than
+## sitting flat until the twelfth. Owner: *"make sure all params have scaling ratios as stacks
+## increase"*.
 
-## The fire request for `stacks` stacks in `style`. Surplus stacks are spent on intensity, height
-## and merging instead of on more tendrils, all logarithmically: 100 stacks should look
-## terrifying, not 100 times brighter than one stack.
+## The fire request for `stacks` stacks in `style`. Surplus stacks are spent on intensity, reach,
+## aperture and the noise, all logarithmically: 100 stacks should look terrifying, not 100 times
+## brighter than one stack.
 static func request(id: StringName, stacks: int, style: FxFireStyle) -> FxRequest:
 	var live := stacks_live(stacks, style)
-	# The flames' own length is exactly how far past the silhouette the quad must reach — the mask
-	# model bounds a flame at exactly `height`, in every column on every shape, so this is a true
-	# bound and not an estimate.
-	var req := FxRequest.make(id, FIRE_SHADER, style, live[&"u_height"])
+	# HOW FAR PAST THE SILHOUETTE THE QUAD MUST REACH, and it is EXACT rather than an estimate: the
+	# cover ladder is measured from `p.y - sink`, so the topmost fragment that can light sits
+	# `height + sink` above the surface and none can sit higher. The retired build padded this by
+	# `height_var` instead, which no longer exists.
+	#
+	# ⚠ `sink` BELONGS IN HERE AND LEAVING IT OUT CLIPPED THE FLAMES (owner report 2026-07-29: *"fire
+	# is clipped at edges"*). It shifts the whole ladder UP, so a prop at `sink = 1.5` drew 1.5 art
+	# units of flame outside a quad sized for `height` alone and the top of every plume came off
+	# square. `body_near` in the shader has carried the `+ sink` margin all along; the QUAD is what
+	# did not. Negative sink lowers the ladder and needs no extra room, hence the `max`.
+	var req := FxRequest.make(id, FIRE_SHADER, style, live[&"u_height"] + maxf(style.sink, 0.0))
 	req.live = live
-	# A lerp between "merged" and "not merged" means nothing, so the sheet snaps on. It only ever
-	# flips at high stacks, where the crown is already a solid mass and the change does not read.
-	req.snap[&"u_merge"] = 1 if merged(stacks, style) else 0
 	return req
 
 const FIRE_SHADER := preload("res://Shaders/fire.gdshader")
@@ -35,26 +35,41 @@ const FIRE_SHADER := preload("res://Shaders/fire.gdshader")
 ## The data-derived uniforms for a stack count: everything that changes when the count does, and
 ## nothing that changes per frame. Kept separate from request() so a host can refresh a live
 ## effect's numbers without rebuilding its quad.
+##
+## ⚠ THIS IS THE ONE MAPPING FROM STACKS TO UNIFORMS and it stays that (FX_HANDOFF §0d). Every knob
+## with a stack ratio is scaled HERE and nowhere else; the ratios themselves are art, so they live
+## on the style where the owner can reach them.
+##
+## ⚠ EVERY VALUE HERE MUST BE CONTINUOUS AND MONOTONE IN `stacks` (owner ruling 16: a stack change
+## eases, it never jumps). `FxAttachment._eased` tweens these, and it can only tween what is
+## continuous — a knob that stepped at an integer count would make the whole effect pop.
 static func stacks_live(stacks: int, style: FxFireStyle) -> Dictionary[StringName, float]:
 	var count := maxi(stacks, 1)
-	var over := overflow(count)
+	var g := growth(count)
 	var live : Dictionary[StringName, float] = {}
-	live[&"u_count"] = float(mini(count, FX_MAX_TENDRILS))
-	live[&"u_intensity"] = style.intensity * (1.0 + log(over) * 0.45)
-	live[&"u_height"] = style.height * (1.0 + log(over) * 0.30)
+	# ⚠ KEPT, AS AN INTENSITY. `fire.gdshader` does not read it — it was the comb's cell count — but
+	# `FxAttachment._emit_embers` reads it out of this dictionary as the ember RATE, so it has to
+	# survive with nothing left to partition. Uncapped now: the cap was the tendril budget.
+	live[&"u_count"] = float(count)
+	live[&"u_intensity"] = style.intensity * ramp(g, style.intensity_ratio)
+	live[&"u_height"] = style.height * ramp(g, style.height_ratio)
+	live[&"u_aperture"] = style.aperture * ramp(g, style.aperture_ratio)
+	live[&"u_fire_gain"] = style.fire_gain * ramp(g, style.gain_ratio)
+	live[&"u_noise_scale"] = style.noise_scale * ramp(g, style.noise_scale_ratio)
+	live[&"u_noise_scroll"] = style.noise_scroll * ramp(g, style.noise_scroll_ratio)
 	live[&"u_level"] = level(count, style)
 	return live
 
-## How much fire each tendril is carrying: 1.0 until the crown is full, then above it. This is
-## what surplus stacks are spent on instead of more slivers.
-static func overflow(stacks: int) -> float:
-	var count := maxi(stacks, 1)
-	return float(count) / float(mini(count, FX_MAX_TENDRILS))
+## How far up the stack ladder a count sits, as the number every ratio multiplies. `log`, so the
+## effect crawls rather than saturating: 0 at one stack, 2.5 at twelve, 5.3 at two hundred.
+static func growth(stacks: int) -> float:
+	return log(float(maxi(stacks, 1)))
 
-## Whether the tendrils fuse into a sheet. On once they are carrying more than their share; off
-## below that, because the 3-tap max triples the tendril evaluations — the shader's main cost.
-static func merged(stacks: int, style: FxFireStyle) -> bool:
-	return style.merge or overflow(stacks) > 1.5
+## One ratio applied. Clamped at zero because a large negative ratio at a high count would otherwise
+## drive a knob through zero and out the far side — a flame with a negative grain size, which reads
+## as the effect inverting rather than as a tuning mistake.
+static func ramp(g: float, ratio: float) -> float:
+	return maxf(1.0 + g * ratio, 0.0)
 
 ## Where a stack count sits on the palette ramp's v axis (owner ruling 14: colour shifts with the
 ## count). Logarithmic, so the colour CRAWLS rather than saturating at three stacks: at a

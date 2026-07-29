@@ -26,7 +26,7 @@ func _ready() -> void:
 	test_ball_fire_invariant()
 	test_ball_fire_index_stability()
 	test_ball_fire_emits_alone()
-	test_no_tendril_growth_past_budget()
+	test_every_fire_knob_ramps_with_stacks()
 	test_balls_uncapped()
 	test_quads_share_geometry()
 	test_ball_pos_matches_the_oracle()
@@ -38,6 +38,8 @@ func _ready() -> void:
 	await test_fade_before_release()
 	test_transition_derived_live()
 	test_enum_mirror()
+	test_fx_pixel_is_the_games_pixel()
+	test_reach_covers_the_sink()
 	_host.queue_free()
 	finish()
 
@@ -110,23 +112,64 @@ func test_ball_fire_emits_alone() -> void:
 	j.ball_fire = PackedInt32Array([4, 0])       # stacks untouched
 	check(changed[0] >= 1, "changing ball_fire alone fires data_changed", str(changed[0]))
 
-## Owner ruling 4: no small tendril cap. Past the budget the fire gets FIERCER instead of
-## sprouting more slivers — and nothing anywhere clamps the stack count itself.
-func test_no_tendril_growth_past_budget() -> void:
-	behavior_section("SURPLUS FIRE STACKS RAISE INTENSITY, NOT TENDRIL COUNT")
+## OWNER 2026-07-29: *"make sure all params have scaling ratios as stacks increase"*. This is the
+## check that no knob was left behind when the noise model replaced the tendrils — and it is written
+## to fail when a NEW knob is added without a ratio, not just when an existing one regresses.
+##
+## Three separate claims, and the third is the one ruling 16 lives or dies on:
+##  1. Every value `stacks_live` emits actually MOVES between a low and a high count. A knob pinned
+##     flat is the failure the retired build had by design below 12 stacks.
+##  2. Nothing saturates or runs away: the ramp is logarithmic, so 200 stacks is a few times 1 stack
+##     rather than 200 times it, and the level never leaves the ramp.
+##  3. **EVERY VALUE IS MONOTONE AND CONTINUOUS IN THE COUNT.** `FxAttachment._eased` tweens these,
+##     and it can only tween what is continuous — a knob that stepped at an integer count would make
+##     the whole effect pop. Walked one stack at a time, so a step shows up as a spike.
+func test_every_fire_knob_ramps_with_stacks() -> void:
+	behavior_section("EVERY FIRE KNOB RAMPS WITH THE STACK COUNT, CONTINUOUSLY")
 	var style := StatusBurning.CARD_FIRE_STYLE
-	var few := FxFire.stacks_live(3, style)
+	var one := FxFire.stacks_live(1, style)
 	var many := FxFire.stacks_live(200, style)
-	check(few[&"u_count"] == 3.0, "below the budget, one tendril per stack",
-			str(few[&"u_count"]))
-	check(many[&"u_count"] == float(FxFire.FX_MAX_TENDRILS),
-			"past it the count STOPS growing", str(many[&"u_count"]))
-	check(many[&"u_intensity"] > few[&"u_intensity"], "while intensity rises",
-			"%f vs %f" % [many[&"u_intensity"], few[&"u_intensity"]])
-	check(many[&"u_level"] > few[&"u_level"] and many[&"u_level"] <= 1.0,
-			"and the colour crawls up the ramp without saturating", str(many[&"u_level"]))
-	check(FxFire.merged(200, style), "a dense crown fuses into a sheet")
-	check(not FxFire.merged(2, style), "a sparse one does not")
+	# 1. At one stack every ratio is inert by construction (log(1) == 0), so this also pins "the base
+	# style IS what a single stack looks like".
+	check(is_equal_approx(one[&"u_height"], style.height)
+			and is_equal_approx(one[&"u_aperture"], style.aperture),
+			"at ONE stack every ratio is inert, so the style's own values are what is pushed",
+			"height %f vs %f" % [one[&"u_height"], style.height])
+	var moved : Array[String] = []
+	var flat : Array[String] = []
+	for key : StringName in one:
+		if is_equal_approx(one[key], many[key]): flat.append(str(key))
+		else: moved.append(str(key))
+	check(flat.is_empty(), "every value stacks_live emits moves between 1 and 200 stacks",
+			"pinned flat: %s — a knob with no ratio is exactly what the owner asked to be removed"
+			% str(flat))
+	check(moved.size() >= 8, "and there are as many scaled knobs as the model has",
+			"only %d moved: %s" % [moved.size(), str(moved)])
+	# 2. Logarithmic, so it crawls rather than saturating.
+	check(many[&"u_intensity"] > one[&"u_intensity"] and many[&"u_intensity"] < 10.0,
+			"intensity RISES but stays sane at 200 stacks", str(many[&"u_intensity"]))
+	check(many[&"u_level"] > one[&"u_level"] and many[&"u_level"] <= 1.0,
+			"and the colour crawls up the ramp without leaving it", str(many[&"u_level"]))
+	# 3. Monotone and continuous, walked stack by stack. `u_noise_scale` normally ramps DOWNWARD
+	# (coarser grain), so the direction is taken from the pair and then held to.
+	var breaks : Array[String] = []
+	for key : StringName in one:
+		var want := signf(many[key] - one[key])
+		var prev : float = one[key]
+		for n : int in range(2, 201):
+			var here : float = FxFire.stacks_live(n, style)[key]
+			var step := here - prev
+			if signf(step) != want and not is_zero_approx(step):
+				breaks.append("%s reverses at %d" % [key, n])
+				break
+			# A jump larger than a fifth of the whole 1 -> 200 travel in ONE stack is a step, not a ramp.
+			if absf(step) > absf(many[key] - one[key]) * 0.2:
+				breaks.append("%s JUMPS at %d (%f in one stack)" % [key, n, step])
+				break
+			prev = here
+	check(breaks.is_empty(),
+			"every value is monotone and continuous in the count (ruling 16: a stack change eases)",
+			str(breaks))
 
 ## Owner ruling 5: balls have no stack limit. The closed-form lookup has no loop over the count,
 ## so what scales is size and arc height, never the number of things evaluated.
@@ -189,11 +232,19 @@ func test_quads_share_geometry() -> void:
 	var reqs := FxJuggle.requests(4, PackedInt32Array([2, 0, 0, 0]),
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)
 	check(reqs.size() == 2, "a lit ball adds the ball-fire quad", str(reqs.size()))
-	var balls := reqs[0]
-	var fire := reqs[1]
-	# u_count is deliberately NOT here any more: on the balls quad it is the ball count, on the fire
-	# quad it is the TENDRIL count (one per ball width). The ball count agreement is asserted below.
-	var shared : Array[StringName] = [&"u_span", &"u_arc_height", &"u_return_height",
+	# ⚠ BY ID, NEVER BY INDEX. The ORDER of these two is load-bearing — the plumes are emitted first
+	# so the balls draw over them (FxJuggle.requests) — so a positional read both breaks when the
+	# order changes and hides what the order is for. It did exactly that when the order flipped.
+	var balls := _named(reqs, &"balls")
+	var fire := _named(reqs, &"ball_fire")
+	check(balls != null and fire != null, "both juggling requests are present",
+			"ids: %s" % str(reqs.map(func(r: FxRequest) -> StringName: return r.id)))
+	if balls == null or fire == null: return
+	# The plumes must come FIRST, which is what puts every ball in front of every plume, lit or not.
+	check(reqs.find(fire) < reqs.find(balls),
+			"the plumes are declared BEFORE the balls, so the balls occlude them (tree order)",
+			"fire at %d, balls at %d" % [reqs.find(fire), reqs.find(balls)])
+	var shared : Array[StringName] = [&"u_count", &"u_span", &"u_arc_height", &"u_return_height",
 			&"u_ball_radius"]
 	for key : StringName in shared:
 		var a : float = balls.live[key]
@@ -204,11 +255,16 @@ func test_quads_share_geometry() -> void:
 	check(fire.shape == FxAttachment.Shape.BALLS,
 			"the fire quad's MASK is the balls, not the card it rides on — a shape, never a mode")
 	check(fire.live[&"u_ball_count"] == balls.live[&"u_count"],
-			"and it is told the ball count separately, now that u_count means TENDRILS",
+			"and it is told the ball count in its own uniform, which is what its MASK reads",
 			"%f vs %f" % [fire.live[&"u_ball_count"], balls.live[&"u_count"]])
-	check(is_equal_approx(fire.live[&"u_emit_width"], 2.0 * fire.live[&"u_ball_radius"]),
-			"the comb's pitch is one ball DIAMETER, so each ball catches roughly one cell (§1.4b)",
-			"%f for radius %f" % [fire.live[&"u_emit_width"], fire.live[&"u_ball_radius"]])
+	# ⚠ THE OLD `u_emit_width` CHECK IS GONE WITH THE COMB, not ported (2026-07-29). It asserted that
+	# the comb's pitch was one ball diameter — the workaround for a comb anchored to the QUAD while
+	# its balls travelled, which is what made plumes blink in and out (FX_HANDOFF §2). The cover
+	# field samples the ball mask and its taps step straight down, so a plume is as wide as its ball
+	# and sits on its ball by construction; there is no width to assert.
+	check(not fire.live.has(&"u_emit_width"),
+			"and carries no comb width — one flame per ball falls out of the mask now, "
+			+ "rather than being arranged", str(fire.live.keys()))
 
 ## THE PIN ON THE SECOND COPY OF THE PATH. `FxJuggle.ball_pos` exists only because embers are
 ## particles — they are spawned by GDScript into world space, so the shader cannot answer "where is
@@ -245,8 +301,10 @@ func test_lit_balls_are_the_ember_sources() -> void:
 	var reqs := FxJuggle.requests(4, PackedInt32Array([0, 3, 0, 7]),
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)
 	check(reqs.size() == 2, "a lit ball adds the ball-fire quad", str(reqs.size()))
-	check(reqs[1].lit == PackedInt32Array([1, 3]),
-			"the ball-fire request carries exactly the alight indices", str(reqs[1].lit))
+	var lit_req := _named(reqs, &"ball_fire")
+	check(lit_req != null and lit_req.lit == PackedInt32Array([1, 3]),
+			"the ball-fire request carries exactly the alight indices",
+			str(lit_req.lit) if lit_req else "no ball_fire request")
 	# A ball that is merely PRESENT contributes nothing — the negative case is the whole point.
 	var dark := FxJuggle.requests(4, PackedInt32Array(), StatusJuggling.JUGGLE_STYLE,
 			StatusJuggling.BALL_FIRE_STYLE)
@@ -400,3 +458,55 @@ func _two_requests() -> Array[FxRequest]:
 	reqs.append_array(FxJuggle.requests(4, PackedInt32Array(),
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 	return reqs
+
+## ⚠ AN EFFECT'S PIXEL MUST BE THE GAME'S PIXEL, and this is the check that would have caught the
+## owner's *"fires not pixelated"* report before it shipped.
+##
+## The project has ONE pixel size for all art (owner 2026-07-27, pinned on the art side by
+## `test_pixels.test_one_pixel_size_for_all_art`). A card draws its pixel art one texel per UNSCALED
+## unit, so a card-hosted effect's pixel is 1.0; a prop's art is drawn at `frame_px *
+## ART_PIXEL_SCALE` in the prop's own local space, so a prop-hosted effect's pixel is that constant.
+## `FxStyle.pixel` is in exactly those local units, and nothing was checking it.
+##
+## What was actually shipped: `fire_card` 0.4 and `fire_prop` 0.45 — both authored by analogy with
+## each other rather than derived, leaving the fire 2.5x finer than every other pixel on a card and
+## ~5.5x finer on a prop. It never read as wrong while the retired model drew broad smooth bands; the
+## noise fire put a fine grain on it and it read as static immediately.
+func test_fx_pixel_is_the_games_pixel() -> void:
+	behavior_section("EVERY FX PIXEL IS THE GAME'S ONE PIXEL SIZE")
+	# CARD-hosted: the card's own art unit.
+	for style : FxStyle in [StatusBurning.CARD_FIRE_STYLE, StatusJuggling.JUGGLE_STYLE,
+			StatusJuggling.BALL_FIRE_STYLE]:
+		check(is_equal_approx(style.pixel, 1.0),
+				"%s is card-hosted, so its pixel is one card art unit" % style.resource_path.get_file(),
+				str(style.pixel))
+	# PROP-hosted: a prop texel is ART_PIXEL_SCALE units in the prop's local space.
+	check(is_equal_approx(PropVisual.PROP_FIRE_STYLE.pixel, PropVisual.ART_PIXEL_SCALE),
+			"fire_prop is prop-hosted, so its pixel is ART_PIXEL_SCALE local units",
+			"%f vs %f" % [PropVisual.PROP_FIRE_STYLE.pixel, PropVisual.ART_PIXEL_SCALE])
+
+## ⚠ THE QUAD MUST BUDGET `height + sink`, NOT `height` — the owner's *"fire is clipped at edges"*.
+## The cover ladder is measured from `p.y - sink`, so a positive sink lifts the whole reachable band
+## by that much and a quad sized for `height` alone cuts the top of every flame off square. The
+## shader's own `body_near` has always carried the `+ sink` margin; the request is what did not.
+func test_reach_covers_the_sink() -> void:
+	behavior_section("A FIRE QUAD REACHES height + sink, SO NOTHING CLIPS")
+	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
+	style.sink = 4.0
+	var req := FxFire.request(&"fire", 8, style)
+	var live := FxFire.stacks_live(8, style)
+	check(req.reach >= live[&"u_height"] + style.sink - 0.001,
+			"reach covers the erosion the ladder is shifted by",
+			"reach %f against height %f + sink %f" % [req.reach, live[&"u_height"], style.sink])
+	# NEGATIVE sink lowers the ladder instead, so it must NOT inflate the quad.
+	style.sink = -4.0
+	check(is_equal_approx(FxFire.request(&"fire", 8, style).reach, live[&"u_height"]),
+			"a negative sink lowers the ladder and buys no extra quad",
+			str(FxFire.request(&"fire", 8, style).reach))
+
+## One request out of a juggling pair, BY ID. The pair's order is meaningful (plumes before balls, so
+## the balls occlude them), so nothing here may depend on a position.
+func _named(reqs: Array[FxRequest], id: StringName) -> FxRequest:
+	for r : FxRequest in reqs:
+		if r.id == id: return r
+	return null

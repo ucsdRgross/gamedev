@@ -44,7 +44,7 @@ func _run() -> void:
 	await _row("card fire x%d" % HOSTS, floor_ms, StatusBurning.CARD_FIRE_STYLE, _card_case)
 	# ⚠ THE ROW ABOVE IS A BOX, AND A REAL BOARD CARD IS NOT ONE. CardVisual hands its attachment the
 	# star rig's outline, so a burning card's mask takes the RADII branch — an `atan`, a table index
-	# and a lerp on EVERY step of the down-march, where the box is one exact ray/rect exit. Measured
+	# and a lerp on EVERY cover tap, where the box is one exact ray/rect exit. Measured
 	# 2026-07-29, Intel UHD, 20 hosts, GPU timer: box 2.13, deformed 4.11 at rest and 4.90 with the
 	# corners at the ~25 % the shipped animation reaches. So the branch is ~1.9x the box before the
 	# warp adds any fill at all. This is the row that decides whether burning cards ship, and until
@@ -93,6 +93,45 @@ func _screen_rows(floor_ms: float) -> void:
 	# rotation-aware bound would give a card that is not currently turned. If this row is close to the
 	# one above, lever B is not worth its lattice risk.
 	await _screen_row("burning + juggling, BOX-BOUND quads", floor_ms, _worst_host_pinned, 0)
+	await _tap_rows(floor_ms)
+	await _noise_rows(floor_ms)
+
+# ================================================================================================
+# THE TWO OPEN QUESTIONS THE NOISE FIRE LEFT (FX_HANDOFF §0), BOTH ON THE ONLY ROW THAT DECIDES
+# ANYTHING — a window packed edge to edge with burning cards.
+# ================================================================================================
+
+## COVER TAPS. This shader is `mask_level` call count times cost per call and NOTHING ELSE, so this
+## sweep is the shader's cost curve, drawn directly. It must come out close to linear in the tap
+## count with a fixed offset (the fill, the noise and the ramp); if it does not, something else has
+## become expensive and the whole cost model in FX_HANDOFF §9 needs re-deriving.
+##
+## ⚠ THE NUMBER ALONE DOES NOT PICK THE WINNER. Judge 4 against 6 on `00_cover_field` and
+## `01_fire_ladder` by EYE first — the bet the noise model makes is that the banding 4 taps leave is
+## invisible under the noise, and only a picture can settle that.
+func _tap_rows(floor_ms: float) -> void:
+	print("  --- COVER TAPS: the cost curve of the only knob that matters (full screen, burning) ---")
+	for taps : int in [2, 4, 6, 8]:
+		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
+		style.cover_taps = taps
+		await _screen_row("burning, %d cover taps" % taps, floor_ms,
+				_burning_host_styled.bind(style), 0)
+
+## THE NOISE SOURCE A/B (FX_HANDOFF §0e.1). `fx_fbm` is three octaves of hash+lerp — seven taps of
+## ALU per lit fragment; the baked tile is one texture fetch whose octaves were paid for at import.
+## It trades ALU for memory bandwidth, and on an Intel UHD with SHARED memory bandwidth which of
+## those wins is genuinely not obvious, which is the whole reason both paths exist.
+##
+## ⚠ Whichever wins, check the TILING PERIOD by eye at the shipped `noise_scale` before switching:
+## a nearest-filtered scrolling tile repeats visibly if its period lands near the flame height, and
+## that is a look bug no number here will catch.
+func _noise_rows(floor_ms: float) -> void:
+	print("  --- NOISE SOURCE: procedural fx_fbm vs the baked tile (full screen, burning) ---")
+	for proc : bool in [true, false]:
+		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
+		style.noise_procedural = proc
+		await _screen_row("burning, noise %s" % ("fx_fbm" if proc else "TEXTURE"), floor_ms,
+				_burning_host_styled.bind(style), 0)
 
 func _screen_row(label: String, floor_ms: float, build_one: Callable, off: int) -> void:
 	var ms := await _measure(label, _fill_screen.bind(build_one, off))
@@ -131,8 +170,14 @@ func _at(holder: Node2D, at: Vector2) -> Node2D:
 
 ## A burning card on the DEFORMED silhouette it really carries.
 func _burning_host(host: Node2D) -> void:
+	_burning_host_styled(host, StatusBurning.CARD_FIRE_STYLE)
+
+## The same, with the style handed in — how the tap and noise sweeps vary one knob at a time.
+## ⚠ Style LAST: `_screen_row` binds nothing on top, but the sweeps above bind the style, and chained
+## `Callable.bind` puts the OUTERMOST bind's arguments first (FX_HANDOFF §11).
+func _burning_host_styled(host: Node2D, style: FxFireStyle) -> void:
 	var att := _card_attachment(host)
-	att.sync([FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)] as Array[FxRequest])
+	att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
 
 ## THE WORST HOST THE GAME CAN MAKE (owner 2026-07-29: *"assume every card on screen is burning and
 ## juggling fire balls"*): three quads on one deformed card — the crown, the balls, and the fire
@@ -221,8 +266,8 @@ func _warped_card_case(holder: Node2D, style: FxFireStyle) -> void:
 		att.measure_outline(CardVisual.star_outline(CardVisual.CARD_SIZE, 0.25))
 		att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
 
-## Burning hoops — the worst case in the game for the march, because the ring is the tallest body
-## and its mask is a texture tap rather than an analytic test.
+## Burning hoops — the worst case in the game for the cover field, because the ring is the tallest
+## body and its mask is a texture tap rather than an analytic test.
 func _hoop_case(holder: Node2D, style: FxFireStyle) -> void:
 	_sprite_case(holder, style, HoopVisual.SHEET, HoopVisual.FRAMES)
 

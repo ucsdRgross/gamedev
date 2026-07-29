@@ -5,7 +5,7 @@ extends FxStyle
 ## how a ball is shaded. Read by `juggle.gdshader` and by `FxJuggle`.
 ##
 ## What is NOT here is fire (`FxFireStyle`), and that separation is the point: a juggling style has no
-## use for `ogee_flare` (owner 2026-07-31). See `FxStyle` for why this is a subclass rather than a flag.
+## use for `aperture` (owner 2026-07-31). See `FxStyle` for why this is a subclass rather than a flag.
 ##
 ## ⚠ THE BALL PATH LIVES HERE AND ONLY HERE. A lit ball's PLUME is drawn by the fire shader from a
 ## `FxFireStyle`, and that style deliberately has no path knobs: `FxJuggle.geometry()` hands the same

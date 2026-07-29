@@ -1,21 +1,17 @@
 [gd_resource type="Resource" script_class="FxFireStyle" format=3 uid="uid://bya6r3bddoo54"]
 
 [ext_resource type="Script" uid="uid://tyyc75tbdqvs" path="res://UI/Fx/fx_fire_style.gd" id="1_fxstyle"]
+[ext_resource type="Texture2D" uid="uid://b316toof1ptcu" path="res://Assets/Fx/noise_fire.png" id="2_8hqry"]
 [ext_resource type="Resource" path="res://Assets/Palette/ramp_fire.tres" id="2_ramp"]
 [ext_resource type="Resource" uid="uid://c224ug7tqmuox" path="res://Shaders/Styles/ember.tres" id="3_ember"]
 
 [resource]
 script = ExtResource("1_fxstyle")
+aperture = 0.32
+fire_gain = 1.6
 skew = 0.0
-height_var = 0.0
-base_width = 2.0
-ogee_point = 0.2
-ogee_flare = 0.38
-onion_power = 0.7
-onion_rise = 1.0
-sink = 0.0
-noise_scale = 1.31
+noise_scale = 0.22
+noise_scroll = 14.0
 ramp_source = ExtResource("2_ramp")
 ramp_edges = PackedFloat32Array()
-pixel = 0.4
 ember = ExtResource("3_ember")

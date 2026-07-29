@@ -22,7 +22,8 @@ extends TestSuite
 # is for the claims that can be stated as a number; that one is for "does it look right".
 #
 # CATEGORY MAP: every check here is BEHAVIOR — they are the owner's own visual rulings (flames point
-# up, balls are spherical, fire is onion-layered, one pixel size for all art), not internal pins.
+# up, balls are spherical, fire is a bounded cover field, one pixel size for all art), not
+# internal pins.
 # ==============================================================================
 
 ## The offscreen stage. Small and zoomed: the checks are about geometry, and a 320px viewport at 4
@@ -61,7 +62,7 @@ func _ready() -> void:
 		return
 	_build_stage()
 	await test_fire_draws_upright()
-	await test_fire_bands_are_onion_shells()
+	await test_fire_is_a_bounded_falling_cover_field()
 	await test_every_upward_surface_burns()
 	await test_balls_sit_on_their_oracle()
 	await test_ball_reads_as_a_sphere()
@@ -129,95 +130,94 @@ func test_fire_draws_upright() -> void:
 			"nothing is drawn below the host's bottom edge (the QuadMesh y-flip)",
 			"%d pixels under the card" % PixelProbe.count(img, below, PixelProbe.is_opaque))
 
-## ONION SHELLS, not rows (owner 2026-07-27) — and the check has to DISCRIMINATE, which took two
-## tries. "The core is hotter than the rim at one height" does NOT: the old height-based heat divided
-## by `top`, which already varies across x, so it satisfied that too (verified by mutation — the
-## check passed with the old formula restored, i.e. it was worthless).
+## THE COVER FIELD IS THE MODEL, AND THIS IS WHAT MAKES IT A MODEL RATHER THAN A GRADIENT (owner
+## 2026-07-29, replacing the onion shells with generic noise fire). Heat is
+## `cover * (((cover + aperture) * n - aperture) * gain)` where `cover` is how far above the nearest
+## surface BELOW this fragment it sits — 1 at the surface, falling one tap at a time to 0 at exactly
+## `height` above it.
 ##
-## What actually separates them is the SHAPE of the hottest band:
-##   * row-layered (heat from height): iso-heat contours are the outline scaled VERTICALLY, all
-##     anchored on the base — so the hottest band is a WIDE, SHORT slab lying along the base.
-##   * onion-layered (heat from distance across, over the local half-width): the contours are scaled
-##     copies about the core — so the hottest band is a TALL, NARROW spine up the middle.
-## Assert the spine. Noise off, one tendril, so the hot region is the shell structure and nothing else.
-func test_fire_bands_are_onion_shells() -> void:
-	behavior_section("FIRE IS ONION-LAYERED, NOT ROW-LAYERED")
-	_host_fire(CardVisual.CARD_SIZE, 1, _plain_fire_style())   # ONE tendril, full width
+## ⚠ THE ONION SECTION THIS REPLACES DIED WHOLE, and deliberately so: "the hottest band is a narrow
+## core" and "the base row crosses several shells" were claims about a per-flame arch with shells
+## wrapped around its spine, and there is no arch. Porting them would have been asserting the old
+## model against the new one. What is asserted instead are the three properties of the NEW model that
+## a bug can actually break, none of which depend on a single art knob:
+##
+##  1. **THE FLAME IS BOUNDED AT `height`.** No tap reaches further, so nothing may be drawn above it.
+##     This is the invariant that makes "no flame leaps the hole" and "the quad cannot clip its own
+##     flames" both free, and it is the one an off-by-one in the tap ladder breaks.
+##  2. **HEAT FALLS OFF WITH HEIGHT.** The band against the body must be hotter than the band near the
+##     top of the reach. A `cover` that came back constant — the failure mode of a broken mask lookup,
+##     which still draws a perfectly plausible-looking slab — passes every "did it render" check and
+##     fails this one.
+##  3. **IT IS FORM-FITTING**: with `skew = 0` the flame is exactly as wide as the body under it and no
+##     wider. Fire that spread past the silhouette would mean the taps are not stepping straight down.
+##
+## Noise is held flat (`_plain_fire_style`), because the noise exists precisely to hide 1 and 2.
+func test_fire_is_a_bounded_falling_cover_field() -> void:
+	behavior_section("FIRE IS A COVER FIELD: BOUNDED AT `height`, COOLING UPWARD, FORM-FITTING")
+	var body := CardVisual.CARD_SIZE
+	var style := _plain_fire_style()
+	# ⚠ EIGHT STACKS, NOT ONE, AND THE RAMP IS WHY. At one stack `u_level` is 0, which is the ramp's
+	# darkest row — entry 0 makes a 1-stack flame near-black, a known art item — so the WHOLE flame
+	# lands inside ~0.01 of luminance and "the base is hotter than the tip" is unmeasurable however
+	# correct the shader is. It failed exactly that way once. Eight is where the game lives and where
+	# the ramp has range to read.
+	var stacks := 8
+	_host_fire(body, stacks, style)
 	var img := await _shoot()
 	var area := Rect2i(Vector2i.ZERO, img.get_size())
-	var hottest := _peak_luminance(img, area)
-	check(hottest > 0.0, "the flame rendered, so it has a hottest band at all",
-			"peak luminance %.3f" % hottest)
-	if hottest <= 0.0: return
-	# The hottest band: everything within a hair of the peak. `filter_nearest` on the ramp makes the
-	# bands flat, so this picks out exactly one band rather than a gradient's crest.
-	var core := PixelProbe.bounds(img, area, func(c: Color) -> bool:
-			return PixelProbe.is_opaque(c) and c.get_luminance() >= hottest - 0.02)
 	var flame := PixelProbe.bounds(img, area, PixelProbe.is_opaque)
-	check(float(core.size.x) < float(flame.size.x) * 0.6,
-			"the hottest band is a narrow CORE, not a slab lying across the flame's whole width",
-			"hottest band is %d px wide inside a %d px flame (%.0f%%)"
-			% [core.size.x, flame.size.x, 100.0 * float(core.size.x)
-			/ maxf(float(flame.size.x), 1.0)])
-	# THE discriminator — and it took FOUR tries, so here is why this one and not the others.
+	check(flame.size.y > 0, "the flame rendered at all", "no opaque pixels")
+	if flame.size.y <= 0: return
+	var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
+	var top_edge := centre.y - body.y * 0.5 * _zoom
+	# 1. THE HARD BOUND: `height + sink`, because the cover ladder is measured from `p.y - sink` — so
+	# the topmost fragment that can light sits that far above the surface and none can sit higher.
+	# One pixel of slack for the quantization of the FX grid.
+	var live : Dictionary[StringName, float] = FxFire.stacks_live(stacks, style)
+	var reach_px := (live[&"u_height"] + maxf(style.sink, 0.0)) * _zoom
+	var overshoot := top_edge - float(flame.position.y)
+	check(overshoot <= reach_px + 1.0,
+			"nothing is drawn higher than `height` above the surface — the tap ladder is a hard bound",
+			"flame reaches %.1f px above the top edge, but %d taps over %.1f art units plus %.1f of "
+			% [overshoot, style.cover_taps, live[&"u_height"], style.sink]
+			+ "sink bound it at %.1f px" % reach_px)
+	# 2. COOLING UPWARD. Two rows near the two ends OF WHAT WAS DRAWN, compared on mean luminance over
+	# the lit pixels of each. Rows rather than single pixels because the ramp is `filter_nearest` and a
+	# single pixel can sit on a band edge.
 	#
-	# Both layouts vary along BOTH axes, so neither "the core is narrow" nor "a horizontal cut crosses
-	# several bands" separates them (each was mutation-tested and each passed with the ROW formula
-	# restored: rows divide by `top`, which is itself x-dependent). And "the hot band reaches up the
-	# flame" is no longer true even of a correct onion, now that a card's flame is only half a
-	# card-separation tall (owner 2026-07-28).
-	#
-	# ⚠ THE THIRD TRY — "the core near the TIP is hotter than the shoulder near the base" — WAS NOT A
-	# STRUCTURAL CLAIM AT ALL, and it failed the moment the owner tuned `onion_rise` to 1.0. Heat is
-	# `(1 - across)^power * (1 - rise * k)`: at rise = 1 the tip cools to zero BY CONSTRUCTION, which
-	# is a legitimate art setting (a candle's tip IS its coolest part), and no amount of correct onion
-	# layering can win that comparison. A check a shipped tuning can turn red is measuring the tuning,
-	# not the model. This one is invariant to every knob in the style, and that is the point.
-	#
-	# What is structural is WHERE THE SHELLS SIT ALONG THE BASE, because `k` is ~0 there and the rise
-	# term drops out of both models:
-	#   * onion  — `across` is |u| over the local half-width, which at the base IS the full half-width.
-	#     The shells are therefore spread EVENLY across the base: heat falls off from the core all the
-	#     way out to the rim.
-	#   * rows   — heat is `rise / top(x)`, and `rise` is ~0 along the base, so the base is at peak heat
-	#     across essentially its whole width. Every contour pinches into the two BASE CORNERS, so the
-	#     entire fall-off is crammed into the last pixel or two before the rim.
-	# So the base row is read twice: it must cross SEVERAL shells at all, and the heat must have fallen
-	# halfway well before the rim rather than holding peak out to the corner.
-	#
-	# MUTATION-TESTED, 2026-07-29: with `heat = 1 - rise/(h*dome)` — the row formula — restored in
-	# `fire.gdshader`, the base row comes back a single flat band (luminance 0.286 across all 152 px)
-	# and the first of the two goes red on its own; the narrow-CORE check above goes red with it
-	# (152 px of 152). Both survive the tuning that killed the previous discriminator.
-	var base_row := flame.end.y - 2
-	var lo := 1.0
-	var hi := 0.0
-	var left := -1
-	var right := -1
-	for x : int in range(flame.position.x, flame.end.x):
-		var c := img.get_pixel(x, base_row)
+	# ⚠ MEASURED AGAINST THE FLAME'S OWN EXTENT, NOT AGAINST `height`, and that is not laziness — it
+	# is the aperture. `heat = cover * (((cover + ap) * n - ap) * gain)` goes NEGATIVE at low cover:
+	# at the shipped card tuning with the noise held flat, cover 0.5 lands under `ramp_cut` and cover
+	# 0.25 is already below zero, so the flame legitimately fills only the lower half of its reach and
+	# the noise is what pushes it higher. A row pinned at 60 % of `height` reads EMPTY and fails a
+	# correct shader — which it did, on the first run of this check.
+	var low := _row_luminance(img, flame, flame.end.y - 2)
+	var high := _row_luminance(img, flame, flame.position.y + maxi(flame.size.y / 6, 1))
+	check(low > 0.0 and high > 0.0 and low > high + 0.02,
+			"heat FALLS OFF with height above the surface, rather than sitting in one flat slab",
+			"mean luminance %.3f at the flame's base vs %.3f near its top — a constant `cover` "
+			% [low, high] + "(a broken mask lookup) still draws a plausible slab and fails only here")
+	# 3. FORM-FITTING. With skew off, the flame may not reach past the body it stands on.
+	var body_left := centre.x - body.x * 0.5 * _zoom
+	var body_right := centre.x + body.x * 0.5 * _zoom
+	check(float(flame.position.x) >= body_left - 1.0 and float(flame.end.x) <= body_right + 1.0,
+			"and the flame is exactly as wide as the body under it — the taps step straight DOWN",
+			"flame spans x %d..%d against a body of %.0f..%.0f"
+			% [flame.position.x, flame.end.x, body_left, body_right])
+
+## Mean luminance of the lit pixels of one row, inside `box`. -1 when the row is empty, so a caller
+## can tell "cold" from "not drawn".
+func _row_luminance(img: Image, box: Rect2i, y: int) -> float:
+	if y < 0 or y >= img.get_height(): return -1.0
+	var total := 0.0
+	var n := 0
+	for x : int in range(maxi(box.position.x, 0), mini(box.end.x, img.get_width())):
+		var c := img.get_pixel(x, y)
 		if not PixelProbe.is_opaque(c): continue
-		if left < 0: left = x
-		right = x
-		lo = minf(lo, c.get_luminance())
-		hi = maxf(hi, c.get_luminance())
-	check(left >= 0 and hi - lo > 0.05,
-			"the flame's BASE row crosses several shells rather than sitting in one flat band",
-			"base row spans luminance %.3f..%.3f over x %d..%d" % [lo, hi, left, right])
-	if left < 0 or hi - lo <= 0.05: return
-	# The outermost pixel still in the hot half, measured from the row's own centre.
-	var centre := 0.5 * float(left + right)
-	var half := maxf(0.5 * float(right - left), 1.0)
-	var reach := 0.0
-	for x : int in range(left, right + 1):
-		var c := img.get_pixel(x, base_row)
-		if not PixelProbe.is_opaque(c) or c.get_luminance() < 0.5 * (lo + hi): continue
-		reach = maxf(reach, absf(float(x) - centre))
-	check(reach < half * 0.75,
-			"the shells are spread ACROSS the flame's base, not crowded into its corners",
-			"heat is still in its hot half %.0f%% of the way out to the rim — a base that stays at "
-			% (100.0 * reach / half) + "peak until the very corner is what vertically stacked rows "
-			+ "look like")
+		total += c.get_luminance()
+		n += 1
+	return total / float(n) if n > 0 else -1.0
 
 ## THE CLAIM §1 EXISTS FOR: fire finds EVERY upward-facing surface in the art, not just the topmost
 ## one in each column (FX_HANDOFF §1.1). The hoop is the counterexample the owner named — its ring
@@ -229,14 +229,14 @@ func test_fire_bands_are_onion_shells() -> void:
 ## discarded that surface and `contour_y` never saw it. So this check is the discriminator, and it is
 ## a real one: it fails against everything that shipped before 2026-07-30.
 ##
-## AND THE INVARIANT THAT BOUNDS IT: no flame may LEAP the hole. A tendril anchored on the outer arc
-## reaching down to the inner one would fill the ring solid — the "enormous flame" the owner
+## AND THE INVARIANT THAT BOUNDS IT: no flame may LEAP the hole. A flame reaching from the outer arc
+## down to the inner one would fill the ring solid — the "enormous flame" the owner
 ## forbade — so the hole's MIDDLE, a flame-length clear of both surfaces, must stay empty.
 func test_every_upward_surface_burns() -> void:
 	behavior_section("EVERY UPWARD-FACING SURFACE BURNS, AND NO FLAME LEAPS THE HOLE")
 	var body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
 	var style : FxFireStyle = PropVisual.PROP_FIRE_STYLE
-	_zoom_to_fit(body.y * 0.5 + style.height * (1.0 + style.height_var) + 4.0)
+	_zoom_to_fit(body.y * 0.5 + style.height + 4.0)
 	var att := FxAttachment.new()
 	att.configure(body, false, FxAttachment.Shape.SPRITE, FxAttachment.Half.WHOLE, false)
 	_place(att, 1.0)
@@ -264,7 +264,7 @@ func test_every_upward_surface_burns() -> void:
 			Vector2i(int(body.x * 0.2 * _zoom), int(body.y * 0.2 * _zoom)))
 	check(PixelProbe.count(img, clear, PixelProbe.is_opaque) == 0,
 			"and the middle of the hole is EMPTY — no flame leaps from one arc to the other",
-			"%d lit pixels in the ring's hollow: a tendril has bridged two separate surfaces, which "
+			"%d lit pixels in the ring's hollow: a flame has bridged two separate surfaces, which "
 			% PixelProbe.count(img, clear, PixelProbe.is_opaque)
 			+ "is the ENORMOUS FLAME a bounded flame length makes impossible")
 
@@ -396,7 +396,7 @@ func test_one_pixel_size_for_all_art() -> void:
 
 ## Fire off `style` at `stacks`, on a host of `body` art units — the same FxAttachment a card builds.
 func _host_fire(body: Vector2, stacks: int, style: FxFireStyle) -> void:
-	_zoom_to_fit(body.y * 0.5 + style.height * (1.0 + style.height_var) + 4.0)
+	_zoom_to_fit(body.y * 0.5 + style.height + 4.0)
 	var att := FxAttachment.new()
 	att.configure(body, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE, false)
 	_place(att, 1.0)
@@ -436,15 +436,18 @@ func _park(att: FxAttachment, phase: float) -> void:
 	att._push_live(0.0)
 	att.set_process(false)
 
-## Fire with every source of raggedness off: this suite measures geometry and band structure, and
-## noise/flicker/dither only make both harder to state.
+## Fire with every source of raggedness off: this suite measures GEOMETRY, and the noise exists
+## precisely to hide geometry.
+##
+## ⚠ `noise_amp = 0` IS NOT "NOISE DISABLED", IT IS NOISE HELD FLAT AT 0.5 (see `fire_noise` in
+## `fire.gdshader`). That matters for reading the numbers below: the shaped value is
+## `cover * (((cover + aperture) * 0.5 - aperture) * gain)`, a clean monotone function of cover
+## alone, which is exactly what makes the cover field measurable at all.
 func _plain_fire_style() -> FxFireStyle:
 	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
-	style.height_var = 0.0
 	style.noise_amp = 0.0
 	style.dither = 0.0
-	style.sway_amp = 0.0
-	style.desync = 0.0
+	style.skew = 0.0
 	return style
 
 ## Crossing comes from the ARC LADDER, not from a per-ball mirror (fixed 2026-07-28). Three
@@ -603,13 +606,6 @@ func _mean_luminance(img: Image, area: Rect2i) -> float:
 			lit += 1
 	return total / float(lit) if lit > 0 else 0.0
 
-func _peak_luminance(img: Image, area: Rect2i) -> float:
-	var best := 0.0
-	for y : int in range(area.position.y, area.end.y):
-		for x : int in range(area.position.x, area.end.x):
-			var c := img.get_pixel(x, y)
-			if PixelProbe.is_opaque(c): best = maxf(best, c.get_luminance())
-	return best
 
 func _brightest_pixel(img: Image, area: Rect2i) -> Vector2i:
 	var best := Vector2i.ZERO

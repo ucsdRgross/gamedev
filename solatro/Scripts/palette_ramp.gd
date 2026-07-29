@@ -50,7 +50,7 @@ func tones_texture() -> ImageTexture:
 ## rises, so more stacks means a hotter set of bands rather than the same bands brightened.
 ##
 ## `edges` are the heat thresholds where the window's bands change, one per band; an empty array
-## spaces them evenly. Everything below `cut` is TRANSPARENT — that cut is what gives the tendrils
+## spaces them evenly. Everything below `cut` is TRANSPARENT — that cut is what gives the fire
 ## their ragged outline, so it is part of the ramp, not a shader constant.
 ##
 ## Replaces tools/make_fx_ramp.py, whose COLD/HOT band tables were interpolated per row.
