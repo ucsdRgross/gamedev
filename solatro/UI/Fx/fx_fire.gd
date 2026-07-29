@@ -1,3 +1,4 @@
+@tool
 class_name FxFire
 extends RefCounted
 ## How a fire stack count becomes fire. One place, shared by every host that can burn — a card's

@@ -1,41 +1,17 @@
-[gd_resource type="Resource" script_class="FxStyle" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="FxStyle" format=3 uid="uid://bya6r3bddoo54"]
 
-[ext_resource type="Script" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
-[ext_resource type="Texture2D" path="res://Shaders/Styles/fire_ramp.png" id="2_ramp"]
+[ext_resource type="Script" uid="uid://c46nbffok8q0y" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+[ext_resource type="Resource" path="res://Assets/Palette/ramp_fire.tres" id="2_ramp"]
 [ext_resource type="Resource" path="res://Shaders/Styles/ember.tres" id="3_ember"]
 
 [resource]
 script = ExtResource("1_fxstyle")
 pixel = 0.6
 dither = 0.35
-wrap = 0.0
-skew = 0.15
-inner_alpha = 0.5
-height = 7.0
+inner_alpha = 1.0
 height_var = 0.35
-base_width = 1.0
-ogee_point = 1.0
-ogee_flare = 0.35
-sink = 2.0
-merge = false
-sway_amp = 0.35
-sway_speed = 4.0
-flicker_speed = 1.7
-wave_amp = 0.0
-wave_freq = 0.35
-wave_speed = 6.0
-desync = 1.0
-pulse_amp = 0.0
-pulse_speed = 2.0
-lag_amount = 1.0
-wind = Vector2(0, 0)
-noise_amp = 0.5
-noise_scale = 0.35
-noise_scroll = 18.0
-ramp = ExtResource("2_ramp")
-level_ref = 120.0
-intensity = 1.0
-brightness = 1.0
-opacity = 1.0
-ember_rate_max = 24.0
+base_width = 1.3
+ramp_source = ExtResource("2_ramp")
+ramp_window = 4
+ramp_cut = 0.18
 ember = ExtResource("3_ember")

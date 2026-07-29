@@ -1,3 +1,4 @@
+@tool
 class_name FxRequest
 extends RefCounted
 ## One visual effect a host is asked to render: which shader draws it, how far past the host's
@@ -39,6 +40,14 @@ var phase_period : float = 0.0
 ## Data-derived uniforms that must be applied WHOLE (ints, textures, vectors) — anything a lerp
 ## would make meaningless. Written when the data changes and not eased.
 var snap : Dictionary[StringName, Variant] = {}
+
+## The PARTNER effect's pixel lattice, for an effect drawn ON another effect's output rather than on
+## the host: the ball-fire plume anchors to a ball centre that the BALL quad snapped to ITS grid
+## (fx_pixel_snap), and the two quads have different reaches and different `pixel`, so their lattices
+## differ. Without these the plume would sit up to half a pixel off its ball and jitter as the ball
+## travelled — the drift class §4g exists to prevent. Negative reach = no partner, the normal case.
+var partner_reach : float = -1.0
+var partner_pixel : float = 1.0
 
 ## Build a request inline. Keeps status fx_request() overrides to a single expression.
 static func make(effect_id: StringName, effect_shader: Shader, effect_style: FxStyle,

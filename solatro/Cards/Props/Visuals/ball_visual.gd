@@ -18,3 +18,10 @@ func _init() -> void:
 func _draw_body() -> void:
 	_draw_frame(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
 			PipSuit.SUIT_TEXTURE_V_FRAMES, FRAME)
+
+## The pip is a small blob in an 8x8 cell, so the frame's box sits well outside it — measure the
+## alpha instead, or the flames hang in the air above the drawing.
+func measure_fx_silhouette(att: FxAttachment) -> void:
+	att.measure_sprite_silhouette(PipSuit.SUIT_TEXTURE,
+			CardModifier.frame_rect(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+					PipSuit.SUIT_TEXTURE_V_FRAMES, FRAME), art_size)

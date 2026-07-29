@@ -26,6 +26,8 @@ const int MODE_BALLS = 1;
 const int SHAPE_BOX = 0;
 const int SHAPE_RING = 1;
 const int SHAPE_RADII = 2;
+// A SPRITE's real top edge, one sample per column (FxAttachment.measure_sprite_silhouette).
+const int SHAPE_PROFILE = 3;
 
 // Number of entries in the deformable-card radius table. 32, NOT 16: the star rig goes up to 16
 // arms, and 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either
@@ -37,6 +39,10 @@ uniform int u_mode = 0;
 uniform int u_shape = 0;
 uniform int u_half = 0;              // split props: 0 whole, 1 back arc only, 2 front arc only
 uniform vec2 u_extent = vec2(64.0);  // the quad's size in art units; UV maps across exactly this
+// The BALL quad's lattice (BALLS mode only), so a plume snaps to the centre its ball was drawn at
+// rather than to this quad's own grid. Pushed from FxRequest.partner_reach / partner_pixel.
+uniform vec2 u_partner_extent = vec2(64.0);
+uniform float u_partner_pixel = 1.0;
 uniform vec2 u_body = vec2(38.0, 50.0);
 uniform float u_shape_rot = 0.0;
 uniform float u_time = 0.0;          // pacing-aware, script-driven — NEVER the built-in TIME
@@ -47,6 +53,16 @@ uniform float u_intensity = 1.0;     // surplus stacks push heat UP the ramp ins
                                      // tendrils (owner ruling 4)
 uniform vec2 u_lag = vec2(0.0);      // the host's motion, normalized — the cape
 uniform float u_radii[RADII];        // deformable card silhouette
+// SHAPE_PROFILE: the sprite's top edge in art units, sampled evenly across u_body.x. A column with
+// no art at all carries PROFILE_EMPTY, and nothing is emitted there.
+//
+// Why a per-COLUMN profile and not the polar radius table: a 32-bucket POLAR table has almost no
+// angular resolution across a wide flat edge, so contour_y stepped between buckets as x moved and
+// the flame bases rose and sank at random along a surface that is perfectly flat (owner report
+// 2026-07-29). A column profile is exact on flat edges by construction.
+const int PROFILE = 32;
+const float PROFILE_EMPTY = 1e8;
+uniform float u_profile[PROFILE];
 // Balls mode only. Shared with juggle.gdshader from ONE computation in FxAttachment, so a plume
 // can never trail its ball by a frame.
 uniform float u_phase = 0.0;
@@ -192,6 +208,19 @@ float contour_y(float x, float sgn) {
 		return d <= 0.0 ? sgn * 1e9 : sgn * h.y * sqrt(d);
 	}
 	if (u_shape == SHAPE_BOX) return box_contour(x, sgn);
+	if (u_shape == SHAPE_PROFILE) {
+		// The BOTTOM contour stays the body box: only `wrap` reads it, and no sprite kind wraps.
+		if (sgn > 0.0) return u_body.y * 0.5;
+		float t = clamp((x / max(u_body.x, 1e-4)) + 0.5, 0.0, 0.9999) * float(PROFILE);
+		int i0 = int(floor(t));
+		int i1 = min(i0 + 1, PROFILE - 1);
+		float a = u_profile[i0];
+		float b = u_profile[i1];
+		// Never interpolate INTO an empty column — that would drag a flame base out over blank art.
+		if (a >= PROFILE_EMPTY) return PROFILE_EMPTY;
+		if (b >= PROFILE_EMPTY) return a;
+		return mix(a, b, fract(t));
+	}
 	float y = sgn * u_body.y * 0.5;
 	for (int it = 0; it < 2; it++) {
 		float a = atan(x, -y);
@@ -210,9 +239,13 @@ float contour_y(float x, float sgn) {
 float emit_half_width() {
 	if (u_shape == SHAPE_RING) return u_body.x * 0.5;
 	if (u_shape == SHAPE_RADII) return u_body.x * 0.5;
+	// PROFILE: u_body is already the art's TIGHT bounds, so the comb spans the drawing and not the
+	// frame's transparent padding — which is what put flames in blank space beside the blade.
+	if (u_shape == SHAPE_PROFILE) return u_body.x * 0.5;
 	vec2 h = u_body * 0.5;
 	return h.x * abs(cos(u_shape_rot)) + h.y * abs(sin(u_shape_rot));
 }
+
 
 // Heat contributed by one tendril at (x, rise). `cell`/`cells` place it in the comb; `seed`
 // desyncs it (for balls the cell is always 0 but each ball needs its own phase, so the two are
@@ -291,6 +324,27 @@ float tendril(float cell, float cells, float seed, float x, float rise, float w)
 	return pow(1.0 - across, u_onion_power) * (1.0 - u_onion_rise * k);
 }
 
+// One tendril standing on the contour, measured from the base under ITS OWN CELL CENTRE.
+//
+// ⚠ Not from the base under the FRAGMENT. Sampling the contour per fragment shears every flame along
+// the surface it stands on: on a curve — the hoop's ring is the visible case — the base drops away
+// across a single cell, so the tendril's arch is squashed flatter and flatter as the contour steepens
+// (owner report 2026-07-29: *"tendrils become flatter as they curve around hoop top ... tendrils
+// should be equally long no matter where base location is"*). One base per tendril makes every flame
+// the same undistorted arch wherever it is planted, like candles standing on a curved cake.
+//
+// WRAP still slides that base from the TOP contour down to the BOTTOM one, so the same comb gives
+// both "flames on top" and "engulfed" — and it still never tilts a flame.
+float tendril_on_contour(float id, float cells, vec2 p, float w) {
+	float xc = ((id + 0.5) / cells - 0.5) * w;
+	float top = contour_y(xc, -1.0);
+	if (top >= PROFILE_EMPTY) return 0.0;             // no art under this tendril: no flame
+	float base = mix(top, contour_y(xc, 1.0), u_wrap) + u_sink;
+	float rise = base - p.y;                          // > 0 means above this tendril's base
+	if (rise <= 0.0) return 0.0;
+	return tendril(id, cells, id, p.x, rise, w);
+}
+
 void fragment() {
 	// The host's MODULATE, which the renderer folds into COLOR before this function runs. Every
 	// path below OVERWRITES COLOR, which silently threw it away: the focus highlight (owner ruling
@@ -306,22 +360,18 @@ void fragment() {
 	if (u_mode == MODE_SILHOUETTE) {
 		float w = emit_half_width() * 2.0;
 		float n = max(u_count, 1.0);
-		// WRAP slides the base from the TOP contour down to the BOTTOM one, so the same comb gives
-		// both "flames on top" and "engulfed" without ever tilting a flame.
-		float top_y = contour_y(p.x, -1.0);
-		float base = mix(top_y, contour_y(p.x, 1.0), u_wrap) + u_sink;
-		float rise = base - p.y;                      // > 0 means above the base line
-		if (rise > 0.0 && abs(p.x) <= w * 0.5) {
+		if (abs(p.x) <= w * 0.5) {
 			float id = min(floor((p.x / w + 0.5) * n), ceil(n) - 1.0);
-			heat = tendril(id, n, id, p.x, rise, w);
+			heat = tendril_on_contour(id, n, p, w);
 			if (u_merge == 1) {                       // neighbours fuse, no V-notch between them
-				heat = max(heat, tendril(id - 1.0, n, id - 1.0, p.x, rise, w));
-				heat = max(heat, tendril(id + 1.0, n, id + 1.0, p.x, rise, w));
+				heat = max(heat, tendril_on_contour(id - 1.0, n, p, w));
+				heat = max(heat, tendril_on_contour(id + 1.0, n, p, w));
 			}
-			// Where the flame overlays the body, draw it at its own alpha so a burning card keeps
-			// its rank and suit readable. Fire is overlay ONLY (ruling 15) — it never tints or
-			// chars its host, so nothing here writes to the card's own art.
-			if (p.y > top_y) alpha_mul = u_inner_alpha;
+			// Where the flame overlays the body it is drawn at u_inner_alpha. Every shipped style
+			// now sets that to 1.0 — fire BLOCKS what it covers (owner 2026-07-29: seeing the art
+			// through the flame "looks very bad"). How far the flames come down over the art is
+			// u_sink's job, not the alpha's: lift the base and there is nothing to see through.
+			if (p.y > contour_y(p.x, -1.0)) alpha_mul = u_inner_alpha;
 		}
 		// Split props: keep only the emitters belonging to this half, so a hoop's back-arc flames
 		// sit behind the occupied card exactly as its back arc does.
@@ -336,9 +386,18 @@ void fragment() {
 				u_ball_gravity, u_ball_dir, u_ball_arcs, id);
 		float lvl = texelFetch(u_ball_fire, ivec2(int(id), 0), 0).r;
 		if (lvl > 0.0) {
-			vec2 c = fx_ball_pos(id, n, u_phase, u_span, u_arc_height, u_return_height,
-					u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs);
-			float rise = (c.y - p.y) + u_ball_radius; // from just under the ball, so no seam
+			// SNAPPED on the BALL quad's lattice, not this quad's: the two have different reaches
+			// and different `pixel`, so snapping here with u_extent/u_pixel would anchor the plume
+			// up to half a pixel off its ball and jitter as the ball travelled.
+			vec2 c = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height,
+					u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs),
+					u_partner_extent, u_partner_pixel);
+			// The plume sits ON TOP of the ball, not around it. Measured from the ball's TOP
+			// (art y is negative upward, so that is c.y - radius) sunk by u_sink so there is no
+			// seam where the two meet. It used to start at the ball's BOTTOM (+ radius), which
+			// wrapped the whole ball in flame and hid it completely (owner report 2026-07-29) —
+			// the same "fire is an overlay, never a replacement" rule the card obeys (ruling 15).
+			float rise = (c.y - p.y) - u_ball_radius + u_sink;
 			if (rise > 0.0) heat = tendril(0.0, 1.0, id, p.x - c.x, rise, u_ball_radius * 3.0);
 			level = lvl;                              // the BALL's level, not the card's
 		}

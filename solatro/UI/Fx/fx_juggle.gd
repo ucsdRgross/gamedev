@@ -1,3 +1,4 @@
+@tool
 class_name FxJuggle
 extends RefCounted
 ## How a juggling stack count becomes a pattern of balls, and the fire riding them.
@@ -29,6 +30,10 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxStyle
 	var fire := FxRequest.make(&"ball_fire", FxFire.FIRE_SHADER, fire_style,
 			reach + fire_style.height)
 	fire.mode = FxAttachment.Mode.BALLS
+	# The plume anchors to the ball centre the BALLS quad drew, so it must snap on the BALLS quad's
+	# lattice — a different reach and a different `pixel` from this quad's.
+	fire.partner_reach = reach
+	fire.partner_pixel = balls_style.pixel
 	fire.live = geo.duplicate()
 	# A ball's flame level comes from the TEXTURE, per ball. The card's stack level is deliberately
 	# absent: ball fire and card fire are separate effects (owner ruling 21).

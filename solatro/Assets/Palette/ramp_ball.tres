@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PaletteRamp" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/palette_ramp.gd" id="1_ramp"]
+[ext_resource type="Resource" path="res://Assets/Palette/circus_crayon.tres" id="2_palette"]
+
+[resource]
+script = ExtResource("1_ramp")
+indices = Array[int]([16, 30, 6])
+palette = ExtResource("2_palette")

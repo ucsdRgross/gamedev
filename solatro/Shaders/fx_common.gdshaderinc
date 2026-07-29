@@ -33,6 +33,35 @@ vec2 fx_local(vec2 uv, vec2 extent, float pixel) {
 	return vec2(p.x, -p.y);
 }
 
+// Snap an ART-SPACE point onto the SAME pixel lattice fx_local() hands fragments back on.
+//
+// Why balls need this: fx_local quantizes to a grid anchored on the QUAD, while a ball's centre
+// moves continuously along its arc. The disc test is therefore rasterized at an arbitrary sub-pixel
+// phase, so a ball is not symmetric — measured on 05c_ball_sphere, the same ball's row widths ran
+// 31/44/…/87 down one half and 87/…/34/9 down the other — and the phase changes as it travels, so
+// the silhouette wobbles frame to frame. Snapping the CENTRE (owner 2026-07-28: the centre only, not
+// the radius) makes every ball rasterize at phase zero: a stable, symmetric circle that translates in
+// whole pixels, which is what pixel art does.
+//
+// ⚠ Both the ball quad AND the ball-fire quad must snap, with the same extent and pixel, or a plume
+// anchors half a pixel off its ball — the drift this include exists to prevent (§4g).
+//
+// ⚠ The Y FLIP MUST BE UNDONE, and this is not pedantry — it was measured. fx_local quantizes and
+// THEN negates y, so the art-space y lattice is {extent.y/2 - (j+0.5)·cell}, while x sits on
+// {(k+0.5)·cell - extent.x/2}. Those two sets coincide only when extent/pixel is a whole number, and
+// it generally is not (a card's ball quad is 62.4 art units at pixel 1.0). Snapping y with the x
+// formula therefore lands BETWEEN lattice rows: the first attempt at this left the ball's row widths
+// running 28/41/…/84 down the top and 84/…/34/15 up the bottom, i.e. still not symmetric.
+vec2 fx_pixel_snap(vec2 p, vec2 extent, float pixel) {
+	vec2 grid = max(extent / max(pixel, 0.01), vec2(1.0));
+	vec2 cell = extent / grid;
+	float x = (floor((p.x + extent.x * 0.5) / cell.x) + 0.5) * cell.x - extent.x * 0.5;
+	// Back into the pre-flip frame, snap there, then flip again — the same order fx_local uses.
+	float q = extent.y * 0.5 - p.y;
+	float y = extent.y * 0.5 - (floor(q / cell.y) + 0.5) * cell.y;
+	return vec2(x, y);
+}
+
 // --- noise ------------------------------------------------------------------------------------
 float fx_hash11(float n) { return fract(sin(n * 127.1) * 43758.5453); }
 float fx_hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -124,49 +153,88 @@ float fx_arc_height(float j, float arcs, float h_top, float h_bot) {
 	return mix(h_top, h_bot, j / max(arcs - 1.0, 1.0));
 }
 
-// Share of the cycle the TALL arc takes. `f` is that share in the two-arc pattern; it thins as lanes
-// are added (x 2/A) so the balls spread over the ladder instead of crowding the top arc — at eight
-// arcs the top one still runs slowest, but only slightly. At A = 2 this is exactly `f`.
-float fx_arc_top_share(float f, float arcs) {
-	return f * 2.0 / max(arcs, 2.0);
+// ONE GRAVITY FOR THE WHOLE LADDER (owner report 2026-07-29: *"balls have inconsistent speeds
+// between different arcs such that it looks like they are all under different gravity"*).
+//
+// A ball thrown to height h is in the air for a time proportional to sqrt(h). The arcs used to take
+// NEARLY EQUAL shares of the cycle — the top arc `f*2/A` and every other one an equal slice of the
+// rest — so a ball crossed the tall throw and the flat carry in about the same time, which is only
+// possible under two different gravities. Weighting each arc by sqrt of its own height is what makes
+// one gravity carry the whole ladder.
+//
+// `f` survives as the HANG-TIME BIAS on the throw: 0.5 is the purely physical share, above it the
+// throw is given more of the cycle than physics alone would (which is what real juggling looks
+// like, and what the knob promised before).
+float fx_arc_weight(float j, float arcs, float h_top, float h_bot, float f) {
+	float w = sqrt(max(fx_arc_height(j, arcs, h_top, h_bot), 1e-4));
+	return (j < 0.5) ? w * (max(f, 0.05) / 0.5) : w;
+}
+
+float fx_arc_total(float arcs, float h_top, float h_bot, float f) {
+	float total = 0.0;
+	for (int k = 0; k < FX_MAX_ARCS; k++) {
+		if (float(k) >= arcs) break;
+		total += fx_arc_weight(float(k), arcs, h_top, h_bot, f);
+	}
+	return max(total, 1e-5);
 }
 
 // Where arc `j` starts in the cycle, and how much of the cycle it spans.
-vec2 fx_arc_span(float j, float arcs, float f) {
-	float ftop = fx_arc_top_share(f, arcs);
-	float rest = (1.0 - ftop) / max(arcs - 1.0, 1.0);
-	return (j < 0.5) ? vec2(0.0, ftop) : vec2(ftop + (j - 1.0) * rest, rest);
+vec2 fx_arc_span(float j, float arcs, float h_top, float h_bot, float f) {
+	float total = fx_arc_total(arcs, h_top, h_bot, f);
+	float start = 0.0;
+	for (int k = 0; k < FX_MAX_ARCS; k++) {
+		if (float(k) >= j || float(k) >= arcs) break;
+		start += fx_arc_weight(float(k), arcs, h_top, h_bot, f) / total;
+	}
+	return vec2(start, fx_arc_weight(j, arcs, h_top, h_bot, f) / total);
 }
 
 vec2 fx_ball_at(float s, float span, float h_top, float h_bot, float f, float g, float arcs) {
 	float A = max(arcs, 2.0);
 	float u = fract(s);
-	float ftop = fx_arc_top_share(f, A);
-	float rest = (1.0 - ftop) / (A - 1.0);
-	// Which arc, and how far along it in TIME.
-	float j = 0.0;
-	float a = u / max(ftop, 1e-5);
-	if (u >= ftop) {
-		float k = min(floor((u - ftop) / max(rest, 1e-5)), A - 2.0);
-		j = k + 1.0;
-		a = ((u - ftop) - k * rest) / max(rest, 1e-5);
+	// Which arc, and how far along it in TIME. Walked rather than solved: the shares are no longer
+	// uniform (fx_arc_weight), and the walk is bounded by FX_MAX_ARCS, so it is still O(1).
+	float total = fx_arc_total(A, h_top, h_bot, f);
+	float j = A - 1.0;
+	float a = 0.0;
+	float acc = 0.0;
+	for (int k = 0; k < FX_MAX_ARCS; k++) {
+		if (float(k) >= A) break;
+		float share = fx_arc_weight(float(k), A, h_top, h_bot, f) / total;
+		if (u < acc + share || float(k) >= A - 1.0) {
+			j = float(k);
+			a = (u - acc) / max(share, 1e-5);
+			break;
+		}
+		acc += share;
 	}
-	// Gravity eases every arc except the CARRY (the lowest): nothing is falling on that one, it is a
-	// hand moving a ball back. The eased value drives BOTH axes, so the PATH is untouched and only
-	// the speed along it changes — feeding x the ease and y the raw time would bend the arc itself.
-	if (j < A - 1.5) a = fx_arc_ease(a, g);
+	a = clamp(a, 0.0, 1.0);
+	// The gravity ease is applied to EVERY arc, the carry included (2026-07-29). Exempting the
+	// lowest one gave it a visibly different character from its neighbours — the thing that read as
+	// "each arc has its own gravity". The eased value drives BOTH axes, so the PATH is untouched and
+	// only the speed along it changes; feeding x the ease and y the raw time would bend the arc.
+	a = fx_arc_ease(a, g);
 	// Even arcs run +x -> -x, odd ones the reverse, so consecutive arcs chain end to end.
 	float sweep = (mod(j, 2.0) < 1.0) ? 1.0 : -1.0;
 	return vec2(span * 0.5 * (1.0 - 2.0 * a) * sweep,
 			-fx_arc_height(j, A, h_top, h_bot) * sin(a * PI));
 }
 
-// Which way ball `i` travels. ALTERNATING (owner 2026-07-28): even indices ride the loop in the
-// host's own direction, odd ones mirror it, so neighbouring balls cross rather than trooping round
-// together. `dir` is that host's own ±1 — randomised per host, so the FIRST ball goes left on one
-// card and right on the next, and two cards juggling the same count never run the same pattern.
+// Which way ball `i` travels: the HOST's own ±1, the same for every ball on that host. `dir` is
+// randomised per host, so the pattern runs one way on one card and the other way on the next, and
+// two cards juggling the same count never look like one pattern.
+//
+// ⚠ DO NOT REINTRODUCE A PER-BALL MIRROR (`i` even -> dir, odd -> -dir). It was here for the
+// two-arc pattern, where every ball rode ONE loop and would otherwise troop round in a conga line.
+// The ARC LADDER already alternates sweep direction per arc — and consecutive balls sit in
+// consecutive arcs whenever the count is near the arc count — so the two alternations CANCEL and
+// every ball ends up moving the same way, leaving half the pattern empty. Measured 2026-07-28 at
+// the counts where n == arcs (2, 4, 6 — the owner's "below 10"): 2/2, 4/4 and 6/6 balls travelling
+// in one direction with the mirror, an even split without it. Crossing now comes from the ladder,
+// which is where it belongs; `i` is deliberately unused.
 float fx_ball_dir(float i, float dir) {
-	return (mod(i, 2.0) < 1.0) ? dir : -dir;
+	return dir;
 }
 
 // THE ball position: index in, ART-UNIT offset from the host's centre out, mirroring included. Call
@@ -203,27 +271,25 @@ float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, flo
 	for (int arc = 0; arc < FX_MAX_ARCS; arc++) {
 		if (float(arc) >= A) break;
 		float j = float(arc);
-		vec2 sp = fx_arc_span(j, A, f);              // (start of this arc in the cycle, its share)
+		vec2 sp = fx_arc_span(j, A, h_top, h_bot, f); // (start of this arc in the cycle, its share)
 		float sweep = (mod(j, 2.0) < 1.0) ? 1.0 : -1.0;
-		// Balls run in TWO directions, so the recovery runs once per direction group: un-mirror the
-		// fragment into that group's frame first. A ball is always found by the branch matching its
-		// OWN direction, so the wrap below cannot lose one however the parity falls.
-		for (int m2 = 0; m2 < 2; m2++) {
-			float px = p.x * ((m2 == 0) ? dir : -dir) * sweep;
-			// Clamp rather than reject: a fragment just past the end of the span is still inside the
-			// endpoint ball's radius, and clamping is what keeps the caps of the pattern drawn.
-			float ax = clamp(0.5 - px / max(span, 1e-4), 0.0, 1.0);
-			// x gives the position along the arc; the gravity ease turns that back into a TIME, which
-			// is what the index is spaced in — and the carry is not eased, so it does not invert.
-			// Still monotonic, so the two bracketing integers are still the two nearest on this arc.
-			float at = (j < A - 1.5) ? fx_arc_ease_inv(ax, g) : ax;
-			float m = (sp.x + at * sp.y - phase) * n;
-			for (int k = 0; k < 2; k++) {            // floor and ceil — a fixed 2, not a cap
-				float i = mod(floor(m) + float(k), count);
-				vec2 d = p - fx_ball_pos(i, n, phase, span, h_top, h_bot, f, g, dir, A);
-				float dd = dot(d, d);
-				if (dd < best) { best = dd; id = i; }
-			}
+		// ONE direction group: every ball on a host now travels that host's `dir` (fx_ball_dir). The
+		// second group this loop used to run existed for the per-ball mirror and is gone with it,
+		// which also halves the evaluations — 8 arcs is 16 now, not 32.
+		float px = p.x * dir * sweep;
+		// Clamp rather than reject: a fragment just past the end of the span is still inside the
+		// endpoint ball's radius, and clamping is what keeps the caps of the pattern drawn.
+		float ax = clamp(0.5 - px / max(span, 1e-4), 0.0, 1.0);
+		// x gives the position along the arc; the gravity ease turns that back into a TIME, which is
+		// what the index is spaced in. Every arc is eased now, so every arc inverts the same way —
+		// still monotonic, so the two bracketing integers are still the two nearest on this arc.
+		float at = fx_arc_ease_inv(ax, g);
+		float m = (sp.x + at * sp.y - phase) * n;
+		for (int k = 0; k < 2; k++) {                // floor and ceil — a fixed 2, not a cap
+			float i = mod(floor(m) + float(k), count);
+			vec2 d = p - fx_ball_pos(i, n, phase, span, h_top, h_bot, f, g, dir, A);
+			float dd = dot(d, d);
+			if (dd < best) { best = dd; id = i; }
 		}
 	}
 	return best;

@@ -277,6 +277,14 @@ class _PropHalf extends Node2D:
 func fx_shape() -> FxAttachment.Shape:
 	return FxAttachment.Shape.BOX
 
+## Point an attachment at this kind's REAL outline. Default: nothing, so the kind keeps whatever
+## `fx_shape()` said. Textured kinds override it to measure their sprite's alpha, because a frame is
+## mostly padding and emitting off the frame's box leaves the flames hanging in the air above the
+## drawing (FxAttachment.measure_sprite_silhouette). The hoop does NOT override it — its ellipse is
+## both a better fit and what the back/front split keys on.
+func measure_fx_silhouette(att: FxAttachment) -> void:
+	pass
+
 ## Build this prop's FX attachments. Runtime only and OWNERLESS: this script is @tool and the
 ## formation editor instantiates PropVisuals live, where there is no game to read a pacing from
 ## and any owned child would be written into a scene on disk.
@@ -298,6 +306,7 @@ func _make_fx(host: Node2D, half: FxAttachment.Half) -> FxAttachment:
 	# so no prop silhouette ever leaves its box and none of them pays the circumscribed quad bound.
 	att.configure(body_size, false, fx_shape(), half)
 	host.add_child(att)
+	measure_fx_silhouette(att)
 	return att
 
 ## Point every attachment at this prop's current fire, and show whichever set matches the split

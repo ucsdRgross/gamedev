@@ -3,6 +3,7 @@ class_name PipSuitFire
 extends PipSuit
 
 func get_suit_index() -> int: return 3
+func palette_role() -> int: return PaletteDB.ROLES.suit_fire
 func get_str() -> String: return TRANSLATION.find('SUIT_FIRE')
 func get_description() -> String: return TRANSLATION.find('SUIT_FIRE_DESCRIPTION')
 

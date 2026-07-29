@@ -1,3 +1,4 @@
+@tool
 class_name ParticleEngine
 extends Node2D
 ## THE particle path for the whole game. Every particle, from any source and of any kind, is
@@ -132,7 +133,7 @@ func _process(delta: float) -> void:
 		_buffer[out + 5] = size
 		_buffer[out + 6] = 0.0
 		_buffer[out + 7] = _pos_y[i]
-		var col := spec.ramp.sample(t) if spec.ramp else Color.WHITE
+		var col := spec.color_at(t)
 		_buffer[out + 8] = col.r
 		_buffer[out + 9] = col.g
 		_buffer[out + 10] = col.b

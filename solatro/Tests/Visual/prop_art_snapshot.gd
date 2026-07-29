@@ -33,6 +33,8 @@ func _ready() -> void:
 	await _shot_hoop_halves()
 	await _shot_recolour()
 	await _shot_hoop_alignment()
+	await _shot_palette_swap()
+	await _shot_prop_fire()
 	get_tree().quit()
 
 # ------------------------------------------------------------------ the shots
@@ -151,6 +153,76 @@ func _shot_recolour() -> void:
 		label(holder, "%s — pip | rank | art" % suit.get_str(),
 				Vector2(at.x, canvas().y * 0.94))
 	await capture("14_recolour", "suit pip keeps its own colours; rank + art take the suit's")
+	holder.queue_free()
+	await get_tree().process_frame
+
+## THE SWAP TEST — the one shot that actually proves "universal palette" (T21). Point PaletteDB's
+## palette at a deliberately different 32x1 image and redraw the recolour row: every RECOLOURED
+## surface must move to a new colour, while the suit PIP — authored in the palette, drawn with no
+## material — keeps the colours baked into its sheet. A shot where the pips moved too would mean
+## something started recolouring art that is already correct (ARCHITECTURE_REVIEW §4h).
+##
+## The palette is restored afterwards, so this shot cannot leak into a later one.
+func _shot_palette_swap() -> void:
+	var original := PaletteDB.PALETTE
+	var w := maxi(PaletteDB.width(), 1)
+	var img := Image.create_empty(w, 1, false, Image.FORMAT_RGBA8)
+	for i : int in range(w):
+		# Nothing like the live palette: a blue -> green sweep, so any surface that did NOT move is
+		# obvious at a glance rather than a subtle hue shift.
+		img.set_pixel(i, 0, Color(0.0, float(i) / float(w), 1.0 - float(i) / float(w)))
+	var swapped := Palette.new()
+	swapped.texture = ImageTexture.create_from_image(img)
+	PaletteDB.PALETTE = swapped
+
+	var holder := Node2D.new()
+	add_child(holder)
+	var suits : Array[GDScript] = PipSuit.STANDARD
+	var step := canvas().x / float(suits.size())
+	var pip_px := CardModifier.frame_size(PipSuit.SUIT_TEXTURE, PipSuit.SUIT_TEXTURE_H_FRAMES,
+			PipSuit.SUIT_TEXTURE_V_FRAMES)
+	for i : int in suits.size():
+		var suit : PipSuit = suits[i].new() as PipSuit
+		var rank := PipRankNumeral.new().with_value(7) as PipRankNumeral
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.4)
+		var pip := _quad(holder, pip_px, at + Vector2(-70.0, 0.0), 6.0)
+		suit.set_texture(pip)
+		var rank_pip := _quad(holder, pip_px, at, 6.0)
+		rank.set_texture(rank_pip)
+		suit.set_material(rank_pip)
+		var art := _quad(holder, Vector2(32, 32), at + Vector2(90.0, 0.0), 2.5)
+		suit.set_art_texture(art, rank)
+		label(holder, "%s — pip | rank | art" % suit.get_str(), Vector2(at.x, canvas().y * 0.94))
+	await capture("16_palette_swap",
+			"a DIFFERENT palette: rank + art must all move; the pips keep their baked colours")
+	holder.queue_free()
+	await get_tree().process_frame
+
+	PaletteDB.PALETTE = original
+
+## FIRE ON THE REAL PROPS — the one shot that exercises `measure_fx_silhouette()`, because
+## fx_snapshot's `04_shapes` builds its attachments by hand and never instantiates a PropVisual.
+##
+## What to look for: every flame's BASE sits on the drawing, not on the frame's bounding box. A
+## prop's frame is mostly transparent padding — the ball pip is a small blob in an 8x8 cell — so
+## before the alpha-derived radius table the flames hung in the air above the art with a visible gap
+## (owner report 2026-07-29). The hoop keeps its ellipse and should be unchanged.
+func _shot_prop_fire() -> void:
+	var holder := Node2D.new()
+	add_child(holder)
+	var kinds : Array[GDScript] = [HoopVisual, KnifeVisual, BallVisual, FireVisual]
+	var step := canvas().x / float(kinds.size())
+	for i : int in kinds.size():
+		var at := Vector2(step * (float(i) + 0.5), canvas().y * 0.55)
+		var vis := kinds[i].new() as PropVisual
+		_place(holder, vis, at, 2.5)
+		vis.fire_stacks = 6
+		label(holder, "%s + fire" % kinds[i].get_global_name(),
+				Vector2(at.x, canvas().y * 0.94))
+	# The FX clock needs a few frames of real motion before the flames have any shape at all.
+	for _f : int in 8:
+		await get_tree().process_frame
+	await capture("17_prop_fire", "fire on the REAL props: every base sits on the ART, not the frame box")
 	holder.queue_free()
 	await get_tree().process_frame
 

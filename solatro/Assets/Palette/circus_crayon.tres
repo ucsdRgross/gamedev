@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Palette" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/palette.gd" id="1_palette"]
+[ext_resource type="Texture2D" uid="uid://fltq1addh8no" path="res://Assets/CircusCrayon.png" id="2_image"]
+
+[resource]
+script = ExtResource("1_palette")
+texture = ExtResource("2_image")

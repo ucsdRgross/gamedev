@@ -40,17 +40,23 @@ func _ready() -> void:
 	var failed := 0
 	var failed_behavior := 0
 	var failed_impl := 0
+	var warned := 0
 	for suite in suites:
 		passed += suite._pass
 		failed += suite._fail
 		failed_behavior += suite._fail_behavior
 		failed_impl += suite._fail_impl
+		warned += suite._warn
 	TestLog.line("")
+	# Placeholder warnings are reported but never affect the verdict or the exit code — they mark
+	# surfaces still carrying hardcoded values, not breakage (TestSuite.warn).
+	var warn_tag := "" if warned == 0 else (" [%d placeholder warnings]" % warned)
 	if failed == 0:
-		TestLog.line("======== ALL %d SUITES: %d CHECKS PASSED ========" % [suites.size(), passed])
+		TestLog.line("======== ALL %d SUITES: %d CHECKS PASSED%s ========"
+				% [suites.size(), passed, warn_tag])
 	else:
-		TestLog.line("======== ALL %d SUITES: %d passed, %d FAILED (%d behavior, %d implementation) ========"
-				% [suites.size(), passed, failed, failed_behavior, failed_impl], true)
+		TestLog.line("======== ALL %d SUITES: %d passed, %d FAILED (%d behavior, %d implementation)%s ========"
+				% [suites.size(), passed, failed, failed_behavior, failed_impl, warn_tag], true)
 	TestLog.line("full logs: %s" % TestLog.paths())
 	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
 	# the play window unless close_when_done is turned off for live inspection).

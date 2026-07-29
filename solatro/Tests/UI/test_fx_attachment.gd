@@ -319,10 +319,13 @@ func test_enum_mirror() -> void:
 		"SHAPE_BOX": FxAttachment.Shape.BOX,
 		"SHAPE_RING": FxAttachment.Shape.RING,
 		"SHAPE_RADII": FxAttachment.Shape.RADII,
+		"SHAPE_PROFILE": FxAttachment.Shape.PROFILE,
 	}
 	for key : String in pairs:
 		check(src.contains("const int %s = %d;" % [key, pairs[key]]),
 				"fire.gdshader's %s matches the GDScript enum" % key)
+	check(src.contains("const int PROFILE = %d;" % FxAttachment.PROFILE),
+			"fire.gdshader's PROFILE column count matches the GDScript constant")
 	check(src.contains("const int RADII = %d;" % FxAttachment.RADII),
 			"and the radius table length matches on both sides")
 

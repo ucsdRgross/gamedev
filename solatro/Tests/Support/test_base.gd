@@ -27,6 +27,7 @@ var _pass := 0
 var _fail := 0
 var _fail_behavior := 0
 var _fail_impl := 0
+var _warn := 0
 var _category := Category.BEHAVIOR
 var finished := false
 
@@ -82,6 +83,20 @@ func check_behavior(ok: bool, ctx: String, detail: String = "") -> void:
 
 func check_impl(ok: bool, ctx: String, detail: String = "") -> void:
 	_check_cat(ok, Category.IMPLEMENTATION, ctx, detail)
+
+## A PLACEHOLDER notice, not a failure. `ok == false` prints [WARN][PLACEHOLDER] and is counted
+## separately: it never touches _fail, so the exit code (= failure count) is unchanged and nobody's
+## build breaks (owner 2026-07-28: warnings mean *"something in scene is still a placeholder"*, not
+## something is broken). Use it for drift that is real but deliberate — a colour still hardcoded in a
+## surface whose art has not been made yet. Anything that is actually WRONG is a check(), not a warn.
+func warn(ok: bool, ctx: String, detail: String = "") -> void:
+	if ok:
+		_pass += 1
+		TestLog.line("  [PASS] " + ctx)
+		return
+	_warn += 1
+	TestLog.line("[WARN][PLACEHOLDER] %s: %s%s" % [suite_name(), ctx,
+			"" if detail.is_empty() else (" -- " + detail)])
 
 func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 	if ok:
@@ -198,10 +213,12 @@ func restore_settings_snapshot(snap: Dictionary) -> void:
 ## (all_tests.gd) that this suite is done.
 func finish() -> void:
 	var total := _pass + _fail
+	var warned := "" if _warn == 0 else (" [%d placeholder warnings]" % _warn)
 	if _fail == 0:
-		TestLog.line("============ %s: ALL %d CHECKS PASSED ============" % [suite_name(), total])
+		TestLog.line("============ %s: ALL %d CHECKS PASSED%s ============"
+				% [suite_name(), total, warned])
 	else:
-		TestLog.line("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d ============"
-				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total], true)
+		TestLog.line("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d%s ============"
+				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total, warned], true)
 	finished = true
 	suite_finished.emit()

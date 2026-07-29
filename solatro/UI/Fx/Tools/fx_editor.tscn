@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://c6ujy8mebuh2o"]
+
+[ext_resource type="Script" uid="uid://cxckr3dkhi1lb" path="res://UI/Fx/Tools/fx_editor.gd" id="1_fxeditor"]
+
+[node name="FxEditor" type="Node2D" unique_id=1322859751]
+scale = Vector2(4, 4)
+script = ExtResource("1_fxeditor")
+time_scale = 0.1

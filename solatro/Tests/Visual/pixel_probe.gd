@@ -34,24 +34,37 @@ static func ball_positions(n: float, phase: float, span: float, h_top: float, h_
 		f: float, g: float = 1.0, dir: float = 1.0, arcs: float = 2.0) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	var a_count := maxf(arcs, 2.0)
-	var top_share := f * 2.0 / a_count
-	var rest := (1.0 - top_share) / (a_count - 1.0)
+	# ONE GRAVITY: each arc's share of the cycle is proportional to sqrt of its own height (flight
+	# time under a single gravity), with `f` biasing the throw's hang time about the physical 0.5.
+	var weights := PackedFloat32Array()
+	var total := 0.0
+	for k : int in int(a_count):
+		var h := lerpf(h_top, h_bot, float(k) / (a_count - 1.0))
+		var w := sqrt(maxf(h, 1e-4))
+		if k == 0: w *= maxf(f, 0.05) / 0.5
+		weights.append(w)
+		total += w
 	for i : int in int(ceilf(n)):
 		var u := fposmod(phase + float(i) / n, 1.0)
-		var mirror := dir if i % 2 == 0 else -dir
 		# Which arc of the ladder, and how far along it in TIME.
-		var arc := 0.0
-		var a := u / top_share
-		if u >= top_share:
-			var k := minf(floorf((u - top_share) / rest), a_count - 2.0)
-			arc = k + 1.0
-			a = ((u - top_share) - k * rest) / rest
-		if g > 1.0 and arc < a_count - 1.5:
+		var arc := a_count - 1.0
+		var a := 0.0
+		var acc := 0.0
+		for k : int in int(a_count):
+			var share := weights[k] / total
+			if u < acc + share or k == int(a_count) - 1:
+				arc = float(k)
+				a = (u - acc) / maxf(share, 1e-5)
+				break
+			acc += share
+		a = clampf(a, 0.0, 1.0)
+		# Every arc is eased, the carry included — exempting it made it read as its own gravity.
+		if g > 1.0:
 			var d := 2.0 * a - 1.0
 			a = 0.5 + 0.5 * signf(d) * pow(absf(d), g)
 		var height := lerpf(h_top, h_bot, arc / (a_count - 1.0))
 		var sweep := 1.0 if int(arc) % 2 == 0 else -1.0
-		out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a) * sweep * mirror, -height * sin(a * PI)))
+		out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a) * sweep * dir, -height * sin(a * PI)))
 	return out
 
 ## Ball pixels are the only WARM colour in these shots (the reference outlines are blue-grey, the

@@ -6,6 +6,7 @@ const HOOP_POINTS := 1
 const HOOP_TICKS_PER_SLOT := 2
 
 func get_suit_index() -> int: return 0
+func palette_role() -> int: return PaletteDB.ROLES.suit_hoop
 func get_str() -> String: return TRANSLATION.find('SUIT_HOOP')
 func get_description() -> String: return TRANSLATION.find('SUIT_HOOP_DESCRIPTION')
 

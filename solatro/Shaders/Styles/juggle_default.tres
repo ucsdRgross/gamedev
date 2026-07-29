@@ -1,22 +1,10 @@
-[gd_resource type="Resource" script_class="FxStyle" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FxStyle" format=3 uid="uid://dupqpni0mexms"]
 
-[ext_resource type="Script" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+[ext_resource type="Script" uid="uid://c46nbffok8q0y" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
+[ext_resource type="Resource" path="res://Assets/Palette/ramp_ball.tres" id="2_tones"]
 
 [resource]
 script = ExtResource("1_fxstyle")
-pixel = 1.0
-ball_radius = 3.0
-ball_radius_min = 1.0
+ramp_edges = null
 ball_span = 30.4
-ball_arc_height = 32.0
-ball_arc_max = 32.0
-ball_return_height = 6.0
-ball_top_fraction = 0.6
-ball_period_secs = 1.2
-ball_gravity = 1.6
-ball_spin = 2.0
-ball_spin_per_count = 0.35
-ball_lit = Color(1, 0.82, 0.35, 1)
-ball_shade = Color(0.72, 0.45, 0.12, 1)
-ball_gloss = Color(1, 0.98, 0.85, 1)
-opacity = 1.0
+ball_tones = ExtResource("2_tones")

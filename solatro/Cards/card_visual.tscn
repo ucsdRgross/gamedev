@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://c75c216gpeonm" path="res://Cards/card_modifier_status.gd" id="5_0xvu6"]
 [ext_resource type="Script" uid="uid://d0trwxy6cxbji" path="res://Cards/Types/type_paper.gd" id="6_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="8_rbggy"]
-[ext_resource type="Shader" uid="uid://nme8n2abyqji" path="res://Assets/color_picker.tres" id="8_uqrsc"]
+[ext_resource type="Shader" path="res://Assets/color_picker.gdshader" id="8_uqrsc"]
 [ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="10_2gib3"]
 [ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="11_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="12_v4ikb"]

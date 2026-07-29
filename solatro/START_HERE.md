@@ -11,25 +11,35 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
 | Doc | What it is |
 |---|---|
 | [START_HERE.md](START_HERE.md) | This file — rules, workflow, learnings. |
-| [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, undo §5, memory §6, testing §7, owner rulings §8). |
+| [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, palette §4i, undo §5, memory §6, testing §7, owner rulings §8). |
+| [FX_HANDOFF.md](FX_HANDOFF.md) | **LIVE handoff (reopened 2026-07-29): the two open FX problems — hoop/curved-surface fire, and embers on every fire.** |
 | [VFX.md](VFX.md) | **Visual effects: read FIRST for any fire / juggling / prop-art / FX-shader work.** The map, the runbook, the open backlog and the known bugs. (The rules themselves live in ARCHITECTURE_REVIEW §4g/§4h; VFX.md points at them.) |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no z_index). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps on this machine. READ BEFORE DEBUGGING A "HANGING" TEST. |
-| [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md) | The scoping brief for the ONE open feature (the universal palette, T21) — audit done, decisions listed. Whoever picks it up writes the plan from this. |
 | [todo.md](todo.md) | Open backlog. |
 | [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (owner's ideas). |
 | [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / historical-reference quarry. |
 
 ## Hard project rules (non-negotiable — every past handoff restated these)
 
-1. **Never run headless Godot while the owner's editor has the project open** — the two
-   instances starve each other. Check `Get-Process *odot*` + `MainWindowTitle`; never
-   kill a process with an editor window title. With the editor CLOSED, run the suite
-   yourself (see Environment facts) — that is the expected verification, not a handoff.
-   Only the *game* still needs the owner (an agent shouldn't play it). The open
-   editor also LOCKS vendored dlls (copies fail) and rewrites `.tscn`/`project.godot` on
-   disk — do scene/project edits with the editor closed, and re-read files from disk
-   before diagnosing (the editor may have rewritten them).
+1. **The editor being open is mostly FINE for running things — but it REWRITES FILES.**
+   Measured 2026-07-29 with the owner's editor open on a scene: `--import` 26 s, the full
+   windowed suite 84 s, exit 0, 28 suites green. The old "the two instances starve each
+   other" claim did NOT reproduce; the agent that wrote it had mistaken **the Bash tool's
+   own 120 s default timeout** for GPU starvation. Bound long runs with an explicit
+   `timeout` parameter, not by blaming the editor.
+   What IS real, and both cost time this week:
+   - The open editor **rewrites `.tscn`/`.tres`/`project.godot` on disk**. If a resource's
+     script is not `@tool` it loads as a PLACEHOLDER and the editor saves back only the
+     properties it could see, **silently dropping the rest** — `fire_card.tres` lost
+     `pixel` and `dither` that way. Re-read files from disk before diagnosing, and keep
+     every script an editor tool touches `@tool` (ARCHITECTURE_REVIEW §4g).
+   - It **LOCKS vendored dlls** (copies fail).
+   - ⚠ **Never kill a Godot process without reading `MainWindowTitle` FIRST.** An agent
+     killed the owner's editor on 2026-07-29 with a blanket `Get-Process *odot* | Kill()`,
+     on a misdiagnosis. Filter to titles that are NOT an editor window, or ask.
+   Run the suite yourself (see Environment facts) — that is the expected verification, not
+   a handoff. Only the *game* still needs the owner (an agent shouldn't play it).
 2. **No `git add`, no commits, no staging** — the owner commits via GitHub Desktop.
    Just edit files.
 3. **Warnings are errors:** type EVERY array and EVERY for-loop variable

@@ -31,6 +31,7 @@ func _ready() -> void:
 class WeirdSuit extends PipSuit:
 	var id := 0
 	func get_suit_index() -> int: return 0
+	func palette_role() -> int: return PaletteDB.ROLES.suit_hoop   # never drawn
 	func get_str() -> String: return "Weird%d" % id
 	func get_description() -> String: return "?"
 	func spawn_props() -> Array: return []

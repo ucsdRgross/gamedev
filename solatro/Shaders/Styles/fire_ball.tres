@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FxStyle" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Fx/fx_style.gd" id="1_fxstyle"]
-[ext_resource type="Texture2D" path="res://Shaders/Styles/fire_ramp.png" id="2_ramp"]
+[ext_resource type="Resource" path="res://Assets/Palette/ramp_fire.tres" id="2_ramp"]
 
 [resource]
 script = ExtResource("1_fxstyle")
@@ -11,7 +11,7 @@ skew = 0.1
 inner_alpha = 1.0
 height = 6.0
 height_var = 0.35
-base_width = 1.0
+base_width = 1.3
 ogee_point = 1.0
 ogee_flare = 0.4
 sink = 1.0
@@ -22,7 +22,9 @@ desync = 1.0
 noise_amp = 0.45
 noise_scale = 0.6
 noise_scroll = 22.0
-ramp = ExtResource("2_ramp")
+ramp_source = ExtResource("2_ramp")
+ramp_window = 4
+ramp_cut = 0.18
 level_ref = 40.0
 intensity = 1.0
 brightness = 1.0

@@ -12,9 +12,8 @@ verification script.
 ## HANDOFF — read this first if you just picked this up
 
 **Status (2026-07-27): BUILT.** T1–T14 and T17–T20 are done, verified on a GPU, full suite green.
-What remains is **T21** (the universal palette — start from
-[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md), it is its own feature), **T15** (the owner plays §10),
-then **T16** (which deletes this file).
+T21 (the universal palette) landed 2026-07-28 — its contract is ARCHITECTURE_REVIEW §4i. What
+remains is **T15** (the owner plays §10), then **T16** (which deletes this file).
 
 **This document is now the SPEC AND THE RATIONALE, not the instructions.** The living contract — the
 rules that prevent regressions, the snapshot commands, and every trap paid for — is
@@ -1337,7 +1336,8 @@ that bites.
 ### Phase F — added 2026-07-27 (owner, after seeing the first snapshots)
 
 T17–T20 landed 2026-07-27; their contracts live in **ARCHITECTURE_REVIEW §4g**. T21's audit and the
-decisions it still needs are in **[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)**.
+decisions it needed were ruled on 2026-07-28; it landed, and its contract is
+**ARCHITECTURE_REVIEW §4i**.
 
 - [x] **T17 · Fix ball positions at low counts** — 2026-07-27. **It was the HARNESS, not the
   shader.** `fx_nearest_ball` and `fx_ball_at` were correct at every count; nothing in
@@ -1371,14 +1371,12 @@ decisions it still needs are in **[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)
   exponents. `height`, `ball_radius`, `ball_arc_height`, `ball_return_height` are untouched
   `FxStyle` levers, and `Shaders/Styles/*.tres` remains the single place FX tuning lives.
 
-- [ ] **T21 · Universal palette system** — NEEDS ITS OWN PLAN DOC FIRST
-  **Read:** [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md) — the audit is done and the open decisions
-  are listed there; that file IS this task's starting point.
-  A project-wide system (like `ParticleEngine`, it outlives this feature): a `Palette` resource
-  wrapping the `Nx1` image, a `PaletteRoles` resource mapping semantic ROLE names to indices, and
-  a `PaletteManager` autoload so `num_colors` comes from the texture width instead of being
-  stamped into scenes. FX is the LAST consumer to migrate — the baked `fire_ramp.png` becomes a
-  ramp generated from palette roles.
+- [x] **T21 · Universal palette system** — LANDED 2026-07-28. Contract: ARCHITECTURE_REVIEW §4i.
+  Built as `Palette` + `PaletteRoles` + `PaletteRamp` + a STATIC `PaletteDB` (the owner ruled against
+  the autoload this plan sketched: nothing changes at runtime and the `@tool` hosts have no
+  autoloads). `num_colors` and the palette image now come from `PaletteDB`, `fire_ramp.png` and its
+  generator are deleted, and fire/ball/ember colours SAMPLE ordered ramps instead of lerping.
+  Map + in-game UI chrome deferred by the owner pending custom art; they warn every run.
   **⚠** Do not start this inside this plan. Write it up to START_HERE's workflow (audit, owner
   APPROVAL lines, runnable steps) and get it ruled on first.
 

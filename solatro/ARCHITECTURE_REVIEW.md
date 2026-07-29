@@ -513,6 +513,40 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `_phase` and the same geometry from one `FxJuggle.geometry()` call, and both call
   `fx_ball_at` from `fx_common.gdshaderinc`. Two copies of the arc maths is the bug that makes
   flames trail their balls by a frame — the shared include prevents it structurally.
+- **ONE BASE PER TENDRIL, from its own cell centre** (`tendril_on_contour`, 2026-07-29). Sampling the
+  contour per FRAGMENT shears every flame along the surface it stands on: across one cell on a curve
+  the base drops away, squashing that tendril's arch flatter as the contour steepens — visible all
+  round the hoop's ring. One base per tendril makes every flame the same undistorted arch wherever it
+  is planted. The cost is that bases no longer form a continuous line on a CURVE, which is what
+  `merge` + `base_width > 1` is for: measured on the ring, 88 columns of art with 12 gap columns and
+  a largest gap of 4 px, versus separate candles without it. On a FLAT host (card, blade) every base
+  is identical and the skirt is one continuous mass — measured 1 segment at the base at 12 and 40
+  stacks.
+- **A SPRITE's silhouette is a per-column PROFILE, not the polar radius table** (`Shape.PROFILE`,
+  `measure_sprite_silhouette`). Two bugs, one cause — treating a prop's FRAME as its body:
+  a frame is mostly transparent padding, so the comb spanned blank columns and put flames in empty
+  space beside the blade; and a 32-bucket POLAR table has almost no angular resolution across a wide
+  flat edge, so the base rose and sank at random along the knife's perfectly flat top. The profile
+  samples the topmost opaque texel per column, carries an explicit `PROFILE_EMPTY` sentinel so a
+  tendril over blank art emits nothing, and TIGHTENS `body` to the art's bounding box so the comb,
+  the contours and the quad bound all measure the drawing. Measured after: 0 px of flame overhang
+  past the art on all three sprite props, and 2 px of base variation across the knife's flat top.
+  The hoop keeps `Shape.RING` — an analytic ellipse is a better fit and the back/front split keys on
+  it.
+- **Fire is OPAQUE over its host; `sink` is the knob for how much art it covers.** Every shipped
+  style sets `inner_alpha = 1.0` (owner 2026-07-29: seeing the card through the flame "looks very
+  bad"). `FxStyle.sink` is how far the base goes DOWN into the art — positive sinks it in and
+  guarantees no seam, 0 plants it on the contour, negative lifts it clear so the flames cover
+  nothing. Reach for `sink`, never for the alpha.
+- **⚠ `base_width` MUST exceed 1.0 or every tendril is an island.** A tendril's dome reaches exactly
+  zero at its cell boundary, and so does its neighbour's — so at `base_width = 1.0` there is a
+  guaranteed hairline of zero heat at every seam, at every height, which the ramp's transparent cut
+  widens into a visible gap. Measured at 12 stacks: 13 separate segments with 1–9 px between them
+  right down to the base. **`u_merge` cannot fix it** — `max(0, 0)` is still 0 — which is why the
+  40-stack panel showed the seams even with auto-merge on. At 1.3 the domes overlap, the seam lands
+  where the dome is well above the cut, the base fuses into one mass, and the outermost tendrils
+  cover the host's full width (measured: 0–1 px uncovered, was visibly short). Merge then does what
+  its docs claim. Owner ruling 2026-07-28.
 - **Guard the noise.** `fire.gdshader` early-outs on `heat <= 0.0` before `fx_fbm`. Most fragments
   in a quad are empty and fbm is seven taps; this one branch is the biggest saving in the shader
   and the easiest to drop in a refactor.
@@ -527,6 +561,28 @@ the fire riding them), which keeps the dependency inside the one class that owns
   with height is what stacked the colours into horizontal stripes. The half-width comes from
   INVERTING the same ogee the outline uses — one arch read two ways, so the shells cannot drift from
   the silhouette.
+- **A ball's CENTRE is snapped to the pixel lattice** (`fx_pixel_snap`, 2026-07-28). `fx_local`
+  quantizes to a grid anchored on the QUAD while the ball centre moves continuously, so without this
+  every ball rasterizes at an arbitrary sub-pixel phase: measured on `05c_ball_sphere`, one ball's row
+  widths ran `31/44/…/87` down one half and `87/…/34/9` up the other, and the silhouette wobbled as it
+  travelled. Snapped, the same ball measures perfectly symmetric. The RADIUS is deliberately NOT
+  snapped (owner 2026-07-28) — it varies with the count and quantizing it would make balls pop
+  between sizes.
+  - **⚠ Undo the Y FLIP when snapping.** `fx_local` quantizes and THEN negates y, so the art-space y
+    lattice is `extent.y/2 - (j+0.5)·cell` while x is `(k+0.5)·cell - extent.x/2`. Those coincide only
+    when `extent/pixel` is a whole number, which it generally is not (62.4 at pixel 1.0). Snapping y
+    with the x formula lands between rows and the asymmetry survives — it did, on the first attempt.
+  - **⚠ The ball-fire quad must snap on the BALL quad's lattice**, not its own: the two have different
+    reaches and different `pixel`. `FxRequest.partner_reach` / `partner_pixel` carry it, pushed as
+    `u_partner_extent` / `u_partner_pixel`. Snapping a plume on its own grid puts it half a pixel off
+    its ball and makes it jitter as the ball moves.
+- **A lit ball's plume sits ON TOP of the ball, and every arc runs under ONE gravity.** The plume's
+  `rise` is measured from the ball's top (`- radius + sink`), not its bottom — from the bottom it
+  wrapped the whole ball and hid it. And each arc's share of the cycle is proportional to sqrt of its
+  own height, the flight time one gravity gives it, instead of the near-equal shares that made the
+  tall throw and the flat carry take the same time: measured spread across arcs 1.92x → 1.26x, with
+  the ease now applied to every arc including the carry (exempting it gave it its own character).
+  `ball_top_fraction` survives as the throw's hang-time bias about the physical 0.5.
 - **Balls are SPHERES.** The fragment is lifted onto the hemisphere (`z = sqrt(1 - |nd|²)`) and shaded
   by that normal, then the Lambert term is QUANTIZED into `ball_bands` hard tones spanning
   `ball_shade → ball_lit`, with a half-vector threshold (`ball_spec`) for a highlight that sits on
@@ -550,13 +606,17 @@ the fire riding them), which keeps the dependency inside the one class that owns
   whole-effect pulse, and the ball spin all do (owner 2026-07-28 — the spin was keyed on the ball
   index alone, so every card's ball 0 turned together, and `_phase` starting at 0 meant two cards
   with the same count juggled as one).
-- **Balls ALTERNATE direction** (`fx_ball_dir`): even indices ride the host's own `u_ball_dir`, odd
-  ones the mirror, so neighbours cross instead of trooping round together — and the host's direction
-  is a coin flip, so ball 0 sets off left on one card and right on the next. `fx_ball_pos` (index in,
-  position out) is the ONE place the mirror is applied; call sites pass an index, never a cycle
-  position, so a plume cannot end up on the mirror image of its ball. `fx_nearest_ball` recovers once
-  per direction group — 2 arcs × 2 directions × 2 bracketing integers = 8 evaluations, still no loop
-  over the count, and a ball is always found by the branch matching its own direction.
+- **Balls cross because the ARC LADDER alternates, NOT because of a per-ball mirror** (fixed
+  2026-07-28). `fx_ball_dir` returns the host's own `u_ball_dir` for every ball; that direction is a
+  coin flip per host, so the pattern runs one way on one card and the other on the next.
+  **⚠ Do not reintroduce the odd-ball mirror.** It made sense when the loop was one throw plus one
+  carry, but consecutive arcs already run opposite ways and consecutive balls sit in consecutive arcs
+  — so when the ball count is near the arc count the two alternations CANCEL and every ball travels
+  the same way, leaving half the pattern empty. Measured at the counts where n == arcs: **2/2, 4/4
+  and 6/6 balls unanimous** with the mirror, an even split without it (owner report: "at ball counts
+  below 10 all balls go left to right, then right to left in one group"). `test_pixels.gd` guards
+  those three counts by name. With one direction group, `fx_nearest_ball` is arcs × 2 bracketing
+  integers — 16 evaluations at the eight-arc ceiling, half what it was, still no loop over the count.
 - **Turbulence scrolls UP.** Art y is negative upward, so the noise sample is `p.y + t·scroll`;
   minus (the original) drifted the grain DOWNWARD and read as the fire falling.
 - **Nothing may reach more than half a card separation past its host** — that is what keeps the card
@@ -626,6 +686,41 @@ shared spec oracle at 1/3/8/50, a ball shades into 3+ tones with an off-centre h
 halves reassemble pixel-for-pixel, and a prop texel matches a card texel at three card scales. It
 FAILS rather than skips under a dummy renderer, which is why the suite runs windowed (§7). The
 snapshot harness below stays for the judgements a number cannot make.
+
+**Tuning FX by hand: `UI/Fx/Tools/fx_editor.tscn`** (2026-07-28, owner request — *"a way to visualize
+fire and juggling purely in editor … so I can fine tune parameters"*). Open the scene in the editor
+and it renders a burning card, a juggling card and a burning prop through the SHIPPING path
+(`FxFire.request` / `FxJuggle.requests` into a real `FxAttachment`) — never a private copy of the
+maths, which is the mistake that made flames trail their balls. Stacks, ball count, lit balls, both
+bodies, zoom and a `time_scale` (0 freezes the animation while the shapes stay live) are inspector
+knobs; editing any `FxStyle` re-pushes immediately.
+
+**⚠⚠ EVERY FX SCRIPT MUST STAY `@tool`, AND THIS ONE DESTROYS DATA.** A non-tool script loads in the
+editor as a PLACEHOLDER instance. Three consequences, all seen on 2026-07-28:
+
+1. Calling anything on it fails — *"Attempt to call a method on a placeholder instance"* — so
+   `FxStyle.apply()` never ran, no uniforms were pushed, and **every effect in the editor rendered
+   pure white**.
+2. `_apply_static()` aborts at that call, so `u_mode`, `u_body`, `u_ball_tones` and the rest never
+   reach the material either — which is why the ball-fire quad appeared to draw nothing at all.
+3. **Saving a `.tres` whose script is a placeholder writes back only the properties the editor could
+   see and silently drops the rest.** `fire_card.tres` lost its `pixel` and `dither` that way, and
+   picked up a corrupt `ramp_edges = null`, just from being opened. Recovered from git.
+
+`FxStyle`, `FxRequest`, `FxFire`, `FxJuggle`, `ParticleSpec`, `ParticleEngine` and `FxAttachment` are
+all `@tool` for this reason. Any new FX class an editor tool touches must be too. The array setters
+also coerce null, as cheap insurance against a `.tres` corrupted this way reaching a shader.
+
+Two more things it required, both worth not undoing:
+- **`FxAttachment` is `@tool` now**, and reads settings through `FxAttachment.settings()` — the editor
+  instantiates NO autoloads, so `SettingsManager` is absent there and the shipped `PlayerSettings`
+  defaults stand in. `pacing()` already returned 1.0 with no Game.
+- **Every node the tool builds is OWNERLESS and rebuilt from scratch** on any change. An owned child
+  would be saved into `fx_editor.tscn` by the editor — the same trap that stops `CardVisual` from
+  building FX in the editor at all.
+
+It is a TOOL, not a test: nothing in it asserts. Assertions live in `Tests/Visual/test_pixels.gd`,
+reviewable captures in `fx_snapshot.tscn`.
 
 **Shader pixels need the SNAPSHOT harness, not the headless suite.** `--headless` uses the dummy
 renderer and never compiles a shader program, so a GLSL error, an inverted sign, an upside-down
@@ -724,29 +819,94 @@ behind the occupied card, its RIGHT arc the near side, in front. That matches `f
 card too. `SHAPE_RING` is an **ellipse** from `u_body`, not a circle of its half-width — a circle sat
 the flames deep inside an 80×180 arc.
 
-**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** `Assets/color_picker.tres` replaces a
+**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** `Assets/color_picker.gdshader` replaces a
 polygon's RGB with a palette entry while the polygon's texture supplies the alpha, so it flattens
 whatever it touches to ONE colour. Therefore:
 
 - The **suit pip** draws the sheet's own colours — `suit_pips.png` is authored in the palette, each
   frame already shaded with its suit's ramp. `PipSuit.set_texture()` CLEARS the material (these
   polygons are pooled and reused, so a stale material from a previous binding would survive).
-- The **rank pip** and the **card art** are shared by every suit, so they are recoloured to
-  `PipSuit.PALETTE[suit]`.
-- `num_colors` is no longer stamped into `card_visual.tscn`; it comes from the shader default, which
-  must match the palette image's width (`Assets/CircusCrayon.png`, 32×1). Removing that duplication
-  for good is T21's `PaletteManager` ([PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)) — until then, a
-  palette of a different width means editing the shader default.
-- **FX colour is NOT on the palette yet** and a palette swap will not touch it: the fire ramp is a
-  baked 64-colour PNG with zero palette entries in it, and the ball colours are hand-picked. That is
-  T21's last migration step, and it has a look change in it (band colours must be SAMPLED from an
-  ordered role list, not lerped between two — both the ramp generator and `juggle.gdshader`'s sphere
-  banding currently interpolate). Measured numbers: PALETTE_PLAN_BRIEF §2.3.
+- The **rank pip** and the **card art** are shared by every suit, so they are recoloured to that
+  suit's `palette_role()` (§4i).
+- The palette IMAGE and `num_colors` are both pushed from `PaletteDB` at bind time. Neither is
+  stamped into `card_visual.tscn` and neither is a shader default any more (T21).
+- **FX colour is on the palette too** since T21 — the fire ramp and the ball tones are generated from
+  `PaletteRamp` resources. See §4i.
 
 Visual checks: `Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn` (windowed, needs a
 GPU) writes `user://prop_art_snapshots/` — every kind over a card outline, the pip-vs-prop pixel-size
 comparison at three `card_scale`s, the mirror, the hoop halves reassembling the whole ring, the
-recolour split per suit, and the hoop/jumped-card centre alignment (`15_hoop_alignment`).
+recolour split per suit, the hoop/jumped-card centre alignment (`15_hoop_alignment`), and the
+palette SWAP (`16_palette_swap`, §4i).
+
+---
+
+## 4i. THE UNIVERSAL PALETTE — every colour is a named pointer (T21, 2026-07-28)
+
+**Every colour the game draws resolves to an entry of one N×1 image.** Reassigning a colour is
+editing ONE named role; swapping the whole palette is repointing ONE resource. Owner's ask:
+*"colors should come from universal palette … via some resource of pointers, and make it easy to
+reassign to different colors especially if the palette changes."*
+
+| Piece | File | What it is |
+|---|---|---|
+| `Palette` | `Scripts/palette.gd` | Wraps the N×1 texture. `width()` comes from the IMAGE — never hand-entered. |
+| `PaletteRoles` | `Scripts/palette_roles.gd` | The resource of pointers: one named `@export` int per role. |
+| `PaletteRamp` | `Scripts/palette_ramp.gd` | An ORDERED list of entries. The only way a gradient is expressed. |
+| `PaletteDB` | `Scripts/palette_db.gd` | Statics that name the live palette, roles and ramps. |
+| Data | `Assets/Palette/*.tres` | `circus_crayon`, `roles`, `ramp_fire`, `ramp_ball`, `ramp_ember`. |
+
+**Rules that prevent regressions:**
+
+- **STATICS, not an autoload** (owner 2026-07-28: *"autoload seems kind of overkill and has bad code
+  smell"*). Nothing changes at runtime, the `@tool` FX hosts run with no autoloads (§4g's trap), and
+  `preload` resolves at parse time — so no call site null-checks, and a null here is a bug to fix.
+- **⚠ `PaletteDB.PALETTE` is a `static var`, NOT a `const` — do not "tidy" it back.** A `const`
+  resource reference is resolved per reading script, so mutating the object through one reference is
+  invisible through `PaletteDB.PALETTE` in another. That is not theory: the palette-swap snapshot came
+  back pixel-identical until this changed, with the probe showing `pal == PaletteDB.PALETTE` true
+  while their `.texture` differed.
+- **RAMPS SAMPLE, THEY NEVER LERP** (owner: *"blending can create unpredictable and bad looking
+  colors"*). A ramp's window is stepped, the ball bands index a tones texture, the ember gradient uses
+  `GRADIENT_INTERPOLATE_CONSTANT`. The old fire ramp was baked by interpolating two band tables and
+  had **64 colours, zero of them palette entries**; the 3-band ball `mix()` put its middle tone 49
+  away from any entry even though both endpoints were hand-picked. Palette-valid ENDPOINTS are not
+  enough — the in-between is where the drift lives.
+- **A ramp is longer than any one effect needs and effects take a sliding WINDOW of it** (owner:
+  *"ramp could have 10 colors, and fire ramp can focus on window of 3 and move through the ramp when
+  intensity increases"*). The window slides toward the hot end as the stack level rises, so more
+  stacks means hotter bands rather than the same bands brightened. `FxStyle.ramp_window` /
+  `ramp_edges` / `ramp_cut`; built by `PaletteRamp.window_texture()` at load and cached on the style.
+  There is no build step and no baked ramp PNG any more (`tools/make_fx_ramp.py` deleted).
+- **The recolour shader is handed the palette; it does not own one.** `Assets/color_picker.gdshader`
+  (a plain shader now — the old VisualShader had the palette texture baked INSIDE it, which is why a
+  swap recoloured nothing). `PipSuit.set_material()` pushes `palette`, `color_x` and `num_colors`.
+- **Roles are named for MEANING** (`status_flame`), never for colour (`orange`) — a role called
+  `orange` is a literal in a costume and stops surviving the first palette change. `ROLE_NAMES` lists
+  every role; a role missing from it is never range-checked again (a test pins the two together).
+- **Pixel art stays as authored.** `suit_pips.png` and the prop sheets are already painted in the
+  palette; recolouring them would flatten their shading (§4h). The swap shot asserts the pips do NOT
+  move while the rank pip and card art do.
+- **Colour is presentation: nothing here is saved.** `run.tres` stores no colour; never add a
+  migration for a palette change.
+
+**Editing roles in the inspector.** `PaletteRoles` is `@tool`: `_validate_property()` rebuilds each
+role's dropdown from the live palette (`0 #1a0319`, `1 #700031`, …) and `_get_property_list()` adds a
+read-only swatch per role. Both read the image, so they cannot go stale.
+
+**Still hardcoded, deliberately** (owner 2026-07-28, *"Map and UI and background can be deferred to
+some other day, I plan on adding custom art for those"*): the map screen, the in-game UI chrome, the
+status-count text, and `FireworkVisual`'s placeholder. They are NOT allowlisted — the drift scan
+reports each one every run as `[WARN][PLACEHOLDER]`, which is the standing reminder. When that art
+lands, assign the colour in code at `_ready()`; never re-bake a literal into a `.tscn`.
+
+**Enforcement.** `Tests/Engine/test_palette.gd` ("PALETTE") checks roles resolve in range, `width()`
+matches the image, generated ramp/tone textures contain ONLY palette entries, a swapped palette moves
+every role — and runs the drift scan through `TestSuite.warn()`, which counts separately and never
+touches the exit code. Pixels: `16_palette_swap` (§4h) and `tools/palette_conformance.py`, which
+reports off-palette pixels in the captured PNGs (a review instrument — FX quads alpha-blend, so
+blended pixels legitimately are not entries; look for LARGE single-colour clusters far from any
+entry).
 
 ---
 

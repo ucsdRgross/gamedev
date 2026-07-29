@@ -19,15 +19,16 @@ const SUIT_TEXTURE_V_FRAMES : int = 8
 const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")     # 13x13 frames
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
-const COLOR_PICKER_SHADER = preload("res://Assets/color_picker.tres")
-## Palette index per suit, for the polygons that are RECOLOURED (rank pips and card art — both drawn
-## as single-colour silhouettes shared by every suit). The suit PIP itself is not in that list: its
-## frames are painted in the palette already, so it draws its own colours (owner 2026-07-27).
-## 5th (Firework) is placeholder art. TODO real Firework art.
-const PALETTE : Array[int] = [30, 11, 8, 2, 14]
+const COLOR_PICKER_SHADER = preload("res://Assets/color_picker.gdshader")
 
 ## 0..4 — art/palette slot ONLY, never orderable.
 @abstract func get_suit_index() -> int
+## This suit's PaletteDB role, for the polygons that are RECOLOURED (rank pips and card art — both
+## drawn as single-colour silhouettes shared by every suit). The suit PIP itself is not recoloured:
+## its frames are painted in the palette already, so it draws its own colours (owner 2026-07-27).
+## Each suit names its own role rather than indexing a magic array — reassigning the colour is
+## editing that one named entry in Assets/Palette/roles.tres (T21).
+@abstract func palette_role() -> int
 ## PURE factory: the spawners this suit launches when its card is scored in a meld.
 ## Empty when the card is talented (data.skill) or off-board. NO mutation in here.
 @abstract func spawn_props() -> Array[PropSpawner]
@@ -48,7 +49,12 @@ func set_texture(polygon2d:Polygon2D) -> void:
 func set_material(polygon2d:Polygon2D) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = COLOR_PICKER_SHADER
-	material.set_shader_parameter("color_x", PALETTE[get_suit_index()])
+	material.set_shader_parameter("color_x", palette_role())
+	# The palette IMAGE and its width both come from PaletteDB, never from the shader: the old
+	# VisualShader had the palette baked into itself and a hand-kept num_colors default, so swapping
+	# palettes recoloured nothing here (ARCHITECTURE_REVIEW §4h, proved by 16_palette_swap).
+	material.set_shader_parameter("palette", PaletteDB.PALETTE.texture)
+	material.set_shader_parameter("num_colors", PaletteDB.width())
 	polygon2d.material = material
 
 func set_art_texture(polygon2d:Polygon2D, rank:PipRank) -> void:

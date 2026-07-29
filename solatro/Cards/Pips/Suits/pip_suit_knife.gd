@@ -6,6 +6,7 @@ const KNIFE_POINTS := 1
 const KNIFE_TICKS_PER_SLOT := 2
 
 func get_suit_index() -> int: return 1
+func palette_role() -> int: return PaletteDB.ROLES.suit_knife
 func get_str() -> String: return TRANSLATION.find('SUIT_KNIFE')
 func get_description() -> String: return TRANSLATION.find('SUIT_KNIFE_DESCRIPTION')
 

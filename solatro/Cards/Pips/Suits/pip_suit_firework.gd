@@ -6,6 +6,8 @@ extends PipSuit
 const FIREWORK_POINTS := 1
 
 func get_suit_index() -> int: return 4
+## Placeholder art still — the role exists so the real Firework art lands on the palette too.
+func palette_role() -> int: return PaletteDB.ROLES.suit_firework
 func get_str() -> String: return TRANSLATION.find('SUIT_FIREWORK')
 func get_description() -> String: return TRANSLATION.find('SUIT_FIREWORK_DESCRIPTION')
 

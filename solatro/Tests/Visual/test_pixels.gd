@@ -330,17 +330,21 @@ func _plain_fire_style() -> FxStyle:
 	style.desync = 0.0
 	return style
 
-## Balls ALTERNATE direction (owner 2026-07-28) — the oracle check above cannot prove that on its
-## own, since an oracle that mirrored the wrong balls would agree with a shader that did the same.
-## Two independent statements instead:
+## Crossing comes from the ARC LADDER, not from a per-ball mirror (fixed 2026-07-28). Three
+## statements, because the oracle check above cannot prove this on its own — an oracle that mirrored
+## the same balls as the shader would agree with it:
 ##
-## 1. An ODD ball is where it is BECAUSE it is mirrored — so the place it would occupy if it were
-##    NOT mirrored (its reflection) must be empty. That is the difference between alternating and
-##    all-one-way, stated without assuming which side of the card anything lands on.
+## 1. Ball 1 sits where the LADDER puts it, and NOT at the reflection of that spot. Before the fix
+##    the odd balls were mirrored, so this is exactly the assertion that flipped.
 ## 2. Flipping the host's coin reflects the WHOLE pattern, not one ball.
+## 3. THE REGRESSION GUARD: at a count where the ball count equals the arc count, the balls must not
+##    all travel the same way. That is the bug the mirror caused — the arc ladder alternates sweep
+##    per arc, consecutive balls sit in consecutive arcs, and the per-ball mirror cancelled it, so
+##    at 2, 4 and 6 balls every one of them ran in one direction and half the pattern sat empty
+##    (owner report). Checked on the oracle, which is what the render is pinned to above.
 func test_balls_alternate_directions() -> void:
-	behavior_section("BALLS ALTERNATE DIRECTION, AND THE HOST PICKS A SIDE")
-	var style := StatusJuggling.JUGGLE_STYLE
+	behavior_section("BALLS CROSS VIA THE ARC LADDER, AND THE HOST PICKS A SIDE")
+	var style : FxStyle = StatusJuggling.JUGGLE_STYLE
 	var geo := FxJuggle.geometry(2, style)
 	var phase := 0.15
 	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
@@ -357,8 +361,9 @@ func test_balls_alternate_directions() -> void:
 	var found_here : bool = here[&"found"]
 	var found_there : bool = there[&"found"]
 	check(found_here and not found_there,
-			"ball 1 rides the MIRROR of ball 0's direction — its un-mirrored spot is empty",
-			"at its alternating spot: %s; at its un-mirrored spot: %s" % [found_here, found_there])
+			"ball 1 sits where the ARC LADDER puts it, not at the mirror of it",
+			"at its ladder spot: %s; at the mirrored spot: %s" % [found_here, found_there])
+	_check_directions_split()
 	# Reflect the whole pattern by flipping the host's coin. Compared as a MIDPOINT (position + end),
 	# whose reflection about the stage centre is 2*VP_SIZE - it.
 	var plus := PixelProbe.bounds(img, Rect2i(Vector2i.ZERO, img.get_size()), PixelProbe.is_warm)
@@ -372,6 +377,29 @@ func test_balls_alternate_directions() -> void:
 			"dir +1 spans x %d..%d, dir -1 spans %d..%d (expected midpoint sum %d, got %d)"
 			% [plus.position.x, plus.end.x, minus.position.x, minus.end.x, want_sum,
 			minus.position.x + minus.end.x])
+
+## THE REGRESSION GUARD (see the docstring above). Sample every ball's x a hair apart in the cycle at
+## the counts where the ball count EQUALS the arc count — 2, 4 and 6, which is where the cancellation
+## was total — and require both directions to be present. A per-ball mirror makes every one of these
+## unanimous, which is what left half the pattern empty.
+func _check_directions_split() -> void:
+	var style : FxStyle = StatusJuggling.JUGGLE_STYLE
+	for count : int in [2, 4, 6]:
+		var geo := FxJuggle.geometry(count, style)
+		if not is_equal_approx(geo[&"u_ball_arcs"], float(count)): continue
+		var right := 0
+		for i : int in count:
+			var a := PixelProbe.ball_positions(float(count), 0.30, geo[&"u_span"],
+					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+					style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
+			var b := PixelProbe.ball_positions(float(count), 0.305, geo[&"u_span"],
+					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+					style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
+			if b[i].x > a[i].x: right += 1
+		check(right > 0 and right < count,
+				"%d balls on %d arcs travel BOTH ways (no per-ball mirror)"
+				% [count, int(geo[&"u_ball_arcs"])],
+				"%d of %d moving +x" % [right, count])
 
 ## Ruling 10 — the focus highlight reaches the EFFECTS, not just the card art. A card is highlighted
 ## by its `modulate`, which the renderer folds into COLOR before the fragment function; both FX

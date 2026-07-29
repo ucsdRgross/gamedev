@@ -8,14 +8,16 @@ regression-critical residue in ARCHITECTURE_REVIEW.md instead of keeping a log h
 `--headless`): the new PIXELS suite asserts on rendered pixels and FAILS rather than skips under a
 dummy renderer. HEADLESS_TESTING.md §0.
 
-**The three things actually waiting on someone (2026-07-27):** ⬜ the **universal palette** feature
-(plan it from [PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md), owner rules on its approval lines first)
-· ⬜ **owner playtest** of the shader FX (FX_SHADER_PLAN §10, 17 steps) · ⬜ **delete
+**The things actually waiting on someone (2026-07-28):** ⬜ **owner playtest** of the universal
+palette (below — the fire and ball colours CHANGED) · ⬜ **owner playtest** of the shader FX
+(FX_SHADER_PLAN §10, 17 steps) · ⬜ **delete
 FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes (their residue is already folded into
 ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else below is unscheduled backlog.
 
 **Anything visual-effects — fire, juggling, prop art, the FX shaders — starts at
-[VFX.md](VFX.md)**, which carries that whole backlog and its known bugs.
+[VFX.md](VFX.md)**, which carries that whole backlog and its known bugs. **Two FX items are handed
+off to a fresh agent in [FX_HANDOFF.md](FX_HANDOFF.md): hoop/curved-surface fire (two rejected
+attempts) and embers on every fire rather than only the card.**
 
 ## Architecture / engine (unscheduled)
 
@@ -64,6 +66,25 @@ ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else belo
 **Moved: the whole VFX backlog and its known bugs now live in [VFX.md](VFX.md) §6/§7.** That file is
 the entry point for any visual-effects work — link it and say what you want changed. Keeping the
 list here as well is exactly the two-places drift this repo's doc hygiene forbids.
+
+## Universal palette (T21 landed 2026-07-28 — owner playtest pending)
+
+Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner rather than missed:
+
+- **Map screen + in-game UI chrome are still hardcoded**, pending the owner's custom art for them
+  (`world_map_controller.gd`, `map_player_token.gd`, `game_view.tscn`, `choice_viewer`, `deck_picker`,
+  `deck_viewer`, `deck_builder`, `text_popup`, and the status-count text in `status_layer.gd`). The
+  PALETTE suite lists each one as `[WARN][PLACEHOLDER]` every run — that list IS this task. When the
+  art lands: add a role per surface, assign it in code at `_ready()`, never re-bake a literal into a
+  `.tscn`. Candidate indices were worked out and are in git (PALETTE_PLAN.md, deleted 2026-07-28).
+- **`FireworkVisual` has no art** — its placeholder magenta polygon is the last non-deferred literal.
+  The `suit_firework` role already exists for whenever that art is drawn.
+- **The fire ramp's ENDS are an art call the owner has not made.** `ramp_fire` currently runs
+  `[0, 20, 1, 2, 16, 30, 6, 3, 31, 19]`; entry 0 makes a 1-stack flame nearly black and entry 19 puts
+  a neutral grey at the white-hot end. Both are honest nearest-palette choices, both are one-line
+  edits to `Assets/Palette/ramp_fire.tres` — retuning is explicitly out of T21's scope.
+- **`suit_pips.png` has a few off-palette pixels** (e.g. `#ec0037`, 27 from entry 2). Authored art, not
+  a plumbing bug; `tools/palette_conformance.py` finds them.
 
 ## Patience & rerolls (landed 2026-07-20 — owner playtest pending)
 

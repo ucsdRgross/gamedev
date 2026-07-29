@@ -25,8 +25,9 @@ rules live and the project's doc-hygiene rule forbids keeping the same text in t
 is the map, the runbook and the backlog.
 
 Background reading, only if you need the *why*: **FX_SHADER_PLAN.md** §0b (the 25 owner rulings —
-they are the spec) and §7 (the task board, T1–T21). **PALETTE_PLAN_BRIEF.md** for the one open
-feature. Both are historical; if they disagree with ARCHITECTURE_REVIEW, the latter wins.
+they are the spec) and §7 (the task board, T1–T21). The palette contract is
+**ARCHITECTURE_REVIEW §4i**. FX_SHADER_PLAN is historical; if it disagrees with
+ARCHITECTURE_REVIEW, the latter wins.
 
 ---
 
@@ -37,13 +38,14 @@ feature. Both are historical; if they disagree with ARCHITECTURE_REVIEW, the lat
 | `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at` / `fx_ball_pos` / `fx_nearest_ball` / the arc ladder). Included by both shaders so the maths cannot exist twice. |
 | `Shaders/fire.gdshader` | Fire, in two modes: SILHOUETTE (a host's outline) and BALLS (a plume per lit ball). |
 | `Shaders/juggle.gdshader` | The juggled balls. |
-| `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`) and the baked `fire_ramp.png`. **The single place FX tuning lives** (owner ruling 8). |
+| `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`). Colours point at `Assets/Palette/` ramps (§4i). **The single place FX tuning lives** (owner ruling 8). |
 | `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads, owns the clock, the per-host randomness, the lag spring. |
 | `UI/Fx/fx_fire.gd`, `fx_juggle.gd` | Stacks → uniforms. `FxJuggle.geometry()` is the ONE computation both ball quads read. |
 | `UI/Fx/fx_style.gd`, `fx_request.gd` | The lever resource, and the request a status hands to an attachment. |
 | `UI/Fx/particle_engine.gd`, `particle_spec.gd` | The game's ONLY particle path (embers are its first client). |
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
-| `Cards/Pips/pip_suit.gd`, `Assets/color_picker.tres` | Suit pips and the palette recolour shader. |
+| `Cards/Pips/pip_suit.gd`, `Assets/color_picker.gdshader` | Suit pips and the palette recolour shader. |
+| `UI/Fx/Tools/fx_editor.tscn` | **Live FX tuning in the editor** — open it, edit an `FxStyle`, watch the real shaders react. Start here for any art tuning (§4g). |
 | `Tests/Visual/` | `test_pixels.gd` (asserting), `fx_snapshot.gd` + `prop_art_snapshot.gd` (reviewable), `pixel_probe.gd` (the shared oracle + image readers), `snapshot_scene.gd` (the harness base). |
 
 ---
@@ -155,9 +157,39 @@ Ordered roughly by what a session should pick up first.
 
 ### 6.2 The one open feature
 
-- **⬜ T21 — the universal palette.** Audit done, decisions listed:
-  **[PALETTE_PLAN_BRIEF.md](PALETTE_PLAN_BRIEF.md)**. Write the plan from it, get the approval lines
-  ruled on, then build. FX is the LAST consumer to migrate (see §7.3).
+- **✅ T21 — the universal palette. LANDED 2026-07-28.** Every FX colour now comes from a
+  `PaletteRamp` of exact palette entries; the contract is **ARCHITECTURE_REVIEW §4i**. What is still
+  hardcoded, deliberately: the map screen and the in-game UI chrome, deferred until the owner's custom
+  art for them exists — the PALETTE suite reports each one as a `[WARN][PLACEHOLDER]` every run.
+
+### 6.2b Open after the 2026-07-28/29 tuning review
+
+**⬜ HOOP FIRE IS THE OPEN PROBLEM — two attempts rejected by the owner. The diagnosis, the owner's
+preference ranking and the suggested direction are in [FX_HANDOFF.md](FX_HANDOFF.md) §1. Start
+there, not here.**
+
+**⬜ EMBERS ON EVERY FIRE, not just the card** — props and balls carry no ember spec today; the two
+real obstacles (ball spawn position, prop-scale spec) are in FX_HANDOFF §2.
+
+
+- **✅ FIXED — balls all travelled the same way below ~10.** The per-ball direction mirror cancelled
+  the arc ladder's own alternation whenever the ball count was near the arc count; at 2, 4 and 6 every
+  ball ran one way and half the pattern sat empty. The mirror is gone; crossing comes from the ladder
+  (ARCHITECTURE_REVIEW §4g, guarded by name in `test_pixels.gd`).
+- **✅ FIXED — everything white in the editor, and `fire_card.tres` silently losing properties.** Every
+  FX script is `@tool` now; a non-tool script is a PLACEHOLDER in the editor, which both breaks
+  `FxStyle.apply()` and makes the editor drop unknown properties when it re-saves a `.tres`. This one
+  destroys data — see the loud block in §4g before removing `@tool` from anything.
+
+
+- **⬜ `fx_editor.tscn` unverified inside the editor.** Its non-editor paths were smoke-run with a
+  GPU; the `Engine.is_editor_hint()` branches (no autoloads, ownerless rebuild) are unproven until
+  the owner opens the scene. First thing to report if it misbehaves.
+- **⬜ `base_width` is now 1.3** on all three fire styles — that is what closed the per-tendril seams
+  and the edge coverage (§4g). If the crown now reads too solid, that number is the lever.
+- **⬜ The ball highlight is a quantized ellipse** at small radii: ~5x7 FX pixels at r=14, so its
+  flanks show dead-straight runs. That is pixel-art resolution, not a defect — the levers if it
+  should read rounder are `ball_spec` (a tighter dot) or a smaller `pixel` on the juggle style.
 
 ### 6.3 Measurements nobody has taken
 
@@ -185,14 +217,12 @@ Ordered roughly by what a session should pick up first.
 
 Nothing here is secretly broken — each is understood, and each is either accepted or scoped.
 
-1. **⬜ FX colours are OFF-PALETTE.** Measured 2026-07-27: `Shaders/Styles/fire_ramp.png` holds **64
-   distinct colours, none of them a CircusCrayon entry**, and the ball colours are hand-picked
-   (nearest-entry distance 40–80). They were tuned to look like fire, so nothing looks wrong — but a
-   palette swap will not move them. Card/prop/pip ART is already on-palette; only the shader FX and
-   ~20 scattered `Color(...)` literals are not. Two mechanisms also GENERATE in-between colours (the
-   ramp generator's COLD→HOT interpolation, and `juggle.gdshader`'s `mix(shade, lit, …)` sphere
-   banding), so on-palette endpoints are not enough — band colours must be SAMPLED from an ordered
-   role list. This is T21's job, not a bug to chase. Numbers: PALETTE_PLAN_BRIEF §2.3 / §4.4.
+1. **✅ FIXED 2026-07-28 — FX colours were OFF-PALETTE.** `fire_ramp.png` held 64 colours, none of
+   them a CircusCrayon entry, and the ball tones were hand-picked (40–80 from the nearest entry). Both
+   generated their in-between colours (the ramp baker's COLD→HOT interpolation, `juggle.gdshader`'s
+   `mix(shade, lit, …)`), which is why on-palette endpoints were never going to be enough. Fire and
+   balls now SAMPLE ordered `PaletteRamp`s and the baked PNG is gone (ARCHITECTURE_REVIEW §4i).
+   The fire and ball tones CHANGED as a result — that was the approved look change, not a regression.
 2. **⚠ Adding an arc lane is a visible POP.** The arc count is an integer; when a stack crosses a
    lane boundary the path re-shapes. This is the one place owner ruling 16 ("no visual jumps") does
    not hold — the alternative is interpolating between two different path topologies. Accepted, not

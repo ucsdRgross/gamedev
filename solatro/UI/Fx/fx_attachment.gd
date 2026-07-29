@@ -1,3 +1,4 @@
+@tool
 class_name FxAttachment
 extends Node2D
 ## One host's visual effects. This node IS the `Fx` node of the FX tree: a child of the host's
@@ -15,6 +16,15 @@ extends Node2D
 ## pixels are never clipped by the quad edge.
 const FX_MARGIN := 4.0
 
+## The settings the FX read. `@tool` because UI/Fx/Tools/fx_editor.tscn previews real effects in the
+## editor — and the editor instantiates NO autoloads, so `SettingsManager` is not there. The shipped
+## defaults stand in, which is also what a tuning tool should be showing.
+static var _editor_settings : PlayerSettings = null
+static func settings() -> PlayerSettings:
+	if not Engine.is_editor_hint(): return SettingsManager.settings
+	if not _editor_settings: _editor_settings = PlayerSettings.new()
+	return _editor_settings
+
 ## Emitter modes, mirroring the constants in fire.gdshader. GDScript and GLSL cannot share an
 ## enum, so the mapping exists twice and can drift silently — the FX ATTACHMENT suite asserts it.
 enum Mode { SILHOUETTE = 0, BALLS = 1 }
@@ -22,7 +32,12 @@ enum Mode { SILHOUETTE = 0, BALLS = 1 }
 ## Silhouette kinds, mirroring fire.gdshader the same way. A card and a blade are BOTH boxes;
 ## only a deformed card needs the 32-tap radius table, so it is its own kind rather than every
 ## card paying for a silhouette lookup it does not use.
-enum Shape { BOX = 0, RING = 1, RADII = 2 }
+enum Shape { BOX = 0, RING = 1, RADII = 2, PROFILE = 3 }
+
+## Columns in the sprite top-edge profile. Must match PROFILE in fire.gdshader.
+const PROFILE := 32
+## Sentinel for a column with no art in it. Must match PROFILE_EMPTY in fire.gdshader.
+const PROFILE_EMPTY := 1.0e8
 
 ## Split-prop halves: which side of the silhouette this quad is allowed to emit from.
 enum Half { WHOLE = 0, BACK = 1, FRONT = 2 }
@@ -104,7 +119,9 @@ func _ready() -> void:
 	# statuses at all.
 	set_process(false)
 	_last_pos = global_position
-	SettingsManager.settings_changed.connect(_restyle)
+	# No autoloads exist in the editor, where the FX EDITOR tool hosts these nodes (§4g).
+	if not Engine.is_editor_hint():
+		SettingsManager.settings_changed.connect(_restyle)
 
 ## Point this attachment at its host's silhouette. Called once by the host right after it adds the
 ## node — the values are authored constants for a given host, so they never change afterwards.
@@ -118,6 +135,8 @@ func configure(body_size: Vector2, host_rotates := true, host_shape := Shape.BOX
 
 ## The card silhouette's reach at each of RADII angles, or empty while the host is a plain box.
 var _radii := PackedFloat32Array()
+## SHAPE_PROFILE: the sprite's top edge per column (measure_sprite_silhouette).
+var _profile := PackedFloat32Array()
 
 ## Entries in the radius table. 32, NOT 16: the star rig deforming a card goes up to 16 arms, and
 ## 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either smooth
@@ -154,13 +173,72 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 	shape = Shape.RADII
 	_restyle()
 
+## Measure a SPRITE's real top edge into a per-column PROFILE, and tighten `body` to the art.
+##
+## Two bugs this fixes, both reported 2026-07-29 and both caused by treating a prop's FRAME as its
+## body:
+##  * A frame is mostly transparent padding — the ball pip is a small blob in an 8x8 cell — so the
+##    comb spanned blank columns and put flames in empty space beside the drawing.
+##  * The polar radius table has almost no angular resolution across a wide flat edge, so the base
+##    rose and sank at random along the knife's perfectly flat top.
+## A column profile is exact on flat edges and carries an explicit "no art here" sentinel, so both
+## go away by construction.
+##
+## `src` is the frame's rect in sheet pixels; `size` is the art units that frame is drawn at. Called
+## ONCE per prop — a sheet never changes at runtime.
+func measure_sprite_silhouette(sheet: Texture2D, src: Rect2, size: Vector2) -> void:
+	if not sheet: return
+	var img := sheet.get_image()
+	if not img: return
+	var x0 := int(src.position.x)
+	var y0 := int(src.position.y)
+	var w := int(src.size.x)
+	var h := int(src.size.y)
+	# Tight bounds of the opaque texels, in TEXELS first.
+	var min_x := w
+	var max_x := -1
+	var min_y := h
+	var max_y := -1
+	# Topmost opaque texel per source column, or -1 for an empty column.
+	var tops : PackedInt32Array = PackedInt32Array()
+	tops.resize(w)
+	tops.fill(-1)
+	for x : int in w:
+		for y : int in h:
+			if img.get_pixel(x0 + x, y0 + y).a <= 0.0: continue
+			if tops[x] < 0: tops[x] = y
+			min_x = mini(min_x, x)
+			max_x = maxi(max_x, x)
+			min_y = mini(min_y, y)
+			max_y = maxi(max_y, y)
+	if max_x < 0:
+		shape = Shape.BOX                              # nothing drawn: leave it a box
+		return
+	# The art's tight box becomes the BODY, so every contour, the comb width and the quad bound are
+	# measured against the drawing rather than the padding around it.
+	var texel := size / Vector2(float(w), float(h))
+	body = Vector2(float(max_x - min_x + 1), float(max_y - min_y + 1)) * texel
+	# Sample the column tops across the tight box, in prop-local art units (y negative upward).
+	_profile.resize(PROFILE)
+	var span := float(max_x - min_x + 1)
+	for i : int in PROFILE:
+		var col := min_x + int(floorf((float(i) + 0.5) / float(PROFILE) * span))
+		var top : int = tops[clampi(col, 0, w - 1)]
+		if top < 0:
+			_profile[i] = PROFILE_EMPTY
+			continue
+		# Texel top edge, relative to the tight box's centre.
+		_profile[i] = (float(top) - float(min_y)) * texel.y - body.y * 0.5
+	shape = Shape.PROFILE
+	_restyle()
+
 ## Ratio of the base delay to the LIVE delay: 1.0 at rest, above 1 as act compression speeds
 ## everything up, so ambient FX quicken in lockstep with card and prop animation. Null-safe: an
 ## FX host in a viewer or in a test has no game and simply runs at rest pace.
 static func pacing() -> float:
 	var game := CardEnvironment.get_current_game()
 	if not game: return 1.0
-	return SettingsManager.settings.base_delay / maxf(game.get_delay(), 0.001)
+	return settings().base_delay / maxf(game.get_delay(), 0.001)
 
 ## How long a stack change takes. The owner's metric is "fast enough before the next status effect
 ## gets applied", and statuses land on PROP TICKS — so this is a fraction of one prop tick,
@@ -171,7 +249,7 @@ static func pacing() -> float:
 ## Under heavy compression the delay approaches its floor and transitions snap — which is already
 ## how prop motion behaves there, so the whole board degrades consistently.
 static func transition_secs() -> float:
-	var s := SettingsManager.settings
+	var s := settings()
 	var game := CardEnvironment.get_current_game()
 	var delay : float = game.get_delay() if game else s.base_delay
 	return delay * s.prop_tick_fraction * s.fx_transition_fraction
@@ -255,7 +333,15 @@ func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 	var extent := bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
 	(quad.mesh as QuadMesh).size = extent
 	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
-	(quad.material as ShaderMaterial).set_shader_parameter(&"u_extent", extent)
+	var mat := quad.material as ShaderMaterial
+	mat.set_shader_parameter(&"u_extent", extent)
+	# An effect that draws ON another effect is handed the PARTNER's lattice too, computed the same
+	# way from the partner's reach — that is what lets the ball-fire plume snap to the exact centre
+	# the ball was drawn at (FxRequest.partner_reach).
+	if req.partner_reach >= 0.0:
+		mat.set_shader_parameter(&"u_partner_extent",
+				bound + Vector2.ONE * (req.partner_reach + FX_MARGIN) * 2.0)
+		mat.set_shader_parameter(&"u_partner_pixel", req.partner_pixel)
 
 ## Write the STATIC half of an effect's uniforms: its style's ~35 art levers plus the host facts
 ## that never change. Called on creation and on style swap, never per frame — pushing the whole
@@ -268,11 +354,12 @@ func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
 	mat.set_shader_parameter(&"u_half", int(half))
 	mat.set_shader_parameter(&"u_body", body)
 	if not _radii.is_empty(): mat.set_shader_parameter(&"u_radii", _radii)
+	if not _profile.is_empty(): mat.set_shader_parameter(&"u_profile", _profile)
 	# The player's master effect strength, on top of the style's own brightness — so a "reduce
 	# effects" setting reaches every effect without editing a single .tres, and reaching zero
 	# turns the board's FX off entirely (a genuine photosensitivity control, not a taste one).
 	var lit : float = req.style.brightness if req.style else 1.0
-	mat.set_shader_parameter(&"u_brightness", lit * SettingsManager.settings.fx_intensity)
+	mat.set_shader_parameter(&"u_brightness", lit * settings().fx_intensity)
 	for key : StringName in req.snap:
 		mat.set_shader_parameter(key, req.snap[key])
 

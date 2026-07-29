@@ -1,3 +1,4 @@
+@tool
 class_name FxStyle
 extends Resource
 ## Every STATIC lever of one visual effect, in one inspector-editable place (owner ruling 8:
@@ -23,8 +24,11 @@ extends Resource
 ## Outward lean of the crown: tendrils fan away from centre in proportion to how far out they
 ## sit (owner ruling 1's "some angle skew as spread").
 @export_range(0.0, 1.0, 0.01) var skew : float = 0.15
-## Opacity where the effect overlays the host's body, so a burning card keeps its rank readable.
-@export_range(0.0, 1.0, 0.01) var inner_alpha : float = 0.5
+## Opacity where the effect overlays the host's body. **Every shipped style sets this to 1.0**: fire
+## BLOCKS what it covers (owner 2026-07-29 — seeing the card through the flame "looks very bad").
+## Use `sink` to decide how much art the flames come down over; this stays only because a future
+## effect (a ghost, a frost bloom) may genuinely want to be see-through.
+@export_range(0.0, 1.0, 0.01) var inner_alpha : float = 1.0
 
 @export_group("Tendril shape")
 ## Flame length in art units, before the per-tendril variation (which only ever SHORTENS a tendril,
@@ -49,8 +53,15 @@ extends Resource
 ## tip. Height must stay the secondary term: leading with it is what stacked the colours in rows.
 @export_range(0.25, 4.0, 0.01) var onion_power : float = 1.0
 @export_range(0.0, 1.0, 0.01) var onion_rise : float = 0.35
-## How far the flame base sinks INTO the body, which is what guarantees no seam at the contour.
-@export var sink : float = 2.0
+## HOW FAR THE FIRE IS ALLOWED DOWN INTO THE HOST'S ART, in art units — the encroachment knob
+## (owner 2026-07-29). Positive sinks the base below the contour, which is what guarantees no seam
+## where flame meets host; 0 plants it exactly on the contour; NEGATIVE lifts it clear so the flames
+## sit above the art and cover nothing at all.
+##
+## This is the lever for "the fire is hiding my card", NOT `inner_alpha`. Fire is opaque now — every
+## shipped style sets `inner_alpha = 1.0`, because seeing the art through the flame reads badly — so
+## the only thing that decides how much art a flame covers is how far down its base starts.
+@export_range(-16.0, 16.0, 0.25) var sink : float = 2.0
 ## 3-tap max so neighbouring tendrils fuse into a sheet instead of showing a V-notch between
 ## them. Off by default: it triples the tendril evaluations. Density turns it on automatically.
 @export var merge : bool = false
@@ -83,9 +94,43 @@ extends Resource
 @export var noise_scroll : float = 18.0
 
 @export_group("Colour")
-## The whole palette: u = heat, v = stack level. Hard pixel columns are what read as pixel art,
-## so it is sampled with filter_nearest; a cold ramp makes this same shader frost.
-@export var ramp : Texture2D = null
+## The effect's whole palette, as an ORDERED LIST OF PALETTE ENTRIES (T21). u = heat, v = stack
+## level; hard pixel columns are what read as pixel art, so it is sampled with filter_nearest, and a
+## cold ramp makes this same shader frost.
+##
+## The texture is BUILT from this ramp at load — it used to be a PNG baked by tools/make_fx_ramp.py
+## from two band tables interpolated per row, which is why the shipped fire ramp had 64 colours and
+## not one of them was in the palette. Retuning fire is now editing an Array[int] in the inspector.
+@export var ramp_source : PaletteRamp = null:
+	set(value):
+		ramp_source = value
+		_ramp_tex = null
+## How many of the ramp's entries one flame shows at once. The window SLIDES toward the hot end as
+## the stack level rises (owner 2026-07-28: *"ramp could have 10 colors, and fire ramp can focus on
+## window of 3 and move through the ramp when intensity increases"*), so more stacks means hotter
+## bands rather than the same bands brightened.
+@export_range(1, 12, 1) var ramp_window : int = 4:
+	set(value):
+		ramp_window = value
+		_ramp_tex = null
+## Heat thresholds where the window's bands change, one per band. Empty spaces them evenly.
+@export var ramp_edges : PackedFloat32Array = PackedFloat32Array():
+	set(value):
+		# Coerced: the editor wrote `ramp_edges = null` into fire_card.tres once, while this script
+		# was still a PLACEHOLDER there (it was not @tool), and a null would then crash the ramp
+		# build on load. Cheap insurance against a corrupt .tres reaching the shader.
+		ramp_edges = value if value != null else PackedFloat32Array()
+		_ramp_tex = null
+## Below this heat the flame is TRANSPARENT — the cut that gives tendrils their ragged outline, so
+## it belongs to the ramp rather than being a constant buried in the shader.
+@export_range(0.0, 0.9, 0.01) var ramp_cut : float = 0.18:
+	set(value):
+		ramp_cut = value
+		_ramp_tex = null
+
+## Cached build of `ramp_source`. Styles are shared preloads, so this is one texture per style for
+## the whole run; every setter above drops it so an inspector edit rebuilds on the next apply().
+var _ramp_tex : ImageTexture = null
 ## The stack count that reaches the TOP of the ramp. Normalization is logarithmic, so most of
 ## the ramp is spent on the first ~20 stacks — where the game actually lives — while still
 ## showing a difference all the way up (owner ruling 19: "a high number like 100+").
@@ -116,7 +161,10 @@ extends Resource
 @export var ball_arc_max : float = 32.0
 ## The shallow return arc — the "flat part", a small upward arc rather than a straight line.
 @export var ball_return_height : float = 6.0
-## Share of the cycle spent on the tall arc. > 0.5 means longer hang time, which is what real
+## The throw's HANG-TIME BIAS. Each arc's share of the cycle is proportional to sqrt of its own
+## height — the flight time one gravity gives it — and this scales the throw's share about that
+## physical baseline: 0.5 is purely physical, above it the throw lingers longer than physics alone,
+## which is what real
 ## juggling looks like: the throw takes longer than the carry.
 @export_range(0.2, 0.8, 0.01) var ball_top_fraction : float = 0.6
 ## Seconds for one full loop at ONE ball. REAL seconds, not a fraction of get_delay(): juggling
@@ -143,15 +191,21 @@ extends Resource
 @export var ball_spin_per_count : float = 0.35
 ## Flat ball colours: balls do NOT ride the stack ramp (owner ruling 20) — their count already
 ## reads through size and speed, so a third channel would be redundant.
-@export var ball_lit : Color = Color(1.0, 0.82, 0.35)
-@export var ball_shade : Color = Color(0.72, 0.45, 0.12)
-@export var ball_gloss : Color = Color(1.0, 0.98, 0.85)
-## SPHERE shading (owner 2026-07-27: "balls need to be spherical"). `bands` is how many hard tones
-## the curvature is quantized into, spanning shade -> lit; `light` is the direction the light comes
-## from in ART space (-y is UP, as everywhere else in 2-D) and `light_z` how head-on it is; `spec`
-## is the highlight threshold — higher is a tighter dot. The spin rotates this whole frame, so the
-## bands and the highlight sweep round the ball as it rolls.
-@export_range(2, 8, 1) var ball_bands : int = 3
+##
+## The body tones are an ordered ramp, darkest first, and the sphere's bands SAMPLE it — one band per
+## entry, every one an exact palette entry. Adding a tone is adding an index to the ramp; `ball_bands`
+## follows its length, so the two cannot disagree.
+@export var ball_tones : PaletteRamp = null:
+	set(value):
+		ball_tones = value
+		_tones_tex = null
+## The specular dot, as a palette role index (PaletteDB.ROLES.ball_gloss by default).
+@export_range(0, 255, 1) var ball_gloss_role : int = 31
+## SPHERE shading (owner 2026-07-27: "balls need to be spherical"). `light` is the direction the
+## light comes from in ART space (-y is UP, as everywhere else in 2-D) and `light_z` how head-on it
+## is; `spec` is the highlight threshold — higher is a tighter dot. The spin rotates this whole
+## frame, so the bands and the highlight sweep round the ball as it rolls.
+var _tones_tex : ImageTexture = null
 @export var ball_light : Vector2 = Vector2(-0.45, -0.6)
 @export_range(0.05, 2.0, 0.01) var ball_light_z : float = 0.65
 @export_range(0.5, 0.999, 0.001) var ball_spec : float = 0.965
@@ -162,6 +216,27 @@ extends Resource
 @export var ember_rate_max : float = 24.0
 ## The particle kind embers spawn. Null disables them, which is what viewer styles use.
 @export var ember : ParticleSpec = null
+
+## The heat/level ramp texture, built from `ramp_source` on first use and cached. Null ramp means the
+## effect has no colours at all, which is a broken style rather than a supported state.
+func ramp_texture() -> ImageTexture:
+	if _ramp_tex: return _ramp_tex
+	if not ramp_source: return null
+	_ramp_tex = ramp_source.window_texture(ramp_window, 16, ramp_edges, ramp_cut)
+	return _ramp_tex
+
+## The N x 1 strip of ball body tones, darkest first. Cached the same way.
+func tones_texture() -> ImageTexture:
+	if _tones_tex: return _tones_tex
+	if not ball_tones: return null
+	_tones_tex = ball_tones.tones_texture()
+	return _tones_tex
+
+## How many hard tones the sphere's curvature is quantized into — the LENGTH of `ball_tones`, so a
+## band can never point past the tones that exist. 3 when no ramp is set (the shader's own floor).
+func ball_bands() -> int:
+	if not ball_tones: return 3
+	return maxi(ball_tones.size(), 2)
 
 ## Write every static lever onto a material. Called on creation and on style swap, NEVER per
 ## frame — pushing ~35 uniforms every frame for every host is the cost this split exists to avoid.
@@ -194,7 +269,7 @@ func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_noise_amp", noise_amp)
 	mat.set_shader_parameter(&"u_noise_scale", noise_scale)
 	mat.set_shader_parameter(&"u_noise_scroll", noise_scroll)
-	mat.set_shader_parameter(&"u_ramp", ramp)
+	mat.set_shader_parameter(&"u_ramp", ramp_texture())
 	mat.set_shader_parameter(&"u_brightness", brightness)
 	mat.set_shader_parameter(&"u_opacity", opacity)
 	# Ball geometry the juggle shader reads statically; the count-dependent halves of these
@@ -205,10 +280,9 @@ func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_ball_gravity", ball_gravity)
 	# u_ball_arcs is NOT here: it depends on the ball COUNT, so it rides in FxJuggle.geometry with the
 	# other count-derived values, which is also what guarantees both quads are handed the same one.
-	mat.set_shader_parameter(&"u_lit", ball_lit)
-	mat.set_shader_parameter(&"u_shade", ball_shade)
-	mat.set_shader_parameter(&"u_gloss", ball_gloss)
-	mat.set_shader_parameter(&"u_ball_bands", ball_bands)
+	mat.set_shader_parameter(&"u_ball_tones", tones_texture())
+	mat.set_shader_parameter(&"u_gloss", PaletteDB.color(ball_gloss_role))
+	mat.set_shader_parameter(&"u_ball_bands", ball_bands())
 	mat.set_shader_parameter(&"u_ball_light", ball_light)
 	mat.set_shader_parameter(&"u_ball_light_z", ball_light_z)
 	mat.set_shader_parameter(&"u_ball_spec", ball_spec)

@@ -53,8 +53,14 @@ uniform float u_ball_light_z : hint_range(0.05, 2.0) = 0.65;
 uniform float u_ball_spec : hint_range(0.5, 0.999) = 0.965;
 // FLAT colours: balls do NOT ride the stack ramp (owner ruling 20). Their count already reads
 // through size and speed, so a third channel would be redundant.
-uniform vec4 u_lit : source_color = vec4(1.0, 0.82, 0.35, 1.0);
-uniform vec4 u_shade : source_color = vec4(0.72, 0.45, 0.12, 1.0);
+//
+// The body TONES are an N x 1 strip of EXACT palette entries, darkest first (FxStyle.ball_tones, a
+// PaletteRamp), sampled with filter_nearest — one texel per band. They used to be mix(shade, lit),
+// and the in-between colours that produced were off-palette by up to 49/255 even though both
+// endpoints were hand-picked (owner 2026-07-28: "blending can create unpredictable and bad looking
+// colors"). A texture rather than a vec4 array because a dynamically indexed array returned garbage
+// on GLES3 once already (ARCHITECTURE_REVIEW §4g).
+uniform sampler2D u_ball_tones : source_color, filter_nearest, repeat_disable;
 uniform vec4 u_gloss : source_color = vec4(1.0, 0.98, 0.85, 1.0);
 uniform float u_opacity = 1.0;
 
@@ -66,8 +72,17 @@ void fragment() {
 	vec2 p = fx_local(UV, u_extent, u_pixel);
 	float n = max(u_count, 1.0);
 	float id;
-	float d2 = fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
+	fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
 			u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, id);
+	// The centre is SNAPPED to the pixel lattice before anything is measured from it, so the disc
+	// test and the shading agree and every ball rasterizes symmetrically (fx_pixel_snap). The
+	// distance from fx_nearest_ball is deliberately recomputed here rather than reused: testing
+	// against the unsnapped centre and shading from the snapped one is what would leave a ragged
+	// edge pixel.
+	vec2 centre = fx_pixel_snap(fx_ball_pos(id, n, u_phase, u_span, u_arc_height, u_return_height,
+			u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs), u_extent, u_pixel);
+	vec2 d = p - centre;
+	float d2 = dot(d, d);
 
 	// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in
 	// place rather than popping into the pattern, and the loop's spacing absorbs the rest.
@@ -76,8 +91,6 @@ void fragment() {
 	if (d2 > r * r || r <= 0.0) {
 		COLOR = vec4(0.0);
 	} else {
-		vec2 d = p - fx_ball_pos(id, n, u_phase, u_span, u_arc_height, u_return_height,
-				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs);
 		// A SPHERE, not a disc. Lift the fragment onto the hemisphere it would sit on — z from the
 		// unit disc, so the normal carries the curvature — and shade by that normal. The Lambert
 		// term's iso-lines on a sphere are closed curves AROUND the light, so quantizing it gives
@@ -95,11 +108,11 @@ void fragment() {
 		vec2 lit_dir = vec2(cos(sp) * u_ball_light.x - sin(sp) * u_ball_light.y,
 				sin(sp) * u_ball_light.x + cos(sp) * u_ball_light.y);
 		vec3 lgt = normalize(vec3(lit_dir, u_ball_light_z));
-		// Hard bands, no antialiasing: floor to a band index, then span shade -> lit across them so
-		// the brightest band IS u_lit and the dark side IS u_shade, at any band count.
+		// Hard bands, no antialiasing: floor to a band index, then SAMPLE that band's palette entry —
+		// never a mix between two, which is what put off-palette colours on the balls.
 		float bands = float(max(u_ball_bands, 2));
 		float step_i = min(floor(clamp(dot(nrm, lgt), 0.0, 1.0) * bands), bands - 1.0);
-		vec4 col = mix(u_shade, u_lit, step_i / (bands - 1.0));
+		vec4 col = texture(u_ball_tones, vec2((step_i + 0.5) / bands, 0.5));
 		// The highlight sits ON the surface: a half-vector threshold puts it where the sphere would
 		// actually catch the light, off-centre and tightening toward the pole as u_ball_spec rises.
 		if (dot(nrm, normalize(lgt + vec3(0.0, 0.0, 1.0))) > u_ball_spec) col = u_gloss;

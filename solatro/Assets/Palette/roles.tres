@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PaletteRoles" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/palette_roles.gd" id="1_roles"]
+[ext_resource type="Resource" path="res://Assets/Palette/circus_crayon.tres" id="2_palette"]
+
+[resource]
+script = ExtResource("1_roles")
+palette = ExtResource("2_palette")
+suit_hoop = 30
+suit_knife = 11
+suit_ball = 8
+suit_fire = 2
+suit_firework = 14
+status_flame = 30
+status_ball = 6
+ball_gloss = 31
