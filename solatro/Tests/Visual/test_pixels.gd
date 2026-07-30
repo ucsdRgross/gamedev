@@ -71,6 +71,7 @@ func _ready() -> void:
 	await test_one_pixel_size_for_all_art()
 	await test_effects_take_their_host_modulate()
 	await test_balls_alternate_directions()
+	await test_the_card_mask_is_the_card_the_player_sees()
 	finish()
 
 ## The guard. A dummy renderer cannot compile a shader or rasterize a triangle, so every check below
@@ -432,6 +433,215 @@ func test_one_pixel_size_for_all_art() -> void:
 		check(box_pip.size == box_prop.size and box_pip.size.x > 0,
 				"card_scale %.1f: the prop's footprint matches the card pip's" % card_scale,
 				"pip %s vs prop %s" % [box_pip.size, box_prop.size])
+
+## THE GAP THIS SUITE EXISTED WITH FOR ITS WHOLE LIFE (owner 2026-07-29: *"has this issue this whole
+## time been that fx editor doesnt use real card visual... because the card outline was never accurate
+## to real cards and therefore tests nothing?"*). FX_HANDOFF §0c.2.
+##
+## ⚠ EVERY OTHER CARD PANEL IN THIS PROJECT IS `CardVisual.star_outline`, A HAND MODEL OF THE RIG —
+## `fx_editor.gd`, `fx_snapshot.gd`, `fx_cost.gd`, `fx_behind.gd` all stand up a bare Node2D and feed
+## it that static, and the FX EDITOR THEN DRAWS THE SAME ARRAY AS THE CARD'S FACE, so it cannot show a
+## face-versus-mask disagreement at all. The props were always tested against their real art
+## (`Shape.SPRITE` samples the sheet); the card never was. This check is the one place a REAL
+## `CardVisual` is instantiated — its rig, its autoplay animation, its skinned face — and the claim is
+## the one nothing else could state: **the mask the fire stands on is the silhouette the player sees.**
+##
+## HOW, and each choice is load-bearing:
+##  * A REAL card needs the autoloads an `@tool` editor deliberately lacks (`SettingsManager`,
+##    `CardEnvironment`), which is *why* the editor fakes it — a test scene has them, so this belongs
+##    here and could not be a snapshot panel of the editor.
+##  * The animation is SEEKED to fixed times and PAUSED, so the shot is reproducible; the rig is on
+##    autoplay and would otherwise have moved between the outline read and the render.
+##  * The face is measured with its TEXTURE OFF (a solid `Polygon2D`), because the claim is about the
+##    skinned GEOMETRY the mask describes. Frame padding inside the art is a separate, art-level
+##    question and it would otherwise be indistinguishable from a mask error.
+##  * Compared COLUMN BY COLUMN against the shader's own mask arithmetic
+##    (`PixelProbe.mask_contains`), not by eye: §0g's standing lesson is that a picture of a card at 2x
+##    zoom hides exactly this, and the number is the whole point.
+##
+## WHAT IT FOUND, AND WHY IT NOW ASSERTS **ZERO**. Against the 32-ray radial-scale table this replaced,
+## the card's stretched corner stood ~27 art units of a column outside its own mask at one point of the
+## rig's own animation — a whole spike with no flame on it. The silhouette's own vertices fixed that, and
+## then this check found the last one: the mask was the RIG, the full rectangle, while every card type's
+## art BITES a corner out of its frame — four flame pixels standing on nothing, which is what the owner
+## saw the moment the FX editor started drawing the real face. With the bite in the outline
+## (`CardVisual._rig_outline`) the two agree in **every decidable cell at every pose**, so the bar is
+## exact agreement rather than a tolerance.
+func test_the_card_mask_is_the_card_the_player_sees() -> void:
+	behavior_section("A REAL CardVisual: THE MASK IS THE SILHOUETTE THE PLAYER SEES")
+	# Four times across the 0.6 s loop, because the deformation is not monotonic: the corner arms and
+	# the mid-edge arms peak at different phases, and a single time would test one shape.
+	for t : float in [0.0, 0.15, 0.30, 0.45] as Array[float]:
+		var card := await _real_card(t)
+		if not card: return
+		var poly := (card.fx._poly as PackedVector2Array).duplicate()
+		var wedge := (card.fx._wedge as PackedFloat32Array).duplicate()
+		var half : Vector2 = card.fx._poly_half
+		var inner : Vector2 = card.fx._poly_inner
+		var rig := (card._rig_outline() as PackedVector2Array).duplicate()
+		var shape : int = card.fx.shape
+		var img := await _shoot()
+		check(shape == int(FxAttachment.Shape.RADII) and poly.size() == rig.size(),
+				"t=%.2f: the real card hands its rig to the mask, vertex for vertex (%d)"
+				% [t, rig.size()],
+				"shape %d with %d of the rig's %d vertices — a real card fell back to the BOX branch or "
+				% [shape, poly.size(), rig.size()]
+				+ "was resampled, so every warp claim in FX_HANDOFF would be about a rectangle")
+		if poly.size() < 3: continue
+		# ONE CLAIM, CELL BY CELL, AND BOTH SIDES SAMPLED AT THE SAME POINT — which is the only
+		# comparison that is fair to either. A flame pixel occupies one FX cell and is decided by the
+		# mask at that cell's CENTRE (`fx_local` quantizes every fragment before the mask sees it), and
+		# the card's art is pixel art on the same grid, so "is there art under this flame pixel" is a
+		# question about that same centre. Anything finer measures the rasterizer; anything coarser (an
+		# earlier draft compared the cell's highest art against a centre-sampled mask) punishes a
+		# diagonal edge for the quantization every pixel-art flame has, in one direction only.
+		#
+		# Two ways to disagree, and they look nothing alike on screen: **mask without art** is a flame
+		# pixel standing on nothing — the corner bite, the spike's shoulder — and **art without mask** is
+		# the card's own edge left unlit.
+		var no_art := 0
+		var no_mask := 0
+		var worst_no_art := Vector2.ZERO
+		var worst_no_mask := Vector2.ZERO
+		var checked := 0
+		var skipped := 0
+		var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
+		var cell : float = StatusBurning.CARD_FIRE_STYLE.pixel
+		var cells := int(ceilf((half.length() + 4.0) / cell))
+		for ky : int in range(-cells, cells + 1):
+			for kx : int in range(-cells, cells + 1):
+				var p := (Vector2(float(kx), float(ky)) + Vector2(0.5, 0.5)) * cell
+				var art := _art_at(img, p, centre)
+				# A cell centre sitting ON the art's boundary is decided by the rasterizer, not by
+				# either side of this claim.
+				if art < 0:
+					skipped += 1
+					continue
+				checked += 1
+				var masked := PixelProbe.mask_contains(p, poly, wedge, half, inner)
+				if masked and art == 0:
+					no_art += 1
+					worst_no_art = p
+				elif not masked and art == 1:
+					no_mask += 1
+					worst_no_mask = p
+		TestLog.line("    [mask vs face] t=%.2f  %d cells (%d on the boundary, skipped)  "
+				% [t, checked, skipped]
+				+ "mask-without-art %d (e.g. %s)  art-without-mask %d (e.g. %s)"
+				% [no_art, worst_no_art, no_mask, worst_no_mask])
+		check(checked > 100, "t=%.2f: the real card's face rendered at all" % t,
+				"only %d cells were decidable — the card did not draw" % checked)
+		check(no_art == 0 and no_mask == 0,
+				"t=%.2f: the mask and the drawn face agree in EVERY FX cell" % t,
+				"%d cells carry mask with no art under them (e.g. %s — flame standing on nothing) and "
+				% [no_art, worst_no_art]
+				+ "%d carry art with no mask (e.g. %s — the card's own edge left unlit)"
+				% [no_mask, worst_no_mask])
+		_report_stand_in_fidelity(t, rig)
+
+## Whether the drawn face covers the art point `p`: 1 yes, 0 no, -1 undecidable because `p` sits on the
+## boundary, where the answer belongs to the rasterizer. Read as a 3x3 screen-pixel neighbourhood, which
+## at this zoom is well under half an FX cell.
+func _art_at(img: Image, p: Vector2, centre: Vector2) -> int:
+	var at := centre + p * _zoom
+	var opaque := 0
+	var seen := 0
+	for dy : int in [-1, 0, 1] as Array[int]:
+		for dx : int in [-1, 0, 1] as Array[int]:
+			var px := Vector2i(int(at.x) + dx, int(at.y) + dy)
+			if px.x < 0 or px.y < 0 or px.x >= VP_SIZE or px.y >= VP_SIZE: continue
+			seen += 1
+			if PixelProbe.is_opaque(img.get_pixelv(px)): opaque += 1
+	if seen == 0: return -1
+	if opaque == 0: return 0
+	if opaque == seen: return 1
+	return -1
+
+## Whether `CardVisual.star_outline` — the shape EVERY other FX harness draws — is a shape this rig
+## actually makes. Reported, never asserted: it is a statement about the harnesses, not about the game,
+## and the number is what tells a reader how far to trust a warp panel.
+##
+## The best-fit warp is read off the CORNERS, since that is the only thing `star_outline` moves; the
+## deviation is then the largest distance from a real arm tip to the stand-in's matching point.
+func _report_stand_in_fidelity(t: float, rig: PackedVector2Array) -> void:
+	# FIT the warp rather than deriving it from the corners: the outline carries the art's corner BITE
+	# now, so a corner is three points and none of them sits at the corner's own radius. A scan is a few
+	# hundred vector subtractions and it makes the number mean what it says — the closest this stand-in
+	# can get, whatever `warp` would have to be.
+	var best_warp := 0.0
+	var worst := INF
+	var at := 0
+	for step : int in 61:
+		var warp := float(step) * 0.01
+		var model := CardVisual.star_outline(CardVisual.CARD_SIZE, warp)
+		if model.size() != rig.size(): return
+		var far := 0.0
+		var far_at := 0
+		for i : int in rig.size():
+			var d := (rig[i] - model[i]).length()
+			if d > far:
+				far = d
+				far_at = i
+		if far < worst:
+			worst = far
+			best_warp = warp
+			at = far_at
+	TestLog.line("    [stand-in] t=%.2f  star_outline(warp=%.2f) is the closest hand model of this "
+			% [t, best_warp] + "rig; it is off by %.2f art units at point %d" % [worst, at])
+
+## A REAL `CardVisual`, its animation parked at `secs`, its face reduced to solid geometry, its rig
+## already handed to the mask. Null when the scene has no rig to read (which would make the whole
+## check meaningless, and is itself worth failing on).
+##
+## ⚠ CONTEXT IS **NOT** `PLAY_AREA`: `delta_self_moving_logic` queue_frees a play-area card the moment
+## it cannot find its data in a running game's play area, so a card built that way deletes itself on
+## its first frame in a test.
+func _real_card(secs: float) -> CardVisual:
+	_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + 6.0)
+	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
+	card.current_context = CardVisual.DisplayContext.PREVIEW
+	_stage.add_child(card)
+	if not card.is_node_ready(): await card.ready
+	# ⚠ ITS OWN `_process` DELETES IT. `delta_self_moving_logic` queue_frees any non-PLAY_AREA card
+	# whose `control_anchor` is gone, and a test has no Control to anchor to — so the first frame frees
+	# the card out from under the shot. It also chases that anchor's position every frame, which would
+	# move the host mid-shot. Parked, exactly like `_park` does for an attachment; the one thing
+	# `_process` did that this check needs — `_track_fx_outline` — is called by hand below.
+	card.set_process(false)
+	# FRONT-FACING and still: `floating` drives the bob and the basis3d flip, and `show_front` is what
+	# puts the face on screen at all.
+	card.floating = false
+	# AFTER _ready, which sets it from card_scale: this suite works in art units and does its own zoom.
+	card.scale = Vector2.ONE
+	card.position = Vector2.ZERO
+	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if ap and ap.autoplay != "":
+		ap.play(ap.autoplay)
+		ap.seek(secs, true)
+		ap.pause()
+	# THE FACE AS THE PLAYER SEES IT — its own TypePaper texture on its own skinned grid, so the drawn
+	# silhouette is the art's ALPHA, corner bite included.
+	#
+	# ⚠ AN EARLIER DRAFT NULLED THE TEXTURE to measure the skinned geometry alone, and that was right
+	# only while the mask was the bare rig: now that the mask carries the art's clipped corners
+	# (`CardVisual._rig_outline`), a geometry-only face has SQUARE corners and reports the fix as four
+	# disagreements. The reference has to be the drawing whenever the mask models the drawing.
+	# Everything else on the face sits inside it and is hidden only to keep the comparison to one layer.
+	card.type.show()
+	for poly : Polygon2D in [card.rank, card.suit, card.stamp, card.art] as Array[Polygon2D]:
+		poly.hide()
+	if card.status_layer: card.status_layer.hide()
+	# One frame for the seek to reach the skinned polygons, then re-read the rig into the mask — the
+	# same call `_process` makes every frame on a board card.
+	await RenderingServer.frame_post_draw
+	card._track_fx_outline()
+	check(not card._rig_arms.is_empty(),
+			"the real card's star rig was found (16 Bone2D arms under Bone_Center)",
+			"no rig — `measure_silhouette` fell back to the baked rest polygon and this check cannot "
+			+ "say anything about a deforming card")
+	return card if card.fx else null
+
+
 
 # ----------------------------------------------------------------- the stage
 

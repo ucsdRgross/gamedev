@@ -125,32 +125,38 @@ var _watched : Array = []
 ## rotated a UV before quantizing it (the universal rule, fx_common.gdshaderinc §0b).
 @export_range(-180.0, 180.0, 1.0) var host_rotation : float = 0.0:
 	set(v): host_rotation = v; _touch()
-## WARP EVERY CARD HOST, to see whether the fire follows a card that is no longer a rectangle (owner
-## 2026-07-29: *"I don't see fire effect warping with the card during playtesting"*).
+## WHERE IN THE CARD'S OWN ANIMATION THE RIG SITS, 0 to 1 across `new_animation_2` — which is how you
+## see whether the fire follows a card that is no longer a rectangle (owner 2026-07-29: *"I don't see
+## fire effect warping with the card during playtesting"*).
 ##
-## The number is how far the four CORNERS stretch outward, as a fraction of their rest reach; the
-## edge points stay where they are, which is what turns the box into a star. That is the deformation
-## the shipped card rig actually makes — `card_visual.tscn`'s autoplay animation peaks around 0.25 —
-## and the outline this builds has the same 16 points in the same order the rig hands over, so what
-## the slider shows is the shipped path and not a preview of its own.
+## ⚠ IT REPLACED A `corner_warp` SLIDER, AND THAT SLIDER WAS THE TOOL'S LAST MOCK. It stretched the four
+## corners of a hand-built 16-point star (`CardVisual.star_outline`) — the same family the rig deforms
+## in, but never a pose the rig actually makes: the shipped animation also swings the four MID-EDGE arms
+## and does not move opposite corners by the same amount, so the closest that slider could get to a real
+## card was **2.3 to 3.3 art units out** (measured — `test_pixels.gd`'s
+## `test_the_card_mask_is_the_card_the_player_sees`). The hosts are REAL `CardVisual`s now, so this
+## seeks the REAL `AnimationPlayer` and every pose it shows is one the game can be in.
 ##
 ## ⚠ IT DOES NOT REACH THE PROPS, and that is not an oversight. A prop's mask IS its drawing's alpha
-## (`Shape.SPRITE`), which has no outline to stretch — and no prop deforms in the game, so a knob that
-## bent one here would be the tool showing something that cannot happen. Warping a sprite mask would
-## take a warp term in `fire.gdshader`'s SPRITE branch; that is a shader change, not a tool one.
-@export_range(0.0, 0.5, 0.01) var corner_warp : float = 0.0:
-	set(v): corner_warp = v; _touch()
+## (`Shape.SPRITE`), which has no outline to deform — and no prop deforms in the game, so a knob that
+## bent one here would be the tool showing something that cannot happen.
+@export_range(0.0, 1.0, 0.01) var rig_pose : float = 0.0:
+	set(v): rig_pose = v; _touch()
 ## Body outlines, so you can see where a flame's base sits relative to its silhouette.
 @export var show_outlines : bool = true:
 	set(v): show_outlines = v; queue_redraw()
-## Fill the CARD hosts with a solid face (the props draw their own art). Without it the flame's base
-## is drawn over nothing, and `inner_alpha` — the overlay opacity that keeps a burning card's rank
-## readable — composites against the backdrop instead, which reads as grey mush at the base of every
-## flame. That is the tool lying, not the effect misbehaving.
+## Show the CARD hosts' own faces — the real `CardVisual`'s TypePaper polygon, skinned to its rig, the
+## same drawing the game puts on the board. Without a face under them the flame bases are drawn over
+## nothing and `inner_alpha` — the overlay opacity that keeps a burning card's rank readable —
+## composites against the backdrop instead, which reads as grey mush. That is the tool lying, not the
+## effect misbehaving.
+##
+## ⚠ IT USED TO BE A FLAT PALETTE-COLOURED POLYGON, and it was drawn from THE SAME ARRAY the mask was
+## built from — so the tool could not show a face-versus-mask disagreement at all (owner 2026-07-29:
+## *"no placeholder art that isnt ever seen in game"*). The real face is not even a rectangle: the
+## TypePaper frame clips one texel off each corner, which a flat polygon could never have shown.
 @export var show_card_face : bool = true:
-	set(v): show_card_face = v; queue_redraw()
-@export_range(0, 255, 1) var card_face_index : int = 19:
-	set(v): card_face_index = v; queue_redraw()
+	set(v): show_card_face = v; _touch()
 ## Embers, through the real ParticleEngine. EVERY fire that carries an `FxStyle.ember` throws them —
 ## the card, the props and the lit balls (owner 2026-07-29). Card fire uses `ember.tres`; props and
 ## balls use the prop-scaled `ember_prop.tres`.
@@ -336,19 +342,67 @@ func _drop_ramp_caches() -> void:
 	for spec : ParticleSpec in [card_ember_spec, prop_ember_spec]:
 		if spec: spec.ramp_source = spec.ramp_source
 
-## A card-sized box carrying the card fire style.
+## A REAL CardVisual carrying the card fire style — its TypePaper face, its star rig, its own
+## animation. The card equivalent of `_add_prop`, and for the same reason (owner 2026-07-29: *"no
+## useless mocks when you can just use actual original scene"*).
 func _add_card_fire(slot : int) -> int:
 	var reqs : Array[FxRequest] = []
 	if fire_stacks > 0 and fire_style:
 		reqs.append(FxFire.request(&"fire", fire_stacks, fire_style))
-	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs,
-			_card_outline(card_body)).set_meta(&"card", true)
+	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs, _new_card())
 	return slot + 1
 
-## The card silhouette at the current `corner_warp` — CardVisual's own rig shape, never a copy of it,
-## so the tool cannot show a deformation the cards do not have.
-func _card_outline(body : Vector2) -> PackedVector2Array:
-	return CardVisual.star_outline(body, corner_warp)
+## A real card, posed and parked: the scene the game instantiates, with real data behind it so the face
+## is the one the player sees rather than the placeholder the .tscn ships with.
+##
+## ⚠ `CardVisual._ready` SKIPS ITS OWN `FxAttachment` IN THE EDITOR — deliberately, since the tool owns
+## the effects it is previewing — so `_spawn_host` builds one exactly as the card would. Everything else
+## about the card is real: the rig, the skinning, the TypePaper frame, the pips.
+func _new_card() -> CardVisual:
+	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
+	# NOT PLAY_AREA: `delta_self_moving_logic` chases a `control_anchor` a tool has none of, and frees
+	# any non-play-area card that loses one — which the editor guard already spares us.
+	card.current_context = CardVisual.DisplayContext.PREVIEW
+	# Real data, built the way `Deck._card` builds every card in the game.
+	card.data = CardData.new().with_type(TypePaper.new()) \
+			.with_suit(PipSuitHoop.new() as PipSuit) \
+			.with_rank(PipRankNumeral.new().with_value(7))
+	return card
+
+## Park a real card at `rig_pose` of its own animation and hand the FX its live outline.
+##
+## ⚠ THE ANIMATION DOES NOT AUTOPLAY IN THE EDITOR (autoplay is a runtime thing), which is what makes
+## `rig_pose` the honest knob: every pose it seeks is one the shipped animation actually passes through,
+## and it holds still while a style is tuned.
+func _pose_card(card : CardVisual, fx : FxAttachment) -> void:
+	# Art units, like every other host here: the card root carries `card_scale` from its own _ready, and
+	# the tool does its own zooming.
+	card.scale = Vector2.ONE
+	# ⚠ PARKED, OR IT DELETES ITSELF THE MOMENT THIS SCENE IS *RUN* rather than edited.
+	# `delta_self_moving_logic` frees any non-play-area card that cannot find its `control_anchor`, and a
+	# tool has none — measured: every card host came back with its FX and no card under it. Its `_process`
+	# does nothing else the preview wants either (anchor chasing, the bob, and re-reading a rig this
+	# function poses by hand).
+	card.set_process(false)
+	# FRONT-FACING and STILL: `floating` drives the bob and the basis3d flip, and `show_front` is what
+	# puts the face on screen at all.
+	card.floating = false
+	card.visual.visible = show_card_face
+	# ⚠ ONE ATTACHMENT PER HOST, and a card builds its own as soon as it is NOT in the editor — so
+	# RUNNING this scene (which is how the preview gets checked without opening the editor) would
+	# otherwise put two fire quads on every card. The tool's is the one carrying the styles being tuned.
+	if card.fx:
+		card.fx.queue_free()
+		card.fx = null
+	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if ap and ap.autoplay != "":
+		var anim := ap.get_animation(ap.autoplay)
+		if anim:
+			ap.play(ap.autoplay)
+			ap.seek(rig_pose * anim.length, true)
+			ap.pause()
+	# The card's OWN rig, the same array `_track_fx_outline` hands over on the board every frame.
+	if not card._rig_arms.is_empty(): fx.measure_outline(card._rig_outline())
 
 ## A card-sized box carrying the juggling pair, exactly as StatusJuggling declares them: the balls,
 ## and the fire riding whichever balls are alight.
@@ -359,8 +413,7 @@ func _add_juggler(slot : int) -> int:
 		for i : int in ball_count:
 			levels.append(lit_level if i < lit_balls else 0)
 		reqs = FxJuggle.requests(ball_count, levels, juggle_style, ball_fire_style)
-	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs,
-			_card_outline(card_body)).set_meta(&"card", true)
+	_spawn_host(_x(slot), card_body, FxAttachment.Shape.BOX, reqs, _new_card())
 	return slot + 1
 
 ## A REAL PropVisual, drawing its real art, with fire on its own MASK — the sheet's own alpha, so
@@ -372,31 +425,33 @@ func _add_prop(slot : int, kind : GDScript) -> int:
 	var reqs : Array[FxRequest] = []
 	if fire_stacks > 0 and prop_fire_style:
 		reqs.append(FxFire.request(&"fire", fire_stacks, prop_fire_style))
-	var host := _spawn_host(_x(slot), prop.body_size, prop.fx_shape(), reqs)
-	# ⚠ The tool MUST measure the silhouette itself. PropVisual does it in _ready(), which early-
-	# returns in the editor, so without this the props emit off their FRAME BOX and the flames sit in
-	# a flat line above the art — which is exactly what the tool showed on 2026-07-29 while the
-	# snapshot (a running scene, so _ready ran) looked correct.
-	for child : Node in host.get_children():
-		var fx := child as FxAttachment
-		if fx: prop.measure_fx_silhouette(fx)
-	host.add_child(prop)
-	host.move_child(prop, 0)          # art under the effects, as on a real prop
+	_spawn_host(_x(slot), prop.body_size, prop.fx_shape(), reqs, prop)
 	return slot + 1
 
-## One preview host: a Node2D standing in for a CardVisual / PropVisual's Offset, carrying a real
-## FxAttachment configured the way its host would configure it.
+## One preview host: a Node2D standing in for a CardVisual / PropVisual's Offset, carrying THE REAL
+## VISUAL and a real FxAttachment configured the way that visual would configure it.
 ##
-## `outline` is the host's DEFORMED silhouette, if it has one — the card hosts hand over the same
-## 16-point walk a CardVisual's rig does, which is what makes the warp knob exercise the shipped path.
+## `art` is the host's own scene — a `CardVisual` or a `PropVisual`, never a stand-in for one (owner
+## 2026-07-29: *"no useless mocks when you can just use actual original scene, just like how hoop knife
+## use actual art"*). It is added FIRST, so it draws UNDER the effects exactly as it does on the board.
+##
+## ⚠ BOTH KINDS SKIP THEIR OWN FX SETUP IN THE EDITOR and the tool has to finish the job: `PropVisual
+## ._ready` early-returns whole, and `CardVisual._ready` builds no attachment. Without that the props
+## emit off their FRAME BOX and the flames sit in a flat line above the art — which is exactly what this
+## tool showed on 2026-07-29 while the snapshot (a running scene, so `_ready` ran) looked correct.
 func _spawn_host(at_x : float, body : Vector2, shape : FxAttachment.Shape,
-		reqs : Array[FxRequest], outline : PackedVector2Array = PackedVector2Array()) -> Node2D:
+		reqs : Array[FxRequest], art : Node2D = null) -> Node2D:
 	var host := Node2D.new()
 	host.position = Vector2(at_x, 0.0)
 	# The whole host turns, art and all — the attachment reads `parent.global_rotation` every frame
 	# and cancels it, which is the thing the knob is here to show.
 	host.rotation = deg_to_rad(host_rotation)
 	add_child(host)                     # NO owner — see the header
+	# The art goes in BEFORE the attachment, which is what puts it underneath: draw order here is tree
+	# order, exactly as it is on a real host (no z_index anywhere — LAYERING.md).
+	if art:
+		host.add_child(art)
+		host.set_meta(&"card", art is CardVisual)
 	var fx := FxAttachment.new()
 	fx.name = "Fx"
 	# `host_rotates` decides the QUAD BOUND, not whether anything turns: a turning host needs the
@@ -405,9 +460,12 @@ func _spawn_host(at_x : float, body : Vector2, shape : FxAttachment.Shape,
 	# since no prop rotates any more (§4g).
 	fx.configure(body, not is_zero_approx(host_rotation), shape, FxAttachment.Half.WHOLE, true)
 	host.add_child(fx)
-	# BEFORE `sync`: the outline decides the shape the quads are built for, and the quad bound a
-	# stretched corner needs.
-	if not outline.is_empty(): fx.measure_outline(outline)
+	# BEFORE `sync`: the silhouette decides the shape the quads are built for, and the quad bound a
+	# stretched corner needs. Each host measures its own — a card from its rig, a prop from its sheet.
+	var card := art as CardVisual
+	if card: _pose_card(card, fx)
+	var prop := art as PropVisual
+	if prop: prop.measure_fx_silhouette(fx)
 	# THE SEED BEFORE `sync`, THE CLOCKS AFTER — per-host randomness is read when the quads are BUILT
 	# (§4.4), while the clock is only ever pushed. This slot's seed is rolled once for the whole
 	# session, so a rebuild does not re-scatter the crown that is being tuned.
@@ -448,25 +506,30 @@ func _draw() -> void:
 	# The reference geometry TURNS WITH ITS HOST, or the rotation knob would show every flame leaning
 	# off a card face that stayed square — the tool lying about the very thing it was added to show.
 	var rot := deg_to_rad(host_rotation)
-	if show_card_face:
-		var face := PaletteDB.color(card_face_index)
-		for host : Node2D in _hosts:
-			if not is_instance_valid(host) or not host.get_meta(&"card", false): continue
-			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
-			draw_set_transform(host.position, rot, Vector2.ONE)
-			# The WARPED face, for the same reason the reference geometry turns with its host: a
-			# square face under a star-shaped flame base would read as the effect misbehaving.
-			draw_colored_polygon(_card_outline(body), face)
+	# ⚠ NO CARD FACE IS DRAWN HERE ANY MORE. The card hosts are real `CardVisual`s and draw their own
+	# TypePaper faces (`show_card_face` toggles the real one, in `_pose_card`) — this used to fill a flat
+	# palette-coloured polygon built from THE SAME array the mask was built from, so the tool could not
+	# show a face-versus-mask disagreement at all. Deleted, not moved.
 	if show_outlines:
 		var line := PaletteDB.color(PaletteDB.ROLES.suit_knife)
 		for host : Node2D in _hosts:
 			if not is_instance_valid(host): continue
 			var body : Vector2 = host.get_meta(&"body", Vector2.ZERO)
 			draw_set_transform(host.position, rot, Vector2.ONE)
-			if host.get_meta(&"card", false):
-				var loop := _card_outline(body)
-				loop.append(loop[0])
-				draw_polyline(loop, line, px)
-			else:
-				draw_rect(Rect2(-body * 0.5, body), line, false, px)
+			# A card outlines its LIVE RIG — the silhouette the fire was handed, so a flame base that
+			# does not sit on it is a real disagreement. A prop outlines its body box; its own art is the
+			# reference that matters and it is already on screen.
+			var loop := _rig_loop(host)
+			if not loop.is_empty(): draw_polyline(loop, line, px)
+			else: draw_rect(Rect2(-body * 0.5, body), line, false, px)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+## The closed rig outline of a host's card, in the card's own space, or empty for a host without one.
+func _rig_loop(host : Node2D) -> PackedVector2Array:
+	for child : Node in host.get_children():
+		var card := child as CardVisual
+		if not card or card._rig_arms.is_empty(): continue
+		var loop := (card._rig_outline() as PackedVector2Array).duplicate()
+		loop.append(loop[0])
+		return loop
+	return PackedVector2Array()

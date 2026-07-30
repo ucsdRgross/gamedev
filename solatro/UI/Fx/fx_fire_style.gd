@@ -62,9 +62,12 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 ## where flame meets host; 0 plants it exactly on the surface; NEGATIVE lifts it clear so the flames
 ## sit above the art and cover nothing at all.
 ##
-## This is the lever for "the fire is hiding my card", NOT `inner_alpha`. Fire is opaque — every
-## shipped style sets `inner_alpha = 1.0`, because seeing the art through the flame reads badly — so
-## the only thing that decides how much art a flame covers is how far down its base starts.
+## This is the lever for "the fire is hiding my card", NOT `inner_alpha`. ⚠ **AND THAT IS TRUE FOR THE
+## OPPOSITE REASON THIS LINE USED TO GIVE**: it claimed every shipped style sets `inner_alpha = 1.0`,
+## which contradicted the export 30 lines below and stopped being true when the fire went BEHIND the art.
+## Every shipped style leaves it at **0**, so a flame is cut at its host's mask and covers no art at any
+## rotation — and `sink` is then how far the base is BURIED below that seam, which is still the only knob
+## that decides how much of the flame you never see.
 @export_range(-16.0, 16.0, 0.25) var sink : float = 2.0
 ## Opacity where the effect overlays the host's body — i.e. **whether the fire draws IN FRONT OF the
 ## art or gets out of its way.**
@@ -87,19 +90,20 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 ## answers "am I over the body", on a uniform branch. Anything else pays one lookup per LIT fragment
 ## — measured at well under a tap, because lit fragments are the minority.
 ##
-## ⚠ **THIS IS NOT TRUE DRAW-ORDER OCCLUSION**, and the difference matters in exactly one place. The
-## cut follows the MASK, and the mask is what the fire reads — for a card at rest that IS the art's
-## outline exactly, but a WARPED card's mask is a 32-ray scale field interpolating a 16-point
-## polygon, so the two can disagree by a fraction of a pixel between rays. Real occlusion would mean
-## putting the fire quad BEFORE `visual` in the tree (LAYERING.md's `move_child`, never a z_index) —
-## which needs a SECOND `FxAttachment`, because a juggling card's balls must stay in FRONT of it
-## (ruling 11) and one attachment is one sibling. Not done; see FX_HANDOFF §0i.3.
+## ⚠ **THIS IS NOT TRUE DRAW-ORDER OCCLUSION**, and the difference used to matter at a warped corner.
+## The cut follows the MASK, and the mask is what the fire reads — and the mask now carries the
+## silhouette's OWN VERTICES rather than 32 interpolated rays, so for a card it agrees with the drawing
+## to one FX pixel at every pose the rig can reach (measured: FX_HANDOFF §0c.1/§0c.2). The owner has
+## accepted it by eye. Real occlusion would mean putting the fire quad BEFORE `visual` in the tree
+## (LAYERING.md's `move_child`, never a z_index) — which needs a SECOND `FxAttachment`, because a
+## juggling card's balls must stay in FRONT of it (ruling 11) and one attachment is one sibling. Not
+## done, and not needed: FX_HANDOFF §0c.3 keeps the plan in case the cut is ever wrong again.
 ##
 ## ⚠ **THE DEFAULT IS 0, AND THAT IS DELIBERATE ROBUSTNESS.** Godot omits any property equal to its
 ## script default when it saves a `.tres`, so a value that has to be non-default to be correct is one
 ## the editor can silently drop — and it dropped this one from `fire_prop.tres` twice while this
-## script was being edited (FX_HANDOFF §11's collision, §0i.5). Making the wanted behaviour the
-## DEFAULT means a clobbered resource still comes back right.
+## script was being edited (FX_HANDOFF §11's collision, and §0g's "clobber or tuning" test). Making the
+## wanted behaviour the DEFAULT means a clobbered resource still comes back right.
 @export_range(0.0, 1.0, 0.01) var inner_alpha : float = 0.0
 
 @export_group("Flame shape")

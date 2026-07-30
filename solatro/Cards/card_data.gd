@@ -1,5 +1,13 @@
+@tool
 class_name CardData
 extends Resource
+## ⚠ `@tool` BECAUSE THE FX EDITOR PREVIEWS A REAL CARD, and a class whose chain is not `@tool` loads in
+## the editor as a PLACEHOLDER: the type name survives and every member does not. Measured 2026-07-29 in
+## the owner's editor — *"Invalid access to property or key 'data_changed' on a base object of type
+## 'Resource (CardData)'"*, and a `PipSuitHoop` that came back as a bare `Resource` with no
+## `set_texture`. Nothing here needs a running game (the `_init` registry is a weakref, the setters only
+## emit), so the flag costs nothing and it is what lets a tool stand up the card the player sees rather
+## than a mock of one. THE WHOLE CHAIN HAS TO CARRY IT: CardModifier, CardModifierType, PipSuit, PipRank.
 
 signal data_changed
 signal stage_changed

@@ -38,6 +38,8 @@ func _ready() -> void:
 	await test_fade_before_release()
 	test_transition_derived_live()
 	test_enum_mirror()
+	test_card_preview_chain_is_tool()
+	test_the_mask_is_the_outline()
 	test_fx_pixel_is_the_games_pixel()
 	test_reach_covers_the_sink()
 	_host.queue_free()
@@ -435,11 +437,111 @@ func test_enum_mirror() -> void:
 	for key : String in pairs:
 		check(src.contains("const int %s = %d;" % [key, pairs[key]]),
 				"fire.gdshader's %s matches the GDScript enum" % key)
-	check(src.contains("const int RADII = %d;" % FxAttachment.RADII),
-			"and the radius table length matches on both sides")
+	check(src.contains("const int POLY = %d;" % FxAttachment.POLY)
+			and src.contains("const int WEDGES = %d;" % FxAttachment.WEDGES)
+			and src.contains("const int WEDGE_CANDIDATES = %d;" % FxAttachment.WEDGE_CANDIDATES),
+			"and the silhouette's vertex count, wedge index length and candidate count match on both sides")
 	# The emitter MODES are gone, not renamed: a ball is a Shape whose mask is the discs, and one
 	# code path serves every host (owner 2026-07-30). Re-adding a mode is the regression to catch.
 	check(not src.contains("u_mode"), "the fire shader has no emitter MODE left at all")
+
+## THE FX EDITOR PREVIEWS A REAL CARD, SO THE CARD'S DATA CHAIN MUST STAY `@tool` — and this is the pin,
+## because the failure is invisible everywhere else. A class whose chain is not `@tool` loads in the
+## EDITOR as a placeholder: the type name survives and every member does not. Measured in the owner's
+## editor, 2026-07-29, before the flags were added: *"Invalid access to property or key 'data_changed' on
+## a base object of type 'Resource (CardData)'"* and *"Nonexistent function 'set_texture' in base
+## 'Resource'"* on a `PipSuitHoop` that was already `@tool` — a non-tool BASE is enough to do it.
+##
+## ⚠ IT CANNOT BE CAUGHT BY RUNNING ANYTHING. At runtime every one of these classes works perfectly,
+## placeholder or not, so the suite can only check the source. Verified by A/B: reverting the flags
+## reproduced all six of the owner's errors on an editor launch, and restoring them gave zero.
+func test_card_preview_chain_is_tool() -> void:
+	implementation_section("THE FX EDITOR'S REAL CARD NEEDS ITS WHOLE DATA CHAIN @tool")
+	# The chain a previewed card actually walks: its data, the modifier base every pip extends, and the
+	# four modifier families a card face draws.
+	for path : String in ["res://Cards/card_data.gd", "res://Cards/card_modifier.gd",
+			"res://Cards/card_modifier_type.gd", "res://Cards/Pips/pip_suit.gd",
+			"res://Cards/Pips/pip_rank.gd", "res://Cards/card_modifier_stamp.gd",
+			"res://Cards/card_modifier_skill.gd", "res://Cards/card_visual.gd"] as Array[String]:
+		var src := FileAccess.get_file_as_string(path)
+		check(src.begins_with("@tool"), "%s is @tool" % path.get_file(),
+				"without it the FX editor's card is a placeholder: no signals, no set_texture, and the "
+				+ "face silently stops drawing halfway through update_visual")
+
+## THE DEFORMABLE MASK IS THE OUTLINE, EXACTLY — the claim the wedge representation was built to make
+## (FX_HANDOFF §0c.1) and the one the 32-ray radial-scale table it replaced could not make at all.
+##
+## `Geometry2D.is_point_in_polygon` is the oracle: an engine implementation of "is this point inside
+## this polygon" that knows nothing about wedges, angular slots or fire. Every sample of a grid over the
+## card's own bound must get the same answer from both — at rest, and at warps past what the rig can
+## reach, since a stretched corner is the vertex the old table cut off.
+##
+## ⚠ AND THE INVARIANT THE SHADER'S TWO-CANDIDATE TEST DEPENDS ON, checked here rather than in the hot
+## path: no two silhouette vertices may share a WEDGES-th of a turn. If one ever did, a sliver of that
+## slot would belong to a third wedge and read as empty — a hole in the mask, with no other symptom.
+## Points within half an FX pixel of the boundary are skipped: both sides are exact there and disagree
+## only on which side of `>=` a point exactly ON an edge falls, which no flame can show.
+func test_the_mask_is_the_outline() -> void:
+	implementation_section("THE DEFORMABLE MASK IS THE OUTLINE, VERTEX FOR VERTEX")
+	var att := _attach()
+	for warp : float in [0.0, 0.1, 0.25, 0.45, 0.6] as Array[float]:
+		var outline := CardVisual.star_outline(CardVisual.CARD_SIZE, warp)
+		att.measure_outline(outline)
+		var poly : PackedVector2Array = att._poly
+		var wedge : PackedFloat32Array = att._wedge
+		var half : Vector2 = att._poly_half
+		var inner : Vector2 = att._poly_inner
+		# The vertices reach the shader untouched, or the comparison below is against a resample.
+		check(poly.size() == outline.size(),
+				"warp %.2f: all %d outline vertices reach the mask" % [warp, outline.size()],
+				"%d of %d" % [poly.size(), outline.size()])
+		# THE BOUND THE SHADER'S CANDIDATE COUNT RESTS ON: however many vertices fall inside one slot,
+		# covering that slot takes one more wedge than that. Counted per slot rather than as a minimum
+		# spacing, because a corner's bite deliberately puts three vertices ~1.5 degrees apart and the
+		# question is never "how close" but "how many in one slot".
+		var slots := PackedInt32Array()
+		slots.resize(FxAttachment.WEDGES)
+		for i : int in poly.size():
+			var a := fposmod(atan2(poly[i].x, -poly[i].y), TAU) / TAU * float(FxAttachment.WEDGES)
+			var slot := int(floorf(a)) % FxAttachment.WEDGES
+			slots[slot] += 1
+		var busiest := 0
+		for n : int in slots: busiest = maxi(busiest, n)
+		check(busiest + 1 <= FxAttachment.WEDGE_CANDIDATES,
+				"warp %.2f: the busiest wedge slot holds %d vertices, so %d candidates cover it (%d tested)"
+				% [warp, busiest, busiest + 1, FxAttachment.WEDGE_CANDIDATES],
+				"%d vertices in one slot needs %d candidates and the shader tests %d — the slot's last "
+				% [busiest, busiest + 1, FxAttachment.WEDGE_CANDIDATES]
+				+ "sliver belongs to an untested wedge and reads as a HOLE in the mask")
+		var wrong := 0
+		var worst := Vector2.ZERO
+		var reach := CardVisual.CARD_SIZE.length() * 0.5 * (1.0 + warp) + 2.0
+		var stride := 0.5
+		var y := -reach
+		while y <= reach:
+			var x := -reach
+			while x <= reach:
+				var p := Vector2(x, y)
+				var want := Geometry2D.is_point_in_polygon(p, outline)
+				if PixelProbe.mask_contains(p, poly, wedge, half, inner) != want \
+						and _clear_of_edges(p, outline, 0.5):
+					wrong += 1
+					worst = p
+				x += stride
+			y += stride
+		check(wrong == 0,
+				"warp %.2f: the mask agrees with the polygon at every sample" % warp,
+				"%d samples disagree, e.g. %s — the mask is not the shape the card is" % [wrong, worst])
+	att.queue_free()
+
+## Whether `p` is further than `margin` art units from every edge of `outline` — the band where "inside"
+## is a question about a `>=` rather than about the shape.
+func _clear_of_edges(p: Vector2, outline: PackedVector2Array, margin: float) -> bool:
+	for i : int in outline.size():
+		var a := outline[i]
+		var b := outline[(i + 1) % outline.size()]
+		if Geometry2D.get_closest_point_to_segment(p, a, b).distance_to(p) <= margin: return false
+	return true
 
 # ------------------------------------------------------------------- helpers
 

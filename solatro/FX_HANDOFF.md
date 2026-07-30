@@ -1,49 +1,63 @@
-# FX_HANDOFF.md — live handoff, updated 2026-07-29 (late: BOTH remaining tasks landed)
+# FX_HANDOFF.md — live handoff, updated 2026-07-29 (FIRE IS DONE; the next task is JUGGLING PERFORMANCE)
 
-**Read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW **§4g** first** (the map and the contract).
+🔴 **THE FIRE EFFECT IS CLOSED. YOUR TASK IS JUGGLING PERFORMANCE, AND IT IS A CONVERSATION WITH THE
+OWNER, NOT A SOLO PASS.** Owner, 2026-07-29: *"with this we are done with fire effect changes... Last
+task for next agent will be back and forth with user to make juggling effect as performant as
+possible."*
 
-✅ **START AT §0. THE NOISE FIRE HAS SHIPPED; SO HAVE BOTH OF THE TASKS THAT WERE LEFT.** The tendril /
-comb / ogee / onion build is gone and `fire.gdshader` is now a cover field carved by scrolling noise,
-with a stack ratio on every knob. §0 is the record of what was built and what it measured.
+➡ **START AT [§0d.5](#0d5--the-next-task-juggling-performance-with-the-owner). It is the whole brief:
+the measured budget, the levers that are already taken, the priced menu, and the questions only the
+owner can answer.** Everything else in this file is background for it.
 
-✅ **THE TWO TASKS OF §0c/§0d ARE DONE** (owner 2026-07-29: *"our last tasks will be making fire vfx
-show behind the art and saving juggling performance"*). Both are code; both are measured; **neither
-has been seen by the owner yet, and §0c is a LOOK claim, so his eye is the last word.**
+**Then read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW §4g** (the map and the contract).
 
-| ✅ | landed | measured |
+### What the fire is, in five lines
+
+`fire.gdshader` is a **cover field carved by scrolling noise**: `cover` is how far above the nearest
+surface below a fragment sits, measured in `u_taps` mask lookups, and everything above it is the
+Kinomoto aperture/gain form over two noise layers. The tendril / comb / ogee / onion build is gone.
+Every knob carries a stack ratio (§0b). **The cost of this shader is `mask_level` call count times cost
+per call and nothing else** (§9) — which is why `cover_taps` is the only knob that matters and why the
+mask's representation was worth getting exactly right.
+
+### Everything the owner asked for on fire, and where it landed
+
+| | asked | landed |
 |---|---|---|
-| **§0c** | fire behind the art — **route 1**, the unquantized alpha cut. Cards AND sprite props (the props were a second pass, after the owner caught them) | the seam follows the art's own edge at every angle; the staircase and its backdrop gaps are gone (`fx_behind.tscn`, new) |
-| **§0d** | juggling perf — **lever 1**, `FxRequest.min_half`, the quad sized to the pattern | the juggling layer **1.44x cheaper** (full screen 2.258 → 1.825 ms), all 18 snapshot panels **byte-identical** |
+| ✅ | *"average fire shader effects like moving noise"*, params scaling with stacks | §0a / §0b — the noise fire and its exported stack ratios |
+| ✅ | *"fire effect always be behind main card art"* | §0c — the unquantized alpha cut, cards and props. **Owner has now seen it: *"fire looks good on rotations, no longer jagged"*** |
+| ✅ | *"still clipping at edges when warping"* | §0c.1 — the mask carries the outline's OWN VERTICES (`u_poly`/`u_wedge`) instead of 32 interpolated rays. **26.9 art units of unlit column → 1.0**, at +6 % on a burning screen |
+| ✅ | *"has this issue... been that fx editor doesnt use real card visual"* | §0c.2 — a real `CardVisual` is under test at last, and it proved the stand-in was **2.3–3.3 art units** from any pose the rig makes |
+| ✅ | *"use actual TypePaper visual for fx editor... no useless mocks"* | §0c.4 — the tool hosts real cards, `rig_pose` seeks the card's own animation, and the whole card data chain is `@tool` so it survives the editor |
+| ✅ | *"fx editor shows corner texel not being accounted for"* — and *"do card and prop use same mask code or not?"* | §0c.5 — the type frame's clipped corners are in the outline, measured off its own alpha and exact under deformation; **zero** disagreeing cells against a real card. Costs 16 % of a burning screen. §0c.5 also answers the second question: one shader, ONE branch apart, and why a card cannot use the prop's. |
+| ✅ | *"another performance test... on slower comp"* | §0d.3 — the Intel UHD table. ⚠ **The two boxes are 5x–8x apart, not the ~2x this file claimed for weeks** |
+| ⬜ | *"saving juggling performance"* | §0d took the first lever (`min_half`, ~30 % of the layer). **The rest is your task: §0d.5** |
 
-⚠ **AND THE REVERT THAT BLOCKED §0d FOR TWO SESSIONS WAS CHASING A HARNESS FLAKE** — measured, not
-argued. §0d.1 has it, and the claim now lives in an asserting check instead of a picture.
+### Three things that will bite you if you skip them
 
-⬜ **TWO THINGS THE OWNER FOUND WHILE REVIEWING THIS, AND ONE OF THEM IS BIGGER THAN EITHER TASK:**
-**§0c.1** the warped card's spikes still take fire over the art (the 32-ray mask cannot hold a vertex,
-and the cut follows the mask), and **§0c.2 NO HARNESS ANYWHERE RENDERS A REAL `CardVisual`** — every
-card panel in this project is `star_outline`, a hand model of the rig, and the FX editor draws that same
-array as the card's face. **§0d.2 is the priced menu of juggling compromises he asked for.**
-
-§0e explains `cover_taps`, the one knob that trades look against the only cost this shader has.
-
-**§1 to §7 describe the RETIRED build: read them as the record of what was learned and what must not
-be broken, not as a description of what is there.** **§8 is the live list**; §9 is the cost
-attribution that justified the rewrite and is now the baseline it beat; §11 is the runbook.
+1. 🔴 **`snapshot_diff.py` WAS BLIND UNTIL TODAY** (§0d.4) — it compared ALPHA only, so it called every
+   colour change "identical". **Every "18/18 panels identical" claim written before 2026-07-29 is
+   vacuous**, `min_half` and `body_near` included. The tool is fixed; the claims were never re-earned.
+2. ⚠ **RATIOS FROM THE GTX 1070 DO NOT TRANSFER** (§0d.3). Re-run `fx_cost.tscn` on the Intel box —
+   three runs, take the minimum — before you believe any number in this file that is not labelled
+   Intel UHD.
+3. ⚠ **A RENDERING HARNESS CAN LIE TWICE OVER**: run it twice before believing a red picture (§0d.1's
+   flake), and remember that `09_embers` differs run to run by design.
 
 Sections are numbered in reading order. If you add one, keep it that way — an earlier edition had
-§6.-1 and put §7b before §7a, and it cost a reader real time.
+§6.-1 and put §7b before §7a, and it cost a reader real time. **§1 to §7 are mostly the RETIRED
+build**: read them for what was learned and what must not be broken, not as a description of what is
+there — each one now says at its head whether it is live. **§8 is the live list**; §9 is the cost
+attribution that justified the rewrite; §11 is the runbook.
 
 ⚠ **The owner will run the `simplify` skill over the unpushed commits.** Land behaviour first; do not
 pre-emptively restructure for tidiness.
 
-⚠ **NUMBERS: §0's and §1's are a GTX 1070; everything in §6 and §9 is the owner's Intel UHD** (driver
-31.0.101.2135, gl_compatibility), which is the real target. The two are ~2x apart on these rows, NOT
-the ~12x an earlier edition of this file assumed. Ratios transfer; absolutes do not — **so read §0's
-RATIOS and re-run `fx_cost.tscn` on the Intel box before making any decision from them.**
-
 ---
 
-## 0. THE NOISE FIRE — shipped, plus the TWO TASKS LEFT
+## 0. THE NOISE FIRE — the shipped build, and the one task left
+
+🟢 **LIVE — this is what is in the game.** §0d.5 is the open task; everything else here is the record of what was built and what it measured.
 
 Owner, 2026-07-29: *"Fire effect no longer has tendrils at all, just average fire shader effects like
 moving noise instead... make sure all params have scaling ratios as stacks increase"* — and *"should
@@ -116,23 +130,24 @@ value  = base * max(1 + growth * ratio, 0)
 - `test_every_fire_knob_ramps_with_stacks` walks all 200 counts and **fails when a new knob is added
   without a ratio** — which is the failure this pass existed to prevent.
 
-### 0c. ✅ TASK 1 — FIRE RENDERS BEHIND THE ART (route 1, shipped 2026-07-29)
+### 0c. ✅ FIRE RENDERS BEHIND THE ART — shipped, and ACCEPTED BY THE OWNER
 
 **What shipped is ONE LINE, and it is route 1 of the three weighed below.** The occlusion cut is now
 tested at the **unquantized** position:
 
 ```glsl
 if (u_inner_alpha < 1.0) {
-    vec2 cut = (u_shape == SHAPE_BOX || u_shape == SHAPE_RADII)
-            ? fx_local_raw(UV, u_extent) : p;      // fx_local_raw = the same point, NOT quantized
+    // BALLS keep the quantized point; every other shape tests the raw one
+    vec2 cut = (u_shape == SHAPE_BALLS) ? p : fx_local_raw(UV, u_extent);
     if (mask_solid(mask_level(cut, ball, ball_level))) alpha_mul = u_inner_alpha;
 }
 ```
 
 - The flame's own pixels stay on the FX grid — it is pixel art. **Only the boundary moved**, onto the
   resolution the art actually has, which is what real occlusion looks like.
-- ⚠ **SPRITE AND BALLS DELIBERATELY KEEP THE QUANTIZED POINT.** Their art IS drawn on the FX grid (a
-  prop's sheet at `pixel` 2.5, a ball by `juggle.gdshader` on the shared lattice), so there the
+- ⚠ **THE SNIPPET ABOVE IS THE SECOND DRAFT.** The first excluded SPRITE, on the reasoning in the next
+  paragraph, and the owner caught it. ⚠ **BALLS DELIBERATELY KEEP THE QUANTIZED POINT.** Their art IS
+  drawn on the FX grid (a ball by `juggle.gdshader` on the shared lattice), so there the
   quantized test is the one that AGREES with the drawing — an exact cut would slice a smooth curve out
   of chunky pixels and open the same class of seam from the other side. Uniform branch either way.
 - ⚠ **Cost: none beyond what the cut already paid** — the same single `mask_level`, at a different
@@ -180,33 +195,77 @@ every host is opaque over its own mask — it is now indistinguishable from draw
 If his eye still says otherwise, **route 3 below is the structural answer and its plan is unchanged**;
 set `inner_alpha` back to 1.0 if you take it.
 
-#### 0c.1. ⚠ THE CARD'S WARP CORNERS ARE STILL WRONG, AND IT IS THE MASK, NOT THE CUT
+#### 0c.1. ✅ THE WARPED CORNERS ARE FIXED — THE MASK CARRIES THE OUTLINE'S OWN VERTICES (2026-07-29)
 
 Owner, 2026-07-29: *"curious why fire effect goes in front of card at extreme warp, chamfering at
-edges."* **Measured on `behind_card_warp`, and the answer is the chamfer §0g already documents:**
+edges"*, then *"still clipping at edges when warping"*. **The diagnosis below was right and the menu of
+fixes under it was wrong — including its own recommendation. Read §0c.2 for why: (b) was "the rest
+rectangle plus four corner triangles", and the REAL rig is not that shape.**
 
-- `u_radii` is a **32-ray table of radial SCALE, linearly interpolated**, and no scheme that blends two
-  rays can reproduce a VERTEX. A warped card's corner is a vertex — `star_outline` pulls 4 corners out
-  and leaves 12 interior points on the rest edges, so the shape is a star with four spikes.
-- So the MASK's boundary near a spike is a straight line across its shoulder. **The cut follows the
-  mask**, which produces both halves of what the owner sees: flame drawn OVER the art where the mask's
-  chamfer line falls inside the spike, and a BARE spike above it where the mask says "no art, nothing
-  to stand on".
-- ⚠ **It is not a regression and the unquantized cut did not cause it** — it made it VISIBLE by making
-  every other part of the seam exact. §0g's chamfer row fixed the REST case (the radial scale reduces to
-  the exact box at warp 0); the deformed case was never exact.
-- **Scale:** at **+45 %** it is obvious (a whole spike bare, ~2 units of overhang). At **+25 %** — which
-  is where `card_visual.tscn`'s autoplay animation actually peaks — it is roughly one art unit at the
-  shoulder and easy to miss. The +45 % panel is deliberately past what the rig can reach (§7).
-- **The three ways out, none of them free** (and §10 E is already taken, which is why this is what is
-  left): **(a) `RADII` 32 → 64** halves the error (§7's numbers: 2.32 → 1.41 → 0.56 art units) for 64
-  floats per material per quad per host — two lines, and the only one that is a one-run experiment;
-  **(b) an analytic STAR branch** in `mask_level` (the shape is exactly the rest rectangle plus four
-  corner triangles), which is exact and cheap per tap but is a PER-SHAPE path, brushing the owner's
-  *"fire should be unified and identical in how it treats everything"*; **(c) accept it**, on the
-  grounds that the rig peaks at 0.25. ⚠ **Owner call — (b) is the only correct one.**
+**The diagnosis, unchanged:** `u_radii` was a 32-ray table of radial SCALE, linearly interpolated, and
+no scheme that blends two rays can reproduce a VERTEX. The cut follows the mask, so a stretched corner
+gave both halves of what the owner saw — flame OVER the art where the mask's chamfer line fell inside
+the spike, and a BARE spike above it where the mask said "no art, nothing to stand on".
 
-#### 0c.2. ⚠ NO HARNESS RENDERS A REAL `CardVisual`, AND THAT IS THE ROOT OF THE CARD-VS-PROP DIVERGENCE
+**What shipped is neither (a) nor (b): `mask_level`'s RADII branch now holds the SILHOUETTE ITSELF.**
+
+```glsl
+uniform vec2  u_poly[POLY];      // the outline's own 16 vertices, in the art's frame
+uniform float u_wedge[WEDGES];   // per 1/32 turn: the vertex whose wedge spans that slot's START
+uniform vec2  u_inner;           // the largest origin-centred box that fits INSIDE the outline
+// inside == inside ONE wedge triangle (origin, V[i], V[i+1]), and the index finds it with no search
+```
+
+- **A shape is the union of its wedges**, so "inside" is "inside one wedge" and the only question is
+  which. `u_wedge` answers it in O(1); a slot is 11.25 deg and the rig's vertices are ~20 deg apart at
+  their closest, so **testing that wedge and the next one covers the slot** — which is why two, not a
+  loop. `test_fx_attachment` asserts the vertex spacing, because a third vertex in one slot would leave
+  a HOLE in the mask with no other symptom.
+- **It is exact for a non-convex shape too**, which matters: a star's rest edge between two stretched
+  corners is a reflex vertex, and the union handles a spike and a dent with the same code. A half-plane
+  per slot would have been one dot product and cannot — a slot holding a vertex has no single line.
+- ⚠ **IT COSTS SOMETHING, AND THE TWO BOX TESTS PAY MOST OF IT BACK.** Outside the outline's own bound
+  nothing is solid; inside `u_inner` everything is; the polygon runs only in the band between. **A card
+  at rest IS its authored rectangle, so the two boxes coincide and no fragment on a resting board ever
+  builds a wedge** — four comparisons, against the old branch's `atan` + two fetches + a lerp + a
+  divide. Measured on the owner's **Intel UHD**, three runs each, minimum taken:
+
+| GPU timer, ms/frame | 32-ray table | bare polygon | **polygon + box tests** | net |
+|---|---|---|---|---|
+| **burning, FULL SCREEN** (78 cards) | 5.163 | 6.529 | **5.459** | **+6 %** |
+| **burning + juggling, FULL SCREEN** | 10.435 | 11.960 | **10.775** | **+3 %** |
+| card fire (DEFORMED) x20 | 1.817 | 2.238 | 2.081 | +15 % |
+| card fire x20 (a BOX host!) | 0.975 | 1.073 | 1.214 | +25 % |
+| prop fire (hoop) x20 — the control | 0.577 | 0.565 | 0.577 | 0 % |
+
+  ⚠ **READ THE LAST TWO ROWS TOGETHER.** The hoop is a SPRITE and did not move at all, which is what
+  makes the rest of the column trustworthy — but `card fire x20` is a **BOX** host that never enters the
+  RADII branch and still got 25 % dearer, so part of the cost is the PROGRAM (two more uniform arrays,
+  one more branch: register pressure and instruction cache), not the work. That part cannot be bought
+  back by making the branch cheaper.
+  ⚠ **The bare-polygon column is the one to reason from if the boxes are ever touched**: without them
+  an exact mask costs 26 % of a burning screen, and the whole of that is `atan` + four `vec2` fetches
+  per tap on hardware where a dynamically indexed uniform array is not free.
+  **If 6 % matters more than the corner does, `cover_taps` is where the money is** — 4 → 2 on
+  `fire_card` is measured at 5.418 → 4.174 on the same row, four times the cost of this whole fix
+  (§0e has what it gives up).
+
+- **What it measures on a REAL card** (§0c.2's new check, four points of the rig's own animation):
+  worst mask-vs-drawn-face disagreement **26.9 art units → 1.0**, and 1.0 is the FX grid's own cell, so
+  it is quantization and nothing else can be bought. Width agreement went to exact.
+- **What it looks like** (`fx_behind`'s `behind_card_warp`, +25 / +45 %): the corner spikes carry flame
+  up their edges instead of stopping at a chamfer line across the shoulder. `fx_snapshot` moves 3 of 20
+  panels — `02_fire_rotation`, `02b_card_warp` and `09_embers` (embers are thrown from the mask's
+  surface) — and NOTHING else, which is exactly the blast radius a mask-only change should have.
+- ⚠ **The radial-scale contract is GONE, and with it `radii_scale`, `_rect_radius` and the "three places
+  must agree" hazard.** What replaces it: `poly_solid` in the shader, `_fill_poly_from_outline` on the
+  script side, and `PixelProbe.mask_contains` as the tests' mirror of the first.
+- ⚠ **The winding is normalized on the CPU** (`_fill_poly_from_outline`). The wedge index and
+  `wedge_has` both read the walk as angle-INCREASING, so an outline handed over backwards would index
+  the wrong edge and mask as empty everywhere — a card with no fire at all, from a caller that did
+  nothing wrong.
+
+#### 0c.2. ✅ A REAL `CardVisual` IS UNDER TEST — and it answered the card-vs-prop divergence
 
 Owner, 2026-07-29: *"has this issue this whole time been that fx editor doesnt use real card visual,
 causing broken assumptions and constant mismatch between card vs prop visuals despite requirement they
@@ -230,20 +289,41 @@ polygon grid SKINNED to those bones. Two things follow, and the second is the ow
 
 **What is genuinely NOT invalidated**, so the next reader does not over-correct: the mask maths, the
 cover field, the cut, `min_half`, the balls, and every prop claim. Those either use real art or are
-statements about the shader that hold for any outline. **What IS unverified is the card's silhouette
-itself** — nothing anywhere checks that the arm-tip polygon the attachment is handed matches the
-boundary of the skinned polygons the player sees, and it is not obvious that it should: the face's
-outer vertices are *skinned by* those bones, not equal to them.
+statements about the shader that hold for any outline.
 
-⬜ **THE TEST THAT WOULD CLOSE IT, and it is the next thing to build:** instantiate a REAL `CardVisual`
-in the PIXELS suite (a test scene has the autoloads the `@tool` editor deliberately lacks — which is
-*why* the editor fakes the card), let its autoplay animation run to a fixed time, and compare the drawn
-face's silhouette against `att._radii` column by column. ⚠ Do it in `test_pixels.gd`, not in a snapshot:
-the claim is numeric agreement, and §0g's lesson is that a picture of a card at 2x zoom hides exactly
-this. Until that exists, **every warp claim in this file is a claim about `star_outline`, not about a
-card**, and `fx_editor`'s warp slider should be read the same way.
+✅ **THE TEST NOW EXISTS AND IT ANSWERED THE OWNER'S QUESTION BOTH WAYS.**
+`test_pixels.gd`'s **`test_the_card_mask_is_the_card_the_player_sees`** instantiates a REAL `CardVisual`
+(the PIXELS suite has the autoloads the `@tool` editor lacks — which is *why* the editor fakes one),
+seeks its autoplay animation to four fixed times, renders the skinned face with its TEXTURE OFF so the
+silhouette is the drawn geometry, and compares it to the mask **on the FX grid the fire actually samples**,
+column by column. Three findings, and they split the owner's question in two:
 
-#### 0c.3. The three routes, as they were weighed — kept for route 3
+1. ✅ **THE MASK'S SOURCE WAS NEVER THE PROBLEM.** The face's 16 perimeter vertices are each weighted
+   **0.99997 to their own arm bone** (`card_visual.tscn`'s `Type` polygon), and each arm's rest position
+   IS that vertex — so the drawn silhouette and `_rig_outline()` are the same 16 points. Measured: at
+   rest they agree to **0.1 art units**. The "hand model vs rig" worry about the SILHOUETTE is answered:
+   for a card, the outline handed over is what gets drawn.
+2. ⚠ **BUT `star_outline(warp)` IS A SHAPE THE RIG NEVER MAKES**, and this is the real content of the
+   owner's *"the card outline was never accurate to real cards"*. The closest `warp` to a real pose is
+   **off by 2.3 to 3.3 art units** at every one of the four times, for two structural reasons: the
+   shipped animation also swings the four MID-EDGE arms (`Arm_Right_2` runs 19 → 21.3 → 16, `Arm_Left_2`
+   the other way), so a real card BULGES and PINCHES its long edges, and its corners do not move
+   together (at t=0.15 the top-left arm is 2.9 units out while the top-right is 0.5). One radial `warp`
+   cannot express either. **So every warp panel is a claim about that stand-in** — ✅ except in the FX
+   EDITOR, which hosts real cards as of §0c.4 and whose slider now seeks the rig's own animation.
+3. ⚠ **AND THAT ASYMMETRY HID A REAL BUG FOR THE WHOLE PASS.** §0c.1's chamfer was ~2 units on
+   `star_outline` at the warp the harnesses use and **26.9 art units of unlit column on the real rig** —
+   an order of magnitude apart, because the rig's corner spike is narrow and steep where the stand-in's
+   is broad. That is why the panels only ever showed "a 0.17 unit sliver" while the owner kept seeing
+   the corner. The stand-in did not test nothing; it tested a shape whose worst case is ten times milder.
+
+#### 0c.3. ✅ CLOSED — the three routes, as they were weighed
+
+✅ **ROUTE 1 SHIPPED AND THE OWNER HAS ACCEPTED IT** (2026-07-29: *"fire looks good on rotations, no
+longer jagged"*), so routes 2 and 3 are not needed. **Kept for one reason only: if a future change ever
+makes the CUT wrong again, route 3 (a second `FxAttachment` before `visual`) is the structural answer and
+its full plan is still written out below.** Route 2's `z_index` experiment was never run and stays
+unsettled rather than dead.
 
 Owner: *"I would prefer that fire effect always be behind main card art visually, so it never covers
 art and hides jaggedness of fire bottom vs object tops when rotating or warping"* — then, after the
@@ -326,7 +406,131 @@ CardVisual
      ragged foot.
    - LAYERING.md documents the board order node by node and needs updating.
 
-### 0d. ✅ TASK 2 — JUGGLING PERFORMANCE (lever 1, shipped 2026-07-29)
+#### 0c.4. ✅ THE FX EDITOR HOSTS REAL CARDS NOW — the tool's last mock is gone (2026-07-29)
+
+Owner: *"please use actual TypePaper visual for fx editor since its not perfect rectangle. no placeholder
+art that isnt ever seen in game, and no useless mocks when you can just use actual original scene, just
+like how hoop knife use actual art."*
+
+**Both card slots are `CardVisual.CARD_VISUAL.instantiate()` now** — the shipped scene, its TypePaper
+face, its star rig, its pips, with real `CardData` built exactly the way `Deck._card` builds every card
+in the game. The props already worked this way; the cards are the same door now (`_spawn_host` takes the
+host's own visual and adds it BEFORE the attachment, so art draws under the effects by tree order).
+
+- ⚠ **AND THE FACE IS NOT A RECTANGLE, WHICH IS WHY IT MATTERED.** `card_types.png` frame 2 is 38x50
+  with **one texel clipped off each corner** — measured off the sheet's alpha. The flat palette-coloured
+  polygon this replaced could never have shown that, and it was drawn from **the same array the mask was
+  built from**, so the tool could not show a face-versus-mask disagreement at all. ✅ **And it showed one
+  the same day** (owner: *"oops yeah fx editor shows corner texel not being accounted for"*): the mask was
+  the RIG, the full rectangle, so the fire stood one flame pixel on nothing at each corner. **Fixed in
+  §0c.5** — which is the tool paying for itself within hours of no longer being a mock.
+- **`corner_warp` became `rig_pose`** — 0 to 1 across the card's own `new_animation_2`. The animation
+  does not autoplay in the editor, so every pose the slider seeks is one the shipped card really passes
+  through, instead of a symmetric star the rig never makes.
+- **Two things a real card needed, and both are the same class of guard the props already had:**
+  `CardVisual.settings()` (the `FxAttachment.settings()` pattern — the editor has no `SettingsManager`,
+  and the shipped defaults are what a tuning tool should show anyway), and `_bind_rig()` moved out of the
+  runtime-only block so the tool can read the same outline the board reads. `CardEnvironment` needed
+  nothing: it is statics, and they answer null.
+- ⚠ **THE TOOL SCENE CAN BE *RUN*, NOT JUST EDITED, AND THAT IS HOW THIS WAS VERIFIED** — a throwaway
+  harness instantiated `fx_editor.tscn` in a real scene and saved a PNG, which is far cheaper than
+  opening the editor. Two traps it caught, both worth knowing: a card **frees itself on its first frame**
+  when run rather than edited (`delta_self_moving_logic` drops any non-play-area card with no
+  `control_anchor`), and at runtime a card **builds its own `FxAttachment`**, so the preview would carry
+  two. `_pose_card` parks the process and frees the card's own attachment for exactly those two reasons.
+- 🔴 **AND THE FIRST DRAFT SHIPPED BROKEN IN THE EDITOR, FOR A REASON WORTH KNOWING: A NON-`@tool` BASE
+  CLASS MAKES ITS SUBCLASSES PLACEHOLDERS.** Owner, minutes later: *"Invalid access to property or key
+  'data_changed' on a base object of type 'Resource (CardData)'"*, *"Nonexistent function 'set_texture'
+  in base 'Resource'"*, and *"dont see type art and other card art, only rank pip art"*.
+  - **`PipSuitHoop` IS `@tool` and still came back as a bare `Resource`** — because `PipSuit` and
+    `CardModifier` above it were not. The type name survives a placeholder; every member does not.
+  - **The visible half follows from the invisible half**: the error was thrown at
+    `data.suit.set_texture(suit)`, which ABORTS `update_visual` — so the rank pip (set on the line
+    before) drew and the type, stamp and art (lines after) never ran. One failing call, three missing
+    polygons, and `show_card_face` could not touch it because nothing was hidden; it was never set.
+  - **Fixed by carrying `@tool` down the whole chain**: `CardData`, `CardModifier`, `CardModifierType`,
+    `PipSuit`, `CardModifierStamp`, `CardModifierSkill` (`PipRank` and every concrete pip already had
+    it). None of them needs a running game — the `CardEnvironment` reads are statics that answer null.
+  - ✅ **A/B'd IN THE EDITOR, not argued**: `Godot --path solatro --editor --quit-after 400
+    res://UI/Fx/Tools/fx_editor.tscn` reproduces all six of the owner's errors with the flags reverted
+    and prints **zero** with them in, and a probe confirmed `type/rank/suit/art` all visible in editor
+    mode. ⚠ **That command is the cheapest way to test an editor-only claim** — it needs the owner's
+    editor CLOSED, and it is how any future `@tool` question should be settled.
+  - ⚠ **The pin is `test_card_preview_chain_is_tool`** in the FX ATTACHMENT suite, and it reads the
+    SOURCE, because nothing that runs can catch this: at runtime every one of these classes works
+    perfectly whether it is `@tool` or not.
+  - ⚠ **ONE THING TO WATCH:** the editor can now see every member of these resources, so the next time it
+    saves anything holding a `CardData` (`card_visual.tscn`'s own embedded default, say) the written
+    property set may differ from before. `git diff` it rather than assuming a scene was untouched.
+- ✅ **THE BALLS ARE FINE IN THE EDITOR** (owner, 2026-07-29: *"i can see the balls in editor, so no
+  issue there"*). ⚠ Kept because it is a standing caveat about the instrument, not a bug: the juggler
+  slot renders **no balls when the tool scene is RUN** rather than edited — identically on the build
+  before the real-card swap, so it is a runtime-only artefact of running an `@tool` scene. **A runtime
+  capture of `fx_editor.tscn` is a fair test of the CARDS and the FIRE and not of the balls.**
+
+⬜ **THE SAME RULE STILL APPLIES TO THREE HARNESSES, and they are the follow-up:** `fx_snapshot`,
+`fx_behind` and `fx_cost` all still stand up a bare `Node2D` and feed it `star_outline`. They run in a
+real scene tree, where a `CardVisual` needs none of the guards above — `test_pixels` already does it in
+about ten lines — so the swap is mechanical; what makes it work is pinning the card's seed and clock the
+way `_park` does. Doing it would make `fx_behind`'s seam shots the real thing (its "hosts drawn FILLED"
+is a filled POLYGON today, not a card) and would delete the last of `star_outline`'s users.
+
+#### 0c.5. ✅ THE ART'S CLIPPED CORNERS ARE IN THE MASK NOW — and why a card needed this at all
+
+Owner, 2026-07-29: *"fx editor shows corner texel not being accounted for, fix it then we are done"* —
+and, fairly: *"do card and prop use same mask code or not? I thought this was already a solved issue
+since hoops, knife, suit pip arts are non trivial shapes... what took so much work to make fire treat
+card as non rect?"*
+
+**THE ANSWER IS THE WHOLE REASON THIS TOOK WORK, so put it at the top of any future mask discussion:**
+
+| host | `Shape` | how the mask answers "is there art here" |
+|---|---|---|
+| hoop, knife, pips, ball pip | `SPRITE` | **samples the sheet's ALPHA, live** — non-trivial shapes and the hoop's HOLE come free |
+| card | `RADII` | an **OUTLINE POLYGON**, because a card DEFORMS |
+
+Everything above the mask — the cover field, the taps, the noise, the ramp, the cut — is one code path
+for every host. **The branch differs for exactly one reason: a prop's art never changes shape, and a
+card's is skinned to a 16-arm rig on autoplay.** The SPRITE branch samples a static sheet through a fixed
+transform, so a card on it would burn its UNDEFORMED shape — which is precisely the report §7 exists for
+(*"I don't see the fire effect warping with the card during playtesting"*). Putting a card on that branch
+means inverting a 16-bone skin per fragment.
+
+So a card gets NONE of what a prop's alpha gives for free, and every bit of it has to be rebuilt
+geometrically. Three separate defects came out of that, and none was polish:
+
+1. the outline was **32 interpolated rays**, which cannot hold a vertex — up to **27 art units** of a
+   stretched corner outside its own mask (§0c.1);
+2. **no harness rendered a real card**, so the stand-in under-reported that by ~10x (§0c.2);
+3. **the corner bite is in the ART, not the rig** — a prop never had to be told, and an outline does.
+
+**WHAT SHIPPED FOR (3).** `CardModifierType.corner_notch()` measures the bite off the type frame's own
+alpha (cached per frame, never typed in) and `CardVisual._rig_outline` emits it as the three points it
+really is: in along one edge, across the bite, out along the other. ⚠ **The middle point is the corner
+cell's BILINEAR corner**, so the bite stretches and shears with the rig instead of only being right at
+rest. Measured across the shipped frames: `TypePaper` and most types bite one texel, `TypeInput` three by
+one, the boosters none — and a frame with a STAIRCASE corner is read conservatively (it under-cuts by a
+texel rather than eating art the frame draws).
+
+- **`POLY` 16 → 24** and `WEDGE_CANDIDATES` 2 → 4: a corner's three points sit within ~1.5 degrees, so
+  one wedge slot can hold three of them and covering it takes four wedges.
+- ✅ **The claim is now EXACT, and the check asserts zero rather than a tolerance.**
+  `test_the_card_mask_is_the_card_the_player_sees` compares **cell by cell, both sides sampled at the FX
+  cell's own centre** — the point a flame pixel is actually decided at — and gets **0 disagreements in
+  ~6300 decidable cells at all four poses**, where the previous draft had 4 (one per corner).
+- ⚠ **IT COSTS 16 % OF A BURNING SCREEN** (Intel UHD, three runs, minimum: 5.459 → 6.344 ms; the worst
+  window 10.775 → 11.649). **And the cost is the ARRAY, not the loop** — isolated with a probe: 24
+  vertices with only 2 candidates already cost 6.142, so the extra candidates are 0.2 of the 0.9. Two
+  micro-optimisations were tried and are recorded because the reasoning for both was sound and both
+  measured WORSE: an early `break` out of the candidate loop, and packing two vertices per `vec4` (6.808
+  — the shift/mask/select per fetch costs more than the padding saves).
+- ⚠ **SO IF THIS 16 % EVER MATTERS, THE LEVER IS NOT THE MASK.** `cover_taps` 4 → 2 on the card style is
+  worth **1.24 ms** on the same row (§0d.3), four times what the whole bite costs, and it is a look call
+  the owner already has priced. The cheaper mask alternative, if it is ever wanted, is a 20-point
+  DIAGONAL chamfer at 1.5x the bite depth: same pixels on the FX grid, ~half the cost, and approximate
+  off it — write it down as a compromise, not as the shape.
+
+### 0d. 🔴 JUGGLING PERFORMANCE — one lever shipped, and the REST IS THE OPEN TASK (§0d.5)
 
 The juggling layer was the dominant half. **Lever 1 landed and took ~30 % off it.** Measured on the
 GTX 1070, `fx_cost.tscn`, **three runs each way, minimum taken**, with the ONLY difference the two
@@ -383,13 +587,18 @@ reproducible"* warning the whole time; nobody had run it twice.
 picture from a flaky harness is not a red build. **Run a rendering harness twice before believing
 either half of what it tells you.**
 
-#### 0d.2. ⬜ THE COMPROMISES AVAILABLE FOR JUGGLING, priced — owner asked for the menu, 2026-07-29
+#### 0d.2. ⬜ THE COMPROMISES AVAILABLE FOR JUGGLING, priced — the menu §0d.5 spends
 
-⚠ **READ THE BUDGET FIRST.** After lever 1 the worst window this box can build — 78 cards, every one
-burning AND juggling five lit balls — is **1.825 ms**, of which the juggling layer is **1.144**. The
-owner's target is ~2 ms for ALL FX. **On the GTX 1070 there is nothing left to buy**; this list matters
-only if the Intel UHD (~2–2.5x, §6) or a real playtest says otherwise. **Do not spend a LOOK change on
-a budget that is already met.**
+⚠ **READ THE BUDGET FIRST, AND READ IT FROM THE INTEL BOX** (§0d.3). The worst window is **10.8 ms, of
+which juggling is ~5.3** (`juggle both x20` scaled by the same ratio the burning rows hold, and the
+`burning + juggling` minus `burning` difference agrees: 10.775 − 5.459). The owner's target is ~2 ms for
+ALL FX. **On the GTX 1070 there was nothing left to buy and this list looked academic; on the box that
+ships, juggling alone is 2.7x the whole budget.** That is the reframing §0d.3 forced, and it is why the
+menu below is now the live task rather than a footnote.
+
+⚠ **THE `worth` COLUMN IS GTX-1070-DERIVED unless it says otherwise.** Ratios were assumed to transfer
+and they demonstrably do not (§0d.3). **Re-price the lever you pick, on the Intel box, before you build
+it** — three runs, minimum, `fx_cost.tscn`.
 
 **Free — no visual change, nothing given up:**
 
@@ -420,6 +629,124 @@ a budget that is already met.**
 on `fire_ball` (the ball branch SOLVES for the tap index with one `sqrt`, so that quad pays no mask
 lookups at all: §0e); and deleting anything from the ARC maths (hoisted to 8 evaluations per fragment
 in §1a.1 — it is not the cost any more).
+
+#### 0d.3. ✅ THE INTEL UHD NUMBERS — the slow box, at last (2026-07-29)
+
+Owner: *"Do another performance test to verify current performance on slower comp."* **Taken on the
+owner's own box** — Intel UHD Graphics, driver 31.0.101.2135, Godot 4.7.1, gl_compatibility, editor
+CLOSED, suite green first (28 suites, exit 0), `fx_cost.tscn` three times, minimum taken. ⚠ **This box
+is STEADY, unlike the 1070**: run to run it holds to ~2–3 % on most rows, so a 6 % delta is real here
+and a 6 % delta on the GTX box is not.
+
+| GPU timer, ms/frame | 32-ray build | with the exact mask | verdict |
+|---|---|---|---|
+| **78 burning cards, edge to edge** | 5.163 | **5.459** | 33 % of a 60 fps frame |
+| **78 burning AND juggling, 5 lit balls each** | 10.435 | **10.775** | **65 % — the worst window this game can build** |
+| the same 78 plus 3x more OFF-SCREEN | 10.712 | 11.495 | still free ✅ |
+| card fire x20 | 0.975 | 1.214 | |
+| card fire (DEFORMED) x20 | 1.817 | 2.081 | |
+| prop fire (hoop) x20 | 0.577 | 0.577 | |
+| prop fire (knife) x20 | 0.153 | 0.146 | |
+| juggle balls x20 | 0.564 | 0.576 | |
+| ball fire x20 | 1.190 | 1.311 | |
+| **juggle both x20** | **1.647** | **1.912** | |
+
+**THREE THINGS THIS SETTLES, AND THE FIRST ONE CONTRADICTS THIS FILE:**
+
+1. ⚠ **THE TWO BOXES ARE NOT "~2x APART" — THEY ARE 5x TO 8x APART ON THE ROWS THAT MATTER.** §6's
+   note (written from the retired build) said 2–2.5x, and §0/§0d's ratios were transferred on that
+   basis. Against the last GTX numbers in this file: `burning FULL SCREEN` 0.681 (GTX) vs **5.459** here
+   = **8x**; `burning + juggling` 1.825 vs **10.775** = **5.9x**; `juggle both x20` 0.386 vs **1.912** =
+   **5.0x**. ⚠ Those GTX rows are the 32-ray build, so the gap is **at least** this wide rather than
+   exactly it — nobody has run the exact-mask build on the 1070, and nobody needs to. The noise fire
+   gained far more on the 1070 than on the Intel, so the gap WIDENED. **Do not
+   transfer an absolute or a budget from a GTX row again; re-run here.**
+2. ✅ **THE NOISE-SOURCE A/B IS A WASH, and §8 expected it to flip.** `fx_fbm` 5.438 vs the baked
+   TEXTURE 5.310 on a full burning screen — 2 %, inside this box's own spread. The theory was that
+   trading seven ALU taps for one memory fetch would pay off on shared-memory hardware; it does not.
+   **`noise_procedural` is a look knob, not a performance one, on either box.** Item closed.
+3. ⚠ **SIX COVER TAPS ARE NOT AFFORDABLE HERE, and two would buy a lot.** Full burning screen: **2 taps
+   4.174, 4 taps 5.418 (ships), 6 taps 6.647, 8 taps 8.083** — dead linear at ~+0.65 ms per tap, which
+   is **8x the per-tap cost on the 1070** (+0.081). So the tap knob is the single biggest lever on the
+   box that matters: dropping the card style to 2 taps is worth 1.24 ms, four times the entire cost of
+   §0c.1's exact mask. ⚠ It is a LOOK change and §0e is the argument against it (a card flame is 7 FX
+   pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art) — **owner call, and now
+   a priced one.**
+
+**Against the owner's ~2 ms target for ALL FX**: burning-only is 5.5 ms and the saturated window is
+10.8. ⚠ **The target is missed by 5x in the saturated case and by 2.7x for burning alone** — so the
+question §6b asked is still the one that decides whether any of this matters: **is a window where every
+one of 78 cards is burning AND juggling reachable in play at all?** That is a playtest question (T15),
+not a shader one, and nothing above should be spent until it is answered.
+
+#### 0d.4. ⚠ `snapshot_diff.py` WAS BLIND, AND IT INVALIDATES EVERY "PANELS IDENTICAL" CLAIM BEFORE TODAY
+
+**Measured, not argued.** `diff` compared two RGBA images with `ImageChops.difference(a, b).getbbox()`,
+and **Pillow trims an RGBA image by its ALPHA channel alone** — verified on Pillow 9.5: two opaque
+images differing only in RED return `getbbox() is None`. Every panel these harnesses write is opaque
+edge to edge, so **the tool reported "identical" for any change that did not move alpha, which is every
+colour change there is.**
+
+How it was caught: the exact mask should have moved the warp panel and the tool said 20 of 20 identical.
+Blanking the card mask deliberately — fire gone from four panels — **also** read as 20 of 20 identical.
+Fixed by splitting the bands and taking each one's own bbox (a single-band image has no alpha to trim
+by), and the fix immediately reported the three panels the mask change actually touches.
+
+- ⚠ **SO §0d's "ALL 18 PANELS BYTE-IDENTICAL" FOR `min_half`, AND §6a's SAME CLAIM FOR `body_near` AND
+  THE OFF-SCREEN SKIP, ARE VACUOUS.** They are not disproved — all three are still very likely
+  pixel-neutral, and `min_half` additionally has an asserting check (§0d.1) — but **the evidence that
+  was offered for them does not exist.** Re-running `save` on `git stash`ed builds and `diff` on those
+  three is a ~10-minute job and it is the next thing to do if any of them is ever doubted.
+- ⚠ **AND `09_embers` DIFFERS RUN TO RUN ON AN UNCHANGED BUILD** (measured: same bbox twice) — the
+  embers are randomised, so that panel is not a regression signal and never was. Expect it in every
+  diff. The 18 others are deterministic.
+- ⚠ Two stale panels (`00_tendril_count`, `00b_ogee_profile`) are still sitting in the shots directory
+  from the retired build. They are not written any more, so they compare identical for ever and pad the
+  count from 18 to 20. Delete them from `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots`.
+
+#### 0d.5. ⬜ THE NEXT TASK: JUGGLING PERFORMANCE, WITH THE OWNER
+
+Owner, 2026-07-29: *"Last task for next agent will be back and forth with user to make juggling effect
+as performant as possible."* **This section is the brief. It is deliberately the only open engineering
+task in this file.**
+
+**THE NUMBER TO BEAT** (Intel UHD, §0d.3, three runs, minimum): the juggling layer is **~5.3 ms** of the
+**10.775 ms** worst window, against a **~2 ms target for all FX**. `juggle both x20` is **1.912**, split
+`juggle balls` **0.576** and `ball fire` **1.311** — ⚠ **the plumes are 2.3x the balls**, so the fire
+shader wearing `SHAPE_BALLS` is the expensive half and `juggle.gdshader` is not the problem.
+
+**WHAT IS ALREADY TAKEN, so you do not re-take it:** the arc-ladder hoist (§1a.1, ~384 → 8 evaluations
+per fragment), `fx_balls_near`'s empty-majority rejection (§1b.2), the box bound on the juggling quads
+(§1a.3), the off-screen upload skip (§6a.2), the ball column SOLVED rather than sampled (§0a — that quad
+pays zero mask lookups), and `min_half` (§0d, ~30 % of the layer). ⚠ **And three things that look like
+levers and are measured not to be** — the last paragraph of §0d.2.
+
+**HOW TO RUN IT AS A CONVERSATION.** The free levers need no permission; everything else is a look or a
+feature decision that is his, and the whole point of the back-and-forth is to spend the smallest one
+that reaches the budget. Bring him numbers, not options:
+
+1. **Take the two FREE levers first and measure each on the Intel box** — the off-centre quad (§0d.2
+   lever 1, ~40 % of both juggling quads is empty space below the loop) and the lit-ball shrink (lever
+   2). Neither changes a pixel, so `snapshot_diff` (now honest — §0d.4) plus
+   `test_balls_ignore_their_hosts_rotation` are the gates.
+2. **Then ask the FIRST question, because it can end the task**: *is a window where every one of 78 cards
+   is juggling five lit balls reachable in play at all?* §6b proved host count is the wrong axis — the
+   bound is the WINDOW — and if the real worst case is 3–5 juggling cards, the budget is already met and
+   every look compromise below is unnecessary. **That is a playtest answer (T15), and it is the cheapest
+   thing in this list.**
+3. **Only then price the LOOK compromises for him** (§0d.2 levers 4–8: plume height, arc height, the
+   second noise layer on plumes alone, fewer arcs, a cap on lit balls). Give each one a measured
+   millisecond and a one-line description of what it costs visually, and let him choose. ⚠ **Ruling 13
+   and the arc ladder are his decisions already** — do not quietly retune them.
+4. **The structural lever (§0d.2 lever 9, merging the two juggling quads) is worth more than any knob and
+   fights two rulings** — plumes must draw behind balls, and one shader per effect (§5b). Raise it only
+   if 1–3 miss, and raise it as a question.
+
+⚠ **ONE DEBT TO SETTLE EARLY, BECAUSE IT IS ABOUT JUGGLING**: `min_half`'s "18 panels byte-identical"
+evidence was produced by the broken `snapshot_diff` (§0d.4) and does not exist. It is very likely still
+pixel-neutral and it has an asserting check for the displacement that got it reverted once (§0d.1) — but
+**re-earning it is ~10 minutes** (`save` on a build with the two `min_half` assignments commented out,
+`diff` with them in) and it is the foundation the next lever sits on.
 
 ### 0e. `cover_taps` — why you do NOT want it as low as possible
 
@@ -540,6 +867,26 @@ instrument could fail.
 | `Tests/Visual/test_pixels.gd` | `test_balls_ignore_their_hosts_rotation` — the rotated-ball claim as an ASSERTION (§0d.1); `_host_balls` takes a `deg` |
 | `Tests/Visual/fx_snapshot.gd` | prints the counter-rotation per case and re-reads it POST-CAPTURE, so the flake in §0d.1 is diagnosable next time |
 
+**And then this pass, 2026-07-29 (the exact mask, the real card, the slow box):**
+
+| file | what happened |
+|---|---|
+| `Shaders/fire.gdshader` | `u_poly` / `u_wedge` / `u_poly_count` / `u_inner` replace `u_radii`; `poly_solid` + `wedge_has` replace `radii_scale`; the RADII branch is two box tests around an exact polygon (§0c.1) |
+| `UI/Fx/fx_attachment.gd` | `_poly` / `_wedge` / `_poly_half` / `_poly_max` / `_poly_inner`; `_fill_poly_from_outline` and `_inner_box` replace `_fill_radii_from_outline`; `_push_poly` pushes the silhouette as ONE fact; winding normalized; `_rect_radius` deleted |
+| `Cards/card_visual.gd` | `star_outline`'s docstring carries the MEASURED gap to the real rig (2.3–3.3 art units) and names the check that uses a real card |
+| `UI/Fx/Tools/fx_editor.gd` | same warning on the `corner_warp` export — the tool cannot host a real `CardVisual` and now says why |
+| **`Tests/Visual/test_pixels.gd`** | **`test_the_card_mask_is_the_card_the_player_sees` — the first real `CardVisual` in any harness (§0c.2)** |
+| `Tests/Visual/pixel_probe.gd` | `mask_contains` — the shader's mask, transcribed, shared by the two suites that need it |
+| `Tests/UI/test_fx_attachment.gd` | `test_the_mask_is_the_outline` — the mask against `Geometry2D.is_point_in_polygon`, plus the vertex-spacing invariant the two-candidate wedge test depends on; the enum-mirror pin follows POLY/WEDGES |
+| **`tools/snapshot_diff.py`** | **`_bbox` — compares EVERY channel. It compared alpha only, and said "identical" to anything that did not move alpha (§0d.4)** |
+| **`UI/Fx/Tools/fx_editor.gd`** | **real `CardVisual` hosts; `rig_pose` replaces `corner_warp`; the flat mock face and its palette index deleted; `_spawn_host` takes the host's own visual (§0c.4)** |
+| `Cards/card_visual.gd` | `settings()` for the editor's missing autoload; `_bind_rig()` in either mode — both so the tool can stand up a REAL card |
+| `Cards/card_data.gd`, `card_modifier.gd`, `card_modifier_type.gd`, `card_modifier_stamp.gd`, `card_modifier_skill.gd`, `Pips/pip_suit.gd` | **`@tool` down the whole data chain** — without it a previewed card's suit/type/stamp are PLACEHOLDERS in the editor and its face stops drawing mid-`update_visual` (§0c.4) |
+| `Cards/card_modifier_type.gd` | **`corner_notch()`** — the bite each type's frame takes out of its corners, measured off the sheet's own alpha and cached per frame (§0c.5) |
+| `Cards/card_visual.gd` | `star_outline` and `_rig_outline` carry that bite as three points per corner (`corner_points`, the middle one the cell's bilinear corner so it shears with the rig) |
+| `Shaders/fire.gdshader` | `POLY` 16 → 24, `WEDGE_CANDIDATES` 4, and `wrap()` instead of an integer `%` per fetch |
+| `Tests/Visual/test_pixels.gd` | the real-card check compares CELL BY CELL at the FX cell's own centre and asserts ZERO disagreements; the two column readers it replaced are gone |
+
 ---
 
 ---
@@ -559,6 +906,8 @@ instrument could fail.
 ---
 
 ## 1. ✅ JUGGLING WAS TOO EXPENSIVE — ~2.4x cheaper on the GPU
+
+🟡 **HALF LIVE.** The three levers of §1a are all still in the shader and must not be lost; the NUMBERS are the retired build's, on a GTX 1070, and §0d.3 supersedes them. §1b is history — that lever shipped (§0d).
 
 **Measured** (`Tests/Visual/fx_cost.tscn`, 20 juggling cards, 5 balls each, all lit). The bench now
 prices the two juggling quads SEPARATELY — one row for both hid which of them was expensive:
@@ -625,6 +974,8 @@ result. That was not done.
 
 ## 2. ✅ FIXED — a lit ball's plume disappeared and came back
 
+⚪ **HISTORY.** The mechanism (a comb tiled at ball pitch) no longer exists, so the bug class is deleted by construction. Kept for `lit_only` in `fx_nearest_ball`, which IS live, and for `06b_ball_fire_cycle`, which is still the guard.
+
 Owner: *"fire on balls sometimes disappear, then reappear later."*
 
 **The cause was NOT the one the last edition of this file predicted.** It guessed the unlit-ball
@@ -661,10 +1012,10 @@ retuned by an agent — but they are the first things to try if ball flames now 
 
 ---
 
-## 3. ⬜ ACCEPTED — the hoop's tendrils look sliced
+## 3. ✅ CLOSED — the hoop's tendrils looked sliced
 
-⚠ **THE MECHANISM IS GONE WITH THE ARCH (§0), SO THIS IS PROBABLY MOOT — BUT IT IS NOT VERIFIED.**
-A per-column `cover` has the same shape of hazard, so look at the ring before crossing it off.
+⚪ **HISTORY, and confirmed gone**: there is no arch left to slice, verified on `04_shapes`. Kept for one live number — 22.52 ms for 20 hoops is still the price of the only correct cross-column anchoring, and *"an anchor ships measured or not at all"* is a standing rule.
+
 The reasoning below is kept because the 22.52 ms it prices is still the price of the only correct fix.
 
 Unchanged, and unchanged on purpose. Each column's flame is anchored to that column's own surface, so
@@ -677,6 +1028,8 @@ at all.** Two rejected builds came from approximating it. He has said it does no
 ---
 
 ## 4. ✅ DONE — the FX editor turns, and juggling is proven not to
+
+🟢 **LIVE.** The rotation knob and the claim it proves are both current; the claim now also has an assertion (§0d.1).
 
 `fx_editor.gd` has a `Host rotation` slider in its **Stage** group (`-180..180`, degrees), applied to
 every host, with the body outlines and card faces turning with them so the tool cannot lie about what
@@ -692,6 +1045,8 @@ the requirement was already satisfied structurally, as predicted: `juggle.gdshad
 ---
 
 ## 5. ✅ DONE — the ember tunables are in the editor, and the preview updates while you type
+
+🟢 **LIVE, and §5b is a standing contract**: one style class per effect, and `FxAttachment` still touches only base members.
 
 **The tool now re-reads its resources four times a second** (`FxEditor.WATCH_SECS`) and rebuilds when
 anything the owner can edit has moved (owner 2026-07-31: *"changing vfx parameters in editor does not
@@ -784,6 +1139,8 @@ FxFireStyle in the current scope"* on every file at once.
 ---
 
 ## 6. ✅ MEASURED ON THE SLOW MACHINE — and it found the number nobody was looking for
+
+🟡 **THE NUMBERS ARE THE RETIRED BUILD'S — §0d.3 is the live table.** What is still live and still governs: §6b (host count is the wrong axis, the bound is the WINDOW) and §6a's two shipped changes.
 
 ⚠ **EVERY NUMBER BELOW IS THE RETIRED BUILD.** It is kept because it is the only Intel UHD data that
 exists and because §6b's reframing — *host count is the wrong axis, the bound is the WINDOW* — still
@@ -953,9 +1310,10 @@ Raise `HOSTS` in `Tests/Visual/fx_cost.gd` from 20 to 50 for the deck-viewer col
 - **The owner's target is ALL FX on screen ≤ ~2 ms, i.e. ~0.2 ms per juggling card.**
 - ⚠ 20 juggling cards with every ball lit may never happen in play. If 3–5 cards are comfortable
   that is a legitimate answer, and it changes what is worth doing.
-- ⚠ **The GTX 1070 and this Intel UHD are ~2x apart on these rows, not the ~12x the old note in this
-  file assumed.** `juggle both x20` is 1.06 on the 1070 and 2.68–2.79 here. Ratios still transfer
-  better than absolutes, but the gap is much smaller than anyone had written down.
+- 🔴 **THIS ROW'S "~2x APART" CLAIM IS WRONG AND IT MISLED SEVERAL PASSES.** It was measured on the
+  RETIRED build (`juggle both x20`: 1.06 on the 1070, 2.68–2.79 here). On the SHIPPED build the same
+  comparison is **5x–8x** (§0d.3), because the noise fire gained far more on the 1070 than on the Intel.
+  **Neither absolutes nor ratios transfer. Re-run `fx_cost.tscn` here.**
 
 ### 6f. If the juggling layer ever needs it again — the older levers, in order
 
@@ -987,6 +1345,8 @@ fire by eye, never by counting columns — that instrument reported two rejected
 ---
 
 ## 7. ✅ DONE — the fire WARPS with the card now
+
+🟡 **LIVE except for the mask's representation**: the rig is still the source and `track_outline` still re-reads it every frame, but the 32-ray radius table this section describes is gone — the mask carries the outline's own vertices now (§0c.1).
 
 Owner 2026-07-29: *"card visual has bones and a default running animation which can heavily distort
 the edges of the card... I don't see the fire effect warping with the card during playtesting."*
@@ -1035,22 +1395,44 @@ one. Said plainly on the export.
 ## 8. What is LEFT — the index; §0 is the text
 
 ⚠ **This section is deliberately a POINTER LIST.** It used to restate §0 and the two drifted; if a row
-here and §0 disagree, §0 wins.
+here and §0 disagree, §0 wins. **Four groups: the one open task, the calls that are the owner's, safe
+housekeeping, and what is closed.**
+
+### 8a. THE ONE OPEN ENGINEERING TASK
 
 | | Item |
 |---|---|
-| ✅ **TASK 1 OF 2** | **§0c — fire renders behind the art.** Route 1, the unquantized cut, one line. ⚠ **A LOOK claim: the owner has not seen it.** Route 3 (the `FxBack` node) is still the answer if his eye disagrees. |
-| ✅ **TASK 2 OF 2** | **§0d — juggling performance.** `min_half`: the layer is 1.44x cheaper, 18/18 panels byte-identical. ⚠ Its old blocker was a harness flake (§0d.1) and the claim now has an asserting check. |
-| ⬜ **THE BIGGEST OPEN GAP** | **§0c.2 — no harness renders a real `CardVisual`.** Every card panel everywhere is `star_outline`, a hand model of the rig, and the FX EDITOR DRAWS THAT SAME ARRAY AS THE CARD'S FACE — so it cannot show a face-versus-mask disagreement at all. The props were always tested with real art; the card never was, which is the card-vs-prop divergence in one sentence. **The test that closes it is specified in §0c.2 and it is the next thing to build.** |
-| ⬜ **The warped card's spikes** | **§0c.1 — fire over the art at a warped corner.** The 32-ray mask cannot represent a vertex; the cut follows the mask. ~1 art unit at the warp the rig actually reaches, obvious past it. A one-run experiment (`RADII` 64) or an analytic star branch — owner call. |
-| ⬜ **Juggling, if it is needed again** | **§0d.2 — the priced menu.** The free levers come first, and the off-centre quad is worth ~1.4x for no visual change. ⚠ The budget is already met on this box; do not spend a look change on it. |
-| ⬜ **Blocking "done"** | **Owner playtest (T15)**, FX_SHADER_PLAN §10, 17 steps — **the last gate, with the art calls in §0f and the real-card test above.** Also the only way to learn whether §6b's saturated window is reachable in play at all. |
-| ⬜ **Owner art calls**, incl. the retune and the clobbered `fire_prop.tres` | §0f. |
-| ⬜ **RE-MEASURE ON THE INTEL UHD** | Every number in §0 is a GTX 1070; §6 and §9 are the owner's Intel UHD, ~2x apart. Ratios transfer, absolutes do not. Two rows are genuinely likely to FLIP on the slow box: the noise-source A/B (ALU vs shared memory bandwidth) and whether 6 cover taps are affordable. Three runs, take the minimum (§0a). |
-| ⬜ **RE-MEASURE `min_half` ON THE INTEL UHD TOO** | The 1.44x of §0d is a GTX 1070. It is a pure FILL cut, which is the multiplier §6b says dominates on the slow box, so it should transfer or do better — but it has not been run there. |
-| ✅ **Closed this pass** | The noise fire and its stack ratios (§0a/§0b); the corner chamfer (§10 E, taken); §3's sliced tendrils (gone with the arch, confirmed on `04_shapes`); the pixel size, the editor freeze, the tap banding, the flame's foot, the `height` jitter, and fire-behind on balls. All in §0g with the measurement that found each. |
-| ⬜ Known limitation | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
-| ⬜ Deferred by the owner | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
+| 🔴 **YOUR TASK** | **§0d.5 — JUGGLING PERFORMANCE, as a back-and-forth with the owner.** The layer is **~5.3 ms of the 10.8 ms worst window** on the box that ships, against a ~2 ms target for all FX; the plumes are 2.3x the balls. §0d.5 has the running order, §0d.2 the priced menu. **Two free levers first, then the playtest question that can end the task, then the look calls — his to make.** |
+| ⬜ **A debt inside that task** | **`min_half` has never been A/B'd on the Intel box**, and its "18/18 panels identical" evidence was produced by the broken diff tool (§0d.4) so it does not exist. ~10 minutes to re-earn both, and it is the foundation the next lever sits on. |
+
+### 8b. OWNER CALLS — nothing an agent should decide
+
+| | Item |
+|---|---|
+| ⬜ **`cover_taps` 4 → 2 on the card style** | Worth **1.24 ms** on the Intel box, four times what the exact mask cost (§0d.3). §0e is the argument against: a card flame is 7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art. **The biggest single number on the table, and a look decision.** |
+| ⬜ **The retune, and the clobbered `fire_prop.tres`** | §0f. The `.tres` were MIGRATED, not tuned; `fire_prop` has been clobbered three times by the editor collision and §0g has the test for telling clobbering from tuning. **Ask before restoring anything.** |
+| ⬜ **Playtest (T15)** | FX_SHADER_PLAN §10, 17 steps — the last gate, and the only way to learn whether §6b's saturated window is reachable in play at all. **It is also the cheapest answer to §0d.5.** |
+
+### 8c. HOUSEKEEPING — small, safe, nobody's decision
+
+| | Item |
+|---|---|
+| ⬜ **Three harnesses still use the stand-in** | `fx_snapshot`, `fx_behind` and `fx_cost` feed `star_outline` to a bare `Node2D`. They run in a real scene tree where a `CardVisual` needs none of the editor guards (`test_pixels` does it in ~10 lines), so the swap is mechanical — pin the card's seed and clock the way `_park` does. It would make `fx_behind`'s seam shots the real thing (its "filled host" is a filled polygon today) and delete `star_outline`'s last users. |
+| ⬜ **Two stale snapshot panels** | `00_tendril_count` and `00b_ogee_profile` are still in `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots` from the retired build. They are never rewritten, so they compare identical for ever and pad the count from 18 to 20. Delete them. |
+| ⬜ **Known limitation** | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
+| ⬜ **Deferred by the owner** | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
+
+### 8d. CLOSED — do not reopen these without new evidence
+
+| | Item |
+|---|---|
+| ✅ **Fire, whole** | Owner 2026-07-29: *"with this we are done with fire effect changes."* The noise fire and its stack ratios (§0a/§0b), fire behind the art (§0c, accepted by eye), the warped corner (§0c.1, exact mask), the real-card test (§0c.2), the FX editor's real cards (§0c.4). |
+| ✅ **The mask IS the art, corners included** | §0c.5 — measured off the type frame's own alpha, exact under deformation, asserted at ZERO disagreeing cells. ⚠ Costs 16 % of a burning screen, and the cost is the uniform ARRAY rather than the wedge loop — both micro-optimisations tried measured worse, and `cover_taps` is where it would be bought back. |
+| ✅ **The Intel UHD measurement** | §0d.3. Worst window 10.8 ms; the noise-source A/B is a WASH; 6 taps unaffordable; **the two boxes are 5x–8x apart, so no GTX absolute transfers.** |
+| ✅ **`snapshot_diff.py`** | §0d.4 — it compared ALPHA only and is fixed. ⚠ The claims it once blessed were not re-earned; `min_half`'s is in §8a. |
+| ✅ **`05f_ball_rotation`'s displacement** | A harness flake, reproduced on an unchanged build, and the claim now lives in an asserting check (§0d.1). |
+| ✅ **The hoop's sliced tendrils** | Gone with the arch, confirmed on `04_shapes` (§3). |
+| ✅ **The five rounds of owner reports** | The pixel size, the editor freeze, the tap banding, the flame's foot, the `height` jitter, fire-behind on balls, the corner chamfer — all in §0g with the measurement that found each. |
 
 ---
 
@@ -1159,15 +1541,30 @@ power states and the GPU timer is bimodal by ~1.3–1.5x between them, with ever
 by the same factor — five consecutive runs of ONE unchanged build read 0.594, 0.597, 0.753, 0.874 and
 0.924 on the same row. A single run is not evidence; consecutive runs agreeing to ~1 % are. (§0b.)
 
+⚠ **AND ON THE OWNER'S INTEL UHD IT IS STEADY** — three runs hold to ~2–3 % on most rows, so a 6 %
+delta is real evidence there and the same delta on the GTX box is not. Take three runs on either.
+⚠ **`snapshot_diff.py` WAS BLIND UNTIL 2026-07-29** (alpha-only comparison — §0d.4). If you are reading
+an older claim of "panels identical", it means nothing. Also expect `09_embers` to differ every time
+(randomised particles) and two stale retired-build panels to pad the count to 20.
+
 **For a change that must not alter the picture, `snapshot_diff.py` is the instrument, not your eye.**
 "Judge fire by EYE" is right for a change that is SUPPOSED to look different; an optimisation's only
-honest claim is byte-identical, and an eye is far too generous for that. Both §6a changes were
-landed on it.
+honest claim is byte-identical, and an eye is far too generous for that.
 
-Last full run (2026-07-29 late, GTX 1070 box, with §0c and §0d in): **28 suites, exit 0** — two runs
-read 1571 and 1555 checks, and **PIXELS: ALL 37** in both (34 before this pass, plus §0d.1's three
-rotated-ball checks). The total COUNT varies run to run because BOARD FUZZ is randomised; what must
-hold is 28 suites and exit 0.
+⚠ **AND FOR AN EDITOR-ONLY CLAIM, THE EDITOR IS THE ONLY INSTRUMENT** — nothing that RUNS can see a
+`@tool` or placeholder problem (§0c.4). This is how to test one without opening the GUI by hand, and it
+needs the owner's editor CLOSED:
+
+```bash
+Godot --path solatro --editor --quit-after 400 res://UI/Fx/Tools/fx_editor.tscn
+```
+
+It opens the project, builds the scene, prints every script error to stdout and quits. A/B it by
+reverting the change and running it again — that is how the `@tool` chain was settled.
+
+**Last full run (2026-07-29, the OWNER'S INTEL UHD box, with everything in this file's §0 in): 28
+suites, exit 0, 1587 checks** — `FX ATTACHMENT: ALL 111`, `PIXELS: ALL 57`. The total COUNT varies run
+to run because BOARD FUZZ is randomised; what must hold is **28 suites and exit 0**.
 
 ⚠ **TWO RENDERING HARNESSES HANG AT RANDOM ON THIS BOX, AND NEITHER IS A FAILURE.** Measured
 2026-07-29 while A/B-ing §0d: `test_pixels.tscn` run STANDALONE printed all 37 checks and then never

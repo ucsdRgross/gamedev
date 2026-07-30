@@ -39,6 +39,30 @@ def save() -> int:
     return 0
 
 
+def _bbox(d):
+    """The bounding box of everything that changed, across EVERY channel.
+
+    ⚠ NOT `d.getbbox()`, AND THAT ONE-LINE DIFFERENCE MADE THIS TOOL LIE. On an RGBA image Pillow
+    trims by the ALPHA channel alone (measured on Pillow 9.5: two opaque images differing only in RED
+    return `getbbox() is None`), and every panel these harnesses write is opaque edge to edge — so
+    `diff` reported "identical" for ANY change that did not move alpha, which is every colour change
+    there is. Found 2026-07-29 by blanking the card mask deliberately: the fire vanished from four
+    panels and the tool still said 20 of 20 identical.
+
+    ⚠ SO EVERY EARLIER "18/18 PANELS BYTE-IDENTICAL" CLAIM IN FX_HANDOFF IS VACUOUS — §0d's `min_half`
+    and §6a's two changes were all landed on this instrument. Splitting the bands first and taking each
+    one's own bbox is honest: a single-band image has no alpha to trim by.
+    """
+    box = None
+    for band in d.split():
+        b = band.getbbox()
+        if b is None:
+            continue
+        box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]),
+                                     max(box[2], b[2]), max(box[3], b[3]))
+    return box
+
+
 def diff() -> int:
     if not os.path.isdir(BASE):
         print("no baseline — run `save` on a build you trust first")
@@ -60,13 +84,14 @@ def diff() -> int:
             bad += 1
             continue
         d = ImageChops.difference(a, b)
-        if d.getbbox() is None:
+        box = _bbox(d)
+        if box is None:
             print("  identical  %s" % name)
             continue
         px = sum(1 for p in d.getdata() if p != (0, 0, 0, 0))
         worst = max(max(p) for p in d.getdata())
         print("  DIFFER     %s  %d px, max channel delta %d, bbox %s"
-              % (name, px, worst, d.getbbox()))
+              % (name, px, worst, box))
         bad += 1
     print("\n%d of %d panels differ" % (bad, total))
     return 1 if bad else 0

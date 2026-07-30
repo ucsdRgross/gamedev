@@ -1,5 +1,9 @@
+@tool
 @abstract class_name PipSuit
 extends CardModifier
+## ⚠ `@tool`, and this is the base the owner's editor actually caught: *"Nonexistent function
+## 'set_texture' in base 'Resource'"* on a `PipSuitHoop` that IS `@tool` — because a non-tool base makes
+## the whole instance a placeholder. See `CardData`. Every concrete suit was already `@tool`.
 ## A card's suit. Now a CardModifier (was Resource): reached ONLY via run_card_mods +
 ## spawn_props, never through the suit-free run_all_mods iterator. Suits are NOMINAL, not
 ## ordinal — there is no `value`; construct the exact suit class (PipSuitHoop.new(), ...)

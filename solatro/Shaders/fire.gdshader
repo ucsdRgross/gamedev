@@ -36,12 +36,12 @@ render_mode blend_mix, unshaded;
 //    that lights the outer top arc. Multiple surfaces in one column stop being a special case:
 //    they are simply more body below a fragment.
 //  * NO FLAME CAN LEAP A HOLE, structurally: no tap reaches further than `u_height`.
-//  * NO CORNER CHAMFER — but ⚠ THAT TOOK A MASK CHANGE, NOT A FLAME ONE, and two earlier drafts of
+//  * NO CORNER CHAMFER — but ⚠ THAT TOOK A MASK CHANGE, NOT A FLAME ONE, and every earlier draft of
 //    this header got it wrong. "Fire licks DOWN the side of a card from each top corner" was never
-//    the flame model: `u_radii` used to hold a RADIUS, and interpolating a function with a vertex in
-//    it cut a real 2.32-unit chamfer that is a genuine upward-facing slope, so every correct model
-//    stood fire on it. It holds a radial SCALE now (see radii_scale) and the RADII branch reduces to
-//    the exact box at rest. FX_HANDOFF §0i.1.
+//    the flame model: the mask used to be a table of 32 RAYS, and interpolating between two rays
+//    cannot reproduce a vertex — which cut a genuine upward-facing slope that every correct flame
+//    model then stood fire on. The mask carries the outline's OWN VERTICES now (see poly_solid), so
+//    it is exact at rest and exact deformed. FX_HANDOFF §0c.1.
 //  * TIPS POINT UP BY CONSTRUCTION — the taps step WORLD-down and only the mask LOOKUP rotates
 //    (owner ruling 1). A spinning knife needs no per-shape branch.
 //
@@ -67,10 +67,29 @@ const int SHAPE_RADII = 1;
 const int SHAPE_SPRITE = 2;
 const int SHAPE_BALLS = 3;
 
-// Number of entries in the deformable-card radius table. 32, NOT 16: the star rig goes up to 16
-// arms, and 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either
-// smooth into a blob or beat against the grid depending on phase.
-const int RADII = 32;
+// THE DEFORMABLE HOST'S SILHOUETTE, AS THE POLYGON IT ACTUALLY IS. `POLY` is how many vertices fit
+// (the card's star rig has exactly 16 arms); `WEDGES` is the angular index that finds the right one in
+// O(1) — see poly_solid.
+//
+// ⚠ THIS REPLACED A 32-RAY TABLE OF RADIAL SCALE, AND IT REPLACED IT BECAUSE THE TABLE WAS MEASURED
+// WRONG ON A REAL CARD. FX_HANDOFF §0c.1/§0c.2: no scheme that interpolates between two rays can
+// reproduce a VERTEX, and a rig that has pulled a corner out is exactly a vertex. Measured
+// 2026-07-29 by `test_the_card_mask_is_the_card_the_player_sees`, on a REAL `CardVisual` at four
+// points of its own autoplay animation: the table left the card's stretched corner **up to 26.9 art
+// units of a column outside its own mask** (a whole spike carrying no flame) and let the mask hang
+// ~2 units past the art elsewhere. Storing the vertices is EXACT, costs the same atan the table
+// already cost, and deletes the radial-scale contract that three files had to keep in step.
+// ⚠ 24, NOT 16, AND THE EXTRA EIGHT ARE THE ART'S CLIPPED CORNERS. Every shipped card type bites a
+// corner out of its frame (`TypePaper` one texel) while the RIG is the full rectangle, so a 16-point
+// outline stood one FX pixel of flame on nothing at each corner — which is what the FX editor showed the
+// owner the moment it started drawing the real face. A bite is three points, not one (see wedge_has).
+const int POLY = 24;
+const int WEDGES = 32;
+// HOW MANY CONSECUTIVE WEDGES A SLOT CAN NEED. A slot is 11.25 degrees and the rig's own vertices are
+// ~20 apart, but a corner's three bite points sit within ~1.5 degrees of each other — so one slot can
+// hold three vertices, and covering it takes their four wedges. ⚠ Raising POLY without re-deriving this
+// is how the mask grows a hole: see poly_solid.
+const int WEDGE_CANDIDATES = 4;
 
 // What mask_level answers. A value >= 0 is a SOLID surface and the value itself is the fire level it
 // emits; MASK_EMPTY is no art at all.
@@ -111,7 +130,15 @@ uniform float u_seed = 0.0;
 uniform float u_level = 0.0;         // normalized stack level -> the ramp's v axis
 uniform float u_intensity = 1.0;     // surplus stacks push heat UP the ramp (owner ruling 4)
 uniform vec2 u_lag = vec2(0.0);      // the host's motion, normalized — the cape
-uniform float u_radii[RADII];        // deformable card silhouette
+// The deformable host's silhouette: its own vertices, in the ART's frame, walked once around the
+// shape, plus the angular index that finds an edge without a search. `u_poly_count` is how many of
+// `POLY` are live — 0 means no outline was measured, which is a BOX host.
+uniform vec2 u_poly[POLY];
+uniform float u_wedge[WEDGES];
+uniform int u_poly_count = 0;
+// THE LARGEST ORIGIN-CENTRED BOX THAT FITS INSIDE THAT SILHOUETTE, as a half-extent — the other half
+// of the two box tests that keep the polygon mask off the hot path (see mask_level's RADII branch).
+uniform vec2 u_inner = vec2(0.0);
 // SPRITE kinds: the art's own sheet, and the frame to read out of it. A mask sampled live cannot go
 // stale when its host turns, and it is the only representation that knows a ring has a HOLE in it.
 uniform sampler2D u_art : filter_nearest, repeat_disable, hint_default_transparent;
@@ -213,35 +240,63 @@ uniform float u_dither = 0.0;
 
 // ===== THE MASK =================================================================================
 
-// THE DEFORMABLE CARD'S RADIAL SCALE at angle `a` from straight up, in the ART's own frame (the
-// caller has already rotated the lookup, so this never touches u_shape_rot).
+// IS `p` INSIDE ONE WEDGE of the silhouette — the triangle from the ORIGIN out to vertices `i` and
+// `i + 1`. `p` is already in the art's own frame (the caller rotated the lookup, so this never touches
+// u_shape_rot).
 //
-// ⚠ THE TABLE IS A SCALE AGAINST THE REST RECTANGLE, NOT A RADIUS, AND THAT IS WHAT KILLED THE
-// CORNER CHAMFER (owner report, twice: *"card fire has weird overlapping curvature at corners"*,
-// then *"still chamfered"*). FX_HANDOFF §10 E, taken.
+// The outline walks once around the shape, so consecutive vertices are positively wound
+// (`cross(V[i], V[i+1]) > 0`) and the three signs below are: past the first ray, before the second
+// ray, and inside the edge that closes them.
+// ⚠ THE WRAP IS A COMPARE, NOT A `%`, and that is worth real time: an integer modulo is a division, the
+// caller runs this up to WEDGE_CANDIDATES times per mask lookup and the mask runs `u_taps + 1` times per
+// fragment. `i` is only ever `slot's wedge + k`, so it can overshoot by at most WEDGE_CANDIDATES - 1.
+int wrap(int i) { return i >= u_poly_count ? i - u_poly_count : i; }
+
+bool wedge_has(vec2 p, int i) {
+	int i0 = wrap(i);
+	vec2 a = u_poly[i0];
+	vec2 b = u_poly[wrap(i0 + 1)];
+	return a.x * p.y - a.y * p.x >= 0.0
+			&& p.x * b.y - p.y * b.x >= 0.0
+			&& (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x) >= 0.0;
+}
+
+// IS `p` INSIDE THE SILHOUETTE — exactly, for any outline that is star-shaped about the host's origin
+// (every ray from the origin leaves it once, which is what a card rig and a warped card both are).
 //
-// Storing `r(a)` asked the shader to interpolate a function with a CORNER in it, and no scheme that
-// blends two rays can reproduce a vertex — at 32 rays a 38x50 card's corner (37.23 deg, sampled at
-// multiples of 11.25) came out cut by 2.32 art units. That chamfer is a genuine upward-facing slope,
-// so the cover field stood fire on it, CORRECTLY; the fault was never the fire. Two dead ends worth
-// recording, because both look like fixes and neither is:
-//  * MORE RAYS only shrinks it — 32 -> -2.32, 64 -> -1.41, 128 -> -0.56 art units, at 128 floats per
-//    material per quad per host.
-//  * INTERPOLATING `1/r` (exact along a straight edge, since `1/r` is linear in `cos`/`sin` there)
-//    fixes the scalloped bulge BETWEEN samples, and does nothing at all for the vertex.
+// THE SHAPE IS THE UNION OF ITS WEDGES, so "inside" is "inside one wedge", and the only question is
+// WHICH. `u_wedge` answers it without a search: the CPU stores, per WEDGES-th of a turn, the vertex
+// whose wedge spans that slot's START, and the loop walks forward from there over the few wedges that
+// can overlap one slot (WEDGE_CANDIDATES). Extra candidates are HARMLESS — a wedge whose angular span
+// does not contain the point fails its own two ray tests — so the count only has to be an upper bound.
 //
-// Dividing the measured radius by the REST rectangle's radius at the same angle makes the table
-// `1.0` everywhere on an undeformed card. The mask test below then divides it back out and lands on
-// the EXACT box branch — same two comparisons, same answer, no vertex to miss. A real deformation
-// becomes a smooth field near 1, which is the one thing that interpolates cleanly.
+// ⚠ THE BOUND IS A PROPERTY OF THE OUTLINE, NOT A GUESS, and `test_fx_attachment` asserts it: if a
+// deformation ever put MORE vertices in one slot than this covers, a sliver of that slot would belong
+// to an untested wedge and read as EMPTY — a hole in the mask with no other symptom. The union is also
+// why this is safe against non-convexity: a reflex vertex (the rest edge between two stretched corners),
+// a spike, and a corner's bite are all the same code.
 //
-// ⚠ `FxAttachment` OWNS THE OTHER HALF OF THIS CONTRACT. Both paths that fill the table
-// (`_fill_radii_from_outline` and `measure_silhouette`) divide by `_rect_radius`, which is this
-// branch's own closed form. Change one and you must change all three.
-float radii_scale(float a) {
-	float t = (a / TAU + 1.0) * float(RADII);
-	int i0 = int(floor(t)) % RADII;
-	return max(mix(u_radii[i0], u_radii[(i0 + 1) % RADII], fract(t)), 1e-3);
+// ⚠ WHY NOT A HALF-PLANE PER SLOT, which would be one dot product: a slot that contains a vertex has
+// no single line, and both the min-of-two (reflex) and max-of-two (spike) cases occur on one card.
+// ⚠ WHY NOT MORE RAYS INSTEAD (the cheap version of this fix): measured, it converges far too slowly
+// on a vertex to matter — 32 rays cut a rest card's corner by 2.32 art units, 64 by 1.41, 128 by 0.56
+// (FX_HANDOFF §7), and the REAL rig's error was ~27 units of column at a stretched corner.
+bool poly_solid(vec2 p) {
+	if (u_poly_count < 3) return false;
+	float t = (atan(p.x, -p.y) / TAU + 1.0) * float(WEDGES);
+	int slot = int(floor(t)) % WEDGES;
+	int w = int(u_wedge[slot]);
+	// ⚠ THE `break` MATTERS. The wedge the index points at is the right one for every fragment that is
+	// not beside one of a corner's clustered bite points, which is almost all of them — so the common
+	// case is one test, and only a lane near a corner walks the rest.
+	bool inside = false;
+	for (int k = 0; k < WEDGE_CANDIDATES; k++) {
+		if (wedge_has(p, w + k)) {
+			inside = true;
+			break;
+		}
+	}
+	return inside;
 }
 
 // THE MASK: the LEVEL of the surface at `p`, or MASK_EMPTY where there is no art.
@@ -275,13 +330,25 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 		return (abs(q.x) <= h.x && abs(q.y) <= h.y) ? u_level : MASK_EMPTY;
 	}
 	if (u_shape == SHAPE_RADII) {
-		// The SAME test the box branch runs, on a coordinate divided by the deformation's radial
-		// scale. At rest every scale is 1.0 and this IS the box branch — corners included, which is
-		// the whole point (see radii_scale). It is also cheaper than the radius form it replaces:
-		// two comparisons and a divide, against a `length()`.
-		vec2 hr = u_body * 0.5;
-		vec2 t = q / radii_scale(atan(q.x, -q.y));
-		return (abs(t.x) <= hr.x && abs(t.y) <= hr.y) ? u_level : MASK_EMPTY;
+		// The host's OWN outline, exactly (see poly_solid) — but SANDWICHED BETWEEN TWO BOX TESTS, and
+		// they are what make an exact mask affordable. Outside the silhouette's own bound nothing can
+		// be solid; inside the largest box that fits in it everything is. Both are two comparisons and
+		// neither can change an answer, so the polygon runs only in the band between them.
+		//
+		// ⚠ IT IS AN OPTIMISATION FOR THE COMMON CASE AND THE COMMON CASE IS A CARD AT REST, where the
+		// rig IS the 38x50 rectangle: the two boxes coincide, every tap is answered by four
+		// comparisons, and no wedge is ever built. Measured on the owner's Intel UHD, 78 burning cards:
+		// the retired 32-ray table cost 5.16 ms, the bare polygon 6.53, and these bring it to 5.46 — so
+		// an exact mask costs 6 % rather than 26 %. The band is only ever the corners of a card the rig
+		// has actually pulled out of shape.
+		//
+		// ⚠ AT REST THIS IS ALSO BIT-IDENTICAL TO THE OLD BOX TEST, which is not a coincidence and is
+		// worth keeping: it is the same `abs(q) <= h` comparison, so `fx_snapshot`'s rotation panels came
+		// back pixel-for-pixel unchanged across the rewrite and only the DEFORMED panel moved.
+		vec2 h = u_body * 0.5;
+		if (abs(q.x) > h.x || abs(q.y) > h.y) return MASK_EMPTY;
+		if (abs(q.x) <= u_inner.x && abs(q.y) <= u_inner.y) return u_level;
+		return poly_solid(q) ? u_level : MASK_EMPTY;
 	}
 	// SPRITE: the drawing's own alpha, read at the point the art is actually drawn at. `u_art_size`
 	// is the WHOLE frame centred on the host's origin — deliberately not the tight body box, which

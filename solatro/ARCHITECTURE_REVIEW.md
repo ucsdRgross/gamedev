@@ -567,17 +567,31 @@ the fire riding them), which keeps the dependency inside the one class that owns
   - **TIPS POINT UP BY CONSTRUCTION** (ruling 1) — because the taps step WORLD-down, not because of
     any per-shape branch. A rotating host turns only the mask LOOKUP (the no-rotating-grid rule), and
     the noise is sampled in the SAME already-quantized `p`, so the grain never goes diagonal either.
-  - ✅ **THE CORNER CHAMFER IS FIXED, and the fix was in the MASK — `u_radii` HOLDS A RADIAL SCALE,
-    NOT A RADIUS.** "Fire licks down the side of a card from each top corner" was never the fire
-    model: 32 uniform-angle rays cannot represent a 37.23-degree vertex, the lerp cut a real
-    2.32-unit chamfer, and a chamfer IS an upward-facing slope — so every correct model stood fire on
-    it. ⚠ **The ray table was EXACT at every ray all along** (measured: worst error 0.000 art units),
-    which is what ruled out `measure_outline` and pointed at the interpolation. Dividing by the rest
-    rectangle's radius makes the table 1.0 on an undeformed card, so `mask_level` lands on the exact
-    BOX branch, corners included, and a deformation becomes a smooth field near 1 with no vertex in
-    it. Cheaper than the radius form too. ⚠ **Three places share this contract**: `radii_scale` in the
-    shader, `_fill_radii_from_outline` and `measure_silhouette` on the script side. (FX_HANDOFF §10 E,
-    taken; the two dead ends — more rays, and interpolating `1/r` — are recorded in the shader.)
+  - ✅ **AND THE MASK IS THE ART, CLIPPED CORNERS INCLUDED (2026-07-29).** ⚠ **A card and a prop do NOT
+    share the mask BRANCH, and that is the answer to "why was a non-rectangular card hard when the hoop
+    already works"** (owner asked, 2026-07-29). A prop is `Shape.SPRITE`: the mask SAMPLES the sheet's
+    alpha, so any silhouette and the hoop's hole come free. A card is `Shape.RADII`: an OUTLINE, because
+    its face is skinned to a 16-arm rig on autoplay and a static alpha sample would burn the undeformed
+    shape (§7's own bug). Everything above the mask is one code path for both. So a card gets none of what
+    the alpha gives a prop, including the fact that every type frame BITES a texel out of each corner —
+    `CardModifierType.corner_notch` measures that off the sheet and `CardVisual._rig_outline` carries it as
+    the three points it really is, the middle one the corner cell's bilinear corner so it shears with the
+    rig. `test_the_card_mask_is_the_card_the_player_sees` asserts ZERO disagreeing FX cells against a real
+    card. ⚠ Costs 16 % of a burning screen (the uniform ARRAY, not the wedge loop). FX_HANDOFF §0c.5.
+  - ✅ **THE CORNER CHAMFER IS FIXED, AND THE FIX IS THAT THE MASK CARRIES THE OUTLINE'S OWN VERTICES
+    (`u_poly` + `u_wedge`), NOT A SAMPLING OF THEM.** "Fire licks down the side of a card from each top
+    corner" was never the fire model: no scheme that interpolates between two angular rays can
+    represent a vertex, and a chamfer IS an upward-facing slope, so every correct flame model stood
+    fire on it. ⚠ **The ray table was EXACT at every ray all along** (worst error 0.000 art units),
+    which is what ruled out `measure_outline` and pointed at the interpolation. Two intermediate fixes
+    are recorded in the shader as dead ends — more rays (converges far too slowly on a vertex) and a
+    RADIAL SCALE against the rest rectangle, which was exact at rest and **still cut up to 26.9 art
+    units of a column off a REAL card's stretched corner** (measured 2026-07-29 by
+    `test_pixels.gd`'s `test_the_card_mask_is_the_card_the_player_sees`, the one check that stands up a
+    real `CardVisual`). The mask is now the union of the silhouette's wedges, exact at rest and
+    deformed, and the two box tests around it make it cheaper than the table it replaced. ⚠ **Three
+    places share the contract**: `poly_solid` in the shader, `FxAttachment._fill_poly_from_outline`,
+    and `PixelProbe.mask_contains` (the tests' mirror). (FX_HANDOFF §0c.1.)
   - **Shape following is IN the shader.** Nothing is baked at `_ready`, so a host that turns cannot
     emit off a stale outline — *"which has chance to fail if object rotates maybe"* (owner).
   - `sink` is now an **EROSION of the mask**, not an offset added to a contour: the base is the
@@ -676,11 +690,14 @@ the fire riding them), which keeps the dependency inside the one class that owns
     are spawned at random times and simulated forward, so there is no clock to park and a single
     frame of a fresh attachment has emitted nothing. Like `02_fire_rotation` it is for EYE review, not
     for diffing.
-- **Fire is OPAQUE over its host; `sink` is the knob for how much art it covers.** Every shipped
-  style sets `inner_alpha = 1.0` (owner 2026-07-29: seeing the card through the flame "looks very
-  bad"). `FxStyle.sink` is how far the base goes DOWN into the art — positive sinks it in and
-  guarantees no seam, 0 plants it on the contour, negative lifts it clear so the flames cover
-  nothing. Reach for `sink`, never for the alpha.
+- **Fire draws BEHIND its host's art, and `sink` is the knob for how much of the flame is buried.**
+  Every shipped style leaves `inner_alpha` at **0** (owner 2026-07-29: *"I would prefer that fire effect
+  always be behind main card art visually"*), so the flame is CUT at its host's mask and covers no art at
+  any rotation or warp — the cut is tested at the UNQUANTIZED position, which is what makes the seam
+  follow the art's own edge instead of a one-unit staircase (FX_HANDOFF §0c). ⚠ **An earlier edition of
+  this row said `inner_alpha = 1.0`, i.e. the exact opposite**; it predates the fire going behind the art.
+  `FxStyle.sink` is how far the base goes DOWN into the art — positive buries it and guarantees no seam,
+  0 plants it on the contour, negative lifts it clear. Reach for `sink`, never for the alpha.
 - ⚠ **HISTORY: `base_width` HAD TO EXCEED 1.0 OR EVERY TENDRIL WAS AN ISLAND.** Kept because it is
   the sharpest example of why the retired model needed so many knobs: a tendril's dome reached
   exactly zero at its cell boundary and so did its neighbour's, so at 1.0 there was a guaranteed
@@ -843,6 +860,17 @@ and it renders a burning card, a juggling card and a burning prop through the SH
 maths, which is the mistake that made flames trail their balls. Stacks, ball count, lit balls, both
 bodies, zoom and a `time_scale` (0 freezes the animation while the shapes stay live) are inspector
 knobs; editing any `FxStyle` re-pushes immediately.
+
+⚠ **EVERY HOST IN IT IS THE REAL SCENE — including the cards, since 2026-07-29** (owner: *"no
+placeholder art that isnt ever seen in game, and no useless mocks when you can just use actual original
+scene, just like how hoop knife use actual art"*). The card slots instantiate `card_visual.tscn` with real
+`CardData`, so the face under the flames is the TypePaper polygon skinned to the star rig — not a flat
+polygon, and **not a rectangle**: the frame clips one texel off each corner. `rig_pose` seeks the card's
+own `AnimationPlayer` rather than warping a hand-built star. Two things that made it possible, both
+recorded in FX_HANDOFF §0c.4: `CardVisual.settings()` for the absent autoload, and **`@tool` down the
+whole card DATA chain** (`CardData`, `CardModifier`, `CardModifierType`, `PipSuit`, the stamp and skill
+bases) — without it a previewed card's suit is a placeholder and its face silently stops drawing
+mid-`update_visual`. `test_card_preview_chain_is_tool` pins that.
 
 **⚠⚠ EVERY FX SCRIPT MUST STAY `@tool`, AND THIS ONE DESTROYS DATA.** A non-tool script loads in the
 editor as a PLACEHOLDER instance. Three consequences, all seen on 2026-07-28:

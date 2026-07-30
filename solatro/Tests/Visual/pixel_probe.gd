@@ -15,6 +15,38 @@ extends RefCounted
 # forbidden in PRODUCTION code for exactly the opposite reason; that rule is about the shipped game.
 # ==============================================================================
 
+## THE FIRE SHADER'S DEFORMABLE MASK, TRANSCRIBED — `poly_solid` plus `wedge_has` from
+## `fire.gdshader`, on the CPU. ⚠ Unlike `ball_positions` this is deliberately NOT independent: it is a
+## MIRROR, and it exists so the two suites that need to know what the mask answers share one
+## transcription instead of two.
+##
+## What each suite then does with it is where the independence lives: `test_pixels` compares it against
+## a RENDERED real card, and `test_fx_attachment` compares it against `Geometry2D.is_point_in_polygon`
+## — a genuine oracle for "is the mask the outline". Keep this in step with the shader; three places
+## share the contract, and `FxAttachment._fill_poly_from_outline` is the third.
+## ⚠ THE TWO BOX TESTS ARE PART OF IT, and leaving them out would leave the shader's fast paths
+## unchecked: the mask answers from `half` (reject) and `inner` (accept) before it ever builds a wedge,
+## so a wrong `inner` box would claim art where there is none and nothing would notice.
+static func mask_contains(p: Vector2, poly: PackedVector2Array, wedge: PackedFloat32Array,
+		half: Vector2, inner: Vector2) -> bool:
+	var count := poly.size()
+	if count < 3 or wedge.size() < 1: return false
+	if absf(p.x) > half.x or absf(p.y) > half.y: return false
+	if absf(p.x) <= inner.x and absf(p.y) <= inner.y: return true
+	var t := (fposmod(atan2(p.x, -p.y), TAU) / TAU) * float(wedge.size())
+	var slot := int(floorf(t)) % wedge.size()
+	var w := int(wedge[slot])
+	for k : int in FxAttachment.WEDGE_CANDIDATES:
+		if _wedge_has(p, poly, w + k): return true
+	return false
+
+## One wedge of the silhouette: the triangle from the origin out to vertices `i` and `i + 1`.
+static func _wedge_has(p: Vector2, poly: PackedVector2Array, i: int) -> bool:
+	var n := poly.size()
+	var a := poly[i % n]
+	var b := poly[(i + 1) % n]
+	return a.cross(p) >= 0.0 and p.cross(b) >= 0.0 and (b - a).cross(p - a) >= 0.0
+
 ## Where every ball of a `n`-ball pattern sits, in ART UNITS relative to the host's centre.
 ## Transcribed from the spec: a closed loop of a tall arc (share `f` of the cycle, +x -> -x) and a
 ## shallow return (-x -> +x). Ball i is at cycle position `phase + i / n` — index IS identity.

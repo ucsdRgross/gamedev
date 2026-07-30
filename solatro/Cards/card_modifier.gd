@@ -1,5 +1,10 @@
+@tool
 @abstract class_name CardModifier
 extends Resource
+## ⚠ `@tool` for the reason spelled out on `CardData`: the FX editor previews a REAL card, and a
+## placeholder base takes every member of every subclass with it — a `@tool` pip on a non-tool base
+## still came back as a bare `Resource`. Nothing here needs a running game: `env` and `game` read
+## `CardEnvironment` STATICS, which simply answer null outside one.
 
 enum Rarity {COMMON, UNCOMMON, RARE, EPIC, LEGENDARY}
 

@@ -145,6 +145,10 @@ actually cost time.
 
 ## 6. Open work
 
+🔴 **THE FIRE EFFECT IS CLOSED (owner, 2026-07-29: *"with this we are done with fire effect changes"*).
+THE ONE OPEN ENGINEERING TASK IS JUGGLING PERFORMANCE, and its brief is FX_HANDOFF §0d.5.** Everything
+else below is either an owner call, art tuning, or a closed record kept for its measurement.
+
 Ordered roughly by what a session should pick up first.
 
 ### 6.1 Owner decisions outstanding (cheap, unblock the rest)
@@ -167,7 +171,9 @@ Ordered roughly by what a session should pick up first.
   `art_size` in `_init` — keep it a multiple of `PropVisual.ART_PIXEL_SCALE` or its pixels stop
   matching the cards'.
 - **The rest of the numbers to settle by eye**, all single tunables: `FxFireStyle.cover_taps` (4 —
-  ⚠ and it is the shader's whole cost curve, +0.076 ms per tap on a full burning screen),
+  ⚠ and it is the shader's whole cost curve: **+0.65 ms per tap on the owner's Intel UHD**, +0.081 on a
+  GTX 1070. Dropping the card style to 2 is worth **1.24 ms**, the biggest single number on the table and
+  a LOOK call — FX_HANDOFF §0d.3 prices it, §0e argues against it),
   `aperture` / `fire_gain` (the flame's shape), the six **stack ratios** (how fast each knob ramps
   with the count — FX_HANDOFF §0d), `FxStyle.level_ref` (120 card / 60 prop / 40 ball),
   `settings.fx_transition_fraction` (0.6), `ParticleEngine.MAX_PARTICLES` (1024),
@@ -242,26 +248,45 @@ that instrument reported two rejected builds as successes.
   destroys data — see the loud block in §4g before removing `@tool` from anything.
 
 
-- **⬜ `fx_editor.tscn` unverified inside the editor.** Its non-editor paths were smoke-run with a
-  GPU; the `Engine.is_editor_hint()` branches (no autoloads, ownerless rebuild) are unproven until
-  the owner opens the scene. First thing to report if it misbehaves.
+- **✅ `fx_editor.tscn` IS verified inside the editor, and it hosts the REAL SCENES (2026-07-29).** Both
+  card slots instantiate `card_visual.tscn` with real `CardData` — the TypePaper face skinned to the star
+  rig, which is **not a rectangle** (the frame clips one texel off each corner) — and `rig_pose` seeks the
+  card's own animation instead of warping a hand-built star (owner: *"no useless mocks when you can just
+  use actual original scene, just like how hoop knife use actual art"*). ⚠ It needed **`@tool` down the
+  whole card DATA chain**: without it a previewed card's suit is a placeholder and the face silently stops
+  drawing mid-`update_visual`. FX_HANDOFF §0c.4, pinned by `test_card_preview_chain_is_tool`.
+  ⚠ **How to test an editor-only claim without opening the GUI** (owner's editor must be CLOSED):
+  `Godot --path solatro --editor --quit-after 400 res://UI/Fx/Tools/fx_editor.tscn` prints every script
+  error and quits. ⚠ Running that scene as a GAME is fair for the cards and the fire but **not for the
+  balls** — they do not render in a runtime run, and that is an artefact of the harness, not a bug.
 - **⬜ THE THREE FIRE `.tres` WERE MIGRATED, NOT TUNED (2026-07-29).** The retired knobs were dropped
   and the new ones given plausible starting values; only `noise_scale` was actually re-derived, and
   only because the retired build's value was ~6x too fine for a model where the noise IS the shape
   (it read as one-pixel static). **This is the biggest thing waiting on the owner** — FX_HANDOFF §0f.
-- **✅ FIXED — fire no longer licks down a card's top corners.** The chamfer was in the RADII MASK,
-  not the fire: 32 uniform-angle rays cannot represent a 37.23-degree vertex, and a chamfer is a real
-  upward-facing slope. ⚠ **The ray table was exact all along (worst error 0.000 art units), so the
-  whole fault was interpolating a function with a CORNER in it.** `u_radii` holds a RADIAL SCALE
-  against the rest rectangle now, so the mask test is the exact box at rest. FX_HANDOFF §0g.
-- **⬜ THE TWO REMAINING FX TASKS ARE FX_HANDOFF §0c/§0d** — read it before writing either.
-  (1) **fire must RENDER BEHIND the art.** `inner_alpha = 0` only makes the flame transparent over the
-  mask, which is not the same thing, and the seam gives it away. ⚠ **The cause is that the cut tests
-  the QUANTIZED position**, so it is a 2.5-screen-pixel staircase against a `Polygon2D`'s
-  screen-pixel edge — which means the cheapest fix may be an UNQUANTIZED cut (one line, untried), not
-  a layering change. Three routes are weighed in §0c. (2) **juggling performance**: the layer is 1.94
-  of 2.58 ms, and ⚠ two levers were rejected for a blocker that no longer exists. §0e explains
-  `cover_taps`.
+- **✅ FIXED, TWICE — fire no longer licks down a card's top corners, and no longer misses a warped
+  one.** The chamfer was always in the MASK, not the fire: no scheme that interpolates between two
+  angular rays can represent a vertex, and a chamfer is a real upward-facing slope. ⚠ **The ray table was
+  exact AT every ray all along (worst error 0.000 art units), so the whole fault was interpolating a
+  function with a CORNER in it.** A radial-SCALE table fixed the REST case; the DEFORMED case needed the
+  mask to carry the silhouette's **own vertices** (`u_poly` + `u_wedge` + two box tests), which is exact at
+  every pose and, measured on a REAL card, took **26.9 art units of unlit column down to 1.0** — one FX
+  pixel, i.e. quantization. FX_HANDOFF §0c.1.
+- **✅ FIXED — the fire stood one pixel of flame on nothing at each card corner (2026-07-29).** Every card
+  type's frame clips its corners and the mask was the RIG, which is the full rectangle. ⚠ **A card and a
+  prop do not share the mask BRANCH** — a prop SAMPLES its sheet's alpha (`Shape.SPRITE`, which is why
+  hoops and blades were never a problem), a card carries an OUTLINE because its face is skinned to a rig
+  that animates. So the bite had to be measured off the type frame and rebuilt geometrically:
+  FX_HANDOFF §0c.5, which also has why a card cannot simply use the prop's branch.
+- **✅ FIRE RENDERS BEHIND THE ART, and the owner has accepted it by eye** (*"fire looks good on
+  rotations, no longer jagged"*). `inner_alpha = 0` cuts the flame at the host's mask, and the cut is
+  tested at the **UNQUANTIZED** position — which is what stopped the seam being a 2.5-screen-pixel
+  staircase against a `Polygon2D`'s screen-pixel edge. Cards AND sprite props. FX_HANDOFF §0c.
+- **🔴 THE ONE OPEN FX TASK IS JUGGLING PERFORMANCE, and it is a conversation with the owner** (*"Last
+  task for next agent will be back and forth with user to make juggling effect as performant as
+  possible"*). On the box that ships (Intel UHD) the juggling layer is **~5.3 ms of a 10.8 ms worst
+  window** against a ~2 ms target for all FX, and the PLUMES are 2.3x the balls. **The brief, the priced
+  menu and the running order are FX_HANDOFF §0d.5 — read it before writing anything.** ⚠ Two levers are
+  free and change no pixel; everything else is a look or a feature call that is his.
 - **⚠ `fire_prop.tres` KEEPS GETTING CLOBBERED** by the editor whenever an agent edits
   `fx_fire_style.gd` with the FX editor open — three times in one pass. `git diff Shaders/Styles/`
   before believing anything, and see FX_HANDOFF §0g for how to tell clobbering from real tuning.

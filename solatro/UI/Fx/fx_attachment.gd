@@ -28,7 +28,7 @@ static func settings() -> PlayerSettings:
 ## Shape kinds, mirroring the constants in fire.gdshader. GDScript and GLSL cannot share an enum,
 ## so the mapping exists twice and can drift silently — the FX ATTACHMENT suite asserts it.
 ##
-## A card is a BOX and a deformed one needs the 32-tap radius table, so that is its own kind rather
+## A card is a BOX and a deformed one carries its own outline (RADII), so that is its own kind rather
 ## than every card paying for a lookup it does not use. Every TEXTURED kind is a SPRITE and answers
 ## with its own alpha — which is the only representation that knows a hoop has a hole in it. BALLS
 ## is a shape too, not a mode: the fire shader treats a juggled ball exactly like a card
@@ -138,30 +138,47 @@ func configure(body_size: Vector2, host_rotates := true, host_shape := Shape.BOX
 	half = host_half
 	ambient = host_ambient
 
-## The card silhouette's reach at each of RADII angles, or empty while the host is a plain box.
-var _radii := PackedFloat32Array()
+## The host silhouette's own VERTICES, walked once around the shape in the art's frame, or empty while
+## the host is a plain box. Pushed as `u_poly`.
+var _poly := PackedVector2Array()
+## Per WEDGES-th of a turn, the vertex whose wedge spans that slot's start — what lets the shader find
+## the right edge with no search. Pushed as `u_wedge`. See `_fill_poly_from_outline`.
+var _wedge := PackedFloat32Array()
 ## SHAPE_SPRITE: the sheet the mask is read out of, the frame inside it in NORMALIZED uv, and the
 ## size that frame is drawn at (centred on the host's origin). Set by measure_sprite_silhouette.
 var _art : Texture2D = null
 var _art_rect : Vector4 = Vector4(0.0, 0.0, 1.0, 1.0)
 var _art_size : Vector2 = Vector2.ONE
 
-## Entries in the radius table. 32, NOT 16: the star rig deforming a card goes up to 16 arms, and
-## 16 samples cannot represent 16 alternating features (Nyquist) — at 16 the arms either smooth
-## into a blob or beat against the grid depending on phase. Must match RADII in fire.gdshader.
-const RADII := 32
+## How many silhouette vertices reach the shader. 24 is what a real card has: the star rig's 16 arms,
+## plus two more at each corner because the type art BITES a corner out of its frame and the rig does not
+## know that (`CardVisual._rig_outline`). Storing the vertices means the mask is the shape rather than a
+## sampling of it. An outline with MORE points than this is resampled at POLY uniform angles, which is the
+## old approximation and loses vertices again — the FX ATTACHMENT suite asserts a card's outline fits.
+## Must match POLY in fire.gdshader.
+const POLY := 24
+## Angular slots in the wedge index, and how many consecutive wedges the shader tests per slot. Both must
+## match `WEDGES` / `WEDGE_CANDIDATES` in fire.gdshader: a slot is 1/32 of a turn and a corner's three
+## BITE points sit inside ~1.5 degrees of each other, so covering one slot can take four wedges. See
+## `_fill_poly_from_outline`, and `test_fx_attachment` asserts the bound.
+const WEDGES := 32
+const WEDGE_CANDIDATES := 4
 
-## The widest entry in `_radii`, in art units — half the CIRCUMSCRIBED extent of the silhouette as it
-## is RIGHT NOW. `_size_quad` bounds a rotating host's quad with it, so a deformed card's stretched
-## corner cannot push its flames past the quad edge.
-var _radii_max : float = 0.0
+## The longest vertex, in art units — half the CIRCUMSCRIBED extent of the silhouette as it is RIGHT
+## NOW. `_size_quad` bounds a rotating host's quad with it, so a deformed card's stretched corner
+## cannot push its flames past the quad edge.
+var _poly_max : float = 0.0
 ## The deformed outline's tight half-extents. Pushed as `u_body` on the RADII quads, because that is
-## what the comb divides — a corner stretched 5 units out of the nominal 38x50 has no cell over it
-## otherwise, and the fire stops short of the very corner that moved.
-var _radii_half : Vector2 = Vector2.ZERO
-## Scratch for `_fill_radii_from_outline`, allocated once: this runs per frame on every card on the
+## what the outward fan is measured across and what `body_near` rejects against — a corner stretched 5
+## units out of the nominal 38x50 would otherwise sit outside the bound its own flames are built in.
+var _poly_half : Vector2 = Vector2.ZERO
+## The largest origin-centred box that fits INSIDE the silhouette. Pushed as `u_inner`, where it is the
+## mask's early ACCEPT — see `_inner_box`.
+var _poly_inner : Vector2 = Vector2.ZERO
+## Scratch for `_fill_poly_from_outline`, allocated once: this runs per frame on every card on the
 ## board, and a fresh table per card per frame is exactly the churn it must not add.
-var _next := PackedFloat32Array()
+var _next := PackedVector2Array()
+var _ring := PackedVector2Array()
 var _angles := PackedFloat32Array()
 
 ## Measure the host's real outline into the radius table, so flames hug a deformed card instead of
@@ -169,37 +186,43 @@ var _angles := PackedFloat32Array()
 ## changed, because sampling a polygon every frame for a shape that almost never moves is exactly
 ## the kind of per-frame work this design avoids elsewhere.
 ##
-## A simple quad stays Shape.BOX: the box branch is an exact ray/rect exit and costs one tap,
-## where the table costs a lookup plus a lerp on every contour sample. Only a genuinely deformed
-## outline is worth the table.
+## A simple quad stays Shape.BOX: the box branch is two comparisons, where a polygon costs an `atan`
+## and an index. Only a genuinely deformed outline is worth the mask.
+##
+## ⚠ THIS PATH IS AN APPROXIMATION AND `measure_outline` IS NOT. Unordered points cannot be walked, so
+## the silhouette is bucketed into POLY angular slots and one vertex is emitted per slot — which puts
+## the vertices at fixed angles rather than where the shape's corners actually are, exactly the
+## sampling the exact path exists to avoid. It is the fallback for a host with no rig (a stripped card
+## in a test, or art with no skeleton); anything with an ordered outline must use `measure_outline`.
 func measure_silhouette(points: PackedVector2Array) -> void:
 	if points.size() <= 8:
 		shape = Shape.BOX
-		_radii = PackedFloat32Array()
-		_radii_max = 0.0
+		_poly = PackedVector2Array()
+		_wedge = PackedFloat32Array()
+		_poly_max = 0.0
+		_poly_inner = Vector2.ZERO
 		_restyle()
 		return
-	_radii.resize(RADII)
-	_radii.fill(0.0)
+	var radius := PackedFloat32Array()
+	radius.resize(POLY)
+	radius.fill(0.0)
 	for p : Vector2 in points:
-		# Angle measured from straight up, matching shape_radius's convention exactly.
+		# Angle measured from straight up, the convention every mask path here shares.
 		var a := atan2(p.x, -p.y)
-		var slot := int(floorf((a / TAU + 1.0) * float(RADII))) % RADII
-		_radii[slot] = maxf(_radii[slot], p.length())
+		var slot := int(floorf((a / TAU + 1.0) * float(POLY))) % POLY
+		radius[slot] = maxf(radius[slot], p.length())
 	# An empty angular bucket would read as a radius of zero and tear a notch in the outline, so
 	# fill each from its neighbours; two passes settle any run of gaps this table can have.
 	for _pass : int in 2:
-		for i : int in RADII:
-			if _radii[i] > 0.0: continue
-			_radii[i] = maxf(_radii[(i + RADII - 1) % RADII], _radii[(i + 1) % RADII])
-	_radii_max = 0.0
-	for r : float in _radii: _radii_max = maxf(_radii_max, r)
-	_radii_half = body * 0.5
-	# ⚠ THE TABLE IS A RADIAL SCALE, NOT A RADIUS — the same contract `_fill_radii_from_outline`
-	# writes, and it has to be converted HERE too or this path feeds the shader radii it will read as
-	# scales. See that function for why the shader wants scales at all (the corner chamfer).
-	for i : int in RADII:
-		_radii[i] /= maxf(_rect_radius(float(i) * TAU / float(RADII), _radii_half), 1e-4)
+		for i : int in POLY:
+			if radius[i] > 0.0: continue
+			radius[i] = maxf(radius[(i + POLY - 1) % POLY], radius[(i + 1) % POLY])
+	var ring := PackedVector2Array()
+	ring.resize(POLY)
+	for i : int in POLY:
+		var a := float(i) * TAU / float(POLY)
+		ring[i] = Vector2(sin(a), -cos(a)) * radius[i]
+	_fill_poly_from_outline(ring)
 	shape = Shape.RADII
 	_restyle()
 
@@ -216,114 +239,182 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 # the grid where a corner stretches, which the owner ruled acceptable here — the card's own art
 # already does the same thing under the same rig.
 
-## Bind the silhouette to an ORDERED outline and switch the mask to the radius table. The setup call:
+## Bind the silhouette to an ORDERED outline and switch the mask to the polygon. The setup call:
 ## `track_outline` is the per-frame one.
 ##
 ## ⚠ `outline` must run ONCE around the silhouette so its points' angles increase monotonically —
-## which is what a rig walked edge by edge gives. That contract is what lets each of the 32 rays be
-## resolved by one segment intersection in a single merged walk (32 + n steps, not 32 * n), and it is
-## the whole reason this is cheap enough to run every frame on every card on the board. Unordered
-## points — a triangulated `Polygon2D`, say — belong in `measure_silhouette`, which buckets instead.
+## which is what a rig walked edge by edge gives. That contract is what lets the wedge index be built
+## in one merged walk (WEDGES + n steps, not WEDGES * n), and it is the whole reason this is cheap
+## enough to run every frame on every card on the board. Unordered points — a triangulated
+## `Polygon2D`, say — belong in `measure_silhouette`, which buckets instead and is approximate.
 func measure_outline(outline: PackedVector2Array) -> void:
 	if outline.size() < 3:
 		shape = Shape.BOX
-		_radii = PackedFloat32Array()
-		_radii_max = 0.0
+		_poly = PackedVector2Array()
+		_wedge = PackedFloat32Array()
+		_poly_max = 0.0
+		_poly_inner = Vector2.ZERO
 		_restyle()
 		return
-	_fill_radii_from_outline(outline)
+	_fill_poly_from_outline(outline)
 	shape = Shape.RADII
 	_restyle()
 
 ## Re-read the deformed outline and push it to the live quads. Called every frame by a host whose rig
 ## moves; a no-op on the frames where it did not, which is most of them once the card settles.
 ##
-## Only `u_radii` and `u_body` reach the GPU — never the ~35 static style levers `_restyle` pushes.
-## The quads are re-sized too, because a stretched corner reaches further than the rest bound they
-## were built for and would clip against their own edge.
+## Only the silhouette and `u_body` reach the GPU — never the ~35 static style levers `_restyle`
+## pushes. The quads are re-sized too, because a stretched corner reaches further than the rest bound
+## they were built for and would clip against their own edge.
 func track_outline(outline: PackedVector2Array) -> void:
 	if shape != Shape.RADII or outline.size() < 3: return
-	if not _fill_radii_from_outline(outline): return
+	if not _fill_poly_from_outline(outline): return
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
 		# A request may override the host's shape (ball fire rides the BALLS, not the card it is on),
-		# and those quads read neither table.
+		# and those quads read no silhouette at all.
 		if fx.req.shape >= 0 and fx.req.shape != int(Shape.RADII): continue
-		var mat := fx.quad.material as ShaderMaterial
-		mat.set_shader_parameter(&"u_radii", _radii)
-		mat.set_shader_parameter(&"u_body", _radii_half * 2.0)
+		_push_poly(fx.quad.material as ShaderMaterial)
 		_size_quad(fx.quad, fx.req)
 
-## Resolve `outline` into the radius table. Returns whether anything actually moved — the early-out
-## that keeps a still card free.
+## The silhouette a RADII quad's mask reads: the vertices, the wedge index and the live count, plus the
+## tight body the fan and `body_near` are measured against. One function, because the four are ONE fact
+## and a quad that got three of them would mask against a shape that does not exist.
+func _push_poly(mat: ShaderMaterial) -> void:
+	# PADDED to the uniform's own length, since a host may have fewer vertices than the shader holds
+	# (a card's outline is exactly POLY, but `edge_subdivisions` can bake a shorter rig). `u_poly_count`
+	# is what keeps the shader off the padding — no wedge is ever built from it.
+	#
+	# ⚠ PACKING TWO VERTICES PER `vec4` WAS TRIED AND IS SLOWER, which is worth recording because the
+	# reasoning for it was sound: the array's SIZE is what costs (isolated on the owner's Intel UHD —
+	# 16 vertices 5.459 ms on a burning screen, 24 as `vec2` 6.344, and only 0.2 of that gap was the
+	# extra wedge candidates), so halving the slots looked free. Measured 6.808 instead: the shift, mask
+	# and select per fetch cost more than the padding saved.
+	var verts := _poly
+	if verts.size() < POLY:
+		verts = _poly.duplicate()
+		verts.resize(POLY)
+	mat.set_shader_parameter(&"u_poly", verts)
+	mat.set_shader_parameter(&"u_wedge", _wedge)
+	mat.set_shader_parameter(&"u_poly_count", _poly.size())
+	mat.set_shader_parameter(&"u_inner", _poly_inner)
+	mat.set_shader_parameter(&"u_body", _poly_half * 2.0)
+
+## Resolve `outline` into the mask's own vertices plus the wedge index that finds them. Returns whether
+## anything actually moved — the early-out that keeps a still card free.
 ##
-## Each ray is intersected with the ONE outline segment that spans its angle, so the table is the
-## exact star rather than an angular histogram of it: bucketing 16 arms into 32 slots and filling the
-## gaps with a neighbour's maximum inflates the shape by up to ~5 art units between a corner and the
-## edge sample beside it, which reads as a lump of flame standing off the card.
-func _fill_radii_from_outline(outline: PackedVector2Array) -> bool:
+## ⚠ THE VERTICES ARE STORED, NOT SAMPLED, AND THAT IS THE WHOLE POINT (FX_HANDOFF §0c.1). This used to
+## resample the outline into 32 rays of radial SCALE, and no interpolation between two rays can
+## reproduce a VERTEX — so a corner the rig had pulled out was chamfered off the mask. Measured on a
+## REAL `CardVisual` (`test_the_card_mask_is_the_card_the_player_sees`, 2026-07-29): at one point of the
+## card's own autoplay animation the stretched corner stood **26.9 art units of a column outside its own
+## mask**, carrying no flame at all, and the mask hung ~2 units past the art on the other side. The
+## polygon is exact at rest AND deformed, and it costs the same `atan` the table cost.
+##
+## THE WEDGE INDEX, which is what keeps the shader O(1): for each of WEDGES angular slots, the vertex
+## whose wedge (origin, V[i], V[i+1]) spans that slot's START. The shader tests that wedge and the next
+## one, so the pair must cover the slot — true while no two vertices share a slot, which the FX
+## ATTACHMENT suite asserts for the rig and for `star_outline` past the warp the rig can reach.
+func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 	var n := outline.size()
 	_angles.resize(n)
 	# The walk has to START at the lowest angle, or the two sequences cannot advance together: an
 	# outline ordered around the shape is monotonic in angle only up to ONE wrap, and this is where
 	# that wrap is cut.
 	var start := 0
-	for i : int in n:
-		_angles[i] = fposmod(atan2(outline[i].x, -outline[i].y), TAU)
-		if _angles[i] < _angles[start]: start = i
-	_next.resize(RADII)
+	var area := 0.0
 	var half := Vector2.ZERO
-	for p : Vector2 in outline:
-		half = Vector2(maxf(half.x, absf(p.x)), maxf(half.y, absf(p.y)))
-	var j := 0
 	var top := 0.0
-	for k : int in RADII:
-		var a := float(k) * TAU / float(RADII)
-		while j < n - 1 and _angles[(start + j + 1) % n] <= a: j += 1
-		var i0 := (start + j) % n
-		var i1 := (start + j + 1) % n
-		# Outside the monotonic run at either end is the CLOSING segment, from the last point back to
-		# the first — the one the wrap cut in half.
-		if a < _angles[i0] or (j >= n - 1 and a >= _angles[i1]):
-			i0 = (start + n - 1) % n
-			i1 = start
-		# ⚠ THE TABLE HOLDS A RADIAL SCALE, NOT A RADIUS — this is the fix for "fire licks DOWN the
-		# side of a card from each top corner" (owner, twice). Storing `r(a)` means the shader has to
-		# interpolate a function with a CORNER in it, and no interpolation between two rays can
-		# reproduce a vertex: at 32 rays a 38x50 card's corner (37.23 deg, sampled at multiples of
-		# 11.25) came out chamfered by 2.32 art units, and a chamfer is a real upward-facing slope, so
-		# fire stood on it — correctly, which is why more rays only ever made it smaller.
-		#
-		# Dividing by the REST rectangle's radius at the same angle turns the table into `1.0`
-		# everywhere on an undeformed card, so the shader's test becomes the EXACT box and the corner
-		# is exact too. A deformation shows up as a smooth field near 1 with no vertex in it, which is
-		# the one thing that interpolates well. (FX_HANDOFF §10 E, taken.)
-		var hit := _ray_hit(a, outline[i0], outline[i1])
-		_next[k] = hit / maxf(_rect_radius(a, half), 1e-4)
-		# `top` stays a real RADIUS: it sizes the quad, which knows nothing about scales.
-		top = maxf(top, hit)
-	var moved := _radii.size() != RADII or not is_equal_approx(top, _radii_max) \
-			or not half.is_equal_approx(_radii_half)
+	for i : int in n:
+		var p := outline[i]
+		_angles[i] = fposmod(atan2(p.x, -p.y), TAU)
+		if _angles[i] < _angles[start]: start = i
+		area += p.cross(outline[(i + 1) % n])
+		half = Vector2(maxf(half.x, absf(p.x)), maxf(half.y, absf(p.y)))
+		top = maxf(top, p.length())
+	# ⚠ THE RING IS NORMALIZED TO ONE WINDING, and that is not tidiness — the wedge index below and the
+	# shader's `wedge_has` both read the walk as ANGLE-INCREASING, so an outline handed over the other
+	# way round would index the wrong edge and mask as EMPTY everywhere: a card with no fire on it at
+	# all, from a caller that did nothing wrong. Walking BACKWARD from the lowest angle turns a
+	# decreasing sequence into an increasing one, which costs a sign and no allocation.
+	var step := 1 if area >= 0.0 else -1
+	_ring.resize(n)
+	for i : int in n: _ring[i] = outline[posmod(start + i * step, n)]
+	for i : int in n: _angles[i] = fposmod(atan2(_ring[i].x, -_ring[i].y), TAU)
+	# ⚠ AN OUTLINE WITH MORE POINTS THAN THE SHADER HOLDS IS RESAMPLED, and that is the approximation
+	# this function exists to avoid — it is here only so a host with a denser rig degrades instead of
+	# breaking. The card's rig is 16 arms and fits exactly.
+	_next.resize(mini(n, POLY))
+	if n <= POLY:
+		for i : int in n: _next[i] = _ring[i]
+	else:
+		for k : int in POLY:
+			var a := float(k) * TAU / float(POLY)
+			var seg := _span_of(a, n)
+			_next[k] = Vector2(sin(a), -cos(a)) * _ray_hit(a, _ring[seg], _ring[(seg + 1) % n])
+	var m := _next.size()
+	if m < n:
+		# The index is built over whatever the shader will actually hold, so a resampled ring re-reads
+		# its own angles rather than the outline's.
+		_angles.resize(m)
+		for i : int in m: _angles[i] = fposmod(atan2(_next[i].x, -_next[i].y), TAU)
+	_wedge.resize(WEDGES)
+	var j := 0
+	for k : int in WEDGES:
+		var a := float(k) * TAU / float(WEDGES)
+		while j < m - 1 and _angles[j + 1] <= a: j += 1
+		# Before the first vertex's angle is the CLOSING wedge, from the last point back to the first.
+		_wedge[k] = float(m - 1) if a < _angles[0] else float(j)
+	var moved := _poly.size() != m or not is_equal_approx(top, _poly_max) \
+			or not half.is_equal_approx(_poly_half)
 	if not moved:
-		for k : int in RADII:
+		for k : int in m:
 			# A twentieth of an art unit is well under one FX pixel, so anything below it cannot move
 			# a rendered flame and is not worth an upload.
-			if absf(_next[k] - _radii[k]) > 0.05:
+			if (_next[k] - _poly[k]).length() > 0.05:
 				moved = true
 				break
 	if not moved: return false
-	_radii = _next.duplicate()
-	_radii_max = top
-	_radii_half = half
+	_poly = _next.duplicate()
+	_poly_max = top
+	_poly_half = half
+	_poly_inner = _inner_box(_poly, half)
 	return true
 
-## How far the ray at angle `a` (from straight up) reaches before it leaves the REST rectangle of
-## half-extent `half` — the denominator that turns the measured radius into a scale. Exactly the
-## closed form `mask_level`'s box branch tests against, so an undeformed outline divides out to 1.0
-## at every ray and the two branches agree to the bit.
-func _rect_radius(a: float, half: Vector2) -> float:
-	var d := Vector2(sin(a), -cos(a))
-	return minf(half.x / maxf(absf(d.x), 1e-9), half.y / maxf(absf(d.y), 1e-9))
+## The largest box of `half`'s own aspect that fits INSIDE the silhouette — the shader's early ACCEPT,
+## and the reason an exact polygon mask is affordable at all (see `mask_level`'s RADII branch).
+##
+## Every edge of a star-shaped outline has the origin on its inside, so intersecting all of their
+## half-planes gives a convex region inside the polygon — conservative where the shape is not convex,
+## which is the safe direction: it can only send more points to the exact test. A box of half-extent
+## `t * half` fits inside `n . p <= d` exactly when `t * (half.x |n.x| + half.y |n.y|) <= d`, so `t` is
+## one min over the edges.
+##
+## ⚠ AT REST THIS EQUALS THE OUTER BOUND, which is the whole point: an undeformed card's rig IS the
+## authored rectangle, so the two boxes coincide and no fragment on the board ever builds a wedge.
+func _inner_box(poly: PackedVector2Array, half: Vector2) -> Vector2:
+	var n := poly.size()
+	if n < 3 or half == Vector2.ZERO: return Vector2.ZERO
+	var t := 1.0
+	for i : int in n:
+		var a := poly[i]
+		var e := poly[(i + 1) % n] - a
+		# The inward normal of the edge, and how far the line sits from the origin along it.
+		var nrm := Vector2(-e.y, e.x)
+		var d := nrm.dot(a)
+		if d < 0.0:
+			nrm = -nrm
+			d = -d
+		var span := half.x * absf(nrm.x) + half.y * absf(nrm.y)
+		if span > 1e-6: t = minf(t, d / span)
+	return half * clampf(t, 0.0, 1.0)
+
+## The index in `_ring` of the vertex whose segment spans angle `a` — the resample path's lookup, and
+## the one place the closing segment (last point back to first) has to be named.
+func _span_of(a: float, n: int) -> int:
+	for j : int in n - 1:
+		if _angles[j + 1] > a: return j
+	return n - 1
 
 ## How far the ray at angle `a` (from straight up) reaches before it crosses segment p->q, in art
 ## units. Zero where the segment is edge-on to the ray, which leaves the previous entry standing.
@@ -512,7 +603,7 @@ func _make_quad(req: FxRequest) -> MeshInstance2D:
 func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 	var bound := body
 	if rotates and req.rotates_with_host:
-		bound = Vector2.ONE * maxf(body.length(), _radii_max * 2.0)
+		bound = Vector2.ONE * maxf(body.length(), _poly_max * 2.0)
 	# A request that declares its own CONTENT is sized from that instead of from body-plus-reach: the
 	# juggling pattern is much smaller than the box that rule builds around it, and this shader is
 	# fragment-bound (FxRequest.min_half).
@@ -547,11 +638,11 @@ func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
 	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
 	mat.set_shader_parameter(&"u_shape", req.shape if req.shape >= 0 else int(shape))
 	mat.set_shader_parameter(&"u_half", int(half))
-	# The DEFORMED width where the rig holds one: `u_body` is what the comb divides, so a restyle
-	# must not stamp the authored rectangle back over the shape the card currently has.
-	mat.set_shader_parameter(&"u_body",
-			_radii_half * 2.0 if shape == Shape.RADII and _radii_half != Vector2.ZERO else body)
-	if not _radii.is_empty(): mat.set_shader_parameter(&"u_radii", _radii)
+	# The DEFORMED width where the rig holds one: `u_body` is what the fan is measured across and what
+	# `body_near` rejects against, so a restyle must not stamp the authored rectangle back over the
+	# shape the card currently has. The silhouette goes with it, as one fact (see `_push_poly`).
+	mat.set_shader_parameter(&"u_body", body)
+	if not _poly.is_empty(): _push_poly(mat)
 	if _art:
 		mat.set_shader_parameter(&"u_art", _art)
 		mat.set_shader_parameter(&"u_art_rect", _art_rect)

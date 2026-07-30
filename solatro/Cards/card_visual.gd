@@ -22,20 +22,31 @@ var card_size : Vector2
 var card_separation: int
 var card_separation_custom: int
 
+## The settings a card reads. `@tool` and the FX EDITOR are why this is not `SettingsManager.settings`
+## directly: the editor instantiates NO autoloads, and the tool stands up a REAL card (owner
+## 2026-07-29: *"no useless mocks when you can just use actual original scene"*), so every settings read
+## on the construction path has to survive their absence. The shipped defaults stand in, which is also
+## what a tuning tool should be showing. Exactly the pattern `FxAttachment.settings()` already uses.
+static var _editor_settings : PlayerSettings = null
+static func settings() -> PlayerSettings:
+	if not Engine.is_editor_hint(): return SettingsManager.settings
+	if not _editor_settings: _editor_settings = PlayerSettings.new()
+	return _editor_settings
+
 static var card_size_play : Vector2:
 	get():
-		return CARD_SIZE * SettingsManager.settings.card_scale
+		return CARD_SIZE * settings().card_scale
 static var card_separation_play : int:
 	get():
-		return CARD_SEPARATION * SettingsManager.settings.card_scale
+		return CARD_SEPARATION * settings().card_scale
 static var card_separation_play_custom : int:
 	get():
-		return card_separation_play * SettingsManager.settings.card_separation_scale
+		return card_separation_play * settings().card_separation_scale
 ## CARD_JUMP_RISE in SCREEN pixels — the jump lives on `offset`, inside the card root's card_scale,
 ## so anything outside the card (PropLayer) has to scale it the same way to line up.
 static var card_jump_rise_play : float:
 	get():
-		return CARD_JUMP_RISE * SettingsManager.settings.card_scale
+		return CARD_JUMP_RISE * settings().card_scale
 
 var focused : bool = false:
 	set(value):
@@ -191,30 +202,86 @@ var fx : FxAttachment
 var _rig_root : Bone2D = null
 var _rig_arms : Array[Bone2D] = []
 ## The arm tips in the card's own art units, rebuilt in place each frame — never reallocated, since
-## this runs on every card on the board.
+## this runs on every card on the board. Longer than the arm count when the art clips its corners: the
+## bite needs three points where the rig has one (`_rig_outline`).
 var _rig_outline_buf : PackedVector2Array = PackedVector2Array()
+## How far into each corner this card's TYPE art bites, as a fraction of the corner cell's two edges.
+## Resolved once in `_bind_rig`; zero for a frame with square corners (the boosters).
+var _notch_frac : Vector2 = Vector2.ZERO
 
 ## A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, as the 16
 ## points the star rig hands over and IN THE ORDER it hands them over: one walk around the shape,
 ## corner first, then the three interior points of that edge.
 ##
-## The interior points stay on the rest edge, so the box becomes a STAR rather than simply growing —
-## which is the deformation the rig makes, and `card_visual.tscn`'s autoplay animation peaks around
-## warp 0.25. It lives here, on the class that owns the rig, because three separate places need to
-## stand a card up without one: the FX editor's warp slider, `fx_snapshot`'s warp panel and
+## The interior points stay on the rest edge, so the box becomes a STAR rather than simply growing.
+## It lives here, on the class that owns the rig, because four separate places need to stand a card up
+## without one: the FX editor's warp slider, `fx_snapshot`'s warp panel, `fx_behind`'s seam shots and
 ## `fx_cost`'s deformed-card row. A private copy in any of them is a copy that can drift from the rig.
-static func star_outline(body: Vector2, warp: float) -> PackedVector2Array:
+##
+## ⚠ IT IS A HAND MODEL OF THE RIG AND THE RIG NEVER EXACTLY MAKES IT — measured, 2026-07-29, by
+## `test_pixels.gd`'s `test_the_card_mask_is_the_card_the_player_sees` against the REAL animation:
+## **the closest `warp` is off by 2.3 to 3.3 art units** at four points of the loop. Two reasons, both
+## structural rather than a matter of picking a better number:
+##  * the shipped animation moves the four MID-EDGE arms as well (`Arm_Right_2` swings 19 -> 21.3 -> 16,
+##    `Arm_Left_2` the other way), so a real card BULGES and PINCHES its long edges; one radial `warp`
+##    cannot express that at all.
+##  * its corners do not move together — at t=0.15 the top-left arm is 2.9 units out while the
+##    top-right is 0.5 — so the real shape is not symmetric and this is.
+##
+## What that means for a reader: every warp claim made on a harness panel is a claim about THIS shape,
+## and the only place a real `CardVisual` is stood up is that PIXELS check. Use it for anything the
+## difference could matter to — the mask's own fidelity, above all.
+static func star_outline(body: Vector2, warp: float,
+		notch: Vector2 = SHIPPED_CORNER_NOTCH) -> PackedVector2Array:
 	var h := body * 0.5
 	var corners : Array[Vector2] = [Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y),
 			Vector2(-h.x, h.y)]
+	var frac := notch_fraction(body, notch)
 	var out := PackedVector2Array()
 	for i : int in 4:
 		var from : Vector2 = corners[i]
 		var to : Vector2 = corners[(i + 1) % 4]
-		out.append(from * (1.0 + warp))
+		var back : Vector2 = corners[(i + 3) % 4]
+		# The edges alternate horizontal / vertical around the walk, so which of the notch's two
+		# dimensions belongs to which of a corner's edges alternates with it.
+		var h_first := i % 2 == 0
+		out.append_array(corner_points(from * (1.0 + warp), back.lerp(from, 0.75),
+				from.lerp(to, 0.25), frac.y if h_first else frac.x,
+				frac.x if h_first else frac.y))
 		for step : int in [1, 2, 3]:
 			out.append(from.lerp(to, float(step) * 0.25))
 	return out
+
+## The corner bite every shipped card type but the boosters has, in ART UNITS — one texel, and on a card
+## one texel IS one art unit (`test_fx_pixel_is_the_games_pixel` pins that). It is the DEFAULT for
+## `star_outline` so the harnesses model a real card without naming a type; the game measures its own
+## card's type instead (`CardModifierType.corner_notch`), which is exact for all of them.
+const SHIPPED_CORNER_NOTCH := Vector2.ONE
+
+## How far along each of a corner's two edges the notch reaches, as a FRACTION of that edge — the form
+## the outline builders need, since a deformed edge is not its rest length. The perimeter points sit at
+## quarter points, so a corner's own cell is a quarter of the card in each direction.
+static func notch_fraction(body: Vector2, notch: Vector2) -> Vector2:
+	return Vector2(notch.x / maxf(body.x * 0.25, 1e-4), notch.y / maxf(body.y * 0.25, 1e-4))
+
+## ONE CORNER OF THE SILHOUETTE, as the three points its clipped art actually has: in along the edge we
+## arrive on, across the bite, then out along the edge we leave on. `prev` and `next` are the neighbouring
+## perimeter points, `frac` what `notch_fraction` returned.
+##
+## ⚠ **THE MIDDLE POINT IS THE CELL'S BILINEAR CORNER**, which is what makes this exact under
+## deformation and not just at rest: the art's corner texel is a fixed fraction of the corner grid cell
+## in each direction, so when the rig stretches or SHEARS that cell the bite follows it — a parallelogram,
+## which three points describe exactly.
+##
+## ⚠ A ZERO notch returns the corner alone, so a booster (whose frame has square corners) keeps a
+## 16-point outline and pays nothing.
+static func corner_points(corner: Vector2, prev: Vector2, next: Vector2, frac_prev: float,
+		frac_next: float) -> PackedVector2Array:
+	if frac_prev <= 0.0 or frac_next <= 0.0: return PackedVector2Array([corner])
+	var along_prev := (prev - corner) * frac_prev
+	var along_next := (next - corner) * frac_next
+	return PackedVector2Array([corner + along_prev, corner + along_prev + along_next,
+			corner + along_next])
 
 ## Find the rig once. Absent (a stripped card in a test, or art without a skeleton) simply means the
 ## caller falls back to the baked polygon.
@@ -224,7 +291,19 @@ func _bind_rig() -> void:
 	for child : Node in _rig_root.get_children():
 		var bone := child as Bone2D
 		if bone: _rig_arms.append(bone)
-	_rig_outline_buf.resize(_rig_arms.size())
+	# THE CORNER BITE, resolved ONCE: it comes from this card's own type frame and never changes at
+	# runtime, and `_rig_outline` runs every frame on every card on the board.
+	_notch_frac = Vector2.ZERO
+	if data and data.type:
+		var frame_px := CardModifier.frame_size(CardModifierType.TYPE_TEXTURE,
+				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES)
+		# Texels into ART UNITS: the face is CARD_SIZE across the frame, so this is the size of one of
+		# the drawing's own pixels — 1.0 on a card, and derived rather than assumed.
+		var per_texel := CARD_SIZE / Vector2(maxf(frame_px.x, 1.0), maxf(frame_px.y, 1.0))
+		_notch_frac = notch_fraction(CARD_SIZE, data.type.corner_notch() * per_texel)
+	# Three points per corner instead of one, wherever there is a bite to describe.
+	var extra := 8 if _notch_frac.x > 0.0 and _notch_frac.y > 0.0 else 0
+	_rig_outline_buf.resize(_rig_arms.size() + extra)
 
 ## The rig's arm tips, in the card's UNSCALED art space.
 ##
@@ -232,10 +311,36 @@ func _bind_rig() -> void:
 ## `visual`, which carries the basis3d flip (a basis that goes SINGULAR edge-on) and the bob. Neither
 ## may reach the effects — ruling 1 — and going through globals would fold both in, so a flipping
 ## card's silhouette would collapse to a line and take its flames with it.
+## ⚠ AND IT CARRIES THE ART'S CORNER BITE. Every shipped type frame clips its corners (`TypePaper` one
+## texel), while the RIG is the full rectangle — so an outline of bare arm tips puts one FX pixel of
+## flame on nothing at each corner. The bite is emitted as the three points it really is, from the live
+## neighbours, so it stretches and shears with the cell (`corner_points`). FX_HANDOFF §0c.5.
 func _rig_outline() -> PackedVector2Array:
 	var root := _rig_root.transform
-	for i : int in _rig_arms.size():
-		_rig_outline_buf[i] = root * _rig_arms[i].position
+	var n := _rig_arms.size()
+	if _rig_outline_buf.size() == n:
+		for i : int in n:
+			_rig_outline_buf[i] = root * _rig_arms[i].position
+		return _rig_outline_buf
+	# ARMS PER EDGE — four on a 16-arm rig, and the corners are every fourth arm in bake order.
+	var per_edge := n / 4
+	var at := 0
+	for i : int in n:
+		var tip := root * _rig_arms[i].position
+		if i % per_edge != 0:
+			_rig_outline_buf[at] = tip
+			at += 1
+			continue
+		# A CORNER. Its neighbours are the arms either side of it, live, and which of the notch's two
+		# dimensions belongs to which edge alternates around the walk exactly as in `star_outline`.
+		var prev := root * _rig_arms[(i + n - 1) % n].position
+		var next := root * _rig_arms[(i + 1) % n].position
+		var h_first := (i / per_edge) % 2 == 0
+		for p : Vector2 in corner_points(tip, prev, next,
+				_notch_frac.y if h_first else _notch_frac.x,
+				_notch_frac.x if h_first else _notch_frac.y):
+			_rig_outline_buf[at] = p
+			at += 1
 	return _rig_outline_buf
 
 ## Hand the DEFORMED outline to the effects. Every frame, because the rig's animation is on autoplay
@@ -276,6 +381,10 @@ func _ready() -> void:
 	# CardVisual subtree stays one unit in CardLayer's draw order. Runtime-only and OWNERLESS,
 	# exactly like status_layer: this script is @tool, and an owned child would be written into
 	# card_visual.tscn by the editor.
+	# THE RIG IS BOUND IN EITHER MODE, because the FX EDITOR previews a REAL card and needs the same
+	# outline the game hands over (owner 2026-07-29: *"no useless mocks when you can just use actual
+	# original scene"*). It is a `get_node_or_null` and a child walk; nothing about it needs a game.
+	_bind_rig()
 	if not Engine.is_editor_hint():
 		fx = FxAttachment.new()
 		fx.name = "Fx"
@@ -288,12 +397,11 @@ func _ready() -> void:
 		# The real card outline, taken from the STAR RIG rather than from the rest polygon: the rig
 		# is what deforms the card, it runs on autoplay, and a silhouette baked once left the flames
 		# standing on a shape the card no longer had. Re-read every frame by _track_fx_outline.
-		_bind_rig()
 		if _rig_arms.is_empty(): fx.measure_silhouette(type.polygon)
 		else: fx.measure_outline(_rig_outline())
 		fx.visible = show_front and data != null
 		fx.sync(_fx_requests())
-	SettingsManager.settings_changed.connect(recalculate_size)
+		SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()
 	match data.previous_stage:
 		data.Stage.PLAY, data.Stage.ZONE:
@@ -320,20 +428,20 @@ func _ready() -> void:
 func recalculate_size() -> void:
 	match current_context:
 		DisplayContext.DECK_VIEWER:
-			card_size = CARD_SIZE * 2#SettingsManager.settings.card_scale
-			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
+			card_size = CARD_SIZE * 2#settings().card_scale
+			card_separation = CARD_SEPARATION * settings().card_scale
+			card_separation_custom = card_separation * settings().card_separation_scale
 			scale = Vector2.ONE * 2
 		DisplayContext.PLAY_AREA:
-			card_size = CARD_SIZE * SettingsManager.settings.card_scale
-			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
-			scale = Vector2.ONE * SettingsManager.settings.card_scale
+			card_size = CARD_SIZE * settings().card_scale
+			card_separation = CARD_SEPARATION * settings().card_scale
+			card_separation_custom = card_separation * settings().card_separation_scale
+			scale = Vector2.ONE * settings().card_scale
 		_:
-			card_size = CARD_SIZE * SettingsManager.settings.card_scale
-			card_separation = CARD_SEPARATION * SettingsManager.settings.card_scale
-			card_separation_custom = card_separation * SettingsManager.settings.card_separation_scale
-			scale = Vector2.ONE * SettingsManager.settings.card_scale
+			card_size = CARD_SIZE * settings().card_scale
+			card_separation = CARD_SEPARATION * settings().card_scale
+			card_separation_custom = card_separation * settings().card_separation_scale
+			scale = Vector2.ONE * settings().card_scale
 
 func on_stage_changed() -> void:
 	if current_context != DisplayContext.PLAY_AREA: return
