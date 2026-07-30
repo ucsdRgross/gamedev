@@ -130,7 +130,18 @@ func art_frame_rect() -> Rect2:
 
 ## True while the art is mirrored (the prop is heading right). Only meaningful with face_travel on;
 ## _process redraws every frame, so setting it needs no explicit invalidation.
-var flipped : bool = false
+##
+## ⚠ THE MIRROR REACHES THE EFFECTS FROM THE SETTER, and it has to: the flames read the ART's own
+## alpha as their mask (`u_art_flip`), so a caller that set this without touching the attachments
+## left a blade drawn one way and its fire standing on the outline it no longer has. `retarget` did
+## both by hand and PropLayer's STAGED POSE did only the first, so a knife spawned already facing
+## right burned off its own drawing until its first real horizontal leg. One assignment, both facts.
+var flipped : bool = false:
+	set(value):
+		if flipped == value: return
+		flipped = value
+		for att : FxAttachment in [fx, fx_back, fx_front]:
+			if att: att.flipped = flipped
 
 ## Begin a fresh travel from the current position to `point`, spread over `ticks` data ticks;
 ## t restarts so the live per-frame drive re-times it against the current tick duration.
@@ -147,10 +158,9 @@ func retarget(point: Vector2, ticks : float = 1.0) -> void:
 		# Only the horizontal sense matters: the art mirrors, it never turns, so a leg with no x
 		# travel (a ballistic drop, a stationary staged pose) keeps the facing it already had.
 		if absf(dir.x) > 1.0:
+			# The attachments mirror with it — the `flipped` setter owns that, so every site that
+			# turns a prop round gets it, not just this one.
 			flipped = dir.x > 0.0
-			# The flames read the ART's own alpha as their mask, so they have to mirror with it.
-			for att : FxAttachment in [fx, fx_back, fx_front]:
-				if att: att.flipped = flipped
 
 ## Instant reposition for teleports — never lerp across the board; flash to signal the jump.
 func relocate_to(point: Vector2) -> void:
@@ -339,6 +349,9 @@ func _make_fx(host: Node2D, half: FxAttachment.Half) -> FxAttachment:
 	att.configure(body_size, false, FxAttachment.Shape.BOX, half)
 	host.add_child(att)
 	measure_fx_silhouette(att)
+	# The facing may already be set — the `flipped` setter can only reach attachments that exist,
+	# so a prop turned round before its FX were built seeds them here instead.
+	att.flipped = flipped
 	return att
 
 ## Point every attachment at this prop's current fire, and show whichever set matches the split

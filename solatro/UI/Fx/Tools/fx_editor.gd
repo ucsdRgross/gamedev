@@ -205,19 +205,28 @@ func _process(delta : float) -> void:
 	if _dirty:
 		_dirty = false
 		_rebuild()
-	if is_zero_approx(time_scale):
-		_set_clock(false)
-		return
-	_set_clock(true)
-	# The attachments run their own _process; this only adds (or removes) the difference between
-	# real time and tuning time, rather than duplicating their easing here.
-	if not is_equal_approx(time_scale, 1.0):
-		for fx : FxAttachment in _attachments():
-			fx._process(delta * (time_scale - 1.0))
-
-func _set_clock(running : bool) -> void:
+	# ⚠ THE ATTACHMENTS ARE DRIVEN FROM HERE, NOT NUDGED. This used to let them run themselves and then
+	# add `delta * (time_scale - 1.0)` on top — the DIFFERENCE between real time and tuning time — which
+	# is NEGATIVE for every `time_scale` below 1, and this scene ships at 0.5. A negative delta reaches
+	# `_push_live` as a negative `step`, so `Effect.t` walks backwards out of its ease and `Effect.fade`
+	# can never reach 1: a released effect simply never goes away in the preview. `_time` happened to
+	# net out correctly, which is why it looked fine.
+	#
+	# Letting the tool own the clock outright costs one call and cannot go backwards. `process_mode`
+	# only stops the ENGINE from calling `_process`; a direct call still works, and nothing else about
+	# the node changes (it still draws).
+	_stop_engine_clock()
+	# 0 FREEZES, and now falls out: with the engine clock off, simply not driving them holds every
+	# effect on its current frame, which is what the knob promises.
+	if is_zero_approx(time_scale): return
 	for fx : FxAttachment in _attachments():
-		fx.process_mode = Node.PROCESS_MODE_INHERIT if running else Node.PROCESS_MODE_DISABLED
+		fx._process(delta * time_scale)
+
+## Take the attachments off the ENGINE's process pass, so `_process` above is the only thing that
+## advances them. Re-applied every frame because `_rebuild` hands back fresh nodes at the default mode.
+func _stop_engine_clock() -> void:
+	for fx : FxAttachment in _attachments():
+		fx.process_mode = Node.PROCESS_MODE_DISABLED
 
 ## Every inspector-visible value of every resource this preview reads, flattened into one array. Two
 ## of these compare unequal exactly when something the owner edited would change what is on screen.

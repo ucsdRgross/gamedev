@@ -356,7 +356,13 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 	// is the WHOLE frame centred on the host's origin — deliberately not the tight body box, which
 	// is not centred on it and would slide the mask sideways.
 	vec2 t = vec2(q.x * u_art_flip, q.y) / max(u_art_size, vec2(1e-4)) + 0.5;
-	if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) return MASK_EMPTY;
+	// ⚠ HALF-OPEN AT THE FAR EDGE, and `>=` rather than `>` is the whole of it. `repeat_disable` clamps
+	// to the TEXTURE's edge, never to this FRAME's — so `t == 1.0` samples exactly
+	// `u_art_rect.xy + u_art_rect.zw`, which under filter_nearest is the first texel of the NEXT frame
+	// on the sheet rather than the last texel of this one. On the 3-frame hoop sheet that is the back
+	// arc leaking into the full ring's mask. A frame's real footprint is [0, 1) — its last texel spans
+	// up to but not including 1 — so closing the interval loses nothing that was ever inside it.
+	if (t.x < 0.0 || t.x >= 1.0 || t.y < 0.0 || t.y >= 1.0) return MASK_EMPTY;
 	float a = texture(u_art, u_art_rect.xy + t * u_art_rect.zw).a;
 	return (a > 0.5) ? u_level : MASK_EMPTY;
 }

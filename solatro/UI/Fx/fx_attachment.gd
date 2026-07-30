@@ -225,9 +225,14 @@ var _angles := PackedFloat32Array()
 ## The incoming outline's angles, in ITS order — `_angles` holds the same values re-wound into `_ring`'s
 ## order, so this is what makes that a permutation rather than a second round of `atan2`.
 var _angles_src := PackedFloat32Array()
-## `_poly` padded to the uniform's own length, allocated once. `_push_poly` runs per quad per frame for
-## any host whose rig is shorter than POLY, and a `duplicate()` + `resize()` there is a per-frame
-## allocation on exactly the hosts that move every frame.
+## `_poly` padded to the uniform's own length. `_push_poly` runs per quad per frame for any host whose
+## rig is shorter than POLY, where a `duplicate()` + `resize()` was TWO buffers per call.
+##
+## ⚠ IT IS NOT ALLOCATION-FREE AND THE FIRST VERSION OF THIS NOTE CLAIMED IT WAS. `Packed*` arrays are
+## copy-on-write, and `set_shader_parameter` stores the Variant — so the material holds a reference and
+## the next frame's write into this buffer forks it anyway. What the pad actually saves is the SECOND
+## buffer and the re-`resize`, not the allocation itself. Keeping the claim honest matters here because
+## it is the kind of thing a later reader would "optimize" again on the strength of a comment.
 var _poly_padded := PackedVector2Array()
 
 ## Measure the host's real outline into the radius table, so flames hug a deformed card instead of
@@ -332,6 +337,15 @@ func track_outline(outline: PackedVector2Array) -> void:
 		# A request may override the host's shape (ball fire rides the BALLS, not the card it is on),
 		# and those quads read no silhouette at all.
 		if fx.req.shape >= 0 and fx.req.shape != int(Shape.RADII): continue
+		# ⚠ NOR DOES AN INSTANCED ONE, AND THE SHAPE TEST ABOVE DOES NOT CATCH IT. The juggling BALLS
+		# quad leaves `shape` at -1 (it inherits the card's RADII) while drawing one disc per instance
+		# in the quad's own space — `juggle.gdshader` declares none of `u_poly`, `u_wedge`,
+		# `u_poly_count`, `u_inner` or `u_body`. So every juggling card was uploading a 24-vertex
+		# polygon plus four more uniforms into a shader that reads none of them, every frame its rig
+		# moved, which is every frame (the animation is on autoplay). That is five wasted
+		# `set_shader_parameter` calls per juggling host per frame inside the function §0d.7 exists to
+		# keep empty.
+		if not fx.req.instances.is_empty(): continue
 		_push_poly(fx.mat)
 		_size_quad(fx)
 
@@ -730,14 +744,21 @@ func _size_quad(fx: Effect) -> void:
 		if rotates and req.rotates_with_host and not _rot_tight:
 			bound = Vector2.ONE * maxf(body.length(), _poly_max * 2.0)
 		extent = bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
-	# ⚠ ROUNDED UP TO WHOLE ART UNITS AND WRITTEN ONLY WHEN IT CHANGES, and that guard is load-bearing
-	# now rather than tidy. `track_outline` calls this EVERY FRAME for a card whose rig is moving, and
-	# lever B above made the extent depend on the live silhouette — so without this, every deforming
-	# burning card rebuilt its QuadMesh and re-pushed `u_extent` every frame, which is exactly the
-	# per-frame CPU §0d.7 went and removed. ⚠ It is invisible in `fx_cost`, whose hosts call
-	# `measure_outline` once and never deform: the bench cannot show this regression, only the game can.
-	# Whole units also mean a rig's sub-unit wobble does not churn the mesh at all.
-	extent = extent.ceil()
+		# ⚠ ROUNDED UP TO WHOLE ART UNITS, and only on THIS branch. `track_outline` calls this EVERY
+		# FRAME for a card whose rig is moving, and lever B above made the extent depend on the live
+		# silhouette — so without this, every deforming burning card rebuilt its QuadMesh and re-pushed
+		# `u_extent` every frame, which is exactly the per-frame CPU §0d.7 went and removed. ⚠ It is
+		# invisible in `fx_cost`, whose hosts call `measure_outline` once and never deform: the bench
+		# cannot show this regression, only the game can. Whole units also mean a rig's sub-unit wobble
+		# does not churn the mesh at all.
+		#
+		# ⚠ AN INSTANCED EXTENT IS NOT ROUNDED HERE, and rounding it would break the contract it already
+		# satisfies: `FxJuggle._cell_box` sizes `instance_half` to a whole number of the style's `pixel`
+		# CELLS, which is what puts the quad's edges on cell boundaries (FxRequest.instance_half).
+		# Whole ART UNITS are a different lattice — they agree only when `2 * k * pixel` happens to be an
+		# integer, which it is at today's `pixel = 1.0` and is not at, say, 0.3 — and the disagreement
+		# slices the outer ring of every ball and plume into partial chunky pixels. There is no churn to
+		# suppress on this branch either: an instance box changes only when the STACK count does.
 	if not extent.is_equal_approx(fx.extent):
 		fx.extent = extent
 		fx.mesh.size = extent
@@ -789,6 +810,14 @@ func _apply_static(fx: Effect, req: FxRequest) -> void:
 	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
 	mat.set_shader_parameter(&"u_shape", req.shape if req.shape >= 0 else int(shape))
 	mat.set_shader_parameter(&"u_half", int(half))
+	# ⚠ THE HOST'S POSE IS SEEDED HERE, because `_push_live` only sends it when it CHANGES and a
+	# material born mid-life would otherwise never be told. A fresh quad starts at the shader's own
+	# defaults (`u_shape_rot = 0`, `u_lag = vec2(0)`), so an effect added to a host that is already
+	# turned — and not turning any further that frame — masked against an angle the host does not have.
+	# `_sent_rot` is NAN until the first push, and the shader's defaults are already what that means.
+	if not is_nan(_sent_rot):
+		mat.set_shader_parameter(&"u_shape_rot", _sent_rot)
+		mat.set_shader_parameter(&"u_lag", _sent_lag)
 	# The DEFORMED width where the rig holds one: `u_body` is what the fan is measured across and what
 	# `body_near` rejects against, so a restyle must not stamp the authored rectangle back over the
 	# shape the card currently has. The silhouette goes with it, as one fact (see `_push_poly`), and
@@ -981,7 +1010,12 @@ func _push_live(scaled_delta: float) -> void:
 	# ⚠ A card is never PERFECTLY still — delta_floating_anim bobs it — but `_update_lag`'s deadzone
 	# already snaps small velocities to zero, so `_lag` really does sit at exactly zero while it bobs.
 	var moved := not is_equal_approx(rot, _sent_rot) or not lag_norm.is_equal_approx(_sent_lag)
-	if moved:
+	# ⚠ AN OFF-SCREEN HOST SKIPS ITS UPLOADS AND NOTHING ELSE — see the note before the loop below.
+	# The pose is only RECORDED as sent once it actually has been, so a host that turned while off
+	# screen re-sends `u_shape_rot` on the frame it comes back instead of coming back masked against
+	# the angle it left at.
+	var on_screen := _on_screen()
+	if moved and on_screen:
 		_sent_rot = rot
 		_sent_lag = lag_norm
 		# Crossing into or out of "upright" changes what bound the quads are entitled to (lever B in
@@ -1006,7 +1040,13 @@ func _push_live(scaled_delta: float) -> void:
 	# The CLOCKS above are advanced first and unconditionally — they are a few floats, and freezing
 	# them would teleport every ball the moment a scroll brought its card back into view. What is
 	# skipped is only the UPLOAD, which nobody can see the result of.
-	if not _on_screen(): return
+	#
+	# ⚠ AND THAT MEANS THE LOOP BELOW STILL RUNS. It used to be an early `return` here, which also
+	# froze `Effect.t` and `Effect.fade` and never reached the release at the bottom — so a card that
+	# lost its Burning while scrolled out of the play area kept its quad, kept `set_process` on, and
+	# came back at FULL opacity to start fading only then. The eases are state, not pixels; only the
+	# `set_shader_parameter` calls are gated, and `Effect.pushed` is left false while they are, so
+	# the settled values are uploaded on the frame the host reappears.
 	var done : Array[StringName] = []
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
@@ -1019,11 +1059,12 @@ func _push_live(scaled_delta: float) -> void:
 		var mat := fx.mat
 		# THE ONLY TRULY PER-FRAME UNIFORMS. Everything else below is pushed when it CHANGES, which on a
 		# settled board is never — see the note above _push_live.
-		mat.set_shader_parameter(&"u_time", _time)
-		if fx.req.phase_period > 0.0: mat.set_shader_parameter(&"u_phase", _phase)
-		if moved:
-			mat.set_shader_parameter(&"u_shape_rot", rot)
-			mat.set_shader_parameter(&"u_lag", lag_norm)
+		if on_screen:
+			mat.set_shader_parameter(&"u_time", _time)
+			if fx.req.phase_period > 0.0: mat.set_shader_parameter(&"u_phase", _phase)
+			if moved:
+				mat.set_shader_parameter(&"u_shape_rot", rot)
+				mat.set_shader_parameter(&"u_lag", lag_norm)
 		# Eased FIRST, then emitted from: a ball ember has to be born on the ball this frame DRAWS,
 		# and mid-transition the eased geometry is not the request's target geometry.
 		#
@@ -1033,14 +1074,18 @@ func _push_live(scaled_delta: float) -> void:
 		# `pushed` is what makes that final frame push before the pushing stops.
 		if fx.t < 1.0 or not fx.pushed:
 			fx.vals = _eased(fx)
-			fx.pushed = fx.t >= 1.0
-			for key : StringName in fx.vals:
-				mat.set_shader_parameter(key, fx.vals[key])
-		_emit_embers(fx, scaled_delta, fx.vals)
+			if on_screen:
+				fx.pushed = fx.t >= 1.0
+				for key : StringName in fx.vals:
+					mat.set_shader_parameter(key, fx.vals[key])
+		# Embers are pixels, not state, so an invisible host throws none — and the engine's global cap
+		# is exactly what a board of off-screen hosts would otherwise spend on nothing.
+		if on_screen: _emit_embers(fx, scaled_delta, fx.vals)
 		if fx.fade >= 0.0:
 			fx.fade = minf(fx.fade + step, 1.0)
-			var base : float = fx.req.style.opacity if fx.req.style else 1.0
-			mat.set_shader_parameter(&"u_opacity", base * (1.0 - fx.fade))
+			if on_screen:
+				var base : float = fx.req.style.opacity if fx.req.style else 1.0
+				mat.set_shader_parameter(&"u_opacity", base * (1.0 - fx.fade))
 			if fx.fade >= 1.0: done.append(id)
 	for id : StringName in done:
 		_fx[id].quad.queue_free()
