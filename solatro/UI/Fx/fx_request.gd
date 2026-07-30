@@ -28,28 +28,55 @@ var shape : int = -1
 ## with the host's body, so a taller flame gets a taller quad instead of clipping at its edge.
 var reach : float = 0.0
 
-## THE EFFECT'S OWN CONTENT, as a half-extent in art units, or ZERO for "size me from the host".
+## ONE INSTANCE PER SUBJECT, or empty for a single quad over the whole effect. Each entry is that
+## instance's INSTANCE_CUSTOM — for juggling, `r` is the ball index and `g` is its own fire level.
 ##
-## `reach` is a DECORATOR'S rule — body plus reach on all four sides — and it assumes the effect hugs
-## the whole silhouette. Fire does. A juggling pattern does not: a loop 33 art units wide and 32 tall
-## was getting a **112x125** quad on a 38x50 card, and the fire shader is fragment-bound, so almost
-## all of that is empty space paid for at full price. Declaring the content instead gives ~54x80.
+## ⚠ THIS IS WHAT MADE THE JUGGLING LAYER AFFORDABLE, AND IT IS A COST MODEL RATHER THAN A TIDINESS
+## CHOICE (FX_HANDOFF §0d.6). A single quad has to cover everywhere its subject MIGHT be, so a
+## juggling pattern got a quad ~33 x 64 art units across for ~28 art units of actual ball, and every
+## one of those fragments ran a closed-form search of the arc ladder to find out which ball — if any —
+## it belonged to. Fitting the published measurements put this layer's cost at *guard-box area x cost
+## of one of those searches*, to within 4 % on both quads. One instance per ball shrinks the area to
+## each ball's own box AND deletes the search, because the index simply arrives with the instance.
 ##
-## ⚠ THIS WAS TRIED AND REVERTED ONCE, and the reason it was reverted is now measured to be a
-## HARNESS FLAKE. It went in on 2026-07-31, measured `juggle both` GPU 1.062 -> 0.724, and was pulled
-## because `fx_snapshot`'s `05f_ball_rotation` showed the balls displaced along +x by up to 6.1 art
-## units at 90 degrees, growing with the angle, with no mechanism ever found. On 2026-07-29 the SAME
-## displacement (1.0 / 2.0 / 5.8 units at 30 / 45 / 90) came out of one run in five of that shot on
-## an **unchanged** build, while `att.rotation` and `host.global_rotation` printed exactly right in
-## every run. That shot has carried a standing "rotated panels are not reproducible" warning the
-## whole time. The claim now lives in an ASSERTING check that runs every suite —
-## `test_balls_ignore_their_hosts_rotation` in the PIXELS suite — which is what a decision this size
-## needed in the first place.
+## ⚠ IT COSTS NOTHING PER FRAME, and that is the point of putting the index here rather than the
+## POSITION. The motion is `u_phase` and the shader's vertex stage; this data changes only when the
+## STACK COUNT or a ball's level does. Writing transforms per frame from GDScript — 78 hosts x 5 balls
+## — would have handed back on the CPU what it saved on the GPU.
 ##
-## ⚠ It REPLACES `reach` rather than capping it, so it must cover everything the effect draws,
-## including whatever it draws BEYOND its own subject (a plume's height above its ball).
-## `FX_MARGIN` is still added on top, as it is for every quad.
-var min_half : Vector2 = Vector2.ZERO
+## ⚠ DRAW ORDER IS OVERLAP ORDER. Instances composite in the order they appear here, so a caller with
+## overlapping subjects owns the tie-break: FxJuggle sorts by level so the highest-level ball draws
+## last and wins (owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*). This replaces
+## the nearest-centre tie-break the search used to give for free.
+var instances : PackedColorArray = PackedColorArray()
+
+## Half-extent of ONE instance's quad, in art units — everything a single subject can draw, measured
+## from the point `vertex()` places that instance at.
+##
+## ⚠ IT MUST BE A WHOLE NUMBER OF THE STYLE'S `pixel` CELLS, and that is not a rounding preference:
+## the instance is placed on a cell BOUNDARY (fx_cell_round), so a whole-cell half-extent puts the
+## quad's edges on boundaries too and every FX pixel it touches is covered in full. A fractional one
+## cuts its edge cells and draws PARTIAL chunky pixels, which reads as a torn edge. `FxJuggle` rounds
+## up and `test_fx_attachment` asserts it.
+##
+## ⚠ It must also cover the whole of the transition: `live` values are EASED, so a ball shrinking
+## toward its target radius is briefly larger than the target, and the box is sized for the larger of
+## the two ends (FxAttachment._size_quad).
+var instance_half : Vector2 = Vector2.ZERO
+
+## Half-extent of everywhere ALL the instances can go, in art units — the whole pattern, not one ball.
+##
+## ⚠ THIS IS A CULL BOUND AND NOT A FILL BOUND, AND FORGETTING IT DELETED MOST OF THE BALLS. Godot
+## derives a MultiMeshInstance2D's cull rect from the instance TRANSFORMS, and an effect that places
+## its instances in `vertex()` leaves every transform at identity — so the engine believes the whole
+## effect is one mesh-sized box at the host's origin and culls every instance outside it. Measured the
+## first time this ran: of 8 balls, the 2 passing near the card's centre rendered and 6 vanished; of
+## 50, four. ⚠ **It also made the effect look 10x faster than it is**, which is the trap — the cost
+## bench cannot tell "cheap" from "not drawn", and only the PIXELS suite's ball checks caught it.
+##
+## It costs no fill: it is written once into `MultiMesh.custom_aabb` and only decides whether the whole
+## item is submitted. Being generous here is free; being tight is a missing ball.
+var instance_bound : Vector2 = Vector2.ZERO
 
 ## Whether THIS effect's content turns when its host does — which is the only reason a quad ever pays
 ## the CIRCUMSCRIBED (diagonal) bound instead of the host's box (FxAttachment._size_quad). Fire needs
@@ -85,9 +112,9 @@ var phase_period : float = 0.0
 ## would make meaningless. Written when the data changes and not eased.
 var snap : Dictionary[StringName, Variant] = {}
 
-## BALLS mode: which ball indices are actually alight. The shader reads the same fact per fragment out
-## of `u_ball_fire`, but a TEXTURE cannot be sampled from GDScript cheaply and embers are spawned from
-## GDScript — so the indices ride along in the form the emitter needs, built where the texture is.
+## BALLS mode: which ball indices are actually alight. The shader learns the same fact from
+## `instances` — one per lit ball, carrying its level — but EMBERS are particles spawned from GDScript
+## into ParticleEngine's world space, so the emitter needs the indices in a form it can walk.
 var lit : PackedInt32Array = PackedInt32Array()
 
 ## The PARTNER effect's pixel lattice, for an effect drawn ON another effect's output rather than on

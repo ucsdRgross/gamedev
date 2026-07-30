@@ -625,17 +625,24 @@ the fire riding them), which keeps the dependency inside the one class that owns
   blade.
   - **NO BALL SPECIAL CASE. `u_mode` and `MODE_BALLS` are deleted** (owner 2026-07-30: *"fire effect
     should be unified and identical in how it treats everything, so no special ball case"*). A ball
-    is a `Shape` whose mask is the union of the discs, positioned from the same `fx_nearest_ball` in
-    the include, and the cover field, the noise and the ramp above it are literally the same code a
-    card runs. `FxRequest.shape` is how ball fire says "my mask is the balls, not the card I ride on".
+    is a `Shape` whose mask is a disc, and the cover field, the noise and the ramp above it are
+    literally the same code a card runs. `FxRequest.shape` is how ball fire says "my mask is the balls,
+    not the card I ride on".
+    - ⚠ **WHICH ball is no longer SEARCHED FOR — it is ONE INSTANCE PER BALL (2026-07-29,
+      FX_HANDOFF §0d.6).** `fx_nearest_ball` and `fx_balls_near` are deleted: the ball's index and its
+      own level arrive in `INSTANCE_CUSTOM`, `vertex()` places that one ball with `fx_ball_of`, and the
+      plume quad is the size of a plume instead of the size of the whole pattern. It is still ONE shader
+      and one cover field — only "who am I part of" changed, from a per-fragment inversion of the arc
+      ladder into a per-instance fact. The juggling half of the worst window went 5.46 → ~1.7 ms.
   - **`mask()` returns the LEVEL of the surface it hit**, which is ruling 21 as one rule instead of
-    two code paths: a silhouette answers `u_level`, a ball answers its own texel from `u_ball_fire`.
+    two code paths: a silhouette answers `u_level`, a ball answers **its own instance's level** (the
+    `u_ball_fire` levels texture is deleted along with the search that needed to index it).
     ⚠ **`MASK_DARK` IS GONE (2026-07-31).** It was solid-but-unlit, so an unlit ball occluded without
     emitting (ruling 3) — and it was half of why a lit ball's plume disappeared and came back: an
     unlit ball won the one-ball-per-fragment lookup, the march reported "solid, emits nothing", and
-    the fragment was forced dark. Fire resolves the nearest **LIT** ball now (`lit_only` in
-    `fx_nearest_ball`), so an unlit ball is never the answer here and the sentinel has no producer
-    left. Ruling 3 still holds where it matters — an unlit ball emits nothing and is dark because of
+    the fragment was forced dark. A plume is **one instance per LIT ball** now, so a fragment's ball is
+    its own instance's ball and an unlit one can never be the answer — the bug class is unreachable
+    rather than guarded against, and the sentinel has no producer left. Ruling 3 still holds where it matters — an unlit ball emits nothing and is dark because of
     it; what was given up is its occlusion of a plume passing behind it, which the owner pre-ruled as
     the cheaper of the two (FX_HANDOFF §2).
   - **The nearest ball is resolved ONCE per fragment and handed to every mask lookup.** The
@@ -664,10 +671,12 @@ the fire riding them), which keeps the dependency inside the one class that owns
     quantizes to the same levels. **It was not optional** — the fixed ladder is a win where the
     retired march was long and a LOSS where it was short, and `fx_balls_near` had already made it
     short on balls, so the first build of the rewrite measured the juggling layer *slower*.
-  - ⚠ **THE BALL POSITION IS RETURNED BY THE LOOKUP** (`fx_nearest_ball`'s `out vec2 pos`). It used
-    to be re-derived by `fx_ball_pos`, which builds a whole second arc ladder (8 `sqrt` plus a
-    normalize) and walks it again, per fragment, on BOTH juggling quads — for a ball the lookup had
-    already positioned. `fx_ball_pos` is deleted so it cannot come back.
+  - ⚠ **THE BALL POSITION IS COMPUTED ONCE PER VERTEX** (`fx_ball_of`, FX_HANDOFF §0d.6) — four
+    evaluations per ball per frame. Two earlier builds got this wrong in the same direction: the position
+    was re-derived per fragment by a `fx_ball_pos` that rebuilt the whole arc ladder, and then returned
+    by the nearest-ball lookup as an `out` parameter. Both of those are deleted, and so is the lookup.
+    ⚠ **The path no longer has to be INVERTIBLE either** — `fx_arc_ease_inv` existed only so a fragment's
+    x could be turned back into a ball index, so an ease inside an arc is now a free look choice.
 - **The mask MIRRORS with the art.** `FxAttachment.flipped` tracks `PropVisual.face_travel`, because
   the mask IS the drawing now — a blade heading right would otherwise emit off the outline it no
   longer has. One sign, re-pushed only when it actually changes.

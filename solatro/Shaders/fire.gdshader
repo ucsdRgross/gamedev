@@ -96,9 +96,10 @@ const int WEDGE_CANDIDATES = 4;
 //
 // ⚠ THERE IS NO "SOLID BUT DARK" ANSWER. An unlit ball used to return one, so that it occluded
 // without lighting (owner ruling 3) — and that is exactly what made a LIT ball's plume disappear and
-// come back (FX_HANDOFF §2). Fire resolves the nearest LIT ball (`lit_only` in fx_nearest_ball), so
-// an unlit ball is never the answer here at all. What was given up is only its occlusion of a plume
-// passing behind it, which the owner pre-ruled as the cheaper of the two.
+// come back (FX_HANDOFF §2). A plume is now ONE INSTANCE PER LIT BALL, so a fragment's ball is its own
+// instance's ball and an unlit one can never be the answer here — the bug class is unreachable rather
+// than guarded against. What was given up is only an unlit ball's occlusion of a plume passing behind
+// it, which the owner pre-ruled as the cheaper of the two.
 const float MASK_EMPTY = -1.0;
 
 bool mask_solid(float m) { return m >= 0.0; }
@@ -163,10 +164,11 @@ uniform float u_top_fraction : hint_range(0.2, 0.8) = 0.6;
 uniform float u_ball_gravity : hint_range(1.0, 3.0) = 1.0;
 uniform float u_ball_dir = 1.0;
 uniform float u_ball_arcs = 2.0;
-// One texel per ball, r = that ball's OWN normalized fire level (owner ruling 21: a ball's flame
-// is the ball's effect at the level it was spawned with, never the card's Burning). Uploaded on
-// status change, never per frame.
-uniform sampler2D u_ball_fire : filter_nearest, repeat_disable, hint_default_black;
+// ⚠ THE PER-BALL LEVELS TEXTURE IS GONE (2026-07-29). `u_ball_fire` held one texel per ball so a
+// fragment could look up the level of whichever ball the closed-form search had picked for it. A
+// plume is ONE INSTANCE per lit ball now and carries its own level in INSTANCE_CUSTOM.y (owner ruling
+// 21 unchanged: a ball's flame is the level that ball was lit with, never the card's Burning), so
+// there is nothing left to look up and no unlit ball a fragment can pick by mistake.
 
 // ===== STATIC — written once from FxStyle ======================================================
 uniform float u_pixel = 1.0;
@@ -312,10 +314,10 @@ bool poly_solid(vec2 p) {
 // nothing else in the file is within an order of magnitude. The RADII branch's `atan` is why a
 // card's mask is 1.9x a box's (FX_HANDOFF §6c).
 //
-// `ball` / `ball_level` are the fragment's own nearest ball, resolved ONCE per fragment by the
-// caller and passed down. The closed-form ball lookup is by far the most expensive thing in this
-// file, and the cover ladder never leaves its column, so re-running it per tap would cost more than
-// the whole rest of the shader. Ignored by every other kind.
+// `ball` / `ball_level` are the fragment's own ball — the INSTANCE's ball, resolved once per vertex
+// and interpolated in, so the ladder is evaluated four times per ball per frame rather than once per
+// fragment. It used to be a closed-form nearest-ball search that was by far the most expensive thing
+// in this file (FX_HANDOFF §0d.6). Ignored by every other kind.
 float mask_level(vec2 p, vec2 ball, float ball_level) {
 	if (u_shape == SHAPE_BALLS) {
 		vec2 d = p - ball;
@@ -501,6 +503,18 @@ float cover_below(vec2 p, vec2 ball, float ball_level, out bool deep) {
 	// more than `sink` inside the art, where fire is not allowed. One lookup, and it replaces the
 	// retired build's separate walk-up loop.
 	deep = mask_solid(mask_level(vec2(p.x, erode), ball, ball_level));
+	// ⚠ BURIED FRAGMENTS USED TO PAY THE WHOLE LADDER AND THEN GET THROWN AWAY. `deep` means this
+	// fragment is more than `sink` inside the art, where fire is not allowed — and `fragment()` discards
+	// it on exactly that flag — but the loop below ran first, all `u_taps` lookups of it. A card's
+	// INTERIOR is the largest contiguous region in its quad (~41 % of everything `body_near` accepts:
+	// 1564 art² of 3808 on a 38x50 card), so this is the single biggest block of wasted work in the
+	// shader, and it is wasted at full price.
+	//
+	// It is PIXEL-EXACT rather than an approximation: the caller's `|| deep` already threw this fragment
+	// away whatever cover said, so returning early cannot change a pixel. And it divides WELL — a warp
+	// only pays for the branch where it straddles the erosion boundary, because the interior is one big
+	// contiguous block rather than scattered fragments.
+	if (deep) return 0.0;
 	for (int i = 1; i <= COVER_TAPS_MAX; i++) {
 		if (float(i) > n) break;
 		if (mask_solid(mask_level(vec2(p.x, base + float(i) * step_y), ball, ball_level))) {
@@ -565,56 +579,78 @@ float fire_noise(vec2 p) {
 	return clamp(0.5 + (n - 0.5) * u_noise_amp * NOISE_CONTRAST, 0.0, 1.0);
 }
 
+// SHAPE_BALLS ONLY — this instance's own ball, resolved once per vertex. Every other shape draws a
+// single host-sized quad, writes zeroes here and reads none of it.
+//   v_origin — the ball's position rounded to a whole number of THIS quad's FX cells. The instance is
+//              placed there and the fragment adds it back, which is what keeps a plume's chunky
+//              pixels on the host's own lattice (fx_cell_round).
+//   v_centre — the same position snapped to a cell centre on the BALL quad's lattice, because the
+//              plume anchors to the centre the ball was DRAWN at (u_partner_pixel).
+//   v_level  — that ball's own fire level (owner ruling 21), straight off the instance.
+varying vec2 v_origin;
+varying vec2 v_centre;
+varying float v_level;
+
+void vertex() {
+	v_origin = vec2(0.0);
+	v_centre = vec2(1e9);
+	v_level = 0.0;
+	if (u_shape == SHAPE_BALLS) {
+		v_level = INSTANCE_CUSTOM.y;
+		vec2 raw = fx_ball_of(INSTANCE_CUSTOM.x, max(u_ball_count, 1.0), u_phase, u_span,
+				u_arc_height, u_return_height, u_top_fraction, u_ball_gravity, u_ball_dir,
+				u_ball_arcs);
+		// The plume box hangs ABOVE its ball — the taps only ever step DOWN — so the instance is
+		// centred `(sink - height) / 2` off the ball rather than on it, which is what lets its quad be
+		// the size of a plume instead of the size of a plume in every direction. FxJuggle sizes the
+		// mesh to match; the two are one fact and disagreeing would clip a flame tip.
+		float bias = (max(u_sink, 0.0) - u_height) * 0.5;
+		v_origin = fx_cell_round(raw + vec2(0.0, bias), u_pixel);
+		v_centre = fx_pixel_snap(raw, u_partner_pixel);
+		// ⚠ NO Y FLIP — a canvas mesh's vertex y already points the way art y does. See the longer note
+		// in juggle.gdshader's vertex(), where negating it drew the whole pattern mirrored.
+		VERTEX += v_origin;
+	}
+}
+
 void fragment() {
 	// The host's MODULATE, which the renderer folds into COLOR before this function runs. Every
 	// path below OVERWRITES COLOR, which silently threw it away: the focus highlight (owner ruling
 	// 10) and a prop's fade never reached the flames, so a selected card lit up while its fire did
 	// not. Captured here, multiplied back in at the end.
 	vec4 tint = COLOR;
-	vec2 p = fx_local(UV, u_extent, u_pixel);
+	// An INSTANCED quad recovers its host-space point by adding its own placement back; `v_origin` is
+	// a whole number of cells, so the result is bit-for-bit the lattice `fx_local` gives a host-sized
+	// quad at the same point (the identity fx_cell_round documents). Every other shape IS a host-sized
+	// quad and takes the direct route.
+	vec2 p = (u_shape == SHAPE_BALLS)
+			? fx_pixel_snap(fx_local_raw(UV, u_extent) + v_origin, u_pixel)
+			: fx_local(UV, u_extent, u_pixel);
 	float heat = 0.0;
 	float level = u_level;
 	float alpha_mul = 1.0;
 
-	// The fragment's own nearest ball, resolved ONCE and handed to every mask lookup below (see
-	// mask_level). A no-op for every other shape.
-	vec2 ball = vec2(1e9);
-	float ball_level = 0.0;
+	// The fragment's own ball, handed to every mask lookup below (see mask_level). A no-op for every
+	// other shape.
+	vec2 ball = v_centre;
+	float ball_level = v_level;
 	// Whether this fragment can draw anything at all. (`return` is not allowed in a Godot fragment
 	// processor, so it is a flag.)
 	bool alive = true;
 	if (u_shape == SHAPE_BALLS) {
-		// THE EMPTY MAJORITY, REJECTED FIRST (FX_HANDOFF §1b.2), with a margin for what this quad
-		// draws BEYOND a ball: one flame's reach, plus the erosion the base sinks by. Below the
-		// pattern is rejected too — the taps only ever step DOWN, away from every ball.
-		alive = fx_balls_near(p, u_height + max(u_sink, 0.0), u_span, u_arc_height, u_ball_radius);
-	} else {
-		// The same rejection for every other shape — see body_near.
-		alive = body_near(p);
-	}
-	if (alive && u_shape == SHAPE_BALLS) {
-		// THE NEAREST LIT BALL (the second half of FX_HANDOFF §2). High above ball A the nearest
-		// ball is often a different ball B, and an unlit B used to report "solid, emits nothing" and
-		// force the fragment dark — an unlit ball actively suppressing a lit one's plume.
+		// ⚠ THERE IS NO SEARCH AND NO GUARD BOX LEFT, AND THAT IS THE WHOLE OF FX_HANDOFF §0d.6. This
+		// used to reject the empty majority of a pattern-sized quad with one box test and then run a
+		// closed-form inversion of the arc ladder on every fragment that survived — which fitting the
+		// measurements showed WAS the cost of the juggling layer. A plume instance is the size of one
+		// plume, so there is no empty majority to reject, and its ball arrives with it.
 		//
-		// ⚠ THE CENTRE COMES BACK FROM THE LOOKUP. It used to be re-derived with `fx_ball_pos`,
-		// which rebuilds the whole arc ladder (8 sqrt plus a normalize) and walks it again — per
-		// fragment, for a ball the lookup had ALREADY positioned. Same arithmetic, same result, one
-		// evaluation (FX_HANDOFF §1b.1's hoist, finished 2026-07-29).
-		float ball_id = 0.0;
-		vec2 raw = vec2(0.0);
-		fx_nearest_ball(p, u_ball_count, u_phase, u_span, u_arc_height, u_return_height,
-				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 1, ball_id,
-				ball_level, raw);
-		// No lit ball anywhere near this column: there is nothing for the cover field to find.
-		alive = ball_level > 0.0;
 		// A BALL'S FLAME IS THE BALL'S OWN LEVEL, never the card's Burning (owner ruling 21): each
 		// ball burns at the level it was lit with, and `u_level` on this quad is not that.
 		level = ball_level;
-		// SNAPPED on the BALL quad's lattice, not this quad's: the two have different reaches and
-		// different `pixel`, so snapping here with u_extent/u_pixel would anchor the plume up to half
-		// a pixel off its ball and jitter as the ball travelled.
-		if (alive) ball = fx_pixel_snap(raw, u_partner_pixel);
+		alive = ball_level > 0.0;
+	} else {
+		// The rejection every other shape still needs — see body_near.
+		alive = body_near(p);
 	}
 
 	// THE COVER FIELD — `u_taps` lookups plus the erosion test, and that is the entire geometry.

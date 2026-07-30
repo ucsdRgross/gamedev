@@ -93,8 +93,50 @@ func _screen_rows(floor_ms: float) -> void:
 	# rotation-aware bound would give a card that is not currently turned. If this row is close to the
 	# one above, lever B is not worth its lattice risk.
 	await _screen_row("burning + juggling, BOX-BOUND quads", floor_ms, _worst_host_pinned, 0)
+	await _cpu_row()
 	await _tap_rows(floor_ms)
 	await _noise_rows(floor_ms)
+
+## THE CPU HALF, WHICH THE GPU TIMER STRUCTURALLY CANNOT SEE — and which became the binding constraint
+## the moment the juggling layer stopped being fragment-bound (FX_HANDOFF §0d.6).
+##
+## `FxAttachment._push_live` is ~15 `set_shader_parameter` calls per quad per frame plus an eased
+## Dictionary per effect, and §6a's only measurement of it was indirect: 234 OFF-SCREEN hosts costing
+## ~7 ms of wall clock, i.e. ~0.03 ms per host, for hosts that skip the upload entirely. This times the
+## real function on the real quads of a full board instead.
+##
+## ⚠ IT DELIBERATELY CALLS `_push_live` MANY TIMES PER FRAME, which is not a thing the game does — it is
+## how the per-call cost gets out from under the frame's noise. So read it as "what one frame's pushes
+## cost", not as a frame time. ⚠ These hosts are built with `ambient = false`, so the EMBER emitter is
+## not in this number; the uniform push is.
+const PUSH_ITER := 60
+
+func _cpu_row() -> void:
+	var holder := Node2D.new()
+	add_child(holder)
+	_fill_screen(holder, _worst_host, 0)
+	await get_tree().process_frame
+	var atts : Array[FxAttachment] = []
+	_collect(holder, atts)
+	var quads := 0
+	for att : FxAttachment in atts: quads += att._fx.size()
+	for att : FxAttachment in atts: att._push_live(0.016)     # warm the branches
+	var start := Time.get_ticks_usec()
+	for _i : int in PUSH_ITER:
+		for att : FxAttachment in atts: att._push_live(0.016)
+	var ms := float(Time.get_ticks_usec() - start) / (1000.0 * float(PUSH_ITER))
+	print("  --- the CPU half: FxAttachment._push_live over a full board ---")
+	print("  -> %-34s %6.3f ms per frame for %d hosts / %d quads (%.1f us per quad)"
+			% ["_push_live, FULL SCREEN", ms, atts.size(), quads,
+			ms * 1000.0 / maxf(float(quads), 1.0)])
+	holder.queue_free()
+	await get_tree().process_frame
+
+func _collect(node: Node, out: Array[FxAttachment]) -> void:
+	for child : Node in node.get_children():
+		var att := child as FxAttachment
+		if att: out.append(att)
+		else: _collect(child, out)
 
 # ================================================================================================
 # THE TWO OPEN QUESTIONS THE NOISE FIRE LEFT (FX_HANDOFF §0), BOTH ON THE ONLY ROW THAT DECIDES

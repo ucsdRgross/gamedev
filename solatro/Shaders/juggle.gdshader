@@ -1,14 +1,21 @@
 shader_type canvas_item;
 render_mode blend_mix, unshaded;
-// Juggled balls, with NO STACK LIMIT (owner ruling 5) and no loop over the count.
+// Juggled balls, with NO STACK LIMIT (owner ruling 5) — ONE INSTANCE PER BALL.
 //
-// A shader loop always needs a constant bound, so there is no loop over the COUNT: balls are evenly
-// spaced on one closed loop of arcs, each monotonic in x, which makes the nearest-ball test
-// invertible in closed form (fx_nearest_ball). The work is set by the number of ARCS — bounded by
-// FX_MAX_ARCS — never by the ball count, so 5 balls and 500 cost the same frame time.
+// ⚠ THIS USED TO BE ONE QUAD OVER THE WHOLE PATTERN, AND THAT WAS THE COST OF THE LAYER. A quad
+// sized to the pattern is ~33 x 64 art units for ~28 art units of actual ball, so 39 fragments out of
+// 40 ran a closed-form inversion of the arc ladder to discover they were empty (fx_common's note
+// where `fx_nearest_ball` used to be). One instance per ball inverts the problem: the ball's INDEX
+// arrives in INSTANCE_CUSTOM, `vertex()` places that one ball, and a fragment's only remaining
+// question is whether it is inside a disc it already knows the centre of.
 //
-// All balls pass IN FRONT of the card, on one quad (owner ruling 11): no depth split, no second
-// bracket node. When two overlap, the lookup keeps the nearest, which is stable and cheap.
+// Counts stay genuinely uncapped — 500 balls is 500 instances, and the per-frame CPU cost is ZERO
+// because the instance data holds only the index and the level, which change when the STACK count
+// does and not when the balls move. The motion is entirely `u_phase` and the vertex stage.
+//
+// All balls pass IN FRONT of the card (owner ruling 11): no depth split, no second bracket node.
+// When two overlap the LAST instance drawn wins, and FxJuggle orders them so that is the ball with
+// the highest level (owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*).
 
 #include "res://Shaders/fx_common.gdshaderinc"
 
@@ -61,54 +68,54 @@ uniform float u_ball_spec : hint_range(0.5, 0.999) = 0.965;
 // colors"). A texture rather than a vec4 array because a dynamically indexed array returned garbage
 // on GLES3 once already (ARCHITECTURE_REVIEW §4g).
 uniform sampler2D u_ball_tones : source_color, filter_nearest, repeat_disable;
-// NEVER SAMPLED HERE. `fx_nearest_ball` takes the per-ball fire levels so that FIRE can resolve the
-// nearest LIT ball (FX_HANDOFF §2); the balls themselves do not care which of them is alight, so
-// this quad passes `lit_only = 0` and the texture is never read. It is declared because GLSL has no
-// optional parameters and there is exactly ONE nearest-ball function — a second copy of that lookup
-// is precisely the drift this include exists to prevent.
-uniform sampler2D u_ball_fire : filter_nearest, repeat_disable, hint_default_black;
 uniform vec4 u_gloss : source_color = vec4(1.0, 0.98, 0.85, 1.0);
 uniform float u_opacity = 1.0;
+
+// THIS INSTANCE'S BALL, resolved once per vertex instead of searched for per fragment.
+//   v_origin — the ball's position rounded to a whole number of FX cells. The quad is placed there,
+//              and the fragment adds it back to recover its host-space point on the host's OWN
+//              lattice (fx_cell_round explains why whole cells and nothing else will do).
+//   v_centre — the same position snapped to a cell CENTRE, which is what the disc is measured from,
+//              so every ball rasterizes at phase zero and translates in whole pixels.
+//   v_id     — the ball index, for the spin phase and the newest ball's grow-in.
+varying vec2 v_origin;
+varying vec2 v_centre;
+varying float v_id;
+
+void vertex() {
+	float n = max(u_count, 1.0);
+	v_id = INSTANCE_CUSTOM.x;
+	vec2 raw = fx_ball_of(v_id, n, u_phase, u_span, u_arc_height, u_return_height,
+			u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs);
+	v_origin = fx_cell_round(raw, u_pixel);
+	v_centre = fx_pixel_snap(raw, u_pixel);
+	// ⚠ NO Y FLIP HERE, AND THE FIRST DRAFT GOT THIS WRONG — it negated y and drew the whole pattern
+	// mirrored below the card (caught by `05_balls`: the oracle crosses above centre, the rendered
+	// balls below). `fx_local`'s flip is between UV and MESH space, not between mesh space and ART
+	// space: the 2-D renderer uses a canvas mesh's vertex x/y directly, and canvas +y is DOWN, which is
+	// the direction art +y already points. So a vertex offset IS an art-space offset.
+	VERTEX += v_origin;
+}
 
 void fragment() {
 	// The host's MODULATE, which the renderer folds into COLOR before this function runs. Both
 	// branches below OVERWRITE COLOR, which silently threw it away — so the focus highlight (owner
 	// ruling 10) never reached the balls (owner report 2026-07-28). Multiplied back in at the end.
 	vec4 tint = COLOR;
-	vec2 p = fx_local(UV, u_extent, u_pixel);
 	float n = max(u_count, 1.0);
-	float id = 0.0;
-	// Far from any ball until proven otherwise, which is what the guard below leaves behind.
-	vec2 d = vec2(1e9);
-	float d2 = 1e9;
-	float r = 0.0;
-	// THE EMPTY MAJORITY, REJECTED FIRST (FX_HANDOFF §1b.2). The quad is sized as the host's body
-	// plus the pattern's reach on EVERY side, so most of it is empty space no ball can ever occupy —
-	// a card's ball quad is ~112 art units across for a ~33 unit pattern — and every one of those
-	// fragments used to pay for the full closed-form lookup. One box test replaces it.
-	// (`return` is not allowed in a Godot fragment processor, hence the wrap rather than an exit.)
-	if (fx_balls_near(p, 0.0, u_span, u_arc_height, u_ball_radius)) {
-		float lvl;
-		// ⚠ THE CENTRE COMES BACK FROM THE LOOKUP. It used to be re-derived with `fx_ball_pos`,
-		// which builds a whole second arc ladder (8 `sqrt` plus a normalize) and walks it again —
-		// per fragment, for a ball this call had already positioned. Same arithmetic, same bits,
-		// one evaluation (FX_HANDOFF §1b.1's hoist, finished 2026-07-29).
-		vec2 raw;
-		fx_nearest_ball(p, n, u_phase, u_span, u_arc_height, u_return_height,
-				u_top_fraction, u_ball_gravity, u_ball_dir, u_ball_arcs, u_ball_fire, 0, id, lvl,
-				raw);
-		// The centre is SNAPPED to the pixel lattice before anything is measured from it, so the disc
-		// test and the shading agree and every ball rasterizes symmetrically (fx_pixel_snap). The
-		// distance from fx_nearest_ball is deliberately recomputed here rather than reused: testing
-		// against the unsnapped centre and shading from the snapped one is what would leave a ragged
-		// edge pixel.
-		vec2 centre = fx_pixel_snap(raw, u_pixel);
-		d = p - centre;
-		d2 = dot(d, d);
-		// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in
-		// place rather than popping into the pattern, and the loop's spacing absorbs the rest.
-		r = u_ball_radius * ((id >= floor(n)) ? fract(n) : 1.0);
-	}
+	float id = v_id;
+	// THE FRAGMENT'S HOST-SPACE POINT, on the host's own origin-anchored lattice. `v_origin` is a
+	// whole number of cells, so adding it before the snap lands on exactly the grid `fx_local` would
+	// have returned for this point off a host-sized quad — the identity fx_cell_round documents. The
+	// flame's chunky pixels therefore did not move when this quad became one quad per ball.
+	vec2 p = fx_pixel_snap(fx_local_raw(UV, u_extent) + v_origin, u_pixel);
+	// Both points are on the lattice, so `d` is a whole number of cells and the disc rasterizes
+	// symmetrically — the same reason the centre was snapped when this was a single quad.
+	vec2 d = p - v_centre;
+	float d2 = dot(d, d);
+	// The newest ball occupies a partial slot, so ramp its RADIUS by the fraction: it grows in
+	// place rather than popping into the pattern, and the loop's spacing absorbs the rest.
+	float r = u_ball_radius * ((id >= floor(n)) ? fract(n) : 1.0);
 
 	if (d2 > r * r || r <= 0.0) {
 		COLOR = vec4(0.0);

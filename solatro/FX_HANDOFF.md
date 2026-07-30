@@ -1,15 +1,26 @@
-# FX_HANDOFF.md — live handoff, updated 2026-07-29 (FIRE IS DONE; the next task is JUGGLING PERFORMANCE)
+# FX_HANDOFF.md — live handoff, updated 2026-07-30 (FX PERFORMANCE IS **PAUSED**, not finished)
 
-🔴 **THE FIRE EFFECT IS CLOSED. YOUR TASK IS JUGGLING PERFORMANCE, AND IT IS A CONVERSATION WITH THE
-OWNER, NOT A SOLO PASS.** Owner, 2026-07-29: *"with this we are done with fire effect changes... Last
-task for next agent will be back and forth with user to make juggling effect as performant as
-possible."*
+🟢 **THERE IS NO OPEN ENGINEERING TASK IN THIS FILE.** The fire effect's LOOK is closed (§0, §0c), and
+the performance pass of 2026-07-29/30 took the worst window the game can build from **12.07 to 5.82 ms of
+GPU**. Owner, 2026-07-30, after the last measurement: *"sure lets stop here then."*
 
-➡ **START AT [§0d.5](#0d5--the-next-task-juggling-performance-with-the-owner). It is the whole brief:
-the measured budget, the levers that are already taken, the priced menu, and the questions only the
-owner can answer.** Everything else in this file is background for it.
+➡ **IF YOU ARE HERE TO SPEND MORE BUDGET, START AT [§0d.10](#0d10--restarting-the-performance-work--the-one-page-version).**
+It is the one page that matters: today's numbers, every lever still on the table with an honest price and
+risk, and — the part that will save you the most time — **the list of things that look like levers and are
+measured or reasoned NOT to be**, so you do not re-tread a day of this pass.
 
-**Then read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW §4g** (the map and the contract).
+➡ **IF YOU ARE HERE TO CHANGE HOW THE FIRE LOOKS**, read §0a–§0c for the model and §0f for the art calls
+that are the owner's. **Then read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW §4g** (the map and the contract).
+
+**WHERE THE 2026-07-29/30 PASS WENT, so you do not re-take any of it:**
+
+| | what | worth |
+|---|---|---|
+| ✅ | **[§0d.6](#0d6--one-instance-per-ball--the-juggling-layer-is-32x-cheaper-and-the-search-is-deleted-2026-07-29) — ONE INSTANCE PER BALL.** The closed-form nearest-ball search is DELETED. ⚠ Read the three things that went wrong doing it; one made a broken build look 10x faster | juggling half of the window **5.46 → ~1.7 ms**; `juggle both x20` **1.822 → 0.220** |
+| ✅ | **[§0d.7](#0d7--the-cpu-half--_push_live-was-42-msframe-and-nobody-had-ever-measured-it-2026-07-30) — THE CPU HALF.** `_push_live` sends 2 uniforms per frame instead of ~15 | **4.21 → ~1.3 ms/frame**, and it was invisible to the GPU timer |
+| ✅ | **[§0d.9](#0d9--two-levers-taken--650--466-ms-and-the-first-one-is-two-lines-2026-07-30) — CARD FIRE.** Buried fragments no longer pay the tap ladder (TWO LINES, 1.27x), plus §10's lever B | `burning, FULL SCREEN` **6.496 → 4.657 ms** |
+| ⬜ | **`cover_taps` 4 → 2 on `fire_card`** — the one lever left that is worth a whole millisecond | **0.98 ms**, and it is a LOOK call the owner has NOT made (§0e argues against it) |
+| ⚪ | **[§0d.5](#0d5--closed-by-0d6--the-brief-kept-for-its-budget-and-its-history)** (the old juggling brief) and **[§0d.2](#0d2--void--the-priced-menu-and-none-of-it-was-spent)** (its nine priced levers) | **VOID as guidance**, kept as history — not one of those nine levers was what worked |
 
 ### What the fire is, in five lines
 
@@ -31,7 +42,8 @@ mask's representation was worth getting exactly right.
 | ✅ | *"use actual TypePaper visual for fx editor... no useless mocks"* | §0c.4 — the tool hosts real cards, `rig_pose` seeks the card's own animation, and the whole card data chain is `@tool` so it survives the editor |
 | ✅ | *"fx editor shows corner texel not being accounted for"* — and *"do card and prop use same mask code or not?"* | §0c.5 — the type frame's clipped corners are in the outline, measured off its own alpha and exact under deformation; **zero** disagreeing cells against a real card. Costs 16 % of a burning screen. §0c.5 also answers the second question: one shader, ONE branch apart, and why a card cannot use the prop's. |
 | ✅ | *"another performance test... on slower comp"* | §0d.3 — the Intel UHD table. ⚠ **The two boxes are 5x–8x apart, not the ~2x this file claimed for weeks** |
-| ⬜ | *"saving juggling performance"* | §0d took the first lever (`min_half`, ~30 % of the layer). **The rest is your task: §0d.5** |
+| 🟡 | *"new task is solving card fire time"* (2026-07-30) | **§0d.9 — two levers taken, 6.50 → 4.657 ms (1.39x).** The buried-fragment early-out (two lines, 1.27x) and lever B. ⬜ **Open: `cover_taps` 4 → 2, worth 0.98 ms, a LOOK call** |
+| ✅ | *"saving juggling performance"* | §0d.6 — **ONE INSTANCE PER BALL.** The juggling half of the worst window is **5.46 → 1.71 ms** and `fx_nearest_ball` is deleted. ⚠ The layer is **CPU-bound now** (wall 10.97 vs GPU 8.23 on that window), so the next millisecond is in `_push_live`, not in a shader |
 
 ### Three things that will bite you if you skip them
 
@@ -530,7 +542,7 @@ texel rather than eating art the frame draws).
   DIAGONAL chamfer at 1.5x the bite depth: same pixels on the FX grid, ~half the cost, and approximate
   off it — write it down as a compromise, not as the shape.
 
-### 0d. 🔴 JUGGLING PERFORMANCE — one lever shipped, and the REST IS THE OPEN TASK (§0d.5)
+### 0d. 🟢 FX PERFORMANCE — the whole 2026-07-29/30 pass, and how to restart it (§0d.10)
 
 The juggling layer was the dominant half. **Lever 1 landed and took ~30 % off it.** Measured on the
 GTX 1070, `fx_cost.tscn`, **three runs each way, minimum taken**, with the ONLY difference the two
@@ -587,7 +599,13 @@ reproducible"* warning the whole time; nobody had run it twice.
 picture from a flaky harness is not a red build. **Run a rendering harness twice before believing
 either half of what it tells you.**
 
-#### 0d.2. ⬜ THE COMPROMISES AVAILABLE FOR JUGGLING, priced — the menu §0d.5 spends
+#### 0d.2. ⚪ VOID — the priced menu, and none of it was spent
+
+⚠ **EVERY LEVER BELOW IS EITHER SUBSUMED OR UNNECESSARY AFTER §0d.6, and the reason is the interesting
+part: they all shave ONE factor of a product with two wrong factors.** Levers 1, 2 and 9 are subsumed
+whole (an off-centre quad, a lit-ball shrink and merging the two quads are all what per-ball instancing
+already does); 3 was measured near-pointless; and 4–8 are LOOK compromises that no longer have to be
+asked for. Kept as the record of how the layer was priced before the model was fitted.
 
 ⚠ **READ THE BUDGET FIRST, AND READ IT FROM THE INTEL BOX** (§0d.3). The worst window is **10.8 ms, of
 which juggling is ~5.3** (`juggle both x20` scaled by the same ratio the burning rows hold, and the
@@ -631,6 +649,11 @@ lookups at all: §0e); and deleting anything from the ARC maths (hoisted to 8 ev
 in §1a.1 — it is not the cost any more).
 
 #### 0d.3. ✅ THE INTEL UHD NUMBERS — the slow box, at last (2026-07-29)
+
+⚠ **EVERY ABSOLUTE IN THIS SECTION IS SUPERSEDED — the worst window is 5.82 ms now, not 10.775, and
+§0d.10 has the current table.** Read this section for its METHOD (three runs, minimum, editor closed) and
+for the two findings that still hold: the noise-source A/B is a wash, and the two boxes are 5x–8x apart so
+no GTX absolute ever transfers.
 
 Owner: *"Do another performance test to verify current performance on slower comp."* **Taken on the
 owner's own box** — Intel UHD Graphics, driver 31.0.101.2135, Godot 4.7.1, gl_compatibility, editor
@@ -704,11 +727,15 @@ by), and the fix immediately reported the three panels the mask change actually 
   from the retired build. They are not written any more, so they compare identical for ever and pad the
   count from 18 to 20. Delete them from `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots`.
 
-#### 0d.5. ⬜ THE NEXT TASK: JUGGLING PERFORMANCE, WITH THE OWNER
+#### 0d.5. ✅ CLOSED BY §0d.6 — the brief, kept for its budget and its history
+
+⚠ **READ §0d.6 FIRST. The task below is done and its priced menu was NOT what did it** — none of the
+nine levers was taken, because the cost model they were all derived from turned out to have two factors
+and every one of them moved only one. Kept because the BUDGET here is still the target, and because the
+list of "what is already taken" is still true history.
 
 Owner, 2026-07-29: *"Last task for next agent will be back and forth with user to make juggling effect
-as performant as possible."* **This section is the brief. It is deliberately the only open engineering
-task in this file.**
+as performant as possible."*
 
 **THE NUMBER TO BEAT** (Intel UHD, §0d.3, three runs, minimum): the juggling layer is **~5.3 ms** of the
 **10.775 ms** worst window, against a **~2 ms target for all FX**. `juggle both x20` is **1.912**, split
@@ -747,6 +774,366 @@ evidence was produced by the broken `snapshot_diff` (§0d.4) and does not exist.
 pixel-neutral and it has an asserting check for the displacement that got it reverted once (§0d.1) — but
 **re-earning it is ~10 minutes** (`save` on a build with the two `min_half` assignments commented out,
 `diff` with them in) and it is the foundation the next lever sits on.
+
+#### 0d.6. ✅ ONE INSTANCE PER BALL — the juggling layer is 3.2x cheaper and the search is DELETED (2026-07-29)
+
+Owner: *"1. yes reachable. 2. if overlapping, ball with highest stacks win"* — answering §0d.5's two
+questions, which closed off the cheap escape (the saturated window IS reachable in play) and pre-ruled
+the one visual change this needed.
+
+**THE COST MODEL THAT PICKED THIS, and it is the reason none of §0d.2's nine levers was taken.** Fit
+§0d.3's own numbers to `cost = guard-box area x cost of one fx_nearest_ball call`:
+
+| | quad extent | `fx_balls_near` box | actual drawn pixels |
+|---|---|---|---|
+| balls | 33.1 x 64.0 = 2118 art² | **1104 art²** | ~28 art² |
+| ball fire | 49.1 x 80.0 = 3928 art² | **2422 art²** | ~150 art² |
+
+Guard-box ratio **2422/1104 = 2.19**; measured cost ratio **1.311/0.576 = 2.28**. A 4 % fit. And
+solving `min_half`'s measured 1.40x with the same model says an ACCEPTED fragment costs **~26x** a
+box-rejected one. So the layer was one product — *area x search* — with the search running over **39x
+more area than there was ball**. Every lever on §0d.2's menu shaves one factor by 10–40 %; both
+factors were wrong by more than an order of magnitude.
+
+**WHAT SHIPPED.** One `MultiMeshInstance2D` per juggling quad, **one instance per ball** (per LIT ball
+for the plumes). The ball's INDEX and its own level ride in `INSTANCE_CUSTOM`; `vertex()` calls
+`fx_ball_of` to place that one ball; the fragment does a disc test against a centre it already has.
+`fx_nearest_ball`, `fx_balls_near`, `lit_only`, the `u_ball_fire` levels texture and
+`FxJuggle.fire_texture` are **all deleted** — not replaced.
+
+| GPU timer, ms/frame, Intel UHD, 3 runs, min | before | after | |
+|---|---|---|---|
+| `juggle balls x20` | 0.540 | **0.091** | **5.9x** |
+| `ball fire x20` | 1.256 | **0.168** | **7.5x** |
+| **`juggle both x20`** | **1.822** | **0.248** | **7.3x** |
+| `burning, FULL SCREEN` (the CONTROL — no juggling in it) | 6.606 | 6.513 | 1.0x ✅ |
+| **`burning + juggling, FULL SCREEN`** | **12.066** | **8.225** | |
+| **the JUGGLING HALF of that window** | **5.46** | **1.71** | **3.2x** |
+
+⚠ **THE x20 ROWS GAIN 7x AND THE 78-HOST WINDOW ONLY 3.2x, AND THE GAP WAS THE CPU — see §0d.7, which
+took it.** At 78 hosts
+the layer is 156 MultiMesh draws carrying 780 instances, so per-draw and per-instance overhead now
+dominates what used to be fill. **The wall clock proves it: the worst window was 11.96 ms wall against
+12.34 GPU (GPU-bound) and is now 10.97 wall against 8.23 GPU — CPU-bound.** So `_push_live`'s ~15
+`set_shader_parameter` calls per quad per frame, which §6a measured at ~0.03 ms per host and which was
+always hidden underneath the GPU, is now the binding constraint. That is where the next millisecond is,
+and it is not a shader change.
+
+**THREE THINGS THAT WENT WRONG, EACH WORTH KNOWING:**
+
+1. 🔴 **THE FIRST BUILD LOOKED 10x FASTER AND WAS DRAWING ALMOST NOTHING.** Godot derives a
+   `MultiMeshInstance2D`'s cull rect from the instance TRANSFORMS, and an effect that places its
+   instances in `vertex()` leaves every transform at identity — so the engine believed the whole effect
+   was one mesh-sized box at the host's origin. Of 8 balls the 2 passing near the card's centre drew and
+   6 vanished; of 50, four. **`fx_cost` cannot tell "cheap" from "not drawn"**, and only the PIXELS
+   suite's ball checks caught it. Fixed with `MultiMesh.custom_aabb` from a new
+   `FxRequest.instance_bound` — the pattern's box, which is exactly what the old quad was SIZED to and
+   now costs no fill at all because it only decides whether the item is submitted.
+2. 🔴 **THE Y FLIP IS NOT WHERE IT LOOKS.** `VERTEX += vec2(origin.x, -origin.y)` drew the entire
+   pattern mirrored below the card. `fx_local`'s flip is between UV and MESH space, not between mesh
+   space and ART space: the 2-D renderer uses a canvas mesh's vertex x/y directly and canvas +y is down,
+   which is the way art +y already points. **A vertex offset IS an art-space offset.** `05_balls` showed
+   it in one glance — oracle crosses above centre, rendered balls below.
+3. ⚠ **AND THE INSTRUMENT I REACHED FOR SECOND WAS A MOCK.** A throwaway probe scene that re-implemented
+   the PIXELS harness rendered NOTHING and told me nothing; `fx_snapshot`'s own PROBE lines answered the
+   same question in seconds (every ball within **0.1–0.3 art units** of its oracle). The rule in §0c.2
+   applies to debugging too: use the harness that already works.
+
+**WHAT IT COSTS VISUALLY, AND IT IS THE OWNER'S OWN RULING.** Overlap is resolved by DRAW ORDER now
+instead of by nearest centre, so `FxJuggle._ball_instances` sorts by level and the highest-level ball
+draws last and wins. `snapshot_diff` against the pre-change build: **the panels with no overlap are
+BYTE-IDENTICAL — `05c_ball_sphere`, `05f_ball_rotation` and `06_ball_fire`** (so the plume path is
+pixel-perfect), and the five that differ are the crowded ones (`05e_ball_arcs` 1477 px at 8 arcs,
+`05_balls` 58 px, `05d_ball_gravity` 27, `06b_ball_fire_cycle` 8, `05b_ball_path` 2). ⚠ Two causes, both
+expected: the overlap order above, and rare single-cell disagreements at a ball's edge where the new
+arithmetic path (`snap(inst_raw + origin)`) rounds differently from the old (`snap` over a host-sized
+quad) at an exact cell boundary. ⚠ `09_embers` differs by design, as always.
+
+**THE CONTRACTS THIS ADDED, and all three are load-bearing:**
+
+- **`fx_cell_round`** — an instance is placed at a WHOLE number of FX cells, which is what keeps its
+  content on the host's own lattice (the identity `fx_pixel_snap(fx_local_raw(uv, e), c) ==
+  fx_local(uv, e, c)`, which holds because `fx_local` quantizes before its flip) AND what puts the
+  quad's edges on cell boundaries so no chunky pixel is ever sliced in half.
+- **`FxRequest.instance_half` must be a whole number of cells**, for that second reason. `_cell_box`
+  rounds up and adds a DERIVED 1.5 cells of slack (0.5 placement + 0.5 snap + 0.5 the cell's own body);
+  `test_fx_attachment` asserts the whole-cell part.
+- **A plume's box is NOT symmetric about its ball** — the cover ladder only steps DOWN, so the box runs
+  `r + height` above the centre and `r + sink` below it and the instance is centred `(sink - height)/2`
+  off the ball. Worth about half that quad's fill. ⚠ `u_height` and `u_sink` were therefore taken OUT of
+  the plume's `live` dictionary: everything in `live` is EASED, and an easing height would move the box's
+  centre while the box was sized for one end of it.
+
+✅ **AND TWO CONSTRAINTS ARE LIFTED, which is worth as much as the milliseconds.** The path no longer has
+to be **invertible** — `fx_arc_ease_inv` is deleted, and "do not add a timing ease inside a half without
+checking it stays invertible" is no longer a rule on anyone tuning the loop. And **§0d.2's menu is void**:
+levers 1 (off-centre quad), 2 (lit-ball shrink) and 9 (merge the two quads) are all subsumed, and 9's
+fight with the plumes-behind-balls ruling never has to be had — two MultiMesh nodes in the same tree
+order keep it.
+
+#### 0d.7. ✅ THE CPU HALF — `_push_live` was 4.2 ms/frame and nobody had ever measured it (2026-07-30)
+
+§0d.6 ended GPU-bound-no-more: the worst window read **wall 10.97 ms against 8.23 ms of GPU**. So the
+next millisecond was never going to be in a shader.
+
+**IT IS NOW MEASURED DIRECTLY, by a new permanent bench row** (`fx_cost`'s `_push_live, FULL SCREEN`,
+which times the real function on a real board's quads — the GPU timer structurally cannot see any of
+this, and §6a's only previous figure was the indirect "234 OFF-SCREEN hosts cost ~7 ms", for hosts that
+skip the upload entirely):
+
+| Intel UHD, 3 runs, min | before | after | |
+|---|---|---|---|
+| **`_push_live`, 78 hosts / 234 quads** | **4.206 ms** | **1.135 ms** | **3.7x** (18.0 → 4.9 µs per quad) |
+| `burning + juggling, FULL SCREEN` — **WALL clock** | 12.760 | **8.460** | the number a player feels |
+| the same row, GPU timer | 8.225 | 7.310 | |
+
+**WHAT IT WAS.** ~15 `set_shader_parameter` per quad per frame plus a freshly allocated eased Dictionary
+per effect. **Only TWO of those are genuinely per-frame** — `u_time` and `u_phase`. The rest describe
+either the HOST'S POSE (`u_shape_rot`, `u_lag`) or an EASED TRANSITION, and on a settled board neither
+changes at all, so both are now sent on CHANGE: `_sent_rot` / `_sent_lag` for the pose, `Effect.pushed`
+for the eased set. `_on_screen`'s per-frame loop over every effect became the `_cull_reach` cache, since
+only `_size_quad` can move that number.
+
+⚠ **THE VALUES ARE STILL COMPUTED, ONLY THE UPLOAD STOPS.** `Effect.vals` caches the eased set because
+the EMBER emitter needs this frame's geometry every frame even when the shader does not.
+
+⚠ **AND `_apply_static` MUST CLEAR `pushed`, WHICH IS THE ONE TRAP HERE.** `style.apply()` writes the
+style's BASE value for names the live set also owns — `u_height` is both a style lever and a stack-scaled
+live value on a card's fire — so a restyle (it is wired to `settings_changed`) stamps the base over the
+eased value, and nothing would ever put it back.
+
+⚠ **ONE REGRESSION FROM §0d.6 WAS FOUND HERE, and no test could have caught it.** Taking `u_height` out
+of the plume's `live` left `_ember_origin` reading it from `vals` as **zero**, so every ball ember was
+born ON its ball instead of scattered up its flame. Embers are randomised — `09_embers` differs run to
+run by design — so the fix is a fallback to the style's own height, and the comment says why the fallback
+is where a plume's height actually lives.
+
+⚠ **AND A REAL NON-DETERMINISM IN §0d.6's OVERLAP RULE, caught by re-running the diff.** `05e_ball_arcs`
+reported 1477 differing pixels one run and 2228 the next with nothing changed between them:
+`Array.sort_custom` is **NOT STABLE**, so balls of EQUAL level — which is every ball in most panels and
+the common case on a real board — came out in an arbitrary permutation, and draw order decides every
+overlap. Ties break on the INDEX now, and that panel dropped to **24 px and holds it across runs**.
+
+⚠ **THE OTHER PANELS STILL FLAKE RUN TO RUN AND IT IS NOT THIS CHANGE.** Two consecutive runs of the same
+build put `05f_ball_rotation` / `06_ball_fire` / `08_focus_highlight` in one diff and `05d_ball_gravity`
+at 1668 px in the other. That is §0d.1's standing warning, unchanged: **run this harness twice before
+believing either half of what it says.** The panels that are stable across runs are `05_balls` 58 px,
+`05b_ball_path` 2, `05e_ball_arcs` 24 and `06b_ball_fire_cycle` 8 — the overlap-order and edge-rounding
+differences §0d.6 predicted, and nothing else.
+
+**WHERE THE BOARD STOOD AT THE END OF THIS STEP** — ⚠ superseded by §0d.9, which took card fire down
+another 1.84 ms; **§0d.10 has the current table.** The worst window was **8.46 ms of wall clock**, of which
+**~6.5 ms is CARD FIRE's GPU time** and juggling is ~1.7. Against the owner's ~2 ms target for all FX, the
+remaining lever is `cover_taps` on `fire_card` (4 → 2 is worth ~1.24 ms — §0d.3), and that is a LOOK call
+only the owner can make (§0e is the argument against it).
+
+#### 0d.8. 🟡 CARD FIRE TIME — the brief, and what it produced
+
+Owner, 2026-07-30: *"new task is solving card fire time."* ✅ **Two levers were taken (§0d.9) and the owner
+then stopped the pass.** ⚠ **For the CURRENT numbers and what is still available, go to §0d.10** — this
+section is the diagnosis as it stood BEFORE those levers, kept because the decomposition and the area
+arithmetic are what pointed at them.
+
+**THE NUMBER IT STARTED FROM** (Intel UHD, `fx_cost`, 3 runs, minimum): a window packed edge to edge with
+78 burning cards cost **6.50 ms of GPU** against the owner's **~2 ms target for all FX**. It is **4.66 ms**
+now.
+
+**THE COST SPLITS ALMOST EXACTLY IN HALF, and this is fresh evidence on the shipped build** — the tap
+sweep, which is the shader's cost curve drawn directly:
+
+| full burning screen, GPU ms | 2 taps | 4 taps (ships) | 6 taps | 8 taps |
+|---|---|---|---|---|
+| | 4.841 | **6.496** | 8.155 | 9.899 |
+
+Dead linear at **0.843 ms per tap**, intercept **3.16 ms**. So at the shipped 4 taps:
+
+- **~3.37 ms IS THE COVER LADDER** — `u_taps` mask lookups per accepted fragment. §9's model holds.
+- **~3.16 ms IS EVERYTHING ELSE** — the fill itself, `body_near`, the erosion test, the noise, the ramp.
+  ⚠ **Do not read that as "the noise"**: the source A/B is still a wash (`fx_fbm` 6.573 vs the baked
+  TEXTURE 6.435 — 2 %, inside this box's spread), which is the third time that has measured flat.
+
+⚠ **BOTH HALVES SCALE WITH ACCEPTED AREA**, which is what makes the leading candidate below worth more
+than any tap knob: taps run only where `body_near` passes, and the noise only where `cover > 0`.
+
+**THE AREA ARITHMETIC, for a 38x50 card** (art units², and the reason to look here first):
+
+| | |
+|---|---|
+| the quad — circumscribed bound plus reach on all four sides | 84.8 x 84.8 = **7191** |
+| what `body_near` ACCEPTS (body bound + `height + sink` each way) | ~54 x 66 = **3564** |
+| the band the flame can actually occupy — the outline extruded by `height + sink` | ~176 perimeter x 8 = **~1408** |
+
+#### 0d.9. ✅ TWO LEVERS TAKEN — 6.50 → 4.66 ms, and the first one is TWO LINES (2026-07-30)
+
+Owner: *"yes assume reachable. reduce ms as much as possible."*
+
+| Intel UHD, 3 runs, min | before | after | |
+|---|---|---|---|
+| **`burning, FULL SCREEN`** | **6.496** | **4.657** | **1.39x, −1.84 ms** |
+| `card fire (DEFORMED) x20` | 2.222 | 1.684 | 1.32x |
+| `burning + juggling, FULL SCREEN` | 7.310 | **5.820** | |
+| the tap slope, ms per tap | 0.843 | **0.541** | −36 % |
+
+**LEVER 1 — BURIED FRAGMENTS NO LONGER PAY THE LADDER (`cover_below`, two lines, worth 1.27x alone).**
+`deep` means the fragment is more than `sink` inside the art, and `fragment()` discards it on exactly
+that flag — but the tap loop ran first, all four lookups of it. **A card's interior is the largest
+contiguous region in its quad — ~41 % of everything `body_near` accepts (1564 art² of 3808)** — and it
+was paying full price to draw nothing. ✅ **Pixel-exact by construction** (the caller already threw the
+fragment away whatever cover said) and it divides well, because the interior is one block rather than
+scattered fragments. The tap slope falling 0.843 → 0.541 is the same 41 %, measured from the other side.
+
+**LEVER 2 — §10's LEVER B, AT LAST: the circumscribed bound only while the host is actually turned**
+(`_size_quad`, `_rot_tight`). A resting card was paying 84.8² of quad for a 56x68 bound. ⚠ **The
+objection that blocked this for months is VOID** — §6a rejected it because "resizing a live quad moves
+the FX pixel lattice", which stopped being true when the lattice moved to the host's ORIGIN. It falls
+back to the diagonal the instant the host turns, so it is exact rather than approximate, and only the
+CROSSING re-sizes anything (a spinning card pays two resizes for the whole spin).
+
+⚠ **AND LEVER 2 CAME WITH A REGRESSION THIS BENCH CANNOT SEE, which is the lesson worth keeping.**
+Making the extent depend on the LIVE silhouette meant `track_outline` — which runs every frame for any
+card whose rig is moving — rebuilt the QuadMesh and re-pushed `u_extent` every frame, handing back
+exactly the per-frame CPU §0d.7 had just removed. `fx_cost`'s hosts call `measure_outline` once and never
+deform, so **the row stayed green while the game got slower**; it showed up only as `_push_live` drifting
+1.14 → 1.40 ms and the wall clock going the wrong way against a falling GPU timer. Fixed by rounding the
+extent to whole art units and writing it only when it changes.
+
+**WHAT THE PIXEL GATE SAYS.** The card panels move by **tens of pixels, and the panel they move in
+changes as the extent's float path changes** (`06_ball_fire` 5 px in one build, `04_shapes` 67 px in the
+next) — the signature of single-cell boundary rounding in `floor(s / cell)`, not of geometry: `04_shapes`
+inspected by eye shows the rings whole, with scattered single flame pixels at their edges and no cut
+line anywhere. ⚠ Two consecutive runs agreed exactly, so this is deterministic within a build.
+
+**WHAT IS LEFT, and the ring mesh is NO LONGER WORTH IT.** At 4 taps the cost is now ~2.16 ms of ladder
+and ~3.00 ms of everything else. ⚠ **My own ~2.5x estimate for the ring mesh below was wrong twice over**:
+the honest area arithmetic is 3808 → ~2174 art² (**1.75x**, not 2.5x — the first estimate forgot the
+corner wedges and the inner erosion band), and **lever 1 has already taken the whole interior out of the
+expensive path**, so a ring would now only save those fragments' RASTERIZATION and their one erosion
+test — about **0.3 ms** for a triangle strip, a reflex-corner problem and a per-frame vertex budget. The
+remaining levers are the tap knob (below) and the mask's own cost (§0c.5's 20-point chamfer compromise).
+
+**THE LEADING CANDIDATE (SUPERSEDED — read §0d.9 first): A RING MESH INSTEAD OF A QUAD.** It is the direct analogue of what just won
+3–8x on juggling (§0d.6), and the machinery it needs already exists:
+
+- The mesh becomes a fixed-topology triangle STRIP around the silhouette — `u_poly` is already a
+  uniform, so `vertex()` can place each strip vertex by reading its own outline vertex and extruding it
+  outward by `height + sink`. **Zero per-frame CPU**, which matters now that §0d.7 has made CPU the thing
+  to protect: no mesh rebuild even though the rig deforms every frame.
+- The fragment recovers its host-space point from a varying and snaps it, exactly as the instanced ball
+  path does — so the FX lattice is untouched and the flame's own pixels do not move.
+- ⚠ **ESTIMATE, NOT A MEASUREMENT: ~2.5x on both halves**, i.e. 6.50 → ~2.6 ms, from accepted area
+  3564 → ~1408. Derived with the 26:1 accepted-to-rejected fragment ratio fitted in §0d.6. **Re-price it
+  on this box before building it** — and remember §0d.6's trap: a build that draws less than it should
+  reads as a triumph, so gate on `all_tests` and `fx_snapshot`, never on `fx_cost` alone.
+- ⚠ **THE RISK IS REFLEX CORNERS.** A deformed card's outline is not convex (§0c.1), so an outward
+  extrusion self-overlaps at a dent — and two ribbons over one fragment blend twice. Convex corners need
+  a fan or a mitre; concave ones need the overlap resolved or accepted.
+
+**AND THE PRIZE BEHIND IT: THE TAP LADDER COULD GO ENTIRELY.** On a ring mesh a fragment knows WHICH
+EDGE it belongs to, so "how far above the surface am I" is a dot product against that edge instead of
+`u_taps` mask lookups — the ~3.37 ms above, gone, and with it the `u_poly` array cost §0c.5 measured at
+16 % of a burning screen (the array would be read once per VERTEX, not once per tap). ⚠ It must quantize
+to the same `taps + 1` levels or the look changes; ⚠ it is CARD-ONLY (props are SPRITE and keep the
+ladder, which is correct — a hoop has two surfaces in a column and §1 exists for that); and ⚠ it is
+§10's lever D wearing different clothes, so read D's warning about per-shape paths first.
+
+**THE CHEAP LEVERS, for completeness:**
+
+| | lever | worth | what it costs |
+|---|---|---|---|
+| 1 | ⬜ **`cover_taps` 4 → 2 on `fire_card`** | **0.98 ms, re-measured after §0d.9** (5.062 → 4.085 on the sweep; it was 1.66 before lever 1 made each tap cheaper) | a LOOK the owner owns — §0e is the argument against it (a card flame is 7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art) |
+| 2 | ✅ **§10's lever B — TAKEN (§0d.9)** | part of the 1.39x | — |
+| 3 | ⚪ **the noise source** | **nothing — measured flat three times** | — |
+
+**THE THREE QUESTIONS THIS SECTION PUT TO THE OWNER, AND WHAT HE SAID (2026-07-30):**
+
+1. **Is a screen of 78 cards where EVERY ONE is burning actually reachable in play?** ✅ **"yes assume
+   reachable"** — so the saturated window is the right number to optimise, and nobody needs to ask again.
+2. **Spend the LOOK (`cover_taps` 2) or the ENGINEERING?** ✅ **"reduce ms as much as possible"** — taken as
+   "do the non-visual work", which is what §0d.9 did. ⬜ **The look call itself is still UNMADE**; it is
+   worth 0.98 ms and it is lever 1 of §0d.10.
+3. Is `height` = 7 on `fire_card` firm? ⬜ **Never answered** — still lever 3 of §0d.10.
+
+#### 0d.10. ⬜ RESTARTING THE PERFORMANCE WORK — the one-page version
+
+**Owner stopped the pass here (2026-07-30), with the numbers below. Nothing is broken and nothing is
+half-built; this section exists so picking it back up costs an hour instead of a day.**
+
+#### Where the budget stands — Intel UHD, `fx_cost.tscn`, 3 runs, MINIMUM taken
+
+| row | ms | what it is |
+|---|---|---|
+| **`burning + juggling, FULL SCREEN`** | **5.82 GPU** | **the worst window the game can build** — 78 cards at board scale, every one burning AND juggling 5 lit balls. Was 12.07 before this pass |
+| `burning, FULL SCREEN` | 4.66 GPU | the same 78 cards burning only — **this is where ~80 % of the remaining FX cost is** |
+| the juggling layer within that window | ~1.2 GPU | §0d.6 |
+| `_push_live`, 78 hosts / 234 quads | ~1.3 CPU | §0d.7. ⚠ **The GPU timer cannot see this row; only `_cpu_row` can** |
+| the tap slope on `fire_card` | 0.541 ms per tap | was 0.843 before §0d.9 |
+
+**The owner's target is ~2 ms for ALL FX.** The window is 5.82 and burning-only is 4.66, so the target is
+still missed by ~3x in the saturated case. ⚠ **The owner has confirmed that window IS reachable in play**
+(2026-07-30: *"yes assume reachable"*), so it is the right number to optimise — do not re-open that.
+
+#### Card fire, decomposed — this is the whole map of what is left
+
+At the shipped 4 taps, `burning, FULL SCREEN` = **4.66 ms**, and the tap sweep splits it:
+
+- **~2.16 ms is the COVER LADDER** (4 taps x 0.541). The only cheap way at it is the tap count.
+- **~2.50 ms is EVERYTHING ELSE** — rasterizing the quads, `body_near`, the erosion test (one mask call
+  per accepted fragment), the noise on the lit band, the ramp. ⚠ **No single item in here is large**,
+  which is why the pass stopped: the next win needs a structural change, not a knob.
+
+#### Every lever still on the table, honestly priced
+
+| | lever | worth | risk / cost |
+|---|---|---|---|
+| **1** | ⬜ **`cover_taps` 4 → 2 on `fire_card`.** Measured directly on the sweep (5.062 → 4.085) | **0.98 ms** | **a LOOK the owner owns.** §0e is the argument against it: a card flame is 7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art. **Show `00_cover_field` and `01_fire_ladder` side by side before asking** |
+| **2** | ⬜ **§0c.5's 20-POINT DIAGONAL CHAMFER** instead of the exact 24-vertex corner bite. §0c.5 measured the exact mask at **16 %** of a burning screen and the cost is the ARRAY's size, not the loop | ~half of that 16 %, so **~0.3–0.4 ms** at today's numbers (UNMEASURED since §0d.9) | an ACCURACY trade the owner should see: same pixels on the FX grid, approximate off it. `POLY` 24 → 20 and `WEDGE_CANDIDATES` back to 2 |
+| **3** | ⬜ **`fire_card.height` down from 7.** It is a FILL knob as well as an art one — the lit band is `height + sink` thick around the whole silhouette, so every unit off it is ~1/8 of the band | ~0.2 ms per unit (ESTIMATE) | a LOOK the owner owns |
+| **4** | ⬜ **A SPECIALISED CARD-FIRE SHADER** — one program per shape instead of one carrying all four. §0c.1 measured a BOX host getting **25 % dearer purely from carrying two uniform arrays it never enters**, so program size demonstrably costs real time on this GPU | UNMEASURED. That 25 % datum is the only reason to believe in it | it fights §5b (one shader per effect) and duplicates the cover/noise/ramp tail unless that tail is extracted into a shared `.gdshaderinc` first |
+| **5** | ⬜ **BOARD-WIDE BATCHING** — one MultiMesh per LAYER instead of per host, collapsing 234 draws and 234 uniform sets into a handful | attacks the ~1.3 ms CPU row, not the GPU | wide: it fights the attachment-per-host architecture that makes "fx shared across all views" free (rulings 7, 18). **Do not start this without re-measuring the CPU row first** |
+
+#### ⛔ Things that look like levers and are NOT — do not spend time here
+
+Each of these cost real time in this pass or an earlier one, and the reason is recorded:
+
+- **A RING / STRIP MESH around the silhouette** (§0d.9's last paragraph). Honest area arithmetic is 3808
+  → ~2174 art² (**1.75x, not the 2.5x an earlier draft of this file claimed**) — and the two-line
+  buried-fragment early-out **already removed the whole interior from the expensive path**, so a ring now
+  saves only those fragments' rasterization and one erosion test each: **~0.3 ms** for a triangle strip, a
+  reflex-corner problem on a deformed outline, and a per-frame vertex budget.
+- **THE NOISE SOURCE** (`noise_procedural`). Procedural `fx_fbm` vs the baked tile has measured FLAT
+  **three separate times** on this box (latest: 6.573 vs 6.435 on a burning screen). It is a look knob.
+- **`FxStyle.pixel`.** Quantizes a coordinate; the quad still runs once per SCREEN pixel (§6f).
+- **`cover_taps` on `fire_ball`.** The ball branch SOLVES for the tap index with one `sqrt`, so that quad
+  pays no mask lookups at all (§0e).
+- **The ARC MATHS.** Hoisted to 8 evaluations per fragment in §1a.1 and then out of the fragment stage
+  entirely in §0d.6. It is 4 evaluations per ball per FRAME now.
+- **Shrinking a quad to `body_near`'s box.** Rejected fragments are ~1/26 the cost of an accepted one, so
+  removing 3383 art² of them is worth ~3 %. The win is always in the ACCEPTED area.
+
+#### ⚠ The four traps that will cost you a day if you skip them
+
+1. **`fx_cost` CANNOT TELL "CHEAP" FROM "NOT DRAWN".** §0d.6's first build read **10x faster** and was
+   culling most of its balls. **Gate on `all_tests.tscn` (the PIXELS ball checks) or `fx_snapshot`, never on
+   `fx_cost` alone.** A number that beats your own prediction is a bug report.
+2. **`fx_cost` CANNOT SEE CPU YOU ADD ELSEWHERE.** §0d.9's lever B made a deforming card rebuild its mesh
+   every frame; the bench's hosts never deform, so the row stayed green while the GAME got slower. **Watch
+   `_push_live, FULL SCREEN` and watch wall clock against the GPU timer** — wall rising while GPU falls is
+   the signature.
+3. **RUN A RENDERING HARNESS TWICE.** `fx_snapshot` disagrees with itself run to run on the rotated and
+   fire panels (§0d.1, re-confirmed 2026-07-30). A red picture from one run is not a red build.
+4. **`snapshot_diff` IS THE INSTRUMENT FOR "NOTHING MOVED", NOT YOUR EYE** — and expect the juggling
+   overlap panels (58 / 2 / 24 / 8 px) plus `09_embers` to differ against the pre-pass baseline for the
+   reasons §0d.6 and §0d.7 give. ⚠ Single-cell differences MIGRATE between panels whenever a quad's extent
+   changes, because `floor(s / cell)` takes a different float path to the same point; tens of pixels with
+   no cut line is that, not geometry.
+
+#### The cost model that has held up, and the one that replaced it
+
+- **For the CARD/PROP path: cost = `mask_level` call count x cost per call** (§9). Still true — the tap
+  sweep is dead linear, and it is why the tap knob is the only cheap lever left.
+- **For the JUGGLING path it was: cost = guard-box area x cost of one nearest-ball search** — fitted to
+  within 4 % (§0d.6), and the reason instancing beat all nine of §0d.2's levers. ⚠ **The lesson generalises:
+  when a menu of knobs each buys 10–40 %, fit a model and check whether it has TWO wrong factors.**
 
 ### 0e. `cover_taps` — why you do NOT want it as low as possible
 
@@ -807,8 +1194,22 @@ the noise. Re-run `fx_cost.tscn` after: three runs, take the minimum.
 3. The fire ramp's ENDS (entry 0 makes a 1-stack flame near-black; entry 19 puts neutral grey at the
    white-hot end — one-line edits to `Assets/Palette/ramp_fire.tres`); prop art SIZES; `level_ref`;
    `aperture` / `fire_gain` per style.
-4. **Owner playtest (T15)** still blocks "done" — FX_SHADER_PLAN §10, 17 steps. It is also the only
-   way to learn whether §6b's saturated window is reachable in play at all.
+4. **Owner playtest (T15)** still blocks "done" — FX_SHADER_PLAN §10, 17 steps. ⚠ Its old second purpose
+   is spent: the owner has ruled that the saturated window IS reachable (2026-07-30), so §6b's question
+   does not need the playtest to answer it.
+5. ⬜ **TWO PERFORMANCE CALLS ARE WAITING ON YOU, and they are the only budget left worth a millisecond**
+   (§0d.10 prices them):
+   - **`cover_taps` 4 → 2 on `fire_card` — worth 0.98 ms.** §0e is the argument against it: a card flame is
+     7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art. **Judge it on
+     `00_cover_field` (the raw ladder) and then `01_fire_ladder` DRESSED, side by side, before deciding.**
+   - **`fire_card.height` (7 today).** It is a FILL knob as well as an art one — the lit band is
+     `height + sink` thick around the whole silhouette — so roughly 0.2 ms per art unit removed.
+   ⚠ **Neither was taken.** The 2026-07-29/30 pass deliberately spent only non-visual levers, and the owner
+   stopped it there rather than spend a look (*"sure lets stop here then"*).
+6. ⚠ **AND ONE LOOK QUESTION THE PASS CREATED, which the owner has not yet seen in motion:** where two
+   juggled balls OVERLAP, the winner is now the one with the higher level rather than the nearer centre
+   (§0d.6, his own ruling), and two overlapping PLUMES now blend twice where they cross. It is measured as
+   tens of pixels on the crowded snapshot panels and has never been judged by eye on a real board.
 
 ### 0g. The findings worth keeping — five rounds of owner reports, compressed
 
@@ -886,6 +1287,34 @@ instrument could fail.
 | `Cards/card_visual.gd` | `star_outline` and `_rig_outline` carry that bite as three points per corner (`corner_points`, the middle one the cell's bilinear corner so it shears with the rig) |
 | `Shaders/fire.gdshader` | `POLY` 16 → 24, `WEDGE_CANDIDATES` 4, and `wrap()` instead of an integer `%` per fetch |
 | `Tests/Visual/test_pixels.gd` | the real-card check compares CELL BY CELL at the FX cell's own centre and asserts ZERO disagreements; the two column readers it replaced are gone |
+
+**And then the JUGGLING REWORK, 2026-07-29 (§0d.6 — one instance per ball):**
+
+| file | what happened |
+|---|---|
+| `Shaders/fx_common.gdshaderinc` | **`fx_nearest_ball`, `fx_balls_near` and `fx_arc_ease_inv` DELETED** — the fragment-stage search, its guard box and the inverse the search needed. `fx_ball_of` (one ball, vertex stage) and `fx_cell_round` (whole-cell placement, and the lattice identity it rests on) added |
+| `Shaders/juggle.gdshader` | a `vertex()` that places this instance's ball; the fragment is a disc test plus the sphere shading and nothing else. `u_ball_fire` gone |
+| `Shaders/fire.gdshader` | a `vertex()` for `SHAPE_BALLS` only, with the plume's asymmetric box bias; the ball comes from the instance, so the search and the levels texture are gone. Every other shape is untouched — the `burning, FULL SCREEN` control moved 6.606 → 6.513 |
+| `UI/Fx/fx_request.gd` | `instances` / `instance_half` / `instance_bound` replace `min_half`. ⚠ `instance_bound` is the CULL bound, and forgetting it deletes most of the balls while looking 10x faster |
+| `UI/Fx/fx_attachment.gd` | `Effect` carries its `mesh` / `mat` / `multi` (a MultiMeshInstance2D has neither of the first two in the shape the call sites want) and `box_from` for the eased transition; `_make_quad` builds either node kind; `_size_quad` sizes ONE subject and writes `custom_aabb`; `_apply_static` writes the instance set |
+| `UI/Fx/fx_juggle.gd` | both quads declare instances, boxes and bounds; `_ball_instances` (sorted by level — the owner's overlap rule) and `_cell_box` added; **`fire_texture` deleted**; `u_height` / `u_sink` taken out of the plume's eased `live` |
+| `Tests/UI/test_fx_attachment.gd` | `test_per_ball_levels` reads the INSTANCE BUFFER instead of a texture, and pins two new contracts: the level ORDERING and the whole-cell instance box |
+| `Tests/Visual/fx_snapshot.gd` | reads `Effect.mat` rather than casting the node to `MeshInstance2D` |
+
+**And the CPU pass, 2026-07-30 (§0d.7):**
+
+| file | what happened |
+|---|---|
+| `UI/Fx/fx_attachment.gd` | `_push_live` sends only `u_time` and `u_phase` every frame; `_sent_rot` / `_sent_lag` gate the host pose and `Effect.pushed` / `Effect.vals` gate the eased set; `_apply_static` clears `pushed` (it can overwrite what the ease owns); `_cull_reach` replaces `_on_screen`'s per-frame loop; `_ember_origin` falls back to the style's height, which §0d.6 had quietly zeroed for balls |
+| `UI/Fx/fx_juggle.gd` | the instance sort breaks TIES ON THE INDEX — `sort_custom` is not stable, and equal-level balls were getting an arbitrary overlap order |
+| `Tests/Visual/fx_cost.gd` | **`_cpu_row` — the first direct measurement of `_push_live`, and the only row in this bench that prices CPU.** Read it as "what one frame's pushes cost", not as a frame time |
+
+**And the CARD FIRE levers, 2026-07-30 (§0d.9) — the last change of the pass:**
+
+| file | what happened |
+|---|---|
+| `Shaders/fire.gdshader` | **`cover_below` returns early when `deep`** — two lines, 1.27x, pixel-exact. A card's interior was paying the whole tap ladder to draw nothing |
+| `UI/Fx/fx_attachment.gd` | `_rot_tight` + `_size_quad` take the AABB instead of the circumscribed diagonal while the host is upright (§10's lever B, at last); `Effect.extent` makes a re-size a NO-OP when nothing moved, which a deforming card needs because `track_outline` calls `_size_quad` every frame; `physics_interpolation_mode = OFF` on the MultiMesh nodes (their transforms are identity for life — the shader places the instances) |
 
 ---
 
@@ -1395,23 +1824,26 @@ one. Said plainly on the export.
 ## 8. What is LEFT — the index; §0 is the text
 
 ⚠ **This section is deliberately a POINTER LIST.** It used to restate §0 and the two drifted; if a row
-here and §0 disagree, §0 wins. **Four groups: the one open task, the calls that are the owner's, safe
-housekeeping, and what is closed.**
+here and §0 disagree, §0 wins. **Four groups: what a restart would pick up, the calls that are the
+owner's, safe housekeeping, and what is closed.**
 
-### 8a. THE ONE OPEN ENGINEERING TASK
+### 8a. NO OPEN ENGINEERING TASK — what a restart would pick up
 
 | | Item |
 |---|---|
-| 🔴 **YOUR TASK** | **§0d.5 — JUGGLING PERFORMANCE, as a back-and-forth with the owner.** The layer is **~5.3 ms of the 10.8 ms worst window** on the box that ships, against a ~2 ms target for all FX; the plumes are 2.3x the balls. §0d.5 has the running order, §0d.2 the priced menu. **Two free levers first, then the playtest question that can end the task, then the look calls — his to make.** |
-| ⬜ **A debt inside that task** | **`min_half` has never been A/B'd on the Intel box**, and its "18/18 panels identical" evidence was produced by the broken diff tool (§0d.4) so it does not exist. ~10 minutes to re-earn both, and it is the foundation the next lever sits on. |
+| 🟢 **NOTHING IS OPEN** | FX performance is **PAUSED at the owner's call** (2026-07-30), not finished. The worst window went **12.07 → 5.82 ms of GPU** across §0d.6, §0d.7 and §0d.9. |
+| ⬜ **IF MORE BUDGET IS WANTED** | **§0d.10 is the one page**: today's numbers, five remaining levers priced with their risks, the ⛔ list of things that look like levers and are measured NOT to be, and the four traps in `fx_cost` itself. Read the ⛔ list first — it is the part that saves a day. |
+| ⚪ **A debt that DIED with its lever** | `min_half`'s missing A/B no longer matters: per-instance sizing replaced `min_half` outright in §0d.6, and the claim it lacked evidence for is now carried by `test_balls_ignore_their_hosts_rotation` plus a real `snapshot_diff`. |
 
 ### 8b. OWNER CALLS — nothing an agent should decide
 
 | | Item |
 |---|---|
-| ⬜ **`cover_taps` 4 → 2 on the card style** | Worth **1.24 ms** on the Intel box, four times what the exact mask cost (§0d.3). §0e is the argument against: a card flame is 7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art. **The biggest single number on the table, and a look decision.** |
+| ⬜ **`cover_taps` 4 → 2 on the card style** | Worth **0.98 ms**, re-measured after §0d.9 made every tap cheaper (it was 1.24 before). §0e is the argument against: a card flame is 7 FX pixels tall, so 2 taps is 3.5 px per tap and the fire stops hugging the art. **Still the biggest single number left, and it is a look decision.** Judge it on `00_cover_field` then `01_fire_ladder` DRESSED. |
+| ⬜ **`fire_card.height` (7 today)** | A FILL knob as well as an art one — the lit band is `height + sink` thick around the whole silhouette, so ~0.2 ms per art unit removed (§0f.5). |
+| ⬜ **The juggling OVERLAP look, never judged by eye** | §0d.6 changed overlap from nearest-centre to highest-level (his ruling), and two crossing PLUMES now blend twice. Measured as tens of pixels on the crowded panels; nobody has watched it on a real board (§0f.6). |
 | ⬜ **The retune, and the clobbered `fire_prop.tres`** | §0f. The `.tres` were MIGRATED, not tuned; `fire_prop` has been clobbered three times by the editor collision and §0g has the test for telling clobbering from tuning. **Ask before restoring anything.** |
-| ⬜ **Playtest (T15)** | FX_SHADER_PLAN §10, 17 steps — the last gate, and the only way to learn whether §6b's saturated window is reachable in play at all. **It is also the cheapest answer to §0d.5.** |
+| ⬜ **Playtest (T15)** | FX_SHADER_PLAN §10, 17 steps — the last gate. ⚠ Its old second purpose is spent: the owner has RULED that the saturated window is reachable (2026-07-30), so no playtest is needed to settle that. |
 
 ### 8c. HOUSEKEEPING — small, safe, nobody's decision
 
@@ -1428,8 +1860,10 @@ housekeeping, and what is closed.**
 |---|---|
 | ✅ **Fire, whole** | Owner 2026-07-29: *"with this we are done with fire effect changes."* The noise fire and its stack ratios (§0a/§0b), fire behind the art (§0c, accepted by eye), the warped corner (§0c.1, exact mask), the real-card test (§0c.2), the FX editor's real cards (§0c.4). |
 | ✅ **The mask IS the art, corners included** | §0c.5 — measured off the type frame's own alpha, exact under deformation, asserted at ZERO disagreeing cells. ⚠ Costs 16 % of a burning screen, and the cost is the uniform ARRAY rather than the wedge loop — both micro-optimisations tried measured worse, and `cover_taps` is where it would be bought back. |
-| ✅ **The Intel UHD measurement** | §0d.3. Worst window 10.8 ms; the noise-source A/B is a WASH; 6 taps unaffordable; **the two boxes are 5x–8x apart, so no GTX absolute transfers.** |
-| ✅ **`snapshot_diff.py`** | §0d.4 — it compared ALPHA only and is fixed. ⚠ The claims it once blessed were not re-earned; `min_half`'s is in §8a. |
+| ✅ **The Intel UHD measurement** | §0d.3 for the method; ⚠ **its ABSOLUTES are superseded — the worst window is 5.82 ms, not 10.8. §0d.10 has the current table.** Still true from it: the noise-source A/B is a WASH (three times now), and **the two boxes are 5x–8x apart, so no GTX absolute transfers.** |
+| ✅ **`snapshot_diff.py`** | §0d.4 — it compared ALPHA only and is fixed. |
+| ✅ **The juggling layer, and the CPU push** | §0d.6 and §0d.7. `fx_nearest_ball`, `fx_balls_near`, `fx_arc_ease_inv`, `u_ball_fire` and `FxJuggle.fire_texture` are all DELETED; the path no longer has to be invertible. ⚠ Do not reintroduce a per-fragment "which ball am I" search. |
+| ✅ **A ring/strip mesh for card fire** | Priced and REJECTED in §0d.10's ⛔ list — ~0.3 ms for a reflex-corner problem and a vertex budget, because §0d.9's two-line early-out already took the interior out of the expensive path. |
 | ✅ **`05f_ball_rotation`'s displacement** | A harness flake, reproduced on an unchanged build, and the claim now lives in an asserting check (§0d.1). |
 | ✅ **The hoop's sliced tendrils** | Gone with the arch, confirmed on `04_shapes` (§3). |
 | ✅ **The five rounds of owner reports** | The pixel size, the editor freeze, the tap banding, the flame's foot, the `height` jitter, fire-behind on balls, the corner chamfer — all in §0g with the measurement that found each. |
@@ -1491,11 +1925,15 @@ table) multiply — 4 cheap taps would approach the 2.17 floor.
 
 ## 10. The levers, ordered by win x safety — and the correction that produced this order
 
-⚠ **A AND THE TAP WORK HAVE SHIPPED; the rest of this table is still live.** A is `body_near`, in
-the shader since §6a and carried through the rewrite intact. B and C are unchanged and untaken. D
-and F are moot — there is no march left to shorten or unwarp. **E is the one to keep**: it is the
-only remaining answer to §8's corner chamfer if the mask is ever revisited, and it makes every tap
-cheaper, which multiplies with the tap count rather than adding to it.
+⚠ **A, B, C AND THE TAP WORK HAVE ALL SHIPPED; almost nothing in this table is live any more — §0d.10 is
+the current list.** A is `body_near`, in the shader since §6a and carried through the rewrite intact.
+**B shipped in §0d.9** (the circumscribed bound only while the host is really turned — and read there why
+the "resizing moves the lattice" objection against it was void). **C shipped as `min_half` in §0d and was
+then superseded by per-instance sizing in §0d.6.** D and F are moot — there is no march left to shorten or
+unwarp, and D's descendant (distance-to-edge on a ring mesh) is priced and rejected in §0d.10. **E is the one
+thing here still worth keeping**: it is the remaining answer to §8's corner chamfer if the mask is ever
+revisited, and it makes every tap cheaper, which multiplies with the tap count rather than adding to it.
+⚠ **E's cheaper cousin — the 20-point diagonal chamfer — is lever 2 of §0d.10.**
 
 ⚠ **An earlier edition of this section offered TWO options and implied that was the space.** It was
 not, and the framing was wrong: it only considered the MASK REPRESENTATION, which §6b shows is the
@@ -1511,8 +1949,10 @@ change at all**, and between them they are worth more than any redesign.
 | **E** | **BOX TEST + RADIAL SCALE.** Divide `q` by a smooth per-angle scale, then test `abs(q) <= h`. Fixes §7's corner chamfer EXACTLY (a scale field has no vertex to miss, and the rig's deformation IS a radial stretch). Costs about what RADII costs today. | fixes correctness, not speed | low |
 | **F** | **UNWARP ONCE, MARCH IN REST SPACE.** Every mask test becomes the two-comparison box: the whole 1.9x. ⚠ APPROXIMATION — world-down is not exactly down in rest space, so the march drifts across columns on a strongly warped card, and approximating the mask is what produced the two rejected builds. | 1.9x | **high** |
 
-**Recommended order: A, then B, re-measure §6b after each, and only then decide between D and E+C.**
-A and B are non-visual and together should be worth ~2.5x on the number that is 1.5x over budget.
+⚪ **The "recommended order: A, then B" this section used to end on is spent — A, B and C are all in.**
+What replaced it is §0d.10's priced list, and the honest summary of how this table aged is that its three
+non-visual levers together were worth less than the two lines of §0d.9's buried-fragment early-out, which
+nobody on this list thought to look for.
 
 ⚠ **Do NOT just raise `RADII`.** The numbers are in §7: it converges far too slowly on a sharp vertex
 to be worth the uniform bytes (32 → -2.32, 64 → -1.41, 128 → -0.56 art units).
@@ -1562,9 +2002,14 @@ Godot --path solatro --editor --quit-after 400 res://UI/Fx/Tools/fx_editor.tscn
 It opens the project, builds the scene, prints every script error to stdout and quits. A/B it by
 reverting the change and running it again — that is how the `@tool` chain was settled.
 
-**Last full run (2026-07-29, the OWNER'S INTEL UHD box, with everything in this file's §0 in): 28
-suites, exit 0, 1587 checks** — `FX ATTACHMENT: ALL 111`, `PIXELS: ALL 57`. The total COUNT varies run
-to run because BOARD FUZZ is randomised; what must hold is **28 suites and exit 0**.
+**Last full run (2026-07-30, the OWNER'S INTEL UHD box, with everything through §0d.9 in): 28 suites,
+1628 CHECKS PASSED.** The total COUNT varies run to run because BOARD FUZZ is randomised; what must hold
+is **28 suites and exit 0**.
+
+⚠ **`fx_cost.tscn` CANNOT TELL "CHEAP" FROM "NOT DRAWN", and §0d.6 lost half a day to exactly that** —
+an instanced build whose balls were being culled read 10x faster than the real thing and every row
+looked like a triumph. **Run `all_tests.tscn` (the PIXELS ball checks) or `fx_snapshot` BEFORE believing
+any speedup.** A number that improves more than the model predicts is a bug report, not a win.
 
 ⚠ **TWO RENDERING HARNESSES HANG AT RANDOM ON THIS BOX, AND NEITHER IS A FAILURE.** Measured
 2026-07-29 while A/B-ing §0d: `test_pixels.tscn` run STANDALONE printed all 37 checks and then never

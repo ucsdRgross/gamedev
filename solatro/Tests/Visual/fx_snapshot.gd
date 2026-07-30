@@ -663,7 +663,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 				" att=", att.rotation, " slot=", slot.rotation)
 		atts.append(att)
 		for id : StringName in att._fx:
-			var m := (att._fx[id].quad as MeshInstance2D).material as ShaderMaterial
+			var m : ShaderMaterial = att._fx[id].mat
 			print("  [", file_name, "/", case.label, "] zoom=", zoom, " ", id,
 					" u_phase=", m.get_shader_parameter("u_phase"),
 					" u_count=", m.get_shader_parameter("u_count"),

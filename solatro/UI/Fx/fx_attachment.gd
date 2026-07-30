@@ -55,7 +55,32 @@ const LAG_MAX := 12.0
 ## adding a stack never makes the established flames jump (owner ruling 16).
 class Effect:
 	var req : FxRequest
-	var quad : MeshInstance2D
+	## The drawn node: a MeshInstance2D for a single quad, a MultiMeshInstance2D for an instanced
+	## effect. Typed as the common base, and the two things every caller actually wants are held
+	## beside it — a MultiMeshInstance2D has no `mesh` or `material` of the shape the sites below
+	## expect, and re-deriving them per site is how the two paths would drift.
+	var quad : Node2D
+	var mesh : QuadMesh
+	var mat : ShaderMaterial
+	## The instance buffer, or null for a single quad. Its `instance_count` is the live subject count.
+	var multi : MultiMesh
+	## The instance box the effect is easing OUT of, or zero. `live` values are eased, so a ball
+	## shrinking toward a higher count is briefly bigger than its target and would clip against a box
+	## built for the target alone. The box is the componentwise MAX of the two ends for the duration —
+	## which is exactly their union, because the box grows monotonically with the radius and its centre
+	## bias does not ease at all (`u_height` and `u_sink` are static style values on a plume) — and it
+	## drops back to the target when the ease lands, so repeated stack changes cannot ratchet it up.
+	var box_from : Vector2 = Vector2.ZERO
+	## The quad size this effect currently HAS, so re-sizing it is a no-op when nothing moved. See the
+	## note in `_size_quad`: a deforming card runs that function every frame.
+	var extent : Vector2 = Vector2.ZERO
+	## This effect's eased values as of the last frame that computed them. Held rather than recomputed
+	## because the EMBER emitter needs them every frame while the shader only needs them while they are
+	## actually changing (see _push_live).
+	var vals : Dictionary[StringName, float] = {}
+	## Whether the settled (t == 1) values have been pushed. Turns the eased set from a per-frame upload
+	## into a one-per-transition one.
+	var pushed : bool = false
 	## The values the effect held when its target last changed — the FROM end of the ease.
 	var from : Dictionary[StringName, float] = {}
 	## Ease progress, 0 to 1. Starts at 1: the first sync applies its numbers immediately, since
@@ -118,6 +143,19 @@ var _phase : float = randf()
 var _lag : Vector2 = Vector2.ZERO
 var _lag_vel : Vector2 = Vector2.ZERO
 var _last_pos : Vector2 = Vector2.ZERO
+## The host pose the quads were last TOLD about, so a still host stops re-sending it (_push_live).
+## NAN so the first push always happens, whatever the host's real rotation is.
+var _sent_rot : float = NAN
+var _sent_lag : Vector2 = Vector2(NAN, NAN)
+## Whether the host is square enough to the world for its quads to take their AABB instead of the
+## circumscribed diagonal (_size_quad's lever B). Re-evaluated only when the pose changes.
+var _rot_tight : bool = true
+## How far from upright still counts as upright, in radians. Small enough that what a turned silhouette
+## pokes past its own axis-aligned bound stays inside FX_MARGIN.
+const TIGHT_ROT := 0.017
+## The largest quad this host owns, for the off-screen test — cached because that test ran a loop over
+## every effect every frame to recompute a number only `_size_quad` can change.
+var _cull_reach : float = 0.0
 
 func _ready() -> void:
 	# Idle until something asks for an effect: every host runs one of these, and most carry no
@@ -274,8 +312,8 @@ func track_outline(outline: PackedVector2Array) -> void:
 		# A request may override the host's shape (ball fire rides the BALLS, not the card it is on),
 		# and those quads read no silhouette at all.
 		if fx.req.shape >= 0 and fx.req.shape != int(Shape.RADII): continue
-		_push_poly(fx.quad.material as ShaderMaterial)
-		_size_quad(fx.quad, fx.req)
+		_push_poly(fx.mat)
+		_size_quad(fx)
 
 ## The silhouette a RADII quad's mask reads: the vertices, the wedge index and the live count, plus the
 ## tight body the fan and `body_near` are measured against. One function, because the four are ONE fact
@@ -550,7 +588,7 @@ func sync(requests: Array[FxRequest]) -> void:
 		if _fx.has(req.id): fx = _fx[req.id]
 		if not fx:
 			fx = Effect.new()
-			fx.quad = _make_quad(req)
+			_make_quad(fx, req)
 			_fx[req.id] = fx
 			add_child(fx.quad)
 		else:
@@ -558,9 +596,11 @@ func sync(requests: Array[FxRequest]) -> void:
 			fx.fade = -1.0
 			fx.from = _eased(fx)
 			fx.t = 0.0
+			# The box has to cover the ease it is about to start (Effect.box_from).
+			fx.box_from = fx.req.instance_half
 		fx.req = req
-		_size_quad(fx.quad, req)
-		_apply_static(fx.quad, req)
+		_size_quad(fx)
+		_apply_static(fx, req)
 		move_child(fx.quad, i)
 	for id : StringName in _fx:
 		# Reaching zero stacks FADES the effect out and only then releases its quad.
@@ -570,24 +610,46 @@ func sync(requests: Array[FxRequest]) -> void:
 	set_process(not _fx.is_empty())
 	if not _fx.is_empty(): _push_live(0.0)
 
-## The quad for one effect. A MeshInstance2D + QuadMesh, never a ColorRect: a Control dropped
+## The drawn node for one effect. A QuadMesh either way, never a ColorRect: a Control dropped
 ## into the host's Node2D subtree joins the GUI input pass and eats the mouse events card
 ## grabbing needs. QuadMesh is Node2D-native, is centred on its origin, takes its size directly,
 ## and cannot swallow input.
-func _make_quad(req: FxRequest) -> MeshInstance2D:
-	var quad := MeshInstance2D.new()
-	quad.name = String(req.id)
-	quad.mesh = QuadMesh.new()
-	var mat := ShaderMaterial.new()
+##
+## ⚠ AN INSTANCED REQUEST GETS A MultiMeshInstance2D, and the mesh then describes ONE SUBJECT rather
+## than the whole effect — one ball, not the pattern (FxRequest.instances). The shader's `vertex()`
+## places each instance; nothing here writes a transform, per frame or otherwise.
+func _make_quad(fx: Effect, req: FxRequest) -> void:
+	fx.mesh = QuadMesh.new()
+	fx.mat = ShaderMaterial.new()
 	# The SHARED Shader resource, never a duplicate: duplicating it recompiles the program for
 	# every card. The per-node state is the ShaderMaterial's uniform set, not the Shader.
-	mat.shader = req.shader
-	quad.material = mat
+	fx.mat.shader = req.shader
+	if req.instances.is_empty():
+		var quad := MeshInstance2D.new()
+		quad.mesh = fx.mesh
+		fx.quad = quad
+	else:
+		fx.multi = MultiMesh.new()
+		fx.multi.transform_format = MultiMesh.TRANSFORM_2D
+		# The index and the level ride here. There is deliberately no per-instance TRANSFORM: writing
+		# one per frame from GDScript for every ball on every host is the CPU cost this design exists
+		# to avoid, and the shader can place a ball from its index far more cheaply.
+		fx.multi.use_custom_data = true
+		fx.multi.mesh = fx.mesh
+		var multi := MultiMeshInstance2D.new()
+		multi.multimesh = fx.multi
+		# ⚠ NO ENGINE-SIDE PHYSICS INTERPOLATION. Godot warns *"MultiMesh interpolation is being triggered
+		# from outside physics process"* the moment an instance transform is written from `sync`, and
+		# interpolating these is meaningless anyway: every transform is IDENTITY for this effect's whole
+		# life, because the SHADER places each instance from the clock.
+		multi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		fx.quad = multi
+	fx.quad.name = String(req.id)
+	fx.quad.material = fx.mat
 	# The HOST's seed and direction, not this quad's: two burning cards side by side must not flicker
 	# in lockstep, and the two quads of ONE juggling host must agree exactly (a ball and its flame).
-	mat.set_shader_parameter(&"u_seed", _seed)
-	mat.set_shader_parameter(&"u_ball_dir", _ball_dir)
-	return quad
+	fx.mat.set_shader_parameter(&"u_seed", _seed)
+	fx.mat.set_shader_parameter(&"u_ball_dir", _ball_dir)
 
 ## Size the quad to bound the host AT EVERY ROTATION plus the effect's reach, or its edge clips.
 ## The quad stays world-aligned while the host turns INSIDE it, so a rotating host's bound is its
@@ -600,20 +662,61 @@ func _make_quad(req: FxRequest) -> MeshInstance2D:
 ## ⚠ A DEFORMED host is bounded by its LIVE reach, not by its authored box. The star rig stretches a
 ## card's corners ~5 art units past the 38x50 it is authored as, and a quad built for the rest pose
 ## clips the flames standing on the part that moved.
-func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
-	var bound := body
-	if rotates and req.rotates_with_host:
-		bound = Vector2.ONE * maxf(body.length(), _poly_max * 2.0)
-	# A request that declares its own CONTENT is sized from that instead of from body-plus-reach: the
-	# juggling pattern is much smaller than the box that rule builds around it, and this shader is
-	# fragment-bound (FxRequest.min_half).
-	var extent := bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
-	if req.min_half != Vector2.ZERO:
-		extent = req.min_half * 2.0 + Vector2.ONE * FX_MARGIN * 2.0
-	(quad.mesh as QuadMesh).size = extent
-	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
-	var mat := quad.material as ShaderMaterial
-	mat.set_shader_parameter(&"u_extent", extent)
+## ⚠ AN INSTANCED EFFECT IS SIZED TO ONE SUBJECT AND NOT TO THE HOST AT ALL — no body, no rotation
+## bound, no `FX_MARGIN`. The mesh is one ball's box, the shader places a copy of it at each ball, and
+## the host's bound is irrelevant because no instance is anywhere near the quad edge that used to
+## exist. That is the fill half of FX_HANDOFF §0d.6; `FxRequest.instance_half` is the contract.
+func _size_quad(fx: Effect) -> void:
+	var req := fx.req
+	var half := Vector2(maxf(req.instance_half.x, fx.box_from.x),
+			maxf(req.instance_half.y, fx.box_from.y))
+	var extent := half * 2.0
+	if req.instances.is_empty():
+		var bound := _poly_half * 2.0 if not _poly.is_empty() else body
+		# THE CIRCUMSCRIBED BOUND ONLY WHILE THE HOST IS ACTUALLY TURNED (FX_HANDOFF §10's lever B). A
+		# card CAN spin, but `anim_spin` is rare and `u_shape_rot` is ~0 the rest of the time — and the
+		# diagonal costs a 38x50 card 84.8² of quad against 56x68 of real bound, i.e. nearly twice the
+		# fill, on every burning card that is merely sitting there. Measured ceiling: 0.455 ms of the
+		# worst window.
+		#
+		# ⚠ THE OBJECTION THIS USED TO CARRY IS VOID. §6a rejected it because "resizing a live quad moves
+		# the FX pixel lattice" — true when the lattice was anchored on the quad's EDGE, and not true
+		# since it was anchored on the host's ORIGIN (fx_common's pixel-grid note). Nothing about the
+		# quad's size can move a cell now.
+		# ⚠ AND IT FALLS BACK THE INSTANT THE HOST TURNS, which is what keeps it exact rather than
+		# approximate: `_rot_tight` is re-evaluated whenever the pose changes, and a card mid-spin gets
+		# the same diagonal it always had. The threshold is small enough that the residue a barely-turned
+		# silhouette pokes past its own AABB (~0.4 art units at 1 degree) is inside `FX_MARGIN`.
+		if rotates and req.rotates_with_host and not _rot_tight:
+			bound = Vector2.ONE * maxf(body.length(), _poly_max * 2.0)
+		extent = bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
+	# ⚠ ROUNDED UP TO WHOLE ART UNITS AND WRITTEN ONLY WHEN IT CHANGES, and that guard is load-bearing
+	# now rather than tidy. `track_outline` calls this EVERY FRAME for a card whose rig is moving, and
+	# lever B above made the extent depend on the live silhouette — so without this, every deforming
+	# burning card rebuilt its QuadMesh and re-pushed `u_extent` every frame, which is exactly the
+	# per-frame CPU §0d.7 went and removed. ⚠ It is invisible in `fx_cost`, whose hosts call
+	# `measure_outline` once and never deform: the bench cannot show this regression, only the game can.
+	# Whole units also mean a rig's sub-unit wobble does not churn the mesh at all.
+	extent = extent.ceil()
+	if not extent.is_equal_approx(fx.extent):
+		fx.extent = extent
+		fx.mesh.size = extent
+		# UV maps across exactly the quad, so the shader needs the same number to recover art units.
+		fx.mat.set_shader_parameter(&"u_extent", extent)
+	# The off-screen margin, kept up to date HERE because this is the only place it can change.
+	# ⚠ AN INSTANCED EFFECT'S MESH IS ONE SUBJECT, NOT ITS FOOTPRINT — its instances reach the whole
+	# pattern — so its bound is the mesh plus the effect's reach. The margin only has to be generous.
+	var span := extent.length() if req.instances.is_empty() \
+			else extent.length() + req.reach * 2.0
+	_cull_reach = maxf(_cull_reach, span)
+	if fx.multi:
+		# WHERE THE INSTANCES CAN GO, for CULLING only (FxRequest.instance_bound). Without it Godot
+		# culls the whole item against a single mesh-sized box at the host's origin, because every
+		# instance transform is identity — which silently deletes most of the balls.
+		var bound := req.instance_bound + half
+		fx.multi.custom_aabb = AABB(Vector3(-bound.x, -bound.y, -1.0),
+				Vector3(bound.x * 2.0, bound.y * 2.0, 2.0))
+	var mat := fx.mat
 	# An effect that draws ON another effect is handed the PARTNER's PIXEL, so the ball-fire plume
 	# snaps on the lattice its ball was drawn on (FxRequest.partner_id).
 	#
@@ -631,8 +734,16 @@ func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 ## Write the STATIC half of an effect's uniforms: its style's ~35 art levers plus the host facts
 ## that never change. Called on creation and on style swap, never per frame — pushing the whole
 ## set every frame for every host is the cost the static/live split exists to avoid.
-func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
-	var mat := quad.material as ShaderMaterial
+func _apply_static(fx: Effect, req: FxRequest) -> void:
+	var mat := fx.mat
+	# THE INSTANCE SET, written here and never per frame: it holds each subject's INDEX and level, not
+	# its position, so it changes when the stack count does and not when the balls move.
+	if fx.multi:
+		fx.multi.instance_count = req.instances.size()
+		for i : int in req.instances.size():
+			# An identity transform on purpose — `vertex()` does the placing (see _make_quad).
+			fx.multi.set_instance_transform_2d(i, Transform2D.IDENTITY)
+			fx.multi.set_instance_custom_data(i, req.instances[i])
 	if req.style: req.style.apply(mat)
 	# A request may override the host's shape — that is how ball fire says "my mask is the balls, not
 	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
@@ -655,6 +766,12 @@ func _apply_static(quad: MeshInstance2D, req: FxRequest) -> void:
 	mat.set_shader_parameter(&"u_brightness", lit * settings().fx_intensity)
 	for key : StringName in req.snap:
 		mat.set_shader_parameter(key, req.snap[key])
+	# ⚠ THE EASED SET HAS TO BE RE-SENT AFTER THIS, and forgetting it would be a quiet bug rather than a
+	# loud one. `style.apply()` above writes the style's BASE value for names the live set also owns
+	# (`u_height` on a card's fire is both a style lever and a stack-scaled live value), so a restyle
+	# stamps the base over the eased value — and _push_live only re-sends the eased set while it is
+	# changing. Clearing this is what makes the next frame put the live values back.
+	fx.pushed = false
 
 ## How many embers a second one effect throws off. Scales with the count, under a PER-SOURCE
 ## ceiling from the style so one blazing card cannot consume the engine's global cap.
@@ -689,7 +806,14 @@ func _emit_embers(fx: Effect, scaled_delta: float, vals: Dictionary[StringName, 
 
 ## Where one ember is born, in the host's local art units.
 func _ember_origin(fx: Effect, vals: Dictionary[StringName, float], balls: bool) -> Vector2:
-	var height : float = vals.get(&"u_height", 0.0)
+	# ⚠ `u_height` IS EASED FOR A CARD'S FIRE AND STATIC FOR A PLUME, so the fallback is not defensive —
+	# it is where a ball effect's height actually lives. FxJuggle keeps height out of the plume's `live`
+	# so an easing value cannot disagree with the instance box built from it (FX_HANDOFF §0d.6), and
+	# reading only `vals` here silently gave every ball ember a height of ZERO: they were born ON the
+	# ball instead of scattered up its flame. Nothing catches that — embers are randomised, so
+	# `09_embers` differs run to run by design.
+	var fire := fx.req.style as FxFireStyle
+	var height : float = vals.get(&"u_height", fire.height if fire else 0.0)
 	if not balls:
 		return Vector2(randf_range(-body.x, body.x) * 0.5, -body.y * 0.5 - randf() * height)
 	var radius : float = vals.get(&"u_ball_radius", 0.0)
@@ -716,7 +840,7 @@ func _ember_origin(fx: Effect, vals: Dictionary[StringName, float], balls: bool)
 ## fx_intensity master knob is a PLAYER setting and must reach effects already on screen.
 func _restyle() -> void:
 	for id : StringName in _fx:
-		_apply_static(_fx[id].quad, _fx[id].req)
+		_apply_static(_fx[id], _fx[id].req)
 
 ## The effect's data-derived values at its current ease position. Every one of them is a float and
 ## rides the SAME ease as the count — including the count itself, which is why it is a float in
@@ -768,7 +892,9 @@ func _update_lag(delta: float) -> void:
 ##
 ## ⚠ GENEROUS BY DESIGN. The margin is the largest quad this host owns, at this host's own scale, so
 ## a quad whose centre is off screen while its flames are not still gets its uniforms. Being wrong in
-## this direction costs a few uploads; being wrong in the other freezes an effect in view.
+## this direction costs a few uploads; being wrong in the other freezes an effect in view. ⚠ `_cull_reach`
+## only ever GROWS for that reason — a host whose quads shrink keeps the older, larger margin, which is
+## the harmless direction and saves recomputing it.
 func _on_screen() -> bool:
 	# ⚠ NEVER CULL IN THE EDITOR — it FROZE THE TUNING TOOL (owner report 2026-07-29: *"card fire not
 	# animating in fx editor... juggling balls not animating either, just static"*). Both spaces this
@@ -782,15 +908,23 @@ func _on_screen() -> bool:
 	# There is nothing to save here either: this cull exists for a board of 78 hosts, and
 	# `fx_editor.tscn` has six.
 	if Engine.is_editor_hint(): return true
-	var reach := 0.0
-	for id : StringName in _fx:
-		reach = maxf(reach, (_fx[id].quad.mesh as QuadMesh).size.length())
-	var scaled := reach * maxf(global_scale.x, global_scale.y) * 0.5
+	var scaled := _cull_reach * maxf(global_scale.x, global_scale.y) * 0.5
 	var at := get_global_transform_with_canvas().origin
 	return get_viewport_rect().grow(scaled).has_point(at)
 
 ## Push the handful of genuinely per-frame uniforms, advance each effect's ease, and release any
 ## effect whose fade has finished.
+##
+## ⚠ "THE HANDFUL" USED TO BE ~15 UPLOADS PER QUAD PER FRAME, AND THAT WAS THE BOARD'S BIGGEST FX COST
+## ONCE THE SHADERS STOPPED BEING THE BOTTLENECK. Measured on the owner's Intel UHD by `fx_cost`'s
+## `_push_live, FULL SCREEN` row: **4.21 ms per frame for 78 hosts / 234 quads** — more than double the
+## whole juggling layer's GPU time after FX_HANDOFF §0d.6. The GPU timer cannot see any of it.
+##
+## Only TWO of those uploads are genuinely per-frame — the clock and the phase. Everything else
+## describes a host pose or an eased transition, and on a settled board neither changes at all, so both
+## are sent on CHANGE instead: `_sent_rot` / `_sent_lag` for the pose, `Effect.pushed` for the eased set.
+## ⚠ The values are still COMPUTED where the emitter needs them (`Effect.vals`); what stops is the
+## upload, and `_apply_static` clears `pushed` because it can overwrite what the ease owns.
 func _push_live(scaled_delta: float) -> void:
 	var parent := get_parent() as Node2D
 	if not parent: return
@@ -799,6 +933,22 @@ func _push_live(scaled_delta: float) -> void:
 	var secs := transition_secs()
 	var step : float = 1.0 if secs <= 0.0 else scaled_delta / secs
 	var lag_norm := _lag / maxf(body.x, 1.0)
+	# HAS THE HOST'S POSE CHANGED AT ALL? `u_shape_rot` and `u_lag` are per-frame pushes that describe
+	# the HOST, and a host that is not turning and not moving hands the shader the same two numbers
+	# every frame for its whole life. Comparing them is two floats against ~4 uniform uploads per quad.
+	# ⚠ A card is never PERFECTLY still — delta_floating_anim bobs it — but `_update_lag`'s deadzone
+	# already snaps small velocities to zero, so `_lag` really does sit at exactly zero while it bobs.
+	var moved := not is_equal_approx(rot, _sent_rot) or not lag_norm.is_equal_approx(_sent_lag)
+	if moved:
+		_sent_rot = rot
+		_sent_lag = lag_norm
+		# Crossing into or out of "upright" changes what bound the quads are entitled to (lever B in
+		# _size_quad). Only the CROSSING re-sizes anything, so a spinning card pays two resizes for the
+		# whole spin rather than one per frame.
+		var tight := absf(rot) < TIGHT_ROT
+		if tight != _rot_tight:
+			_rot_tight = tight
+			for id : StringName in _fx: _size_quad(_fx[id])
 	# Advance the shared phase ONCE, from the longest period any effect declares — the balls quad
 	# and the ball-fire quad declare the same one, and reading a single value is what guarantees
 	# they agree on every frame rather than merely starting together.
@@ -820,17 +970,32 @@ func _push_live(scaled_delta: float) -> void:
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
 		fx.t = minf(fx.t + step, 1.0)
-		var mat := fx.quad.material as ShaderMaterial
+		# The ease has landed, so the box no longer has to span both of its ends. Done here rather than
+		# left alone because holding the larger box would ratchet it up across repeated stack changes.
+		if fx.t >= 1.0 and fx.box_from != Vector2.ZERO:
+			fx.box_from = Vector2.ZERO
+			_size_quad(fx)
+		var mat := fx.mat
+		# THE ONLY TRULY PER-FRAME UNIFORMS. Everything else below is pushed when it CHANGES, which on a
+		# settled board is never — see the note above _push_live.
 		mat.set_shader_parameter(&"u_time", _time)
-		mat.set_shader_parameter(&"u_shape_rot", rot)
-		mat.set_shader_parameter(&"u_lag", lag_norm)
 		if fx.req.phase_period > 0.0: mat.set_shader_parameter(&"u_phase", _phase)
+		if moved:
+			mat.set_shader_parameter(&"u_shape_rot", rot)
+			mat.set_shader_parameter(&"u_lag", lag_norm)
 		# Eased FIRST, then emitted from: a ball ember has to be born on the ball this frame DRAWS,
 		# and mid-transition the eased geometry is not the request's target geometry.
-		var vals := _eased(fx)
-		for key : StringName in vals:
-			mat.set_shader_parameter(key, vals[key])
-		_emit_embers(fx, scaled_delta, vals)
+		#
+		# ⚠ THE EASED SET IS COMPUTED AND PUSHED ONLY WHILE THE EASE IS RUNNING, and `fx.vals` is what
+		# makes that safe: the emitter below needs this frame's geometry every frame, so the values are
+		# CACHED rather than skipped. `fx.t` lands on exactly 1.0 on the frame the transition ends, and
+		# `pushed` is what makes that final frame push before the pushing stops.
+		if fx.t < 1.0 or not fx.pushed:
+			fx.vals = _eased(fx)
+			fx.pushed = fx.t >= 1.0
+			for key : StringName in fx.vals:
+				mat.set_shader_parameter(key, fx.vals[key])
+		_emit_embers(fx, scaled_delta, fx.vals)
 		if fx.fade >= 0.0:
 			fx.fade = minf(fx.fade + step, 1.0)
 			var base : float = fx.req.style.opacity if fx.req.style else 1.0

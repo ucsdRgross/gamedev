@@ -35,11 +35,11 @@ ARCHITECTURE_REVIEW, the latter wins.
 
 | Path | What |
 |---|---|
-| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at_ladder` / `fx_ball_pos_ladder` / `fx_nearest_ball` / the arc ladder). Included by both shaders so the maths cannot exist twice. |
+| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at_ladder` / `fx_ball_pos_ladder` / `fx_ball_of` / the arc ladder), plus `fx_cell_round` — the whole-cell placement an INSTANCED effect needs to stay on its host's lattice. Included by both shaders so the maths cannot exist twice. ⚠ **`fx_nearest_ball` and `fx_balls_near` are GONE (2026-07-29): the juggling layer is ONE INSTANCE PER BALL and a fragment's ball arrives in `INSTANCE_CUSTOM`, so nothing searches for it. FX_HANDOFF §0d.6 is the live description.** |
 | `Shaders/fire.gdshader` | Fire. ONE path for every host: a COVER FIELD sampled from the art's MASK, carved by two layers of scrolling noise (2026-07-29 — the tendril/comb/ogee/onion build is retired). `mask_level()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
-| `Shaders/juggle.gdshader` | The juggled balls. |
+| `Shaders/juggle.gdshader` | The juggled balls — ONE INSTANCE PER BALL on a `MultiMeshInstance2D`, placed by `vertex()`. The fragment is a disc test and the sphere shading, nothing more. |
 | `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`). Colours point at `Assets/Palette/` ramps (§4i). **The single place FX tuning lives** (owner ruling 8). |
-| `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads, owns the clock, the per-host randomness, the lag spring. |
+| `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads (a `MeshInstance2D`, or a `MultiMeshInstance2D` for an instanced effect), owns the clock, the per-host randomness, the lag spring. ⚠ `_push_live` sends only the two genuinely per-frame uniforms; everything else goes on CHANGE (FX_HANDOFF §0d.7 — it was 4.2 ms per frame on a full board). |
 | `UI/Fx/fx_fire.gd`, `fx_juggle.gd` | Stacks → uniforms. `FxJuggle.geometry()` is the ONE computation both ball quads read. |
 | `UI/Fx/fx_style.gd`, `fx_request.gd` | The lever resource, and the request a status hands to an attachment. |
 | `UI/Fx/particle_engine.gd`, `particle_spec.gd` | The game's ONLY particle path (embers are its first client). |
@@ -145,9 +145,16 @@ actually cost time.
 
 ## 6. Open work
 
-🔴 **THE FIRE EFFECT IS CLOSED (owner, 2026-07-29: *"with this we are done with fire effect changes"*).
-THE ONE OPEN ENGINEERING TASK IS JUGGLING PERFORMANCE, and its brief is FX_HANDOFF §0d.5.** Everything
-else below is either an owner call, art tuning, or a closed record kept for its measurement.
+🟢 **THE FIRE EFFECT IS CLOSED (owner, 2026-07-29: *"with this we are done with fire effect changes"*)
+AND FX PERFORMANCE IS PAUSED, NOT FINISHED (owner, 2026-07-30: *"sure lets stop here then"*). THERE IS NO
+OPEN ENGINEERING TASK.** The 2026-07-29/30 pass took the worst window the game can build from **12.07 to
+5.82 ms of GPU** — one instance per ball, the CPU uniform push, and two card fire levers.
+
+⬜ **TO SPEND MORE BUDGET, GO STRAIGHT TO FX_HANDOFF §0d.10.** It is one page: today's measured numbers,
+every remaining lever with an honest price and risk, **the list of things that look like levers and are
+measured NOT to be** (do not re-tread those — this pass did), and the four traps in the bench itself.
+
+Everything below is either an owner call, art tuning, or a closed record kept for its measurement.
 
 Ordered roughly by what a session should pick up first.
 
@@ -281,12 +288,14 @@ that instrument reported two rejected builds as successes.
   rotations, no longer jagged"*). `inner_alpha = 0` cuts the flame at the host's mask, and the cut is
   tested at the **UNQUANTIZED** position — which is what stopped the seam being a 2.5-screen-pixel
   staircase against a `Polygon2D`'s screen-pixel edge. Cards AND sprite props. FX_HANDOFF §0c.
-- **🔴 THE ONE OPEN FX TASK IS JUGGLING PERFORMANCE, and it is a conversation with the owner** (*"Last
-  task for next agent will be back and forth with user to make juggling effect as performant as
-  possible"*). On the box that ships (Intel UHD) the juggling layer is **~5.3 ms of a 10.8 ms worst
-  window** against a ~2 ms target for all FX, and the PLUMES are 2.3x the balls. **The brief, the priced
-  menu and the running order are FX_HANDOFF §0d.5 — read it before writing anything.** ⚠ Two levers are
-  free and change no pixel; everything else is a look or a feature call that is his.
+- **✅ JUGGLING PERFORMANCE IS DONE, AND SO IS THE FIRST HALF OF CARD FIRE.** It was *"~5.3 ms of a 10.8 ms
+  worst window"* against a ~2 ms target; the whole window is **5.82 ms of GPU** now and juggling is ~1.2 of
+  it. What did it: **one instance per ball** (FX_HANDOFF §0d.6 — the closed-form nearest-ball search is
+  deleted), **the CPU uniform push** (§0d.7 — 4.21 → ~1.3 ms/frame, and nothing had ever measured it), and
+  **two card fire levers** (§0d.9 — the first is two lines). ⚠ **Not one of the nine levers the old priced
+  menu offered was what worked**; the cost model had two wrong factors and the menu only ever moved one.
+  ⬜ **Still open, and both are the owner's LOOK calls, not engineering: `cover_taps` 4 → 2 on `fire_card`
+  (0.98 ms) and `fire_card.height` (§0f.5).**
 - **⚠ `fire_prop.tres` KEEPS GETTING CLOBBERED** by the editor whenever an agent edits
   `fx_fire_style.gd` with the FX editor open — three times in one pass. `git diff Shaders/Styles/`
   before believing anything, and see FX_HANDOFF §0g for how to tell clobbering from real tuning.
@@ -382,7 +391,13 @@ Nothing here is secretly broken — each is understood, and each is either accep
    `fire.gdshader`). The FX ATTACHMENT suite reads the constants out of the shader source and asserts
    the mapping — keep that test alive if you add a shape. It also asserts that `u_mode` never comes
    BACK: one code path for every host is the point of the mask model.
-8. **✅ MOSTLY FIXED 2026-07-31 — ball fire cost 28.5 ms per frame for 20 juggling cards** (measured
+8. **✅ CLOSED 2026-07-29/30 — the juggling layer is now ~1.7 ms of the worst window and the search is
+   DELETED.** ⚠ **Everything below this line is the history of an intermediate build; the live account is
+   FX_HANDOFF §0d.6 (one instance per ball) and §0d.7 (the CPU push).** What finally did it was neither
+   of the two levers described below: the layer's cost was *guard-box area x one nearest-ball search*,
+   and instancing removed both factors at once. Measured on the Intel UHD: `juggle both x20`
+   1.822 → 0.220, the juggling half of a full window 5.46 → ~1.7, and `_push_live` 4.21 → 1.14.
+   Original report — **ball fire cost 28.5 ms per frame for 20 juggling cards** (measured
    2026-07-30, integrated graphics). It was **pre-existing**: the shipped contour build measured
    26.6 ms on the same bench, so the mask model added ~2 ms to an already-broken number rather than
    causing it. The cost was `fx_nearest_ball` — `O(arcs²)` in `sqrt`-carrying arc weights, none of

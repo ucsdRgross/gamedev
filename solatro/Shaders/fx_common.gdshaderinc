@@ -96,6 +96,27 @@ vec2 fx_pixel_snap(vec2 p, float pixel) {
 	return vec2(x, y);
 }
 
+// THE NEAREST CELL *BOUNDARY* CORNER — a whole number of cells from the host's origin on both axes.
+//
+// This is what lets an INSTANCED effect keep the host's own lattice. An instance quad is placed by
+// vertex() at its subject's position, and the fragment then recovers its host-space point as
+// `fx_pixel_snap(fx_local_raw(UV, extent) + origin)`. That is exactly `fx_local` of the true
+// host-space position — the identity `fx_pixel_snap(fx_local_raw(uv, e), c) == fx_local(uv, e, c)`,
+// which holds because fx_local quantizes BEFORE its y flip and this snap undoes the flip to match —
+// but ONLY while `origin` is a whole number of cells. Add a half-cell offset instead and every
+// instance draws on a lattice shifted half a pixel from its host's, which is the seam this whole
+// file exists to prevent.
+//
+// ⚠ IT IS ALSO WHAT MAKES THE INSTANCE QUAD SAFE TO CLIP AGAINST. Cell centres sit at
+// `(k + 0.5) * cell`, so cell BOUNDARIES sit at whole multiples — and a quad centred on one of those
+// with a whole number of cells of half-extent has its edges on boundaries too. Every cell it touches
+// is therefore covered in FULL. A quad centred on a cell CENTRE would cut its edge cells in half and
+// draw a partial chunky pixel, which reads as a torn edge rather than as pixel art.
+vec2 fx_cell_round(vec2 p, float pixel) {
+	float cell = max(pixel, 0.01);
+	return round(p / cell) * cell;
+}
+
 
 // --- noise ------------------------------------------------------------------------------------
 float fx_hash11(float n) { return fract(sin(n * 127.1) * 43758.5453); }
@@ -144,8 +165,12 @@ float fx_bayer(vec2 frag) {
 //   f      = share of the cycle spent on the tall arc. 0.5 is even; > 0.5 gives longer hang time,
 //            which is what real juggling looks like (the throw takes longer than the carry).
 //   h_bot  = the "flat" return — a small upward arc, not a straight line.
-// Both halves are MONOTONIC in x, which is what makes fx_nearest_ball's closed-form lookup
-// invertible; do not add a timing ease inside a half without checking it stays invertible.
+// ✅ THE PATH NO LONGER HAS TO BE INVERTIBLE, AND THAT CONSTRAINT IS WORTH KNOWING IS GONE. Both
+// halves used to have to be MONOTONIC in x so `fx_nearest_ball` could recover a ball index from a
+// fragment's x in closed form, and "do not add a timing ease inside a half without checking it stays
+// invertible" was a real rule on anyone tuning this. Instancing answers "which ball" from
+// INSTANCE_CUSTOM instead (FX_HANDOFF §0d.6), so the path is now free to be any function of time at
+// all — an ease inside a half, a non-monotonic flourish, a hold at the apex.
 // ONE definition, included by juggle.gdshader AND fire.gdshader, so burning balls physically
 // cannot drift off their balls — two copies of this maths is the bug the include exists to
 // prevent.
@@ -154,21 +179,17 @@ float fx_bayer(vec2 frag) {
 // motion). Above 1 the ball covers the ends fast and crawls through the apex — decelerating into
 // the top of the throw and accelerating out of it, which is what a thrown ball does.
 //
-// The curve is |2a-1|^g mirrored about the apex, chosen because it is EXACTLY INVERTIBLE
-// (fx_arc_ease_inv, exponent 1/g). That matters more than the exact curve: fx_nearest_ball recovers
-// a ball index from a fragment's x in closed form, which needs this mapping inverted analytically.
+// The curve is |2a-1|^g mirrored about the apex. ⚠ It was chosen because it is EXACTLY INVERTIBLE —
+// there was a matching `fx_arc_ease_inv` at exponent 1/g, and the nearest-ball search needed this
+// mapping inverted analytically to turn a fragment's x back into a ball index. **That inverse is
+// deleted and the requirement with it** (FX_HANDOFF §0d.6), so this curve is now a free look choice
+// rather than the only shape that fit. It is kept because it reads correctly, not because it must be.
 // The carry (return arc) is deliberately NOT warped — nothing is falling there, it is a hand
 // moving a ball back, and warping it made the loop pause twice per cycle.
 float fx_arc_ease(float a, float g) {
 	if (g <= 1.0) return a;
 	float d = 2.0 * a - 1.0;                         // -1 .. 1, zero at the apex
 	return 0.5 + 0.5 * sign(d) * pow(abs(d), g);
-}
-
-float fx_arc_ease_inv(float e, float g) {
-	if (g <= 1.0) return e;
-	float d = 2.0 * e - 1.0;
-	return 0.5 + 0.5 * sign(d) * pow(abs(d), 1.0 / g);
 }
 
 // --- the arc ladder ---------------------------------------------------------------------------
@@ -289,109 +310,48 @@ vec2 fx_ball_pos_ladder(float i, float n, float phase, float span, float h_top, 
 	return q;
 }
 
-// ⚠ THERE IS DELIBERATELY NO LADDER-FREE `fx_ball_pos` ANY MORE (2026-07-29). It existed so a
-// caller with no ladder to hand could ask for one ball's position, and BOTH shaders called it
-// exactly once per fragment — to re-derive the centre of the ball `fx_nearest_ball` had just
-// positioned. That is a second full `fx_arc_ladder` (8 `sqrt` plus a normalizing pass) and a second
-// walk, per fragment, on both juggling quads, for a number the lookup already had. The lookup
-// returns it now (`out vec2 pos`), and the convenience wrapper is gone so it cannot come back.
-
-// IS THIS FRAGMENT ANYWHERE NEAR THE PATTERN AT ALL? The whole loop lives in a box: x within half a
-// span plus a ball, y between the top of the tallest arc and the bottom of the carry (art y is
-// negative upward, and every arc starts and ends at y = 0).
+// ONE BALL'S POSITION, LADDER AND ALL — the VERTEX-stage entry point of the instanced juggling
+// layer, and the only place either shader asks where a ball is.
 //
-// The quads are far bigger than that box — a card's ball quad is ~112 art units across for a ~33
-// unit pattern, because a quad is sized as the host's body plus the effect's reach on EVERY side —
-// so most of a ball quad's fragments are empty space between the pattern and the quad edge, and
-// every one of them used to pay for the full closed-form lookup. This is the same shape of saving as
-// fire.gdshader's "guard the noise" branch (§4g: the single biggest one in that shader).
+// ⚠ A LADDER-FREE WRAPPER LIKE THIS WAS DELETED ON 2026-07-29 AND THIS IS NOT A REGRESSION — read
+// this before "fixing" it back. That one was called once per FRAGMENT by both shaders, to re-derive a
+// centre `fx_nearest_ball` had already computed: a second full `fx_arc_ladder` (8 `sqrt` plus a
+// normalizing pass) and a second walk, per fragment, for a number the caller already held. It was
+// deleted so it could not come back to the FRAGMENT stage, and it has not.
 //
-// `margin` is what the caller draws BEYOND a ball: 0 for the balls themselves, a flame's height for
-// the plumes riding them.
-bool fx_balls_near(vec2 p, float margin, float span, float h_top, float radius) {
-	float reach = radius + margin;
-	return abs(p.x) <= span * 0.5 + reach && p.y <= reach && p.y >= -(h_top + reach);
-}
-
-// Squared distance from `p` to the nearest ball, with that ball's index in `id` and the fire level
-// it carries in `level`.
-//
-// Ball counts are uncapped (owner ruling 5), and a shader loop always needs a constant bound — so
-// there is no loop over the count. Both arcs are monotonic in x, so from a fragment's x you can
-// RECOVER the cycle position that would put a ball there (one per arc), convert it to a
-// real-valued index, and the only balls that can possibly cover this fragment are the two
-// bracketing integers. Two arcs x two candidates = FOUR evaluations, O(1) at any count including
-// 500 — which is also what lets fire mark INDIVIDUAL balls: the index falls out of the lookup.
-//
-// `n` may be fractional (a stack count mid-transition), so indices are wrapped into
-// [0, ceil(n)) — without that the newest ball ghosts at the seam.
-//
-// ⚠ `lit_only` IS THE FIX FOR "a lit ball's plume disappears and comes back" (owner report,
-// FX_HANDOFF §2). A plume is drawn high above its ball, and up there the NEAREST ball can easily be a
-// different one — so fire, which resolves one ball per fragment and marches with it, kept picking an
-// unlit neighbour and drawing nothing at all where a plume belonged. With `lit_only` an unlit
-// candidate is simply skipped, and because the candidates come from the fragment's OWN column (the
-// arc inversion at this x), the ball whose plume this is stays in the set. `levels` is the per-ball
-// fire texture — one texel per ball, r = its own level — and it is NEVER sampled while `lit_only` is
-// 0, which is what lets juggle.gdshader pass a texture it does not have.
-//
-// What is lost is occlusion: an unlit ball no longer hides a lit one's plume passing behind it. That
-// is the trade the owner pre-ruled (§2) — an unlit ball is dark because it emits nothing, and the
-// occlusion it bought was costing real plumes.
-//
-// ⚠ `pos` IS THE WINNING BALL'S CENTRE, AND RETURNING IT IS A FREE PERFORMANCE WIN (FX_HANDOFF
-// §1b.1's hoist, finished 2026-07-29). This function already evaluates `fx_ball_pos_ladder` for
-// every candidate — the winner's value was simply thrown away, and both call sites then re-derived
-// it with `fx_ball_pos`, which BUILDS A WHOLE SECOND ARC LADDER (8 `sqrt` plus a normalizing pass)
-// and walks it again, per fragment, on both juggling quads. Same function, same arguments, same
-// bits; one evaluation instead of two. ⚠ It is UNSNAPPED — the caller owns the snap, because the
-// two quads snap on DIFFERENT lattices (fx_pixel_snap).
-float fx_nearest_ball(vec2 p, float n, float phase, float span, float h_top, float h_bot,
-		float f, float g, float dir, float arcs, sampler2D levels, int lit_only,
-		out float id, out float level, out vec2 pos) {
-	float count = max(ceil(n), 1.0);
+// This is the vertex stage, where the arithmetic is the opposite shape. One instance is one ball, so
+// the index arrives in INSTANCE_CUSTOM and the position is wanted exactly ONCE per vertex — four
+// evaluations per ball per frame, against the hundreds of thousands of fragments the closed-form
+// nearest-ball search used to run over. There is no lookup left to piggyback on, because there is no
+// lookup: knowing WHICH ball a fragment belongs to is what instancing answers for free, and that was
+// the entire cost of this layer (FX_HANDOFF §0d.5).
+vec2 fx_ball_of(float i, float n, float phase, float span, float h_top, float h_bot,
+		float f, float g, float dir, float arcs) {
 	float A = max(arcs, 2.0);
-	float best = 1e9;
-	id = 0.0;
-	level = 0.0;
-	pos = vec2(1e9);
-	// THE HOIST: one ladder for every arc and every candidate below (fx_arc_ladder).
 	float start[FX_MAX_ARCS];
 	float share[FX_MAX_ARCS];
 	fx_arc_ladder(A, h_top, h_bot, f, start, share);
-	// Still NO loop over the ball count — the work is set by the ARC LADDER, which is bounded by
-	// FX_MAX_ARCS: arcs x 2 directions x 2 bracketing integers. Two arcs is 8 evaluations, the
-	// eight-arc ceiling is 32, and 5 balls cost exactly what 500 do either way.
-	for (int arc = 0; arc < FX_MAX_ARCS; arc++) {
-		if (float(arc) >= A) break;
-		float j = float(arc);
-		float sweep = (mod(j, 2.0) < 1.0) ? 1.0 : -1.0;
-		// ONE direction group: every ball on a host now travels that host's `dir` (fx_ball_dir). The
-		// second group this loop used to run existed for the per-ball mirror and is gone with it,
-		// which also halves the evaluations — 8 arcs is 16 now, not 32.
-		float px = p.x * dir * sweep;
-		// Clamp rather than reject: a fragment just past the end of the span is still inside the
-		// endpoint ball's radius, and clamping is what keeps the caps of the pattern drawn.
-		float ax = clamp(0.5 - px / max(span, 1e-4), 0.0, 1.0);
-		// x gives the position along the arc; the gravity ease turns that back into a TIME, which is
-		// what the index is spaced in. Every arc is eased now, so every arc inverts the same way —
-		// still monotonic, so the two bracketing integers are still the two nearest on this arc.
-		float at = fx_arc_ease_inv(ax, g);
-		float m = (start[arc] + at * share[arc] - phase) * n;
-		for (int k = 0; k < 2; k++) {                // floor and ceil — a fixed 2, not a cap
-			float i = mod(floor(m) + float(k), count);
-			// An unlit candidate is not a candidate at all when the caller asked for lit balls only.
-			float lvl = 0.0;
-			if (lit_only == 1) {
-				lvl = texelFetch(levels, ivec2(int(i), 0), 0).r;
-				if (lvl <= 0.0) continue;
-			}
-			vec2 at = fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, A, start,
-					share);
-			vec2 d = p - at;
-			float dd = dot(d, d);
-			if (dd < best) { best = dd; id = i; level = lvl; pos = at; }
-		}
-	}
-	return best;
+	return fx_ball_pos_ladder(i, n, phase, span, h_top, h_bot, g, dir, A, start, share);
 }
+
+// ⚠ `fx_balls_near` AND `fx_nearest_ball` ARE GONE, AND THE WHOLE POINT IS THAT NOTHING REPLACED
+// THEM (2026-07-29 — FX_HANDOFF §0d.6). They were the fragment stage answering "which ball, if any,
+// am I part of": one box test to reject the empty majority of a pattern-sized quad, then a
+// closed-form inversion of the arc ladder — 8 `sqrt`, then per arc a `pow` and two candidate
+// positions each carrying another `pow` and a `sin` — for every fragment that survived the box.
+//
+// **That question is what INSTANCING answers for nothing.** One instance per ball means the index
+// arrives in INSTANCE_CUSTOM, the position is computed once per vertex (`fx_ball_of`), and a
+// fragment's ball is simply the instance it belongs to. Fitting the published measurements
+// (FX_HANDOFF §0d.5) put the cost of this layer at guard-box area x cost of one of these calls, to
+// within 4 % on both quads — so removing the call and shrinking the area from the pattern's box to
+// each ball's own box attacks both factors of the only product that mattered.
+//
+// What went with them, and none of it is a loss:
+//  * `lit_only` and the `u_ball_fire` LEVELS TEXTURE. A plume instance exists only for a ball that is
+//    actually alight and carries its own level in INSTANCE_CUSTOM.y, so the bug the flag fixed
+//    ("a lit ball's plume disappears and comes back", §2) cannot be expressed any more: no fragment
+//    ever resolves a ball other than its own, lit or not.
+//  * The nearest-ball TIE-BREAK. Overlapping balls used to be resolved by distance; they are resolved
+//    by DRAW ORDER now, and FxJuggle sorts the instances so the highest-level ball draws last
+//    (owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*).

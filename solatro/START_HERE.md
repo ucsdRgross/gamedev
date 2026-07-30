@@ -12,7 +12,7 @@ and fold/delete any temporary plan docs (see "Doc hygiene" below).**
 |---|---|
 | [START_HERE.md](START_HERE.md) | This file — rules, workflow, learnings. |
 | [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, palette §4i, undo §5, memory §6, testing §7, owner rulings §8). |
-| [FX_HANDOFF.md](FX_HANDOFF.md) | **LIVE handoff (2026-07-29): the FIRE effect is CLOSED by the owner; the one open task is JUGGLING PERFORMANCE, and it is a back-and-forth with him. Start at its §0d.5.** |
+| [FX_HANDOFF.md](FX_HANDOFF.md) | **LIVE handoff (2026-07-30): the FIRE effect is CLOSED and FX PERFORMANCE IS PAUSED, not finished — there is NO open engineering task.** The 2026-07-29/30 pass took the worst window the game can build from **12.07 → 5.82 ms of GPU**. ⬜ **To spend more budget, start at its §0d.10**: today's numbers, every remaining lever priced, and the list of things that LOOK like levers and are measured not to be. ⬜ Two LOOK calls are waiting on the owner (§0f.5). |
 | [VFX.md](VFX.md) | **Visual effects: read FIRST for any fire / juggling / prop-art / FX-shader work.** The map, the runbook, the open backlog and the known bugs. (The rules themselves live in ARCHITECTURE_REVIEW §4g/§4h; VFX.md points at them.) |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no z_index). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps on this machine. READ BEFORE DEBUGGING A "HANGING" TEST. |

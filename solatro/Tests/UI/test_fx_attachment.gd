@@ -319,17 +319,41 @@ func test_lit_balls_are_the_ember_sources() -> void:
 func test_per_ball_levels() -> void:
 	behavior_section("PER-BALL FIRE LEVELS")
 	var style := StatusJuggling.BALL_FIRE_STYLE
-	check(FxJuggle.fire_texture(3, PackedInt32Array([0, 0, 0]), style) == null,
-			"no lit ball produces NO texture, so a burning card's balls stay dark")
-	var tex := FxJuggle.fire_texture(3, PackedInt32Array([1, 0, 20]), style)
-	check(tex != null and tex.get_width() == 3, "one texel per ball",
-			str(tex.get_width() if tex else -1))
-	var img := tex.get_image()
-	check(is_equal_approx(img.get_pixel(1, 0).r, 0.0), "an unlit ball reads zero")
-	check(img.get_pixel(2, 0).r > img.get_pixel(0, 0).r,
-			"and each lit ball carries its OWN level, not a shared one")
-	check(is_equal_approx(img.get_pixel(0, 0).r, FxFire.level(1, style)),
+	var juggle := StatusJuggling.JUGGLE_STYLE
+	check(FxJuggle.requests(3, PackedInt32Array([0, 0, 0]), juggle, style).size() == 1,
+			"no lit ball produces NO ball-fire quad, so a burning card's balls stay dark")
+	# ONE INSTANCE PER LIT BALL, carrying its own level — the levels TEXTURE this replaced had a texel
+	# per ball whether it was alight or not, and the shader searched for which ball a fragment was on.
+	var reqs := FxJuggle.requests(3, PackedInt32Array([1, 0, 20]), juggle, style)
+	var fire : FxRequest = reqs[0]
+	check(fire.id == &"ball_fire" and fire.instances.size() == 2,
+			"one instance per LIT ball, and the unlit one is simply absent",
+			str(fire.instances.size()))
+	check(fire.instances[1].g > fire.instances[0].g,
+			"each lit ball carries its OWN level, not a shared one")
+	check(is_equal_approx(fire.instances[0].g, FxFire.level(1, style)),
 			"read against the BALL style's reference, never the card's")
+	check(int(fire.instances[0].r) == 0 and int(fire.instances[1].r) == 2,
+			"and its own INDEX, which is what the vertex stage places it from",
+			"%d %d" % [int(fire.instances[0].r), int(fire.instances[1].r)])
+	# Owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*. Instances composite in
+	# buffer order, so the highest level must be LAST — this is the whole tie-break now that no
+	# fragment resolves a nearest ball.
+	var mixed : FxRequest = FxJuggle.requests(4, PackedInt32Array([9, 2, 30, 5]), juggle, style)[0]
+	var rising := true
+	for i : int in mixed.instances.size() - 1:
+		if mixed.instances[i].g > mixed.instances[i + 1].g: rising = false
+	check(rising and int(mixed.instances[mixed.instances.size() - 1].r) == 2,
+			"instances are ordered by level so the HIGHEST draws last and wins an overlap")
+	# The lattice contract: a fractional half-extent slices the quad's edge cells and draws PARTIAL
+	# chunky pixels (FxRequest.instance_half).
+	for req : FxRequest in reqs:
+		if req.instances.is_empty(): continue
+		var cell : float = req.style.pixel
+		var cells := req.instance_half / cell
+		check(is_equal_approx(cells.x, roundf(cells.x)) and is_equal_approx(cells.y, roundf(cells.y)),
+				"%s's instance box is a WHOLE number of %s-unit cells" % [req.id, cell],
+				str(req.instance_half))
 
 	# The two are genuinely separate effects: the same ball level must not move when the card's
 	# Burning does, which is structurally true because no card stacks reach this call at all.

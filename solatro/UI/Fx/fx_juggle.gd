@@ -22,22 +22,25 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	# bound even on a spinning card — see FxRequest.rotates_with_host. Both quads of the pair must
 	# say the same thing, or their lattices differ and the plume anchors off its ball.
 	balls.rotates_with_host = false
-	# THE QUAD IS SIZED TO THE PATTERN, NOT TO THE CARD (FxRequest.min_half). This is the SAME box
-	# `fx_balls_near` rejects fragments outside of — half a span plus a ball wide, one tall arc plus a
-	# ball high — so anything smaller would clip something the shader is willing to draw, and anything
-	# larger is fill no ball can land in.
-	#
-	# ⚠ THE PATTERN IS NOT SYMMETRIC IN Y AND THE QUAD IS. Every arc starts and ends at y = 0 and the
-	# loop hangs ABOVE that line, so the guard's box runs from `-(arc + ball)` to `+ball` — but the quad
-	# is centred on the host's origin, so the taller side has to set the half-extent.
-	balls.min_half = Vector2(geo[&"u_span"] * 0.5 + geo[&"u_ball_radius"], reach)
+	# ⚠ ONE INSTANCE PER BALL, AND THE MESH IS ONE BALL'S BOX (FxRequest.instances). This used to be a
+	# single quad over the whole pattern — ~33 x 64 art units for ~28 units of actual ball, with every
+	# fragment paying a closed-form search of the arc ladder to find out which ball it belonged to. The
+	# index arrives with the instance now, so both halves of that cost are gone (FX_HANDOFF §0d.6).
+	balls.instances = _ball_instances(stacks, levels, fire_style, false)
+	# A ball draws nothing but its own disc, so its box is the radius — plus the SLACK the pixel lattice
+	# demands, which is what `_cell_box` exists to explain.
+	balls.instance_half = _cell_box(Vector2.ONE * geo[&"u_ball_radius"], balls_style.pixel)
+	# WHERE THE BALLS CAN GO, for culling (FxRequest.instance_bound). This is the box the single quad
+	# used to be SIZED to — half a span wide, one tall arc high — but it buys no fill now: it only
+	# decides whether the item is submitted at all.
+	balls.instance_bound = Vector2(geo[&"u_span"] * 0.5, reach)
 	balls.live = geo
 	balls.phase_period = period(stacks, balls_style)
 
 	# The ball-fire quad exists only while a ball is actually alight. A card with StatusBurning
 	# and unlit balls shows NO ball fire — the negative case is the point of ruling 3.
-	var fire_tex := fire_texture(stacks, levels, fire_style)
-	if not fire_tex:
+	var alight := lit_balls(stacks, levels)
+	if alight.is_empty():
 		out.append(balls)
 		return out
 	# ⚠ `+ sink` for the same reason `FxFire.request` carries it: the cover ladder is measured from
@@ -52,11 +55,22 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	# Its mask is the BALLS, and `mask_level`'s ball branch returns before `u_shape_rot` is ever read
 	# — so this quad does not turn with the host either, and must match the balls quad exactly.
 	fire.rotates_with_host = false
-	# The pattern's own box GROWN BY ONE FLAME on every side — the same `margin` this quad passes to
-	# `fx_balls_near`, which is what the shader itself will accept fragments within. Not the balls
-	# quad's box: a plume stands above its ball, and one on the outermost ball leans outward.
-	fire.min_half = balls.min_half + \
-			Vector2.ONE * (fire_style.height + maxf(fire_style.sink, 0.0))
+	# ⚠ ONE INSTANCE PER **LIT** BALL, which is where most of this quad's win is: usually one or two
+	# balls of many are alight, and the old quad had to cover everywhere any of them might be.
+	fire.instances = _ball_instances(stacks, levels, fire_style, true)
+	# A PLUME'S BOX IS NOT SYMMETRIC ABOUT ITS BALL, and getting that right is worth about half the
+	# fill. The cover ladder steps DOWN from `p.y - sink` over `height`, and its ball branch returns
+	# nothing at all where the column misses the disc — so the lit region is provably
+	#   x within the RADIUS (`r2 <= 0.0` is an early zero: the drift only moves where the noise is
+	#     SAMPLED, never which fragments the cover field lets through), and
+	#   y from `r + height` above the centre down to `r + sink` below it.
+	# The shader centres the instance on that box (`(sink - height) / 2` off the ball) and this is the
+	# matching half-extent; the two are ONE fact and disagreeing clips a flame tip.
+	var r : float = geo[&"u_ball_radius"]
+	var up := fire_style.height
+	var down := maxf(fire_style.sink, 0.0)
+	fire.instance_half = _cell_box(Vector2(r, r + (up + down) * 0.5), fire_style.pixel)
+	fire.instance_bound = balls.instance_bound
 	# The plume anchors to the ball centre the BALLS quad drew, so it must snap on the BALLS quad's
 	# lattice — the same origin, but possibly a different `pixel`. ⚠ The partner's EXTENT is no longer
 	# part of this: the lattice is anchored on the host's origin, so two quads of different sizes
@@ -64,6 +78,11 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	fire.partner_id = balls.id
 	fire.partner_pixel = balls_style.pixel
 	fire.live = geo.duplicate()
+	# ⚠ `u_height` AND `u_sink` ARE DELIBERATELY *NOT* IN `live` FOR A PLUME, and that is what makes the
+	# instance box exact. Everything in `live` is EASED, so a height that eased would move the box's
+	# centre mid-transition while the box itself was sized for one end of it. A plume's height is a flat
+	# style value — it carries no stack scaling, unlike a card's — so `FxStyle.apply` pushing it once is
+	# both cheaper and the only version that cannot disagree with the box.
 	# ⚠ ONE FLAME PER BALL IS NOT ARRANGED ANY MORE — IT FALLS OUT (2026-07-29). The retired build
 	# had to say so explicitly, with a `u_emit_width` that tiled a comb at ball pitch and then, when
 	# that turned out to BE the "fire on balls disappears and reappears" bug, with an arch anchored
@@ -78,12 +97,10 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	fire.live[&"u_count"] = geo[&"u_count"]
 	# The BALL COUNT is its own uniform: the mask needs it to find which ball a fragment is over.
 	fire.live[&"u_ball_count"] = geo[&"u_count"]
-	# A ball's flame level comes from the TEXTURE, per ball. The card's stack level is deliberately
-	# absent: ball fire and card fire are separate effects (owner ruling 21).
+	# A ball's flame level comes from its own INSTANCE. The card's stack level is deliberately absent:
+	# ball fire and card fire are separate effects (owner ruling 21).
 	fire.live[&"u_intensity"] = fire_style.intensity
-	fire.live[&"u_height"] = fire_style.height
-	fire.snap[&"u_ball_fire"] = fire_tex
-	fire.lit = lit_balls(stacks, levels)
+	fire.lit = alight
 	fire.phase_period = balls.phase_period
 	# ⚠ THE PLUMES GO IN BEFORE THE BALLS, AND THE ORDER IS THE WHOLE MECHANISM (owner 2026-07-29:
 	# *"fire not behind props and balls?"*). `FxAttachment.sync` builds quads in this order and they
@@ -219,21 +236,47 @@ static func ball_pos(i: float, n: float, phase: float, span: float, h_top: float
 	return Vector2(span * 0.5 * (1.0 - 2.0 * a) * sweep * dir,
 			-_arc_height(j, a_count, h_top, h_bot) * sin(a * PI))
 
-## The per-ball fire levels as a 1xN data texture, or null when no ball is alight.
+## ONE INSTANCE PER BALL — index in `r`, that ball's own normalized fire level in `g`. `lit_only`
+## drops the dark ones, which is what makes the plume quad cover one or two balls instead of all of
+## them.
 ##
-## Uniform arrays need a constant size and the ball count is unbounded, so the levels travel as a
-## texture — one texel per ball, r = that ball's own normalized level. Built when the status
-## changes and NEVER per frame.
-static func fire_texture(stacks: int, levels: PackedInt32Array,
-		style: FxFireStyle) -> ImageTexture:
-	var n := maxi(stacks, 1)
-	var any := false
-	var img := Image.create(n, 1, false, Image.FORMAT_RGBA8)
-	for i : int in n:
+## ⚠ SORTED BY LEVEL, ASCENDING, AND THAT IS THE OVERLAP RULE (owner, 2026-07-29: *"if overlapping,
+## ball with highest stacks win"*). Instances composite in buffer order, so the last one drawn is the
+## one seen — this replaces the nearest-centre tie-break the retired per-fragment search gave for
+## free, and it is a rule the owner picked rather than a side effect of the arithmetic.
+##
+## ⚠ Built on a STATUS change and never per frame: it holds each ball's index, not its position. Where
+## a ball IS comes from `u_phase` and the shader's vertex stage (fx_ball_of).
+static func _ball_instances(stacks: int, levels: PackedInt32Array, style: FxFireStyle,
+		lit_only: bool) -> PackedColorArray:
+	var rows : Array[Color] = []
+	for i : int in maxi(stacks, 1):
 		var raw : int = levels[i] if i < levels.size() else 0
-		if raw <= 0:
-			img.set_pixel(i, 0, Color(0.0, 0.0, 0.0, 1.0))
-			continue
-		any = true
-		img.set_pixel(i, 0, Color(FxFire.level(raw, style), 0.0, 0.0, 1.0))
-	return ImageTexture.create_from_image(img) if any else null
+		if lit_only and raw <= 0: continue
+		var lvl := FxFire.level(raw, style) if raw > 0 else 0.0
+		rows.append(Color(float(i), lvl, 0.0, 0.0))
+	# ⚠ TIES BREAK ON THE INDEX, AND THAT IS NOT COSMETIC: `sort_custom` is NOT STABLE, so ordering by
+	# level alone leaves balls of EQUAL level in an arbitrary permutation — and since draw order decides
+	# every overlap, that permutation is visible. Caught by `05e_ball_arcs` (the crowded 8-arc panel)
+	# reporting 1477 differing pixels one run and 2228 the next with nothing changed in between. Every
+	# ball in that panel carries the same level, which is also the common case on a real board.
+	rows.sort_custom(func(a: Color, b: Color) -> bool:
+			return a.r < b.r if is_equal_approx(a.g, b.g) else a.g < b.g)
+	var out := PackedColorArray()
+	for row : Color in rows: out.append(row)
+	return out
+
+## An instance's half-extent, rounded UP to whole FX cells and padded by the slack the lattice costs.
+##
+## ⚠ THE 1.5 CELLS ARE DERIVED, NOT PICKED. An instance is placed at its subject's position rounded to
+## a cell boundary (up to 0.5 cells away), its content is measured from that position snapped to a cell
+## CENTRE (another 0.5), and a drawn cell is itself 0.5 cells wide from its centre. So a cell the shader
+## is willing to light can sit `content + 1.5` cells from where the quad is placed, and one cell less
+## clips the outermost ring of pixels on some frames and not others as the subject travels.
+##
+## The result must be a WHOLE number of cells for the reason `fx_cell_round` gives: whole cells put the
+## quad's edges on cell boundaries, so every FX pixel it touches is covered in full rather than sliced.
+static func _cell_box(content: Vector2, pixel: float) -> Vector2:
+	var cell := maxf(pixel, 0.01)
+	return Vector2(ceilf((content.x + 1.5 * cell) / cell), ceilf((content.y + 1.5 * cell) / cell)) \
+			* cell
