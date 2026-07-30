@@ -287,6 +287,11 @@ vec2 fx_ball_at_ladder(float s, float span, float h_top, float h_bot, float g, f
 // randomised per host, so the pattern runs one way on one card and the other way on the next, and
 // two cards juggling the same count never look like one pattern.
 //
+// THE ball position: index in, ART-UNIT offset from the host's centre out, mirroring included. Call
+// sites pass an INDEX rather than a cycle position so the mirror cannot be forgotten at one of them
+// — a ball drawn on one side with its flame on the other is exactly the drift this include exists
+// to prevent.
+//
 // ⚠ DO NOT REINTRODUCE A PER-BALL MIRROR (`i` even -> dir, odd -> -dir). It was here for the
 // two-arc pattern, where every ball rode ONE loop and would otherwise troop round in a conga line.
 // The ARC LADDER already alternates sweep direction per arc — and consecutive balls sit in
@@ -294,19 +299,13 @@ vec2 fx_ball_at_ladder(float s, float span, float h_top, float h_bot, float g, f
 // every ball ends up moving the same way, leaving half the pattern empty. Measured 2026-07-28 at
 // the counts where n == arcs (2, 4, 6 — the owner's "below 10"): 2/2, 4/4 and 6/6 balls travelling
 // in one direction with the mirror, an even split without it. Crossing now comes from the ladder,
-// which is where it belongs; `i` is deliberately unused.
-float fx_ball_dir(float i, float dir) {
-	return dir;
-}
-
-// THE ball position: index in, ART-UNIT offset from the host's centre out, mirroring included. Call
-// sites pass an INDEX rather than a cycle position so the mirror cannot be forgotten at one of them
-// — a ball drawn on one side with its flame on the other is exactly the drift this include exists
-// to prevent.
+// which is where it belongs, so the whole host turns ONE way and `i` does not enter the direction
+// at all — `FxJuggle.ball_pos` multiplies by the same bare `dir`, and this used to be wrapped in an
+// identity `fx_ball_dir(i, dir)` that made the two sides look asymmetric for no reason.
 vec2 fx_ball_pos_ladder(float i, float n, float phase, float span, float h_top, float h_bot,
 		float g, float dir, float arcs, float start[FX_MAX_ARCS], float share[FX_MAX_ARCS]) {
 	vec2 q = fx_ball_at_ladder(phase + i / n, span, h_top, h_bot, g, arcs, start, share);
-	q.x *= fx_ball_dir(i, dir);
+	q.x *= dir;
 	return q;
 }
 

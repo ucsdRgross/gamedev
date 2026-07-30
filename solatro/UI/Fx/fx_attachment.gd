@@ -131,8 +131,9 @@ var _time : float = 0.0
 ## the flames riding them have to agree on it, and two hosts must not share it. Every phase in both
 ## shaders — the fire's noise offset, the whole-effect pulse, ball spin — is keyed on it.
 var _seed : float = randf() * 100.0
-## Which way this host's juggling pattern runs. Balls ALTERNATE around this (`fx_ball_dir`), so this
-## is really "which way does ball 0 set off", and it is a coin flip per host.
+## Which way this host's juggling pattern runs — the WHOLE pattern, as one direction, and it is a coin
+## flip per host. The crossing comes from the arc ladder alternating its sweep, not from a per-ball
+## mirror of this (`fx_ball_pos_ladder` records why a per-ball mirror cancels the ladder's own).
 var _ball_dir : float = 1.0 if randf() < 0.5 else -1.0
 
 var _fx : Dictionary[StringName, Effect] = {}
@@ -140,6 +141,9 @@ var _fx : Dictionary[StringName, Effect] = {}
 ## what welds a ball's flame to its ball rather than letting the two drift apart. Starts at a RANDOM
 ## point in the cycle: from zero, every card that started juggling with the same count moved as one.
 var _phase : float = randf()
+## That clock's period, resolved in `sync` from the longest any live effect declares — see
+## `_resolve_phase_period`. 0 while nothing has a phase.
+var _phase_period : float = 0.0
 var _lag : Vector2 = Vector2.ZERO
 var _lag_vel : Vector2 = Vector2.ZERO
 var _last_pos : Vector2 = Vector2.ZERO
@@ -218,6 +222,13 @@ var _poly_inner : Vector2 = Vector2.ZERO
 var _next := PackedVector2Array()
 var _ring := PackedVector2Array()
 var _angles := PackedFloat32Array()
+## The incoming outline's angles, in ITS order — `_angles` holds the same values re-wound into `_ring`'s
+## order, so this is what makes that a permutation rather than a second round of `atan2`.
+var _angles_src := PackedFloat32Array()
+## `_poly` padded to the uniform's own length, allocated once. `_push_poly` runs per quad per frame for
+## any host whose rig is shorter than POLY, and a `duplicate()` + `resize()` there is a per-frame
+## allocation on exactly the hosts that move every frame.
+var _poly_padded := PackedVector2Array()
 
 ## Measure the host's real outline into the radius table, so flames hug a deformed card instead of
 ## its nominal rectangle. Behind a dirty flag by contract: the caller decides when the silhouette
@@ -306,6 +317,15 @@ func measure_outline(outline: PackedVector2Array) -> void:
 ## they were built for and would clip against their own edge.
 func track_outline(outline: PackedVector2Array) -> void:
 	if shape != Shape.RADII or outline.size() < 3: return
+	# ⚠ DO NOT SHORT-CIRCUIT THIS ON `_fx.is_empty()`, however tempting it looks — an unlit card walks its
+	# whole rig here and pushes the result nowhere, which reads like pure waste and was measured at ~24
+	# `atan2` plus the wedge index per card per frame across a 78-card board and a 50-card deck viewer.
+	# `_poly` IS A PUBLISHED PROPERTY, NOT A CACHE FOR THE QUADS: `test_the_card_mask_is_the_card_the
+	# _player_sees` reads it off an UNLIT card, and it has to be unlit, because that check samples the
+	# card's own face pixels and flames drawn over them would decide the comparison instead. Skipping the
+	# resolve leaves `_poly` at the rest pose while the rig deforms, which the suite reports as the card's
+	# own edge left unlit. If this cost has to come down, make the RESOLVE cheaper — it already skips its
+	# upload when nothing moved — or have the host stop calling it, which is where the knowledge lives.
 	if not _fill_poly_from_outline(outline): return
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
@@ -330,8 +350,11 @@ func _push_poly(mat: ShaderMaterial) -> void:
 	# and select per fetch cost more than the padding saved.
 	var verts := _poly
 	if verts.size() < POLY:
-		verts = _poly.duplicate()
-		verts.resize(POLY)
+		# Into the persistent pad, in place — see `_poly_padded`. The tail past `_poly.size()` is never
+		# read (`u_poly_count` keeps the shader off it), so stale values there cannot reach a fragment.
+		_poly_padded.resize(POLY)
+		for i : int in _poly.size(): _poly_padded[i] = _poly[i]
+		verts = _poly_padded
 	mat.set_shader_parameter(&"u_poly", verts)
 	mat.set_shader_parameter(&"u_wedge", _wedge)
 	mat.set_shader_parameter(&"u_poly_count", _poly.size())
@@ -355,7 +378,7 @@ func _push_poly(mat: ShaderMaterial) -> void:
 ## ATTACHMENT suite asserts for the rig and for `star_outline` past the warp the rig can reach.
 func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 	var n := outline.size()
-	_angles.resize(n)
+	_angles_src.resize(n)
 	# The walk has to START at the lowest angle, or the two sequences cannot advance together: an
 	# outline ordered around the shape is monotonic in angle only up to ONE wrap, and this is where
 	# that wrap is cut.
@@ -365,8 +388,8 @@ func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 	var top := 0.0
 	for i : int in n:
 		var p := outline[i]
-		_angles[i] = fposmod(atan2(p.x, -p.y), TAU)
-		if _angles[i] < _angles[start]: start = i
+		_angles_src[i] = fposmod(atan2(p.x, -p.y), TAU)
+		if _angles_src[i] < _angles_src[start]: start = i
 		area += p.cross(outline[(i + 1) % n])
 		half = Vector2(maxf(half.x, absf(p.x)), maxf(half.y, absf(p.y)))
 		top = maxf(top, p.length())
@@ -375,10 +398,18 @@ func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 	# way round would index the wrong edge and mask as EMPTY everywhere: a card with no fire on it at
 	# all, from a caller that did nothing wrong. Walking BACKWARD from the lowest angle turns a
 	# decreasing sequence into an increasing one, which costs a sign and no allocation.
+	#
+	# ⚠ THE RE-WOUND ANGLES ARE PERMUTED, NOT RECOMPUTED. `_ring` is a reordering of `outline` and
+	# nothing about it moves a point, so each vertex's angle is the one already measured above — a float
+	# copy instead of a second `atan2` per vertex, which on a 24-point rig is 24 transcendentals saved
+	# per host per frame on exactly the hosts whose rigs move every frame.
 	var step := 1 if area >= 0.0 else -1
 	_ring.resize(n)
-	for i : int in n: _ring[i] = outline[posmod(start + i * step, n)]
-	for i : int in n: _angles[i] = fposmod(atan2(_ring[i].x, -_ring[i].y), TAU)
+	_angles.resize(n)
+	for i : int in n:
+		var src := posmod(start + i * step, n)
+		_ring[i] = outline[src]
+		_angles[i] = _angles_src[src]
 	# ⚠ AN OUTLINE WITH MORE POINTS THAN THE SHADER HOLDS IS RESAMPLED, and that is the approximation
 	# this function exists to avoid — it is here only so a host with a denser rig degrades instead of
 	# breaking. The card's rig is 16 arms and fits exactly.
@@ -607,8 +638,17 @@ func sync(requests: Array[FxRequest]) -> void:
 		if not seen.has(id) and _fx[id].fade < 0.0:
 			_fx[id].from = _eased(_fx[id])
 			_fx[id].fade = 0.0
+	_resolve_phase_period()
 	set_process(not _fx.is_empty())
 	if not _fx.is_empty(): _push_live(0.0)
+
+## The shared phase clock's period: the longest any live effect declares, INCLUDING one that is fading
+## out — it is still drawn, so its balls must keep moving with the rest. Re-resolved whenever the quad
+## set changes and never per frame (see `_push_live`).
+func _resolve_phase_period() -> void:
+	_phase_period = 0.0
+	for id : StringName in _fx:
+		_phase_period = maxf(_phase_period, _fx[id].req.phase_period)
 
 ## The drawn node for one effect. A QuadMesh either way, never a ColorRect: a Control dropped
 ## into the host's Node2D subtree joins the GUI input pass and eats the mouse events card
@@ -751,9 +791,11 @@ func _apply_static(fx: Effect, req: FxRequest) -> void:
 	mat.set_shader_parameter(&"u_half", int(half))
 	# The DEFORMED width where the rig holds one: `u_body` is what the fan is measured across and what
 	# `body_near` rejects against, so a restyle must not stamp the authored rectangle back over the
-	# shape the card currently has. The silhouette goes with it, as one fact (see `_push_poly`).
-	mat.set_shader_parameter(&"u_body", body)
-	if not _poly.is_empty(): _push_poly(mat)
+	# shape the card currently has. The silhouette goes with it, as one fact (see `_push_poly`), and
+	# `_push_poly` writes `u_body` ITSELF from the polygon's own half-extent — so the authored
+	# rectangle is only ever pushed when there is no silhouette to override it.
+	if _poly.is_empty(): mat.set_shader_parameter(&"u_body", body)
+	else: _push_poly(mat)
 	if _art:
 		mat.set_shader_parameter(&"u_art", _art)
 		mat.set_shader_parameter(&"u_art_rect", _art_rect)
@@ -951,11 +993,10 @@ func _push_live(scaled_delta: float) -> void:
 			for id : StringName in _fx: _size_quad(_fx[id])
 	# Advance the shared phase ONCE, from the longest period any effect declares — the balls quad
 	# and the ball-fire quad declare the same one, and reading a single value is what guarantees
-	# they agree on every frame rather than merely starting together.
-	var period := 0.0
-	for id : StringName in _fx:
-		period = maxf(period, _fx[id].req.phase_period)
-	if period > 0.0: _phase = fmod(_phase + scaled_delta / period, 1.0)
+	# they agree on every frame rather than merely starting together. Resolved in `sync`, because a
+	# `FxRequest.phase_period` can only change when the request SET does, and walking the dictionary
+	# for it every frame put a per-effect `maxf` inside the board's single biggest FX cost.
+	if _phase_period > 0.0: _phase = fmod(_phase + scaled_delta / _phase_period, 1.0)
 	# ⚠ AN OFF-SCREEN HOST STILL PAYS FOR ITS UNIFORMS, and that is the one way an invisible card is
 	# NOT free. Godot culls the QUADS — measured 2026-07-29, 312 hosts with 78 on screen cost the same
 	# GPU time as the 78 alone — but nothing culls this function, and it is ~15 `set_shader_parameter`
@@ -1004,4 +1045,5 @@ func _push_live(scaled_delta: float) -> void:
 	for id : StringName in done:
 		_fx[id].quad.queue_free()
 		_fx.erase(id)
+	if not done.is_empty(): _resolve_phase_period()
 	set_process(not _fx.is_empty())

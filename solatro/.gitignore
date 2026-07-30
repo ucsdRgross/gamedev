@@ -1,2 +1,12 @@
 # Godot 4+ specific ignores
 .godot/
+
+# Python bytecode from tools/ (palette_conformance.py, scoring_sim.py, ...)
+__pycache__/
+*.py[cod]
+
+# Godot's GDExtension hot-reload scratch: while the editor holds a .dll open it writes the new build
+# beside it as `~<name>.dll~RF<hex>.TMP` and swaps on release. Four of these (~2 MB) were committed
+# with the FX work before this rule existed.
+*.TMP
+~*.dll~*

@@ -5,4 +5,4 @@
 [node name="FxEditor" type="Node2D" unique_id=1322859751]
 scale = Vector2(4, 4)
 script = ExtResource("1_fxeditor")
-time_scale = 0.1
+time_scale = 0.5

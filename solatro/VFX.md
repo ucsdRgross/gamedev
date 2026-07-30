@@ -356,6 +356,62 @@ that instrument reported two rejected builds as successes.
   deformation from the star rig is not tracked — re-call it if anything ever re-bakes a card shape
   at runtime.
 
+### 6.5 Cleanups left on the table by the 2026-07-30 `/simplify` pass
+
+Reviewed and deliberately NOT applied. Each was judged, not missed — the reason is the useful part.
+
+- **⚠ DO NOT ADD `if _fx.is_empty(): return` TO `FxAttachment.track_outline`.** It looks like the single
+  biggest per-frame win in the layer (an unlit card walks its whole rig, ~24 `atan2` plus the wedge index,
+  and pushes the result nowhere — across a 78-card board and a 50-card deck viewer). **It was applied and
+  it broke `PIXELS / the mask and the drawn face agree in EVERY FX cell` at 3 of 4 phases.** `_poly` is a
+  PUBLISHED property, not a cache for the quads: that check reads it off an UNLIT card, and it has to be
+  unlit because it samples the card's own face pixels — flames drawn over them would decide the
+  comparison. A guard at the call site has the same problem. To actually collect this, make the resolve
+  cheaper or have the HOST stop calling it; the reasoning is repeated at the guard site in the code.
+- **The outline RESAMPLE path in `_fill_poly_from_outline` is reachable, despite looking dead.** Every
+  shipped caller hands over exactly `POLY = 24` points, so it never runs today — but `CardVisual`'s rig
+  generator has an `edge_subdivisions` `@export`, and raising it to 4 bakes 28 points and drops straight
+  into it. Deleting it would turn a tool knob into the chamfer bug the vertex mask was built to remove.
+- **`FxAttachment.measure_silhouette` is all but dead** (one caller, `card_visual.gd`'s `_rig_arms
+  .is_empty()` branch, which the shipped `card_visual.tscn` never takes). Left in place because it is the
+  fallback for a card scene with no skeleton, and deleting it silently changes that case to a plain box.
+- **`PaletteRoles.ROLE_NAMES` is a hand-maintained mirror of the `@export` list.** Derivable by walking
+  `get_property_list()` for `TYPE_INT` script variables — which is exactly what the test that polices it
+  already does. Not applied: `_get_property_list`/`_get`/`_validate_property` all read `ROLE_NAMES`, so
+  deriving it inside the same reflection surface risks recursion for a two-line saving.
+- **The 18 `fx_editor` export setters are `set(v): x = v; _touch()` boilerplate**, and the tool already
+  polls for changes it cannot get setters for. Not applied on purpose: polling costs a quarter-second of
+  latency, and the owner keeps this editor open while tuning — trading instant feedback for tidiness in
+  the one tool that exists for feel is the wrong trade.
+- **`tools/palette_conformance.py` hand-rolls a PNG decoder (Paeth reconstruction included)** and claims
+  *"stdlib only — no PIL, no numpy, same rule the rest of tools/ follows"*. **That claim is now false:**
+  `snapshot_diff.py` imports PIL and `make_fx_noise.py` imports both, in this same changeset. ~75 lines
+  would collapse into `Image.open(...).convert("RGB")` + `getcolors()`. Not applied because it adds a
+  dependency to a script that works — but fix the docstring or fix the code, not neither. Its
+  `PALETTE_PNG` also hardcodes the palette path, bypassing the one-place rule `PaletteDB` holds.
+- **Test-harness duplication that `snapshot_scene.gd` was created to stop.** Its own header says the two
+  harnesses "had drifted into two copies of this… not the kind of thing that should live in two files" —
+  and `fx_behind.gd` still re-implements `fx_snapshot.gd`'s panel harness: `_zoom_for` is body-identical,
+  `_Panel` duplicates `Case` field for field, `_Face` duplicates `_Ghost`'s sprite branch, and the
+  attachment build repeats `_attach_for` **including its documented "disable the process LAST" ordering
+  trap**. ~90 lines. If that trap is ever fixed in one copy only, the two harnesses shoot different
+  frames of the same noise and neither is comparable to the other.
+- **Nine ball-path uniforms are declared in BOTH `fire.gdshader` and `juggle.gdshader` with
+  independently written defaults** (`u_span = 30.0`, `u_arc_height = 37.5`, `u_ball_radius = 3.0`, …),
+  while `fx_common.gdshaderinc` — the file that exists so "the maths cannot exist twice" — holds only
+  functions. A default that drifts is invisible on any host that pushes the uniform and wrong on any that
+  does not. Same shape: `COVER_TAPS_MAX = 8` against `FxFireStyle.cover_taps`' `@export_range(2, 8)`,
+  unpinned, where exceeding it makes the tap loop silently stop.
+- **A split prop's dividing line is declared twice** — `HoopVisual._draw_half` cuts the source frame at
+  0.5 of its width, and `fire.gdshader` carves the same cut with `if (u_half == 1 && p.x > 0.0)`, which
+  also hardcodes "back = left, front = right" for every future split kind. Handing each half attachment
+  its own half rect would make the SPRITE branch return `MASK_EMPTY` outside it for free and delete
+  `u_half` and both branch lines.
+- **`FxAttachment.transition_secs` re-derives `PropLayer.current_tick_seconds`'s formula.** Blocked, not
+  skipped: `PropLayer` is not `@tool` and reads `SettingsManager.settings` directly, so it must route
+  through the shared editor-safe accessor first. When `PropLayer` grew `MIN_FLOURISH_SECS` nothing
+  propagated to FX transitions.
+
 ---
 
 ## 7. Known bugs and limitations
@@ -430,6 +486,33 @@ Nothing here is secretly broken — each is understood, and each is either accep
    suite builds now sets `att._seed = SEED` BEFORE `sync()` (the per-host randomness is read when the
    quads are BUILT — §4.4). **A rendering test with a random input is not a test**; if you add a shot
    to that suite, pin the seed.
+11. **⬜ `fx_intensity` DOES NOT REACH THE JUGGLED BALLS.** `FxStyle`'s own doc calls `brightness` a lever
+   the attachment re-pushes with the player's `fx_intensity` folded in, "which is what lets a *reduce
+   effects* setting reach every effect without editing a single `.tres`" — and `FxAttachment._apply_static`
+   does push `u_brightness = brightness * fx_intensity`. But **`juggle.gdshader` declares no
+   `u_brightness`**, so that write lands nowhere and the balls ignore the setting. Reaching 0 is
+   documented as "a genuine photosensitivity control, not a taste one", so this is the one effect where
+   that claim is false. Fix is either `uniform float u_brightness = 1.0;` folded into `col.rgb` beside
+   `u_opacity` (juggle.gdshader:148), or a decision that brightness is fire-only — in which case move it
+   off `FxStyle` onto `FxFireStyle`, where a shader-less uniform cannot be written by accident.
+   Found by the 2026-07-30 `/simplify` pass; deliberately NOT fixed there because it changes what renders.
+12. **⬜ `FxAttachment` KNOWS ABOUT JUGGLING, in the ember emitter only.** The class's headline contract is
+   "it does not know which effects exist", and `sync`/`_apply_static`/`_push_live` all honour it. Then
+   `_emit_embers` branches on `fx.req.shape == Shape.BALLS`, `_ember_origin` casts `fx.req.style as
+   FxFireStyle`, reads eight juggling uniform names out of `vals` (`u_ball_radius`, `u_span`,
+   `u_arc_height`, `u_return_height`, `u_ball_arcs`, `u_top_fraction`, `u_ball_gravity`, `u_ball_count`)
+   and calls `FxJuggle.ball_pos` directly. So a juggle-uniform rename silently degrades embers to height
+   0 — the failure already recorded in the comment there, which was found by eye because `09_embers` is
+   randomised. The deep fix is a spawn-point seam ON the request (a small emitter object, not a
+   `Callable` — a stored closure on a long-lived request keeps its whole enclosing scope alive), set by
+   `FxFire.request` / `FxJuggle.requests`. That also deletes `FxRequest.lit`, which exists only so the
+   generic request class can carry a juggling fact. Third visual status = a third `if` until then.
+13. **⬜ A PROP CATCHING FIRE MID-FLIGHT SHOWS NOTHING.** `PropVisual.fire_stacks`' setter documents that
+   it exists so "a prop catching fire mid-flight lights up without waiting for a respawn", but the only
+   write is `PropLayer._make_visual` (capture at spawn). `PropLayer._process` already re-derives every
+   other data→visual fact live — scale, pin, lane offset, split state, position — precisely because
+   capture-at-spawn caused two owner reports. So `PropBurning` raising `PropData.fire_stacks` is a live
+   gameplay state with no visual. Fix is one line in that existing `_process` loop (or `begin_prop_tick`).
 
 ---
 

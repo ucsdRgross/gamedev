@@ -68,8 +68,11 @@ func run_role_tests() -> void:
 		check(idx >= 0 and idx < w, "role %s in range" % role, "index=%d width=%d" % [idx, w])
 
 	implementation_section("ROLES — bookkeeping")
-	check(roles.palette == PaletteDB.PALETTE,
-			"roles preview against the SAME palette the game draws with")
+	# There is no "roles preview against the SAME palette the game draws with" check any more, and its
+	# removal is the point rather than a loss of coverage: PaletteRoles and PaletteRamp each used to hold
+	# their own `palette` pointer, so the preview and the game were two facts that a test had to pin
+	# together. Both now read PaletteDB.PALETTE, so they are one fact and there is nothing left to drift
+	# — including on the three ramps, whose pointers this check never covered.
 	# A role declared but left out of ROLE_NAMES would never be range-checked again.
 	var declared := 0
 	for prop : Dictionary in roles.get_property_list():
@@ -166,12 +169,15 @@ func run_swap_tests() -> void:
 			"every role resolves to a different colour under a different palette",
 			"%d of %d moved" % [moved, PaletteRoles.ROLE_NAMES.size()])
 
-	# A ramp follows its palette too — the indices are the pointer, the colours are not stored.
-	var ramp := PaletteRamp.new()
-	ramp.indices = PaletteDB.RAMP_FIRE.indices
-	ramp.palette = swapped
-	var swapped_cols := ramp.colors()
+	# A ramp follows the palette too — the indices are the pointer, the colours are not stored. Swapping
+	# means moving the ONE storage slot every reader shares, which is why PaletteDB.PALETTE is a static
+	# var and not a const (palette_db.gd:17-22); a ramp has no palette pointer of its own to set.
 	var live_cols := PaletteDB.RAMP_FIRE.colors()
+	var original := PaletteDB.PALETTE
+	PaletteDB.PALETTE = swapped
+	var swapped_cols := PaletteDB.RAMP_FIRE.colors()
+	PaletteDB.PALETTE = original
+	check(PaletteDB.PALETTE == original, "the swap test put the live palette back")
 	check(swapped_cols.size() == live_cols.size(), "the swapped ramp has the same length")
 	check(swapped_cols != live_cols, "the swapped ramp resolves to different colours")
 
