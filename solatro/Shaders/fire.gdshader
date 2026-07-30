@@ -576,8 +576,39 @@ void fragment() {
 		// art through the flame "looks very bad") — a uniform branch, so it costs nothing and saves
 		// a full mask call on every lit fragment. How far the flames come down over the art is
 		// u_sink's job, not the alpha's.
-		if (u_inner_alpha < 1.0 && mask_solid(mask_level(p, ball, ball_level))) {
-			alpha_mul = u_inner_alpha;
+		//
+		// ⚠ THE CUT IS TESTED AT THE UNQUANTIZED POSITION, and that is the whole of FX_HANDOFF §0c.
+		// The flame's own pixels stay on the FX grid — it is pixel art — but the boundary where the
+		// art takes over must follow the ART's edge, at the resolution the art HAS. A card's face is a
+		// Polygon2D whose edge is a line at screen resolution; cutting against `p` gave that boundary a
+		// one-art-unit staircase, so a rotated card showed alternating gaps and overhang along an edge
+		// that is perfectly straight (owner: *"rotating still shows jaggedness"*). Measured on
+		// `fx_behind.tscn`: a 45-degree card's seam is a staircase of 1-unit treads against a diagonal
+		// line, with backdrop showing through every tread.
+		//
+		// ⚠ A SPRITE PROP NEEDS THE UNQUANTIZED POINT TOO, AND THE FIRST DRAFT OF THIS GOT IT WRONG
+		// (owner report, 2026-07-29: *"props did not get same treatment as card and dont have nice
+		// seams"*). The reasoning that excluded them — "a prop's art is pixel art at `pixel` 2.5, so the
+		// quantized test agrees with the drawing" — holds ONLY at zero rotation. **The art turns with its
+		// host and the FX grid never turns** (the universal rule), so on a knife at 25 degrees the art's
+		// texels run diagonally while the cut's staircase stays axis-aligned, and the two agree nowhere:
+		// measured on `fx_behind.tscn`'s `behind_prop_turned`, whole 2.5-unit flame blocks sat squarely on
+		// the blade. And even at rest the two grids share a size, not a PHASE — the art's texel
+		// boundaries land on half-cell offsets whenever a frame has an odd texel count.
+		//
+		// It is the right point for a sprite for the same reason it is right for a card: the mask IS the
+		// art (a `filter_nearest` alpha sample), so testing it unquantized returns the drawing's OWN
+		// pixel edges, diagonal staircase included. The flame stays chunky; only the boundary sharpens.
+		//
+		// ⚠ SHAPE_BALLS IS THE ONE THAT KEEPS `p`, and it is not an oversight. A ball is drawn by
+		// juggle.gdshader, which quantizes on the SAME origin-anchored lattice and never rotates — so
+		// there the drawn silhouette really is the quantized disc, and an exact circular cut would slice
+		// a smooth arc through the chunky pixels the partner quad drew, opening the same seam from the
+		// other side. ⚠ That holds while the ball and ball-fire styles share a `pixel` (both 1.0 today);
+		// if they ever diverge, this cut is on the wrong lattice and needs `u_partner_pixel`.
+		if (u_inner_alpha < 1.0) {
+			vec2 cut = (u_shape == SHAPE_BALLS) ? p : fx_local_raw(UV, u_extent);
+			if (mask_solid(mask_level(cut, ball, ball_level))) alpha_mul = u_inner_alpha;
 		}
 		// EVERYTHING THAT DISPLACES THE FLAME GROWS WITH HEIGHT, so the base stays planted on the
 		// body and only the top moves: skew (systematic outward fan — ruling 1's "angle skew as

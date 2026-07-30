@@ -22,6 +22,15 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	# bound even on a spinning card — see FxRequest.rotates_with_host. Both quads of the pair must
 	# say the same thing, or their lattices differ and the plume anchors off its ball.
 	balls.rotates_with_host = false
+	# THE QUAD IS SIZED TO THE PATTERN, NOT TO THE CARD (FxRequest.min_half). This is the SAME box
+	# `fx_balls_near` rejects fragments outside of — half a span plus a ball wide, one tall arc plus a
+	# ball high — so anything smaller would clip something the shader is willing to draw, and anything
+	# larger is fill no ball can land in.
+	#
+	# ⚠ THE PATTERN IS NOT SYMMETRIC IN Y AND THE QUAD IS. Every arc starts and ends at y = 0 and the
+	# loop hangs ABOVE that line, so the guard's box runs from `-(arc + ball)` to `+ball` — but the quad
+	# is centred on the host's origin, so the taller side has to set the half-extent.
+	balls.min_half = Vector2(geo[&"u_span"] * 0.5 + geo[&"u_ball_radius"], reach)
 	balls.live = geo
 	balls.phase_period = period(stacks, balls_style)
 
@@ -43,6 +52,11 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	# Its mask is the BALLS, and `mask_level`'s ball branch returns before `u_shape_rot` is ever read
 	# — so this quad does not turn with the host either, and must match the balls quad exactly.
 	fire.rotates_with_host = false
+	# The pattern's own box GROWN BY ONE FLAME on every side — the same `margin` this quad passes to
+	# `fx_balls_near`, which is what the shader itself will accept fragments within. Not the balls
+	# quad's box: a plume stands above its ball, and one on the outermost ball leans outward.
+	fire.min_half = balls.min_half + \
+			Vector2.ONE * (fire_style.height + maxf(fire_style.sink, 0.0))
 	# The plume anchors to the ball centre the BALLS quad drew, so it must snap on the BALLS quad's
 	# lattice — the same origin, but possibly a different `pixel`. ⚠ The partner's EXTENT is no longer
 	# part of this: the lattice is anchored on the host's origin, so two quads of different sizes

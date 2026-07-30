@@ -52,6 +52,23 @@ vec2 fx_local(vec2 uv, vec2 extent, float pixel) {
 	return vec2(q.x, -q.y);
 }
 
+// THE SAME POINT, NOT QUANTIZED — the fragment's true position in the host's art space.
+//
+// ⚠ THIS IS NOT FOR DRAWING, and using it to draw would break the universal rule above. It exists
+// for one job: an OCCLUSION TEST against art that is NOT on the FX grid. A card's face is a
+// Polygon2D, so its edge is a line at SCREEN resolution; testing "am I over the art" at the
+// quantized point makes that boundary a staircase with a one-FX-pixel tread, which is the jaggedness
+// the owner reported at every rotation (FX_HANDOFF §0c). Testing it here instead lets the art's own
+// edge slice the chunky flame pixels diagonally — which is exactly what real occlusion does.
+//
+// ⚠ It is the WRONG point for a host whose art IS pixel art (a sprite prop, a juggling ball): there
+// the drawing lands on the FX grid too, so the quantized test is the one that agrees with it. The
+// caller picks, on u_shape.
+vec2 fx_local_raw(vec2 uv, vec2 extent) {
+	vec2 s = (uv - 0.5) * extent;
+	return vec2(s.x, -s.y);                    // the same y flip fx_local applies, for the same reason
+}
+
 // Snap an ART-SPACE point onto the SAME pixel lattice fx_local() hands fragments back on.
 //
 // Why balls need this: a ball's centre moves continuously along its arc, so without this the disc

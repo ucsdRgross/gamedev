@@ -1,18 +1,30 @@
-# FX_HANDOFF.md — live handoff, updated 2026-07-29
+# FX_HANDOFF.md — live handoff, updated 2026-07-29 (late: BOTH remaining tasks landed)
 
 **Read [VFX.md](VFX.md) and ARCHITECTURE_REVIEW **§4g** first** (the map and the contract).
 
-✅ **START AT §0. THE NOISE FIRE HAS SHIPPED, AND TWO TASKS REMAIN.** The tendril / comb / ogee /
-onion build is gone and `fire.gdshader` is now a cover field carved by scrolling noise, with a stack
-ratio on every knob. §0 is the record of what was built and what it measured.
+✅ **START AT §0. THE NOISE FIRE HAS SHIPPED; SO HAVE BOTH OF THE TASKS THAT WERE LEFT.** The tendril /
+comb / ogee / onion build is gone and `fire.gdshader` is now a cover field carved by scrolling noise,
+with a stack ratio on every knob. §0 is the record of what was built and what it measured.
 
-⬜ **THE WHOLE OF WHAT IS LEFT IS §0c/§0d** (owner 2026-07-29: *"our last tasks will be making fire vfx
-show behind the art and saving juggling performance"*). ⚠ **READ §0c/§0d BEFORE WRITING ANY OF IT.** Both
-first task has had two attempts and neither is finished — ⚠ **but `inner_alpha` and `z_index` are NOT
-ruled out; an earlier edition of this file said they were and that was premature.** §0c weighs all
-three routes and names the one-line experiment to run first. The second task has two levers whose
-blocker may have just been removed by an unrelated fix. §0e explains `cover_taps`, the one knob that
-trades look against the only cost this shader has.
+✅ **THE TWO TASKS OF §0c/§0d ARE DONE** (owner 2026-07-29: *"our last tasks will be making fire vfx
+show behind the art and saving juggling performance"*). Both are code; both are measured; **neither
+has been seen by the owner yet, and §0c is a LOOK claim, so his eye is the last word.**
+
+| ✅ | landed | measured |
+|---|---|---|
+| **§0c** | fire behind the art — **route 1**, the unquantized alpha cut. Cards AND sprite props (the props were a second pass, after the owner caught them) | the seam follows the art's own edge at every angle; the staircase and its backdrop gaps are gone (`fx_behind.tscn`, new) |
+| **§0d** | juggling perf — **lever 1**, `FxRequest.min_half`, the quad sized to the pattern | the juggling layer **1.44x cheaper** (full screen 2.258 → 1.825 ms), all 18 snapshot panels **byte-identical** |
+
+⚠ **AND THE REVERT THAT BLOCKED §0d FOR TWO SESSIONS WAS CHASING A HARNESS FLAKE** — measured, not
+argued. §0d.1 has it, and the claim now lives in an asserting check instead of a picture.
+
+⬜ **TWO THINGS THE OWNER FOUND WHILE REVIEWING THIS, AND ONE OF THEM IS BIGGER THAN EITHER TASK:**
+**§0c.1** the warped card's spikes still take fire over the art (the 32-ray mask cannot hold a vertex,
+and the cut follows the mask), and **§0c.2 NO HARNESS ANYWHERE RENDERS A REAL `CardVisual`** — every
+card panel in this project is `star_outline`, a hand model of the rig, and the FX editor draws that same
+array as the card's face. **§0d.2 is the priced menu of juggling compromises he asked for.**
+
+§0e explains `cover_taps`, the one knob that trades look against the only cost this shader has.
 
 **§1 to §7 describe the RETIRED build: read them as the record of what was learned and what must not
 be broken, not as a description of what is there.** **§8 is the live list**; §9 is the cost
@@ -37,7 +49,8 @@ Owner, 2026-07-29: *"Fire effect no longer has tendrils at all, just average fir
 moving noise instead... make sure all params have scaling ratios as stacks increase"* — and *"should
 still be form fitting to any shape and rotation. Do this for all current fire effects card prop ball."*
 
-Built, measured, green (28 suites, exit 0). ⬜ **What is LEFT is §0c and §0d, and nothing else.**
+Built, measured, green (28 suites, exit 0). ✅ **§0c and §0d have since landed on top of it — read
+them for what changed and what is still owner-only.**
 
 ### 0a. The model, and what it measured
 
@@ -103,7 +116,134 @@ value  = base * max(1 + growth * ratio, 0)
 - `test_every_fire_knob_ramps_with_stacks` walks all 200 counts and **fails when a new knob is added
   without a ratio** — which is the failure this pass existed to prevent.
 
-### 0c. ⬜ TASK 1 — FIRE MUST RENDER BEHIND THE ART
+### 0c. ✅ TASK 1 — FIRE RENDERS BEHIND THE ART (route 1, shipped 2026-07-29)
+
+**What shipped is ONE LINE, and it is route 1 of the three weighed below.** The occlusion cut is now
+tested at the **unquantized** position:
+
+```glsl
+if (u_inner_alpha < 1.0) {
+    vec2 cut = (u_shape == SHAPE_BOX || u_shape == SHAPE_RADII)
+            ? fx_local_raw(UV, u_extent) : p;      // fx_local_raw = the same point, NOT quantized
+    if (mask_solid(mask_level(cut, ball, ball_level))) alpha_mul = u_inner_alpha;
+}
+```
+
+- The flame's own pixels stay on the FX grid — it is pixel art. **Only the boundary moved**, onto the
+  resolution the art actually has, which is what real occlusion looks like.
+- ⚠ **SPRITE AND BALLS DELIBERATELY KEEP THE QUANTIZED POINT.** Their art IS drawn on the FX grid (a
+  prop's sheet at `pixel` 2.5, a ball by `juggle.gdshader` on the shared lattice), so there the
+  quantized test is the one that AGREES with the drawing — an exact cut would slice a smooth curve out
+  of chunky pixels and open the same class of seam from the other side. Uniform branch either way.
+- ⚠ **Cost: none beyond what the cut already paid** — the same single `mask_level`, at a different
+  point. `burning, FULL SCREEN` is 0.615 ms before and after, inside the clock noise.
+
+**THE INSTRUMENT IS NEW AND IT IS THE POINT: `Tests/Visual/fx_behind.tscn`.** §0g's standing lesson is
+that every FX bug that reached the owner was invisible in `fx_snapshot`, and the reason is structural
+— that harness draws its hosts as an **outline**, and an outline cannot show a seam. `fx_behind` draws
+the host **filled and opaque**, the way the game draws it, at up to 6 screen px per art unit, in three
+shots: `behind_card_rot` (0 / 15 / 45 deg), `behind_card_warp` (corners +0 / 25 / 45 %) and
+`behind_prop` (ring, ring rotated, blade rotated). Reviewed with
+`py <scratch>/crop.py <png> <out> x y w h 5`.
+
+**What it showed, before and after** (45-degree card, the worst case):
+
+| | the seam along a diagonal art edge |
+|---|---|
+| **before** | a staircase of 1-art-unit treads against a straight line, with **backdrop showing through every tread** — exactly *"rotating still shows jaggedness"* |
+| **after** | the art's edge slices the chunky flame pixels diagonally; no treads, no gaps |
+| **0 deg, before AND after** | identical, and it always looked right — an axis-aligned edge happens to fall ON the FX grid, which is why this bug only ever showed when a card turned |
+| **warped card** | the flame's foot rides the concave dip and the stretched corners; ⚠ a **~0.17 art unit** grey sliver survives in places, and it is the RADII table's own fidelity (32 rays interpolated as a radial scale) rather than the cut — see §10 E |
+
+**THE SPRITE PROPS NEEDED IT TOO, AND THE FIRST DRAFT EXCLUDED THEM** (owner, 2026-07-29: *"props did
+not get same treatment as card and dont have nice seams"* — with a screenshot of a knife at ~25 deg
+carrying whole 2.5-unit flame blocks straight across the blade). The excluding argument was *"a prop's
+art is pixel art at `pixel` 2.5, so the quantized test agrees with the drawing"*, and **it holds only
+at zero rotation**: the art turns with its host and the FX grid never turns (the universal rule), so
+the art's texels run diagonally while the cut's staircase stays axis-aligned. Fixed by testing the raw
+point for SPRITE as well — the mask IS the art's alpha, so it returns the drawing's own pixel edges,
+diagonal staircase included.
+
+**SHAPE_BALLS is now the only shape that keeps the quantized point**, and that one is not an oversight:
+a ball is drawn by `juggle.gdshader` on the SAME origin-anchored lattice and never rotates, so there
+the drawn silhouette really is the quantized disc. ⚠ It holds while the juggle and `fire_ball` styles
+share a `pixel` (both 1.0 today); if they diverge, that cut is on the wrong lattice.
+
+⚠ **AND `fx_snapshot` COULD NOT HAVE CAUGHT THE PROP BUG — `snapshot_diff` came back 18/18 IDENTICAL
+across the fix.** Every prop panel in that harness is at rotation ZERO, which is the one angle where
+the two cuts agree. The FX editor rotates every host, which is why the owner saw it and no test did.
+`fx_behind`'s `behind_prop_turned` exists for exactly this, and §0c.2 is the wider version of the same
+gap.
+
+⚠ **IT IS STILL A CUT, NOT A LAYER, AND THE OWNER SHOULD BE TOLD THAT PLAINLY.** For an opaque host —
+every host is opaque over its own mask — it is now indistinguishable from drawing the fire underneath.
+If his eye still says otherwise, **route 3 below is the structural answer and its plan is unchanged**;
+set `inner_alpha` back to 1.0 if you take it.
+
+#### 0c.1. ⚠ THE CARD'S WARP CORNERS ARE STILL WRONG, AND IT IS THE MASK, NOT THE CUT
+
+Owner, 2026-07-29: *"curious why fire effect goes in front of card at extreme warp, chamfering at
+edges."* **Measured on `behind_card_warp`, and the answer is the chamfer §0g already documents:**
+
+- `u_radii` is a **32-ray table of radial SCALE, linearly interpolated**, and no scheme that blends two
+  rays can reproduce a VERTEX. A warped card's corner is a vertex — `star_outline` pulls 4 corners out
+  and leaves 12 interior points on the rest edges, so the shape is a star with four spikes.
+- So the MASK's boundary near a spike is a straight line across its shoulder. **The cut follows the
+  mask**, which produces both halves of what the owner sees: flame drawn OVER the art where the mask's
+  chamfer line falls inside the spike, and a BARE spike above it where the mask says "no art, nothing
+  to stand on".
+- ⚠ **It is not a regression and the unquantized cut did not cause it** — it made it VISIBLE by making
+  every other part of the seam exact. §0g's chamfer row fixed the REST case (the radial scale reduces to
+  the exact box at warp 0); the deformed case was never exact.
+- **Scale:** at **+45 %** it is obvious (a whole spike bare, ~2 units of overhang). At **+25 %** — which
+  is where `card_visual.tscn`'s autoplay animation actually peaks — it is roughly one art unit at the
+  shoulder and easy to miss. The +45 % panel is deliberately past what the rig can reach (§7).
+- **The three ways out, none of them free** (and §10 E is already taken, which is why this is what is
+  left): **(a) `RADII` 32 → 64** halves the error (§7's numbers: 2.32 → 1.41 → 0.56 art units) for 64
+  floats per material per quad per host — two lines, and the only one that is a one-run experiment;
+  **(b) an analytic STAR branch** in `mask_level` (the shape is exactly the rest rectangle plus four
+  corner triangles), which is exact and cheap per tap but is a PER-SHAPE path, brushing the owner's
+  *"fire should be unified and identical in how it treats everything"*; **(c) accept it**, on the
+  grounds that the rig peaks at 0.25. ⚠ **Owner call — (b) is the only correct one.**
+
+#### 0c.2. ⚠ NO HARNESS RENDERS A REAL `CardVisual`, AND THAT IS THE ROOT OF THE CARD-VS-PROP DIVERGENCE
+
+Owner, 2026-07-29: *"has this issue this whole time been that fx editor doesnt use real card visual,
+causing broken assumptions and constant mismatch between card vs prop visuals despite requirement they
+use same code, because the card outline was never accurate to real cards and therefore tests nothing?"*
+**Substantially yes, and here is the precise version.**
+
+**Every FX harness stands up a bare `Node2D` + `FxAttachment` and feeds it
+`CardVisual.star_outline(body, warp)`** — `fx_editor.gd:351`, `fx_snapshot.gd:188`, `fx_cost.gd:206`,
+`fx_behind.gd:100`. That static is a **hand model of the rig**, not the rig: the real card hands
+`_rig_outline()`, composed from 16 `Bone2D` local transforms every frame, and its FACE is a baked
+polygon grid SKINNED to those bones. Two things follow, and the second is the owner's point:
+
+1. ⚠ **THE FX EDITOR DRAWS THE MASK'S OWN SOURCE AS THE CARD FACE** (`_draw` fills `_card_outline()`,
+   the same polygon it hands the attachment). **A tool built that way cannot show a face-versus-mask
+   disagreement at all** — the two are the same array. It is the same class of tool-lie the §0g
+   instruments were built to avoid, in the one place that gets used for tuning every day.
+2. ⚠ **THE PROPS WERE ALWAYS TESTED WITH THEIR REAL ART** (`Shape.SPRITE`, the mask IS the sheet's
+   alpha, and the harnesses draw that same sheet), **while the card was tested against an idealisation
+   of itself.** That asymmetry IS the "card and prop keep diverging despite sharing code": the shared
+   code is fine, but only one of the two was ever checked against what the game draws.
+
+**What is genuinely NOT invalidated**, so the next reader does not over-correct: the mask maths, the
+cover field, the cut, `min_half`, the balls, and every prop claim. Those either use real art or are
+statements about the shader that hold for any outline. **What IS unverified is the card's silhouette
+itself** — nothing anywhere checks that the arm-tip polygon the attachment is handed matches the
+boundary of the skinned polygons the player sees, and it is not obvious that it should: the face's
+outer vertices are *skinned by* those bones, not equal to them.
+
+⬜ **THE TEST THAT WOULD CLOSE IT, and it is the next thing to build:** instantiate a REAL `CardVisual`
+in the PIXELS suite (a test scene has the autoloads the `@tool` editor deliberately lacks — which is
+*why* the editor fakes the card), let its autoplay animation run to a fixed time, and compare the drawn
+face's silhouette against `att._radii` column by column. ⚠ Do it in `test_pixels.gd`, not in a snapshot:
+the claim is numeric agreement, and §0g's lesson is that a picture of a card at 2x zoom hides exactly
+this. Until that exists, **every warp claim in this file is a claim about `star_outline`, not about a
+card**, and `fx_editor`'s warp slider should be read the same way.
+
+#### 0c.3. The three routes, as they were weighed — kept for route 3
 
 Owner: *"I would prefer that fire effect always be behind main card art visually, so it never covers
 art and hides jaggedness of fire bottom vs object tops when rotating or warping"* — then, after the
@@ -131,7 +271,7 @@ angle and warp.
 **Three routes. Try them in this order; only the third is definitely correct and it is also the most
 work.**
 
-1. ⬜ **`inner_alpha` WITH AN UNQUANTIZED CUT — one line, no layering change, and UNTESTED.** Keep the
+1. ✅ **`inner_alpha` WITH AN UNQUANTIZED CUT — TAKEN, and it worked exactly as predicted.** Keep the
    flame's own pixels on the FX grid (it is pixel art) but test the mask for the ALPHA CUT at the raw,
    un-quantized local position. The cut then follows the art's true edge at screen resolution, which
    is **exactly what occlusion does**: the art's smooth edge slices chunky fire pixels diagonally.
@@ -142,8 +282,9 @@ work.**
    - ⚠ It costs the mask lookup `inner_alpha < 1.0` already costs, and no more.
    - ⚠ For a SPRITE host the mask IS the art's alpha, so an unquantized sample lands on the art's own
      texel boundaries — the prop and knife cases come out right for free.
-   - **This is the cheapest thing that can possibly work and it has not been tried. Start here.**
-2. ⬜ **`z_index`, which the owner explicitly offered** (*"Changing z index is fine here just to save
+   - **It was the cheapest thing that could work, and it did. Shipped — see the top of §0c.**
+2. ⬜ **`z_index`, which the owner explicitly offered** — NOT NEEDED NOW, and the experiment below was
+   never run, so it stays unsettled rather than dead. (*"Changing z index is fine here just to save
    us from having back and front vfx layers"*). ⚠ **A bare `z_index = -1` on the fire quad does NOT
    work, but the reason is a claim that was DERIVED AND NEVER MEASURED, and it should be measured
    before this route is dropped.** Godot resolves effective z through the `z_as_relative` chain and
@@ -185,30 +326,100 @@ CardVisual
      ragged foot.
    - LAYERING.md documents the board order node by node and needs updating.
 
-### 0d. ⬜ TASK 2 — SAVING JUGGLING PERFORMANCE
+### 0d. ✅ TASK 2 — JUGGLING PERFORMANCE (lever 1, shipped 2026-07-29)
 
-The juggling layer is the dominant half: **1.94 of 2.58 ms**. Levers in order:
+The juggling layer was the dominant half. **Lever 1 landed and took ~30 % off it.** Measured on the
+GTX 1070, `fx_cost.tscn`, **three runs each way, minimum taken**, with the ONLY difference the two
+`min_half` assignments:
 
-1. ⬜ **THE QUAD EXTENT (`FxRequest.min_half`) — ~25 % of the layer, AND ITS BLOCKER MAY BE GONE.**
-   Written, measured at `juggle both` GPU 1.062 → 0.724, REVERTED because it moved the rendered balls
-   on a rotated host (+6.1 art units at 90 degrees) with **no mechanism ever found** (§1b).
-   - ⚠ **TWO EXTENT-DEPENDENT THINGS HAVE SINCE BEEN DELETED** and either could have been it:
-     `fx_local`'s lattice was anchored on the QUAD, and `fx_pixel_snap` TOOK THE QUAD'S EXTENT to snap
-     a ball's centre. Both are origin-anchored now and neither can see the quad's size (§0g).
-   - ⚠ **DO NOT ASSUME IT IS FIXED**: 6.1 art units is far more than a half-cell shift, so if it still
-     reproduces the cause is something else again. Instrument: `05f_ball_rotation`'s PROBE lines, and
-     ⚠ **run the snapshot twice on an unchanged build first** — that harness carries a standing
-     "rotated panels are not reproducible" warning nobody has ruled in or out.
-   - §6a's lever B was rejected for the SAME now-void reason and is also worth re-pricing.
-2. ⬜ **`noise_ratio = 0`** drops the second noise layer — about a third of the noise cost, uniform
-   branch. Visible, so an owner call.
-3. ⬜ **Fewer arcs** (`FxJuggleStyle.ball_arcs_max`, 8). Fixed work PER ARC in the lookup, so 8 → 6 → 4
-   is near-linear — but the ladder is a LOOK decision the owner made.
-4. ⬜ **`cover_taps` on `fire_ball` buys almost nothing** — the ball branch SOLVES for the tap index
-   with one `sqrt` instead of sampling, so that quad pays zero mask lookups already (§0e).
-5. ⬜ **Merging the two juggling quads** is the untried structural idea: one `fx_nearest_ball` and one
-   fill instead of two. It fights §0c (plumes want to be behind the balls) and the one-shader-per-
-   effect architecture — price it before designing it.
+| GPU timer, ms/frame | before | after | |
+|---|---|---|---|
+| `juggle balls x20` | 0.224 | **0.160** | 1.40x |
+| `ball fire x20` | 0.360 | **0.246** | 1.46x |
+| **`juggle both x20`** | **0.567** | **0.386** | **1.47x** |
+| `burning + juggling, FULL SCREEN` | 2.258 | **1.825** | 1.24x |
+| **the JUGGLING HALF of that row** | **1.643** | **1.144** | **1.44x** |
+| `burning, FULL SCREEN` (the control — no juggle quad in it) | 0.615 | 0.681 | ⚠ 0.90x |
+
+⚠ **READ THE CONTROL ROW BEFORE THE OTHERS.** The burning-only rows came out ~10 % *slower* in the
+"after" set, which is the bimodal clock of §0a scaling a whole run — so the juggling gains above are
+if anything **understated**, and the honest claim is "the juggling layer costs ~30 % less", not a
+specific millisecond.
+
+**What it is: the quad is sized to the PATTERN instead of to the card.** `FxRequest.min_half` lets a
+request declare its own content half-extent, and `FxAttachment._size_quad` uses it INSTEAD of
+body-plus-reach. The two values are `fx_balls_near`'s own box — half a span plus a ball, one tall arc
+plus a ball, plus one flame for the plumes — so nothing the shader is willing to draw can fall outside.
+A 38x50 card's ball quads went from **112x125** to ~**54x80**.
+
+**Proof it changed nothing visible: `py solatro/tools/snapshot_diff.py` — ALL 18 PANELS BYTE-IDENTICAL**
+with the lever on versus off. That is the honest instrument for an optimisation (§11), and it is a
+stronger statement than "no clipping was visible": the lattice is origin-anchored, so a correctly
+sized quad renders the same pixels as an oversized one.
+
+#### 0d.1. ⚠ THE REVERT THAT BLOCKED THIS WAS A HARNESS FLAKE — measured, and it is a lesson
+
+This lever was written, measured and **reverted** on 2026-07-31 because `05f_ball_rotation` showed the
+balls displaced along +x by up to **6.1 art units at 90 degrees**, growing with the angle, with no
+mechanism ever found. §1b called that "exactly the class of thing that produced two rejected builds".
+
+**On 2026-07-29 the same displacement was reproduced on an UNCHANGED build**: five consecutive runs of
+`fx_snapshot`, and run one printed probe offsets of **1.0 / 2.0 / 5.8** art units at 30 / 45 / 90 while
+the other four printed 0.1 at every angle. The shot has carried a standing *"rotated panels are not
+reproducible"* warning the whole time; nobody had run it twice.
+
+- The counter-rotation was **printed** and it was correct in every run (`host.global_rotation` and
+  `att.rotation` exact negatives at all four angles) — that print is now permanent in `_shot`, along
+  with a POST-CAPTURE re-read, so a future flake is diagnosable rather than mysterious.
+- A first-run **shader-recompile** theory was tested (touch `fire.gdshader`, run once) and is **wrong**:
+  that run came out clean.
+- **So the mechanism is still unknown, and that is now acceptable, because the claim moved.**
+  `test_balls_ignore_their_hosts_rotation` in the PIXELS suite asserts it: 5 balls on a host at 30 / 45
+  / 90 degrees must sit within 2 art units of the WORLD-UPRIGHT oracle. Deterministic (`_seed` pinned),
+  runs in the suite, passes with the lever on. **A decision this size needed an assertion, not a
+  picture** — and `_host_balls` takes a `deg` now, which is what made it three lines.
+
+⚠ **THE STANDING LESSON, and it is the twin of §0g's:** a green metric is not a green look — and a red
+picture from a flaky harness is not a red build. **Run a rendering harness twice before believing
+either half of what it tells you.**
+
+#### 0d.2. ⬜ THE COMPROMISES AVAILABLE FOR JUGGLING, priced — owner asked for the menu, 2026-07-29
+
+⚠ **READ THE BUDGET FIRST.** After lever 1 the worst window this box can build — 78 cards, every one
+burning AND juggling five lit balls — is **1.825 ms**, of which the juggling layer is **1.144**. The
+owner's target is ~2 ms for ALL FX. **On the GTX 1070 there is nothing left to buy**; this list matters
+only if the Intel UHD (~2–2.5x, §6) or a real playtest says otherwise. **Do not spend a LOOK change on
+a budget that is already met.**
+
+**Free — no visual change, nothing given up:**
+
+| | lever | worth | risk |
+|---|---|---|---|
+| **1** | ⬜ **AN OFF-CENTRE QUAD.** The pattern hangs ABOVE y = 0 (`fx_balls_near`: y from `-(arc+ball)` to `+ball`), but a quad is centred on the host's origin — so **~40 % of both juggling quads is empty space below the loop**, and `min_half` cannot express it because it is a half-extent. Give a request an OFFSET, fold it into `fx_local`'s `s` BEFORE the quantize, and move the mesh by the same amount. ⚠ **Safe with the current lattice and only because of it** — the grid is anchored on the host's ORIGIN, so a constant offset added before `floor` leaves it exactly where it was (this is the same reason `min_half` was safe: §0g's `height`-jitter row). | **~1.4x on the layer**, the largest thing left | medium — it is quad geometry, so §0d.1's flake will look like a bug again. `test_balls_ignore_their_hosts_rotation` plus `snapshot_diff` 18/18 are the gates, and both exist now. |
+| **2** | ⬜ **SHRINK THE BALL-FIRE QUAD TO THE LIT BALLS.** `req.lit` is known on the CPU, so the plume quad only needs to cover the balls actually alight — usually 1–2 of many. It changes every frame as they travel, which used to be unthinkable (a live resize moved the lattice) and is now free for the same reason as above. | large in PLAY, zero in the saturated bench (where every ball is lit) | medium, plus per-frame CPU to recompute — and the bench cannot show the win, so it needs a play measurement |
+| **3** | ⬜ **§6a's lever B / §10 B** — the diagonal bound only while a card is really turned. | ⚠ **1.09x, measured** (`BOX-BOUND quads` row: 1.825 → 1.672). Lever 1 already removed most of what it was measuring. | low, and now nearly pointless |
+
+**Cheap, and they cost a LOOK the owner owns:**
+
+| | lever | worth | what is given up |
+|---|---|---|---|
+| **4** | ⬜ **`fire_ball.height` down (7 → 5).** It is now a FILL knob as well as an art knob: `min_half` grows the plume quad by `height + sink` on all four sides. | ~1.15x on the ball-fire quad | shorter plumes |
+| **5** | ⬜ **`ball_arc_max` / `ball_arc_height` down.** These set `min_half.y` for BOTH quads directly, and a lower cap shrinks the loop as well as the fill. | similar to 4, on both quads | a flatter pattern; ties into ruling 13 |
+| **6** | ⬜ **`noise_ratio = 0` on `fire_ball.tres` ALONE** — drops the second noise layer for plumes and leaves cards untouched. Uniform branch, ~a third of that quad's noise cost. | ~1.1x on ball fire | plumes read coarser and flicker less |
+| **7** | ⬜ **Fewer arcs** (`ball_arcs_max` 8 → 6 → 4): the nearest-ball lookup does fixed work PER ARC, so it is near-linear in the lookup. | up to ~1.3x on `juggle balls` | the ladder is a look decision the owner made (owner 2026-07-28) |
+| **8** | ⬜ **Cap simultaneously lit balls, or juggling cards.** Feature scope. | unbounded | gameplay |
+
+**Structural, and worth more than any knob above — but they fight a ruling:**
+
+| | lever | worth | what it fights |
+|---|---|---|---|
+| **9** | ⬜ **MERGE THE TWO JUGGLING QUADS** into one shader: one `fx_nearest_ball`, one fill, instead of two of each. | large — the two quads are ~equal halves of the layer | plumes must draw BEHIND balls (§0g's tree-order fix, which handed back occlusion for free) and one-shader-per-effect (§5b) |
+
+⚠ **THREE THINGS THAT LOOK LIKE LEVERS AND ARE MEASURED NOT TO BE.** Do not spend time here:
+`FxStyle.pixel` (quantizes a coordinate — the quad still runs once per SCREEN pixel: §6f); `cover_taps`
+on `fire_ball` (the ball branch SOLVES for the tap index with one `sqrt`, so that quad pays no mask
+lookups at all: §0e); and deleting anything from the ARC maths (hoisted to 8 evaluations per fragment
+in §1a.1 — it is not the cost any more).
 
 ### 0e. `cover_taps` — why you do NOT want it as low as possible
 
@@ -316,6 +527,19 @@ instrument could fail.
 | `Assets/Fx/noise_fire.png`, `tools/make_fx_noise.py` | new — the baked tile and its generator |
 | `Tests/` | `00_cover_field` / `00b_aperture` replace the tendril shots; the ONION section died whole; the stack-ratio walk; tap-sweep and noise-source cost rows; two new pins |
 
+**And then §0c/§0d, on top of all of that:**
+
+| file | what happened |
+|---|---|
+| `Shaders/fx_common.gdshaderinc` | `fx_local_raw` — the same point, NOT quantized, for occlusion tests only (§0c) |
+| `Shaders/fire.gdshader` | the inner-alpha cut tests that point for BOX/RADII, `p` for SPRITE/BALLS |
+| `UI/Fx/fx_request.gd` | `min_half` — an effect's own content extent, replacing body-plus-reach (§0d) |
+| `UI/Fx/fx_attachment.gd` | `_size_quad` honours it |
+| `UI/Fx/fx_juggle.gd` | both juggling quads declare it, from `fx_balls_near`'s own box |
+| **`Tests/Visual/fx_behind.gd` / `.tscn`** | **NEW — the seam instrument: hosts drawn FILLED, at up to 6 px per art unit. `fx_snapshot` cannot answer a seam question and never could (§0c)** |
+| `Tests/Visual/test_pixels.gd` | `test_balls_ignore_their_hosts_rotation` — the rotated-ball claim as an ASSERTION (§0d.1); `_host_balls` takes a `deg` |
+| `Tests/Visual/fx_snapshot.gd` | prints the counter-rotation per case and re-reads it POST-CAPTURE, so the flake in §0d.1 is diagnosable next time |
+
 ---
 
 ---
@@ -370,7 +594,11 @@ driver, which is why the original measurement had to use wall-clock).
    the 38x50 box instead of the 62.4 diagonal, ~22 % of their fill. Fire on a card still needs the
    diagonal, and still gets it.
 
-### 1b. ⚠ THE NEXT LEVER, AND THE TRAP THAT STOPPED IT — read this before trying it
+### 1b. ✅ SUPERSEDED — THIS LEVER HAS SINCE SHIPPED, AND ITS "TRAP" WAS A HARNESS FLAKE (§0d)
+
+⚠ **Read §0d and §0d.1 for what actually happened. Everything below is the state of the argument
+before that, kept because the displacement it describes is real — as an artefact of
+`05f_ball_rotation`, which reproduces it on an UNCHANGED build about one run in five.**
 
 The quads are STILL sized as body-plus-reach on **every** side, because `FxRequest.reach` is a
 decorator's rule. A juggling pattern is 33 art units wide and 32 tall on a 38x50 card and gets a
@@ -731,7 +959,8 @@ Raise `HOSTS` in `Tests/Visual/fx_cost.gd` from 20 to 50 for the deck-viewer col
 
 ### 6f. If the juggling layer ever needs it again — the older levers, in order
 
-1. **THE QUAD EXTENT — worth ~25 %, and the work is already written.** The quads are sized as
+1. ✅ **THE QUAD EXTENT — TAKEN, 2026-07-29. §0d has the shipped numbers; the paragraph below is the
+   pre-ship argument and its reproducibility question, which §0d.1 answers.** The quads are sized as
    body-plus-reach on EVERY side, so a 33-unit-wide juggling pattern gets a 112x125 quad. §1b has the
    whole story: it is three lines (`FxRequest.min_half` plus two in `FxAttachment._size_quad`), it
    measured `juggle both` GPU 1.062 → 0.724 here, and it was **reverted because it displaced the balls
@@ -810,11 +1039,15 @@ here and §0 disagree, §0 wins.
 
 | | Item |
 |---|---|
-| ⬜ **TASK 1 OF 2** | **§0c — fire must RENDER behind the art.** Three routes, weighed there. ⚠ Start with the UNQUANTIZED alpha cut: it is one line and untried. |
-| ⬜ **TASK 2 OF 2** | **§0d — juggling performance.** 1.94 of 2.58 ms. ⚠ Two levers were rejected for a blocker that no longer exists. |
-| ⬜ **Blocking "done"** | **Owner playtest (T15)**, FX_SHADER_PLAN §10, 17 steps. Also the only way to learn whether §6b's saturated window is reachable in play at all — which decides how much of the perf argument matters. |
+| ✅ **TASK 1 OF 2** | **§0c — fire renders behind the art.** Route 1, the unquantized cut, one line. ⚠ **A LOOK claim: the owner has not seen it.** Route 3 (the `FxBack` node) is still the answer if his eye disagrees. |
+| ✅ **TASK 2 OF 2** | **§0d — juggling performance.** `min_half`: the layer is 1.44x cheaper, 18/18 panels byte-identical. ⚠ Its old blocker was a harness flake (§0d.1) and the claim now has an asserting check. |
+| ⬜ **THE BIGGEST OPEN GAP** | **§0c.2 — no harness renders a real `CardVisual`.** Every card panel everywhere is `star_outline`, a hand model of the rig, and the FX EDITOR DRAWS THAT SAME ARRAY AS THE CARD'S FACE — so it cannot show a face-versus-mask disagreement at all. The props were always tested with real art; the card never was, which is the card-vs-prop divergence in one sentence. **The test that closes it is specified in §0c.2 and it is the next thing to build.** |
+| ⬜ **The warped card's spikes** | **§0c.1 — fire over the art at a warped corner.** The 32-ray mask cannot represent a vertex; the cut follows the mask. ~1 art unit at the warp the rig actually reaches, obvious past it. A one-run experiment (`RADII` 64) or an analytic star branch — owner call. |
+| ⬜ **Juggling, if it is needed again** | **§0d.2 — the priced menu.** The free levers come first, and the off-centre quad is worth ~1.4x for no visual change. ⚠ The budget is already met on this box; do not spend a look change on it. |
+| ⬜ **Blocking "done"** | **Owner playtest (T15)**, FX_SHADER_PLAN §10, 17 steps — **the last gate, with the art calls in §0f and the real-card test above.** Also the only way to learn whether §6b's saturated window is reachable in play at all. |
 | ⬜ **Owner art calls**, incl. the retune and the clobbered `fire_prop.tres` | §0f. |
 | ⬜ **RE-MEASURE ON THE INTEL UHD** | Every number in §0 is a GTX 1070; §6 and §9 are the owner's Intel UHD, ~2x apart. Ratios transfer, absolutes do not. Two rows are genuinely likely to FLIP on the slow box: the noise-source A/B (ALU vs shared memory bandwidth) and whether 6 cover taps are affordable. Three runs, take the minimum (§0a). |
+| ⬜ **RE-MEASURE `min_half` ON THE INTEL UHD TOO** | The 1.44x of §0d is a GTX 1070. It is a pure FILL cut, which is the multiplier §6b says dominates on the slow box, so it should transfer or do better — but it has not been run there. |
 | ✅ **Closed this pass** | The noise fire and its stack ratios (§0a/§0b); the corner chamfer (§10 E, taken); §3's sliced tendrils (gone with the arch, confirmed on `04_shapes`); the pixel size, the editor freeze, the tap banding, the flame's foot, the `height` jitter, and fire-behind on balls. All in §0g with the measurement that found each. |
 | ⬜ Known limitation | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
 | ⬜ Deferred by the owner | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
@@ -912,6 +1145,7 @@ to be worth the uniform bytes (32 → -2.32, 64 → -1.41, 128 → -0.56 art uni
 ```bash
 Godot --path solatro res://Tests/all_tests.tscn            # windowed, ~60-85 s, exit = failure count
 Godot --path solatro res://Tests/Visual/fx_snapshot.tscn   # after ANY shader edit
+Godot --path solatro res://Tests/Visual/fx_behind.tscn     # the SEAM: hosts drawn FILLED (§0c)
 Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn
 Godot --path solatro res://Tests/Visual/fx_cost.tscn       # ms/frame per host kind — not a test
 py solatro/tools/palette_conformance.py
@@ -930,8 +1164,18 @@ by the same factor — five consecutive runs of ONE unchanged build read 0.594, 
 honest claim is byte-identical, and an eye is far too generous for that. Both §6a changes were
 landed on it.
 
-Last full run (2026-07-29, GTX 1070 box, the noise fire): **28 suites, exit 0**, all checks passed (the check COUNT
-varies run to run — BOARD FUZZ is randomised; what must hold is 28 suites and exit 0).
+Last full run (2026-07-29 late, GTX 1070 box, with §0c and §0d in): **28 suites, exit 0** — two runs
+read 1571 and 1555 checks, and **PIXELS: ALL 37** in both (34 before this pass, plus §0d.1's three
+rotated-ball checks). The total COUNT varies run to run because BOARD FUZZ is randomised; what must
+hold is 28 suites and exit 0.
+
+⚠ **TWO RENDERING HARNESSES HANG AT RANDOM ON THIS BOX, AND NEITHER IS A FAILURE.** Measured
+2026-07-29 while A/B-ing §0d: `test_pixels.tscn` run STANDALONE printed all 37 checks and then never
+exited, in four consecutive runs, with the change both ON and OFF — so that one is an exit hang, and
+the checks are what matter. `all_tests.tscn` hung MID-SUITE once (inside the PIXELS modulate shot,
+awaiting `frame_post_draw`) and completed cleanly on the next run of the identical build. **Both were
+briefly mistaken for a bug in the change under test. Re-run before believing a hang**, and time the
+runs out rather than waiting (a hung run holds a window at ~10 % CPU forever).
 
 ⚠ **LEAK CANARY is mildly FLAKY** — it failed once in four consecutive runs of an unchanged build
 with `growth 2` and two stray `/Fx` Node2Ds, and passed the other three. Zero tolerance and a

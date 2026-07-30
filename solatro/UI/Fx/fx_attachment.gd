@@ -513,7 +513,12 @@ func _size_quad(quad: MeshInstance2D, req: FxRequest) -> void:
 	var bound := body
 	if rotates and req.rotates_with_host:
 		bound = Vector2.ONE * maxf(body.length(), _radii_max * 2.0)
+	# A request that declares its own CONTENT is sized from that instead of from body-plus-reach: the
+	# juggling pattern is much smaller than the box that rule builds around it, and this shader is
+	# fragment-bound (FxRequest.min_half).
 	var extent := bound + Vector2.ONE * (req.reach + FX_MARGIN) * 2.0
+	if req.min_half != Vector2.ZERO:
+		extent = req.min_half * 2.0 + Vector2.ONE * FX_MARGIN * 2.0
 	(quad.mesh as QuadMesh).size = extent
 	# UV maps across exactly the quad, so the shader needs the same number to recover art units.
 	var mat := quad.material as ShaderMaterial

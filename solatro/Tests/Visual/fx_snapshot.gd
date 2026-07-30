@@ -604,6 +604,9 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var step := size.x / float(cases.size())
 	var zoom := _zoom_for(cases, step)
 	var probes : Array[_Probe] = []
+	## Kept so the counter-rotation can be re-read AFTER the capture: a value that is right when it is
+	## written and wrong in the captured frame is a different bug from one that was never right.
+	var atts : Array[FxAttachment] = []
 	for i : int in cases.size():
 		var case : Case = cases[i]
 		var slot := Node2D.new()
@@ -649,6 +652,16 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		att._push_live(0.0)
 		att.set_process(false)
 		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
+		# THE COUNTER-ROTATION, PRINTED — because the rotated panels of this shot have a standing
+		# "not reproducible" warning and it was never run to ground. Two consecutive runs of ONE
+		# unchanged build (2026-07-29) put the 05f_ball_rotation probes at 1.0 / 2.0 / 5.8 art units for
+		# 30 / 45 / 90 degrees in the first and 0.1 in the second — the SAME grows-with-the-angle
+		# displacement along +x that got FX_HANDOFF §1b's quad-extent lever reverted. So the pattern
+		# rotated with its host in one run and not the other, and these two numbers are the only place
+		# that can happen: `_push_live` sets `rotation = -parent.global_rotation`.
+		print("  [", file_name, "/", case.label, "] ROT host=", host.global_rotation,
+				" att=", att.rotation, " slot=", slot.rotation)
+		atts.append(att)
 		for id : StringName in att._fx:
 			var m := (att._fx[id].quad as MeshInstance2D).material as ShaderMaterial
 			print("  [", file_name, "/", case.label, "] zoom=", zoom, " ", id,
@@ -661,6 +674,9 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 					" u_return_height=", m.get_shader_parameter("u_return_height"),
 					" u_extent=", m.get_shader_parameter("u_extent"))
 	var img : Image = await capture(file_name, caption)
+	for att : FxAttachment in atts:
+		print("  [", file_name, "] POST-CAPTURE att.rotation=", att.rotation, " global=",
+				att.global_rotation, " processing=", att.is_processing())
 	for probe : _Probe in probes: _report(img, probe)
 	holder.queue_free()
 	await get_tree().process_frame

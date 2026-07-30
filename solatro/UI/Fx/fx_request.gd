@@ -28,15 +28,29 @@ var shape : int = -1
 ## with the host's body, so a taller flame gets a taller quad instead of clipping at its edge.
 var reach : float = 0.0
 
-## ⚠ THE QUAD IS SIZED FROM `reach` ON EVERY SIDE, AND FOR THE JUGGLING PATTERN THAT IS FAR TOO BIG —
-## a loop 33 art units wide and 32 tall gets a 112x125 quad, because `reach` is a decorator's rule
-## that assumes the effect hugs the whole silhouette. Letting a request declare its own half-extent
-## and shrinking the quad to it was TRIED and REVERTED on 2026-07-31: it is worth ~25 % of the
-## juggling layer's GPU time, and it MOVED THE RENDERED BALLS on a rotated host — `05f_ball_rotation`
-## went from sub-unit probe offsets at every angle to +6.1 art units at 90 degrees and +2.3 at 45,
-## with the whole pattern displaced along +x, on a quad whose uniforms and transform were byte for
-## byte the same at every angle. Shrinking only the X axis reproduced it; not shrinking reproduced
-## nothing. No mechanism was found, so it did not ship (FX_HANDOFF §1b.3).
+## THE EFFECT'S OWN CONTENT, as a half-extent in art units, or ZERO for "size me from the host".
+##
+## `reach` is a DECORATOR'S rule — body plus reach on all four sides — and it assumes the effect hugs
+## the whole silhouette. Fire does. A juggling pattern does not: a loop 33 art units wide and 32 tall
+## was getting a **112x125** quad on a 38x50 card, and the fire shader is fragment-bound, so almost
+## all of that is empty space paid for at full price. Declaring the content instead gives ~54x80.
+##
+## ⚠ THIS WAS TRIED AND REVERTED ONCE, and the reason it was reverted is now measured to be a
+## HARNESS FLAKE. It went in on 2026-07-31, measured `juggle both` GPU 1.062 -> 0.724, and was pulled
+## because `fx_snapshot`'s `05f_ball_rotation` showed the balls displaced along +x by up to 6.1 art
+## units at 90 degrees, growing with the angle, with no mechanism ever found. On 2026-07-29 the SAME
+## displacement (1.0 / 2.0 / 5.8 units at 30 / 45 / 90) came out of one run in five of that shot on
+## an **unchanged** build, while `att.rotation` and `host.global_rotation` printed exactly right in
+## every run. That shot has carried a standing "rotated panels are not reproducible" warning the
+## whole time. The claim now lives in an ASSERTING check that runs every suite —
+## `test_balls_ignore_their_hosts_rotation` in the PIXELS suite — which is what a decision this size
+## needed in the first place.
+##
+## ⚠ It REPLACES `reach` rather than capping it, so it must cover everything the effect draws,
+## including whatever it draws BEYOND its own subject (a plume's height above its ball).
+## `FX_MARGIN` is still added on top, as it is for every quad.
+var min_half : Vector2 = Vector2.ZERO
+
 ## Whether THIS effect's content turns when its host does — which is the only reason a quad ever pays
 ## the CIRCUMSCRIBED (diagonal) bound instead of the host's box (FxAttachment._size_quad). Fire needs
 ## it: its mask IS the host's art, so a card turned 45 degrees presents its diagonal and a box-bound

@@ -65,6 +65,7 @@ func _ready() -> void:
 	await test_fire_is_a_bounded_falling_cover_field()
 	await test_every_upward_surface_burns()
 	await test_balls_sit_on_their_oracle()
+	await test_balls_ignore_their_hosts_rotation()
 	await test_ball_reads_as_a_sphere()
 	await test_hoop_halves_reassemble()
 	await test_one_pixel_size_for_all_art()
@@ -315,6 +316,46 @@ func test_balls_sit_on_their_oracle() -> void:
 					% [n, BALL_TOLERANCE, dir],
 					"%d missing, worst offset %.2f art units" % [missing, worst])
 
+## THE SAME CLAIM ON A TURNING HOST, AND IT IS HERE BECAUSE THE SNAPSHOT THAT USED TO CARRY IT IS
+## FLAKY. The juggling pattern does not rotate with its card (owner 2026-07-30, §4): `juggle.gdshader`
+## never reads `u_shape_rot` and `FxAttachment._push_live` counter-rotates the quad, so the balls must
+## sit on the WORLD-UPRIGHT oracle no matter how far the host is turned.
+##
+## ⚠ THIS IS THE INSTRUMENT THAT DECIDES A PERFORMANCE LEVER, and that is why it is an assertion
+## rather than a picture. `fx_snapshot`'s `05f_ball_rotation` reported exactly this displacement —
+## growing with the angle, along +x, up to ~6 art units at 90 degrees — and it is what got
+## FX_HANDOFF §1b's quad-extent lever (worth ~25 % of the juggling layer) implemented, measured and
+## then REVERTED with no mechanism ever found. Measured 2026-07-29: **that displacement appears on an
+## UNCHANGED build**, once in five consecutive runs of the shot, while `att.rotation` and
+## `host.global_rotation` printed correct in every run. So the snapshot's standing "rotated panels are
+## not reproducible" warning is real, the revert's evidence was one flaky run, and a claim about
+## rotated balls needs a check that runs every suite instead.
+func test_balls_ignore_their_hosts_rotation() -> void:
+	behavior_section("A TURNING HOST DOES NOT TURN THE PATTERN")
+	var style := StatusJuggling.JUGGLE_STYLE
+	var geo := FxJuggle.geometry(5, style)
+	var phase := 0.13
+	for deg : float in [30.0, 45.0, 90.0] as Array[float]:
+		_host_balls(5, style, phase, 1.0, deg)
+		var img := await _shoot()
+		var expected := PixelProbe.ball_positions(5.0, phase, geo[&"u_span"], geo[&"u_arc_height"],
+				geo[&"u_return_height"], style.ball_top_fraction, style.ball_gravity, 1.0,
+				geo[&"u_ball_arcs"])
+		var worst := 0.0
+		var missing := 0
+		for p : Vector2 in expected:
+			var want := Vector2(VP_SIZE, VP_SIZE) * 0.5 + p * _zoom
+			var hit := PixelProbe.nearest(img, want, int(ceilf(BALL_TOLERANCE * _zoom)) + 2,
+					PixelProbe.is_warm)
+			if not hit[&"found"]:
+				missing += 1
+				continue
+			worst = maxf(worst, (hit[&"offset"] as Vector2).length() / _zoom)
+		check(missing == 0 and worst <= BALL_TOLERANCE,
+				"host at %.0f deg: every ball still sits within %.1f art units of the UPRIGHT spec"
+				% [deg, BALL_TOLERANCE],
+				"%d missing, worst offset %.2f art units" % [missing, worst])
+
 ## A ball must read as a SPHERE, not a disc (owner 2026-07-27): banded curvature plus a highlight
 ## sitting ON the surface. Measurable form: at least three distinct tones inside one ball (a flat
 ## two-tone split has two), and the brightest tone is OFF CENTRE — a centred dot is a disc's gloss.
@@ -405,13 +446,28 @@ func _host_fire(body: Vector2, stacks: int, style: FxFireStyle) -> void:
 	_park(att, 0.0)
 
 ## The juggling pattern at a fixed phase, with no ball on fire (this suite is about the balls).
-func _host_balls(n: int, style: FxJuggleStyle, phase: float, dir: float = 1.0) -> void:
+##
+## `deg` turns the HOST the attachment hangs under, which is the only way to exercise the
+## counter-rotation: `_push_live` reads `get_parent().global_rotation`, so a rotation put on the
+## attachment itself would be overwritten on the first push. A turned host also declares
+## `rotates`, exactly as a spinning card does, so the quad takes the diagonal bound it would
+## really get.
+func _host_balls(n: int, style: FxJuggleStyle, phase: float, dir: float = 1.0,
+		deg: float = 0.0) -> void:
 	var geo := FxJuggle.geometry(n, style)
 	_zoom_to_fit(geo[&"u_arc_height"] + geo[&"u_ball_radius"] + 4.0)
+	var turned := not is_zero_approx(deg)
 	var att := FxAttachment.new()
-	att.configure(CardVisual.CARD_SIZE, false, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
+	att.configure(CardVisual.CARD_SIZE, turned, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			false)
-	_place(att, 1.0)
+	if turned:
+		var host := Node2D.new()
+		host.rotation = deg_to_rad(deg)
+		_place(host, 1.0)
+		att.scale = Vector2.ONE
+		host.add_child(att)
+	else:
+		_place(att, 1.0)
 	# Pin the host's randomness BEFORE sync: the quads read `_seed` and `_ball_dir` as they are BUILT,
 	# unlike the clock, which is pushed afterwards (VFX.md §4.4).
 	#
