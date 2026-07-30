@@ -425,7 +425,7 @@ func _add_prop(slot : int, kind : GDScript) -> int:
 	var reqs : Array[FxRequest] = []
 	if fire_stacks > 0 and prop_fire_style:
 		reqs.append(FxFire.request(&"fire", fire_stacks, prop_fire_style))
-	_spawn_host(_x(slot), prop.body_size, prop.fx_shape(), reqs, prop)
+	_spawn_host(_x(slot), prop.body_size, FxAttachment.Shape.BOX, reqs, prop)
 	return slot + 1
 
 ## One preview host: a Node2D standing in for a CardVisual / PropVisual's Offset, carrying THE REAL

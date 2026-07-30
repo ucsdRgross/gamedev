@@ -107,6 +107,27 @@ const ART_PIXEL_SCALE := AUTHORED_CARD_SCALE
 static func art_size_for(sheet: Texture2D, h_frames: int = 1, v_frames: int = 1) -> Vector2:
 	return CardModifier.frame_size(sheet, h_frames, v_frames) * ART_PIXEL_SCALE
 
+## THIS KIND'S ART — the sheet plus WHICH FRAME of it, declared once in `_init` beside `art_size`.
+##
+## ⚠ ONE DECLARATION, TWO CONSUMERS, AND THAT IS THE WHOLE REASON IT IS A FIELD. `_draw_body` draws this
+## frame and `measure_fx_silhouette` masks against the SAME frame's alpha, so a kind that named its
+## `(sheet, h, v, frame)` tuple separately in each of them could drift into masking one frame while
+## drawing another — flames standing on art that is not there, which is the bug class
+## `measure_sprite_silhouette` was added to fix. Every textured kind used to override BOTH methods with
+## the tuple written out again; now it sets these four and overrides neither.
+##
+## A null sheet is an UNTEXTURED kind (the firework): it keeps the primitive `_draw_body` default and the
+## plain BOX mask, which is exactly what an untextured kind should get.
+var art_sheet : Texture2D = null
+var art_h_frames : int = 1
+var art_v_frames : int = 1
+var art_frame : int = 0
+
+## The source rect of `art_frame` in `art_sheet` — the one place the four fields turn into a rect, so the
+## mask, the whole-body draw and a split prop's halves all cut from the same measurement.
+func art_frame_rect() -> Rect2:
+	return CardModifier.frame_rect(art_sheet, art_h_frames, art_v_frames, art_frame)
+
 ## True while the art is mirrored (the prop is heading right). Only meaningful with face_travel on;
 ## _process redraws every frame, so setting it needs no explicit invalidation.
 var flipped : bool = false
@@ -177,11 +198,14 @@ func _draw() -> void:
 	if not has_back_half() or Engine.is_editor_hint() or not _split_active:
 		_draw_body()
 
-## Full-shape body — subclasses override with their sprite (or a kind-distinct primitive) at
-## `art_size`. For split props this is used for the editor preview (and the non-split default
-## draw); the runtime split is drawn by _draw_back()/_draw_front() onto the two half nodes.
+## Full-shape body: the kind's own frame of its own sheet, or a plain disc for a kind that has declared
+## no art. Only an UNTEXTURED kind that wants a distinct primitive overrides this (the firework's rocket);
+## a textured kind declares `art_sheet` in `_init` and inherits this. For split props this is the editor
+## preview (and the non-split default draw); the runtime split is drawn by _draw_back()/_draw_front()
+## onto the two half nodes.
 func _draw_body() -> void:
-	draw_circle(Vector2.ZERO, art_size.x * 0.5, color)
+	if art_sheet: _draw_frame(art_sheet, art_h_frames, art_v_frames, art_frame)
+	else: draw_circle(Vector2.ZERO, art_size.x * 0.5, color)
 
 ## THE textured body: one frame of a uniform sheet, centred and drawn at `art_size`. Every textured
 ## kind's `_draw_body` is a single call to this — the framing maths is CardModifier's (cards use the
@@ -275,17 +299,23 @@ class _PropHalf extends Node2D:
 		queue_redraw()
 
 # --- shader FX ----------------------------------------------------------------
-## Which silhouette this kind's effects decorate. A blade and a card are both boxes; the hoop
-## overrides to a ring. Adding a kind is one override here and one branch in the shader.
-func fx_shape() -> FxAttachment.Shape:
-	return FxAttachment.Shape.BOX
-
-## Point an attachment at this kind's REAL art. Default: nothing, so the kind keeps whatever
-## `fx_shape()` said. EVERY textured kind overrides it, the hoop included: the fire shader reads the
-## sheet's own ALPHA as its mask, which is what lets it find the drawing inside a mostly-transparent
-## frame and, on the hoop, the upward-facing surface at the bottom of the RING's hole.
+## Point an attachment at this kind's REAL art. Default: nothing, so the kind stays a plain BOX. EVERY
+## textured kind overrides it, the hoop included: the fire shader reads the sheet's own ALPHA as its
+## mask, which is what lets it find the drawing inside a mostly-transparent frame and, on the hoop, the
+## upward-facing surface at the bottom of the RING's hole.
+##
+## ⚠ THIS IS THE ONLY SHAPE SEAM A KIND NEEDS, which is why there is no `fx_shape()` beside it. There
+## was one — a virtual returning `Shape.BOX` — and in the end no kind ever overrode it: a textured kind
+## reaches `Shape.SPRITE` through this call instead, so the virtual was a documented extension point that
+## described behaviour (`the hoop overrides to a ring`) nothing implemented. Add a genuinely non-box,
+## non-sprite kind and give it a shape THROUGH this call.
+##
+## The four kinds that HAVE art all measured it the same way, so this reads `art_sheet` rather than being
+## overridden per kind — see that field. A kind whose mask is not simply its own frame's alpha (a ring
+## whose halves want their own rects, say) is the case that overrides this again.
 func measure_fx_silhouette(att: FxAttachment) -> void:
-	pass
+	if not art_sheet: return
+	att.measure_sprite_silhouette(art_sheet, art_frame_rect(), art_size)
 
 ## Build this prop's FX attachments. Runtime only and OWNERLESS: this script is @tool and the
 ## formation editor instantiates PropVisuals live, where there is no game to read a pacing from
@@ -306,7 +336,7 @@ func _make_fx(host: Node2D, half: FxAttachment.Half) -> FxAttachment:
 	att.name = "Fx"
 	# host_rotates = false for EVERY prop: directional art mirrors instead of turning (face_travel),
 	# so no prop silhouette ever leaves its box and none of them pays the circumscribed quad bound.
-	att.configure(body_size, false, fx_shape(), half)
+	att.configure(body_size, false, FxAttachment.Shape.BOX, half)
 	host.add_child(att)
 	measure_fx_silhouette(att)
 	return att

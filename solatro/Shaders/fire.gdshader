@@ -361,15 +361,13 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 	return (a > 0.5) ? u_level : MASK_EMPTY;
 }
 
-// Half the art's WORLD-ALIGNED width at the live rotation. Not `u_body.x * 0.5`: that is the
-// UNROTATED width, so a card turned 90 degrees (which anim_spin_start does every revolution) is 50
-// units wide, not 38. Read by the outward fan, which is measured across the silhouette.
-float body_half_width() {
-	vec2 h = u_body * 0.5;
-	return h.x * abs(cos(u_shape_rot)) + h.y * abs(sin(u_shape_rot));
-}
-
-// The body's WORLD-ALIGNED half-extent at the live rotation — `body_half_width` on both axes.
+// The body's WORLD-ALIGNED half-extent at the live rotation. Not `u_body * 0.5`: that is the
+// UNROTATED extent, so a card turned 90 degrees (which anim_spin_start does every revolution) is 50
+// units wide, not 38.
+//
+// ⚠ ONE DEFINITION, READ BY BOTH CONSUMERS. `.x` is what the outward fan is measured across and the
+// whole vec2 is what `body_near` rejects against; these used to be two functions with the same body,
+// which is how a rotation-convention fix reaches one consumer and silently misses the other.
 vec2 body_bound() {
 	vec2 h = u_body * 0.5;
 	float c = abs(cos(u_shape_rot));
@@ -718,7 +716,7 @@ void fragment() {
 		// spread"), the wind, and the host's motion lag (the cape). `k` is height above the surface,
 		// normalized — the complement of cover, which is the only thing `rise` was ever needed for.
 		float k = 1.0 - cover;
-		float fan = clamp(p.x / max(body_half_width(), 1e-4), -1.0, 1.0);
+		float fan = clamp(p.x / max(body_bound().x, 1e-4), -1.0, 1.0);
 		float drift = (u_skew * fan + u_wind.x + u_lag.x * u_lag_amount) * k * k;
 		float n = fire_noise(vec2(p.x - drift * u_height, p.y));
 
@@ -741,8 +739,16 @@ void fragment() {
 		// The whole-effect breath rides the APERTURE rather than the brightness, so a breathing
 		// flame grows and shrinks instead of flashing. It carries the HOST's phase, or every burning
 		// card on the board would breathe in unison.
-		float ap = u_aperture * k
-				* (1.0 + u_pulse_amp * sin(u_time * u_pulse_speed + fx_hash11(u_seed) * TAU));
+		//
+		// ⚠ GATED ON A UNIFORM, so a style that does not breathe pays nothing. The branch cannot
+		// diverge — it is the same for every fragment of the draw — while the term it guards costs a
+		// `sin` plus `fx_hash11`'s own `sin`/`fract` per LIT fragment. `pulse_amp` is 0.0 in all four
+		// shipped styles, so this was buying a multiplier of exactly 1.0 on every burning card,
+		// prop and ball.
+		float ap = u_aperture * k;
+		if (u_pulse_amp > 0.0) {
+			ap *= 1.0 + u_pulse_amp * sin(u_time * u_pulse_speed + fx_hash11(u_seed) * TAU);
+		}
 		heat = cover * (((cover + ap) * n - ap) * u_fire_gain);
 		heat *= u_intensity;
 		// ⚠ THE DITHER IS INDEXED ON THE FX PIXEL GRID, NOT ON SCREEN PIXELS. It used to take

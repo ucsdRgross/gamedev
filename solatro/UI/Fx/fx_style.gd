@@ -71,7 +71,10 @@ extends Resource
 ## Write the shared levers onto a material. **Subclasses override this and call `super(mat)` first.**
 ## Called on creation and on style swap, NEVER per frame — pushing a style's ~35 uniforms every frame
 ## for every host is the cost the static/live split exists to avoid.
+##
+## ⚠ `brightness` IS DELIBERATELY NOT PUSHED HERE. The ATTACHMENT owns `u_brightness`, because only it
+## knows the player's `fx_intensity` to fold in (FxAttachment._apply_static) — and it writes that
+## uniform immediately after calling this, so a push here would be overwritten every time.
 func apply(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter(&"u_pixel", pixel)
-	mat.set_shader_parameter(&"u_brightness", brightness)
 	mat.set_shader_parameter(&"u_opacity", opacity)

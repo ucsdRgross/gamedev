@@ -92,7 +92,7 @@ func _screen_rows(floor_ms: float) -> void:
 	# gives the quad the BOX bound instead of the 62.4 diagonal, which is exactly what a live
 	# rotation-aware bound would give a card that is not currently turned. If this row is close to the
 	# one above, lever B is not worth its lattice risk.
-	await _screen_row("burning + juggling, BOX-BOUND quads", floor_ms, _worst_host_pinned, 0)
+	await _screen_row("burning + juggling, BOX-BOUND quads", floor_ms, _worst_host.bind(false), 0)
 	await _cpu_row()
 	await _tap_rows(floor_ms)
 	await _noise_rows(floor_ms)
@@ -224,28 +224,28 @@ func _burning_host_styled(host: Node2D, style: FxFireStyle) -> void:
 ## THE WORST HOST THE GAME CAN MAKE (owner 2026-07-29: *"assume every card on screen is burning and
 ## juggling fire balls"*): three quads on one deformed card — the crown, the balls, and the fire
 ## riding every one of them.
-func _worst_host(host: Node2D) -> void:
-	var att := _card_attachment(host)
+## `turns` false is the same host with its quads PINNED to the box bound — the ceiling of lever B, not a
+## shipped configuration (a real card can spin, and would clip against this bound while it did).
+##
+## ⚠ ONE BODY, ONE PARAMETER. This was two functions identical but for that flag, in the one file whose
+## whole purpose is that two priced rows differ in EXACTLY the thing being priced — a stray argument in
+## one copy makes the comparison meaningless while still looking like a real regression.
+func _worst_host(host: Node2D, turns := true) -> void:
+	var att := _card_attachment(host, turns)
 	var reqs : Array[FxRequest] = [FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)]
 	reqs.append_array(FxJuggle.requests(5, PackedInt32Array([4, 4, 4, 4, 4]),
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 	att.sync(reqs)
 
-## The same worst host with its quads PINNED to the box bound — the ceiling of lever B, not a shipped
-## configuration (a real card can spin, and would clip against this bound while it did).
-func _worst_host_pinned(host: Node2D) -> void:
-	var att := _card_attachment(host, false)
-	var reqs : Array[FxRequest] = [FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)]
-	reqs.append_array(FxJuggle.requests(5, PackedInt32Array([4, 4, 4, 4, 4]),
-			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
-	att.sync(reqs)
-
-func _card_attachment(host: Node2D, turns := true) -> FxAttachment:
+## THE card-host setup, in one place — every card row in this file builds its attachment through here, so
+## two rows can only differ by the arguments they pass. `warped` is what puts the deformed star outline on
+## it (the RADII mask); without it the host keeps its authored box.
+func _card_attachment(host: Node2D, turns := true, warped := true) -> FxAttachment:
 	var att := FxAttachment.new()
 	att.configure(CardVisual.CARD_SIZE, turns, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			false)
 	host.add_child(att)
-	att.measure_outline(CardVisual.star_outline(CardVisual.CARD_SIZE, 0.25))
+	if warped: att.measure_outline(CardVisual.star_outline(CardVisual.CARD_SIZE, 0.25))
 	return att
 
 ## One host kind, priced against the empty scene.
@@ -288,24 +288,20 @@ func _measure(label: String, build: Callable) -> float:
 
 ## Burning cards at the size the board draws them (CardVisual's own scale), tiled across the window.
 func _card_case(holder: Node2D, style: FxFireStyle) -> void:
-	for i : int in HOSTS:
-		var host := _slot(holder, i, PropVisual.AUTHORED_CARD_SCALE)
-		var att := FxAttachment.new()
-		att.configure(CardVisual.CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
-				false)
-		host.add_child(att)
-		att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
+	_card_fire_case(holder, style, false)
 
 ## Burning cards on the DEFORMED silhouette a board card really carries — the star rig's 16-point
 ## outline, with the corners stretched the ~25 % the shipped animation peaks at.
 func _warped_card_case(holder: Node2D, style: FxFireStyle) -> void:
+	_card_fire_case(holder, style, true)
+
+## ⚠ ONE BODY FOR BOTH ROWS, on the `_hoop_case`/`_knife_case` -> `_sprite_case` pattern this file
+## already uses. The box row and the deformed row are only comparable if they differ in EXACTLY the
+## silhouette — they were two pasted copies of the attachment setup, so a stray `configure` argument in
+## one would have shown up as a fill regression that no code change caused.
+func _card_fire_case(holder: Node2D, style: FxFireStyle, warped: bool) -> void:
 	for i : int in HOSTS:
-		var host := _slot(holder, i, PropVisual.AUTHORED_CARD_SCALE)
-		var att := FxAttachment.new()
-		att.configure(CardVisual.CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
-				false)
-		host.add_child(att)
-		att.measure_outline(CardVisual.star_outline(CardVisual.CARD_SIZE, 0.25))
+		var att := _card_attachment(_slot(holder, i, PropVisual.AUTHORED_CARD_SCALE), true, warped)
 		att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
 
 ## Burning hoops — the worst case in the game for the cover field, because the ring is the tallest
@@ -339,11 +335,7 @@ func _sprite_case(holder: Node2D, style: FxFireStyle, sheet: Texture2D, frames: 
 func _balls_case(holder: Node2D, style: FxFireStyle, only: StringName) -> void:
 	var levels := PackedInt32Array([4, 4, 4, 4, 4])
 	for i : int in HOSTS:
-		var host := _slot(holder, i, PropVisual.AUTHORED_CARD_SCALE)
-		var att := FxAttachment.new()
-		att.configure(CardVisual.CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
-				false)
-		host.add_child(att)
+		var att := _card_attachment(_slot(holder, i, PropVisual.AUTHORED_CARD_SCALE), true, false)
 		var reqs := FxJuggle.requests(5, levels, StatusJuggling.JUGGLE_STYLE, style)
 		if only != &"":
 			var one : Array[FxRequest] = []

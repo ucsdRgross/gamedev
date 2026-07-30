@@ -14,15 +14,10 @@ extends Resource
 ##   * _validate_property() turns each role into a DROPDOWN listing the live palette's entries with
 ##     their hex values, so the number is chosen with the colour in view;
 ##   * _get_property_list() appends a read-only Color swatch per role.
-## Both read `palette` at inspector time, so neither can go stale against the image.
+## Both read PaletteDB.PALETTE at inspector time, so neither can go stale against the image.
 ##
 ## Reached through PaletteDB. See ARCHITECTURE_REVIEW §4i; the deferred surfaces (map, UI chrome)
 ## are listed in todo.md and warn every test run until their art exists.
-
-## The palette these indices are authored against — EDITOR PREVIEW ONLY. What the game actually draws
-## is PaletteDB.PALETTE; a test pins the two to the same resource so a preview can never quietly
-## disagree with the game.
-@export var palette : Palette = null
 
 @export_group("Suits")
 ## Rank pip + card art on each suit's cards, via Assets/color_picker.gdshader. NOT the suit pip itself:
@@ -55,10 +50,17 @@ const ROLE_NAMES : Array[StringName] = [
 func index_of(role : StringName) -> int:
 	return get(role)
 
-## This role's colour, resolved against `palette`.
+## This role's colour, resolved against the LIVE palette.
+##
+## ⚠ THERE IS NO `palette` FIELD HERE, and there was one — an `@export` filled in by roles.tres and
+## described as "editor preview only" while being what this function actually read. The preview and the
+## game could therefore disagree, and only a test standing between them said otherwise (see
+## PaletteRamp.colors, which had the same field with no test at all). Reading `PaletteDB.PALETTE`
+## directly makes them the same fact rather than two facts pinned together.
 func color_of(role : StringName) -> Color:
-	if not palette: return Color.MAGENTA
-	return palette.color(index_of(role))
+	var pal := PaletteDB.PALETTE
+	if not pal: return Color.MAGENTA
+	return pal.color(index_of(role))
 
 # --- Editor conveniences (all @tool-only; none of this runs in a build) ----------------------------
 
@@ -68,6 +70,7 @@ func color_of(role : StringName) -> Color:
 func _validate_property(property : Dictionary) -> void:
 	if not Engine.is_editor_hint(): return
 	if property.name not in ROLE_NAMES: return
+	var palette := PaletteDB.PALETTE
 	if not palette or palette.width() == 0: return
 	var parts : PackedStringArray = PackedStringArray()
 	var cols := palette.colors()

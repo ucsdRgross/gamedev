@@ -26,12 +26,15 @@ var card_separation_custom: int
 ## directly: the editor instantiates NO autoloads, and the tool stands up a REAL card (owner
 ## 2026-07-29: *"no useless mocks when you can just use actual original scene"*), so every settings read
 ## on the construction path has to survive their absence. The shipped defaults stand in, which is also
-## what a tuning tool should be showing. Exactly the pattern `FxAttachment.settings()` already uses.
-static var _editor_settings : PlayerSettings = null
+## what a tuning tool should be showing.
+##
+## ⚠ ONE ACCESSOR, DELEGATED — this used to be its own copy of `FxAttachment.settings()` body and its own
+## `static var _editor_settings`, which meant the editor held TWO PlayerSettings instances: the FX editor
+## tuned `fx_intensity` against one object while the real card it was previewing sized itself against
+## another, so the one tool that shows both could quietly disagree with itself. `FxAttachment` is the
+## right home because a card already depends on it and it depends on no host.
 static func settings() -> PlayerSettings:
-	if not Engine.is_editor_hint(): return SettingsManager.settings
-	if not _editor_settings: _editor_settings = PlayerSettings.new()
-	return _editor_settings
+	return FxAttachment.settings()
 
 static var card_size_play : Vector2:
 	get():

@@ -19,18 +19,24 @@ extends Resource
 		indices = value
 		emit_changed()
 
-## Editor preview only, as on PaletteRoles: the game draws through PaletteDB.PALETTE.
-@export var palette : Palette = null
-
 func size() -> int:
 	return indices.size()
 
-## The ramp's colours in order.
+## The ramp's colours in order, resolved against the LIVE palette.
+##
+## ⚠ THERE IS NO `palette` FIELD HERE, and there was one — an `@export` every ramp `.tres` filled in
+## with its own `ExtResource` pointer to circus_crayon.tres, documented as "editor preview only" while
+## being the runtime source this function actually read. So the shipped fire ramp, ball tones and ember
+## gradient each resolved through a pointer of their own, three of which no test pinned: repoint one
+## `.tres` and it emits off-palette colours while the "every colour is a palette entry" suite passes,
+## which is the precise failure T21 exists to end. `PaletteDB.PALETTE` is a static var for exactly this
+## reason — one storage slot every reader shares (palette_db.gd:17-22).
 func colors() -> PackedColorArray:
 	var out := PackedColorArray()
-	if not palette: return out
+	var pal := PaletteDB.PALETTE
+	if not pal: return out
 	for i : int in indices:
-		out.append(palette.color(i))
+		out.append(pal.color(i))
 	return out
 
 ## An N x 1 texture of the whole ramp, nearest-filtered — for a shader that indexes bands directly
