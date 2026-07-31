@@ -1,0 +1,92 @@
+---
+name: handoff
+description: The session-continuity loop for this repo — read a handoff doc to resume work with zero prior context, and keep it updated as durable state while executing. Use when picking work back up, when asked for a handoff or checkpoint, when turning a plan into a resumable run, or partway through long multi-phase work before the session runs out.
+---
+
+# Handoff
+
+One file per work stream: `<project>/HANDOFF_<topic>.md` (e.g. `solatro/HANDOFF_fx.md`). It is
+both the resume point and the live journal — **never split state across two files**, and never
+create a parallel copy of an existing handoff. Update it in place.
+
+## Resuming (the file exists)
+
+1. Read it, plus the `entry_docs` it names. Do not rely on conversation history — the file is the
+   source of truth.
+2. Confirm the tree is actually green before trusting any `done` status: run the suite,
+   `<binary> --path solatro res://Tests/all_tests.tscn`, **windowed, no `--headless`** (~60 s,
+   self-quits with the failure count). Check the owner's Godot editor is closed first.
+3. Summarize goal, what is done (with its evidence), what is in progress or blocked, what is
+   next. That summary must stand on its own with zero prior context.
+4. Continue from the first `pending` task.
+
+## Starting fresh (no file yet)
+
+Read the project's entry doc first — `solatro/START_HERE.md`, `solatro/VFX.md` for effects work,
+`palette/ARCHITECTURE.md` then `PROGRESS.md`, `worldgen/START_HERE.md` — then decompose the work
+into the structure below and start executing.
+
+## Structure
+
+````markdown
+# HANDOFF — <topic>
+
+**Goal:** one sentence; what "done" means for the whole stream.
+**State:** one paragraph; where this actually stands right now.
+**Entry docs:** solatro/START_HERE.md, solatro/VFX.md
+
+## Tasks
+```yaml
+- id: fx-01
+  description: Concrete enough to start cold.
+  files_touched: [solatro/Effects/fire.gdshader]
+  verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
+  verification_kind: suite      # suite | snapshot | perf | manual
+  status: pending               # pending | in_progress | done | blocked
+  evidence: ''                  # paste of the real output / measured numbers
+  notes: ''                     # blockers, decisions, what was tried
+```
+
+## Verified vs assumed
+Per claim: the exact command plus measured numbers that prove it, or an explicit
+"assumed, not checked". Visual claims count as verified only with a rendered snapshot
+someone looked at.
+
+## Open bugs
+Each with repro steps and the file:line where it surfaces.
+
+## Files touched
+From `git status` / `git diff --stat`.
+
+## Next up
+The next 3 tasks in priority order, then a copy-paste opening prompt for the next agent.
+````
+
+## Per-task loop — never batch
+
+1. Set `status: in_progress`.
+2. Do the work.
+3. Run its `verification_command`. For `verification_kind: snapshot` that means the `/fx-verify`
+   gate — render and actually look at the PNG.
+4. Paste the real output or measured numbers into `evidence`. Never write evidence you did not
+   observe; never paste a green banner from a different run.
+5. Set `status: done`, or `blocked` with the reason in `notes`.
+
+Update the file after **every** task and **at the 60% mark of the session at the latest** — not
+as an end-of-session artifact. Sessions here have died mid-handoff; the file existing early is
+the entire point.
+
+## Rules
+
+- **Repo-relative paths only** — no machine-local absolute paths, no references to memory files.
+  The next agent may be on a different machine.
+- **Do not `git add` or commit on your own.** The owner drives this repo through GitHub Desktop.
+  Evidence lives in this file rather than in commit messages. If they have authorized commits for
+  the session, commit after a green verification with a message naming the task id.
+- **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue
+  into `ARCHITECTURE_REVIEW.md` / `todo.md` and delete the handoff — but run `git ls-files <path>`
+  first, since deleting an untracked file destroys it.
+- Include a references/sources section; the owner expects plans and handoffs to carry them.
+- Keep going through mechanical work. Surface to the owner for subjective visual judgment, an
+  architectural decision the plan does not cover, a failure suggesting the plan itself is wrong,
+  or a task blocked on their editor being open. Report failures with the actual output.

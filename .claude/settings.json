@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\khanr\\Documents\\GitHub\\gamedev\\.claude\\hooks\\block-process-kill.ps1\""
+          }
+        ]
+      }
+    ]
+  }
+}
