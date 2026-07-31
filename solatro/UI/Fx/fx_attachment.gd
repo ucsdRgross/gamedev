@@ -1044,9 +1044,12 @@ func _push_live(scaled_delta: float) -> void:
 	# ⚠ AND THAT MEANS THE LOOP BELOW STILL RUNS. It used to be an early `return` here, which also
 	# froze `Effect.t` and `Effect.fade` and never reached the release at the bottom — so a card that
 	# lost its Burning while scrolled out of the play area kept its quad, kept `set_process` on, and
-	# came back at FULL opacity to start fading only then. The eases are state, not pixels; only the
-	# `set_shader_parameter` calls are gated, and `Effect.pushed` is left false while they are, so
-	# the settled values are uploaded on the frame the host reappears.
+	# came back at FULL opacity to start fading only then.
+	#
+	# What still runs is the STATE: two float advances per effect and the release at the bottom. What
+	# `on_screen` gates is every `set_shader_parameter`, the ember emitter, and the eased-value
+	# evaluation those two feed on — so an invisible host is still within a few floats of free, which
+	# is the claim `fx_cost`'s OFF-SCREEN control row exists to hold this code to.
 	var done : Array[StringName] = []
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
@@ -1072,12 +1075,18 @@ func _push_live(scaled_delta: float) -> void:
 		# makes that safe: the emitter below needs this frame's geometry every frame, so the values are
 		# CACHED rather than skipped. `fx.t` lands on exactly 1.0 on the frame the transition ends, and
 		# `pushed` is what makes that final frame push before the pushing stops.
-		if fx.t < 1.0 or not fx.pushed:
+		# ⚠ THE EASED SET IS NOT EVALUATED OFF SCREEN EITHER, and that is not the same call as leaving the
+		# EASE to run. `fx.t` above is two floats; `_eased` builds a Dictionary per effect per frame, and
+		# `pushed` can only be set once the values have actually been uploaded — so gating the upload
+		# alone would leave `pushed` false for ever on an invisible host and rebuild that Dictionary every
+		# frame, which is the opposite of what this whole guard is for (`fx_cost`'s OFF-SCREEN control row
+		# is what would report it). Nothing reads `fx.vals` while it is skipped: the emitter below is the
+		# only consumer and it is gated on the same flag.
+		if on_screen and (fx.t < 1.0 or not fx.pushed):
 			fx.vals = _eased(fx)
-			if on_screen:
-				fx.pushed = fx.t >= 1.0
-				for key : StringName in fx.vals:
-					mat.set_shader_parameter(key, fx.vals[key])
+			fx.pushed = fx.t >= 1.0
+			for key : StringName in fx.vals:
+				mat.set_shader_parameter(key, fx.vals[key])
 		# Embers are pixels, not state, so an invisible host throws none — and the engine's global cap
 		# is exactly what a board of off-screen hosts would otherwise spend on nothing.
 		if on_screen: _emit_embers(fx, scaled_delta, fx.vals)

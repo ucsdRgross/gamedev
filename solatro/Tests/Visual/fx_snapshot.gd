@@ -21,12 +21,18 @@ extends SnapshotScene
 # rather than left to accumulate from real frame deltas, so two runs of an unchanged shader produce
 # identical images and a diff means a real change.
 #
-# ⚠ ONE EXCEPTION, measured 2026-07-27: `02_fire_rotation` is NOT reproducible — two consecutive runs
-# of identical code differ by ~11k pixels, all of them inside the ROTATED panels (the 0-degree panel
-# is stable). Every other shot is byte-identical across runs. So that shot is for EYE review ("are
-# the flames upright, are the pixels square"), and a pixel diff of it means nothing. If it ever needs
-# to be diffable, start at what varies per run for a rotated host only — `fx_bayer(FRAGCOORD.xy)` is
-# screen-space, so a sub-pixel placement difference moves every band edge.
+# ⚠ EVERY PANEL WITH A **ROTATED** HOST IS NOT REPRODUCIBLE, and that is a property of rotated hosts
+# rather than of any one shot. Re-measured 2026-07-30 across all three harnesses, two consecutive runs
+# of an unchanged build with the per-host seed pinned: `02_fire_rotation` 12392 px, `05f_ball_rotation`
+# 1035 px and `fx_behind`'s `behind_prop_turned` 15506 px, while every UPRIGHT panel in all three sets
+# came back byte-identical. So the rotated shots are for EYE review ("are the flames upright, are the
+# pixels square") and a pixel diff of one means nothing; `snapshot_diff.py` lists them in NOISY.
+#
+# ⚠ THE CAUSE IS STILL UNKNOWN AND THE OLD ONE IS RETIRED. This used to blame screen-space
+# `fx_bayer(FRAGCOORD.xy)` — a fair hypothesis, but the dither moved onto the FX pixel grid in the
+# simplify pass and the flakiness did not go with it. Pinning `_seed` (which this scene was NOT doing
+# for fire, see `_attach_for`) does not remove it either. `test_pixels.gd` carries the standing warning
+# about what that costs: a real optimisation was reverted on the evidence of one flaky rotated shot.
 # ==============================================================================
 
 const OUT_DIR := "user://fx_snapshots"
@@ -34,6 +40,12 @@ const OUT_DIR := "user://fx_snapshots"
 ## Where each shot's clock is parked. Not zero: at t = 0 every noise term is at its starting
 ## value and the flames look artificially uniform.
 const SHOT_TIME := 3.7
+
+## The per-host random every shot pins. `FxAttachment._seed` is otherwise `randf() * 100.0` drawn in
+## the constructor, and it drives the fire's noise offset — so leaving it free makes a panel's
+## raggedness an artefact of where the global RNG happened to be, which is precisely the input
+## `snapshot_diff.py` cannot tolerate. Any value works; this is simply one that is the same every run.
+const SHOT_SEED := 12.5
 
 ## Largest art-unit-to-pixel blow-up. Cards are 38x50 art units; at 1:1 a whole flame is a few pixels
 ## and nothing is reviewable. Each shot may use LESS than this — see _zoom_for.
@@ -589,8 +601,14 @@ func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
 				PropVisual.art_size_for(case.sheet, case.frames))
 	elif not case.outline.is_empty():
 		att.measure_outline(case.outline)
-	# BEFORE sync: the quads read the host's direction as they are built, unlike the clock, which is
+	# BEFORE sync: the quads read the host's randomness as they are built, unlike the clock, which is
 	# pushed afterwards.
+	#
+	# ⚠ THE SEED BELONGS HERE TOO, and only `_ball_dir` was pinned — so every fire panel in this scene
+	# rendered on whatever `randf()` the attachment's constructor happened to draw. That is exactly the
+	# input `snapshot_diff.py` cannot tolerate: its claim is "these two RUNS are byte-identical", and an
+	# unpinned per-host random reduces it to "the RNG happened to land in the same place".
+	att._seed = SHOT_SEED
 	att._ball_dir = case.ball_dir
 	att.sync(case.requests)
 	return att
@@ -629,6 +647,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 			probe.origin = slot.position
 			probe.zoom = zoom
 			probe.expected = ghost.balls
+			probe.tint = case.modulate
 			probes.append(probe)
 		# The modulate goes on a PARENT of the attachment, so it reaches the effects the way a card's
 		# does — down the tree, not through a uniform. Added AFTER the ghost: the reference geometry
@@ -709,6 +728,9 @@ class _Probe:
 	var origin : Vector2 = Vector2.ZERO
 	var zoom : float = 1.0
 	var expected : PackedVector2Array = PackedVector2Array()
+	## The host's modulate for this case — a ball's rendered colour is its palette entry times this
+	## (ruling 10), so the colour predicate has to be built with it or a FOCUSED panel reads as empty.
+	var tint : Color = Color.WHITE
 
 ## How far out, in ART UNITS, the probe is willing to look for a ball before calling it missing.
 const PROBE_REACH := 24.0
@@ -720,9 +742,15 @@ func _report(img: Image, probe: _Probe) -> void:
 	var to_img := to_image_scale(img)
 	var art_to_img := probe.zoom * to_img
 	var reach := int(ceilf(PROBE_REACH * art_to_img))
+	# ⚠ THE BALL'S OWN COLOURS, NEVER A HUE GUESS. This read `PixelProbe.is_warm`, which encoded "a
+	# ball is orange" and went blind the moment `ramp_ball` was retuned to greens (see that function).
+	# Here it also collided with the ORACLE CROSSES, which are green — and a probe that cannot tell a
+	# ball from the cross marking where the ball should be is worse than none. This one only PRINTS,
+	# so it would have gone on reporting "NO BALL within 24 art units" indefinitely.
+	var is_ball := PixelProbe.ball_pixel(StatusJuggling.JUGGLE_STYLE, probe.tint)
 	for i : int in probe.expected.size():
 		var want : Vector2 = (probe.origin + probe.expected[i] * probe.zoom) * to_img
-		var hit := PixelProbe.nearest(img, want, reach, PixelProbe.is_warm)
+		var hit := PixelProbe.nearest(img, want, reach, is_ball)
 		var off : Vector2 = (hit[&"offset"] as Vector2) / art_to_img
 		var found := "nearest rendered ball offset by art (%.1f, %.1f)" % [off.x, off.y] \
 				if hit[&"found"] else "NO BALL within %.0f art units" % PROBE_REACH

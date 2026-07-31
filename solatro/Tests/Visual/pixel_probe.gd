@@ -55,13 +55,23 @@ static func _wedge_has(p: Vector2, poly: PackedVector2Array, i: int) -> bool:
 ## space as `0.5 + 0.5 * sign(d) * |d|^g` about the apex (d = 2a - 1), so the ball lingers at the
 ## top. 1 = constant speed. The CARRY is never eased.
 ##
-## `dir` is the host's base direction: EVEN balls travel it, ODD balls travel the mirror image, so
-## neighbouring balls cross. Written from those descriptions, not from fx_common.gdshaderinc — the
-## point of an oracle is that it could disagree.
-## `arcs` is the LADDER: the loop is that many arcs chained end to end, heights running evenly from
-## `h_top` down to `h_bot`, alternating direction (even arcs run +x to -x). The tall arc takes
-## `f * 2 / arcs` of the cycle and the rest split what is left evenly. Every arc but the LOWEST is
-## gravity-eased. 2 arcs is the original throw-and-carry pattern.
+## `dir` is the host's base direction, and EVERY ball travels it — there is no per-ball mirror. The
+## crossing comes from the LADDER alternating its sweep per arc; a mirror on top of that cancels it
+## and sends every ball the same way at the counts where n == arcs (fx_common.gdshaderinc records the
+## measurement). Written from those descriptions, not from the include — the point of an oracle is
+## that it could disagree.
+##
+## `arcs` is the LADDER: that many arcs chained end to end, heights running evenly from `h_top` down
+## to `h_bot`, alternating direction (even arcs run +x to -x). Each arc's SHARE of the cycle is
+## proportional to the square root of its own height — the flight time one gravity gives it — with
+## `f` biasing the throw's share about the physical 0.5. Every arc is gravity-eased, the carry
+## included. 2 arcs is the original throw-and-carry pattern.
+##
+## ⚠ THIS PARAGRAPH IS THE SPEC THE CODE BELOW IS TRANSCRIBED FROM, so it drifting is worse here than
+## anywhere else in the project: a reader "fixing" the oracle to match a stale description would make
+## it agree with nothing. All three claims above were stale — a per-ball mirror, `f * 2 / arcs` equal
+## shares, and the lowest arc exempt from the ease — each describing a model retired on 2026-07-28/29
+## and each contradicted by the inline comments a few lines down.
 static func ball_positions(n: float, phase: float, span: float, h_top: float, h_bot: float,
 		f: float, g: float = 1.0, dir: float = 1.0, arcs: float = 2.0) -> PackedVector2Array:
 	var out := PackedVector2Array()
@@ -99,11 +109,52 @@ static func ball_positions(n: float, phase: float, span: float, h_top: float, h_
 		out.append(Vector2(span * 0.5 * (1.0 - 2.0 * a) * sweep * dir, -height * sin(a * PI)))
 	return out
 
-## Ball pixels are the only WARM colour in these shots (the reference outlines are blue-grey, the
-## oracle crosses green, the backdrop neutral), so classifying by hue alone finds them with no radius
-## or centre guessing.
-static func is_warm(c: Color) -> bool:
-	return c.a > 0.5 and c.r > 0.45 and c.r > c.b * 1.6 and c.g > c.b
+## THE COLOURS A BALL CAN BE DRAWN IN — every entry of its tones ramp, plus the gloss role.
+##
+## ⚠ THIS REPLACED A HUE TEST, AND THE HUE TEST COST TWO FAILING CHECKS. `is_warm` was
+## `r > 0.45 and r > b * 1.6 and g > b` — i.e. "a ball is orange", which was true of `ramp_ball` at
+## palette entries 16/30/6 and stopped being true on 2026-07-30, when the owner retuned it to 7/8/9:
+## three GREENS, of which only the lightest still reads as warm, and a cream gloss that never did. A
+## ball then registered on its lit sliver alone, so at 50 balls — radius pinned to its 1.0 floor, ~4 px
+## on the stage — 5 of 50 had no matching pixel at all and the rest measured off-centre. `50 balls all
+## render within 2.0 art units` failed at 2.73. **The art was right; the instrument was wrong.**
+##
+## Exact palette entries, because that is exactly what the shader emits: `u_ball_tones` is sampled
+## `filter_nearest`, one texel per band, and the gloss is a flat role colour — a ball pixel is never a
+## mix of two. So this cannot go stale against a retune the way a hue guess does, which is the same
+## reason nothing else in this project stores a colour value (T21).
+## ⚠ `tint` IS THE HOST'S MODULATE, and it is not optional on a panel that carries one. The renderer
+## folds a host's modulate into COLOR and both FX shaders multiply it back in (ruling 10), so on
+## `fx_snapshot`'s FOCUSED panel a ball is its palette entry times 1.825 — clamped by the 8-bit target,
+## exactly as below. Leaving it out reported all five balls of that panel MISSING.
+static func ball_colours(style: FxJuggleStyle, tint : Color = Color.WHITE) -> PackedColorArray:
+	var raw := PackedColorArray()
+	if style.ball_tones: raw.append_array(style.ball_tones.colors())
+	raw.append(PaletteDB.color(style.ball_gloss_role))
+	var out := PackedColorArray()
+	for c : Color in raw:
+		out.append(Color(minf(c.r * tint.r, 1.0), minf(c.g * tint.g, 1.0), minf(c.b * tint.b, 1.0)))
+	return out
+
+## A `nearest` / `bounds` predicate for "this pixel belongs to a ball", bound to one style's colours
+## under one host tint. Build it once per shot and hand it to the readers below.
+static func ball_pixel(style: FxJuggleStyle, tint : Color = Color.WHITE) -> Callable:
+	var cols := ball_colours(style, tint)
+	return func(c: Color) -> bool: return is_ball(c, cols)
+
+## ⚠ A SMALL TOLERANCE, NOT AN EQUALITY: the render target is 8-bit and the tones reach the shader
+## through an `ImageTexture`, so a channel can land a step either side. It is far tighter than the gap
+## between any two palette entries — and tighter than the gap to the harness's own chrome, which now
+## MATTERS, because `fx_snapshot`'s oracle crosses are green and so are the balls.
+const COLOUR_EPS := 2.5 / 255.0
+
+static func is_ball(c: Color, cols: PackedColorArray) -> bool:
+	if c.a <= 0.5: return false
+	for e : Color in cols:
+		if absf(c.r - e.r) <= COLOUR_EPS and absf(c.g - e.g) <= COLOUR_EPS \
+				and absf(c.b - e.b) <= COLOUR_EPS:
+			return true
+	return false
 
 ## Any pixel that was drawn at all.
 static func is_opaque(c: Color) -> bool:

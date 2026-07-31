@@ -46,7 +46,7 @@ ARCHITECTURE_REVIEW, the latter wins.
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
 | `Cards/Pips/pip_suit.gd`, `Assets/color_picker.gdshader` | Suit pips and the palette recolour shader. |
 | `UI/Fx/Tools/fx_editor.tscn` | **Live FX tuning in the editor** — open it, edit an `FxStyle`, watch the real shaders react. Start here for any art tuning (§4g). |
-| `Tests/Visual/` | `test_pixels.gd` (asserting), `fx_snapshot.gd` + `prop_art_snapshot.gd` (reviewable), `pixel_probe.gd` (the shared oracle + image readers), `snapshot_scene.gd` (the harness base). |
+| `Tests/Visual/` | `test_pixels.gd` (asserting), `fx_snapshot.gd` + `prop_art_snapshot.gd` + `fx_behind.gd` (reviewable — the last one draws hosts FILLED, for the seam), `fx_cost.gd` (the GPU bench, asserts nothing), `pixel_probe.gd` (the shared oracle + image readers), `snapshot_scene.gd` (the harness base). |
 
 ---
 
@@ -67,6 +67,12 @@ Exit code = failure count. Read only `%APPDATA%\Godot\app_userdata\Solatro\test_
 (empty = green) plus the final banner. **A dropped suite count is a silent failure**: a parse error
 in a suite script means it never loads, the banner still says "ALL n SUITES PASSED", and n is simply
 one smaller. Check the number.
+
+⚠ **`push_error` LINES IN THE CONSOLE ARE NOT THE VERDICT**, and two suites print some on purpose:
+LEAK CANARY's sentinel report, and PALETTE's `Palette index -5 out of range 0..31 — clamped` (that
+call IS the clamp contract — `Palette.color` reports rather than returning a silent wrong colour).
+Both label themselves in their check text. The errors LOG is the suite's own channel, so neither
+reaches it; a green run still leaves it empty.
 
 **FX snapshots — after every shader edit.** Writes PNGs to
 `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots\`; the shot list is in ARCHITECTURE_REVIEW §4g.
@@ -94,6 +100,28 @@ timeout 600 "/c/Users/khanr/Desktop/Godot_v4.7.1-stable_win64_console.exe" --pat
 ```bash
 timeout 250 "/c/Users/khanr/Desktop/Godot_v4.7.1-stable_win64_console.exe" --path solatro res://Tests/Visual/prop_art_snapshot.tscn > /tmp/snap.log 2>&1; echo "exit: $?"
 ```
+
+**The SEAM harness — after any change to the mask, `sink` or `inner_alpha`.** `fx_behind.tscn` is the
+only one that draws its hosts FILLED, which is the thing an outline harness cannot show: whether the
+boundary between flame and art reads as occlusion or as a staircase of its own.
+
+```bash
+timeout 250 "/c/Users/khanr/Desktop/Godot_v4.7.1-stable_win64_console.exe" --path solatro res://Tests/Visual/fx_behind.tscn > /tmp/snap.log 2>&1; echo "exit: $?"
+```
+
+**And for a change that must alter NOTHING, diff the panels rather than looking at them.** `save` on
+the build you trust, make the change, re-run the three snapshot scenes, `diff` — 31 panels across the
+three sets.
+
+```bash
+py solatro/tools/snapshot_diff.py save     # then make the change and re-run the scenes
+py solatro/tools/snapshot_diff.py diff     # -> "0 of 27 comparable panels differ (4 known-noisy skipped)"
+```
+
+⚠ **It has been blind twice** — alpha-only until 2026-07-29, and scanning `fx_snapshots` alone until
+2026-07-30 — so any "panels identical" claim older than that measured less than it claimed
+(FX_HANDOFF §12). ⚠ **Four panels differ on unchanged code** and print as `noisy` instead of counting:
+the three ROTATED ones (cause unknown — todo.md) and `09_embers` (randomised by design).
 
 **After adding a `class_name` or a new PNG:** `--headless --path solatro --import` first, or you
 will chase a phantom parse error (and a brand-new image has no `.import` yet).
@@ -396,6 +424,13 @@ Reviewed and deliberately NOT applied. Each was judged, not missed — the reaso
   attachment build repeats `_attach_for` **including its documented "disable the process LAST" ordering
   trap**. ~90 lines. If that trap is ever fixed in one copy only, the two harnesses shoot different
   frames of the same noise and neither is comparable to the other.
+  **⚠ THAT PREDICTION CAME TRUE ON 2026-07-30, AND IT HAD ALREADY HAPPENED WHEN THIS WAS WRITTEN**
+  (FX_HANDOFF §12b). The two copies had diverged on the OTHER per-host random: `fx_behind` set
+  `att._seed` BELOW its `sync` — a no-op, since `u_seed` is written to the material inside
+  `_make_quad` — while `fx_snapshot` pinned `_ball_dir` with a comment stating that exact rule and
+  never pinned `_seed` at all. Two copies, two different wrong answers, neither visible until
+  `snapshot_diff` was pointed at both sets for the first time. This bullet is no longer speculative
+  and should be promoted above the tidiness items.
 - **Nine ball-path uniforms are declared in BOTH `fire.gdshader` and `juggle.gdshader` with
   independently written defaults** (`u_span = 30.0`, `u_arc_height = 37.5`, `u_ball_radius = 3.0`, …),
   while `fx_common.gdshaderinc` — the file that exists so "the maths cannot exist twice" — holds only

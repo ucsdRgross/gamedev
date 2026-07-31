@@ -1,6 +1,7 @@
 # Headless testing on this machine — READ BEFORE DEBUGGING A "HANGING" TEST
 
-Findings from the 2026-07 efficiency audit sessions (last updated 2026-07-20).
+Findings from the 2026-07 efficiency audit sessions (last updated 2026-07-30 — §0b, the visual
+instruments, came out of the FX code-review audit; FX_HANDOFF §12).
 Applies to Godot 4.7.1 (`C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64.exe`; the
 `_console` variant, which is the redirectable one, must live in the same folder as the
 main exe — it launches it by name) and both projects (`solatro`, `worldgen`).
@@ -39,8 +40,13 @@ Two launch gotchas, both cost time on 2026-07-20:
 - `TestLog` flushes every line, so a log that is 0 bytes means the run has not logged
   yet (or another run just truncated it) — not that it died silently.
 - Deliberate stderr noise is expected from LEAK CANARY (`LeakSentinel: ... unreachable`
-  push_error, worldgen `_load_baked` warning, "4 ObjectDB instances were leaked").
-  The real verdict is `test_output_errors.log` (empty = green) + the final banner.
+  push_error, worldgen `_load_baked` warning, "4 ObjectDB instances were leaked") and from
+  PALETTE (`Palette index -5 out of range 0..31 — clamped`, then `131`) — those two calls
+  ARE the clamp contract being pinned, since `Palette.color` reports an out-of-range index
+  rather than returning a silent wrong colour. Both suites say so in their own check text.
+  The real verdict is `test_output_errors.log` (empty = green) + the final banner. ⚠ That
+  file is the SUITE's own channel, not Godot's stderr, so a deliberate `push_error` never
+  reaches it — which is exactly what keeps "empty = green" a usable signal.
 
 ## 0a. ALWAYS bound the run — a parse error makes the suite hang FOREVER
 
@@ -99,6 +105,41 @@ A fast fail-fast while the run is still going: `grep -c "Parse Error" <log>` a f
 in. Non-zero means kill it now — it will never finish. Before killing, `Get-Process *odot*`
 and check `MainWindowTitle` is EMPTY: never kill a process with an editor window title
 (START_HERE rule 1). A killed run can leave BOTH the console launcher and the main exe.
+
+## 0b. The VISUAL instruments are separate runs, and one of them is a diff (2026-07-30)
+
+None of these are in `all_tests.tscn` — they need a window and a GPU, and they write PNGs rather
+than asserting. Three scenes write reviewable panels, each to its own directory under
+`%APPDATA%\Godot\app_userdata\Solatro\`:
+
+```bash
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/fx_snapshot.tscn        # -> fx_snapshots/       18 panels
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/prop_art_snapshot.tscn  # -> prop_art_snapshots/  8 panels
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/fx_behind.tscn          # -> fx_behind/           5 panels
+py solatro/tools/snapshot_diff.py save    # stash the panels you trust
+py solatro/tools/snapshot_diff.py diff    # re-run the scenes first, then prove nothing moved
+```
+
+**For a change that must NOT alter the picture, the diff is the instrument and your eye is not.**
+The reverse also holds: for a change that is supposed to look different, the diff says nothing.
+
+⚠ **`snapshot_diff.py` covered ONE of the three sets until 2026-07-30** (and compared alpha only
+until 2026-07-29). Any "N of N panels identical" claim written before those dates was measured with
+a defect in place — `fx_behind`, the only harness that shows where flame meets art, was never
+compared at all. It now walks all 31 panels and names a set whose scene has not been run.
+
+⚠ **FOUR PANELS DIFFER ON UNCHANGED CODE**, and the tool lists them as `noisy` instead of counting
+them: `02_fire_rotation`, `05f_ball_rotation` and `behind_prop_turned` (every ROTATED host is
+nondeterministic — cause unknown, FX_HANDOFF §12) plus `09_embers` (randomised particles, by
+design). A clean run reads:
+
+```
+0 of 27 comparable panels differ (4 known-noisy skipped, 3 of 3 sets compared)
+```
+
+⚠ **`fx_cost.tscn` is a bench, not a test** — it prints a table of ms/frame and quits. Take three
+runs and the MINIMUM on the GTX box (its GPU timer is bimodal by ~1.3–1.5x); the owner's Intel UHD
+is steady to ~2–3 %.
 
 ## 1. `--headless` never fires `RenderingServer.frame_post_draw` (Godot 4.7)
 

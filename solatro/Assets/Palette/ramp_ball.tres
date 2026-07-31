@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="PaletteRamp" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PaletteRamp" format=3 uid="uid://bjattfjettxub"]
 
-[ext_resource type="Script" path="res://Scripts/palette_ramp.gd" id="1_ramp"]
+[ext_resource type="Script" uid="uid://bhyeuek8omphp" path="res://Scripts/palette_ramp.gd" id="1_ramp"]
 
 [resource]
 script = ExtResource("1_ramp")
-indices = Array[int]([16, 30, 6])
+indices = Array[int]([7, 8, 9])

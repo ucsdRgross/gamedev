@@ -46,10 +46,18 @@ func run_palette_tests() -> void:
 			"width=%d" % w)
 
 	# Out of range is a BUG, not a crash: reported and clamped, never a silent wrong colour.
+	#
+	# ⚠ THE TWO `push_error`s THESE PRINT ARE THE BEHAVIOUR UNDER TEST, NOT A FAILURE — "Palette index
+	# -5 out of range 0..31 — clamped", then 131. `Palette.color` REPORTS and clamps rather than
+	# returning a silent wrong colour or crashing on load, so pinning that contract necessarily writes
+	# to stderr. Same status as LEAK CANARY's deliberate sentinel report, and called out in the check
+	# text for the same reason: an unexplained error in a green run is what teaches people to stop
+	# reading the log. ⚠ Neither reaches `test_output_errors.log` — that is the suite's OWN channel and
+	# stays empty, which is what keeps "empty = green" true (HEADLESS_TESTING §0).
 	check(PaletteDB.color(0) == PaletteDB.color(-5),
-			"negative index clamps to the first entry")
+			"a negative index clamps to the first entry (the push_error above is deliberate)")
 	check(PaletteDB.color(w - 1) == PaletteDB.color(w + 99),
-			"past-the-end index clamps to the last entry")
+			"a past-the-end index clamps to the last entry (the push_error above is deliberate)")
 
 	var cols := PaletteDB.PALETTE.colors()
 	check(cols.size() == w, "colors() returns one entry per texel", "%d" % cols.size())

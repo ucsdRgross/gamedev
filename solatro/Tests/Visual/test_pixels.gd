@@ -302,12 +302,13 @@ func test_balls_sit_on_their_oracle() -> void:
 			var expected := PixelProbe.ball_positions(float(n), phase, geo[&"u_span"],
 					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
 					style.ball_gravity, dir, geo[&"u_ball_arcs"])
+			var is_ball := PixelProbe.ball_pixel(style)
 			var worst := 0.0
 			var missing := 0
 			for p : Vector2 in expected:
 				var want := Vector2(VP_SIZE, VP_SIZE) * 0.5 + p * _zoom
 				var hit := PixelProbe.nearest(img, want, int(ceilf(BALL_TOLERANCE * _zoom)) + 2,
-						PixelProbe.is_warm)
+						is_ball)
 				if not hit[&"found"]:
 					missing += 1
 					continue
@@ -342,12 +343,13 @@ func test_balls_ignore_their_hosts_rotation() -> void:
 		var expected := PixelProbe.ball_positions(5.0, phase, geo[&"u_span"], geo[&"u_arc_height"],
 				geo[&"u_return_height"], style.ball_top_fraction, style.ball_gravity, 1.0,
 				geo[&"u_ball_arcs"])
+		var is_ball := PixelProbe.ball_pixel(style)
 		var worst := 0.0
 		var missing := 0
 		for p : Vector2 in expected:
 			var want := Vector2(VP_SIZE, VP_SIZE) * 0.5 + p * _zoom
 			var hit := PixelProbe.nearest(img, want, int(ceilf(BALL_TOLERANCE * _zoom)) + 2,
-					PixelProbe.is_warm)
+					is_ball)
 			if not hit[&"found"]:
 				missing += 1
 				continue
@@ -734,15 +736,20 @@ func test_balls_alternate_directions() -> void:
 	var geo := FxJuggle.geometry(2, style)
 	var phase := 0.15
 	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
-	var reach := int(ceilf(BALL_TOLERANCE * _zoom)) + 2
 	_host_balls(2, style, phase, 1.0)
+	# ⚠ AFTER `_host_balls`, WHICH IS WHAT SETS `_zoom`. Read before it, this search radius came off
+	# whatever the PREVIOUS shot had fitted itself to — the two happen to clamp to the same ZOOM today,
+	# so it was right by luck, and a retune of `ball_span` or `ball_arc_max` would silently make the
+	# window too tight (a ball reported missing) or too loose (the mirrored spot found).
+	var reach := int(ceilf(BALL_TOLERANCE * _zoom)) + 2
+	var is_ball := PixelProbe.ball_pixel(style)
 	var img := await _shoot()
 	var expected := PixelProbe.ball_positions(2.0, phase, geo[&"u_span"], geo[&"u_arc_height"],
 			geo[&"u_return_height"], style.ball_top_fraction, style.ball_gravity, 1.0,
 			geo[&"u_ball_arcs"])
-	var here := PixelProbe.nearest(img, mid + expected[1] * _zoom, reach, PixelProbe.is_warm)
+	var here := PixelProbe.nearest(img, mid + expected[1] * _zoom, reach, is_ball)
 	var reflection := Vector2(-expected[1].x, expected[1].y)
-	var there := PixelProbe.nearest(img, mid + reflection * _zoom, reach, PixelProbe.is_warm)
+	var there := PixelProbe.nearest(img, mid + reflection * _zoom, reach, is_ball)
 	# Through typed locals: a Dictionary lookup is a Variant, and `check()` takes a bool.
 	var found_here : bool = here[&"found"]
 	var found_there : bool = there[&"found"]
@@ -752,11 +759,11 @@ func test_balls_alternate_directions() -> void:
 	_check_directions_split()
 	# Reflect the whole pattern by flipping the host's coin. Compared as a MIDPOINT (position + end),
 	# whose reflection about the stage centre is 2*VP_SIZE - it.
-	var plus := PixelProbe.bounds(img, Rect2i(Vector2i.ZERO, img.get_size()), PixelProbe.is_warm)
+	var plus := PixelProbe.bounds(img, Rect2i(Vector2i.ZERO, img.get_size()), is_ball)
 	_host_balls(2, style, phase, -1.0)
 	var flipped_img := await _shoot()
 	var minus := PixelProbe.bounds(flipped_img, Rect2i(Vector2i.ZERO, flipped_img.get_size()),
-			PixelProbe.is_warm)
+			is_ball)
 	var want_sum := 2 * VP_SIZE - (plus.position.x + plus.end.x)
 	check(absf(float(minus.position.x + minus.end.x) - float(want_sum)) <= 2.0 * _zoom,
 			"the host's direction flips the WHOLE pattern, not just one ball",
@@ -772,15 +779,26 @@ func _check_directions_split() -> void:
 	var style : FxJuggleStyle = StatusJuggling.JUGGLE_STYLE
 	for count : int in [2, 4, 6]:
 		var geo := FxJuggle.geometry(count, style)
-		if not is_equal_approx(geo[&"u_ball_arcs"], float(count)): continue
+		# ⚠ THE PRECONDITION IS CHECKED, NOT `continue`-D PAST. This was a silent skip, and it guarded
+		# the one condition that makes the guard mean anything: the cancellation was total only where
+		# the ball count EQUALS the arc count. Retune `ball_arcs_per_count` and every one of these
+		# counts stops matching, so the regression check would quietly test nothing while the suite
+		# stayed green — which is the exact failure this file's own header refuses to allow.
+		var arcs := int(geo[&"u_ball_arcs"])
+		check(arcs == count,
+				"%d balls still ride %d arcs, which is what makes this the cancelling case" % [count, count],
+				"arcs = %d — a retune moved this off the interesting counts, so pick new ones" % arcs)
+		if arcs != count: continue
+		# Two samples a hair apart in the cycle, for every ball at once — the walk is over `i`, not the
+		# oracle, which was being rebuilt identically once per ball.
+		var a := PixelProbe.ball_positions(float(count), 0.30, geo[&"u_span"],
+				geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+				style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
+		var b := PixelProbe.ball_positions(float(count), 0.305, geo[&"u_span"],
+				geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
+				style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
 		var right := 0
 		for i : int in count:
-			var a := PixelProbe.ball_positions(float(count), 0.30, geo[&"u_span"],
-					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
-					style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
-			var b := PixelProbe.ball_positions(float(count), 0.305, geo[&"u_span"],
-					geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
-					style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
 			if b[i].x > a[i].x: right += 1
 		check(right > 0 and right < count,
 				"%d balls on %d arcs travel BOTH ways (no per-ball mirror)"

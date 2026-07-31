@@ -22,6 +22,12 @@ extends SnapshotScene
 #  * The flame's own pixels are SUPPOSED to be chunky. It is pixel art. Only the CUT has to be sharp.
 #  * BACKDROP-coloured notches between flame and art are the gap the owner is seeing; flame colour
 #    lying over the face is the other half of the same error.
+#
+# ⚠ `behind_prop_turned` IS NOT REPRODUCIBLE — two consecutive runs of an unchanged build differ by
+# ~15k pixels (measured 2026-07-30), while the three UPRIGHT panels here are byte-identical. It is the
+# same rotated-host phenomenon `fx_snapshot.gd`'s header describes, and it is worth knowing about
+# HERE because this is the one panel someone reaches for after a mask change: a diff of it says
+# nothing either way. Judge it by eye, and pin a mask claim with `test_pixels.gd` instead.
 # ==============================================================================
 
 const OUT_DIR := "user://fx_behind"
@@ -180,10 +186,16 @@ func _shot(file_name: String, caption: String, panels: Array[_Panel]) -> void:
 					PropVisual.art_size_for(panel.sheet, panel.frames))
 		elif not panel.outline.is_empty():
 			att.measure_outline(panel.outline)
+		# ⚠ THE SEED GOES IN BEFORE `sync`, AND IT USED TO GO IN AFTER — where it did nothing at all.
+		# `u_seed` is written to the material in `_make_quad`, i.e. while `sync` BUILDS the quad, and
+		# nothing re-pushes it afterwards (`_push_live` carries the clock, not the randomness). So the
+		# assignment below the sync set a GDScript field the shader had already read, and every panel
+		# here rendered with the random seed the attachment was constructed with. Same rule
+		# `test_pixels._host_balls` and `fx_snapshot._attach_for` state for `_ball_dir` (VFX.md §4.4).
+		att._seed = 0.37
 		att.sync(panel.requests)
 		# Park the clock by hand — and DISABLE THE PROCESS LAST, because _push_live re-enables it
 		# (the trap documented in fx_snapshot._shot).
-		att._seed = 0.37
 		att._time = SHOT_TIME
 		att._push_live(0.0)
 		att.set_process(false)

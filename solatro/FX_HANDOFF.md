@@ -1395,9 +1395,14 @@ an unexplained displacement is exactly the class of thing that produced two reje
 not shipped. If you pick it up: the experiment is three lines (`FxRequest.min_half` plus two lines in
 `FxAttachment._size_quad`), and `05f_ball_rotation`'s probe output is the instrument.
 
-⚠ Note that the rotated panels of this harness carry a standing "not reproducible" warning for
-`02_fire_rotation`. Rule that in or out FIRST — run the same build twice — before believing either
-result. That was not done.
+⚠ Note that the rotated panels of this harness carry a standing "not reproducible" warning. Rule that
+in or out FIRST — run the same build twice — before believing either result. That was not done.
+
+⚠ **AND IT IS NOT ONE PANEL — IT IS EVERY ROTATED HOST, IN EVERY HARNESS** (re-measured 2026-07-30,
+§12). Two consecutive runs of an unchanged build with the per-host seed pinned: `02_fire_rotation`
+12392 px, `05f_ball_rotation` 1035 px, and `fx_behind`'s `behind_prop_turned` 15506 px — while **every
+upright panel in all three sets came back byte-identical.** So the warning generalizes, and a pixel
+diff of any rotated panel is worth nothing whichever way it comes out.
 
 ---
 
@@ -1851,6 +1856,7 @@ owner's, safe housekeeping, and what is closed.**
 |---|---|
 | ⬜ **Three harnesses still use the stand-in** | `fx_snapshot`, `fx_behind` and `fx_cost` feed `star_outline` to a bare `Node2D`. They run in a real scene tree where a `CardVisual` needs none of the editor guards (`test_pixels` does it in ~10 lines), so the swap is mechanical — pin the card's seed and clock the way `_park` does. It would make `fx_behind`'s seam shots the real thing (its "filled host" is a filled polygon today) and delete `star_outline`'s last users. |
 | ⬜ **Two stale snapshot panels** | `00_tendril_count` and `00b_ogee_profile` are still in `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots` from the retired build. They are never rewritten, so they compare identical for ever and pad the count from 18 to 20. Delete them. |
+| ⬜ **THE ROTATED-PANEL NONDETERMINISM IS STILL UNEXPLAINED** | §12. It is not one panel, it is every rotated host in all three harnesses, and the cause the docs carried since 2026-07-27 (screen-space `fx_bayer(FRAGCOORD.xy)`) is RETIRED — the dither moved onto the FX pixel grid in the simplify pass and the flakiness did not go with it. Pinning `_seed` does not remove it either. It already cost one real optimisation a revert (§1b), so it is worth an hour: two runs of an unchanged build and a diff is the whole experiment. |
 | ⬜ **Known limitation** | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
 | ⬜ **Deferred by the owner** | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
 
@@ -1861,7 +1867,7 @@ owner's, safe housekeeping, and what is closed.**
 | ✅ **Fire, whole** | Owner 2026-07-29: *"with this we are done with fire effect changes."* The noise fire and its stack ratios (§0a/§0b), fire behind the art (§0c, accepted by eye), the warped corner (§0c.1, exact mask), the real-card test (§0c.2), the FX editor's real cards (§0c.4). |
 | ✅ **The mask IS the art, corners included** | §0c.5 — measured off the type frame's own alpha, exact under deformation, asserted at ZERO disagreeing cells. ⚠ Costs 16 % of a burning screen, and the cost is the uniform ARRAY rather than the wedge loop — both micro-optimisations tried measured worse, and `cover_taps` is where it would be bought back. |
 | ✅ **The Intel UHD measurement** | §0d.3 for the method; ⚠ **its ABSOLUTES are superseded — the worst window is 5.82 ms, not 10.8. §0d.10 has the current table.** Still true from it: the noise-source A/B is a WASH (three times now), and **the two boxes are 5x–8x apart, so no GTX absolute transfers.** |
-| ✅ **`snapshot_diff.py`** | §0d.4 — it compared ALPHA only and is fixed. |
+| ✅ **`snapshot_diff.py`** | §0d.4 — it compared ALPHA only, and (§12) it scanned one of the three panel sets. Both fixed; it now walks 31 panels and separates the four known-noisy ones from real differences. ⚠ Any "panels identical" claim dated before 2026-07-30 was measured with one or both defects in place. |
 | ✅ **The juggling layer, and the CPU push** | §0d.6 and §0d.7. `fx_nearest_ball`, `fx_balls_near`, `fx_arc_ease_inv`, `u_ball_fire` and `FxJuggle.fire_texture` are all DELETED; the path no longer has to be invertible. ⚠ Do not reintroduce a per-fragment "which ball am I" search. |
 | ✅ **A ring/strip mesh for card fire** | Priced and REJECTED in §0d.10's ⛔ list — ~0.3 ms for a reflex-corner problem and a vertex budget, because §0d.9's two-line early-out already took the interior out of the expensive path. |
 | ✅ **`05f_ball_rotation`'s displacement** | A harness flake, reproduced on an unchanged build, and the claim now lives in an asserting check (§0d.1). |
@@ -1983,9 +1989,17 @@ by the same factor — five consecutive runs of ONE unchanged build read 0.594, 
 
 ⚠ **AND ON THE OWNER'S INTEL UHD IT IS STEADY** — three runs hold to ~2–3 % on most rows, so a 6 %
 delta is real evidence there and the same delta on the GTX box is not. Take three runs on either.
-⚠ **`snapshot_diff.py` WAS BLIND UNTIL 2026-07-29** (alpha-only comparison — §0d.4). If you are reading
-an older claim of "panels identical", it means nothing. Also expect `09_embers` to differ every time
-(randomised particles) and two stale retired-build panels to pad the count to 20.
+⚠ **`snapshot_diff.py` HAS BEEN BLIND TWICE, AND ONLY THE SECOND FIX MAKES ITS COUNT MEAN ANYTHING.**
+It compared ALPHA only until 2026-07-29 (§0d.4), and until 2026-07-30 it scanned **`fx_snapshots`
+alone** while its own docstring claimed the prop harness too — so `prop_art_snapshots` and, worse,
+`fx_behind` were never diffed at all (§12). Any "N of N panels identical" claim written before those
+dates means nothing. It now walks all three sets (18 → **31 panels**) and names a missing one instead
+of dropping it.
+
+⚠ **FOUR PANELS DIFFER ON UNCHANGED CODE and the tool lists them as `noisy` rather than counting
+them**: the three ROTATED ones (§1b) plus `09_embers` (randomised particles, by design). A clean run
+now reads `0 of 27 comparable panels differ (4 known-noisy skipped, 3 of 3 sets compared)`. Two stale
+retired-build panels still pad `fx_snapshots` (§8c).
 
 **For a change that must not alter the picture, `snapshot_diff.py` is the instrument, not your eye.**
 "Judge fire by EYE" is right for a change that is SUPPOSED to look different; an optimisation's only
@@ -2078,6 +2092,11 @@ agreement (the search finds an EDGE pixel, so it reads a radius pessimistically)
 - ⚠ **A rendering test with a random input is not a test.** `FxAttachment._seed` is `randf()` per
   host and drives ball spin, which moves the highlight — the PIXELS suite now pins `att._seed = SEED`
   before `sync()` at every construction site. Per-host randomness is read when the quads are BUILT.
+  ⚠ **BEFORE `sync()` IS THE WHOLE OF IT, AND BOTH REVIEW HARNESSES GOT IT WRONG** (§12b): `u_seed`
+  is written to the material inside `_make_quad`, so `fx_behind`'s assignment BELOW its `sync` set a
+  field the shader had already read, and `fx_snapshot` pinned `_ball_dir` — with a comment stating
+  this very rule — while never pinning `_seed` at all. An assignment that is a no-op looks exactly
+  like one that works.
 - **`Texture2D.get_image()` + `Image.get_pixel` is a real hitch** (2304 calls for one hoop frame,
   once per attachment, three per split prop). `FxAttachment._sprite_cache` exists for that reason.
 - **The GLSL shading language has `PI`, `TAU`, `E` — but NOT `HALF_PI`.** Using it compiles to
@@ -2089,3 +2108,89 @@ agreement (the search finds an EDGE pixel, so it reads a radius pessimistically)
 - ⚠ **Never kill a Godot process without reading `MainWindowTitle` first.** The owner's editor was
   killed on 2026-07-29 by a blanket `Get-Process *odot* | Kill()`.
 - `PropVisual._ready()` early-returns in the editor, so a snapshot scene and the editor can disagree.
+
+---
+
+## 12. CODE-REVIEW AUDIT — 2026-07-30
+
+A review pass over everything since `22f2aac` (the VFX plan) through `b566324` (the simplify pass):
+~11.3k added lines. **The shipped FX layer held up** — nothing in the simplify commit was a
+regression, and the nine defects below are all in seams the suites do not reach. Recorded here
+because most of them are in the INSTRUMENTS, and an instrument that lies is worse than no instrument.
+
+Verified: **ALL 28 SUITES green, windowed, twice** (`1591` / `1614` / `1621` checks — the total
+drifts run to run on the data-dependent suites), all 235 `fx_snapshot` ball probes agreeing to under
+one art unit, and `snapshot_diff` clean across all 31 panels.
+
+### 12a. The game
+
+| Fix | What it was |
+|---|---|
+| **`PropVisual.flipped` is a SETTER now** | `PropLayer.begin_prop_tick`'s staged pose set `vis.flipped` without mirroring the attachments, unlike `retarget`. `u_art_flip` stayed `+1`, so a burning knife staged heading right drew its blade mirrored while the fire mask read the un-mirrored frame — flames off the drawing until its first horizontal leg. The setter owns the propagation, so every site gets it; `_make_fx` seeds a late-built attachment. |
+| **`_push_live`'s off-screen guard skips UPLOADS ONLY** | It was an early `return` above the loop, so it also froze `Effect.t` and `Effect.fade` and never reached the release. A card that lost its Burning while scrolled out of the play area kept its quad, kept `set_process` on, and came back at FULL opacity to start fading only then. ⚠ **The follow-up matters as much as the fix:** gating the upload alone leaves `Effect.pushed` false for ever on an invisible host and rebuilds the eased Dictionary every frame — so the eased EVALUATION is gated with the upload, and only two float advances plus the release still run. §6b's "off-screen is FREE" row is what would have reported getting that wrong. |
+| **`extent.ceil()` moved into the non-instanced branch** | It was rounding INSTANCED extents to whole ART UNITS, over the whole-number-of-`pixel`-CELLS contract `FxJuggle._cell_box` exists to satisfy (`FxRequest.instance_half`). Dormant at today's `pixel = 1.0`; at 0.3 it slices the outer ring of every ball and plume. `test_fx_attachment` asserts the contract on `instance_half` and so could never have caught it on the quad. |
+| **`track_outline` skips INSTANCED quads** | The balls quad leaves `shape` at -1, so it inherited the card's RADII and slipped past the shape test — uploading a 24-vertex polygon plus four more uniforms into `juggle.gdshader`, which declares none of them, every frame the rig moved (which is every frame). Five wasted `set_shader_parameter` calls per juggling host per frame, inside the function §0d.7 emptied. |
+| **`_apply_static` seeds `u_shape_rot` / `u_lag`** | `_push_live` sends the pose only when it CHANGES, and a material born mid-life starts at the shader defaults — so an effect added to a host already turned, and not turning further that frame, masked against an angle the host did not have. |
+| **`fire.gdshader`'s sprite frame test is half-open** | `repeat_disable` clamps to the TEXTURE edge, never the FRAME's, so `t == 1.0` sampled the first texel of the NEXT frame on the sheet — the hoop's back arc bleeding into the full ring's mask. `>=` costs nothing and a frame's footprint really is `[0, 1)`. A/B'd across all 31 panels: **no rendered pixel moved**, which is what "the boundary was never inside the frame" predicts. |
+| **`fx_editor` owns its clock** | It let the attachments self-drive and then added `delta * (time_scale - 1.0)` — the DIFFERENCE, which is NEGATIVE below 1.0, and the scene ships at 0.5. A negative delta reaches `_push_live` as a negative `step`: `Effect.t` walks backwards out of its ease and `Effect.fade` can never reach 1, so a released effect never goes away in the preview. `_time` netted out correctly, which is why it looked fine. |
+
+Not a defect, checked and dropped: `StringName.begins_with` **is** supported in Godot 4.7 (verified
+directly), so `PaletteRoles._get` is fine. `_poly_padded` is safe but does NOT avoid an allocation —
+CoW forks it once the material holds the Variant — and its comment now says so, because an
+overclaiming perf note is what invites the next round of "optimization".
+
+### 12b. The instruments — and this is the half worth reading
+
+| Fix | What it was |
+|---|---|
+| **`snapshot_diff.py` scanned 1 of 3 sets** | Its docstring claimed the prop harness; it read `fx_snapshots` only. `prop_art_snapshots` and — worse — `fx_behind`, the ONLY harness that shows where flame meets art, were never diffed. This is the second time this tool has been silently blind (§0d.4 was the first). Now 31 panels across three sets, with a missing set NAMED. |
+| **Known-noisy panels are listed, not counted** | Four panels differ on unchanged code (§1b). Burying one real regression under four expected ones is how a diff stops being read; DROPPING them silently is the `_bbox` mistake in the other direction. They print as `noisy` with their pixel counts and sit outside the verdict. |
+| **Both review harnesses mis-pinned the seed** | `u_seed` is written to the material in `_make_quad`, i.e. while `sync` BUILDS the quad. `fx_behind` set `att._seed` AFTER `sync` — a no-op on a field the shader had already read — and `fx_snapshot` pinned `_ball_dir` with a comment stating exactly that rule while never pinning `_seed` at all. Both fixed. ⚠ **This did NOT fix the rotated-panel flakiness** — tested directly; that is a separate, still-unknown cause. |
+| **`test_pixels._check_directions_split` skipped SILENTLY** | `if arcs != count: continue` guarded the one condition that makes the guard mean anything (the cancellation was total only where ball count == arc count). Retune `ball_arcs_per_count` and the regression check would test nothing with the suite still green — the exact failure that file's own header refuses to allow. Now a check that fails loudly, plus 3 new PASSes. |
+| **`test_balls_alternate_directions` read a stale `_zoom`** | Its search radius came off the PREVIOUS shot's zoom, since `_host_balls` is what sets `_zoom`. Right by luck today (both clamp to `ZOOM`); a `ball_span` or `ball_arc_max` retune silently makes the window too tight (ball reported missing) or too loose (the mirrored spot found). |
+| **`PixelProbe.ball_positions`' docstring had drifted** | Three stale claims — a per-ball mirror, `f * 2 / arcs` equal shares, the lowest arc exempt from the ease — each describing a model retired on 2026-07-28/29 and each contradicted by the inline comments a few lines below. ⚠ **That paragraph is the SPEC the oracle is transcribed FROM**, so it drifting is worse here than anywhere else in the project: a reader "fixing" the oracle to match it would make it agree with nothing. |
+
+### 12c. An ART RETUNE turned the suite red, and the instrument was at fault
+
+⚠ **THE ONE FINDING HERE THAT WAS FOUND BY A FAILING TEST RATHER THAN BY READING**, and the honest
+answer was to change the test, not the art.
+
+`ramp_ball.tres` was retuned in the editor from palette entries **16/30/6 to 7/8/9** — three oranges
+to three GREENS. `PixelProbe.is_warm`, the predicate both harnesses used to find a ball in a rendered
+frame, was `r > 0.45 and r > b * 1.6 and g > b`: *"a ball is orange"*. Of the new tones only the
+lightest still reads as warm, and the cream gloss never did — so a ball registered on its lit sliver
+alone. At 50 balls the radius is pinned to its 1.0 floor (~4 px on the stage), which took **5 of 50
+balls to "missing" in one direction and 7 in the other**, and pushed the worst measured offset to
+2.73 against a 2.0 tolerance. Both `50 balls all render within 2.0 art units` checks failed,
+deterministically and identically across runs.
+
+**Fixed by deriving the ball's colours from the STYLE** (`PixelProbe.ball_colours` / `ball_pixel`):
+its tones ramp plus the gloss role, matched exactly, because that is precisely what the shader emits
+— `u_ball_tones` is `filter_nearest`, one texel per band, never a mix. It cannot go stale against a
+retune, which is the same reason nothing else in the project stores a colour value (T21).
+
+Two things this dragged out with it:
+
+- **`fx_snapshot`'s ball PROBE was blind in the same way and said nothing about it**, because it only
+  prints. Worse, its oracle CROSSES are green — so a hue test could no longer tell a ball from the
+  mark showing where the ball should be. 5 of 235 probes still failed after the first fix: the
+  FOCUSED panel multiplies the ball by the host's `1.825` modulate (ruling 10), so the predicate now
+  takes the tint and clamps it the way the 8-bit target does. **235 of 235 agree to under one art
+  unit.**
+- ⚠ **`ramp_ball.tres` and `juggle_default.tres` are UNCOMMITTED**, and were not touched by this
+  audit — the editor-collision trap in §11 is exactly this, and its advice (`git diff` before
+  believing a test result) is what found it in one step.
+
+### 12d. What this says about the test layer
+
+The suites are strong where they assert and blind where they SKIP — every instrument defect in §12b
+is a silent skip, a stale spec, or a tool measuring less than it claims, and none of them could ever
+turn a run red. Three are worth generalizing:
+
+- **A guard that `continue`s past its own precondition tests nothing and reports success.** Both
+  cases here were written as `continue` and should have been `check(); if fail: continue`.
+- **A tool's claimed SCOPE is part of its contract.** `snapshot_diff.py` was correct about every
+  panel it looked at, both times it was blind. What was wrong was which panels it looked at.
+- **A check that infers a fact instead of asking for it dies at the next art change.** `is_warm`
+  guessed at hue where the style could simply be asked. When a test fails right after a `.tres`
+  edit, `git diff` the resources FIRST — the art is usually right and the instrument usually is not.

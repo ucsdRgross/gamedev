@@ -145,6 +145,15 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
 
 ## Testing / infrastructure
 
+- **Every ROTATED snapshot panel is nondeterministic, and nobody knows why** (measured
+  2026-07-30 — FX_HANDOFF §12). Two runs of an unchanged build differ by 1k–15k px on
+  `02_fire_rotation`, `05f_ball_rotation` and `behind_prop_turned`, while every UPRIGHT
+  panel in all three harnesses is byte-identical. The cause the docs carried since
+  2026-07-27 (screen-space `fx_bayer(FRAGCOORD.xy)`) is RETIRED — the dither moved onto
+  the FX pixel grid in the simplify pass and the flakiness did not follow — and pinning
+  `_seed` does not remove it either. Worth an hour: it already cost one real optimisation
+  a revert (§1b), and the whole experiment is two runs and a diff. `snapshot_diff.py`
+  lists them as `noisy` in the meantime, so they no longer drown out a real difference.
 - Headless "hangs after final banner": did not reproduce 2026-07-17 (6 clean runs) — if
   it recurs, capture with `--verbose`; workarounds in HEADLESS_TESTING.md.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.

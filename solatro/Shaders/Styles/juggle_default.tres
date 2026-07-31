@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FxJuggleStyle" format=3 uid="uid://dupqpni0mexms"]
 
 [ext_resource type="Script" uid="uid://c3npeajan7xfl" path="res://UI/Fx/fx_juggle_style.gd" id="1_fxstyle"]
-[ext_resource type="Resource" path="res://Assets/Palette/ramp_ball.tres" id="2_tones"]
+[ext_resource type="Resource" uid="uid://bjattfjettxub" path="res://Assets/Palette/ramp_ball.tres" id="2_tones"]
 
 [resource]
 script = ExtResource("1_fxstyle")

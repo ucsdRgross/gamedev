@@ -16,6 +16,13 @@ snapshot scene, run `diff`.
 
 ⚠ It proves two RUNS agree, not that either is correct. A change that is meant to look different
 still has to be looked at.
+
+⚠ EVERY HARNESS THAT WRITES PANELS IS COVERED, and for a while only one was. This read
+`fx_snapshots` alone while the docstring above claimed the prop harness too — so an optimisation
+landed on the props, or on the seam, came back "18 of 18 identical" having compared nothing about
+them. `fx_behind` matters most of the three here: it is the only harness that shows where flame meets
+art, which is exactly what a mask change moves. A missing directory is reported, never skipped
+silently — that is the same lesson as `_bbox` below.
 """
 import os
 import shutil
@@ -23,19 +30,54 @@ import sys
 
 from PIL import Image, ImageChops
 
-SHOTS = os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots")
-BASE = os.path.join(SHOTS, "_baseline")
+ROOT = os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro")
+# Every scene that writes reviewable panels. Keep in step with the OUT_DIR constants in
+# Tests/Visual/{fx_snapshot,prop_art_snapshot,fx_behind}.gd.
+SETS = ("fx_snapshots", "prop_art_snapshots", "fx_behind")
+
+# PANELS THAT DIFFER RUN TO RUN ON UNCHANGED CODE. Reported, never counted — a diff that buries one
+# real regression under four known ones is a diff nobody reads, and silently DROPPING them is the
+# `_bbox` mistake again in the other direction.
+#
+# Measured 2026-07-30, two consecutive runs of an unchanged build with the per-host seed pinned:
+#   02_fire_rotation      12392 px    ROTATED host
+#   05f_ball_rotation      1035 px    ROTATED host
+#   behind_prop_turned    15506 px    ROTATED host
+#   09_embers              1159 px    embers are randomised BY DESIGN (FxAttachment._emit_embers)
+# Every panel with an upright host was byte-identical, in all three sets. The rotated-host
+# phenomenon is the one `fx_snapshot.gd`'s header has warned about since 2026-07-27 and its cause is
+# still unknown — its stated one (screen-space `fx_bayer(FRAGCOORD.xy)`) stopped applying when the
+# dither moved onto the FX pixel grid, and the flakiness did not go with it.
+#
+# ⚠ ADDING A NAME HERE IS GIVING UP ON DIFFING THAT PANEL. Do it only with two runs of an UNCHANGED
+# build to point at, as above.
+NOISY = ("02_fire_rotation.png", "05f_ball_rotation.png", "behind_prop_turned.png",
+         "09_embers.png")
+
+
+def _dirs():
+    """(shots, baseline) per set, with the missing ones named rather than dropped."""
+    for name in SETS:
+        shots = os.path.join(ROOT, name)
+        if not os.path.isdir(shots):
+            print("  NO PANELS  %s (run its scene first)" % name)
+            continue
+        yield name, shots, os.path.join(shots, "_baseline")
 
 
 def save() -> int:
-    os.makedirs(BASE, exist_ok=True)
-    n = 0
-    for name in sorted(os.listdir(SHOTS)):
-        if not name.endswith(".png"):
-            continue
-        shutil.copy2(os.path.join(SHOTS, name), os.path.join(BASE, name))
-        n += 1
-    print("baseline: %d panels saved to %s" % (n, BASE))
+    total = 0
+    for name, shots, base in _dirs():
+        os.makedirs(base, exist_ok=True)
+        n = 0
+        for entry in sorted(os.listdir(shots)):
+            if not entry.endswith(".png"):
+                continue
+            shutil.copy2(os.path.join(shots, entry), os.path.join(base, entry))
+            n += 1
+        print("baseline: %d panels saved from %s" % (n, name))
+        total += n
+    print("%d panels in total" % total)
     return 0
 
 
@@ -64,36 +106,49 @@ def _bbox(d):
 
 
 def diff() -> int:
-    if not os.path.isdir(BASE):
-        print("no baseline — run `save` on a build you trust first")
+    bad = total = seen = noisy = 0
+    for name, shots, base in _dirs():
+        if not os.path.isdir(base):
+            print("  NO BASELINE %s — run `save` on a build you trust first" % name)
+            bad += 1
+            continue
+        seen += 1
+        print("  --- %s ---" % name)
+        for entry in sorted(os.listdir(base)):
+            if not entry.endswith(".png"):
+                continue
+            total += 1
+            new = os.path.join(shots, entry)
+            if not os.path.exists(new):
+                print("  MISSING    %s" % entry)
+                bad += 1
+                continue
+            a = Image.open(os.path.join(base, entry)).convert("RGBA")
+            b = Image.open(new).convert("RGBA")
+            if a.size != b.size:
+                print("  SIZE DIFF  %s  %s vs %s" % (entry, a.size, b.size))
+                bad += 1
+                continue
+            d = ImageChops.difference(a, b)
+            box = _bbox(d)
+            if box is None:
+                print("  identical  %s" % entry)
+                continue
+            data = list(d.getdata())
+            px = sum(1 for p in data if p != (0, 0, 0, 0))
+            worst = max(max(p) for p in data)
+            if entry in NOISY:
+                print("  noisy      %s  %d px (known: differs on unchanged code)" % (entry, px))
+                noisy += 1
+                continue
+            print("  DIFFER     %s  %d px, max channel delta %d, bbox %s"
+                  % (entry, px, worst, box))
+            bad += 1
+    if seen == 0:
+        print("\nnothing compared — no baseline anywhere")
         return 2
-    bad = total = 0
-    for name in sorted(os.listdir(BASE)):
-        if not name.endswith(".png"):
-            continue
-        total += 1
-        new = os.path.join(SHOTS, name)
-        if not os.path.exists(new):
-            print("  MISSING    %s" % name)
-            bad += 1
-            continue
-        a = Image.open(os.path.join(BASE, name)).convert("RGBA")
-        b = Image.open(new).convert("RGBA")
-        if a.size != b.size:
-            print("  SIZE DIFF  %s  %s vs %s" % (name, a.size, b.size))
-            bad += 1
-            continue
-        d = ImageChops.difference(a, b)
-        box = _bbox(d)
-        if box is None:
-            print("  identical  %s" % name)
-            continue
-        px = sum(1 for p in d.getdata() if p != (0, 0, 0, 0))
-        worst = max(max(p) for p in d.getdata())
-        print("  DIFFER     %s  %d px, max channel delta %d, bbox %s"
-              % (name, px, worst, box))
-        bad += 1
-    print("\n%d of %d panels differ" % (bad, total))
+    print("\n%d of %d comparable panels differ (%d known-noisy skipped, %d of %d sets compared)"
+          % (bad, total - noisy, noisy, seen, len(SETS)))
     return 1 if bad else 0
 
 
