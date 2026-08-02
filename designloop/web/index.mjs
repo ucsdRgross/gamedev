@@ -18,9 +18,15 @@ function statusLine(d) {
   return d.owner.reason === 'new_branch_needed' ? 'with the agent — new branch needed' : 'with the agent';
 }
 
-const designs = await (await fetch('/api/designs')).json();
+const response = await fetch('/api/designs');
+const designs = response.ok ? await response.json().catch(() => null) : null;
 
-if (!designs.length) {
+if (!designs) {
+  // A scan that failed is not an empty repo, and saying "no designs yet" would send the owner
+  // looking for a directory they never lost.
+  body.innerHTML = '<p class="muted">Could not read the design index — the server answered '
+    + `<span class="mono">${response.status}</span>. Its console says why.</p>`;
+} else if (!designs.length) {
   body.innerHTML = '<p class="muted">No designs yet. A design is any directory with a '
     + '<span class="mono">meta.json</span> under <span class="mono">&lt;project&gt;/design/</span>.</p>';
 } else {

@@ -467,6 +467,7 @@ export function nextQuestion(questions, answers = {}, sections = null) {
  * answer can make a gate that named it pending, which strands the next one down.
  */
 export function blastRadius(questions, answers, id, next) {
+  const map = byId(questions);
   const current = new Map();
   for (const q of questions) {
     const a = answerFor(answers, q.id);
@@ -474,6 +475,14 @@ export function blastRadius(questions, answers, id, next) {
   }
   const target = current.get(id) || { state: 'chosen', active: true };
   current.set(id, { ...target, ...next, active: true });
+  // The answer being given is subject to its OWN gate like every other one. The canvas links
+  // straight to a question an earlier answer already ruled out — a node's "decided by" list offers
+  // "answer it" on a pruned question — and recording that as live would resurrect the branch the
+  // owner declined. A gate only ever names questions upstream of this one, so its verdict cannot
+  // change as a consequence of what follows, and it is settled here rather than in the fixpoint.
+  const self = map.get(id);
+  const selfLive = !self || evaluateGate(self.effectiveGate || self.gate, current) === 'true';
+  current.get(id).active = selfLive;
 
   for (let pass = 0; pass < questions.length + 2; pass++) {
     let changed = false;
@@ -494,7 +503,14 @@ export function blastRadius(questions, answers, id, next) {
   for (const q of questions) {
     const before = answerFor(answers, q.id);
     const after = current.get(q.id);
-    if (!before || q.id === id) continue;
+    if (q.id === id) {
+      // It is being answered right now, so what it WAS is beside the point: it is stranded exactly
+      // when its own gate says it does not apply. Naming it here is what carries the inactivity
+      // into the log — `applyEvent` records every answer active, and the strand event corrects it.
+      if (!selfLive) strand.push(q.id);
+      continue;
+    }
+    if (!before) continue;
     const wasActive = before.active !== false;
     const isActive = after.active !== false;
     if (wasActive && !isActive) strand.push(q.id);

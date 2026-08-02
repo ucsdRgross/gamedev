@@ -167,7 +167,16 @@ export async function load(dir, { slug = '' } = {}) {
     };
   }
 
+  // The log is authoritative for every answer it MENTIONS, but it is not necessarily the whole
+  // record: `answers.json` may have been seeded or hand-edited before the first event was ever
+  // logged (chart I5). Replaying over the materialised answers keeps those; anything the log has
+  // since said about the same ID overwrites it, so the log still wins wherever the two disagree.
   const state = emptyState(materialised?.slug || slug);
+  for (const [id, a] of Object.entries(materialised?.answers || {})) {
+    state.answers[id] = { ...a };
+    state.order.push(id);
+  }
+  state.updated = materialised?.updated ?? null;
   const events = [];
   for (const line of log.split('\n')) {
     const text = line.trim();

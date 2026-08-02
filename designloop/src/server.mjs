@@ -682,8 +682,14 @@ async function replaceExisting(port) {
   return false;
 }
 
-/** Listen on `port`, stepping to the next one if something else already has it. */
-export function listenFrom(server, port, attempts = 20) {
+/**
+ * Listen on `port`, stepping to the next one if something else already has it.
+ *
+ * Bound to the loopback address, never to every interface: Q93 is localhost only, and `isLoopback`
+ * guards `/api/*` alone — `/api/ping`, `/web/…` and `/src/…` answer before it. On a shared network
+ * an all-interfaces bind is what turns "the owner's tool" into "a service on the LAN".
+ */
+export function listenFrom(server, port, attempts = 20, host = '127.0.0.1') {
   return new Promise((resolvePromise, reject) => {
     let current = port;
     let left = attempts;
@@ -693,7 +699,7 @@ export function listenFrom(server, port, attempts = 20) {
         return;
       }
       current += 1;
-      server.listen(current);
+      server.listen(current, host);
     };
     server.on('error', onError);
     server.once('listening', () => {
@@ -701,7 +707,7 @@ export function listenFrom(server, port, attempts = 20) {
       // Ask the socket, not the request: port 0 means "any free port", and only the socket knows.
       resolvePromise(server.address().port);
     });
-    server.listen(current);
+    server.listen(current, host);
   });
 }
 

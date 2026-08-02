@@ -984,7 +984,14 @@ async function openVersion(n) {
   // `engine` in layout.json is for: a later engine may lay it out differently, and the version does
   // not care, because its own positions are on disk.
   const fresh = layout(version.graph, { collapsed: [...state.collapsed] });
-  state.frozen.layout = { ...fresh, ...version.layout, positions: { ...fresh.positions, ...version.layout.positions } };
+  state.frozen.layout = {
+    ...fresh,
+    ...version.layout,
+    // A version whose `layout.json` is missing or unreadable still has its graph, so it opens on
+    // the recomputed layout rather than throwing — `readVersion` returns a null layout, and
+    // `listVersions` lists the version regardless.
+    positions: { ...fresh.positions, ...(version.layout?.positions || {}) },
+  };
   redraw();
   if (version.layout?.viewport) {
     state.view = { x: version.layout.viewport.x, y: version.layout.viewport.y, k: version.layout.viewport.zoom };

@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://c75c216gpeonm" path="res://Cards/card_modifier_status.gd" id="5_0xvu6"]
 [ext_resource type="Script" uid="uid://d0trwxy6cxbji" path="res://Cards/Types/type_paper.gd" id="6_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="8_rbggy"]
-[ext_resource type="Shader" path="res://Assets/color_picker.gdshader" id="8_uqrsc"]
+[ext_resource type="Shader" uid="uid://c3u2256nxmj1m" path="res://Assets/color_picker.gdshader" id="8_uqrsc"]
 [ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="10_2gib3"]
 [ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="11_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="12_v4ikb"]
@@ -22,20 +22,16 @@ metadata/_custom_type_script = "uid://bfhxsav3rh04r"
 script = ExtResource("4_uqrsc")
 metadata/_custom_type_script = "uid://c5mgc8r0lle4w"
 
-[sub_resource type="Resource" id="Resource_cksyn"]
-metadata/_custom_type_script = "uid://cuxy11agy0s0s"
-
 [sub_resource type="Resource" id="Resource_0xvu6"]
 script = ExtResource("6_0xvu6")
 metadata/_custom_type_script = "uid://d0trwxy6cxbji"
 
 [sub_resource type="Resource" id="Resource_wmxs8"]
 script = ExtResource("2_rbggy")
-suit = SubResource("Resource_cksyn")
 rank = SubResource("Resource_v4ikb")
 type = SubResource("Resource_0xvu6")
 stamp = SubResource("Resource_dmau8")
-stage = 4
+previous_stage = 4
 metadata/_custom_type_script = "uid://b0nr8s0uyec23"
 
 [sub_resource type="Animation" id="Animation_dmau8"]
@@ -459,16 +455,13 @@ _data = {
 &"new_animation_2": SubResource("Animation_cksyn")
 }
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_0xvu6"]
-shader = ExtResource("8_uqrsc")
-shader_parameter/color_x = 8
-
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dmau8"]
 shader = ExtResource("8_uqrsc")
 shader_parameter/color_x = 8
+shader_parameter/num_colors = 32
 
 [node name="CardVisual" type="Node2D" unique_id=758458623 groups=["CardVisual"]]
-scale = Vector2(3, 3)
+scale = Vector2(2.5, 2.5)
 script = ExtResource("1_s3n6f")
 data = SubResource("Resource_wmxs8")
 subdivisions_x = 3
@@ -482,9 +475,11 @@ autoplay = &"new_animation_2"
 [node name="Offset" type="Node2D" parent="." unique_id=1932524186]
 
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
+position = Vector2(0, -0.051853854)
+scale = Vector2(0.9999919, 0.9857081)
+skew = 0.0006803274
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
-visible = false
 texture = ExtResource("2_y74k2")
 skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-19, -25, 19, -25, 19, 25, -19, 25, -9.5, -25, 0, -25, 9.5, -25, -19, -12.5, -9.5, -12.5, 0, -12.5, 9.5, -12.5, 19, -12.5, -19, 0, -9.5, 0, 0, 0, 9.5, 0, 19, 0, -19, 12.5, -9.5, 12.5, 0, 12.5, 9.5, 12.5, 19, 12.5, -9.5, 25, 0, 25, 9.5, 25, -14.25, -18.75, -4.75, -18.75, 4.75, -18.75, 14.25, -18.75, -14.25, -6.25, -4.75, -6.25, 4.75, -6.25, 14.25, -6.25, -14.25, 6.25, -4.75, 6.25, 4.75, 6.25, 14.25, 6.25, -14.25, 18.75, -4.75, 18.75, 4.75, 18.75, 14.25, 18.75)
@@ -494,7 +489,6 @@ bones = ["Bone_Center", PackedFloat32Array(1.1268517e-06, 1.1268517e-06, 1.12685
 internal_vertex_count = 37
 
 [node name="Rank" type="Polygon2D" parent="Offset/Visual" unique_id=1514090271]
-material = SubResource("ShaderMaterial_0xvu6")
 position = Vector2(-12, -17)
 texture = ExtResource("8_rbggy")
 skeleton = NodePath("../Skeleton2D")
@@ -505,7 +499,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.01711818, 0.02116435, 0.10145136, 0
 internal_vertex_count = 1
 
 [node name="Suit" type="Polygon2D" parent="Offset/Visual" unique_id=655054366]
-visible = false
 position = Vector2(12, -17)
 texture = ExtResource("10_2gib3")
 skeleton = NodePath("../Skeleton2D")
@@ -516,7 +509,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.02116435, 0.01711818, 0.016944854, 
 internal_vertex_count = 1
 
 [node name="Stamp" type="Polygon2D" parent="Offset/Visual" unique_id=1921553756]
-visible = false
 position = Vector2(0, -17)
 texture = ExtResource("11_0xvu6")
 skeleton = NodePath("../Skeleton2D")
@@ -527,7 +519,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.028354941, 0.028354941, 0.13503475,
 internal_vertex_count = 1
 
 [node name="Art" type="Polygon2D" parent="Offset/Visual" unique_id=738299753]
-visible = false
 material = SubResource("ShaderMaterial_dmau8")
 position = Vector2(0, 5)
 texture = ExtResource("12_v4ikb")

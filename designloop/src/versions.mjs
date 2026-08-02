@@ -50,6 +50,26 @@ export async function listVersions(dir) {
   return out.sort((a, b) => a.n - b.n);
 }
 
+/**
+ * The highest version NUMBER on disk, readable or not.
+ *
+ * `listVersions` skips a version whose `graph.json` cannot be read — a freeze that died between
+ * the two writes, say — and numbering the next one off that list would hand it a directory that
+ * already exists and overwrite what is in it. A version is citable only if its number is never
+ * reused, so the numbering counts directories and the listing reads them.
+ */
+async function highestVersion(dir) {
+  try {
+    const entries = await readdir(join(dir, 'versions'), { withFileTypes: true });
+    return entries.reduce(
+      (max, e) => (e.isDirectory() && /^\d+$/.test(e.name) ? Math.max(max, Number(e.name)) : max),
+      0,
+    );
+  } catch {
+    return 0;
+  }
+}
+
 /** Everything a frozen version holds, for reopening it read-only (Q90=a, H6). */
 export async function readVersion(dir, n) {
   const path = join(dir, 'versions', pad(n));
@@ -269,7 +289,7 @@ export function renderChangelog({ version, previous, graph, answers, questions, 
  */
 export async function freeze(dir, payload) {
   const existing = await listVersions(dir);
-  const version = (existing.length ? existing[existing.length - 1].n : 0) + 1;
+  const version = (await highestVersion(dir)) + 1;
   const previous = existing.length ? await readVersion(dir, existing[existing.length - 1].n) : null;
   const path = join(dir, 'versions', pad(version));
   await mkdir(path, { recursive: true });

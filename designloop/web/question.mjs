@@ -70,9 +70,11 @@ async function refresh() {
   titleEl.textContent = scope === 'gaps' ? `${design.title} — the open gaps` : design.title;
   document.title = `${design.title} — Design Loop`;
   document.getElementById('canvas-link').href = `canvas.html?key=${encodeURIComponent(key)}`;
-  if (!parsed.questions.length) {
-    parsed = parseDocument(await fetch(`/api/designs/${key}/doc`).then((r) => r.text()));
-  }
+  // Re-parsed on every refresh, never cached: the agent rewrites the document between rounds
+  // (chart B2), and `refresh()` is exactly what runs when it does. A parse held over from round 1
+  // makes BACK, the history list and the canvas' `#Qn` links silently miss every question round 2
+  // added, and leaves `describeGate` unable to name the options it is explaining.
+  parsed = parseDocument(await fetch(`/api/designs/${key}/doc`).then((r) => r.text()));
   history = await api('/history');
   if (scope === 'gaps') return refreshGaps();
   // The round can end with reachable questions still on the table: free text at a ⚑gate ends it on

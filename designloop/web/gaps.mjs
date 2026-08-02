@@ -79,8 +79,27 @@ function renderGap(gap) {
   return card;
 }
 
-const data = await (await fetch(`/api/designs/${key}/gaps`)).json();
-const design = await (await fetch(`/api/designs/${key}`)).json();
+/** Fetch JSON, or throw with the API's own message rather than returning a body with no `gaps`. */
+async function json(path) {
+  const res = await fetch(path);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `${res.status}`);
+  return body;
+}
+
+/**
+ * Put the failure on the page and stop the module. Without this, a design whose `DESIGN.md` is
+ * missing — which the index badges and still links here — leaves this page on its `Loading…`
+ * placeholder for good, with the only explanation in the browser console.
+ */
+function fail(err) {
+  document.getElementById('design-title').textContent = 'Gaps';
+  body.replaceChildren(el('div', 'banner bad', `Could not open the gaps for this design: ${md(err.message)}`));
+  throw err;
+}
+
+const data = await json(`/api/designs/${key}/gaps`).catch(fail);
+const design = await json(`/api/designs/${key}`).catch(fail);
 document.getElementById('design-title').textContent = `${design.title} — gaps`;
 document.title = `Gaps — ${design.title}`;
 
