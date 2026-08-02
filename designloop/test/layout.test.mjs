@@ -1,0 +1,110 @@
+// PLAN S12 / §4.7 — the hand-rolled layered layout: deterministic, non-overlapping, and fast
+// enough at Spotlight's size that the dependency the plan would have allowed is not needed.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { parseCharts } from '../src/graph.mjs';
+import { layout, edgeGeometry, wrapLabel, METRICS, ENGINE } from '../src/layout.mjs';
+
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const SPOTLIGHT = parseCharts(readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8'), { file: 'S.md' });
+
+function chart(...lines) {
+  return parseCharts(['```mermaid', 'flowchart TD', ...lines.map((l) => `  ${l}`), '```'].join('\n'), { file: 'T.md' });
+}
+
+test('a label wraps to the node width, breaks a word too long for it, and is capped', () => {
+  const fits = Math.floor((METRICS.nodeWidth - 2 * METRICS.padX) / METRICS.charWidth);
+  const lines = wrapLabel('one two three four five six seven eight nine ten eleven twelve');
+  assert.ok(lines.every((l) => l.length <= fits), 'every line fits the node');
+  assert.ok(lines.length > 1);
+  assert.ok(wrapLabel('Supercalifragilistic'.repeat(6)).every((l) => l.length <= fits), 'a long word is broken');
+  assert.equal(wrapLabel('word '.repeat(200)).length, METRICS.maxLines, 'and the label is capped');
+  assert.match(wrapLabel('word '.repeat(200)).at(-1), /…$/);
+});
+
+test('the same graph always lays out identically — a frozen version must reproduce', () => {
+  const a = layout(SPOTLIGHT);
+  const b = layout(SPOTLIGHT);
+  assert.equal(JSON.stringify(a.positions), JSON.stringify(b.positions));
+  assert.equal(a.engine, ENGINE);
+});
+
+test('no two nodes in a chart overlap', () => {
+  const laid = layout(SPOTLIGHT);
+  const ids = Object.keys(laid.positions);
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = { ...laid.positions[ids[i]], ...laid.sizes[ids[i]] };
+      const b = { ...laid.positions[ids[j]], ...laid.sizes[ids[j]] };
+      const apart = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+      assert.ok(apart, `${ids[i]} overlaps ${ids[j]}`);
+    }
+  }
+});
+
+test('every node sits inside its own chart frame', () => {
+  const laid = layout(SPOTLIGHT);
+  for (const [id, p] of Object.entries(laid.positions)) {
+    const frame = laid.charts[SPOTLIGHT.nodes[id].chart];
+    const size = laid.sizes[id];
+    assert.ok(p.x >= frame.x && p.x + size.w <= frame.x + frame.w, `${id} escapes its frame sideways`);
+    assert.ok(p.y >= frame.y && p.y + size.h <= frame.y + frame.h, `${id} escapes its frame vertically`);
+  }
+});
+
+test('every edge points down a layer, except the loops the ranking had to cut', () => {
+  const laid = layout(SPOTLIGHT);
+  const back = new Set(laid.backEdges);
+  for (const edge of SPOTLIGHT.edges) {
+    const geo = edgeGeometry(edge, laid);
+    if (!geo) continue;
+    if (back.has(edge.key)) continue;
+    assert.ok(geo.y2 >= geo.y1, `${edge.key} runs upward but was not recorded as a back edge`);
+  }
+  assert.ok(back.size > 0, 'Spotlight has real loops — C10→C8, I10→I5 — and they are found');
+});
+
+test('collapsing a chart removes its nodes and shrinks the page', () => {
+  const open = layout(SPOTLIGHT);
+  const shut = layout(SPOTLIGHT, { collapsed: ['D'] });
+  const chartD = SPOTLIGHT.charts.find((c) => c.id === 'D');
+  for (const id of chartD.nodes) assert.equal(shut.positions[id], undefined);
+  assert.equal(shut.charts.D.collapsed, true);
+  assert.equal(shut.charts.D.h, METRICS.collapsedHeight + 3 * METRICS.chartPad);
+  assert.ok(shut.bounds.h < open.bounds.h, 'the tallest chart folded, so the page got shorter');
+  assert.deepEqual(shut.collapsed, ['D'], 'and the collapse state is recorded for Q115=b');
+});
+
+test('one chart on its own is the only thing laid out (Q52, the picker)', () => {
+  const laid = layout(SPOTLIGHT, { only: 'A' });
+  assert.deepEqual(Object.keys(laid.charts), ['A']);
+  assert.equal(Object.keys(laid.positions).length, SPOTLIGHT.charts.find((c) => c.id === 'A').nodes.length);
+});
+
+test('a chart that is one long chain lays out as one column', () => {
+  const g = chart('A1["one"] --> A2["two"]', 'A2 --> A3["three"]', 'A3 --> A4["four"]');
+  const laid = layout(g);
+  const xs = new Set(Object.values(laid.positions).map((p) => p.x));
+  assert.equal(xs.size, 1, 'a chain is straightened, not staircased');
+  const ys = Object.values(laid.positions).map((p) => p.y).sort((a, b) => a - b);
+  assert.equal(new Set(ys).size, 4, 'one layer each');
+});
+
+test('MEASUREMENT — Spotlight lays out fast enough that no layout dependency is needed', () => {
+  for (let i = 0; i < 3; i++) layout(SPOTLIGHT);           // warm
+  const runs = [];
+  for (let i = 0; i < 5; i++) {
+    const start = process.hrtime.bigint();
+    layout(SPOTLIGHT);
+    runs.push(Number(process.hrtime.bigint() - start) / 1e6);
+  }
+  const best = Math.min(...runs);
+  assert.equal(Object.keys(SPOTLIGHT.nodes).length, 176);
+  // The gate is generous on purpose — this pins "interactive", not a benchmark. Measured on the
+  // owner's machine 2026-08-01: 1.8 ms for 176 nodes and 182 edges. PLAN §9 asked for the number.
+  assert.ok(best < 250, `layout took ${best.toFixed(1)} ms`);
+});

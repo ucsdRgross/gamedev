@@ -2,8 +2,8 @@
      second computer does not have. Write new and updated memories HERE. See /CLAUDE.md. -->
 
 - [Repo Claude tooling](repo-claude-tooling.md) — gamedev/.claude/ has the /handoff (write+resume, one file), /fx-verify and /flowchart-design skills, the plan-auditor subagent, and a hook blocking name-based process kills
-- [Spotlight design in flight](solatro-spotlight-design.md) — solatro/SPOTLIGHT_DESIGN.md is an unapproved DESIGN-ONLY flowchart plan, PAUSED; §17 is a branching question DAG with QR1–QR8 roots
-- [Design Loop tool](designloop-tool.md) — designloop/design/designloop/: local web front end for the questionnaire workflow; design CLOSED, PLAN.md is the build doc, S1–S10 built and green (resume from designloop/HANDOFF_designloop.md)
+- [Spotlight design in flight](solatro-spotlight-design.md) — solatro/design/spotlight/DESIGN.md is an unapproved DESIGN-ONLY flowchart plan, PAUSED; §17 is a branching question DAG with QR1–QR8 roots
+- [Design Loop tool](designloop-tool.md) — designloop/: the local web front end for the questionnaire workflow — questions, review canvas, gap surface; **all 17 steps DONE, 119 tests green (2026-08-02)**; GAP-002 open (the all-charts view has no cross-chart edges to draw); read designloop/README.md, then HANDOFF_designloop.md
 - [Design review ends with a handoff](design-review-ends-with-handoff.md) — handoff fires on CONFIRMING the flowcharts (not the last answer); then plan + scope + copy-paste prompt in ONE message
 - [Verify visuals by eye](verify-visuals-by-eye.md) — render a snapshot and describe the image; metrics and green tests are not evidence about pixels, say UNVERIFIED instead
 - [General, not shape-specific](general-not-shape-specific.md) — owner rejects one-silhouette hacks and coupled designs; propose the general form or 2-3 options before implementing

@@ -1,6 +1,6 @@
 ---
 name: designloop-tool
-description: designloop/ — local web tool presenting the flowchart-design questionnaire one question at a time; design CLOSED, design/designloop/PLAN.md is the 17-step build plan, and steps S1–S10 (Phases 0–2) are BUILT and green — resume from designloop/HANDOFF_designloop.md
+description: designloop/ — local web tool presenting the flowchart-design questionnaire one question at a time, plus a review canvas and a gap surface; design CLOSED and ALL 17 build steps are DONE and green (2026-08-02) — read designloop/README.md, then HANDOFF_designloop.md
 metadata: 
   node_type: memory
   type: project
@@ -14,20 +14,58 @@ the front end for [[repo-claude-tooling]]'s `/flowchart-design` workflow. **Both
 build plan — 17 steps in 5 phases, each citing design node IDs, ordered so stopping after Phase 1
 still leaves a working tool (Phase 3, the review canvas, is roughly half the work).
 
-**BUILD STATE (2026-08-01): S1–S10, Phases 0–2, are done and verified — the questionnaire half
-works end to end.** Resume from `designloop/HANDOFF_designloop.md`, which stands alone; next is
-Phase 3, the canvas, at S11 (mermaid ingestion, the riskiest step). `npm --prefix designloop test`
-is the gate. Both hard gates passed: SPOTLIGHT_DESIGN.md parses UNEDITED (195 live + 1 retired
-questions, 0 errors), and a crash between the log append and the materialise is recovered by
-replay. One gap is open and not blocking — GAP-001, a contradiction between "a ⚑gate option with no
-`→ next:` is a parse error" and "the acceptance document must parse unchanged" (QR8 breaks it);
-both behaviours exist behind a `strict` flag until the owner answers.
+**BUILD STATE (2026-08-02): ALL 17 STEPS DONE — the tool is finished and green at 118 tests**
+(`npm --prefix designloop test` is the gate). `designloop/README.md` is the entry point;
+`designloop/HANDOFF_designloop.md` is the build's live state and stands alone. Every hard gate
+passed: the Spotlight document parses and ingests **UNEDITED** (195 live + 1 retired questions,
+0 errors; 14 charts, 176 nodes, 182 edges) — verified again after S16 moved it, byte-identical
+(sha1 `68c348db`); a crash between the log append and the materialise is recovered by replay; the
+hand-rolled layered layout does those 176 nodes in **1.8 ms**, deterministically, so **no layout
+dependency was needed** and no gap was filed for one.
+**GAP-002 is OPEN** (2026-08-02, from the owner's review of the built canvas): the whole-graph view
+has no connections to show — **0 cross-chart edges in either real document** (of 133 and 182),
+while 12 node labels name another chart in prose ("… — chart B"). Q52 asked for that view "if I want
+to see all connections". Whether a prose reference becomes a drawn link changes `graph.json`, so it
+is an owner call and is parked. Six other review defects were fixed (see the handoff's S18); the
+biggest reusable one: **`web/md.mjs` is now the ONE inline-markdown renderer** — it was copied into
+three screens and the canvas panel had never had it, so `**bold**` reached the owner as asterisks.
+
+GAP-001 was resolved (b) on 2026-08-01: a ⚑gate option with no `→ next:` is a
+**warning**, surfaced by `run check`, by a badge on the index card, and on the question screen as
+`→ next: not described`; `strict: true` still throws for the grammar test.
+
+**S16 moved the owner's paused document, 2026-08-02:** the file that was `solatro/SPOTLIGHT_DESIGN.md`
+is now `solatro/design/spotlight/DESIGN.md` (Q104=a, one layout, no exceptions), with `meta.json`'s `doc`
+changed from `../../SPOTLIGHT_DESIGN.md` to `DESIGN.md`. **Not one byte of the document changed.**
+Anything pointing at the old top-level path is stale.
+
+**The gap surface (S15) is where execution gets back into the design.** `src/gaps.mjs` reads
+`gaps/*.md` as *draft questions* — the `**Options I can see**` line goes through the same grammar
+as every other question (`parseQuestionBody`), with `*my recommendation*` normalised to `*default*`
+— so `question.html?key=…&scope=gaps` is a **scoped round** asking only the open gaps. Answers land
+in the ordinary `answers.json` keyed by the gap's own ID; the last one ends the owner's turn with
+`reason: "gaps_answered"`, which wakes the watch WITHOUT ending the main questionnaire (Q88b=a).
+Stale plan steps are **computed and reported, never written into `PLAN.md`** — read out of the
+plan's `(implements …)` citations against a gap's `**Blast radius**` line. The canvas' assumptions
+panel files a gap from an assumption ("I want a say in this", Q95b=a) with **no options**, because
+the tool never authors a question (Q94=a).
+
+**Two places the DESIGN beat the PLAN in Phase 3, both worth remembering as a pattern:** Q52's
+written answer asked for a chart picker *and* the whole graph with collapsible charts (the plan
+recorded only the latter), and Q59's asked for **disapproval flagging** with soft-approval defaults
+(the plan's summary said per-node approval). Read the owner's own words in `DESIGN.md` §9, not the
+plan's one-line summary of them.
+
+**The mermaid subset is deliberately tiny** (`PLAN.md` §6, `src/graph.mjs`): `ID["label"]`,
+`ID{"decision"}`, `-->`, `-- label -->`, one `flowchart TD` header, one shared ID prefix per chart.
+Everything else throws with the file and line. It is parsed by a left-to-right cursor, never by
+splitting on `-->`, because real labels contain `->`, `--` and `·`.
 
 **Windows landmine, design-guaranteed not bad luck:** a replacing `rename` fails with **EPERM** while
 the S9 watch holds the design directory open, so `writeJsonAtomic` retries. Atomic-write + directory
 watch on the same folder is the collision; any new writer in that directory needs the same retry.
 
-**Measured, replacing two wrong hand estimates:** `SPOTLIGHT_DESIGN.md` is **196 question lines**
+**Measured, replacing two wrong hand estimates:** the Spotlight `DESIGN.md` is **196 question lines**
 (188 `Q` + 8 `QR`; 195 live, Q140 retired in place), 8 `⚑gate`, 39 `notes`, and its **longest path is
 194 of 195** — only one pair in the DAG is mutually exclusive. ⚠ **Gate weight only prunes when a
 root's DEFAULT is the pruning branch**; Spotlight's roots all default to "include this sub-feature",
@@ -35,11 +73,11 @@ so all-defaults answers nearly everything. The DAG's value is amputating a sub-f
 not a short common path.
 
 **Structure settled:** the tool lives in `designloop/`; design ARTEFACTS live beside the code they
-describe, `<project>/design/<slug>/` (so `solatro/SPOTLIGHT_DESIGN.md` moves to
+describe, `<project>/design/<slug>/` (which is where Spotlight now lives, at
 `solatro/design/spotlight/DESIGN.md`), each design self-contained with its own `gaps/`,
 `ASSUMPTIONS.md` and `versions/`. Markdown stays the source of truth — the tool parses it, so the
-workflow still works with no tool at all. Phase 0's acceptance test is that
-SPOTLIGHT_DESIGN.md parses UNCHANGED; if it needs edits, the grammar is wrong.
+workflow still works with no tool at all. Phase 0's acceptance test is that that document parses
+UNCHANGED; if it needs edits, the grammar is wrong.
 
 The loop it specifies: braindump in chat → agent researches and authors a question DAG + draft
 design graph → agent hands over a **local URL** → owner answers **one question at a time**, never
@@ -75,7 +113,7 @@ resolved by the agent picking an answer, and is closed only by a new design vers
 **every execution-plan step to cite the design node IDs it implements** — without that there is no
 blast radius. The protocol travels via a self-propagating block copied verbatim into every derived
 document (design → execution plan → handoff → …); the master copy is in the skill, the first live
-copy is `solatro/SPOTLIGHT_DESIGN.md` §20.
+copy is `solatro/design/spotlight/DESIGN.md` §20.
 
 **Round 1 answered 2026-08-01** (§11 of the doc). Notable: the review canvas IS in v1 (QR3=a);
 questions are ordered document-order-within-section, sections by gate weight (Q11=c); no progress

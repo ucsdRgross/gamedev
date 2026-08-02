@@ -1,5 +1,5 @@
 // PLAN S2 / §5.6 — the question grammar, one case per construct, plus THE acceptance test:
-// `solatro/SPOTLIGHT_DESIGN.md` parsing unchanged.
+// `solatro/design/spotlight/DESIGN.md` parsing unchanged.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
   parseDocument, parseQuestionLine, parseGate, evaluateGate, reachability,
-  nextQuestion, blastRadius, validate, longestPath, GrammarError,
+  nextQuestion, blastRadius, validate, longestPath, describeGate, GrammarError,
 } from '../src/grammar.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -110,6 +110,23 @@ test('a section gate ANDs with each question gate', () => {
   assert.equal(q43.effectiveGate.atoms.length, 2);
   assert.equal(evaluateGate(q43.effectiveGate, { Q44: A('a'), QR4: A('b') }), 'false');
   assert.equal(evaluateGate(q43.effectiveGate, { Q44: A('a'), QR4: A('a') }), 'true');
+});
+
+test('a question repeating its own section gate is not asked about it twice', () => {
+  // Measured on the real Spotlight document: §17.2 is gated `[QR1=a]` and its questions carry
+  // `[QR1=a]` too, so the question screen said "asked because QR1 = …" twice on one screen. The
+  // conjunction of an atom with itself is that atom.
+  const { questions } = parseDocument([
+    '### 17.2 The mechanical rule `[QR1=a]`',
+    '',
+    '- **QR1** `[root]` — Mechanical? · **(a)** yes · **(b)** no · *default* (a)',
+    '- **Q9** `[QR1=a]` — Ship the seam? · **(a)** now · **(b)** later · *default* (a)',
+  ].join('\n'));
+  const q9 = questions.find((q) => q.id === 'Q9');
+  assert.equal(q9.effectiveGate.atoms.length, 1, 'one reason, not the same reason twice');
+  assert.equal(q9.effectiveGate.text, 'QR1=a');
+  assert.equal(describeGate(q9.effectiveGate, questions, { QR1: A('a') }).length, 1);
+  assert.equal(evaluateGate(q9.effectiveGate, { QR1: A('b') }), 'false', 'and it still gates');
 });
 
 test('an option whose consequence contains a " — " of its own keeps it whole', () => {
@@ -228,8 +245,8 @@ test('ordering is document order within a section, sections by gate weight (§5.
 // --- THE ACCEPTANCE TEST (PLAN S2, §5.6) ------------------------------------------------------
 // The document is not edited to make it parse. If it does not parse, the grammar is wrong.
 
-test('SPOTLIGHT_DESIGN.md parses unchanged: 188 questions + 8 QR gates, zero errors', () => {
-  const md = readFileSync(resolve(REPO, 'solatro', 'SPOTLIGHT_DESIGN.md'), 'utf8');
+test('the Spotlight DESIGN.md parses unchanged: 188 questions + 8 QR gates, zero errors', () => {
+  const md = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');
   const { questions, errors, warnings } = parseDocument(md);
 
   assert.deepEqual(errors.map((e) => e.message), [], 'the acceptance document must parse clean');
@@ -248,7 +265,7 @@ test('SPOTLIGHT_DESIGN.md parses unchanged: 188 questions + 8 QR gates, zero err
 });
 
 test('the Spotlight DAG validates: no cycle, no undefined ID or letter, nothing unreachable', () => {
-  const md = readFileSync(resolve(REPO, 'solatro', 'SPOTLIGHT_DESIGN.md'), 'utf8');
+  const md = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');
   const { questions, sections } = parseDocument(md);
   assert.deepEqual(validate(questions, sections).map((e) => e.message), []);
 
@@ -259,7 +276,7 @@ test('the Spotlight DAG validates: no cycle, no undefined ID or letter, nothing 
 });
 
 test('the Spotlight questionnaire opens at QR1 and QR1=(b) prunes §17.2', () => {
-  const md = readFileSync(resolve(REPO, 'solatro', 'SPOTLIGHT_DESIGN.md'), 'utf8');
+  const md = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');
   const { questions, sections } = parseDocument(md);
 
   assert.equal(nextQuestion(questions, {}, sections).id, 'QR1');
@@ -278,7 +295,7 @@ test('the Spotlight questionnaire opens at QR1 and QR1=(b) prunes §17.2', () =>
 // a hand estimate, not a property of the gates — recorded in ASSUMPTIONS.md and reported to the
 // owner rather than papered over. This test pins the measured number so it cannot drift silently.
 test('the longest path through Spotlight is 194 of 195 live questions', () => {
-  const md = readFileSync(resolve(REPO, 'solatro', 'SPOTLIGHT_DESIGN.md'), 'utf8');
+  const md = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');
   const { questions } = parseDocument(md);
   assert.equal(longestPath(questions), 194);
 });

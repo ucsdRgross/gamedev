@@ -84,6 +84,13 @@ Why: at a gating question the owner is choosing a *path*, not just an answer, an
 blind is how a questionnaire produces a design nobody wanted. The preview is what makes the choice
 informed.
 
+**A `⚑gate` option with no `→ next:` is a warning, not a parse error** (`GAP-001`, resolved
+2026-08-01). The document still parses and the owner can still answer it — blocking the person who
+cannot fix it helps nobody — but the shortfall is *yours* to fix: `run check` names the question and
+its line, and the design's card in the index carries a warning badge until it is gone. The owner
+sees the option marked **→ next: not described**, which is exactly the blind choice rule 5 exists to
+prevent. Treat any warning on that badge as an authoring defect.
+
 **Free text at a gating question cannot be routed** — there is no path for an answer the DAG does
 not know about. So a free-text answer at a `⚑gate` question **ends the round immediately** and
 returns to the agent to author the new branch, rather than being queued until the rest of the
@@ -260,6 +267,31 @@ a changelog: nodes added or changed, questions added, gaps closed. Every executi
 a changed node is marked **stale** and re-derived before it is worked on again. Work on untouched
 steps was never blocked and does not get thrown away.
 
+**The Design Loop tool does all of that from the gap file itself** (`designloop/web/gaps.html`), so
+write the file properly and there is nothing else to build:
+
+- the design's index card badges the open gaps, and quietly badges the closed ones;
+- `→ Answer N gaps now` opens a **scoped round** on the ordinary question screen —
+  `question.html?key=<project>/<slug>&scope=gaps` — built from the gap's `**Options I can see**`
+  line, parsed by the same grammar as every other question, with the report's own
+  *what the design says / does not say / why it blocks* carried onto the screen beside it;
+- the plan steps that cite what an open gap puts in question are listed as **stale**, read out of
+  `PLAN.md`'s own `(implements …)` citations against the gap's `**Blast radius**` line. It is
+  reported, never written into the plan;
+- when the last open gap is answered the owner's turn ends with `reason: "gaps_answered"`, which is
+  what wakes an agent parked on the watch. Only that thread parks — the main questionnaire carries
+  on where it was;
+- the review canvas' assumptions panel has **"I want a say in this"**, which files an open gap
+  against an assumption already made and makes every step that relied on it stale. It is filed with
+  **no options** — the owner asked for the decision, not for a question — and drafting the real
+  options in the grammar is yours.
+
+Three things to get right in the file, all of them from the template above: `status:` on its own
+line (`open` and `questioned` are open, `resolved` and `withdrawn` are kept but never re-asked);
+`resolution:` as a `|` block when you close it, because a closed gap is only a record if what it
+became is beside it; and a `**Blast radius**` line naming plan steps first and design nodes after
+`design nodes`, because that is where the stale list comes from.
+
 ### The propagation block (copy verbatim into every derived document)
 
 ```markdown
@@ -336,8 +368,19 @@ grammar above is obeyed.
    npm --prefix designloop run check -- <project>/<slug>
    ```
 
-   It reports the question count, which question the round opens at, and every error and warning
-   with its line. Errors mean the document is wrong, not the parser — fix the line.
+   It reports the question count, which question the round opens at, how many mermaid charts were
+   ingested, and every error and warning with its line. Errors mean the document is wrong, not the
+   parser — fix the line. Add `charts` for one line per chart:
+
+   ```
+   npm --prefix designloop run check -- <project>/<slug> charts
+   ```
+
+   **Your charts must be inside the subset the canvas reads** — `ID["label"]`, `ID{"decision"}`,
+   `-->`, `-- label -->`, one `flowchart TD` header, one shared ID prefix per chart. Anything else
+   (`subgraph`, `classDef`, `-.->`, an unquoted label) is refused by name and line rather than
+   guessed at. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
+   change, not a parser change.
 
 3. **Start the server and hand over the URL.** Not a file path, not "open the doc":
 
@@ -345,7 +388,9 @@ grammar above is obeyed.
    npm --prefix designloop start
    ```
 
-   → `http://localhost:5273/web/question.html?key=<project>/<slug>`
+   → `http://localhost:5273/web/question.html?key=<project>/<slug>`  the questions
+   → `http://localhost:5273/web/canvas.html?key=<project>/<slug>`    the review canvas
+   → `http://localhost:5273/web/gaps.html?key=<project>/<slug>`      the gaps, once there are any
 
    (`designloop/start.cmd` is the double-click equivalent, and a second launch reclaims the port.)
 
@@ -370,10 +415,18 @@ grammar above is obeyed.
    The owner's screen switches itself over and opens the round with that summary. `mode: "review"`
    is for when the questions are finished and the design graph is ready to review instead.
 
-   One ending is special: `status.owner.json` with `reason: "new_branch_needed"` means the owner
-   answered a `⚑gate` in their own words and the round stopped there, with questions still
-   unanswered. Author the branch they described — **their answer becomes a real option on that
-   question** — and they resume at that same question with it there to click.
+   Two endings are special. `reason: "new_branch_needed"` means the owner answered a `⚑gate` in
+   their own words and the round stopped there, with questions still unanswered: author the branch
+   they described — **their answer becomes a real option on that question** — and they resume at
+   that same question with it there to click. `reason: "gaps_answered"` means they answered a
+   scoped gap round instead: read the answers against `gaps/`, write design version N+1 with its
+   changelog, close those gaps in place *with their resolution*, and re-derive the steps the gap
+   page lists as stale.
+
+**The live example is `solatro/design/spotlight/`** — 195 questions, 14 charts, written by hand to
+this grammar before the tool existed and answerable in it without a single edit. That is the bar:
+if a real document needs editing to be read, the parser is wrong. `designloop/README.md` is the
+tool's own entry point.
 
 ---
 

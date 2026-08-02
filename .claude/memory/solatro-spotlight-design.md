@@ -1,6 +1,6 @@
 ---
 name: solatro-spotlight-design
-description: solatro/SPOTLIGHT_DESIGN.md (started 2026-08-01) is a DESIGN-ONLY flowchart plan for the Spotlight mechanic + its VFX — nothing is implemented until every node and question is approved
+description: solatro/design/spotlight/DESIGN.md (started 2026-08-01) is a DESIGN-ONLY flowchart plan for the Spotlight mechanic + its VFX — nothing is implemented until every node and question is approved
 metadata: 
   node_type: memory
   type: project
@@ -8,7 +8,7 @@ metadata:
   modified: 2026-08-01T12:18:13.757Z
 ---
 
-`solatro/SPOTLIGHT_DESIGN.md`, written 2026-08-01 via [[repo-claude-tooling]]'s
+`solatro/design/spotlight/DESIGN.md`, written 2026-08-01 via [[repo-claude-tooling]]'s
 `/flowchart-design` skill. **PAUSED and not approved — nothing may be implemented yet.** The
 owner reviews it by answering 188 questions and pointing at flowchart node IDs (A1…N7). The
 implementation plan is a SEPARATE doc written only after that.

@@ -7,7 +7,7 @@
 //
 //   - **<ID>** `<gate>` [⚑gate] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [⇒ <hint>]
 //
-// The acceptance test is `solatro/SPOTLIGHT_DESIGN.md` parsing UNCHANGED: 188 Q-numbered questions
+// The acceptance test is `solatro/design/spotlight/DESIGN.md` parsing UNCHANGED: 188 Q-numbered questions
 // plus 8 QR root gates, zero errors. If that document does not parse, the grammar is wrong.
 
 /** An ID is `QR<n>` or `Q<n>` with an optional letter suffix (`Q88` and `Q88b` are different). */
@@ -60,11 +60,26 @@ export function parseGate(str) {
   return { root: false, atoms, text };
 }
 
-/** Conjoin two gates. A `root` gate contributes nothing, which is what makes it the identity. */
+/**
+ * Conjoin two gates. A `root` gate contributes nothing, which is what makes it the identity.
+ *
+ * Identical atoms collapse. A question inside a gated section routinely repeats its section's own
+ * gate — `- **Q9** \`[QR1=a]\`` under `### 17.2 … \`[QR1=a]\`` — and the conjunction of an atom
+ * with itself is that atom. Without this the owner is told "asked because QR1 = … " twice on the
+ * same screen, which reads as two different reasons.
+ */
 export function andGates(a, b) {
   if (!a || a.root) return b || { root: true, atoms: [], text: 'root' };
   if (!b || b.root) return a;
-  return { root: false, atoms: [...a.atoms, ...b.atoms], text: `${a.text} & ${b.text}` };
+  const atoms = [];
+  const seen = new Set();
+  for (const atom of [...a.atoms, ...b.atoms]) {
+    const signature = `${atom.id}${atom.op}${[...atom.letters].sort().join('|')}`;
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    atoms.push(atom);
+  }
+  return { root: false, atoms, text: a.text === b.text ? a.text : `${a.text} & ${b.text}` };
 }
 
 /** Split a trailing `⇒ …` / `⇐ …` hint off a segment. */
@@ -110,8 +125,11 @@ function parseOption(segment) {
  * errors in documents that are perfectly correct.
  *
  * `strict` (PLAN §5.1) makes a ⚑gate question whose options do not all carry `→ next:` throw.
- * See `gaps/GAP-001.md`: `SPOTLIGHT_DESIGN.md` contains one such question and the acceptance gate
- * forbids editing it, so the default is non-strict and the shortfall is reported as a warning.
+ * The DEFAULT is non-strict: `gaps/GAP-001.md` was resolved (b) on 2026-08-01 — that shortfall is a
+ * **warning**, because refusing a document that is 195/196 correct blocks the owner, who cannot fix
+ * it, to punish the authoring agent, who can. The warning reaches the agent through `run check` and
+ * the index card's badge, and the owner sees the option marked "→ next: not described".
+ * `strict: true` is what PLAN §5.6's must-throw case exercises.
  */
 export function parseQuestionLine(line, { strict = false, lineNumber = null } = {}) {
   const head = RE_QUESTION_HEAD.exec(line.trim());
@@ -141,9 +159,19 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
   if (!rest.startsWith('—')) {
     throw new GrammarError(`${id}: expected "—" after the gate`, { id, line: lineNumber });
   }
-  rest = rest.slice(1).trim();
+  return parseQuestionBody(id, rest.slice(1).trim(), { gate, isGate, strict, lineNumber });
+}
 
-  const segments = rest.split(SEP);
+/**
+ * Everything after the `—`: the text, the ` · `-separated options, the default, `notes`.
+ *
+ * Split out of `parseQuestionLine` for `src/gaps.mjs` (PLAN S15): a gap is filed **in the
+ * questionnaire grammar** so that its options drop into the next round unchanged (DESIGN J8), and
+ * "unchanged" is only true if the same code reads them. A gap has no line and no gate, so those
+ * are parameters rather than parsed here.
+ */
+export function parseQuestionBody(id, body, { gate = null, isGate = false, strict = false, lineNumber = null } = {}) {
+  const segments = String(body ?? '').split(SEP);
   const question = {
     id,
     retired: false,
@@ -164,25 +192,25 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
   if (first.hint) question.hint = first.hint;
 
   for (const raw of segments.slice(1)) {
-    const { body, hint } = splitHint(raw);
+    const { body: segment, hint } = splitHint(raw);
     if (hint) question.hint = hint;
-    if (!body) continue;
-    const option = parseOption(body);
+    if (!segment) continue;
+    const option = parseOption(segment);
     if (option) {
       question.options.push(option);
       continue;
     }
-    const def = RE_DEFAULT.exec(body);
+    const def = RE_DEFAULT.exec(segment);
     if (def) {
       question.default = def[1];
       question.defaultNote = def[2].trim().replace(/^—\s*/, '');
       continue;
     }
-    if (/^notes\b/i.test(body)) {
+    if (/^notes\b/i.test(segment)) {
       question.notes = true;
       continue;
     }
-    throw new GrammarError(`${id}: unrecognised segment "${body}"`, { id, line: lineNumber });
+    throw new GrammarError(`${id}: unrecognised segment "${segment}"`, { id, line: lineNumber });
   }
 
   if (!question.options.length) {

@@ -9,8 +9,16 @@
 // gate means, because there is one parser.
 
 import { parseDocument, describeGate } from '../src/grammar.mjs';
+import { md } from './md.mjs';
 
-const key = new URLSearchParams(location.search).get('key') || '';
+const params = new URLSearchParams(location.search);
+const key = params.get('key') || '';
+/**
+ * `?scope=gaps` is the SCOPED round (Q90b=b, chart J12): the open gaps' own questions and nothing
+ * else. It is the same screen, the same keyboard, the same durability — only the source of the
+ * questions differs, which is the whole point of a gap being written in the question grammar.
+ */
+const scope = params.get('scope') === 'gaps' ? 'gaps' : null;
 const screen = document.getElementById('screen');
 const titleEl = document.getElementById('design-title');
 
@@ -34,16 +42,6 @@ const api = (path, init) => fetch(`/api/designs/${key}${path}`, init).then(async
   return body;
 });
 
-/** Escape, then render the inline markdown a question may contain (Q19=a). */
-function md(text) {
-  const safe = String(text ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return safe
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
-}
-
 /** Build an element with inline markdown content. */
 function el(tag, className, html) {
   const node = document.createElement(tag);
@@ -60,29 +58,67 @@ function answersFromHistory(history) {
 }
 
 let history = [];
+/** The open gaps' questions, when this screen is a scoped round. Empty otherwise. */
+let gapQuestions = [];
+/** The scoped round says what it is, once, at the top. */
+let announcedScope = false;
 
 // --- loading -----------------------------------------------------------------------------------
 
 async function refresh() {
   design = await api('');
-  titleEl.textContent = design.title;
+  titleEl.textContent = scope === 'gaps' ? `${design.title} — the open gaps` : design.title;
   document.title = `${design.title} — Design Loop`;
+  document.getElementById('canvas-link').href = `canvas.html?key=${encodeURIComponent(key)}`;
   if (!parsed.questions.length) {
     parsed = parseDocument(await fetch(`/api/designs/${key}/doc`).then((r) => r.text()));
   }
   history = await api('/history');
+  if (scope === 'gaps') return refreshGaps();
   // The round can end with reachable questions still on the table: free text at a ⚑gate ends it on
   // the spot, because every question after it sits on a branch just declined (chart B2, §4.2).
-  if (design.owner.state === 'done' && design.agent.state !== 'ready') {
+  //
+  // `gaps_answered` is the one ending that does NOT mean the questionnaire is over: a scoped round
+  // is an interruption, and Q88b=a is explicit that only the affected thread parks. It hands the
+  // turn back so the agent writes the next design version, and this screen carries on asking.
+  if (design.owner.state === 'done' && design.owner.reason !== 'gaps_answered' && design.agent.state !== 'ready') {
     return renderDone({ owner: design.owner, agent: design.agent });
   }
   if (design.agent.state === 'ready' && design.owner.state === 'done') {
     // The agent finished a round while this screen was away. Take the turn back (§4.2).
     design = await api('/resume', { method: 'POST' });
   }
+  // `question.html?key=…#Q26` opens that question directly — the canvas links here from a node's
+  // "decided by" list (Q18's other direction: node → the question that created it).
+  const wanted = decodeURIComponent(location.hash.slice(1));
+  if (wanted && parsed.questions.some((q) => q.id === wanted)) {
+    location.hash = '';
+    return revisit(wanted);
+  }
   const next = await api('/next');
   if (next.done) return renderDone(next);
   view = { question: next.question, answer: next.answer, revisit: false };
+  return render();
+}
+
+/**
+ * The scoped round. Its questions come from `gaps/*.md` rather than from the design document, and
+ * it ignores the questionnaire's own state entirely: a gap can be answered while the main round is
+ * finished, half-finished, or waiting on the agent (Q88b=a — only the affected thread parks).
+ */
+async function refreshGaps() {
+  const data = await api('/gaps');
+  gapQuestions = data.gaps.map((g) => g.question).filter(Boolean);
+  const next = await api('/next?scope=gaps');
+  if (next.done) return renderGapsDone(data);
+  view = { question: next.question, answer: next.answer, revisit: false };
+  if (!announcedScope) {
+    announcedScope = true;
+    banner = el('div', 'banner', `<strong>A scoped round.</strong> Only what the open gaps ask — `
+      + `never the whole questionnaire again. Each one is a decision an agent hit during `
+      + `implementation and would not take on your behalf; the thread it belongs to is parked and `
+      + `everything else has kept going.`);
+  }
   return render();
 }
 
@@ -105,7 +141,21 @@ function render() {
     screen.append(back);
   }
 
+  if (q.gap) screen.append(el('div', 'phase', `${q.gap} · a gap found during implementation`));
   screen.append(el('div', 'qtext', md(q.text)));
+
+  // Rule 4 — a question is answerable with nothing else on screen. A gap's question is its title,
+  // so the report it came out of comes with it: what the design says, what it does not, why the
+  // agent would not decide it. Without this the owner would have to go and read the file.
+  if (q.context?.length) {
+    const box = el('div', 'gap');
+    const dl = document.createElement('dl');
+    for (const { label, value } of q.context) {
+      dl.append(el('dt', null, label), el('dd', null, md(value)));
+    }
+    box.append(dl);
+    screen.append(box);
+  }
 
   // Q17=a — the gate, collapsed by default, expandable to "asked because …".
   const why = describeGate(q.effectiveGate, parsed.questions, answersFromHistory(history));
@@ -131,7 +181,14 @@ function render() {
     if (option.letter === q.default) button.querySelector('.label').after(el('span', 'rec', 'recommended'));
     if (option.consequence) button.append(el('span', 'consequence', md(option.consequence)));
     // B7b / Q17d — only a ⚑gate previews what follows. On an ordinary question it is noise.
-    if (q.isGate && option.next) button.append(el('span', 'next', `→ next: ${md(option.next)}`));
+    // GAP-001=b: an option whose preview the author never wrote says so, rather than rendering
+    // nothing. Silence here is indistinguishable from "nothing follows this branch", and rule 5
+    // exists so that a path is never chosen blind — an honest gap is the least bad way to say it.
+    if (q.isGate) {
+      button.append(option.next
+        ? el('span', 'next', `→ next: ${md(option.next)}`)
+        : el('span', 'next missing', '→ next: not described'));
+    }
     if (view.answer && view.answer.option === option.letter && !view.answer.override) button.classList.add('selected');
     button.addEventListener('click', () => choose(option.letter));
     list.append(button);
@@ -308,10 +365,12 @@ function goBack() {
 /** Open an earlier question with its recorded answer selected (D2). */
 async function revisit(id) {
   hammered = [];
-  const q = parsed.questions.find((x) => x.id === id);
+  const q = parsed.questions.find((x) => x.id === id) || gapQuestions.find((x) => x.id === id);
   const answer = history.find((h) => h.id === id);
   if (!q) return;
-  view = { question: q, answer, revisit: true };
+  // The "you already answered this" banner belongs to an answer that exists. Arriving from the
+  // canvas at a question nobody has reached yet is just being asked it early.
+  view = { question: q, answer, revisit: !!answer };
   render();
 }
 
@@ -343,6 +402,34 @@ function renderHistory() {
 // --- the DONE screen (Q28=a, chart E10) ----------------------------------------------------------
 
 let poll = null;
+
+/**
+ * The end of a scoped round (chart J15). It does not wait for the agent the way the main round
+ * does: the agent's next act is a new design version and a changelog, not more questions, and the
+ * owner's own next act is usually to look at what the answers just made stale.
+ */
+function renderGapsDone(data) {
+  screen.replaceChildren();
+  const answered = data.gaps.filter((g) => g.open && g.answer);
+  screen.append(el('h2', null, answered.length
+    ? 'That is every open gap answered'
+    : 'Nothing here is waiting on you'));
+  screen.append(el('p', 'muted', answered.length
+    ? 'The agent has been handed the turn back. It writes the next design version — a changelog of '
+      + 'what changed and which gaps closed — and re-derives the plan steps your answers made stale. '
+      + 'Steps that cite none of it were never blocked and keep their work.'
+    : 'Every gap on this design is either closed or still waiting for the agent to draft its '
+      + 'options. Nothing here needs an answer from you.'));
+  const row = el('div', 'row');
+  const gaps = el('button', null, 'See the gaps and what is stale');
+  gaps.addEventListener('click', () => { location.href = `gaps.html?key=${encodeURIComponent(key)}`; });
+  const hist = el('button', null, 'Look back over your answers');
+  hist.addEventListener('click', renderHistory);
+  row.append(gaps, hist);
+  screen.append(row);
+  focusables = [gaps, hist];
+  focusIndex = -1;
+}
 
 function renderDone(state) {
   screen.replaceChildren();

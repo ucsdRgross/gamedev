@@ -54,7 +54,7 @@ already covers that topic, labelled as machine-specific, never assumed.
 | `solatro/` | Godot 4.7 card game — the main project | `solatro/START_HERE.md`, then `VFX.md` for effects work |
 | `palette/` | Node/npm procedural palette generator (zero dependencies) | `palette/ARCHITECTURE.md` |
 | `worldgen/` | Godot map generation addon, vendored into solatro | `worldgen/START_HERE.md` |
-| `designloop/` | Node tool: the branching-questionnaire design front end | `designloop/design/designloop/PLAN.md` |
+| `designloop/` | Node tool: the branching-questionnaire design front end — built and working | `designloop/README.md` |
 | others | smaller game-jam and study projects | — |
 
 ## The design workflow
@@ -62,6 +62,11 @@ already covers that topic, labelled as machine-specific, never assumed.
 Feature design in this repo runs through **`/flowchart-design`** (`.claude/skills/flowchart-design/`):
 braindump → research → numbered mermaid flowcharts + a branching question DAG → the owner answers →
 flowcharts reviewed and **confirmed** → implementation plan + a copy-paste handoff prompt.
+
+The owner answers in **`designloop/`** — `npm --prefix designloop start`, then hand over
+`http://localhost:5273/web/question.html?key=<project>/<slug>`. It parses the markdown you wrote;
+there is never a second authored copy. **It is optional**: with the server down, the document is
+still answerable by ID in chat exactly as before.
 
 Two rules from that skill that reach beyond it:
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design Loop — review</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="canvas-body">
+  <header class="canvas-bar">
+    <div class="canvas-bar-main">
+      <a class="back-link" href="index.html">← designs</a>
+      <h1 id="design-title">…</h1>
+      <a class="back-link" id="questions-link" href="#">questions</a>
+    </div>
+    <div class="canvas-bar-tools">
+      <input id="search" type="search" placeholder="find a node — ID or text  ( / )" autocomplete="off">
+      <button id="colour-mode" type="button" title="Colour by chart or by status (s)">colour: by chart</button>
+      <button id="ruled-out" type="button" title="Show the nodes your answers ruled out">ruled out: hidden</button>
+      <button id="collapse-all" type="button">collapse all</button>
+      <button id="expand-all" type="button">expand all</button>
+      <button id="zoom-out" type="button" title="Zoom out (-)">−</button>
+      <button id="zoom-in" type="button" title="Zoom in (+)">+</button>
+      <button id="zoom-fit" type="button" title="Fit the whole graph (0)">fit</button>
+      <button id="full-screen" type="button" title="Give the whole window to the graph (f)">⤢ full width</button>
+    </div>
+  </header>
+
+  <main class="canvas-main">
+    <nav class="chart-picker" id="chart-picker" aria-label="charts"></nav>
+    <div class="canvas-stage" id="stage">
+      <svg id="canvas" tabindex="0" aria-label="the design graph"></svg>
+      <!-- The three pieces of chrome fold away independently, so the graph can have the window.
+           Buttons rather than a gesture: everything is keyboard-reachable (Q113=a). -->
+      <button class="chrome-toggle left" id="toggle-picker" type="button"
+              title="Hide or show the chart list (1)" aria-label="chart list">‹</button>
+      <button class="chrome-toggle right" id="toggle-panel" type="button"
+              title="Hide or show the side panel (2)" aria-label="side panel">›</button>
+      <button class="chrome-toggle top" id="toggle-bar" type="button"
+              title="Hide or show the toolbar (3)" aria-label="toolbar">⌃</button>
+      <div class="canvas-status" id="canvas-status"></div>
+    </div>
+    <aside class="side-panel" id="side-panel"></aside>
+  </main>
+
+  <script type="module" src="canvas.mjs"></script>
+</body>
+</html>

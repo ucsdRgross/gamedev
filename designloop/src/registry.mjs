@@ -10,6 +10,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { readJson, writeJsonAtomic, load, lastTouched, now } from './store.mjs';
+import { parseDocument } from './grammar.mjs';
+import { readGaps as readGapFiles, countGaps as countGapList } from './gaps.mjs';
 
 /** Directories that are never projects. */
 const SKIP = new Set(['node_modules', 'design', '.git', '.claude', '.godot', 'dist', 'build']);
@@ -48,23 +50,47 @@ export async function writeOwnerStatus(dir, patch) {
   return next;
 }
 
-/** Count the open gaps in a design's own `gaps/` directory (Q105=a, Q89b=c). */
-export async function countGaps(dir) {
-  let files;
-  try {
-    files = await readdir(join(dir, 'gaps'));
-  } catch {
-    return { open: 0, total: 0 };
+// Gaps are read by `src/gaps.mjs` (S15): a gap is a draft question, so the module that knows the
+// questionnaire grammar owns the file format, and the registry only counts what it finds.
+
+/**
+ * Read the agent's own assumptions (Q58=c, Q94b=a). `ASSUMPTIONS.md` is a table in this repo's
+ * house style; a bullet list is accepted too, because the file is written by hand and the panel
+ * showing it must not be the reason someone reformats their notes.
+ */
+export async function readAssumptions(dir) {
+  const text = await readFile(join(dir, 'ASSUMPTIONS.md'), 'utf8').catch(() => '');
+  const out = [];
+  let header = true;
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|')) {
+      const cells = trimmed.slice(1, trimmed.endsWith('|') ? -1 : undefined).split('|').map((c) => c.trim());
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue;
+      if (header) {
+        header = false;                       // the first row of a table is its heading, not data
+        continue;
+      }
+      if (cells.length >= 3) out.push({ source: 'agent', when: cells[0], step: cells[1], text: cells[2], why: cells[3] || '' });
+      continue;
+    }
+    if (/^-\s+\S/.test(trimmed)) out.push({ source: 'agent', text: trimmed.slice(2).trim(), why: '' });
   }
-  let open = 0;
-  let total = 0;
-  for (const name of files) {
-    if (!name.toLowerCase().endsWith('.md')) continue;
-    total += 1;
-    const text = await readFile(join(dir, 'gaps', name), 'utf8').catch(() => '');
-    if (/^status:\s*(open|questioned)\s*$/mi.test(text)) open += 1;
-  }
-  return { open, total };
+  return out;
+}
+
+/**
+ * Parse a design's document far enough to say whether it is well-formed.
+ *
+ * The index carries these as badges, which is half of GAP-001's resolution (b, 2026-08-01): a
+ * ⚑gate option with no `→ next:` no longer refuses the document, so the defect has to be visible
+ * somewhere the authoring agent will meet it. The other half is `run check`.
+ */
+async function docHealth(docPath) {
+  const text = await readFile(docPath, 'utf8').catch(() => null);
+  if (text === null) return { errors: 0, warnings: 0, doc_missing: true };
+  const parsed = parseDocument(text);
+  return { errors: parsed.errors.length, warnings: parsed.warnings.length, doc_missing: false };
 }
 
 /** Everything the index needs about one design directory, or null if it is not one. */
@@ -75,7 +101,7 @@ export async function readDesign(repoRoot, project, slug) {
   const ui = (await readJson(join(dir, 'ui_meta.json'))) || {};
   const status = await readStatus(dir);
   const answers = await load(dir, { slug: meta.slug });
-  const gaps = await countGaps(dir);
+  const gaps = countGapList(await readGapFiles(dir));
   const design = {
     slug: meta.slug,
     // `title` is UI-owned so that renaming from the index (Q107=a) never writes meta.json, which
@@ -92,11 +118,16 @@ export async function readDesign(repoRoot, project, slug) {
     owner: status.owner,
     agent: status.agent,
     answered: Object.values(answers.answers).filter((a) => a.active !== false).length,
+    // Open and closed both reach the index card: Q89b=c wants the open ones visible without being
+    // asked, and Q96b=a keeps the closed ones, which are only kept if somebody can see them.
     gaps: gaps.open,
+    gaps_closed: gaps.closed,
+    gaps_total: gaps.total,
     touched: await lastTouched(dir),
   };
   design.key = key(design);
   design.docPath = resolve(dir, design.doc);
+  Object.assign(design, await docHealth(design.docPath));
   return design;
 }
 

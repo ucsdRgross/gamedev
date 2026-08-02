@@ -1,0 +1,3214 @@
+{
+  "doc_hash": "sha256:389ca783b1eb6cab95e9b705560401213fec38327f32cf9ad1dd988b96e9d2fc",
+  "charts": [
+    {
+      "id": "A",
+      "title": "where the mechanical spotlight comes from",
+      "line": 246,
+      "nodes": [
+        "A1",
+        "A2",
+        "A99",
+        "A3",
+        "A4",
+        "A98",
+        "A5",
+        "A6",
+        "A7",
+        "A8"
+      ]
+    },
+    {
+      "id": "B",
+      "title": "activation edges (who gets told, and when)",
+      "line": 280,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14"
+      ]
+    },
+    {
+      "id": "C",
+      "title": "Submit, top level, with the new phases spliced in",
+      "line": 313,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C11",
+        "C9",
+        "C10",
+        "C12",
+        "C13",
+        "C14",
+        "C15",
+        "C16",
+        "C17",
+        "C18",
+        "C19",
+        "C20",
+        "C21"
+      ]
+    },
+    {
+      "id": "D",
+      "title": "ONE LINE'S SPOTLIGHT PHASE (the core of the feature)",
+      "line": 362,
+      "nodes": [
+        "D1",
+        "D2",
+        "D99",
+        "D3",
+        "D4",
+        "D5",
+        "D8",
+        "D6",
+        "D7",
+        "D9",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16",
+        "D17",
+        "D18",
+        "D19",
+        "D20",
+        "D21",
+        "D22",
+        "D23",
+        "D24",
+        "D25"
+      ]
+    },
+    {
+      "id": "E",
+      "title": "the spotlight transition between lines",
+      "line": 429,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    },
+    {
+      "id": "F",
+      "title": "the spotlight transition between lines",
+      "line": 450,
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ]
+    },
+    {
+      "id": "G",
+      "title": "what a card looks like, moment by moment",
+      "line": 481,
+      "nodes": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "G12",
+        "G13",
+        "G14"
+      ]
+    },
+    {
+      "id": "H",
+      "title": "the light layer's render model",
+      "line": 525,
+      "nodes": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ]
+    },
+    {
+      "id": "I",
+      "title": "beam origins, the allocator, and scrolling",
+      "line": 562,
+      "nodes": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I9",
+        "I10"
+      ]
+    },
+    {
+      "id": "J",
+      "title": "beam origins, the allocator, and scrolling",
+      "line": 592,
+      "nodes": [
+        "J1",
+        "J2",
+        "J3",
+        "J4"
+      ]
+    },
+    {
+      "id": "K",
+      "title": "the reveal (per-row expansion)",
+      "line": 624,
+      "nodes": [
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5",
+        "K6",
+        "K7",
+        "K8",
+        "K9",
+        "K10",
+        "K11",
+        "K12",
+        "K13",
+        "K14"
+      ]
+    },
+    {
+      "id": "L",
+      "title": "interruptions and edge cases",
+      "line": 667,
+      "nodes": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "L7",
+        "L8",
+        "L9",
+        "L10",
+        "L11",
+        "L12",
+        "L13",
+        "L14"
+      ]
+    },
+    {
+      "id": "M",
+      "title": "the non-scoring spotlight (normal play)",
+      "line": 715,
+      "nodes": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7",
+        "M8",
+        "M9",
+        "M10",
+        "M11",
+        "M12",
+        "M13",
+        "M14",
+        "M15",
+        "M16",
+        "M17"
+      ]
+    },
+    {
+      "id": "N",
+      "title": "the tuning tool",
+      "line": 756,
+      "nodes": [
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "N5",
+        "N6",
+        "N7"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "CardModifier.is_active() called",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 248
+    },
+    "A2": {
+      "chart": "A",
+      "label": "card is in the rules deck?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 248
+    },
+    "A99": {
+      "chart": "A",
+      "label": "SPOTLIT",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 249
+    },
+    "A3": {
+      "chart": "A",
+      "label": "stamp is StampGlobal?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 250
+    },
+    "A4": {
+      "chart": "A",
+      "label": "a Game exists?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 252
+    },
+    "A98": {
+      "chart": "A",
+      "label": "NOT spotlit",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 253
+    },
+    "A5": {
+      "chart": "A",
+      "label": "stage is PLAY or ZONE?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 254
+    },
+    "A6": {
+      "chart": "A",
+      "label": "NEW: is this card in state.forced_spotlight?",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q6"
+      ],
+      "line": 256
+    },
+    "A7": {
+      "chart": "A",
+      "label": "stamp is StampRevealing?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 258
+    },
+    "A8": {
+      "chart": "A",
+      "label": "NEW: is any card above it a spotlight blocker?",
+      "shape": "decision",
+      "new": true,
+      "decidedBy": [
+        "Q9",
+        "Q6"
+      ],
+      "line": 260
+    },
+    "B1": {
+      "chart": "B",
+      "label": "anything that could change activation: board mutation / forced_spotlight set or cleared / prop tick / resume",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 282
+    },
+    "B2": {
+      "chart": "B",
+      "label": "CardEnvironment.skill_active_check()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 282
+    },
+    "B3": {
+      "chart": "B",
+      "label": "for every card in CardDataIterator",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 284
+    },
+    "B4": {
+      "chart": "B",
+      "label": "skill exists?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 285
+    },
+    "B5": {
+      "chart": "B",
+      "label": "skill.active vs skill.is_active()",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 287
+    },
+    "B6": {
+      "chart": "B",
+      "label": "skill.active = true",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 288
+    },
+    "B7": {
+      "chart": "B",
+      "label": "await skill.on_active() if implemented",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 289
+    },
+    "B8": {
+      "chart": "B",
+      "label": "skill.active = false",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 290
+    },
+    "B9": {
+      "chart": "B",
+      "label": "await skill.on_deactive() if implemented",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 291
+    },
+    "B10": {
+      "chart": "B",
+      "label": "NEW: view is told this card became spotlit",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 293
+    },
+    "B11": {
+      "chart": "B",
+      "label": "NEW: view is told this card stopped being spotlit",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 294
+    },
+    "B12": {
+      "chart": "B",
+      "label": "NEW: CardVisual glow fades IN over glow_fade_fraction",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 295
+    },
+    "B13": {
+      "chart": "B",
+      "label": "NEW: CardVisual glow fades OUT over glow_fade_fraction",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 296
+    },
+    "B14": {
+      "chart": "B",
+      "label": "NEW: types / stamps / statuses — see Q10",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q10"
+      ],
+      "line": 297
+    },
+    "C1": {
+      "chart": "C",
+      "label": "Submit pressed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 315
+    },
+    "C2": {
+      "chart": "C",
+      "label": "Game._perform_submit()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 315
+    },
+    "C3": {
+      "chart": "C",
+      "label": "processing = true, _begin_act(), _begin_action(on_run_scorer)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 316
+    },
+    "C4": {
+      "chart": "C",
+      "label": "NEW: view.begin_spotlight_act()",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 317
+    },
+    "C5": {
+      "chart": "C",
+      "label": "NEW: light layer raises dim 0 to dim_target over dim_in_fraction",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 318
+    },
+    "C6": {
+      "chart": "C",
+      "label": "run_all_mods(on_run_scorer) -> SkillScorerCascadeLower.on_run_scorer()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 319
+    },
+    "C7": {
+      "chart": "C",
+      "label": "ROW LOOP: row = 0",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 320
+    },
+    "C8": {
+      "chart": "C",
+      "label": "any column deeper than row?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q33"
+      ],
+      "line": 321
+    },
+    "C11": {
+      "chart": "C",
+      "label": "COLUMN LOOP: col = 0",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 322
+    },
+    "C9": {
+      "chart": "C",
+      "label": "run_all_mods(on_score_row, zone, row) -> SkillEvalPokerBest.on_score_row() -> Game.score_line(result, true, zone, row)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q34"
+      ],
+      "line": 323
+    },
+    "C10": {
+      "chart": "C",
+      "label": "row += 1",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 326
+    },
+    "C12": {
+      "chart": "C",
+      "label": "col < column count?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 328
+    },
+    "C13": {
+      "chart": "C",
+      "label": "run_all_mods(on_score_col, zone, col) -> SkillEvalPokerBest.on_score_col() -> Game.score_line(result, false, zone, col)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 329
+    },
+    "C14": {
+      "chart": "C",
+      "label": "col += 1",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 332
+    },
+    "C15": {
+      "chart": "C",
+      "label": "NEW: view.end_spotlight_act()",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q78",
+        "Q151"
+      ],
+      "line": 334
+    },
+    "C16": {
+      "chart": "C",
+      "label": "NEW: last spotlights fade out, rows collapse, dim falls to 0",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q78",
+        "Q151"
+      ],
+      "line": 335
+    },
+    "C17": {
+      "chart": "C",
+      "label": "state.apply_act_score(), view.sync_scores(), state.discard_lower_board()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 336
+    },
+    "C18": {
+      "chart": "C",
+      "label": "submits_used += 1, save_state()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 337
+    },
+    "C19": {
+      "chart": "C",
+      "label": "submits_used >= MAX_SUBMITS?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 338
+    },
+    "C20": {
+      "chart": "C",
+      "label": "_resolve_game() — win/lose screen, processing stays true",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 339
+    },
+    "C21": {
+      "chart": "C",
+      "label": "processing = false",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 340
+    },
+    "D1": {
+      "chart": "D",
+      "label": "Game.score_line(result, is_row, zone, index) entered",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 364
+    },
+    "D2": {
+      "chart": "D",
+      "label": "act_cancelled?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 364
+    },
+    "D99": {
+      "chart": "D",
+      "label": "return — no spotlight, no scoring",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 365
+    },
+    "D3": {
+      "chart": "D",
+      "label": "NEW: determine the SPOTLIGHT SET for this line",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q31",
+        "Q32",
+        "Q35",
+        "Q42"
+      ],
+      "line": 366
+    },
+    "D4": {
+      "chart": "D",
+      "label": "NEW: determine the REVEAL SET — which board rows must expand to make every member of the spotlight set fully visible",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 367
+    },
+    "D5": {
+      "chart": "D",
+      "label": "NEW: reveal set empty OR skip tunable says nothing here can react?",
+      "shape": "decision",
+      "new": true,
+      "decidedBy": [
+        "Q47"
+      ],
+      "line": 369
+    },
+    "D8": {
+      "chart": "D",
+      "label": "NEW: spotlight TRANSITION — chart E (assign / travel / spawn / retire)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 371
+    },
+    "D6": {
+      "chart": "D",
+      "label": "NEW: PlayArea grows each reveal row's gap to a full card, tweened over reveal_fraction",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 372
+    },
+    "D7": {
+      "chart": "D",
+      "label": "NEW: await the reveal settle (cards ease to their new anchors)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 374
+    },
+    "D9": {
+      "chart": "D",
+      "label": "NEW: await every spotlight to arrive on its target",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 378
+    },
+    "D10": {
+      "chart": "D",
+      "label": "NEW: state.forced_spotlight = the spotlight set (per-act state, bumps nothing else)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q37"
+      ],
+      "line": 379
+    },
+    "D11": {
+      "chart": "D",
+      "label": "await skill_active_check()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 381
+    },
+    "D12": {
+      "chart": "D",
+      "label": "on_active fires for every card that was NOT already spotlit, in board order",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q37",
+        "Q22",
+        "Q26"
+      ],
+      "line": 382
+    },
+    "D13": {
+      "chart": "D",
+      "label": "NEW: await spotlight_hold — the beat that lets those effects read",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q68"
+      ],
+      "line": 384
+    },
+    "D14": {
+      "chart": "D",
+      "label": "EXISTING: view.animate_meld(result) -> popup_meld -> anim_jump per meld card",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 385
+    },
+    "D15": {
+      "chart": "D",
+      "label": "EXISTING: Game.add_line_score(...) + register_combo(...)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 386
+    },
+    "D16": {
+      "chart": "D",
+      "label": "EXISTING: view.show_meld_score(result) -> popup_score",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 387
+    },
+    "D17": {
+      "chart": "D",
+      "label": "EXISTING: Game._run_score_effects(result) -> suit prop spawners -> run_props tick loop -> on_score per meld card -> on_after_score",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 388
+    },
+    "D18": {
+      "chart": "D",
+      "label": "EXISTING: view.reset_meld(result) -> anim_reset",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 391
+    },
+    "D19": {
+      "chart": "D",
+      "label": "NEW: is there a next line?",
+      "shape": "decision",
+      "new": true,
+      "decidedBy": [
+        "Q49",
+        "Q50"
+      ],
+      "line": 392
+    },
+    "D20": {
+      "chart": "D",
+      "label": "NEW: HOLD — forced_spotlight stays set, rows stay expanded, dim stays up",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q49",
+        "Q50"
+      ],
+      "line": 393
+    },
+    "D21": {
+      "chart": "D",
+      "label": "next score_line re-enters at D1; chart E decides what travels where",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 395
+    },
+    "D22": {
+      "chart": "D",
+      "label": "NEW: clear state.forced_spotlight",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 397
+    },
+    "D23": {
+      "chart": "D",
+      "label": "await skill_active_check() -> on_deactive for the released cards",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 398
+    },
+    "D24": {
+      "chart": "D",
+      "label": "NEW: collapse every expanded row over reveal_fraction",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 399
+    },
+    "D25": {
+      "chart": "D",
+      "label": "NEW: retire every spotlight, drop the dim (chart C, C16)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 400
+    },
+    "E1": {
+      "chart": "E",
+      "label": "previous set P (may be empty), next set N",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 431
+    },
+    "E2": {
+      "chart": "E",
+      "label": "compute P ∩ N — cards spotlit in both lines",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 431
+    },
+    "E3": {
+      "chart": "E",
+      "label": "those spotlights DO NOT MOVE — they stay lit on their card",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 432
+    },
+    "E4": {
+      "chart": "E",
+      "label": "leftover lights L = P minus N; leftover targets T = N minus P",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 433
+    },
+    "E5": {
+      "chart": "E",
+      "label": "count(L) vs count(T)",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 434
+    },
+    "E6": {
+      "chart": "E",
+      "label": "pair L to T — chart E2 assignment",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 435
+    },
+    "E7": {
+      "chart": "E",
+      "label": "pair as many as possible; surplus lights RETIRE (chart E3)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 436
+    },
+    "E8": {
+      "chart": "E",
+      "label": "pair as many as possible; surplus targets get NEW spotlights (chart E4)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 438
+    },
+    "E9": {
+      "chart": "E",
+      "label": "each paired light TWEENS its circle centre from old card to new card over travel_fraction, easing",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 440
+    },
+    "E10": {
+      "chart": "E",
+      "label": "its beam re-aims every frame: origin fixed, wide end tracks the circle",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 444
+    },
+    "E11": {
+      "chart": "E",
+      "label": "arrival: every travelling light within epsilon of its target",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 445
+    },
+    "F1": {
+      "chart": "F",
+      "label": "leftover lights L, leftover targets T",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 452
+    },
+    "F2": {
+      "chart": "F",
+      "label": "assignment rule",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 452
+    },
+    "F3": {
+      "chart": "F",
+      "label": "sort both by target x; pair in order. Provably minimises beam crossings",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 453
+    },
+    "F4": {
+      "chart": "F",
+      "label": "greedy nearest: each light takes its closest free target",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 455
+    },
+    "F5": {
+      "chart": "F",
+      "label": "minimise total travel distance (Hungarian)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 456
+    },
+    "G1": {
+      "chart": "G",
+      "label": "CardVisual draws",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 483
+    },
+    "G2": {
+      "chart": "G",
+      "label": "show_front? (face-down hides everything — ruling 23)",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 483
+    },
+    "G3": {
+      "chart": "G",
+      "label": "no glow, no circle, no beam. The dim still darkens it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 484
+    },
+    "G4": {
+      "chart": "G",
+      "label": "effective spotlight (natural OR forced)?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 485
+    },
+    "G5": {
+      "chart": "G",
+      "label": "no glow",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 486
+    },
+    "G6": {
+      "chart": "G",
+      "label": "GLOW: the card's own light shader, ON AT ALL TIMES, over the whole card, at glow_strength",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 487
+    },
+    "G7": {
+      "chart": "G",
+      "label": "is the focus highlight also on this card?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 489
+    },
+    "G8": {
+      "chart": "G",
+      "label": "BOTH read distinctly — glow is a coloured bloom, highlight is the existing modulate 1.825 brightening",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q121",
+        "Q124"
+      ],
+      "line": 490
+    },
+    "G9": {
+      "chart": "G",
+      "label": "glow alone",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 492
+    },
+    "G10": {
+      "chart": "G",
+      "label": "is the dim phase active?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 493
+    },
+    "G11": {
+      "chart": "G",
+      "label": "glow at full, no circle, no beam, no dim",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 496
+    },
+    "G12": {
+      "chart": "G",
+      "label": "the light layer draws OVER the whole board: dim everywhere, minus the circle and beam holes",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 497
+    },
+    "G13": {
+      "chart": "G",
+      "label": "so the glow on a spotlit card reads ONLY inside its circle or beam; outside, the dim cancels it and it looks unlit",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 499
+    },
+    "G14": {
+      "chart": "G",
+      "label": "a card that is spotlit but has NO light instance (e.g. naturally spotlit, elsewhere on the board) is dimmed like everything else — see Q127",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q127"
+      ],
+      "line": 501
+    },
+    "H1": {
+      "chart": "H",
+      "label": "light layer, per frame",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 527
+    },
+    "H2": {
+      "chart": "H",
+      "label": "input: dim level d (0..1), and for each live spotlight: circle centre, circle radius, origin point, beam width at each end, per-light intensity",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 527
+    },
+    "H3": {
+      "chart": "H",
+      "label": "for each screen pixel: coverage = 0",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 530
+    },
+    "H4": {
+      "chart": "H",
+      "label": "for each spotlight: add its BEAM contribution (a cone, narrow at the origin, widening to fully contain the circle)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 531
+    },
+    "H5": {
+      "chart": "H",
+      "label": "for each spotlight: add its CIRCLE contribution (brighter than the beam — owner)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 533
+    },
+    "H6": {
+      "chart": "H",
+      "label": "coverage ACCUMULATES, so two beams crossing are brighter than one — the stacked-alpha effect the brief asks for",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 535
+    },
+    "H7": {
+      "chart": "H",
+      "label": "final dim alpha = d * (1 - clamp(coverage))",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 537
+    },
+    "H8": {
+      "chart": "H",
+      "label": "final additive light = clamp(coverage) * light colour",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 538
+    },
+    "H9": {
+      "chart": "H",
+      "label": "composite over the board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 539
+    },
+    "I1": {
+      "chart": "I",
+      "label": "dim phase begins",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 564
+    },
+    "I2": {
+      "chart": "I",
+      "label": "initial origin count k0 — see Q109",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q109"
+      ],
+      "line": 564
+    },
+    "I3": {
+      "chart": "I",
+      "label": "place k0 origins evenly across the origin line",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 565
+    },
+    "I4": {
+      "chart": "I",
+      "label": "free-origin pool = those k0 points",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 566
+    },
+    "I5": {
+      "chart": "I",
+      "label": "a new spotlight needs an origin",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 567
+    },
+    "I6": {
+      "chart": "I",
+      "label": "pool empty?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 568
+    },
+    "I7": {
+      "chart": "I",
+      "label": "take one from the pool — see Q111 for which",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q111"
+      ],
+      "line": 569
+    },
+    "I8": {
+      "chart": "I",
+      "label": "SUBDIVIDE: every midpoint between adjacent existing origins becomes a candidate",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 570
+    },
+    "I9": {
+      "chart": "I",
+      "label": "pick candidates at random until the request is satisfied; the rest join the pool",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 572
+    },
+    "I10": {
+      "chart": "I",
+      "label": "the origin is pinned for the rest of the dim phase — it never moves",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 575
+    },
+    "J1": {
+      "chart": "J",
+      "label": "model choice",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 594
+    },
+    "J2": {
+      "chart": "J",
+      "label": "MODEL 1 — screen-anchored. Origin line = viewport top, always. Beams never leave the screen; length is bounded by the viewport. Scrolling slides the CIRCLES but the origins stay put, so beam angles change as you scroll",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 594
+    },
+    "J3": {
+      "chart": "J",
+      "label": "MODEL 2 — content-anchored (RECOMMENDED reading of the brief). When a spotlight is created, its origin is pinned in BOARD space at (allocated x, target card y minus origin_rise). It scrolls with the board: scroll down and origin+circle+beam all slide up off screen together and new ones rise from below. Beam angle is constant. Length is bounded by origin_rise",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 599
+    },
+    "J4": {
+      "chart": "J",
+      "label": "MODEL 3 — hybrid. Origin is placed at the viewport top AT CREATION TIME, then converted to board space and pinned there. Reads screen-anchored while still, content-anchored while scrolling",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 605
+    },
+    "K1": {
+      "chart": "K",
+      "label": "spotlight set for this line is known",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 626
+    },
+    "K2": {
+      "chart": "K",
+      "label": "for each spotlit card, walk its COLUMN upward: every card at a HIGHER z in that column is covering it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 626
+    },
+    "K3": {
+      "chart": "K",
+      "label": "the row that must expand is the spotlit card's OWN row z: growing the gap below row z pushes rows z+1.. down",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 629
+    },
+    "K4": {
+      "chart": "K",
+      "label": "is the spotlit card already the last card of its column?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 631
+    },
+    "K5": {
+      "chart": "K",
+      "label": "already fully visible — no expansion needed for it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 632
+    },
+    "K6": {
+      "chart": "K",
+      "label": "mark row z as a reveal row",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 633
+    },
+    "K7": {
+      "chart": "K",
+      "label": "apply the expansion to EVERY column, or only to columns that actually have a card at row z?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q51"
+      ],
+      "line": 634
+    },
+    "K8": {
+      "chart": "K",
+      "label": "rows stay straight across the board; short columns simply have nothing to push",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 636
+    },
+    "K9": {
+      "chart": "K",
+      "label": "the board goes ragged: row z+1 sits at different heights in different columns",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 638
+    },
+    "K10": {
+      "chart": "K",
+      "label": "the reveal row's control height goes from card_separation_play_custom (35 px) to the full card height (125 px), tweened",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q52"
+      ],
+      "line": 640
+    },
+    "K11": {
+      "chart": "K",
+      "label": "cards below ease down to their new anchors — CardVisual.delta_self_moving_logic already smooths this for free",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 643
+    },
+    "K12": {
+      "chart": "K",
+      "label": "the ROW SCORE GUTTER labels for that row must grow identically or the score numbers desync from their rows",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q57",
+        "Q59"
+      ],
+      "line": 645
+    },
+    "K13": {
+      "chart": "K",
+      "label": "PlayArea.slot_center_global must account for the expansion or every prop anchored to a row below it lands in the wrong place",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q57",
+        "Q59"
+      ],
+      "line": 647
+    },
+    "K14": {
+      "chart": "K",
+      "label": "the scroll content grows taller; see chart H for what that does to the view",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 649
+    },
+    "L1": {
+      "chart": "L",
+      "label": "something interrupts a dim phase",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 669
+    },
+    "L2": {
+      "chart": "L",
+      "label": "what?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 669
+    },
+    "L3": {
+      "chart": "L",
+      "label": "Game.undo -> act_cancelled = true. get_delay() returns 0.0 from now on, so every Spotlight tween degrades to a snap for free",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 670
+    },
+    "L4": {
+      "chart": "L",
+      "label": "score_line returns immediately at D2 for every remaining line",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 673
+    },
+    "L5": {
+      "chart": "L",
+      "label": "_restore_pre_act_board: state replaced, view.rebuild(), view.abort_props()",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 674
+    },
+    "L6": {
+      "chart": "L",
+      "label": "NEW: the light layer must be torn down and every row collapsed HERE, because no further score_line will run",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 675
+    },
+    "L7": {
+      "chart": "L",
+      "label": "pending_action = on_run_scorer is persisted; resume replays the whole submit from the pre-act board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 677
+    },
+    "L8": {
+      "chart": "L",
+      "label": "NEW: the dim phase replays from scratch. Origins are re-allocated, so the beams will NOT be in the same places as before the quit",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 680
+    },
+    "L9": {
+      "chart": "L",
+      "label": "the spotlit card may no longer be where the light is pointing",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 682
+    },
+    "L10": {
+      "chart": "L",
+      "label": "NEW: lights re-pin to their card's live position every frame, so a card that moves drags its light with it",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 684
+    },
+    "L11": {
+      "chart": "L",
+      "label": "a card that leaves the board entirely: its light retires (chart E3)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 686
+    },
+    "L12": {
+      "chart": "L",
+      "label": "card_scale / card_separation_scale change relayouts the whole board. Reveal heights and light positions are all derived live, so they follow",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 687
+    },
+    "L13": {
+      "chart": "L",
+      "label": "_resolve_game raises the win/lose overlay, which has its OWN dim ColorRect",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 690
+    },
+    "L14": {
+      "chart": "L",
+      "label": "NEW: two dims must not stack into a black screen — the spotlight dim is fully down before the outcome overlay appears (C15 precedes C17)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 692
+    },
+    "M1": {
+      "chart": "M",
+      "label": "normal play, no dim, no beams",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 717
+    },
+    "M2": {
+      "chart": "M",
+      "label": "player places a card on a stack",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 717
+    },
+    "M3": {
+      "chart": "M",
+      "label": "Board mutation -> revision bump -> board_changed -> PlayArea.queue_rebuild",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 718
+    },
+    "M4": {
+      "chart": "M",
+      "label": "skill_active_check() runs during the move's dispatch",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 719
+    },
+    "M5": {
+      "chart": "M",
+      "label": "the covered card loses natural spotlight -> on_deactive -> glow fades out",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 720
+    },
+    "M6": {
+      "chart": "M",
+      "label": "the placed card gains natural spotlight -> on_active -> glow fades in",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 721
+    },
+    "M7": {
+      "chart": "M",
+      "label": "player grabs a stack",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 722
+    },
+    "M8": {
+      "chart": "M",
+      "label": "the card revealed underneath: its DATA has not moved, so is_active() is unchanged — no glow change. See Q145",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q145"
+      ],
+      "line": 723
+    },
+    "M9": {
+      "chart": "M",
+      "label": "Next: input stacks drop, decks refill (on_next)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 725
+    },
+    "M10": {
+      "chart": "M",
+      "label": "a card with StampRevealing sits covered",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 727
+    },
+    "M11": {
+      "chart": "M",
+      "label": "it is spotlit, so it glows — through the top ~45 px strip that shows. See Q142",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q142"
+      ],
+      "line": 728
+    },
+    "M12": {
+      "chart": "M",
+      "label": "a card with StampGlobal sits in the draw deck",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 730
+    },
+    "M13": {
+      "chart": "M",
+      "label": "it is spotlit anywhere. Does it glow in the deck viewer? Q143",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q143"
+      ],
+      "line": 731
+    },
+    "M14": {
+      "chart": "M",
+      "label": "zone / type header cards (stage ZONE)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 732
+    },
+    "M15": {
+      "chart": "M",
+      "label": "is_active() true when their column is empty. Do they glow? Q141",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q141"
+      ],
+      "line": 733
+    },
+    "M16": {
+      "chart": "M",
+      "label": "rules-deck cards",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 734
+    },
+    "M17": {
+      "chart": "M",
+      "label": "always spotlit, only visible in the rules viewer. Q144",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q144"
+      ],
+      "line": 735
+    },
+    "N1": {
+      "chart": "N",
+      "label": "spotlight tuning tool",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 758
+    },
+    "N2": {
+      "chart": "N",
+      "label": "hosts a REAL board: real PlayArea, real CardVisuals, real light layer, real styles",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 758
+    },
+    "N3": {
+      "chart": "N",
+      "label": "a SCENARIO selector — one entry per usage listed in §15",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 760
+    },
+    "N4": {
+      "chart": "N",
+      "label": "a play/step control: run the scenario at real pacing, or step it one phase at a time",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 761
+    },
+    "N5": {
+      "chart": "N",
+      "label": "a viewport-size control, so origin spread can be judged at every aspect ratio",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 763
+    },
+    "N6": {
+      "chart": "N",
+      "label": "every tunable from §16 live in the inspector, re-read while the scenario runs (the fx_editor polls, because a custom resource does not announce its own edits)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 765
+    },
+    "N7": {
+      "chart": "N",
+      "label": "freeze control — hold the whole thing on one frame to judge a silhouette",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 768
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 248
+    },
+    {
+      "key": "A2->A99",
+      "from": "A2",
+      "to": "A99",
+      "label": "yes",
+      "chart": "A",
+      "line": 249
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "no",
+      "chart": "A",
+      "line": 250
+    },
+    {
+      "key": "A3->A99",
+      "from": "A3",
+      "to": "A99",
+      "label": "yes",
+      "chart": "A",
+      "line": 251
+    },
+    {
+      "key": "A3->A4",
+      "from": "A3",
+      "to": "A4",
+      "label": "no",
+      "chart": "A",
+      "line": 252
+    },
+    {
+      "key": "A4->A98",
+      "from": "A4",
+      "to": "A98",
+      "label": "no",
+      "chart": "A",
+      "line": 253
+    },
+    {
+      "key": "A4->A5",
+      "from": "A4",
+      "to": "A5",
+      "label": "yes",
+      "chart": "A",
+      "line": 254
+    },
+    {
+      "key": "A5->A98",
+      "from": "A5",
+      "to": "A98",
+      "label": "no",
+      "chart": "A",
+      "line": 255
+    },
+    {
+      "key": "A5->A6",
+      "from": "A5",
+      "to": "A6",
+      "label": "yes",
+      "chart": "A",
+      "line": 256
+    },
+    {
+      "key": "A6->A99",
+      "from": "A6",
+      "to": "A99",
+      "label": "yes",
+      "chart": "A",
+      "line": 257
+    },
+    {
+      "key": "A6->A7",
+      "from": "A6",
+      "to": "A7",
+      "label": "no",
+      "chart": "A",
+      "line": 258
+    },
+    {
+      "key": "A7->A99",
+      "from": "A7",
+      "to": "A99",
+      "label": "yes",
+      "chart": "A",
+      "line": 259
+    },
+    {
+      "key": "A7->A8",
+      "from": "A7",
+      "to": "A8",
+      "label": "no",
+      "chart": "A",
+      "line": 260
+    },
+    {
+      "key": "A8->A99#1",
+      "from": "A8",
+      "to": "A99",
+      "label": "no cards above",
+      "chart": "A",
+      "line": 261
+    },
+    {
+      "key": "A8->A99#2",
+      "from": "A8",
+      "to": "A99",
+      "label": "all above are non-blocking",
+      "chart": "A",
+      "line": 262
+    },
+    {
+      "key": "A8->A98",
+      "from": "A8",
+      "to": "A98",
+      "label": "a blocker is above",
+      "chart": "A",
+      "line": 263
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 282
+    },
+    {
+      "key": "B2->B3",
+      "from": "B2",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 284
+    },
+    {
+      "key": "B3->B4",
+      "from": "B3",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 285
+    },
+    {
+      "key": "B4->B3",
+      "from": "B4",
+      "to": "B3",
+      "label": "no",
+      "chart": "B",
+      "line": 286
+    },
+    {
+      "key": "B4->B5",
+      "from": "B4",
+      "to": "B5",
+      "label": "yes",
+      "chart": "B",
+      "line": 287
+    },
+    {
+      "key": "B5->B6",
+      "from": "B5",
+      "to": "B6",
+      "label": "false to true",
+      "chart": "B",
+      "line": 288
+    },
+    {
+      "key": "B6->B7",
+      "from": "B6",
+      "to": "B7",
+      "label": "",
+      "chart": "B",
+      "line": 289
+    },
+    {
+      "key": "B5->B8",
+      "from": "B5",
+      "to": "B8",
+      "label": "true to false",
+      "chart": "B",
+      "line": 290
+    },
+    {
+      "key": "B8->B9",
+      "from": "B8",
+      "to": "B9",
+      "label": "",
+      "chart": "B",
+      "line": 291
+    },
+    {
+      "key": "B5->B3",
+      "from": "B5",
+      "to": "B3",
+      "label": "unchanged",
+      "chart": "B",
+      "line": 292
+    },
+    {
+      "key": "B7->B10",
+      "from": "B7",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 293
+    },
+    {
+      "key": "B9->B11",
+      "from": "B9",
+      "to": "B11",
+      "label": "",
+      "chart": "B",
+      "line": 294
+    },
+    {
+      "key": "B10->B12",
+      "from": "B10",
+      "to": "B12",
+      "label": "",
+      "chart": "B",
+      "line": 295
+    },
+    {
+      "key": "B11->B13",
+      "from": "B11",
+      "to": "B13",
+      "label": "",
+      "chart": "B",
+      "line": 296
+    },
+    {
+      "key": "B3->B14",
+      "from": "B3",
+      "to": "B14",
+      "label": "",
+      "chart": "B",
+      "line": 297
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 315
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "",
+      "chart": "C",
+      "line": 316
+    },
+    {
+      "key": "C3->C4",
+      "from": "C3",
+      "to": "C4",
+      "label": "",
+      "chart": "C",
+      "line": 317
+    },
+    {
+      "key": "C4->C5",
+      "from": "C4",
+      "to": "C5",
+      "label": "",
+      "chart": "C",
+      "line": 318
+    },
+    {
+      "key": "C5->C6",
+      "from": "C5",
+      "to": "C6",
+      "label": "",
+      "chart": "C",
+      "line": 319
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 320
+    },
+    {
+      "key": "C7->C8",
+      "from": "C7",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 321
+    },
+    {
+      "key": "C8->C11",
+      "from": "C8",
+      "to": "C11",
+      "label": "no",
+      "chart": "C",
+      "line": 322
+    },
+    {
+      "key": "C8->C9",
+      "from": "C8",
+      "to": "C9",
+      "label": "yes",
+      "chart": "C",
+      "line": 323
+    },
+    {
+      "key": "C9->C10",
+      "from": "C9",
+      "to": "C10",
+      "label": "",
+      "chart": "C",
+      "line": 326
+    },
+    {
+      "key": "C10->C8",
+      "from": "C10",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 327
+    },
+    {
+      "key": "C11->C12",
+      "from": "C11",
+      "to": "C12",
+      "label": "",
+      "chart": "C",
+      "line": 328
+    },
+    {
+      "key": "C12->C13",
+      "from": "C12",
+      "to": "C13",
+      "label": "yes",
+      "chart": "C",
+      "line": 329
+    },
+    {
+      "key": "C13->C14",
+      "from": "C13",
+      "to": "C14",
+      "label": "",
+      "chart": "C",
+      "line": 332
+    },
+    {
+      "key": "C14->C12",
+      "from": "C14",
+      "to": "C12",
+      "label": "",
+      "chart": "C",
+      "line": 333
+    },
+    {
+      "key": "C12->C15",
+      "from": "C12",
+      "to": "C15",
+      "label": "no",
+      "chart": "C",
+      "line": 334
+    },
+    {
+      "key": "C15->C16",
+      "from": "C15",
+      "to": "C16",
+      "label": "",
+      "chart": "C",
+      "line": 335
+    },
+    {
+      "key": "C16->C17",
+      "from": "C16",
+      "to": "C17",
+      "label": "",
+      "chart": "C",
+      "line": 336
+    },
+    {
+      "key": "C17->C18",
+      "from": "C17",
+      "to": "C18",
+      "label": "",
+      "chart": "C",
+      "line": 337
+    },
+    {
+      "key": "C18->C19",
+      "from": "C18",
+      "to": "C19",
+      "label": "",
+      "chart": "C",
+      "line": 338
+    },
+    {
+      "key": "C19->C20",
+      "from": "C19",
+      "to": "C20",
+      "label": "yes",
+      "chart": "C",
+      "line": 339
+    },
+    {
+      "key": "C19->C21",
+      "from": "C19",
+      "to": "C21",
+      "label": "no",
+      "chart": "C",
+      "line": 340
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 364
+    },
+    {
+      "key": "D2->D99",
+      "from": "D2",
+      "to": "D99",
+      "label": "yes",
+      "chart": "D",
+      "line": 365
+    },
+    {
+      "key": "D2->D3",
+      "from": "D2",
+      "to": "D3",
+      "label": "no",
+      "chart": "D",
+      "line": 366
+    },
+    {
+      "key": "D3->D4",
+      "from": "D3",
+      "to": "D4",
+      "label": "",
+      "chart": "D",
+      "line": 367
+    },
+    {
+      "key": "D4->D5",
+      "from": "D4",
+      "to": "D5",
+      "label": "",
+      "chart": "D",
+      "line": 369
+    },
+    {
+      "key": "D5->D8",
+      "from": "D5",
+      "to": "D8",
+      "label": "skip",
+      "chart": "D",
+      "line": 371
+    },
+    {
+      "key": "D5->D6",
+      "from": "D5",
+      "to": "D6",
+      "label": "expand",
+      "chart": "D",
+      "line": 372
+    },
+    {
+      "key": "D6->D7",
+      "from": "D6",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 374
+    },
+    {
+      "key": "D7->D8",
+      "from": "D7",
+      "to": "D8",
+      "label": "",
+      "chart": "D",
+      "line": 376
+    },
+    {
+      "key": "D8->D9",
+      "from": "D8",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 378
+    },
+    {
+      "key": "D9->D10",
+      "from": "D9",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 379
+    },
+    {
+      "key": "D10->D11",
+      "from": "D10",
+      "to": "D11",
+      "label": "",
+      "chart": "D",
+      "line": 381
+    },
+    {
+      "key": "D11->D12",
+      "from": "D11",
+      "to": "D12",
+      "label": "",
+      "chart": "D",
+      "line": 382
+    },
+    {
+      "key": "D12->D13",
+      "from": "D12",
+      "to": "D13",
+      "label": "",
+      "chart": "D",
+      "line": 384
+    },
+    {
+      "key": "D13->D14",
+      "from": "D13",
+      "to": "D14",
+      "label": "",
+      "chart": "D",
+      "line": 385
+    },
+    {
+      "key": "D14->D15",
+      "from": "D14",
+      "to": "D15",
+      "label": "",
+      "chart": "D",
+      "line": 386
+    },
+    {
+      "key": "D15->D16",
+      "from": "D15",
+      "to": "D16",
+      "label": "",
+      "chart": "D",
+      "line": 387
+    },
+    {
+      "key": "D16->D17",
+      "from": "D16",
+      "to": "D17",
+      "label": "",
+      "chart": "D",
+      "line": 388
+    },
+    {
+      "key": "D17->D18",
+      "from": "D17",
+      "to": "D18",
+      "label": "",
+      "chart": "D",
+      "line": 391
+    },
+    {
+      "key": "D18->D19",
+      "from": "D18",
+      "to": "D19",
+      "label": "",
+      "chart": "D",
+      "line": 392
+    },
+    {
+      "key": "D19->D20",
+      "from": "D19",
+      "to": "D20",
+      "label": "yes",
+      "chart": "D",
+      "line": 393
+    },
+    {
+      "key": "D20->D21",
+      "from": "D20",
+      "to": "D21",
+      "label": "",
+      "chart": "D",
+      "line": 395
+    },
+    {
+      "key": "D19->D22",
+      "from": "D19",
+      "to": "D22",
+      "label": "no",
+      "chart": "D",
+      "line": 397
+    },
+    {
+      "key": "D22->D23",
+      "from": "D22",
+      "to": "D23",
+      "label": "",
+      "chart": "D",
+      "line": 398
+    },
+    {
+      "key": "D23->D24",
+      "from": "D23",
+      "to": "D24",
+      "label": "",
+      "chart": "D",
+      "line": 399
+    },
+    {
+      "key": "D24->D25",
+      "from": "D24",
+      "to": "D25",
+      "label": "",
+      "chart": "D",
+      "line": 400
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "",
+      "chart": "E",
+      "line": 431
+    },
+    {
+      "key": "E2->E3",
+      "from": "E2",
+      "to": "E3",
+      "label": "",
+      "chart": "E",
+      "line": 432
+    },
+    {
+      "key": "E3->E4",
+      "from": "E3",
+      "to": "E4",
+      "label": "",
+      "chart": "E",
+      "line": 433
+    },
+    {
+      "key": "E4->E5",
+      "from": "E4",
+      "to": "E5",
+      "label": "",
+      "chart": "E",
+      "line": 434
+    },
+    {
+      "key": "E5->E6",
+      "from": "E5",
+      "to": "E6",
+      "label": "equal",
+      "chart": "E",
+      "line": 435
+    },
+    {
+      "key": "E5->E7",
+      "from": "E5",
+      "to": "E7",
+      "label": "more lights than targets",
+      "chart": "E",
+      "line": 436
+    },
+    {
+      "key": "E5->E8",
+      "from": "E5",
+      "to": "E8",
+      "label": "more targets than lights",
+      "chart": "E",
+      "line": 438
+    },
+    {
+      "key": "E6->E9",
+      "from": "E6",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 440
+    },
+    {
+      "key": "E7->E9",
+      "from": "E7",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 442
+    },
+    {
+      "key": "E8->E9",
+      "from": "E8",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 443
+    },
+    {
+      "key": "E9->E10",
+      "from": "E9",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 444
+    },
+    {
+      "key": "E10->E11",
+      "from": "E10",
+      "to": "E11",
+      "label": "",
+      "chart": "E",
+      "line": 445
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 452
+    },
+    {
+      "key": "F2->F3",
+      "from": "F2",
+      "to": "F3",
+      "label": "option A (RECOMMENDED)",
+      "chart": "F",
+      "line": 453
+    },
+    {
+      "key": "F2->F4",
+      "from": "F2",
+      "to": "F4",
+      "label": "option B",
+      "chart": "F",
+      "line": 455
+    },
+    {
+      "key": "F2->F5",
+      "from": "F2",
+      "to": "F5",
+      "label": "option C",
+      "chart": "F",
+      "line": 456
+    },
+    {
+      "key": "G1->G2",
+      "from": "G1",
+      "to": "G2",
+      "label": "",
+      "chart": "G",
+      "line": 483
+    },
+    {
+      "key": "G2->G3",
+      "from": "G2",
+      "to": "G3",
+      "label": "no",
+      "chart": "G",
+      "line": 484
+    },
+    {
+      "key": "G2->G4",
+      "from": "G2",
+      "to": "G4",
+      "label": "yes",
+      "chart": "G",
+      "line": 485
+    },
+    {
+      "key": "G4->G5",
+      "from": "G4",
+      "to": "G5",
+      "label": "no",
+      "chart": "G",
+      "line": 486
+    },
+    {
+      "key": "G4->G6",
+      "from": "G4",
+      "to": "G6",
+      "label": "yes",
+      "chart": "G",
+      "line": 487
+    },
+    {
+      "key": "G6->G7",
+      "from": "G6",
+      "to": "G7",
+      "label": "",
+      "chart": "G",
+      "line": 489
+    },
+    {
+      "key": "G7->G8",
+      "from": "G7",
+      "to": "G8",
+      "label": "yes",
+      "chart": "G",
+      "line": 490
+    },
+    {
+      "key": "G7->G9",
+      "from": "G7",
+      "to": "G9",
+      "label": "no",
+      "chart": "G",
+      "line": 492
+    },
+    {
+      "key": "G8->G10",
+      "from": "G8",
+      "to": "G10",
+      "label": "",
+      "chart": "G",
+      "line": 493
+    },
+    {
+      "key": "G9->G10",
+      "from": "G9",
+      "to": "G10",
+      "label": "",
+      "chart": "G",
+      "line": 494
+    },
+    {
+      "key": "G5->G10",
+      "from": "G5",
+      "to": "G10",
+      "label": "",
+      "chart": "G",
+      "line": 495
+    },
+    {
+      "key": "G10->G11",
+      "from": "G10",
+      "to": "G11",
+      "label": "no",
+      "chart": "G",
+      "line": 496
+    },
+    {
+      "key": "G10->G12",
+      "from": "G10",
+      "to": "G12",
+      "label": "yes",
+      "chart": "G",
+      "line": 497
+    },
+    {
+      "key": "G12->G13",
+      "from": "G12",
+      "to": "G13",
+      "label": "",
+      "chart": "G",
+      "line": 499
+    },
+    {
+      "key": "G12->G14",
+      "from": "G12",
+      "to": "G14",
+      "label": "",
+      "chart": "G",
+      "line": 501
+    },
+    {
+      "key": "H1->H2",
+      "from": "H1",
+      "to": "H2",
+      "label": "",
+      "chart": "H",
+      "line": 527
+    },
+    {
+      "key": "H2->H3",
+      "from": "H2",
+      "to": "H3",
+      "label": "",
+      "chart": "H",
+      "line": 530
+    },
+    {
+      "key": "H3->H4",
+      "from": "H3",
+      "to": "H4",
+      "label": "",
+      "chart": "H",
+      "line": 531
+    },
+    {
+      "key": "H4->H5",
+      "from": "H4",
+      "to": "H5",
+      "label": "",
+      "chart": "H",
+      "line": 533
+    },
+    {
+      "key": "H5->H6",
+      "from": "H5",
+      "to": "H6",
+      "label": "",
+      "chart": "H",
+      "line": 535
+    },
+    {
+      "key": "H6->H7",
+      "from": "H6",
+      "to": "H7",
+      "label": "",
+      "chart": "H",
+      "line": 537
+    },
+    {
+      "key": "H7->H8",
+      "from": "H7",
+      "to": "H8",
+      "label": "",
+      "chart": "H",
+      "line": 538
+    },
+    {
+      "key": "H8->H9",
+      "from": "H8",
+      "to": "H9",
+      "label": "",
+      "chart": "H",
+      "line": 539
+    },
+    {
+      "key": "I1->I2",
+      "from": "I1",
+      "to": "I2",
+      "label": "",
+      "chart": "I",
+      "line": 564
+    },
+    {
+      "key": "I2->I3",
+      "from": "I2",
+      "to": "I3",
+      "label": "",
+      "chart": "I",
+      "line": 565
+    },
+    {
+      "key": "I3->I4",
+      "from": "I3",
+      "to": "I4",
+      "label": "",
+      "chart": "I",
+      "line": 566
+    },
+    {
+      "key": "I4->I5",
+      "from": "I4",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 567
+    },
+    {
+      "key": "I5->I6",
+      "from": "I5",
+      "to": "I6",
+      "label": "",
+      "chart": "I",
+      "line": 568
+    },
+    {
+      "key": "I6->I7",
+      "from": "I6",
+      "to": "I7",
+      "label": "no",
+      "chart": "I",
+      "line": 569
+    },
+    {
+      "key": "I6->I8",
+      "from": "I6",
+      "to": "I8",
+      "label": "yes",
+      "chart": "I",
+      "line": 570
+    },
+    {
+      "key": "I8->I9",
+      "from": "I8",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 572
+    },
+    {
+      "key": "I9->I7",
+      "from": "I9",
+      "to": "I7",
+      "label": "",
+      "chart": "I",
+      "line": 574
+    },
+    {
+      "key": "I7->I10",
+      "from": "I7",
+      "to": "I10",
+      "label": "",
+      "chart": "I",
+      "line": 575
+    },
+    {
+      "key": "I10->I5",
+      "from": "I10",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 576
+    },
+    {
+      "key": "J1->J2",
+      "from": "J1",
+      "to": "J2",
+      "label": "",
+      "chart": "J",
+      "line": 594
+    },
+    {
+      "key": "J1->J3",
+      "from": "J1",
+      "to": "J3",
+      "label": "",
+      "chart": "J",
+      "line": 599
+    },
+    {
+      "key": "J1->J4",
+      "from": "J1",
+      "to": "J4",
+      "label": "",
+      "chart": "J",
+      "line": 605
+    },
+    {
+      "key": "K1->K2",
+      "from": "K1",
+      "to": "K2",
+      "label": "",
+      "chart": "K",
+      "line": 626
+    },
+    {
+      "key": "K2->K3",
+      "from": "K2",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 629
+    },
+    {
+      "key": "K3->K4",
+      "from": "K3",
+      "to": "K4",
+      "label": "",
+      "chart": "K",
+      "line": 631
+    },
+    {
+      "key": "K4->K5",
+      "from": "K4",
+      "to": "K5",
+      "label": "yes",
+      "chart": "K",
+      "line": 632
+    },
+    {
+      "key": "K4->K6",
+      "from": "K4",
+      "to": "K6",
+      "label": "no",
+      "chart": "K",
+      "line": 633
+    },
+    {
+      "key": "K6->K7",
+      "from": "K6",
+      "to": "K7",
+      "label": "",
+      "chart": "K",
+      "line": 634
+    },
+    {
+      "key": "K7->K8",
+      "from": "K7",
+      "to": "K8",
+      "label": "every column (RECOMMENDED)",
+      "chart": "K",
+      "line": 636
+    },
+    {
+      "key": "K7->K9",
+      "from": "K7",
+      "to": "K9",
+      "label": "only occupied columns",
+      "chart": "K",
+      "line": 638
+    },
+    {
+      "key": "K8->K10",
+      "from": "K8",
+      "to": "K10",
+      "label": "",
+      "chart": "K",
+      "line": 640
+    },
+    {
+      "key": "K9->K10",
+      "from": "K9",
+      "to": "K10",
+      "label": "",
+      "chart": "K",
+      "line": 642
+    },
+    {
+      "key": "K10->K11",
+      "from": "K10",
+      "to": "K11",
+      "label": "",
+      "chart": "K",
+      "line": 643
+    },
+    {
+      "key": "K11->K12",
+      "from": "K11",
+      "to": "K12",
+      "label": "",
+      "chart": "K",
+      "line": 645
+    },
+    {
+      "key": "K12->K13",
+      "from": "K12",
+      "to": "K13",
+      "label": "",
+      "chart": "K",
+      "line": 647
+    },
+    {
+      "key": "K13->K14",
+      "from": "K13",
+      "to": "K14",
+      "label": "",
+      "chart": "K",
+      "line": 649
+    },
+    {
+      "key": "L1->L2",
+      "from": "L1",
+      "to": "L2",
+      "label": "",
+      "chart": "L",
+      "line": 669
+    },
+    {
+      "key": "L2->L3",
+      "from": "L2",
+      "to": "L3",
+      "label": "Undo pressed mid-act",
+      "chart": "L",
+      "line": 670
+    },
+    {
+      "key": "L3->L4",
+      "from": "L3",
+      "to": "L4",
+      "label": "",
+      "chart": "L",
+      "line": 673
+    },
+    {
+      "key": "L4->L5",
+      "from": "L4",
+      "to": "L5",
+      "label": "",
+      "chart": "L",
+      "line": 674
+    },
+    {
+      "key": "L5->L6",
+      "from": "L5",
+      "to": "L6",
+      "label": "",
+      "chart": "L",
+      "line": 675
+    },
+    {
+      "key": "L2->L7",
+      "from": "L2",
+      "to": "L7",
+      "label": "app quit mid-act, then resume",
+      "chart": "L",
+      "line": 677
+    },
+    {
+      "key": "L7->L8",
+      "from": "L7",
+      "to": "L8",
+      "label": "",
+      "chart": "L",
+      "line": 680
+    },
+    {
+      "key": "L2->L9",
+      "from": "L2",
+      "to": "L9",
+      "label": "board mutated mid-line by an on_active effect",
+      "chart": "L",
+      "line": 682
+    },
+    {
+      "key": "L9->L10",
+      "from": "L9",
+      "to": "L10",
+      "label": "",
+      "chart": "L",
+      "line": 684
+    },
+    {
+      "key": "L10->L11",
+      "from": "L10",
+      "to": "L11",
+      "label": "",
+      "chart": "L",
+      "line": 686
+    },
+    {
+      "key": "L2->L12",
+      "from": "L2",
+      "to": "L12",
+      "label": "settings changed mid-act",
+      "chart": "L",
+      "line": 687
+    },
+    {
+      "key": "L2->L13",
+      "from": "L2",
+      "to": "L13",
+      "label": "the show ends (3rd submit)",
+      "chart": "L",
+      "line": 690
+    },
+    {
+      "key": "L13->L14",
+      "from": "L13",
+      "to": "L14",
+      "label": "",
+      "chart": "L",
+      "line": 692
+    },
+    {
+      "key": "M1->M2",
+      "from": "M1",
+      "to": "M2",
+      "label": "",
+      "chart": "M",
+      "line": 717
+    },
+    {
+      "key": "M2->M3",
+      "from": "M2",
+      "to": "M3",
+      "label": "",
+      "chart": "M",
+      "line": 718
+    },
+    {
+      "key": "M3->M4",
+      "from": "M3",
+      "to": "M4",
+      "label": "",
+      "chart": "M",
+      "line": 719
+    },
+    {
+      "key": "M4->M5",
+      "from": "M4",
+      "to": "M5",
+      "label": "",
+      "chart": "M",
+      "line": 720
+    },
+    {
+      "key": "M4->M6",
+      "from": "M4",
+      "to": "M6",
+      "label": "",
+      "chart": "M",
+      "line": 721
+    },
+    {
+      "key": "M1->M7",
+      "from": "M1",
+      "to": "M7",
+      "label": "",
+      "chart": "M",
+      "line": 722
+    },
+    {
+      "key": "M7->M8",
+      "from": "M7",
+      "to": "M8",
+      "label": "",
+      "chart": "M",
+      "line": 723
+    },
+    {
+      "key": "M1->M9",
+      "from": "M1",
+      "to": "M9",
+      "label": "",
+      "chart": "M",
+      "line": 725
+    },
+    {
+      "key": "M9->M4",
+      "from": "M9",
+      "to": "M4",
+      "label": "",
+      "chart": "M",
+      "line": 726
+    },
+    {
+      "key": "M1->M10",
+      "from": "M1",
+      "to": "M10",
+      "label": "",
+      "chart": "M",
+      "line": 727
+    },
+    {
+      "key": "M10->M11",
+      "from": "M10",
+      "to": "M11",
+      "label": "",
+      "chart": "M",
+      "line": 728
+    },
+    {
+      "key": "M1->M12",
+      "from": "M1",
+      "to": "M12",
+      "label": "",
+      "chart": "M",
+      "line": 730
+    },
+    {
+      "key": "M12->M13",
+      "from": "M12",
+      "to": "M13",
+      "label": "",
+      "chart": "M",
+      "line": 731
+    },
+    {
+      "key": "M1->M14",
+      "from": "M1",
+      "to": "M14",
+      "label": "",
+      "chart": "M",
+      "line": 732
+    },
+    {
+      "key": "M14->M15",
+      "from": "M14",
+      "to": "M15",
+      "label": "",
+      "chart": "M",
+      "line": 733
+    },
+    {
+      "key": "M1->M16",
+      "from": "M1",
+      "to": "M16",
+      "label": "",
+      "chart": "M",
+      "line": 734
+    },
+    {
+      "key": "M16->M17",
+      "from": "M16",
+      "to": "M17",
+      "label": "",
+      "chart": "M",
+      "line": 735
+    },
+    {
+      "key": "N1->N2",
+      "from": "N1",
+      "to": "N2",
+      "label": "",
+      "chart": "N",
+      "line": 758
+    },
+    {
+      "key": "N2->N3",
+      "from": "N2",
+      "to": "N3",
+      "label": "",
+      "chart": "N",
+      "line": 760
+    },
+    {
+      "key": "N3->N4",
+      "from": "N3",
+      "to": "N4",
+      "label": "",
+      "chart": "N",
+      "line": 761
+    },
+    {
+      "key": "N4->N5",
+      "from": "N4",
+      "to": "N5",
+      "label": "",
+      "chart": "N",
+      "line": 763
+    },
+    {
+      "key": "N5->N6",
+      "from": "N5",
+      "to": "N6",
+      "label": "",
+      "chart": "N",
+      "line": 765
+    },
+    {
+      "key": "N6->N7",
+      "from": "N6",
+      "to": "N7",
+      "label": "",
+      "chart": "N",
+      "line": 768
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "slug": "spotlight",
+  "doc_hash": "sha256:389ca783b1eb6cab95e9b705560401213fec38327f32cf9ad1dd988b96e9d2fc",
+  "updated": "2026-08-02T10:54:07Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T10:54:03Z"
+    },
+    "Q9": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T10:54:07Z"
+    }
+  }
+}

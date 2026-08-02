@@ -262,6 +262,28 @@ export async function annotate(dir, target, key, text) {
   return current;
 }
 
+/**
+ * Flag a node or an edge, or approve it (§4.5, Q59, Q60=a).
+ *
+ * Q59's answer in the owner's own words: *"make it a disapproval flagger where I mark nodes and
+ * edges I don't like, with approval being default for ones I don't click, but assume I may have not
+ * reviewed it yet so it's not a hard approval."* So `flagged` is the map that matters and unmarked
+ * means "not objected to", NOT "approved" — §4.5's `approved` map stays for the deliberate act of
+ * saying "I have read this one and it is right", and neither gates Confirm (Q60=a).
+ */
+export async function mark(dir, key, value, { version = 0 } = {}) {
+  const file = join(dir, ANNOTATIONS);
+  const current = (await readJson(file)) || { nodes: {}, edges: {}, approved: {} };
+  current.approved = current.approved || {};
+  current.flagged = current.flagged || {};
+  delete current.approved[key];
+  delete current.flagged[key];
+  if (value === 'flagged' || value === 'approved') current[value][key] = { at: now(), version };
+  await mkdir(dir, { recursive: true });
+  await writeJsonAtomic(file, current);
+  return current;
+}
+
 /** The most recent write to any file in a design directory — the index's "last touched". */
 export async function lastTouched(dir) {
   let latest = null;

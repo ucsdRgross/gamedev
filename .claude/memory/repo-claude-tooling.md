@@ -34,7 +34,7 @@ Prefer these over improvising the same workflow:
   DESIGN ONLY — no code, no file lists, no test plan; the implementation plan is a separate doc
   written after every node is approved. Ask about behaviour/appearance, never about code: the
   agent fills in the architecture. Skill self-improves — fix it in-session when a review turns up
-  a question category it should have caught. First use: `solatro/SPOTLIGHT_DESIGN.md`.
+  a question category it should have caught. First use: `solatro/design/spotlight/DESIGN.md`.
 - **`plan-auditor`** subagent (`agents/plan-auditor.md`) — read-only; audits a plan/handoff/design
   doc against live code and reports STALE / MOVED / UNVERIFIABLE / SOUND with file:line. Good for
   the read-heavy phases that otherwise eat the main context.
