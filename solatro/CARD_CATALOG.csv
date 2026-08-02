@@ -74,31 +74,31 @@ Added (added effect that it randomly acts as any prop from the game),"The Best B
     if in_scoring_pass(): return 1.0  # matches all suits for melds
     return NAN                        # stacking uses real comparisons
   func spawn_props(origin, count): return []","pip;combo","The flush enabler every suit build wants — and an open Balatro homage.","Spawns no props (no suit effect at all); pure meld grease."
-,"The Half Card","Johnny Eck, 'The Amazing Half-Boy' — performer, artist, sawing-gag legend","Literally the top half of a card, cleanly cut, standing proud","Rare","3","Half rank (rounds down), half size: TWO Half Cards occupy one board slot together and meld as one combined card.","class PipRankHalf extends PipRank:
+"Modified (either talent that splits into two halves down middle, or becomes two cards where rank is half. recombines on score as its own meld)","The Half Card","Johnny Eck, 'The Amazing Half-Boy' — performer, artist, sawing-gag legend","Literally the top half of a card, cleanly cut, standing proud","Rare","3","Half rank (rounds down), half size: TWO Half Cards occupy one board slot together and meld as one combined card.","class PipRankHalf extends PipRank:
   func on_can_place_stack(stack, dest) -> Variant:
     if is_half(dest.top()) and is_half(stack.head()): return true  # co-slot
     return null
   # Scoring: co-slotted pair evaluates as one card of summed rank","pip;movement;freakshow","Two acts in one slot — board compression as a collectible.","Alone it is a weak half-rank; the payoff needs the pair drawn and placed together."
-,"Harlequin","Arlecchino's diamond motley — the visual ancestor of harlequin card backs","A pip diamond-patterned in two suit colors at once","Rare","3","Dual-suit pip: this card counts as BOTH printed suits for every comparison, meld, and suit effect (both props fire).","# MultiSuit stub already commented in pip_comparator.gd
+vetoed (2 suit suit is boring),"Harlequin","Arlecchino's diamond motley — the visual ancestor of harlequin card backs","A pip diamond-patterned in two suit colors at once","Rare","3","Dual-suit pip: this card counts as BOTH printed suits for every comparison, meld, and suit effect (both props fire).","# MultiSuit stub already commented in pip_comparator.gd
 class PipSuitHarlequin extends PipSuit:
   var a : PipSuit; var b : PipSuit
   func on_compare_suits(x, y): return best_of(a.compare(x,y), b.compare(x,y))
   func spawn_props(origin, count): return a.spawn_props(origin,1) + b.spawn_props(origin,1)","pip;prop;combo","One card, two flushes, two prop volleys — the placement puzzle squared.","Cannot stack on either of its suits (both count); double props double the chaos you must plan for."
-,"The Fire-Knife","Samoan siva afi — the ailao war dance, machete wrapped in burning towels","A spinning machete wreathed in flame trails against night","Rare","3","Fixed dual-suit card: Knives AND Flames simultaneously — knife props fly the row while Burning drops down the column.","class PipSuitFireKnife extends PipSuitHarlequin:
+vetoed (already have fire and knives),"The Fire-Knife","Samoan siva afi — the ailao war dance, machete wrapped in burning towels","A spinning machete wreathed in flame trails against night","Rare","3","Fixed dual-suit card: Knives AND Flames simultaneously — knife props fly the row while Burning drops down the column.","class PipSuitFireKnife extends PipSuitHarlequin:
   func _init() -> void:
     a = PipSuitKnife.new()
     b = PipSuitFire.new()  # both spawn_props volleys fire per meld","pip;prop;status;combo","The one-card argument for dual suits: a whole act in a single scored card.","Feeds both prop economies at half focus; suit-hate towns punish it twice."
-,"The Wildcard","The user's wild pip: tracks the previous pip inside itself, rerolled from the board","A pip of shifting stained glass, mid-transformation","Rare","4","Wild pip: on every board change it becomes a copy of a rank/suit currently present in its row, chosen deterministically. Cycling visuals show the current identity.","class PipRankWild extends PipRank:
+Added (is any rank instead),"The Wildcard","The user's wild pip: tracks the previous pip inside itself, rerolled from the board","A pip of shifting stained glass, mid-transformation","Rare","4","Wild pip: on every board change it becomes a copy of a rank/suit currently present in its row, chosen deterministically. Cycling visuals show the current identity.","class PipRankWild extends PipRank:
   var mimic : PipRank
   func on_anything(...) -> void:  # cheap: recompute only on revision change
     mimic = pick_from_row_hash(data, game.state.revision)  # deterministic, no RNG
   func on_compare_ranks(a, b): return mimic.on_compare_ranks(a, b)","pip;random;deck-manip","A shapeshifter you can herd — move its neighbors and you choose what it becomes.","You never fully control it; a bad row makes it a bad card, and it re-rolls when you least want."
-,"The Forged Ace","The English Ace of Spades duty stamp — forging it hanged Richard Harding in 1805","An ornate Ace of Spades a little TOO ornate, ink still wet","Legendary","7","Event-granted counterfeit: enormous rank (counts as two Aces in melds). If any inspection effect or Prepared Town examines it, it is destroyed and this show's fame payout is voided.","class PipRankForgedAce extends PipRankNumeral:
+Vetoed (??? wtf is this),"The Forged Ace","The English Ace of Spades duty stamp — forging it hanged Richard Harding in 1805","An ornate Ace of Spades a little TOO ornate, ink still wet","Legendary","7","Event-granted counterfeit: enormous rank (counts as two Aces in melds). If any inspection effect or Prepared Town examines it, it is destroyed and this show's fame payout is voided.","class PipRankForgedAce extends PipRankNumeral:
   func on_score(result) -> void: game.add_line_score(row_of(data), FORGERY_PTS)
   func on_mod_triggered(mod) -> void:
     if mod is InspectionEffect:
       game.defer(func(): game.destroy_card(data); game.state.void_fame = true)","pip;gamble;event-granted;secret","History's highest-stakes single card — every inspection event becomes a heart attack.","One inspection doesn't just kill the card, it hangs the whole show's payout."
-,"Paper","The printed playing card itself — cheap stock democratized the deck","A plain card stock texture with a faint watermark","Common","1","Default material. No modifier behavior; the baseline every other type upgrades.","# IMPLEMENTED: TypePaper — the no-op default type
+Added,"Paper","The printed playing card itself — cheap stock democratized the deck","A plain card stock texture with a faint watermark","Common","1","Default material. No modifier behavior; the baseline every other type upgrades.","# IMPLEMENTED: TypePaper — the no-op default type
 class TypePaper extends CardModifierType:
   pass  # exists so every card has a type slot filled","type","The floor everything else is measured against.","It is the absence of an effect — strictly outclassed by any real material."
 ,"Canvas","The big top itself — canvas bosses and roustabouts raised it town after town","A tight weave of tent canvas with a stitched patch","Common","1","Sturdy material: the first debuff/status applied to this card each show is discarded (canvas shrugs it off).","class TypeCanvas extends CardModifierType:
@@ -130,7 +130,7 @@ class TypeHeavy extends CardModifierType:
   func on_stack_cards(stack) -> void:
     if not is_bottom(data, stack):
       game.defer(func(): Board.move_stack(game.state, stack.below(data), Board.OnTop.new(data)))","type;movement","Foundation cards that dig in — build the column ON it and it never gets in the way.","Buried means covered: without Revealing its skill is dark all game."
-,"Water","Early materials list; Vietnamese water puppetry — performers hidden waist-deep","A card of rippling water, reflections of its neighbors on its face","Uncommon","2","Elemental material: on Next, if an adjacent column is shorter, this card flows sideways into it (always seeking the lowest level).","class TypeWater extends CardModifierType:
+Added,"Water","Early materials list; Vietnamese water puppetry — performers hidden waist-deep","A card of rippling water, reflections of its neighbors on its face","Uncommon","2","Elemental material: on Next, if an adjacent column is shorter, this card flows sideways into it (always seeking the lowest level).","class TypeWater extends CardModifierType:
   func on_next() -> void:
     var dest : int = shortest_adjacent_column(data)
     if dest != -1:
