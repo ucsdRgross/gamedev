@@ -1,2 +1,4 @@
 {"seq":1,"at":"2026-08-02T10:54:03Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
 {"seq":2,"at":"2026-08-02T10:54:07Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":3,"at":"2026-08-02T20:29:09Z","event":"answer","id":"Q10","state":"chosen","option":null,"note":"only talens","override":true,"round":1}
+{"seq":4,"at":"2026-08-02T20:35:33Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
