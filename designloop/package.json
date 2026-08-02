@@ -1,0 +1,16 @@
+{
+  "name": "designloop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Design Loop — the branching-questionnaire design tool (PLAN.md, zero dependencies)",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node src/server.mjs",
+    "watch": "node src/watch.mjs",
+    "check": "node src/check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

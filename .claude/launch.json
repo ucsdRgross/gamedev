@@ -7,6 +7,13 @@
       "runtimeArgs": ["--prefix", "palette", "start"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "designloop",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "designloop", "start"],
+      "port": 5273,
+      "autoPort": true
     }
   ]
 }

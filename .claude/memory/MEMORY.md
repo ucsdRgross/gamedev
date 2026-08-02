@@ -1,0 +1,32 @@
+<!-- SOURCE OF TRUTH. This directory travels in git; the per-user memory directory is a cache that a
+     second computer does not have. Write new and updated memories HERE. See /CLAUDE.md. -->
+
+- [Repo Claude tooling](repo-claude-tooling.md) — gamedev/.claude/ has the /handoff (write+resume, one file), /fx-verify and /flowchart-design skills, the plan-auditor subagent, and a hook blocking name-based process kills
+- [Spotlight design in flight](solatro-spotlight-design.md) — solatro/SPOTLIGHT_DESIGN.md is an unapproved DESIGN-ONLY flowchart plan, PAUSED; §17 is a branching question DAG with QR1–QR8 roots
+- [Design Loop tool](designloop-tool.md) — designloop/design/designloop/: local web front end for the questionnaire workflow; design CLOSED, PLAN.md is the build doc, S1–S10 built and green (resume from designloop/HANDOFF_designloop.md)
+- [Design review ends with a handoff](design-review-ends-with-handoff.md) — handoff fires on CONFIRMING the flowcharts (not the last answer); then plan + scope + copy-paste prompt in ONE message
+- [Verify visuals by eye](verify-visuals-by-eye.md) — render a snapshot and describe the image; metrics and green tests are not evidence about pixels, say UNVERIFIED instead
+- [General, not shape-specific](general-not-shape-specific.md) — owner rejects one-silhouette hacks and coupled designs; propose the general form or 2-3 options before implementing
+- [Running Godot scenes](running-godot-scenes.md) — Claude runs the Solatro suite itself, WINDOWED (not headless) since 2026-07-27; runs snapshot scenes and READS the PNGs; only gameplay/generation scenes go to the user
+- [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files, hangs headless runs, and locks dlls; re-read disk before diagnosing, never kill their editor
+- [No mocks in tools](no-mocks-in-tools.md) — tools/harnesses host the real scene + real data; a stand-in can't disagree with what it models
+- [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never Get-Content | Set-Content a source file; use Edit
+- [No git staging](no-git-staging.md) — user runs GitHub Desktop; don't `git add`, just edit files; ask before committing
+- [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments on methods, plans need handoff references
+- [Type all arrays + iterators](gdscript-type-all-arrays.md) — warnings-as-errors: type every Array element + every for-loop variable
+- [Solatro project facts](solatro-project-facts.md) — read solatro/START_HERE.md first, VFX.md for effects work; mutation guidelines; owner rulings; BigNumber gotchas
+- [Solatro shipped workstreams](solatro-shipped-workstreams.md) — suit-props (2026-07-13) and scoring/goal rework (2026-07-17) are DONE; live spec ARCHITECTURE_REVIEW §4/§3; don't relitigate
+- [Solatro Game/GameView split](solatro-game-view-split.md) — Game=headless logic, GameView=UI; view==null seam; commands/signals/paced contract
+- [Solatro structural layering](solatro-structural-layering.md) — board draw order is all-structural (no z_index); hoop pass-through via bracket nodes; TestSuite deadlock rule + TestLog
+- [Pooled board controls](solatro-pooled-board-controls.md) — PlayArea controls are per-slot & reused; re-derive per-card state in _bind_slot
+- [Solatro persistence gotchas](solatro-persistence-gotchas.md) — ResourceSaver format=extension, has_save=run.tres only, map is regenerable cache, pending_action replay, packed score arrays
+- [Solatro .tres cyclic backrefs](solatro-tres-cyclic-backrefs.md) — CardModifier.data is a WeakRef since 2026-07-18; don't reintroduce unlink/relink; relink after every duplicate_deep
+- [Tuning knobs in settings](solatro-tuning-knobs-in-settings.md) — shared adjustable/speedup knobs live in player_settings.gd; no wall-clock pacing; durations derive from get_delay()
+- [Localize UI strings](solatro-localize-ui-strings.md) — user-facing text goes in Locale/localization.csv via TRANSLATION.find, never a literal
+- [Solatro multi-modal input](solatro-multimodal-input.md) — all UI needs mouse+keyboard+controller; focus steal/restore, ui_cancel closes
+- [Godot key events don't bubble](godot-key-events-no-bubble.md) — key/joypad events reach ONLY the focused control; area-wide ui_accept/ui_cancel goes in _unhandled_input
+- [Palette project facts](palette-project-facts.md) — palette/ generator: all phases + external-palette recolour and param fitter shipped; read ARCHITECTURE.md first; npm test ~6min (PALETTE_FUZZ_N shortens)
+- [Palette recolour context inference](palette-recolor-context-inference.md) — measured: auto source-context inference infeasible; disjoint target pools work, MAP_CONTEXTS overlap does not
+- [worldgen_native build env](worldgen-native-build-env.md) — python -m SCons, re-clone godot-cpp, --import before the dll registers
+- [Graph spec Step A](graph-spec-step-a.md) — graph_spec.gd abstract DAG: depth=rank, lane ramp, spread fan, width=target via ideal_reach, trim+re-add repair
+- [Graph placement Step B](graph-placement-step-b.md) — v4 ladder placement + edges-last forward sweep; standing rules and measured dead ends (worldgen dormant since ~2026-07-18)

@@ -63,9 +63,22 @@ under which it is asked at all. Answering a root question prunes whole sections.
   deleted, and come back intact if you change your mind again.
 
 **Start at §17.0.** Those eight root questions gate most of the rest: answer them first and a large
-part of the document may simply not apply to you. **188 questions exist; the longest possible path
-is ~150 and a plausible path is ~90.** You should never answer a question your earlier answers
-already made meaningless — if you do, that is a bug in my gates and worth reporting as one.
+part of the document may simply not apply to you.
+
+**Measured, not estimated (2026-08-01, by the parser):** 196 question lines — 188 `Q`-numbered plus
+8 `QR` root gates — of which 195 are live and one (Q140) is retired in place. 8 are `⚑gate`, 39 are
+marked `notes`. The **longest path is 194 of 195**, because exactly one pair in the whole DAG is
+mutually exclusive (Q118 needs Q113=a, Q114 needs Q113=b or c).
+
+⚠ **So read the pruning honestly: this DAG only saves you work when you CUT something.** Every root
+default is the "yes, include this" branch, so answering *default* to all eight roots leaves you with
+essentially the whole document. Declining is what prunes — QR1=(b) removes 22 questions, QR3=(b)
+removes 24, QR4=(b) removes 18, QR5=(c) removes 21. If the feature you want is the full one, expect
+to answer nearly all of it; the DAG's value is that you can amputate a whole sub-feature in one
+click, not that the common path is short.
+
+You should never answer a question your earlier answers already made meaningless — if you do, that
+is a bug in my gates and worth reporting as one.
 
 ---
 

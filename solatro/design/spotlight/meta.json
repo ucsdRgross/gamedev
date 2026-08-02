@@ -1,0 +1,9 @@
+{
+  "slug": "spotlight",
+  "title": "The Spotlight mechanic and its visual effects",
+  "projects": ["solatro"],
+  "doc": "../../SPOTLIGHT_DESIGN.md",
+  "created": "2026-08-01T00:00:00Z",
+  "rounds": 1,
+  "confirmed_version": null
+}

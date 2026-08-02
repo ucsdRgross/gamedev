@@ -471,9 +471,26 @@ order.
 naming a nonexistent letter (must throw); both retired forms; a section gate; an option whose
 consequence contains a ` — ` of its own; an option list of four.
 
-**And the acceptance test:** `solatro/design/spotlight/DESIGN.md` parses to 188 questions, 8 of them
-`QR*`, zero errors, and the DAG validator reports no cycle, no unreachable question, and no gate
-referencing an undefined ID or letter.
+**And the acceptance test** — ⚠ **the numbers below are MEASURED (2026-08-01), replacing a hand
+estimate that was wrong in two places.** `solatro/SPOTLIGHT_DESIGN.md` parses **unedited** to:
+
+```
+196 question lines   = 188 Q-numbered + 8 QR root gates
+195 live, 1 retired  (Q140, retired in place)
+8 ⚑gate, 39 notes
+opens at QR1 · 0 errors · 1 warning (QR8, GAP-001)
+```
+
+and the DAG validator reports no cycle, no gate naming an undefined ID or letter, and nothing
+unsatisfiable. The original wording — *"188 questions, 8 of them `QR*`"* — cannot be true of that
+document: it is 188 **plus** 8. The **longest path is 194 of 195**, not the ~150 originally
+estimated, because exactly one pair in the DAG is mutually exclusive (Q118 `[Q113=a]` against
+Q114 `[Q113=b|c]`).
+
+⚠ **The general lesson, worth carrying into every future questionnaire:** gate weight only pays off
+when a root's *default* is the pruning branch. Spotlight's eight roots all default to "include this
+sub-feature", so the all-defaults path answers nearly everything. The DAG's value is amputating a
+sub-feature in one click, not shortening the common path.
 
 ---
 

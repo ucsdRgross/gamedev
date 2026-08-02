@@ -175,8 +175,16 @@ Per the grammar above. Additional rules:
   which may send them down a different path; answers stranded on the abandoned path are marked
   inactive, never deleted, and are restored if they come back. Say so where the questionnaire is
   presented.
-- **Count the worst path, not the total.** Report "180 questions, longest path ~60" — the second
-  number is the one that describes the owner's actual workload.
+- **Count the worst path, not the total** — and **measure it, never estimate it.** Report "196
+  lines, longest path 194". ⚠ A hand estimate of Spotlight's was wrong by 44 (2026-08-01: guessed
+  ~150, measured 194), because path length is a property of the whole DAG and intuition is bad at it.
+- ⚠ **Gate weight only pays off when a root's DEFAULT is the pruning branch.** Spotlight's eight
+  roots all default to "include this sub-feature", so the all-defaults path answers nearly
+  everything and the DAG saves the owner nothing on the common route. That is not a defect — the
+  value is amputating a whole sub-feature in one click — but **say so plainly** where the
+  questionnaire is introduced, rather than advertising a short path the owner will not get. If you
+  want the common path genuinely shorter, the roots have to be framed so that the *expected* answer
+  prunes, which usually means asking "is X in v1?" rather than "do you want X?".
 
 ### 6. Ship a tunables section
 
@@ -290,11 +298,82 @@ machine-readable block; two copies drift, and the prose is the one humans read.
 
 Offer to render the design flowcharts as an Artifact for visual review.
 
-**The Design Loop tool** (`designloop/`, in design as of 2026-08-01) is the eventual front end for
-this: the agent authors the question DAG, the owner answers one question at a time in a local web
-UI that hides the question count and prunes as it goes, answers stream to disk, and the agent picks
-the session back up automatically. Until it ships, the markdown document IS the questionnaire and
-the owner answers by ID in chat. Keep documents convertible: same grammar, same IDs, same gates.
+### Where the design goes, and how the owner answers it
+
+**The Design Loop tool** (`designloop/`) is the front end for this document: it parses the markdown
+you write — there is no second authored copy — and presents it one question at a time in a local
+web UI that never shows the question count and prunes as it goes. Answers stream to disk, and the
+agent is woken when the round ends.
+
+**The tool is optional and must stay optional.** If it is not running, is broken, or the owner
+would rather not use it, the markdown document IS the questionnaire and they answer by ID in chat
+exactly as before. Nothing in this procedure depends on it. What the tool needs is only that the
+grammar above is obeyed.
+
+1. **Write the design beside the code it describes**, in its own directory:
+
+   ```
+   <project>/design/<slug>/DESIGN.md      the document — this skill's whole output
+   <project>/design/<slug>/meta.json      slug, title, projects touched
+   <project>/design/<slug>/gaps/          filed by executing agents, later
+   ```
+
+   `<project>` is a top-level repo directory (`solatro`, `palette`, `worldgen`). `<slug>` is short
+   and typeable; the readable name lives in `meta.json`:
+
+   ```json
+   { "slug": "spotlight", "title": "The Spotlight mechanic and its visual effects",
+     "projects": ["solatro"], "doc": "DESIGN.md",
+     "created": "2026-08-01T00:00:00Z", "rounds": 1, "confirmed_version": null }
+   ```
+
+   `projects` is a list because a design may touch several; it appears under each in the index.
+
+2. **Check that it parses before handing anything over.** A question the parser cannot read is a
+   question the owner never sees:
+
+   ```
+   npm --prefix designloop run check -- <project>/<slug>
+   ```
+
+   It reports the question count, which question the round opens at, and every error and warning
+   with its line. Errors mean the document is wrong, not the parser — fix the line.
+
+3. **Start the server and hand over the URL.** Not a file path, not "open the doc":
+
+   ```
+   npm --prefix designloop start
+   ```
+
+   → `http://localhost:5273/web/question.html?key=<project>/<slug>`
+
+   (`designloop/start.cmd` is the double-click equivalent, and a second launch reclaims the port.)
+
+4. **Park on the watch** in the same session, so the owner is never waiting on you:
+
+   ```
+   npm --prefix designloop run watch -- <project>/<slug>
+   ```
+
+   It blocks and returns the moment the round ends, printing what was answered, what was waved
+   through as *not relevant* or Enter-defaulted, and whether the owner wrote their own answer.
+   **Telling you in chat always works too** — never make the watch the only route.
+
+5. **When it wakes**, read `<project>/design/<slug>/answers.json`, revise the document, and hand the
+   turn back by writing `status.agent.json` (yours; the owner's half is never yours to write):
+
+   ```json
+   { "state": "ready", "mode": "questions", "round": 2, "at": "…",
+     "summary": "Your answer to QR3 opened these: …" }
+   ```
+
+   The owner's screen switches itself over and opens the round with that summary. `mode: "review"`
+   is for when the questions are finished and the design graph is ready to review instead.
+
+   One ending is special: `status.owner.json` with `reason: "new_branch_needed"` means the owner
+   answered a `⚑gate` in their own words and the round stopped there, with questions still
+   unanswered. Author the branch they described — **their answer becomes a real option on that
+   question** — and they resume at that same question with it there to click.
 
 ---
 
