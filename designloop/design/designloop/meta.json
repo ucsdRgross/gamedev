@@ -1,0 +1,9 @@
+{
+  "slug": "designloop",
+  "title": "Design Loop — the branching-questionnaire design tool",
+  "projects": ["designloop"],
+  "doc": "DESIGN.md",
+  "created": "2026-08-01T00:00:00Z",
+  "rounds": 2,
+  "confirmed_version": null
+}

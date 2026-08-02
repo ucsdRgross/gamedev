@@ -1,4 +1,4 @@
-# DESIGNLOOP_DESIGN.md — the branching-questionnaire design tool
+# DESIGN.md — Design Loop, the branching-questionnaire design tool
 
 **Status: DESIGN ONLY (2026-08-01).** No code, no file plan, no step ordering, no test plan. This
 is the mini project that must finish before `solatro/SPOTLIGHT_DESIGN.md` resumes — Spotlight will
@@ -446,12 +446,34 @@ flowchart TD
 ### 9.0 ROOT FORKS — answer these first
 
 - **QR1** `[root]` ⚑gate — When you finish a round of questions, how does the agent find out? It has to notice before it can read your answers and write the next round. · **(a)** the agent session stays alive and watches a status file while you answer, waking the moment you finish — **→ next:** how often it checks, what it does if you stop halfway, whether it can work while you answer · **(b)** you tell it in chat when you are done, and it reads the files then — **→ next:** nothing about watching; straight to progress and rounds · **(c)** both — it watches, and telling it always works as a fallback — **→ next:** same as (a), plus the fallback · *default* (c) · notes
+
+A: (c) agent waits for it to finish similar to how pending background tasks work
+
 - **QR2** `[root]` ⚑gate — What has to be installed on this machine for the tool to run? · **(a)** nothing new — a Python server using only the standard library (`py` already runs `solatro/tools/`) — **→ next:** nothing about runtimes · **(b)** Node, which `palette/` already requires — **→ next:** nothing about runtimes · **(c)** no server at all: one HTML file that saves through the browser — **→ next:** questions about how answers reach disk and how the agent sees them, because neither works the usual way · *default* (a) — (c) cannot give you "saved to disk immediately" or let the agent watch, and both are explicit asks · notes
+
+A: (b) I want website supporting mouse clicks which I assume python server does not provide
+
 - **QR3** `[root]` ⚑gate — After the questions are answered, the tool can show you the finished design as a graph you pan, zoom and annotate. Is that in the first version? · **(a)** yes, questionnaire and canvas together — **→ next:** ~20 questions on canvas layout, annotation, versioning and the handoff artefact · **(b)** questionnaire first, canvas in a second pass — **→ next:** none of that; the round ends much sooner · *default* (b) — the questionnaire alone already replaces the current chat workflow, and the canvas is the larger half of the work · notes ⇒ (b) defers §9.5 and §9.6
+
+A: (b) no point canvassing before questions are answered since it will create canvas that is useless
+
 - **QR4** `[root]` — On the review canvas, how much can you change directly? · **(a)** annotate only — notes on nodes and edges, and the agent applies them on the next cycle, so the graph always matches the research behind it · **(b)** full structural editing — add, delete and rewire nodes in the browser, and the agent works from what you left · *default* (a) · notes
+
+A: (a) ill just annotate an edge if it should be rewired, and existing nodes if it needs to be split into more nodes
+
+
 - **QR5** `[root]` — Does the tool handle several design projects at once from day one? · **(a)** yes — one directory per project under `designloop/projects/`, with an index page · **(b)** one project at a time; generalise when a second one exists · *default* (a) — the directory shape costs nothing now and retrofitting it later is a migration
+
+A: a
+
 - **QR6** `[root]` — Where do the questionnaire and graph files live? · **(a)** in the repo, committed like any other doc, so a design is versioned alongside the code it describes — half-finished questionnaires show up in your diffs · **(b)** outside the repo in a user directory — diffs stay clean, but a design is not versioned with its code · **(c)** in the repo but gitignored until you press Confirm — clean diffs and versioned results, at the cost of a rule to remember · *default* (a) · notes
+
+A: a
+
 - **QR7** `[root]` ⚑gate — The questionnaire has to exist in some authored form. Which one is the source of truth? · **(a)** markdown, exactly as `SPOTLIGHT_DESIGN.md` is written today, parsed into the tool's format — the document stays readable and answerable in chat with no tool at all — **→ next:** questions about parsing strictness and converting existing docs · **(b)** JSON authored directly, with markdown generated from it — **→ next:** questions about how you read and review a design that only exists as data · *default* (a) — (a) means the 188 Spotlight questions convert with no rewrite, and the workflow keeps working if the tool is ever unavailable · notes
+
+A: (b) having it start data first makes more sense to me as it would be easier to convert to questionnaire. Goal is creating flowcharts in an md like the one we are in right now, so data -> flowchart md makes much more sense to me than plan md -> data -> flowchart md
+
 
 ### 9.1 The answering experience
 
@@ -464,11 +486,20 @@ flowchart TD
 - **Q16** — *settled: free text without choosing an option is allowed everywhere; on an ordinary question it is an override the agent resolves next round, on a gating question it ends the round (chart B2). Not asked.*
 - **Q17** `[root]` — Does the UI show the gate — i.e. why you are being asked this? · **(a)** yes, collapsed by default, expandable to "asked because QR3 = beams and circles" — costs nothing, and it is the fastest way to spot a wrong gate · **(b)** no, it is noise on a screen that is meant to hold one question · *default* (a)
 - **Q17b** `[root]` — What exactly does **NOT RELEVANT** record? · **(a)** the recommended default, flagged unreviewed — the design never has a hole, and the agent can list everything waved through · **(b)** an explicit "no opinion", leaving the agent to decide and list it as an assumption · **(c)** nothing; the question comes back in a later round · *default* (a) · notes
+
+A: functionally same as skip (there shouldnt be both skip and not relevant buttons), I feel for whatever reason that answering the question will not contribute, and acts as shortcut for me to communicate that without needing to use text box to say that
+
 - **Q17c** `[root]` — How long may an option's consequence note be? · **(a)** one short clause, so the options stay scannable side by side · **(b)** up to a sentence or two where the choice is genuinely intricate · *default* (b) — several Spotlight options need a sentence, and a truncated consequence is worse than a long one
 - **Q17d** `[root]` — On a gating question, how detailed is the **→ next** preview? · **(a)** the topics that follow ("beam shape, origin placement, overlap") · **(b)** the topics plus a rough sense of how many · **(c)** the actual first question of that branch · *default* (a) — (b) leaks the count the owner asked to hide · notes
 - **Q17e** `[root]` — When the agent has authored a new branch from your free-text answer (chart B2, P7), how are you returned? · **(a)** straight back to that same question, with your answer now present as a real option to click · **(b)** to the start of the round · *default* (a)
 - **Q17f** `[root]` — Rule 4 says a question must be answerable with nothing else on screen, which makes some questions long. Trade-off · **(a)** accept long questions — repeating context is cheaper than making you go look it up · **(b)** keep them short with an expandable "background" section · *default* (a) · notes
+
+A: (a) but dont actually repeat duplicate knowledge, redundant information should be saved same way we reduce duplicates in code to save on tokens. Something like tabs for repeated knowledge, but other than that implementation detail, yes it should all be on 1 screen.
+
 - **Q18** `[root]` — Does a question show which flowchart nodes it decides? · **(a)** yes, as a link into the canvas (once the canvas exists) · **(b)** just the node IDs as text · **(c)** no · *default* (b) if QR3=(b), else (a)
+
+A: (a) node ids as text seems pretty useless UX wise, also allow oppsite direction, clicking on node or edges can link to question and answer that created it. Likely need some way to show if 1 question impacted multiple nodes and if 1 node has multiple source questions that created it.
+
 - **Q19** `[root]` — Long questions with code or geometry in them (the Spotlight set has several). Does the UI render markdown in question text? · **(a)** yes — inline code, bold, and small tables · **(b)** plain text only · *default* (a)
 
 ### 9.2 The session and the handover
@@ -483,6 +514,9 @@ flowchart TD
 ### 9.3 Progress, ending, and rounds
 
 - **Q26** `[Q10=a]` — With no count shown, what does the screen show instead? · **(a)** nothing at all — just the question · **(b)** a coarse phase label ("root questions", "detail questions") · **(c)** the number answered so far, but never the number remaining · *default* (b) · notes
+
+A: (b) having labels for type of question seems fine since it communicates importance of the question. Additionally if flowchart has been created at this point since we are past very first review, there should be visible interactable flowchart on the side I can reference to help with question, and highlight the impacted nodes and edges by current question if there is a connection. 
+
 - **Q27** `[root]` — Can you tell how much is left indirectly (e.g. by the history list length)? Is that acceptable? · **(a)** acceptable — hiding the count is about not being daunted up front, not about secrecy · **(b)** no, hide anything that leaks it · *default* (a)
 - **Q28** `[root]` — What does the DONE screen say? · **(a)** "that is everything for now — the agent is reading your answers", then it waits and switches itself over · **(b)** "you are done, go back to chat" · *default* (a)
 - **Q29** `[root]` — When the agent adds follow-up questions, are you told how they arose? · **(a)** yes — a short round summary at the top of round 2 ("your answer to Q31 opened these") · **(b)** no, just more questions · *default* (a)
@@ -496,11 +530,17 @@ flowchart TD
 - **Q34** `[root]` — Changing an earlier answer can strand later ones. How loudly is that said? · **(a)** a clear summary before it applies — "this makes 14 of your answers irrelevant, continue?" · **(b)** applied silently, listed afterwards · **(c)** applied silently, never mentioned · *default* (a)
 - **Q35** `[root]` — Stranded answers are · **(a)** kept on disk, marked inactive, and restored intact if you change back — nothing you typed is ever lost · **(b)** deleted · *default* (a)
 - **Q36** `[root]` — Can you change an answer during REVIEW mode, after the questions are done? · **(a)** yes, and it sends the project back to the agent for another pass · **(b)** no — use Review again with a note instead, so the graph and the answers can never disagree · *default* (a) · notes
+
+A: (a) this seems good if I realize an answer I gave was not descriptive enough or missing crucial details. Have original answer be editable if I go back and change it, and tool should pick up that I changed an existing answer.
+
 - **Q36b** `[root]` — Going back to a gating question and picking a different branch abandons a whole subtree of answers · **(a)** allowed, with the Q34 warning — it is the main reason back navigation exists · **(b)** allowed only before that subtree has been answered · *default* (a)
 
 ### 9.5 The canvas `[QR3=a]`
 
 - **Q52** `[QR3=a]` — How is a 200-node graph made legible? · **(a)** one chart at a time, with a chart picker, plus an overview map · **(b)** everything at once, pan and zoom only · **(c)** everything at once, with collapsible subgraphs · *default* (c) · notes
+
+A: both (a) and (c). (a) if I want easy access to all charts and be able to focus on specific subcharts without needing to see entire graph, (c) if I want to see all connections and whole picture
+
 - **Q53** `[QR3=a]` — Layout · **(a)** automatic (a layered graph engine) — nothing to maintain, but node positions move between versions · **(b)** automatic, then positions frozen at Confirm so a version always looks the same · **(c)** manual positioning · *default* (b)
 - **Q54** `[QR3=a]` — Are pruned branches shown on the canvas at all? · **(a)** hidden by default, revealable — "here is what you ruled out" · **(b)** never shown · **(c)** always shown, greyed · *default* (a)
 - **Q55** `[QR3=a]` — Does a node show which question decided it? · **(a)** yes, with your answer · **(b)** no · *default* (a)
@@ -508,6 +548,9 @@ flowchart TD
 - **Q57** `[QR3=a]` — Does the side panel list assumptions, out-of-scope items and open notes as separate sections? · **(a)** yes, three sections · **(b)** one combined list · *default* (a)
 - **Q58** `[QR3=a]` — Where do "assumptions" come from? · **(a)** the agent writes them explicitly as it works — every place it filled in structure rather than asking · **(b)** derived from skipped/defaulted answers · **(c)** both · *default* (c)
 - **Q59** `[QR3=a]` — Can you mark an individual node as approved, so a second cycle only re-reviews the rest? · **(a)** yes, per-node approval with a visible diff of what changed since · **(b)** no, approval is whole-graph only · *default* (a) · notes
+
+A: Since there may be too many nodes to manually approve each, instead make it a disapproval flagger where I mark nodes and edges I don't like, with approval being default for ones I don't click, but assume I may have not reviewed it yet so its not a hard approval.
+
 - **Q60** `[QR3=a]` — Does Confirm require every node approved, or is it one button for the lot? · **(a)** one button; per-node approval is a convenience, not a gate · **(b)** every node must be approved first · *default* (a)
 - **Q61** `[QR3=a]` — What does Confirm LOCK? · **(a)** it freezes a version; the working copy stays editable and a later Confirm makes a new version · **(b)** it locks the project outright · *default* (a)
 - **Q62** `[QR3=a]` — Can you diff two versions? · **(a)** yes, node-level added/changed/removed · **(b)** no, versions are just snapshots · *default* (a) · notes
@@ -538,8 +581,13 @@ flowchart TD
 
 - **Q88** `[root]` — Is Spotlight the first client, converted from its existing markdown? · **(a)** yes — it is the reason this exists and it is a real 188-question load test · **(b)** start with a small throwaway questionnaire · *default* (a)
 - **Q89** `[root]` — Must the tool handle the existing `SPOTLIGHT_DESIGN.md` without editing it? · **(a)** yes — the grammar in its §0 is already the interchange format · **(b)** a conversion pass is acceptable · *default* (a)
+
+A: (b) you can edit the md since it is only a draft from before this plan and so can be updated
+
 - **Q90** `[root]` — Is the tool itself designed to be used by future you without an agent present (reading an old design)? · **(a)** yes — a confirmed design opens read-only from the index with no agent involved · **(b)** agent-mediated always · *default* (a)
 - **Q91** `[root]` — Does the flowchart-design SKILL change to emit tool artefacts instead of markdown? · **(a)** no — markdown stays the source (QR7=a) and the tool parses it, so the skill keeps working with no tool at all · **(b)** yes, the skill emits JSON directly · *default* (a)
+
+A: (b) the SKILL's goal is to orchestrate this entire workflow when I trigger it, with the first thing I read after triggering skill be first page of the website, which may include a short summary of what questionnaire topic is and version so I can tell questionnaire was created on corect context and differentiate from other questionnaires. No reading an md first, but the json can contain an info section at the top with content same to what an md would have meant only for an agent to read so information is not lost, with a descriptive header summary for human readers to immediately figure out what topic of the json is.
 
 ### 9.85 Gaps found during execution (chart J)
 
@@ -548,6 +596,9 @@ flowchart TD
 - **Q88b** `[root]` — When a gap is filed, does work stop? · **(a)** only the affected thread parks; everything else keeps going · **(b)** the whole implementation stops until the gap is answered · *default* (a)
 - **Q89b** `[root]` — How are you told a gap exists? · **(a)** in chat when it happens, with a running count · **(b)** silently filed; you find them when you look · **(c)** in chat, plus a badge in the tool's project index · *default* (c) · notes
 - **Q90b** `[root]` — What can you do with an open gap? · **(a)** run a scoped questionnaire round covering only the gaps, answer it inline in chat, or defer it and let the rest proceed · **(b)** only a full questionnaire round · **(c)** only answer inline · *default* (a)
+
+A: (b) scoped questionnaire round in the website, since website would have better UI than inline chat
+
 - **Q91b** `[root]` — A gap round asks only the gaps' own questions plus whatever they open — never the whole questionnaire again. Confirm? · **(a)** confirmed · **(b)** re-ask anything the new answers might have changed · *default* (a) · notes
 - **Q92b** `[root]` — When a gap round changes a design node, what happens to execution-plan steps that cite it? · **(a)** marked stale and re-derived before being worked again; untouched steps are untouched · **(b)** the whole execution plan is regenerated · **(c)** nothing automatic; the agent re-reads and decides · *default* (a)
 - **Q93b** `[root]` — Every execution-plan step must cite the design node IDs it implements, or nothing can compute a blast radius. Accept that as a hard requirement? · **(a)** yes, hard requirement · **(b)** best-effort · *default* (a)
@@ -576,3 +627,131 @@ it is roughly half the work).
 One thing this design deliberately does NOT treat as out of scope, despite being about execution
 rather than about questionnaires: **chart J, the gap loop.** A design tool whose output cannot be
 reopened when reality disagrees with it just moves the silent decision one step later.
+
+---
+
+## 11. ROUND 1 — answers of record (2026-08-01)
+
+Everything not listed took its recommended default. Answers that **changed** a default are marked ⚑;
+answers that added a requirement beyond the option are quoted.
+
+| Q | Answer | Note |
+|---|---|---|
+| QR1 | (c) | agent watches **and** you can tell it in chat |
+| QR2 | ⚑ **(b) Node** | you answered (a) *"need to check if python or node is better first"* — researched below, and the evidence flips it. **Confirm at Q100.** |
+| QR3 | ⚑ (a) | canvas IS in v1 — §9.5/§9.6 all live |
+| QR4 | (a) | annotate only |
+| QR5 | (a) | multi-project from day one |
+| QR6 | (a) + | *"as separate project like solatro/palette/worldgen… file structure needs to be robust for projects with multiple design docs"* → **Q101–Q107** |
+| QR7 | (a) | markdown is the source of truth |
+| Q10 | (a) | one question at a time, count never shown |
+| Q11 | ⚑ (c) | document order within a section; sections by gate weight |
+| Q12 | (b) + | not pre-selected — *"but Enter repeatedly accepts defaults; mark/log those separately as I did not actually think about them"* → **Q108–Q111** |
+| Q13 | (a) + | keyboard — *"mouse must do everything too; arrow keys + Enter navigate everything"* → **Q112–Q113** |
+| Q14, Q17, Q17b, Q17d, Q17f | (a) | |
+| Q17c | ⚑ (b) | consequences may run to a sentence or two |
+| Q26 | ⚑ (a) | **nothing shown at all** — *"progress is impossible to determine with branching paths"* → **Q114** |
+| Q29, Q30, Q33, Q34 | (a) | |
+| Q52 | ⚑ (c) | whole graph at once, collapsible subgraphs → interacts with Q53, **Q115** |
+| Q53 | (b) | auto-layout, frozen at Confirm |
+| Q54, Q55, Q57, Q59, Q62, Q65 | (a) | |
+| Q58 | ⚑ (c) | assumptions come from both the agent and defaulted answers → **Q116** |
+| Q66 | ⚑ (c) | colour by chart **and** by status, switchable |
+| Q71, Q72, Q80, Q81, Q83, Q84, Q85, Q87 | (a) | |
+| Q89b | ⚑ (c) | chat notification **and** a badge in the project index |
+| Q95b, Q96b, Q97b | (a) | |
+
+### QR2 answered: Node, and the reason is not preference
+
+You asked whether Node is much better for an entirely local app. Measured on this machine today:
+
+| Evidence | Finding |
+|---|---|
+| Runtimes present | Node **v26.4.0**, npm 10.9.0. `py` → Python **3.9.7** (old), `python` → 3.14.6. Two Pythons that disagree is itself a small hazard. |
+| **The precedent already exists** | `palette/tools/serve.mjs` is a **435-line dependency-free Node server** doing nearly this exact job: static hosting + a small JSON API backed by files on disk, plus ping/shutdown so re-launching reclaims the port. Not hypothetical — running code in this repo. |
+| Dependencies | `palette` has **none**. `node --test` is built in. Node stdlib alone covers http, fs, atomic rename, fsync and file watching. So "Node" does not mean "npm install". |
+| **The decisive one** | The question-grammar parser and the graph schema are needed **in the browser and on the server**. With Node that is one module imported twice. With Python it is two implementations of the same grammar — and "two copies drift" is this repo's most-repeated scar (`fx_behind` vs `fx_snapshot` shooting different frames, `ROLE_NAMES`, the hand-rolled PNG decoder). |
+| Not a factor | The graph layout engine is JavaScript in the browser either way, so it does not favour either side. |
+
+Python's only real advantage was "nothing to install", and Node is already installed and already
+serving a local tool in this repo. **Recommendation: Node, zero dependencies, `serve.mjs` as the
+model.** Confirm or override at **Q100**.
+
+---
+
+## 12. ROUND 2 — questions your answers created
+
+Same grammar as §9. Free text and *not relevant* are available on all of them; unanswered takes the
+default.
+
+### 12.1 Runtime
+
+- **Q100** `[root]` — Given the evidence above — Node already installed, a dependency-free local server already running in this repo, and one shared parser instead of two — is the runtime Node? · **(a)** yes, Node with zero dependencies, modelled on `palette/tools/serve.mjs` · **(b)** no, Python stdlib anyway, and accept a second parser implementation · **(c)** Node, but allow a small number of vetted npm dependencies where they save real work (a graph layout engine is the likely one) · *default* (a) · notes
+
+### 12.2 File structure for many projects and many designs `[QR6=a]`
+
+You asked for a structure robust enough that Solatro can hold Spotlight *and* other feature designs.
+That means a two-level hierarchy, and the open question is where it physically lives.
+
+- **Q101** `[root]` ⚑gate — Where do the design artefacts for a feature live? · **(a)** centrally, under `designloop/projects/<project>/<design>/` — every design in one place, the tool needs no knowledge of other repos, and the index is trivial — **→ next:** how designs are named, and whether the markdown doc also lives there · **(b)** beside the code they describe (`solatro/design/spotlight/`), with `designloop/` holding only the tool — designs are versioned in the same directory tree as what they describe, which is what "versioned with the code" meant — **→ next:** how the tool discovers designs scattered across sibling projects · **(c)** split: the human-readable markdown beside the code, the tool's working files (answers, graph, gaps) centrally — **→ next:** questions about keeping the two halves in sync · *default* (b) · notes
+- **Q102** `[root]` — What is a "project" in the hierarchy? · **(a)** a top-level repo directory — `solatro`, `palette`, `worldgen`, `designloop` itself · **(b)** an arbitrary label you type, unrelated to directories · *default* (a)
+- **Q103** `[root]` — Can one design span two projects (a change touching `solatro` and `worldgen` together)? · **(a)** yes — a design lists the projects it touches, and appears under each in the index · **(b)** no — one design belongs to exactly one project; cross-cutting work is two designs · *default* (a) · notes
+- **Q104** `[root]` — `solatro/SPOTLIGHT_DESIGN.md` already exists at the top level of its project. When the tool arrives, does it move? · **(a)** yes, into whatever structure Q101 picks — one layout, no exceptions · **(b)** no, it stays put and is registered where it is; only new designs use the structure · *default* (a) · notes
+- **Q105** `[root]` — Where do a design's gaps and assumptions live (chart J)? · **(a)** inside that design's own directory — `.../spotlight/gaps/`, `.../spotlight/ASSUMPTIONS.md` — so a design is entirely self-contained and can be moved or archived whole · **(b)** one shared `gaps/` per project, covering every design in it · *default* (a)
+- **Q106** `[root]` — Naming · **(a)** a short slug you choose (`spotlight`), with a longer human title stored alongside — the directory stays typeable and the index stays readable · **(b)** the directory name IS the title · *default* (a)
+- **Q107** `[root]` — Can a design be renamed or archived after work has started? · **(a)** renamed and archived, never deleted from the UI — a frozen version's path must stay valid for anything citing it · **(b)** rename only · **(c)** neither; pick the name once · *default* (a)
+
+### 12.3 Enter-to-default `[root]`
+
+You want repeated Enter to walk through defaults, with those answers marked because you did not
+actually consider them. That creates a third kind of answer, alongside deliberate choices and the
+NOT RELEVANT button — and NOT RELEVANT (Q17b=a) also records the default. They must be
+distinguishable or the flag means nothing.
+
+- **Q108** `[root]` — How are the three recorded? · **(a)** three distinct states — `chosen`, `not_relevant` (you decided it does not matter), `defaulted` (you hammered Enter past it) — and the agent lists the last two separately · **(b)** two states: chosen, and everything else · *default* (a)
+- **Q109** `[root]` ⚑gate — Does Enter-hammering stop at ⚑gate questions? · **(a)** yes, a gate always requires a deliberate choice — a gate picks a whole path, and defaulting past one silently commits you to a branch you never saw — **→ next:** whether it also stops at `notes` questions · **(b)** no, Enter walks straight through gates too, taking the recommended branch — **→ next:** nothing more; it is uniform · *default* (a)
+- **Q110** `[Q109=a]` — Does it also stop at questions marked `notes` (the forks where the options are likely to be insufficient)? · **(a)** yes, stop there too — those are flagged precisely because they need thought · **(b)** no, only gates stop it · *default* (a)
+- **Q111** `[root]` — After a run of Enter-hammering, are you shown what you just accepted? · **(a)** yes — a short "you accepted N defaults" list you can click back into, shown when you stop hammering · **(b)** no, they are just flagged in the log for the agent · *default* (a) · notes
+
+### 12.4 Input parity `[root]`
+
+- **Q112** `[root]` — Mouse and keyboard must both do everything. How are options navigated? · **(a)** arrow keys move a visible focus ring, Enter picks the focused one, letter keys jump straight to an option, and every one of them is also a click target · **(b)** letter keys and clicking only, no focus ring · *default* (a)
+- **Q113** `[root]` — Does the same navigation cover the non-question controls (back, history, notes box, not-relevant, and later the canvas)? · **(a)** yes — full keyboard reachability everywhere, including the canvas · **(b)** questions only; the canvas is mouse-driven · *default* (a) · notes
+
+### 12.5 Consequences of "no progress indicator at all"
+
+- **Q114** `[root]` — With nothing on screen but the question, the end of a round arrives with no warning. Is that right? · **(a)** yes — and the DONE screen makes it obvious when it happens · **(b)** show a one-question-ahead warning ("this is the last one I have for now") · *default* (a) · notes
+
+### 12.6 Canvas interactions from Q52 + Q53
+
+- **Q115** `[QR3=a]` — Layout is auto-generated then frozen at Confirm (Q53=b), but subgraphs collapse and expand (Q52=c), which changes the layout. What is frozen? · **(a)** the fully-expanded layout is frozen; collapsing is a live view state that is never saved · **(b)** the layout AND your collapse state are both frozen, so a version reopens exactly as you left it · **(c)** freeze the layout, remember collapse state per-viewer but outside the frozen version · *default* (b) · notes
+- **Q116** `[QR3=a]` — Assumptions come from both the agent and from defaulted answers (Q58=c). With Q108's three states, which count? · **(a)** agent assumptions, plus `defaulted` (Enter-hammered) answers, plus `not_relevant` ones — all three listed, visually distinguished · **(b)** agent assumptions and Enter-defaults only; `not_relevant` was a deliberate act · *default* (a)
+
+---
+
+## 13. ROUND 2 — answered "all defaults" (2026-08-01)
+
+Every round-2 question took its recommended default. The consequential ones:
+
+| Q | Answer | What it settles |
+|---|---|---|
+| Q100 | (a) | **Node, zero npm dependencies**, modelled on `palette/tools/serve.mjs` |
+| Q101 | (b) | design artefacts live **beside the code**: `<project>/design/<slug>/`; `designloop/` is the tool only |
+| Q102–Q103 | (a) | a project is a top-level repo dir; a design may span several and appears under each |
+| Q104 | (a) | `solatro/SPOTLIGHT_DESIGN.md` **moves** into the structure — one layout, no exceptions |
+| Q105–Q107 | (a) | gaps + assumptions live inside the design's own directory; slug + title; rename/archive, never delete |
+| Q108 | (a) | three answer states: `chosen`, `not_relevant`, `defaulted` |
+| Q109–Q110 | (a) | Enter-to-default **stops at gates and at `notes` questions** |
+| Q111 | (a) | "you accepted N defaults" list when hammering stops |
+| Q112–Q113 | (a) | full mouse + keyboard parity everywhere, canvas included |
+| Q114 | (a) | no end-of-round warning; the DONE screen is the signal |
+| Q115 | (b) | Confirm freezes **layout and collapse state** — a version reopens exactly as left |
+| Q116 | (a) | assumptions list all three sources, visually distinguished |
+
+**The design is fully answered. The questionnaire is closed.**
+
+→ **`PLAN.md`** (beside this file) is the execution plan: 17 steps in 5 phases, each citing the design node
+IDs it implements, ordered so that stopping after Phase 1 still leaves a working tool.
+
+Reopening this design is not a rewrite: file a gap (chart J), and a scoped round covers only what
+the gap opens.

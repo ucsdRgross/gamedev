@@ -2,7 +2,7 @@
 
 **Status: DESIGN ONLY, and PAUSED (2026-08-01).** No code, no file plan, no step ordering, no test
 plan. The questionnaire (§17) has been converted to the branching-DAG format and is ready to be
-answered either in chat or by the **Design Loop** tool — see `designloop/DESIGNLOOP_DESIGN.md`,
+answered either in chat or by the **Design Loop** tool — see `designloop/design/designloop/DESIGN.md`,
 which is the mini project being designed first. Nothing here is blocked by that: §17 can be
 answered by ID today. Conversion contract in §19.
 
@@ -1127,7 +1127,7 @@ These eight gate most of the document.
 
 ## 19. Conversion contract — this document is machine-readable on purpose
 
-This plan is **paused** pending the Design Loop tool (`designloop/DESIGNLOOP_DESIGN.md`), which
+This plan is **paused** pending the Design Loop tool (`designloop/design/designloop/DESIGN.md`), which
 will present exactly this questionnaire one question at a time in a browser. When that tool ships,
 this document is ingested rather than rewritten. What makes that possible:
 

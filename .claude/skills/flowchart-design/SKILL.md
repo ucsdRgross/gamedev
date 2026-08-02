@@ -298,6 +298,97 @@ the owner answers by ID in chat. Keep documents convertible: same grammar, same 
 
 ---
 
+## Step 8 — THE HANDOFF. Confirmation ends with a plan AND a prompt, in the same message.
+
+### 8.0 The trigger is CONFIRM, not the last answer
+
+⚠ **Answering the last question does not end the design.** The sequence, matching chart A of the
+Design Loop design (A13 → A14 → A15 → A18):
+
+```
+last reachable question answered
+  → agent revises and FINALISES the design flowcharts
+  → owner REVIEWS the flowcharts            ← a real stage, not a formality
+  → owner CONFIRMS  (or "review again" → another cycle)
+  → THEN: implementation plan + scope + copy-paste prompt, in one message
+```
+
+The review stage exists because the questionnaire settles *decisions* while the flowcharts settle
+*sequence and completeness* — "between D6 and D7 there must be…" is feedback that only arrives when
+someone looks at the chart. Producing the plan before that is building on an unreviewed design.
+
+**Until the Design Loop tool ships**, the review stage is the markdown document's own mermaid
+charts: after the last question, present the updated flowcharts, say what changed as a result of the
+answers, and **ask for confirmation**. Do not assume it. Confirmation is the owner saying the
+flowcharts are right — not their having answered the questions.
+
+**Once confirmed, the owner must never have to ask "is this ready to hand off?"** If they do, this
+step failed. Confirmation is followed immediately by the implementation plan, a scope
+recommendation, and a copy-paste prompt. Do not stop at the plan and wait to be asked.
+
+### 8a. The implementation plan is NOT bound by the design doc's no-code rule
+
+⚠ **This is the mistake that produced this section (2026-08-01).** The no-code rule belongs to the
+*design* document only. The *implementation plan* is the last document anyone should need to build
+the thing, and it must carry every normative contract:
+
+- **File formats / schemas** — every file, field by field, with who writes it. Anything read by two
+  components is a contract, and a plan that names a file without specifying it is guaranteeing two
+  incompatible inventions of the same thing.
+- **Grammars and parsers** — formally, not by example. Prose plus a sample is not a spec.
+- **Module APIs** — function signatures, so two callers cannot grow two versions of one behaviour.
+- **Wire protocol** — every endpoint, its payload, its ordering guarantees.
+- **Per-step done-when**, and at least one or two **hard self-checking acceptance gates** — a test
+  that cannot be talked past. Those are what make a lower-effort autonomous run safe.
+
+Writing "the plan deliberately contains no implementation detail" is not restraint. It is an
+unfinished plan with a justification attached.
+
+### 8b. Readiness checklist — run it before presenting anything
+
+1. Every file the plan names is either specified in it or created by a step in it.
+2. Every path the plan references exists, or a step creates it. **Grep for the paths.**
+3. Every step cites design node IDs (the gap protocol's traceability requirement).
+4. At least one acceptance gate per phase is objective and self-checking.
+5. The propagation block is at the head, with real paths filled in.
+6. The plan's own directory layout matches the layout the design chose — including for the plan's
+   own documents. (The tool's own design living outside the structure its design mandates is exactly
+   the kind of thing that greets an implementing agent as a broken path.)
+7. Nothing in the plan is phrased as a question to the owner. The questionnaire is over.
+
+### 8c. Scope the run
+
+Say which phases go in one handoff and why, and name the effort level. The split is usually:
+**pure-logic phases with hard gates** run together and tolerate lower effort; **visual or
+judgment-heavy phases** get their own run at higher effort, because they need iteration against a
+preview rather than one blind pass.
+
+### 8d. The copy-paste prompt — always the last thing in the message
+
+Fenced, self-contained, ready to paste into a fresh session with no editing. Template:
+
+```
+Implement <plan path>, Phases <n>-<m> only (steps S1-S10). Stop at S10.
+
+Read <plan path> first; it is self-contained. <design path> is the authority on behaviour -
+where they disagree the design wins and the plan is wrong.
+
+Sections <n>-<m> of the plan are normative: <the contracts> are specified, not suggestions.
+Do not invent them.
+
+Hard gates, self-checking:
+- <gate 1: an objective acceptance test>
+- <gate 2>
+
+Follow the gap protocol at the head of the plan: if you hit a decision the plan does not
+cover, do not invent it - file a gap and keep working the unaffected steps.
+
+Use /handoff to keep resumable state.
+```
+
+Include `/handoff` whenever the run spans more than one session's work. Repo-level rules (git
+policy, code style) propagate through directory-keyed memory and do not need restating.
+
 ## Keep this skill improving
 
 Every time this skill is used and the owner's review turns up something the questionnaire should
