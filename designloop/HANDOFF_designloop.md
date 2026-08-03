@@ -3,7 +3,8 @@
 **Goal:** build the tool described by `designloop/design/designloop/PLAN.md` — the owner answers a
 branching design questionnaire one question at a time in a local browser UI, every answer is on
 disk before the next question appears, and the agent is woken when the round ends. Done for the
-whole stream = all 17 steps (S1–S17). **All 17 are done.**
+whole stream = all 19 steps (S1–S19; S18 and S19 are the owner's own reviews of what was built).
+**All 19 are done.**
 
 **State: THE TOOL IS FINISHED.** Every step S1–S17 is complete and verified, and
 `npm --prefix designloop test` is green at **119/119**. All three halves work end to end: the
@@ -15,9 +16,18 @@ document**: `solatro/SPOTLIGHT_DESIGN.md` is now `solatro/design/spotlight/DESIG
 `meta.json` says `"doc": "DESIGN.md"` — **not one byte of the document changed** (sha1
 `68c348dbe38262be6c2af49042321a9085eb3471` before and after), and it still parses (195 live
 questions) and ingests (14 charts / 176 nodes / 182 edges) unedited from its new home.
-`designloop/README.md` is the tool's entry point; new work on it starts there. The owner reviewed
-the built screens on 2026-08-02 (S18): six defects fixed, and **one gap is open — GAP-002**, the
-whole-graph view having no cross-chart connections to show. Nothing else is parked on it.
+`designloop/README.md` is the tool's entry point; new work on it starts there.
+
+**The owner has now reviewed both halves by using them, and each review became a design version.**
+The canvas on 2026-08-02 (S18 → version 3, GAP-002). **The answering screen on 2026-08-03 (S19 →
+version 4)**: history is a scrollable sidebar carrying question *and* answer; BACK is a real visit
+stack that is never a silent no-op; every control shows the key that presses it; the control Enter
+will press is **marked before you press it**; a typed answer can no longer be destroyed by Enter;
+and the screen says whether **an agent is actually watching**, with a prompt to paste when none is.
+`DESIGN.md` §15 is the changelog. **Both gaps are closed and there is nothing parked.** GAP-002 was answered in the tool's own scoped gap round on
+2026-08-02 — the owner chose **(b)**, derive the cross-chart links — which produced **design
+version 3** (`DESIGN.md` §14) and re-derived S11, S12 and S14. The links ship: `graph.json` has a
+`links` list beside `edges`, and the whole-graph view draws them dashed. 125/125 green.
 
 **Entry docs:** `designloop/design/designloop/PLAN.md` (the build document; §4–§7 are normative),
 `designloop/design/designloop/DESIGN.md` (the authority on behaviour — where they disagree, the
@@ -562,7 +572,11 @@ Chrome blocks a *second* automatic download, so only the first export lands in `
 
 | Claim | How it is known |
 |---|---|
-| The whole suite is green | `npm --prefix designloop test` → `tests 119 / pass 119 / fail 0`, 1.5 s, run after the last edit |
+| The whole suite is green | `npm --prefix designloop test` → `tests 128 / pass 128 / fail 0`, run after the last edit |
+| **The S19 screen changes work, and I LOOKED** | Driven in headless Edge over CDP against a throwaway copy of the design (never the owner's live round): the Enter mark reads `option c`, moves to `Use what I wrote` the moment the note box has text, and Enter then submits the written answer instead of discarding it. BACK walked four questions in reverse and then disabled itself with its reason. `h`, `i`, `w`, `n` all fire. The session chip was screenshotted **live**, **stopped** and **none** |
+| **Not verified: physical keypresses** | Still dispatched `KeyboardEvent`s in the real page rather than OS input, same as before. The handlers are the real ones |
+| **The derived cross-chart links are right, and I LOOKED** | Counts measured on both real documents (10 and 5, 0 unresolved) and pinned as a fixture. The canvas was screenshotted in headless Edge over CDP and described: expanded, collapsed, and the picker. **The first bow was wrong and only the picture said so** — collapsed charts shelf-pack into one row, so a bow proportional to the vertical drop was flat and the links lay along the row through the boxes. Fixed to a perpendicular bow, re-shot, and the arcs now pass clear |
+| **How to screenshot without the Browser pane** | **`designloop/tools/shot.mjs`** — headless Edge with `--remote-debugging-port`, driven over CDP with Node's built-in `WebSocket`, runs a JS snippet first (so the shot can be of the *collapsed* canvas, or of the picker) and writes a real PNG. No dependencies. `msedge --screenshot` on its own only ever captures the initial state, which is useless for a canvas whose interesting states are behind a click |
 | The Spotlight document parses AND ingests unchanged, from its NEW path | `npm --prefix designloop run check -- solatro/spotlight charts` → 195 live + 1 retired, 14 charts / 176 nodes / 182 edges, 0 errors, 1 warning (QR8); `sha1sum` is `68c348db…` both before the move and after it |
 | The gap surface does what S15 asks | Driven in the Browser pane against a throwaway design: badge → gaps page → scoped round → `gaps_answered` → promotion. Quoted in S15's evidence, and the gap file was byte-identical afterwards |
 | A crash between log and materialise is survivable | The S4 test simulates the exact window (append + fsync, no materialise) and asserts the stale file first, then the recovery — not an inferred property |
@@ -585,17 +599,35 @@ scoped gap round making the MAIN question screen claim the questionnaire was ove
 
 ## Open gaps
 
-**GAP-002 is open** (filed 2026-08-02, from the owner's review): the whole-graph view has no
-connections to show, because **neither design document has a single cross-chart edge** — 0 of 133
-and 0 of 182, measured — while 12 node labels name another chart in prose ("… — chart B"). Q52's
-written answer asked for the whole graph "if I want to see all connections", and that is the view
-that has none. Four options are in the file, from "leave the graph alone and say what the view is
-actually for" to "widen the §6 subset so cross-chart edges are written on purpose"; the middle two
-differ in whether `graph.json` gains the derived links or only the canvas draws them, which is
-Q64=(a) and the no-mocks rule. **Answer it in the tool**:
-`web/question.html?key=designloop/designloop&scope=gaps`.
+**None.** Both filed gaps are closed, in place, with their resolutions.
 
-Parked with it: nothing but that thread. Everything else in the review shipped (S18).
+**GAP-002 — resolved 2026-08-02, the owner chose (b): derive the cross-chart links.** It was
+answered in the tool's own scoped gap round (`question.html?key=designloop/designloop&scope=gaps`),
+which is the first time the gap loop ran on real work rather than on a throwaway design. What it
+turned into, so nobody re-derives it:
+
+- **`src/graph.mjs` derives them at ingestion.** A node label naming another chart becomes a link
+  from that node to that **chart** — not to a node inside it, because the label named a chart and
+  picking an endpoint would invent structure the document does not have.
+- **`graph.json` grows a `links` list beside `edges`** (PLAN §4.6), deliberately separate: an edge
+  was drawn by the author, a link was inferred from a label, and a consumer that cannot tell them
+  apart asserts a connection the document never made. Key is `FROM~>TOCHART`, so it can never
+  collide with an edge key.
+- **The rule is PLAN §6.1**, and it resolves a name **the way a reader does — by the name the
+  document uses, before the chart ID.** This is the one that bites: Spotlight's §7 holds two
+  charts, so from there on every chart ID is one letter ahead of the heading naming it, and
+  `K14 "see chart H"` means the chart with `I`-prefixed nodes. ID-first gives a wrong link.
+- **Nothing is guessed.** Unresolved → a warning naming the line (GAP-001's rule, same class of
+  defect); same-chart → dropped silently (chart E says "chart E2" about its own node, which is
+  correct authoring); repeated in one label → deduped.
+- **The canvas draws them dashed, purple, node-to-chart**, under the nodes, hidden in the
+  single-chart picker view, with a `links: shown (N)` toggle (`l`). A collapsed chart keeps its
+  links (F8).
+- **Measured, and pinned as a fixture** in PLAN §6.1 and `test/graph.test.mjs`: **10** links here,
+  **5** in Spotlight, 0 unresolved in either, and neither document was edited to make it so.
+
+Design version 3 (`DESIGN.md` §14) records the round; S11, S12 and S14 in `PLAN.md` are re-derived
+and marked as such.
 
 `designloop/design/designloop/gaps/GAP-001.md` is `status: resolved` — the owner
 chose **(b)**: a ⚑gate option with no `→ next:` is a **warning**, not a parse error. What that
@@ -640,20 +672,22 @@ whenever its hash moves.
 
 ## Next up
 
-**Nothing in this stream.** All 17 steps are done. What is genuinely next is not building the tool
-but *using* it, and there is one obvious first job:
+**Nothing in this stream.** All 19 steps are done, and the owner is already *using* it — the
+Spotlight round is live, so the next job is that design, not this tool.
 
-1. **Resume `solatro/design/spotlight/`** — the design this tool was built for. It is paused,
-   unapproved and now answerable: `npm --prefix designloop start`, hand over
-   `http://localhost:5273/web/question.html?key=solatro/spotlight`, park on
-   `npm --prefix designloop run watch -- solatro/spotlight`. It opens at QR1 with 195 live
-   questions and no answers — the acceptance run's answers were deleted, so what the owner sees is
-   a clean start.
+1. **`solatro/design/spotlight/` is IN PROGRESS.** The owner began answering it on 2026-08-03 and
+   was ~47 answers in. Do not reset it, do not answer it, and do not delete its `answers.*`. Park
+   on `npm --prefix designloop run watch -- solatro/spotlight` — and note that parking is now
+   *visible to them*: the screen's chip goes green while a watch is beating.
 2. **Fix QR8** while doing that: it is the one live authoring warning in the repo (its option (a)
    carries no `→ next:`), and it shows on the index card until it is gone.
-3. **Look at the question screens' pixels.** S12/S13 screenshotted the canvas in real Chrome and
-   three defects fell out. The question screen, the gaps page and the scoped round have only ever
-   been read as text.
+3. **The gaps page and the scoped round have still never been looked at.** S18 reviewed the canvas
+   and S19 the question screen, and both found things no test would have. These two are the
+   remaining screens that have only ever been read as text —
+   `node designloop/tools/shot.mjs` makes that cheap now.
+4. ⚠ **When editing `src/`, the owner's own server does not reload.** They run one from
+   `start.cmd`; it keeps the code it started with. `web/` changes reach them on a page reload.
+   Never restart or kill their server to make a change land — say so and let them.
 
 ### Copy-paste opening prompt for the next agent
 
@@ -678,10 +712,10 @@ is the procedure end to end.
 
 Environment facts that cost time twice: the Browser pane is not displayed, so screenshots fail
 there and OS key events do not reach the page — verify with read_page/get_page_text and dispatch
-KeyboardEvents through javascript_tool, and use the claude-in-chrome tools when you need to
-actually LOOK at something (that window opens at 200% zoom; send ctrl+- and check
-devicePixelRatio before trusting a screenshot). The Node server has no hot reload, so
-preview_stop + preview_start after any src/ edit; editing web/ only needs a page reload.
+KeyboardEvents through javascript_tool. To actually LOOK at something, run
+`node designloop/tools/shot.mjs <url> <out.png> [w] [h] ["js first"]` and Read the PNG: headless
+Edge over CDP, a JS snippet run before the shot, no dependencies. The Node server has no hot
+reload, so preview_stop + preview_start after any src/ edit; editing web/ only needs a page reload.
 
 Keep this handoff updated after every task. Do not git add or commit.
 ```

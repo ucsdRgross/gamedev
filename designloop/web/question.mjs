@@ -1,4 +1,4 @@
-// The answering session (PLAN S5–S8; DESIGN charts B, B2, D).
+// The answering session (PLAN S5–S8, S19; DESIGN charts B, B2, D).
 //
 // One question on the screen and NOTHING that indicates progress (Q10=a, Q26=a, Q114=a) — no
 // count, no bar, no "question 4 of". The end of a round arrives without warning, and the DONE
@@ -7,6 +7,16 @@
 // This module imports `../src/grammar.mjs` — the same file the server parses with. That is the
 // point of the Node runtime (DESIGN §11): the screen and the server cannot disagree about what a
 // gate means, because there is one parser.
+//
+// S19 (the owner's review of 2026-08-03) changed four things about how it is driven, and each one
+// is a rule this file now keeps:
+//
+//   1. History is a scrollable SIDEBAR carrying the question AND the answer, not a screen you have
+//      to leave the question for.
+//   2. BACK is a real visit stack, like a browser's. It is never a no-op that looks like a click
+//      that failed, and it never dead-ends at the index.
+//   3. EVERY control says which key presses it, and Enter's target is VISIBLE before you press it.
+//   4. Nothing you typed is ever thrown away by a keystroke.
 
 import { parseDocument, describeGate } from '../src/grammar.mjs';
 import { md } from './md.mjs';
@@ -21,8 +31,15 @@ const key = params.get('key') || '';
 const scope = params.get('scope') === 'gaps' ? 'gaps' : null;
 const screen = document.getElementById('screen');
 const titleEl = document.getElementById('design-title');
+const historyPanel = document.getElementById('history-panel');
+const historyList = document.getElementById('history-list');
+const historyCount = document.getElementById('history-count');
+const historyHandle = document.getElementById('history-handle');
+const sessionChip = document.getElementById('session-chip');
+const sessionDetail = document.getElementById('session-detail');
+const keyhelp = document.getElementById('keyhelp');
 
-/** The design's meta + both status halves. */
+/** The design's meta + both status halves + whether an agent is parked (§4.9). */
 let design = null;
 /** The parsed document, for gate explanations and history labels. */
 let parsed = { questions: [], sections: [] };
@@ -30,11 +47,16 @@ let parsed = { questions: [], sections: [] };
 let view = null;
 /** A run of Enter-accepted defaults, shown back to the owner when the run ends (Q111=a). */
 let hammered = [];
-/** Where the visible focus ring is. -1 means nothing is focused, and Enter takes the default. */
+/** Where the visible focus ring is. -1 means the owner has not moved it. */
 let focusIndex = -1;
 let focusables = [];
 /** A message to show above the next question — stranding notices, hammer summaries, round openers. */
 let banner = null;
+let history = [];
+/** The open gaps' questions, when this screen is a scoped round. Empty otherwise. */
+let gapQuestions = [];
+/** The scoped round says what it is, once, at the top. */
+let announcedScope = false;
 
 const api = (path, init) => fetch(`/api/designs/${key}${path}`, init).then(async (r) => {
   const body = await r.json().catch(() => ({}));
@@ -51,31 +73,143 @@ function el(tag, className, html) {
 }
 
 /** The answers map, as the grammar module wants it. */
-function answersFromHistory(history) {
+function answersFromHistory(list) {
   const map = {};
-  for (const h of history) map[h.id] = { option: h.option, active: h.active, state: h.state };
+  for (const h of list) map[h.id] = { option: h.option, active: h.active, state: h.state };
   return map;
 }
 
-let history = [];
-/** The open gaps' questions, when this screen is a scoped round. Empty otherwise. */
-let gapQuestions = [];
-/** The scoped round says what it is, once, at the top. */
-let announcedScope = false;
+// --- what a key does, and saying so (S19.3) -------------------------------------------------------
+//
+// Every control on this screen has a key, and every control SHOWS it. The option letters own their
+// own keys — `(b)` is pressed by `b`, always — so an action whose mnemonic collides with an option
+// on the question currently displayed simply has no key on that question rather than stealing one.
+// Both real documents top out at three options, so this is a guard, not a common case.
 
-// --- loading -----------------------------------------------------------------------------------
+const ACTION_KEYS = { write: 'w', notRelevant: 'n', history: 'h', canvas: 'g', session: 'i' };
+
+function keyFor(action) {
+  const wanted = ACTION_KEYS[action];
+  const taken = (view?.question.options || []).some((o) => o.letter === wanted);
+  return taken ? null : wanted;
+}
+
+/** The `⌨` chip that goes on a control. */
+function kbd(label) {
+  return label ? el('span', 'kbd', label) : null;
+}
+
+function withKey(button, label) {
+  const chip = kbd(label);
+  if (chip) button.append(chip);
+  return button;
+}
+
+// --- the visit stack (S19.2) ---------------------------------------------------------------------
+//
+// BACK used to mean "the last answer in the file", which is not what a back button means: standing
+// on that same last answer, it pointed at itself and the click did nothing, which is why the owner
+// had to use the history list instead.
+//
+// This is a browser's back stack. It records the questions this screen has SHOWN, in the order it
+// showed them, and BACK steps one entry down it. It lives in `sessionStorage` so that walking off
+// to the canvas and coming back does not reset it — the owner's own words: "in case user checks
+// another page then comes back". Arriving fresh with no stack at all, BACK falls back to the last
+// question actually answered, never to the index: leaving the questionnaire is what the link in
+// the corner is for.
+
+const NAV_KEY = `designloop.nav.${key}${scope ? '.gaps' : ''}`;
+
+function loadNav() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(NAV_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter((x) => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+let nav = loadNav();
+
+function saveNav() {
+  // Long rounds are long; the tail is the only part BACK can reach anyway.
+  if (nav.length > 500) nav = nav.slice(-500);
+  try { sessionStorage.setItem(NAV_KEY, JSON.stringify(nav)); } catch { /* private mode */ }
+}
+
+/** Record that this question is now on screen. Repeats of the top are not a new visit. */
+function pushNav(id) {
+  if (!id || nav[nav.length - 1] === id) return;
+  nav.push(id);
+  saveNav();
+}
+
+/** What BACK would open, or null when there is nowhere to go. */
+function backTarget() {
+  const current = view?.question.id;
+  for (let i = nav.length - 2; i >= 0; i--) {
+    if (nav[i] !== current) return { id: nav[i], depth: nav.length - i };
+  }
+  // No stack above this question: opened straight from the index, from a canvas link, or in a new
+  // tab. "Where was I before this?" then means the question answered immediately BEFORE this one —
+  // which for a question nobody has answered yet is simply the latest answer.
+  //
+  // Not "the newest answer" unconditionally: standing on the first question of the round, that
+  // would send BACK *forward*, to the end of the history. There is genuinely nothing before the
+  // first question, and the button says so instead.
+  const live = history.filter((h) => h.active);
+  const at = live.findIndex((h) => h.id === current);
+  const previous = at === -1 ? live[live.length - 1] : live[at - 1];
+  return previous ? { id: previous.id, depth: 0 } : null;
+}
+
+function goBack() {
+  hammered = [];
+  const target = backTarget();
+  if (!target) return;
+  // Pop back to the target INCLUSIVE, so it becomes the new top and the entry below it is where
+  // the next BACK goes. Truncating one too far is what turns a back stack into a one-shot.
+  if (target.depth) nav = nav.slice(0, nav.length - target.depth + 1);
+  saveNav();
+  revisit(target.id, { record: false });
+}
+
+// --- drafts (S19.4) -------------------------------------------------------------------------------
+//
+// What the owner typed belongs to them. It used to live only in the textarea, so anything that
+// re-rendered the screen — including the Enter that took the recommendation instead — destroyed it,
+// and the browser's own undo had nothing left to undo because the element itself was gone. Every
+// keystroke is now saved against its question and restored when that question comes back.
+
+const draftKey = (id) => `designloop.draft.${key}.${id}`;
+
+function readDraft(id) {
+  try { return sessionStorage.getItem(draftKey(id)) || ''; } catch { return ''; }
+}
+
+function writeDraft(id, text) {
+  try {
+    if (text) sessionStorage.setItem(draftKey(id), text);
+    else sessionStorage.removeItem(draftKey(id));
+  } catch { /* private mode */ }
+}
+
+const noteValue = () => document.getElementById('note')?.value ?? '';
+
+// --- loading -------------------------------------------------------------------------------------
 
 async function refresh() {
   design = await api('');
   titleEl.textContent = scope === 'gaps' ? `${design.title} — the open gaps` : design.title;
   document.title = `${design.title} — Design Loop`;
   document.getElementById('canvas-link').href = `canvas.html?key=${encodeURIComponent(key)}`;
+  renderSession();
   // Re-parsed on every refresh, never cached: the agent rewrites the document between rounds
   // (chart B2), and `refresh()` is exactly what runs when it does. A parse held over from round 1
   // makes BACK, the history list and the canvas' `#Qn` links silently miss every question round 2
   // added, and leaves `describeGate` unable to name the options it is explaining.
   parsed = parseDocument(await fetch(`/api/designs/${key}/doc`).then((r) => r.text()));
   history = await api('/history');
+  renderHistoryPanel();
   if (scope === 'gaps') return refreshGaps();
   // The round can end with reachable questions still on the table: free text at a ⚑gate ends it on
   // the spot, because every question after it sits on a branch just declined (chart B2, §4.2).
@@ -100,6 +234,7 @@ async function refresh() {
   const next = await api('/next');
   if (next.done) return renderDone(next);
   view = { question: next.question, answer: next.answer, revisit: false };
+  pushNav(next.question.id);
   return render();
 }
 
@@ -114,6 +249,7 @@ async function refreshGaps() {
   const next = await api('/next?scope=gaps');
   if (next.done) return renderGapsDone(data);
   view = { question: next.question, answer: next.answer, revisit: false };
+  pushNav(next.question.id);
   if (!announcedScope) {
     announcedScope = true;
     banner = el('div', 'banner', `<strong>A scoped round.</strong> Only what the open gaps ask — `
@@ -124,7 +260,118 @@ async function refreshGaps() {
   return render();
 }
 
-// --- the question screen -------------------------------------------------------------------------
+// --- is anyone listening? (S19.7, §4.9) -----------------------------------------------------------
+
+/**
+ * Whether an agent is parked on this design, and what to do when it is not.
+ *
+ * The owner could previously answer a whole round into a directory nobody was watching and have no
+ * way to tell. `session.json` is the watch process' heartbeat; a session that ended leaves it
+ * stale. The fallback has always been true and is said here rather than assumed: telling the agent
+ * in chat works whether or not anything is watching (Q22=a), because every answer is already on
+ * disk before the next question appears.
+ */
+function renderSession() {
+  const s = design?.session || { watching: false, stale: false, ever: false };
+  const state = s.watching ? 'live' : (s.stale ? 'stale' : 'none');
+  sessionChip.className = `badge session ${state}`;
+  sessionChip.textContent = {
+    live: '● an agent is watching',
+    stale: '◍ the session stopped',
+    none: '○ no agent is watching',
+  }[state];
+
+  const prompt = scope === 'gaps'
+    ? `The gaps at ${key} are answered — read designloop/design/${key.split('/')[1]}/gaps/ against the answers, write the next design version with its changelog, close them in place with their resolutions, and re-derive the plan steps they made stale.`
+    : `I am answering ${key} in the Design Loop. Park on it:\nnpm --prefix designloop run watch -- ${key}\nWhen it wakes, read the answers, revise the design, and hand the turn back with status.agent.json.`;
+
+  sessionDetail.replaceChildren();
+  sessionDetail.append(el('div', null, {
+    live: `<strong>An agent is parked on this design.</strong> It is blocked on `
+      + `<code>run watch</code> and returns the moment you finish this round — you do not have to `
+      + `tell it anything. Watching since ${s.since ? new Date(s.since).toLocaleTimeString() : 'a moment ago'}.`,
+    stale: `<strong>The session that was watching this design has stopped.</strong> Its last `
+      + `heartbeat was ${s.at ? new Date(s.at).toLocaleTimeString() : 'a while ago'}. `
+      + `<strong>Nothing is lost</strong> — every answer was on disk before the next question `
+      + `appeared, and a fresh session reads them all. Keep answering; start a new one when you like.`,
+    none: `<strong>No agent is watching this design.</strong> That is not a problem: every answer `
+      + `is on disk before the next question appears, and any session can read them. It only means `
+      + `nobody is woken automatically when you finish. Start one by pasting this into a Claude `
+      + `Code session in the repo:`,
+  }[state]));
+  if (state !== 'live') {
+    const pre = document.createElement('pre');
+    pre.textContent = prompt;
+    sessionDetail.append(pre);
+    const copy = el('button', null, 'Copy that prompt');
+    copy.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(prompt).catch(() => {});
+      copy.textContent = 'Copied';
+    });
+    sessionDetail.append(el('div', 'row', ''));
+    sessionDetail.lastChild.append(copy);
+  }
+}
+
+function toggleSession() {
+  sessionDetail.hidden = !sessionDetail.hidden;
+}
+
+sessionChip.addEventListener('click', toggleSession);
+
+/** The chip goes stale on its own if nothing refreshes it, so it is polled while answering. */
+setInterval(async () => {
+  if (!key) return;
+  const latest = await api('?poll=1').catch(() => null);
+  if (!latest) return;
+  const was = design?.session?.watching;
+  design = { ...design, session: latest.session, owner: latest.owner, agent: latest.agent };
+  if (was !== latest.session?.watching || sessionChip.textContent === '') renderSession();
+}, 7000);
+
+// --- the history sidebar (S19.1) ------------------------------------------------------------------
+
+/**
+ * Q33=a asked for a BACK button and a clickable history. The history was a button that replaced
+ * the question with a list of IDs and option letters — you had to leave the question to read it,
+ * and what it showed was not enough to recognise an answer by. It is now a sidebar that is always
+ * there, scrolls, and carries **both halves**: what was asked, and what you said.
+ */
+function renderHistoryPanel() {
+  historyList.replaceChildren();
+  const live = history.filter((h) => h.active).length;
+  historyCount.textContent = history.length
+    ? `${live}${history.length > live ? ` of ${history.length}` : ''}`
+    : '';
+  if (!history.length) {
+    historyList.append(el('p', 'faint', 'Nothing yet. Answers appear here as you give them.'));
+    return;
+  }
+  for (const h of history) {
+    const answer = h.override
+      ? `<em>your own answer</em>${h.note ? ` — ${md(h.note.slice(0, 140))}` : ''}`
+      : `<span class="state-${h.state}">(${h.option})</span> ${md(h.label || '')}`;
+    const button = el('button', `history-entry${h.active ? '' : ' inactive'}`
+      + `${view && h.id === view.question.id ? ' current' : ''}`,
+      `<span class="hq"><span class="hid">${h.id}</span>${md(h.text || '')}</span>`
+      + `<span class="ha">${answer}</span>`
+      + (h.active ? '' : '<span class="hq faint">— set aside by a later change, kept</span>'));
+    button.dataset.id = h.id;
+    button.addEventListener('click', () => revisit(h.id));
+    historyList.append(button);
+  }
+  const current = historyList.querySelector('.history-entry.current');
+  current?.scrollIntoView({ block: 'nearest' });
+}
+
+function toggleHistory() {
+  document.body.classList.toggle('no-history');
+  historyHandle.textContent = document.body.classList.contains('no-history') ? '›' : '‹';
+}
+
+historyHandle.addEventListener('click', toggleHistory);
+
+// --- the question screen ---------------------------------------------------------------------------
 
 function render() {
   const q = view.question;
@@ -178,6 +425,8 @@ function render() {
     const button = el('button', 'option');
     button.type = 'button';
     button.dataset.letter = option.letter;
+    // The option's own letter IS its key — `(b)` is pressed by `b` — so it needs no second chip
+    // saying the same character twice. The key legend below says as much once.
     button.innerHTML = `<span class="letter">(${option.letter})</span><span class="label">${md(option.label)}</span>`;
     // Q12=b — the recommendation is MARKED but never pre-selected; every answer is a real click.
     if (option.letter === q.default) button.querySelector('.label').after(el('span', 'rec', 'recommended'));
@@ -204,24 +453,41 @@ function render() {
     : 'Add a note, or write your own answer instead of choosing.'));
   const note = document.createElement('textarea');
   note.id = 'note';
-  note.value = view.answer?.note || '';
-  note.addEventListener('input', () => { hammered = []; });
+  // The draft outranks the recorded note: it is what the owner typed most recently and has not
+  // committed. Restoring it is what makes a stray keystroke survivable (S19.4).
+  note.value = readDraft(q.id) || view.answer?.note || '';
+  note.addEventListener('input', () => {
+    hammered = [];
+    writeDraft(q.id, note.value);
+    // Typing changes what Enter does — it now means "use what I wrote" — so the marker moves as
+    // the first character lands, not as a surprise afterwards.
+    paintEnterTarget();
+  });
   screen.append(note);
   focusables.push(note);
 
   const row = el('div', 'row');
   row.style.marginTop = '1rem';
-  const write = el('button', null, 'Use what I wrote');
-  write.addEventListener('click', () => submit({ override: true, note: note.value, state: 'chosen' }));
+  const write = withKey(el('button', null, 'Use what I wrote'), keyFor('write'));
+  write.dataset.action = 'write';
+  write.addEventListener('click', () => submitWritten());
   // Q17b=a / Q14 — NOT RELEVANT records the recommended default and flags it unreviewed. It is one
   // button, not two: "skip" and "not relevant" would be the same act under two names.
-  const nr = el('button', null, 'Not relevant');
+  const nr = withKey(el('button', null, 'Not relevant'), keyFor('notRelevant'));
   nr.title = 'Records the recommended answer and flags it as unreviewed';
-  nr.addEventListener('click', () => submit({ state: 'not_relevant', option: q.default, note: note.value }));
-  const back = el('button', null, '← Back');
+  nr.addEventListener('click', () => submit({ state: 'not_relevant', option: q.default, note: noteValue() }));
+  const target = backTarget();
+  const back = withKey(el('button', null, '← Back'), '⌫');
+  back.disabled = !target;
+  // A disabled button that says why beats a live one that does nothing, which is what sent the
+  // owner to the history list in the first place.
+  back.title = target
+    ? `Back to ${target.id}`
+    : 'Nothing to go back to yet — this is the first question you have seen';
   back.addEventListener('click', goBack);
-  const hist = el('button', null, 'History');
-  hist.addEventListener('click', renderHistory);
+  const hist = withKey(el('button', null, 'History'), keyFor('history'));
+  hist.title = 'Show or hide the list of what you have answered';
+  hist.addEventListener('click', toggleHistory);
   row.append(write, nr, el('span', 'spacer'), back, hist);
   for (const b of [write, nr, back, hist]) focusables.push(b);
   screen.append(row);
@@ -229,12 +495,99 @@ function render() {
   screen.append(el('p', 'faint', q.notes
     ? 'The options here may not cover it — writing your own answer is expected.'
     : '&nbsp;'));
+
+  renderKeyHelp();
+  renderHistoryPanel();
+  paintEnterTarget();
+}
+
+/** The key legend, from the same map the handler reads — it cannot drift from what the keys do. */
+function renderKeyHelp() {
+  const q = view.question;
+  const parts = [
+    `<span class="kbd">↑</span><span class="kbd">↓</span> move`,
+    `<span class="kbd">⏎</span> the highlighted one`,
+    `${q.options.map((o) => `<span class="kbd">${o.letter}</span>`).join('')} the options`,
+    keyFor('write') ? `<span class="kbd">${keyFor('write')}</span> use what I wrote` : '',
+    keyFor('notRelevant') ? `<span class="kbd">${keyFor('notRelevant')}</span> not relevant` : '',
+    `<span class="kbd">⌫</span> back`,
+    keyFor('history') ? `<span class="kbd">${keyFor('history')}</span> history` : '',
+    keyFor('canvas') ? `<span class="kbd">${keyFor('canvas')}</span> review canvas` : '',
+    keyFor('session') ? `<span class="kbd">${keyFor('session')}</span> is anyone watching` : '',
+  ].filter(Boolean);
+  keyhelp.innerHTML = parts.join(' · ');
+}
+
+// --- what Enter does, said out loud (S19.3) ---------------------------------------------------------
+//
+// Enter used to silently take the recommendation. Nothing on the screen said so, so the owner
+// learned it by having it happen — and it happened while there was typed text in the note box,
+// which it discarded. Now: exactly one control is marked as Enter's target at all times, the mark
+// moves as the situation changes, and the target is whatever the mark is on.
+
+/** The index in `focusables` that Enter will press, and whether that is the owner's choice. */
+function enterTarget() {
+  if (focusIndex >= 0) return { index: focusIndex, deliberate: true };
+  const q = view?.question;
+  if (!q) return { index: -1, deliberate: false };
+  // Typed something? Then Enter means what you wrote. It can never mean "throw that away and take
+  // the recommendation" — that was the bug.
+  if (noteValue().trim()) {
+    const index = focusables.findIndex((n) => n.dataset?.action === 'write');
+    return { index, deliberate: false, written: true };
+  }
+  const index = focusables.findIndex((n) => n.dataset?.letter === q.default);
+  return { index, deliberate: false, defaulted: index >= 0 };
+}
+
+function paintEnterTarget() {
+  for (const node of focusables) {
+    node.classList.remove('enter-target');
+    node.querySelector?.('.enter-chip')?.remove();
+  }
+  const { index } = enterTarget();
+  const node = focusables[index];
+  if (!node || node.tagName === 'TEXTAREA') return;
+  node.classList.add('enter-target');
+  node.append(el('span', 'enter-chip', '⏎ Enter'));
+}
+
+function paintFocus() {
+  focusables.forEach((node, i) => node.classList.toggle('focused', i === focusIndex));
+  if (focusIndex >= 0) focusables[focusIndex].focus();
+  paintEnterTarget();
+}
+
+/** Enter, in one place: press whatever is marked, in the mode the mark means. */
+function pressEnter() {
+  const target = enterTarget();
+  const node = focusables[target.index];
+  if (!node) return;
+  if (target.deliberate) {
+    // The owner moved the mark there themselves, so this is a considered answer (Q108: `chosen`),
+    // not a default that was walked past.
+    node.click();
+    return;
+  }
+  if (target.written) return submitWritten();
+  return acceptDefault();
+}
+
+/** Write-in answers, from the button and from Enter alike, so they cannot behave differently. */
+function submitWritten() {
+  const text = noteValue();
+  if (!text.trim()) {
+    banner = el('div', 'banner warn', 'There is nothing written yet — type your answer first, or pick an option.');
+    render();
+    return Promise.resolve();
+  }
+  return submit({ override: true, note: text, state: 'chosen' });
 }
 
 /** Pick an option deliberately (Q108: `chosen`). */
 function choose(letter) {
   hammered = [];
-  submit({ state: 'chosen', option: letter, note: document.getElementById('note')?.value || '' });
+  submit({ state: 'chosen', option: letter, note: noteValue() });
 }
 
 /**
@@ -297,6 +650,8 @@ async function apply(body, already) {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
 
+  // It is recorded, so the draft has served its purpose. Only now — never before the 200.
+  writeDraft(q.id, '');
   history = await api('/history');
   if (result.strand.length || result.restore.length) {
     const parts = [];
@@ -308,10 +663,11 @@ async function apply(body, already) {
   if (body.override && q.isGate) return refresh();     // chart B2 — the round ends on the spot
   if (result.done || !result.next) return refresh();
   view = { question: result.next, answer: null, revisit: false };
+  pushNav(result.next.id);
   return render();
 }
 
-/** Enter on a question nobody has focused accepts the recommendation (Q12, Q109–Q111). */
+/** Enter on a question the owner has not touched accepts the recommendation (Q12, Q109–Q111). */
 async function acceptDefault() {
   const q = view.question;
   // Q109=a / Q110=a — a gate picks a whole path and a `notes` question is flagged because the
@@ -322,7 +678,8 @@ async function acceptDefault() {
   }
   const label = q.options.find((o) => o.letter === q.default)?.label || '';
   hammered.push({ id: q.id, letter: q.default, label });
-  await submit({ state: 'defaulted', option: q.default, note: '' });
+  // The note rides along. Enter cannot be a way to lose it (S19.4).
+  await submit({ state: 'defaulted', option: q.default, note: noteValue() });
 }
 
 /** Show what a run of Enter just accepted, and stop (Q111=a). */
@@ -354,18 +711,10 @@ function endHammerRun(q) {
   paintFocus();
 }
 
-// --- back, history, revisiting (chart D) --------------------------------------------------------
-
-function goBack() {
-  hammered = [];
-  const live = history.filter((h) => h.active);
-  const last = live[live.length - 1];
-  if (!last) return;
-  revisit(last.id);
-}
+// --- revisiting (chart D) --------------------------------------------------------------------------
 
 /** Open an earlier question with its recorded answer selected (D2). */
-async function revisit(id) {
+async function revisit(id, { record = true } = {}) {
   hammered = [];
   const q = parsed.questions.find((x) => x.id === id) || gapQuestions.find((x) => x.id === id);
   const answer = history.find((h) => h.id === id);
@@ -373,32 +722,8 @@ async function revisit(id) {
   // The "you already answered this" banner belongs to an answer that exists. Arriving from the
   // canvas at a question nobody has reached yet is just being asked it early.
   view = { question: q, answer, revisit: !!answer };
+  if (record) pushNav(id);
   render();
-}
-
-/** Q33=a — a BACK button AND a clickable history list. */
-function renderHistory() {
-  screen.replaceChildren();
-  screen.append(el('h2', null, 'What you have answered'));
-  const ul = el('ul', 'history');
-  for (const h of history) {
-    const li = document.createElement('li');
-    const state = h.override ? 'your own answer' : `(${h.option})`;
-    const b = el('button', `history-item${h.active ? '' : ' inactive'}`,
-      `<strong>${h.id}</strong> <span class="state-${h.state}">${state}</span> ${md(h.label || h.note || '')}`
-      + (h.active ? '' : ' <span class="faint">— set aside by a later change, kept</span>'));
-    b.addEventListener('click', () => revisit(h.id));
-    li.append(b);
-    ul.append(li);
-  }
-  screen.append(ul);
-  const back = el('button', null, 'Back to the question');
-  back.addEventListener('click', () => render());
-  const row = el('div', 'row');
-  row.append(back);
-  screen.append(row);
-  focusables = [...ul.querySelectorAll('button'), back];
-  focusIndex = -1;
 }
 
 // --- the DONE screen (Q28=a, chart E10) ----------------------------------------------------------
@@ -422,15 +747,22 @@ function renderGapsDone(data) {
       + 'Steps that cite none of it were never blocked and keep their work.'
     : 'Every gap on this design is either closed or still waiting for the agent to draft its '
       + 'options. Nothing here needs an answer from you.'));
+  if (answered.length && !design?.session?.watching) {
+    screen.append(el('p', 'muted', 'Nothing is watching this design right now, so tell the agent in '
+      + 'chat — the answers are on disk either way. The chip at the top has a prompt to paste.'));
+  }
   const row = el('div', 'row');
   const gaps = el('button', null, 'See the gaps and what is stale');
   gaps.addEventListener('click', () => { location.href = `gaps.html?key=${encodeURIComponent(key)}`; });
-  const hist = el('button', null, 'Look back over your answers');
-  hist.addEventListener('click', renderHistory);
-  row.append(gaps, hist);
+  row.append(gaps);
   screen.append(row);
-  focusables = [gaps, hist];
+  // No question is on screen, so no key may act as though one were: `view` going null is what
+  // stops `w`, `n` and Enter from operating on the question that was here a moment ago.
+  view = null;
+  focusables = [gaps];
   focusIndex = -1;
+  keyhelp.innerHTML = '';
+  renderHistoryPanel();
 }
 
 function renderDone(state) {
@@ -445,16 +777,31 @@ function renderDone(state) {
       + 'will come back to that same question with your answer on it as a real option.'
     : 'The agent is reading your answers. This screen switches itself over when the next round is ready — '
       + 'and telling it in chat always works too.'));
-  const hist = el('button', null, 'Look back over your answers');
-  hist.addEventListener('click', renderHistory);
-  screen.append(hist);
+  // The one place where "is anyone listening?" decides what the owner should do next, so it is
+  // said here in full rather than left to the chip.
+  if (!design?.session?.watching) {
+    screen.append(el('div', 'banner warn',
+      '<strong>Nothing is watching this design.</strong> Your answers are safely on disk — every one '
+      + 'of them was written before the next question appeared — but no session will wake up on its '
+      + 'own. Open the chip at the top of the screen for a prompt to paste into a Claude Code '
+      + 'session, or just say so in chat.'));
+  }
+  screen.append(el('p', 'faint', 'Everything you answered is in the sidebar, and clicking any of it goes back to that question.'));
+  view = null;
+  focusables = [];
+  focusIndex = -1;
+  keyhelp.innerHTML = '';
+  renderHistoryPanel();
 
   // E10 — the UI watches `status.agent.json` and switches ITSELF over. The owner never has to
   // reload, and never has to be told to.
   clearInterval(poll);
   poll = setInterval(async () => {
-    const latest = await api('').catch(() => null);
-    if (!latest || latest.agent.state !== 'ready') return;
+    const latest = await api('?poll=1').catch(() => null);
+    if (!latest) return;
+    design = { ...design, ...latest };
+    renderSession();
+    if (latest.agent.state !== 'ready') return;
     clearInterval(poll);
     // Q29=a — round 2 opens by saying what opened it, not just with more questions.
     if (latest.agent.summary) banner = el('div', 'banner', md(latest.agent.summary));
@@ -464,19 +811,31 @@ function renderDone(state) {
 
 // --- input parity (Q112, Q113) --------------------------------------------------------------------
 
-function paintFocus() {
-  focusables.forEach((node, i) => node.classList.toggle('focused', i === focusIndex));
-  if (focusIndex >= 0) focusables[focusIndex].focus();
-}
-
 document.addEventListener('keydown', (event) => {
-  const typing = document.activeElement?.tagName === 'TEXTAREA';
+  const typing = ['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName);
+  // Ctrl/Alt/Meta belong to the browser — Ctrl+Z in the note box has to keep working, which is the
+  // whole point of not destroying what was typed in the first place.
+  if (event.ctrlKey || event.metaKey) {
+    // …except the browser-ish back chord, which people try.
+    if (event.key === 'ArrowLeft' && event.altKey) { event.preventDefault(); goBack(); }
+    return;
+  }
+  if (event.altKey) {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); goBack(); }
+    return;
+  }
+
+  if (event.key === 'Escape' && !sessionDetail.hidden) {
+    sessionDetail.hidden = true;
+    return;
+  }
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     if (typing) return;
     event.preventDefault();
     hammered = [];
-    // The ring has one slot MORE than there are controls: slot 0 is "nothing focused", which is
-    // the state Enter reads as "accept the recommendation". Arrowing past the end returns to it.
+    // The ring has one slot MORE than there are controls: slot 0 is "the owner has not chosen",
+    // which is the state that leaves Enter on its automatic target. Arrowing past the end returns
+    // to it, and the ⏎ mark visibly springs back to the recommendation.
     const slots = focusables.length + 1;
     const slot = (focusIndex + 1 + (event.key === 'ArrowDown' ? 1 : -1) + slots) % slots;
     focusIndex = slot - 1;
@@ -486,8 +845,8 @@ document.addEventListener('keydown', (event) => {
   }
   if (event.key === 'Enter' && !typing) {
     event.preventDefault();
-    if (focusIndex >= 0) focusables[focusIndex].click();
-    else if (view) acceptDefault();
+    if (view) pressEnter();
+    else if (focusIndex >= 0) focusables[focusIndex].click();
     return;
   }
   if (event.key === 'Backspace' && !typing) {
@@ -495,14 +854,42 @@ document.addEventListener('keydown', (event) => {
     goBack();
     return;
   }
-  if (!typing && /^[a-z]$/.test(event.key) && view) {
-    const index = focusables.findIndex((n) => n.dataset?.letter === event.key);
-    if (index >= 0) {
-      event.preventDefault();
-      hammered = [];
-      focusIndex = index;
-      paintFocus();
-    }
+  if (typing) return;
+
+  if (event.key === '?') {
+    keyhelp.classList.toggle('faint');
+    return;
+  }
+  if (!view) return;
+
+  // An option's letter moves the mark to it. It does not answer on its own: a single stray key
+  // must never commit an answer, and the ⏎ mark now makes the second step obvious.
+  const option = focusables.findIndex((n) => n.dataset?.letter === event.key);
+  if (option >= 0) {
+    event.preventDefault();
+    hammered = [];
+    focusIndex = option;
+    paintFocus();
+    return;
+  }
+  // Every other control has a key, and presses on the spot — none of them records an answer
+  // without another confirmation, so there is nothing to protect against.
+  const actions = new Map();
+  const bind = (name, fn) => {
+    const k = keyFor(name);
+    // An action whose key an option has claimed simply has no key on this question. Silently
+    // rebinding it to something else would put a key on screen that does something else tomorrow.
+    if (k) actions.set(k, fn);
+  };
+  bind('write', () => submitWritten());
+  bind('notRelevant', () => submit({ state: 'not_relevant', option: view.question.default, note: noteValue() }));
+  bind('history', toggleHistory);
+  bind('canvas', () => { location.href = `canvas.html?key=${encodeURIComponent(key)}`; });
+  bind('session', toggleSession);
+  const action = actions.get(event.key);
+  if (action) {
+    event.preventDefault();
+    action();
   }
 });
 

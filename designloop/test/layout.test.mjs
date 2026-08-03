@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { parseCharts } from '../src/graph.mjs';
-import { layout, edgeGeometry, wrapLabel, METRICS, ENGINE } from '../src/layout.mjs';
+import { layout, edgeGeometry, linkGeometry, wrapLabel, METRICS, ENGINE } from '../src/layout.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SPOTLIGHT = parseCharts(readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8'), { file: 'S.md' });
@@ -92,6 +92,52 @@ test('a chart that is one long chain lays out as one column', () => {
   assert.equal(xs.size, 1, 'a chain is straightened, not staircased');
   const ys = Object.values(laid.positions).map((p) => p.y).sort((a, b) => a - b);
   assert.equal(new Set(ys).size, 4, 'one layer each');
+});
+
+// --- derived cross-chart links (S12, design F13; GAP-002 = b) ---
+
+test('a link runs from its node to the target chart frame, ending on both borders', () => {
+  const laid = layout(SPOTLIGHT);
+  const link = SPOTLIGHT.links.find((l) => l.key === 'K14~>I');
+  const geo = linkGeometry(link, laid);
+  const node = { ...laid.positions.K14, ...laid.sizes.K14 };
+  const frame = laid.charts.I;
+
+  // The start is ON the source node's border — outside it would float, inside would run under it.
+  const onBorder = (x, y, r) => Math.abs(x - r.x) < 1 || Math.abs(x - (r.x + r.w)) < 1
+    || Math.abs(y - r.y) < 1 || Math.abs(y - (r.y + r.h)) < 1;
+  assert.ok(onBorder(geo.x1, geo.y1, { x: node.x, y: node.y, w: node.w, h: node.h }));
+  assert.ok(onBorder(geo.x2, geo.y2, frame), 'and it lands on the chart, not on a node inside it');
+  assert.equal(geo.folded, false);
+});
+
+test('a link from a collapsed chart starts at the collapsed box (F8)', () => {
+  const laid = layout(SPOTLIGHT, { collapsed: ['K'] });
+  const geo = linkGeometry(SPOTLIGHT.links.find((l) => l.key === 'K14~>I'), laid);
+  assert.equal(geo.folded, true, 'K14 has no position of its own, so the fold is the source');
+  assert.equal(laid.positions.K14, undefined);
+  const frame = laid.charts.K;
+  assert.ok(geo.x1 >= frame.x - 1 && geo.x1 <= frame.x + frame.w + 1);
+});
+
+test('a link always bows, even when both ends sit on the same row', () => {
+  // Collapse everything and the charts shelf-pack into one row: same y at both ends, which is
+  // exactly where a bow computed from the vertical drop would be flat and the link would lie along
+  // the row, through every box between its ends.
+  const laid = layout(SPOTLIGHT, { collapsed: SPOTLIGHT.charts.map((c) => c.id) });
+  const geos = SPOTLIGHT.links.map((l) => [l.key, linkGeometry(l, laid)]);
+  assert.ok(geos.some(([, g]) => Math.abs(g.y1 - g.y2) < 1), 'the same-row case really occurs');
+  for (const [key, g] of geos) {
+    const off = Math.hypot(g.cx - (g.x1 + g.x2) / 2, g.cy - (g.y1 + g.y2) / 2);
+    assert.ok(off >= 26, `${key} is flat: its control point sits on the chord (${off.toFixed(1)})`);
+  }
+});
+
+test('links never move a node — the layout is computed from edges alone', () => {
+  const withLinks = layout(SPOTLIGHT);
+  const withoutLinks = layout({ ...SPOTLIGHT, links: [] });
+  assert.deepEqual(withLinks.positions, withoutLinks.positions);
+  assert.deepEqual(withLinks.bounds, withoutLinks.bounds);
 });
 
 test('MEASUREMENT — Spotlight lays out fast enough that no layout dependency is needed', () => {

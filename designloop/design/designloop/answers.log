@@ -1,3 +1,4 @@
 {"seq":1,"at":"2026-08-02T20:27:57Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
 {"seq":2,"at":"2026-08-02T20:27:58Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
 {"seq":3,"at":"2026-08-02T20:28:02Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":4,"at":"2026-08-02T23:45:22Z","event":"answer","id":"GAP-002","state":"chosen","option":"b","note":"","override":false,"round":1}

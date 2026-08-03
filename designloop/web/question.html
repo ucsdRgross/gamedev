@@ -6,16 +6,33 @@
   <title>Design Loop</title>
   <link rel="stylesheet" href="app.css">
 </head>
-<body>
-  <div class="wrap">
-    <div class="row" style="margin-bottom:2rem">
-      <a href="index.html" id="home" class="faint" style="text-decoration:none">← all designs</a>
-      <span class="spacer"></span>
-      <a href="#" id="canvas-link" class="faint" style="text-decoration:none">review canvas →</a>
-      <span id="design-title" class="faint"></span>
+<body class="answering-body">
+  <!-- Q33=a's history list, as a scrollable sidebar rather than a screen you leave the question
+       for: every question you have answered AND what you answered, always in view, click to go
+       back to one. -->
+  <aside id="history-panel" class="history-panel">
+    <div class="history-head">
+      <strong>What you have answered</strong>
+      <span id="history-count" class="faint"></span>
     </div>
-    <div id="screen"><p class="muted">Loading…</p></div>
-  </div>
+    <div id="history-list" class="history-scroll"><p class="faint">Nothing yet.</p></div>
+  </aside>
+  <button id="history-handle" type="button" class="panel-handle" title="Show or hide the history (h)">‹</button>
+
+  <main class="answering-main">
+    <div class="wrap">
+      <div class="row topbar">
+        <a href="index.html" id="home" class="faint" style="text-decoration:none">← all designs</a>
+        <span id="design-title" class="faint"></span>
+        <span class="spacer"></span>
+        <span id="session-chip" class="badge session" title="Is an agent listening? (i)"></span>
+        <a href="#" id="canvas-link" class="faint" style="text-decoration:none">review canvas →</a>
+      </div>
+      <div id="session-detail" class="banner session-detail" hidden></div>
+      <div id="screen"><p class="muted">Loading…</p></div>
+      <div id="keyhelp" class="keyhelp"></div>
+    </div>
+  </main>
   <script type="module" src="question.mjs"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "slug": "spotlight",
   "doc_hash": "sha256:389ca783b1eb6cab95e9b705560401213fec38327f32cf9ad1dd988b96e9d2fc",
-  "updated": "2026-08-02T20:35:33Z",
+  "updated": "2026-08-03T00:17:49Z",
   "answers": {
     "QR1": {
       "state": "chosen",
@@ -10,7 +10,7 @@
       "override": false,
       "active": true,
       "round": 1,
-      "at": "2026-08-02T10:54:03Z"
+      "at": "2026-08-02T23:54:37Z"
     },
     "Q9": {
       "state": "chosen",
@@ -19,7 +19,7 @@
       "override": false,
       "active": true,
       "round": 1,
-      "at": "2026-08-02T10:54:07Z"
+      "at": "2026-08-02T23:58:31Z"
     },
     "Q10": {
       "state": "chosen",
@@ -28,7 +28,232 @@
       "override": false,
       "active": true,
       "round": 1,
-      "at": "2026-08-02T20:35:33Z"
+      "at": "2026-08-02T23:51:26Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:58:52Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:58:59Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "a",
+      "note": "stacked spotlight / active does not deactivate until last spotlight removed",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:59:16Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:09:06Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:09:17Z"
+    },
+    "Q18": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:59:32Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:00:07Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:01:49Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:01:56Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:02:18Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:02:36Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": null,
+      "note": "card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:06:58Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:11Z"
+    },
+    "Q28": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:19Z"
+    },
+    "Q29": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:27Z"
+    },
+    "Q30": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:53Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:08Z"
+    },
+    "Q73": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:08:29Z"
+    },
+    "Q74": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:14Z"
+    },
+    "Q75": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:18Z"
+    },
+    "Q76": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:36Z"
+    },
+    "Q78": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:01Z"
+    },
+    "Q79": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:20Z"
+    },
+    "Q80": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:43Z"
+    },
+    "Q81": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:49Z"
     }
   }
 }

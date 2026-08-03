@@ -22,11 +22,18 @@ passed: the Spotlight document parses and ingests **UNEDITED** (195 live + 1 ret
 (sha1 `68c348db`); a crash between the log append and the materialise is recovered by replay; the
 hand-rolled layered layout does those 176 nodes in **1.8 ms**, deterministically, so **no layout
 dependency was needed** and no gap was filed for one.
-**GAP-002 is OPEN** (2026-08-02, from the owner's review of the built canvas): the whole-graph view
-has no connections to show — **0 cross-chart edges in either real document** (of 133 and 182),
-while 12 node labels name another chart in prose ("… — chart B"). Q52 asked for that view "if I want
-to see all connections". Whether a prose reference becomes a drawn link changes `graph.json`, so it
-is an owner call and is parked. Six other review defects were fixed (see the handoff's S18); the
+**GAP-002 is RESOLVED (b), 2026-08-02 → design version 3** (`DESIGN.md` §14), answered in the tool's
+own scoped gap round — the first time the gap loop ran on real work. The whole-graph view had no
+connections to show, because **neither real document has a single cross-chart edge** (of 133 and
+182) while node labels name other charts in prose. They are now **derived**: `src/graph.mjs` reads
+`chart X` out of a node label into a `links` list beside `edges` in `graph.json` (PLAN §4.6, §6.1),
+and the canvas draws them dashed, node-to-chart, hidden in the single-chart picker, toggled with
+`l`. **10 links here, 5 in Spotlight, 0 unresolved — pinned as a fixture**, and neither document
+was edited. ⚠ **Resolution is by the name the DOCUMENT uses before the chart ID**: Spotlight's §7
+holds two charts, so from there every chart ID runs a letter ahead of its heading and
+`K14 "see chart H"` means the chart with `I`-prefixed nodes — ID-first gives a confidently wrong
+link. Unresolved → warning; same-chart → dropped; repeated → deduped. Six other review defects were
+fixed (see the handoff's S18); the
 biggest reusable one: **`web/md.mjs` is now the ONE inline-markdown renderer** — it was copied into
 three screens and the canvas panel had never had it, so `**bold**` reached the owner as asterisks.
 
@@ -60,6 +67,31 @@ plan's one-line summary of them.
 `ID{"decision"}`, `-->`, `-- label -->`, one `flowchart TD` header, one shared ID prefix per chart.
 Everything else throws with the file and line. It is parsed by a left-to-right cursor, never by
 splitting on `-->`, because real labels contain `->`, `--` and `·`.
+
+**S19 — the owner's review of the ANSWERING screen, 2026-08-03 → design version 4** (`DESIGN.md`
+§15, nodes B18–B20, D10–D14, E12–E16). Seven findings, **none of them a re-answered question**:
+history is a scrollable sidebar carrying question *and* answer; **BACK is a browser-style visit
+stack** in `sessionStorage` (it used to mean "the newest answer", so standing on that answer it
+pointed at itself and did nothing); every control shows its key (`w n ⌫ h g i`, options are their
+own letters); **Enter's target is marked before it is pressed** and moves to "use what I wrote" as
+soon as you type — which killed a bug where Enter discarded a typed answer with no undo; and
+`session.json` (§4.9) is the watch's **heartbeat**, so the screen says whether an agent is actually
+parked, with a prompt to paste when none is. Q108's states survived being shown: the mark where the
+screen *put* it answers `defaulted`, the mark the owner *moved* answers `chosen`.
+
+⚠ **The general lesson, now in the skill:** every one of those seven was a decision the design had
+already settled (Q12 Enter, Q33 BACK, QR1 the watch) that the SCREEN never said out loud. A
+questionnaire settles what a thing does; it does not settle whether the person using it can tell.
+Plan for two reviews — one on the charts, one by driving the built thing — and when a design settles
+a hidden behaviour, write the node saying how the user will KNOW.
+
+**To LOOK at a screen** (CLAUDE.md rule 4, and the Browser pane's screenshot fails here because the
+pane is not displayed): `node designloop/tools/shot.mjs <url> <out.png> [w] [h] ["js first"]` —
+headless Edge over CDP with Node's built-in WebSocket, running a JS snippet before the capture, so
+the shot can be of a state behind a click. `msedge --screenshot` alone only ever gets the initial
+state. It paid for itself immediately: the links passed every count and every test, and the
+screenshot of the COLLAPSED canvas is what showed them lying flat through the boxes (collapsed
+charts shelf-pack into one row, so a bow proportional to the vertical drop is zero).
 
 **Windows landmine, design-guaranteed not bad luck:** a replacing `rename` fails with **EPERM** while
 the S9 watch holds the design directory open, so `writeJsonAtomic` retries. Atomic-write + directory

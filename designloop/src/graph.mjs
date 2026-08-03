@@ -283,12 +283,25 @@ function parseChart(block, file) {
   };
 }
 
+/** The `Flowchart X — ` lead of a heading: its name and its title, separated. */
+const HEADING_LEAD = /^Flowchart\s+([A-Z]{1,2}\d*)\s*[—-]\s*/i;
+
 /** Strip a leading section number and a `Flowchart X — ` prefix off a heading. */
 function cleanTitle(heading) {
   return String(heading)
     .replace(/^[\d][\w.-]*\.\s+/, '')
-    .replace(/^Flowchart\s+[A-Z]{1,2}\d*\s*[—-]\s*/i, '')
+    .replace(HEADING_LEAD, '')
     .trim();
+}
+
+/**
+ * What the document CALLS this chart, which is not always its ID (§4.6).
+ * `### Flowchart B2 — free text at a gating question` heads a chart whose nodes are prefixed `P`,
+ * and a label saying "chart B2" means that one. Null when the heading names nothing.
+ */
+function chartName(heading) {
+  const lead = HEADING_LEAD.exec(String(heading).replace(/^[\d][\w.-]*\.\s+/, ''));
+  return lead ? lead[1] : null;
 }
 
 /**
@@ -326,6 +339,74 @@ function proseAfter(lines, endIndex) {
 }
 
 /**
+ * A reference to another chart, written in prose inside a node label (PLAN §6.1; DESIGN F12–F14).
+ *
+ * `\b` before `chart` is load-bearing: it is what keeps `flowchart TD` from matching. Case is
+ * significant — chart names are capitals.
+ */
+const CHART_REF = /\bchart\s+([A-Z]{1,2}\d*)\b/g;
+
+/**
+ * Derive the cross-chart links (PLAN §6.1, GAP-002 = b).
+ *
+ * The subset has no cross-chart arrow, so charts never point at each other — and yet both real
+ * design documents refer to each other constantly, in prose, inside labels:
+ * `A6["owner answers one question at a time — chart B"]`. The link is already authored; this reads
+ * it rather than inventing it. It NEVER guesses: a reference that resolves to nothing is a warning
+ * naming the line, not a link to somewhere plausible.
+ *
+ * Returns `{ links, warnings }`. Warnings, not errors — an unresolved reference is an authoring
+ * defect in a document that is otherwise perfectly readable, and GAP-001 already settled that that
+ * class of thing must not block the owner (who cannot fix it) mid-review.
+ */
+function deriveLinks({ charts, nodes }) {
+  // The name the DOCUMENT uses comes first, and it has to: Spotlight's §7 holds two charts, so
+  // every chart ID after it is one letter ahead of the heading that names it. `K14 "see chart H"`
+  // means the chart headed *Flowchart H*, which is the chart with ID `I`. Resolving by ID first
+  // would silently link it to the wrong chart — a wrong link, drawn confidently, which is worse
+  // than no link at all.
+  const byName = new Map();
+  for (const chart of charts) {
+    if (chart.name && !byName.has(chart.name)) byName.set(chart.name, chart.id);
+  }
+  const byId = new Map(charts.map((c) => [c.id, c.id]));
+
+  const links = [];
+  const warnings = [];
+  const seen = new Set();
+
+  for (const chart of charts) {
+    for (const id of chart.nodes) {
+      const node = nodes[id];
+      for (const match of String(node.label ?? '').matchAll(CHART_REF)) {
+        const ref = match[1];
+        // Resolution order, first hit wins (§6.1): the name the document uses, then the chart ID,
+        // then a node ID the graph declares — `chart E3` is chart E, said by one of its nodes.
+        const toChart = byName.get(ref) ?? byId.get(ref) ?? nodes[ref]?.chart ?? null;
+        if (!toChart) {
+          warnings.push(new GraphError(
+            `${id}: "chart ${ref}" names no chart and no node — it is not linked to anything`,
+            { line: node.line, text: node.label },
+          ));
+          continue;
+        }
+        // A reference to the node's OWN chart is not a link. Spotlight's chart E says "chart E2",
+        // "chart E3", "chart E4" about its own nodes; drawing those is noise, and it is correct
+        // authoring, so it is dropped silently rather than warned about.
+        if (toChart === chart.id) continue;
+        const key = `${id}~>${toChart}`;
+        // §4.6: one link per (from, toChart). D8's label says "chart E" twice; repetition in prose
+        // is not a second connection.
+        if (seen.has(key)) continue;
+        seen.add(key);
+        links.push({ key, from: id, fromChart: chart.id, toChart, ref, line: node.line });
+      }
+    }
+  }
+  return { links, warnings };
+}
+
+/**
  * Parse every chart in a design document (PLAN §7).
  * Returns the §4.6 shape. `doc_hash` is left null — this module is pure, and the caller that read
  * the file is the one that can hash it.
@@ -338,6 +419,7 @@ export function parseCharts(markdown, { file = 'DESIGN.md' } = {}) {
   const nodes = {};
   const edges = [];
   const seenChart = new Map();
+  const namedHeading = new Set();
 
   for (const block of blocks) {
     const chart = parseChart(block, file);
@@ -352,11 +434,20 @@ export function parseCharts(markdown, { file = 'DESIGN.md' } = {}) {
 
     // Best-effort title: the nearest heading above the block, with its numbering and its
     // "Flowchart X —" lead stripped. Charts sharing a heading share a title, which is true.
+    // The lead itself becomes `name` (§4.6) — the chart's ID is `P`, but the document calls it B2.
     let title = '';
+    let name = null;
     for (let i = block.start - 2; i >= 0; i--) {
       const heading = HEADING.exec(lines[i]);
       if (heading) {
         title = cleanTitle(heading[2]);
+        // One heading names ONE chart: the first under it. Spotlight's §7 holds chart E and chart
+        // F, and "chart E" in a label means the first one. The second is nameless and is reached
+        // by its ID.
+        if (!namedHeading.has(i)) {
+          name = chartName(heading[2]);
+          if (name) namedHeading.add(i);
+        }
         break;
       }
     }
@@ -400,10 +491,14 @@ export function parseCharts(markdown, { file = 'DESIGN.md' } = {}) {
       edges.push({ key, from: edge.from, to: edge.to, label: edge.label, chart: chart.id, line: edge.line });
     }
 
-    charts.push({ id: chart.id, title, line: chart.line, nodes: chart.nodes.map((n) => n.id) });
+    // `name` stays null rather than falling back to the ID, and that is deliberate: in Spotlight
+    // the heading "Flowchart F" names the chart whose IDs are `G`, so an ID-shaped fallback would
+    // put a WRONG name in the table and §6.1 resolves names first.
+    charts.push({ id: chart.id, name, title, line: chart.line, nodes: chart.nodes.map((n) => n.id) });
   }
 
-  return { doc_hash: null, charts, nodes, edges };
+  const { links, warnings } = deriveLinks({ charts, nodes });
+  return { doc_hash: null, charts, nodes, edges, links, warnings };
 }
 
 /**
@@ -437,6 +532,12 @@ export function validate(graph) {
 export function describeGraph(graph) {
   return graph.charts.map((c) => {
     const within = graph.edges.filter((e) => e.chart === c.id).length;
-    return `${c.id.padEnd(3)} ${String(c.nodes.length).padStart(3)} nodes ${String(within).padStart(3)} edges  ${c.title}`;
+    // The document's own name for the chart, shown only when it differs from the ID — which it
+    // does whenever a section holds two charts (§6.1), and that is exactly when the reader needs
+    // to be told.
+    const called = c.name && c.name !== c.id ? ` (called ${c.name})` : '';
+    const out = (graph.links ?? []).filter((l) => l.fromChart === c.id).map((l) => l.toChart);
+    const links = out.length ? `  → ${[...new Set(out)].join(' ')}` : '';
+    return `${c.id.padEnd(3)} ${String(c.nodes.length).padStart(3)} nodes ${String(within).padStart(3)} edges  ${c.title}${called}${links}`;
   });
 }

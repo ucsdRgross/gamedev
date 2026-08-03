@@ -162,9 +162,14 @@ test('validate reports what parses but is still wrong', () => {
 
 const CORPUS = [
   { file: 'solatro/design/spotlight/DESIGN.md', charts: 14, nodes: 176, edges: 182,
-    ids: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'] },
-  { file: 'designloop/design/designloop/DESIGN.md', charts: 11, nodes: 128, edges: 133,
-    ids: ['A', 'B', 'P', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'I'] },
+    ids: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'],
+    // §6.1's fixture, measured 2026-08-02. `K14~>I` is the one that matters most: its label says
+    // "chart H", and the chart the document calls H is the one with I-prefixed nodes.
+    links: ['D8~>E', 'D21~>E', 'D25~>C', 'K14~>I', 'L11~>E'] },
+  { file: 'designloop/design/designloop/DESIGN.md', charts: 11, nodes: 144, edges: 148,
+    ids: ['A', 'B', 'P', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'I'],
+    links: ['A6~>B', 'A9~>E', 'A14~>F', 'A18~>G', 'B3~>C', 'B10~>D', 'B17~>P', 'B14~>D',
+      'P5~>E', 'F14~>G'] },
 ];
 
 for (const expect of CORPUS) {
@@ -188,8 +193,54 @@ for (const expect of CORPUS) {
       assert.ok(node.label.length > 0, `${id} has no label`);
       assert.ok(node.shape === 'box' || node.shape === 'decision');
     }
+
+    // The derived cross-chart links, exactly (§6.1, GAP-002 = b). This is the fixture: neither
+    // document may be edited to make it pass, and any change to the rule shows up here as a moved
+    // count rather than as a silently different picture.
+    assert.deepEqual(graph.links.map((l) => l.key), expect.links);
+    assert.deepEqual(graph.warnings, [], 'no reference in either document resolves to nothing');
+    for (const link of graph.links) {
+      assert.ok(graph.nodes[link.from], `${link.key} starts at a node that exists`);
+      assert.ok(graph.charts.some((c) => c.id === link.toChart), `${link.key} lands on a real chart`);
+      // A link is BETWEEN charts by definition; a same-chart reference is dropped, not recorded.
+      assert.notEqual(link.fromChart, link.toChart, `${link.key} is not a self-link`);
+    }
   });
 }
+
+test('links resolve by the name the document uses, before the chart ID (§6.1)', () => {
+  // Two charts under one heading is what makes IDs and names drift, and both real documents have
+  // it. A miniature of Spotlight's §7: chart A is named "A", chart B is under the same heading and
+  // is therefore nameless, chart C is headed "Flowchart B" — so "chart B" means C, not B.
+  const doc = [
+    '## Flowchart A — first', '', '```mermaid', 'flowchart TD',
+    'A1["start — chart B"] --> A2["and chart Q9"]', '```', '',
+    '```mermaid', 'flowchart TD', 'B1["second chart, same heading"] --> B2["end"]', '```', '',
+    '## Flowchart B — third', '', '```mermaid', 'flowchart TD',
+    'C1["third"] --> C2["back to chart A"]', '```', '',
+  ].join('\n');
+  const graph = parseCharts(doc, { file: 'x.md' });
+
+  assert.deepEqual(graph.charts.map((c) => [c.id, c.name]), [['A', 'A'], ['B', null], ['C', 'B']]);
+  // A1 says "chart B" and means the chart headed Flowchart B, which is C. Resolving by ID would
+  // have said B — a wrong link, drawn as confidently as a right one.
+  assert.deepEqual(graph.links.map((l) => l.key), ['A1~>C', 'C2~>A']);
+  // "chart Q9" resolves to nothing: a warning naming the node, never a guessed link.
+  assert.equal(graph.warnings.length, 1);
+  assert.match(graph.warnings[0].message, /A2: "chart Q9" names no chart and no node/);
+});
+
+test('a label naming its own chart is not a link, and repetition is not two links', () => {
+  const doc = [
+    '## Flowchart A — first', '', '```mermaid', 'flowchart TD',
+    // Spotlight's chart E does exactly this: it says "chart E3" about its own node E3.
+    'A1["see chart A3, and chart B, and chart B again"] --> A3["here"]', '```', '',
+    '## Flowchart B — second', '', '```mermaid', 'flowchart TD', 'B1["b"] --> B2["b"]', '```', '',
+  ].join('\n');
+  const graph = parseCharts(doc, { file: 'x.md' });
+  assert.deepEqual(graph.links.map((l) => l.key), ['A1~>B']);
+  assert.deepEqual(graph.warnings, []);
+});
 
 test('ACCEPTANCE — the ingest is a pure function of the text (a frozen version reproduces)', () => {
   const markdown = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');

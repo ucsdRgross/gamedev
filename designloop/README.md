@@ -67,6 +67,42 @@ A design is anything with a `meta.json` under `<project>/design/`. The index is 
 that is added, renamed on disk or moved simply is what the next scan finds — there is no registry
 to keep in step.
 
+## Answering: the keyboard, and whether anyone is listening
+
+Every control on the question screen has a key and **shows** it. Options are their own letters —
+`(b)` is pressed by `b`; then `w` use what I wrote, `n` not relevant, `⌫` back, `h` the history
+sidebar, `g` the review canvas, `i` is anyone watching. `↑` `↓` move, and **`⏎` presses whatever is
+marked** — one control is always marked, so what Enter is about to do is never a surprise. The mark
+starts on the recommended answer and moves to *use what I wrote* the moment you type something, so
+Enter can never discard what you wrote.
+
+Accepting the recommendation without moving the mark is still recorded as its own state
+(`defaulted`, Q12) — being shown what Enter does did not turn it into a considered answer.
+
+**BACK is a visit stack**, like a browser's: the question this screen showed before this one. It
+survives a trip to the canvas and back, and where there is nowhere to go it is disabled and says
+why rather than doing nothing.
+
+The chip at the top says whether **an agent is parked on this design** — green while a
+`run watch` is beating, amber if the session that was watching has stopped, grey if none ever was.
+Click it (or press `i`) for a prompt to paste into a fresh session. Nothing about answering depends
+on it: every answer is on disk before the next question appears, and any session reads them
+afterwards. It only decides whether one wakes up on its own.
+
+## Cross-chart links, derived
+
+The chart language has no arrow between charts — every edge stays inside one chart. The references
+exist anyway, written in prose inside labels: `A6["owner answers one question at a time — chart B"]`.
+The tool reads them out and draws them, **dashed and node-to-chart**, so the whole-graph view shows
+the loop the document actually describes. They go into `graph.json` as a `links` list beside
+`edges`, kept separate on purpose: an edge was drawn by the author, a link was inferred, and a
+reader who cannot tell them apart has been told something the design does not say.
+
+A name is resolved the way a reader resolves it — **by the name the heading gives the chart, before
+the chart's node prefix**, because the two can drift when one section holds two charts. A reference
+to the node's own chart is not a link; a reference to nothing at all is reported by `run check` as
+an authoring warning, never guessed. `l` toggles them on the canvas.
+
 ## The two rules worth knowing before changing anything
 
 1. **The markdown IS the questionnaire.** There is never a second authored copy. `src/grammar.mjs`

@@ -116,7 +116,22 @@ export function diffGraphs(before, after) {
   for (const id of Object.keys(before.nodes)) {
     if (!after.nodes[id]) removed.push({ id, label: before.nodes[id].label, chart: before.nodes[id].chart });
   }
-  return { added, removed, changed };
+
+  // Links get their own group and are never folded into `changed` (PLAN §4.6, S14). A link appears
+  // or disappears because a LABEL was reworded, which is a real change to what the design claims —
+  // and it is still not an edge anyone drew. Both facts have to survive into the diff.
+  const keysOf = (graph) => new Set((graph.links || []).map((l) => l.key));
+  const beforeLinks = keysOf(before);
+  const afterLinks = keysOf(after);
+  const describe = (graph, key) => {
+    const link = (graph.links || []).find((l) => l.key === key);
+    return { key, from: link.from, toChart: link.toChart, ref: link.ref };
+  };
+  const links = {
+    added: [...afterLinks].filter((k) => !beforeLinks.has(k)).map((k) => describe(after, k)),
+    removed: [...beforeLinks].filter((k) => !afterLinks.has(k)).map((k) => describe(before, k)),
+  };
+  return { added, removed, changed, links };
 }
 
 /** Render one chart back to the §6 mermaid subset. Re-ingesting this reproduces the same chart. */
@@ -158,6 +173,14 @@ export function renderDesignMarkdown({ design, version, graph, questions, answer
     md.push('');
     md.push(renderChart(graph, chart));
     md.push('');
+    // Links are prose here, never mermaid: the §6 subset has no cross-chart arrow, so emitting one
+    // would produce a document this tool refuses to read (S14). The labels said it in prose anyway.
+    const out = (graph.links || []).filter((l) => l.fromChart === chart.id);
+    if (out.length) {
+      md.push(`**Links to other charts** (derived from the labels, §6.1): `
+        + `${out.map((l) => `${l.from} → chart ${l.toChart}`).join(' · ')}`);
+      md.push('');
+    }
     const notes = chart.nodes.flatMap((id) => (annotations.nodes?.[id] || []).map((a) => ({ id, ...a })));
     const flagged = chart.nodes.filter((id) => annotations.flagged?.[id]);
     if (flagged.length) {
@@ -247,6 +270,11 @@ export function renderChangelog({ version, previous, graph, answers, questions, 
     ['Nodes added', diff.added, (n) => `- **${n.id}** (${n.chart}) — ${n.label}`],
     ['Nodes changed', diff.changed, (n) => `- **${n.id}** (${n.chart}) — ${n.fields.join(', ')}`],
     ['Nodes removed', diff.removed, (n) => `- **${n.id}** (${n.chart}) — ${n.label}`],
+    // Their own groups, and labelled derived, so nobody reads them as edges the author drew.
+    ['Cross-chart links added (derived)', diff.links.added,
+      (l) => `- **${l.from} → chart ${l.toChart}** — from "chart ${l.ref}" in its label`],
+    ['Cross-chart links removed (derived)', diff.links.removed,
+      (l) => `- **${l.from} → chart ${l.toChart}** — the label no longer names it`],
   ]) {
     md.push(`## ${title}`);
     md.push('');

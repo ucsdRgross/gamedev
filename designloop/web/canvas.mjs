@@ -13,7 +13,7 @@
 // the bottom of the canvas is the contract.
 
 import { parseDocument, reachability } from '../src/grammar.mjs';
-import { layout, edgeGeometry } from '../src/layout.mjs';
+import { layout, edgeGeometry, linkGeometry } from '../src/layout.mjs';
 import { md, esc } from './md.mjs';
 
 const key = new URLSearchParams(location.search).get('key') || '';
@@ -47,6 +47,7 @@ const state = {
   only: null,
   colourBy: 'chart',
   showRuledOut: false,
+  showLinks: true,
   selected: null,
   laid: null,
   view: { x: 0, y: 0, k: 1 },
@@ -193,7 +194,7 @@ function redraw() {
 
   svg.replaceChildren();
   const defs = svgEl('defs');
-  for (const [id, colour] of [['arrow', 'var(--edge)'], ['arrow-hi', 'var(--accent)']]) {
+  for (const [id, colour] of [['arrow', 'var(--edge)'], ['arrow-hi', 'var(--accent)'], ['arrow-link', 'var(--link)']]) {
     const marker = svgEl('marker', {
       id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse',
     });
@@ -209,7 +210,9 @@ function redraw() {
   // The colour mode lives on the group, so the stylesheet paints by status ONLY in status mode —
   // otherwise its rules would beat the per-chart colours below, which are presentation attributes.
   const nodes = svgEl('g', {}, `nodes by-${state.colourBy}`);
-  scene.append(frames, edges, nodes);
+  // Links sit under the nodes and over the frames: they are context, never the thing being read.
+  const links = svgEl('g', {}, 'links');
+  scene.append(frames, links, edges, nodes);
   svg.append(scene);
 
   for (const chart of state.graph.charts) {
@@ -225,12 +228,22 @@ function redraw() {
     const drawn = drawEdge(edge, laid, labelBoxes);
     if (drawn) edges.append(drawn);
   }
+  // Cross-chart links (GAP-002 = b, design F12–F14). Only in the whole-graph view: in the picker's
+  // single-chart view the other end is off-screen by construction, so a link there would be a line
+  // going nowhere.
+  if (state.showLinks && state.only === null) {
+    for (const link of state.graph.links || []) {
+      const drawn = drawLink(link, laid);
+      if (drawn) links.append(drawn);
+    }
+  }
   for (const [id, node] of Object.entries(state.graph.nodes)) {
     if (!visible(id)) continue;
     nodes.append(drawNode(id, node, laid));
   }
 
   renderPicker();
+  renderLinkToggle();
   applyView();
   renderStatus();
   renderPanel();
@@ -387,6 +400,30 @@ function drawEdge(edge, laid, labelBoxes = []) {
   return g;
 }
 
+/**
+ * One derived cross-chart link: dashed, node to chart frame (design F13).
+ *
+ * Dashed and its own colour, because it is the one thing on this canvas the author did not draw —
+ * it was read out of a label by §6.1. A reader who cannot tell a derived link from an authored edge
+ * has been told something about the design that the design does not say.
+ */
+function drawLink(link, laid) {
+  const geo = linkGeometry(link, laid);
+  if (!geo) return null;
+  const g = svgEl('g', { 'data-key': link.key }, `link${geo.folded ? ' folded' : ''}`);
+  // The bow comes from the layout, not from here: it is geometry a frozen version has to reproduce,
+  // and it is what keeps a link off the boxes it passes over.
+  const d = `M ${geo.x1} ${geo.y1} Q ${geo.cx} ${geo.cy} ${geo.x2} ${geo.y2}`;
+  g.append(svgEl('path', { d, 'marker-end': 'url(#arrow-link)' }, 'link-line'));
+
+  const target = state.graph.charts.find((c) => c.id === link.toChart);
+  const title = svgEl('title');
+  title.textContent = `${link.from} names "chart ${link.ref}" — chart ${link.toChart}`
+    + `${target ? `, ${target.title}` : ''}\nderived from the label, not an edge the document draws`;
+  g.append(title);
+  return g;
+}
+
 // --- pan, zoom and fitting -----------------------------------------------------------------------
 
 function applyView() {
@@ -529,6 +566,7 @@ document.addEventListener('keydown', (e) => {
     case '0': fit(); break;
     case 's': toggleColour(); break;
     case 'r': toggleRuledOut(); break;
+    case 'l': toggleLinks(); break;
     case 'f': toggleAllChrome(); break;
     case '1': toggleChrome('picker'); break;
     case '2': toggleChrome('panel'); break;
@@ -558,8 +596,23 @@ function toggleRuledOut() {
   redraw();
 }
 
+/** Links are context, and the owner's complaint about this view was clutter — so they turn off. */
+function toggleLinks() {
+  state.showLinks = !state.showLinks;
+  renderLinkToggle();
+  redraw();
+}
+
+function renderLinkToggle() {
+  const button = document.getElementById('show-links');
+  const count = (state.graph?.links || []).length;
+  button.textContent = `links: ${state.showLinks ? 'shown' : 'hidden'}${count ? ` (${count})` : ''}`;
+  button.disabled = !count;
+}
+
 document.getElementById('colour-mode').addEventListener('click', toggleColour);
 document.getElementById('ruled-out').addEventListener('click', toggleRuledOut);
+document.getElementById('show-links').addEventListener('click', toggleLinks);
 document.getElementById('collapse-all').addEventListener('click', () => {
   for (const c of state.graph.charts) state.collapsed.add(c.id);
   redraw();

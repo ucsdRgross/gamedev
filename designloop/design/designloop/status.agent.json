@@ -1,0 +1,7 @@
+{
+  "state": "ready",
+  "mode": "review",
+  "round": 4,
+  "at": "2026-08-03T00:45:00Z",
+  "summary": "Design version 4 (§15) — your seven findings on the answering screen. History is a sidebar with question and answer, BACK is a real visit stack, every button shows its key, the control Enter will press is marked before you press it, a typed answer can no longer be lost, and the chip at the top says whether an agent is actually watching. The src/ changes need a server restart; the screen changes only need a reload."
+}

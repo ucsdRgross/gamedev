@@ -354,6 +354,70 @@ export function layout(graph, { collapsed = [], only = null } = {}) {
  * — a loop the ranking had to cut — leaves and arrives on the RIGHT side, so the renderer can bow
  * it out to the side instead of drawing it straight back up through the nodes it skips.
  */
+/** Where a straight line from a rectangle's centre towards (tx,ty) crosses its border. */
+function borderPoint(rect, tx, ty) {
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  const dx = tx - cx;
+  const dy = ty - cy;
+  if (!dx && !dy) return { x: cx, y: cy };
+  const t = Math.min(
+    dx ? (rect.w / 2) / Math.abs(dx) : Infinity,
+    dy ? (rect.h / 2) / Math.abs(dy) : Infinity,
+  );
+  return { x: cx + dx * t, y: cy + dy * t };
+}
+
+/**
+ * Where a derived cross-chart link starts and ends (PLAN §6.1, S12; DESIGN F13).
+ *
+ * It runs from the node that named the other chart to that CHART — the target is the chart's frame,
+ * never a node inside it, because the label named a chart and picking an endpoint would be
+ * inventing structure. When the source's own chart is collapsed the link starts at the collapsed
+ * box instead, which is F8: the fold is where these links matter most.
+ *
+ * Both ends land on a border rather than a centre, so the line never runs underneath a box, and
+ * the layout is not consulted for ranking — links are drawn over a layout computed from `edges`
+ * alone, so they can never move a node or re-flow a frozen version.
+ */
+export function linkGeometry(link, laid) {
+  const toFrame = laid.charts[link.toChart];
+  const fromFrame = laid.charts[link.fromChart];
+  if (!toFrame || !fromFrame) return null;
+
+  const p = laid.positions[link.from];
+  const s = laid.sizes[link.from];
+  const source = p && s ? { x: p.x, y: p.y, w: s.w, h: s.h } : fromFrame;
+  if (source === fromFrame && fromFrame === toFrame) return null;
+
+  const sc = { x: source.x + source.w / 2, y: source.y + source.h / 2 };
+  const tc = { x: toFrame.x + toFrame.w / 2, y: toFrame.y + toFrame.h / 2 };
+  const a = borderPoint(source, tc.x, tc.y);
+  const b = borderPoint(toFrame, sc.x, sc.y);
+
+  // The control point of a bow, always PERPENDICULAR to the line and never zero.
+  //
+  // With every chart collapsed — the view these links are most useful in — the charts shelf-pack
+  // into a single row, so both ends sit at the same y and a bow proportional to the vertical drop
+  // would be flat: ten straight lines lying along the row, through the boxes between them. The bow
+  // is what keeps a link off the boxes it passes and keeps two links between the same pair apart.
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  // A quadratic Bézier only reaches HALF its control offset, so the offset has to be twice the
+  // clearance wanted. Measured against the collapsed row, where the links pass over other charts:
+  // at 120 the curve peaked at 60 and grazed the 74-high boxes it crossed. 260 peaks at 130 and
+  // passes cleanly above them.
+  const lift = Math.max(30, Math.min(len * 0.14, 260));
+  return {
+    x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+    // Left-hand normal, so a link and its reverse bow to opposite sides rather than overlapping.
+    cx: (a.x + b.x) / 2 + (-dy / len) * lift,
+    cy: (a.y + b.y) / 2 + (dx / len) * lift,
+    folded: source === fromFrame,
+  };
+}
+
 export function edgeGeometry(edge, laid) {
   const a = laid.positions[edge.from];
   const b = laid.positions[edge.to];

@@ -2,3 +2,48 @@
 {"seq":2,"at":"2026-08-02T10:54:07Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
 {"seq":3,"at":"2026-08-02T20:29:09Z","event":"answer","id":"Q10","state":"chosen","option":null,"note":"only talens","override":true,"round":1}
 {"seq":4,"at":"2026-08-02T20:35:33Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":5,"at":"2026-08-02T23:50:51Z","event":"answer","id":"Q10","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":6,"at":"2026-08-02T23:51:22Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":7,"at":"2026-08-02T23:51:26Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":8,"at":"2026-08-02T23:52:32Z","event":"answer","id":"Q11","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":9,"at":"2026-08-02T23:52:52Z","event":"answer","id":"Q13","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":10,"at":"2026-08-02T23:53:52Z","event":"answer","id":"Q14","state":"chosen","option":"a","note":"stacked spotlight / active does not deactivate until last spotlight removed","override":false,"round":1}
+{"seq":11,"at":"2026-08-02T23:53:56Z","event":"answer","id":"Q15","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":12,"at":"2026-08-02T23:54:01Z","event":"answer","id":"Q17","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":13,"at":"2026-08-02T23:54:24Z","event":"answer","id":"Q11","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":14,"at":"2026-08-02T23:54:37Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":15,"at":"2026-08-02T23:54:53Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":16,"at":"2026-08-02T23:58:31Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":17,"at":"2026-08-02T23:58:52Z","event":"answer","id":"Q11","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":18,"at":"2026-08-02T23:58:59Z","event":"answer","id":"Q13","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":19,"at":"2026-08-02T23:59:16Z","event":"answer","id":"Q14","state":"chosen","option":"a","note":"stacked spotlight / active does not deactivate until last spotlight removed","override":false,"round":1}
+{"seq":20,"at":"2026-08-02T23:59:32Z","event":"answer","id":"Q18","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":21,"at":"2026-08-02T23:59:57Z","event":"answer","id":"Q19","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":22,"at":"2026-08-03T00:00:07Z","event":"answer","id":"Q19","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":23,"at":"2026-08-03T00:01:49Z","event":"answer","id":"Q20","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":24,"at":"2026-08-03T00:01:56Z","event":"answer","id":"Q21","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":25,"at":"2026-08-03T00:02:18Z","event":"answer","id":"Q22","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":26,"at":"2026-08-03T00:02:36Z","event":"answer","id":"Q23","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":27,"at":"2026-08-03T00:04:14Z","event":"answer","id":"Q24","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":28,"at":"2026-08-03T00:04:29Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"","override":true,"round":1}
+{"seq":29,"at":"2026-08-03T00:06:55Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process","override":true,"round":1}
+{"seq":30,"at":"2026-08-03T00:06:58Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process","override":true,"round":1}
+{"seq":31,"at":"2026-08-03T00:07:11Z","event":"answer","id":"Q25","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":32,"at":"2026-08-03T00:07:19Z","event":"answer","id":"Q28","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":33,"at":"2026-08-03T00:07:27Z","event":"answer","id":"Q29","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":34,"at":"2026-08-03T00:07:53Z","event":"answer","id":"Q30","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":35,"at":"2026-08-03T00:08:25Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":36,"at":"2026-08-03T00:08:29Z","event":"answer","id":"Q73","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":37,"at":"2026-08-03T00:09:06Z","event":"answer","id":"Q15","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":38,"at":"2026-08-03T00:09:17Z","event":"answer","id":"Q17","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":39,"at":"2026-08-03T00:11:41Z","event":"answer","id":"QR2","state":"chosen","option":null,"note":"no dim only lasts for as long as it takes for spotlight fx to spawn in, and jump up and score first meld, fading away back to normal lit state for everything else","override":true,"round":1}
+{"seq":40,"at":"2026-08-03T00:11:41Z","event":"strand","ids":["Q73"],"cause":"QR2","active":false}
+{"seq":41,"at":"2026-08-03T00:15:08Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":42,"at":"2026-08-03T00:15:08Z","event":"restore","ids":["Q73"],"cause":"QR2","active":true}
+{"seq":43,"at":"2026-08-03T00:15:14Z","event":"answer","id":"Q74","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":44,"at":"2026-08-03T00:15:18Z","event":"answer","id":"Q75","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":45,"at":"2026-08-03T00:15:36Z","event":"answer","id":"Q76","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":46,"at":"2026-08-03T00:17:01Z","event":"answer","id":"Q78","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":47,"at":"2026-08-03T00:17:20Z","event":"answer","id":"Q79","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":48,"at":"2026-08-03T00:17:43Z","event":"answer","id":"Q80","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":49,"at":"2026-08-03T00:17:49Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}

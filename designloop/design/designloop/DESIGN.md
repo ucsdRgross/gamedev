@@ -1,8 +1,13 @@
 # DESIGN.md — Design Loop, the branching-questionnaire design tool
 
-**Status: DESIGN ONLY (2026-08-01).** No code, no file plan, no step ordering, no test plan. This
-is the mini project that must finish before `solatro/SPOTLIGHT_DESIGN.md` resumes — Spotlight will
-be its first real client.
+**Status: version 3, in execution (2026-08-02).** No code, no file plan, no step ordering, no test
+plan — those live in `PLAN.md` beside this file. This is the mini project that must finish before
+`solatro/design/spotlight/DESIGN.md` resumes — Spotlight is its first real client.
+
+Version 1–2 are the questionnaire rounds (§11, §13). **Version 3 is the gap round of 2026-08-02**
+(§14): GAP-001 and GAP-002, answered in the tool's own gap surface, closed in `gaps/`.
+**Version 4 is the owner's review of the answering screen, 2026-08-03** (§15): seven findings about
+how the screen is driven, none of them reversing a settled answer.
 
 Written with the workflow it describes (`.claude/skills/flowchart-design`), so it is also the
 workflow's own dogfood: if answering this questionnaire is annoying, that is data about the tool.
@@ -172,6 +177,11 @@ flowchart TD
                       what kind of questions follow if you pick it"]
   B7a -- no --> B8
   B7b --> B8{"owner acts"}
+  B7 --> B18["NEW: exactly one control is MARKED as what Enter will press,
+              and the mark is visible before the key is"]
+  B18 --> B19["NEW: type in the note box and the mark MOVES to use what I wrote —
+               Enter can never be the thing that discards what you typed"]
+  B18 --> B20["NEW: every control shows the key that presses it"]
   B8 -- "clicks an option" --> B9["POST the answer"]
   B8 -- "clicks an option AND writes a note" --> B9
   B8 -- "presses NOT RELEVANT" --> B11["record the recommended default,
@@ -204,6 +214,19 @@ flowchart TD
 - **B15/B17** — the asymmetry that matters: free text on an ordinary question is an override the
   agent reads later, but free text on a *gating* question invalidates every question after it, so
   the round ends on the spot.
+- **B18–B20 — what Enter does, said out loud (owner review, 2026-08-03, design version 4).** Q12
+  settled that Enter accepts the recommendation and that doing so is recorded as its own state,
+  because it was not really considered. Nothing on the screen *said* so, so the only way to learn
+  it was to have it happen — the owner's words: *"pressing enter on new question automatically
+  takes recommended top answer, but this is bad UX"*. The decision stands; the silence does not.
+  One control is always marked as Enter's target, and the mark moves with the situation.
+  Q108's three states survive intact: the mark sitting where it was **put** is a `defaulted`
+  answer, the mark the owner **moved** there is a `chosen` one.
+- **B19 is a bug this made unrepeatable.** Enter with text in the note box took the recommendation
+  and threw the text away, and because the textarea was replaced wholesale the browser's own undo
+  had nothing left to undo. Typing now moves the mark to *use what I wrote*, the note rides along
+  with every answer including a defaulted one, and what was typed is kept against its question
+  until it is committed. **Nothing the owner typed is ever destroyed by a keystroke.**
 
 ### Flowchart B2 — free text at a gating question
 
@@ -260,6 +283,16 @@ flowchart TD
 ```mermaid
 flowchart TD
   D1["owner presses BACK, or clicks an earlier answer in the history list"] --> D2["show that question with its recorded answer selected"]
+  D10["NEW: BACK is a VISIT STACK, like a browser's — the question this screen
+       showed before this one, not the newest answer in the file"] --> D1
+  D11["NEW: the stack survives leaving for the canvas and coming back,
+       so BACK is never the way out of the questionnaire"] --> D10
+  D12["NEW: with nothing above it — opened from the index or a canvas link —
+       BACK means the question answered immediately before this one"] --> D10
+  D13["NEW: and at the first question there IS nothing before it,
+       so BACK is disabled and says so, rather than doing nothing"] --> D10
+  D14["NEW: the history is a SIDEBAR, always on screen and scrollable,
+       carrying the question AND the answer, not a screen you leave for"] --> D1
   D2 --> D3{"owner changes it?"}
   D3 -- no --> D4["forward again, nothing else moves"]
   D3 -- yes --> D5["recompute reachability from that point"]
@@ -273,6 +306,26 @@ flowchart TD
 **Q32–Q36** cover this whole chart: whether BACK exists at all, whether a history list is visible
 (it leaks the question count, which the owner asked to hide), and how loudly a re-answer announces
 its blast radius.
+
+**D10–D14 — what BACK means (owner review, 2026-08-03, design version 4).** Q33=a asked for a BACK
+button *and* a clickable history, and both existed; what they did was wrong. BACK meant "the last
+answer in the file", so standing on that answer it pointed at itself and the click did nothing —
+the owner's report was that it "does not really go back to previous already answered page
+sometimes, pressing it does nothing and forced to use history instead". A button that silently
+does nothing is worse than no button, because it costs a click and a doubt every time.
+
+It is now a **visit stack**: the questions this screen has shown, in the order it showed them.
+BACK steps down it. The stack outlives leaving for the canvas, because the owner named that case
+exactly — *"in case user checks another page then comes back"*. Where the stack has nothing above
+the current question the fallback is the question answered immediately **before** this one, never
+the newest answer in the file: at the first question of a round that would send BACK *forwards*.
+And where there is genuinely nowhere to go, the button is disabled and says why. **Leaving the
+questionnaire is what the link in the corner is for; BACK never dead-ends at the index.**
+
+**D14 — the history sidebar.** It was a button that replaced the question with a list of IDs and
+option letters: you had to leave the question to read it, and what it showed was not enough to
+recognise an answer by. It is a sidebar now — always there, scrolling, and carrying **both halves**,
+what was asked and what you said.
 
 ---
 
@@ -295,6 +348,12 @@ flowchart TD
   E7 --> E8["agent revises graph.json, appends follow-ups or finalises"]
   E8 --> E9["agent writes status.json: agent_state = ready, mode = questions|review"]
   E9 --> E10["UI is polling status.json and switches itself over"]
+  E12["NEW: the watch writes a HEARTBEAT while it is parked"] --> E13{"is anyone listening?"}
+  E13 -- "beating" --> E14["the screen says an agent is watching, and since when"]
+  E13 -- "gone stale" --> E15["the screen says the session STOPPED — nothing is lost,
+                              here is the prompt that starts another"]
+  E13 -- "never any" --> E16["the screen says nobody is watching, and what that does
+                             and does not cost"]
   E10 --> E11["owner is notified — see Q49 for how"]
 ```
 
@@ -304,20 +363,43 @@ flowchart TD
 - **M3 always works** and needs nothing. It is the honest fallback and should exist regardless of
   which of M1/M2 is chosen (**Q22**).
 
+**E12–E16 — the same question, asked from the owner's side (owner review, 2026-08-03, design
+version 4).** This whole chart is about how the AGENT finds out. Nobody had asked the mirror
+question, and it turns out to be the one the owner is actually sitting with: *is anything listening
+to me right now?* Answering a whole round into a directory no session is parked on is invisible —
+it works, every answer is on disk, and nothing wakes up.
+
+The watch writes a heartbeat while it is parked, so the screen can say which of three situations
+this is: **watching**, **stopped** (a session that was there and ended — a killed process, a chat
+that finished), or **none**. Staleness is the signal rather than a goodbye flag, because the case
+worth reporting is precisely the one where nothing got to say goodbye.
+
+None of it changes what is true underneath, and the screen says that too: **no answer depends on
+anyone watching.** Q22=a's fallback — tell the agent in chat — was always the honest route, and
+"stopped" is a prompt to paste, not an error.
+
 ---
 
 ## 9-preview. Flowchart F — review mode
 
 ```mermaid
 flowchart TD
-  F1["mode = review"] --> F2["canvas: the whole design graph, pan and zoom"]
+  F1["mode = review"] --> F2["canvas: the whole design graph, pan and zoom,
+                             beside a picker that shows one chart on its own"]
+  F2 --> F12["NEW: cross-chart links — a node label that names another chart
+              becomes a link to that chart, DERIVED from the label, never authored twice"]
+  F12 --> F13["drawn distinctly: dashed, node to chart, so it can never be read
+               as one of the edges the author actually drew"]
+  F13 --> F14["the same links go into graph.json beside edges, so the canvas and an
+               implementation agent are looking at one artefact — chart G"]
   F2 --> F3["side panel: assumptions, out-of-scope, open notes, the answers summary"]
   F3 --> F4{"owner interacts"}
   F4 -- "clicks a node" --> F5["node detail: its text, which question decided it,
                                and a free-text annotation box"]
   F4 -- "clicks an edge" --> F6["edge detail: the condition it represents, plus an annotation box"]
   F4 -- "edits an annotation" --> F7["saved immediately, same durability rule as answers"]
-  F4 -- "collapses a subgraph" --> F8["a chart folds to one node so a 200-node graph stays legible"]
+  F4 -- "collapses a subgraph" --> F8["a chart folds to one node so a 200-node graph stays legible,
+                                      and its cross-chart links follow the fold"]
   F4 -- "searches" --> F9["jump to a node by ID or text"]
   F4 -- "presses Review again" --> F10["status = awaiting_agent, annotations attached"]
   F4 -- "presses Confirm" --> F11["freeze: snapshot into versions/NNN/, mark confirmed,
@@ -326,6 +408,31 @@ flowchart TD
 
 **Q52–Q66** cover the canvas: layout engine, how a 200-node graph is made legible, whether the
 owner can edit the graph structurally or only annotate it, and what Confirm actually locks.
+
+**F12–F14 — cross-chart links (GAP-002, resolved 2026-08-02).** Charts never point at each other:
+measured on both real documents, every one of this document's 133 edges and every one of
+Spotlight's 182 stays inside its own chart. The references *are* there — they are written in prose
+inside a node's label, `A6 "owner answers one question at a time — chart B"` — so the whole-graph
+view, the one view whose whole purpose was to show all the connections, was the view that showed
+none. The link is now read out of the label it was already written in:
+
+- A label naming another chart is a **link from that node to that chart**, not to a node in it. The
+  author wrote the name of a chart; inventing a specific endpoint inside it would be inventing
+  structure the document does not have.
+- It is drawn **dashed and distinct** from a real edge, because it is derived and a real edge is
+  authored. A reader must never have to wonder which of the two they are looking at.
+- Resolution is **exact and conservative**. `chart B2` finds the chart headed *Flowchart B2* even
+  though its nodes are prefixed `P`; `chart E3` finds chart E through its node `E3`; a name that
+  resolves to nothing at all is a **warning to the author**, never a guessed link. A reference that
+  lands on the node's own chart is not a link — Spotlight's chart E says "chart E2" about its own
+  E2 three times, and drawing those would be noise.
+- The links live in `graph.json` beside the edges, not only in the canvas. A picture that shows a
+  connection no consumer of the file can see is the mock this project's rules exist to forbid
+  (**Q64=a**).
+
+The alternative the owner did not take was widening the chart language so an author writes
+`A6 --> B1` by hand. It stays available: these documents can gain real cross-chart edges later, and
+the derived links are what they mean in the meantime.
 
 ## Flowchart G — the handoff artefact
 
@@ -755,3 +862,58 @@ IDs it implements, ordered so that stopping after Phase 1 still leaves a working
 
 Reopening this design is not a rewrite: file a gap (chart J), and a scoped round covers only what
 the gap opens.
+
+---
+
+## 14. VERSION 3 — the gap round (2026-08-02)
+
+The first scoped round the tool ran on itself, through its own gap surface (S15), on gaps filed
+during its own execution. Chart J working on chart J's author.
+
+| Gap | Answer | What it settles |
+|---|---|---|
+| GAP-001 | (b) | a `⚑gate` option with no `→ next:` is a **warning**, not an error — the document parses, the shortfall reaches the agent who can fix it and the owner sees **→ next: not described** |
+| GAP-002 | (b) | **cross-chart links are derived** from labels that name another chart, drawn dashed, and written into `graph.json` beside `edges` |
+
+**Changed** — F2 (the picker named beside the whole graph), F8 (a collapsed chart keeps its links).
+**Added** — F12, F13, F14, and the prose under chart F that states the resolution rule.
+**Questions added** — none. Both gaps were decided by their own filed options; neither opened a new
+fork.
+**Gaps closed** — GAP-001, GAP-002, both in place with their resolutions.
+
+**Stale, and re-derived in `PLAN.md`:** S11 (ingestion derives the links), S12 (the whole-graph view
+draws them), S14 (a frozen version records them). `PLAN.md` §4.6 grows the `links` list and §6 grows
+§6.1, the derivation rule. Every other step was never blocked and is untouched.
+
+---
+
+## 15. VERSION 4 — the owner's review of the ANSWERING screen (2026-08-03)
+
+The canvas was reviewed on 2026-08-02 and the question screen was not. Seven findings, all of them
+about being driven rather than about what is asked. None reverses a settled answer; each one is a
+decision this document had made and the screen had failed to *show*, or a case it never covered.
+
+| # | The finding, in the owner's terms | What it settles |
+|---|---|---|
+| 1 | history is a button; wants a **scrollable sidebar with question and answer** | **D14** |
+| 2 | BACK "does nothing" sometimes, forcing the history list | **D10, D13** |
+| 3 | **shortcut keys** like the canvas has, on **every** button | **B20** |
+| 4 | Enter silently taking the recommendation is bad UX — **pre-highlight what Enter will press** | **B18** |
+| 5 | Enter after typing a custom answer **deleted it** and took the recommendation; undo did nothing | **B19** |
+| 6 | BACK must mean **the question before this one appeared**, browser-style, and never the index | **D10–D12** |
+| 7 | say whether **a session is tracking**, how to start one, and what to paste if it disconnected | **E12–E16** |
+
+**Added** — B18, B19, B20; D10, D11, D12, D13, D14; E12, E13, E14, E15, E16.
+**Changed** — nothing. Every finding was an unshown decision or an uncovered case, which is why
+this is a version rather than a re-answered question.
+**Questions added** — none. The owner decided all seven in the report itself.
+
+**In `PLAN.md`:** §4.9 is the new `session.json` contract, §4.8 gains `?poll=1`, and **S19** is the
+step that implements the lot. Nothing already built was invalidated: no step cites B18–B20,
+D10–D14 or E12–E16, because until this review none of them existed.
+
+⚠ **The lesson for the skill, and it is the general one:** every finding here is a decision the
+design had already made — Enter takes the default (Q12), BACK exists (Q33), the agent is woken by a
+watch (QR1=c) — that the *screen* never said out loud. A questionnaire settles what the thing does.
+It does not settle whether the person using it can tell. Those are two reviews, and this document
+only ever asked for the first.

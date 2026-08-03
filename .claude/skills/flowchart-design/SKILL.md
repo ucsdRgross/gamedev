@@ -152,6 +152,17 @@ architecture ones. If a structural choice has a behavioural consequence, ask abo
 - **Mark new nodes `NEW`**, and name existing nodes with their **real function**
   (`Game.score_line`). The chart should read as a diff against reality.
 - **One chart per concern**, not one giant chart.
+- ⚠ **One heading, one chart, and the heading's letter IS the chart's node prefix.** Put a second
+  chart under `## 7. Flowchart E — …` and its nodes are prefixed `F`, so from there on every chart
+  ID runs a letter ahead of the heading that names it — Spotlight's *Flowchart H* is the chart whose
+  nodes are `I1`, `I2`…. The tool copes (it resolves a reference by the heading name first, which is
+  how a reader reads it), but it is a trap for everyone: give the second chart its own heading,
+  `### Flowchart E2 — …`, and prefix its nodes to match if you can.
+- **A label that names another chart becomes a drawn link.** Write the reference the way the
+  documents already do — `A6["owner answers one question at a time — chart B"]` — and the canvas
+  draws it dashed, node to chart, and puts it in `graph.json` as a `links` entry (GAP-002, design
+  version 3). There is no cross-chart arrow in the mermaid subset, so this prose form IS the way to
+  connect charts. A name that resolves to nothing is reported as an authoring warning.
 - **Over-decompose.** A step that "obviously" has no decision in it is a step the owner cannot point
   at when it turns out to have one.
 - **Draw unresolved forks as explicit option branches**, recommendation marked, cross-referenced to
@@ -379,7 +390,9 @@ grammar above is obeyed.
    **Your charts must be inside the subset the canvas reads** — `ID["label"]`, `ID{"decision"}`,
    `-->`, `-- label -->`, one `flowchart TD` header, one shared ID prefix per chart. Anything else
    (`subgraph`, `classDef`, `-.->`, an unquoted label) is refused by name and line rather than
-   guessed at. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
+   guessed at. `run check` also reports `links N derived, M unresolved` — the cross-chart links read
+   out of your labels (§6.1). **M must be 0**: an unresolved `chart X` is a reference you wrote to
+   something that does not exist. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
    change, not a parser change.
 
 3. **Start the server and hand over the URL.** Not a file path, not "open the doc":
@@ -520,6 +533,30 @@ Use /handoff to keep resumable state.
 
 Include `/handoff` whenever the run spans more than one session's work. Repo-level rules (git
 policy, code style) propagate through directory-keyed memory and do not need restating.
+
+## ⚠ A questionnaire settles what a thing DOES, not whether anyone can tell
+
+Learned twice, on the tool this skill drives (2026-08-02 and 2026-08-03), and it is the most
+reliable class of miss in the whole procedure. Both owner reviews of built screens produced findings
+that were **already decided in the design and simply never shown**:
+
+- Enter accepts the recommendation (Q12, answered) — and nothing on the screen said so, so the only
+  way to learn it was to have it happen, on a question where it destroyed what had been typed.
+- BACK exists (Q33, answered) — and it meant "the newest answer", so on the newest answer it
+  pointed at itself and the click did nothing.
+- An agent is woken by a watch (QR1, answered) — and the owner had no way to see whether one was
+  parked, so a whole round could be answered into a directory nothing was listening to.
+
+None of these is a question the questionnaire failed to ask. Each is a decision it settled and the
+*surface* never surfaced. So:
+
+- **Plan for two reviews, and say so.** One settles behaviour, from the charts. The other happens
+  only by **driving the built thing**, and it cannot be done early or on paper.
+- **When a design settles a hidden behaviour — a key, a default, a background process, an implicit
+  navigation — write the node that says how the person using it will KNOW.** "Enter takes the
+  default" is half a decision; "and the control it will press is marked" is the other half.
+- Findings from the second review are usually **a new design version, not re-answered questions**:
+  the owner is not changing their mind, they are covering ground the questions never reached.
 
 ## Keep this skill improving
 

@@ -125,6 +125,41 @@ async function report(design, status) {
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
+/**
+ * The heartbeat that tells the OWNER whether anyone is listening (§4.9).
+ *
+ * Everything else in this file answers "has the owner finished?". This answers the question from
+ * the other side, which until now the tool could not answer at all: the owner sat on a question
+ * screen with no way to know whether an agent was parked, whether its session had ended, or what
+ * to do about it. A watch that is running says so every few seconds; a watch that was killed,
+ * crashed, or whose chat session simply ended stops saying it, and the file goes stale on its own.
+ *
+ * Staleness, not a clean shutdown flag, is the signal on purpose: the failure this exists to
+ * report is a process that did NOT get to run its exit handler.
+ */
+const HEARTBEAT_MS = 5000;
+
+export function heartbeat(dir, { intervalMs = HEARTBEAT_MS, key = null } = {}) {
+  const path = join(dir, 'session.json');
+  const since = now();
+  const beat = () => writeJsonAtomic(path, {
+    watching: true, key, pid: process.pid, since, at: now(), every_ms: intervalMs,
+  }).catch(() => {});
+  beat();
+  const timer = setInterval(beat, intervalMs);
+  timer.unref?.();
+  const stop = async () => {
+    clearInterval(timer);
+    // Best effort, and never load-bearing: if this never runs, the file goes stale and the UI says
+    // the same thing a beat later.
+    await writeJsonAtomic(path, { watching: false, key, pid: process.pid, since, at: now(), every_ms: intervalMs }).catch(() => {});
+  };
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => { stop().then(() => process.exit(0)); });
+  }
+  return stop;
+}
+
 /** Tell the UI the agent picked it up. `status.agent.json` is agent-owned, so this is ours (§4.2). */
 export async function claim(dir, patch) {
   const current = (await readJson(join(dir, 'status.agent.json'))) || {};
@@ -149,13 +184,20 @@ async function main() {
   const timeoutMs = timeoutArg >= 0 ? Number(args[timeoutArg + 1]) * 1000 : 0;
 
   process.stdout.write(`watching ${design.key} — waiting for the owner. Ctrl-C, or just tell me in chat.\n`);
+  // The owner's screen shows this as "an agent is parked on this design" (§4.9). It is the only
+  // way they can tell a live session from one that ended while they were mid-question.
+  const stopHeartbeat = heartbeat(design.dir, { key: design.key });
   const status = await watchOwner(design.dir, { timeoutMs });
   if (!status) {
+    await stopHeartbeat();
     process.stdout.write('timed out; nothing has changed\n');
     process.exit(3);
   }
   await report(design, status);
   await claim(design.dir, { state: 'working', round: status.round });
+  // The watch returning means the agent is now WORKING, not watching. `status.agent.json` carries
+  // that; this file is only ever about whether someone is parked.
+  await stopHeartbeat();
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

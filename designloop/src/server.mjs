@@ -175,7 +175,11 @@ function forScreen(question, sections) {
  * cache that only exists while the server is up.
  */
 async function buildGraph(design, markdown, docHash) {
-  const graph = parseCharts(markdown, { file: design.doc });
+  const parsed = parseCharts(markdown, { file: design.doc });
+  // `warnings` (unresolved `chart X` references, §6.1) are a report about the document, not part of
+  // the graph §4.6 specifies. They reach the author through `run check` and the index badge; the
+  // file on disk stays exactly the shape an implementation agent is promised.
+  const { warnings, ...graph } = parsed;
   graph.doc_hash = docHash;
   const path = join(design.dir, 'graph.json');
   const existing = await readJson(path);
@@ -284,11 +288,16 @@ async function handleDesignApi(req, res, pathname, query) {
   const answers = state.answers;
 
   if (action === '' && req.method === 'GET') {
-    await touch(design.dir);
+    // `?poll=1` is the answering screen asking "is anyone watching yet?" every few seconds. It must
+    // not count as the owner opening the design: touching on every poll would rewrite `ui_meta.json`
+    // — and wake the watch's directory watcher — several times a minute, for no information.
+    if (query.get('poll') !== '1') await touch(design.dir);
     sendJson(res, 200, {
       key: design.key, slug: design.slug, title: design.title, projects: design.projects,
       doc: design.doc, rounds: design.rounds, confirmed_version: design.confirmed_version,
       archived: design.archived, owner: design.owner, agent: design.agent,
+      // §4.9 — is an agent parked on this design right now?
+      session: design.session,
       errors: parsed.errors.map((e) => e.message),
       warnings: parsed.warnings.map((e) => e.message),
       doc_hash: docHash,

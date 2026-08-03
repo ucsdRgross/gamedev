@@ -5,8 +5,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { watchOwner, claim } from '../src/watch.mjs';
+import { watchOwner, claim, heartbeat } from '../src/watch.mjs';
 import { writeJsonAtomic, readJson } from '../src/store.mjs';
+import { readSession } from '../src/registry.mjs';
 
 async function design() {
   const dir = join(await mkdtemp(join(tmpdir(), 'designloop-watch-')), 'demo');
@@ -92,4 +93,64 @@ test('waking claims the agent half, and never touches the owner half', async () 
 
 test('a design directory that does not exist yet fails loudly, not silently', async () => {
   await assert.rejects(watchOwner(join(tmpdir(), 'designloop-nope-' + Date.now()), { pollMs: 50 }));
+});
+
+// --- is anyone listening? (S19.7, §4.9) ---------------------------------------------------------
+//
+// The owner could answer a whole round into a directory nobody was watching and have no way to
+// tell. `session.json` is the watch's heartbeat, and the case that matters is the one where NOBODY
+// got to clean up: a killed process, a crashed one, a chat session that simply ended.
+
+test('a parked watch says so, and a session that ended goes stale on its own', async () => {
+  const dir = await design();
+  try {
+    const stop = heartbeat(dir, { intervalMs: 40, key: 'demo/demo' });
+    await new Promise((r) => setTimeout(r, 60));
+
+    const beating = await readSession(dir);
+    assert.equal(beating.watching, true, 'a live watch reads as watching');
+    assert.equal(beating.stale, false);
+    assert.ok(beating.since, 'and says how long it has been parked');
+
+    // The heartbeat stops WITHOUT the process getting to tidy up — the whole point.
+    await stop();
+    const raw = await readJson(join(dir, 'session.json'));
+    await writeJsonAtomic(join(dir, 'session.json'), {
+      ...raw, watching: true, at: new Date(Date.now() - 60_000).toISOString(), every_ms: 5000,
+    });
+
+    const abandoned = await readSession(dir);
+    assert.equal(abandoned.watching, false, 'an old heartbeat is not a live session');
+    assert.equal(abandoned.stale, true, 'and it is reported as one that STOPPED, not one that never was');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a design nobody has ever watched is not reported as a session that died', async () => {
+  const dir = await design();
+  try {
+    const never = await readSession(dir);
+    assert.deepEqual(
+      { watching: never.watching, stale: never.stale, ever: never.ever },
+      { watching: false, stale: false, ever: false },
+      'no file at all means "no agent is watching", never "the session stopped"',
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a clean shutdown is immediate, not a 20-second wait for staleness', async () => {
+  const dir = await design();
+  try {
+    const stop = heartbeat(dir, { intervalMs: 40, key: 'demo/demo' });
+    await new Promise((r) => setTimeout(r, 60));
+    await stop();
+    const after = await readSession(dir);
+    assert.equal(after.watching, false);
+    assert.equal(after.stale, false, 'it said goodbye, so there is nothing to report as broken');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

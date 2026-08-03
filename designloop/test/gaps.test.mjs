@@ -130,11 +130,15 @@ test('the scoped round asks the open gaps and stops (chart J12)', () => {
 
 test('plan steps are read with their citations, ranges expanded (Q93b=a)', async () => {
   const steps = planSteps(await read(new URL('../design/designloop/PLAN.md', import.meta.url), 'utf8'));
-  assert.equal(steps.length, 17, 'S1–S17, exactly the steps in the plan');
+  assert.equal(steps.length, 19, 'S1–S19, exactly the steps in the plan');
+  // The two review steps cite nodes that did not exist until the review that produced them, which
+  // is what keeps a finding traceable back to the screen it came from.
+  assert.ok(steps.find((s) => s.id === 'S19').cites.includes('B19'), 'S19 cites what it implements');
+  assert.ok(steps.find((s) => s.id === 'S19').cites.includes('D14'));
   const s7 = steps.find((s) => s.id === 'S7');
   assert.ok(s7.cites.includes('D4') && s7.cites.includes('D9'), 'D1–D9 is a range, and it expands');
   assert.ok(s7.cites.includes('Q36b'), 'a lettered ID is its own question, not its number');
-  assert.equal(steps.find((s) => s.id === 'S11').cites.join(','), 'G2,Q64');
+  assert.equal(steps.find((s) => s.id === 'S11').cites.join(','), 'G2,F12,F14,Q64');
 });
 
 test('only steps citing a changed node are stale — the rest keep their work (J16, J17)', async () => {

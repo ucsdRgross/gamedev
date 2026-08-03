@@ -42,6 +42,7 @@ export function describe(markdown, file = 'DESIGN.md') {
       `opens at    ${nextQuestion(live, {}, parsed.sections)?.id ?? '(nothing)'}`,
       `longest     ${longestPath(live)} questions on one path`,
       `charts      ${graph ? `${graph.charts.length} ingested, ${Object.keys(graph.nodes).length} nodes, ${graph.edges.length} edges` : 'FAILED — see below'}`,
+      `links       ${graph ? `${graph.links.length} derived, ${graph.warnings.length} unresolved` : '—'}`,
       `errors      ${parsed.errors.length}`,
       `warnings    ${parsed.warnings.length}`,
       `skipped     ${parsed.ignored.length} bullet(s) that name a question ID but are not questions`,
@@ -69,6 +70,9 @@ async function main() {
   for (const e of parsed.errors) process.stdout.write(`  ERROR   line ${e.line ?? '?'}: ${e.message}\n`);
   for (const w of parsed.warnings) process.stdout.write(`  warning line ${w.line ?? '?'}: ${w.message}\n`);
   if (graphError) process.stdout.write(`  CHART   ${graphError.message}\n`);
+  // §6.1: a label naming a chart that does not exist is the author's defect and only the author can
+  // fix it, so it is named here and never blocks (GAP-001's rule, applied to links).
+  for (const w of graph?.warnings ?? []) process.stdout.write(`  link    ${w.message}\n`);
   const graphErrors = graph ? validateGraph(graph) : [];
   for (const e of graphErrors) process.stdout.write(`  CHART   ${e.message}\n`);
   // A bare word, not a flag: `npm run check -- <design> charts`. npm eats unknown `--flags` before
