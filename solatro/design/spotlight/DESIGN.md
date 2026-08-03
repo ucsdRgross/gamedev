@@ -1,10 +1,31 @@
 # SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
 
-**Status: DESIGN ONLY, and PAUSED (2026-08-01).** No code, no file plan, no step ordering, no test
-plan. The questionnaire (§17) has been converted to the branching-DAG format and is ready to be
-answered either in chat or by the **Design Loop** tool — see `designloop/design/designloop/DESIGN.md`,
-which is the mini project being designed first. Nothing here is blocked by that: §17 can be
-answered by ID today. Conversion contract in §19.
+**Status: DESIGN ONLY, version 2, round 1 IN PROGRESS (2026-08-03).** No code, no file plan, no step
+ordering, no test plan. The questionnaire (§17) is being answered in the **Design Loop** tool
+(`npm --prefix designloop start` → `question.html?key=solatro/spotlight`); it can equally be answered
+by ID in chat. Conversion contract in §19.
+
+### Version 2 changelog (2026-08-03) — what changed and why
+
+Round 1 is roughly a quarter answered (29 of 195). Two answers were written in the owner's own words
+rather than picked, and one is at a `⚑gate`, which is what stopped the round. Plus a new braindump on
+the glow shader. All three are folded in here:
+
+| # | Trigger | What changed |
+|---|---|---|
+| 1 | **QR2 free text** — *"no dim only lasts for as long as it takes for spotlight fx to spawn in, and jump up and score first meld, fading away back to normal lit state for everything else"* | **QR2 gains option (c), the TRANSIENT dim** — the house lights go down for the opening beat only, not the whole submit. New §5b **Flowchart S**, new §17.6b (Q189–Q197), and every §17.6 question re-gated to `[QR2=a\|c]` where it still applies so the answers already given survive the switch. |
+| 2 | **Q24 free text** — *"card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process"* | **Q24 gains option (c), COMPACT-AND-FOLLOW**, and it is now the default. New §12b **Flowchart R**, new §17.2b (Q198–Q206). Q160 re-gated, because it said the opposite. |
+| 3 | **New braindump** — the glow shader for generic Node2Ds, the spotlight circle drawn by the same shader, and the *Dangerous Light* film-light model | **New §1.6 audit facts, new §14b Flowchart O (the glow's model) and Flowchart P (the film pipeline), two new root gates QR9 and QR10, and §17.17/§17.18 (Q207–Q239).** §16's Look table gains the glow knobs. |
+
+⚠ **Nothing already answered was invalidated.** QR2's and Q24's existing answers stay valid — the new
+options sit beside them. The only questions you are asked again are QR2 (so option (c) is clickable)
+and Q24 (same). Everything else is additive.
+
+⚠ **Chart naming is fixed from here on.** Charts A–L were named by heading letter while their node
+prefixes ran one letter ahead from §7 onward (heading *Flowchart G* holds nodes `H1…H9`). The
+existing charts are left alone — renumbering nodes would invalidate every answer that cites one — but
+**every chart added in v2 is named by its own node prefix** (Flowchart O holds `O1…`, R holds `R1…`).
+The prefix is always the truth.
 
 This document exists to be *argued with*. It is the complete behavioural and visual specification of the
 Spotlight system as a set of numbered flowcharts, plus every question whose answer changes what
@@ -62,20 +83,27 @@ under which it is asked at all. Answering a root question prunes whole sections.
   different path. Answers stranded on the abandoned path are kept and marked inactive, never
   deleted, and come back intact if you change your mind again.
 
-**Start at §17.0.** Those eight root questions gate most of the rest: answer them first and a large
+**Start at §17.0.** Those ten root questions gate most of the rest: answer them first and a large
 part of the document may simply not apply to you.
 
-**Measured, not estimated (2026-08-01, by the parser):** 196 question lines — 188 `Q`-numbered plus
-8 `QR` root gates — of which 195 are live and one (Q140) is retired in place. 8 are `⚑gate`, 39 are
-marked `notes`. The **longest path is 194 of 195**, because exactly one pair in the whole DAG is
-mutually exclusive (Q118 needs Q113=a, Q114 needs Q113=b or c).
+**Measured, not estimated (2026-08-03, by the parser, version 2):** **248 live questions** — 239
+`Q`-numbered plus 10 `QR` root gates — with one (Q140) retired in place. **10 are `⚑gate`**, 70 are
+marked `notes`. **49 are askable before any gate is answered**; the other 199 wait on one. The
+**longest path is 236 of 248**. (v1 was 195 live, longest path 194; v2 added 53.)
 
-⚠ **So read the pruning honestly: this DAG only saves you work when you CUT something.** Every root
-default is the "yes, include this" branch, so answering *default* to all eight roots leaves you with
-essentially the whole document. Declining is what prunes — QR1=(b) removes 22 questions, QR3=(b)
-removes 24, QR4=(b) removes 18, QR5=(c) removes 21. If the feature you want is the full one, expect
-to answer nearly all of it; the DAG's value is that you can amputate a whole sub-feature in one
-click, not that the common path is short.
+⚠ **So read the pruning honestly: this DAG only saves you work when you CUT something.** Almost every
+root default is the "yes, include this" branch, so answering *default* to all ten roots leaves you
+with essentially the whole document. Declining is what prunes — QR1=(b) removes 22 questions, QR3=(b)
+removes 24, QR4=(b) removes 18, QR5=(c) removes 21 plus the whole of §17.17. The two v2 roots are the
+exception and prune by default: **QR10=(b) is the default and skips §17.18's 10 questions**, and
+QR9=(c) skips four of §17.17b's seven. If the feature you want is the full one, expect to answer
+nearly all of it; the DAG's value is that you can amputate a whole sub-feature in one click, not that
+the common path is short.
+
+⚠ **You are 29 questions in and nothing you answered has been thrown away.** v2 added options to two
+questions you had already reached (QR2 and Q24) rather than replacing them, and widened the gates on
+§17.6 so the dim answers you gave under QR2=(a) still apply under (c). The two you will see again are
+QR2 and Q24, so that your own words are there as something to click.
 
 You should never answer a question your earlier answers already made meaningless — if you do, that
 is a bug in my gates and worth reporting as one.
@@ -212,6 +240,65 @@ scoring participant.
   and returns **0.0 when an act is cancelled** — so every Spotlight animation must degrade to an
   instant snap for free.
 
+### 1.6 What the FX layer already gives the glow, and what it does not (verified 2026-08-03)
+
+The new braindump asks for one glow shader serving **cards, props and the spotlight circle**, plus
+the *Dangerous Light* film pipeline. Measured against the code, those are two very different asks.
+
+**Already there, and it is most of the glow:**
+
+| Fact | Where | Why it matters |
+|---|---|---|
+| `FxAttachment` **is** the generic-Node2D host. `class_name FxAttachment extends Node2D`, configured by `configure(body_size, host_rotates, host_shape, …)`. | `UI/Fx/fx_attachment.gd:2,175` | "A glow for generic Node2D like cards and props" is not new machinery. A card hosts one under `CardVisual/Offset`; a prop hosts one. A glow is a new request on the same attachment. |
+| **The recipe for a new effect is fixed and small:** one `.gdshader`, one **`FxStyle` SUBCLASS** carrying only that effect's levers, one `.tres`, one `fx_request()`. `FxAttachment` never learns effect names. | VFX.md §5 | The glow is `FxGlowStyle`, not knobs bolted onto `FxStyle`. ⚠ A knob on the base is a knob every other effect's inspector shows (2026-07-31 ruling). |
+| **A mask that fits any host already exists**, exactly, including a deformed card: `mask_level()` with `SHAPE_BOX` / `SHAPE_RADII` (the host's own 24 vertices + wedge index) / `SHAPE_SPRITE` (the art's own alpha) / `SHAPE_BALLS`. | `Shaders/fire.gdshader:321` | "form-fitting to any shape and rotation" is solved. A glow can reuse the same mask and the same `body_near` early-out. |
+| **The braindump's "can overlap object pixels, unlike the fire shader" is one existing uniform.** `u_inner_alpha` is the alpha the effect draws at *where it covers the host's own art*; fire ships at the opaque/cut end because the owner ruled seeing art through flame *"looks very bad"*. | `fire.gdshader:175, 716` | The glow is the case that lever was written for and nothing uses: a partial `inner_alpha` **is** "readable art under a light". |
+| **Reach past the silhouette is a first-class field.** `FxRequest.reach` sizes the quad as body-plus-reach, so an effect legitimately hangs off the card's edge. | `UI/Fx/fx_request.gd` | "shader vfx going off edge of card" is free. |
+| The **pixel grid is anchored on the host's origin** and never rotates; quantize first, rotate after. | `fx_common.gdshaderinc:48` | A glow drawn on that grid is chunky at `pixel` size — see the banding warning below. |
+| **The clock is `u_time`, pushed per frame by the attachment — never GLSL `TIME`.** | `fire.gdshader:125` | Any animated term in the braindump's pseudocode (scroll, breath, gate weave) must take `u_time`. |
+| `brightness` is re-pushed with the player's `fx_intensity` folded in, and reaching 0 is *"a genuine photosensitivity control, not a taste one"*. | `fx_style.gd:52`, VFX.md §7.11 | The glow inherits the accessibility floor for free — and ⚠ VFX.md §7.11 records that `juggle.gdshader` declares no `u_brightness`, so the setting silently misses one effect today. Do not repeat that. |
+| **A shader that writes `COLOR` must multiply the host's modulate back in**, or the focus highlight stops reaching it. | VFX.md §4.2 | Directly load-bearing: Q121 is about glow and highlight reading distinctly, and this is how the highlight arrives at all. |
+
+**Not there, and this is the honest half:**
+
+1. ⚠ **There is no screen-read anywhere in the project.** Grepped 2026-08-03 across every `.gd`,
+   `.gdshader` and `.tscn` outside `addons/`: **zero** hits for `SCREEN_TEXTURE`,
+   `hint_screen_texture`, `BackBufferCopy` or a viewport texture read. Every effect is a quad that
+   draws its own thing and composites normally. **Halation, bloom, the film LUT, grain, dust, gate
+   weave and chromatic aberration all require reading the already-rendered scene.** They are a
+   full-screen post-process subsystem that does not exist, and they would change the look of the
+   *entire game*, not of the spotlight. That is **QR10**, and it is a root gate for a reason.
+2. ⚠ **There is no HDR buffer.** "Additive accumulation in linear HDR space, tonemap at the end"
+   needs a float render target and a post pass to tonemap it. A `canvas_item` shader in the game's
+   normal 2D viewport writes straight to an LDR framebuffer, so an additive term above 1.0 clips
+   there and then, and "no premature clipping" is precisely what cannot be honoured without (1).
+3. ⚠ **The palette contract cuts both ways** (§4i). Every colour resolves to a named entry of one
+   N×1 image and ramps **SAMPLE, never lerp** — so the braindump's core→mid→edge *radial colour
+   shift* is a perfect fit: it is one `PaletteRamp` lookup on intensity, which is exactly what
+   `u_ramp` already does for fire (`vec2(heat, level)`). But a film **LUT** is a colour transform
+   over arbitrary input colours, which is the opposite of a fixed palette. The two cannot both be
+   the authority on colour.
+4. ⚠ **A soft gradient on a chunky grid BANDS, and this project has already been bitten by it
+   twice.** `u_ramp` is `filter_nearest`, so a smooth falloff quantizes to the ramp's columns; the
+   fire shader carries `u_cover_dither` and `fx_bayer` for exactly this, and the FX-pixel-indexed
+   dither had to be fixed once already because it was indexed per SCREEN pixel and printed a
+   checkerboard inside every chunky block (`fire.gdshader:760`, VFX.md §6.2b). A glow is *mostly*
+   gradient, so this is its central look problem, not a detail — **Q213–Q215**.
+5. ⚠ **Cost is fill × mask calls, and a glow's quad is larger than fire's.** Fire's whole cost is
+   `mask_level` call count × cost per call (`fire.gdshader:28`), held down by `u_taps = 4` and by
+   `body_near` rejecting the empty majority (worth 2.1×). A glow with `reach` big enough to read as
+   a halo has a *bigger* quad than fire's and, if it does a multi-layer blur, many more taps.
+   Measured context: 20 burning cards = 1.53 ms, and ball fire once cost 28.5 ms. **A four-layer
+   blurred glow on 78 cards is not obviously affordable** — **Q220**.
+6. ⚠ **An effect on a card is occluded by the card covering it** (owner ruling 2), because the quad
+   is a child of the host. **The light layer (chart G) is screen-space and is not.** So "the
+   spotlight circle drawn by the glow shader, on the card" and "the circle drawn by the light layer,
+   punching a hole in the dim" are structurally different pictures — that is **QR9**.
+7. **`filter_nearest` art plus a smooth circle is a seam question that has been answered before.**
+   Fire tests its occlusion cut at the **unquantized** position so the art's own edge slices the
+   chunky pixels (`fire.gdshader:687`); a prop needed the same treatment and the first draft got it
+   wrong. The glow inherits the whole of that reasoning — **Q215**.
+
 ---
 
 ## 2. The state model this design proposes
@@ -224,10 +311,23 @@ flag. **This is structure I have filled in; the questions are about its behaviou
 | 1 | **Natural spotlight** | derived, no storage | `CardModifier.is_active()` as it is today: uncovered / Revealing / Global / rules. |
 | 2 | **Forced spotlight** | per-act state on `GameData` (undo rewinds it, §1 rule 6) | "the scoring beam is on this card right now." Set and cleared by the scoring cascade. |
 | 3 | **Spotlight instance** | view only | One travelling light: a target card, a circle, a beam, an origin. Has identity and persists across lines so it can *travel* rather than pop. |
-| 4 | **Glow** | view only | The per-card light shader. Driven by (1 OR 2). Independent of (3). |
+| 4 | **Glow** | view only | The per-host light shader — an `FxRequest` on the host's own `FxAttachment` (§1.6), so a card and a prop use one code path. Driven by (1 OR 2). Independent of (3). |
 
 **Effective spotlight = natural OR forced.** That one sentence is the whole mechanical change;
 everything else is presentation.
+
+**Two render homes, and everything visual lands in one of them.** This is the structural fact the v2
+braindump puts under question:
+
+| Home | What draws there | Scrolls with the board? | Occluded by a covering card? |
+|---|---|---|---|
+| **The host's `FxAttachment`** (a `Node2D` quad under `CardVisual/Offset` or `PropVisual`) | the glow, today | yes | **yes** — owner ruling 2 |
+| **The light layer** (one screen-space surface, chart G) | the dim, the circles, the beams, today | no — it is fed board→screen positions per frame | no |
+
+The braindump asks for the **circle** to be drawn by the same shader as the glow. Whether that also
+moves the circle from the second home to the first — inheriting occlusion, scrolling and the card's
+own rotation, and losing the ability to punch a hole in the dim — is **QR9**, and it is the single
+most structural question v2 adds.
 
 **Vocabulary used throughout** (naming is **Q1–Q5**):
 
@@ -352,6 +452,68 @@ Open forks in this chart:
   dark. **Q78**
 - **A cancelled act** (undo mid-submit) short-circuits at `score_line`'s first line and jumps to
   `_restore_pre_act_board`. C15/C16 must still run. **Q151**
+
+---
+
+## 5b. Flowchart S — the TRANSIENT dim `[QR2=c]`
+
+Chart C above holds the dim up for the **whole submit**: it rises at C5 and does not fall until C16,
+so every line of the cascade — every row, then every column — is scored in the dark. Your own words
+described something else:
+
+> *"no dim only lasts for as long as it takes for spotlight fx to spawn in, and jump up and score
+> first meld, fading away back to normal lit state for everything else"*
+
+That is a **dramatic opener**, not a lighting state. The house lights go down, the first hand is
+performed under them, and then they come back up and the rest of the act runs in normal light. This
+chart is that reading written out; it replaces C5 and C16 only, and nothing else in chart C moves.
+
+```mermaid
+flowchart TD
+  S1["NEW: view.begin_spotlight_act() — chart C, C4"] --> S2["dim rises 0 to dim_target
+                                                             over dim_in_fraction"]
+  S2 --> S3["the FIRST line's spotlight phase runs inside the dark — chart D"]
+  S3 --> S4["spotlights spawn in and arrive on their targets (D8, D9)"]
+  S4 --> S5["forced spotlight set, on_active fires, the hold beat (D10 to D13)"]
+  S5 --> S6["the meld JUMPS and scores (D14 to D16)"]
+  S6 --> S7{"what exactly is the last beat under the dim? — Q189"}
+  S7 -- "the jump lands" --> S8["dim starts falling as the cards are still up"]
+  S7 -- "the score popup shows" --> S9["dim starts falling once the number is readable"]
+  S7 -- "the line's props finish" --> S10["dim starts falling after _run_score_effects returns"]
+  S8 --> S11["dim falls to 0 over dim_out_fraction — back to a normally lit board"]
+  S9 --> S11
+  S10 --> S11
+  S11 --> S12{"what survives the dim coming up? — Q190"}
+  S12 -- "lights too" --> S13["circles and beams retire with the dim.
+                              Every later line scores with glow only"]
+  S12 -- "lights stay" --> S14["circles and beams keep travelling line to line
+                               over a normally lit board — chart E is unchanged,
+                               only the dim was transient"]
+  S13 --> S15["the rest of the act: chart C's row and column loops run
+               with no dim and no re-raise"]
+  S14 --> S15
+  S15 --> S16{"does the COLUMN pass count as a second opening? — Q192"}
+  S16 -- no --> S17["one dim per act, at the very start"]
+  S16 -- yes --> S18["the dim raises a second time on the first COLUMN line,
+                      because a change of axis is a new number"]
+```
+
+**What this chart deliberately leaves open, because it is genuinely undecided:**
+
+- **S7 — where the beat ends.** "score first meld" could mean the jump, the number, or the props.
+  Under act compression these collapse into each other, so the choice only shows at normal pacing.
+  **Q189.**
+- **S12 — the dim and the lights are separable.** A circle and a beam still read on a lit board;
+  they just read as *bright* rather than as *the only thing lit*. Whether the whole show is
+  transient or only the darkness is **Q190**, and it is the one that changes how much of chart E and
+  chart H still matter.
+- **S16 — the row pass and the column pass are two performances.** **Q192.**
+- ⚠ **The reveal (chart I) is NOT part of this chart.** Rows expanding to uncover a buried card is
+  about *visibility*, not about darkness, so under (c) it keeps running for every line unless you
+  say otherwise — **Q193**.
+- ⚠ **QR8 = (b) and QR2 = (c) do not compose.** QR8's (b) lights the whole board at the start of the
+  submit and holds it; (c) says the dark lasts one meld. If both are chosen, the lights hold and only
+  the darkness is brief — stated so it is not discovered later. **Q194.**
 
 ---
 
@@ -708,6 +870,78 @@ Additional edge cases enumerated as questions rather than drawn:
 
 ---
 
+## 12b. Flowchart R — a spotlit card is DISCARDED mid-line: compact and follow `[Q24=c]`
+
+Q24 asked what happens when an `on_active` handler discards a card that is in the meld, and offered
+"its light retires" or "recompute the score". You wrote a third thing:
+
+> *"card discards, removed from meld, card stacked above in same column slides into discarded card's
+> place and spotlight now follows that card and goes through activation process"*
+
+That is a **follow**, not a retirement: the hole closes and the light stays on the slot rather than
+on the card. It is now Q24 option (c) and the recommended default.
+
+**The slide is already free, and that is the good news.** A column is `ArrayCardData.datas`, a plain
+`Array` — `Game.is_data_topmost` reads `vec3.z == zone_col.datas.size() - 1` (`Levels/game.gd:613`).
+Erase the entry at `z` and every card at a higher `z` shifts down one index by itself. Higher `z`
+draws later and covers (§1.2), so the card that *was* covering the discarded one is exactly the card
+that lands in the vacated slot. Nothing has to be written to make cards slide; what has to be
+decided is what the **light** and the **activation** do about it.
+
+```mermaid
+flowchart TD
+  R1["on_active handler discards a card at column c, row z, during line L"] --> R2["the card leaves the board:
+                                                                                  zone_col.datas.erase — every card
+                                                                                  at higher z shifts down one index"]
+  R2 --> R3{"was the discarded card the LAST of its column?"}
+  R3 -- yes --> R4["nothing was covering it, so nothing slides in.
+                    The card now at z-1 becomes topmost and NATURALLY spotlit —
+                    but it is in row z-1, not in this row line. Q199"]
+  R3 -- no --> R5["the card that was at z+1 is now at z:
+                   it occupies the discarded card's slot AND its row"]
+  R5 --> R6["the score is UNCHANGED — Q22=a fixed the meld before the
+             spotlight phase, so the discarded card still scores"]
+  R6 --> R7["the discarded card's JUMP is skipped: its visual is gone by D14"]
+  R7 --> R8["its light does NOT retire. It re-pins to the slot's new occupant — Q200"]
+  R8 --> R9["the new occupant joins the line's spotlight set and is force-spotlit"]
+  R9 --> R10["skill_active_check runs — it already runs after every mod call, §1.1 —
+              and fires on_active on the new occupant"]
+  R10 --> R11{"that handler discards a card too?"}
+  R11 -- yes --> R12["re-enter at R1. A cap is needed or a column can unzip
+                      itself in one line — Q201"]
+  R11 -- no --> R13["the line continues at D13, the hold beat, with the
+                     original meld and a changed board"]
+  R4 --> R14["every card BELOW the discard in that column also moved up one row.
+              Row membership for every later line of this act has changed — Q202"]
+  R13 --> R14
+  R14 --> R15["the reveal rows were computed at D4 against the OLD indices.
+               They are re-derived, or they are stale — Q203"]
+  R15 --> R16["the column is one card shorter, so the board is shorter:
+               every reveal below it, every prop anchored below it, and the
+               scroll extent all move — chart I, K13"]
+```
+
+**Where this is load-bearing, stated so it can be rejected:**
+
+- **R6 is the whole reason this is cheap.** Because Q22 = (a) — the meld is fixed before the
+  spotlight phase — a card leaving the board does not change what the hand scores. If Q22 is ever
+  changed to (b), R6 becomes a contradiction and this chart needs rewriting.
+- **R8 vs Q160.** Q160 said *"a card's visual is freed mid-line → its light retires"*. That is the
+  opposite of this, and it was written before you answered. Q160 is re-gated so it only asks about
+  the case R3/R4 covers — a discard with nothing to slide in.
+- **R11 is the one that can hurt.** Every activation runs `skill_active_check` again, so a chain of
+  discards is a loop with no natural bound. Fire it too eagerly and a single spotlight can strip a
+  column. `act_event_cap` catches a true runaway but at act granularity, not line granularity.
+  **Q201.**
+- **R14 is the quiet one.** The compaction moves every card below the discard **up one row**, and
+  the row loop in chart C is still counting. A card that was in row 4 is in row 3, which the cascade
+  has *already scored*. **Q202** is whether that card is scored twice, or skipped, or neither.
+- ⚠ **This chart is about a discard caused by `on_active`.** A card removed by any other route
+  mid-line (a prop, an `on_score` effect firing later in the same line) hits the same board
+  mechanics. Whether it gets the same follow behaviour is **Q205**.
+
+---
+
 ## 13. Flowchart K — the non-scoring spotlight (normal play)
 
 Everything above is the scoring cascade. The glow also has a life outside it.
@@ -786,6 +1020,194 @@ flowchart TD
 | S12 | Normal play, no scoring | The glow-only path |
 | S13 | Hover + spotlight on the same card | The two highlights reading distinctly |
 | S14 | `fx_intensity = 0` | The accessibility floor |
+| S15 | **The circle at full intensity, held on one frame, over the busiest card face the game can build** | **The readability constraint (§14b.3) — the only way to judge ask 2** |
+| S16 | **A discard mid-line that compacts a column** | Flowchart R — compact-and-follow |
+| S17 | **The transient dim, at NORMAL pacing** | Flowchart S — where the beat ends is invisible under compression |
+
+---
+
+## 14b. Flowchart O — THE GLOW SHADER `[QR5≠c]`
+
+The v2 braindump, restated as its three asks:
+
+1. *"glow shader I want for both generic node2d like cards and props **and** the spotlight circle
+   that will go over cards"* — **one shader, three clients.**
+2. *"it cant be too bright and circle needs transparency since glowing object still needs to be
+   readable"* — **the art under the light must stay legible.** This is a hard constraint, not a
+   preference, and it is what rules out the obvious implementation.
+3. *"Should overlap object similar to current fire shader with shader vfx going off edge of card,
+   but **can** overlap object pixels unlike fire shader"* — **reach past the silhouette like fire,
+   but draw over the art instead of being cut at it.**
+
+### 14b.1 The unification, and it is smaller than it looks
+
+Ask 1 sounds like three effects. It is one, because of a shape the fire shader already has: fire is
+not "a card effect" — it is a field computed from a **mask**, and `mask_level()` has one branch per
+mask kind (box / the host's own 24-vertex outline / a sprite's alpha / a disc, for balls). The
+braindump's own pseudocode has the same shape and calls it `uLightMask`.
+
+So: **the glow is a light field over a mask, and the three clients differ only in which mask.**
+
+| Client | Mask | Where the quad lives |
+|---|---|---|
+| A glowing card | the host's own outline (`SHAPE_RADII`) or a rounded rect (Q124) | the card's `FxAttachment` |
+| A glowing prop | the art's alpha (`SHAPE_SPRITE`) | the prop's `FxAttachment` |
+| **The spotlight circle** | a **disc** of `circle_radius`, centred on the card's art square | **QR9** — the card's attachment, or the light layer |
+
+That is one new shader, one `FxGlowStyle`, and one extra mask branch. It is **not** a second copy of
+the fire shader: fire's cover field asks *"how far above the nearest surface below me"* (directional,
+`u_taps` downward taps); a glow asks *"how far from the mask am I, in any direction"*, which is a
+different and — for the shapes that have one — cheaper question.
+
+### 14b.2 The model
+
+```mermaid
+flowchart TD
+  O1["glow quad: host body plus reach, one per host — same sizing as fire, FxRequest.reach"] --> O2["body_near early-out:
+                                                                                                    reject the empty corners of the quad
+                                                                                                    before any lookup — worth 2.1x on fire"]
+  O2 --> O3["p = fx_local(UV, extent, pixel) — quantized on the HOST'S ORIGIN, never rotated"]
+  O3 --> O4{"which mask? — see 14b.1"}
+  O4 -- "host silhouette" --> O5["d = signed distance from p to the mask.
+                                 Q124 picks how: a plain rounded rect, or the host's
+                                 own exact outline"]
+  O4 -- "disc (the circle)" --> O6["d = length(p - centre) - circle_radius.
+                                   One subtraction. This is why the circle is the CHEAP client"]
+  O5 --> O7["falloff(d): mix of a smooth curve and inverse-square, per the braindump.
+             Inverse-square is what makes the core read HOT instead of foggy"]
+  O6 --> O7
+  O7 --> O8{"how many layers? — Q207"}
+  O8 -- "one" --> O9["intensity = falloff(d) * gain"]
+  O8 -- "L layers" --> O10["intensity = sum over layers of falloff(d / radius_i) * gain_i,
+                           the multi-exposure simulation — each layer its own reach and gain"]
+  O9 --> O11["radial COLOUR SHIFT: core to mid to edge.
+              This is a PaletteRamp SAMPLE on intensity, exactly as fire samples u_ramp —
+              the palette contract forbids lerping colours, and a ramp is the fix, not a limit"]
+  O10 --> O11
+  O11 --> O12{"is this fragment OVER the host's own art?"}
+  O12 -- no --> O13["outside the silhouette: the halo. Draws at full alpha —
+                     this is the part that hangs off the card's edge"]
+  O12 -- yes --> O14["over the art: draws at inner_alpha, the lever fire ships at the opaque end
+                     and this effect exists to use. THIS IS ASK 2 — Q216"]
+  O14 --> O15["⚠ the over-art test is done at the UNQUANTIZED position, so the art's own
+               edge slices the chunky glow pixels instead of a staircase — fire paid for
+               this lesson twice, for cards and again for props"]
+  O13 --> O16["dither on the FX PIXEL GRID (never FRAGCOORD) to break the ramp's bands"]
+  O15 --> O16
+  O16 --> O17["COLOR = ramp sample * brightness * fx_intensity, alpha * opacity * inner_alpha"]
+  O17 --> O18["multiply the host's MODULATE back in — or the focus highlight
+               never reaches the glow, which is exactly Q121's problem"]
+  O18 --> O19{"blend mode — Q218"}
+  O19 -- "blend_add" --> O20["light adds. Bright, correct for a lamp,
+                             and it washes dark ink toward the light colour —
+                             the direct threat to ask 2"]
+  O19 -- "blend_mix, premultiplied" --> O21["light tints. Keeps contrast, reads flatter,
+                                            cannot blow out"]
+```
+
+### 14b.3 The readability constraint, taken seriously
+
+Ask 2 is the one that decides whether this looks right, so it is written out rather than left to a
+tuning pass:
+
+- **A canvas quad cannot brighten what is under it.** With no screen read (§1.6, fact 1), the only
+  blends available are add, mix, sub and mul. A light is add or mix. **Add is what "light" means and
+  add is what destroys legibility**: adding a bright value to a dark pixel and to a light pixel moves
+  both toward the light colour, so the ink and the paper converge and the rank glyph disappears
+  first, because it is the smallest dark feature on the card.
+- **Which means "not too bright" is a contrast budget, not a brightness knob.** The honest form of
+  the constraint is: *the darkest pixel of the card art, plus the glow, must stay some distance below
+  the lightest pixel plus the glow.* Since add moves both by the same amount, contrast is preserved
+  in absolute terms and destroyed in **relative** terms — and perception is relative. That is why
+  `inner_alpha` exists as a separate knob from `brightness`: the halo outside the card can be as
+  bright as it likes, and the part over the art is what has to be held down. **Q216** sets it.
+- ⚠ **The circle is the worst case, not the card glow.** A halo around a silhouette barely covers
+  art at all; the spotlight circle is `r = 16` art units centred on the card's own 32×32 art square
+  (§1.2), so it covers **the whole art square and nothing else**. Whatever the answer to ask 2 is,
+  it is decided by looking at the circle over a real card face, not at a glowing card.
+- **This is a case for the eye, not for the tuning table** (project rule 4: verify visuals by eye).
+  The scenario the tool must be able to hold on one frame is *the circle at full intensity over the
+  busiest card the game can build* — added to §14's scenario list as **S15**.
+
+### 14b.4 What "overlap like fire, but over the pixels" means precisely
+
+Fire's relationship to its host is governed by two knobs that pull in opposite directions:
+
+| Knob | Fire's value | What it does | The glow wants |
+|---|---|---|---|
+| `u_sink` | `2.0` | how far *into* the art the effect is allowed, as an **erosion of the mask**. Positive sinks the base below the surface so there is no seam; negative lifts the flame clear so it covers no art at all | positive, and larger — the glow starts *inside* the silhouette |
+| `u_inner_alpha` | `1.0` (opaque; the lookup is skipped whole) | the alpha the effect draws at **where it covers the host's art** | strictly between 0 and 1 — this is ask 3 |
+
+So ask 3 — *"can overlap object pixels unlike fire shader"* — is **exactly `inner_alpha < 1`**, a
+uniform that already exists, is already documented, is already wired through `FxStyle.apply()`, and
+that no shipped style uses because the owner ruled seeing art through flame *"looks very bad"*. The
+glow is the effect it was written for. No new mechanism.
+
+---
+
+## 14c. Flowchart P — the film-light pipeline `[QR10≠c]`
+
+The braindump's Part 1 §§3–7 (halation, bloom, film emulation, imperfections, HDR) and most of its
+pseudocode are **not a shader on a card**. They are a full-screen post-process over the finished
+frame. This chart separates what can be done inside the glow quad from what cannot, so the two are
+not accidentally scoped as one job.
+
+```mermaid
+flowchart TD
+  P1["the Dangerous Light pipeline, as written"] --> P2{"does this stage read the RENDERED SCENE?"}
+  P2 -- no --> P3["MULTI-LAYER GLOW — layers of radius and gain, summed.
+                   Doable inside the glow quad today: chart O, O10"]
+  P2 -- no --> P4["INVERSE-SQUARE FALLOFF — a function of one distance.
+                   Doable today: chart O, O7"]
+  P2 -- no --> P5["RADIAL COLOUR SHIFT core to mid to edge.
+                   Doable today, and it IS a PaletteRamp: chart O, O11"]
+  P2 -- no --> P6["GRAIN — a hash per pixel. Doable in the quad,
+                   but only over the quad, not over the frame"]
+  P2 -- yes --> P7["HALATION — blur the BRIGHT parts of the scene, tint red, add back"]
+  P2 -- yes --> P8["BLOOM — threshold the scene, wide blur, tint cyan, add back"]
+  P2 -- yes --> P9["FILM LUT — a colour transform of every pixel in the frame"]
+  P2 -- yes --> P10["CHROMATIC ABERRATION — resample the scene per channel"]
+  P2 -- yes --> P11["GATE WEAVE — jitter the whole frame's sample point"]
+  P2 -- yes --> P12["DUST — composite over the frame"]
+  P2 -- yes --> P13["HDR TONEMAP — needs a float target to tonemap FROM"]
+  P7 --> P14["ALL of these need a screen read. The project has ZERO today — §1.6 fact 1"]
+  P8 --> P14
+  P9 --> P14
+  P10 --> P14
+  P11 --> P14
+  P12 --> P14
+  P13 --> P14
+  P14 --> P15["so they are one new subsystem: a full-screen pass over the whole game"]
+  P15 --> P16{"and it changes the look of EVERYTHING, not of the spotlight — QR10"}
+  P16 -- "in scope now" --> P17["a real decision, and a large one: it is a game-wide art
+                                direction change that happens to arrive with Spotlight"]
+  P16 -- "deferred" --> P18["Spotlight ships the four stages that need no screen read.
+                            The pipeline becomes its own design"]
+  P16 -- "never" --> P19["the palette and the pixel grid stay the only colour authorities"]
+```
+
+**The three collisions to weigh before answering QR10**, none of which is fatal and all of which are
+real:
+
+1. **A LUT and a fixed palette are two authorities on colour.** §4i says every colour resolves to a
+   named entry of one N×1 image and ramps SAMPLE rather than lerp; a film LUT remaps arbitrary
+   colours to arbitrary colours. Applied over the frame, it takes the game **off palette
+   everywhere** — which may be the intent (it is a *look*), but it is the opposite of the contract
+   the palette work landed to establish.
+2. **Grain, chromatic aberration and gate weave are sub-pixel effects on a pixel-art game.** Grain
+   at screen resolution puts a different noise value inside each screen pixel of a chunky FX block —
+   the exact bug that was found and fixed once already (`fire.gdshader:760`). Gate weave jitters the
+   whole frame by a fraction of a pixel, which on nearest-neighbour pixel art does not read as weave;
+   it reads as the art shimmering. Both want to be quantized to the game's pixel size, at which point
+   they are a different effect from the film one.
+3. **Cost.** Every stage in the right-hand column is a full-screen pass with a blur in it. Against a
+   measured budget where the whole FX layer is 5.82 ms of the worst window the game can build, that
+   is not a rounding error.
+
+**My recommendation is QR10 = (b), deferred**: build the four left-hand stages inside the glow (they
+are most of what makes light read as light), ship Spotlight, and design the film pipeline as its own
+document when there is a finished picture to apply it to. It is a whole-game art decision and it
+should not be made as a side effect of a card glow.
 
 ---
 
@@ -817,6 +1239,11 @@ most valuable thing you can tell me.**
 | U19 | `on_active` effect mutates the board mid-line | spotlight set may go stale | lights re-pin | Chart J |
 | U20 | A future `Ghost Light` / `Kuroko` card | does not block spotlight beneath | the card beneath glows while covered | Q9 |
 | U21 | The QOL "show all abilities" board-spread toggle (DESIGN_DOC §7) | — | reuses the reveal machinery | Q186 |
+| U22 | **A spotlit card's PROP** | — | glow, same shader | Q219 |
+| U23 | **The circle sitting over a card's art square** | — | the readability case — the whole 32×32 picture is under it | Q216, Q217 |
+| U24 | **A meld card discarded mid-line by an `on_active`** | the set changes mid-line | the light follows the slot | Chart R |
+| U25 | **Every line after the first, once the transient dim has lifted** | unchanged | lights over a normally lit board — or no lights at all | Chart S, Q190 |
+| U26 | **A glowing card next to a BURNING card** | — | two effects on one host; the halo and the flame share a quad budget | Q210 |
 
 ---
 
@@ -863,9 +1290,32 @@ settings — §4g owner ruling 8: one shared location for all effect tuning)
 | `beam_width_at_target` | must cover the circle | 34 |
 | `beam_softness` | edge falloff | — |
 | `origin_rise` | how far above its target an origin sits (Models 2/3) | 600 px |
-| `glow_strength` | the card glow | — |
-| `glow_falloff` | the card glow's reach | — |
 | `light_colour` / `light_ramp` | see Q134 | — |
+
+**The glow shader** (new in v2 — an `FxGlowStyle` subclass beside `FxFireStyle` and `FxJuggleStyle`,
+never knobs on the `FxStyle` base; §1.6 and the 2026-07-31 ruling). One `.tres` per client, as fire
+ships `fire_card` / `fire_prop` / `fire_ball`.
+
+| Knob | Meaning | Suggested | Question |
+|---|---|---|---|
+| `pixel` | art units per FX pixel — inherited from `FxStyle` | match the host's art, as fire had to learn to | Q213 |
+| `reach` | how far past the silhouette the halo extends, in art units | 8 (card), 5 (prop) | Q210 |
+| `layers` | how many glow layers are summed (the multi-exposure sim) | 2 | Q207 |
+| `layer_radius[i]` | each layer's falloff radius, as a fraction of `reach` | 0.35 / 1.0 | Q207 |
+| `layer_gain[i]` | each layer's gain | 1.0 / 0.4 | Q207 |
+| `inverse_square` | 0 = smooth falloff, 1 = pure inverse-square (the "hot core") | 0.6 | Q208 |
+| `glow_ramp` | the core→mid→edge `PaletteRamp`, sampled on intensity | — | Q211 |
+| `brightness` | inherited; `fx_intensity` folds in here | 1.0 | — |
+| `inner_alpha` | **the alpha over the host's own art — ask 2's knob** | 0.35 | **Q216** |
+| `sink` | how far inside the silhouette the field starts | 4 | Q209 |
+| `dither` | breaks the ramp's bands, indexed on the FX pixel grid | 1.0 | Q214 |
+| `circle_radius` | the disc mask's radius, in ART units | 16 | Q85 |
+| `circle_inner_alpha` | the circle's own over-art alpha, if it is not the glow's | 0.5 | Q217 |
+| `breathe_amp` / `breathe_speed` | if the glow animates at all | 0.0 | Q126 |
+
+⚠ **`circle_intensity`, `beam_intensity`, `beam_width_*` and `beam_softness` stay on the light
+layer's style** unless QR9 moves the circle onto the card, in which case the circle's knobs move with
+it and the two `.tres` files split differently. That is a consequence of QR9, not a separate choice.
 
 ---
 
@@ -876,16 +1326,20 @@ answer. `notes` means the options may not cover it and free text is welcome.
 
 ### 17.0 ROOT FORKS — answer these first
 
-These eight gate most of the document.
+These ten gate most of the document. **QR2 and QR9/QR10 are new or changed in v2** — QR2 because you
+wrote your own answer to it and that answer is now option (c), QR9 and QR10 because the glow
+braindump opens two forks nothing in v1 asked about.
 
 - **QR1** `[root]` ⚑gate — Today, a card's abilities only fire while it is uncovered on the board. During scoring, should the cards being scored genuinely COUNT as uncovered — so their abilities fire even if they are buried — or is the spotlight only a light show? · **(a)** mechanical and visual: a scored card really becomes active and its abilities trigger before the hand scores — **→ next:** ~22 questions on what fires, in what order, what happens when an ability moves a card mid-scoring, undo, headless · **(b)** visual only: the lights are theatre, nothing about activation changes — **→ next:** none of that; straight to what gets lit and how it looks · *default* (a) · notes ⇒ (b) skips §17.2 and most of §17.3
-- **QR2** `[root]` ⚑gate — During scoring, does the rest of the screen go dark so the lit cards stand out? · **(a)** yes, the house lights go down for the whole submit — **→ next:** ~12 questions on what the darkness covers (HUD, props, popups), how dark, and accessibility · **(b)** no, lights over a normally-lit board — **→ next:** none of that · *default* (a) · notes ⇒ (b) skips §17.6
+- **QR2** `[root]` ⚑gate — During scoring, does the rest of the screen go dark so the lit cards stand out, and if so for how long? A submit scores every row and then every column, which can be a dozen lines. · **(a)** yes, for the WHOLE submit — the house lights stay down until the last column has scored — **→ next:** ~12 questions on what the darkness covers (HUD, props, popups), how dark it goes, and accessibility · **(b)** no dim at all — the lights play over a normally lit board — **→ next:** none of that · **(c)** TRANSIENT — the dark lasts only the opening beat: the lights spawn in, the first meld jumps and scores, then it fades back to a normally lit board and the rest of the act runs in the light. This is your own answer from round 1, written up as §5b — **→ next:** the same ~12 questions about what the darkness covers, PLUS ~9 on exactly which beat ends it, whether the circles and beams end with it, and whether the column pass gets its own opening · *default* (c) — it is what you asked for · notes ⇒ (b) skips §17.6 and §17.6b; (a) skips §17.6b only
 - **QR3** `[root]` ⚑gate — A theatrical spotlight is two things: a bright circle on the card, and the visible cone of light reaching it from a lamp. Which do you want? · **(a)** both — circle on the card, beam from above — **→ next:** ~24 questions on beam shape, where the lamps sit, what happens on a deep board, overlapping beams · **(b)** circle only, no visible beam — **→ next:** none of that; much shorter · **(c)** beam only, no distinct brighter circle — **→ next:** the beam questions but not the circle ones · *default* (a) · notes ⇒ (b) skips §17.8 and §17.9 (24 questions)
 - **QR4** `[root]` ⚑gate — Stacked cards cover each other: a buried card shows only its top ~45 px of 125, so a light on it would fall almost entirely on the card in front. Should the board push its rows apart to uncover a card before lighting it? · **(a)** yes, rows slide apart so the lit card is fully visible, then close again — **→ next:** ~18 questions on how far it opens, whether the whole board or one column moves, and what that does to score labels and props · **(b)** no, the light lands on whatever part of the card happens to be visible — **→ next:** none of that · *default* (a) · notes ⇒ (b) skips §17.4 (18 questions)
 - **QR5** `[root]` ⚑gate — Separately from the scoring show: should every card whose abilities are currently live carry a soft glow the whole time, so you can see at a glance which cards are doing something? · **(a)** yes, always on, during normal play as well as scoring — **→ next:** ~21 questions on what the glow looks like, how it reads next to the hover highlight, and which screens show it · **(b)** only while a scoring dim is up — **→ next:** the look questions but none about normal play · **(c)** no glow at all; the circles and beams are the only lighting — **→ next:** none of that · *default* (a) · notes ⇒ (c) skips §17.10 and §17.12 (21 questions)
 - **QR6** `[root]` ⚑gate — Should a tuning tool be built alongside this — a scene that plays every spotlight situation on a real board so you can tune it by eye, like the existing FX editor? · **(a)** in scope, built alongside the feature — **→ next:** ~10 questions on what it hosts and which situations it must be able to replay · **(b)** follow-up; ship the feature first and tune it in-game — **→ next:** none of that · *default* (a) · notes ⇒ (b) skips §17.15
 - **QR7** `[root]` ⚑gate — Scoring moves from row to row and then column to column. When it moves on, does a light TRAVEL from the old card to the new one, or does one set fade out and another fade in? · **(a)** travel — the same lamp swings across, which is what a real followspot does — **→ next:** ~12 questions on how they travel, which light goes to which card, and what happens when the counts do not match · **(b)** fresh set each line, fade out and in — **→ next:** almost none of that · *default* (a) · notes ⇒ (b) skips most of §17.5
-- **QR8** `[root]` ⚑gate — Does the lighting follow the scorer line by line, or does everything that is going to be scored light up at once and stay lit? · **(a)** per line — the light follows the scorer, row by row then column by column · **(b)** once per act — the whole board lights up at the start of the submit and holds — **→ next:** the travel and per-line-timing questions stop applying · *default* (a) · notes ⇒ (b) collapses §17.5 and much of §17.4
+- **QR8** `[root]` ⚑gate — Does the lighting follow the scorer line by line, or does everything that is going to be scored light up at once and stay lit? · **(a)** per line — the light follows the scorer, row by row then column by column — **→ next:** the travel questions (how a light gets from one line's cards to the next), the per-line timing of the reveal, and whether rows collapse between lines · **(b)** once per act — the whole board lights up at the start of the submit and holds — **→ next:** the travel and per-line-timing questions stop applying · *default* (a) · notes ⇒ (b) collapses §17.5 and much of §17.4
+- **QR9** `[root]` ⚑gate — **NEW in v2.** You want one glow shader serving cards, props *and* the spotlight circle. That is a shader question and a *where does it draw* question, and they can be answered separately. Today the circle is drawn by the screen-space light layer, which is what lets it punch a hole in the dim and ignore the card covering its target; a card-hosted quad instead scrolls with the board, turns with the card, and is painted over by the card in front of it. · **(a)** keep the circle on the light layer with its own shader — one more shader, nothing else changes — **→ next:** nothing new · **(b)** move the circle onto the card's own attachment, drawn by the glow shader — **→ next:** ~7 questions on it being occluded, scrolling, turning with the card, and how it survives the dim at all · **(c)** ONE SHADER, TWO HOSTS — the same `.gdshader` and style class draw the card glow, the prop glow and the circle, but the circle's quad still lives on the light layer, so nothing about occlusion or the dim changes — **→ next:** ~3 questions on what the shared shader has to carry to serve both · *default* (c) — it gives you the single shader you asked for without moving the circle underneath the dim that has to be punched for it · notes
+- **QR10** `[root]` ⚑gate — **NEW in v2.** The braindump's film half — halation, bloom, a film LUT, grain, dust, gate weave, chromatic aberration, HDR tonemapping — is a full-screen pass over the finished frame, not a shader on a card, and this project has **no screen read anywhere** today (grepped, §1.6). It would change how the whole game looks, not just the spotlight. · **(a)** in scope now, built alongside Spotlight — **→ next:** ~10 questions on which stages, what it does to the palette contract and to pixel art at screen resolution, and what it costs · **(b)** deferred — Spotlight ships the four stages that need no screen read (multi-layer glow, inverse-square falloff, radial colour shift, in-quad grain) and the film pipeline becomes its own design document — **→ next:** none of that · **(c)** never — the palette and the pixel grid stay the only authorities on colour, and even in-quad grain is dropped — **→ next:** none of that, and one look question is re-asked · *default* (b) — it is a whole-game art-direction change and should not be decided as a side effect of a card glow · notes ⇒ (b)/(c) skip §17.18
 
 ### 17.1 Naming and scope
 
@@ -915,13 +1369,30 @@ These eight gate most of the document.
 - **Q21** `[QR1=a]` — Do they touch patience? · **(a)** no (patience is already inactive during a submit) · **(b)** yes · *default* (a)
 - **Q22** `[QR1=a]` — An `on_active` handler moves a card out of the line. Does the score use the ORIGINAL meld? · **(a)** yes, the meld is fixed before the spotlight phase · **(b)** no, re-evaluate · *default* (a) ⇒ (a) skips Q23
 - **Q23** `[Q22=b]` — When is the meld re-evaluated? · **(a)** after all spotlight effects fire, once · **(b)** after each card's effect · *default* (a) · notes
-- **Q24** `[QR1=a]` — An `on_active` handler discards a card that is in the meld · **(a)** its light retires, its jump is skipped, the score is unchanged · **(b)** the score is recomputed without it · *default* (a)
+- **Q24** `[QR1=a]` — During scoring, a card's own ability fires and discards a card that is part of the hand being scored. The hand's value was already worked out before any ability fired, so the score does not move — but a card has just vanished from the middle of a stack, and a light is pointing at where it was. · **(a)** the light retires; the discarded card's jump is skipped and the score is unchanged · **(b)** the score is recomputed without it · **(c)** COMPACT AND FOLLOW — the column closes up, the card that was covering it slides into its place, and the light follows the slot: the new occupant is spotlit and goes through the whole activation. Score unchanged. This is your own answer from round 1, written up as §12b · *default* (c) — it is what you asked for · notes ⇒ (c) opens §17.2b
 - **Q25** `[QR1=a]` — May `on_active` handlers mutate the board during scoring? · **(a)** no, they defer (ruling B10) · **(b)** yes, immediately · *default* (a) ⇒ (b) skips Q26
 - **Q26** `[Q25=a]` — When does the deferred work run? · **(a)** after the line, before the next line · **(b)** at the very end of the act · *default* (a)
 - **Q27** `[QR1=a & QR8=a]` — Do activations happen per line (chart D) or for the whole act up front? · **(a)** per line · **(b)** whole act up front · *default* (a)
 - **Q28** `[QR1=a]` — Is there a MECHANICAL cap on simultaneously force-spotlit cards? · **(a)** no · **(b)** yes, a number · *default* (a)
 - **Q29** `[QR1=a]` — Does being spotlit make a card targetable or interactable in any new way? · **(a)** no · **(b)** yes · *default* (a) · notes
 - **Q30** `[QR1=a]` — Will content ever QUERY "is this card spotlit" (a card reading "while 3 cards are spotlit")? · **(a)** not in this plan, but the state is queryable so it is possible later · **(b)** yes, design the query surface now · *default* (a)
+
+### 17.2b The discard compaction `[Q24=c]`
+
+Nine questions opened by "compact and follow". §12b draws the same thing as a chart. The one fact
+every question below rests on: a column is a plain array, so **erasing a card slides every card
+below it up one slot automatically** — the board already does that, and it does it whether or not
+Spotlight exists.
+
+- **Q198** `[Q24=c]` — You said *"card stacked above in same column slides into discarded card's place"*. Cards in a column overlap downward: the one drawn on top of another sits lower on screen and hides its bottom. Which neighbour slides in? · **(a)** the card that was COVERING it — the one on top of it, which sits just below it on screen. This is what the board does by itself when an array entry is erased, so it costs nothing · **(b)** the card ABOVE it on screen — the one it was itself covering, which would mean the stack slides down instead of up · *default* (a) · notes
+- **Q199** `[Q24=c]` — The discarded card was the last of its column — nothing was covering it, so nothing can slide in. · **(a)** the light retires, as Q24=(a) would have done. The card that was under it becomes uncovered and naturally spotlit, but it is in a different row and is not part of this line · **(b)** the light follows downward to the newly uncovered card and force-spotlights it anyway, even though it is not in the line being scored · *default* (a)
+- **Q200** `[Q24=c]` — How does the light get from the discarded card to its replacement? They are one row apart, which is 45 px at defaults. · **(a)** it travels, using the same tween as a line-to-line move but shorter · **(b)** it snaps — the card slid into the same slot, so the light was already almost there · **(c)** it stays exactly where it is; the replacement card arrives underneath it · *default* (c) — the light is pinned to the SLOT for this one case, so nothing has to move at all · notes
+- **Q201** `[Q24=c]` — The replacement card activates, and its ability discards a card too, and so on. A column could unzip itself in one line. Is there a cap? · **(a)** yes, a cap on follows per line (a tunable, suggested 3) — beyond it the light retires and the line proceeds · **(b)** no cap; `act_event_cap` already stops a true runaway at act level · **(c)** cap at one follow — a slot is filled at most once per line · *default* (a) · notes ⇐ **the one that can hurt: without a bound this loop has no natural end**
+- **Q202** `[Q24=c]` — The compaction moves every card BELOW the discard up one row, while the scoring cascade is still counting rows. A card that was in row 4 is now in row 3 — a row the cascade has already scored. · **(a)** accept it: rows are scored by index, the index is re-read each iteration, and a card that moves up is simply scored in whatever row it is in when that row comes up — so it can be skipped · **(b)** a card that has already been scored this act is never scored again, tracked per card · **(c)** freeze the row indices for the whole act, so the cascade scores the board as it was at submit · *default* (a) · notes ⇐ this is a SCORING question, not a lighting one, and it exists today for any mid-act discard
+- **Q203** `[Q24=c & QR4=a]` — The rows that had to slide apart were worked out before the discard. After it, the board is one card shorter in that column. · **(a)** re-derive the reveal set and re-tween — the board settles into its new shape mid-line · **(b)** leave the reveal as it was; the extra gap is harmless and re-tweening mid-line is visual noise · *default* (a) · notes
+- **Q204** `[Q24=c]` — Does the replacement card fire `on_active` even though it cannot affect this hand's score (the meld was fixed before any ability fired)? · **(a)** yes — it is spotlit, and spotlit means your abilities fire; the score not moving is a separate fact · **(b)** no — an activation that cannot matter is ceremony · *default* (a) — it is your own words, *"goes through activation process"*
+- **Q205** `[Q24=c]` — A card can also leave the board mid-line by other routes — a prop, an `on_score` effect firing later in the same line. Do those get the same compact-and-follow? · **(a)** yes, one rule for any card that leaves a slot the light is on · **(b)** no, only an `on_active` discard during the spotlight phase · *default* (a) — two rules for the same picture is how the two diverge later
+- **Q206** `[Q24=c]` — Does the discarded card get any exit cue of its own before its light moves on? · **(a)** no — it discards exactly as it does today, and the light is on its replacement by the next frame · **(b)** yes, a beat: the light holds on the empty slot for a moment first · *default* (b) — a card vanishing from under a spotlight with no pause reads as a glitch rather than as an event · notes
 
 ### 17.3 What is in the spotlight set
 
@@ -974,20 +1445,39 @@ These eight gate most of the document.
 - **Q71** `[root]` — The transition already waits for the previous line's props (`_run_score_effects` is awaited). No change? · **(a)** confirmed · **(b)** the next line's lights should start moving during the props · *default* (a)
 - **Q72** `[root]` — Any audible or visual "cue" marker at the moment the set changes? · **(a)** out of scope (no audio in this plan) · **(b)** a visual cue, specify in notes · *default* (a) · notes
 
-### 17.6 The dim `[QR2=a]`
+### 17.6 The dim `[QR2=a|c]`
 
-- **Q73** `[QR2=a]` — Does the dim cover the **HUD** (buttons, score labels, deck/discard/rules)? · **(a)** yes · **(b)** no, the HUD stays lit · *default* (a)
-- **Q74** `[QR2=a]` — Does the dim cover the **props** (the prop sim runs inside the dim phase)? · **(a)** no — props are performers, they stay lit (PropLayer draws above the light layer) · **(b)** yes, props dim with everything else · *default* (a) · notes
-- **Q75** `[QR2=a]` — Does the dim cover the **score popups**? · **(a)** no, the number stays readable · **(b)** yes · *default* (a)
-- **Q76** `[QR2=a]` — Does the dim cover the **focus inspector panel**? · **(a)** no · **(b)** yes · *default* (a)
-- **Q77** `[QR2=a & QR5≠c]` — Does the dim cover the **card glow**? · **(a)** YES — this is the mechanism that makes the glow read only inside the circle and beam (G13) · **(b)** no, the glow punches through · *default* (a)
+⚠ **v2 re-gate.** These were written for QR2=(a). Everything that is still a real question under the
+transient dim now reads `[QR2=a|c]`, so **the answers you have already given survive if you switch
+QR2 to (c)**. The four that are genuinely about a dim that lasts the whole act stay `[QR2=a]`.
+
+- **Q73** `[QR2=a|c]` — Does the dim cover the **HUD** (buttons, score labels, deck/discard/rules)? · **(a)** yes · **(b)** no, the HUD stays lit · *default* (a)
+- **Q74** `[QR2=a|c]` — Does the dim cover the **props** (the prop sim runs inside the dim phase)? · **(a)** no — props are performers, they stay lit (PropLayer draws above the light layer) · **(b)** yes, props dim with everything else · *default* (a) · notes
+- **Q75** `[QR2=a|c]` — Does the dim cover the **score popups**? · **(a)** no, the number stays readable · **(b)** yes · *default* (a)
+- **Q76** `[QR2=a|c]` — Does the dim cover the **focus inspector panel**? · **(a)** no · **(b)** yes · *default* (a)
+- **Q77** `[QR2=a|c & QR5≠c]` — Does the dim cover the **card glow**? · **(a)** YES — this is the mechanism that makes the glow read only inside the circle and beam (G13) · **(b)** no, the glow punches through · *default* (a)
 - **Q78** `[QR2=a]` — Does the dim fall before or after `discard_lower_board` sweeps the board? · **(a)** before — the sweep happens in the light · **(b)** after — the board clears in the dark · *default* (a)
-- **Q79** `[QR2=a]` — Dim colour · **(a)** flat multiply toward a dark palette entry, not black · **(b)** a colour cast (cool blue "house lights down") · **(c)** pure black · *default* (a)
-- **Q80** `[QR2=a]` — Texture? · **(a)** uniform · **(b)** vignette · **(c)** subtle noise · *default* (a)
+- **Q79** `[QR2=a|c]` — Dim colour · **(a)** flat multiply toward a dark palette entry, not black · **(b)** a colour cast (cool blue "house lights down") · **(c)** pure black · *default* (a)
+- **Q80** `[QR2=a|c]` — Texture? · **(a)** uniform · **(b)** vignette · **(c)** subtle noise · *default* (a)
 - **Q81** `[QR2=a]` — Is the dim level constant through the act? · **(a)** constant · **(b)** deepens as the cascade proceeds · *default* (a)
 - **Q82** `[QR2=a & QR8=a]` — Does the dim raise once per act (C5) or per line? · **(a)** once per act · **(b)** per line · *default* (a)
-- **Q83** `[QR2=a]` — `fx_intensity = 0` (the accessibility floor) · **(a)** removes beams and glow, KEEPS a reduced dim — removing it entirely makes the mechanic invisible · **(b)** removes everything including the dim · **(c)** removes nothing, dim is not an "effect" · *default* (a) · notes
-- **Q84** `[QR2=a]` — A separate player setting for dim depth (a 75 % dim every submit may be fatiguing)? · **(a)** yes, `dim_target` is a player setting · **(b)** no, style-resource only · *default* (a)
+- **Q83** `[QR2=a|c]` — `fx_intensity = 0` (the accessibility floor) · **(a)** removes beams and glow, KEEPS a reduced dim — removing it entirely makes the mechanic invisible · **(b)** removes everything including the dim · **(c)** removes nothing, dim is not an "effect" · *default* (a) · notes
+- **Q84** `[QR2=a|c]` — A separate player setting for dim depth (a 75 % dim every submit may be fatiguing)? · **(a)** yes, `dim_target` is a player setting · **(b)** no, style-resource only · *default* (a)
+
+### 17.6b The TRANSIENT dim `[QR2=c]`
+
+Nine questions that only exist because the dark is brief. Each is self-contained; §5b draws the same
+thing as a chart if you would rather look at it.
+
+- **Q189** `[QR2=c]` — You said the dark lasts until the first meld has *"jump[ed] up and score[d]"*. A hand scoring is actually four beats in a row: the cards rise, the score number pops up, the suit props run, and then the cards drop back. Which of those is the last one under the dark? · **(a)** the jump — the dim starts falling while the cards are still up, so the light comes back as they land · **(b)** the score popup — the dim holds until the number is readable, then falls · **(c)** the props — the dim holds through the whole prop show for that line, which can be long · **(d)** the cards dropping back — the full beat, dim falls last · *default* (b) — the number is the payoff, and (c) makes the dark's length depend on how many props that hand happened to spawn · notes
+- **Q190** `[QR2=c]` — When the lights come back up, do the spotlight circles and beams go with them, or do they keep playing over a normally lit board for the rest of the act? · **(a)** they keep playing — only the *darkness* was transient; the followspot still travels line to line, just over a lit board · **(b)** they end with the dim — every later line scores with the card glow only, no circles and no beams · **(c)** they finish the current line and then retire · *default* (a) — otherwise the whole followspot machinery (charts E, G, H) exists for exactly one line of every submit · notes ⇐ **this is the one to scrutinise: (b) makes roughly half this document apply to one line per act**
+- **Q191** `[QR2=c]` — Does the dim fade back up smoothly, or cut? · **(a)** fades over `dim_out_fraction`, the same knob the whole-act version uses · **(b)** a faster fade than the raise — lights up quickly, lights down slowly · **(c)** cuts instantly · *default* (b)
+- **Q192** `[QR2=c]` — A submit scores every ROW and then every COLUMN. The column pass is a whole change of axis. Does it get its own opening — the dark coming down a second time for the first column's meld? · **(a)** no, one dark per submit, at the very start · **(b)** yes, once per axis: the rows open in the dark and so do the columns · *default* (a) — twice a submit is twice as often as it is dramatic · notes
+- **Q193** `[QR2=c]` — Rows sliding apart to uncover a buried card (the reveal) is about visibility, not darkness. Does it keep happening for every line after the dark has gone? · **(a)** yes — every line still opens its rows, lit or not; the reveal and the dim are independent · **(b)** no, the reveal is part of the opening too and later lines score with the board as it stands · *default* (a)
+- **Q194** `[QR2=c & QR8=b]` — You have also said the whole board lights up at once at the start of a submit and holds (QR8=b). Combined with a transient dark, that means the lights stay on every scored card for the whole act while only the darkness is brief. Is that the picture? · **(a)** yes, that is what I want · **(b)** no — if the dark is brief the lights should be too · *default* (a)
+- **Q195** `[QR2=c]` — What if the first line produces no meld and is skipped (a row with no scoring hand never reaches `score_line` at all)? · **(a)** the opening moves to the first line that *does* score — the dark raises lazily on the first real meld · **(b)** the dark raises at the submit regardless and falls after the first line that scores · **(c)** the dark raises and falls on the submit boundary whether anything scores or not · *default* (a)
+- **Q196** `[QR2=c]` — Does anything later in the act bring the dark back — a very large hand, a combo, a final line? · **(a)** no, once per submit and that is the whole of it · **(b)** yes, on a threshold worth naming (notes) · *default* (a) · notes
+- **Q197** `[QR2=c]` — Under act compression the delay shrinks toward zero, so late in a long cascade the opening beat would be instant. Does the transient dim get exempted? · **(a)** no — it is the FIRST line of the act, so compression has barely started; nothing to exempt · **(b)** yes, give the opening a floor so it is always readable · *default* (a) — compression counts activations within an act, and the opening happens before there have been any
 
 ### 17.7 The circle `[QR3≠c]`
 
@@ -1084,7 +1574,7 @@ These eight gate most of the document.
 - **Q157** `[root]` — Every column one card deep: one row line, then N single-card column lines. A lot of ceremony for very little board · **(a)** accept · **(b)** collapse trivial lines into one cue · *default* (a) · notes
 - **Q158** `[root]` — Act compression zeroes the delay after ~2000 activations, so late lines get instant spotlight phases · **(a)** accept — exempting the spotlight would make a runaway cascade take minutes · **(b)** exempt the spotlight phase from compression · **(c)** exempt it up to a floor · *default* (a)
 - **Q159** `[root]` — `act_event_cap` trips ("the audience went home") · **(a)** nothing special, the act ends and the dim falls normally · **(b)** a distinct visual (lights cut out) · *default* (a) · notes
-- **Q160** `[root]` — A card's visual is freed mid-line (discarded by an effect) · **(a)** its light retires · **(b)** its light travels to a neighbour · *default* (a)
+- **Q160** `[Q24≠c]` — A card's visual is freed mid-line (discarded by an effect) · **(a)** its light retires · **(b)** its light travels to a neighbour · *default* (a) · notes ⇐ superseded by Q24=(c), which answers this with "the light follows the slot". Only asked if you did not take that branch
 - **Q161** `[QR2=a]` — Two acts in a row: the dim falls and rises again · **(a)** accept · **(b)** hold the dim between acts · *default* (a)
 - **Q162** `[root]` — Does the dim phase block opening the deck / discard / rules viewers? · **(a)** no, they stay clickable as they already do during processing · **(b)** yes, block them · *default* (a)
 - **Q163** `[QR2=a]` — A viewer opened during the dim phase · **(a)** not dimmed, it draws over everything · **(b)** dimmed with the rest · *default* (a)
@@ -1114,7 +1604,55 @@ These eight gate most of the document.
 - **Q181** `[QR6=a]` — Is the tool also the source of reviewable snapshots? · **(a)** yes, a separate snapshot scene reusing `snapshot_scene.gd` · **(b)** no, snapshots are a separate job · *default* (a)
 - **Q182** `[QR6=a]` — Is the S1–S14 scenario list complete? · **(a)** yes · **(b)** no (notes) · *default* (a) · notes ⇐ **the one to scrutinise**
 
-### 17.16 Explicitly out of scope — confirm
+### 17.17 The glow shader itself `[QR5≠c]`
+
+New in v2. §17.10 asked what the glow *looks like*; this asks what it *is*. §14b draws it. Every
+question here is about one shader that draws a card's halo, a prop's halo and — depending on QR9 —
+the spotlight circle, from one light field over one mask.
+
+- **Q207** `[QR5≠c]` — Real backlit animation got its glow by exposing the same frame several times through different diffusions, and the braindump asks to simulate that with several glow layers summed, each with its own reach and gain. How many? · **(a)** one layer — a single falloff, cheapest, and the difference is subtle at the sizes a card is drawn at · **(b)** two — a tight bright core plus a wide soft halo. This is where almost all of the effect is · **(c)** four, the braindump's maximum — every layer costs a full pass of the falloff over the quad · *default* (b) · notes
+- **Q208** `[QR5≠c]` — Real light falls off as one over distance squared, which drops hard and makes the middle read as *hot* rather than as fog; a plain smooth fade reads soft and even. The braindump asks for a blend of the two. Is that adjustable, or is one shape picked and baked? · **(a)** adjustable — one knob from "smooth" to "pure inverse-square", tuned by eye · **(b)** baked at whatever looks right, no knob · *default* (a) — it is one `mix`, and it is the single knob that decides whether the glow reads as a lamp or as a smudge
+- **Q209** `[QR5≠c]` — Where does the falloff *start* — at the card's edge, or inside it? · **(a)** inside, by a few art units, so the light is already at full strength when it crosses the silhouette and there is no seam at the edge. This is exactly what fire's `sink` does · **(b)** at the edge — the glow is strictly outside the card · *default* (a)
+- **Q210** `[QR5≠c]` — How far past the card's edge does the halo reach? For scale: a card is 38×50 art units and the fire on it reaches 7. · **(a)** ~8 art units — comparable to the fire, so a glowing card and a burning card sit in the same visual budget · **(b)** wider, ~16 — unmistakable, and it will overlap the neighbouring card in a stack (rows are 45 px apart at defaults) · **(c)** tighter, ~4 — a rim rather than a halo · *default* (a) · notes ⇐ the budget note in VFX.md is that effect heights are held to half a card separation *so the card behind stays visible*, and a halo is the effect most likely to break it
+- **Q211** `[QR5≠c]` — The braindump's light changes colour as it fades: white-hot at the core, warm in the middle, cooler at the edge. Do you want that, or one colour at varying strength? · **(a)** yes, a core→mid→edge shift. It costs nothing extra: it is a ramp lookup on intensity, which is exactly how fire already gets its colours, and it satisfies the palette rule by construction · **(b)** one colour, varying only in strength — simpler and cannot clash with a card's own art · *default* (a) · notes
+- **Q212** `[QR5≠c & Q136=a]` — You have said the circle, beam and glow are one hue at different intensities (Q136). A core→mid→edge shift means the glow spans three palette entries. Is that still "one hue"? · **(a)** yes — the three entries are a ramp *of* that hue, light to dark, not three different colours · **(b)** no, drop the shift and keep one flat entry · *default* (a)
+- **Q213** `[QR5≠c]` — This game's effects are drawn as chunky pixels on a grid, at a size set per effect. A glow is almost entirely gradient. Is it chunky like the fire, or smooth? · **(a)** chunky, on the same grid at the same size as the card's own art — consistent with everything else, and the gradient becomes visible steps · **(b)** smooth, at screen resolution — the only effect in the game that is not pixelated, which will read as "from a different game" next to the fire · **(c)** chunky, but at a finer grid than the art, so the steps are small · *default* (a) · notes ⇐ **this is the look call, and it cannot be judged from a description — it needs the tool and an eye**
+- **Q214** `[QR5≠c & Q213=a|c]` — Chunky plus a fixed palette means the gradient lands in a handful of flat bands with hard edges between them. The project's answer to that elsewhere is a dither — a checkerboard along each band edge that breaks it up without softening it. · **(a)** yes, dither the bands, same Bayer pattern the rest of the repo uses · **(b)** no, let the bands read as bands — hard steps are a legitimate pixel-art look · *default* (a) · notes
+- **Q215** `[QR5≠c]` — Where the glow crosses the card's own edge, that boundary can be tested at the chunky grid's resolution or at the art's real resolution. Fire had to be changed to the second, twice — for cards and then again for props — because the first drew a visible staircase along a straight edge. · **(a)** the art's real resolution, the lesson already paid for · **(b)** the chunky grid, and accept the staircase · *default* (a)
+- **Q216** `[QR5≠c]` — **THE READABILITY QUESTION.** *"It can't be too bright and the circle needs transparency since the glowing object still needs to be readable."* Light adds, and adding the same amount to the card's dark ink and to its light paper moves both toward the light colour — so the first thing to disappear under a bright circle is the rank glyph. The knob that controls this is separate from overall brightness: it is the alpha the effect draws at *where it covers the card's own art*, and it already exists in the FX layer, unused, because fire ships at the opaque end. Where should it sit? · **(a)** low, ~0.35 — the art stays clearly readable and the light over it is a wash · **(b)** medium, ~0.5 — a real lift, glyphs still legible on the shipped card art · **(c)** high, ~0.8 — the card is genuinely lit and the busiest faces will get hard to read · **(d)** start at (a) and tune it against the S15 scenario before shipping · *default* (d) — this is a call for the eye against a real card face, and (d) is the honest version of it · notes
+- **Q217** `[QR5≠c]` — Same question for the spotlight circle, which is the harder case: the circle is 16 art units of radius centred on the card's 32×32 art square, so it covers **the whole picture and nothing else**. Does it use the same over-art alpha as the glow, or its own? · **(a)** its own knob — the circle is doing a different job and covers a different thing · **(b)** the same knob, one number for all light over art · *default* (a)
+- **Q218** `[QR5≠c]` — How does the light combine with what is under it? · **(a)** additive — this is what light does, it can blow out to white, and it is the direct threat to Q216 · **(b)** a tint that cannot exceed full brightness — keeps contrast, reads flatter and safer · **(c)** additive outside the card, tinted over the art — the two halves of the effect blend differently, which is more code but is exactly what the readability constraint is asking for · *default* (c) · notes
+- **Q219** `[QR5≠c]` — Do PROPS glow when they are spotlit? §17.10 only ever asked about cards, and the braindump explicitly names props. · **(a)** yes, same shader, same rule — a prop belonging to a spotlit card glows with it · **(b)** yes, but props follow their own activation, not their card's · **(c)** no — props are already the most animated things on screen and a halo on each is noise · *default* (a) · notes
+- **Q220** `[QR5=a]` — With the glow on all the time during normal play, a full board is up to ~78 cards and every uncovered one glows. Measured context: 20 burning cards cost 1.53 ms of GPU, and the whole FX layer's worst case is 5.82 ms. A multi-layer glow on every uncovered card is a new cost of the same order. Which way does that get resolved? · **(a)** measure it before choosing a layer count — build the single-layer version, price it, and add the second layer only if it fits · **(b)** cap the glow to a number of cards and drop the rest · **(c)** accept whatever it costs; correctness of look first, optimisation later · *default* (a) — the project's standing rule is that "cheap" ships measured or not at all · notes
+- **Q221** `[QR5≠c]` — One `.tres` per client or one shared? Fire ships three (`fire_card`, `fire_prop`, `fire_ball`) because a card's art units and a prop's screen pixels are different scales. · **(a)** three — card, prop, circle — for the same reason fire needs three · **(b)** one shared, with the scale differences handled in code · *default* (a)
+- **Q222** `[QR5≠c & QR10≠c]` — The braindump asks for film grain "so the light feels embedded rather than sitting on top". Inside the glow quad, that is a hash per pixel and it is cheap — but it only grains the *glow*, not the frame, which is a different thing from what film does. Worth having? · **(a)** yes, a subtle grain on the glow itself, quantized to the effect's own pixels so it does not fight the pixel art · **(b)** no — grain that stops at the quad's edge draws attention to the quad's edge · *default* (b) · notes
+
+### 17.17b What a shared shader has to carry `[QR9=b|c]`
+
+- **Q223** `[QR9=b|c]` — The glow's field is measured from the host's own outline; the circle's is measured from a point. One shader serving both needs to know which. · **(a)** a mask-kind uniform, exactly as the fire shader already switches between box, outline, sprite and disc — one more branch, and the branch is uniform so it costs nothing · **(b)** two shaders that share an include file instead · *default* (a)
+- **Q224** `[QR9=b|c]` — Does the circle inherit the glow's core→mid→edge colour shift, or is it flat? · **(a)** inherits it — a followspot's pool of light really is hotter in the middle · **(b)** flat, so the circle reads as a defined shape rather than as a blur · *default* (a)
+- **Q225** `[QR9=b|c]` — Does the circle inherit the glow's multi-layer construction (Q207)? · **(a)** yes, one code path · **(b)** no, the circle is always single-layer — it is the effect that runs on the most pixels · *default* (a)
+- **Q226** `[QR9=b]` — Drawn on the card, the circle is painted over by the card in front of it (owner ruling 2), exactly as fire is. But the reason the row slides apart (chart I) is to make the buried card visible in the first place — so a circle that is then occluded anyway partly undoes the reveal. · **(a)** accept: after the reveal the card is fully visible, so nothing occludes it in practice · **(b)** exempt the circle from occlusion — it is light in the air, not an effect on a card · *default* (b) · notes
+- **Q227** `[QR9=b]` — Drawn on the card, the circle turns and squashes with the card (its rotation, its offset spin, its 3-D basis squash) unless it is explicitly kept upright. Fire is its own quad precisely to avoid this. · **(a)** keep it upright and unsquashed — a lamp does not roll with the thing it is lighting · **(b)** let it ride the card · *default* (a)
+- **Q228** `[QR9=b]` — Drawn on the card, the circle is *under* the dim and would be darkened along with everything else, so it would not read at all. The dim would have to be punched with a matching hole at the circle's position every frame. · **(a)** yes, punch the dim — the light layer is told where every circle is, which it already is · **(b)** draw the dim *below* the card layer instead so card-hosted effects escape it — but then the cards themselves are not dimmed, which is the whole point · *default* (a) · notes ⇐ **if this reads as a lot of machinery to get back to where QR9=(c) already is, that is the honest comparison**
+- **Q229** `[QR9=c]` — With one shader on two hosts, the circle's quad is placed by the light layer in screen space and the glow's by the host in art space. The shader has to be told which space it is in. · **(a)** a uniform, set once per quad — the same way the shader is already told its pixel size and extent · **(b)** the light layer converts to art units so both are the same · *default* (a)
+
+### 17.18 The film-light pipeline `[QR10=a]`
+
+Only asked if you put the full film pipeline in scope. §14c draws what each stage needs.
+
+- **Q230** `[QR10=a]` — This pipeline reads the finished frame, which nothing in the game does today. Where does that pass live? · **(a)** one full-screen node over the whole game, always on · **(b)** over the play area only, so menus and the map are untouched · **(c)** on only while a spotlight dim is up — the film look is part of the show, not part of the game · *default* (c) · notes
+- **Q231** `[QR10=a]` — A film LUT remaps every colour in the frame to another colour. The palette contract says every colour in the game resolves to a named entry of one shared image. These are two different authorities on colour, and after a LUT the game is off-palette everywhere. · **(a)** accept — the LUT *is* the look, and the palette governs the art rather than the final frame · **(b)** no LUT; keep the palette as the last word · **(c)** a LUT that is itself built from palette entries, so the output stays on-palette · *default* (c) · notes
+- **Q232** `[QR10=a]` — Halation (bright light bleeding red into the film base) and bloom (light scattering to a cyan haze) are two separate stages in the braindump, each with its own threshold, radius and tint. Both? · **(a)** both, as written — they genuinely look different · **(b)** bloom only — halation on a pixel-art frame at these brightnesses may not be visible at all · **(c)** neither; the multi-layer glow already provides the halo · *default* (b) · notes
+- **Q233** `[QR10=a]` — Grain, dust and gate weave at screen resolution put sub-pixel detail on top of art whose whole identity is chunky pixels. Gate weave in particular jitters the frame by a fraction of a pixel, which on nearest-neighbour art reads as shimmer rather than as a camera. · **(a)** quantize all three to the game's pixel size — they become a different, coarser effect, but they belong to the same picture · **(b)** at screen resolution, as film does, and accept that the frame stops reading as pixel art · **(c)** drop gate weave and dust, keep grain · *default* (a) · notes
+- **Q234** `[QR10=a]` — Chromatic aberration resamples the frame per colour channel, which on a fixed palette produces colours that are in no palette entry, along every edge in the game. · **(a)** accept — the same exception already granted to additive FX blending (Q138) · **(b)** no chromatic aberration · *default* (b)
+- **Q235** `[QR10=a]` — "Accumulate in HDR, tonemap at the end" needs a floating-point render target and a tonemap pass; a normal 2D canvas clips above full brightness immediately. · **(a)** yes, render the play area to an HDR viewport — a real change to how the game renders, and the only way the braindump's model is honoured · **(b)** no HDR; clamp as the game already does, and tune the glow so it never wants more headroom · *default* (b)
+- **Q236** `[QR10=a]` — Every stage above is a full-screen pass with a blur in it, against a measured FX budget where the whole layer's worst case is 5.82 ms. · **(a)** prototype and measure before committing to a stage list · **(b)** build the full list and optimise afterwards · *default* (a)
+- **Q237** `[QR10=a]` — Does the film pipeline respect `fx_intensity = 0` (the photosensitivity floor)? · **(a)** yes, it turns off entirely at 0 · **(b)** it is grading, not an effect, and stays on · *default* (a)
+- **Q238** `[QR10=a]` — Is the pipeline's own tuning surface part of the spotlight tool (§17.15), or its own? · **(a)** the same tool, one more panel — it has a real board to look at · **(b)** its own, since it applies to the whole game · *default* (a)
+- **Q239** `[QR10=a]` — Is this one scope with Spotlight, or two deliverables shipped in order? · **(a)** two: Spotlight ships first and is judged on its own; the film pass follows against a finished picture · **(b)** one — the look only makes sense assembled · *default* (a) · notes
+
+### 17.19 Explicitly out of scope — confirm (the terminal group)
 
 - **Q183** `[root]` — Audio (a clunk as the lamp strikes, a hum during the dim) · **(a)** out of scope · **(b)** in scope · *default* (a)
 - **Q184** `[root]` — The Spotlight ICON in card descriptions (DESIGN_DOC §7) · **(a)** out of scope · **(b)** in scope · *default* (a)

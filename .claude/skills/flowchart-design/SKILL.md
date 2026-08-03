@@ -97,6 +97,27 @@ returns to the agent to author the new branch, rather than being queued until th
 questions are answered. Design for that: keep `⚑gate` questions few, put them early, and make their
 option sets genuinely exhaustive.
 
+⚠ **READ `answers.log`, NOT ONLY `answers.json` (2026-08-03).** `answers.json` is the CURRENT state;
+the log is what actually happened. Spotlight's log held a free-text answer at `QR2` — a real new
+branch — and then, four minutes later, the owner going back and picking `(a)` so they could keep
+answering instead of sitting blocked. `answers.json` therefore showed a clean `QR2=a` and **the
+branch would have been missed entirely**. Grep the log for `"override":true` every time you pick a
+round up, including on IDs whose current answer is an ordinary option. A reverted override is not a
+withdrawn opinion; it is someone working around you.
+
+⚠ **When a `⚑gate` gains an option, WIDEN THE GATES BELOW IT — that is how answers survive.** Adding
+`(c)` to a gate whose children all read `[QR2=a]` strands every answer already given the moment the
+owner switches. Go through each child and ask which of them the new branch still needs: those become
+`[QR2=a|c]`, and only the ones that are genuinely about the old branch stay `[QR2=a]`. Then say so in
+the document, at the section head and in the changelog, because from the owner's side "did my work
+just get thrown away" is the first question and the answer must not be "read the gates".
+
+⚠ **Add options, never replace them, and say which questions will be re-asked.** The owner's own
+words become an option on the question they wrote them on, and normally become its `*default*` — they
+already told you what they want. Everything else stays untouched, so the re-ask list is exactly the
+questions whose option sets changed. Name that list in the changelog and in `status.agent.json`'s
+summary; two IDs is a very different message from "the round restarts".
+
 ### Root questions
 
 Open the question section with a short **§ Root forks** group: the 4–8 `⚑gate` questions that gate

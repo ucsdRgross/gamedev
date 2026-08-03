@@ -47,3 +47,65 @@
 {"seq":47,"at":"2026-08-03T00:17:20Z","event":"answer","id":"Q79","state":"chosen","option":"a","note":"","override":false,"round":1}
 {"seq":48,"at":"2026-08-03T00:17:43Z","event":"answer","id":"Q80","state":"chosen","option":"c","note":"","override":false,"round":1}
 {"seq":49,"at":"2026-08-03T00:17:49Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":50,"at":"2026-08-03T00:50:11Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":51,"at":"2026-08-03T01:15:28Z","event":"answer","id":"Q83","state":"chosen","option":null,"note":"keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent","override":true,"round":1}
+{"seq":52,"at":"2026-08-03T01:15:31Z","event":"answer","id":"Q83","state":"chosen","option":null,"note":"keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent","override":true,"round":1}
+{"seq":53,"at":"2026-08-03T01:16:20Z","event":"answer","id":"Q84","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":54,"at":"2026-08-03T01:17:04Z","event":"answer","id":"QR3","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":55,"at":"2026-08-03T01:18:20Z","event":"answer","id":"Q85","state":"chosen","option":null,"note":"16, make it adjustable so I can test slightly different radius","override":true,"round":1}
+{"seq":56,"at":"2026-08-03T01:18:31Z","event":"answer","id":"Q86","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":57,"at":"2026-08-03T01:19:17Z","event":"answer","id":"Q87","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":58,"at":"2026-08-03T01:19:43Z","event":"answer","id":"Q88","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":59,"at":"2026-08-03T01:19:49Z","event":"answer","id":"Q89","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":60,"at":"2026-08-03T01:20:10Z","event":"answer","id":"Q90","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":61,"at":"2026-08-03T01:20:13Z","event":"answer","id":"Q91","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":62,"at":"2026-08-03T01:20:24Z","event":"answer","id":"Q92","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":63,"at":"2026-08-03T01:20:32Z","event":"answer","id":"Q93","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":64,"at":"2026-08-03T01:20:37Z","event":"answer","id":"Q94","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":65,"at":"2026-08-03T01:20:48Z","event":"answer","id":"Q95","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":66,"at":"2026-08-03T01:22:03Z","event":"answer","id":"Q96","state":"chosen","option":null,"note":"soft edges across width, and brighter at origin","override":true,"round":1}
+{"seq":67,"at":"2026-08-03T01:22:13Z","event":"answer","id":"Q96","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":68,"at":"2026-08-03T01:22:21Z","event":"answer","id":"Q97","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":69,"at":"2026-08-03T01:23:05Z","event":"answer","id":"Q98","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":70,"at":"2026-08-03T01:23:15Z","event":"answer","id":"Q99","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":71,"at":"2026-08-03T01:24:15Z","event":"answer","id":"Q100","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":72,"at":"2026-08-03T01:24:19Z","event":"answer","id":"Q101","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":73,"at":"2026-08-03T01:27:38Z","event":"answer","id":"Q102","state":"chosen","option":null,"note":"same as other props and vfx. in front of card it is effecting, but not in front of other objects in front of card","override":true,"round":1}
+{"seq":74,"at":"2026-08-03T01:28:20Z","event":"answer","id":"Q103","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":75,"at":"2026-08-03T01:28:35Z","event":"answer","id":"Q104","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":76,"at":"2026-08-03T01:28:39Z","event":"answer","id":"Q105","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":77,"at":"2026-08-03T01:28:59Z","event":"answer","id":"Q106","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":78,"at":"2026-08-03T01:32:36Z","event":"answer","id":"Q107","state":"chosen","option":null,"note":"No cap. soft cap at how many cards can fit on screen. Spotlight is used whenever card is entering active state and for highlighting cards about to score.","override":true,"round":1}
+{"seq":79,"at":"2026-08-03T01:32:44Z","event":"answer","id":"Q108","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":80,"at":"2026-08-03T01:33:04Z","event":"answer","id":"Q109","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":81,"at":"2026-08-03T01:33:24Z","event":"answer","id":"Q110","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":82,"at":"2026-08-03T01:33:35Z","event":"answer","id":"Q111","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":83,"at":"2026-08-03T01:33:55Z","event":"answer","id":"Q112","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":84,"at":"2026-08-03T01:37:19Z","event":"answer","id":"Q113","state":"chosen","option":null,"note":"(b) content anchored so y level is always same, but x axis can shift to maximize usage of viewport top evenly if y level is above viewport top. reminder that no beam origins should have identical y level even if target cards have identical y level on same row.","override":true,"round":1}
+{"seq":85,"at":"2026-08-03T01:37:27Z","event":"answer","id":"Q115","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":86,"at":"2026-08-03T01:39:08Z","event":"answer","id":"Q116","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":87,"at":"2026-08-03T01:40:14Z","event":"answer","id":"Q117","state":"chosen","option":null,"note":"(a) beam still draws from screen edge, but only if target is below viewport bottom. beam can never point upwards","override":true,"round":1}
+{"seq":88,"at":"2026-08-03T01:40:58Z","event":"answer","id":"Q119","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":89,"at":"2026-08-03T01:41:09Z","event":"answer","id":"Q120","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":90,"at":"2026-08-03T01:41:58Z","event":"answer","id":"QR4","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":91,"at":"2026-08-03T01:42:04Z","event":"answer","id":"Q43","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":92,"at":"2026-08-03T01:42:31Z","event":"answer","id":"Q44","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":93,"at":"2026-08-03T01:43:24Z","event":"answer","id":"Q45","state":"chosen","option":null,"note":"dims occur at same time spotlight appears. dims go away when spotlight disappears","override":true,"round":1}
+{"seq":94,"at":"2026-08-03T01:47:20Z","event":"answer","id":"Q46","state":"chosen","option":null,"note":"finer needed, 2 booleans per when scoring row vs when scoring col","override":true,"round":1}
+{"seq":95,"at":"2026-08-03T01:48:10Z","event":"answer","id":"Q47","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":96,"at":"2026-08-03T01:51:55Z","event":"answer","id":"Q47","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":97,"at":"2026-08-03T01:52:53Z","event":"answer","id":"Q48","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":98,"at":"2026-08-03T01:53:25Z","event":"answer","id":"Q51","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":99,"at":"2026-08-03T01:54:16Z","event":"answer","id":"Q52","state":"chosen","option":null,"note":"only expand for rows that contain a card that can react","override":true,"round":1}
+{"seq":100,"at":"2026-08-03T01:54:33Z","event":"answer","id":"Q53","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":101,"at":"2026-08-03T01:54:52Z","event":"answer","id":"Q54","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":102,"at":"2026-08-03T01:54:59Z","event":"answer","id":"Q55","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":103,"at":"2026-08-03T01:56:12Z","event":"answer","id":"Q56","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":104,"at":"2026-08-03T01:56:25Z","event":"answer","id":"Q57","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":105,"at":"2026-08-03T01:57:03Z","event":"answer","id":"Q58","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":106,"at":"2026-08-03T01:57:11Z","event":"answer","id":"Q59","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":107,"at":"2026-08-03T01:57:51Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":108,"at":"2026-08-03T02:04:02Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":109,"at":"2026-08-03T02:04:10Z","event":"answer","id":"QR5","state":"chosen","option":"a","note":"note: spotlight should show first time a card becomes active which has active hook. If a card in active slot which no active gains an active effect somehow, it should still trigger momentary spotlight to show it has become active","override":false,"round":1}
+{"seq":110,"at":"2026-08-03T02:04:19Z","event":"answer","id":"Q121","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":111,"at":"2026-08-03T02:04:38Z","event":"answer","id":"Q122","state":"chosen","option":"c","note":"","override":false,"round":1}

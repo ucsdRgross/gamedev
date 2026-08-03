@@ -1,7 +1,7 @@
 {
   "slug": "spotlight",
-  "doc_hash": "sha256:389ca783b1eb6cab95e9b705560401213fec38327f32cf9ad1dd988b96e9d2fc",
-  "updated": "2026-08-03T00:17:49Z",
+  "doc_hash": "sha256:3c1b5d40bb6ed9ae057d281fd50726d5060c94a799ae4985581c88b194af4595",
+  "updated": "2026-08-03T02:04:38Z",
   "answers": {
     "QR1": {
       "state": "chosen",
@@ -253,7 +253,520 @@
       "override": false,
       "active": true,
       "round": 1,
-      "at": "2026-08-03T00:17:49Z"
+      "at": "2026-08-03T00:50:11Z"
+    },
+    "Q83": {
+      "state": "chosen",
+      "option": null,
+      "note": "keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:15:31Z"
+    },
+    "Q84": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:16:20Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:17:04Z"
+    },
+    "Q85": {
+      "state": "chosen",
+      "option": null,
+      "note": "16, make it adjustable so I can test slightly different radius",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:18:20Z"
+    },
+    "Q86": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:18:31Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:17Z"
+    },
+    "Q88": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:43Z"
+    },
+    "Q89": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:49Z"
+    },
+    "Q90": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:10Z"
+    },
+    "Q91": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:13Z"
+    },
+    "Q92": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:24Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:32Z"
+    },
+    "Q94": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:37Z"
+    },
+    "Q95": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:48Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:22:13Z"
+    },
+    "Q97": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:22:21Z"
+    },
+    "Q98": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:23:05Z"
+    },
+    "Q99": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:23:15Z"
+    },
+    "Q100": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:24:15Z"
+    },
+    "Q101": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:24:19Z"
+    },
+    "Q102": {
+      "state": "chosen",
+      "option": null,
+      "note": "same as other props and vfx. in front of card it is effecting, but not in front of other objects in front of card",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:27:38Z"
+    },
+    "Q103": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:20Z"
+    },
+    "Q104": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:35Z"
+    },
+    "Q105": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:39Z"
+    },
+    "Q106": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:59Z"
+    },
+    "Q107": {
+      "state": "chosen",
+      "option": null,
+      "note": "No cap. soft cap at how many cards can fit on screen. Spotlight is used whenever card is entering active state and for highlighting cards about to score.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:32:36Z"
+    },
+    "Q108": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:32:44Z"
+    },
+    "Q109": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:04Z"
+    },
+    "Q110": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:24Z"
+    },
+    "Q111": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:35Z"
+    },
+    "Q112": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:55Z"
+    },
+    "Q113": {
+      "state": "chosen",
+      "option": null,
+      "note": "(b) content anchored so y level is always same, but x axis can shift to maximize usage of viewport top evenly if y level is above viewport top. reminder that no beam origins should have identical y level even if target cards have identical y level on same row.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:37:19Z"
+    },
+    "Q115": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:37:27Z"
+    },
+    "Q116": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:39:08Z"
+    },
+    "Q117": {
+      "state": "chosen",
+      "option": null,
+      "note": "(a) beam still draws from screen edge, but only if target is below viewport bottom. beam can never point upwards",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:40:14Z"
+    },
+    "Q119": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:40:58Z"
+    },
+    "Q120": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:41:09Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:41:58Z"
+    },
+    "Q43": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:42:04Z"
+    },
+    "Q44": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:42:31Z"
+    },
+    "Q45": {
+      "state": "chosen",
+      "option": null,
+      "note": "dims occur at same time spotlight appears. dims go away when spotlight disappears",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:43:24Z"
+    },
+    "Q46": {
+      "state": "chosen",
+      "option": null,
+      "note": "finer needed, 2 booleans per when scoring row vs when scoring col",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:47:20Z"
+    },
+    "Q47": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:51:55Z"
+    },
+    "Q48": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:52:53Z"
+    },
+    "Q51": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:53:25Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": null,
+      "note": "only expand for rows that contain a card that can react",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:16Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:33Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:52Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:59Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:56:12Z"
+    },
+    "Q57": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:56:25Z"
+    },
+    "Q58": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:57:03Z"
+    },
+    "Q59": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:57:11Z"
+    },
+    "Q60": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:02Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "note: spotlight should show first time a card becomes active which has active hook. If a card in active slot which no active gains an active effect somehow, it should still trigger momentary spotlight to show it has become active",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:10Z"
+    },
+    "Q121": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:19Z"
+    },
+    "Q122": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:38Z"
     }
   }
 }
