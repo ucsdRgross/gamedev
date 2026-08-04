@@ -84,11 +84,101 @@ Why: at a gating question the owner is choosing a *path*, not just an answer, an
 blind is how a questionnaire produces a design nobody wanted. The preview is what makes the choice
 informed.
 
+⚠⚠ **IF A QUESTION'S ANSWER APPEARS IN ANY OTHER QUESTION'S GATE, IT IS A `⚑gate`. NO EXCEPTIONS.**
+Breaking this fails SILENTLY. A free-text answer has **no letter**, so a gate reading `[Q24=c]` can
+never be true. On a `⚑gate` question that is handled — free text ends the round and you author the
+branch. On an *unmarked* one it is not handled at all: the answer is recorded, the round rolls on,
+and **the entire subtree below it is amputated with no warning and nothing on screen.** Measured on
+Spotlight 2026-08-03: six unmarked gating questions, **20 questions never asked**, and the round
+still reported `done (complete)`.
+
+⚠⚠ **AND THE OBVIOUS RECOVERY DOES NOT WORK.** The question screen presents only *UNANSWERED*
+reachable questions, so **adding an option to an already-answered question is invisible to the
+tool**. Use the **ask list** (`status.agent.json` → `"ask": [...]`, README §"The ask list"): those
+questions are re-asked FIRST with the previous answer prefilled, and the round cannot end until the
+whole ask is satisfied. If you need an answer *now*, ask in chat and write it back through the store
+API so `answers.json` does not drift from the design.
+
+### `run check` now catches all of this — read its bottom four lines
+
+These were manual greps; they are automated, and none of them existed when the defects above shipped:
+
+```bash
+npm --prefix designloop run check -- <project>/<slug>
+```
+
+| Line | What it means |
+|---|---|
+| `errors` | the document is wrong; fix the line |
+| `warnings` | a `⚑gate` option with no `→ next:` |
+| **`dag audit`** | **the silent-pruning defects**: a question that gates others without the mark; a `default` orphaned from a multi-letter gate it should be in; a **section heading narrower than its own question lines** (the heading wins — this one stranded 20 answers) |
+| **`stale`** | **chart nodes still posing an ANSWERED question as an open fork.** Needs `answers.json`, so it only runs on a design key, not a bare path |
+| **`plan`** | once `PLAN.md` exists: a step citing an ID that is no design node or question, or **citing nothing at all** — which silently removes it from every future stale report |
+
+⚠ **`dag audit` and `stale` do not block, and that is deliberate** — each shape has a legitimate
+form, so the judgement is yours. Being *told* is not optional: every one of them is invisible from
+the owner's side of the screen. **A non-zero count in either is a defect until you have looked at it
+and said why not.**
+
+⚠ **Re-run `check` after ANY answer round, not just after authoring.** `stale` compares charts
+against answers, so it only turns red once answers exist — which is exactly when nobody thinks to
+run it. Spotlight accumulated **20 stale nodes across 11 charts** over four rounds and the owner
+found them by eye.
+
+**A `⚑gate` option with no `→ next:` is a warning, not a parse error** (`GAP-001`, resolved
+2026-08-01). The document still parses and the owner can still answer it — blocking the person who
+cannot fix it helps nobody — but the shortfall is *yours* to fix: `run check` names the question and
+its line, and the design's card in the index carries a warning badge until it is gone. The owner
+sees the option marked **→ next: not described**, which is exactly the blind choice rule 5 exists to
+prevent. Treat any warning on that badge as an authoring defect.
+
 **Free text at a gating question cannot be routed** — there is no path for an answer the DAG does
 not know about. So a free-text answer at a `⚑gate` question **ends the round immediately** and
 returns to the agent to author the new branch, rather than being queued until the rest of the
 questions are answered. Design for that: keep `⚑gate` questions few, put them early, and make their
 option sets genuinely exhaustive.
+
+⚠ **READ `answers.log`, NOT ONLY `answers.json` (2026-08-03).** `answers.json` is the CURRENT state;
+the log is what actually happened. Spotlight's log held a free-text answer at `QR2` — a real new
+branch — and then, four minutes later, the owner going back and picking `(a)` so they could keep
+answering instead of sitting blocked. `answers.json` therefore showed a clean `QR2=a` and **the
+branch would have been missed entirely**. Grep the log for `"override":true` every time you pick a
+round up, including on IDs whose current answer is an ordinary option. A reverted override is not a
+withdrawn opinion; it is someone working around you.
+
+⚠ **When a `⚑gate` gains an option, WIDEN THE GATES BELOW IT — that is how answers survive.** Adding
+`(c)` to a gate whose children all read `[QR2=a]` strands every answer already given the moment the
+owner switches.
+
+⚠⚠ **AND THE SECTION HEADING CARRIES A GATE TOO.** `reachability()` evaluates
+`q.effectiveGate || q.gate`, and `effectiveGate` folds in the `### 17.6 The dim [QR2=a|c]` heading.
+Measured on Spotlight 2026-08-03: 17 question lines were widened to `a|c|d`, the heading was not,
+and **all 12 of §17.6 stayed pruned anyway** — the owner clicked the option I told them to click and
+watched 20 answers go inactive. Widen the heading in the same edit, always.
+
+**Then prove it, twice, rather than assuming:**
+
+```bash
+# 1. does every option of every gating question actually reach something?
+#    an option that appears in NO downstream gate prunes its whole subtree.
+# 2. re-run reachability against the real answers.json and confirm the count.
+node --input-type=module -e "…parseDocument + reachability…"   # designloop/src/grammar.mjs
+```
+
+The first catch is the one that matters: a newly added option is *by construction* absent from every
+gate you wrote earlier, so it orphans its subtree by default. On Spotlight this caught `Q113=(d)`
+orphaning `Q114` — `origin_rise`, the number that sets every beam's length. Note that a legitimate
+"decline this whole sub-feature" option shows up in the same list and is fine; read the list, do not
+just count it. Go through each child and ask which of them the new branch still needs: those become
+`[QR2=a|c]`, and only the ones that are genuinely about the old branch stay `[QR2=a]`. Then say so in
+the document, at the section head and in the changelog, because from the owner's side "did my work
+just get thrown away" is the first question and the answer must not be "read the gates".
+
+⚠ **Add options, never replace them, and say which questions will be re-asked.** The owner's own
+words become an option on the question they wrote them on, and normally become its `*default*` — they
+already told you what they want. Everything else stays untouched, so the re-ask list is exactly the
+questions whose option sets changed. Name that list in the changelog and in `status.agent.json`'s
+summary; two IDs is a very different message from "the round restarts".
 
 ### Root questions
 
@@ -137,7 +227,41 @@ view-only). Most feature confusion is two facts that were never separated. Do th
 architecture ones. If a structural choice has a behavioural consequence, ask about the
 *consequence*, not the structure.
 
-### 3. Write the design flowcharts
+### 3. SKETCH the flow to find the questions — do NOT ship it yet
+
+⚠⚠ **CHARTS GO IN AFTER THE FIRST ANSWER ROUND, NOT BEFORE IT** (owner, 2026-08-03: *"no way will
+chart ever be accurate before first question round"*). This reverses what this step used to say, and
+the reversal was earned: Spotlight's charts were authored up front, patched across four rounds, and
+ended with **20 stale nodes across 11 charts** that the owner found by eye. A chart of behaviour
+nobody has chosen yet is a guess with an ID on it.
+
+**Sketching still comes first, because drawing the flow is HOW you find the questions.** A step you
+cannot draw is a decision you have not noticed. So:
+
+- **Sketch the flow however you like — scratch file, scratchpad, prose.** Over-decompose: a step that
+  "obviously" has no decision in it is a step the owner cannot point at when it turns out to have one.
+- **Every fork you cannot resolve becomes a QUESTION**, not a drawn branch.
+- **Then throw the sketch away.** It has done its job. It is not an artefact, it is not reviewed, and
+  it must not be published — a published sketch is something you will feel obliged to patch instead
+  of re-derive, which is exactly how drift accumulates.
+
+⚠⚠ **AND THE RULE THAT WOULD HAVE PREVENTED MOST OF IT: NEVER DRAW A QUESTION'S OPTION SET AS A
+CHART FORK.** This step used to say the opposite — *"draw unresolved forks as explicit option
+branches, cross-referenced to the question ID that decides them"* — and that single instruction
+produced Spotlight's worst charts: a whole chart offering three origin models (`Q113`), a node
+branching on the three answers to `QR10`, forks reading *"does it have anything to announce? — Q246"*.
+Every one of them was **the questionnaire, redrawn**. Before the answer it tells the owner nothing
+the question did not; after the answer it is a lie. If a fork's branches are a question's options, it
+belongs in the questionnaire and nowhere else.
+
+**What may be charted before a round, because it is fact rather than proposal:** the EXISTING call
+chain, read out of the code with `file.gd:line` pinned. That is the §1 audit and it cannot go stale
+from an answer. Anything marked `NEW` is a proposal and waits.
+
+### 3b. Write the charts AFTER the round — derived, and re-derived
+
+Once the round ends, the answers decide the behaviour, so the charts can finally be written as
+statements instead of guesses.
 
 - **Mermaid, in fenced ```mermaid blocks.**
 - **Every node gets an ID** (`D4`, `G12`). The owner reviews by ID. Without IDs the review has no
@@ -145,17 +269,32 @@ architecture ones. If a structural choice has a behavioural consequence, ask abo
 - **Mark new nodes `NEW`**, and name existing nodes with their **real function**
   (`Game.score_line`). The chart should read as a diff against reality.
 - **One chart per concern**, not one giant chart.
-- **Over-decompose.** A step that "obviously" has no decision in it is a step the owner cannot point
-  at when it turns out to have one.
-- **Draw unresolved forks as explicit option branches**, recommendation marked, cross-referenced to
-  the question ID that decides them.
+- **A node states its answer, never its question.** `"Q141=b — headers glow, no special case"`, not
+  `"do they glow? Q141"`. `run check`'s `stale` line reports the second form; a node that ends on a
+  bare question ID is the shape it catches.
+- ⚠ **One heading, one chart, and the heading's letter IS the chart's node prefix.** Put a second
+  chart under `## 7. Flowchart E — …` and its nodes are prefixed `F`, so from there on every chart
+  ID runs a letter ahead of the heading that names it — Spotlight's *Flowchart H* is the chart whose
+  nodes are `I1`, `I2`…. The tool copes (it resolves a reference by the heading name first, which is
+  how a reader reads it), but it is a trap for everyone: **name every chart by its own node prefix.**
+- **A label that names another chart becomes a drawn link.** Write the reference the way the
+  documents already do — `A6["owner answers one question at a time — chart B"]` — and the canvas
+  draws it dashed, node to chart, and puts it in `graph.json` as a `links` entry (GAP-002, design
+  version 3). There is no cross-chart arrow in the mermaid subset, so this prose form IS the way to
+  connect charts. A name that resolves to nothing is reported as an authoring warning.
+
+⚠ **On a LATER round, RE-DERIVE the charts from the answers; do not patch them.** Patching is what
+accumulated the 20 stale nodes: each round I fixed the nodes I remembered and left the rest. The
+answers are the source; the charts are output. `run check`'s `stale` line is the check, and it only
+turns red once answers exist — **so re-run it after every round, not only after authoring.**
 
 ### 4. Enumerate every usage
 
 One row per situation the feature can be in — including the boring ones (headless, empty case,
 single-element case, every screen it can appear on, undo, resume, settings changed mid-flight).
-Each row points at the chart or question that covers it. State plainly: *if a usage is missing,
-that is the most valuable thing you can report.*
+Each row points at the **question** that covers it — and, after §3b, at the chart too. ⚠ Before the
+first round there are no charts to point at, which is the point: if a usage has no question, you have
+found a hole. State plainly: *if a usage is missing, that is the most valuable thing you can report.*
 
 ### 5. Write the branching questionnaire
 
@@ -260,6 +399,31 @@ a changelog: nodes added or changed, questions added, gaps closed. Every executi
 a changed node is marked **stale** and re-derived before it is worked on again. Work on untouched
 steps was never blocked and does not get thrown away.
 
+**The Design Loop tool does all of that from the gap file itself** (`designloop/web/gaps.html`), so
+write the file properly and there is nothing else to build:
+
+- the design's index card badges the open gaps, and quietly badges the closed ones;
+- `→ Answer N gaps now` opens a **scoped round** on the ordinary question screen —
+  `question.html?key=<project>/<slug>&scope=gaps` — built from the gap's `**Options I can see**`
+  line, parsed by the same grammar as every other question, with the report's own
+  *what the design says / does not say / why it blocks* carried onto the screen beside it;
+- the plan steps that cite what an open gap puts in question are listed as **stale**, read out of
+  `PLAN.md`'s own `(implements …)` citations against the gap's `**Blast radius**` line. It is
+  reported, never written into the plan;
+- when the last open gap is answered the owner's turn ends with `reason: "gaps_answered"`, which is
+  what wakes an agent parked on the watch. Only that thread parks — the main questionnaire carries
+  on where it was;
+- the review canvas' assumptions panel has **"I want a say in this"**, which files an open gap
+  against an assumption already made and makes every step that relied on it stale. It is filed with
+  **no options** — the owner asked for the decision, not for a question — and drafting the real
+  options in the grammar is yours.
+
+Three things to get right in the file, all of them from the template above: `status:` on its own
+line (`open` and `questioned` are open, `resolved` and `withdrawn` are kept but never re-asked);
+`resolution:` as a `|` block when you close it, because a closed gap is only a record if what it
+became is beside it; and a `**Blast radius**` line naming plan steps first and design nodes after
+`design nodes`, because that is where the stale list comes from.
+
 ### The propagation block (copy verbatim into every derived document)
 
 ```markdown
@@ -296,7 +460,8 @@ the interchange format. A parser must be able to recover, from the prose alone: 
 text, options, default, and whether notes are offered. Never duplicate the questions into a second
 machine-readable block; two copies drift, and the prose is the one humans read.
 
-Offer to render the design flowcharts as an Artifact for visual review.
+Offer to render the design flowcharts as an Artifact for visual review — **after the round, once
+they exist** (§3/§3b). There is nothing to render before it.
 
 ### Where the design goes, and how the owner answers it
 
@@ -336,8 +501,21 @@ grammar above is obeyed.
    npm --prefix designloop run check -- <project>/<slug>
    ```
 
-   It reports the question count, which question the round opens at, and every error and warning
-   with its line. Errors mean the document is wrong, not the parser — fix the line.
+   It reports the question count, which question the round opens at, how many mermaid charts were
+   ingested, and every error and warning with its line. Errors mean the document is wrong, not the
+   parser — fix the line. Add `charts` for one line per chart:
+
+   ```
+   npm --prefix designloop run check -- <project>/<slug> charts
+   ```
+
+   **Your charts must be inside the subset the canvas reads** — `ID["label"]`, `ID{"decision"}`,
+   `-->`, `-- label -->`, one `flowchart TD` header, one shared ID prefix per chart. Anything else
+   (`subgraph`, `classDef`, `-.->`, an unquoted label) is refused by name and line rather than
+   guessed at. `run check` also reports `links N derived, M unresolved` — the cross-chart links read
+   out of your labels (§6.1). **M must be 0**: an unresolved `chart X` is a reference you wrote to
+   something that does not exist. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
+   change, not a parser change.
 
 3. **Start the server and hand over the URL.** Not a file path, not "open the doc":
 
@@ -345,7 +523,9 @@ grammar above is obeyed.
    npm --prefix designloop start
    ```
 
-   → `http://localhost:5273/web/question.html?key=<project>/<slug>`
+   → `http://localhost:5273/web/question.html?key=<project>/<slug>`  the questions
+   → `http://localhost:5273/web/canvas.html?key=<project>/<slug>`    the review canvas
+   → `http://localhost:5273/web/gaps.html?key=<project>/<slug>`      the gaps, once there are any
 
    (`designloop/start.cmd` is the double-click equivalent, and a second launch reclaims the port.)
 
@@ -370,10 +550,18 @@ grammar above is obeyed.
    The owner's screen switches itself over and opens the round with that summary. `mode: "review"`
    is for when the questions are finished and the design graph is ready to review instead.
 
-   One ending is special: `status.owner.json` with `reason: "new_branch_needed"` means the owner
-   answered a `⚑gate` in their own words and the round stopped there, with questions still
-   unanswered. Author the branch they described — **their answer becomes a real option on that
-   question** — and they resume at that same question with it there to click.
+   Two endings are special. `reason: "new_branch_needed"` means the owner answered a `⚑gate` in
+   their own words and the round stopped there, with questions still unanswered: author the branch
+   they described — **their answer becomes a real option on that question** — and they resume at
+   that same question with it there to click. `reason: "gaps_answered"` means they answered a
+   scoped gap round instead: read the answers against `gaps/`, write design version N+1 with its
+   changelog, close those gaps in place *with their resolution*, and re-derive the steps the gap
+   page lists as stale.
+
+**The live example is `solatro/design/spotlight/`** — 195 questions, 14 charts, written by hand to
+this grammar before the tool existed and answerable in it without a single edit. That is the bar:
+if a real document needs editing to be read, the parser is wrong. `designloop/README.md` is the
+tool's own entry point.
 
 ---
 
@@ -386,11 +574,16 @@ Design Loop design (A13 → A14 → A15 → A18):
 
 ```
 last reachable question answered
-  → agent revises and FINALISES the design flowcharts
+  → agent WRITES the flowcharts from the answers   ← §3b; on a later round, RE-DERIVES them
   → owner REVIEWS the flowcharts            ← a real stage, not a formality
   → owner CONFIRMS  (or "review again" → another cycle)
   → THEN: implementation plan + scope + copy-paste prompt, in one message
 ```
+
+⚠ **This is the FIRST time the charts exist**, and that is deliberate (§3): a chart drawn before the
+answers is a guess with an ID on it. The owner's verdict that put it here — *"no way will chart ever
+be accurate before first question round"* — was earned by 20 stale nodes across 11 charts on
+Spotlight.
 
 The review stage exists because the questionnaire settles *decisions* while the flowcharts settle
 *sequence and completeness* — "between D6 and D7 there must be…" is feedback that only arrives when
@@ -467,6 +660,30 @@ Use /handoff to keep resumable state.
 
 Include `/handoff` whenever the run spans more than one session's work. Repo-level rules (git
 policy, code style) propagate through directory-keyed memory and do not need restating.
+
+## ⚠ A questionnaire settles what a thing DOES, not whether anyone can tell
+
+Learned twice, on the tool this skill drives (2026-08-02 and 2026-08-03), and it is the most
+reliable class of miss in the whole procedure. Both owner reviews of built screens produced findings
+that were **already decided in the design and simply never shown**:
+
+- Enter accepts the recommendation (Q12, answered) — and nothing on the screen said so, so the only
+  way to learn it was to have it happen, on a question where it destroyed what had been typed.
+- BACK exists (Q33, answered) — and it meant "the newest answer", so on the newest answer it
+  pointed at itself and the click did nothing.
+- An agent is woken by a watch (QR1, answered) — and the owner had no way to see whether one was
+  parked, so a whole round could be answered into a directory nothing was listening to.
+
+None of these is a question the questionnaire failed to ask. Each is a decision it settled and the
+*surface* never surfaced. So:
+
+- **Plan for two reviews, and say so.** One settles behaviour, from the charts. The other happens
+  only by **driving the built thing**, and it cannot be done early or on paper.
+- **When a design settles a hidden behaviour — a key, a default, a background process, an implicit
+  navigation — write the node that says how the person using it will KNOW.** "Enter takes the
+  default" is half a decision; "and the control it will press is marked" is the other half.
+- Findings from the second review are usually **a new design version, not re-answered questions**:
+  the owner is not changing their mind, they are covering ground the questions never reached.
 
 ## Keep this skill improving
 

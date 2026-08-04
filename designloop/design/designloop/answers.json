@@ -1,0 +1,34 @@
+{
+  "slug": "designloop",
+  "doc_hash": "sha256:8b20f42a75e5e1f160c74c93ac9233662dcc099e044f8e623d2770afaacd68d4",
+  "updated": "2026-08-02T23:45:22Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T20:27:57Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T20:28:02Z"
+    },
+    "GAP-002": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:45:22Z"
+    }
+  }
+}

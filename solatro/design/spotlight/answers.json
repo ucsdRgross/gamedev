@@ -1,0 +1,2302 @@
+{
+  "slug": "spotlight",
+  "doc_hash": "sha256:31dd9ceff904a1fa62e1b8221fe45af29a1382d88dc47745f2b6abcaa4ee08af",
+  "updated": "2026-08-03T11:07:48Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:54:37Z"
+    },
+    "Q9": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:58:31Z"
+    },
+    "Q10": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:51:26Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:58:52Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:58:59Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "a",
+      "note": "stacked spotlight / active does not deactivate until last spotlight removed",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:59:16Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:09:06Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:09:17Z"
+    },
+    "Q18": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-02T23:59:32Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:00:07Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:01:49Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:01:56Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:02:18Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:02:36Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:11Z"
+    },
+    "Q28": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:19Z"
+    },
+    "Q29": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:27Z"
+    },
+    "Q30": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:07:53Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T10:09:45Z"
+    },
+    "Q73": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:08:29Z"
+    },
+    "Q74": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:14Z"
+    },
+    "Q75": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:18Z"
+    },
+    "Q76": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:15:36Z"
+    },
+    "Q78": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": false,
+      "round": 1,
+      "at": "2026-08-03T00:17:01Z"
+    },
+    "Q79": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:20Z"
+    },
+    "Q80": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T00:17:43Z"
+    },
+    "Q81": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": false,
+      "round": 1,
+      "at": "2026-08-03T00:50:11Z"
+    },
+    "Q83": {
+      "state": "chosen",
+      "option": null,
+      "note": "keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:15:31Z"
+    },
+    "Q84": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:16:20Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:17:04Z"
+    },
+    "Q85": {
+      "state": "chosen",
+      "option": null,
+      "note": "16, make it adjustable so I can test slightly different radius",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:18:20Z"
+    },
+    "Q86": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:18:31Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:17Z"
+    },
+    "Q88": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:43Z"
+    },
+    "Q89": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:19:49Z"
+    },
+    "Q90": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:10Z"
+    },
+    "Q91": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:13Z"
+    },
+    "Q92": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:24Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:32Z"
+    },
+    "Q94": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:37Z"
+    },
+    "Q95": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:20:48Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:22:13Z"
+    },
+    "Q97": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:22:21Z"
+    },
+    "Q98": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:23:05Z"
+    },
+    "Q99": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:23:15Z"
+    },
+    "Q100": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:24:15Z"
+    },
+    "Q101": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:24:19Z"
+    },
+    "Q102": {
+      "state": "chosen",
+      "option": null,
+      "note": "same as other props and vfx. in front of card it is effecting, but not in front of other objects in front of card",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:27:38Z"
+    },
+    "Q103": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:20Z"
+    },
+    "Q104": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:35Z"
+    },
+    "Q105": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:39Z"
+    },
+    "Q106": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:28:59Z"
+    },
+    "Q107": {
+      "state": "chosen",
+      "option": null,
+      "note": "No cap. soft cap at how many cards can fit on screen. Spotlight is used whenever card is entering active state and for highlighting cards about to score.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:32:36Z"
+    },
+    "Q108": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:32:44Z"
+    },
+    "Q109": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:04Z"
+    },
+    "Q110": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:24Z"
+    },
+    "Q111": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:35Z"
+    },
+    "Q112": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:33:55Z"
+    },
+    "Q113": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q115": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:37:27Z"
+    },
+    "Q116": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:39:08Z"
+    },
+    "Q117": {
+      "state": "chosen",
+      "option": null,
+      "note": "(a) beam still draws from screen edge, but only if target is below viewport bottom. beam can never point upwards",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:40:14Z"
+    },
+    "Q119": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:40:58Z"
+    },
+    "Q120": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:41:09Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:41:58Z"
+    },
+    "Q43": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:42:04Z"
+    },
+    "Q44": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:42:31Z"
+    },
+    "Q45": {
+      "state": "chosen",
+      "option": null,
+      "note": "dims occur at same time spotlight appears. dims go away when spotlight disappears",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:43:24Z"
+    },
+    "Q46": {
+      "state": "chosen",
+      "option": null,
+      "note": "finer needed, 2 booleans per when scoring row vs when scoring col",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:47:20Z"
+    },
+    "Q47": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:51:55Z"
+    },
+    "Q48": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:52:53Z"
+    },
+    "Q51": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:53:25Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": null,
+      "note": "only expand for rows that contain a card that can react",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:16Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:33Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:52Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:54:59Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:56:12Z"
+    },
+    "Q57": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:56:25Z"
+    },
+    "Q58": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:57:03Z"
+    },
+    "Q59": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T01:57:11Z"
+    },
+    "Q60": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:02Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "note: spotlight should show first time a card becomes active which has active hook. If a card in active slot which no active gains an active effect somehow, it should still trigger momentary spotlight to show it has become active",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:10Z"
+    },
+    "Q121": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T02:04:19Z"
+    },
+    "Q122": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:19:18Z"
+    },
+    "Q123": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:19:40Z"
+    },
+    "Q124": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:19:54Z"
+    },
+    "Q125": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:19:59Z"
+    },
+    "Q126": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:06Z"
+    },
+    "Q127": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:18Z"
+    },
+    "Q128": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:24Z"
+    },
+    "Q129": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:29Z"
+    },
+    "Q130": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:38Z"
+    },
+    "Q131": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:20:56Z"
+    },
+    "Q132": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:21:02Z"
+    },
+    "Q133": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:21:08Z"
+    },
+    "Q141": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:21:35Z"
+    },
+    "Q142": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:21:43Z"
+    },
+    "Q144": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:24:06Z"
+    },
+    "Q145": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:30:11Z"
+    },
+    "Q146": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:30:25Z"
+    },
+    "Q148": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:30:29Z"
+    },
+    "Q149": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q150": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes it is linked to spotlight effect",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:34:00Z"
+    },
+    "Q207": {
+      "state": "chosen",
+      "option": null,
+      "note": "2 to 4, let me choose",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:35:18Z"
+    },
+    "Q208": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:35:55Z"
+    },
+    "Q209": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:37:02Z"
+    },
+    "Q210": {
+      "state": "chosen",
+      "option": null,
+      "note": "let me tune myself, star with 4",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:38:20Z"
+    },
+    "Q211": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:38:32Z"
+    },
+    "Q213": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q215": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:40:26Z"
+    },
+    "Q216": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:40:41Z"
+    },
+    "Q217": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:42:22Z"
+    },
+    "Q218": {
+      "state": "chosen",
+      "option": null,
+      "note": "(c) is fine if it doesnt lead to visible seam between additive and tinted parts, otherwise just tint, dont want blowout to white",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:44:21Z"
+    },
+    "Q219": {
+      "state": "chosen",
+      "option": null,
+      "note": "only lit up if crossing the lit up portion on same layer",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:46:07Z"
+    },
+    "Q220": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:49:25Z"
+    },
+    "Q221": {
+      "state": "chosen",
+      "option": null,
+      "note": "should be three card circle beam, no prop",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:50:48Z"
+    },
+    "Q12": {
+      "state": "chosen",
+      "option": null,
+      "note": "why would it flicker? only way to flicker is if card gets covered and uncovered multiple times which would be correct anyways",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:20Z"
+    },
+    "Q77": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:30Z"
+    },
+    "QR6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:41Z"
+    },
+    "Q173": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:45Z"
+    },
+    "Q174": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:50Z"
+    },
+    "Q175": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:53:55Z"
+    },
+    "Q176": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:02Z"
+    },
+    "Q177": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:06Z"
+    },
+    "Q178": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:11Z"
+    },
+    "Q179": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:31Z"
+    },
+    "Q180": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:36Z"
+    },
+    "Q181": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:54:45Z"
+    },
+    "Q182": {
+      "state": "chosen",
+      "option": null,
+      "note": "we are still on first review pass we could add more",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:55:36Z"
+    },
+    "QR7": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:55:54Z"
+    },
+    "QR8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T05:56:17Z"
+    },
+    "Q16": {
+      "state": "chosen",
+      "option": null,
+      "note": "whole act? increases or decreases based on cards being scored. dims after initially showing, but gets revealed again at start of next scoring section, moves at same time as other row expanding and moves down with other cards moving down. In future its possible for scoring hand shape to not be orthogonal, maybe multiple rows and columns at same time or diagonals or any shape possible, so keep that in mind for future proofing",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:07:18Z"
+    },
+    "Q27": {
+      "state": "chosen",
+      "option": null,
+      "note": "per scoring section, so lines right now but could be more than lines with scorers other than cascader",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:10:43Z"
+    },
+    "Q82": {
+      "state": "chosen",
+      "option": null,
+      "note": "per anytime spotlight effect is happening",
+      "override": true,
+      "active": false,
+      "round": 1,
+      "at": "2026-08-03T06:11:35Z"
+    },
+    "Q49": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:11:48Z"
+    },
+    "Q50": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:13:56Z"
+    },
+    "Q61": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:14:04Z"
+    },
+    "Q62": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:14:36Z"
+    },
+    "Q63": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:14:52Z"
+    },
+    "Q64": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:15:06Z"
+    },
+    "Q65": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:15:19Z"
+    },
+    "Q66": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:15:27Z"
+    },
+    "Q67": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:15:36Z"
+    },
+    "Q68": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:15:58Z"
+    },
+    "Q69": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:16:11Z"
+    },
+    "Q70": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:16:17Z"
+    },
+    "Q71": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:23:18Z"
+    },
+    "Q72": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:23:41Z"
+    },
+    "QR9": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:24:29Z"
+    },
+    "Q223": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:24:57Z"
+    },
+    "Q224": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:25:05Z"
+    },
+    "Q225": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:25:32Z"
+    },
+    "Q229": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:33:11Z"
+    },
+    "QR10": {
+      "state": "chosen",
+      "option": "a",
+      "note": "No reason those effects cant also be on the individual shaders. \nI'm interested in applying separately to both screen and individual shaders, so that shader can be grainier than rest of image for example. Or allow tuning film effects separately between foreground/background/UI so background is more distorted, and stuff like darker colors get more grain to simulate how shadows in old photography work.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:34:57Z"
+    },
+    "Q222": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:36:26Z"
+    },
+    "Q230": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:37:32Z"
+    },
+    "Q231": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:37:48Z"
+    },
+    "Q232": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:38:33Z"
+    },
+    "Q233": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:38:51Z"
+    },
+    "Q234": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:39:00Z"
+    },
+    "Q235": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:39:21Z"
+    },
+    "Q236": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:39:29Z"
+    },
+    "Q237": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:39:36Z"
+    },
+    "Q238": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:42:09Z"
+    },
+    "Q239": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:42:27Z"
+    },
+    "Q1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:42:36Z"
+    },
+    "Q2": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:42:56Z"
+    },
+    "Q3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:43:16Z"
+    },
+    "Q5": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T06:43:31Z"
+    },
+    "Q6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:11:03Z"
+    },
+    "Q7": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:12:22Z"
+    },
+    "Q31": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q33": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:15:19Z"
+    },
+    "Q34": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:15:35Z"
+    },
+    "Q35": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:15:45Z"
+    },
+    "Q36": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:15:59Z"
+    },
+    "Q37": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:16:08Z"
+    },
+    "Q38": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:16:27Z"
+    },
+    "Q39": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:16:41Z"
+    },
+    "Q40": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:16:53Z"
+    },
+    "Q41": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:17:02Z"
+    },
+    "Q134": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:17:11Z"
+    },
+    "Q135": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:18:16Z"
+    },
+    "Q136": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:18:33Z"
+    },
+    "Q212": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:19:35Z"
+    },
+    "Q137": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:22:22Z"
+    },
+    "Q138": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:22:37Z"
+    },
+    "Q139": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:22:44Z"
+    },
+    "Q151": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:25:21Z"
+    },
+    "Q152": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:26:00Z"
+    },
+    "Q153": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:26:19Z"
+    },
+    "Q154": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:27:54Z"
+    },
+    "Q155": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:28:05Z"
+    },
+    "Q156": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:28:37Z"
+    },
+    "Q157": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:30:45Z"
+    },
+    "Q158": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:33:31Z"
+    },
+    "Q159": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:34:03Z"
+    },
+    "Q161": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:34:16Z"
+    },
+    "Q162": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:34:29Z"
+    },
+    "Q163": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:34:35Z"
+    },
+    "Q164": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:34:56Z"
+    },
+    "Q165": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:35:08Z"
+    },
+    "Q166": {
+      "state": "chosen",
+      "option": null,
+      "note": "maybe",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:35:18Z"
+    },
+    "Q167": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T07:35:29Z"
+    },
+    "Q168": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:08:16Z"
+    },
+    "Q169": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:08:29Z"
+    },
+    "Q170": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:10:06Z"
+    },
+    "Q171": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:10:19Z"
+    },
+    "Q172": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:10:25Z"
+    },
+    "Q183": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:10:30Z"
+    },
+    "Q184": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:11:13Z"
+    },
+    "Q185": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:11:23Z"
+    },
+    "Q186": {
+      "state": "chosen",
+      "option": null,
+      "note": "in scope, show all active abilities spreads out all rows with active talent/skill and uses spotlight effect on all of them with no dimming at all until turned off for now ",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:16:46Z"
+    },
+    "Q187": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:17:04Z"
+    },
+    "Q188": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T08:43:43Z"
+    },
+    "Q240": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:15:09Z"
+    },
+    "Q242": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:15:38Z"
+    },
+    "Q244": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:16:12Z"
+    },
+    "Q250": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:16:38Z"
+    },
+    "Q251": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:20:43Z"
+    },
+    "Q252": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:35:10Z"
+    },
+    "Q253": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:36:54Z"
+    },
+    "Q254": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:38:45Z"
+    },
+    "Q255": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:39:09Z"
+    },
+    "Q256": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:39:32Z"
+    },
+    "Q257": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:39:38Z"
+    },
+    "Q258": {
+      "state": "chosen",
+      "option": null,
+      "note": "props themselves dont get brightened like its an effect or something, just treat it same as non lit cards being coincidentally lit up if beams cross it",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:45:58Z"
+    },
+    "Q259": {
+      "state": "chosen",
+      "option": null,
+      "note": "glow at instant when spotlight effect is on top of card, instantly lose glow once covered visually so its snappy",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:51:10Z"
+    },
+    "Q260": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:51:24Z"
+    },
+    "Q261": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-03T09:52:14Z"
+    },
+    "Q245": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T10:10:26Z"
+    },
+    "Q262": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T10:10:41Z"
+    },
+    "Q263": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T10:12:06Z"
+    },
+    "Q264": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-03T10:12:14Z"
+    },
+    "Q198": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q199": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q200": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q201": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q202": {
+      "state": "chosen",
+      "option": "a",
+      "note": "further scoring on that row would include new card",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q203": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q204": {
+      "state": "chosen",
+      "option": "a",
+      "note": "if already scored, yes cannot change, scorer moves on as if discard never happened, new card took its place",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q205": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q206": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q247": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q248": {
+      "state": "chosen",
+      "option": "b",
+      "note": "if it was saved as active it should load as active with no transition and already glowing; if saved inactive and loaded uncovered it triggers normally as if no resuming happened. should match saved data, no extra code",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q249": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q246": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q265": {
+      "state": "chosen",
+      "option": "c",
+      "note": "was wrong about raise, must have been a previous iteration. gap is allowed if all cards jump at same time since once ducking has completed it shouldnt track current card bottoms anymore",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q266": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q243": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q114": {
+      "state": "chosen",
+      "option": "a",
+      "note": "tunable",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q214": {
+      "state": "chosen",
+      "option": "a",
+      "note": "gradient shouldnt be forced to be on fixed palette",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    },
+    "Q42": {
+      "state": "chosen",
+      "option": "b",
+      "note": "yes but only for zones that actually have active effect",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-03T11:07:48Z"
+    }
+  }
+}

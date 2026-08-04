@@ -1,0 +1,2694 @@
+{
+  "doc_hash": "sha256:16265078b4c50d9d10df776c96b9479613ef5887e9e62eb074e26dd2e95ffe6f",
+  "charts": [
+    {
+      "id": "A",
+      "name": "A",
+      "title": "the whole loop",
+      "line": 129,
+      "nodes": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "title": "the answering session",
+      "line": 165,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B7a",
+        "B7b",
+        "B8",
+        "B18",
+        "B19",
+        "B20",
+        "B9",
+        "B11",
+        "B10",
+        "B15",
+        "B16",
+        "B17",
+        "B12",
+        "B13",
+        "B14"
+      ]
+    },
+    {
+      "id": "P",
+      "name": "B2",
+      "title": "free text at a gating question",
+      "line": 233,
+      "nodes": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "title": "reachability (what makes a question disappear)",
+      "line": 256,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C9",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C10",
+        "C11"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "D",
+      "title": "going back, and changing your mind",
+      "line": 283,
+      "nodes": [
+        "D1",
+        "D2",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "E",
+      "title": "how the agent knows you are done",
+      "line": 336,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E11"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "F",
+      "title": "review mode",
+      "line": 385,
+      "nodes": [
+        "F1",
+        "F2",
+        "F12",
+        "F13",
+        "F14",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "G",
+      "title": "the handoff artefact",
+      "line": 439,
+      "nodes": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8"
+      ]
+    },
+    {
+      "id": "H",
+      "name": "H",
+      "title": "projects, history and re-opening",
+      "line": 457,
+      "nodes": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8"
+      ]
+    },
+    {
+      "id": "J",
+      "name": "J",
+      "title": "execution hits design space the plan does not cover",
+      "line": 474,
+      "nodes": [
+        "J1",
+        "J2",
+        "J3",
+        "J4",
+        "J5",
+        "J6",
+        "J7",
+        "J8",
+        "J9",
+        "J10",
+        "J11",
+        "J12",
+        "J13",
+        "J14",
+        "J15",
+        "J16",
+        "J17"
+      ]
+    },
+    {
+      "id": "I",
+      "name": "I",
+      "title": "failure modes",
+      "line": 530,
+      "nodes": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "owner braindumps a feature in chat + triggers the skill",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 131
+    },
+    "A2": {
+      "chart": "A",
+      "label": "agent researches the codebase (the skill's step 1)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 131
+    },
+    "A3": {
+      "chart": "A",
+      "label": "agent authors questions.json + a DRAFT graph.json",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 133
+    },
+    "A4": {
+      "chart": "A",
+      "label": "agent starts the local server and hands over a URL",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 134
+    },
+    "A5": {
+      "chart": "A",
+      "label": "status = awaiting_owner, mode = questions",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 135
+    },
+    "A6": {
+      "chart": "A",
+      "label": "owner answers one question at a time — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 136
+    },
+    "A7": {
+      "chart": "A",
+      "label": "any reachable unanswered question left?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 137
+    },
+    "A8": {
+      "chart": "A",
+      "label": "UI writes status = awaiting_agent",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 139
+    },
+    "A9": {
+      "chart": "A",
+      "label": "agent notices — chart E",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 140
+    },
+    "A10": {
+      "chart": "A",
+      "label": "agent reads answers.json and revises graph.json",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 141
+    },
+    "A11": {
+      "chart": "A",
+      "label": "did the answers open NEW questions?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q20",
+        "Q24",
+        "Q31",
+        "Q45"
+      ],
+      "line": 142
+    },
+    "A12": {
+      "chart": "A",
+      "label": "agent appends them to questions.json, status = awaiting_owner, mode = questions",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 143
+    },
+    "A13": {
+      "chart": "A",
+      "label": "agent finalises the graph, writes assumptions / out-of-scope, status = awaiting_owner, mode = review",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 146
+    },
+    "A14": {
+      "chart": "A",
+      "label": "owner reviews the graph on the canvas — chart F",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 148
+    },
+    "A15": {
+      "chart": "A",
+      "label": "Confirm or Review again?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 149
+    },
+    "A16": {
+      "chart": "A",
+      "label": "status = awaiting_agent, with the owner's annotations",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 150
+    },
+    "A17": {
+      "chart": "A",
+      "label": "graph is frozen into versions/NNN/ and marked confirmed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 152
+    },
+    "A18": {
+      "chart": "A",
+      "label": "an implementation agent is handed the confirmed graph and writes the execution plan — chart G",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 153
+    },
+    "B1": {
+      "chart": "B",
+      "label": "owner opens the URL",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 167
+    },
+    "B2": {
+      "chart": "B",
+      "label": "UI loads questions.json + answers.json",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 167
+    },
+    "B3": {
+      "chart": "B",
+      "label": "compute the REACHABLE set — chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 168
+    },
+    "B4": {
+      "chart": "B",
+      "label": "any reachable unanswered question?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 169
+    },
+    "B5": {
+      "chart": "B",
+      "label": "show the DONE screen — see Q28 for what it says",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q28"
+      ],
+      "line": 170
+    },
+    "B6": {
+      "chart": "B",
+      "label": "pick the next question — see Q11 for the ordering rule",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q11"
+      ],
+      "line": 171
+    },
+    "B7": {
+      "chart": "B",
+      "label": "render ONE question, self-contained: the text, every option PREFILLED and clickable with its CONSEQUENCE beside it, the recommended one marked, a free-text box, and a NOT RELEVANT button",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q26"
+      ],
+      "line": 172
+    },
+    "B7a": {
+      "chart": "B",
+      "label": "is this a GATING question (its answer prunes others)?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 175
+    },
+    "B7b": {
+      "chart": "B",
+      "label": "each option also shows a → next preview: what kind of questions follow if you pick it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 176
+    },
+    "B8": {
+      "chart": "B",
+      "label": "owner acts",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 179
+    },
+    "B18": {
+      "chart": "B",
+      "label": "NEW: exactly one control is MARKED as what Enter will press, and the mark is visible before the key is",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q12",
+        "Q108"
+      ],
+      "line": 180
+    },
+    "B19": {
+      "chart": "B",
+      "label": "NEW: type in the note box and the mark MOVES to use what I wrote — Enter can never be the thing that discards what you typed",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 182
+    },
+    "B20": {
+      "chart": "B",
+      "label": "NEW: every control shows the key that presses it",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q12",
+        "Q108"
+      ],
+      "line": 184
+    },
+    "B9": {
+      "chart": "B",
+      "label": "POST the answer",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 185
+    },
+    "B11": {
+      "chart": "B",
+      "label": "record the recommended default, flagged unreviewed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 187
+    },
+    "B10": {
+      "chart": "B",
+      "label": "revisit an earlier question — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 189
+    },
+    "B15": {
+      "chart": "B",
+      "label": "gating question?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 190
+    },
+    "B16": {
+      "chart": "B",
+      "label": "record as answered-with-override; the agent resolves it next round; keep going",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 191
+    },
+    "B17": {
+      "chart": "B",
+      "label": "END THE ROUND NOW — chart B2",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 193
+    },
+    "B12": {
+      "chart": "B",
+      "label": "server appends to answers.log, rewrites answers.json, fsyncs BOTH, and only then returns 200",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 194
+    },
+    "B13": {
+      "chart": "B",
+      "label": "UI advances only after the 200 — nothing is ever shown as saved when it is not",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 198
+    },
+    "B14": {
+      "chart": "B",
+      "label": "the changed answer may orphan later answers — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 200
+    },
+    "P1": {
+      "chart": "P",
+      "label": "owner writes their own answer at a ⚑gate question",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 235
+    },
+    "P2": {
+      "chart": "P",
+      "label": "the answer is saved like any other, marked needs_new_branch",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 235
+    },
+    "P3": {
+      "chart": "P",
+      "label": "the UI stops asking — every remaining question sits on a branch the owner has just declined to take",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 237
+    },
+    "P4": {
+      "chart": "P",
+      "label": "status = awaiting_agent, reason = new_branch_needed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 239
+    },
+    "P5": {
+      "chart": "P",
+      "label": "the agent picks it up immediately (chart E) — it does not wait for the rest of the questionnaire",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 240
+    },
+    "P6": {
+      "chart": "P",
+      "label": "agent authors the new branch: a new option on that question, plus whatever questions it opens, plus gates on existing ones",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 242
+    },
+    "P7": {
+      "chart": "P",
+      "label": "status = awaiting_owner; the owner resumes at the SAME question, now with their answer present as a real option",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 244
+    },
+    "P8": {
+      "chart": "P",
+      "label": "answers already given on other branches are untouched",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 246
+    },
+    "C1": {
+      "chart": "C",
+      "label": "for each question Q in questions.json",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 258
+    },
+    "C2": {
+      "chart": "C",
+      "label": "Q already answered?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 258
+    },
+    "C3": {
+      "chart": "C",
+      "label": "not reachable-unanswered; its answer feeds other gates",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 259
+    },
+    "C4": {
+      "chart": "C",
+      "label": "gate is [root]?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 260
+    },
+    "C9": {
+      "chart": "C",
+      "label": "REACHABLE",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 261
+    },
+    "C5": {
+      "chart": "C",
+      "label": "evaluate the gate against the current answers",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 262
+    },
+    "C6": {
+      "chart": "C",
+      "label": "every identifier in the gate answered?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 263
+    },
+    "C7": {
+      "chart": "C",
+      "label": "PENDING — not askable yet, not pruned either",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q4",
+        "Q9"
+      ],
+      "line": 264
+    },
+    "C8": {
+      "chart": "C",
+      "label": "gate true?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 265
+    },
+    "C10": {
+      "chart": "C",
+      "label": "PRUNED — never shown, and its own answer is discarded if it had one",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q4",
+        "Q9",
+        "Q35"
+      ],
+      "line": 267
+    },
+    "C11": {
+      "chart": "C",
+      "label": "recompute after EVERY answer — one answer can prune dozens at once",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 268
+    },
+    "D1": {
+      "chart": "D",
+      "label": "owner presses BACK, or clicks an earlier answer in the history list",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 285
+    },
+    "D2": {
+      "chart": "D",
+      "label": "show that question with its recorded answer selected",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 285
+    },
+    "D10": {
+      "chart": "D",
+      "label": "NEW: BACK is a VISIT STACK, like a browser's — the question this screen showed before this one, not the newest answer in the file",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q33"
+      ],
+      "line": 286
+    },
+    "D11": {
+      "chart": "D",
+      "label": "NEW: the stack survives leaving for the canvas and coming back, so BACK is never the way out of the questionnaire",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 288
+    },
+    "D12": {
+      "chart": "D",
+      "label": "NEW: with nothing above it — opened from the index or a canvas link — BACK means the question answered immediately before this one",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 290
+    },
+    "D13": {
+      "chart": "D",
+      "label": "NEW: and at the first question there IS nothing before it, so BACK is disabled and says so, rather than doing nothing",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 292
+    },
+    "D14": {
+      "chart": "D",
+      "label": "NEW: the history is a SIDEBAR, always on screen and scrollable, carrying the question AND the answer, not a screen you leave for",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q33"
+      ],
+      "line": 294
+    },
+    "D3": {
+      "chart": "D",
+      "label": "owner changes it?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 296
+    },
+    "D4": {
+      "chart": "D",
+      "label": "forward again, nothing else moves",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 297
+    },
+    "D5": {
+      "chart": "D",
+      "label": "recompute reachability from that point",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 298
+    },
+    "D6": {
+      "chart": "D",
+      "label": "do any LATER answers now sit on pruned questions?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 299
+    },
+    "D7": {
+      "chart": "D",
+      "label": "continue from the next reachable question",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 300
+    },
+    "D8": {
+      "chart": "D",
+      "label": "those answers are marked inactive, not deleted",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 301
+    },
+    "D9": {
+      "chart": "D",
+      "label": "the UI says plainly what just became irrelevant — see Q34",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q34"
+      ],
+      "line": 302
+    },
+    "E1": {
+      "chart": "E",
+      "label": "owner answers the last reachable question",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 338
+    },
+    "E2": {
+      "chart": "E",
+      "label": "UI writes status.json: owner_state = done",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 338
+    },
+    "E3": {
+      "chart": "E",
+      "label": "how does the agent find out?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 339
+    },
+    "E4": {
+      "chart": "E",
+      "label": "the agent session runs a watch loop on status.json and wakes when owner_state flips",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 340
+    },
+    "E5": {
+      "chart": "E",
+      "label": "the local server writes a sentinel file / exits with a code that the agent's blocking wait is already parked on",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 342
+    },
+    "E6": {
+      "chart": "E",
+      "label": "owner says 'done' in chat; the agent reads the files",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 344
+    },
+    "E7": {
+      "chart": "E",
+      "label": "agent reads answers.json",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 345
+    },
+    "E8": {
+      "chart": "E",
+      "label": "agent revises graph.json, appends follow-ups or finalises",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 348
+    },
+    "E9": {
+      "chart": "E",
+      "label": "agent writes status.json: agent_state = ready, mode = questions|review",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 349
+    },
+    "E10": {
+      "chart": "E",
+      "label": "UI is polling status.json and switches itself over",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 350
+    },
+    "E12": {
+      "chart": "E",
+      "label": "NEW: the watch writes a HEARTBEAT while it is parked",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 351
+    },
+    "E13": {
+      "chart": "E",
+      "label": "is anyone listening?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 351
+    },
+    "E14": {
+      "chart": "E",
+      "label": "the screen says an agent is watching, and since when",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 352
+    },
+    "E15": {
+      "chart": "E",
+      "label": "the screen says the session STOPPED — nothing is lost, here is the prompt that starts another",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 353
+    },
+    "E16": {
+      "chart": "E",
+      "label": "the screen says nobody is watching, and what that does and does not cost",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 355
+    },
+    "E11": {
+      "chart": "E",
+      "label": "owner is notified — see Q49 for how",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q49"
+      ],
+      "line": 357
+    },
+    "F1": {
+      "chart": "F",
+      "label": "mode = review",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 387
+    },
+    "F2": {
+      "chart": "F",
+      "label": "canvas: the whole design graph, pan and zoom, beside a picker that shows one chart on its own",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 387
+    },
+    "F12": {
+      "chart": "F",
+      "label": "NEW: cross-chart links — a node label that names another chart becomes a link to that chart, DERIVED from the label, never authored twice",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 389
+    },
+    "F13": {
+      "chart": "F",
+      "label": "drawn distinctly: dashed, node to chart, so it can never be read as one of the edges the author actually drew",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 391
+    },
+    "F14": {
+      "chart": "F",
+      "label": "the same links go into graph.json beside edges, so the canvas and an implementation agent are looking at one artefact — chart G",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 393
+    },
+    "F3": {
+      "chart": "F",
+      "label": "side panel: assumptions, out-of-scope, open notes, the answers summary",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 395
+    },
+    "F4": {
+      "chart": "F",
+      "label": "owner interacts",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 396
+    },
+    "F5": {
+      "chart": "F",
+      "label": "node detail: its text, which question decided it, and a free-text annotation box",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 397
+    },
+    "F6": {
+      "chart": "F",
+      "label": "edge detail: the condition it represents, plus an annotation box",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 399
+    },
+    "F7": {
+      "chart": "F",
+      "label": "saved immediately, same durability rule as answers",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 400
+    },
+    "F8": {
+      "chart": "F",
+      "label": "a chart folds to one node so a 200-node graph stays legible, and its cross-chart links follow the fold",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 401
+    },
+    "F9": {
+      "chart": "F",
+      "label": "jump to a node by ID or text",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 403
+    },
+    "F10": {
+      "chart": "F",
+      "label": "status = awaiting_agent, annotations attached",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 404
+    },
+    "F11": {
+      "chart": "F",
+      "label": "freeze: snapshot into versions/NNN/, mark confirmed, emit the handoff artefact",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 405
+    },
+    "G1": {
+      "chart": "G",
+      "label": "Confirm pressed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 441
+    },
+    "G2": {
+      "chart": "G",
+      "label": "freeze graph.json + answers.json + annotations.json into versions/NNN/, never mutated again",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 441
+    },
+    "G3": {
+      "chart": "G",
+      "label": "render a human-readable DESIGN.md beside it: the charts as mermaid, the decisions as prose, assumptions, out-of-scope",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q71",
+        "Q76"
+      ],
+      "line": 443
+    },
+    "G4": {
+      "chart": "G",
+      "label": "an implementation agent is pointed at versions/NNN/",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 445
+    },
+    "G5": {
+      "chart": "G",
+      "label": "it produces the EXECUTION PLAN — a separate document, as today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 446
+    },
+    "G6": {
+      "chart": "G",
+      "label": "the plan disagrees with the design?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 447
+    },
+    "G7": {
+      "chart": "G",
+      "label": "that is a design gap: back to Review again, not a silent decision",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 448
+    },
+    "G8": {
+      "chart": "G",
+      "label": "implementation proceeds against a frozen, cited design",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 449
+    },
+    "H1": {
+      "chart": "H",
+      "label": "designloop/projects/",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 459
+    },
+    "H2": {
+      "chart": "H",
+      "label": "one directory per design project, named by slug",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 459
+    },
+    "H3": {
+      "chart": "H",
+      "label": "index page lists every project: name, status, last touched, confirmed version",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 460
+    },
+    "H4": {
+      "chart": "H",
+      "label": "owner picks one",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 461
+    },
+    "H5": {
+      "chart": "H",
+      "label": "resume exactly where it stopped",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 462
+    },
+    "H6": {
+      "chart": "H",
+      "label": "open read-only at its confirmed version",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 463
+    },
+    "H7": {
+      "chart": "H",
+      "label": "reopen for another cycle?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 464
+    },
+    "H8": {
+      "chart": "H",
+      "label": "a NEW version is started from the confirmed one; the old one stays frozen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 465
+    },
+    "J1": {
+      "chart": "J",
+      "label": "implementing agent is working a plan step (every step cites the design node IDs it implements)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 476
+    },
+    "J2": {
+      "chart": "J",
+      "label": "is this decision covered?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 476
+    },
+    "J3": {
+      "chart": "J",
+      "label": "do it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 478
+    },
+    "J4": {
+      "chart": "J",
+      "label": "triage",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 479
+    },
+    "J5": {
+      "chart": "J",
+      "label": "ASSUME: do it, append one line to ASSUMPTIONS.md citing the node. Never silently",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 480
+    },
+    "J6": {
+      "chart": "J",
+      "label": "GAP",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 483
+    },
+    "J7": {
+      "chart": "J",
+      "label": "CONTRADICTION — highest priority",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 485
+    },
+    "J8": {
+      "chart": "J",
+      "label": "write gaps/GAP-NNN.md IN THE QUESTIONNAIRE GRAMMAR: what the design says, what it does not say, why it blocks, the options with consequences, blast radius, what was parked",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 486
+    },
+    "J9": {
+      "chart": "J",
+      "label": "PARK that thread only — keep working every unaffected thread",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 490
+    },
+    "J10": {
+      "chart": "J",
+      "label": "notify the owner: N gaps open, M threads parked, work continuing on the rest",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 491
+    },
+    "J11": {
+      "chart": "J",
+      "label": "owner chooses",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 492
+    },
+    "J12": {
+      "chart": "J",
+      "label": "a SCOPED questionnaire: the gaps' own options as questions, plus whatever they open. Never the whole questionnaire again",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 493
+    },
+    "J13": {
+      "chart": "J",
+      "label": "owner answers in chat; the agent records it against the gap",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 495
+    },
+    "J14": {
+      "chart": "J",
+      "label": "gap stays open, thread stays parked, everything else proceeds",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 496
+    },
+    "J15": {
+      "chart": "J",
+      "label": "design version N+1: changelog of nodes added/changed, questions added, gaps closed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 497
+    },
+    "J16": {
+      "chart": "J",
+      "label": "every plan step citing a CHANGED node is marked STALE",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 499
+    },
+    "J17": {
+      "chart": "J",
+      "label": "stale steps are re-derived before they are worked again; untouched steps were never blocked and are not thrown away",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 500
+    },
+    "I1": {
+      "chart": "I",
+      "label": "failure",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 532
+    },
+    "I2": {
+      "chart": "I",
+      "label": "server not running when the owner opens the URL → a plain page saying how to start it, never a browser error",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 532
+    },
+    "I3": {
+      "chart": "I",
+      "label": "port already taken → the tool picks the next free port and the URL it hands over reflects that",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 534
+    },
+    "I4": {
+      "chart": "I",
+      "label": "two browser tabs open on the same project → both poll status.json; the second to act wins, and the other refreshes. No lock, because answers are idempotent per question ID",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 536
+    },
+    "I5": {
+      "chart": "I",
+      "label": "owner edits answers.json by hand → it is plain JSON on purpose; the UI reloads it and carries on",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 539
+    },
+    "I6": {
+      "chart": "I",
+      "label": "agent crashes mid-revision → graph.json is written atomically (temp + rename), so it is never half-written",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 541
+    },
+    "I7": {
+      "chart": "I",
+      "label": "disk full / write fails → the POST returns non-200 and the UI does NOT advance; the owner sees the failure",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 543
+    },
+    "I8": {
+      "chart": "I",
+      "label": "browser closed mid-round → nothing is lost; every answer was already on disk",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 545
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 131
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "",
+      "chart": "A",
+      "line": 133
+    },
+    {
+      "key": "A3->A4",
+      "from": "A3",
+      "to": "A4",
+      "label": "",
+      "chart": "A",
+      "line": 134
+    },
+    {
+      "key": "A4->A5",
+      "from": "A4",
+      "to": "A5",
+      "label": "",
+      "chart": "A",
+      "line": 135
+    },
+    {
+      "key": "A5->A6",
+      "from": "A5",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 136
+    },
+    {
+      "key": "A6->A7",
+      "from": "A6",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 137
+    },
+    {
+      "key": "A7->A6",
+      "from": "A7",
+      "to": "A6",
+      "label": "yes",
+      "chart": "A",
+      "line": 138
+    },
+    {
+      "key": "A7->A8",
+      "from": "A7",
+      "to": "A8",
+      "label": "no",
+      "chart": "A",
+      "line": 139
+    },
+    {
+      "key": "A8->A9",
+      "from": "A8",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 140
+    },
+    {
+      "key": "A9->A10",
+      "from": "A9",
+      "to": "A10",
+      "label": "",
+      "chart": "A",
+      "line": 141
+    },
+    {
+      "key": "A10->A11",
+      "from": "A10",
+      "to": "A11",
+      "label": "",
+      "chart": "A",
+      "line": 142
+    },
+    {
+      "key": "A11->A12",
+      "from": "A11",
+      "to": "A12",
+      "label": "yes",
+      "chart": "A",
+      "line": 143
+    },
+    {
+      "key": "A12->A6",
+      "from": "A12",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 145
+    },
+    {
+      "key": "A11->A13",
+      "from": "A11",
+      "to": "A13",
+      "label": "no",
+      "chart": "A",
+      "line": 146
+    },
+    {
+      "key": "A13->A14",
+      "from": "A13",
+      "to": "A14",
+      "label": "",
+      "chart": "A",
+      "line": 148
+    },
+    {
+      "key": "A14->A15",
+      "from": "A14",
+      "to": "A15",
+      "label": "",
+      "chart": "A",
+      "line": 149
+    },
+    {
+      "key": "A15->A16",
+      "from": "A15",
+      "to": "A16",
+      "label": "Review again",
+      "chart": "A",
+      "line": 150
+    },
+    {
+      "key": "A16->A9",
+      "from": "A16",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 151
+    },
+    {
+      "key": "A15->A17",
+      "from": "A15",
+      "to": "A17",
+      "label": "Confirm",
+      "chart": "A",
+      "line": 152
+    },
+    {
+      "key": "A17->A18",
+      "from": "A17",
+      "to": "A18",
+      "label": "",
+      "chart": "A",
+      "line": 153
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 167
+    },
+    {
+      "key": "B2->B3",
+      "from": "B2",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 168
+    },
+    {
+      "key": "B3->B4",
+      "from": "B3",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 169
+    },
+    {
+      "key": "B4->B5",
+      "from": "B4",
+      "to": "B5",
+      "label": "no",
+      "chart": "B",
+      "line": 170
+    },
+    {
+      "key": "B4->B6",
+      "from": "B4",
+      "to": "B6",
+      "label": "yes",
+      "chart": "B",
+      "line": 171
+    },
+    {
+      "key": "B6->B7",
+      "from": "B6",
+      "to": "B7",
+      "label": "",
+      "chart": "B",
+      "line": 172
+    },
+    {
+      "key": "B7->B7a",
+      "from": "B7",
+      "to": "B7a",
+      "label": "",
+      "chart": "B",
+      "line": 175
+    },
+    {
+      "key": "B7a->B7b",
+      "from": "B7a",
+      "to": "B7b",
+      "label": "yes",
+      "chart": "B",
+      "line": 176
+    },
+    {
+      "key": "B7a->B8",
+      "from": "B7a",
+      "to": "B8",
+      "label": "no",
+      "chart": "B",
+      "line": 178
+    },
+    {
+      "key": "B7b->B8",
+      "from": "B7b",
+      "to": "B8",
+      "label": "",
+      "chart": "B",
+      "line": 179
+    },
+    {
+      "key": "B7->B18",
+      "from": "B7",
+      "to": "B18",
+      "label": "",
+      "chart": "B",
+      "line": 180
+    },
+    {
+      "key": "B18->B19",
+      "from": "B18",
+      "to": "B19",
+      "label": "",
+      "chart": "B",
+      "line": 182
+    },
+    {
+      "key": "B18->B20",
+      "from": "B18",
+      "to": "B20",
+      "label": "",
+      "chart": "B",
+      "line": 184
+    },
+    {
+      "key": "B8->B9#1",
+      "from": "B8",
+      "to": "B9",
+      "label": "clicks an option",
+      "chart": "B",
+      "line": 185
+    },
+    {
+      "key": "B8->B9#2",
+      "from": "B8",
+      "to": "B9",
+      "label": "clicks an option AND writes a note",
+      "chart": "B",
+      "line": 186
+    },
+    {
+      "key": "B8->B11",
+      "from": "B8",
+      "to": "B11",
+      "label": "presses NOT RELEVANT",
+      "chart": "B",
+      "line": 187
+    },
+    {
+      "key": "B8->B10",
+      "from": "B8",
+      "to": "B10",
+      "label": "presses BACK / picks from history",
+      "chart": "B",
+      "line": 189
+    },
+    {
+      "key": "B8->B15",
+      "from": "B8",
+      "to": "B15",
+      "label": "writes free text INSTEAD of choosing",
+      "chart": "B",
+      "line": 190
+    },
+    {
+      "key": "B15->B16",
+      "from": "B15",
+      "to": "B16",
+      "label": "no",
+      "chart": "B",
+      "line": 191
+    },
+    {
+      "key": "B15->B17",
+      "from": "B15",
+      "to": "B17",
+      "label": "yes",
+      "chart": "B",
+      "line": 193
+    },
+    {
+      "key": "B9->B12",
+      "from": "B9",
+      "to": "B12",
+      "label": "",
+      "chart": "B",
+      "line": 194
+    },
+    {
+      "key": "B11->B12",
+      "from": "B11",
+      "to": "B12",
+      "label": "",
+      "chart": "B",
+      "line": 196
+    },
+    {
+      "key": "B16->B12",
+      "from": "B16",
+      "to": "B12",
+      "label": "",
+      "chart": "B",
+      "line": 197
+    },
+    {
+      "key": "B12->B13",
+      "from": "B12",
+      "to": "B13",
+      "label": "",
+      "chart": "B",
+      "line": 198
+    },
+    {
+      "key": "B13->B3",
+      "from": "B13",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 199
+    },
+    {
+      "key": "B10->B14",
+      "from": "B10",
+      "to": "B14",
+      "label": "",
+      "chart": "B",
+      "line": 200
+    },
+    {
+      "key": "B14->B3",
+      "from": "B14",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 201
+    },
+    {
+      "key": "P1->P2",
+      "from": "P1",
+      "to": "P2",
+      "label": "",
+      "chart": "P",
+      "line": 235
+    },
+    {
+      "key": "P2->P3",
+      "from": "P2",
+      "to": "P3",
+      "label": "",
+      "chart": "P",
+      "line": 237
+    },
+    {
+      "key": "P3->P4",
+      "from": "P3",
+      "to": "P4",
+      "label": "",
+      "chart": "P",
+      "line": 239
+    },
+    {
+      "key": "P4->P5",
+      "from": "P4",
+      "to": "P5",
+      "label": "",
+      "chart": "P",
+      "line": 240
+    },
+    {
+      "key": "P5->P6",
+      "from": "P5",
+      "to": "P6",
+      "label": "",
+      "chart": "P",
+      "line": 242
+    },
+    {
+      "key": "P6->P7",
+      "from": "P6",
+      "to": "P7",
+      "label": "",
+      "chart": "P",
+      "line": 244
+    },
+    {
+      "key": "P7->P8",
+      "from": "P7",
+      "to": "P8",
+      "label": "",
+      "chart": "P",
+      "line": 246
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 258
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "yes",
+      "chart": "C",
+      "line": 259
+    },
+    {
+      "key": "C2->C4",
+      "from": "C2",
+      "to": "C4",
+      "label": "no",
+      "chart": "C",
+      "line": 260
+    },
+    {
+      "key": "C4->C9",
+      "from": "C4",
+      "to": "C9",
+      "label": "yes",
+      "chart": "C",
+      "line": 261
+    },
+    {
+      "key": "C4->C5",
+      "from": "C4",
+      "to": "C5",
+      "label": "no",
+      "chart": "C",
+      "line": 262
+    },
+    {
+      "key": "C5->C6",
+      "from": "C5",
+      "to": "C6",
+      "label": "",
+      "chart": "C",
+      "line": 263
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "no",
+      "chart": "C",
+      "line": 264
+    },
+    {
+      "key": "C6->C8",
+      "from": "C6",
+      "to": "C8",
+      "label": "yes",
+      "chart": "C",
+      "line": 265
+    },
+    {
+      "key": "C8->C9",
+      "from": "C8",
+      "to": "C9",
+      "label": "yes",
+      "chart": "C",
+      "line": 266
+    },
+    {
+      "key": "C8->C10",
+      "from": "C8",
+      "to": "C10",
+      "label": "no",
+      "chart": "C",
+      "line": 267
+    },
+    {
+      "key": "C9->C11",
+      "from": "C9",
+      "to": "C11",
+      "label": "",
+      "chart": "C",
+      "line": 268
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 285
+    },
+    {
+      "key": "D10->D1",
+      "from": "D10",
+      "to": "D1",
+      "label": "",
+      "chart": "D",
+      "line": 286
+    },
+    {
+      "key": "D11->D10",
+      "from": "D11",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 288
+    },
+    {
+      "key": "D12->D10",
+      "from": "D12",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 290
+    },
+    {
+      "key": "D13->D10",
+      "from": "D13",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 292
+    },
+    {
+      "key": "D14->D1",
+      "from": "D14",
+      "to": "D1",
+      "label": "",
+      "chart": "D",
+      "line": 294
+    },
+    {
+      "key": "D2->D3",
+      "from": "D2",
+      "to": "D3",
+      "label": "",
+      "chart": "D",
+      "line": 296
+    },
+    {
+      "key": "D3->D4",
+      "from": "D3",
+      "to": "D4",
+      "label": "no",
+      "chart": "D",
+      "line": 297
+    },
+    {
+      "key": "D3->D5",
+      "from": "D3",
+      "to": "D5",
+      "label": "yes",
+      "chart": "D",
+      "line": 298
+    },
+    {
+      "key": "D5->D6",
+      "from": "D5",
+      "to": "D6",
+      "label": "",
+      "chart": "D",
+      "line": 299
+    },
+    {
+      "key": "D6->D7",
+      "from": "D6",
+      "to": "D7",
+      "label": "no",
+      "chart": "D",
+      "line": 300
+    },
+    {
+      "key": "D6->D8",
+      "from": "D6",
+      "to": "D8",
+      "label": "yes",
+      "chart": "D",
+      "line": 301
+    },
+    {
+      "key": "D8->D9",
+      "from": "D8",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 302
+    },
+    {
+      "key": "D9->D7",
+      "from": "D9",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 303
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "",
+      "chart": "E",
+      "line": 338
+    },
+    {
+      "key": "E2->E3",
+      "from": "E2",
+      "to": "E3",
+      "label": "",
+      "chart": "E",
+      "line": 339
+    },
+    {
+      "key": "E3->E4",
+      "from": "E3",
+      "to": "E4",
+      "label": "M1 — agent polls",
+      "chart": "E",
+      "line": 340
+    },
+    {
+      "key": "E3->E5",
+      "from": "E3",
+      "to": "E5",
+      "label": "M2 — server signals",
+      "chart": "E",
+      "line": 342
+    },
+    {
+      "key": "E3->E6",
+      "from": "E3",
+      "to": "E6",
+      "label": "M3 — owner tells it",
+      "chart": "E",
+      "line": 344
+    },
+    {
+      "key": "E4->E7",
+      "from": "E4",
+      "to": "E7",
+      "label": "",
+      "chart": "E",
+      "line": 345
+    },
+    {
+      "key": "E5->E7",
+      "from": "E5",
+      "to": "E7",
+      "label": "",
+      "chart": "E",
+      "line": 346
+    },
+    {
+      "key": "E6->E7",
+      "from": "E6",
+      "to": "E7",
+      "label": "",
+      "chart": "E",
+      "line": 347
+    },
+    {
+      "key": "E7->E8",
+      "from": "E7",
+      "to": "E8",
+      "label": "",
+      "chart": "E",
+      "line": 348
+    },
+    {
+      "key": "E8->E9",
+      "from": "E8",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 349
+    },
+    {
+      "key": "E9->E10",
+      "from": "E9",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 350
+    },
+    {
+      "key": "E12->E13",
+      "from": "E12",
+      "to": "E13",
+      "label": "",
+      "chart": "E",
+      "line": 351
+    },
+    {
+      "key": "E13->E14",
+      "from": "E13",
+      "to": "E14",
+      "label": "beating",
+      "chart": "E",
+      "line": 352
+    },
+    {
+      "key": "E13->E15",
+      "from": "E13",
+      "to": "E15",
+      "label": "gone stale",
+      "chart": "E",
+      "line": 353
+    },
+    {
+      "key": "E13->E16",
+      "from": "E13",
+      "to": "E16",
+      "label": "never any",
+      "chart": "E",
+      "line": 355
+    },
+    {
+      "key": "E10->E11",
+      "from": "E10",
+      "to": "E11",
+      "label": "",
+      "chart": "E",
+      "line": 357
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 387
+    },
+    {
+      "key": "F2->F12",
+      "from": "F2",
+      "to": "F12",
+      "label": "",
+      "chart": "F",
+      "line": 389
+    },
+    {
+      "key": "F12->F13",
+      "from": "F12",
+      "to": "F13",
+      "label": "",
+      "chart": "F",
+      "line": 391
+    },
+    {
+      "key": "F13->F14",
+      "from": "F13",
+      "to": "F14",
+      "label": "",
+      "chart": "F",
+      "line": 393
+    },
+    {
+      "key": "F2->F3",
+      "from": "F2",
+      "to": "F3",
+      "label": "",
+      "chart": "F",
+      "line": 395
+    },
+    {
+      "key": "F3->F4",
+      "from": "F3",
+      "to": "F4",
+      "label": "",
+      "chart": "F",
+      "line": 396
+    },
+    {
+      "key": "F4->F5",
+      "from": "F4",
+      "to": "F5",
+      "label": "clicks a node",
+      "chart": "F",
+      "line": 397
+    },
+    {
+      "key": "F4->F6",
+      "from": "F4",
+      "to": "F6",
+      "label": "clicks an edge",
+      "chart": "F",
+      "line": 399
+    },
+    {
+      "key": "F4->F7",
+      "from": "F4",
+      "to": "F7",
+      "label": "edits an annotation",
+      "chart": "F",
+      "line": 400
+    },
+    {
+      "key": "F4->F8",
+      "from": "F4",
+      "to": "F8",
+      "label": "collapses a subgraph",
+      "chart": "F",
+      "line": 401
+    },
+    {
+      "key": "F4->F9",
+      "from": "F4",
+      "to": "F9",
+      "label": "searches",
+      "chart": "F",
+      "line": 403
+    },
+    {
+      "key": "F4->F10",
+      "from": "F4",
+      "to": "F10",
+      "label": "presses Review again",
+      "chart": "F",
+      "line": 404
+    },
+    {
+      "key": "F4->F11",
+      "from": "F4",
+      "to": "F11",
+      "label": "presses Confirm",
+      "chart": "F",
+      "line": 405
+    },
+    {
+      "key": "G1->G2",
+      "from": "G1",
+      "to": "G2",
+      "label": "",
+      "chart": "G",
+      "line": 441
+    },
+    {
+      "key": "G2->G3",
+      "from": "G2",
+      "to": "G3",
+      "label": "",
+      "chart": "G",
+      "line": 443
+    },
+    {
+      "key": "G3->G4",
+      "from": "G3",
+      "to": "G4",
+      "label": "",
+      "chart": "G",
+      "line": 445
+    },
+    {
+      "key": "G4->G5",
+      "from": "G4",
+      "to": "G5",
+      "label": "",
+      "chart": "G",
+      "line": 446
+    },
+    {
+      "key": "G5->G6",
+      "from": "G5",
+      "to": "G6",
+      "label": "",
+      "chart": "G",
+      "line": 447
+    },
+    {
+      "key": "G6->G7",
+      "from": "G6",
+      "to": "G7",
+      "label": "yes",
+      "chart": "G",
+      "line": 448
+    },
+    {
+      "key": "G6->G8",
+      "from": "G6",
+      "to": "G8",
+      "label": "no",
+      "chart": "G",
+      "line": 449
+    },
+    {
+      "key": "H1->H2",
+      "from": "H1",
+      "to": "H2",
+      "label": "",
+      "chart": "H",
+      "line": 459
+    },
+    {
+      "key": "H2->H3",
+      "from": "H2",
+      "to": "H3",
+      "label": "",
+      "chart": "H",
+      "line": 460
+    },
+    {
+      "key": "H3->H4",
+      "from": "H3",
+      "to": "H4",
+      "label": "",
+      "chart": "H",
+      "line": 461
+    },
+    {
+      "key": "H4->H5",
+      "from": "H4",
+      "to": "H5",
+      "label": "in progress",
+      "chart": "H",
+      "line": 462
+    },
+    {
+      "key": "H4->H6",
+      "from": "H4",
+      "to": "H6",
+      "label": "confirmed",
+      "chart": "H",
+      "line": 463
+    },
+    {
+      "key": "H6->H7",
+      "from": "H6",
+      "to": "H7",
+      "label": "",
+      "chart": "H",
+      "line": 464
+    },
+    {
+      "key": "H7->H8",
+      "from": "H7",
+      "to": "H8",
+      "label": "yes",
+      "chart": "H",
+      "line": 465
+    },
+    {
+      "key": "J1->J2",
+      "from": "J1",
+      "to": "J2",
+      "label": "",
+      "chart": "J",
+      "line": 476
+    },
+    {
+      "key": "J2->J3",
+      "from": "J2",
+      "to": "J3",
+      "label": "yes",
+      "chart": "J",
+      "line": 478
+    },
+    {
+      "key": "J2->J4",
+      "from": "J2",
+      "to": "J4",
+      "label": "no",
+      "chart": "J",
+      "line": 479
+    },
+    {
+      "key": "J4->J5",
+      "from": "J4",
+      "to": "J5",
+      "label": "reversible AND clearly within intent",
+      "chart": "J",
+      "line": 480
+    },
+    {
+      "key": "J4->J6",
+      "from": "J4",
+      "to": "J6",
+      "label": "two defensible choices differ in what the player sees / expensive to reverse / an owner call",
+      "chart": "J",
+      "line": 483
+    },
+    {
+      "key": "J4->J7",
+      "from": "J4",
+      "to": "J7",
+      "label": "the design contradicts itself or the code",
+      "chart": "J",
+      "line": 485
+    },
+    {
+      "key": "J6->J8",
+      "from": "J6",
+      "to": "J8",
+      "label": "",
+      "chart": "J",
+      "line": 486
+    },
+    {
+      "key": "J7->J8",
+      "from": "J7",
+      "to": "J8",
+      "label": "",
+      "chart": "J",
+      "line": 489
+    },
+    {
+      "key": "J8->J9",
+      "from": "J8",
+      "to": "J9",
+      "label": "",
+      "chart": "J",
+      "line": 490
+    },
+    {
+      "key": "J9->J10",
+      "from": "J9",
+      "to": "J10",
+      "label": "",
+      "chart": "J",
+      "line": 491
+    },
+    {
+      "key": "J10->J11",
+      "from": "J10",
+      "to": "J11",
+      "label": "",
+      "chart": "J",
+      "line": 492
+    },
+    {
+      "key": "J11->J12",
+      "from": "J11",
+      "to": "J12",
+      "label": "run a round",
+      "chart": "J",
+      "line": 493
+    },
+    {
+      "key": "J11->J13",
+      "from": "J11",
+      "to": "J13",
+      "label": "answer inline",
+      "chart": "J",
+      "line": 495
+    },
+    {
+      "key": "J11->J14",
+      "from": "J11",
+      "to": "J14",
+      "label": "not now",
+      "chart": "J",
+      "line": 496
+    },
+    {
+      "key": "J12->J15",
+      "from": "J12",
+      "to": "J15",
+      "label": "",
+      "chart": "J",
+      "line": 497
+    },
+    {
+      "key": "J13->J15",
+      "from": "J13",
+      "to": "J15",
+      "label": "",
+      "chart": "J",
+      "line": 498
+    },
+    {
+      "key": "J15->J16",
+      "from": "J15",
+      "to": "J16",
+      "label": "",
+      "chart": "J",
+      "line": 499
+    },
+    {
+      "key": "J16->J17",
+      "from": "J16",
+      "to": "J17",
+      "label": "",
+      "chart": "J",
+      "line": 500
+    },
+    {
+      "key": "J17->J1",
+      "from": "J17",
+      "to": "J1",
+      "label": "",
+      "chart": "J",
+      "line": 502
+    },
+    {
+      "key": "I1->I2",
+      "from": "I1",
+      "to": "I2",
+      "label": "",
+      "chart": "I",
+      "line": 532
+    },
+    {
+      "key": "I1->I3",
+      "from": "I1",
+      "to": "I3",
+      "label": "",
+      "chart": "I",
+      "line": 534
+    },
+    {
+      "key": "I1->I4",
+      "from": "I1",
+      "to": "I4",
+      "label": "",
+      "chart": "I",
+      "line": 536
+    },
+    {
+      "key": "I1->I5",
+      "from": "I1",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 539
+    },
+    {
+      "key": "I1->I6",
+      "from": "I1",
+      "to": "I6",
+      "label": "",
+      "chart": "I",
+      "line": 541
+    },
+    {
+      "key": "I1->I7",
+      "from": "I1",
+      "to": "I7",
+      "label": "",
+      "chart": "I",
+      "line": 543
+    },
+    {
+      "key": "I1->I8",
+      "from": "I1",
+      "to": "I8",
+      "label": "",
+      "chart": "I",
+      "line": 545
+    }
+  ],
+  "links": [
+    {
+      "key": "A6~>B",
+      "from": "A6",
+      "fromChart": "A",
+      "toChart": "B",
+      "ref": "B",
+      "line": 136
+    },
+    {
+      "key": "A9~>E",
+      "from": "A9",
+      "fromChart": "A",
+      "toChart": "E",
+      "ref": "E",
+      "line": 140
+    },
+    {
+      "key": "A14~>F",
+      "from": "A14",
+      "fromChart": "A",
+      "toChart": "F",
+      "ref": "F",
+      "line": 148
+    },
+    {
+      "key": "A18~>G",
+      "from": "A18",
+      "fromChart": "A",
+      "toChart": "G",
+      "ref": "G",
+      "line": 153
+    },
+    {
+      "key": "B3~>C",
+      "from": "B3",
+      "fromChart": "B",
+      "toChart": "C",
+      "ref": "C",
+      "line": 168
+    },
+    {
+      "key": "B10~>D",
+      "from": "B10",
+      "fromChart": "B",
+      "toChart": "D",
+      "ref": "D",
+      "line": 189
+    },
+    {
+      "key": "B17~>P",
+      "from": "B17",
+      "fromChart": "B",
+      "toChart": "P",
+      "ref": "B2",
+      "line": 193
+    },
+    {
+      "key": "B14~>D",
+      "from": "B14",
+      "fromChart": "B",
+      "toChart": "D",
+      "ref": "D",
+      "line": 200
+    },
+    {
+      "key": "P5~>E",
+      "from": "P5",
+      "fromChart": "P",
+      "toChart": "E",
+      "ref": "E",
+      "line": 240
+    },
+    {
+      "key": "F14~>G",
+      "from": "F14",
+      "fromChart": "F",
+      "toChart": "G",
+      "ref": "G",
+      "line": 393
+    }
+  ]
+}

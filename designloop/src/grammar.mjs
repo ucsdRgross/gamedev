@@ -7,8 +7,10 @@
 //
 //   - **<ID>** `<gate>` [⚑gate] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [⇒ <hint>]
 //
-// The acceptance test is `solatro/SPOTLIGHT_DESIGN.md` parsing UNCHANGED: 188 Q-numbered questions
-// plus 8 QR root gates, zero errors. If that document does not parse, the grammar is wrong.
+// The acceptance document is `solatro/design/spotlight/DESIGN.md`. ⚠ It is a LIVING document — the
+// tests assert that it parses clean and that its DAG is sound, never how many questions it has
+// today (it went 195 -> 275 over four ordinary revisions). If it does not parse, the grammar is
+// wrong, not the document.
 
 /** An ID is `QR<n>` or `Q<n>` with an optional letter suffix (`Q88` and `Q88b` are different). */
 export const ID_PATTERN = /^(?:QR\d+|Q\d+[a-z]?)$/;
@@ -60,11 +62,26 @@ export function parseGate(str) {
   return { root: false, atoms, text };
 }
 
-/** Conjoin two gates. A `root` gate contributes nothing, which is what makes it the identity. */
+/**
+ * Conjoin two gates. A `root` gate contributes nothing, which is what makes it the identity.
+ *
+ * Identical atoms collapse. A question inside a gated section routinely repeats its section's own
+ * gate — `- **Q9** \`[QR1=a]\`` under `### 17.2 … \`[QR1=a]\`` — and the conjunction of an atom
+ * with itself is that atom. Without this the owner is told "asked because QR1 = … " twice on the
+ * same screen, which reads as two different reasons.
+ */
 export function andGates(a, b) {
   if (!a || a.root) return b || { root: true, atoms: [], text: 'root' };
   if (!b || b.root) return a;
-  return { root: false, atoms: [...a.atoms, ...b.atoms], text: `${a.text} & ${b.text}` };
+  const atoms = [];
+  const seen = new Set();
+  for (const atom of [...a.atoms, ...b.atoms]) {
+    const signature = `${atom.id}${atom.op}${[...atom.letters].sort().join('|')}`;
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    atoms.push(atom);
+  }
+  return { root: false, atoms, text: a.text === b.text ? a.text : `${a.text} & ${b.text}` };
 }
 
 /** Split a trailing `⇒ …` / `⇐ …` hint off a segment. */
@@ -110,8 +127,11 @@ function parseOption(segment) {
  * errors in documents that are perfectly correct.
  *
  * `strict` (PLAN §5.1) makes a ⚑gate question whose options do not all carry `→ next:` throw.
- * See `gaps/GAP-001.md`: `SPOTLIGHT_DESIGN.md` contains one such question and the acceptance gate
- * forbids editing it, so the default is non-strict and the shortfall is reported as a warning.
+ * The DEFAULT is non-strict: `gaps/GAP-001.md` was resolved (b) on 2026-08-01 — that shortfall is a
+ * **warning**, because refusing a document that is 195/196 correct blocks the owner, who cannot fix
+ * it, to punish the authoring agent, who can. The warning reaches the agent through `run check` and
+ * the index card's badge, and the owner sees the option marked "→ next: not described".
+ * `strict: true` is what PLAN §5.6's must-throw case exercises.
  */
 export function parseQuestionLine(line, { strict = false, lineNumber = null } = {}) {
   const head = RE_QUESTION_HEAD.exec(line.trim());
@@ -141,9 +161,19 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
   if (!rest.startsWith('—')) {
     throw new GrammarError(`${id}: expected "—" after the gate`, { id, line: lineNumber });
   }
-  rest = rest.slice(1).trim();
+  return parseQuestionBody(id, rest.slice(1).trim(), { gate, isGate, strict, lineNumber });
+}
 
-  const segments = rest.split(SEP);
+/**
+ * Everything after the `—`: the text, the ` · `-separated options, the default, `notes`.
+ *
+ * Split out of `parseQuestionLine` for `src/gaps.mjs` (PLAN S15): a gap is filed **in the
+ * questionnaire grammar** so that its options drop into the next round unchanged (DESIGN J8), and
+ * "unchanged" is only true if the same code reads them. A gap has no line and no gate, so those
+ * are parameters rather than parsed here.
+ */
+export function parseQuestionBody(id, body, { gate = null, isGate = false, strict = false, lineNumber = null } = {}) {
+  const segments = String(body ?? '').split(SEP);
   const question = {
     id,
     retired: false,
@@ -164,25 +194,25 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
   if (first.hint) question.hint = first.hint;
 
   for (const raw of segments.slice(1)) {
-    const { body, hint } = splitHint(raw);
+    const { body: segment, hint } = splitHint(raw);
     if (hint) question.hint = hint;
-    if (!body) continue;
-    const option = parseOption(body);
+    if (!segment) continue;
+    const option = parseOption(segment);
     if (option) {
       question.options.push(option);
       continue;
     }
-    const def = RE_DEFAULT.exec(body);
+    const def = RE_DEFAULT.exec(segment);
     if (def) {
       question.default = def[1];
       question.defaultNote = def[2].trim().replace(/^—\s*/, '');
       continue;
     }
-    if (/^notes\b/i.test(body)) {
+    if (/^notes\b/i.test(segment)) {
       question.notes = true;
       continue;
     }
-    throw new GrammarError(`${id}: unrecognised segment "${body}"`, { id, line: lineNumber });
+    throw new GrammarError(`${id}: unrecognised segment "${segment}"`, { id, line: lineNumber });
   }
 
   if (!question.options.length) {
@@ -439,6 +469,7 @@ export function nextQuestion(questions, answers = {}, sections = null) {
  * answer can make a gate that named it pending, which strands the next one down.
  */
 export function blastRadius(questions, answers, id, next) {
+  const map = byId(questions);
   const current = new Map();
   for (const q of questions) {
     const a = answerFor(answers, q.id);
@@ -446,6 +477,14 @@ export function blastRadius(questions, answers, id, next) {
   }
   const target = current.get(id) || { state: 'chosen', active: true };
   current.set(id, { ...target, ...next, active: true });
+  // The answer being given is subject to its OWN gate like every other one. The canvas links
+  // straight to a question an earlier answer already ruled out — a node's "decided by" list offers
+  // "answer it" on a pruned question — and recording that as live would resurrect the branch the
+  // owner declined. A gate only ever names questions upstream of this one, so its verdict cannot
+  // change as a consequence of what follows, and it is settled here rather than in the fixpoint.
+  const self = map.get(id);
+  const selfLive = !self || evaluateGate(self.effectiveGate || self.gate, current) === 'true';
+  current.get(id).active = selfLive;
 
   for (let pass = 0; pass < questions.length + 2; pass++) {
     let changed = false;
@@ -466,7 +505,14 @@ export function blastRadius(questions, answers, id, next) {
   for (const q of questions) {
     const before = answerFor(answers, q.id);
     const after = current.get(q.id);
-    if (!before || q.id === id) continue;
+    if (q.id === id) {
+      // It is being answered right now, so what it WAS is beside the point: it is stranded exactly
+      // when its own gate says it does not apply. Naming it here is what carries the inactivity
+      // into the log — `applyEvent` records every answer active, and the strand event corrects it.
+      if (!selfLive) strand.push(q.id);
+      continue;
+    }
+    if (!before) continue;
     const wasActive = before.active !== false;
     const isActive = after.active !== false;
     if (wasActive && !isActive) strand.push(q.id);
@@ -555,6 +601,132 @@ export function validate(questions, sections = []) {
   for (const q of questions) if (!q.retired) visit(q.id);
 
   return errors;
+}
+
+/**
+ * THREE DAG DEFECTS THAT ARE INVISIBLE UNTIL THEY HAVE ALREADY COST A ROUND.
+ *
+ * `validate()` above catches contradictions — a gate that can never be satisfied, a name that does
+ * not exist, a cycle. These are different: each leaves a document that parses, validates, and
+ * answers perfectly well, while **silently withholding questions the owner was supposed to see**.
+ * All three were found the hard way on `solatro/spotlight` (2026-08-03) and none of them showed up
+ * in any check, any test, or any round summary.
+ *
+ * They are WARNINGS, not errors, because each has a legitimate shape too — a "decline this whole
+ * sub-feature" option is supposed to prune, and a section gate is supposed to narrow. The judgement
+ * is the author's; being told is not optional.
+ */
+export function auditGates(questions, sections = []) {
+  const warnings = [];
+  const live = questions.filter((q) => !q.retired);
+  const map = byId(live);
+  const sectionOf = (q) => sections.find((s) => s.index === q.section);
+
+  // Which letters of which question does any gate anywhere actually admit?
+  const admitted = new Map();
+  const note = (id, letters) => {
+    if (!admitted.has(id)) admitted.set(id, new Set());
+    for (const l of letters) admitted.get(id).add(l);
+  };
+  const named = new Set();
+  // The widest letter set any single gate enumerates for a question — see audit (2).
+  const enumerated = new Map();
+  for (const q of live) {
+    const gates = [q.gate];
+    const sec = sectionOf(q);
+    if (sec && !sec.gate.root) gates.push(sec.gate);
+    for (const gate of gates) {
+      for (const atom of gate.atoms) {
+        named.add(atom.id);
+        const ref = map.get(atom.id);
+        if (!ref) continue;
+        const offered = ref.options.map((o) => o.letter);
+        note(atom.id, atom.op === '=' ? atom.letters : offered.filter((l) => !atom.letters.includes(l)));
+        if (atom.op === '=') {
+          enumerated.set(atom.id, Math.max(enumerated.get(atom.id) || 0, atom.letters.length));
+        }
+      }
+    }
+  }
+
+  // (1) A QUESTION THAT GATES OTHERS BUT IS NOT MARKED ⚑gate.
+  // A free-text answer has NO LETTER, so no gate naming it can ever be true. On a ⚑gate question
+  // that is handled — free text ends the round and the agent authors the new branch. On an unmarked
+  // one nothing happens at all: the answer is recorded, the round rolls on, and the entire subtree
+  // is amputated in silence. Measured: six unmarked gating questions, 20 questions never asked, and
+  // the round still reported `done (complete)`.
+  for (const id of [...named].sort()) {
+    const ref = map.get(id);
+    if (!ref || ref.isGate) continue;
+    const dependents = live.filter((q) => {
+      const sec = sectionOf(q);
+      const gates = [q.gate, ...(sec && !sec.gate.root ? [sec.gate] : [])];
+      return gates.some((g) => g.atoms.some((a) => a.id === id)) && q.id !== id;
+    });
+    warnings.push(new GrammarError(
+      `${id} gates ${dependents.length} question(s) but is not marked ⚑gate — a free-text answer to it `
+      + 'would silently prune all of them',
+      { id, line: ref.line },
+    ));
+  }
+
+  // (2) THE RECOMMENDED ANSWER REACHES NOTHING.
+  // A NEWLY ADDED option is by construction absent from every gate written earlier, so it orphans
+  // its subtree BY DEFAULT. That is how `Q113=(d)` came to orphan `Q114` — `origin_rise`, the number
+  // that sets every beam's length.
+  //
+  // ⚠ THE FILTER IS TWO CONDITIONS, AND GETTING IT PRECISE IS THE WHOLE DESIGN OF THIS CHECK.
+  // Reporting every orphaned option is useless: a "decline this whole sub-feature" branch is
+  // SUPPOSED to reach nothing, and on Spotlight that shape alone produced 24 warnings, every one of
+  // them correct behaviour. Filtering to the DEFAULT still left five, because "the default is the
+  // conservative branch and the follow-ups hang off the other option" (`[Q3=b]`, `[Q98=b]`,
+  // `[Q22=b]`…) is just as common and just as correct. A check at that signal-to-noise gets muted,
+  // and a muted check catches nothing.
+  //
+  // The real signature of the bug is narrower and quite specific: **some gate names this question
+  // with a MULTI-LETTER set — `[Q113=b|c]` — and the question's own recommended answer is not in
+  // it.** A multi-letter atom means the author was enumerating "the options that reach this", so an
+  // option missing from that enumeration is an omission rather than a decline; and requiring it to
+  // be the DEFAULT is what separates "I added an option and forgot to widen" from "(b) legitimately
+  // declines". Both real defects this session — `Q113=(d)` orphaning `Q114`, and `[QR2=a|c]`
+  // stranding twenty answers when (d) was added — match it exactly, and nothing else does.
+  for (const id of [...named].sort()) {
+    const ref = map.get(id);
+    if (!ref || !ref.default) continue;
+    const seen = admitted.get(id) || new Set();
+    if (seen.has(ref.default)) continue;
+    if (!(enumerated.get(id) > 1)) continue;
+    warnings.push(new GrammarError(
+      `${id}: some gate enumerates ${id}=(${[...seen].sort().join('|')}) but its DEFAULT (${ref.default}) `
+      + 'is not among them, so the recommended answer reaches nothing — a new option whose subtree was '
+      + 'never widened',
+      { id, line: ref.line },
+    ));
+  }
+
+  // (3) A SECTION HEADING NARROWER THAN ITS OWN QUESTIONS.
+  // `reachability()` evaluates `effectiveGate`, which folds the heading in — so a heading reading
+  // `[QR2=a|c]` overrides every question line under it that says `[QR2=a|c|d]`, and the whole
+  // section stays pruned no matter what the lines say. That is exactly what stranded 20 answers the
+  // moment the owner clicked the option they had been told to click.
+  for (const q of live) {
+    const sec = sectionOf(q);
+    if (!sec || sec.gate.root) continue;
+    for (const mine of q.gate.atoms) {
+      for (const theirs of sec.gate.atoms) {
+        if (theirs.id !== mine.id || mine.op !== '=' || theirs.op !== '=') continue;
+        const extra = mine.letters.filter((l) => !theirs.letters.includes(l));
+        if (extra.length) {
+          warnings.push(new GrammarError(
+            `${q.id}: gate admits ${mine.id}=${extra.join('|')} but its section "${sec.title}" does not `
+            + '— the heading wins, so those answers are pruned anyway. Widen the heading too',
+            { id: q.id, line: q.line },
+          ));
+        }
+      }
+    }
+  }
+  return warnings;
 }
 
 /**

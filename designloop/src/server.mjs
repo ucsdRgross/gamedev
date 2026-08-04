@@ -19,8 +19,15 @@ import { dirname, join, resolve, extname, normalize, sep } from 'node:path';
 import { spawn } from 'node:child_process';
 
 import { parseDocument, reachability, nextQuestion, blastRadius } from './grammar.mjs';
-import { load, answer as writeAnswer, hashDoc } from './store.mjs';
-import { discover, find, writeOwnerStatus, touch } from './registry.mjs';
+import { parseCharts, validate as validateGraph } from './graph.mjs';
+import {
+  load, answer as writeAnswer, hashDoc, readJson, writeJsonAtomic, annotate, mark, materialiseShape,
+} from './store.mjs';
+import { discover, find, writeOwnerStatus, touch, readAssumptions } from './registry.mjs';
+import {
+  readGaps, countGaps, scopedQuestions, nextGapQuestion, readPlanSteps, staleFor, promoteAssumption,
+} from './gaps.mjs';
+import { listVersions, readVersion, diffGraphs, freeze } from './versions.mjs';
 
 /** designloop/ — the tool directory, and the static root. */
 export const TOOL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -130,7 +137,10 @@ async function openDesign(rawKey) {
   if (markdown === null) return { design, missingDoc: true };
   const parsed = parseDocument(markdown);
   const state = await load(design.dir, { slug: design.slug });
-  return { design, parsed, state, docHash: hashDoc(markdown) };
+  // The gaps come along on every request (S15). They are a handful of small files, and a scoped
+  // round answers them through the same routes as the questionnaire — one answer path, not two.
+  const gaps = await readGaps(design.dir);
+  return { design, parsed, state, gaps, docHash: hashDoc(markdown) };
 }
 
 /** Strip the fields the question screen must never see. Q26=a: nothing indicates progress. */
@@ -149,7 +159,75 @@ function forScreen(question, sections) {
     gate: question.gate,
     effectiveGate: question.effectiveGate,
     section: section ? { title: section.title, gate: section.gate } : null,
+    // A gap question carries the report it came out of, so the screen stays self-contained (rule 4)
+    // without the owner going to find the file. Absent on an ordinary question.
+    gap: question.gap || null,
+    context: question.context || null,
   };
+}
+
+/**
+ * The design graph (§4.6), ingested from the document's ```mermaid blocks.
+ *
+ * `graph.json` is a generated artefact: the document is the source of truth (QR7=a) and the canvas
+ * renders the same file an implementation agent consumes (Q64=a, no mocks). It is rewritten only
+ * when the document's hash moves, so an agent reading it off disk gets a real file rather than a
+ * cache that only exists while the server is up.
+ */
+async function buildGraph(design, markdown, docHash) {
+  const parsed = parseCharts(markdown, { file: design.doc });
+  // `warnings` (unresolved `chart X` references, §6.1) are a report about the document, not part of
+  // the graph §4.6 specifies. They reach the author through `run check` and the index badge; the
+  // file on disk stays exactly the shape an implementation agent is promised.
+  const { warnings, ...graph } = parsed;
+  graph.doc_hash = docHash;
+  const path = join(design.dir, 'graph.json');
+  const existing = await readJson(path);
+  if (!existing || existing.doc_hash !== docHash) await writeJsonAtomic(path, graph);
+  return graph;
+}
+
+/**
+ * The three assumption sources the review panel lists, visually distinguished (Q58=c, Q116=a):
+ * what the agent declared, what was Enter-defaulted, and what was waved through as not relevant.
+ * Listing only the first would hide exactly the answers nobody thought about.
+ */
+async function assumptionsFor(design, parsed, answers) {
+  const out = await readAssumptions(design.dir);
+  for (const q of parsed.questions) {
+    const a = answers[q.id];
+    if (!a || a.active === false) continue;
+    if (a.state !== 'defaulted' && a.state !== 'not_relevant') continue;
+    const option = q.options.find((o) => o.letter === a.option);
+    out.push({
+      source: a.state,
+      id: q.id,
+      text: `${q.text} — took (${a.option}) ${option ? option.label : ''}`,
+      why: a.state === 'defaulted' ? 'accepted with Enter, unread' : 'marked not worth answering',
+    });
+  }
+  return out;
+}
+
+/**
+ * The out-of-scope list (chart F3, Q57=a). Derived, not authored: a question is out of scope when
+ * its section says so or when the answer it took is literally an exclusion. Best-effort by design —
+ * the same standing as `decidedBy` in §4.6 — and both design documents end with exactly such a
+ * section, which is the convention the flowchart-design skill asks for.
+ */
+function outOfScopeFor(parsed, answers) {
+  const out = [];
+  for (const q of parsed.questions) {
+    const a = answers[q.id];
+    if (!a || a.active === false || a.override) continue;
+    const option = q.options.find((o) => o.letter === a.option);
+    if (!option) continue;
+    const section = parsed.sections.find((s) => s.index === q.section);
+    const bySection = /out of scope/i.test(section?.title || '');
+    const byAnswer = /^out of scope\b/i.test(option.label);
+    if (bySection || byAnswer) out.push({ id: q.id, text: q.text, answer: option.label });
+  }
+  return out;
 }
 
 /**
@@ -157,11 +235,84 @@ function forScreen(question, sections) {
  * `new_branch_needed` is the free-text-at-a-gate case and is the only ending that can arrive with
  * reachable questions still unanswered (chart B2).
  */
-async function settleOwnerStatus(design, parsed, answers, { override = false, question = null } = {}) {
+/**
+ * THE AGENT'S ASK LIST — `status.agent.json`'s `ask: [...]`, and the whole of it is this function.
+ *
+ * ⚠ WHY IT EXISTS (owner, 2026-08-03): *"This workflow of going into history to find the question
+ * you are talking about then changing previous choice to unlock questions is pretty bad UX. If you
+ * need me to answer new questions, every question that needs to be answered needs to be given in
+ * one go, and you only pick up its finished when I finish answering all new questions you want me
+ * to, instead of me changing one answer, answering its subquestions, then you immediately pick it
+ * up before I have chance to look at next question."*
+ *
+ * Two separate defects, and ONE mechanism fixes both, which is why this is a view over `answers`
+ * rather than a second code path:
+ *
+ *  1. **The screen only ever showed UNANSWERED questions**, so an agent that had rewritten a
+ *     question — new option, corrected premise — could not get it re-asked. It had to tell the
+ *     owner to go hunting through their own history. Hiding the stale answer puts the question back
+ *     in the queue where it belongs.
+ *  2. **`done` fired whenever the reachable set happened to empty**, which is mid-thought: the owner
+ *     re-answers one gate, its subtree opens, they answer that, the set empties for an instant and
+ *     the watch declares the round over. An ask-list entry counts as UNANSWERED until it is answered
+ *     in the CURRENT round, so `settleOwnerStatus` cannot say `complete` while any of them is
+ *     outstanding — and the subtrees they unlock are ordinary reachable questions, so they hold the
+ *     round open too. The round ends when the agent's whole ask is satisfied and not before.
+ *
+ * ⚠ THE GATE EFFECT IS DELIBERATE, NOT A SIDE EFFECT. Hiding an answer also makes every gate naming
+ * it evaluate `pending` instead of `true`, so the subtree is withheld until the question is answered
+ * again. That is correct — until the owner has re-answered it, what lies below is genuinely
+ * undecided — and it is what makes "the ask list first, then everything it unlocks, then done" fall
+ * out of one filter instead of needing a scheduler.
+ *
+ * ⚠ ONLY THE ROUND-STAMPED ANSWER IS HIDDEN. `next` still hands the REAL answer to the screen for
+ * prefill, so re-answering is one keystroke and the owner can see what they said last time. Losing
+ * that would turn a confirmation into retyping.
+ */
+function askView(answers, askIds, round) {
+  if (!askIds.length) return answers;
+  const view = { ...answers };
+  for (const id of askIds) {
+    const a = view[id];
+    // `>= round` means "already answered in this round" — satisfied, leave it alone. An answer from
+    // an earlier round is exactly what the agent is asking to revisit.
+    if (a && (a.round ?? 0) < round) delete view[id];
+  }
+  return view;
+}
+
+/** Which of the agent's asks are still outstanding — what the screen reports and `done` waits on. */
+function askRemaining(answers, askIds, round) {
+  return askIds.filter((id) => {
+    const a = answers[id];
+    return !a || (a.round ?? 0) < round;
+  });
+}
+
+/** The agent's ask list, defensively — a hand-written JSON file is allowed to be wrong. */
+function askIdsOf(design) {
+  const raw = design.agent?.ask;
+  return Array.isArray(raw) ? raw.filter((id) => typeof id === 'string') : [];
+}
+
+async function settleOwnerStatus(design, parsed, answers, { override = false, question = null, gaps = [] } = {}) {
   if (override && question?.isGate) {
     return writeOwnerStatus(design.dir, { state: 'done', reason: 'new_branch_needed' });
   }
-  const { reachable } = reachability(parsed.questions, answers);
+  // A scoped gap round ends on its own terms (chart J12/J15): it never asks the questionnaire
+  // again, so the questionnaire's reachable set says nothing about whether it is finished. Its
+  // ending is what wakes the agent to write design version N+1.
+  if (question?.gap) {
+    const left = nextGapQuestion(gaps, answers);
+    return writeOwnerStatus(design.dir, left
+      ? { state: 'answering', reason: null }
+      : { state: 'done', reason: 'gaps_answered' });
+  }
+  // The ask list holds the round open (see askView): an outstanding ask is unanswered, so it is
+  // either reachable itself or it is withholding the subtree it gates, and either way `complete`
+  // cannot fire early.
+  const view = askView(answers, askIdsOf(design), design.agent.round);
+  const { reachable } = reachability(parsed.questions, view);
   if (!reachable.length) return writeOwnerStatus(design.dir, { state: 'done', reason: 'complete' });
   return writeOwnerStatus(design.dir, { state: 'answering', reason: null });
 }
@@ -172,8 +323,14 @@ async function handleDesignApi(req, res, pathname, query) {
     const designs = await discover(REPO_ROOT);
     sendJson(res, 200, designs.map((d) => ({
       key: d.key, slug: d.slug, title: d.title, projects: d.projects, archived: d.archived,
-      owner: d.owner, agent: d.agent, answered: d.answered, gaps: d.gaps,
+      owner: d.owner, agent: d.agent, answered: d.answered,
+      // Q89b=c badges the open ones; Q96b=a keeps the closed ones, and the card is where "kept"
+      // is visible without opening a directory.
+      gaps: d.gaps, gaps_closed: d.gaps_closed, gaps_total: d.gaps_total,
       touched: d.touched, rounds: d.rounds, confirmed_version: d.confirmed_version,
+      // GAP-001=b: a document that parses with warnings is answerable, but the defect is the
+      // authoring agent's to fix, so it is on the card rather than only in `run check`.
+      errors: d.errors, warnings: d.warnings, doc_missing: d.doc_missing,
     })));
     return;
   }
@@ -191,15 +348,20 @@ async function handleDesignApi(req, res, pathname, query) {
     sendJson(res, 500, { error: `cannot read ${design.doc}`, key: design.key });
     return;
   }
-  const { parsed, state, docHash } = opened;
+  const { parsed, state, gaps, docHash } = opened;
   const answers = state.answers;
 
   if (action === '' && req.method === 'GET') {
-    await touch(design.dir);
+    // `?poll=1` is the answering screen asking "is anyone watching yet?" every few seconds. It must
+    // not count as the owner opening the design: touching on every poll would rewrite `ui_meta.json`
+    // — and wake the watch's directory watcher — several times a minute, for no information.
+    if (query.get('poll') !== '1') await touch(design.dir);
     sendJson(res, 200, {
       key: design.key, slug: design.slug, title: design.title, projects: design.projects,
       doc: design.doc, rounds: design.rounds, confirmed_version: design.confirmed_version,
       archived: design.archived, owner: design.owner, agent: design.agent,
+      // §4.9 — is an agent parked on this design right now?
+      session: design.session,
       errors: parsed.errors.map((e) => e.message),
       warnings: parsed.warnings.map((e) => e.message),
       doc_hash: docHash,
@@ -222,11 +384,187 @@ async function handleDesignApi(req, res, pathname, query) {
     return;
   }
 
+  // §4.8 GET /graph. A chart outside the §6 subset throws, and the message names the file and the
+  // line — the canvas shows it as plain text rather than failing silently or drawing half a graph.
+  if (action === 'graph' && req.method === 'GET') {
+    try {
+      const graph = await buildGraph(design, await readFile(design.docPath, 'utf8'), docHash);
+      sendJson(res, 200, { ...graph, errors: validateGraph(graph).map((e) => e.message) });
+    } catch (err) {
+      sendJson(res, 422, { error: String(err.message || err), key: design.key });
+    }
+    return;
+  }
+
+  // Everything the review panel needs that §4.8 has no route for: the annotations back out again,
+  // and the two derived lists (assumptions, out-of-scope) that only the server can compute.
+  if (action === 'review' && req.method === 'GET') {
+    sendJson(res, 200, {
+      annotations: (await readJson(join(design.dir, 'annotations.json')))
+        || { nodes: {}, edges: {}, approved: {}, flagged: {} },
+      assumptions: await assumptionsFor(design, parsed, answers),
+      out_of_scope: outOfScopeFor(parsed, answers),
+      confirmed_version: design.confirmed_version,
+    });
+    return;
+  }
+
+  // F10 — "Review again": the owner hands the graph back with their annotations on it. §4.2 gives
+  // the owner half no `reason` for this transition; `review_again` is the addition (ASSUMPTIONS.md).
+  if (action === 'review' && req.method === 'POST') {
+    const status = await writeOwnerStatus(design.dir, { state: 'done', reason: 'review_again' });
+    sendJson(res, 200, { ok: true, owner: status });
+    return;
+  }
+
+  // §4.8 GET /gaps — open AND closed (Q96b=a), each with its own draft question, plus the plan
+  // steps the open ones make stale (chart J16, Q92b=a). The whole gap surface is this one payload:
+  // the index badge, the scoped round and the stale-step report all read it.
+  if (action === 'gaps' && req.method === 'GET') {
+    const steps = await readPlanSteps(design.dir);
+    sendJson(res, 200, {
+      key: design.key,
+      counts: countGaps(gaps),
+      gaps: gaps.map(({ text, question, ...rest }) => ({
+        ...rest, question: forScreen(question, parsed.sections),
+        answer: answers[rest.id] || null,
+      })),
+      scoped: scopedQuestions(gaps).map((q) => q.id),
+      stale: staleFor(gaps, steps),
+      steps: steps.length,
+    });
+    return;
+  }
+
+  // Q95b=a — the owner takes back the licence to assume something. The gap is filed with no
+  // options (the tool does not author questions, Q94=a) and every step that relied on it is stale
+  // from this moment, which the `stale` list above reports without anything else being written.
+  if (action === 'promote' && req.method === 'POST') {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      sendJson(res, 400, { error: 'body must be valid JSON' });
+      return;
+    }
+    if (!body.assumption) {
+      sendJson(res, 400, { error: 'name the assumption being promoted' });
+      return;
+    }
+    const filed = await promoteAssumption(design.dir, {
+      assumption: String(body.assumption),
+      step: String(body.step || ''),
+      nodes: Array.isArray(body.nodes) ? body.nodes : [],
+      why: String(body.why || ''),
+    });
+    sendJson(res, 200, { ok: true, ...filed });
+    return;
+  }
+
+  if (action === 'versions' && req.method === 'GET') {
+    if (rest[3]) {
+      const version = await readVersion(design.dir, Number(rest[3]));
+      if (!version) {
+        sendJson(res, 404, { error: `no version ${rest[3]}` });
+        return;
+      }
+      sendJson(res, 200, version);
+      return;
+    }
+    sendJson(res, 200, { versions: await listVersions(design.dir), confirmed: design.confirmed_version });
+    return;
+  }
+
+  // Q62=a — node-level added / changed / removed between two frozen versions.
+  if (action === 'diff' && req.method === 'GET') {
+    const a = await readVersion(design.dir, Number(query.get('a')));
+    const b = await readVersion(design.dir, Number(query.get('b')));
+    if (!a || !b) {
+      sendJson(res, 404, { error: 'both versions must exist' });
+      return;
+    }
+    sendJson(res, 200, { a: a.n, b: b.n, ...diffGraphs(a.graph, b.graph) });
+    return;
+  }
+
+  if ((action === 'annotate' || action === 'approve') && req.method === 'POST') {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      sendJson(res, 400, { error: 'body must be valid JSON' });
+      return;
+    }
+    // §4.8 spells the approve body `{node}`; Q59 needs edges and a state, so both are accepted.
+    const target = body.target || (body.node ? 'node' : 'edge');
+    const markKey = body.key || body.node;
+    if (!markKey) {
+      sendJson(res, 400, { error: 'name the node or edge' });
+      return;
+    }
+    const written = action === 'annotate'
+      ? await annotate(design.dir, target, markKey, String(body.text ?? ''))
+      : await mark(design.dir, markKey, body.state ?? 'approved', { version: design.confirmed_version ?? 0 });
+    sendJson(res, 200, { ok: true, annotations: written });
+    return;
+  }
+
+  // F11 / G2 — Confirm freezes the next version, layout and collapse state included (Q115=b).
+  if (action === 'confirm' && req.method === 'POST') {
+    let body = {};
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      body = {};
+    }
+    if (!body.layout?.positions) {
+      sendJson(res, 400, { error: 'confirm needs the layout that is on screen (Q115=b)' });
+      return;
+    }
+    const graph = await buildGraph(design, await readFile(design.docPath, 'utf8'), docHash);
+    const frozen = await freeze(design.dir, {
+      design,
+      graph,
+      questions: parsed.questions,
+      answers: materialiseShape(state),
+      annotations: (await readJson(join(design.dir, 'annotations.json')))
+        || { nodes: {}, edges: {}, approved: {}, flagged: {} },
+      layout: body.layout,
+      assumptions: await assumptionsFor(design, parsed, answers),
+      outOfScope: outOfScopeFor(parsed, answers),
+      gaps: gaps.map(({ text, question, ...g }) => g),
+    });
+    // `meta.json` is the agent's file, but Confirm is an owner action and the agent is idle while
+    // the owner reviews (Q24=a), so there is no second writer to race. Recorded in ASSUMPTIONS.md.
+    const meta = (await readJson(join(design.dir, 'meta.json'))) || {};
+    await writeJsonAtomic(join(design.dir, 'meta.json'), { ...meta, confirmed_version: frozen.version });
+    sendJson(res, 200, { ok: true, version: frozen.version, versions: await listVersions(design.dir) });
+    return;
+  }
+
   if (action === 'next' && req.method === 'GET') {
-    const question = nextQuestion(parsed.questions, answers, parsed.sections);
+    // `?scope=gaps` is the scoped round (Q90b=b, chart J12): the open gaps' own questions and
+    // nothing else. Never the whole questionnaire again — that is the promise of a gap round.
+    const scoped = query.get('scope') === 'gaps';
+    // The agent's ask list (askView): questions it needs re-answered count as unanswered, so they
+    // come back into the queue instead of the owner being told to go and find them in their history.
+    const askIds = askIdsOf(design);
+    const remaining = askRemaining(answers, askIds, design.agent.round);
+    const view = askView(answers, askIds, design.agent.round);
+    let question = scoped
+      ? nextGapQuestion(gaps, answers)
+      : nextQuestion(parsed.questions, view, parsed.sections);
+    // ⚠ THE ASK LIST GOES FIRST, and not merely for tidiness: every question it unlocks is gated on
+    // it, so asking anything else first means asking around a hole. Ordinary section weighting
+    // resumes the moment the ask is satisfied.
+    if (!scoped && remaining.length) {
+      const { reachable } = reachability(parsed.questions, view);
+      const first = reachable.find((q) => remaining.includes(q.id));
+      if (first) question = first;
+    }
     if (!question) {
       sendJson(res, 200, {
-        done: true, owner: design.owner, agent: design.agent,
+        done: true, owner: design.owner, agent: design.agent, scope: scoped ? 'gaps' : null,
         reason: design.owner.reason, round: design.agent.round,
       });
       return;
@@ -234,9 +572,16 @@ async function handleDesignApi(req, res, pathname, query) {
     sendJson(res, 200, {
       done: false,
       question: forScreen(question, parsed.sections),
+      // The REAL answer, never the view's — so a question the agent wants revisited arrives with
+      // what you said last time already selected, and confirming it is one keystroke.
       answer: answers[question.id] || null,
       round: design.agent.round,
       answered: state.order.filter((id) => answers[id]?.active !== false).length,
+      // What the screen needs to say "the agent is waiting on N of these" instead of leaving the
+      // owner to guess how much of the round is left.
+      ask_total: askIds.length,
+      ask_remaining: remaining.length,
+      ask_revisit: remaining.includes(question.id),
     });
     return;
   }
@@ -252,7 +597,9 @@ async function handleDesignApi(req, res, pathname, query) {
   }
 
   if (action === 'history' && req.method === 'GET') {
-    const map = new Map(parsed.questions.map((q) => [q.id, q]));
+    // Gap answers are answers: they go in the same file (§4.3) and belong in the same history, or
+    // BACK from a scoped round would have nowhere to go.
+    const map = new Map([...parsed.questions, ...scopedQuestions(gaps)].map((q) => [q.id, q]));
     sendJson(res, 200, state.order.filter((id) => map.has(id)).map((id) => {
       const q = map.get(id);
       const a = answers[id];
@@ -274,7 +621,8 @@ async function handleDesignApi(req, res, pathname, query) {
       sendJson(res, 400, { error: 'body must be valid JSON' });
       return;
     }
-    const question = parsed.questions.find((q) => q.id === body.id);
+    const question = parsed.questions.find((q) => q.id === body.id)
+      || scopedQuestions(gaps).find((q) => q.id === body.id);
     if (!question || question.retired) {
       sendJson(res, 400, { error: `no such question: ${body.id}` });
       return;
@@ -311,8 +659,10 @@ async function handleDesignApi(req, res, pathname, query) {
     const written = await writeAnswer(design.dir, record, {
       strand: radius.strand, restore: radius.restore, slug: design.slug, docHash,
     });
-    const status = await settleOwnerStatus(design, parsed, written.answers, { override, question });
-    const next = nextQuestion(parsed.questions, written.answers, parsed.sections);
+    const status = await settleOwnerStatus(design, parsed, written.answers, { override, question, gaps });
+    const next = question.gap
+      ? nextGapQuestion(gaps, written.answers)
+      : nextQuestion(parsed.questions, written.answers, parsed.sections);
     sendJson(res, 200, {
       ok: true,
       strand: radius.strand,
@@ -425,8 +775,14 @@ async function replaceExisting(port) {
   return false;
 }
 
-/** Listen on `port`, stepping to the next one if something else already has it. */
-export function listenFrom(server, port, attempts = 20) {
+/**
+ * Listen on `port`, stepping to the next one if something else already has it.
+ *
+ * Bound to the loopback address, never to every interface: Q93 is localhost only, and `isLoopback`
+ * guards `/api/*` alone — `/api/ping`, `/web/…` and `/src/…` answer before it. On a shared network
+ * an all-interfaces bind is what turns "the owner's tool" into "a service on the LAN".
+ */
+export function listenFrom(server, port, attempts = 20, host = '127.0.0.1') {
   return new Promise((resolvePromise, reject) => {
     let current = port;
     let left = attempts;
@@ -436,7 +792,7 @@ export function listenFrom(server, port, attempts = 20) {
         return;
       }
       current += 1;
-      server.listen(current);
+      server.listen(current, host);
     };
     server.on('error', onError);
     server.once('listening', () => {
@@ -444,7 +800,7 @@ export function listenFrom(server, port, attempts = 20) {
       // Ask the socket, not the request: port 0 means "any free port", and only the socket knows.
       resolvePromise(server.address().port);
     });
-    server.listen(current);
+    server.listen(current, host);
   });
 }
 

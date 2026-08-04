@@ -11,8 +11,9 @@ formats, the question grammar, the mermaid subset and the module APIs are specif
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
-Derived from: `designloop/design/designloop/DESIGN.md`, rounds 1–2 answered 2026-08-01. Every step
-below cites the design node IDs it implements.
+Derived from: `designloop/design/designloop/DESIGN.md`, **version 3** — rounds 1–2 answered
+2026-08-01, the GAP-001/GAP-002 round answered 2026-08-02 (design §14). Every step below cites the
+design node IDs it implements.
 
 If you are executing this and you reach a decision the design does not cover:
 
@@ -196,22 +197,47 @@ markdown remains answerable in chat.
 
 ### Phase 3 — the canvas
 
-**S11 — graph ingestion.** *(implements G2, Q64)*
+**S11 — graph ingestion.** *(implements G2, F12, F14, Q64)* — **re-derived, design v3 (GAP-002)**
 `src/graph.mjs` reads the design doc's ```mermaid blocks into `{nodes, edges, chart}` with IDs
 preserved. **Restrict to a documented subset** (`ID["text"]`, `-->`, `-- label -->`, `{decision}`)
 and **fail loudly** on anything outside it rather than guessing.
 ⚠ Riskiest step in the plan: mermaid is loose and the existing docs use several node shapes.
-Validate against all 14 Spotlight charts and all 10 of this document's before declaring it done.
-**Done when:** every chart in both design docs ingests with zero unknown constructs.
+Validate against all 14 Spotlight charts and all 11 of this document's before declaring it done.
 
-**S12 — canvas render.** *(implements F2, Q52, Q53, Q63, Q66)*
+Ingestion also **derives the cross-chart links** exactly as §6.1 specifies, and carries each chart's
+`name` (§4.6) because resolution needs it. Warnings — unresolved references — are **returned beside
+the graph, never thrown**: an unresolved `chart Z` is an authoring defect in a document that is
+otherwise fine, and the GAP-001 rule already decided that class of thing warns rather than blocks.
+**Done when:** every chart in both design docs ingests with zero unknown constructs, **and** the
+link counts of §6.1's fixture table reproduce exactly — 10 here, 4 in Spotlight, 0 unresolved in
+both — with neither document edited to make it so.
+
+**S12 — canvas render.** *(implements F2, F8, F13, Q52, Q53, Q63, Q66)* — **re-derived, design v3 (GAP-002)**
 Whole graph at once, collapsible subgraphs (one per chart), auto layout, pan/zoom, desktop-only,
 colour by chart or by status (switchable). Layout must be deterministic for a given input so a
 frozen version reproduces.
 ⚠ Layout is the one place a dependency is defensible (Q100 allowed vetted ones). Try a hand-rolled
 layered layout first — these graphs are small and mostly a DAG of ~20 nodes per chart; reach for a
 library only if it visibly fails, and record the measurement either way.
-**Done when:** Spotlight's ~200 nodes render legibly and pan/zoom smoothly.
+
+**Cross-chart links are drawn in the whole-graph view** (F13). They are what that view is *for* —
+without them it was, in the owner's words on review, worse than the picker. Requirements:
+
+- **Dashed, and visibly not an edge.** A reader must never have to work out which of the two they
+  are looking at.
+- **Node to chart**, terminating on the target chart's frame or title, not on a node inside it. The
+  document named a chart; picking an endpoint would invent structure.
+- **A collapsed chart keeps its links** (F8), re-anchored to the collapsed box at both ends — that
+  is the case where the links are most useful, because a collapsed whole-graph view is exactly the
+  "how do these fit together" picture.
+- **Not in the single-chart picker view**, or shown there only as a stub, since the other end is
+  off-screen by construction.
+- **Never routed through the layout's ranking.** Links do not create layers, do not affect
+  positions, and must not be able to change a frozen layout. Layout runs on `edges`; links are drawn
+  over the result.
+**Done when:** Spotlight's ~200 nodes render legibly and pan/zoom smoothly, and this document's 10
+links are visible, dashed, and still correct with every chart collapsed. **Verify by eye** — render
+it and look at it (repo rule 4); a link count in the console is not evidence about the picture.
 
 **S13 — annotations and side panel.** *(implements F5, F6, F7, Q55, Q56, Q57, Q58, Q116)*
 Click a node or an edge, annotate it, saved with the same durability rule as answers. Side panel has
@@ -219,12 +245,24 @@ three sections: assumptions, out-of-scope, open notes. Assumptions list all thre
 agent-declared, `defaulted`, `not_relevant` — visually distinguished.
 **Done when:** an annotation survives a restart and appears in the panel.
 
-**S14 — approval, Confirm, versions.** *(implements F10, F11, G1–G3, Q59, Q60, Q61, Q62, Q65, Q71, Q72, Q115)*
+**S14 — approval, Confirm, versions.** *(implements F10, F11, F14, G1–G3, Q59, Q60, Q61, Q62, Q65, Q71, Q72, Q115)* — **re-derived, design v3 (GAP-002)**
 Per-node approve (a convenience, not a gate on Confirm). Confirm freezes `versions/NNN/` including
 **layout and collapse state**, renders a generated `DESIGN.md` beside it, and leaves the working copy
 editable. Node-level diff between versions. SVG and PNG export.
-**Done when:** two Confirms produce two frozen versions, the diff names exactly what changed, and
-reopening version 1 restores its collapse state.
+
+A frozen `graph.json` carries its `links` like any other part of the graph — that is the whole point
+of putting them in the file rather than in the canvas (F14, Q64=a). Two consequences:
+
+- **The diff reports links**, added and removed, in their own group and labelled as derived. A link
+  that appears because a label was reworded is a real change to what the design claims, and it is
+  also not an edge the author drew; both facts have to survive into the diff.
+- **The generated `DESIGN.md` render (G3) does not draw links as mermaid edges.** The subset has no
+  cross-chart arrow, and emitting one would produce a document this tool refuses to read. They
+  belong in the render as prose beneath each chart — "chart D links to: E, C" — which is what the
+  original labels said anyway.
+**Done when:** two Confirms produce two frozen versions, the diff names exactly what changed
+including link changes in their own group, reopening version 1 restores its collapse state, and the
+generated `DESIGN.md` of any frozen version **re-ingests through S11 with zero errors**.
 
 ### Phase 4 — gaps, handoff, migration
 
@@ -244,6 +282,44 @@ does not, S2 or S11 is wrong.
 `designloop/README.md` (what it is, how to start it), the skill updated, `ARCHITECTURE.md` if the
 tool grows contracts worth pinning, and memory updated. Fold nothing from the design doc — it stays
 as the authority.
+
+### Phase 5 — what the owner found by using it
+
+**S18 — the canvas review.** *(implements F2–F11, and design version 3)*
+The owner drove the built canvas on 2026-08-02. Six defects fixed inline as look decisions (§10
+gives the implementer that latitude), and one filed as **GAP-002**, because whether a prose
+reference becomes a drawn link changes `graph.json` and is not an implementer's call. Its answer is
+design version 3 and the re-derivation of S11, S12 and S14.
+**Done when:** every finding is either fixed or filed. Both, done.
+
+**S19 — the answering-screen review.** *(implements B18, B19, B20, D10–D14, E12–E16 — design version 4)*
+The owner drove the question screen on 2026-08-03. Seven findings, none of them reversing a settled
+answer, all of them decisions this design had made and the screen had never shown:
+
+1. **History is a sidebar** (D14) — scrollable, always on screen, carrying the question **and** the
+   answer. It replaces the button and the screen it opened.
+2. **BACK is a visit stack** (D10–D13) — the questions this screen has shown, in order, in
+   `sessionStorage` so that leaving for the canvas and coming back does not reset it. Fallback with
+   nothing above the current question: the question answered **immediately before** it, never the
+   newest answer, or BACK would run forwards at the start of a round. Nowhere to go → **disabled,
+   with the reason in its tooltip**. It never navigates to the index.
+3. **Every control carries its key, and shows it** (B20). Option letters own their own keys; an
+   action whose mnemonic an option has claimed has **no** key on that question rather than a
+   silently rebound one. A legend is rendered from the same map the handler reads, so it cannot
+   drift from what the keys do.
+4. **Enter's target is marked before it is pressed** (B18). Exactly one control at a time. Q12 and
+   Q108 survive: the mark where it was **put** answers `defaulted`, the mark the owner **moved**
+   answers `chosen`.
+5. **Typing moves the mark to "use what I wrote"** (B19), and the note rides along with every
+   answer including a defaulted one. Drafts are kept per question until committed.
+6. **`session.json`** (E12–E16, §4.9) — the watch's heartbeat, three readings, a copy-paste prompt
+   when nothing is listening, and the standing truth that no answer depends on it.
+
+**Done when:** all six behave as described, driven in a real browser, **and** the four that a test
+can hold are held by one: the heartbeat reads live, a killed watch reads as *stopped*, a clean exit
+reads as *none*, and a design nobody ever watched is never reported as a session that died.
+⚠ **Verify by eye** (repo rule 4): every one of these findings is about what the screen shows, and
+not one of them would have been caught by a passing test.
 
 ---
 
@@ -349,15 +425,34 @@ in the source chart.
 ```json
 {
   "doc_hash": "sha256:…",
-  "charts": [ { "id": "D", "title": "ONE LINE'S SPOTLIGHT PHASE", "nodes": ["D1","D2"] } ],
+  "charts": [ { "id": "D", "name": "D", "title": "ONE LINE'S SPOTLIGHT PHASE", "nodes": ["D1","D2"] } ],
   "nodes":  { "D1": { "chart": "D", "label": "…", "shape": "box", "new": true, "decidedBy": ["Q31"] } },
-  "edges":  [ { "key": "D1->D2", "from": "D1", "to": "D2", "label": "" } ]
+  "edges":  [ { "key": "D1->D2", "from": "D1", "to": "D2", "label": "" } ],
+  "links":  [ { "key": "D8~>E", "from": "D8", "fromChart": "D", "toChart": "E", "ref": "E", "line": 376 } ]
 }
 ```
 
 `shape` is `box` or `decision`. `new` is true when the label carries the `NEW:` marker.
 `decidedBy` lists question IDs mentioned in the node's label or in the prose immediately following
 its chart — best-effort, and the source of the "which question decided this" panel (Q55=a).
+
+`name` is what the document **calls** the chart — the `X` in a `Flowchart X — …` heading — which is
+not always its ID: the chart headed *Flowchart B2* has `P`-prefixed nodes, so `{ "id": "P", "name":
+"B2" }`, and in Spotlight the chart headed *Flowchart H* is the one with `I`-prefixed nodes. A
+heading names the **first** chart under it and no other; every later chart under that heading has
+`name: null`, which is also what a chart with no heading above it gets. It never falls back to the
+ID — see §6.1 for why a fabricated name is worse than none. `name` exists so §6.1 can resolve a
+reference the way a reader does.
+
+`links` is the derived cross-chart links (§6.1, design F12–F14, GAP-002). It is a **separate list
+from `edges` and must stay separate**: an edge was drawn by the author, a link was inferred from a
+label, and a consumer that cannot tell them apart will assert a connection the document never made.
+`key` is `FROM~>TOCHART` — `~>` rather than `->` so a link key can never collide with an edge key in
+`annotations.json` — and it is **unique**: one node naming the same chart twice in one label (chart
+D's `D8` does exactly that) is one link, the first occurrence, not two. Repetition in prose is not a
+second connection. `ref` is the text as written (`E`, `B2`), kept so an error message can quote the
+document. Links are **not** annotatable and **not** approvable in v1: they are derived, so there is
+nothing on them the owner could be reviewing that is not already in the label.
 
 ### 4.7 `versions/NNN/` — agent-owned, immutable once written
 
@@ -378,6 +473,36 @@ versions/003/
 
 `engine` is recorded so a later layout change cannot silently re-flow a frozen version.
 
+### 4.9 `session.json` — agent-owned, written by the watch (design E12–E16)
+
+```json
+{ "watching": true, "key": "solatro/spotlight", "pid": 12345,
+  "since": "2026-08-03T00:31:57Z", "at": "2026-08-03T00:34:18Z", "every_ms": 5000 }
+```
+
+A **heartbeat**, not a state. `watch.mjs` rewrites it every `every_ms` while it is parked, and once
+more with `watching: false` if it gets to exit cleanly. One writer, like every other file here.
+
+**Staleness is the signal.** A reader treats the session as live only while
+`now - at <= max(every_ms × 4, 3000 ms)`. The 3-second floor is not a fudge: `now()` writes
+timestamps to the **second**, so any window shorter than that is measuring rounding and would report
+a healthy watch as a dead one. Three situations, and they are three different sentences to the
+owner:
+
+| File | Reading | What the screen says |
+|---|---|---|
+| absent | nobody has ever watched | "no agent is watching" — and what that does not cost |
+| `watching: true`, fresh | parked | "an agent is watching", since when |
+| `watching: true`, stale | **it died without tidying up** | "the session stopped" — plus a prompt to paste |
+| `watching: false` | it exited cleanly | "no agent is watching" |
+
+The stale row is the one this file exists for. A killed process, a crashed one, or a chat session
+that simply ended never gets to write anything; only the absence of a further beat reports it.
+
+⚠ **Nothing about answering depends on it.** Every answer is fsynced before the next question
+appears, and any session reads them all afterwards (Q22=a). This file decides what the screen
+*says*, never what is *safe* — and the screen has to say so, or a missing session reads as lost work.
+
 ### 4.8 HTTP API
 
 `:key` is `<project>/<slug>`. Everything is JSON except static assets. Loopback callers only.
@@ -385,7 +510,7 @@ versions/003/
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/designs` | the index (H3): key, title, projects, status, counts, gap badge |
-| GET | `/api/designs/:key` | meta + both status halves |
+| GET | `/api/designs/:key` | meta + both status halves + `session` (§4.9). `?poll=1` for the answering screen's "is anyone watching yet?" — same body, but it does **not** count as the owner opening the design, so a poll every few seconds cannot rewrite `ui_meta.json` or keep waking the watch's directory watcher |
 | GET | `/api/designs/:key/next` | the next reachable question, or `{done:true}` |
 | GET | `/api/designs/:key/history` | answered questions in answer order (Q33=a) |
 | POST | `/api/designs/:key/answer` | `{id,state,option,note,override}` — 200 **only after fsync** |
@@ -517,9 +642,75 @@ flowchart TD
   (`-.->`, `==>`) are errors — if a chart needs one, that is a plan change, not a parser change.
 - Every chart's node IDs must share a prefix letter, which becomes the chart ID.
 
-**Validation gate for S11:** all 14 charts in the Spotlight design and all 10 in this tool's design
-ingest with zero unknown constructs. That is 24 real charts; if the subset cannot express them, the
+**Validation gate for S11:** all 14 charts in the Spotlight design and all 11 in this tool's design
+ingest with zero unknown constructs. That is 25 real charts; if the subset cannot express them, the
 subset is wrong.
+
+### 6.1 Cross-chart links, derived (design F12–F14; GAP-002 = b)
+
+Charts in this subset cannot point at each other — every edge is within one chart, and `validate()`
+errors if one is not. The references exist anyway, written in prose inside labels
+(`A6 "owner answers one question at a time — chart B"`). §6.1 reads them out. It is **derivation,
+never authoring**: the document is not edited to gain links, and nothing is guessed.
+
+**Extraction.** Over each node's label, every match of
+
+```
+/\bchart\s+([A-Z]{1,2}\d*)\b/g
+```
+
+The `\b` before `chart` is load-bearing: it is what stops `flowchart TD` matching. Case-sensitive.
+Only node labels are scanned — not edge labels, not prose, not headings.
+
+**Resolution**, in order, first hit wins:
+
+1. `ref` equals some chart's `name` (§4.6) → that chart. *(`chart B2` → the chart with `P` nodes.)*
+2. `ref` equals some chart's `id` → that chart.
+3. `ref` is a node ID the graph declares → the chart that node belongs to. *(`chart E3` → chart E.)*
+4. Nothing → **warning**, naming file, line, node and `ref`. Never a link.
+
+Warnings are **reported, never stored**: they reach the author through `run check` and the index
+badge (the surface GAP-001 built), and `graph.json` on disk stays exactly the §4.6 shape. A report
+about a document is not part of the graph an implementation agent is promised.
+
+⚠ **Name before ID is not a preference, it is the only correct order**, and the reason is worth
+stating because it is invisible until it bites. Spotlight's §7 holds *two* charts, so from there on
+every chart ID runs one letter ahead of the heading that names it: the chart headed *Flowchart H* is
+the chart whose nodes are `I1`, `I2`… A reader writing `K14 "see chart H"` means the heading. ID-first
+resolution would have linked it to chart `H` — a different chart, a wrong link, drawn as confidently
+as a right one. Wrong links are worse than no links; that is the whole reason this gap was filed.
+
+**Naming, therefore, is per heading, not per chart.** A heading names the **first** chart under it and
+no other. The second chart in Spotlight's §7 has `name: null` and is reachable only by its ID. `name`
+never falls back to the ID for the same reason — a fabricated name would land in the resolution
+table and shadow a real one.
+
+Then: **a link whose `toChart` is the source node's own chart is dropped, silently.** It is a
+same-chart reference — Spotlight's chart E says `chart E2`, `chart E3`, `chart E4` about its own
+nodes — and drawing it would be noise, not information. Dropping is silent because it is correct
+authoring, not a defect.
+
+Finally, **duplicates collapse**: one link per `(from, toChart)` pair, the first occurrence, per
+§4.6.
+
+**Ordering.** Source order: by chart as ingested, then by the node's declaration line, then by
+position within the label. Deterministic, because a frozen version records this list (S14).
+
+**Known result, measured 2026-08-02** — a regression fixture, not an estimate:
+
+| Document | links | keys |
+|---|---|---|
+| `designloop/design/designloop/DESIGN.md` | **10** | `A6~>B` `A9~>E` `A14~>F` `A18~>G` `B3~>C` `B10~>D` `B17~>P` `B14~>D` `P5~>E` `F14~>G` |
+| `solatro/design/spotlight/DESIGN.md` | **5** | `D8~>E` `D21~>E` `D25~>C` `K14~>I` `L11~>E` |
+
+Unresolved: **0** in both. The three interesting rows, each of which is a rule earning its keep:
+`B17~>P` came from `chart B2` (resolved by name); `K14~>I` came from `chart H` (the drift — ID
+resolution would have said `H`); `L11~>E` came from `chart E3` (resolved through a node). Dropped as
+same-chart: **3** in Spotlight, where chart E says `chart E2`, `chart E3` and `chart E4` about its
+own nodes. Deduped: **1**, `D8`'s label naming chart E twice.
+
+If a change to §6.1 moves any of these numbers, that is the change announcing itself. `run check`
+prints `links N derived, M unresolved` and every unresolved reference by line.
 
 ---
 

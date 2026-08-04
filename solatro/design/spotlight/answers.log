@@ -1,0 +1,299 @@
+{"seq":1,"at":"2026-08-02T10:54:03Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":2,"at":"2026-08-02T10:54:07Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":3,"at":"2026-08-02T20:29:09Z","event":"answer","id":"Q10","state":"chosen","option":null,"note":"only talens","override":true,"round":1}
+{"seq":4,"at":"2026-08-02T20:35:33Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":5,"at":"2026-08-02T23:50:51Z","event":"answer","id":"Q10","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":6,"at":"2026-08-02T23:51:22Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":7,"at":"2026-08-02T23:51:26Z","event":"answer","id":"Q10","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":8,"at":"2026-08-02T23:52:32Z","event":"answer","id":"Q11","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":9,"at":"2026-08-02T23:52:52Z","event":"answer","id":"Q13","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":10,"at":"2026-08-02T23:53:52Z","event":"answer","id":"Q14","state":"chosen","option":"a","note":"stacked spotlight / active does not deactivate until last spotlight removed","override":false,"round":1}
+{"seq":11,"at":"2026-08-02T23:53:56Z","event":"answer","id":"Q15","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":12,"at":"2026-08-02T23:54:01Z","event":"answer","id":"Q17","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":13,"at":"2026-08-02T23:54:24Z","event":"answer","id":"Q11","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":14,"at":"2026-08-02T23:54:37Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":15,"at":"2026-08-02T23:54:53Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":16,"at":"2026-08-02T23:58:31Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":17,"at":"2026-08-02T23:58:52Z","event":"answer","id":"Q11","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":18,"at":"2026-08-02T23:58:59Z","event":"answer","id":"Q13","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":19,"at":"2026-08-02T23:59:16Z","event":"answer","id":"Q14","state":"chosen","option":"a","note":"stacked spotlight / active does not deactivate until last spotlight removed","override":false,"round":1}
+{"seq":20,"at":"2026-08-02T23:59:32Z","event":"answer","id":"Q18","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":21,"at":"2026-08-02T23:59:57Z","event":"answer","id":"Q19","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":22,"at":"2026-08-03T00:00:07Z","event":"answer","id":"Q19","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":23,"at":"2026-08-03T00:01:49Z","event":"answer","id":"Q20","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":24,"at":"2026-08-03T00:01:56Z","event":"answer","id":"Q21","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":25,"at":"2026-08-03T00:02:18Z","event":"answer","id":"Q22","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":26,"at":"2026-08-03T00:02:36Z","event":"answer","id":"Q23","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":27,"at":"2026-08-03T00:04:14Z","event":"answer","id":"Q24","state":"defaulted","option":"a","note":"","override":false,"round":1}
+{"seq":28,"at":"2026-08-03T00:04:29Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"","override":true,"round":1}
+{"seq":29,"at":"2026-08-03T00:06:55Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process","override":true,"round":1}
+{"seq":30,"at":"2026-08-03T00:06:58Z","event":"answer","id":"Q24","state":"chosen","option":null,"note":"card discards, removed from meld, card stacked above in same column slides into discarded card's place and spotlight now follows that card and goes through activation process","override":true,"round":1}
+{"seq":31,"at":"2026-08-03T00:07:11Z","event":"answer","id":"Q25","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":32,"at":"2026-08-03T00:07:19Z","event":"answer","id":"Q28","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":33,"at":"2026-08-03T00:07:27Z","event":"answer","id":"Q29","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":34,"at":"2026-08-03T00:07:53Z","event":"answer","id":"Q30","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":35,"at":"2026-08-03T00:08:25Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":36,"at":"2026-08-03T00:08:29Z","event":"answer","id":"Q73","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":37,"at":"2026-08-03T00:09:06Z","event":"answer","id":"Q15","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":38,"at":"2026-08-03T00:09:17Z","event":"answer","id":"Q17","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":39,"at":"2026-08-03T00:11:41Z","event":"answer","id":"QR2","state":"chosen","option":null,"note":"no dim only lasts for as long as it takes for spotlight fx to spawn in, and jump up and score first meld, fading away back to normal lit state for everything else","override":true,"round":1}
+{"seq":40,"at":"2026-08-03T00:11:41Z","event":"strand","ids":["Q73"],"cause":"QR2","active":false}
+{"seq":41,"at":"2026-08-03T00:15:08Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":42,"at":"2026-08-03T00:15:08Z","event":"restore","ids":["Q73"],"cause":"QR2","active":true}
+{"seq":43,"at":"2026-08-03T00:15:14Z","event":"answer","id":"Q74","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":44,"at":"2026-08-03T00:15:18Z","event":"answer","id":"Q75","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":45,"at":"2026-08-03T00:15:36Z","event":"answer","id":"Q76","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":46,"at":"2026-08-03T00:17:01Z","event":"answer","id":"Q78","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":47,"at":"2026-08-03T00:17:20Z","event":"answer","id":"Q79","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":48,"at":"2026-08-03T00:17:43Z","event":"answer","id":"Q80","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":49,"at":"2026-08-03T00:17:49Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":50,"at":"2026-08-03T00:50:11Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":51,"at":"2026-08-03T01:15:28Z","event":"answer","id":"Q83","state":"chosen","option":null,"note":"keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent","override":true,"round":1}
+{"seq":52,"at":"2026-08-03T01:15:31Z","event":"answer","id":"Q83","state":"chosen","option":null,"note":"keeps beams glow and dim, Also since recc answer implies dim is more important than glow, it is not. The glow is most important. Beam and circle and dim are helper to make glow on card more prominent","override":true,"round":1}
+{"seq":53,"at":"2026-08-03T01:16:20Z","event":"answer","id":"Q84","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":54,"at":"2026-08-03T01:17:04Z","event":"answer","id":"QR3","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":55,"at":"2026-08-03T01:18:20Z","event":"answer","id":"Q85","state":"chosen","option":null,"note":"16, make it adjustable so I can test slightly different radius","override":true,"round":1}
+{"seq":56,"at":"2026-08-03T01:18:31Z","event":"answer","id":"Q86","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":57,"at":"2026-08-03T01:19:17Z","event":"answer","id":"Q87","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":58,"at":"2026-08-03T01:19:43Z","event":"answer","id":"Q88","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":59,"at":"2026-08-03T01:19:49Z","event":"answer","id":"Q89","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":60,"at":"2026-08-03T01:20:10Z","event":"answer","id":"Q90","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":61,"at":"2026-08-03T01:20:13Z","event":"answer","id":"Q91","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":62,"at":"2026-08-03T01:20:24Z","event":"answer","id":"Q92","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":63,"at":"2026-08-03T01:20:32Z","event":"answer","id":"Q93","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":64,"at":"2026-08-03T01:20:37Z","event":"answer","id":"Q94","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":65,"at":"2026-08-03T01:20:48Z","event":"answer","id":"Q95","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":66,"at":"2026-08-03T01:22:03Z","event":"answer","id":"Q96","state":"chosen","option":null,"note":"soft edges across width, and brighter at origin","override":true,"round":1}
+{"seq":67,"at":"2026-08-03T01:22:13Z","event":"answer","id":"Q96","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":68,"at":"2026-08-03T01:22:21Z","event":"answer","id":"Q97","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":69,"at":"2026-08-03T01:23:05Z","event":"answer","id":"Q98","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":70,"at":"2026-08-03T01:23:15Z","event":"answer","id":"Q99","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":71,"at":"2026-08-03T01:24:15Z","event":"answer","id":"Q100","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":72,"at":"2026-08-03T01:24:19Z","event":"answer","id":"Q101","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":73,"at":"2026-08-03T01:27:38Z","event":"answer","id":"Q102","state":"chosen","option":null,"note":"same as other props and vfx. in front of card it is effecting, but not in front of other objects in front of card","override":true,"round":1}
+{"seq":74,"at":"2026-08-03T01:28:20Z","event":"answer","id":"Q103","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":75,"at":"2026-08-03T01:28:35Z","event":"answer","id":"Q104","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":76,"at":"2026-08-03T01:28:39Z","event":"answer","id":"Q105","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":77,"at":"2026-08-03T01:28:59Z","event":"answer","id":"Q106","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":78,"at":"2026-08-03T01:32:36Z","event":"answer","id":"Q107","state":"chosen","option":null,"note":"No cap. soft cap at how many cards can fit on screen. Spotlight is used whenever card is entering active state and for highlighting cards about to score.","override":true,"round":1}
+{"seq":79,"at":"2026-08-03T01:32:44Z","event":"answer","id":"Q108","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":80,"at":"2026-08-03T01:33:04Z","event":"answer","id":"Q109","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":81,"at":"2026-08-03T01:33:24Z","event":"answer","id":"Q110","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":82,"at":"2026-08-03T01:33:35Z","event":"answer","id":"Q111","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":83,"at":"2026-08-03T01:33:55Z","event":"answer","id":"Q112","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":84,"at":"2026-08-03T01:37:19Z","event":"answer","id":"Q113","state":"chosen","option":null,"note":"(b) content anchored so y level is always same, but x axis can shift to maximize usage of viewport top evenly if y level is above viewport top. reminder that no beam origins should have identical y level even if target cards have identical y level on same row.","override":true,"round":1}
+{"seq":85,"at":"2026-08-03T01:37:27Z","event":"answer","id":"Q115","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":86,"at":"2026-08-03T01:39:08Z","event":"answer","id":"Q116","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":87,"at":"2026-08-03T01:40:14Z","event":"answer","id":"Q117","state":"chosen","option":null,"note":"(a) beam still draws from screen edge, but only if target is below viewport bottom. beam can never point upwards","override":true,"round":1}
+{"seq":88,"at":"2026-08-03T01:40:58Z","event":"answer","id":"Q119","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":89,"at":"2026-08-03T01:41:09Z","event":"answer","id":"Q120","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":90,"at":"2026-08-03T01:41:58Z","event":"answer","id":"QR4","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":91,"at":"2026-08-03T01:42:04Z","event":"answer","id":"Q43","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":92,"at":"2026-08-03T01:42:31Z","event":"answer","id":"Q44","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":93,"at":"2026-08-03T01:43:24Z","event":"answer","id":"Q45","state":"chosen","option":null,"note":"dims occur at same time spotlight appears. dims go away when spotlight disappears","override":true,"round":1}
+{"seq":94,"at":"2026-08-03T01:47:20Z","event":"answer","id":"Q46","state":"chosen","option":null,"note":"finer needed, 2 booleans per when scoring row vs when scoring col","override":true,"round":1}
+{"seq":95,"at":"2026-08-03T01:48:10Z","event":"answer","id":"Q47","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":96,"at":"2026-08-03T01:51:55Z","event":"answer","id":"Q47","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":97,"at":"2026-08-03T01:52:53Z","event":"answer","id":"Q48","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":98,"at":"2026-08-03T01:53:25Z","event":"answer","id":"Q51","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":99,"at":"2026-08-03T01:54:16Z","event":"answer","id":"Q52","state":"chosen","option":null,"note":"only expand for rows that contain a card that can react","override":true,"round":1}
+{"seq":100,"at":"2026-08-03T01:54:33Z","event":"answer","id":"Q53","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":101,"at":"2026-08-03T01:54:52Z","event":"answer","id":"Q54","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":102,"at":"2026-08-03T01:54:59Z","event":"answer","id":"Q55","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":103,"at":"2026-08-03T01:56:12Z","event":"answer","id":"Q56","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":104,"at":"2026-08-03T01:56:25Z","event":"answer","id":"Q57","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":105,"at":"2026-08-03T01:57:03Z","event":"answer","id":"Q58","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":106,"at":"2026-08-03T01:57:11Z","event":"answer","id":"Q59","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":107,"at":"2026-08-03T01:57:51Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":108,"at":"2026-08-03T02:04:02Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":109,"at":"2026-08-03T02:04:10Z","event":"answer","id":"QR5","state":"chosen","option":"a","note":"note: spotlight should show first time a card becomes active which has active hook. If a card in active slot which no active gains an active effect somehow, it should still trigger momentary spotlight to show it has become active","override":false,"round":1}
+{"seq":110,"at":"2026-08-03T02:04:19Z","event":"answer","id":"Q121","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":111,"at":"2026-08-03T02:04:38Z","event":"answer","id":"Q122","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":112,"at":"2026-08-03T05:19:18Z","event":"answer","id":"Q122","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":113,"at":"2026-08-03T05:19:40Z","event":"answer","id":"Q123","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":114,"at":"2026-08-03T05:19:54Z","event":"answer","id":"Q124","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":115,"at":"2026-08-03T05:19:59Z","event":"answer","id":"Q125","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":116,"at":"2026-08-03T05:20:06Z","event":"answer","id":"Q126","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":117,"at":"2026-08-03T05:20:18Z","event":"answer","id":"Q127","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":118,"at":"2026-08-03T05:20:24Z","event":"answer","id":"Q128","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":119,"at":"2026-08-03T05:20:29Z","event":"answer","id":"Q129","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":120,"at":"2026-08-03T05:20:38Z","event":"answer","id":"Q130","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":121,"at":"2026-08-03T05:20:56Z","event":"answer","id":"Q131","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":122,"at":"2026-08-03T05:21:02Z","event":"answer","id":"Q132","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":123,"at":"2026-08-03T05:21:08Z","event":"answer","id":"Q133","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":124,"at":"2026-08-03T05:21:35Z","event":"answer","id":"Q141","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":125,"at":"2026-08-03T05:21:43Z","event":"answer","id":"Q142","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":126,"at":"2026-08-03T05:24:06Z","event":"answer","id":"Q144","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":127,"at":"2026-08-03T05:30:11Z","event":"answer","id":"Q145","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":128,"at":"2026-08-03T05:30:25Z","event":"answer","id":"Q146","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":129,"at":"2026-08-03T05:30:29Z","event":"answer","id":"Q148","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":130,"at":"2026-08-03T05:31:26Z","event":"answer","id":"Q149","state":"chosen","option":null,"note":"yes when a card becomes active at anytime it triggers momentary spotlight effect","override":true,"round":1}
+{"seq":131,"at":"2026-08-03T05:33:26Z","event":"answer","id":"Q150","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":132,"at":"2026-08-03T05:34:00Z","event":"answer","id":"Q150","state":"chosen","option":null,"note":"yes it is linked to spotlight effect","override":true,"round":1}
+{"seq":133,"at":"2026-08-03T05:35:18Z","event":"answer","id":"Q207","state":"chosen","option":null,"note":"2 to 4, let me choose","override":true,"round":1}
+{"seq":134,"at":"2026-08-03T05:35:55Z","event":"answer","id":"Q208","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":135,"at":"2026-08-03T05:37:02Z","event":"answer","id":"Q209","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":136,"at":"2026-08-03T05:38:20Z","event":"answer","id":"Q210","state":"chosen","option":null,"note":"let me tune myself, star with 4","override":true,"round":1}
+{"seq":137,"at":"2026-08-03T05:38:32Z","event":"answer","id":"Q211","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":138,"at":"2026-08-03T05:39:26Z","event":"answer","id":"Q213","state":"chosen","option":null,"note":"smooth to finer grid, let me tune myself","override":true,"round":1}
+{"seq":139,"at":"2026-08-03T05:40:26Z","event":"answer","id":"Q215","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":140,"at":"2026-08-03T05:40:41Z","event":"answer","id":"Q216","state":"chosen","option":"d","note":"","override":false,"round":1}
+{"seq":141,"at":"2026-08-03T05:42:22Z","event":"answer","id":"Q217","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":142,"at":"2026-08-03T05:44:21Z","event":"answer","id":"Q218","state":"chosen","option":null,"note":"(c) is fine if it doesnt lead to visible seam between additive and tinted parts, otherwise just tint, dont want blowout to white","override":true,"round":1}
+{"seq":143,"at":"2026-08-03T05:46:07Z","event":"answer","id":"Q219","state":"chosen","option":null,"note":"only lit up if crossing the lit up portion on same layer","override":true,"round":1}
+{"seq":144,"at":"2026-08-03T05:49:25Z","event":"answer","id":"Q220","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":145,"at":"2026-08-03T05:50:48Z","event":"answer","id":"Q221","state":"chosen","option":null,"note":"should be three card circle beam, no prop","override":true,"round":1}
+{"seq":146,"at":"2026-08-03T05:53:20Z","event":"answer","id":"Q12","state":"chosen","option":null,"note":"why would it flicker? only way to flicker is if card gets covered and uncovered multiple times which would be correct anyways","override":true,"round":1}
+{"seq":147,"at":"2026-08-03T05:53:30Z","event":"answer","id":"Q77","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":148,"at":"2026-08-03T05:53:41Z","event":"answer","id":"QR6","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":149,"at":"2026-08-03T05:53:45Z","event":"answer","id":"Q173","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":150,"at":"2026-08-03T05:53:50Z","event":"answer","id":"Q174","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":151,"at":"2026-08-03T05:53:55Z","event":"answer","id":"Q175","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":152,"at":"2026-08-03T05:54:02Z","event":"answer","id":"Q176","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":153,"at":"2026-08-03T05:54:06Z","event":"answer","id":"Q177","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":154,"at":"2026-08-03T05:54:11Z","event":"answer","id":"Q178","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":155,"at":"2026-08-03T05:54:31Z","event":"answer","id":"Q179","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":156,"at":"2026-08-03T05:54:36Z","event":"answer","id":"Q180","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":157,"at":"2026-08-03T05:54:45Z","event":"answer","id":"Q181","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":158,"at":"2026-08-03T05:54:55Z","event":"answer","id":"Q182","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":159,"at":"2026-08-03T05:55:36Z","event":"answer","id":"Q182","state":"chosen","option":null,"note":"we are still on first review pass we could add more","override":true,"round":1}
+{"seq":160,"at":"2026-08-03T05:55:54Z","event":"answer","id":"QR7","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":161,"at":"2026-08-03T05:56:17Z","event":"answer","id":"QR8","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":162,"at":"2026-08-03T06:07:18Z","event":"answer","id":"Q16","state":"chosen","option":null,"note":"whole act? increases or decreases based on cards being scored. dims after initially showing, but gets revealed again at start of next scoring section, moves at same time as other row expanding and moves down with other cards moving down. In future its possible for scoring hand shape to not be orthogonal, maybe multiple rows and columns at same time or diagonals or any shape possible, so keep that in mind for future proofing","override":true,"round":1}
+{"seq":163,"at":"2026-08-03T06:10:43Z","event":"answer","id":"Q27","state":"chosen","option":null,"note":"per scoring section, so lines right now but could be more than lines with scorers other than cascader","override":true,"round":1}
+{"seq":164,"at":"2026-08-03T06:11:35Z","event":"answer","id":"Q82","state":"chosen","option":null,"note":"per anytime spotlight effect is happening","override":true,"round":1}
+{"seq":165,"at":"2026-08-03T06:11:48Z","event":"answer","id":"Q49","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":166,"at":"2026-08-03T06:13:56Z","event":"answer","id":"Q50","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":167,"at":"2026-08-03T06:14:04Z","event":"answer","id":"Q61","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":168,"at":"2026-08-03T06:14:36Z","event":"answer","id":"Q62","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":169,"at":"2026-08-03T06:14:52Z","event":"answer","id":"Q63","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":170,"at":"2026-08-03T06:15:06Z","event":"answer","id":"Q64","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":171,"at":"2026-08-03T06:15:19Z","event":"answer","id":"Q65","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":172,"at":"2026-08-03T06:15:27Z","event":"answer","id":"Q66","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":173,"at":"2026-08-03T06:15:36Z","event":"answer","id":"Q67","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":174,"at":"2026-08-03T06:15:58Z","event":"answer","id":"Q68","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":175,"at":"2026-08-03T06:16:11Z","event":"answer","id":"Q69","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":176,"at":"2026-08-03T06:16:17Z","event":"answer","id":"Q70","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":177,"at":"2026-08-03T06:23:18Z","event":"answer","id":"Q71","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":178,"at":"2026-08-03T06:23:41Z","event":"answer","id":"Q72","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":179,"at":"2026-08-03T06:24:29Z","event":"answer","id":"QR9","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":180,"at":"2026-08-03T06:24:57Z","event":"answer","id":"Q223","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":181,"at":"2026-08-03T06:25:05Z","event":"answer","id":"Q224","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":182,"at":"2026-08-03T06:25:32Z","event":"answer","id":"Q225","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":183,"at":"2026-08-03T06:26:00Z","event":"answer","id":"Q229","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":184,"at":"2026-08-03T06:33:11Z","event":"answer","id":"Q229","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":185,"at":"2026-08-03T06:34:51Z","event":"answer","id":"QR10","state":"chosen","option":"a","note":"No reason those effects cant also be on the individual shaders. \nI'm interested in applying separately to both screen and individual shaders, so that shader can be grainier than rest of image for example. Or allow tuning film effects separately between foreground/background/UI so background is more distorted, and stuff like darker colors get more grain to simulate how shadows in old photography work.","override":false,"round":1}
+{"seq":186,"at":"2026-08-03T06:34:57Z","event":"answer","id":"QR10","state":"chosen","option":"a","note":"No reason those effects cant also be on the individual shaders. \nI'm interested in applying separately to both screen and individual shaders, so that shader can be grainier than rest of image for example. Or allow tuning film effects separately between foreground/background/UI so background is more distorted, and stuff like darker colors get more grain to simulate how shadows in old photography work.","override":false,"round":1}
+{"seq":187,"at":"2026-08-03T06:36:26Z","event":"answer","id":"Q222","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":188,"at":"2026-08-03T06:37:32Z","event":"answer","id":"Q230","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":189,"at":"2026-08-03T06:37:48Z","event":"answer","id":"Q231","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":190,"at":"2026-08-03T06:38:33Z","event":"answer","id":"Q232","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":191,"at":"2026-08-03T06:38:51Z","event":"answer","id":"Q233","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":192,"at":"2026-08-03T06:39:00Z","event":"answer","id":"Q234","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":193,"at":"2026-08-03T06:39:21Z","event":"answer","id":"Q235","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":194,"at":"2026-08-03T06:39:29Z","event":"answer","id":"Q236","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":195,"at":"2026-08-03T06:39:36Z","event":"answer","id":"Q237","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":196,"at":"2026-08-03T06:42:03Z","event":"answer","id":"Q238","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":197,"at":"2026-08-03T06:42:09Z","event":"answer","id":"Q238","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":198,"at":"2026-08-03T06:42:27Z","event":"answer","id":"Q239","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":199,"at":"2026-08-03T06:42:36Z","event":"answer","id":"Q1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":200,"at":"2026-08-03T06:42:56Z","event":"answer","id":"Q2","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":201,"at":"2026-08-03T06:43:16Z","event":"answer","id":"Q3","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":202,"at":"2026-08-03T06:43:31Z","event":"answer","id":"Q5","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":203,"at":"2026-08-03T07:11:03Z","event":"answer","id":"Q6","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":204,"at":"2026-08-03T07:11:57Z","event":"answer","id":"Q7","state":"chosen","option":null,"note":"itll have spotlight and beam when it enters board from deck regardless of zone","override":true,"round":1}
+{"seq":205,"at":"2026-08-03T07:12:22Z","event":"answer","id":"Q8","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":206,"at":"2026-08-03T07:14:59Z","event":"answer","id":"Q31","state":"chosen","option":null,"note":"every card participating in hand for scoring, which for now is a line because cascade only scores rows and columns, so should be exact same cards as initial jumpers / raised cards to indicate which cards are being scored ","override":true,"round":1}
+{"seq":207,"at":"2026-08-03T07:15:19Z","event":"answer","id":"Q33","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":208,"at":"2026-08-03T07:15:35Z","event":"answer","id":"Q34","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":209,"at":"2026-08-03T07:15:45Z","event":"answer","id":"Q35","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":210,"at":"2026-08-03T07:15:59Z","event":"answer","id":"Q36","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":211,"at":"2026-08-03T07:16:08Z","event":"answer","id":"Q37","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":212,"at":"2026-08-03T07:16:27Z","event":"answer","id":"Q38","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":213,"at":"2026-08-03T07:16:41Z","event":"answer","id":"Q39","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":214,"at":"2026-08-03T07:16:53Z","event":"answer","id":"Q40","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":215,"at":"2026-08-03T07:17:02Z","event":"answer","id":"Q41","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":216,"at":"2026-08-03T07:17:11Z","event":"answer","id":"Q134","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":217,"at":"2026-08-03T07:18:16Z","event":"answer","id":"Q135","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":218,"at":"2026-08-03T07:18:33Z","event":"answer","id":"Q136","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":219,"at":"2026-08-03T07:19:35Z","event":"answer","id":"Q212","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":220,"at":"2026-08-03T07:22:22Z","event":"answer","id":"Q137","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":221,"at":"2026-08-03T07:22:37Z","event":"answer","id":"Q138","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":222,"at":"2026-08-03T07:22:44Z","event":"answer","id":"Q139","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":223,"at":"2026-08-03T07:25:21Z","event":"answer","id":"Q151","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":224,"at":"2026-08-03T07:26:00Z","event":"answer","id":"Q152","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":225,"at":"2026-08-03T07:26:19Z","event":"answer","id":"Q153","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":226,"at":"2026-08-03T07:27:54Z","event":"answer","id":"Q154","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":227,"at":"2026-08-03T07:28:05Z","event":"answer","id":"Q155","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":228,"at":"2026-08-03T07:28:37Z","event":"answer","id":"Q156","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":229,"at":"2026-08-03T07:30:45Z","event":"answer","id":"Q157","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":230,"at":"2026-08-03T07:33:16Z","event":"answer","id":"Q158","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":231,"at":"2026-08-03T07:33:31Z","event":"answer","id":"Q158","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":232,"at":"2026-08-03T07:34:03Z","event":"answer","id":"Q159","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":233,"at":"2026-08-03T07:34:16Z","event":"answer","id":"Q161","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":234,"at":"2026-08-03T07:34:29Z","event":"answer","id":"Q162","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":235,"at":"2026-08-03T07:34:35Z","event":"answer","id":"Q163","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":236,"at":"2026-08-03T07:34:45Z","event":"answer","id":"Q164","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":237,"at":"2026-08-03T07:34:56Z","event":"answer","id":"Q164","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":238,"at":"2026-08-03T07:35:08Z","event":"answer","id":"Q165","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":239,"at":"2026-08-03T07:35:18Z","event":"answer","id":"Q166","state":"chosen","option":null,"note":"maybe","override":true,"round":1}
+{"seq":240,"at":"2026-08-03T07:35:29Z","event":"answer","id":"Q167","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":241,"at":"2026-08-03T08:08:16Z","event":"answer","id":"Q168","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":242,"at":"2026-08-03T08:08:29Z","event":"answer","id":"Q169","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":243,"at":"2026-08-03T08:10:06Z","event":"answer","id":"Q170","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":244,"at":"2026-08-03T08:10:19Z","event":"answer","id":"Q171","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":245,"at":"2026-08-03T08:10:25Z","event":"answer","id":"Q172","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":246,"at":"2026-08-03T08:10:30Z","event":"answer","id":"Q183","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":247,"at":"2026-08-03T08:11:13Z","event":"answer","id":"Q184","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":248,"at":"2026-08-03T08:11:23Z","event":"answer","id":"Q185","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":249,"at":"2026-08-03T08:16:46Z","event":"answer","id":"Q186","state":"chosen","option":null,"note":"in scope, show all active abilities spreads out all rows with active talent/skill and uses spotlight effect on all of them with no dimming at all until turned off for now ","override":true,"round":1}
+{"seq":250,"at":"2026-08-03T08:17:04Z","event":"answer","id":"Q187","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":251,"at":"2026-08-03T08:43:43Z","event":"answer","id":"Q188","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":252,"at":"2026-08-03T09:15:09Z","event":"answer","id":"Q240","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":253,"at":"2026-08-03T09:15:38Z","event":"answer","id":"Q242","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":254,"at":"2026-08-03T09:16:12Z","event":"answer","id":"Q244","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":255,"at":"2026-08-03T09:16:38Z","event":"answer","id":"Q250","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":256,"at":"2026-08-03T09:20:43Z","event":"answer","id":"Q251","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":257,"at":"2026-08-03T09:35:10Z","event":"answer","id":"Q252","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":258,"at":"2026-08-03T09:36:54Z","event":"answer","id":"Q253","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":259,"at":"2026-08-03T09:38:45Z","event":"answer","id":"Q254","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":260,"at":"2026-08-03T09:39:04Z","event":"answer","id":"Q255","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":261,"at":"2026-08-03T09:39:09Z","event":"answer","id":"Q255","state":"chosen","option":"d","note":"","override":false,"round":2}
+{"seq":262,"at":"2026-08-03T09:39:32Z","event":"answer","id":"Q256","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":263,"at":"2026-08-03T09:39:38Z","event":"answer","id":"Q257","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":264,"at":"2026-08-03T09:45:58Z","event":"answer","id":"Q258","state":"chosen","option":null,"note":"props themselves dont get brightened like its an effect or something, just treat it same as non lit cards being coincidentally lit up if beams cross it","override":true,"round":2}
+{"seq":265,"at":"2026-08-03T09:51:10Z","event":"answer","id":"Q259","state":"chosen","option":null,"note":"glow at instant when spotlight effect is on top of card, instantly lose glow once covered visually so its snappy","override":true,"round":2}
+{"seq":266,"at":"2026-08-03T09:51:24Z","event":"answer","id":"Q260","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":267,"at":"2026-08-03T09:52:14Z","event":"answer","id":"Q261","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":268,"at":"2026-08-03T10:09:45Z","event":"answer","id":"QR2","state":"chosen","option":"d","note":"","override":false,"round":1}
+{"seq":269,"at":"2026-08-03T10:09:45Z","event":"strand","ids":["Q45","Q73","Q74","Q75","Q76","Q77","Q78","Q79","Q80","Q81","Q82","Q83","Q84","Q127","Q137","Q150","Q155","Q156","Q161","Q163"],"cause":"QR2","active":false}
+{"seq":270,"at":"2026-08-03T10:10:26Z","event":"answer","id":"Q245","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":271,"at":"2026-08-03T10:10:41Z","event":"answer","id":"Q262","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":272,"at":"2026-08-03T10:12:06Z","event":"answer","id":"Q263","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":273,"at":"2026-08-03T10:12:14Z","event":"answer","id":"Q264","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":274,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q7","state":"chosen","option":"d","note":"","override":false,"round":3}
+{"seq":275,"at":"2026-08-03T11:07:48Z","event":"restore","ids":["Q45","Q73","Q74","Q75","Q76","Q77","Q79","Q80","Q83","Q84","Q127","Q137","Q150","Q155","Q156","Q161","Q163"],"cause":"Q7","active":true}
+{"seq":276,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q24","state":"chosen","option":"c","note":"","override":false,"round":3}
+{"seq":277,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q31","state":"chosen","option":"d","note":"","override":false,"round":3}
+{"seq":278,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q113","state":"chosen","option":"d","note":"","override":false,"round":3}
+{"seq":279,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q149","state":"chosen","option":"b","note":"","override":false,"round":3}
+{"seq":280,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q213","state":"chosen","option":"d","note":"","override":false,"round":3}
+{"seq":281,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q198","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":282,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q199","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":283,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q200","state":"chosen","option":"c","note":"","override":false,"round":3}
+{"seq":284,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q201","state":"chosen","option":"b","note":"","override":false,"round":3}
+{"seq":285,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q202","state":"chosen","option":"a","note":"further scoring on that row would include new card","override":false,"round":3}
+{"seq":286,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q203","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":287,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q204","state":"chosen","option":"a","note":"if already scored, yes cannot change, scorer moves on as if discard never happened, new card took its place","override":false,"round":3}
+{"seq":288,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q205","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":289,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q206","state":"chosen","option":"b","note":"","override":false,"round":3}
+{"seq":290,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q247","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":291,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q248","state":"chosen","option":"b","note":"if it was saved as active it should load as active with no transition and already glowing; if saved inactive and loaded uncovered it triggers normally as if no resuming happened. should match saved data, no extra code","override":false,"round":3}
+{"seq":292,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q249","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":293,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q246","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":294,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q265","state":"chosen","option":"c","note":"was wrong about raise, must have been a previous iteration. gap is allowed if all cards jump at same time since once ducking has completed it shouldnt track current card bottoms anymore","override":false,"round":3}
+{"seq":295,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q266","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":296,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q243","state":"chosen","option":"a","note":"","override":false,"round":3}
+{"seq":297,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q114","state":"chosen","option":"a","note":"tunable","override":false,"round":3}
+{"seq":298,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q214","state":"chosen","option":"a","note":"gradient shouldnt be forced to be on fixed palette","override":false,"round":3}
+{"seq":299,"at":"2026-08-03T11:07:48Z","event":"answer","id":"Q42","state":"chosen","option":"b","note":"yes but only for zones that actually have active effect","override":false,"round":3}
