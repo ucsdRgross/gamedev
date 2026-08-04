@@ -1,10 +1,11 @@
 {
-  "doc_hash": "sha256:389ca783b1eb6cab95e9b705560401213fec38327f32cf9ad1dd988b96e9d2fc",
+  "doc_hash": "sha256:3a7a569ad0e483daea376ec7b97df091d8b76ed260151300ab1393398a9af962",
   "charts": [
     {
       "id": "A",
+      "name": "A",
       "title": "where the mechanical spotlight comes from",
-      "line": 246,
+      "line": 630,
       "nodes": [
         "A1",
         "A2",
@@ -20,8 +21,9 @@
     },
     {
       "id": "B",
+      "name": "B",
       "title": "activation edges (who gets told, and when)",
-      "line": 280,
+      "line": 664,
       "nodes": [
         "B1",
         "B2",
@@ -41,8 +43,9 @@
     },
     {
       "id": "C",
+      "name": "C",
       "title": "Submit, top level, with the new phases spliced in",
-      "line": 313,
+      "line": 701,
       "nodes": [
         "C1",
         "C2",
@@ -68,9 +71,36 @@
       ]
     },
     {
+      "id": "S",
+      "name": "S",
+      "title": "the TRANSIENT dim `[QR2=c]` — ⚠ NOT THE ANSWER, KEPT AS THE RECORD",
+      "line": 768,
+      "nodes": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "S9",
+        "S10",
+        "S11",
+        "S12",
+        "S13",
+        "S14",
+        "S15",
+        "S16",
+        "S17",
+        "S18"
+      ]
+    },
+    {
       "id": "D",
+      "name": "D",
       "title": "ONE LINE'S SPOTLIGHT PHASE (the core of the feature)",
-      "line": 362,
+      "line": 821,
       "nodes": [
         "D1",
         "D2",
@@ -85,7 +115,9 @@
         "D10",
         "D11",
         "D12",
+        "D12b",
         "D13",
+        "D13b",
         "D14",
         "D15",
         "D16",
@@ -102,8 +134,9 @@
     },
     {
       "id": "E",
+      "name": "E",
       "title": "the spotlight transition between lines",
-      "line": 429,
+      "line": 905,
       "nodes": [
         "E1",
         "E2",
@@ -120,8 +153,9 @@
     },
     {
       "id": "F",
+      "name": null,
       "title": "the spotlight transition between lines",
-      "line": 450,
+      "line": 926,
       "nodes": [
         "F1",
         "F2",
@@ -132,8 +166,9 @@
     },
     {
       "id": "G",
+      "name": "F",
       "title": "what a card looks like, moment by moment",
-      "line": 481,
+      "line": 957,
       "nodes": [
         "G1",
         "G2",
@@ -153,8 +188,9 @@
     },
     {
       "id": "H",
+      "name": "G",
       "title": "the light layer's render model",
-      "line": 525,
+      "line": 1002,
       "nodes": [
         "H1",
         "H2",
@@ -169,8 +205,9 @@
     },
     {
       "id": "I",
+      "name": "H",
       "title": "beam origins, the allocator, and scrolling",
-      "line": 562,
+      "line": 1055,
       "nodes": [
         "I1",
         "I2",
@@ -181,13 +218,16 @@
         "I7",
         "I8",
         "I9",
-        "I10"
+        "I10",
+        "I11",
+        "I12"
       ]
     },
     {
       "id": "J",
+      "name": null,
       "title": "beam origins, the allocator, and scrolling",
-      "line": 592,
+      "line": 1097,
       "nodes": [
         "J1",
         "J2",
@@ -197,8 +237,9 @@
     },
     {
       "id": "K",
+      "name": "I",
       "title": "the reveal (per-row expansion)",
-      "line": 624,
+      "line": 1130,
       "nodes": [
         "K1",
         "K2",
@@ -210,6 +251,9 @@
         "K8",
         "K9",
         "K10",
+        "K10b",
+        "K10c",
+        "K10d",
         "K11",
         "K12",
         "K13",
@@ -218,8 +262,9 @@
     },
     {
       "id": "L",
+      "name": "J",
       "title": "interruptions and edge cases",
-      "line": 667,
+      "line": 1184,
       "nodes": [
         "L1",
         "L2",
@@ -238,9 +283,34 @@
       ]
     },
     {
+      "id": "R",
+      "name": "R",
+      "title": "a spotlit card is DISCARDED mid-line: compact and follow `[Q24=c]`",
+      "line": 1246,
+      "nodes": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R8",
+        "R9",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16"
+      ]
+    },
+    {
       "id": "M",
+      "name": "K",
       "title": "the non-scoring spotlight (normal play)",
-      "line": 715,
+      "line": 1319,
       "nodes": [
         "M1",
         "M2",
@@ -262,9 +332,35 @@
       ]
     },
     {
+      "id": "T",
+      "name": "T",
+      "title": "the MOMENTARY spotlight, outside scoring `[Q149=b]`",
+      "line": 1363,
+      "nodes": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17"
+      ]
+    },
+    {
       "id": "N",
+      "name": "L",
       "title": "the tuning tool",
-      "line": 756,
+      "line": 1439,
       "nodes": [
         "N1",
         "N2",
@@ -273,6 +369,63 @@
         "N5",
         "N6",
         "N7"
+      ]
+    },
+    {
+      "id": "O",
+      "name": null,
+      "title": "14b.2 The model",
+      "line": 1519,
+      "nodes": [
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6",
+        "O7",
+        "O8",
+        "O9",
+        "O10",
+        "O11",
+        "O12",
+        "O13",
+        "O14",
+        "O15",
+        "O16",
+        "O17",
+        "O18",
+        "O18b",
+        "O19",
+        "O20",
+        "O21"
+      ]
+    },
+    {
+      "id": "P",
+      "name": "P",
+      "title": "the film-light pipeline `[QR10≠c]`",
+      "line": 1616,
+      "nodes": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8",
+        "P9",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19"
       ]
     }
   ],
@@ -283,7 +436,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 248
+      "line": 632
     },
     "A2": {
       "chart": "A",
@@ -291,7 +444,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 248
+      "line": 632
     },
     "A99": {
       "chart": "A",
@@ -299,7 +452,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 249
+      "line": 633
     },
     "A3": {
       "chart": "A",
@@ -307,7 +460,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 250
+      "line": 634
     },
     "A4": {
       "chart": "A",
@@ -315,7 +468,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 252
+      "line": 636
     },
     "A98": {
       "chart": "A",
@@ -323,7 +476,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 253
+      "line": 637
     },
     "A5": {
       "chart": "A",
@@ -331,7 +484,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 254
+      "line": 638
     },
     "A6": {
       "chart": "A",
@@ -341,7 +494,7 @@
       "decidedBy": [
         "Q6"
       ],
-      "line": 256
+      "line": 640
     },
     "A7": {
       "chart": "A",
@@ -349,7 +502,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 258
+      "line": 642
     },
     "A8": {
       "chart": "A",
@@ -360,7 +513,7 @@
         "Q9",
         "Q6"
       ],
-      "line": 260
+      "line": 644
     },
     "B1": {
       "chart": "B",
@@ -368,7 +521,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 282
+      "line": 666
     },
     "B2": {
       "chart": "B",
@@ -376,7 +529,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 282
+      "line": 666
     },
     "B3": {
       "chart": "B",
@@ -384,7 +537,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 284
+      "line": 668
     },
     "B4": {
       "chart": "B",
@@ -392,7 +545,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 285
+      "line": 669
     },
     "B5": {
       "chart": "B",
@@ -400,7 +553,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 287
+      "line": 671
     },
     "B6": {
       "chart": "B",
@@ -408,7 +561,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 288
+      "line": 672
     },
     "B7": {
       "chart": "B",
@@ -416,7 +569,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 289
+      "line": 673
     },
     "B8": {
       "chart": "B",
@@ -424,7 +577,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 290
+      "line": 674
     },
     "B9": {
       "chart": "B",
@@ -432,7 +585,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 291
+      "line": 675
     },
     "B10": {
       "chart": "B",
@@ -440,7 +593,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 293
+      "line": 677
     },
     "B11": {
       "chart": "B",
@@ -448,33 +601,37 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 294
+      "line": 678
     },
     "B12": {
       "chart": "B",
-      "label": "NEW: CardVisual glow fades IN over glow_fade_fraction",
+      "label": "NEW: CardVisual glow snaps ON — Q264=a, NO fade in either direction. Owner: instantly on when the spotlight lands, instantly off once covered, so it is snappy",
       "shape": "box",
       "new": true,
-      "decidedBy": [],
-      "line": 295
+      "decidedBy": [
+        "Q264"
+      ],
+      "line": 679
     },
     "B13": {
       "chart": "B",
-      "label": "NEW: CardVisual glow fades OUT over glow_fade_fraction",
+      "label": "NEW: CardVisual glow snaps OFF — no fade (Q264=a). spotlight_glow_fade_fraction is deleted, not set to zero",
       "shape": "box",
       "new": true,
-      "decidedBy": [],
-      "line": 296
+      "decidedBy": [
+        "Q264"
+      ],
+      "line": 682
     },
     "B14": {
       "chart": "B",
-      "label": "NEW: types / stamps / statuses — see Q10",
+      "label": "NEW: types / stamps / statuses — Q10=a, UNCHANGED. Only SKILLS are gated on spotlight, exactly as today; the other three fire regardless of coverage",
       "shape": "box",
       "new": true,
       "decidedBy": [
         "Q10"
       ],
-      "line": 297
+      "line": 684
     },
     "C1": {
       "chart": "C",
@@ -482,7 +639,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 315
+      "line": 703
     },
     "C2": {
       "chart": "C",
@@ -490,7 +647,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 315
+      "line": 703
     },
     "C3": {
       "chart": "C",
@@ -498,7 +655,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 316
+      "line": 704
     },
     "C4": {
       "chart": "C",
@@ -506,15 +663,17 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 317
+      "line": 705
     },
     "C5": {
       "chart": "C",
-      "label": "NEW: light layer raises dim 0 to dim_target over dim_in_fraction",
+      "label": "NEW: no dim yet. QR2=d — the dim belongs to the BEAMS, not to the submit: it rises when the first beam does and falls when the last one retires, which is inside chart D, not here",
       "shape": "box",
       "new": true,
-      "decidedBy": [],
-      "line": 318
+      "decidedBy": [
+        "QR2"
+      ],
+      "line": 706
     },
     "C6": {
       "chart": "C",
@@ -522,7 +681,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 319
+      "line": 709
     },
     "C7": {
       "chart": "C",
@@ -530,7 +689,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 320
+      "line": 710
     },
     "C8": {
       "chart": "C",
@@ -540,7 +699,7 @@
       "decidedBy": [
         "Q33"
       ],
-      "line": 321
+      "line": 711
     },
     "C11": {
       "chart": "C",
@@ -548,7 +707,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 322
+      "line": 712
     },
     "C9": {
       "chart": "C",
@@ -558,7 +717,7 @@
       "decidedBy": [
         "Q34"
       ],
-      "line": 323
+      "line": 713
     },
     "C10": {
       "chart": "C",
@@ -566,7 +725,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 326
+      "line": 716
     },
     "C12": {
       "chart": "C",
@@ -574,7 +733,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 328
+      "line": 718
     },
     "C13": {
       "chart": "C",
@@ -582,7 +741,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 329
+      "line": 719
     },
     "C14": {
       "chart": "C",
@@ -590,29 +749,30 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 332
+      "line": 722
     },
     "C15": {
       "chart": "C",
-      "label": "NEW: view.end_spotlight_act()",
+      "label": "NEW: view.end_spotlight_act() — by now the last beam has retired, so the dim is already down (QR2=d)",
       "shape": "box",
       "new": true,
       "decidedBy": [
+        "QR2",
         "Q78",
         "Q151"
       ],
-      "line": 334
+      "line": 724
     },
     "C16": {
       "chart": "C",
-      "label": "NEW: last spotlights fade out, rows collapse, dim falls to 0",
+      "label": "NEW: last spotlights fade out and rows collapse. The dim is NOT dropped here — it went with the beams",
       "shape": "box",
       "new": true,
       "decidedBy": [
         "Q78",
         "Q151"
       ],
-      "line": 335
+      "line": 726
     },
     "C17": {
       "chart": "C",
@@ -620,7 +780,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 336
+      "line": 728
     },
     "C18": {
       "chart": "C",
@@ -628,7 +788,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 337
+      "line": 729
     },
     "C19": {
       "chart": "C",
@@ -636,7 +796,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 338
+      "line": 730
     },
     "C20": {
       "chart": "C",
@@ -644,7 +804,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 339
+      "line": 731
     },
     "C21": {
       "chart": "C",
@@ -652,7 +812,157 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 340
+      "line": 732
+    },
+    "S1": {
+      "chart": "S",
+      "label": "NEW: view.begin_spotlight_act() — chart C, C4",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 770
+    },
+    "S2": {
+      "chart": "S",
+      "label": "dim rises 0 to dim_target over dim_in_fraction",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 770
+    },
+    "S3": {
+      "chart": "S",
+      "label": "the FIRST line's spotlight phase runs inside the dark — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 772
+    },
+    "S4": {
+      "chart": "S",
+      "label": "spotlights spawn in and arrive on their targets (D8, D9)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 773
+    },
+    "S5": {
+      "chart": "S",
+      "label": "forced spotlight set, on_active fires, the hold beat (D10 to D13)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 774
+    },
+    "S6": {
+      "chart": "S",
+      "label": "the meld JUMPS and scores (D14 to D16)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 775
+    },
+    "S7": {
+      "chart": "S",
+      "label": "what exactly is the last beat under the dim? — Q189",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q189"
+      ],
+      "line": 776
+    },
+    "S8": {
+      "chart": "S",
+      "label": "dim starts falling as the cards are still up",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 777
+    },
+    "S9": {
+      "chart": "S",
+      "label": "dim starts falling once the number is readable",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 778
+    },
+    "S10": {
+      "chart": "S",
+      "label": "dim starts falling after _run_score_effects returns",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 779
+    },
+    "S11": {
+      "chart": "S",
+      "label": "dim falls to 0 over dim_out_fraction — back to a normally lit board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 780
+    },
+    "S12": {
+      "chart": "S",
+      "label": "what survives the dim coming up? — Q190",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q190"
+      ],
+      "line": 783
+    },
+    "S13": {
+      "chart": "S",
+      "label": "circles and beams retire with the dim. Every later line scores with glow only",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 784
+    },
+    "S14": {
+      "chart": "S",
+      "label": "circles and beams keep travelling line to line over a normally lit board — chart E is unchanged, only the dim was transient",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 786
+    },
+    "S15": {
+      "chart": "S",
+      "label": "the rest of the act: chart C's row and column loops run with no dim and no re-raise",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 789
+    },
+    "S16": {
+      "chart": "S",
+      "label": "does the COLUMN pass count as a second opening? — Q192",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q192"
+      ],
+      "line": 792
+    },
+    "S17": {
+      "chart": "S",
+      "label": "one dim per act, at the very start",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 793
+    },
+    "S18": {
+      "chart": "S",
+      "label": "the dim raises a second time on the first COLUMN line, because a change of axis is a new number",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 794
     },
     "D1": {
       "chart": "D",
@@ -660,7 +970,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 364
+      "line": 823
     },
     "D2": {
       "chart": "D",
@@ -668,7 +978,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 364
+      "line": 823
     },
     "D99": {
       "chart": "D",
@@ -676,7 +986,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 365
+      "line": 824
     },
     "D3": {
       "chart": "D",
@@ -689,7 +999,7 @@
         "Q35",
         "Q42"
       ],
-      "line": 366
+      "line": 825
     },
     "D4": {
       "chart": "D",
@@ -697,25 +1007,26 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 367
+      "line": 826
     },
     "D5": {
       "chart": "D",
-      "label": "NEW: reveal set empty OR skip tunable says nothing here can react?",
+      "label": "NEW: reveal set empty OR the skip tunable says nothing here can react? Q46 — the granularity is FOUR booleans, not two: expand-vs-skip for ROW scoring and for COLUMN scoring, each with its own can-react rule",
       "shape": "decision",
       "new": true,
       "decidedBy": [
+        "Q46",
         "Q47"
       ],
-      "line": 369
+      "line": 828
     },
     "D8": {
       "chart": "D",
-      "label": "NEW: spotlight TRANSITION — chart E (assign / travel / spawn / retire)",
+      "label": "NEW: spotlight TRANSITION — chart E (assign / travel / spawn / retire), concurrent with D6",
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 371
+      "line": 837
     },
     "D6": {
       "chart": "D",
@@ -723,15 +1034,17 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 372
+      "line": 832
     },
     "D7": {
       "chart": "D",
-      "label": "NEW: await the reveal settle (cards ease to their new anchors)",
+      "label": "NEW: the reveal does NOT complete first — Q44=b, the rows open and the lights arrive SIMULTANEOUSLY. The card is being uncovered as the beam swings onto it",
       "shape": "box",
       "new": true,
-      "decidedBy": [],
-      "line": 374
+      "decidedBy": [
+        "Q44"
+      ],
+      "line": 834
     },
     "D9": {
       "chart": "D",
@@ -739,17 +1052,18 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 378
+      "line": 839
     },
     "D10": {
       "chart": "D",
-      "label": "NEW: state.forced_spotlight = the spotlight set (per-act state, bumps nothing else)",
+      "label": "NEW: state.forced_spotlight = the spotlight set, and the FIRST beam raising is what raises the dim (QR2=d). Per-act state, bumps nothing else",
       "shape": "box",
       "new": true,
       "decidedBy": [
+        "QR2",
         "Q37"
       ],
-      "line": 379
+      "line": 840
     },
     "D11": {
       "chart": "D",
@@ -757,7 +1071,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 381
+      "line": 842
     },
     "D12": {
       "chart": "D",
@@ -769,7 +1083,19 @@
         "Q22",
         "Q26"
       ],
-      "line": 382
+      "line": 843
+    },
+    "D12b": {
+      "chart": "D",
+      "label": "NEW: Q25=b — a handler may mutate the board IMMEDIATELY, so the set the sweep is walking can change under it. Q252=b: RE-DERIVE after every hook, which is what lets a compacted-in card activate (chart R). No per-section cap — Q201=b leaves only the act-level runaway guard",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q25",
+        "Q252",
+        "Q201"
+      ],
+      "line": 845
     },
     "D13": {
       "chart": "D",
@@ -779,15 +1105,30 @@
       "decidedBy": [
         "Q68"
       ],
-      "line": 384
+      "line": 849
+    },
+    "D13b": {
+      "chart": "D",
+      "label": "NEW: Q22=b — RE-EVALUATE the hand now, ONCE (Q23=a), over whatever cards are in the section after every effect has fired. Q244=a: whatever it evaluates to is the score, including nothing at all — no floor. If the hand changed, the lights and jumps RE-CUE (Q243=a)",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [
+        "Q22",
+        "Q23",
+        "Q244",
+        "Q243"
+      ],
+      "line": 850
     },
     "D14": {
       "chart": "D",
-      "label": "EXISTING: view.animate_meld(result) -> popup_meld -> anim_jump per meld card",
+      "label": "EXISTING, UNCHANGED: view.animate_meld(result) -> popup_meld -> anim_jump per MELD card. Q265=c — only the meld jumps, exactly as today; the wider lit set is carried by the spotlight alone",
       "shape": "box",
       "new": false,
-      "decidedBy": [],
-      "line": 385
+      "decidedBy": [
+        "Q265"
+      ],
+      "line": 854
     },
     "D15": {
       "chart": "D",
@@ -795,7 +1136,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 386
+      "line": 857
     },
     "D16": {
       "chart": "D",
@@ -803,7 +1144,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 387
+      "line": 858
     },
     "D17": {
       "chart": "D",
@@ -811,7 +1152,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 388
+      "line": 859
     },
     "D18": {
       "chart": "D",
@@ -819,37 +1160,39 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 391
+      "line": 862
     },
     "D19": {
       "chart": "D",
-      "label": "NEW: is there a next line?",
+      "label": "NEW: is there a next SCORING SECTION?",
       "shape": "decision",
       "new": true,
       "decidedBy": [
         "Q49",
         "Q50"
       ],
-      "line": 392
+      "line": 863
     },
     "D20": {
       "chart": "D",
-      "label": "NEW: HOLD — forced_spotlight stays set, rows stay expanded, dim stays up",
+      "label": "NEW: HOLD — forced_spotlight stays set for the whole act (Q16), rows stay expanded, and the dim stays up because beams are still live (QR2=d). Q16: the set is revealed again at the start of the next section and moves down with the cards",
       "shape": "box",
       "new": true,
       "decidedBy": [
+        "Q16",
+        "QR2",
         "Q49",
         "Q50"
       ],
-      "line": 393
+      "line": 864
     },
     "D21": {
       "chart": "D",
-      "label": "next score_line re-enters at D1; chart E decides what travels where",
+      "label": "the next section re-enters at D1; chart E decides what travels where",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 395
+      "line": 868
     },
     "D22": {
       "chart": "D",
@@ -857,7 +1200,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 397
+      "line": 870
     },
     "D23": {
       "chart": "D",
@@ -865,7 +1208,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 398
+      "line": 871
     },
     "D24": {
       "chart": "D",
@@ -873,15 +1216,17 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 399
+      "line": 872
     },
     "D25": {
       "chart": "D",
-      "label": "NEW: retire every spotlight, drop the dim (chart C, C16)",
+      "label": "NEW: retire every spotlight — and the dim falls WITH the last beam, because it belongs to the beams and not to the act (QR2=d). The act's own teardown still follows in chart C: rows collapse, then the board is swept",
       "shape": "box",
       "new": true,
-      "decidedBy": [],
-      "line": 400
+      "decidedBy": [
+        "QR2"
+      ],
+      "line": 873
     },
     "E1": {
       "chart": "E",
@@ -889,7 +1234,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 431
+      "line": 907
     },
     "E2": {
       "chart": "E",
@@ -897,7 +1242,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 431
+      "line": 907
     },
     "E3": {
       "chart": "E",
@@ -905,7 +1250,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 432
+      "line": 908
     },
     "E4": {
       "chart": "E",
@@ -913,7 +1258,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 433
+      "line": 909
     },
     "E5": {
       "chart": "E",
@@ -921,7 +1266,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 434
+      "line": 910
     },
     "E6": {
       "chart": "E",
@@ -929,7 +1274,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 435
+      "line": 911
     },
     "E7": {
       "chart": "E",
@@ -937,7 +1282,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 436
+      "line": 912
     },
     "E8": {
       "chart": "E",
@@ -945,7 +1290,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 438
+      "line": 914
     },
     "E9": {
       "chart": "E",
@@ -953,7 +1298,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 440
+      "line": 916
     },
     "E10": {
       "chart": "E",
@@ -961,7 +1306,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 444
+      "line": 920
     },
     "E11": {
       "chart": "E",
@@ -969,7 +1314,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 445
+      "line": 921
     },
     "F1": {
       "chart": "F",
@@ -977,7 +1322,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 452
+      "line": 928
     },
     "F2": {
       "chart": "F",
@@ -985,7 +1330,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 452
+      "line": 928
     },
     "F3": {
       "chart": "F",
@@ -993,7 +1338,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 453
+      "line": 929
     },
     "F4": {
       "chart": "F",
@@ -1001,7 +1346,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 455
+      "line": 931
     },
     "F5": {
       "chart": "F",
@@ -1009,7 +1354,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 456
+      "line": 932
     },
     "G1": {
       "chart": "G",
@@ -1017,7 +1362,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 483
+      "line": 959
     },
     "G2": {
       "chart": "G",
@@ -1025,7 +1370,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 483
+      "line": 959
     },
     "G3": {
       "chart": "G",
@@ -1033,7 +1378,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 484
+      "line": 960
     },
     "G4": {
       "chart": "G",
@@ -1041,7 +1386,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 485
+      "line": 961
     },
     "G5": {
       "chart": "G",
@@ -1049,7 +1394,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 486
+      "line": 962
     },
     "G6": {
       "chart": "G",
@@ -1057,7 +1402,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 487
+      "line": 963
     },
     "G7": {
       "chart": "G",
@@ -1065,7 +1410,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 489
+      "line": 965
     },
     "G8": {
       "chart": "G",
@@ -1076,7 +1421,7 @@
         "Q121",
         "Q124"
       ],
-      "line": 490
+      "line": 966
     },
     "G9": {
       "chart": "G",
@@ -1084,7 +1429,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 492
+      "line": 968
     },
     "G10": {
       "chart": "G",
@@ -1092,7 +1437,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 493
+      "line": 969
     },
     "G11": {
       "chart": "G",
@@ -1100,7 +1445,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 496
+      "line": 972
     },
     "G12": {
       "chart": "G",
@@ -1108,7 +1453,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 497
+      "line": 973
     },
     "G13": {
       "chart": "G",
@@ -1116,17 +1461,17 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 499
+      "line": 975
     },
     "G14": {
       "chart": "G",
-      "label": "a card that is spotlit but has NO light instance (e.g. naturally spotlit, elsewhere on the board) is dimmed like everything else — see Q127",
+      "label": "a card that is spotlit but has NO light instance (e.g. naturally spotlit, elsewhere on the board) is dimmed like everything else, so its glow vanishes — Q127=a. That is what makes the beam MEAN something",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q127"
       ],
-      "line": 501
+      "line": 977
     },
     "H1": {
       "chart": "H",
@@ -1134,7 +1479,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 527
+      "line": 1004
     },
     "H2": {
       "chart": "H",
@@ -1142,7 +1487,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 527
+      "line": 1004
     },
     "H3": {
       "chart": "H",
@@ -1150,7 +1495,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 530
+      "line": 1007
     },
     "H4": {
       "chart": "H",
@@ -1158,7 +1503,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 531
+      "line": 1008
     },
     "H5": {
       "chart": "H",
@@ -1166,7 +1511,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 533
+      "line": 1010
     },
     "H6": {
       "chart": "H",
@@ -1174,7 +1519,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 535
+      "line": 1012
     },
     "H7": {
       "chart": "H",
@@ -1182,7 +1527,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 537
+      "line": 1014
     },
     "H8": {
       "chart": "H",
@@ -1190,7 +1535,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 538
+      "line": 1015
     },
     "H9": {
       "chart": "H",
@@ -1198,33 +1543,38 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 539
+      "line": 1016
     },
     "I1": {
       "chart": "I",
-      "label": "dim phase begins",
+      "label": "the first beam of a spotlight rises — QR2=d, this is also what raises the dim",
       "shape": "box",
       "new": false,
-      "decidedBy": [],
-      "line": 564
+      "decidedBy": [
+        "QR2"
+      ],
+      "line": 1057
     },
     "I2": {
       "chart": "I",
-      "label": "initial origin count k0 — see Q109",
+      "label": "initial origin count k0 = the size of the first section's set, minimum 4 (Q109=a) — so the common case is perfectly even",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q109"
       ],
-      "line": 564
+      "line": 1057
     },
     "I3": {
       "chart": "I",
-      "label": "place k0 origins evenly across the origin line",
+      "label": "place k0 origins evenly across the origin BAND — even in x, and each with a deterministic y scatter of a few lamp-heights, because no two origins may share a y even when their targets share a row (Q113=d, Q250=a)",
       "shape": "box",
       "new": false,
-      "decidedBy": [],
-      "line": 565
+      "decidedBy": [
+        "Q113",
+        "Q250"
+      ],
+      "line": 1059
     },
     "I4": {
       "chart": "I",
@@ -1232,7 +1582,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 566
+      "line": 1062
     },
     "I5": {
       "chart": "I",
@@ -1240,7 +1590,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 567
+      "line": 1063
     },
     "I6": {
       "chart": "I",
@@ -1248,17 +1598,17 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 568
+      "line": 1064
     },
     "I7": {
       "chart": "I",
-      "label": "take one from the pool — see Q111 for which",
+      "label": "take the one NEAREST its target (Q111=a) — keeps beams mostly vertical and mostly non-crossing",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q111"
       ],
-      "line": 569
+      "line": 1065
     },
     "I8": {
       "chart": "I",
@@ -1266,7 +1616,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 570
+      "line": 1067
     },
     "I9": {
       "chart": "I",
@@ -1274,47 +1624,68 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 572
+      "line": 1069
     },
     "I10": {
       "chart": "I",
-      "label": "the origin is pinned for the rest of the dim phase — it never moves",
-      "shape": "box",
+      "label": "is this origin above the viewport?",
+      "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 575
+      "line": 1072
+    },
+    "I11": {
+      "chart": "I",
+      "label": "PINNED — it does not move while it is on screen (Q164)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q164"
+      ],
+      "line": 1073
+    },
+    "I12": {
+      "chart": "I",
+      "label": "x RE-SPREADS every frame to fill the visible width (Q251=b, Q262=a). Invisible, so moving it costs nothing to look at; it is pinned again the moment it comes back into view",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q251",
+        "Q262"
+      ],
+      "line": 1074
     },
     "J1": {
       "chart": "J",
-      "label": "model choice",
+      "label": "model choice — DECIDED: (d), Model 2 refined",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 594
+      "line": 1099
     },
     "J2": {
       "chart": "J",
-      "label": "MODEL 1 — screen-anchored. Origin line = viewport top, always. Beams never leave the screen; length is bounded by the viewport. Scrolling slides the CIRCLES but the origins stay put, so beam angles change as you scroll",
+      "label": "MODEL 1 — REJECTED. Screen-anchored. Origin line = viewport top, always. Beams never leave the screen; length is bounded by the viewport. Scrolling slides the CIRCLES but the origins stay put, so beam angles change as you scroll",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 594
+      "line": 1099
     },
     "J3": {
       "chart": "J",
-      "label": "MODEL 2 — content-anchored (RECOMMENDED reading of the brief). When a spotlight is created, its origin is pinned in BOARD space at (allocated x, target card y minus origin_rise). It scrolls with the board: scroll down and origin+circle+beam all slide up off screen together and new ones rise from below. Beam angle is constant. Length is bounded by origin_rise",
+      "label": "MODEL 2 — ✅ CHOSEN, as (d) with two refinements: x re-spreads while the origin is off the top, and no two origins share a y. When a spotlight is created, its origin is pinned in BOARD space at (allocated x, target card y minus origin_rise). It scrolls with the board: scroll down and origin+circle+beam all slide up off screen together and new ones rise from below. Beam angle is constant. Length is bounded by origin_rise",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 599
+      "line": 1104
     },
     "J4": {
       "chart": "J",
-      "label": "MODEL 3 — hybrid. Origin is placed at the viewport top AT CREATION TIME, then converted to board space and pinned there. Reads screen-anchored while still, content-anchored while scrolling",
+      "label": "MODEL 3 — REJECTED. Hybrid. Origin is placed at the viewport top AT CREATION TIME, then converted to board space and pinned there. Reads screen-anchored while still, content-anchored while scrolling",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 605
+      "line": 1111
     },
     "K1": {
       "chart": "K",
@@ -1322,7 +1693,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 626
+      "line": 1132
     },
     "K2": {
       "chart": "K",
@@ -1330,7 +1701,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 626
+      "line": 1132
     },
     "K3": {
       "chart": "K",
@@ -1338,7 +1709,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 629
+      "line": 1135
     },
     "K4": {
       "chart": "K",
@@ -1346,7 +1717,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 631
+      "line": 1137
     },
     "K5": {
       "chart": "K",
@@ -1354,7 +1725,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 632
+      "line": 1138
     },
     "K6": {
       "chart": "K",
@@ -1362,7 +1733,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 633
+      "line": 1139
     },
     "K7": {
       "chart": "K",
@@ -1372,7 +1743,7 @@
       "decidedBy": [
         "Q51"
       ],
-      "line": 634
+      "line": 1140
     },
     "K8": {
       "chart": "K",
@@ -1380,7 +1751,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 636
+      "line": 1142
     },
     "K9": {
       "chart": "K",
@@ -1388,17 +1759,45 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 638
+      "line": 1144
     },
     "K10": {
       "chart": "K",
-      "label": "the reveal row's control height goes from card_separation_play_custom (35 px) to the full card height (125 px), tweened",
+      "label": "the reveal row's control height grows, tweened — by the DERIVED amount at K10b, never to a fixed full card height",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q52"
       ],
-      "line": 640
+      "line": 1146
+    },
+    "K10b": {
+      "chart": "K",
+      "label": "⚠ v6 — HOW FAR IT OPENS IS DERIVED (supersedes Q43=a). The covering cards duck by exactly enough that there is NO VISIBLE GAP between the top of a ducking card and the top of a lifted card, sized from the LOWEST lifted card in that row. Where a row holds a card that did not lift, a gap is allowed there",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q43"
+      ],
+      "line": 1148
+    },
+    "K10c": {
+      "chart": "K",
+      "label": "⚠ AND THE DUCK IS COMPUTED ONCE, NOT LIVE-TRACKED. Worked out from the geometry at the moment the duck begins; once finished it stops tracking card bottoms, so a card moving afterwards may open a gap under it and that is accepted",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1152
+    },
+    "K10d": {
+      "chart": "K",
+      "label": "🔶 FOR REVIEW — under Q265=c only the MELD lifts, but the reveal exists to uncover a buried LIT card, and a lit non-meld card never lifts. Is the opening sized by the lifting cards, the lit cards, or the larger of the two?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q265"
+      ],
+      "line": 1155
     },
     "K11": {
       "chart": "K",
@@ -1406,7 +1805,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 643
+      "line": 1160
     },
     "K12": {
       "chart": "K",
@@ -1417,7 +1816,7 @@
         "Q57",
         "Q59"
       ],
-      "line": 645
+      "line": 1162
     },
     "K13": {
       "chart": "K",
@@ -1428,7 +1827,7 @@
         "Q57",
         "Q59"
       ],
-      "line": 647
+      "line": 1164
     },
     "K14": {
       "chart": "K",
@@ -1436,7 +1835,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 649
+      "line": 1166
     },
     "L1": {
       "chart": "L",
@@ -1444,7 +1843,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 669
+      "line": 1186
     },
     "L2": {
       "chart": "L",
@@ -1452,7 +1851,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 669
+      "line": 1186
     },
     "L3": {
       "chart": "L",
@@ -1460,7 +1859,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 670
+      "line": 1187
     },
     "L4": {
       "chart": "L",
@@ -1468,7 +1867,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 673
+      "line": 1190
     },
     "L5": {
       "chart": "L",
@@ -1476,7 +1875,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 674
+      "line": 1191
     },
     "L6": {
       "chart": "L",
@@ -1484,7 +1883,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 675
+      "line": 1192
     },
     "L7": {
       "chart": "L",
@@ -1492,7 +1891,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 677
+      "line": 1194
     },
     "L8": {
       "chart": "L",
@@ -1500,7 +1899,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 680
+      "line": 1197
     },
     "L9": {
       "chart": "L",
@@ -1508,7 +1907,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 682
+      "line": 1199
     },
     "L10": {
       "chart": "L",
@@ -1516,7 +1915,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 684
+      "line": 1201
     },
     "L11": {
       "chart": "L",
@@ -1524,7 +1923,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 686
+      "line": 1203
     },
     "L12": {
       "chart": "L",
@@ -1532,7 +1931,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 687
+      "line": 1204
     },
     "L13": {
       "chart": "L",
@@ -1540,7 +1939,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 690
+      "line": 1207
     },
     "L14": {
       "chart": "L",
@@ -1548,7 +1947,156 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 692
+      "line": 1209
+    },
+    "R1": {
+      "chart": "R",
+      "label": "on_active handler discards a card at column c, row z, during line L",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1248
+    },
+    "R2": {
+      "chart": "R",
+      "label": "the card leaves the board: zone_col.datas.erase — every card at higher z shifts down one index",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1248
+    },
+    "R3": {
+      "chart": "R",
+      "label": "was the discarded card the LAST of its column?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q160"
+      ],
+      "line": 1251
+    },
+    "R4": {
+      "chart": "R",
+      "label": "nothing was covering it, so nothing slides in. The card now at z-1 becomes topmost and NATURALLY spotlit — but it is in row z-1, so it is NOT part of this section. Q199=a — the light retires rather than following downward",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q199",
+        "Q160"
+      ],
+      "line": 1252
+    },
+    "R5": {
+      "chart": "R",
+      "label": "the card that was at z+1 is now at z: it occupies the discarded card's slot AND its row",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1256
+    },
+    "R6": {
+      "chart": "R",
+      "label": "⚠ THE SCORE MOVES. Q22=b re-evaluates the meld after every spotlight effect has fired (Q23=a, once), so the discarded card does NOT still score and the hand may be a different hand — C2",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q22",
+        "Q23",
+        "Q243",
+        "Q244"
+      ],
+      "line": 1258
+    },
+    "R7": {
+      "chart": "R",
+      "label": "the discarded card's JUMP is skipped: its visual is gone by D14",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1261
+    },
+    "R8": {
+      "chart": "R",
+      "label": "its light does NOT retire, and Q200=c means it does not MOVE either: the light is pinned to the SLOT, and the replacement card arrives underneath it. Nothing has to travel",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q200",
+        "Q160"
+      ],
+      "line": 1262
+    },
+    "R9": {
+      "chart": "R",
+      "label": "the new occupant joins the line's spotlight set and is force-spotlit",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1266
+    },
+    "R10": {
+      "chart": "R",
+      "label": "skill_active_check runs — it already runs after every mod call, §1.1 — and fires on_active on the new occupant",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1267
+    },
+    "R11": {
+      "chart": "R",
+      "label": "that handler discards a card too?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q201"
+      ],
+      "line": 1269
+    },
+    "R12": {
+      "chart": "R",
+      "label": "re-enter at R1. A cap is needed or a column can unzip itself in one line. Q201=b — NO per-section cap: only the act-level runaway guard bounds it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q201"
+      ],
+      "line": 1270
+    },
+    "R13": {
+      "chart": "R",
+      "label": "the line continues at D13, the hold beat, with the original meld and a changed board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1273
+    },
+    "R14": {
+      "chart": "R",
+      "label": "every card BELOW the discard in that column also moved up one row. Q202=a — and note the direction: compaction pulls cards UP, into the section being scored now or into ones still pending, so nothing is skipped there. Only a discard in a row the cascade already PASSED moves cards into scored rows",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q202"
+      ],
+      "line": 1275
+    },
+    "R15": {
+      "chart": "R",
+      "label": "the reveal rows were computed at D4 against the OLD indices. Q203=a — they are RE-DERIVED and re-tweened; the board settles into its new shape mid-section rather than holding a stale gap",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q203"
+      ],
+      "line": 1281
+    },
+    "R16": {
+      "chart": "R",
+      "label": "the column is one card shorter, so the board is shorter: every reveal below it, every prop anchored below it, and the scroll extent all move — chart I, K13",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1284
     },
     "M1": {
       "chart": "M",
@@ -1556,7 +2104,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 717
+      "line": 1321
     },
     "M2": {
       "chart": "M",
@@ -1564,7 +2112,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 717
+      "line": 1321
     },
     "M3": {
       "chart": "M",
@@ -1572,7 +2120,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 718
+      "line": 1322
     },
     "M4": {
       "chart": "M",
@@ -1580,7 +2128,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 719
+      "line": 1323
     },
     "M5": {
       "chart": "M",
@@ -1588,7 +2136,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 720
+      "line": 1324
     },
     "M6": {
       "chart": "M",
@@ -1596,7 +2144,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 721
+      "line": 1325
     },
     "M7": {
       "chart": "M",
@@ -1604,17 +2152,18 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 722
+      "line": 1326
     },
     "M8": {
       "chart": "M",
-      "label": "the card revealed underneath: its DATA has not moved, so is_active() is unchanged — no glow change. See Q145",
+      "label": "the card revealed underneath: its DATA has not moved, so is_active() is unchanged and the glow does NOT come on — Q145=a and Q263=b both say the glow follows MECHANICAL state, never what happens to be visible",
       "shape": "box",
       "new": false,
       "decidedBy": [
-        "Q145"
+        "Q145",
+        "Q263"
       ],
-      "line": 723
+      "line": 1327
     },
     "M9": {
       "chart": "M",
@@ -1622,7 +2171,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 725
+      "line": 1331
     },
     "M10": {
       "chart": "M",
@@ -1630,17 +2179,17 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 727
+      "line": 1333
     },
     "M11": {
       "chart": "M",
-      "label": "it is spotlit, so it glows — through the top ~45 px strip that shows. See Q142",
+      "label": "it is spotlit, so it glows — through the top ~45 px strip that shows. Q142=a: exactly the case a player needs to be told about",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q142"
       ],
-      "line": 728
+      "line": 1334
     },
     "M12": {
       "chart": "M",
@@ -1648,7 +2197,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 730
+      "line": 1337
     },
     "M13": {
       "chart": "M",
@@ -1658,7 +2207,7 @@
       "decidedBy": [
         "Q143"
       ],
-      "line": 731
+      "line": 1338
     },
     "M14": {
       "chart": "M",
@@ -1666,17 +2215,17 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 732
+      "line": 1339
     },
     "M15": {
       "chart": "M",
-      "label": "is_active() true when their column is empty. Do they glow? Q141",
+      "label": "is_active() true when their column is empty — and Q141=b says YES, they glow, same rule everywhere. No header special case",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q141"
       ],
-      "line": 733
+      "line": 1340
     },
     "M16": {
       "chart": "M",
@@ -1684,17 +2233,170 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 734
+      "line": 1342
     },
     "M17": {
       "chart": "M",
-      "label": "always spotlit, only visible in the rules viewer. Q144",
+      "label": "always spotlit, only visible in the rules viewer — and Q144=a says NO glow: every rules card is always active, so a uniformly glowing list says nothing",
       "shape": "box",
       "new": false,
       "decidedBy": [
         "Q144"
       ],
-      "line": 735
+      "line": 1343
+    },
+    "T1": {
+      "chart": "T",
+      "label": "any board mutation: a card placed, a stack dropped by Next, a card gaining an ability mid-game, resume, act start",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1365
+    },
+    "T2": {
+      "chart": "T",
+      "label": "skill_active_check() runs — it already runs after every mod call and at game start",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1365
+    },
+    "T3": {
+      "chart": "T",
+      "label": "did this card transition from not-spotlit to spotlit?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1368
+    },
+    "T4": {
+      "chart": "T",
+      "label": "nothing. A card that was already spotlit is not re-cued (Q13, Q15)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q13",
+        "Q15"
+      ],
+      "line": 1369
+    },
+    "T5": {
+      "chart": "T",
+      "label": "does it have anything to announce? Q246=a — it must have a SKILL that implements on_active; anything else has nothing to show",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q246",
+        "Q10"
+      ],
+      "line": 1370
+    },
+    "T6": {
+      "chart": "T",
+      "label": "MOMENTARY SPOTLIGHT: a circle and a beam spawn on it, hold, and retire",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1372
+    },
+    "T7": {
+      "chart": "T",
+      "label": "glow only — there is nothing to show happening",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1374
+    },
+    "T8": {
+      "chart": "T",
+      "label": "its glow fades in and STAYS — the glow is the persistent state, the spotlight is the announcement — chart F",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1375
+    },
+    "T9": {
+      "chart": "T",
+      "label": "the dim, under QR2=d",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "QR2"
+      ],
+      "line": 1378
+    },
+    "T10": {
+      "chart": "T",
+      "label": "the dim rises with this spotlight's BEAM and falls when it retires — during ORDINARY PLAY, not only during a submit. Q245=c: a SHALLOWER dim outside scoring than inside it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q245"
+      ],
+      "line": 1379
+    },
+    "T11": {
+      "chart": "T",
+      "label": "how many cards transitioned at once? Q247=a — one dim covering all of them, one cue, the lights spawn together and retire together",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q247"
+      ],
+      "line": 1382
+    },
+    "T12": {
+      "chart": "T",
+      "label": "one spotlight, one short dim",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1384
+    },
+    "T13": {
+      "chart": "T",
+      "label": "N spotlights, ONE dim that covers all of them and falls when the last retires",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1385
+    },
+    "T14": {
+      "chart": "T",
+      "label": "✅ Q248=b — THIS CASE DOES NOT ARISE, and no code prevents it. CardModifierSkill.active is @export_storage: a card saved active LOADS active, so there is no transition and no cue. A card saved inactive that loads uncovered transitions normally, as in play",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q248",
+        "Q149"
+      ],
+      "line": 1387
+    },
+    "T15": {
+      "chart": "T",
+      "label": "does it block input while it plays? Q249=a — NO. It is a flourish; a second cue may start while the first is still retiring",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q249"
+      ],
+      "line": 1393
+    },
+    "T16": {
+      "chart": "T",
+      "label": "the player keeps playing; a second cue can start while the first is still retiring",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1397
+    },
+    "T17": {
+      "chart": "T",
+      "label": "REJECTED — a short lockout per cue, which on a Next that drops four stacks would be four lockouts in a row",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1399
     },
     "N1": {
       "chart": "N",
@@ -1702,7 +2404,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 758
+      "line": 1441
     },
     "N2": {
       "chart": "N",
@@ -1710,7 +2412,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 758
+      "line": 1441
     },
     "N3": {
       "chart": "N",
@@ -1718,7 +2420,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 760
+      "line": 1443
     },
     "N4": {
       "chart": "N",
@@ -1726,7 +2428,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 761
+      "line": 1444
     },
     "N5": {
       "chart": "N",
@@ -1734,7 +2436,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 763
+      "line": 1446
     },
     "N6": {
       "chart": "N",
@@ -1742,7 +2444,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 765
+      "line": 1448
     },
     "N7": {
       "chart": "N",
@@ -1750,7 +2452,357 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 768
+      "line": 1451
+    },
+    "O1": {
+      "chart": "O",
+      "label": "glow quad: host body plus reach, one per host — same sizing as fire, FxRequest.reach",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1521
+    },
+    "O2": {
+      "chart": "O",
+      "label": "body_near early-out: reject the empty corners of the quad before any lookup — worth 2.1x on fire",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1521
+    },
+    "O3": {
+      "chart": "O",
+      "label": "p = fx_local(UV, extent, pixel) — quantized on the HOST'S ORIGIN, never rotated",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1524
+    },
+    "O4": {
+      "chart": "O",
+      "label": "which mask? — see 14b.1",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1525
+    },
+    "O5": {
+      "chart": "O",
+      "label": "d = signed distance from p to the mask, measured against the host's EXACT deformed outline — Q124=b, the 24-vertex mask the fire shader already carries. Not a rounded rect",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q124"
+      ],
+      "line": 1526
+    },
+    "O6": {
+      "chart": "O",
+      "label": "d = length(p - centre) - circle_radius. One subtraction. This is why the circle is the CHEAP client",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1529
+    },
+    "O7": {
+      "chart": "O",
+      "label": "falloff(d): mix of a smooth curve and inverse-square, per the braindump. Inverse-square is what makes the core read HOT instead of foggy",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1531
+    },
+    "O8": {
+      "chart": "O",
+      "label": "how many layers? Q207 — between 2 and 4, and it is a KNOB: owner picks by eye rather than the design fixing it",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q207"
+      ],
+      "line": 1534
+    },
+    "O9": {
+      "chart": "O",
+      "label": "intensity = falloff(d) * gain",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1536
+    },
+    "O10": {
+      "chart": "O",
+      "label": "intensity = sum over layers of falloff(d / radius_i) * gain_i, the multi-exposure simulation — each layer its own reach and gain",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1537
+    },
+    "O11": {
+      "chart": "O",
+      "label": "radial COLOUR SHIFT: core to mid to edge. This is a PaletteRamp SAMPLE on intensity, exactly as fire samples u_ramp — the palette contract forbids lerping colours, and a ramp is the fix, not a limit",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1539
+    },
+    "O12": {
+      "chart": "O",
+      "label": "is this fragment OVER the host's own art?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1543
+    },
+    "O13": {
+      "chart": "O",
+      "label": "outside the silhouette: the halo. Draws at full alpha — this is the part that hangs off the card's edge",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1544
+    },
+    "O14": {
+      "chart": "O",
+      "label": "over the art: draws at inner_alpha — the lever fire ships at the opaque end and this effect exists to use. Q216=d: START LOW (~0.35) and tune it by eye against scenario S15, the circle over a real card face",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q216"
+      ],
+      "line": 1546
+    },
+    "O15": {
+      "chart": "O",
+      "label": "⚠ the over-art test is done at the UNQUANTIZED position, so the art's own edge slices the chunky glow pixels instead of a staircase — fire paid for this lesson twice, for cards and again for props",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1549
+    },
+    "O16": {
+      "chart": "O",
+      "label": "dither on the FX PIXEL GRID (never FRAGCOORD) to break the ramp's bands",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1552
+    },
+    "O17": {
+      "chart": "O",
+      "label": "COLOR = ramp sample * brightness * fx_intensity, alpha * opacity * inner_alpha",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1554
+    },
+    "O18": {
+      "chart": "O",
+      "label": "multiply the host's MODULATE back in — or the focus highlight never reaches the glow, which is exactly Q121's problem",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q121"
+      ],
+      "line": 1555
+    },
+    "O18b": {
+      "chart": "O",
+      "label": "⚠ Q121=b — the FOCUS HIGHLIGHT is being changed too, so that glow and highlight read distinctly on the same card. Not a glow-side fix alone",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q121"
+      ],
+      "line": 1557
+    },
+    "O19": {
+      "chart": "O",
+      "label": "blend mode — Q218: (c) additive OUTSIDE the card, tinted OVER the art, PROVIDED that produces no visible seam between the two. If it does, tint everywhere. Never blow out to white",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "Q218"
+      ],
+      "line": 1559
+    },
+    "O20": {
+      "chart": "O",
+      "label": "light adds. Bright, correct for a lamp, and harmless out here because there is no art under it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1562
+    },
+    "O21": {
+      "chart": "O",
+      "label": "light tints. Keeps the card's contrast and cannot blow out — which is what keeps the rank glyph readable. ⚠ If the join between O20 and O21 shows a seam, tint BOTH",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1564
+    },
+    "P1": {
+      "chart": "P",
+      "label": "the Dangerous Light pipeline, as written",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1618
+    },
+    "P2": {
+      "chart": "P",
+      "label": "does this stage read the RENDERED SCENE?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1618
+    },
+    "P3": {
+      "chart": "P",
+      "label": "MULTI-LAYER GLOW — layers of radius and gain, summed. Doable inside the glow quad today: chart O, O10",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1619
+    },
+    "P4": {
+      "chart": "P",
+      "label": "INVERSE-SQUARE FALLOFF — a function of one distance. Doable today: chart O, O7",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1621
+    },
+    "P5": {
+      "chart": "P",
+      "label": "RADIAL COLOUR SHIFT core to mid to edge. Doable today, and it IS a PaletteRamp: chart O, O11",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1623
+    },
+    "P6": {
+      "chart": "P",
+      "label": "GRAIN — a hash per pixel. Doable in the quad, but only over the quad, not over the frame",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1625
+    },
+    "P7": {
+      "chart": "P",
+      "label": "HALATION — blur the BRIGHT parts of the scene, tint red, add back",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1627
+    },
+    "P8": {
+      "chart": "P",
+      "label": "BLOOM — threshold the scene, wide blur, tint cyan, add back",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1628
+    },
+    "P9": {
+      "chart": "P",
+      "label": "FILM LUT — a colour transform of every pixel in the frame",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1629
+    },
+    "P10": {
+      "chart": "P",
+      "label": "CHROMATIC ABERRATION — resample the scene per channel",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1630
+    },
+    "P11": {
+      "chart": "P",
+      "label": "GATE WEAVE — jitter the whole frame's sample point",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1631
+    },
+    "P12": {
+      "chart": "P",
+      "label": "DUST — composite over the frame",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1632
+    },
+    "P13": {
+      "chart": "P",
+      "label": "HDR TONEMAP — needs a float target to tonemap FROM",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1633
+    },
+    "P14": {
+      "chart": "P",
+      "label": "ALL of these need a screen read. The project has ZERO today — §1.6 fact 1",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1634
+    },
+    "P15": {
+      "chart": "P",
+      "label": "so they are one new subsystem: a full-screen pass over the whole game",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1641
+    },
+    "P16": {
+      "chart": "P",
+      "label": "and it changes the look of EVERYTHING, not of the spotlight — QR10=a, IN SCOPE",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [
+        "QR10"
+      ],
+      "line": 1642
+    },
+    "P17": {
+      "chart": "P",
+      "label": "CHOSEN. A game-wide art-direction change, shipped as a SECOND deliverable AFTER Spotlight (Q239=a). Q230=c: on only while a dim is up. Q231=c: a LUT built from palette entries so the frame stays on-palette. Q232=b: bloom only, no halation. Q233=a: grain, dust and weave quantized to the game pixel. Q234=b: NO chromatic aberration. Q235=a: a real HDR viewport",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q239",
+        "Q230",
+        "Q231",
+        "Q232",
+        "Q233",
+        "Q234",
+        "Q235"
+      ],
+      "line": 1643
+    },
+    "P18": {
+      "chart": "P",
+      "label": "REJECTED — Spotlight would ship only the four stages that need no screen read",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1649
+    },
+    "P19": {
+      "chart": "P",
+      "label": "REJECTED — the palette and the pixel grid would stay the only colour authorities",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1651
     }
   },
   "edges": [
@@ -1760,7 +2812,7 @@
       "to": "A2",
       "label": "",
       "chart": "A",
-      "line": 248
+      "line": 632
     },
     {
       "key": "A2->A99",
@@ -1768,7 +2820,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 249
+      "line": 633
     },
     {
       "key": "A2->A3",
@@ -1776,7 +2828,7 @@
       "to": "A3",
       "label": "no",
       "chart": "A",
-      "line": 250
+      "line": 634
     },
     {
       "key": "A3->A99",
@@ -1784,7 +2836,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 251
+      "line": 635
     },
     {
       "key": "A3->A4",
@@ -1792,7 +2844,7 @@
       "to": "A4",
       "label": "no",
       "chart": "A",
-      "line": 252
+      "line": 636
     },
     {
       "key": "A4->A98",
@@ -1800,7 +2852,7 @@
       "to": "A98",
       "label": "no",
       "chart": "A",
-      "line": 253
+      "line": 637
     },
     {
       "key": "A4->A5",
@@ -1808,7 +2860,7 @@
       "to": "A5",
       "label": "yes",
       "chart": "A",
-      "line": 254
+      "line": 638
     },
     {
       "key": "A5->A98",
@@ -1816,7 +2868,7 @@
       "to": "A98",
       "label": "no",
       "chart": "A",
-      "line": 255
+      "line": 639
     },
     {
       "key": "A5->A6",
@@ -1824,7 +2876,7 @@
       "to": "A6",
       "label": "yes",
       "chart": "A",
-      "line": 256
+      "line": 640
     },
     {
       "key": "A6->A99",
@@ -1832,7 +2884,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 257
+      "line": 641
     },
     {
       "key": "A6->A7",
@@ -1840,7 +2892,7 @@
       "to": "A7",
       "label": "no",
       "chart": "A",
-      "line": 258
+      "line": 642
     },
     {
       "key": "A7->A99",
@@ -1848,7 +2900,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 259
+      "line": 643
     },
     {
       "key": "A7->A8",
@@ -1856,7 +2908,7 @@
       "to": "A8",
       "label": "no",
       "chart": "A",
-      "line": 260
+      "line": 644
     },
     {
       "key": "A8->A99#1",
@@ -1864,7 +2916,7 @@
       "to": "A99",
       "label": "no cards above",
       "chart": "A",
-      "line": 261
+      "line": 645
     },
     {
       "key": "A8->A99#2",
@@ -1872,7 +2924,7 @@
       "to": "A99",
       "label": "all above are non-blocking",
       "chart": "A",
-      "line": 262
+      "line": 646
     },
     {
       "key": "A8->A98",
@@ -1880,7 +2932,7 @@
       "to": "A98",
       "label": "a blocker is above",
       "chart": "A",
-      "line": 263
+      "line": 647
     },
     {
       "key": "B1->B2",
@@ -1888,7 +2940,7 @@
       "to": "B2",
       "label": "",
       "chart": "B",
-      "line": 282
+      "line": 666
     },
     {
       "key": "B2->B3",
@@ -1896,7 +2948,7 @@
       "to": "B3",
       "label": "",
       "chart": "B",
-      "line": 284
+      "line": 668
     },
     {
       "key": "B3->B4",
@@ -1904,7 +2956,7 @@
       "to": "B4",
       "label": "",
       "chart": "B",
-      "line": 285
+      "line": 669
     },
     {
       "key": "B4->B3",
@@ -1912,7 +2964,7 @@
       "to": "B3",
       "label": "no",
       "chart": "B",
-      "line": 286
+      "line": 670
     },
     {
       "key": "B4->B5",
@@ -1920,7 +2972,7 @@
       "to": "B5",
       "label": "yes",
       "chart": "B",
-      "line": 287
+      "line": 671
     },
     {
       "key": "B5->B6",
@@ -1928,7 +2980,7 @@
       "to": "B6",
       "label": "false to true",
       "chart": "B",
-      "line": 288
+      "line": 672
     },
     {
       "key": "B6->B7",
@@ -1936,7 +2988,7 @@
       "to": "B7",
       "label": "",
       "chart": "B",
-      "line": 289
+      "line": 673
     },
     {
       "key": "B5->B8",
@@ -1944,7 +2996,7 @@
       "to": "B8",
       "label": "true to false",
       "chart": "B",
-      "line": 290
+      "line": 674
     },
     {
       "key": "B8->B9",
@@ -1952,7 +3004,7 @@
       "to": "B9",
       "label": "",
       "chart": "B",
-      "line": 291
+      "line": 675
     },
     {
       "key": "B5->B3",
@@ -1960,7 +3012,7 @@
       "to": "B3",
       "label": "unchanged",
       "chart": "B",
-      "line": 292
+      "line": 676
     },
     {
       "key": "B7->B10",
@@ -1968,7 +3020,7 @@
       "to": "B10",
       "label": "",
       "chart": "B",
-      "line": 293
+      "line": 677
     },
     {
       "key": "B9->B11",
@@ -1976,7 +3028,7 @@
       "to": "B11",
       "label": "",
       "chart": "B",
-      "line": 294
+      "line": 678
     },
     {
       "key": "B10->B12",
@@ -1984,7 +3036,7 @@
       "to": "B12",
       "label": "",
       "chart": "B",
-      "line": 295
+      "line": 679
     },
     {
       "key": "B11->B13",
@@ -1992,7 +3044,7 @@
       "to": "B13",
       "label": "",
       "chart": "B",
-      "line": 296
+      "line": 682
     },
     {
       "key": "B3->B14",
@@ -2000,7 +3052,7 @@
       "to": "B14",
       "label": "",
       "chart": "B",
-      "line": 297
+      "line": 684
     },
     {
       "key": "C1->C2",
@@ -2008,7 +3060,7 @@
       "to": "C2",
       "label": "",
       "chart": "C",
-      "line": 315
+      "line": 703
     },
     {
       "key": "C2->C3",
@@ -2016,7 +3068,7 @@
       "to": "C3",
       "label": "",
       "chart": "C",
-      "line": 316
+      "line": 704
     },
     {
       "key": "C3->C4",
@@ -2024,7 +3076,7 @@
       "to": "C4",
       "label": "",
       "chart": "C",
-      "line": 317
+      "line": 705
     },
     {
       "key": "C4->C5",
@@ -2032,7 +3084,7 @@
       "to": "C5",
       "label": "",
       "chart": "C",
-      "line": 318
+      "line": 706
     },
     {
       "key": "C5->C6",
@@ -2040,7 +3092,7 @@
       "to": "C6",
       "label": "",
       "chart": "C",
-      "line": 319
+      "line": 709
     },
     {
       "key": "C6->C7",
@@ -2048,7 +3100,7 @@
       "to": "C7",
       "label": "",
       "chart": "C",
-      "line": 320
+      "line": 710
     },
     {
       "key": "C7->C8",
@@ -2056,7 +3108,7 @@
       "to": "C8",
       "label": "",
       "chart": "C",
-      "line": 321
+      "line": 711
     },
     {
       "key": "C8->C11",
@@ -2064,7 +3116,7 @@
       "to": "C11",
       "label": "no",
       "chart": "C",
-      "line": 322
+      "line": 712
     },
     {
       "key": "C8->C9",
@@ -2072,7 +3124,7 @@
       "to": "C9",
       "label": "yes",
       "chart": "C",
-      "line": 323
+      "line": 713
     },
     {
       "key": "C9->C10",
@@ -2080,7 +3132,7 @@
       "to": "C10",
       "label": "",
       "chart": "C",
-      "line": 326
+      "line": 716
     },
     {
       "key": "C10->C8",
@@ -2088,7 +3140,7 @@
       "to": "C8",
       "label": "",
       "chart": "C",
-      "line": 327
+      "line": 717
     },
     {
       "key": "C11->C12",
@@ -2096,7 +3148,7 @@
       "to": "C12",
       "label": "",
       "chart": "C",
-      "line": 328
+      "line": 718
     },
     {
       "key": "C12->C13",
@@ -2104,7 +3156,7 @@
       "to": "C13",
       "label": "yes",
       "chart": "C",
-      "line": 329
+      "line": 719
     },
     {
       "key": "C13->C14",
@@ -2112,7 +3164,7 @@
       "to": "C14",
       "label": "",
       "chart": "C",
-      "line": 332
+      "line": 722
     },
     {
       "key": "C14->C12",
@@ -2120,7 +3172,7 @@
       "to": "C12",
       "label": "",
       "chart": "C",
-      "line": 333
+      "line": 723
     },
     {
       "key": "C12->C15",
@@ -2128,7 +3180,7 @@
       "to": "C15",
       "label": "no",
       "chart": "C",
-      "line": 334
+      "line": 724
     },
     {
       "key": "C15->C16",
@@ -2136,7 +3188,7 @@
       "to": "C16",
       "label": "",
       "chart": "C",
-      "line": 335
+      "line": 726
     },
     {
       "key": "C16->C17",
@@ -2144,7 +3196,7 @@
       "to": "C17",
       "label": "",
       "chart": "C",
-      "line": 336
+      "line": 728
     },
     {
       "key": "C17->C18",
@@ -2152,7 +3204,7 @@
       "to": "C18",
       "label": "",
       "chart": "C",
-      "line": 337
+      "line": 729
     },
     {
       "key": "C18->C19",
@@ -2160,7 +3212,7 @@
       "to": "C19",
       "label": "",
       "chart": "C",
-      "line": 338
+      "line": 730
     },
     {
       "key": "C19->C20",
@@ -2168,7 +3220,7 @@
       "to": "C20",
       "label": "yes",
       "chart": "C",
-      "line": 339
+      "line": 731
     },
     {
       "key": "C19->C21",
@@ -2176,7 +3228,167 @@
       "to": "C21",
       "label": "no",
       "chart": "C",
-      "line": 340
+      "line": 732
+    },
+    {
+      "key": "S1->S2",
+      "from": "S1",
+      "to": "S2",
+      "label": "",
+      "chart": "S",
+      "line": 770
+    },
+    {
+      "key": "S2->S3",
+      "from": "S2",
+      "to": "S3",
+      "label": "",
+      "chart": "S",
+      "line": 772
+    },
+    {
+      "key": "S3->S4",
+      "from": "S3",
+      "to": "S4",
+      "label": "",
+      "chart": "S",
+      "line": 773
+    },
+    {
+      "key": "S4->S5",
+      "from": "S4",
+      "to": "S5",
+      "label": "",
+      "chart": "S",
+      "line": 774
+    },
+    {
+      "key": "S5->S6",
+      "from": "S5",
+      "to": "S6",
+      "label": "",
+      "chart": "S",
+      "line": 775
+    },
+    {
+      "key": "S6->S7",
+      "from": "S6",
+      "to": "S7",
+      "label": "",
+      "chart": "S",
+      "line": 776
+    },
+    {
+      "key": "S7->S8",
+      "from": "S7",
+      "to": "S8",
+      "label": "the jump lands",
+      "chart": "S",
+      "line": 777
+    },
+    {
+      "key": "S7->S9",
+      "from": "S7",
+      "to": "S9",
+      "label": "the score popup shows",
+      "chart": "S",
+      "line": 778
+    },
+    {
+      "key": "S7->S10",
+      "from": "S7",
+      "to": "S10",
+      "label": "the line's props finish",
+      "chart": "S",
+      "line": 779
+    },
+    {
+      "key": "S8->S11",
+      "from": "S8",
+      "to": "S11",
+      "label": "",
+      "chart": "S",
+      "line": 780
+    },
+    {
+      "key": "S9->S11",
+      "from": "S9",
+      "to": "S11",
+      "label": "",
+      "chart": "S",
+      "line": 781
+    },
+    {
+      "key": "S10->S11",
+      "from": "S10",
+      "to": "S11",
+      "label": "",
+      "chart": "S",
+      "line": 782
+    },
+    {
+      "key": "S11->S12",
+      "from": "S11",
+      "to": "S12",
+      "label": "",
+      "chart": "S",
+      "line": 783
+    },
+    {
+      "key": "S12->S13",
+      "from": "S12",
+      "to": "S13",
+      "label": "lights too",
+      "chart": "S",
+      "line": 784
+    },
+    {
+      "key": "S12->S14",
+      "from": "S12",
+      "to": "S14",
+      "label": "lights stay",
+      "chart": "S",
+      "line": 786
+    },
+    {
+      "key": "S13->S15",
+      "from": "S13",
+      "to": "S15",
+      "label": "",
+      "chart": "S",
+      "line": 789
+    },
+    {
+      "key": "S14->S15",
+      "from": "S14",
+      "to": "S15",
+      "label": "",
+      "chart": "S",
+      "line": 791
+    },
+    {
+      "key": "S15->S16",
+      "from": "S15",
+      "to": "S16",
+      "label": "",
+      "chart": "S",
+      "line": 792
+    },
+    {
+      "key": "S16->S17",
+      "from": "S16",
+      "to": "S17",
+      "label": "no",
+      "chart": "S",
+      "line": 793
+    },
+    {
+      "key": "S16->S18",
+      "from": "S16",
+      "to": "S18",
+      "label": "yes",
+      "chart": "S",
+      "line": 794
     },
     {
       "key": "D1->D2",
@@ -2184,7 +3396,7 @@
       "to": "D2",
       "label": "",
       "chart": "D",
-      "line": 364
+      "line": 823
     },
     {
       "key": "D2->D99",
@@ -2192,7 +3404,7 @@
       "to": "D99",
       "label": "yes",
       "chart": "D",
-      "line": 365
+      "line": 824
     },
     {
       "key": "D2->D3",
@@ -2200,7 +3412,7 @@
       "to": "D3",
       "label": "no",
       "chart": "D",
-      "line": 366
+      "line": 825
     },
     {
       "key": "D3->D4",
@@ -2208,7 +3420,7 @@
       "to": "D4",
       "label": "",
       "chart": "D",
-      "line": 367
+      "line": 826
     },
     {
       "key": "D4->D5",
@@ -2216,7 +3428,7 @@
       "to": "D5",
       "label": "",
       "chart": "D",
-      "line": 369
+      "line": 828
     },
     {
       "key": "D5->D8",
@@ -2224,7 +3436,7 @@
       "to": "D8",
       "label": "skip",
       "chart": "D",
-      "line": 371
+      "line": 831
     },
     {
       "key": "D5->D6",
@@ -2232,7 +3444,7 @@
       "to": "D6",
       "label": "expand",
       "chart": "D",
-      "line": 372
+      "line": 832
     },
     {
       "key": "D6->D7",
@@ -2240,7 +3452,7 @@
       "to": "D7",
       "label": "",
       "chart": "D",
-      "line": 374
+      "line": 834
     },
     {
       "key": "D7->D8",
@@ -2248,7 +3460,7 @@
       "to": "D8",
       "label": "",
       "chart": "D",
-      "line": 376
+      "line": 837
     },
     {
       "key": "D8->D9",
@@ -2256,7 +3468,7 @@
       "to": "D9",
       "label": "",
       "chart": "D",
-      "line": 378
+      "line": 839
     },
     {
       "key": "D9->D10",
@@ -2264,7 +3476,7 @@
       "to": "D10",
       "label": "",
       "chart": "D",
-      "line": 379
+      "line": 840
     },
     {
       "key": "D10->D11",
@@ -2272,7 +3484,7 @@
       "to": "D11",
       "label": "",
       "chart": "D",
-      "line": 381
+      "line": 842
     },
     {
       "key": "D11->D12",
@@ -2280,23 +3492,39 @@
       "to": "D12",
       "label": "",
       "chart": "D",
-      "line": 382
+      "line": 843
     },
     {
-      "key": "D12->D13",
+      "key": "D12->D12b",
       "from": "D12",
+      "to": "D12b",
+      "label": "",
+      "chart": "D",
+      "line": 845
+    },
+    {
+      "key": "D12b->D13",
+      "from": "D12b",
       "to": "D13",
       "label": "",
       "chart": "D",
-      "line": 384
+      "line": 849
     },
     {
-      "key": "D13->D14",
+      "key": "D13->D13b",
       "from": "D13",
+      "to": "D13b",
+      "label": "",
+      "chart": "D",
+      "line": 850
+    },
+    {
+      "key": "D13b->D14",
+      "from": "D13b",
       "to": "D14",
       "label": "",
       "chart": "D",
-      "line": 385
+      "line": 854
     },
     {
       "key": "D14->D15",
@@ -2304,7 +3532,7 @@
       "to": "D15",
       "label": "",
       "chart": "D",
-      "line": 386
+      "line": 857
     },
     {
       "key": "D15->D16",
@@ -2312,7 +3540,7 @@
       "to": "D16",
       "label": "",
       "chart": "D",
-      "line": 387
+      "line": 858
     },
     {
       "key": "D16->D17",
@@ -2320,7 +3548,7 @@
       "to": "D17",
       "label": "",
       "chart": "D",
-      "line": 388
+      "line": 859
     },
     {
       "key": "D17->D18",
@@ -2328,7 +3556,7 @@
       "to": "D18",
       "label": "",
       "chart": "D",
-      "line": 391
+      "line": 862
     },
     {
       "key": "D18->D19",
@@ -2336,7 +3564,7 @@
       "to": "D19",
       "label": "",
       "chart": "D",
-      "line": 392
+      "line": 863
     },
     {
       "key": "D19->D20",
@@ -2344,7 +3572,7 @@
       "to": "D20",
       "label": "yes",
       "chart": "D",
-      "line": 393
+      "line": 864
     },
     {
       "key": "D20->D21",
@@ -2352,7 +3580,7 @@
       "to": "D21",
       "label": "",
       "chart": "D",
-      "line": 395
+      "line": 868
     },
     {
       "key": "D19->D22",
@@ -2360,7 +3588,7 @@
       "to": "D22",
       "label": "no",
       "chart": "D",
-      "line": 397
+      "line": 870
     },
     {
       "key": "D22->D23",
@@ -2368,7 +3596,7 @@
       "to": "D23",
       "label": "",
       "chart": "D",
-      "line": 398
+      "line": 871
     },
     {
       "key": "D23->D24",
@@ -2376,7 +3604,7 @@
       "to": "D24",
       "label": "",
       "chart": "D",
-      "line": 399
+      "line": 872
     },
     {
       "key": "D24->D25",
@@ -2384,7 +3612,7 @@
       "to": "D25",
       "label": "",
       "chart": "D",
-      "line": 400
+      "line": 876
     },
     {
       "key": "E1->E2",
@@ -2392,7 +3620,7 @@
       "to": "E2",
       "label": "",
       "chart": "E",
-      "line": 431
+      "line": 907
     },
     {
       "key": "E2->E3",
@@ -2400,7 +3628,7 @@
       "to": "E3",
       "label": "",
       "chart": "E",
-      "line": 432
+      "line": 908
     },
     {
       "key": "E3->E4",
@@ -2408,7 +3636,7 @@
       "to": "E4",
       "label": "",
       "chart": "E",
-      "line": 433
+      "line": 909
     },
     {
       "key": "E4->E5",
@@ -2416,7 +3644,7 @@
       "to": "E5",
       "label": "",
       "chart": "E",
-      "line": 434
+      "line": 910
     },
     {
       "key": "E5->E6",
@@ -2424,7 +3652,7 @@
       "to": "E6",
       "label": "equal",
       "chart": "E",
-      "line": 435
+      "line": 911
     },
     {
       "key": "E5->E7",
@@ -2432,7 +3660,7 @@
       "to": "E7",
       "label": "more lights than targets",
       "chart": "E",
-      "line": 436
+      "line": 912
     },
     {
       "key": "E5->E8",
@@ -2440,7 +3668,7 @@
       "to": "E8",
       "label": "more targets than lights",
       "chart": "E",
-      "line": 438
+      "line": 914
     },
     {
       "key": "E6->E9",
@@ -2448,7 +3676,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 440
+      "line": 916
     },
     {
       "key": "E7->E9",
@@ -2456,7 +3684,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 442
+      "line": 918
     },
     {
       "key": "E8->E9",
@@ -2464,7 +3692,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 443
+      "line": 919
     },
     {
       "key": "E9->E10",
@@ -2472,7 +3700,7 @@
       "to": "E10",
       "label": "",
       "chart": "E",
-      "line": 444
+      "line": 920
     },
     {
       "key": "E10->E11",
@@ -2480,7 +3708,7 @@
       "to": "E11",
       "label": "",
       "chart": "E",
-      "line": 445
+      "line": 921
     },
     {
       "key": "F1->F2",
@@ -2488,7 +3716,7 @@
       "to": "F2",
       "label": "",
       "chart": "F",
-      "line": 452
+      "line": 928
     },
     {
       "key": "F2->F3",
@@ -2496,7 +3724,7 @@
       "to": "F3",
       "label": "option A (RECOMMENDED)",
       "chart": "F",
-      "line": 453
+      "line": 929
     },
     {
       "key": "F2->F4",
@@ -2504,7 +3732,7 @@
       "to": "F4",
       "label": "option B",
       "chart": "F",
-      "line": 455
+      "line": 931
     },
     {
       "key": "F2->F5",
@@ -2512,7 +3740,7 @@
       "to": "F5",
       "label": "option C",
       "chart": "F",
-      "line": 456
+      "line": 932
     },
     {
       "key": "G1->G2",
@@ -2520,7 +3748,7 @@
       "to": "G2",
       "label": "",
       "chart": "G",
-      "line": 483
+      "line": 959
     },
     {
       "key": "G2->G3",
@@ -2528,7 +3756,7 @@
       "to": "G3",
       "label": "no",
       "chart": "G",
-      "line": 484
+      "line": 960
     },
     {
       "key": "G2->G4",
@@ -2536,7 +3764,7 @@
       "to": "G4",
       "label": "yes",
       "chart": "G",
-      "line": 485
+      "line": 961
     },
     {
       "key": "G4->G5",
@@ -2544,7 +3772,7 @@
       "to": "G5",
       "label": "no",
       "chart": "G",
-      "line": 486
+      "line": 962
     },
     {
       "key": "G4->G6",
@@ -2552,7 +3780,7 @@
       "to": "G6",
       "label": "yes",
       "chart": "G",
-      "line": 487
+      "line": 963
     },
     {
       "key": "G6->G7",
@@ -2560,7 +3788,7 @@
       "to": "G7",
       "label": "",
       "chart": "G",
-      "line": 489
+      "line": 965
     },
     {
       "key": "G7->G8",
@@ -2568,7 +3796,7 @@
       "to": "G8",
       "label": "yes",
       "chart": "G",
-      "line": 490
+      "line": 966
     },
     {
       "key": "G7->G9",
@@ -2576,7 +3804,7 @@
       "to": "G9",
       "label": "no",
       "chart": "G",
-      "line": 492
+      "line": 968
     },
     {
       "key": "G8->G10",
@@ -2584,7 +3812,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 493
+      "line": 969
     },
     {
       "key": "G9->G10",
@@ -2592,7 +3820,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 494
+      "line": 970
     },
     {
       "key": "G5->G10",
@@ -2600,7 +3828,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 495
+      "line": 971
     },
     {
       "key": "G10->G11",
@@ -2608,7 +3836,7 @@
       "to": "G11",
       "label": "no",
       "chart": "G",
-      "line": 496
+      "line": 972
     },
     {
       "key": "G10->G12",
@@ -2616,7 +3844,7 @@
       "to": "G12",
       "label": "yes",
       "chart": "G",
-      "line": 497
+      "line": 973
     },
     {
       "key": "G12->G13",
@@ -2624,7 +3852,7 @@
       "to": "G13",
       "label": "",
       "chart": "G",
-      "line": 499
+      "line": 975
     },
     {
       "key": "G12->G14",
@@ -2632,7 +3860,7 @@
       "to": "G14",
       "label": "",
       "chart": "G",
-      "line": 501
+      "line": 977
     },
     {
       "key": "H1->H2",
@@ -2640,7 +3868,7 @@
       "to": "H2",
       "label": "",
       "chart": "H",
-      "line": 527
+      "line": 1004
     },
     {
       "key": "H2->H3",
@@ -2648,7 +3876,7 @@
       "to": "H3",
       "label": "",
       "chart": "H",
-      "line": 530
+      "line": 1007
     },
     {
       "key": "H3->H4",
@@ -2656,7 +3884,7 @@
       "to": "H4",
       "label": "",
       "chart": "H",
-      "line": 531
+      "line": 1008
     },
     {
       "key": "H4->H5",
@@ -2664,7 +3892,7 @@
       "to": "H5",
       "label": "",
       "chart": "H",
-      "line": 533
+      "line": 1010
     },
     {
       "key": "H5->H6",
@@ -2672,7 +3900,7 @@
       "to": "H6",
       "label": "",
       "chart": "H",
-      "line": 535
+      "line": 1012
     },
     {
       "key": "H6->H7",
@@ -2680,7 +3908,7 @@
       "to": "H7",
       "label": "",
       "chart": "H",
-      "line": 537
+      "line": 1014
     },
     {
       "key": "H7->H8",
@@ -2688,7 +3916,7 @@
       "to": "H8",
       "label": "",
       "chart": "H",
-      "line": 538
+      "line": 1015
     },
     {
       "key": "H8->H9",
@@ -2696,7 +3924,7 @@
       "to": "H9",
       "label": "",
       "chart": "H",
-      "line": 539
+      "line": 1016
     },
     {
       "key": "I1->I2",
@@ -2704,7 +3932,7 @@
       "to": "I2",
       "label": "",
       "chart": "I",
-      "line": 564
+      "line": 1057
     },
     {
       "key": "I2->I3",
@@ -2712,7 +3940,7 @@
       "to": "I3",
       "label": "",
       "chart": "I",
-      "line": 565
+      "line": 1059
     },
     {
       "key": "I3->I4",
@@ -2720,7 +3948,7 @@
       "to": "I4",
       "label": "",
       "chart": "I",
-      "line": 566
+      "line": 1062
     },
     {
       "key": "I4->I5",
@@ -2728,7 +3956,7 @@
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 567
+      "line": 1063
     },
     {
       "key": "I5->I6",
@@ -2736,7 +3964,7 @@
       "to": "I6",
       "label": "",
       "chart": "I",
-      "line": 568
+      "line": 1064
     },
     {
       "key": "I6->I7",
@@ -2744,7 +3972,7 @@
       "to": "I7",
       "label": "no",
       "chart": "I",
-      "line": 569
+      "line": 1065
     },
     {
       "key": "I6->I8",
@@ -2752,7 +3980,7 @@
       "to": "I8",
       "label": "yes",
       "chart": "I",
-      "line": 570
+      "line": 1067
     },
     {
       "key": "I8->I9",
@@ -2760,7 +3988,7 @@
       "to": "I9",
       "label": "",
       "chart": "I",
-      "line": 572
+      "line": 1069
     },
     {
       "key": "I9->I7",
@@ -2768,7 +3996,7 @@
       "to": "I7",
       "label": "",
       "chart": "I",
-      "line": 574
+      "line": 1071
     },
     {
       "key": "I7->I10",
@@ -2776,15 +4004,39 @@
       "to": "I10",
       "label": "",
       "chart": "I",
-      "line": 575
+      "line": 1072
     },
     {
-      "key": "I10->I5",
+      "key": "I10->I11",
       "from": "I10",
+      "to": "I11",
+      "label": "no",
+      "chart": "I",
+      "line": 1073
+    },
+    {
+      "key": "I10->I12",
+      "from": "I10",
+      "to": "I12",
+      "label": "yes",
+      "chart": "I",
+      "line": 1074
+    },
+    {
+      "key": "I11->I5",
+      "from": "I11",
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 576
+      "line": 1077
+    },
+    {
+      "key": "I12->I5",
+      "from": "I12",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 1078
     },
     {
       "key": "J1->J2",
@@ -2792,7 +4044,7 @@
       "to": "J2",
       "label": "",
       "chart": "J",
-      "line": 594
+      "line": 1099
     },
     {
       "key": "J1->J3",
@@ -2800,7 +4052,7 @@
       "to": "J3",
       "label": "",
       "chart": "J",
-      "line": 599
+      "line": 1104
     },
     {
       "key": "J1->J4",
@@ -2808,7 +4060,7 @@
       "to": "J4",
       "label": "",
       "chart": "J",
-      "line": 605
+      "line": 1111
     },
     {
       "key": "K1->K2",
@@ -2816,7 +4068,7 @@
       "to": "K2",
       "label": "",
       "chart": "K",
-      "line": 626
+      "line": 1132
     },
     {
       "key": "K2->K3",
@@ -2824,7 +4076,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 629
+      "line": 1135
     },
     {
       "key": "K3->K4",
@@ -2832,7 +4084,7 @@
       "to": "K4",
       "label": "",
       "chart": "K",
-      "line": 631
+      "line": 1137
     },
     {
       "key": "K4->K5",
@@ -2840,7 +4092,7 @@
       "to": "K5",
       "label": "yes",
       "chart": "K",
-      "line": 632
+      "line": 1138
     },
     {
       "key": "K4->K6",
@@ -2848,7 +4100,7 @@
       "to": "K6",
       "label": "no",
       "chart": "K",
-      "line": 633
+      "line": 1139
     },
     {
       "key": "K6->K7",
@@ -2856,7 +4108,7 @@
       "to": "K7",
       "label": "",
       "chart": "K",
-      "line": 634
+      "line": 1140
     },
     {
       "key": "K7->K8",
@@ -2864,7 +4116,7 @@
       "to": "K8",
       "label": "every column (RECOMMENDED)",
       "chart": "K",
-      "line": 636
+      "line": 1142
     },
     {
       "key": "K7->K9",
@@ -2872,7 +4124,7 @@
       "to": "K9",
       "label": "only occupied columns",
       "chart": "K",
-      "line": 638
+      "line": 1144
     },
     {
       "key": "K8->K10",
@@ -2880,7 +4132,39 @@
       "to": "K10",
       "label": "",
       "chart": "K",
-      "line": 640
+      "line": 1146
+    },
+    {
+      "key": "K10->K10b",
+      "from": "K10",
+      "to": "K10b",
+      "label": "",
+      "chart": "K",
+      "line": 1148
+    },
+    {
+      "key": "K10b->K10c",
+      "from": "K10b",
+      "to": "K10c",
+      "label": "",
+      "chart": "K",
+      "line": 1152
+    },
+    {
+      "key": "K10c->K10d",
+      "from": "K10c",
+      "to": "K10d",
+      "label": "",
+      "chart": "K",
+      "line": 1155
+    },
+    {
+      "key": "K10d->K11",
+      "from": "K10d",
+      "to": "K11",
+      "label": "",
+      "chart": "K",
+      "line": 1158
     },
     {
       "key": "K9->K10",
@@ -2888,7 +4172,7 @@
       "to": "K10",
       "label": "",
       "chart": "K",
-      "line": 642
+      "line": 1159
     },
     {
       "key": "K10->K11",
@@ -2896,7 +4180,7 @@
       "to": "K11",
       "label": "",
       "chart": "K",
-      "line": 643
+      "line": 1160
     },
     {
       "key": "K11->K12",
@@ -2904,7 +4188,7 @@
       "to": "K12",
       "label": "",
       "chart": "K",
-      "line": 645
+      "line": 1162
     },
     {
       "key": "K12->K13",
@@ -2912,7 +4196,7 @@
       "to": "K13",
       "label": "",
       "chart": "K",
-      "line": 647
+      "line": 1164
     },
     {
       "key": "K13->K14",
@@ -2920,7 +4204,7 @@
       "to": "K14",
       "label": "",
       "chart": "K",
-      "line": 649
+      "line": 1166
     },
     {
       "key": "L1->L2",
@@ -2928,7 +4212,7 @@
       "to": "L2",
       "label": "",
       "chart": "L",
-      "line": 669
+      "line": 1186
     },
     {
       "key": "L2->L3",
@@ -2936,7 +4220,7 @@
       "to": "L3",
       "label": "Undo pressed mid-act",
       "chart": "L",
-      "line": 670
+      "line": 1187
     },
     {
       "key": "L3->L4",
@@ -2944,7 +4228,7 @@
       "to": "L4",
       "label": "",
       "chart": "L",
-      "line": 673
+      "line": 1190
     },
     {
       "key": "L4->L5",
@@ -2952,7 +4236,7 @@
       "to": "L5",
       "label": "",
       "chart": "L",
-      "line": 674
+      "line": 1191
     },
     {
       "key": "L5->L6",
@@ -2960,7 +4244,7 @@
       "to": "L6",
       "label": "",
       "chart": "L",
-      "line": 675
+      "line": 1192
     },
     {
       "key": "L2->L7",
@@ -2968,7 +4252,7 @@
       "to": "L7",
       "label": "app quit mid-act, then resume",
       "chart": "L",
-      "line": 677
+      "line": 1194
     },
     {
       "key": "L7->L8",
@@ -2976,7 +4260,7 @@
       "to": "L8",
       "label": "",
       "chart": "L",
-      "line": 680
+      "line": 1197
     },
     {
       "key": "L2->L9",
@@ -2984,7 +4268,7 @@
       "to": "L9",
       "label": "board mutated mid-line by an on_active effect",
       "chart": "L",
-      "line": 682
+      "line": 1199
     },
     {
       "key": "L9->L10",
@@ -2992,7 +4276,7 @@
       "to": "L10",
       "label": "",
       "chart": "L",
-      "line": 684
+      "line": 1201
     },
     {
       "key": "L10->L11",
@@ -3000,7 +4284,7 @@
       "to": "L11",
       "label": "",
       "chart": "L",
-      "line": 686
+      "line": 1203
     },
     {
       "key": "L2->L12",
@@ -3008,7 +4292,7 @@
       "to": "L12",
       "label": "settings changed mid-act",
       "chart": "L",
-      "line": 687
+      "line": 1204
     },
     {
       "key": "L2->L13",
@@ -3016,7 +4300,7 @@
       "to": "L13",
       "label": "the show ends (3rd submit)",
       "chart": "L",
-      "line": 690
+      "line": 1207
     },
     {
       "key": "L13->L14",
@@ -3024,7 +4308,135 @@
       "to": "L14",
       "label": "",
       "chart": "L",
-      "line": 692
+      "line": 1209
+    },
+    {
+      "key": "R1->R2",
+      "from": "R1",
+      "to": "R2",
+      "label": "",
+      "chart": "R",
+      "line": 1248
+    },
+    {
+      "key": "R2->R3",
+      "from": "R2",
+      "to": "R3",
+      "label": "",
+      "chart": "R",
+      "line": 1251
+    },
+    {
+      "key": "R3->R4",
+      "from": "R3",
+      "to": "R4",
+      "label": "yes",
+      "chart": "R",
+      "line": 1252
+    },
+    {
+      "key": "R3->R5",
+      "from": "R3",
+      "to": "R5",
+      "label": "no",
+      "chart": "R",
+      "line": 1256
+    },
+    {
+      "key": "R5->R6",
+      "from": "R5",
+      "to": "R6",
+      "label": "",
+      "chart": "R",
+      "line": 1258
+    },
+    {
+      "key": "R6->R7",
+      "from": "R6",
+      "to": "R7",
+      "label": "",
+      "chart": "R",
+      "line": 1261
+    },
+    {
+      "key": "R7->R8",
+      "from": "R7",
+      "to": "R8",
+      "label": "",
+      "chart": "R",
+      "line": 1265
+    },
+    {
+      "key": "R8->R9",
+      "from": "R8",
+      "to": "R9",
+      "label": "",
+      "chart": "R",
+      "line": 1266
+    },
+    {
+      "key": "R9->R10",
+      "from": "R9",
+      "to": "R10",
+      "label": "",
+      "chart": "R",
+      "line": 1267
+    },
+    {
+      "key": "R10->R11",
+      "from": "R10",
+      "to": "R11",
+      "label": "",
+      "chart": "R",
+      "line": 1269
+    },
+    {
+      "key": "R11->R12",
+      "from": "R11",
+      "to": "R12",
+      "label": "yes",
+      "chart": "R",
+      "line": 1270
+    },
+    {
+      "key": "R11->R13",
+      "from": "R11",
+      "to": "R13",
+      "label": "no",
+      "chart": "R",
+      "line": 1273
+    },
+    {
+      "key": "R4->R14",
+      "from": "R4",
+      "to": "R14",
+      "label": "",
+      "chart": "R",
+      "line": 1275
+    },
+    {
+      "key": "R13->R14",
+      "from": "R13",
+      "to": "R14",
+      "label": "",
+      "chart": "R",
+      "line": 1280
+    },
+    {
+      "key": "R14->R15",
+      "from": "R14",
+      "to": "R15",
+      "label": "",
+      "chart": "R",
+      "line": 1281
+    },
+    {
+      "key": "R15->R16",
+      "from": "R15",
+      "to": "R16",
+      "label": "",
+      "chart": "R",
+      "line": 1284
     },
     {
       "key": "M1->M2",
@@ -3032,7 +4444,7 @@
       "to": "M2",
       "label": "",
       "chart": "M",
-      "line": 717
+      "line": 1321
     },
     {
       "key": "M2->M3",
@@ -3040,7 +4452,7 @@
       "to": "M3",
       "label": "",
       "chart": "M",
-      "line": 718
+      "line": 1322
     },
     {
       "key": "M3->M4",
@@ -3048,7 +4460,7 @@
       "to": "M4",
       "label": "",
       "chart": "M",
-      "line": 719
+      "line": 1323
     },
     {
       "key": "M4->M5",
@@ -3056,7 +4468,7 @@
       "to": "M5",
       "label": "",
       "chart": "M",
-      "line": 720
+      "line": 1324
     },
     {
       "key": "M4->M6",
@@ -3064,7 +4476,7 @@
       "to": "M6",
       "label": "",
       "chart": "M",
-      "line": 721
+      "line": 1325
     },
     {
       "key": "M1->M7",
@@ -3072,7 +4484,7 @@
       "to": "M7",
       "label": "",
       "chart": "M",
-      "line": 722
+      "line": 1326
     },
     {
       "key": "M7->M8",
@@ -3080,7 +4492,7 @@
       "to": "M8",
       "label": "",
       "chart": "M",
-      "line": 723
+      "line": 1330
     },
     {
       "key": "M1->M9",
@@ -3088,7 +4500,7 @@
       "to": "M9",
       "label": "",
       "chart": "M",
-      "line": 725
+      "line": 1331
     },
     {
       "key": "M9->M4",
@@ -3096,7 +4508,7 @@
       "to": "M4",
       "label": "",
       "chart": "M",
-      "line": 726
+      "line": 1332
     },
     {
       "key": "M1->M10",
@@ -3104,7 +4516,7 @@
       "to": "M10",
       "label": "",
       "chart": "M",
-      "line": 727
+      "line": 1333
     },
     {
       "key": "M10->M11",
@@ -3112,7 +4524,7 @@
       "to": "M11",
       "label": "",
       "chart": "M",
-      "line": 728
+      "line": 1336
     },
     {
       "key": "M1->M12",
@@ -3120,7 +4532,7 @@
       "to": "M12",
       "label": "",
       "chart": "M",
-      "line": 730
+      "line": 1337
     },
     {
       "key": "M12->M13",
@@ -3128,7 +4540,7 @@
       "to": "M13",
       "label": "",
       "chart": "M",
-      "line": 731
+      "line": 1338
     },
     {
       "key": "M1->M14",
@@ -3136,7 +4548,7 @@
       "to": "M14",
       "label": "",
       "chart": "M",
-      "line": 732
+      "line": 1339
     },
     {
       "key": "M14->M15",
@@ -3144,7 +4556,7 @@
       "to": "M15",
       "label": "",
       "chart": "M",
-      "line": 733
+      "line": 1340
     },
     {
       "key": "M1->M16",
@@ -3152,7 +4564,7 @@
       "to": "M16",
       "label": "",
       "chart": "M",
-      "line": 734
+      "line": 1342
     },
     {
       "key": "M16->M17",
@@ -3160,7 +4572,159 @@
       "to": "M17",
       "label": "",
       "chart": "M",
-      "line": 735
+      "line": 1343
+    },
+    {
+      "key": "T1->T2",
+      "from": "T1",
+      "to": "T2",
+      "label": "",
+      "chart": "T",
+      "line": 1365
+    },
+    {
+      "key": "T2->T3",
+      "from": "T2",
+      "to": "T3",
+      "label": "",
+      "chart": "T",
+      "line": 1368
+    },
+    {
+      "key": "T3->T4",
+      "from": "T3",
+      "to": "T4",
+      "label": "no",
+      "chart": "T",
+      "line": 1369
+    },
+    {
+      "key": "T3->T5",
+      "from": "T3",
+      "to": "T5",
+      "label": "yes",
+      "chart": "T",
+      "line": 1370
+    },
+    {
+      "key": "T5->T6",
+      "from": "T5",
+      "to": "T6",
+      "label": "it has an on_active hook",
+      "chart": "T",
+      "line": 1372
+    },
+    {
+      "key": "T5->T7",
+      "from": "T5",
+      "to": "T7",
+      "label": "no hook at all",
+      "chart": "T",
+      "line": 1374
+    },
+    {
+      "key": "T6->T8",
+      "from": "T6",
+      "to": "T8",
+      "label": "",
+      "chart": "T",
+      "line": 1375
+    },
+    {
+      "key": "T7->T8",
+      "from": "T7",
+      "to": "T8",
+      "label": "",
+      "chart": "T",
+      "line": 1377
+    },
+    {
+      "key": "T6->T9",
+      "from": "T6",
+      "to": "T9",
+      "label": "",
+      "chart": "T",
+      "line": 1378
+    },
+    {
+      "key": "T9->T10",
+      "from": "T9",
+      "to": "T10",
+      "label": "",
+      "chart": "T",
+      "line": 1379
+    },
+    {
+      "key": "T10->T11",
+      "from": "T10",
+      "to": "T11",
+      "label": "",
+      "chart": "T",
+      "line": 1382
+    },
+    {
+      "key": "T11->T12",
+      "from": "T11",
+      "to": "T12",
+      "label": "one",
+      "chart": "T",
+      "line": 1384
+    },
+    {
+      "key": "T11->T13",
+      "from": "T11",
+      "to": "T13",
+      "label": "many (a Next drops several stacks)",
+      "chart": "T",
+      "line": 1385
+    },
+    {
+      "key": "T11->T14",
+      "from": "T11",
+      "to": "T14",
+      "label": "the whole board (first build, resume)",
+      "chart": "T",
+      "line": 1387
+    },
+    {
+      "key": "T12->T15",
+      "from": "T12",
+      "to": "T15",
+      "label": "",
+      "chart": "T",
+      "line": 1393
+    },
+    {
+      "key": "T13->T15",
+      "from": "T13",
+      "to": "T15",
+      "label": "",
+      "chart": "T",
+      "line": 1395
+    },
+    {
+      "key": "T14->T15",
+      "from": "T14",
+      "to": "T15",
+      "label": "",
+      "chart": "T",
+      "line": 1396
+    },
+    {
+      "key": "T15->T16",
+      "from": "T15",
+      "to": "T16",
+      "label": "no",
+      "chart": "T",
+      "line": 1397
+    },
+    {
+      "key": "T15->T17",
+      "from": "T15",
+      "to": "T17",
+      "label": "yes",
+      "chart": "T",
+      "line": 1399
     },
     {
       "key": "N1->N2",
@@ -3168,7 +4732,7 @@
       "to": "N2",
       "label": "",
       "chart": "N",
-      "line": 758
+      "line": 1441
     },
     {
       "key": "N2->N3",
@@ -3176,7 +4740,7 @@
       "to": "N3",
       "label": "",
       "chart": "N",
-      "line": 760
+      "line": 1443
     },
     {
       "key": "N3->N4",
@@ -3184,7 +4748,7 @@
       "to": "N4",
       "label": "",
       "chart": "N",
-      "line": 761
+      "line": 1444
     },
     {
       "key": "N4->N5",
@@ -3192,7 +4756,7 @@
       "to": "N5",
       "label": "",
       "chart": "N",
-      "line": 763
+      "line": 1446
     },
     {
       "key": "N5->N6",
@@ -3200,7 +4764,7 @@
       "to": "N6",
       "label": "",
       "chart": "N",
-      "line": 765
+      "line": 1448
     },
     {
       "key": "N6->N7",
@@ -3208,7 +4772,521 @@
       "to": "N7",
       "label": "",
       "chart": "N",
-      "line": 768
+      "line": 1451
+    },
+    {
+      "key": "O1->O2",
+      "from": "O1",
+      "to": "O2",
+      "label": "",
+      "chart": "O",
+      "line": 1521
+    },
+    {
+      "key": "O2->O3",
+      "from": "O2",
+      "to": "O3",
+      "label": "",
+      "chart": "O",
+      "line": 1524
+    },
+    {
+      "key": "O3->O4",
+      "from": "O3",
+      "to": "O4",
+      "label": "",
+      "chart": "O",
+      "line": 1525
+    },
+    {
+      "key": "O4->O5",
+      "from": "O4",
+      "to": "O5",
+      "label": "host silhouette",
+      "chart": "O",
+      "line": 1526
+    },
+    {
+      "key": "O4->O6",
+      "from": "O4",
+      "to": "O6",
+      "label": "disc (the circle)",
+      "chart": "O",
+      "line": 1529
+    },
+    {
+      "key": "O5->O7",
+      "from": "O5",
+      "to": "O7",
+      "label": "",
+      "chart": "O",
+      "line": 1531
+    },
+    {
+      "key": "O6->O7",
+      "from": "O6",
+      "to": "O7",
+      "label": "",
+      "chart": "O",
+      "line": 1533
+    },
+    {
+      "key": "O7->O8",
+      "from": "O7",
+      "to": "O8",
+      "label": "",
+      "chart": "O",
+      "line": 1534
+    },
+    {
+      "key": "O8->O9",
+      "from": "O8",
+      "to": "O9",
+      "label": "one",
+      "chart": "O",
+      "line": 1536
+    },
+    {
+      "key": "O8->O10",
+      "from": "O8",
+      "to": "O10",
+      "label": "L layers",
+      "chart": "O",
+      "line": 1537
+    },
+    {
+      "key": "O9->O11",
+      "from": "O9",
+      "to": "O11",
+      "label": "",
+      "chart": "O",
+      "line": 1539
+    },
+    {
+      "key": "O10->O11",
+      "from": "O10",
+      "to": "O11",
+      "label": "",
+      "chart": "O",
+      "line": 1542
+    },
+    {
+      "key": "O11->O12",
+      "from": "O11",
+      "to": "O12",
+      "label": "",
+      "chart": "O",
+      "line": 1543
+    },
+    {
+      "key": "O12->O13",
+      "from": "O12",
+      "to": "O13",
+      "label": "no",
+      "chart": "O",
+      "line": 1544
+    },
+    {
+      "key": "O12->O14",
+      "from": "O12",
+      "to": "O14",
+      "label": "yes",
+      "chart": "O",
+      "line": 1546
+    },
+    {
+      "key": "O14->O15",
+      "from": "O14",
+      "to": "O15",
+      "label": "",
+      "chart": "O",
+      "line": 1549
+    },
+    {
+      "key": "O13->O16",
+      "from": "O13",
+      "to": "O16",
+      "label": "",
+      "chart": "O",
+      "line": 1552
+    },
+    {
+      "key": "O15->O16",
+      "from": "O15",
+      "to": "O16",
+      "label": "",
+      "chart": "O",
+      "line": 1553
+    },
+    {
+      "key": "O16->O17",
+      "from": "O16",
+      "to": "O17",
+      "label": "",
+      "chart": "O",
+      "line": 1554
+    },
+    {
+      "key": "O17->O18",
+      "from": "O17",
+      "to": "O18",
+      "label": "",
+      "chart": "O",
+      "line": 1555
+    },
+    {
+      "key": "O18->O18b",
+      "from": "O18",
+      "to": "O18b",
+      "label": "",
+      "chart": "O",
+      "line": 1557
+    },
+    {
+      "key": "O18b->O19",
+      "from": "O18b",
+      "to": "O19",
+      "label": "",
+      "chart": "O",
+      "line": 1559
+    },
+    {
+      "key": "O19->O20",
+      "from": "O19",
+      "to": "O20",
+      "label": "additive, outside the silhouette",
+      "chart": "O",
+      "line": 1562
+    },
+    {
+      "key": "O19->O21",
+      "from": "O19",
+      "to": "O21",
+      "label": "tinted, over the art",
+      "chart": "O",
+      "line": 1564
+    },
+    {
+      "key": "P1->P2",
+      "from": "P1",
+      "to": "P2",
+      "label": "",
+      "chart": "P",
+      "line": 1618
+    },
+    {
+      "key": "P2->P3",
+      "from": "P2",
+      "to": "P3",
+      "label": "no",
+      "chart": "P",
+      "line": 1619
+    },
+    {
+      "key": "P2->P4",
+      "from": "P2",
+      "to": "P4",
+      "label": "no",
+      "chart": "P",
+      "line": 1621
+    },
+    {
+      "key": "P2->P5",
+      "from": "P2",
+      "to": "P5",
+      "label": "no",
+      "chart": "P",
+      "line": 1623
+    },
+    {
+      "key": "P2->P6",
+      "from": "P2",
+      "to": "P6",
+      "label": "no",
+      "chart": "P",
+      "line": 1625
+    },
+    {
+      "key": "P2->P7",
+      "from": "P2",
+      "to": "P7",
+      "label": "yes",
+      "chart": "P",
+      "line": 1627
+    },
+    {
+      "key": "P2->P8",
+      "from": "P2",
+      "to": "P8",
+      "label": "yes",
+      "chart": "P",
+      "line": 1628
+    },
+    {
+      "key": "P2->P9",
+      "from": "P2",
+      "to": "P9",
+      "label": "yes",
+      "chart": "P",
+      "line": 1629
+    },
+    {
+      "key": "P2->P10",
+      "from": "P2",
+      "to": "P10",
+      "label": "yes",
+      "chart": "P",
+      "line": 1630
+    },
+    {
+      "key": "P2->P11",
+      "from": "P2",
+      "to": "P11",
+      "label": "yes",
+      "chart": "P",
+      "line": 1631
+    },
+    {
+      "key": "P2->P12",
+      "from": "P2",
+      "to": "P12",
+      "label": "yes",
+      "chart": "P",
+      "line": 1632
+    },
+    {
+      "key": "P2->P13",
+      "from": "P2",
+      "to": "P13",
+      "label": "yes",
+      "chart": "P",
+      "line": 1633
+    },
+    {
+      "key": "P7->P14",
+      "from": "P7",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1634
+    },
+    {
+      "key": "P8->P14",
+      "from": "P8",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1635
+    },
+    {
+      "key": "P9->P14",
+      "from": "P9",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1636
+    },
+    {
+      "key": "P10->P14",
+      "from": "P10",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1637
+    },
+    {
+      "key": "P11->P14",
+      "from": "P11",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1638
+    },
+    {
+      "key": "P12->P14",
+      "from": "P12",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1639
+    },
+    {
+      "key": "P13->P14",
+      "from": "P13",
+      "to": "P14",
+      "label": "",
+      "chart": "P",
+      "line": 1640
+    },
+    {
+      "key": "P14->P15",
+      "from": "P14",
+      "to": "P15",
+      "label": "",
+      "chart": "P",
+      "line": 1641
+    },
+    {
+      "key": "P15->P16",
+      "from": "P15",
+      "to": "P16",
+      "label": "",
+      "chart": "P",
+      "line": 1642
+    },
+    {
+      "key": "P16->P17",
+      "from": "P16",
+      "to": "P17",
+      "label": "✅ in scope (QR10=a)",
+      "chart": "P",
+      "line": 1643
+    },
+    {
+      "key": "P16->P18",
+      "from": "P16",
+      "to": "P18",
+      "label": "deferred",
+      "chart": "P",
+      "line": 1649
+    },
+    {
+      "key": "P16->P19",
+      "from": "P16",
+      "to": "P19",
+      "label": "never",
+      "chart": "P",
+      "line": 1651
+    }
+  ],
+  "links": [
+    {
+      "key": "C5~>D",
+      "from": "C5",
+      "fromChart": "C",
+      "toChart": "D",
+      "ref": "D",
+      "line": 706
+    },
+    {
+      "key": "S1~>C",
+      "from": "S1",
+      "fromChart": "S",
+      "toChart": "C",
+      "ref": "C",
+      "line": 770
+    },
+    {
+      "key": "S3~>D",
+      "from": "S3",
+      "fromChart": "S",
+      "toChart": "D",
+      "ref": "D",
+      "line": 772
+    },
+    {
+      "key": "S14~>E",
+      "from": "S14",
+      "fromChart": "S",
+      "toChart": "E",
+      "ref": "E",
+      "line": 786
+    },
+    {
+      "key": "S15~>C",
+      "from": "S15",
+      "fromChart": "S",
+      "toChart": "C",
+      "ref": "C",
+      "line": 789
+    },
+    {
+      "key": "D8~>E",
+      "from": "D8",
+      "fromChart": "D",
+      "toChart": "E",
+      "ref": "E",
+      "line": 837
+    },
+    {
+      "key": "D12b~>R",
+      "from": "D12b",
+      "fromChart": "D",
+      "toChart": "R",
+      "ref": "R",
+      "line": 845
+    },
+    {
+      "key": "D21~>E",
+      "from": "D21",
+      "fromChart": "D",
+      "toChart": "E",
+      "ref": "E",
+      "line": 868
+    },
+    {
+      "key": "D25~>C",
+      "from": "D25",
+      "fromChart": "D",
+      "toChart": "C",
+      "ref": "C",
+      "line": 873
+    },
+    {
+      "key": "K14~>I",
+      "from": "K14",
+      "fromChart": "K",
+      "toChart": "I",
+      "ref": "H",
+      "line": 1166
+    },
+    {
+      "key": "L11~>E",
+      "from": "L11",
+      "fromChart": "L",
+      "toChart": "E",
+      "ref": "E3",
+      "line": 1203
+    },
+    {
+      "key": "R16~>K",
+      "from": "R16",
+      "fromChart": "R",
+      "toChart": "K",
+      "ref": "I",
+      "line": 1284
+    },
+    {
+      "key": "T8~>G",
+      "from": "T8",
+      "fromChart": "T",
+      "toChart": "G",
+      "ref": "F",
+      "line": 1375
+    },
+    {
+      "key": "P3~>O",
+      "from": "P3",
+      "fromChart": "P",
+      "toChart": "O",
+      "ref": "O",
+      "line": 1619
+    },
+    {
+      "key": "P4~>O",
+      "from": "P4",
+      "fromChart": "P",
+      "toChart": "O",
+      "ref": "O",
+      "line": 1621
+    },
+    {
+      "key": "P5~>O",
+      "from": "P5",
+      "fromChart": "P",
+      "toChart": "O",
+      "ref": "O",
+      "line": 1623
     }
   ]
 }

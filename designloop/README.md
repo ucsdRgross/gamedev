@@ -32,7 +32,7 @@ Three screens, all keyed by `<project>/<slug>`:
 
 ```
 npm --prefix designloop test                            the suite (~1.5 s)
-npm --prefix designloop run check -- solatro/spotlight  does a design parse?
+npm --prefix designloop run check -- solatro/spotlight  does it parse — AND the four silent audits
 npm --prefix designloop run check -- solatro/spotlight charts   …and do its charts ingest?
 npm --prefix designloop run watch -- solatro/spotlight  park until the owner finishes a round
 ```
@@ -111,6 +111,87 @@ an authoring warning, never guessed. `l` toggles them on the canvas.
 2. **An answer is on disk before the next question appears.** `answers.log` append → `fsync` →
    `answers.json` rewrite → `fsync` → *then* HTTP 200. The UI never advances on a failed write, and
    a crash between the two is recovered by replaying the log.
+
+## The four silent defects `run check` reports
+
+Three of these leave a document that **parses, validates and answers perfectly** while withholding
+questions the owner was supposed to see; the fourth quietly misleads the reviewer. All four cost real
+rounds on `solatro/spotlight` before they were automated, and none of them showed up in any other
+check, test or round summary.
+
+```
+  dag audit   0 — defects that prune questions SILENTLY (listed below)
+  stale       0 chart node(s) posing an ANSWERED question as open
+```
+
+| Reported as | The defect |
+|---|---|
+| `DAG … not marked ⚑gate` | A question whose answer appears in another question's gate, without the mark. A free-text answer has **no letter**, so no gate naming it can ever be true — on an unmarked question the whole subtree is amputated in silence. *Six of these hid 20 questions and the round still said `complete`.* |
+| `DAG … DEFAULT (x) is not among them` | Some gate enumerates a multi-letter set — `[Q113=b|c]` — and the question's own recommended answer is not in it. A newly added option is by construction absent from every gate written earlier, so it orphans its subtree by default. |
+| `DAG … its section … does not` | A **section heading** gate narrower than its own question lines. `reachability()` evaluates `effectiveGate`, which folds the heading in, so the heading wins and the whole section stays pruned no matter what the lines say. |
+| `STALE …` | A chart node still posing an **answered** question as an open fork. Needs `answers.json`, so **re-run `check` after every answer round**, not only after authoring. |
+| `PLAN …` | Once a `PLAN.md` exists beside the design: a step citing an ID that is **no design node or question**, or citing **nothing at all** — which means it can never be reported stale when the node it was built on changes. The gap protocol's whole blast-radius mechanism is those `(implements …)` clauses. |
+
+⚠ **None of them blocks, deliberately** — each shape has a legitimate form (a "decline this
+sub-feature" option is *supposed* to reach nothing; a section gate is *supposed* to narrow). The
+judgement is the author's; being told is not. A non-zero count is a defect until someone has looked
+at it and said why not.
+
+⚠ **Precision was the hard part, not detection.** Reporting every orphaned option produced 24
+warnings on Spotlight, all of them correct behaviour, and a check at that signal-to-noise gets muted.
+The filters are narrow on purpose: `auditGates` in `src/grammar.mjs` documents each one.
+
+## The plan, and where progress lives
+
+`PLAN.md` sits beside `DESIGN.md` in the design directory and is read by `readPlanSteps` for one
+purpose: the `(implements …)` clause on each step, which is what makes a design change able to name
+the plan steps it invalidates.
+
+A step is recognised as **`**Sn — title**`** at the start of a line — optionally behind a list or
+checkbox marker — or as a bare **`id: Sn`** inside YAML, which is the shape `/handoff` writes.
+
+⚠ **The plan is a specification and should not carry status.** Progress belongs in the work stream's
+`<project>/HANDOFF_<topic>.md`, which is a ledger of `id` / `status` / `evidence` / `notes` and
+nothing else — the step's description, files, dependencies and citations stay in `PLAN.md`, because
+the same text in two places is the drift this whole tool exists to prevent. The reason they are
+separate files at all is that **the plan is immutable and the handoff is not**: "S5 is stale" is a
+claim about a specification, and it stops meaning anything if that file also churns with ticks.
+
+⚠ **The leading `- [ ]` is TOLERATED, not recommended.** It used to be rejected, and rejection was
+not benign — the unmatched line fell through to the citation branch and attributed its nodes to the
+*previous* step, so a checklist silently made the stale report name the wrong steps. Guidance about
+where status belongs is guidance; it must not be enforced by silent data loss.
+
+## The ask list — how an agent gets a question RE-asked
+
+`status.agent.json` may carry an **`ask`**: the questions the agent needs answered this round.
+
+```json
+{ "state": "ready", "mode": "questions", "round": 3, "ask": ["Q24", "Q113", "QR2"] }
+```
+
+An entry counts as **unanswered until it is answered in that round**, which does two things at once:
+
+- **it comes back into the queue, and it is asked first** — an agent that has rewritten a question
+  (new option, corrected premise) no longer has to tell the owner to go hunting through their own
+  history for it. The previous answer arrives with it, already selected, so confirming is one
+  keystroke;
+- **the round cannot end while any of them is outstanding.** Everything an ask unlocks is gated on
+  it, so the subtree is withheld until it is answered and then holds the round open in turn. The
+  owner is declared finished when the agent's whole ask is satisfied — not the instant the reachable
+  set happens to empty.
+
+⚠ **Both halves came from one owner report (2026-08-03):** *"This workflow of going into history to
+find the question you are talking about then changing previous choice to unlock questions is pretty
+bad UX. If you need me to answer new questions, every question that needs to be answered needs to be
+given in one go, and you only pick up its finished when I finish answering all new questions you want
+me to, instead of me changing one answer, answering its subquestions, then you immediately pick it up
+before I have chance to look at next question."* Before this, the only routes were to make the owner
+navigate their own history, or to ask in chat and leave `answers.json` permanently out of step with
+the design. Both had happened.
+
+`ask_total`, `ask_remaining` and `ask_revisit` come back from `/next` so the screen can say how much
+of the agent's ask is left instead of leaving the owner to guess.
 
 ## Gaps — the way back from execution
 

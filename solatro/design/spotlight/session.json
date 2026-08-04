@@ -1,8 +1,8 @@
 {
-  "watching": true,
+  "watching": false,
   "key": "solatro/spotlight",
-  "pid": 28444,
-  "since": "2026-08-03T01:06:46Z",
-  "at": "2026-08-03T02:05:02Z",
+  "pid": 16844,
+  "since": "2026-08-03T10:17:26Z",
+  "at": "2026-08-03T11:09:06Z",
   "every_ms": 5000
 }

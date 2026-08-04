@@ -53,6 +53,23 @@ resolution: |
 **Blast radius** — plan steps S2; design nodes B7a
 `;
 
+
+test('a step line with a list or checkbox marker parses instead of corrupting its neighbour', () => {
+  // ⚠ REGRESSION GUARD. Before 2026-08-03 the leading marker was rejected, and rejection was NOT
+  // benign: the unmatched line fell through to the citation branch, which attributes what it finds
+  // to the PREVIOUS step. `**S1**` + `- [ ] **S2**` + `- [x] **S3**` parsed as ONE step citing all
+  // three steps' nodes, so the stale-step report would have named the wrong steps, silently.
+  const steps = planSteps([
+    '**S1 — first** (implements A1)',
+    '- [ ] **S2 — second** (implements B2)',
+    '- [x] **S3 — third** (implements C3)',
+    '* **S4 — fourth** (implements D4)',
+  ].join('\n'));
+  assert.deepEqual(steps.map((s) => s.id), ['S1', 'S2', 'S3', 'S4']);
+  assert.deepEqual(steps.map((s) => s.cites), [['A1'], ['B2'], ['C3'], ['D4']],
+    'each step keeps its OWN citations — no attribution leaks to the step above');
+});
+
 test('a hand-written gap parses into a question in the questionnaire grammar (J8)', () => {
   const gap = parseGap('GAP-002.md', OPEN_GAP);
   assert.equal(gap.id, 'GAP-002');

@@ -1,7 +1,7 @@
 {
   "state": "ready",
-  "mode": "questions",
-  "round": 1,
-  "at": "2026-08-02T18:10:00Z",
-  "summary": "Design version 2 is in. Your two written-in answers are now real options you can click: QR2 gains (c) the TRANSIENT dim (the dark lasts the opening beat only), and Q24 gains (c) COMPACT AND FOLLOW (the column closes up and the light follows the slot). Both are the recommended default now. The glow-shader braindump is folded in too: two new root gates, QR9 (is the spotlight circle drawn by the glow shader, and does it move onto the card?) and QR10 (is the halation/bloom/LUT/grain film pipeline in scope at all?). 53 new questions, none of your 29 answers thrown away - the dim questions you already answered were re-gated so they survive if you switch QR2 to (c). Go back to QR2 first."
+  "mode": "review",
+  "round": 3,
+  "at": "2026-08-03T13:30:00Z",
+  "summary": "DESIGN CONFIRMED — PLAN.md is written and ready to execute. 18 steps across 4 phases, every one citing the design nodes it implements (verified: 18/18 steps, 0 unknown citations, 0 steps without a chart-node citation, so the gap protocol's stale-step tracking works). Phase 1 is the mechanical spotlight and is fully headless with seven hard gates - it can run autonomously. Phases 2 and 3 are the shader, the light layer and the reveal; they need iteration against a rendered frame and a higher effort level. Phase 4 is the tuning tool. Phase 5, the film pipeline, is deliberately NOT in this plan: Q239=a ships it as a second deliverable after Spotlight. Two things to know: the rename active -> spotlight touches @export_storage, so gate G1.3 asserts the save migration; and Q84 (dim_target on the style) contradicts Q168 (dim_target in settings) - the plan resolves to Q84 as the later, more specific answer and tells the executor to file a gap if that reading is wrong. Open the canvas and hit Confirm if you want version 1 frozen."
 }

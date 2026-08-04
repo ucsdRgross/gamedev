@@ -149,7 +149,10 @@ test('MEASUREMENT — Spotlight lays out fast enough that no layout dependency i
     runs.push(Number(process.hrtime.bigint() - start) / 1e6);
   }
   const best = Math.min(...runs);
-  assert.equal(Object.keys(SPOTLIGHT.nodes).length, 176);
+  // ⚠ A FLOOR, not equality: Spotlight is a living document and this measurement is about SPEED,
+  // not about how many nodes it happens to have today (it was 176 on 2026-08-01 and 268 by
+  // 2026-08-03). Asserting the count made an ordinary design edit fail a performance test.
+  assert.ok(Object.keys(SPOTLIGHT.nodes).length >= 176);
   // The gate is generous on purpose — this pins "interactive", not a benchmark. Measured on the
   // owner's machine 2026-08-01: 1.8 ms for 176 nodes and 182 edges. PLAN §9 asked for the number.
   assert.ok(best < 250, `layout took ${best.toFixed(1)} ms`);

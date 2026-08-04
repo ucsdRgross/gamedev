@@ -1,6 +1,6 @@
 ---
 name: solatro-spotlight-design
-description: solatro/design/spotlight/DESIGN.md (started 2026-08-01, version 2 on 2026-08-03) is a DESIGN-ONLY flowchart plan for the Spotlight mechanic + its VFX — nothing is implemented until every node and question is approved
+description: solatro/design/spotlight/DESIGN.md (started 2026-08-01, version 6 on 2026-08-03) is a DESIGN-ONLY flowchart plan for the Spotlight mechanic + its VFX — nothing is implemented until every node and question is approved
 metadata: 
   node_type: memory
   type: project
@@ -9,23 +9,36 @@ metadata:
 ---
 
 `solatro/design/spotlight/DESIGN.md`, written 2026-08-01 via [[repo-claude-tooling]]'s
-`/flowchart-design` skill. **NOT approved — nothing may be implemented yet.** Round 1 is IN
-PROGRESS in [[designloop-tool]] (`question.html?key=solatro/spotlight`); the implementation plan is
-a SEPARATE doc written only after the flowcharts are CONFIRMED, not after the last answer
-([[design-review-ends-with-handoff]]).
+`/flowchart-design` skill. **NOT approved — nothing may be implemented yet.**
 
-⚠ **§17 is a branching DAG, not a list.** Measured by the parser, **version 2 (2026-08-03): 248 live
-questions, 10 `⚑gate` roots QR1–QR10, longest path 236, 18 charts, 0 errors/warnings.** (v1 was 195
-live / path 194 / 8 roots.) Every question carries a gate in backticks (`[Q4=b|c]`), lettered
+⚠ **ROUND 1 IS COMPLETE (2026-08-03).** 255 answers on file, **0 reachable and 0 pending** — the
+questionnaire is finished. **The next step is the REVIEW CANVAS, not more questions**
+(`canvas.html?key=solatro/spotlight`): the owner reviews the flowcharts and CONFIRMS, and only then
+comes the implementation plan — see [[design-review-ends-with-handoff]].
+
+⚠ **§17 is a branching DAG, not a list.** Measured by the parser, **version 6 (2026-08-03): 275 live
+questions, 30 `⚑gate` (all 30 gating questions marked), 19 charts, 0 errors/warnings.** (v1 was 195
+live / 8 roots.) Every question carries a gate in backticks (`[Q4=b|c]`), lettered
 options, and a recommended default so *default* is a complete answer. Q140 is retired in place —
 **IDs are never renumbered.**
 
-**Version 2 exists because two round-1 answers were written in the owner's own words**, one of them
-at a `⚑gate` (which is what ends a round). Both became real options rather than replacing anything,
-and the §17.6 gates were widened to `[QR2=a|c]` so answers already given survive the switch:
+**What the answers settled, and it re-frames the feature** — read §0a of the doc before anything:
+**the GLOW is the point** (Q83: *"the glow is most important. Beam and circle and dim are helper"*);
+**spotlight is a general "this card became active" cue, not a scoring feature** (Q149=b), so scoring
+is one caller; **the dim follows the BEAMS** (QR2=d), not the submit. Scope grew too: `active` is
+renamed to `spotlight` (Q2=b), the card-description icon is in (Q5/Q184=b), the board-spread toggle
+is in (Q186), and **the full film pipeline is in as a SECOND deliverable shipped after Spotlight**
+(QR10=a, Q239=a). ⚠ **Q265=(c) means the existing scoring animation does NOT change** — only the
+meld jumps, as today; the wider lit set is carried by the spotlight alone.
 
-- **QR2 (c) — the TRANSIENT dim.** The dark lasts only the opening beat (lights spawn, first meld
-  jumps and scores), then back to a normally lit board for the rest of the act. Chart S, §17.6b.
+**Version 2 existed because two round-1 answers were written in the owner's own words**, one at a
+`⚑gate`. Both became real options rather than replacing anything, and the §17.6 gates were widened
+so answers already given survived the switch:
+
+- **QR2 — settled at (d), not (c).** (c) the TRANSIENT dim was v2's authored branch (chart S,
+  §17.6b, kept); the ANSWER is **(d) the dim follows the spotlight — active if there are BEAMS**,
+  which is what Q45/Q82/Q150/Q16 all described. ⚠ Adding (d) without widening §17.6's **section
+  heading** gate stranded 20 answers when it was clicked — see [[design-round-read-the-log]].
 - **Q24 (c) — COMPACT AND FOLLOW.** A meld card discarded mid-line: the column closes up (free — a
   column is a plain array, `game.gd:613`), the covering card slides into the slot, and the light
   follows the SLOT and force-spotlights the new occupant. Chart R, §17.2b. Q160 said the opposite

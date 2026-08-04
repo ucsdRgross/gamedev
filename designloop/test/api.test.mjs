@@ -503,6 +503,70 @@ test('promoting an assumption from the canvas files an open gap (Q95b=a)', async
   }
 });
 
+test("the agent's ask list re-opens answered questions and holds the round open", async () => {
+  await fixture();
+  const s = await serve();
+  try {
+    // Round 1: answer everything, so the owner is `done` and nothing is left to ask.
+    for (const id of ['QR1', 'Q1', 'Q2', 'Q3']) {
+      await s.post('/answer', { id, state: 'chosen', option: 'a' });
+    }
+    assert.equal((await s.get('/next')).done, true, 'the round really is finished');
+    assert.equal((await readJson(join(DIR, 'status.owner.json'))).state, 'done');
+
+    // The agent rewrites QR1 and needs it re-answered. Before this existed, the only route was to
+    // tell the owner to go and find it in their own history — the UX the owner rejected.
+    await writeFile(join(DIR, 'status.agent.json'), JSON.stringify({
+      state: 'ready', mode: 'questions', round: 2, ask: ['QR1', 'Q1'],
+    }), 'utf8');
+
+    const first = await s.get('/next');
+    assert.equal(first.done, false, 'an ask list re-opens a finished round');
+    assert.equal(first.question.id, 'QR1', 'and the ask list is asked FIRST');
+    assert.equal(first.ask_revisit, true);
+    assert.equal(first.ask_remaining, 2, 'both asks are outstanding');
+    assert.ok(first.answer, 'the previous answer comes with it, so confirming is one keystroke');
+    assert.equal(first.answer.option, 'a');
+
+    // Answering one ask must NOT end the round while the other is outstanding: that premature
+    // `done` is the second half of what the owner reported.
+    await s.post('/answer', { id: 'QR1', state: 'chosen', option: 'a' });
+    assert.equal((await readJson(join(DIR, 'status.owner.json'))).state, 'answering',
+      'one ask answered is not the round finished');
+    const second = await s.get('/next');
+    assert.equal(second.question.id, 'Q1', 'the rest of the ask list follows');
+    assert.equal(second.ask_remaining, 1);
+
+    await s.post('/answer', { id: 'Q1', state: 'chosen', option: 'b' });
+    assert.equal((await s.get('/next')).done, true, 'the round ends when the ask is satisfied');
+    assert.equal((await readJson(join(DIR, 'status.owner.json'))).state, 'done');
+  } finally {
+    await s.close();
+  }
+});
+
+test('an ask on a gate withholds its subtree until it is re-answered', async () => {
+  await fixture();
+  const s = await serve();
+  try {
+    for (const id of ['QR1', 'Q1', 'Q2', 'Q3']) {
+      await s.post('/answer', { id, state: 'chosen', option: 'a' });
+    }
+    await writeFile(join(DIR, 'status.agent.json'), JSON.stringify({
+      state: 'ready', mode: 'questions', round: 2, ask: ['QR1'],
+    }), 'utf8');
+
+    // QR1 gates section 2. While it is outstanding the gate is PENDING, so Q2/Q3 are withheld —
+    // asking them first would be asking around a hole.
+    assert.equal((await s.get('/next')).question.id, 'QR1');
+    // Re-answering it (b) prunes the section outright, and the round is then genuinely over.
+    await s.post('/answer', { id: 'QR1', state: 'chosen', option: 'b' });
+    assert.equal((await s.get('/next')).done, true);
+  } finally {
+    await s.close();
+  }
+});
+
 test.after(async () => {
   await rm(ROOT, { recursive: true, force: true });
 });

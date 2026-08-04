@@ -235,6 +235,66 @@ function outOfScopeFor(parsed, answers) {
  * `new_branch_needed` is the free-text-at-a-gate case and is the only ending that can arrive with
  * reachable questions still unanswered (chart B2).
  */
+/**
+ * THE AGENT'S ASK LIST — `status.agent.json`'s `ask: [...]`, and the whole of it is this function.
+ *
+ * ⚠ WHY IT EXISTS (owner, 2026-08-03): *"This workflow of going into history to find the question
+ * you are talking about then changing previous choice to unlock questions is pretty bad UX. If you
+ * need me to answer new questions, every question that needs to be answered needs to be given in
+ * one go, and you only pick up its finished when I finish answering all new questions you want me
+ * to, instead of me changing one answer, answering its subquestions, then you immediately pick it
+ * up before I have chance to look at next question."*
+ *
+ * Two separate defects, and ONE mechanism fixes both, which is why this is a view over `answers`
+ * rather than a second code path:
+ *
+ *  1. **The screen only ever showed UNANSWERED questions**, so an agent that had rewritten a
+ *     question — new option, corrected premise — could not get it re-asked. It had to tell the
+ *     owner to go hunting through their own history. Hiding the stale answer puts the question back
+ *     in the queue where it belongs.
+ *  2. **`done` fired whenever the reachable set happened to empty**, which is mid-thought: the owner
+ *     re-answers one gate, its subtree opens, they answer that, the set empties for an instant and
+ *     the watch declares the round over. An ask-list entry counts as UNANSWERED until it is answered
+ *     in the CURRENT round, so `settleOwnerStatus` cannot say `complete` while any of them is
+ *     outstanding — and the subtrees they unlock are ordinary reachable questions, so they hold the
+ *     round open too. The round ends when the agent's whole ask is satisfied and not before.
+ *
+ * ⚠ THE GATE EFFECT IS DELIBERATE, NOT A SIDE EFFECT. Hiding an answer also makes every gate naming
+ * it evaluate `pending` instead of `true`, so the subtree is withheld until the question is answered
+ * again. That is correct — until the owner has re-answered it, what lies below is genuinely
+ * undecided — and it is what makes "the ask list first, then everything it unlocks, then done" fall
+ * out of one filter instead of needing a scheduler.
+ *
+ * ⚠ ONLY THE ROUND-STAMPED ANSWER IS HIDDEN. `next` still hands the REAL answer to the screen for
+ * prefill, so re-answering is one keystroke and the owner can see what they said last time. Losing
+ * that would turn a confirmation into retyping.
+ */
+function askView(answers, askIds, round) {
+  if (!askIds.length) return answers;
+  const view = { ...answers };
+  for (const id of askIds) {
+    const a = view[id];
+    // `>= round` means "already answered in this round" — satisfied, leave it alone. An answer from
+    // an earlier round is exactly what the agent is asking to revisit.
+    if (a && (a.round ?? 0) < round) delete view[id];
+  }
+  return view;
+}
+
+/** Which of the agent's asks are still outstanding — what the screen reports and `done` waits on. */
+function askRemaining(answers, askIds, round) {
+  return askIds.filter((id) => {
+    const a = answers[id];
+    return !a || (a.round ?? 0) < round;
+  });
+}
+
+/** The agent's ask list, defensively — a hand-written JSON file is allowed to be wrong. */
+function askIdsOf(design) {
+  const raw = design.agent?.ask;
+  return Array.isArray(raw) ? raw.filter((id) => typeof id === 'string') : [];
+}
+
 async function settleOwnerStatus(design, parsed, answers, { override = false, question = null, gaps = [] } = {}) {
   if (override && question?.isGate) {
     return writeOwnerStatus(design.dir, { state: 'done', reason: 'new_branch_needed' });
@@ -248,7 +308,11 @@ async function settleOwnerStatus(design, parsed, answers, { override = false, qu
       ? { state: 'answering', reason: null }
       : { state: 'done', reason: 'gaps_answered' });
   }
-  const { reachable } = reachability(parsed.questions, answers);
+  // The ask list holds the round open (see askView): an outstanding ask is unanswered, so it is
+  // either reachable itself or it is withholding the subtree it gates, and either way `complete`
+  // cannot fire early.
+  const view = askView(answers, askIdsOf(design), design.agent.round);
+  const { reachable } = reachability(parsed.questions, view);
   if (!reachable.length) return writeOwnerStatus(design.dir, { state: 'done', reason: 'complete' });
   return writeOwnerStatus(design.dir, { state: 'answering', reason: null });
 }
@@ -482,9 +546,22 @@ async function handleDesignApi(req, res, pathname, query) {
     // `?scope=gaps` is the scoped round (Q90b=b, chart J12): the open gaps' own questions and
     // nothing else. Never the whole questionnaire again — that is the promise of a gap round.
     const scoped = query.get('scope') === 'gaps';
-    const question = scoped
+    // The agent's ask list (askView): questions it needs re-answered count as unanswered, so they
+    // come back into the queue instead of the owner being told to go and find them in their history.
+    const askIds = askIdsOf(design);
+    const remaining = askRemaining(answers, askIds, design.agent.round);
+    const view = askView(answers, askIds, design.agent.round);
+    let question = scoped
       ? nextGapQuestion(gaps, answers)
-      : nextQuestion(parsed.questions, answers, parsed.sections);
+      : nextQuestion(parsed.questions, view, parsed.sections);
+    // ⚠ THE ASK LIST GOES FIRST, and not merely for tidiness: every question it unlocks is gated on
+    // it, so asking anything else first means asking around a hole. Ordinary section weighting
+    // resumes the moment the ask is satisfied.
+    if (!scoped && remaining.length) {
+      const { reachable } = reachability(parsed.questions, view);
+      const first = reachable.find((q) => remaining.includes(q.id));
+      if (first) question = first;
+    }
     if (!question) {
       sendJson(res, 200, {
         done: true, owner: design.owner, agent: design.agent, scope: scoped ? 'gaps' : null,
@@ -495,9 +572,16 @@ async function handleDesignApi(req, res, pathname, query) {
     sendJson(res, 200, {
       done: false,
       question: forScreen(question, parsed.sections),
+      // The REAL answer, never the view's — so a question the agent wants revisited arrives with
+      // what you said last time already selected, and confirming it is one keystroke.
       answer: answers[question.id] || null,
       round: design.agent.round,
       answered: state.order.filter((id) => answers[id]?.active !== false).length,
+      // What the screen needs to say "the agent is waiting on N of these" instead of leaving the
+      // owner to guess how much of the round is left.
+      ask_total: askIds.length,
+      ask_remaining: remaining.length,
+      ask_revisit: remaining.includes(question.id),
     });
     return;
   }

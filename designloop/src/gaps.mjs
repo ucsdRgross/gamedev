@@ -245,7 +245,17 @@ export function planSteps(markdown) {
     steps.set(id, step);
   };
   lines.forEach((raw, i) => {
-    const heading = /^\*\*(S\d+)\s*[—-]\s*([^*]*)\*\*\s*(.*)$/.exec(raw.trim());
+    // ⚠ THE LEADING LIST / CHECKBOX MARKER IS TOLERATED ON PURPOSE (2026-08-03).
+    // It used to be rejected, and rejection here is not benign: an unmatched step line falls
+    // through to the `citations(raw)` branch below, which attributes whatever it finds to the
+    // PREVIOUS step. Measured — `**S1**`, `- [ ] **S2**`, `- [x] **S3**` parsed as ONE step citing
+    // all three steps' nodes, so the stale-step report would have named the wrong steps with no
+    // error anywhere. A plan author writing a checklist should get a checklist, not corruption.
+    //
+    // (Whether a plan SHOULD carry checkboxes is a separate, documented judgement — a plan is a
+    // specification and status belongs in the handoff — but that is guidance, and guidance must not
+    // be enforced by silent data loss.)
+    const heading = /^(?:[-*+]\s*(?:\[[ xX]\]\s*)?)?\*\*(S\d+)\s*[—-]\s*([^*]*)\*\*\s*(.*)$/.exec(raw.trim());
     if (heading) {
       add(heading[1], i + 1, heading[2].trim().replace(/\.$/, ''), citations(heading[3]));
       return;

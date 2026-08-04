@@ -168,3 +168,31 @@ canvas in v1, or questionnaire-first — roughly half the work).
 **Ordering:** this ships before [[solatro-spotlight-design]] resumes, and Spotlight is its first
 real client — 188 questions, 8 root gates, ~200 graph nodes, converted from its existing markdown
 without editing it.
+
+⚠ **The ASK LIST landed 2026-08-03** (`status.agent.json` → `"ask": ["Q24", …]`, README §"The ask
+list"). An entry counts as **unanswered until answered in that round**, which both re-opens it — asked
+FIRST, previous answer prefilled — and **holds the round open until the whole ask is satisfied**.
+Owner report that caused it: *"going into history to find the question you are talking about then
+changing previous choice to unlock questions is pretty bad UX… every question that needs to be
+answered needs to be given in one go, and you only pick up its finished when I finish."* Before it,
+the only routes were making the owner navigate their own history or asking in chat and leaving
+`answers.json` out of step.
+
+⚠ **Its test suite used to PIN the live Spotlight document's counts** (188 questions, longest path
+194, 176 nodes) — five tests broke on every ordinary design edit and none ever found a defect. They
+assert properties now (parses clean, DAG sound, every originally-ingesting chart still ingests,
+every derived link still resolves), plus the two checks that HAVE caught bugs: every gating question
+is `⚑gate`, and no option orphans its subtree. **132 tests.**
+
+⚠ **`run check` gained two audit lines on 2026-08-03** — `dag audit` (a gating question not marked
+`⚑gate`; a `default` orphaned from a multi-letter gate; a section heading narrower than its own
+question lines) and `stale` (chart nodes posing an ANSWERED question as an open fork). They catch the
+class of defect that leaves a document parsing, validating and reporting `done (complete)` while
+**silently withholding questions from the owner**. Neither blocks. **135 tests.**
+
+⚠ **`run check` also reports `plan`** once a `PLAN.md` exists beside the design: steps whose
+`(implements …)` cites a non-existent node, and steps citing nothing (which can never be reported
+stale). `planSteps` now tolerates a leading `- [ ]` — it used to reject it and silently reattribute
+that step's citations to the step ABOVE. **The plan is the immutable spec; progress lives in
+`<project>/HANDOFF_<topic>.md` as an `id`/`status`/`evidence`/`notes` ledger, never restating the
+plan.** 136 tests.
