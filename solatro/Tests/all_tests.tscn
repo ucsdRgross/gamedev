@@ -29,6 +29,7 @@
 [ext_resource type="PackedScene" path="res://Tests/UI/test_fx_attachment.tscn" id="26_fx"]
 [ext_resource type="PackedScene" path="res://Tests/Visual/test_pixels.tscn" id="27_pix"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_palette.tscn" id="28_palet"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_spotlight.tscn" id="29_spot"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -53,6 +54,8 @@ speed_base_delay = 0.1
 [node name="TestPatience" parent="." instance=ExtResource("25_patnc")]
 
 [node name="TestPalette" parent="." instance=ExtResource("28_palet")]
+
+[node name="TestSpotlight" parent="." instance=ExtResource("29_spot")]
 
 [node name="TestGameData" parent="." unique_id=871797032 instance=ExtResource("13_gdata")]
 

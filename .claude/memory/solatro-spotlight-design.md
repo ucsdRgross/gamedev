@@ -9,12 +9,23 @@ metadata:
 ---
 
 `solatro/design/spotlight/DESIGN.md`, written 2026-08-01 via [[repo-claude-tooling]]'s
-`/flowchart-design` skill. **NOT approved — nothing may be implemented yet.**
+`/flowchart-design` skill. **Design CONFIRMED 2026-08-03; `PLAN.md` is the execution spec and §1 of
+it is normative.**
 
-⚠ **ROUND 1 IS COMPLETE (2026-08-03).** 255 answers on file, **0 reachable and 0 pending** — the
-questionnaire is finished. **The next step is the REVIEW CANVAS, not more questions**
-(`canvas.html?key=solatro/spotlight`): the owner reviews the flowcharts and CONFIRMS, and only then
-comes the implementation plan — see [[design-review-ends-with-handoff]].
+⚠ **PHASE 1 (S1–S10, the mechanical spotlight) IS IMPLEMENTED AND GREEN, 2026-08-04.** Live status
+is `solatro/HANDOFF_spotlight.md`; it is a status ledger only. Phases 2–4 (shader, light layer,
+reveal, tuning tool) are still pending and need the owner's eye — see [[verify-visuals-by-eye]].
+What shipped: `active` → **`spotlit`** everywhere (`is_spotlit`, `skill_spotlight_check`,
+`on_spotlight`/`on_unspotlight`), `GameData.forced_spotlight` (per-act, NOT `@export_storage`, never
+bumps `revision`), `ScoringSection` (`Scripts/scoring_section.gd` — the shape-agnostic "one scorer
+invocation's cards", re-read after every hook), and `score_line` now RE-EVALUATES the hand over the
+live section, so a synthetic `Scoring.Result` passed in for a populated zone is discarded.
+⚠ **Two owner rulings 2026-08-04 correct the documents and are NOT folded in yet** (gaps/GAP-001,
+GAP-002, both answered): `blocks_spotlight()` defaults **true** — a covering card hides the talent
+beneath, Kuroko overrides to false and unhides it, Revealing is a property of the card itself — so
+the seam REPLACES `is_data_topmost` and `PLAN.md` §1.4's `false` default is wrong; and
+`forced_spotlight` **moves with the scoring section, never accumulates**, so `PLAN.md` §1.3's
+"Q16 whole act" and `DESIGN.md` D19/D20 are wrong about membership.
 
 ⚠ **§17 is a branching DAG, not a list.** Measured by the parser, **version 6 (2026-08-03): 275 live
 questions, 30 `⚑gate` (all 30 gating questions marked), 19 charts, 0 errors/warnings.** (v1 was 195
@@ -56,9 +67,15 @@ describe in review of plan will have functionally no difference once implemented
 
 Load-bearing facts the plan is built on, worth keeping even if the doc is deleted:
 
-- **Spotlight already exists as `active`.** `CardModifier.is_active()` — rules card / StampGlobal /
-  stage PLAY or ZONE / StampRevealing / else `game.is_data_topmost`. Only SKILLS are gated on it
-  (`run_all_mods` fires type/stamp/status hooks with no activation check at all).
+- **Spotlight already existed as `active`, and is now `spotlit`.** `CardModifier.is_spotlit()` —
+  rules card / StampGlobal / stage PLAY or ZONE / `forced_spotlight` / StampRevealing / else
+  **is anything above me blocking** (`blocks_spotlight`, default true — this REPLACED
+  `is_data_topmost`, identically). Only SKILLS are gated on it
+  (`run_all_mods` fires type/stamp/status hooks with no spotlight check at all).
+- ⚠ **A new `class_name` script does NOT resolve until the class cache is rebuilt.** Running the
+  suite straight after adding one gives *"Could not find type X"* parse errors that cascade into
+  dozens of unrelated failures. Fix: `<godot> --headless --path solatro --import` once. The owner's
+  editor does it by itself; a headless-only session does not.
 - **Board geometry:** a column is a VBox, a row is a child index across VBoxes; higher `z` draws
   later, sits lower and covers. A covered card shows only its top ~45 px of 125, and the card's
   32×32 art square is CENTRED, so a spotlight circle on a covered card is ~75% hidden — which is

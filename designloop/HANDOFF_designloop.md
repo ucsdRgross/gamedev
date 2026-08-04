@@ -572,7 +572,8 @@ Chrome blocks a *second* automatic download, so only the first export lands in `
 
 | Claim | How it is known |
 |---|---|
-| The whole suite is green | `npm --prefix designloop test` → `tests 128 / pass 128 / fail 0`, run after the last edit |
+| The whole suite is green | `npm --prefix designloop test` → `tests 151 / pass 151 / fail 0`, run after the last edit (2026-08-04) |
+| **The provenance audits find the defect that motivated them** | `test/provenance.test.mjs` reduces the solatro/spotlight incident to its smallest form and asserts each report on it, and the last test runs all three against the real Spotlight documents. `npm run check -- solatro/spotlight` reports 22 answers given in prose, 16 documents paraphrasing one, and 0 unauthorised contracts (7 blocks, all cited) |
 | **The S19 screen changes work, and I LOOKED** | Driven in headless Edge over CDP against a throwaway copy of the design (never the owner's live round): the Enter mark reads `option c`, moves to `Use what I wrote` the moment the note box has text, and Enter then submits the written answer instead of discarding it. BACK walked four questions in reverse and then disabled itself with its reason. `h`, `i`, `w`, `n` all fire. The session chip was screenshotted **live**, **stopped** and **none** |
 | **Not verified: physical keypresses** | Still dispatched `KeyboardEvent`s in the real page rather than OS input, same as before. The handlers are the real ones |
 | **The derived cross-chart links are right, and I LOOKED** | Counts measured on both real documents (10 and 5, 0 unresolved) and pinned as a fixture. The canvas was screenshotted in headless Edge over CDP and described: expanded, collapsed, and the picker. **The first bow was wrong and only the picture said so** — collapsed charts shelf-pack into one row, so a bow proportional to the vertical drop was flat and the links lay along the row through the boxes. Fixed to a perpendicular bow, re-shot, and the arcs now pass clear |
@@ -672,8 +673,19 @@ whenever its hash moves.
 
 ## Next up
 
-**Nothing in this stream.** All 19 steps are done, and the owner is already *using* it — the
-Spotlight round is live, so the next job is that design, not this tool.
+**Nothing in this stream.** All 19 steps are done plus S20 below, and the owner is already *using*
+it — Spotlight's phase 1 shipped against it, so the next job is that design, not this tool.
+
+⚠ **S20 — PROVENANCE (added 2026-08-04, after Spotlight phase 1 cost a round to a misreading).**
+`src/provenance.mjs` + `⚑contract` in the grammar + `GET /provenance` + two new `check`
+subcommands. The incident is written at the head of the module and it is worth reading before
+touching any of it: **one free-text answer, two documents paraphrasing it, both dropping the clause
+that settled it, and an executing agent filing a gap on the difference between the paraphrases.**
+The reports are `in prose`, `unquoted` and `contracts`; like every other audit here, none of them
+blocks. ⚠ **What is NOT built: the canvas has no contracts panel.** The owner reviews flowcharts;
+`PLAN.md` §1 — which is what an executor actually obeys — is still reviewed only by being read in
+chat. `GET /provenance` serves the data a panel would need. `.claude/skills/flowchart-design/`
+§8b item 9 carries the process half in the meantime.
 
 1. **`solatro/design/spotlight/` is IN PROGRESS.** The owner began answering it on 2026-08-03 and
    was ~47 answers in. Do not reset it, do not answer it, and do not delete its `answers.*`. Park

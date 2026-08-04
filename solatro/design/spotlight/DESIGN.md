@@ -1,8 +1,12 @@
 # SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
 
-**Status: DESIGN ONLY, version 4. Rounds 1 and 2 COMPLETE (2026-08-03) — 232 answered in the tool
-plus 7 settled in chat. Six of the seven contradictions are closed; three new ones (C9–C11) and the
-20 questions C8 skipped are what remain.** No code, no file plan, no step ordering, no test plan.
+**Status: CONFIRMED, version 7. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
+2026-08-03, and PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04) — v7 folds in the two things that
+implementation found.** This document still carries no code, no file plan, no step ordering and no
+test plan; those live in `PLAN.md`.
+
+⚠ **Status of the questionnaire itself is unchanged: 255 answers, 0 open.** v7 changes two nodes'
+wording, not any answer.
 
 ⚠ **Before handing this document over again, run the gating check** (§0b C8 is what happens when you
 do not): every question ID named in any `[gate]` must itself carry `⚑gate`. As of v4 that is 30 of
@@ -48,6 +52,37 @@ statements, and §0b C3 is where they are reconciled. QR2 has gained a **(d)** f
 everywhere (Q2=b), the Spotlight icon in card descriptions is IN (Q5=b, Q184=b), the "show all active
 abilities" board-spread toggle is IN (Q186), and the **full film pipeline is IN as a second
 deliverable shipped after Spotlight** (QR10=a, Q239=a).
+
+### Version 7 changelog (2026-08-04) — what implementing phase 1 found
+
+Two nodes, both of which an executor misread. **No answer changed; both were wording that let a
+correct answer be read two ways.**
+
+**1. `blocks_spotlight()`'s polarity is now stated, not implied (A8, `Q9`, GAP-001).** Chart A8 was
+right and `PLAN.md` §1.4 was wrong — it specified `return false` as the default, which under A8
+would make **every covered card on the board spotlit**. The answer, in the owner's words:
+
+> *"default is if card is covered by another card stacked on top, then that card is not active
+> since its talent is hidden. Kuroko allows card it is on top of to be unhidden instead, activating
+> its effect, and revealing allows the card it is attached to be spotlit anywhere even if card is
+> covered."*
+
+So: `blocks_spotlight()` is asked of the **covering** card, defaults **`true`**, Kuroko/Ghost Light
+override it to `false`, `StampRevealing` is a property of the card **itself**, and A8 **replaces**
+`is_data_topmost` rather than sitting in front of it. `PLAN.md` §1.4 is corrected to match.
+
+**2. D20's "stays set for the whole act" now says what it always meant (`Q16`, GAP-002).** It was
+read as *accumulating* — every scored section's cards piling up. It means the forced spotlight is
+not torn down between sections; it **travels**, and its membership is whichever section is being
+scored. Both halves of `Q16`'s answer say so and neither contradicts the other:
+
+> *"whole act? increases or decreases based on cards being scored. dims after initially showing,
+> but gets revealed again at start of next scoring section, moves at same time as other row
+> expanding and moves down with other cards moving down."*
+
+⚠ *"increases or decreases based on cards being scored"* is the operative half and had been dropped
+from every restatement of this answer. **A light that stays up while it moves is one behaviour, not
+two competing ones.** D20 and §17.2's `Q16` are reworded; the implementation was already correct.
 
 ### Version 6 changelog (2026-08-03) — round 3, answered in chat in one go
 
@@ -402,7 +437,7 @@ Everything below was read out of the current source. The design is built on thes
 
 | Where | What it does |
 |---|---|
-| `Cards/card_modifier.gd:60` `CardModifier.is_active()` | THE spotlight rule. Rules-deck card → true. `StampGlobal` → true anywhere. Not stage `PLAY`/`ZONE` → false. `StampRevealing` → true even when covered. Otherwise → `game.is_data_topmost(data)`. |
+| `Cards/card_modifier.gd` `CardModifier.is_spotlit()` (was `is_active`) | THE spotlight rule. Rules-deck card → true. `StampGlobal` → true anywhere. Not stage `PLAY`/`ZONE` → false. **`state.forced_spotlight` → true (A6).** `StampRevealing` → true even when covered. Otherwise → **is anything above me blocking (A8)**, which replaced `game.is_data_topmost(data)` identically. |
 | `Levels/game.gd:603` `Game.is_data_topmost()` | O(1) via the board position index: a card is topmost when it is the last entry of its column, a zone header when its column is empty. |
 | `Cards/card_modifier_skill.gd:11` `active` | The CACHED flag. `@export_storage`, so it is saved and rewound with the board. |
 | `Scripts/card_environment.gd:136` `skill_active_check()` | Walks every card; where `skill.active != skill.is_active()` it flips the flag and fires `on_active` / `on_deactive`. |
@@ -641,18 +676,31 @@ flowchart TD
   A6 -- yes --> A99
   A6 -- no --> A7{"stamp is StampRevealing?"}
   A7 -- yes --> A99
-  A7 -- no --> A8{"NEW: is any card above it a spotlight blocker?"}
+  A7 -- no --> A8{"NEW: is any card above it a spotlight blocker?
+                   blocks_spotlight() DEFAULTS TO TRUE — a card stacked on top HIDES
+                   the talent underneath it. v7 / GAP-001"}
   A8 -- "no cards above" --> A99
-  A8 -- "all above are non-blocking" --> A99
+  A8 -- "all above are non-blocking (a Kuroko is up there)" --> A99
   A8 -- "a blocker is above" --> A98
 ```
 
 - **A6** is the entire new mechanical fork. Placed AFTER the stage check on purpose: a card that has
   left the board cannot be force-spotlit by a stale entry.
-- **A8** is today's `game.is_data_topmost(data)` restated as the general rule the card catalogue
-  already assumes (`Ghost Light`, `Kuroko` — cards that do not block the spotlight beneath them).
-  Shipping it as "is anything above me that blocks" instead of "am I last" costs nothing now and is
-  the only form those cards can ever be built on. **Q9** decides whether it goes in now or later.
+- **A7 is a property of the card ITSELF.** `StampRevealing` keeps *its own* card spotlit anywhere on
+  the board, however deeply covered. It is not a statement about anything above it, which is why it
+  is a separate fork from A8 and sits before it.
+- **A8 REPLACES `game.is_data_topmost(data)`** — it does not sit in front of it. It is the same rule
+  stated generally, as the card catalogue already assumes (`Ghost Light`, `Kuroko` — cards that do
+  not block the spotlight beneath them). **Q9** decides whether it goes in now or later.
+- ⚠ **`blocks_spotlight()` defaults to `true` (v7, GAP-001).** Blocking is what coverage IS: *"if
+  card is covered by another card stacked on top, then that card is not active since its talent is
+  hidden"*. Kuroko is the override to `false`. With everything blocking, "nothing above me" and "I
+  am topmost" are the same statement, so shipping A8 changes no behaviour — which is the whole
+  reason it costs nothing now. **A `false` default would light up every covered card on the board**
+  and contradict U2; `PLAN.md` §1.4 shipped that mistake and is corrected.
+- **One opting-out modifier is enough for its whole card.** A Kuroko stamp unhides the card beneath
+  without having to convince its own card's type and suit to agree — otherwise no card could ever
+  stop blocking, since every base modifier blocks.
 
 **Q6** — does the forced spotlight bypass `blocks_spotlight` (A6 before A8, as drawn), or is a
 forced spotlight still blockable? *Default: bypass — the beam is literally pointed at it.*
@@ -861,10 +909,14 @@ flowchart TD
                -> on_score per meld card -> on_after_score"]
   D17 --> D18["EXISTING: view.reset_meld(result) -> anim_reset"]
   D18 --> D19{"NEW: is there a next SCORING SECTION?"}
-  D19 -- yes --> D20["NEW: HOLD — forced_spotlight stays set for the whole act (Q16),
-                      rows stay expanded, and the dim stays up because beams are
-                      still live (QR2=d). Q16: the set is revealed again at the
-                      start of the next section and moves down with the cards"]
+  D19 -- yes --> D20["NEW: HOLD — the forced spotlight is NOT torn down between sections.
+                      It TRAVELS: it stays up for the whole act (Q16) while its MEMBERSHIP
+                      moves to whichever section is being scored — Q16, 'increases or
+                      decreases based on cards being scored'. It does NOT accumulate;
+                      a section that has been scored is no longer force-spotlit.
+                      Rows stay expanded and the dim stays up because beams are still
+                      live (QR2=d). The set is revealed again at the start of the next
+                      section and moves down with the cards. v7 / GAP-002"]
   D20 --> D21["the next section re-enters at D1;
                chart E decides what travels where"]
   D19 -- no --> D22["NEW: clear state.forced_spotlight"]
@@ -1812,7 +1864,7 @@ braindump opens two forks nothing in v1 asked about.
 - **QR6** `[root]` ⚑gate — Should a tuning tool be built alongside this — a scene that plays every spotlight situation on a real board so you can tune it by eye, like the existing FX editor? · **(a)** in scope, built alongside the feature — **→ next:** ~10 questions on what it hosts and which situations it must be able to replay · **(b)** follow-up; ship the feature first and tune it in-game — **→ next:** none of that · *default* (a) · notes ⇒ (b) skips §17.15
 - **QR7** `[root]` ⚑gate — Scoring moves from row to row and then column to column. When it moves on, does a light TRAVEL from the old card to the new one, or does one set fade out and another fade in? · **(a)** travel — the same lamp swings across, which is what a real followspot does — **→ next:** ~12 questions on how they travel, which light goes to which card, and what happens when the counts do not match · **(b)** fresh set each line, fade out and in — **→ next:** almost none of that · *default* (a) · notes ⇒ (b) skips most of §17.5
 - **QR8** `[root]` ⚑gate — Does the lighting follow the scorer line by line, or does everything that is going to be scored light up at once and stay lit? · **(a)** per line — the light follows the scorer, row by row then column by column — **→ next:** the travel questions (how a light gets from one line's cards to the next), the per-line timing of the reveal, and whether rows collapse between lines · **(b)** once per act — the whole board lights up at the start of the submit and holds — **→ next:** the travel and per-line-timing questions stop applying · *default* (a) · notes ⇒ (b) collapses §17.5 and much of §17.4
-- **QR9** `[root]` ⚑gate — **NEW in v2.** You want one glow shader serving cards, props *and* the spotlight circle. That is a shader question and a *where does it draw* question, and they can be answered separately. Today the circle is drawn by the screen-space light layer, which is what lets it punch a hole in the dim and ignore the card covering its target; a card-hosted quad instead scrolls with the board, turns with the card, and is painted over by the card in front of it. · **(a)** keep the circle on the light layer with its own shader — one more shader, nothing else changes — **→ next:** nothing new · **(b)** move the circle onto the card's own attachment, drawn by the glow shader — **→ next:** ~7 questions on it being occluded, scrolling, turning with the card, and how it survives the dim at all · **(c)** ONE SHADER, TWO HOSTS — the same `.gdshader` and style class draw the card glow, the prop glow and the circle, but the circle's quad still lives on the light layer, so nothing about occlusion or the dim changes — **→ next:** ~3 questions on what the shared shader has to carry to serve both · *default* (c) — it gives you the single shader you asked for without moving the circle underneath the dim that has to be punched for it · notes
+- **QR9** `[root]` ⚑gate ⚑contract — **NEW in v2.** You want one glow shader serving cards, props *and* the spotlight circle. That is a shader question and a *where does it draw* question, and they can be answered separately. Today the circle is drawn by the screen-space light layer, which is what lets it punch a hole in the dim and ignore the card covering its target; a card-hosted quad instead scrolls with the board, turns with the card, and is painted over by the card in front of it. · **(a)** keep the circle on the light layer with its own shader — one more shader, nothing else changes — **→ next:** nothing new · **(b)** move the circle onto the card's own attachment, drawn by the glow shader — **→ next:** ~7 questions on it being occluded, scrolling, turning with the card, and how it survives the dim at all · **(c)** ONE SHADER, TWO HOSTS — the same `.gdshader` and style class draw the card glow, the prop glow and the circle, but the circle's quad still lives on the light layer, so nothing about occlusion or the dim changes — **→ next:** ~3 questions on what the shared shader has to carry to serve both · *default* (c) — it gives you the single shader you asked for without moving the circle underneath the dim that has to be punched for it · notes
 - **QR10** `[root]` ⚑gate — **NEW in v2.** The braindump's film half — halation, bloom, a film LUT, grain, dust, gate weave, chromatic aberration, HDR tonemapping — is a full-screen pass over the finished frame, not a shader on a card, and this project has **no screen read anywhere** today (grepped, §1.6). It would change how the whole game looks, not just the spotlight. · **(a)** in scope now, built alongside Spotlight — **→ next:** ~10 questions on which stages, what it does to the palette contract and to pixel art at screen resolution, and what it costs · **(b)** deferred — Spotlight ships the four stages that need no screen read (multi-layer glow, inverse-square falloff, radial colour shift, in-quad grain) and the film pipeline becomes its own design document — **→ next:** none of that · **(c)** never — the palette and the pixel grid stay the only authorities on colour, and even in-quad grain is dropped — **→ next:** none of that, and one look question is re-asked · *default* (b) — it is a whole-game art-direction change and should not be decided as a side effect of a card glow · notes ⇒ (b)/(c) skip §17.18
 
 ### 17.1 Naming and scope
@@ -1828,28 +1880,60 @@ braindump opens two forks nothing in v1 asked about.
 
 ### 17.2 The mechanical rule `[QR1=a]`
 
-- **Q9** `[QR1=a]` — Ship the general `blocks_spotlight` seam (A8) now, or keep `is_data_topmost`? · **(a)** ship the seam now — same cost, and the only shape Ghost Light / Kuroko can be built on · **(b)** keep `is_data_topmost`, add the seam with those cards · *default* (a)
+- **Q9** `[QR1=a]` ⚑contract — Ship the general `blocks_spotlight` seam (A8) now, or keep `is_data_topmost`? · **(a)** ship the seam now — same cost, and the only shape Ghost Light / Kuroko can be built on · **(b)** keep `is_data_topmost`, add the seam with those cards · *default* (a)
 - **Q10** `[QR1=a]` — Does Spotlight gate **types, stamps and statuses** as well as skills (B14)? Today they fire regardless of coverage. · **(a)** no — skills only, as today · **(b)** yes — all four modifier kinds · *default* (a) · notes ⇒ (b) is a balance change to every shipped card
 - **Q11** `[QR1=a]` — What hook does a forced spotlight fire? · **(a)** `on_active`, the existing one · **(b)** a new `on_spotlight` distinct from `on_active` · *default* (a)
 - **Q12** `[QR5≠c]` — `skill_active_check` runs after every mod call, so a card can flicker spotlit several times inside one line. Does the glow follow that literally? · **(a)** no, minimum on-time damps it · **(b)** yes, literally · *default* (a)
 - **Q13** `[QR1=a]` — A card force-spotlit that was ALREADY naturally spotlit — does anything fire? · **(a)** nothing, it never changed state · **(b)** it re-fires · *default* (a)
 - **Q14** `[QR1=a]` — On release, a card still naturally spotlit must NOT fire `on_deactive`. · **(a)** confirmed, the release recomputes · **(b)** blanket-clear and let it re-activate · *default* (a)
 - **Q15** `[QR1=a]` — A card force-spotlit twice in one act (row pass, then column pass) · **(a)** `on_active` fires once per transition — nothing the second time if it stayed spotlit · **(b)** fires every time it is force-spotlit · *default* (a)
-- **Q16** `[QR1=a & QR8=a]` — Does the forced spotlight persist for the whole act or only its line? · **(a)** only its line · **(b)** the whole act, accumulating · *default* (a)
-- **Q17** `[QR1=a]` — Does forced spotlight bump `GameData.revision`? · **(a)** no — not a board mutation, and a bump forces a rebuild mid-cascade · **(b)** yes · *default* (a)
-- **Q18** `[QR1=a]` — Does forced spotlight survive undo? · **(a)** no, per-act state · **(b)** yes · *default* (a)
+- **Q16** `[QR1=a & QR8=a]` — Does the forced spotlight persist for the whole act or only its line? · **(a)** only its line · **(b)** the whole act, accumulating — every scored section's cards pile up · **(c)** THE WHOLE ACT, TRAVELLING — it is never torn down between sections, and its membership is whichever section is being scored, so a section that has already scored is no longer force-spotlit. Your own answer, added v7 · *default* (c) · notes
+- **Q17** `[QR1=a]` ⚑contract — Does forced spotlight bump `GameData.revision`? · **(a)** no — not a board mutation, and a bump forces a rebuild mid-cascade · **(b)** yes · *default* (a)
+- **Q18** `[QR1=a]` ⚑contract — Does forced spotlight survive undo? · **(a)** no, per-act state · **(b)** yes · *default* (a)
 - **Q19** `[QR1=a]` — Headless: does the mechanical spotlight fire identically, with no waits? · **(a)** yes — otherwise headless scoring diverges and the resume-replay contract breaks · **(b)** no, headless skips it · *default* (a)
 - **Q20** `[QR1=a]` — Do spotlight-triggered activations register combo classes (§15a U)? · **(a)** yes, they count · **(b)** no, they are excluded · *default* (a)
 - **Q21** `[QR1=a]` — Do they touch patience? · **(a)** no (patience is already inactive during a submit) · **(b)** yes · *default* (a)
-- **Q22** `[QR1=a]` ⚑gate — An `on_active` handler moves a card out of the section. Does the score use the ORIGINAL hand? · **(a)** yes, the hand is fixed before the spotlight phase — **→ next:** nothing further · **(b)** no, re-evaluate — **→ next:** when re-evaluation runs, whether a worse hand still scores, and what the player sees while the hand changes under the animation · *default* (a) ⇒ (a) skips Q23
-- **Q23** `[Q22=b]` — When is the meld re-evaluated? · **(a)** after all spotlight effects fire, once · **(b)** after each card's effect · *default* (a) · notes
+- **Q22** `[QR1=a]` ⚑gate ⚑contract — An `on_active` handler moves a card out of the section. Does the score use the ORIGINAL hand? · **(a)** yes, the hand is fixed before the spotlight phase — **→ next:** nothing further · **(b)** no, re-evaluate — **→ next:** when re-evaluation runs, whether a worse hand still scores, and what the player sees while the hand changes under the animation · *default* (a) ⇒ (a) skips Q23
+- **Q23** `[Q22=b]` ⚑contract — When is the meld re-evaluated? · **(a)** after all spotlight effects fire, once · **(b)** after each card's effect · *default* (a) · notes
 - **Q24** `[QR1=a]` ⚑gate — During scoring, a card's own ability fires and discards a card that is part of the hand being scored. The hand's value was already worked out before any ability fired, so the score does not move — but a card has just vanished from the middle of a stack, and a light is pointing at where it was. · **(a)** the light retires; the discarded card's jump is skipped — **→ next:** nothing further · **(b)** the score is recomputed without it — **→ next:** nothing further · **(c)** COMPACT AND FOLLOW — the column closes up, the card that was covering it slides into its place, and the light follows the slot: the new occupant is spotlit and goes through the whole activation. Score unchanged. This is your own answer from round 1, written up as §12b — **→ next:** ~9 questions on which neighbour slides in, what happens when nothing can, whether the chain needs a cap, and what it does to rows the cascade has already scored · *default* (c) — it is what you asked for, and picking the letter is what opens those nine · notes ⇒ (a)/(b) skip §17.2b
-- **Q25** `[QR1=a]` ⚑gate — May `on_active` handlers mutate the board during scoring? · **(a)** no, they defer (ruling B10) — **→ next:** when the deferred work runs · **(b)** yes, immediately — **→ next:** what happens to the list the activation sweep is walking, and whether the resulting loop needs a cap · *default* (a) ⇒ (b) skips Q26
+- **Q25** `[QR1=a]` ⚑gate ⚑contract — May `on_active` handlers mutate the board during scoring? · **(a)** no, they defer (ruling B10) — **→ next:** when the deferred work runs · **(b)** yes, immediately — **→ next:** what happens to the list the activation sweep is walking, and whether the resulting loop needs a cap · *default* (a) ⇒ (b) skips Q26
 - **Q26** `[Q25=a]` — When does the deferred work run? · **(a)** after the line, before the next line · **(b)** at the very end of the act · *default* (a)
 - **Q27** `[QR1=a & QR8=a]` — Do activations happen per line (chart D) or for the whole act up front? · **(a)** per line · **(b)** whole act up front · *default* (a)
 - **Q28** `[QR1=a]` — Is there a MECHANICAL cap on simultaneously force-spotlit cards? · **(a)** no · **(b)** yes, a number · *default* (a)
 - **Q29** `[QR1=a]` — Does being spotlit make a card targetable or interactable in any new way? · **(a)** no · **(b)** yes · *default* (a) · notes
 - **Q30** `[QR1=a]` — Will content ever QUERY "is this card spotlit" (a card reading "while 3 cards are spotlit")? · **(a)** not in this plan, but the state is queryable so it is possible later · **(b)** yes, design the query surface now · *default* (a)
+
+
+**Two answers in this section were re-stated in v7 after phase 1 was implemented. Both are quoted
+rather than summarised, because summarising them is exactly what went wrong.**
+
+**`Q9` = (a), and the CONTRACT it did not ask about (GAP-001).** `Q9` decided to *ship* the seam;
+it never asked what the seam's default is or what it replaces, and `PLAN.md` §1.4 filled that in
+backwards. The owner's answer:
+
+> *"default is if card is covered by another card stacked on top, then that card is not active
+> since its talent is hidden. Kuroko allows card it is on top of to be unhidden instead, activating
+> its effect, and revealing allows the card it is attached to be spotlit anywhere even if card is
+> covered."*
+
+`blocks_spotlight()` is asked of the **covering** card, defaults **`true`**, is overridden to
+`false` by Kuroko / Ghost Light, and one opting-out modifier is enough for its whole card. It
+**replaces** `is_data_topmost` rather than preceding it. `StampRevealing` is not part of it at all —
+it is a property of the card itself (A7).
+
+**`Q16` = (c), quoted in full (GAP-002).** This was answered in free text because (a) and (b) did
+not contain the answer; option (c) was added in v7 so it has a letter. **Every earlier restatement
+of this answer kept the first half and dropped the second, and the second is the operative one:**
+
+> *"whole act? **increases or decreases based on cards being scored.** dims after initially showing,
+> but gets revealed again at start of next scoring section, moves at same time as other row
+> expanding and moves down with other cards moving down. In future its possible for scoring hand
+> shape to not be orthogonal, maybe multiple rows and columns at same time or diagonals or any
+> shape possible, so keep that in mind for future proofing"*
+
+*"Decreases"* rules out (b); *"whole act"* rules out (a). **They are one behaviour — a light that
+stays up while it moves — not two competing ones.** GAP-002 was filed on reading them as two, and
+is withdrawn.
 
 ### 17.2b The discard compaction `[Q24=c]`
 
@@ -1861,7 +1945,7 @@ Spotlight exists.
 - **Q198** `[Q24=c]` — You said *"card stacked above in same column slides into discarded card's place"*. Cards in a column overlap downward: the one drawn on top of another sits lower on screen and hides its bottom. Which neighbour slides in? · **(a)** the card that was COVERING it — the one on top of it, which sits just below it on screen. This is what the board does by itself when an array entry is erased, so it costs nothing · **(b)** the card ABOVE it on screen — the one it was itself covering, which would mean the stack slides down instead of up · *default* (a) · notes
 - **Q199** `[Q24=c]` — The discarded card was the last of its column — nothing was covering it, so nothing can slide in. · **(a)** the light retires, as Q24=(a) would have done. The card that was under it becomes uncovered and naturally spotlit, but it is in a different row and is not part of this line · **(b)** the light follows downward to the newly uncovered card and force-spotlights it anyway, even though it is not in the line being scored · *default* (a)
 - **Q200** `[Q24=c]` — How does the light get from the discarded card to its replacement? They are one row apart, which is 45 px at defaults. · **(a)** it travels, using the same tween as a line-to-line move but shorter · **(b)** it snaps — the card slid into the same slot, so the light was already almost there · **(c)** it stays exactly where it is; the replacement card arrives underneath it · *default* (c) — the light is pinned to the SLOT for this one case, so nothing has to move at all · notes
-- **Q201** `[Q24=c]` — The replacement card activates, and its ability discards a card too, and so on. A column could unzip itself in one line. Is there a cap? · **(a)** yes, a cap on follows per line (a tunable, suggested 3) — beyond it the light retires and the line proceeds · **(b)** no cap; `act_event_cap` already stops a true runaway at act level · **(c)** cap at one follow — a slot is filled at most once per line · *default* (a) · notes ⇐ **the one that can hurt: without a bound this loop has no natural end**
+- **Q201** `[Q24=c]` ⚑contract — The replacement card activates, and its ability discards a card too, and so on. A column could unzip itself in one line. Is there a cap? · **(a)** yes, a cap on follows per line (a tunable, suggested 3) — beyond it the light retires and the line proceeds · **(b)** no cap; `act_event_cap` already stops a true runaway at act level · **(c)** cap at one follow — a slot is filled at most once per line · *default* (a) · notes ⇐ **the one that can hurt: without a bound this loop has no natural end**
 - **Q202** `[Q24=c]` — The compaction moves every card BELOW the discard up one row, while the scoring cascade is still counting rows. A card that was in row 4 is now in row 3 — a row the cascade has already scored. · **(a)** accept it: rows are scored by index, the index is re-read each iteration, and a card that moves up is simply scored in whatever row it is in when that row comes up — so it can be skipped · **(b)** a card that has already been scored this act is never scored again, tracked per card · **(c)** freeze the row indices for the whole act, so the cascade scores the board as it was at submit · *default* (a) · notes ⇐ this is a SCORING question, not a lighting one, and it exists today for any mid-act discard
 - **Q203** `[Q24=c & QR4=a]` — The rows that had to slide apart were worked out before the discard. After it, the board is one card shorter in that column. · **(a)** re-derive the reveal set and re-tween — the board settles into its new shape mid-line · **(b)** leave the reveal as it was; the extra gap is harmless and re-tweening mid-line is visual noise · *default* (a) · notes
 - **Q204** `[Q24=c]` — Does the replacement card fire `on_active` even though it cannot affect this hand's score (the meld was fixed before any ability fired)? · **(a)** yes — it is spotlit, and spotlit means your abilities fire; the score not moving is a separate fact · **(b)** no — an activation that cannot matter is ceremony · *default* (a) — it is your own words, *"goes through activation process"*
@@ -1870,7 +1954,7 @@ Spotlight exists.
 
 ### 17.3 What is in the spotlight set
 
-- **Q31** `[root]` ⚑gate — **THE BIG ONE.** What is the spotlight set for one scoring section? · **(a)** every card in the line — **→ next:** whether a 5-card row with a 2-card pair really lights all five · **(b)** only the cards in `result.meld` (the best hand) — **→ next:** none of that · **(c)** every card in the line is lit, but only the meld cards jump — **→ next:** the same as (a) · **(d)** EVERY CARD PARTICIPATING IN THE HAND, and the lit set is **exactly the set that jumps** — shape-agnostic, so it is a row or a column today and any shape a future scorer evaluates together. Your round-1 answer — **→ next:** the same question as (a), plus whether every participating card now JUMPS (today only the meld does) · *default* (d) — it is what you wrote · notes
+- **Q31** `[root]` ⚑gate ⚑contract — **THE BIG ONE.** What is the spotlight set for one scoring section? · **(a)** every card in the line — **→ next:** whether a 5-card row with a 2-card pair really lights all five · **(b)** only the cards in `result.meld` (the best hand) — **→ next:** none of that · **(c)** every card in the line is lit, but only the meld cards jump — **→ next:** the same as (a) · **(d)** EVERY CARD PARTICIPATING IN THE HAND, and the lit set is **exactly the set that jumps** — shape-agnostic, so it is a row or a column today and any shape a future scorer evaluates together. Your round-1 answer — **→ next:** the same question as (a), plus whether every participating card now JUMPS (today only the meld does) · *default* (d) — it is what you wrote · notes
 - **Q32** `[Q31=a|c]` — A 5-card row whose meld is a 2-card pair: all 5 get beams, 2 jump. Intended? · **(a)** yes · **(b)** no, rethink · *default* (a)
 - **Q33** `[root]` — A line with exactly one card (ragged row, 1-card column) · **(a)** full treatment, no special case · **(b)** skipped, not worth a cue · *default* (a)
 - **Q34** `[root]` — A line that produces NO meld never reaches `score_line`, so it silently gets no spotlight · **(a)** correct — nothing was evaluated, nothing is spotlit · **(b)** wrong, it should still light up · *default* (a)
@@ -1888,7 +1972,7 @@ Spotlight exists.
 - **Q43** `[QR4=a]` — How far does a row expansion open? · **(a)** the FULL card height (matches the existing held-stack expansion) · **(b)** only enough to clear the 32×32 art square (~103 px of 125) · **(c)** a tunable fraction · *default* (a) · notes
 - **Q44** `[QR4=a]` — Reveal before the lights arrive (D6 → D8) or simultaneously? · **(a)** before — the light lands on an already-visible card · **(b)** simultaneously · *default* (a)
 - **Q45** `[QR4=a & QR2=a|c|d]` — Reveal before or after the dim rises? · **(a)** after — the dim rises once at act start, reveals happen inside it · **(b)** before · *default* (a)
-- **Q46** `[QR4=a]` — Is `expand_rows` / `expand_cols` (two independent booleans) the right granularity? · **(a)** yes · **(b)** one shared boolean · **(c)** finer than that · *default* (a) · notes
+- **Q46** `[QR4=a]` ⚑contract — Is `expand_rows` / `expand_cols` (two independent booleans) the right granularity? · **(a)** yes · **(b)** one shared boolean · **(c)** finer than that · *default* (a) · notes
 - **Q47** `[QR4=a]` — What counts as "a card that can react", for the skip tunable? · **(a)** not already spotlit · **(b)** not already spotlit AND its skill implements `on_active` · **(c)** (b) plus type/stamp/status hooks · *default* (b) — (c) only makes sense if Q10=(b)
 - **Q48** `[QR4=a]` — If NO card in a line can react · **(a)** it still gets lights, just no expansion — the audience still watches the hand · **(b)** the line is skipped entirely, no lights either · *default* (a)
 - **Q49** `[QR4=a & QR8=a]` ⚑gate — Between sections, do expanded rows collapse? · **(a)** collapse the rows the next section does not need — **→ next:** one question on the visible bounce when a shared row collapses and re-expands · **(b)** stay expanded until the whole cascade ends — **→ next:** nothing further · *default* (a) — (b) grows the board monotonically through the act ⇒ (b) skips Q50
@@ -1936,7 +2020,7 @@ QR2 to (c)**. The four that are genuinely about a dim that lasts the whole act s
 - **Q81** `[QR2=a]` — Is the dim level constant through the act? · **(a)** constant · **(b)** deepens as the cascade proceeds · *default* (a)
 - **Q82** `[QR2=a & QR8=a]` — Does the dim raise once per act (C5) or per line? · **(a)** once per act · **(b)** per line · *default* (a)
 - **Q83** `[QR2=a|c|d]` — `fx_intensity = 0` (the accessibility floor) · **(a)** removes beams and glow, KEEPS a reduced dim — removing it entirely makes the mechanic invisible · **(b)** removes everything including the dim · **(c)** removes nothing, dim is not an "effect" · *default* (a) · notes
-- **Q84** `[QR2=a|c|d]` — A separate player setting for dim depth (a 75 % dim every submit may be fatiguing)? · **(a)** yes, `dim_target` is a player setting · **(b)** no, style-resource only · *default* (a)
+- **Q84** `[QR2=a|c|d]` ⚑contract — A separate player setting for dim depth (a 75 % dim every submit may be fatiguing)? · **(a)** yes, `dim_target` is a player setting · **(b)** no, style-resource only · *default* (a)
 
 ### 17.6b The TRANSIENT dim `[QR2=c]`
 
@@ -2003,7 +2087,7 @@ thing as a chart if you would rather look at it.
 - **Q121** `[QR5≠c]` — Glow and focus-highlight on the same card must read distinctly (the highlight is a whole-card `modulate` brighten; the glow is a coloured bloom). Enough separation? · **(a)** yes, different mechanism and colour · **(b)** no, the highlight needs changing too · *default* (a) · notes
 - **Q122** `[QR5≠c]` ⚑gate — Glow form · **(a)** OUTER glow, a halo around the silhouette — **→ next:** whether the reference shader's look is the intended one · **(b)** INNER lift, the face itself brightens — **→ next:** nothing further · **(c)** both — **→ next:** nothing further · *default* (a) — an inner lift is indistinguishable from the focus highlight, the exact confusion the brief wants avoided ⇒ (b)/(c) skip Q123
 - **Q123** `[Q122=a|c]` — The reference shader in the brief is `blend_add` with a rounded-rect distance field. Is that the intended look? · **(a)** yes · **(b)** something else (notes) · *default* (a) · notes
-- **Q124** `[QR5≠c]` — Does the glow follow the card's deformed star-rig silhouette? · **(a)** no, a plain rounded rect for v1 · **(b)** yes, exact silhouette · *default* (a) — the mask machinery exists but is expensive, and a halo need not be exact
+- **Q124** `[QR5≠c]` ⚑contract — Does the glow follow the card's deformed star-rig silhouette? · **(a)** no, a plain rounded rect for v1 · **(b)** yes, exact silhouette · *default* (a) — the mask machinery exists but is expensive, and a halo need not be exact
 - **Q125** `[QR5≠c]` — Is the glow occluded by covering cards (owner ruling 2, as fire is)? · **(a)** yes, occluded — consistent with every other effect · **(b)** no, it draws over covering cards · *default* (a) · notes
 - **Q126** `[QR5≠c]` — Does the glow animate? · **(a)** steady · **(b)** slow breathe · **(c)** flicker · *default* (a) — photosensitivity and board-wide noise both argue against a board of pulsing halos
 - **Q127** `[QR2=a|c|d & QR5=a]` — During the dim, a naturally spotlit card with no beam on it · **(a)** is dimmed like everything else, so its glow vanishes — that is what makes the beam mean something · **(b)** keeps its glow through the dim · *default* (a)
@@ -2058,7 +2142,7 @@ thing as a chart if you would rather look at it.
 ### 17.14 Tunables
 
 - **Q166** `[root]` — Is the §16 timing list complete? · **(a)** yes · **(b)** no (notes) · *default* (a) · notes
-- **Q167** `[root]` — All timings as fractions of `get_delay()`, never wall-clock? · **(a)** yes, project rule · **(b)** some should be absolute · *default* (a)
+- **Q167** `[root]` ⚑contract — All timings as fractions of `get_delay()`, never wall-clock? · **(a)** yes, project rule · **(b)** some should be absolute · *default* (a)
 - **Q168** `[root]` — Which LOOK knobs are player settings rather than style-resource knobs? · **(a)** `dim_target` and `fx_intensity` in settings, everything else on the style · **(b)** all of them in settings · **(c)** none, style only · *default* (a)
 - **Q169** `[root]` — One style resource or two? · **(a)** two — the light layer and the card glow are different shaders, one folder (as fire does for card vs prop) · **(b)** one combined · *default* (a)
 - **Q170** `[root]` — Are the suggested VALUES in §16 in the right ballpark? · **(a)** yes, starting points to tune by eye · **(b)** start more dramatic · **(c)** start subtler · *default* (a)
@@ -2149,7 +2233,7 @@ The 22 are self-contained; §0b has the collisions in table form.
 **C2 — the score moves under the animation**
 
 - **Q243** `[Q22=b & Q24=c]` — You chose both "re-evaluate the hand after the spotlight effects fire" and "when a scored card is discarded, the column closes up and the next card slides in and activates". Together those mean the hand being scored can become a *different hand* part-way through the performance that is showing it. What does the player see? · **(a)** the lights and jumps re-cue: cards that left the hand drop and go dark, cards that joined rise and light up, then the score lands · **(b)** the performance is not interrupted — the original cards keep performing and only the final number reflects the new hand · **(c)** the performance restarts for the new hand · *default* (a) — (b) shows a number that does not match what is lit, which is the one thing a spotlight exists to prevent · notes
-- **Q244** `[Q22=b]` — Re-evaluation runs once, after all spotlight effects (Q23=a). If the new hand is WORSE than the original — a pair broken and not re-made — does it still score? · **(a)** yes, whatever the section evaluates to at that point is the score, including nothing at all · **(b)** the original hand is a floor; re-evaluation can only improve it · *default* (a) · notes
+- **Q244** `[Q22=b]` ⚑contract — Re-evaluation runs once, after all spotlight effects (Q23=a). If the new hand is WORSE than the original — a pair broken and not re-made — does it still score? · **(a)** yes, whatever the section evaluates to at that point is the score, including nothing at all · **(b)** the original hand is a floor; re-evaluation can only improve it · *default* (a) · notes
 
 **C3 — what the dim actually belongs to** *(QR2 has gained option (d); these follow from it)*
 
@@ -2166,7 +2250,7 @@ The 22 are self-contained; §0b has the collisions in table form.
 
 **C5 — mutation inside the activation sweep**
 
-- **Q252** `[Q25=b]` — You allowed `on_active` handlers to mutate the board immediately rather than deferring. The activation sweep walks the section's cards in board order firing hooks; a hook that moves or discards a card changes the very list being walked. · **(a)** snapshot the list before the sweep and walk the snapshot — cards added by a handler are not activated this section · **(b)** re-derive after every hook, so a card that arrives mid-sweep is activated too (this is what Flowchart R's follow already does) · **(c)** snapshot, but re-run the whole sweep once if the board changed · *default* (b) — it is what you asked for at Q24, and (a) would make the compaction's new occupant *not* activate · notes
+- **Q252** `[Q25=b]` ⚑contract — You allowed `on_active` handlers to mutate the board immediately rather than deferring. The activation sweep walks the section's cards in board order firing hooks; a hook that moves or discards a card changes the very list being walked. · **(a)** snapshot the list before the sweep and walk the snapshot — cards added by a handler are not activated this section · **(b)** re-derive after every hook, so a card that arrives mid-sweep is activated too (this is what Flowchart R's follow already does) · **(c)** snapshot, but re-run the whole sweep once if the board changed · *default* (b) — it is what you asked for at Q24, and (a) would make the compaction's new occupant *not* activate · notes
 - **Q253** `[Q25=b]` — Immediate mutation plus re-derivation is a loop that can feed itself. Flowchart R already needed a cap for the discard case (Q201). Is that the same cap? · **(a)** yes, one cap on activations per scoring section covers both · **(b)** two separate caps · *default* (a)
 
 **C6 — the cost, honestly**
@@ -2183,7 +2267,7 @@ The 22 are self-contained; §0b has the collisions in table form.
 **Two more your answers opened**
 
 - **Q259** `[QR5≠c]` — You are right that natural spotlight only changes when a card is covered or uncovered, so there is nothing to damp there (Q12 is withdrawn). The narrow case that remains: during one scoring section the FORCED spotlight is set, hooks run, and the activation check re-runs several times before the section ends. Under Q13/Q15 a card that stays spotlit does not re-fire — but should the *glow* still be held at full for a minimum time, so a card spotlit for a very short section does not flash? · **(a)** yes, a minimum on-time on the glow only · **(b)** no, the glow follows the state exactly · *default* (a)
-- **Q260** `[root]` ⚑gate — You asked three times that this not hardcode "a line is a row or a column" — *"could be more than lines with scorers other than cascader"*, *"maybe multiple rows and columns at same time or diagonals or any shape possible"*. v3 renames the unit from **line** to **scoring section**: whatever set of cards one scorer invocation evaluates together. Is that far enough? · **(a)** yes — a section is an arbitrary set of cards, and nothing in the design may assume its shape — **→ next:** one question re-deriving the reveal, the beam assignment and the skip tunables from the card set instead of from rows and columns · **(b)** further: sections should be able to overlap and run concurrently — **→ next:** the same question · **(c)** rows and columns are enough for now, note the rest as a follow-up — **→ next:** nothing further · *default* (a) · notes
+- **Q260** `[root]` ⚑gate ⚑contract — You asked three times that this not hardcode "a line is a row or a column" — *"could be more than lines with scorers other than cascader"*, *"maybe multiple rows and columns at same time or diagonals or any shape possible"*. v3 renames the unit from **line** to **scoring section**: whatever set of cards one scorer invocation evaluates together. Is that far enough? · **(a)** yes — a section is an arbitrary set of cards, and nothing in the design may assume its shape — **→ next:** one question re-deriving the reveal, the beam assignment and the skip tunables from the card set instead of from rows and columns · **(b)** further: sections should be able to overlap and run concurrently — **→ next:** the same question · **(c)** rows and columns are enough for now, note the rest as a follow-up — **→ next:** nothing further · *default* (a) · notes
 - **Q261** `[Q260=a|b]` — Several things in this design read geometry off the assumption that a section is a row or a column: the reveal expands *"the spotlit card's own row"*, beam-to-target assignment sorts by x, and the skip tunables are named `expand_rows` / `expand_cols`. · **(a)** re-derive all three from the section's actual card set — the reveal expands whatever rows the section touches, assignment sorts by x regardless of shape, and the tunables become per-section-kind rather than row/col · **(b)** keep the row/column names and generalise later · *default* (a) — (b) is how the assumption survives into the code · notes
 
 ### 17.21 ROUND 3 — the three round 2 opened `[root]`
@@ -2195,7 +2279,7 @@ the six gating questions carry a letter.
 - **Q263** `[QR5≠c]` — You said the glow appears the instant the spotlight lands on a card and is *"instantly lost once covered visually so its snappy"*. Elsewhere you confirmed the glow follows MECHANICAL state, not visual state — which is why picking up a stack does not light the card revealed underneath, even though it has become visible. "Covered visually" is the opposite test. Which is it? · **(a)** visual: if the player cannot see the card, it does not glow, however the covering happened — including a held stack hovering over it · **(b)** mechanical: the glow follows whether the card is actually uncovered on the board; a stack held in the air over it changes nothing · **(c)** mechanical for whether it glows, visual for whether it is DRAWN — the glow exists but is occluded, which is already what Q125=(a) says happens to it · *default* (c) — it is the one that makes both your answers true at once · notes
 - **Q264** `[QR5≠c]` — Confirming the snappiness itself, which Q259 settled: no fade in or out on the glow at all? · **(a)** correct — instant on, instant off, no `glow_fade_fraction` · **(b)** instant ON, short fade OFF · **(c)** keep a short fade both ways · *default* (a) — it is what you asked for, and it makes `spotlight_glow_fade_fraction` in §16 a dead knob to delete
 - **Q265** `[Q31=d]` — Making the lit set exactly the jump set means **every participating card jumps**, where today only the best hand's cards do. That is a change to the existing scoring animation. Intended? · **(a)** yes — everything being scored rises together, and the hand is not visually singled out at all · **(b)** yes, but the best hand's cards jump HIGHER, so the hand is still readable within the lift · **(c)** no — keep today's behaviour, only the best hand jumps, and the lit set is simply wider than the jumping set · *default* (b) · notes ⇐ **(a) removes the only cue that currently tells you which cards actually made the score**
-- **Q266** `[Q31=d]` — With the section shape no longer assumed to be a row or column, "every participating card" needs a definition that survives a future diagonal or multi-row scorer. · **(a)** whatever set of cards the scorer handed to `score_line` — the section IS its card list, and no geometry is inferred from it anywhere · **(b)** the cards the scorer evaluated AND any it names as contributing, which may differ · *default* (a) · notes
+- **Q266** `[Q31=d]` ⚑contract — With the section shape no longer assumed to be a row or column, "every participating card" needs a definition that survives a future diagonal or multi-row scorer. · **(a)** whatever set of cards the scorer handed to `score_line` — the section IS its card list, and no geometry is inferred from it anywhere · **(b)** the cards the scorer evaluated AND any it names as contributing, which may differ · *default* (a) · notes
 
 ### 17.19 Explicitly out of scope — confirm (the terminal group)
 

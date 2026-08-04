@@ -2,6 +2,16 @@
 class_name CardEnvironment
 extends Node
 
+## One or more cards just TRANSITIONED into the spotlight (design chart T, `Q149`=b): the
+## momentary activation cue. Fire-and-forget — phase 1 wires the seam, the light layer draws it.
+## ⚠ Emitted once per `skill_spotlight_check()` sweep that saw any transition, carrying every
+## card that transitioned in it (`Q247`=a: one cue covering all of them, not one per card), and
+## only for cards whose skill implements `on_spotlight` (`Q246`=a — anything else has nothing to
+## announce). A card that was ALREADY spotlit never appears here (`Q13`, `Q15`), which is also
+## why loading a save emits nothing: `spotlit` is `@export_storage`, so a card saved spotlit
+## loads spotlit and transitions nothing (`Q248`=b — no suppression code, the case cannot arise).
+signal spotlight_cued(cards: Array[CardData])
+
 static var CURRENT : CardEnvironment = null
 
 static func get_current_game() -> Game:
@@ -66,14 +76,14 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 					note_processing()
 					await Callable(mod, function).callv(params)
 					_note_mod_fired(mod, function)
-					await skill_active_check()
+					await skill_spotlight_check()
 			var skill : CardModifierSkill = data.skill
-			if skill and skill.has_method(function) and skill.active:
+			if skill and skill.has_method(function) and skill.spotlit:
 				triggered = true
 				note_processing()
 				await Callable(skill, function).callv(params)
 				_note_mod_fired(skill, function)
-				await skill_active_check()
+				await skill_spotlight_check()
 	# P1 owner ruling (2026-07-16): the passive on_anything tail only runs when this event
 	# actually invoked a mod — if nothing ran, nothing could have changed.
 	if triggered and function != &"on_anything":
@@ -81,7 +91,7 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 
 #SE1: comparators run per card-compare, so the "which mods implement this hook" walk
 #is cached while the board hasn't mutated. Skills stay in the list regardless of
-#`active` and are gate-checked at use time (the active flag flips without a mutation).
+#`spotlit` and are gate-checked at use time (the spotlit flag flips without a mutation).
 var _compare_cache : Dictionary[StringName, Array] = {}
 var _compare_cache_key : Array = []
 
@@ -111,7 +121,7 @@ func _compare_implementers(function: StringName) -> Array:
 
 func return_first_compare_mod_result(function: StringName, ...params:Array) -> float:
 	for mod : CardModifier in _compare_implementers(function):
-		if mod is CardModifierSkill and not (mod as CardModifierSkill).active: continue
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
 		var result : float = await Callable(mod, function).callv(params)
 		_note_mod_fired(mod, function, false)
 		return result
@@ -127,27 +137,38 @@ func return_first_data_array_result(function: StringName, ...params:Array) -> Ar
 				_note_mod_fired(mod, function, false)
 				if result: return result
 		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.active:
+		if skill and skill.has_method(function) and skill.spotlit:
 			var result : Array[CardData] = await Callable(skill, function).callv(params)
 			_note_mod_fired(skill, function, false)
 			if result: return result
 	return []
 
-func skill_active_check() -> void:
+## THE activation sweep (design chart B). Walks every card and reconciles the cached `spotlit`
+## flag with the live rule, firing `on_spotlight` / `on_unspotlight` on the EDGE only — a card
+## that was already spotlit is not re-announced (Q13, Q15).
+func skill_spotlight_check() -> void:
+	# The momentary cue (design chart T, S10): every card that transitioned to spotlit during
+	# THIS sweep and has something to announce. Q247=a — ONE cue covering all of them, so it is
+	# collected across the walk and emitted once at the end, not per card.
+	var cued : Array[CardData] = []
 	for data in CardDataIterator.new(self):
 		var skill : CardModifierSkill = data.skill
 		if skill:
-			if not skill.active and skill.is_active():
-				skill.active = true
-				if skill.has_method(&"on_active"):
-					await Callable(skill, &"on_active").call()
-			elif skill.active and not skill.is_active():
-				skill.active = false
-				if skill.has_method(&"on_deactive"):
-					await Callable(skill, &"on_deactive").call()
+			if not skill.spotlit and skill.is_spotlit():
+				skill.spotlit = true
+				if skill.has_method(&"on_spotlight"):
+					# Q246=a: only a skill with an on_spotlight hook has anything to show.
+					cued.append(data)
+					await Callable(skill, &"on_spotlight").call()
+			elif skill.spotlit and not skill.is_spotlit():
+				skill.spotlit = false
+				if skill.has_method(&"on_unspotlight"):
+					await Callable(skill, &"on_unspotlight").call()
+	if cued:
+		spotlight_cued.emit(cued)
 
 ## Run `function` on ONE card's own modifiers — type, stamp, suit, a statuses snapshot, then
-## the active skill. The ONLY dispatch that sees suits; the board-wide run_all_mods iterator
+## the spotlit skill. The ONLY dispatch that sees suits; the board-wide run_all_mods iterator
 ## stays suit-free. Used by the prop tick loop's 3-phase pass (on_prop_passing/passed).
 ## Cost: O(mods on this card). Statuses are appended as a copy (safe if one self-removes).
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
@@ -159,7 +180,7 @@ func run_card_mods(card: CardData, function: StringName, ...params: Array) -> vo
 			await Callable(mod, function).callv(params)
 			_note_mod_fired(mod, function, false)
 	var skill : CardModifierSkill = card.skill
-	if skill and skill.active and skill.has_method(function):
+	if skill and skill.spotlit and skill.has_method(function):
 		note_processing()
 		await Callable(skill, function).callv(params)
 		_note_mod_fired(skill, function, false)

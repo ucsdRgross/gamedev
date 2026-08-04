@@ -567,6 +567,45 @@ test('an ask on a gate withholds its subtree until it is re-answered', async () 
   }
 });
 
+test('GET /provenance reports the distance between an answer and what the docs say (S19)', async () => {
+  await fixture();
+  // Q1 is answered in PROSE — no letter, just the owner's words. That is not a defect; leaving it
+  // to be paraphrased is. PLAN.md below summarises it and carries none of the owner's wording,
+  // which is exactly the shape that cost solatro/spotlight a round (GAP-002).
+  const NOTE = 'yes but only while the beam is live, it increases or decreases with the cards';
+  const PLAN = [
+    '## 1. NORMATIVE CONTRACTS', '', '### 1.1 The thing (`Q1`=yes)', '',
+    '```js', 'const thing = true;', '```', '',
+  ].join('\n');
+  await writeFile(join(DIR, 'PLAN.md'), PLAN, 'utf8');
+  const s = await serve();
+  try {
+    // `override: true` IS the owner writing their own answer: no letter, just the note.
+    await s.post('/answer', { id: 'Q1', state: 'chosen', override: true, note: NOTE });
+    const prov = await s.get('/provenance');
+
+    // 1. answered in prose, with no option for a gate to read or a document to cite
+    assert.deepEqual(prov.in_prose.map((x) => x.id), ['Q1']);
+    assert.equal(prov.in_prose[0].promoted, false);
+
+    // 2. PLAN.md relies on Q1 and quotes none of it
+    assert.deepEqual(prov.unquoted.map((x) => [x.id, x.doc]), [['Q1', 'PLAN.md']]);
+
+    // 3. a normative block no ⚑contract question authorises
+    assert.equal(prov.contracts.blocks.length, 1);
+    assert.equal(prov.contracts.unauthorised.length, 1);
+
+    // ?id= is the restatement index: the answer, and every place a document speaks for it.
+    const one = await s.get('/provenance?id=Q1');
+    assert.equal(one.answer.note, NOTE);
+    assert.ok(one.restatements.some((r) => r.doc === 'PLAN.md'));
+    assert.ok(one.restatements.some((r) => r.doc.endsWith('.md') && r.own),
+      "the question's own bullet is in the index — it is where the options live");
+  } finally {
+    await s.close();
+  }
+});
+
 test.after(async () => {
   await rm(ROOT, { recursive: true, force: true });
 });

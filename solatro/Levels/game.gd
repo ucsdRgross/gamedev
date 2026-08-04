@@ -246,7 +246,7 @@ func _start_fresh_show() -> void:
 	_update_submit_label()
 	add_deck()
 	await run_all_mods(&"on_game_start")
-	skill_active_check()
+	skill_spotlight_check()
 	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
 	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
 	# setup_gui found no game and skipped the score gutters — including the row buffer control
@@ -259,7 +259,10 @@ func _start_fresh_show() -> void:
 
 # Resume the exact board a quit interrupted: restore the saved undo history, rebuild the
 # current runtime state from its top, restore the act count and board UI, and re-sync skill
-# active flags WITHOUT re-firing on_active / on_deactive (effects are baked into the state).
+# SPOTLIT flags WITHOUT re-firing on_spotlight / on_unspotlight (effects are baked into the
+# state). ⚠ This resync is ALSO the spotlight rename's save migration (spotlight S2, gate
+# G1.3): a run.tres written before `active` became `spotlit` loads with the key absent and the
+# flag false, and this line re-derives the whole board's set with zero hooks fired.
 func _resume_show() -> void:
 	save_history = Main.save_info.game_history
 	history_trimmed = Main.save_info.game_history_trimmed
@@ -275,7 +278,7 @@ func _resume_show() -> void:
 	_last_saved_revision = state.revision
 	for data in CardDataIterator.new(self):
 		if data.skill:
-			data.skill.active = data.skill.is_active()
+			data.skill.spotlit = data.skill.is_spotlit()
 	# Lock input immediately: the board is restored but must stay untouchable until its visuals
 	# (cards AND score gutters) are synced and any interrupted action has replayed. The rest is
 	# deferred because the play area hasn't finished its first layout during _ready.
@@ -637,6 +640,12 @@ func _perform_submit() -> void:
 	_begin_action(&"on_run_scorer")
 	_act_cancellable = true
 	await run_all_mods(&"on_run_scorer")
+	# D22/D23: the last section has scored, so the beams go out. Inside the cancellable span on
+	# purpose — an on_unspotlight handler is part of the act and registers combos like any other.
+	# Skipped when the act is being unwound: that path throws the whole state away anyway, and
+	# the restored snapshot brings its own (pre-act) spotlight flags with it.
+	if not act_cancelled:
+		await _release_spotlight()
 	_act_cancellable = false
 	if act_cancelled:
 		_restore_pre_act_board("cancelled submit")
@@ -721,6 +730,26 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : int) -> void:
 	# a cancelled act discards its whole state — skip the remaining lines outright
 	if act_cancelled: return
+	# D3 (spotlight S5): building the SECTION is this call's first act. Everything
+	# spotlight-related consumes the section; nothing below reads is_row/index except
+	# add_line_score, which always did. ⚠ Rows and columns are the only shapes today and
+	# NOTHING here may assume that stays true (Q260=a, Q266=a).
+	var section := ScoringSection.of_line(zone, is_row, index)
+	# An EMPTY section means the caller is not scoring a board line at all (a synthetic
+	# Result handed straight to score_line — the unit fixtures do exactly this). There is no
+	# section to light and nothing to re-evaluate, so the old path runs unchanged. A section
+	# that had cards and lost them all is a different case and is handled below (Q244=a).
+	if not section.cards.is_empty():
+		await _spotlight_section(section)
+		if act_cancelled: return
+		# D13b (spotlight S8): RE-EVALUATE the hand now, ONCE (Q22=b, Q23=a), over whatever
+		# is in the section after every spotlight effect has fired. Whatever it comes to IS
+		# the score, INCLUDING NOTHING AT ALL — Q244=a, there is no floor. The re-derived
+		# result is what jumps and what banks, so a hand changed by an effect re-cues for
+		# free (Q243=a); it is the same object every consumer below already reads.
+		var rescored : Array[Scoring.Result] = await Scoring.PokerHands.score(section.cards)
+		result = rescored[0] if rescored else null
+		if result == null: return
 	var score_zone : Array[BigNumber]
 	if is_row:
 		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
@@ -743,6 +772,48 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 	if view: await view.show_meld_score(result)
 	await _run_score_effects(result)
 	if view: view.reset_meld(result)
+
+## D10–D12b (spotlight S5–S7): force-spotlight a whole SECTION and let the board settle under it.
+## The whole set is forced at once and ONE sweep fires every `on_spotlight` in board order
+## (`Q37`=a — the beams arrive together, not card by card).
+##
+## ⚠ **THE LOOP IS UNBOUNDED BY DESIGN.** `Q201`=(b) rejected a per-section cap: a hook that
+## discards a card in its own section compacts the column — the slide is free, erasing an array
+## entry shifts every higher index down by one — a new card lands in the lit SLOT, and it has to
+## activate too (chart R, `Q198`/`Q204`). The act-level runaway guard is the ONLY bound, which is
+## exactly why every iteration counts as processing: a chain whose handlers invoke no other mod
+## would otherwise spin without ever advancing `act_calls` toward `act_event_cap` (gate G1.6).
+##
+## Headless is identical and waits on nothing (`Q19`=a): there is no view call in here at all.
+func _spotlight_section(section: ScoringSection) -> void:
+	while true:
+		note_processing()
+		# D10 — the forced spotlight TRAVELS (`Q16`=c, design D20). It is never torn down
+		# between sections, which is what lets a light move rather than strobe; what moves is
+		# its MEMBERSHIP, which is always exactly the section being scored — *"increases or
+		# decreases based on cards being scored"*. A section that has already scored is no
+		# longer force-spotlit. The cards dropped here are released by the sweep below, and one
+		# that is still NATURALLY spotlit fires no `on_unspotlight`, because the sweep
+		# recomputes rather than blanket-clearing (`Q14`=a).
+		# ⚠ Never bumps state.revision (`Q17`=a) — a bump would rebuild the board mid-cascade.
+		state.forced_spotlight.clear()
+		for card : CardData in section.cards:
+			state.forced_spotlight[card] = true
+		await skill_spotlight_check()
+		if act_cancelled or act_overrun: return
+		# Q252=b: RE-READ the section from the board after every hook — never cache it across
+		# one. A handler may have added a card to the section or compacted one out of it, and
+		# an unchanged set is what ends the phase.
+		if not section.refresh(): return
+
+## D22/D23 (spotlight S9): the act is over — drop every forced spotlight and re-run the sweep.
+## ⚠ RECOMPUTE, never blanket-clear: a released card that is still NATURALLY spotlit must not
+## fire `on_unspotlight` (`Q14`=a — *"does not deactivate until the last spotlight is removed"*),
+## and running the ordinary check is what makes that free.
+func _release_spotlight() -> void:
+	if state.forced_spotlight.is_empty(): return
+	state.forced_spotlight.clear()
+	await skill_spotlight_check()
 
 ## Bank `amount` into a row/col gutter + the matching act total; animate the label when a view
 ## exists. THE single write path for line scores — melds and prop effects both call it.
@@ -844,7 +915,7 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 				await p.run_mods(&"on_finish", p, self)
 				var sp : PropSpawner = owner_of.get(p)
 				if sp: sp.live -= 1
-		await skill_active_check()          # once per tick: hooks may flip active states
+		await skill_spotlight_check()          # once per tick: hooks may flip spotlight states
 		# SYNC — tick over when animation AND events are both complete (headless: nothing
 		# awaited). tick_done is a persistent signal: if the events phase spanned frames the
 		# animation may ALREADY have emitted, so only await while the tick is still pending —

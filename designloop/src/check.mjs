@@ -4,6 +4,8 @@
 //   npm --prefix designloop run check -- solatro/spotlight
 //   npm --prefix designloop run check -- path/to/DESIGN.md
 //   npm --prefix designloop run check -- solatro/spotlight charts     one line per mermaid chart
+//   npm --prefix designloop run check -- solatro/spotlight answers    every answer given in PROSE
+//   npm --prefix designloop run check -- solatro/spotlight answer Q16 one answer + every restatement
 
 import { readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -13,6 +15,7 @@ import { parseCharts, validate as validateGraph, describeGraph } from './graph.m
 import { find } from './registry.mjs';
 import { readJson } from './store.mjs';
 import { readPlanSteps } from './gaps.mjs';
+import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 
 const TOOL_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO_ROOT = resolve(process.env.DESIGNLOOP_ROOT || resolve(TOOL_ROOT, '..'));
@@ -45,7 +48,7 @@ export function describe(markdown, file = 'DESIGN.md') {
     audit,
     lines: [
       `questions   ${live.length} live, ${parsed.questions.length - live.length} retired`,
-      `gates       ${live.filter((q) => q.isGate).length} ⚑gate, ${live.filter((q) => q.notes).length} marked notes`,
+      `gates       ${live.filter((q) => q.isGate).length} ⚑gate, ${live.filter((q) => q.isContract).length} ⚑contract, ${live.filter((q) => q.notes).length} marked notes`,
       `at the top  ${reachable.length} askable now, ${pending.length} waiting on a gate`,
       `opens at    ${nextQuestion(live, {}, parsed.sections)?.id ?? '(nothing)'}`,
       `longest     ${longestPath(live)} questions on one path`,
@@ -57,6 +60,12 @@ export function describe(markdown, file = 'DESIGN.md') {
       `skipped     ${parsed.ignored.length} bullet(s) that name a question ID but are not questions`,
     ],
   };
+}
+
+/** One line of a long note, for a report that must stay scannable. */
+function clip(text, max = 120) {
+  const one = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return one.length <= max ? one : `${one.slice(0, max - 1)}…`;
 }
 
 async function main() {
@@ -74,7 +83,8 @@ async function main() {
     }
     path = design.docPath;
   }
-  const { parsed, graph, graphError, audit, lines } = describe(await readFile(path, 'utf8'), target);
+  const markdown = await readFile(path, 'utf8');
+  const { parsed, graph, graphError, audit, lines } = describe(markdown, target);
   process.stdout.write(`\n${path}\n${lines.map((l) => `  ${l}`).join('\n')}\n`);
   for (const e of parsed.errors) process.stdout.write(`  ERROR   line ${e.line ?? '?'}: ${e.message}\n`);
   for (const w of parsed.warnings) process.stdout.write(`  warning line ${w.line ?? '?'}: ${w.message}\n`);
@@ -149,6 +159,77 @@ async function main() {
         `  plan        ${steps.length} step(s), ${unknown.length} bad citation(s), ${uncited.length} uncited\n`,
       );
       for (const line of [...unknown, ...uncited]) process.stdout.write(`  PLAN    ${line}\n`);
+    }
+
+    // PROVENANCE — the distance between an ANSWER and what the documents say it was.
+    //
+    // ⚠ These cost a round of the owner's time on Spotlight, and nothing above can see them: the
+    // document parses, the DAG is sound, every citation resolves, the round reports complete — and
+    // two normative documents quietly disagree about one answer because both paraphrased it. The
+    // incident is written up at the head of src/provenance.mjs.
+    const planText = design
+      ? await readFile(join(design.dir, 'PLAN.md'), 'utf8').catch(() => '')
+      : '';
+    const docs = [{ name: design?.doc || 'DESIGN.md', text: markdown }];
+    if (planText) docs.push({ name: 'PLAN.md', text: planText });
+
+    if (answers) {
+      // 1. ANSWERED IN PROSE. Not a defect in itself — it is how the owner corrects a premise, and
+      // it is where the best answers come from. The defect is leaving it there, with no letter for
+      // a gate to read and no option for a document to cite.
+      const soft = softAnswers(answers, parsed.questions);
+      const open = soft.filter((s) => !s.promoted);
+      process.stdout.write(
+        `  in prose    ${soft.length} answered with no option (${open.length} not promoted to one)\n`,
+      );
+      for (const s of open) {
+        const flag = s.provisional ? 'PROVISIONAL, reads as thinking aloud' : 'no option carries it';
+        process.stdout.write(`  PROSE   ${s.id}: ${flag} — "${clip(s.note)}"\n`);
+      }
+
+      // 2. A document RELIES on a free-text answer and quotes none of it.
+      const unquoted = quoteAudit(answers, parsed.questions, docs);
+      process.stdout.write(`  unquoted    ${unquoted.length} document(s) paraphrasing a free-text answer\n`);
+      for (const u of unquoted) {
+        const where = `${u.lines.slice(0, 6).join(', ')}${u.lines.length > 6 ? ', …' : ''}`;
+        process.stdout.write(
+          `  QUOTE   ${u.id} is relied on in ${u.doc} (line${u.lines.length > 1 ? 's' : ''} ${where})`
+          + ` but none of the owner's words appear there — paste the note, do not summarise it\n`,
+        );
+      }
+    }
+
+    // 3. CONTRACTS. A normative block in PLAN §1 that no ⚑contract question authorises is a
+    // contract the executor will follow and the owner never saw.
+    if (planText) {
+      const contracts = contractAudit(parsed.questions, planText);
+      process.stdout.write(
+        `  contracts   ${contracts.blocks.length} normative block(s) in PLAN §1, `
+        + `${contracts.unauthorised.length} unauthorised, ${contracts.uncontracted.length} uncontracted\n`,
+      );
+      for (const b of contracts.unauthorised) {
+        process.stdout.write(
+          `  CONTRACT PLAN.md:${b.line} (${clip(b.heading, 60)}) cites `
+          + `${b.cites.length ? b.cites.join(', ') : 'no question'}, none ⚑contract`
+          + ` — is this contract an ANSWER, or an invention?\n`,
+        );
+      }
+      for (const id of contracts.uncontracted) {
+        process.stdout.write(`  CONTRACT ${id} is ⚑contract but no PLAN §1 block cites it\n`);
+      }
+    }
+
+    // `answer Q16` — the RESTATEMENT INDEX. Every place one answer is spoken for, side by side,
+    // so a divergence is one screen instead of three greps. This is the report that would have
+    // ended GAP-002 before it was filed.
+    const wanted = process.argv.slice(2).find((a) => /^QR?\d+[a-z]?$/.test(a));
+    if (wanted && answers) {
+      const a = answers[wanted];
+      process.stdout.write(`\n  ${wanted} — ${a ? (a.option ? `(${a.option})` : 'free text, no option') : 'UNANSWERED'}\n`);
+      if (a?.note) process.stdout.write(`  note    ${a.note}\n`);
+      for (const r of restatementsOf(wanted, docs)) {
+        process.stdout.write(`  ${r.doc}:${r.line}  ${clip(r.text, 150)}\n`);
+      }
     }
   }
   // A bare word, not a flag: `npm run check -- <design> charts`. npm eats unknown `--flags` before

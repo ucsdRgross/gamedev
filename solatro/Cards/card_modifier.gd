@@ -57,22 +57,71 @@ func combo_key(_hook: StringName = &"") -> String:
 # list with signatures lives in ARCHITECTURE_REVIEW.md §1.4; keep THAT current when
 # adding events. (The stale copy that used to sit here was purged 2026-07-16, D7 override.)
 
-func is_active() -> bool:
-	#rules cards are always active
+## THE spotlight rule (design chart A). Renamed off the old `active` vocabulary 2026-08-04 (Q2=b):
+## "spotlit" is the one word for it everywhere — the mechanical state and the light show are the
+## same fact. Effective spotlight = NATURAL (this rule) OR FORCED (GameData.forced_spotlight, the
+## scoring beam) — see design §2.
+func is_spotlit() -> bool:
+	#rules cards are always spotlit
 	if CardEnvironment.CURRENT and CardEnvironment.CURRENT.is_data_in_rules(data):
 		return true
-	#Global: active from anywhere (deck, discard, covered, ...)
+	#Global: spotlit from anywhere (deck, discard, covered, ...)
 	if data.stamp is StampGlobal:
 		return true
 	#everything else must be on the board
 	if not game: return false
 	if data.stage != CardData.Stage.PLAY and data.stage != CardData.Stage.ZONE:
 		return false
-	#Revealing: active on the board even when covered
+	#A6 (design chart A): the scoring beam is literally on this card. Placed AFTER the stage
+	#check so a stale entry for a card that left the board cannot force it, and BEFORE the
+	#coverage rules so a forced spotlight bypasses both Revealing and blocks_spotlight (Q6=a).
+	if game.state.forced_spotlight.has(data):
+		return true
+	#Revealing is a property of THIS card: spotlit anywhere on the board, even covered.
 	if data.stamp is StampRevealing:
 		return true
-	#default: active while uncovered (topmost of its stack)
-	return game.is_data_topmost(data)
+	#A8 (Q9=a): THE COVERAGE RULE, as the general question rather than "am I last". A card
+	#stacked on top HIDES the talent underneath it, so it blocks — that is the default, and a
+	#Kuroko-style modifier on the covering card is what stops it blocking, unhiding the card
+	#beneath (owner, GAP-001 answer 2026-08-04). This REPLACES is_data_topmost: with every
+	#modifier blocking, "nothing above me" and "I am topmost" are the same statement, so today's
+	#behaviour is unchanged.
+	return not _blocked_from_above()
+
+## Does this card HIDE the talents of whatever is stacked under it? Default `true` — a covering
+## card is exactly what makes the card beneath dark (design Q9=a, chart A8). A Kuroko / Ghost
+## Light modifier overrides it to `false`, and one such modifier is enough for its whole card
+## (see `_card_blocks`). Content that uses it is OUT of scope here (Q185=a).
+## ⚠ `PLAN.md` §1.4 specifies the opposite default; it is wrong — with `false` every covered card
+## on the board would be spotlit, which contradicts the design's own U2. See gaps/GAP-001.md.
+func blocks_spotlight() -> bool:
+	return true
+
+## A8: is this card hidden by anything stacked above it in its own column? The FIRST blocker
+## ends the walk, and since blocking is the default that is almost always the card immediately
+## above — so a covered card costs one comparison, not a column scan. A zone/type header
+## (`coord.z == -1`) is blocked by any card in its column, which is the same rule
+## `is_data_topmost` expressed for headers ("topmost exactly when its column is empty").
+func _blocked_from_above() -> bool:
+	var coord := game.state.position_of(data)
+	if coord == Vector3i.MIN: return false
+	var zone := game.get_zone_from_vec3(coord)
+	if coord.y < 0 or coord.y >= zone.size(): return false
+	var col : ArrayCardData = zone[coord.y]
+	if not col: return false
+	for z in range(maxi(coord.z + 1, 0), col.datas.size()):
+		if _card_blocks(col.datas[z]): return true
+	return false
+
+## Does `above` hide what is stacked under it? A card blocks by default and stops blocking the
+## moment ANY ONE of its modifiers opts out — a single Kuroko stamp unhides the card beneath, it
+## does not have to convince the card's type and suit to agree with it.
+static func _card_blocks(above: CardData) -> bool:
+	for mod : CardModifier in [above.skill, above.type, above.stamp, above.suit]:
+		if mod and not mod.blocks_spotlight(): return false
+	for st : CardModifierStatus in above.statuses:
+		if not st.blocks_spotlight(): return false
+	return true
 
 # TODO(card feedback popups): the old card_shake / card_raise / card_lower / _do_popup
 # flow (spawn a temp visual off the deck/discard pile, raise it, run the effect, lower

@@ -18,13 +18,13 @@ func get_zone() -> Array[ArrayCardData]
 @abstract
 func get_zone_type() -> Array[CardData]
 
-func on_active() -> void:
+func on_spotlight() -> void:
 	if not game: return
 	if not card_data:
 		card_data = card_data_to_add()
 	Board.add_column(game.state, get_zone(), get_zone_type(), card_data)
 
-func on_deactive() -> void:
+func on_unspotlight() -> void:
 	if not game: return
 	var index := get_zone_type().find(card_data)
 	if index == -1:

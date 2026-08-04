@@ -32,8 +32,10 @@ Three screens, all keyed by `<project>/<slug>`:
 
 ```
 npm --prefix designloop test                            the suite (~1.5 s)
-npm --prefix designloop run check -- solatro/spotlight  does it parse — AND the four silent audits
+npm --prefix designloop run check -- solatro/spotlight  does it parse — AND the seven silent audits
 npm --prefix designloop run check -- solatro/spotlight charts   …and do its charts ingest?
+npm --prefix designloop run check -- solatro/spotlight answers  which answers are PROSE, not a letter
+npm --prefix designloop run check -- solatro/spotlight answer Q16   the note + every restatement of it
 npm --prefix designloop run watch -- solatro/spotlight  park until the owner finishes a round
 ```
 
@@ -112,16 +114,19 @@ an authoring warning, never guessed. `l` toggles them on the canvas.
    `answers.json` rewrite → `fsync` → *then* HTTP 200. The UI never advances on a failed write, and
    a crash between the two is recovered by replaying the log.
 
-## The four silent defects `run check` reports
+## The seven silent defects `run check` reports
 
-Three of these leave a document that **parses, validates and answers perfectly** while withholding
-questions the owner was supposed to see; the fourth quietly misleads the reviewer. All four cost real
-rounds on `solatro/spotlight` before they were automated, and none of them showed up in any other
-check, test or round summary.
+Every one of these leaves a document that **parses, validates and answers perfectly**. Three withhold
+questions the owner was supposed to see, one misleads the reviewer, and three let a document say
+something the answer does not. All seven cost real rounds on `solatro/spotlight` before they were
+automated, and none showed up in any other check, test or round summary.
 
 ```
   dag audit   0 — defects that prune questions SILENTLY (listed below)
   stale       0 chart node(s) posing an ANSWERED question as open
+  in prose    0 answered with no option (0 not promoted to one)
+  unquoted    0 document(s) paraphrasing a free-text answer
+  contracts   7 normative block(s) in PLAN §1, 0 unauthorised, 0 uncontracted
 ```
 
 | Reported as | The defect |
@@ -131,6 +136,9 @@ check, test or round summary.
 | `DAG … its section … does not` | A **section heading** gate narrower than its own question lines. `reachability()` evaluates `effectiveGate`, which folds the heading in, so the heading wins and the whole section stays pruned no matter what the lines say. |
 | `STALE …` | A chart node still posing an **answered** question as an open fork. Needs `answers.json`, so **re-run `check` after every answer round**, not only after authoring. |
 | `PLAN …` | Once a `PLAN.md` exists beside the design: a step citing an ID that is **no design node or question**, or citing **nothing at all** — which means it can never be reported stale when the node it was built on changes. The gap protocol's whole blast-radius mechanism is those `(implements …)` clauses. |
+| `PROSE …` | An answer with a note and **no lettered option**. Not a defect in itself — it is how the owner corrects a premise, and it is where the best answers come from. The defect is leaving it there: no gate can read it, no document can cite it, and every restatement has to paraphrase it. The fix the workflow already knows is to promote the owner's words to a new option. Marked `PROVISIONAL` when the note reads as thinking aloud — *`Q16`'s opens with the literal word "whole act?"*. |
+| `QUOTE …` | A document **relies on a free-text answer and carries none of the owner's words**. This is the one that cost the most: `Q16` became *"Q16 whole act"* in the plan and *"stays set for the whole act"* in the design, both dropped *"increases or decreases based on cards being scored"*, and an executing agent read the two summaries, saw a contradiction that **does not exist in `answers.json`**, and filed a gap on it. Paste the note; do not summarise it. |
+| `CONTRACT …` | A normative code block in `PLAN.md` §1 that **no `⚑contract` question authorises** — an invented contract — or a `⚑contract` question no block writes down. `Q9` asked *whether* to ship a seam and never what its default was, so §1 invented one, inverted, which would have lit up every covered card on the board. |
 
 ⚠ **None of them blocks, deliberately** — each shape has a legitimate form (a "decline this
 sub-feature" option is *supposed* to reach nothing; a section gate is *supposed* to narrow). The
@@ -140,6 +148,18 @@ at it and said why not.
 ⚠ **Precision was the hard part, not detection.** Reporting every orphaned option produced 24
 warnings on Spotlight, all of them correct behaviour, and a check at that signal-to-noise gets muted.
 The filters are narrow on purpose: `auditGates` in `src/grammar.mjs` documents each one.
+
+### Reading one answer, and everything that speaks for it
+
+```
+npm --prefix designloop run check -- solatro/spotlight answer Q16
+```
+
+The note from `answers.json`, then **every line in every document that names `Q16`**, with file and
+line. Three restatements of one answer side by side is a divergence you see in a second; the same
+three found by grepping two files is an argument. ⚠ **This is the report to run before filing a gap
+about two documents disagreeing** — if they are both summarising one answer, there is no decision to
+escalate, only a summary to fix.
 
 ## The plan, and where progress lives
 

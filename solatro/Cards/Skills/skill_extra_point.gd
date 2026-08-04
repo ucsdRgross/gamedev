@@ -7,7 +7,7 @@ func get_description() -> String: return "Gain 1 Extra Point Per Score"
 func get_frame() -> int: return 0
 
 func on_score(target:CardData) -> void:
-	if not is_active(): return
+	if not is_spotlit(): return
 	# P7 fix (2026-07-16): was `data == self.data` — comparing the field to itself, always
 	# true, so EVERY scored card anywhere announced a trigger from every active ExtraPoint.
 	# The skill triggers only when ITS OWN card is the one scored, per its description.

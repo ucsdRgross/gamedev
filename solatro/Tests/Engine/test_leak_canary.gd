@@ -377,7 +377,7 @@ func _restore_settings() -> void:
 func _rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)
 	c.stage = CardData.Stage.RULES
-	skill.active = true
+	skill.spotlit = true
 	return c
 
 ## Same minimal-but-real headless fixture as test_game_headless.make_game():

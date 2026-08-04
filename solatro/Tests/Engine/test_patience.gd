@@ -86,7 +86,7 @@ class ProbeType extends CardModifierType:
 func rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)
 	c.stage = CardData.Stage.RULES
-	skill.active = true
+	skill.spotlit = true
 	return c
 
 ## The minimal show that supports a legal placement: classic grabber/placer rules and two lower

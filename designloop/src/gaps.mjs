@@ -10,6 +10,7 @@
 //
 //     # GAP-007 — <one-line title>
 //     status: open | questioned | resolved | withdrawn
+//     outcome: answered | withdrawn | superseded   (when it closes; withdrawn = it was never a gap)
 //     raised: <date>, during <execution plan step>
 //     design: <doc>, nodes <D6, I10>
 //     severity: GAP | CONTRADICTION
@@ -17,6 +18,7 @@
 //       …
 //
 //     **What the design says** — …
+//     **What the ANSWER says** — … (verbatim from answers.json, and why it does not settle this)
 //     **What it does not say** — …
 //     **Why it blocks** — …
 //     **Options I can see** — **(a)** … · **(b)** … · *my recommendation* (a)
@@ -168,6 +170,13 @@ export function parseGap(name, text) {
     title: heading.replace(/^[A-Z]+-\d+\s*[—-]\s*/, ''),
     status,
     open: OPEN_STATES.has(status),
+    // How it ENDED, once it has (`answered` | `withdrawn` | `superseded`). Distinct from `status`,
+    // which is where it sits in the round: a gap withdrawn because the design answered it and a gap
+    // withdrawn because it was never a gap at all are different lessons for the next
+    // questionnaire. `withdrawn` in particular means STOP LOOKING FOR A DECISION —
+    // solatro/spotlight GAP-002 was an executor escalating two paraphrases of one answer, and the
+    // fix was to go read the answer.
+    outcome: (field(text, 'outcome') || '').split(/\s/)[0].toLowerCase() || null,
     severity: field(text, 'severity'),
     raised: field(text, 'raised'),
     design: field(text, 'design'),
@@ -176,6 +185,10 @@ export function parseGap(name, text) {
     resolution: block(text, 'resolution') || field(text, 'resolution'),
     context: [
       ['What the design says', paragraph(text, 'What the design says')],
+      // MANDATORY in the template, and the one that stops a wasted round: the verbatim note from
+      // answers.json for every question involved, and why it does not settle this. An executor who
+      // cannot fill this in does not have a gap.
+      ['What the ANSWER says', paragraph(text, 'What the ANSWER says')],
       ['What it does not say', paragraph(text, 'What it does not say')],
       ['Why it blocks', paragraph(text, 'Why it blocks')],
       ['Meanwhile', paragraph(text, 'Meanwhile')],

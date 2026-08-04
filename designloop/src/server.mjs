@@ -27,6 +27,7 @@ import { discover, find, writeOwnerStatus, touch, readAssumptions } from './regi
 import {
   readGaps, countGaps, scopedQuestions, nextGapQuestion, readPlanSteps, staleFor, promoteAssumption,
 } from './gaps.mjs';
+import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 import { listVersions, readVersion, diffGraphs, freeze } from './versions.mjs';
 
 /** designloop/ — the tool directory, and the static root. */
@@ -414,6 +415,35 @@ async function handleDesignApi(req, res, pathname, query) {
   if (action === 'review' && req.method === 'POST') {
     const status = await writeOwnerStatus(design.dir, { state: 'done', reason: 'review_again' });
     sendJson(res, 200, { ok: true, owner: status });
+    return;
+  }
+
+  // GET /provenance — the distance between an ANSWER and what the documents say it was.
+  //
+  // ⚠ Nothing else in this API can see these: the document parses, the DAG is sound, every citation
+  // resolves, the round reports complete, and two normative documents quietly disagree about one
+  // answer because both paraphrased it. The incident is at the head of src/provenance.mjs.
+  // `?id=Q16` narrows it to the restatement index for one answer — every place that answer is
+  // spoken for, beside the note itself, which is the view that ends an argument in one screen.
+  if (action === 'provenance' && req.method === 'GET') {
+    const markdown = await readFile(design.docPath, 'utf8');
+    const planText = await readFile(join(design.dir, 'PLAN.md'), 'utf8').catch(() => '');
+    const docs = [{ name: design.doc || 'DESIGN.md', text: markdown }];
+    if (planText) docs.push({ name: 'PLAN.md', text: planText });
+    const id = query.get('id');
+    if (id) {
+      sendJson(res, 200, {
+        id,
+        answer: answers[id] || null,
+        restatements: restatementsOf(id, docs),
+      });
+      return;
+    }
+    sendJson(res, 200, {
+      in_prose: softAnswers(answers, parsed.questions),
+      unquoted: quoteAudit(answers, parsed.questions, docs),
+      contracts: planText ? contractAudit(parsed.questions, planText) : null,
+    });
     return;
   }
 

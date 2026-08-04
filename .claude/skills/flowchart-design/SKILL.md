@@ -84,6 +84,21 @@ Why: at a gating question the owner is choosing a *path*, not just an answer, an
 blind is how a questionnaire produces a design nobody wanted. The preview is what makes the choice
 informed.
 
+A **contract question** is one whose answer has to be written down as a code-level contract in the
+implementation plan's normative section — a signature, a default, a schema, a uniform name. Mark it
+`⚑contract`. A question can be both; the two tags are independent and may appear in either order.
+
+```
+- **Q9** `[QR1=a]` ⚑contract — Ship the general `blocks_spotlight` seam now, or keep `is_data_topmost`? · …
+```
+
+⚠ **The tag exists because `Q9` above was NOT one, and that cost a round.** It asked *whether* to
+ship a seam and never what the seam's default was or what it replaced, so the plan's §1 invented
+both — and inverted the default, which would have lit up every covered card on the board. A
+scheduling question is not a contract question, and `npm run check` now reports every normative
+block in the plan that no `⚑contract` question authorises. **If the plan will have to write a
+literal — a default, a bound, a name — the question that fixes it is `⚑contract`.**
+
 ⚠⚠ **IF A QUESTION'S ANSWER APPEARS IN ANY OTHER QUESTION'S GATE, IT IS A `⚑gate`. NO EXCEPTIONS.**
 Breaking this fails SILENTLY. A free-text answer has **no letter**, so a gate reading `[Q24=c]` can
 never be true. On a `⚑gate` question that is handled — free text ends the round and you author the
@@ -366,6 +381,7 @@ Not everything uncovered is a blocker; stopping for each one is as bad as decidi
 | **ASSUME** | uncovered, but reversible and clearly within the design's intent | do it, append one line to the assumptions log citing the node — never silently |
 | **GAP** | uncovered **and** any of: two defensible choices differ in observable behaviour; the choice is expensive to reverse (data/save format, a public seam, art direction); it is a class the project reserves for the owner (balance, look, scope) | park that thread, file a gap, keep working on unaffected threads, tell the owner |
 | **CONTRADICTION** | the design says two incompatible things, or says something the code makes impossible | always a gap, highest priority — the design is wrong, not merely incomplete |
+| **RESTATEMENT** | two documents disagree, but both are *summarising the same answer* | ⚠ **NOT a gap — go read the answer.** Resolve it against `answers.json`, fix the losing summary, and log it. Escalating this costs the owner a round to be told what they already said. `npm run check -- <slug> answer <ID>` prints the source note and every restatement of it, side by side. |
 
 ### The gap report is a draft question
 
@@ -375,17 +391,26 @@ drop into the next round unchanged. One file per gap:
 ```markdown
 # GAP-007 — <one-line title>
 status: open | questioned | resolved | withdrawn
+outcome: answered | withdrawn | superseded      (added when it closes; withdrawn = it was never a gap)
 raised: <date>, during <execution plan step>
 design: <doc> version <N>, nodes <D6, I10>
 severity: GAP | CONTRADICTION
 
 **What the design says** — <quote it, cited>
+**What the ANSWER says** — <the verbatim note from `answers.json` for every question involved, and
+  why it does not settle this>
 **What it does not say** — <the decision that has to be made, stated as a decision>
 **Why it blocks** — <which triage test it meets, concretely>
 **Options I can see** — **(a)** … — consequence · **(b)** … — consequence · *my recommendation* (a)
 **Blast radius** — plan steps <4, 9>; design nodes <D6, D7>
 **Meanwhile** — parked <thread>; continued on <threads>
 ```
+
+⚠ **`What the ANSWER says` is mandatory and it is the field that stops wasted rounds.** Filing a gap
+without reading the source note is how `solatro/spotlight` GAP-002 happened: two documents
+paraphrased one free-text answer, both dropped the clause that settles it, and the executor
+escalated the gap between the two summaries. Quoting the note and having to write *why it does not
+settle this* is what makes that impossible to do accidentally.
 
 Rules for the executing agent, and they are absolute: **do not resolve a gap by picking an answer.
 Do not proceed on the parked thread. Do not delete or edit a gap** — a gap is closed by a new
@@ -439,6 +464,10 @@ If you are executing this and you reach a decision the design does not cover:
    reverse, or it is an owner call (balance, look, scope) → **park that thread, file a gap, keep
    working on unaffected threads, and tell the owner.**
 3. The design contradicts itself or the code → always a gap, highest priority.
+4. ⚠ **Two documents disagreeing is NOT automatically (3).** If both are restating the same answer,
+   go read that answer — the conflict is a documentation bug to fix against the source, not a
+   decision to escalate. Quote the note in the gap and say why it does not settle the question; if
+   you cannot, it was never a gap.
 
 File gaps at `<gaps dir>/GAP-NNN.md` using the template in `<design doc>` §gap-protocol. Write the
 options in the questionnaire grammar; they become the next round's questions unchanged.
@@ -578,6 +607,7 @@ last reachable question answered
   → owner REVIEWS the flowcharts            ← a real stage, not a formality
   → owner CONFIRMS  (or "review again" → another cycle)
   → THEN: implementation plan + scope + copy-paste prompt, in one message
+  → owner REVIEWS THE PLAN'S §1 CONTRACTS    ← the second review gate; §8b item 9
 ```
 
 ⚠ **This is the FIRST time the charts exist**, and that is deliberate (§3): a chart drawn before the
@@ -616,6 +646,14 @@ the thing, and it must carry every normative contract:
 Writing "the plan deliberately contains no implementation detail" is not restraint. It is an
 unfinished plan with a justification attached.
 
+⚠ **QUOTE A FREE-TEXT ANSWER; NEVER SUMMARISE IT.** An answer with no lettered option is prose, and
+the plan's habit of compressing everything into a contract line destroys it: Spotlight's `Q16` became
+*"Q16 whole act"* in the plan and *"stays set for the whole act"* in the design, and **both dropped
+the clause that settled it**. An executor then read two lossy summaries, saw a contradiction that
+does not exist in `answers.json`, and filed a gap on it. Paste the note. `run check -- <slug>
+answers` lists every answer this applies to, and `answer <ID>` prints the note beside every place
+the documents speak for it.
+
 ### 8b. Readiness checklist — run it before presenting anything
 
 1. Every file the plan names is either specified in it or created by a step in it.
@@ -627,6 +665,15 @@ unfinished plan with a justification attached.
    own documents. (The tool's own design living outside the structure its design mandates is exactly
    the kind of thing that greets an implementing agent as a broken path.)
 7. Nothing in the plan is phrased as a question to the owner. The questionnaire is over.
+8. **`npm --prefix designloop run check -- <slug>` is clean on the four provenance lines**, not just
+   on errors: `in prose` (answers with no letter), `unquoted` (a document paraphrasing a free-text
+   answer instead of quoting it), `contracts … unauthorised` (a normative block no `⚑contract`
+   question covers), and `uncontracted`.
+9. ⚠ **THE OWNER HAS REVIEWED §1, not only the flowcharts.** Both of Spotlight's phase-1 gaps were
+   in the plan's normative section, which is written *after* confirmation and goes straight to an
+   executor — the design was reviewed and was right both times. Present §1's contracts with the
+   answers each one implements, and get the same explicit confirmation the charts get. **The review
+   gate belongs on whatever the executor actually obeys.**
 
 ### 8c. Scope the run
 

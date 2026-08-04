@@ -42,7 +42,7 @@ func on_dropped_by(_prop: PropData) -> void:
 	pass
 
 ## Statuses work anywhere on their own card — no rules-deck requirement (unlike skills).
-func is_active() -> bool:
+func is_spotlit() -> bool:
 	return stacks > 0
 
 ## Fresh instance of `script` carrying `n` stacks. Script-based (not a polymorphic static:

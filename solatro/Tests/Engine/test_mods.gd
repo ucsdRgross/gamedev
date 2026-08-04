@@ -45,7 +45,7 @@ func _ready() -> void:
 func rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)
 	c.stage = CardData.Stage.RULES
-	skill.active = true
+	skill.spotlit = true
 	return c
 
 func play_card(rank: int, suit: int) -> CardData:
@@ -251,12 +251,12 @@ func run_zone_adder_tests() -> void:
 	var adder := SkillAdderInputLower.new()
 	var adder_card := CardData.new().with_skill(adder)
 	adder_card.stage = CardData.Stage.RULES
-	adder.active = false #so the activation edge below fires on_active
+	adder.spotlit = false #so the activation edge below fires on_spotlight
 	var g := make_game([adder_card], [[]], [[]])
 
 	var cols_before := g.state.lower_zone.size()
-	await g.skill_active_check()
-	check(adder.active, "rules-deck adder activates")
+	await g.skill_spotlight_check()
+	check(adder.spotlit, "rules-deck adder activates")
 	check(g.state.lower_zone.size() == cols_before + 1 \
 			and g.state.lower_zone_type.size() == g.state.lower_zone.size(),
 			"activation adds one column, zone and type arrays in lockstep")
@@ -274,8 +274,8 @@ func run_zone_adder_tests() -> void:
 	g.state.discard_deck.append(adder_card)
 	adder_card.stage = CardData.Stage.DISCARD
 	g.state.revision += 1
-	await g.skill_active_check()
-	check(not adder.active, "adder deactivates when it leaves the rules deck")
+	await g.skill_spotlight_check()
+	check(not adder.spotlit, "adder deactivates when it leaves the rules deck")
 	check(g.state.lower_zone.size() == cols_before \
 			and g.state.lower_zone_type.size() == cols_before,
 			"deactivation removes exactly its column, lockstep kept")
@@ -288,7 +288,7 @@ func run_zone_adder_tests() -> void:
 	g.state.rules_deck.append(adder_card)
 	adder_card.stage = CardData.Stage.RULES
 	g.state.revision += 1
-	await g.skill_active_check() #re-activate: adds a column again
+	await g.skill_spotlight_check() #re-activate: adds a column again
 	var manual := g.state.lower_zone_type.find(adder.card_data)
 	Board.remove_column(g.state, g.state.lower_zone, g.state.lower_zone_type, manual)
 	var cols_now := g.state.lower_zone.size()
@@ -296,7 +296,7 @@ func run_zone_adder_tests() -> void:
 	g.state.discard_deck.append(adder_card)
 	adder_card.stage = CardData.Stage.DISCARD
 	g.state.revision += 1
-	await g.skill_active_check()
+	await g.skill_spotlight_check()
 	check_impl(g.state.lower_zone.size() == cols_now,
 			"B6: deactivate after the column was already removed is a no-op",
 			"cols %d -> %d" % [cols_now, g.state.lower_zone.size()])

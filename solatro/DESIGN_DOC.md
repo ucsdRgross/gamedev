@@ -249,7 +249,7 @@ generator) — ref: "Correlated randomness in Slay the Spire 2" (Andy Tockman). 
    always-active stamp less crucial.
 
 **Implementation state:** ✅ the base rule is implemented — a play card's modifiers are
-active while the card is topmost/unblocked (`CardModifier.is_active()`), with
+spotlit while the card is topmost/unblocked (`CardModifier.is_spotlit()`), with
 `StampRevealing` (active while covered) and `StampGlobal` (active from anywhere) as
 overrides. Ordinary cards' skills fire.
 

@@ -36,11 +36,11 @@ func _ready() -> void:
 func rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)
 	c.stage = CardData.Stage.RULES
-	skill.active = true
+	skill.spotlit = true
 	return c
 
 # A minimal but real show fixture: rules cards carry the classic grabber/placer/scorer skills
-# (always active because they live in rules_deck), and both zones have two paired 2-card
+# (always spotlit because they live in rules_deck), and both zones have two paired 2-card
 # columns whose ranks ascend by 1 with distinct suits (so grab/place runs are legal and poker
 # high-card scoring pays > 0). view is deliberately left null.
 func make_game() -> Game:
@@ -318,12 +318,20 @@ func test_score_line_headless_mutates_data() -> void:
 	r.score = 7
 	r.meld = [] as Array[CardData]
 	check(g.state.row_total == 0, "precondition: row_total starts at 0")
+	# ⚠ score_line RE-EVALUATES a real board line over its own section before banking
+	# (spotlight S8, Q22=b/Q23=a), so a synthetic Result handed in for a populated zone is
+	# discarded — the expected number comes from the board, not from `r`.
+	var row_cards := ScoringSection.collect(g.state.lower_zone, true, 0)
+	var expected : int = (await Scoring.PokerHands.score(row_cards))[0].score
 	await g.score_line(r, true, g.state.lower_zone, 0)  # row, lower gutter, index 0
-	check(g.state.row_total == 7, "score_line adds to row_total headless", str(g.state.row_total))
+	check(g.state.row_total == expected,
+			"score_line banks the re-evaluated row hand headless", str(g.state.row_total))
 	check_impl(g.state.scores_row_lower.size() >= 1 and g.state.scores_row_lower[0] != null,
 			"score_line accumulates a gutter BigNumber headless (view skipped, no crash)")
+	# An EMPTY zone builds an empty section: there is nothing to light and nothing to
+	# re-evaluate, so the Result handed in is banked unchanged.
 	await g.score_line(r, false, [] as Array, 0)  # col path
-	check(g.state.col_total == 7, "score_line adds to col_total headless")
+	check(g.state.col_total == 7, "score_line adds to col_total headless (no section)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
 

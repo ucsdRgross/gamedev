@@ -60,6 +60,16 @@ var revision : int = 0:
 ## seeds it from settings. Every committed board otherwise carries at least 1 — see the auto-Next
 ## rule in Game._spend_patience_for_move.
 @export_storage var patience : int = 0
+## SPOTLIGHT (2026-08-04) — the cards the scoring beam is on RIGHT NOW. Effective spotlight is
+## `is_spotlit()` OR a key in here (design §2), and that one line is the whole mechanical change.
+## ⚠ Deliberately NOT `@export_storage`: it is per-act state, so undo rewinds it by simply not
+## saving it (`Q18`=a), and a resume replays the act from the pre-act board with it empty.
+## ⚠ NEVER bump `revision` from it (`Q17`=a) — this is not a board mutation, and a bump would
+## force the play area to rebuild in the middle of the cascade.
+## Written only by `Game._spotlight_section()` / `Game._release_spotlight()`; read only by
+## `CardModifier.is_spotlit()`. A Dictionary, not an Array, because the read is per-card and hot.
+var forced_spotlight : Dictionary[CardData, bool] = {}
+
 ## combo_key set of modifiers the audience has already seen this round: a re-trigger of one of
 ## these no longer holds patience (settings.patience_track_uniques). Cleared on Next, or after a
 ## Submit when settings.patience_reset_uniques_on_act.
@@ -162,6 +172,10 @@ func duplicate_state() -> GameData:
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
 	copy._pos_index_revision = -1
+	#the forced spotlight is per-ACT and never travels with a copy: a snapshot restored by undo,
+	#act-cancel or resume must come back with no beam on it (Q18=a). duplicate_deep already
+	#skips a non-exported var; stated here for the same reason the index above is.
+	copy.forced_spotlight = {}
 	#modifier .data backrefs are WeakRefs, which duplicate_deep does NOT remap — the
 	#copied modifiers still point at THIS state's cards. Rebind them to the copies.
 	copy.relink_modifier_backrefs()

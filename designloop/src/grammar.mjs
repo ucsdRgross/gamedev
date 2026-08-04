@@ -5,7 +5,7 @@
 // The normative grammar is PLAN §5; the prose version is in
 // `.claude/skills/flowchart-design/SKILL.md` and the two must agree.
 //
-//   - **<ID>** `<gate>` [⚑gate] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [⇒ <hint>]
+//   - **<ID>** `<gate>` [⚑gate] [⚑contract] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [⇒ <hint>]
 //
 // The acceptance document is `solatro/design/spotlight/DESIGN.md`. ⚠ It is a LIVING document — the
 // tests assert that it parses clean and that its DAG is sound, never how many questions it has
@@ -145,7 +145,8 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
     if (retired) {
       return {
         id, retired: true, reason: retired[1].trim(), gate: null, text: retired[1].trim(),
-        options: [], default: null, notes: false, isGate: false, hint: null, line: lineNumber,
+        options: [], default: null, notes: false, isGate: false, isContract: false,
+        hint: null, line: lineNumber,
       };
     }
     return null;
@@ -153,15 +154,22 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
   const gate = parseGate(gm[1]);
   rest = rest.slice(gm[0].length).trim();
 
+  // ⚑gate and ⚑contract are independent and may appear in either order. A question can be both:
+  // ⚑gate says "this answer prunes other questions", ⚑contract says "this answer must be written
+  // down as a code-level contract in PLAN §1". Spotlight's Q9 was the first and not the second —
+  // it decided to SHIP a seam and never asked what the seam's default was, so the plan invented
+  // one, backwards, and nothing could tell (spotlight gaps/GAP-001).
   let isGate = false;
-  if (rest.startsWith('⚑gate')) {
-    isGate = true;
-    rest = rest.slice('⚑gate'.length).trim();
+  let isContract = false;
+  for (;;) {
+    if (rest.startsWith('⚑gate')) { isGate = true; rest = rest.slice('⚑gate'.length).trim(); continue; }
+    if (rest.startsWith('⚑contract')) { isContract = true; rest = rest.slice('⚑contract'.length).trim(); continue; }
+    break;
   }
   if (!rest.startsWith('—')) {
     throw new GrammarError(`${id}: expected "—" after the gate`, { id, line: lineNumber });
   }
-  return parseQuestionBody(id, rest.slice(1).trim(), { gate, isGate, strict, lineNumber });
+  return parseQuestionBody(id, rest.slice(1).trim(), { gate, isGate, isContract, strict, lineNumber });
 }
 
 /**
@@ -172,13 +180,14 @@ export function parseQuestionLine(line, { strict = false, lineNumber = null } = 
  * "unchanged" is only true if the same code reads them. A gap has no line and no gate, so those
  * are parameters rather than parsed here.
  */
-export function parseQuestionBody(id, body, { gate = null, isGate = false, strict = false, lineNumber = null } = {}) {
+export function parseQuestionBody(id, body, { gate = null, isGate = false, isContract = false, strict = false, lineNumber = null } = {}) {
   const segments = String(body ?? '').split(SEP);
   const question = {
     id,
     retired: false,
     gate,
     isGate,
+    isContract,
     text: '',
     options: [],
     default: null,

@@ -7,7 +7,7 @@ func get_frame() -> int: return 1
 
 @export_storage var triggered : Array[CardData]
 func on_trigger(data:CardData, mod:Callable) -> void:
-	if not is_active(): return
+	if not is_spotlit(): return
 	if data not in triggered and data.skill:
 		triggered.append(data)
 		#card_raise()

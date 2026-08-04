@@ -56,7 +56,7 @@ CardEnvironment (Scripts/card_environment.gd, @abstract, base of Game)
  │                               implements skip the walk; the on_anything tail fires only
  │                               when a mod actually ran.
  ├─ return_first_*_result ...... same walk, first non-empty answer wins
- ├─ skill_active_check ......... toggles skill.active, fires on_active/on_deactive
+ ├─ skill_spotlight_check ...... toggles skill.spotlit, fires on_spotlight/on_unspotlight
  │                               (runs after EVERY mod call — owner ruling, don't batch)
  └─ _compare_implementers ...... comparator/hook implementer cache keyed on
                                  [state id, state.revision]
@@ -70,8 +70,8 @@ CardData (Cards/card_data.gd, Resource) — one card
 CardModifier (@abstract Resource)
  ├─ data : CardData ............ WEAKREF-BACKED property (see §6) — the backref cycle
  │                               cannot exist; saves carry no backref
- ├─ CardModifierSkill  (active flag)       e.g. SkillEvalPokerBest, SkillGrabberOgLower
- │   └─ ZoneAdder (@abstract)              adds a zone column while active
+ ├─ CardModifierSkill  (spotlit flag)      e.g. SkillEvalPokerBest, SkillGrabberOgLower
+ │   └─ ZoneAdder (@abstract)              adds a zone column while spotlit
  ├─ CardModifierStamp                      e.g. StampDoubleTrigger, StampGlobal
  ├─ CardModifierType                       e.g. TypeInput (draw/drop pipeline)
  │   └─ BoosterTemplate (@abstract)        card-pack generation (map screen)
@@ -118,13 +118,15 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
 2. Implement any hook: `on_next`, `on_run_scorer`, `on_can_grab_stack`,
    `on_can_place_stack`, `on_card_dropped_on`, `on_stack_cards`, `on_score_row`,
    `on_score_col`, `on_score`, `on_after_score`, `on_trigger`, `on_append`, `on_discard`,
-   `on_game_start/end`, `on_compare_ranks/suits`, `on_anything`, `on_active/on_deactive`,
+   `on_game_start/end`, `on_compare_ranks/suits`, `on_anything`, `on_spotlight/on_unspotlight`,
    `on_get_possible_*` (boosters), `on_prop_passing/on_prop_passed` (props),
    `on_mod_triggered`. Dispatch is duck-typed via `has_method` — a typo in a StringName
    silently disables a mechanic; there is no signature check.
-3. Attach to a `CardData` in `rules_deck` (always active), or rely on the default-active
-   rule: **a play card's modifiers are active while the card is topmost/uncovered**;
-   `StampRevealing` overrides covered, `StampGlobal` is active from anywhere (incl. decks).
+3. Attach to a `CardData` in `rules_deck` (always spotlit), or rely on the default rule:
+   **a play card's modifiers are SPOTLIT while the card is topmost/uncovered** (renamed off
+   `active` 2026-08-04, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
+   is spotlit from anywhere (incl. decks), and `GameData.forced_spotlight` — the scoring beam —
+   ORs on top of all of it.
 4. `combo_key(hook)` on the modifier controls combo participation (§3): default = the
    script path (counts once per act); return `""` to opt out (engine rules mods do).
 5. Warnings-as-errors gotchas: class-ref arrays in a func body must be
@@ -336,7 +338,7 @@ never serialized); a quit mid-act replays the act from the pre-act board.
   AHEAD of the view. Per tick: SPAWN → MOVE → `view.begin_prop_tick(...)` (NOT awaited) →
   EVENTS (3-phase pass per mover: `on_prop_passing` (card, may `negate_pass`) →
   `on_pass_card` (prop, the effect) → `on_prop_passed` (card, always)) → FINISH →
-  `skill_active_check` → `if view and view.prop_tick_pending(): await tick_done`.
+  `skill_spotlight_check` → `if view and view.prop_tick_pending(): await tick_done`.
   Runaway caps: `MAX_TICKS` (2048) + `act_event_cap` via `note_processing`.
 - Emission order IS hook order (`live_props` is an Array — the determinism guarantee).
   Prop behavior = composed `PropModifier`s; spawn plans = `PropSpawner`
@@ -1213,7 +1215,7 @@ Standing owner rulings:
 - **S6:** same-value `stage` re-sets DO re-emit `stage_changed` — relied upon.
 - **N8:** score arrays never shrink on zone removal — desync allowed so scores are never
   lost.
-- **skill_active_check runs after every mod call** (not batched per event) — skills whose
+- **skill_spotlight_check runs after every mod call** (not batched per event) — skills whose
   conditions become true must trigger immediately.
 - **Commented-out code policy:** TODO comment if it refers to unimplemented logic, delete
   if the implementation exists elsewhere. (`##` purpose comments on methods.)

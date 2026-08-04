@@ -213,16 +213,16 @@ func run_mod_override_tests() -> void:
 			"first implementing mod wins; later mods not called",
 			"diff %s spy2 calls %d" % [diff, spy2.rank_calls])
 
-	#skills only dispatch while their `active` flag is set
+	#skills only dispatch while their `spotlit` flag is set
 	env.card_collections.clear()
 	var skill_spy := SpySkillCompare.new()
 	var skill_carrier := CardData.new().with_skill(skill_spy)
 	var arr2 : Array[CardData] = [skill_carrier]
 	env.card_collections.append(arr2)
-	skill_spy.active = false
+	skill_spy.spotlit = false
 	check_behavior(await PipComparator.compare_ranks(r9, r2) == 7.0 \
 			and skill_spy.rank_calls == 0, "inactive skill mod not dispatched")
-	skill_spy.active = true
+	skill_spy.spotlit = true
 	skill_spy.rank_result = -1.0
 	check_behavior(await PipComparator.compare_ranks(r9, r2) == -1.0 and skill_spy.rank_calls == 1,
 			"active skill mod dispatched")
@@ -231,7 +231,7 @@ func run_mod_override_tests() -> void:
 	env.free()
 	check(CardEnvironment.CURRENT == null, "removing FakeEnvironment restores CURRENT = null")
 
-## Skill-flavored spy for the active-flag gate.
+## Skill-flavored spy for the spotlit-flag gate.
 class SpySkillCompare extends CardModifierSkill:
 	var rank_result := NAN
 	var rank_calls := 0

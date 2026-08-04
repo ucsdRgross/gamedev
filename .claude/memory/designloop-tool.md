@@ -1,6 +1,6 @@
 ---
 name: designloop-tool
-description: designloop/ — local web tool presenting the flowchart-design questionnaire one question at a time, plus a review canvas and a gap surface; design CLOSED and ALL 17 build steps are DONE and green (2026-08-02) — read designloop/README.md, then HANDOFF_designloop.md
+description: designloop/ — local web tool presenting the flowchart-design questionnaire one question at a time, plus a review canvas and a gap surface; design CLOSED, all 17 build steps DONE plus S20 provenance (2026-08-04), 151 tests green — read designloop/README.md, then HANDOFF_designloop.md
 metadata: 
   node_type: memory
   type: project
@@ -14,7 +14,22 @@ the front end for [[repo-claude-tooling]]'s `/flowchart-design` workflow. **Both
 build plan — 17 steps in 5 phases, each citing design node IDs, ordered so stopping after Phase 1
 still leaves a working tool (Phase 3, the review canvas, is roughly half the work).
 
-**BUILD STATE (2026-08-02): ALL 17 STEPS DONE — the tool is finished and green at 118 tests**
+⚠ **S20 — PROVENANCE, added 2026-08-04** after Spotlight phase 1 cost the owner a round to a
+misreading. `src/provenance.mjs` reports three things nothing else can see: **`in prose`** (an
+answer with a note and no lettered option — no gate can read it and every document has to
+paraphrase it), **`unquoted`** (a document relying on such an answer and carrying none of the
+owner's words), and **`contracts`** (a normative code block in `PLAN.md` §1 that no `⚑contract`
+question authorises — an invented contract). New `⚑contract` tag in the grammar, `GET /provenance`,
+and `run check -- <slug> answer Q16` — the **restatement index**, the note beside every line in
+every document that speaks for it. ⚠ **THE INCIDENT, because it is the general lesson:** `Q16` was
+answered in free text; `DESIGN.md` and `PLAN.md` each summarised it and both dropped the clause that
+settled it, so an executing agent read two lossy summaries, saw a contradiction that *does not exist
+in `answers.json`*, and filed a gap on it. **Two documents disagreeing is not automatically a design
+contradiction — if both restate one answer, go read the answer.** That is now rule 4 of the gap
+protocol and a `RESTATEMENT` row in the triage table. Not built: a canvas panel for §1 contracts, so
+the owner still reviews flowcharts and not the contracts an executor actually obeys.
+
+**BUILD STATE (2026-08-02): ALL 17 STEPS DONE — the tool is finished and green at 151 tests**
 (`npm --prefix designloop test` is the gate). `designloop/README.md` is the entry point;
 `designloop/HANDOFF_designloop.md` is the build's live state and stands alone. Every hard gate
 passed: the Spotlight document parses and ingests **UNEDITED** (195 live + 1 retired questions,

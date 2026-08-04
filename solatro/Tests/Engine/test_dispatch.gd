@@ -1,7 +1,7 @@
 extends TestSuite
 # res://Tests/Engine/test_dispatch.gd
 # Dispatch / CardEnvironment suite (UNIT_TESTS_PLAN.md §3): run_all_mods ordering,
-# skill_active_check activation edges, on_anything non-recursion, first-result
+# skill_spotlight_check spotlight edges, on_anything non-recursion, first-result
 # semantics, CURRENT lifecycle. Uses FakeEnvironment + spy modifiers.
 #
 # CATEGORY MAP: this whole suite is IMPLEMENTATION — it pins the internal mod
@@ -9,7 +9,7 @@ extends TestSuite
 # policy). Nothing here is a rule a player sees; failures after a dispatcher
 # refactor may just mean the pinned policy legitimately changed.
 #
-# NOTE on skills under FakeEnvironment: CardModifier.is_active() only returns true
+# NOTE on skills under FakeEnvironment: CardModifier.is_spotlit() only returns true
 # outside a Game for rules cards / StampGlobal — so skill carriers here are
 # registered in env.rules as well, exactly like rules_deck cards in-game.
 
@@ -24,7 +24,7 @@ func _ready() -> void:
 	add_child(env)
 	await run_order_tests()
 	await run_on_anything_tests()
-	await run_active_check_tests()
+	await run_spotlight_check_tests()
 	await run_first_result_tests()
 	env.queue_free()
 	await run_current_lifecycle_tests()
@@ -59,14 +59,14 @@ class SpyStamp extends CardModifierStamp:
 class SpySkill extends CardModifierSkill:
 	var log : Array
 	var tag : String
-	var active_calls := 0
-	var deactive_calls := 0
+	var spotlight_calls := 0
+	var unspotlight_calls := 0
 	func get_str() -> String: return "SpyK:" + tag
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
 	func on_ping() -> void: log.append(tag)
-	func on_active() -> void: active_calls += 1
-	func on_deactive() -> void: deactive_calls += 1
+	func on_spotlight() -> void: spotlight_calls += 1
+	func on_unspotlight() -> void: unspotlight_calls += 1
 
 class SpyFirst extends CardModifierType:
 	var compare_result := NAN
@@ -116,7 +116,7 @@ func run_order_tests() -> void:
 	var c2 := CardData.new().with_type(spy_type(log, "c2.type"))
 	var cards : Array[CardData] = [c1, c2]
 	env.card_collections.append(cards)
-	env.rules.append_array(cards) #keeps c1.skill active through skill_active_check
+	env.rules.append_array(cards) #keeps c1.skill spotlit through skill_spotlight_check
 
 	await env.run_all_mods(&"on_ping")
 	#the trailing entries are the passive on_anything pass (spy types implement it)
@@ -131,12 +131,12 @@ func run_order_tests() -> void:
 	check(log == [],
 			"unimplemented hook -> no calls, no error, on_anything skipped", str(log))
 
-	#skill with active == false is skipped even if it implements the hook
+	#skill with spotlit == false is skipped even if it implements the hook
 	log.clear()
-	env.rules.clear() #out of rules -> is_active false -> skill_active_check turns it off
+	env.rules.clear() #out of rules -> is_spotlit false -> skill_spotlight_check turns it off
 	await env.run_all_mods(&"on_ping")
 	check("c1.skill" not in log and "c1.type" in log,
-			"inactive skill skipped; types/stamps still dispatched", str(log))
+			"unspotlit skill skipped; types/stamps still dispatched", str(log))
 
 
 # ==============================================================================
@@ -160,10 +160,10 @@ func run_on_anything_tests() -> void:
 
 
 # ==============================================================================
-# SECTION 3: skill_active_check edges
+# SECTION 3: skill_spotlight_check edges
 # ==============================================================================
-func run_active_check_tests() -> void:
-	implementation_section("SECTION 3: ACTIVE CHECK")
+func run_spotlight_check_tests() -> void:
+	implementation_section("SECTION 3: SPOTLIGHT CHECK")
 	reset_env()
 	var log := []
 	var skill := spy_skill(log, "k")
@@ -171,22 +171,22 @@ func run_active_check_tests() -> void:
 	var cards : Array[CardData] = [c]
 	env.card_collections.append(cards)
 
-	#activation edge: card enters rules -> on_active exactly once, not per check
+	#spotlight edge: card enters rules -> on_spotlight exactly once, not per check
 	env.rules.append(c)
-	skill.active = false
-	await env.skill_active_check()
-	await env.skill_active_check()
-	check(skill.active and skill.active_calls == 1,
-			"activation edge fires on_active exactly once",
-			"active_calls %d" % skill.active_calls)
+	skill.spotlit = false
+	await env.skill_spotlight_check()
+	await env.skill_spotlight_check()
+	check(skill.spotlit and skill.spotlight_calls == 1,
+			"spotlight edge fires on_spotlight exactly once",
+			"spotlight_calls %d" % skill.spotlight_calls)
 
-	#deactivation edge: card leaves rules -> on_deactive exactly once
+	#release edge: card leaves rules -> on_unspotlight exactly once
 	env.rules.clear()
-	await env.skill_active_check()
-	await env.skill_active_check()
-	check(not skill.active and skill.deactive_calls == 1,
-			"deactivation edge fires on_deactive exactly once",
-			"deactive_calls %d" % skill.deactive_calls)
+	await env.skill_spotlight_check()
+	await env.skill_spotlight_check()
+	check(not skill.spotlit and skill.unspotlight_calls == 1,
+			"release edge fires on_unspotlight exactly once",
+			"unspotlight_calls %d" % skill.unspotlight_calls)
 
 
 # ==============================================================================

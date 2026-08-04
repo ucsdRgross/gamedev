@@ -7,6 +7,13 @@ Unlike `DESIGN.md`, **this document carries code-level contracts on purpose**: s
 uniform names, per-step done-when, and self-checking acceptance gates. A plan that names a file
 without specifying it guarantees two incompatible inventions of the same thing.
 
+⚠ **§1 IS ALSO WHERE BOTH OF PHASE 1'S GAPS WERE, and neither was in `DESIGN.md`.** The design was
+reviewed and confirmed by the owner; §1's contracts were written afterwards and never were. §1.4
+shipped a default (`false`) that inverted a confirmed flowchart, and §1.5's one-line shorthand was
+read as contradicting §1.3. **If a normative contract here disagrees with the design, the design is
+right and this document is wrong** — that is not a tie to be broken by whichever is more specific.
+Corrections folded in 2026-08-04 are marked v7.
+
 ---
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
@@ -193,7 +200,7 @@ alternative is a silent board-wide re-activation storm on every existing save.
 
 ### 1.3 Forced spotlight — the state
 
-`Q17`=(a) no revision bump, `Q18`=(a) does not survive undo, `Q16` whole act.
+`Q17`=(a) no revision bump, `Q18`=(a) does not survive undo, `Q16`=(c) the whole act, TRAVELLING.
 
 ```gdscript
 # On GameData, per-act, NOT @export_storage (design Q18=a: undo rewinds it by not saving it).
@@ -204,20 +211,40 @@ var forced_spotlight : Dictionary[CardData, bool] = {}
   whole mechanical change (design §2).
 - Written only by `Game._spotlight_section()` / `_release_spotlight()`. Read only by
   `CardModifier.is_spotlit()`.
+- ⚠ **It TRAVELS; it does not accumulate** (`Q16`=c, design D20, v7). It is never torn down
+  between sections — that is what lets a light travel rather than strobe — while its MEMBERSHIP
+  is whichever section is being scored: *"increases or **decreases** based on cards being scored"*.
+  A section that has already scored is no longer force-spotlit. `_release_spotlight()` at the end
+  of the act is the only place it empties.
 - ⚠ **Never bump `GameData.revision` from it** (`Q17`=a) — a bump forces a board rebuild mid-cascade.
 
 ### 1.4 The block seam (`Q9`=a)
 
+⚠ **CORRECTED 2026-08-04 (v7, GAP-001).** This section originally specified `return false`, which
+under chart A8 would have made **every covered card on the board spotlit**. The default is `true`.
+
 ```gdscript
-## Can this card's spotlight be blocked by something above it? Ships now with exactly one
-## implementation — the default `false` — because it is the only shape Ghost Light / Kuroko can be
-## built on later (design Q9=a, A8). Content that uses it is OUT of scope (Q185=a).
+## Does this card HIDE the talents of whatever is stacked under it? Default `true` — a covering
+## card is exactly what makes the card beneath dark. A Kuroko / Ghost Light modifier overrides it
+## to `false`, unhiding the card beneath (design Q9=a, A8). Content that uses it is OUT of scope
+## (Q185=a); ONE test implementation exists so the seam can be asserted at all.
 func blocks_spotlight() -> bool:
-    return false
+    return true
 ```
 
-`CardModifier.is_spotlit()` consults it **before** `Game.is_data_topmost()`. ⚠ **A forced spotlight
-bypasses it entirely** (`Q6`=a) — the beam is literally on the card.
+- `CardModifier.is_spotlit()` **REPLACES** `Game.is_data_topmost()` with it — it does not consult
+  it first. With every modifier blocking, "nothing above me" and "I am topmost" are the same
+  statement, so the seam ships behaviour-neutral.
+- **A card blocks unless ANY ONE of its modifiers opts out.** A single Kuroko stamp is enough; it
+  does not have to convince its own card's type and suit to agree, or nothing could ever stop
+  blocking.
+- The walk stops at the first blocker — which, blocking being the default, is the card immediately
+  above — so a covered card costs one comparison, not a column scan.
+- A zone/type header is blocked by any card in its column, which is `is_data_topmost`'s header rule
+  ("topmost exactly when its column is empty") restated.
+- `StampRevealing` is **not** part of this seam: it is a property of the card ITSELF (chart A7) and
+  is checked before it.
+- ⚠ **A forced spotlight bypasses all of it** (`Q6`=a) — the beam is literally on the card.
 
 ### 1.5 The activation sweep
 
@@ -226,9 +253,11 @@ cap**, only the existing act-level `act_event_cap`.
 
 ```
 _spotlight_section(section):
-    forced_spotlight = section.cards            # D10
     loop:
+        note_processing()                       # or the act-level cap cannot see this loop
+        forced_spotlight = section.cards        # D10 — REPLACES; the set travels (Q16=c)
         await skill_spotlight_check()           # fires on_spotlight for newly-spotlit cards
+        if act_cancelled or act_overrun: return
         re-read section.cards from the board    # Q252=b — a hook may have mutated it
         if the set did not change: break
 ```
