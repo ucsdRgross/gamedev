@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c75iyc2gw2tpm" path="res://Levels/game_view.gd" id="1_gview"]
 [ext_resource type="Texture2D" uid="uid://dsgtqhs7yoimg" path="res://Assets/gettyimages-1406174121.jpg" id="2_78hkv"]
 [ext_resource type="PackedScene" uid="uid://qrkoeclfyd48" path="res://UI/play_area.tscn" id="4_fiyor"]
+[ext_resource type="Script" path="res://UI/light_layer.gd" id="5_light"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
@@ -401,3 +402,14 @@ grow_vertical = 2
 texture = ExtResource("2_78hkv")
 expand_mode = 5
 stretch_mode = 6
+
+[node name="LightLayer" type="ColorRect" parent="SceneRoot" unique_id=1013700483]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_light")

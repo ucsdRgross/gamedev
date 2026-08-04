@@ -47,6 +47,23 @@ const SHOT_TIME := 3.7
 ## `snapshot_diff.py` cannot tolerate. Any value works; this is simply one that is the same every run.
 const SHOT_SEED := 12.5
 
+## The light layer's shader and the size of its uniform arrays. ⚠ `LIGHT_MAX` must equal
+## `MAX_LIGHTS` in `light.gdshader`: Godot matches an array uniform by DECLARED SIZE, and a shorter
+## array is rejected whole rather than partially filled — the same trap `FxGlowStyle` pads around.
+const LIGHT_SHADER := preload("res://Shaders/light.gdshader")
+const LIGHT_MAX := 64
+
+## The suits the light-layer board is dealt from — several, because a real board is mixed and the
+## dim has to be judged over more than one art square. A function rather than an array of classes:
+## a class name is not a constant expression in GDScript, so `const [PipSuitKnife, …]` will not
+## parse.
+func _shot_suit(i: int) -> PipSuit:
+	match i % 4:
+		0: return PipSuitKnife.new()
+		1: return PipSuitBall.new()
+		2: return PipSuitHoop.new()
+		_: return PipSuitFire.new()
+
 ## Largest art-unit-to-pixel blow-up. Cards are 38x50 art units; at 1:1 a whole flame is a few pixels
 ## and nothing is reviewable. Each shot may use LESS than this — see _zoom_for.
 const ZOOM_MAX := 5.0
@@ -89,7 +106,14 @@ func _run() -> void:
 			+ "a CURVED one — the ring panels are where the anchor could pop", _transition())
 	await _shot("08_focus_highlight", "host modulate 1.0 vs the card's focus highlight — the "
 			+ "effects must brighten WITH their host (ruling 10)", _focus_highlight())
+	await _shot("09_glow_falloff", "THE SPOTLIGHT GLOW's field: inverse_square 0 (smooth) / 0.6 "
+			+ "(shipped) / 1.0 (pure), then ONE layer against TWO — a lamp, not a smudge",
+			_glow_falloff())
+	await _shot("09b_glow_over_art", "THE READABILITY CALL (Q216, gate G2.2): inner_alpha 0 / 0.35 "
+			+ "(shipped) / 0.6 / 0.9 over a real card face — the rank glyph must stay legible",
+			_glow_over_art())
 	await _shot_embers()
+	await _shot_light_layer()
 
 # ------------------------------------------------------------------ the shots
 
@@ -510,6 +534,101 @@ func _shot_embers() -> void:
 	holder.queue_free()
 	await get_tree().process_frame
 
+## THE LIGHT LAYER (S13), OVER A STAND-IN BOARD. Not a `Case` row: chart H's surface is ONE
+## screen-space quad over everything, so it has no host, no silhouette and no per-panel zoom — it is
+## staged directly instead.
+##
+## ⚠ **WHERE THE REAL SURFACE SITS IS NOT DECIDED (GAP-004)** — four round-1 answers exempt the
+## props, the popups and the focus panel from the dim while dimming the HUD, and one surface has one
+## depth. **This shot does not answer that and must not be read as answering it.** It shows what a
+## light fragment COMPUTES, which is identical under every option on the table.
+##
+## What must be true, by EYE:
+##  * the board is visibly DARKER outside the light and at full brightness inside it — the beam
+##    punches its own hole in the dim, which is H7 and H8 being one equation;
+##  * **the two crossing beams are brighter where they cross** than either is alone (`Q100`=a), and
+##    the crossing does not blow out to white (`Q101`=a clamps);
+##  * each circle opens the dim COMPLETELY where the beam only thins it (chart H5's "brighter",
+##    once the circle's light itself comes from the glow shader — see ASSUMPTIONS.md), and the beam
+##    is WIDER at the card than at its origin;
+##  * **the beam STOPS on its circle's FAR ARC and its mouth is exactly the circle's width** —
+##    owner, 2026-08-04. ⚠ Two earlier builds cut it at `t = 1`, which is the circle's CENTRE, so the
+##    cone ended on a straight chord halfway across the pool. **A straight edge anywhere near a beam
+##    end is that bug back.** Crop and magnify before judging: at full-shot scale it is easy to miss.
+##  * **the circle READS as its own pool inside the beam** (chart H5) — brighter than the shaft that
+##    feeds it, at every one of the three radii, while the card under it keeps its rank and pips.
+##  * the beams carry visible grain that is not screen static (`Q98`=b, volumetric from the start);
+##  * the dim is a dark palette colour, NOT black (`Q79`=a), and uniform rather than a vignette.
+func _shot_light_layer() -> void:
+	var holder := Node2D.new()
+	add_child(holder)
+	var size := canvas()
+	# ⚠ **REAL CARDS, NOT RECTANGLES** — project rule 5, and the first build of this shot broke it:
+	# three rows of `ColorRect`s in card colours. The owner's objection was exactly the rule
+	# (2026-08-04: *"the demo scene doesnt look like a real board using existing art and logic"*),
+	# and it is not cosmetic. **A stand-in cannot disagree with what it models**: a flat rectangle
+	# has no rank glyph to lose, no art square, no suit pip and no dark ink beside light paper — so
+	# it can never show the one thing the dim is capable of getting wrong, which is legibility.
+	# These are `ControlCard`s built by the game's own factory, with the game's own art.
+	var ranks : Array[int] = [5, 11, 2, 9, 13, 7]
+	for row : int in 3:
+		for col : int in 6:
+			# ⚠ THE TYPE IS WHAT DRAWS THE CARD'S PAPER. Without it `CardVisual` hides the `type`
+			# polygon and the card is rank and pips floating on the background — which is what the
+			# first real-art build of this shot showed, and it is worse than useless for a dim: the
+			# thing a dim acts on is the paper, and the thing it threatens is the dark ink ON that
+			# paper. No body, no contrast, nothing to judge.
+			var data := CardData.new() \
+					.with_rank(PipRankNumeral.new().with_value(ranks[(col + row) % ranks.size()])) \
+					.with_suit(_shot_suit(col + row * 2)) \
+					.with_type(TypePaper.new())
+			var control := ControlCard.add_child_control_card(holder, data,
+					CardVisual.DisplayContext.PLAY_AREA)
+			control.position = Vector2(70.0 + float(col) * 190.0, 130.0 + float(row) * 180.0)
+	# The visuals are added with `call_deferred`, so they do not exist until the next frame — and a
+	# capture taken before that would be the empty board this shot exists to stop being.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var rect := ColorRect.new()
+	rect.size = size
+	var mat := ShaderMaterial.new()
+	mat.shader = LIGHT_SHADER
+	rect.material = mat
+	holder.add_child(rect)
+
+	# Three lights. TWO OF THEM CROSS on purpose — that crossing is what `Q100`/`Q101` are about and
+	# it is the one thing this shot exists to show.
+	var centres : Array[Vector2] = [Vector2(318.0, 395.0), Vector2(678.0, 395.0),
+			Vector2(1128.0, 220.0)]
+	var origins : Array[Vector2] = [Vector2(760.0, -240.0), Vector2(300.0, -190.0),
+			Vector2(1150.0, -260.0)]
+	var radii : Array[float] = [46.0, 70.0, 100.0]
+	var lights := PackedVector4Array()
+	var beams := PackedVector4Array()
+	lights.resize(LIGHT_MAX)
+	beams.resize(LIGHT_MAX)
+	for i : int in centres.size():
+		# ⚠ **THREE DIFFERENT RADII, AND THAT IS THE POINT OF THE SHOT'S SECOND HALF.** `Q85`'s 16
+		# art units is ~46 px at this card scale (a card is 38 art units wide and draws ~110 px), and
+		# the owner asked whether the shape stays consistent if the circle is enlarged later. It is
+		# not enough to answer that from the code: the panels carry 46 / 70 / 100 so the scaling is
+		# LOOKED AT. The beam's mouth and its end cap are both derived from this number, so all three
+		# must show the same shape at different sizes and none may show a straight edge.
+		lights[i] = Vector4(centres[i].x, centres[i].y, radii[i], 1.0)
+		# .w is FLARE — extra half-width beyond the circle, and 0 is the owner's answer: the cone's
+		# mouth is exactly the circle it serves, and it stops there.
+		beams[i] = Vector4(origins[i].x, origins[i].y, 26.0, 0.0)
+	mat.set_shader_parameter(&"u_lights", lights)
+	mat.set_shader_parameter(&"u_beams", beams)
+	mat.set_shader_parameter(&"u_light_count", centres.size())
+	mat.set_shader_parameter(&"u_dim", 0.75)
+	mat.set_shader_parameter(&"u_time", SHOT_TIME)
+	await capture("10_light_layer", "THE LIGHT LAYER (chart H): dim 0.75, three lights, two CROSSING "
+			+ "(the overlap brighter, Q100=a, not blown out, Q101=a) at circle radius 46 / 70 / 100 "
+			+ "— the beam's mouth and cap scale WITH the circle, and no size shows a straight edge")
+	holder.queue_free()
+	await get_tree().process_frame
+
 ## One frame of real time, and how long it took.
 func _tick() -> float:
 	await get_tree().process_frame
@@ -561,6 +680,60 @@ func _case(label: String, body: Vector2, shape: FxAttachment.Shape, half: FxAtta
 	c.half = half
 	c.requests = requests
 	return c
+
+## THE GLOW'S FIELD, ISOLATED. `inverse_square` is the one knob that decides whether the light reads
+## as A LAMP or as A SMUDGE (`Q208`), so the first three panels are that knob alone and nothing else
+## moves. The last two are `Q207`'s layer count: one falloff against the shipped tight-core-plus-wide-
+## halo pair.
+##
+## What must be true across the panels, and each is a separate way for the field to be wrong:
+##  * **no rectangle.** The halo must fade to nothing before the quad's edge — an inverse-square that
+##    is not normalized to zero at its limit leaves a visible box around every glowing card, which is
+##    exactly what `falloff()`'s FLOOR constant exists to remove.
+##  * **no seam at the card's edge.** `sink` starts the field inside the silhouette, so the light is
+##    already at full strength where it crosses the outline (`Q209`=a). A bright line along the edge
+##    means the sink is not being applied.
+##  * **the pure-inverse-square panel has a visibly HOTTER, TIGHTER core** than the smooth one. If the
+##    three panels look alike the knob is not reaching the shader.
+func _glow_falloff() -> Array[Case]:
+	var out : Array[Case] = []
+	for k : float in [0.0, 0.6, 1.0]:
+		out.append(_card_case("inv_sq %.1f" % k, [_glow_request(0.35, k, 2)]))
+	out.append(_card_case("1 layer", [_glow_request(0.35, 0.6, 1)]))
+	out.append(_card_case("2 layers", [_glow_request(0.35, 0.6, 2)]))
+	return out
+
+## ⚠ **THE `Q216` CALL, AND IT CANNOT BE MADE FROM A DESCRIPTION** (gate G2.2, project rule 4). The
+## knob is the alpha the light draws at where it covers the host's own art: light ADDS, and adding
+## the same amount to a card's dark ink and its light paper moves both toward the light colour, so
+## the first thing to disappear is the rank glyph — the smallest dark feature on the card.
+##
+## `Q216`=(d) is *start low (~0.35) and tune it against the S15 scenario*, so these panels exist to
+## be tuned against, not to confirm a number. **0 is the honest floor** — pure addition outside the
+## silhouette and nothing at all over the art — and 0.9 is what "the card is genuinely lit" costs.
+##
+## ⚠ The card here is a plain BOX host, which is the LENIENT case. The real S15 shot is the spotlight
+## CIRCLE at full intensity over the busiest card face the game can build, and it needs the light
+## layer (S13) to exist before it can be staged.
+func _glow_over_art() -> Array[Case]:
+	var out : Array[Case] = []
+	for a : float in [0.0, 0.35, 0.6, 0.9]:
+		out.append(_card_case("inner_alpha %.2f" % a, [_glow_request(a, 0.6, 2)]))
+	return out
+
+## One glow request off the shipped card style, with the two knobs a panel varies overridden.
+## ⚠ The reach is `reach + sink`, the same budget `FxFire.request` uses and for the same reason: the
+## field starts `sink` units INSIDE the silhouette, so a quad sized for `reach` alone clips the halo.
+func _glow_request(inner_alpha: float, inverse_square: float, layers: int) -> FxRequest:
+	var style := load("res://Shaders/Styles/glow_card.tres").duplicate() as FxGlowStyle
+	style.inner_alpha = inner_alpha
+	style.inverse_square = inverse_square
+	style.layers = layers
+	# Wide enough to READ at snapshot zoom. The shipped 4 is a rim, which is the right look on a
+	# board and the wrong one for judging a falloff curve in a still.
+	style.reach = 12.0
+	return FxRequest.make(&"glow", FxGlowStyle.GLOW_SHADER, style,
+			style.reach + maxf(style.sink, 0.0))
 
 func _card_case(label: String, requests: Array[FxRequest]) -> Case:
 	return _case(label, CardVisual.CARD_SIZE, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,

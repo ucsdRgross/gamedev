@@ -91,6 +91,38 @@ signal settings_changed
 		card_jump_settle_fraction = value
 		settings_changed.emit()
 
+@export_group("Spotlight")
+## How dark the dim goes under the light layer, 0 = untouched and 1 = the dim colour outright.
+##
+## ⚠ **`Q84`=(b) PUT THIS ON THE STYLE RESOURCE AND `Q168`=(a) CALLS IT A PLAYER SETTING. The plan
+## resolves to `Q84`, style-only — but the light layer has no style resource** (`FxGlowStyle`'s three
+## `.tres` are the GLOW's, and §16 keeps the layer's own knobs separate). Living here is the reading
+## that exists; if that is wrong, file a gap rather than splitting the difference — see
+## `design/spotlight/PLAN.md` §1.11's G0 note.
+@export_range(0.0, 1.0, 0.01) var spotlight_dim_target : float = 0.75:
+	set(value):
+		spotlight_dim_target = value
+		settings_changed.emit()
+## The dim's rise, as a FRACTION of `Game.get_delay()` (`Q167`=a — never wall-clock, so the whole
+## effect follows the game's pacing and the act speed-up compresses it with everything else).
+@export var spotlight_dim_in_fraction : float = 0.5:
+	set(value):
+		spotlight_dim_in_fraction = value
+		settings_changed.emit()
+## The dim's fall, same units.
+@export var spotlight_dim_out_fraction : float = 0.5:
+	set(value):
+		spotlight_dim_out_fraction = value
+		settings_changed.emit()
+## ⚠ **A SHALLOWER DIM OUTSIDE SCORING THAN INSIDE IT** (`Q245`=c). The spotlight fires whenever a
+## card becomes active — including every placement in ordinary play — and the owner's own scrutiny
+## note on that question is *"(a) means the screen pulses dark on every single card you place"*. This
+## multiplies `spotlight_dim_target` when the cue is not part of a scoring act.
+@export_range(0.0, 1.0, 0.01) var spotlight_dim_casual_scale : float = 0.35:
+	set(value):
+		spotlight_dim_casual_scale = value
+		settings_changed.emit()
+
 @export_group("Act speed-up (per-activation compression)")
 ## Long/looping score cascades shrink their per-step delay per unit of WORK PROCESSED
 ## (Game.act_calls — the same counter act_event_cap trips on), so the speed-up is deterministic

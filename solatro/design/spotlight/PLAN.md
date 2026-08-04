@@ -12,7 +12,13 @@ reviewed and confirmed by the owner; §1's contracts were written afterwards and
 shipped a default (`false`) that inverted a confirmed flowchart, and §1.5's one-line shorthand was
 read as contradicting §1.3. **If a normative contract here disagrees with the design, the design is
 right and this document is wrong** — that is not a tie to be broken by whichever is more specific.
-Corrections folded in 2026-08-04 are marked v7.
+Corrections folded in 2026-08-04 are marked v7 (phase 1) and v8 (S11–S12).
+
+⚠ **AND §1.8 REPEATED THE MISTAKE, WHICH IS WHY THE PARAGRAPH ABOVE IS NOT ENOUGH ON ITS OWN.**
+`glow_ramp` was typed `PaletteRamp` here because chart O11 said so — but O11 argued from a premise
+`Q134`=(b), `Q135`=(b) and `Q214` had already overturned, and copying a chart faithfully reproduced
+its staleness. **A contract traceable to a CHART is not thereby traceable to an ANSWER.** When the
+two disagree the answers win, and the correct move is a gap (GAP-003), not a transcription.
 
 ---
 
@@ -61,43 +67,47 @@ either function.**
 
 ### The opening prompt for a fresh session
 
-Paste this verbatim. It is self-contained.
+Paste this verbatim, at any point in the stream. **It carries no phase, no step number and no
+status** — those live in `solatro/HANDOFF_spotlight.md`, which is the one place they are current.
+A prompt that names a phase is wrong the moment that phase lands.
 
 ```
-Implement solatro/design/spotlight/PLAN.md, Phase 1 only (steps S1-S10). Stop at S10.
+Implement solatro/design/spotlight/PLAN.md.
 
-Read PLAN.md first, then solatro/HANDOFF_spotlight.md for status; they are self-contained.
-solatro/design/spotlight/DESIGN.md is the authority on behaviour - where they disagree the
-design wins and the plan is wrong.
+Read PLAN.md, then solatro/HANDOFF_spotlight.md; together they are self-contained.
+PLAN.md is the immutable specification (what each step IS, section 0b for dependencies,
+sections 2-5 for the steps and their gates). HANDOFF_spotlight.md is the live status
+ledger - id / status / evidence / notes, and nothing else.
+solatro/design/spotlight/DESIGN.md is the authority on behaviour: where it and the plan
+disagree, the design wins and the plan is wrong. That is not a tie broken by whichever
+is more specific.
 
-Section 1 of the plan is NORMATIVE: ScoringSection's shape, the rename table, the
-forced_spotlight state, the block seam signature, the activation sweep and the
-compact-and-follow rules are specified, not suggested. Do not invent them.
+Work the first pending step in the handoff whose dependencies (PLAN.md section 0b) are
+all done. Per-step loop, never batched: set status in_progress, do the work, run that
+step's gate, paste the REAL output into evidence, set done or blocked. Update the
+handoff after every step.
 
-Do S2 (the rename) FIRST - it is mechanical only while nothing new depends on the old names.
-Dependencies for every other step are in PLAN.md section 0b.
+Section 1 of the plan is NORMATIVE - ScoringSection, the rename table, forced_spotlight,
+the block seam, the activation sweep, compact-and-follow, the FxGlowStyle knob table and
+the glow.gdshader uniform contract are specified, not suggested. Do not invent them. But
+section 1 is also where both of phase 1's gaps were: it was written after the owner
+confirmed the design and was never reviewed. If a contract there is not traceable to an
+answer, treat it as a gap, not as settled.
 
-Phase 1 changes NO pixels. If you find yourself editing a shader, a .tres or
-CardVisual.anim_jump, you have left the phase - stop and re-read section 0.
+Which gates apply is a property of the step you are on, not of this prompt: G1.x in
+PLAN.md section 2, G2.x in section 3, G3.x in section 4, G4.x in section 5. The suite is
+run WINDOWED, no --headless, and the SUITES count must not fall below the baseline
+recorded in the handoff - the banner says PASSED even when a suite failed to load, so
+check the number, not the word.
 
-Hard gates, self-checking, all must pass before you report done:
-- G1.1 full suite green WINDOWED, errors log empty, SUITES count not lower than the
-       baseline recorded in HANDOFF_spotlight.md
-- G1.2 grep -rn "is_active|skill_active_check|on_active|on_deactive" --include=*.gd
-       solatro/ returns nothing outside addons/
-- G1.3 a run.tres written before the rename loads with the same spotlit set a fresh
-       check would derive, and fires NO on_spotlight during the load
-- G1.5 GameData.revision is unchanged across a whole submit
-- G1.6 a skill whose on_spotlight discards a card in its own section terminates via
-       act_event_cap rather than hanging - assert with a bounded watchdog
-- G1.7 headless and windowed produce identical mod-fire logs for the same seed
+Phases 1 and 3-4 are gated headless and can run autonomously. Phase 2 (S11-S15) and the
+reveal work in phase 3 CANNOT be verified from metrics: render, LOOK at the PNG, describe
+what it actually shows, or report UNVERIFIED. Phase 5 is a separate deliverable - do not
+start it here.
 
-Follow the gap protocol at the head of this plan: if you hit a decision the plan does not
-cover, do not invent it - file a gap at solatro/design/spotlight/gaps/GAP-NNN.md and keep
-working the unaffected steps. Q84 vs Q168 on dim_target is a known one.
-
-Keep solatro/HANDOFF_spotlight.md updated after EVERY task - it is a status ledger only
-(id / status / evidence / notes); everything else stays in PLAN.md.
+Follow the gap protocol at the head of PLAN.md: a decision the design does not cover is
+filed at solatro/design/spotlight/gaps/GAP-NNN.md, not invented; park that thread and keep
+working the unaffected ones. Q84 vs Q168 on dim_target is a known one.
 
 Never run Godot while the owner's editor is open. No git add, no commits.
 ```
@@ -307,7 +317,7 @@ style** (`Q221`).
 | `inverse_square` | `float` 0–1 | 0.6 | `Q208`=a |
 | `sink` | `float` | 4.0 | `Q209`=a |
 | `reach` | `float` | 4.0 | `Q210` (owner: *"start with 4"*, tunable) |
-| `glow_ramp` | `PaletteRamp` | — | `Q211`=a core→mid→edge |
+| `glow_ramp` | **`Gradient`** ⚠ v8 | — | `Q211`=a core→mid→edge · **`Q134`=b, `Q135`=b, `Q214`** |
 | `grid` | `float` | finer than the art | `Q213`=d — **a knob spanning art-grid → screen resolution** |
 | `dither` | `float` 0–1 | 1.0 | `Q214`=a |
 | `inner_alpha` | `float` 0–1 | **0.35** | `Q216`=d — start low, tune against S15 |

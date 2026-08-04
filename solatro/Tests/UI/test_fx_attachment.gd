@@ -42,6 +42,12 @@ func _ready() -> void:
 	test_the_mask_is_the_outline()
 	test_fx_pixel_is_the_games_pixel()
 	test_reach_covers_the_sink()
+	test_glow_styles_are_the_three_clients()
+	test_glow_grid_replaces_pixel()
+	test_glow_layer_arrays_are_padded()
+	test_glow_has_no_retired_knob()
+	test_glow_shader_declares_every_knob()
+	test_glow_shader_constants_mirror()
 	_host.queue_free()
 	finish()
 
@@ -629,6 +635,176 @@ func test_reach_covers_the_sink() -> void:
 	check(is_equal_approx(FxFire.request(&"fire", 8, style).reach, live[&"u_height"]),
 			"a negative sink lowers the ladder and buys no extra quad",
 			str(FxFire.request(&"fire", 8, style).reach))
+
+# ------------------------------------------------------------------ SPOTLIGHT GLOW (S11)
+
+## `Q221` / `Q257`, in the owner's words: *"should be three card circle beam, no prop"*. The count is
+## the assertion — a fourth `.tres` appearing here means a prop glow was added back, which round 1
+## cut, and the cut is the reason `FxAttachment`'s genericity now has exactly one client.
+func test_glow_styles_are_the_three_clients() -> void:
+	behavior_section("THREE GLOW STYLES: CARD, CIRCLE, BEAM — AND NO PROP")
+	var paths : Array[String] = ["res://Shaders/Styles/glow_card.tres",
+			"res://Shaders/Styles/glow_circle.tres", "res://Shaders/Styles/glow_beam.tres"]
+	for p : String in paths:
+		var style := load(p)
+		check(style is FxGlowStyle, "%s loads as an FxGlowStyle" % p.get_file(),
+				str(style))
+	var dir := DirAccess.open("res://Shaders/Styles")
+	var found : Array[String] = []
+	for f : String in dir.get_files():
+		if f.begins_with("glow_"): found.append(f.trim_suffix(".remap"))
+	check(found.size() == 3, "exactly three glow styles ship, no prop style", str(found))
+
+## ⚠ `grid` REPLACES the inherited `pixel`, and this pins the mechanism rather than the number.
+## `Q213`=(d) asked for one knob running from the art's own grid down to SCREEN RESOLUTION, which
+## `FxStyle.pixel` cannot express — its range stops at 0.25. So the glow declares its own, hides the
+## inherited row from the inspector, and writes `u_pixel` from it after `super(mat)` has already
+## written the other one.
+##
+## ⚠ THIS IS THE ONE DELIBERATE EXCEPTION TO `test_fx_pixel_is_the_games_pixel` ABOVE. Every other
+## effect draws on the game's single pixel size; a glow is almost entirely gradient, and drawing it
+## on the art's grid turns that gradient into contour rings. Do not "fix" the glow to 1.0.
+func test_glow_grid_replaces_pixel() -> void:
+	behavior_section("THE GLOW'S GRID IS THE KNOB, AND IT WINS OVER THE INHERITED PIXEL")
+	var style := load("res://Shaders/Styles/glow_card.tres").duplicate() as FxGlowStyle
+	style.pixel = 4.0          # the inherited one, which must NOT be what reaches the shader
+	style.grid = 0.125
+	var mat := ShaderMaterial.new()
+	style.apply(mat)
+	var pushed : float = mat.get_shader_parameter(&"u_pixel")
+	check(is_equal_approx(pushed, 0.125),
+			"u_pixel comes from grid, not from the inherited pixel", str(pushed))
+	check(style.grid < 1.0, "and it ships FINER than the card's own art grid (Q213=d)",
+			str(style.grid))
+	# The inherited row is hidden from the inspector but still stored, so an existing .tres keeps
+	# loading. Hiding it is what stops two rows quantizing the same coordinate.
+	var usage := -1
+	for prop : Dictionary in style.get_property_list():
+		if prop.name != &"pixel": continue
+		var raw : Variant = prop.get("usage", 0)
+		if raw is int: usage = raw
+	check(usage >= 0 and (usage & PROPERTY_USAGE_EDITOR) == 0,
+			"the inherited pixel is hidden from the inspector but still saved", str(usage))
+
+## Godot matches an array uniform BY DECLARED SIZE. A `PackedFloat32Array` of 2 pushed at a
+## `float[4]` is not partially filled — it is rejected whole, with no error, and the shader then runs
+## on whatever the uniform held before. Both arrays are therefore padded to `MAX_LAYERS` on the way
+## out, and the fallbacks are chosen so an under-filled array is INERT: radius 1.0 (the layer spans
+## the whole reach) and gain 0.0 (it contributes nothing).
+func test_glow_layer_arrays_are_padded() -> void:
+	behavior_section("LAYER ARRAYS REACH THE SHADER AT EXACTLY MAX_LAYERS")
+	var style := FxGlowStyle.new()
+	style.layer_radius = PackedFloat32Array([0.35, 1.0])
+	style.layer_gain = PackedFloat32Array([1.0, 0.4])
+	var mat := ShaderMaterial.new()
+	style.apply(mat)
+	var radius : PackedFloat32Array = mat.get_shader_parameter(&"u_layer_radius")
+	var gain : PackedFloat32Array = mat.get_shader_parameter(&"u_layer_gain")
+	check(radius.size() == FxGlowStyle.MAX_LAYERS and gain.size() == FxGlowStyle.MAX_LAYERS,
+			"both arrays are padded to MAX_LAYERS", "%d / %d" % [radius.size(), gain.size()])
+	check(is_equal_approx(radius[0], 0.35) and is_equal_approx(gain[1], 0.4),
+			"the authored entries survive the padding", "%s / %s" % [str(radius), str(gain)])
+	check(is_equal_approx(gain[2], 0.0) and is_equal_approx(gain[3], 0.0),
+			"an untuned layer contributes nothing rather than full strength", str(gain))
+	# LONGER than the array is truncated, not spilled.
+	style.layer_gain = PackedFloat32Array([1.0, 0.4, 0.2, 0.1, 0.05])
+	style.apply(mat)
+	check((mat.get_shader_parameter(&"u_layer_gain") as PackedFloat32Array).size()
+			== FxGlowStyle.MAX_LAYERS, "and a longer array is truncated to it",
+			str(mat.get_shader_parameter(&"u_layer_gain")))
+
+## `Q264`=(a) DELETED the fade knob rather than shipping it at zero, and `Q126`=(a) settled that the
+## glow does not animate at all. Both are regressions that would arrive as a well-meaning addition,
+## so the absence is what is pinned.
+##
+## ⚠ **AND THE COLOUR RAMP IS A `Gradient`, NOT A `PaletteRamp`** — GAP-003, answered by the owner
+## 2026-08-04. Every other gradient in this project is palette-bound by construction; light is the
+## granted exception (`Q134`=b, `Q135`=b, `Q214`). A well-meaning "fix" back to `PaletteRamp` would
+## pass every other test in the repo, including the palette suite, so it is pinned here.
+func test_glow_has_no_retired_knob() -> void:
+	implementation_section("THE GLOW'S DELETED KNOBS STAY ABSENT, AND ITS RAMP IS OFF-PALETTE")
+	var names : Array[StringName] = []
+	for prop : Dictionary in FxGlowStyle.new().get_property_list():
+		names.append(prop.name)
+	check(not names.has(&"glow_fade_fraction") and not names.has(&"fade_fraction"),
+			"no fade knob: the glow snaps on and off (Q264=a)")
+	check(not names.has(&"breathe_amp") and not names.has(&"breathe_speed"),
+			"no breathe knobs: the glow is steady (Q126=a)")
+	for path : String in ["res://Shaders/Styles/glow_card.tres",
+			"res://Shaders/Styles/glow_circle.tres", "res://Shaders/Styles/glow_beam.tres"]:
+		var style := load(path) as FxGlowStyle
+		# ⚠ The EXPORT'S OWN TYPE is what forbids a `PaletteRamp` here — `Gradient` and `PaletteRamp`
+		# are unrelated classes, so the compiler rejects the comparison outright and a retyped
+		# export could not load these files at all. What this asserts is the other half: the ramp is
+		# actually FILLED IN, since a null one draws nothing and would look like a dead effect.
+		check(style.glow_ramp is Gradient,
+				"%s carries an OFF-PALETTE Gradient (GAP-003, Q134=b)" % path.get_file(),
+				str(style.glow_ramp))
+		check(style.ramp_texture() != null and style.ramp_texture().width == FxGlowStyle.RAMP_WIDTH,
+				"and it bakes to a %d-wide texture" % FxGlowStyle.RAMP_WIDTH)
+
+## ⚠ **A UNIFORM THE SHADER DOES NOT DECLARE IS SILENTLY DISCARDED** — `set_shader_parameter` never
+## complains, and the effect simply runs on the shader's own default forever. That is exactly how
+## `juggle.gdshader` came to miss `fx_intensity`: it does not declare `u_brightness`, and nothing
+## said so (VFX.md §7.11). Every name `FxGlowStyle.apply()` writes is therefore checked against the
+## shader's real uniform list, `u_brightness` loudest of all.
+func test_glow_shader_declares_every_knob() -> void:
+	implementation_section("EVERY GLOW UNIFORM THE STYLE WRITES EXISTS IN THE SHADER")
+	var shader := load("res://Shaders/glow.gdshader") as Shader
+	check(shader != null, "glow.gdshader loads")
+	if not shader: return
+	var declared : Array[String] = []
+	for u : Dictionary in shader.get_shader_uniform_list():
+		declared.append(str(u.get("name", "")))
+	var written : Array[String] = ["u_pixel", "u_opacity", "u_dither", "u_reach", "u_sink",
+			"u_layers", "u_layer_radius", "u_layer_gain", "u_inverse_square", "u_inner_alpha",
+			"u_circle_radius", "u_circle_inner_alpha", "u_ramp", "u_ramp_width"]
+	for name : String in written:
+		check(declared.has(name), "the shader declares %s, which FxGlowStyle.apply() writes" % name)
+	check(declared.has("u_brightness"),
+			"and it declares u_brightness — the one juggle.gdshader forgot, so fx_intensity misses it")
+	check(declared.has("u_mask_kind") and declared.has("u_space"),
+			"the two host seams are declared: u_mask_kind and u_space (Q229=a)")
+
+## The GLSL-side constants that must agree with GDScript, plus the two absences the design is
+## explicit about. ⚠ `u_mask_kind` is deliberately NOT `FxAttachment.Shape`: a card at rest and a
+## deformed card are one kind to a glow, and the disc is not a host kind at all. The DIFFERENT NAME
+## is the guard — see the shader's header.
+func test_glow_shader_constants_mirror() -> void:
+	implementation_section("GLOW SHADER CONSTANTS AND ABSENCES")
+	var src := FileAccess.get_file_as_string("res://Shaders/glow.gdshader")
+	check(src.contains("const int POLY = %d;" % FxAttachment.POLY)
+			and src.contains("const int WEDGES = %d;" % FxAttachment.WEDGES)
+			and src.contains("const int WEDGE_CANDIDATES = %d;" % FxAttachment.WEDGE_CANDIDATES),
+			"the silhouette constants match FxAttachment on both shaders")
+	check(src.contains("const int MAX_LAYERS = %d;" % FxGlowStyle.MAX_LAYERS),
+			"MAX_LAYERS matches FxGlowStyle, so the array uniforms are the same size on both sides")
+	check(src.contains("blend_premul_alpha"),
+			"premultiplied alpha — the one blend that is additive at a=0 and a tint above it (Q218)")
+	# `TIME` is banned everywhere (it ignores the game's pacing) and this shader has no clock at all:
+	# Q126=(a) steady, Q264=(a) no fade. Both would arrive as a well-meaning addition.
+	# ⚠ COMMENTS ARE STRIPPED FIRST. The header discusses both bans by name, so a raw `contains`
+	# fails on the documentation that exists to prevent the thing it is looking for.
+	var code := ""
+	for line : String in src.split("\n"):
+		if not line.strip_edges().begins_with("//"): code += line + "\n"
+	check(not code.contains("TIME"), "no TIME: the glow is steady (Q126=a) and never fades (Q264=a)")
+	check(not code.contains("u_fade"), "and no fade uniform to push a fade into")
+
+	# THE LIGHT LAYER's own two pins. ⚠ `MAX_LIGHTS` is not a policy — Q107 is "No cap. soft cap at
+	# how many cards can fit on screen" — so it is a bound the CPU must respect, and every consumer
+	# has to agree with it: Godot matches an array uniform by DECLARED SIZE and rejects a shorter
+	# one whole rather than filling part of it, which draws a black frame with no error.
+	var light_src := FileAccess.get_file_as_string("res://Shaders/light.gdshader")
+	var light_code := ""
+	for line : String in light_src.split("\n"):
+		if not line.strip_edges().begins_with("//"): light_code += line + "\n"
+	check(light_code.contains("const int MAX_LIGHTS = 64;"),
+			"light.gdshader's MAX_LIGHTS is the bound every consumer sizes its arrays to (Q107)")
+	# The beam's grain SCROLLS (Q99=a) on the game's own clock — u_time, pushed by the CPU. The
+	# built-in ignores the game's pacing, which is why it is banned across the whole FX layer.
+	check(light_code.contains("u_time") and not light_code.contains("TIME"),
+			"and it scrolls on u_time, never the built-in TIME (Q99=a)")
 
 ## One request out of a juggling pair, BY ID. The pair's order is meaningful (plumes before balls, so
 ## the balls occlude them), so nothing here may depend on a position.

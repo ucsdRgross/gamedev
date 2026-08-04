@@ -38,6 +38,11 @@ var game : Game = null
 @onready var row_label: Label = %MultScore/Row
 @onready var combo_label: Label = %MultScore/Combo
 @onready var patience_label: Label = %Patience
+## The spotlight's light layer, and the node that feeds it. ⚠ The DIRECTOR is created here rather
+## than placed in the scene because it must bind AFTER `game` exists — it connects to
+## `CardEnvironment.spotlight_cued`, and the environment is `game` itself.
+@onready var light_layer: LightLayer = %LightLayer
+var spotlight_director : SpotlightDirector = null
 
 func _ready() -> void:
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
@@ -52,6 +57,13 @@ func _ready() -> void:
 	game.patience_changed.connect(_on_patience_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
+	# THE SPOTLIGHT WIRE. Bound after `game` is built (it IS the CardEnvironment the cue comes
+	# from) and before the deal, so the first placement of the run is already lit.
+	spotlight_director = SpotlightDirector.new()
+	spotlight_director.name = "SpotlightDirector"
+	add_child(spotlight_director)
+	spotlight_director.bind(light_layer, play_area, game)
+
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
 	game.state_bound.connect(_on_state_bound)
 	_bind_state(null, game.state)  # the initial default state bypasses the setter -> bind by hand

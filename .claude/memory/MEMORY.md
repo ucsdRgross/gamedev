@@ -8,7 +8,7 @@
 - [Design review ends with a handoff](design-review-ends-with-handoff.md) — handoff fires on CONFIRMING the flowcharts (not the last answer); then plan + scope + copy-paste prompt in ONE message
 - [Verify visuals by eye](verify-visuals-by-eye.md) — render a snapshot and describe the image; metrics and green tests are not evidence about pixels, say UNVERIFIED instead
 - [General, not shape-specific](general-not-shape-specific.md) — owner rejects one-silhouette hacks and coupled designs; propose the general form or 2-3 options before implementing
-- [Running Godot scenes](running-godot-scenes.md) — Claude runs the Solatro suite itself, WINDOWED (not headless) since 2026-07-27; runs snapshot scenes and READS the PNGs; only gameplay/generation scenes go to the user
+- [Running Godot scenes](running-godot-scenes.md) — Claude runs the Solatro suite itself, WINDOWED (not headless) since 2026-07-27; runs snapshot scenes and READS the PNGs; only gameplay/generation scenes go to the user; ⚠ a green banner is NOT proof the tests ran — a runtime error aborts a test silently, redirect stderr and check per-section counts
 - [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files, hangs headless runs, and locks dlls; re-read disk before diagnosing, never kill their editor
 - [No mocks in tools](no-mocks-in-tools.md) — tools/harnesses host the real scene + real data; a stand-in can't disagree with what it models
 - [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never Get-Content | Set-Content a source file; use Edit

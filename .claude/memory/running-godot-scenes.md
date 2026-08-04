@@ -10,6 +10,17 @@ metadata:
 
 **⚠ CHANGED 2026-07-27: the Solatro suite now runs WINDOWED — `Godot --path solatro res://Tests/all_tests.tscn` with NO `--headless`** (~60 s, still self-quits, still exits with the failure count). It gained a **PIXELS** suite that renders effects into a SubViewport and asserts on the image; a dummy renderer cannot compile a shader, so headless that suite FAILS (exit 1) with a message telling you to re-run windowed. That is deliberate — the owner's rule is **"prioritize running all tests properly over skipping them, even if that means all tests never run headless anymore"**, because a skipped pixel check reads exactly like a passing one. Headless is still right for `--import` and quick parse checks (expect the one PIXELS failure). Everything below about WAITING for the process, bounding with a timeout, and reading only failures still applies verbatim.
 
+**⚠ THE GREEN BANNER IS NOT PROOF THE TESTS RAN (measured 2026-08-04, spotlight stream).** A GDScript
+RUNTIME error inside a test function — `Invalid call. Nonexistent function 'x' in base 'Nil'` — aborts
+that function on the spot. The remaining `check()` calls never execute, so they cannot fail, so the
+runner reports `ALL N SUITES: M CHECKS PASSED` with entire tests silently missing. Real case: five
+spotlight tests aborted, SPOTLIGHT emitted 64 checks where the source asserts 76, one acceptance gate's
+only assertion never ran, and **`test_output_errors.log` was 0 BYTES throughout** — that file does not
+catch this class. **So: redirect STDERR as well as stdout (`Start-Process -RedirectStandardError`) and
+treat ANY `SCRIPT ERROR` line as a failure regardless of the summary, and when a section's evidence
+claims a check count, diff it against the `check(` calls in the source.** The check TOTAL drifts run to
+run because of the fuzz suites, so the total alone can't detect it — a per-SECTION count can.
+
 **CORRECTED 2026-07-20 (user, explicitly): Claude runs the Solatro TEST SUITE itself — do not hand that off.** A full `--headless res://Tests/all_tests.tscn` run took ~40 s, self-terminated, 25 suites / 1332 checks / 0 failures. Launch it so you WAIT for it (PowerShell `Start-Process <console exe> -RedirectStandardOutput <file> -PassThru` then `WaitForExit(300000)`) — a bare `& $exe ...` can return while the run keeps going, and two overlapping runs truncate each other's log so it looks hung (`Get-Process *odot*` finds the orphans). Read ONLY failures: `test_output_errors.log` empty = green, plus the final banner; LEAK CANARY's stderr push_error/ObjectDB-leak lines are deliberate. The redirectable `_console` exe must sit in the same folder as the main exe (a copy is on the Desktop).
 
 The rest of this memory's caution applies to GAMEPLAY/GENERATION scenes only: for those (main.tscn, the param-search harness), Claude's own `Godot --headless --path . res://...` invocations are unreliable for this project — they frequently produce no/partial generation output (the GPU Compatibility renderer on the user's Intel UHD seems not to drive generation the same way under Claude's invocation), so Claude ends up "waiting on output that never comes."

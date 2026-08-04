@@ -66,6 +66,13 @@ func _ready() -> void:
 
 	behavior_section("G1.3: THE SAVE MIGRATION")
 	test_migration_pre_rename_save()
+	behavior_section("S14: THE ORIGIN ALLOCATOR")
+	test_origins_spread_and_never_share_a_y()
+	test_origins_take_the_nearest_free()
+	test_origins_subdivide_when_exhausted()
+	test_origins_respread_only_above_the_viewport()
+	test_a_beam_never_points_upward()
+
 	finish()
 
 
@@ -79,8 +86,15 @@ func rules_card(skill: CardModifierSkill) -> CardData:
 	skill.spotlit = true
 	return c
 
+## ⚠ The `TypePaper` is LOAD-BEARING, not decoration: `is_spotlit()` lives on `CardModifier`, so the
+## S3/S4 tests ask a card whether it is lit by going through one of its modifiers, and
+## `TestFactories.m_card` builds a card with no type at all. Without this, `card.type.is_spotlit()`
+## is a call on `Nil` — a RUNTIME error that aborts the test function silently, leaving the suite
+## banner saying PASSED with five tests' worth of checks simply never run. Every real card has a
+## type (`Decks/deck.gd:36`), so this makes the fixture match the game rather than working around it.
 func play_card(rank: int, suit_id: int) -> CardData:
 	var c := TestFactories.m_card(float(rank), suit_id)
+	c.with_type(TypePaper.new())
 	c.stage = CardData.Stage.PLAY
 	return c
 
@@ -621,3 +635,120 @@ func test_migration_pre_rename_save() -> void:
 	free_game(g2)
 	if FileAccess.file_exists(MIGRATION_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(MIGRATION_PATH))
+
+# ------------------------------------------------------------------ S14: THE ORIGIN ALLOCATOR
+# Chart I. None of these are things an eye can check — "no two share a y" and "a beam never points
+# upward" are assertions over every pair, not a look at one frame — which is why the allocator is a
+# plain RefCounted with no node, no material and no frame.
+
+## I2 + I3: `k0` is the section size with a floor of 4 (`Q109`=a), the spread is even in x, and
+## ⚠ **NO TWO ORIGINS SHARE A Y** (`Q113`=d, the owner: *"no beam origins should have identical y
+## level even if target cards have identical y level on same row"*). The scatter exists for that one
+## reason, so the test is over every PAIR rather than a spot check.
+func test_origins_spread_and_never_share_a_y() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(2, 1280.0, 100.0)
+	check(o.count() == SpotlightOrigins.MIN_ORIGINS,
+			"a section smaller than the floor still gets MIN_ORIGINS lamps (Q109=a)", str(o.count()))
+	o.begin(6, 1280.0, 100.0)
+	check(o.count() == 6, "and a bigger section gets one lamp each", str(o.count()))
+	var ys : Array[float] = []
+	var xs : Array[float] = []
+	for i : int in o.count():
+		ys.append(o.origin_of(i).y)
+		xs.append(o.origin_of(i).x)
+	var shared := false
+	for a : int in ys.size():
+		for b : int in range(a + 1, ys.size()):
+			if is_equal_approx(ys[a], ys[b]): shared = true
+	check(not shared, "NO TWO ORIGINS SHARE A Y (Q113=d)", str(ys))
+	# Even in x: the gaps between consecutive lamps are all the same.
+	xs.sort()
+	var gap := xs[1] - xs[0]
+	var even := true
+	for i : int in range(1, xs.size() - 1):
+		if not is_equal_approx(xs[i + 1] - xs[i], gap): even = false
+	check(even, "and the spread is even across the band", str(xs))
+	# Every lamp is ABOVE the board top it was given, by the rise.
+	var all_above := true
+	for i : int in o.count():
+		if o.origin_of(i).y >= 100.0: all_above = false
+	check(all_above, "and every lamp sits above the board it lights (Q114)")
+
+## I7 / `Q111`=(a): the NEAREST free origin, which is what keeps beams mostly vertical and mostly
+## non-crossing without a rule about either.
+func test_origins_take_the_nearest_free() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(4, 1280.0, 100.0)
+	var left := o.take(Vector2(10.0, 400.0))
+	var right := o.take(Vector2(1270.0, 400.0))
+	check(o.origin_of(left).x < o.origin_of(right).x,
+			"a target on the left takes a lamp left of the one a right-hand target takes",
+			"%f vs %f" % [o.origin_of(left).x, o.origin_of(right).x])
+	# Taken means taken: the same target twice gets two different lamps.
+	var again := o.take(Vector2(10.0, 400.0))
+	check(again != left, "and an origin already in use is not handed out twice", str(again))
+	o.release(left)
+	check(o.take(Vector2(10.0, 400.0)) == left, "releasing puts it back in the pool")
+
+## I8 / I9: the pool empties, midpoints become candidates, and the rig GROWS rather than refusing.
+## ⚠ `Q107` refuses a cap — *"No cap. soft cap at how many cards can fit on screen"* — so running out
+## of origins may never be a reason a card goes unlit.
+func test_origins_subdivide_when_exhausted() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(4, 1280.0, 100.0)
+	var handed : Array[int] = []
+	for i : int in 12:
+		var idx := o.take(Vector2(float(i) * 100.0, 400.0))
+		check(idx >= 0, "request %d is satisfied — the rig subdivides rather than refusing" % i)
+		handed.append(idx)
+	check(o.count() > 4, "the rig grew past its initial four", str(o.count()))
+	var dup := false
+	for a : int in handed.size():
+		for b : int in range(a + 1, handed.size()):
+			if handed[a] == handed[b]: dup = true
+	check(not dup, "and no lamp was handed out twice across the subdivision")
+
+## I10–I12: ⚠ `Q164` (*an origin does not move once assigned*) and `Q251`=(b) (*x re-spreads every
+## frame*) are ONE answer, not a conflict — the re-spread only ever touches origins ABOVE the
+## viewport, which is to say ones you cannot see. A lamp that has come on screen is pinned for good.
+func test_origins_respread_only_above_the_viewport() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(4, 1280.0, 100.0)
+	# Force one lamp on screen, leave the rest above it.
+	var on_screen := 0
+	var before := o.origin_of(on_screen)
+	o._origins[on_screen] = Vector2(before.x, 200.0)
+	var above_before : Array[float] = []
+	for i : int in range(1, o.count()): above_before.append(o.origin_of(i).x)
+	o.advance(0.0)
+	check(is_equal_approx(o.origin_of(on_screen).x, before.x),
+			"a lamp INSIDE the viewport is pinned and does not move (Q164)",
+			"%f vs %f" % [o.origin_of(on_screen).x, before.x])
+	var moved := false
+	for i : int in range(1, o.count()):
+		if not is_equal_approx(o.origin_of(i).x, above_before[i - 1]): moved = true
+	check(moved, "while the ones above it re-spread to fill the width (Q251=b, Q262=a)")
+
+## ⚠ **`Q117`, AND IT IS THE ONE RULE THE SHADER DELIBERATELY DOES NOT ENFORCE.** Owner: *"beam
+## still draws from screen edge, but only if target is below viewport bottom. beam can never point
+## upwards."* Keeping it here rather than in the shader means one copy: a shader that also clamped
+## could disagree with the allocator, and the disagreement would be invisible.
+func test_a_beam_never_points_upward() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(5, 1280.0, 100.0)
+	var ok := true
+	for i : int in o.count():
+		if not SpotlightOrigins.points_down(o.origin_of(i), Vector2(640.0, 400.0)): ok = false
+	check(ok, "every rig lamp points DOWN at a target on the board (Q117)")
+	# A target BELOW the viewport is the case the rule exists for: the beam comes in from the top
+	# edge instead of tilting up to reach it.
+	var below := Vector2(640.0, 900.0)
+	var edge := SpotlightOrigins.edge_origin_for(below, 0.0, 760.0, Vector2(640.0, -500.0))
+	check(SpotlightOrigins.points_down(edge, below),
+			"and a target BELOW the viewport is lit from the screen edge, still pointing down",
+			str(edge))
+	var normal := Vector2(640.0, 400.0)
+	check(SpotlightOrigins.edge_origin_for(normal, 0.0, 760.0, Vector2(640.0, -500.0))
+			== Vector2(640.0, -500.0),
+			"while a target on screen keeps its rig lamp")

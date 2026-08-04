@@ -1,12 +1,13 @@
 # SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
 
-**Status: CONFIRMED, version 7. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
-2026-08-03, and PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04) — v7 folds in the two things that
-implementation found.** This document still carries no code, no file plan, no step ordering and no
-test plan; those live in `PLAN.md`.
+**Status: CONFIRMED, version 9. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
+2026-08-03. PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04, folded in as v7), and **S11–S12 of
+phase 2 — the glow style and its shader — are implemented (2026-08-04, v8).** This document still
+carries no code, no file plan, no step ordering and no test plan; those live in `PLAN.md`.
 
-⚠ **Status of the questionnaire itself is unchanged: 255 answers, 0 open.** v7 changes two nodes'
-wording, not any answer.
+⚠ **Status of the questionnaire itself is unchanged: 255 answers, 0 open.** v7 and v8 change three
+nodes' wording between them, plus one node's ARGUMENT that a later answer had overturned. **No
+answer changed.**
 
 ⚠ **Before handing this document over again, run the gating check** (§0b C8 is what happens when you
 do not): every question ID named in any `[gate]` must itself carry `⚑gate`. As of v4 that is 30 of
@@ -52,6 +53,54 @@ statements, and §0b C3 is where they are reconciled. QR2 has gained a **(d)** f
 everywhere (Q2=b), the Spotlight icon in card descriptions is IN (Q5=b, Q184=b), the "show all active
 abilities" board-spread toggle is IN (Q186), and the **full film pipeline is IN as a second
 deliverable shipped after Spotlight** (QR10=a, Q239=a).
+
+### Version 9 changelog (2026-08-04) — what implementing S13 found
+
+**`Q74`, `Q75` and `Q76` are WITHDRAWN. The dim covers everything (GAP-004).** One screen-space
+surface has one depth (`Q240`=b), and those three exempted the props, the score popups and the focus
+panel while `Q73`=(a) dimmed the HUD — which sits later in the draw order than all of them. No
+position satisfies the four. Owner:
+
+> *"dim doesnt last long enough to matter for readability, dim everything without worrying about
+> certain visuals being exempt"*
+
+⚠ **The reason retires the question class, not just the four questions.** Every exemption was
+argued from legibility — *"the number stays readable"*, *"props are performers, they stay lit"* —
+and legibility is about how long something is obscured, which none of them asked. Every duration in
+this feature is a fraction of `Game.get_delay()` (§16, `Q167`=a). **A future question of the form
+"should X be exempt from the dim" is already answered: no.**
+
+⚠ **This is `Q102`'s withdrawal a second time, and the third instance of one defect.** §0b C1 caught
+*"in front of the card it is effecting, but not in front of other objects in front of card"* against
+one surface and withdrew `Q102` — but `Q73`–`Q76` are the same claim broken into four, and nothing
+carried the withdrawal across to them. Together with v7's two and v8's one, **all four gaps found in
+implementation are the same shape: a statement written before an answer, never revisited after it.**
+The gating check (§0b C8) catches an unreachable question; nothing catches a live answer whose
+premise a later answer removed. **When a round lands, re-read what it contradicts, not just what it
+fills in.**
+
+### Version 8 changelog (2026-08-04) — what implementing S11 and S12 found
+
+**One node, and it is the same failure shape as both of v7's: a chart argued from a premise that a
+later ANSWER had already overturned, and nothing marked the chart stale.**
+
+**`O11`'s colour source is an OFF-PALETTE `Gradient`, not a `PaletteRamp` (GAP-003).** O11 was
+written in v2 and justified itself with *"the palette contract forbids lerping colours, and a ramp
+is the fix, not a limit"*. Round 1 then overturned exactly that premise, three separate times:
+`Q134`=(b) *"light gets freedom to use off-palette colour from the start"*, `Q135`=(b) *"an
+off-palette exception for the light layer only"*, and `Q214`'s note *"gradient shouldnt be forced to
+be on fixed palette"* — which §0b's answer list already recorded, beside O11, without either one
+noticing the other. **Owner, 2026-08-04: the off-palette ramp.** O11 and §16's `glow_ramp` row are
+corrected below; `PLAN.md` §1.8's row is known-wrong.
+
+⚠ **What this costs, stated plainly: light is now the only thing in this game outside the palette
+contract.** That exception is granted once, is scoped to the light layer, and does not travel — every
+other gradient in the project is still a `PaletteRamp` that never interpolates.
+
+⚠ **The lesson is v7's lesson again, at a different node.** Both of phase 1's gaps and this one are
+the same defect: a statement written BEFORE an answer, never revisited after it. The gating check
+(§0b C8) catches an unreachable question; nothing catches a chart whose reasoning an answer has
+retired. When a round lands, the charts it touches need re-reading, not just the question list.
 
 ### Version 7 changelog (2026-08-04) — what implementing phase 1 found
 
@@ -593,8 +642,10 @@ the *Dangerous Light* film pipeline. Measured against the code, those are two ve
    there and then, and "no premature clipping" is precisely what cannot be honoured without (1).
 3. ⚠ **The palette contract cuts both ways** (§4i). Every colour resolves to a named entry of one
    N×1 image and ramps **SAMPLE, never lerp** — so the braindump's core→mid→edge *radial colour
-   shift* is a perfect fit: it is one `PaletteRamp` lookup on intensity, which is exactly what
-   `u_ramp` already does for fire (`vec2(heat, level)`). But a film **LUT** is a colour transform
+   shift* is a perfect fit in SHAPE: it is one ramp lookup on intensity, which is exactly what
+   `u_ramp` already does for fire (`vec2(heat, level)`). ⚠ **The ramp itself is off-palette for
+   light** (v8 / GAP-003, `Q134`=b) — the lookup is the same, the source is the exception. But a
+   film **LUT** is a colour transform
    over arbitrary input colours, which is the opposite of a fixed palette. The two cannot both be
    the authority on colour.
 4. ⚠ **A soft gradient on a chunky grid BANDS, and this project has already been bitten by it
@@ -1071,7 +1122,8 @@ flowchart TD
 Consequences of this model, stated so they can be rejected:
 
 1. **Everything under the layer is dimmed uniformly** — cards, props, the score popups, the prop
-   simulation, the HUD if the layer covers it. Which of those are under it is **Q73–Q77**.
+   simulation and the HUD. ✅ **SETTLED v9 (GAP-004): the layer is above ALL of them and there are no
+   exemptions.** `Q74`–`Q76` are withdrawn; `Q73`=(a) and `Q77`=(a) already said yes.
 2. **Overlaps get brighter for free** and cannot be turned off independently of the model. If two
    beams cross, that region is brighter than either alone; if the sum exceeds 1 the dim is fully
    punched through and the additive term keeps climbing (or clamps — **Q101**).
@@ -1588,9 +1640,12 @@ flowchart TD
   O8 -- "one" --> O9["intensity = falloff(d) * gain"]
   O8 -- "L layers" --> O10["intensity = sum over layers of falloff(d / radius_i) * gain_i,
                            the multi-exposure simulation — each layer its own reach and gain"]
-  O9 --> O11["radial COLOUR SHIFT: core to mid to edge.
-              This is a PaletteRamp SAMPLE on intensity, exactly as fire samples u_ramp —
-              the palette contract forbids lerping colours, and a ramp is the fix, not a limit"]
+  O9 --> O11["radial COLOUR SHIFT: core to mid to edge — a RAMP SAMPLE on intensity,
+              exactly where fire samples u_ramp.
+              ⚠ CORRECTED v8 / GAP-003: the ramp is an OFF-PALETTE Gradient, NOT a PaletteRamp.
+              Q134=b, Q135=b and Q214 all grant light off-palette freedom; this node used to
+              argue the opposite from a premise those answers had already overturned.
+              Light is the ONE exception to the palette contract, and it does not travel"]
   O10 --> O11
   O11 --> O12{"is this fragment OVER the host's own art?"}
   O12 -- no --> O13["outside the silhouette: the halo. Draws at full alpha —
@@ -1673,7 +1728,8 @@ flowchart TD
   P2 -- no --> P4["INVERSE-SQUARE FALLOFF — a function of one distance.
                    Doable today: chart O, O7"]
   P2 -- no --> P5["RADIAL COLOUR SHIFT core to mid to edge.
-                   Doable today, and it IS a PaletteRamp: chart O, O11"]
+                   Doable today, and it IS one ramp lookup: chart O, O11.
+                   ⚠ v8: an off-palette Gradient, not a PaletteRamp — GAP-003"]
   P2 -- no --> P6["GRAIN — a hash per pixel. Doable in the quad,
                    but only over the quad, not over the frame"]
   P2 -- yes --> P7["HALATION — blur the BRIGHT parts of the scene, tint red, add back"]
@@ -1830,7 +1886,7 @@ ships `fire_card` / `fire_prop` / `fire_ball`.
 | `layer_radius[i]` | each layer's falloff radius, as a fraction of `reach` | 0.35 / 1.0 | Q207 |
 | `layer_gain[i]` | each layer's gain | 1.0 / 0.4 | Q207 |
 | `inverse_square` | 0 = smooth falloff, 1 = pure inverse-square (the "hot core") | 0.6 | Q208 |
-| `glow_ramp` | the core→mid→edge `PaletteRamp`, sampled on intensity | — | Q211 |
+| `glow_ramp` | the core→mid→edge ramp, sampled on intensity. ⚠ **an off-palette `Gradient`** — v8 / GAP-003, not a `PaletteRamp` | — | Q211, Q134, Q135, Q214 |
 | `brightness` | inherited; `fx_intensity` folds in here | 1.0 | — |
 | `inner_alpha` | **the alpha over the host's own art — ask 2's knob** | 0.35 | **Q216** |
 | `sink` | how far inside the silhouette the field starts | 4 | Q209 |
@@ -2010,9 +2066,9 @@ transient dim now reads `[QR2=a|c]`, so **the answers you have already given sur
 QR2 to (c)**. The four that are genuinely about a dim that lasts the whole act stay `[QR2=a]`.
 
 - **Q73** `[QR2=a|c|d]` — Does the dim cover the **HUD** (buttons, score labels, deck/discard/rules)? · **(a)** yes · **(b)** no, the HUD stays lit · *default* (a)
-- **Q74** `[QR2=a|c|d]` — Does the dim cover the **props** (the prop sim runs inside the dim phase)? · **(a)** no — props are performers, they stay lit (PropLayer draws above the light layer) · **(b)** yes, props dim with everything else · *default* (a) · notes
-- **Q75** `[QR2=a|c|d]` — Does the dim cover the **score popups**? · **(a)** no, the number stays readable · **(b)** yes · *default* (a)
-- **Q76** `[QR2=a|c|d]` — Does the dim cover the **focus inspector panel**? · **(a)** no · **(b)** yes · *default* (a)
+- **Q74** — ⚠ *WITHDRAWN v9 (GAP-004). Not asked.* **The dim covers the props.** Its (a) assumed *"PropLayer draws above the light layer"*, which `Q240`=(b)'s single surface made unavailable. Owner: *"dim everything without worrying about certain visuals being exempt"*
+- **Q75** — ⚠ *WITHDRAWN v9 (GAP-004). Not asked.* **The dim covers the score popups.** Its (a) was *"the number stays readable"*; the dim is a fraction of `Game.get_delay()` and does not last long enough to threaten reading it
+- **Q76** — ⚠ *WITHDRAWN v9 (GAP-004). Not asked.* **The dim covers the focus inspector panel.** Same reason as `Q75`
 - **Q77** `[QR2=a|c|d & QR5≠c]` — Does the dim cover the **card glow**? · **(a)** YES — this is the mechanism that makes the glow read only inside the circle and beam (G13) · **(b)** no, the glow punches through · *default* (a)
 - **Q78** `[QR2=a]` — Does the dim fall before or after `discard_lower_board` sweeps the board? · **(a)** before — the sweep happens in the light · **(b)** after — the board clears in the dark · *default* (a)
 - **Q79** `[QR2=a|c|d]` — Dim colour · **(a)** flat multiply toward a dark palette entry, not black · **(b)** a colour cast (cool blue "house lights down") · **(c)** pure black · *default* (a)

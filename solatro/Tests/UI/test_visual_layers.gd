@@ -61,6 +61,8 @@ func _ready() -> void:
 	behavior_section("FULL VIEW SNAPSHOTS (real GameView)")
 	await test_game_view_deal_snapshot()
 	await test_end_screen_above_board()
+	await test_light_layer_is_over_everything()
+	await test_the_spotlight_wire_lights_the_layer()
 	SettingsManager.settings.base_delay = prev_delay
 	_restore_settings()
 	finish()
@@ -744,6 +746,113 @@ func test_game_view_deal_snapshot() -> void:
 			"nonzero: %s" % str(pa_offenders.map(func(n: Node) -> String: return String(n.name))))
 	check(order.size() > 0, "the dumper walked the full GameView tree", str(order.size()))
 	await _teardown_view(view, prev_run, prev_save_info)
+
+## ⚠ **THE LIGHT LAYER'S POSITION IS A CONTRACT AND IT FAILS SILENTLY.** `DESIGN.md` v9 / GAP-004:
+## the dim exempts NOTHING — props, score popups, the focus panel, the HUD and the card glow all dim,
+## and the glow dimming (`Q77`=a) is the entire mechanism by which a glow reads only inside its
+## circle or beam (chart G13). Move the node one sibling earlier and whatever now draws after it is
+## never dimmed again: no error, no crash, and the only symptom is "that one thing stays bright"
+## during an effect nobody is looking at closely. Hence a test rather than a comment.
+##
+## It asserts the ORDER, not a pixel — a screen read is what this project does not have.
+func test_light_layer_is_over_everything() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var root := view.get_node("SceneRoot")
+	var layer : LightLayer = root.get_node_or_null("LightLayer") as LightLayer
+	check(layer != null, "the GameView carries a LightLayer under SceneRoot",
+			str(root.get_node_or_null("LightLayer")))
+	if layer:
+		check(layer.get_index() == root.get_child_count() - 1,
+				"and it is SceneRoot's LAST child, so it draws over the HUD and the board alike",
+				"index %d of %d" % [layer.get_index(), root.get_child_count()])
+		# It covers the screen; it must never swallow a click meant for a button under it.
+		check(layer.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+				"and it ignores the mouse, so every control beneath it stays clickable")
+		# The dim is a function of what is LIT (QR2=d) — nothing lit, no dim, and no second
+		# "stop" path that could disagree with the light set.
+		check(not layer.is_lit() and is_equal_approx(layer._dim, 0.0),
+				"a board with no spotlight is not dimmed at all (QR2=d)", str(layer._dim))
+	await _teardown_view(view, prev_run, prev_save_info)
+
+## ⚠ **THE WHOLE LOOP, END TO END, AND IT IS THE ONLY TEST THAT CAN CATCH A BROKEN WIRE.** Every
+## piece of phase 2 is asserted on its own — the cue emits (S10), the allocator places lamps (S14),
+## the layer draws them (S13) — and all three can be green while nothing whatever appears on screen,
+## because the thing between them is a signal connection and a `set_lights` call. That is exactly
+## the failure "all tests pass and the feature does nothing" is made of.
+##
+## It drives the REAL `CardEnvironment` cue on a REAL dealt board, then asserts the layer came up.
+func test_the_spotlight_wire_lights_the_layer() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await view.game.next()
+	view.play_area.flush_rebuild()
+	await get_tree().process_frame
+	check(view.spotlight_director != null, "the GameView built a SpotlightDirector")
+	var layer := view.light_layer
+	check(layer != null and not layer.is_lit(),
+			"nothing is lit before a cue, so the dim is down (QR2=d)")
+	# The REAL signal, with real board cards — not a hand-built light list, which would test the
+	# layer and skip the wire that is actually at issue.
+	var cards : Array[CardData] = []
+	for data : CardData in view.play_area.data_card.keys():
+		cards.append(data)
+		if cards.size() >= 3: break
+	check(cards.size() > 0, "the dealt board has cards to light", str(cards.size()))
+	view.game.spotlight_cued.emit(cards)
+	await get_tree().process_frame
+	check(layer.is_lit(), "emitting the cue LIGHTS the layer — the wire is connected",
+			"lit=%s" % str(layer.is_lit()))
+	# ⚠ Every beam must point DOWN at its card (Q117). Asserted here as well as in the allocator,
+	# because this is the only place the real pairing exists.
+	var all_down := true
+	for l : LightLayer.Light in layer._lights:
+		if not SpotlightOrigins.points_down(l.origin, l.centre): all_down = false
+	check(all_down, "and every live beam points DOWN at its target (Q117)")
+	# The dim RISES because something is lit, not because an act said so.
+	var settled := 0.0
+	while settled < 1.0 and is_equal_approx(layer._dim, 0.0):
+		settled += await _tick_seconds()
+	check(layer._dim > 0.0, "the dim rises while lights are up (QR2=d — driven by the light set)",
+			str(layer._dim))
+	# ⚠ GATE G2.4: `fx_intensity = 0` removes the LIGHTS and KEEPS a reduced dim. Q83 in the owner's
+	# words: "keeps beams glow and dim" — so the setting may not switch the effect off outright.
+	var prev_intensity := SettingsManager.settings.fx_intensity
+	SettingsManager.settings.fx_intensity = 0.0
+	view.light_layer._push_static()
+	await get_tree().process_frame
+	var brightness : float = layer._mat.get_shader_parameter(&"u_brightness")
+	check(is_equal_approx(brightness, 0.0),
+			"G2.4: fx_intensity 0 takes the lights to nothing", str(brightness))
+	check(layer._dim > 0.0, "G2.4: and the DIM still stands (Q83 keeps it)", str(layer._dim))
+	SettingsManager.settings.fx_intensity = prev_intensity
+	# Retiring the set is what lowers the dim — there is no second stop path.
+	view.spotlight_director.retire()
+	check(not layer.is_lit(), "retiring the lights is what lowers the dim, with no separate stop")
+	await _teardown_view(view, prev_run, prev_save_info)
+
+## One frame of real time, and how long it took.
+func _tick_seconds() -> float:
+	await get_tree().process_frame
+	return get_process_delta_time()
 
 func test_end_screen_above_board() -> void:
 	backup_real_save()

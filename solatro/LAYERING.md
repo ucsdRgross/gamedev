@@ -73,7 +73,14 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
    ├─ Submit / Undo / Next / Reroll (Buttons)
    ├─ HUD Labels (ScoreName / Score / MultScore / Total / Goal / Turns / Rerolls / Preview)
    ├─ Deck / Discard / Rules (Control + Button)
-   └─ Background (TextureRect, visible=false; if shown, paints over SceneRoot — no back layer)
+   ├─ Background (TextureRect, visible=false; if shown, paints over SceneRoot — no back layer)
+   └─ LightLayer (ColorRect, full rect, mouse_filter=IGNORE)   [LAST SIBLING → over EVERYTHING]
+       · the spotlight dim, circles and beams — one screen-space surface (Q240=b), NOT scrolling
+       · ⚠ ITS POSITION IS A CONTRACT, not a convenience. DESIGN.md v9 / GAP-004: the dim exempts
+         NOTHING — props, score popups, the focus panel and the HUD all dim, and so does the card
+         glow (Q77=a), which is the entire mechanism by which a glow reads only inside its circle
+         or beam. MOVING IT EARLIER SILENTLY UN-DIMS whatever now draws after it, with no error
+         and no failing test — the symptom is "that one thing never goes dark".
 ```
 
 ---
