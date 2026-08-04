@@ -116,12 +116,69 @@ than asserting. Three scenes write reviewable panels, each to its own directory 
 "$GODOT_CONSOLE" --path solatro res://Tests/Visual/fx_snapshot.tscn        # -> fx_snapshots/       18 panels
 "$GODOT_CONSOLE" --path solatro res://Tests/Visual/prop_art_snapshot.tscn  # -> prop_art_snapshots/  8 panels
 "$GODOT_CONSOLE" --path solatro res://Tests/Visual/fx_behind.tscn          # -> fx_behind/           5 panels
-py solatro/tools/snapshot_diff.py save    # stash the panels you trust
-py solatro/tools/snapshot_diff.py diff    # re-run the scenes first, then prove nothing moved
+py solatro/Tools/snapshot_diff.py save    # stash the panels you trust
+py solatro/Tools/snapshot_diff.py diff    # re-run the scenes first, then prove nothing moved
 ```
 
 **For a change that must NOT alter the picture, the diff is the instrument and your eye is not.**
 The reverse also holds: for a change that is supposed to look different, the diff says nothing.
+
+## 0c. THE VISUAL LOG — behaviour over TIME, which no snapshot can show (2026-08-04)
+
+A PNG proves what one frame looked like. It cannot answer *"did those five beams appear together or
+one after another"*, *"did the board rebuild under the light"*, or *"why did that section light
+nothing"* — those are questions about ORDER, and the instrument for them is `EventLog`
+(`Scripts/visual_log.gd`), not a picture and not a green test.
+
+```bash
+"$GODOT_CONSOLE" --path solatro res://Tools/spotlight_trace.tscn   # -> user://logs/spotlight_trace/
+```
+
+**Two log roots under `%APPDATA%\Godot\app_userdata\Solatro\logs\`, deliberately separate:**
+
+| Folder | Written by | Answers |
+|---|---|---|
+| `logs\test\` | `TestLog` | what `check()` said — PASS/FAIL, sections, banners |
+| `logs\events\<run>\` | `EventLog` | what the game DID — `summary.log`, `visual_log.log`, `visual_log_by_frame.log` |
+
+(`logs\godot*.log` are Godot's own engine logs and belong to neither.)
+
+⚠ **`EventLog` is GENERIC — it is not the spotlight's, and not only the visual layer's.** `<run>`
+names a capture, so scripted scenarios, a mod being debugged and an owner playtest coexist and are
+referred to by path.
+
+**Two channel GROUPS, one timeline:**
+
+| Group | Channels | Fires headless? |
+|---|---|---|
+| `GROUP_VISUAL` | `spotlight` `light` `board` `prop` `score` | no — these have pixels |
+| `GROUP_DATA` | `act` `move` `mod` `state` `input` | **yes** |
+
+`EventLog.begin()` records everything; `begin(EventLog.GROUP_DATA)` gives a headless-meaningful
+capture. ⚠ **They share ONE timeline on purpose** — the question worth asking is *"did the data layer
+do X before or after the visual layer did Y"*, and two separate logs cannot answer it.
+
+**Recording a playtest (debug builds only).** Three buttons, top-right of `GameView`:
+`Rec` toggles a capture and WRITES it on stop (printing the folder), `<< Undo` is an **uncapped**
+debug rewind, `Redo >>` steps forward again. The loop they serve: *see a bug → debug-undo past it →
+Rec → redo the action → Stop → send the folder*. ⚠ The debug history is separate from
+`save_history`, which stays capped — raising `undo_cap` to serve debugging would change the game to
+serve the tool.
+
+⚠ **`f=` IS THE ORDERING TRUTH, NOT `t=`.** Same frame = one moment on screen = parallel. One frame
+per event = sequential. A wall-clock gap cannot distinguish those (0.3 ms is either one frame's work
+or two frames at 3000 fps), and the act speed-up makes that ambiguity the normal case rather than the
+edge case. The frame counter is also exact under `--headless`, where wall-clock means nothing.
+
+⚠ **READ `EventLog.summary()` FIRST — it is a few dozen lines however long the capture ran.** The
+per-event tally is often the whole diagnosis on its own: `score_line 12` against `lights_set 4` says
+eight sections lit nothing, which is a bug found without opening the event list. Recording stops at
+`max_events` (20000) with a warning rather than growing without bound; if you hit it, narrow the
+channels passed to `begin()` rather than raising the cap.
+
+**To add a channel to something:** `EventLog.event(EventLog.CH_BOARD, "what", "detail")`. It is
+free when disabled (one static bool), but build the detail string only behind `EventLog.is_on(ch)`
+if it costs anything — arguments evaluate before the guard inside `event()` can reject them.
 
 ⚠ **`snapshot_diff.py` covered ONE of the three sets until 2026-07-30** (and compared alpha only
 until 2026-07-29). Any "N of N panels identical" claim written before those dates was measured with

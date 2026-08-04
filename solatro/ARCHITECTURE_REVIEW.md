@@ -399,7 +399,7 @@ Per-kind spawn patterns: `PropFormationData`/`PropFormationSet` loaded from
 `Cards/Props/Formations/<kind>.tres`; missing file = slot-line flight. Points are stored
 in full-card normalized space (separation-agnostic); offsets are view-only, derived from
 LIVE settings every frame; hoops always skip formations (card center). Author via
-`Cards/Props/Tools/formation_editor.tscn` (@tool scene, inspector-only).
+`Tools/formation_editor.tscn` (@tool scene, inspector-only).
 
 Timing: `base_delay` (master), `prop_tick_fraction` (seconds per prop tick), per-suit
 `ticks_per_slot` (data speed), per-ACTIVATION compression
@@ -864,7 +864,7 @@ halves reassemble pixel-for-pixel, and a prop texel matches a card texel at thre
 FAILS rather than skips under a dummy renderer, which is why the suite runs windowed (§7). The
 snapshot harness below stays for the judgements a number cannot make.
 
-**Tuning FX by hand: `UI/Fx/Tools/fx_editor.tscn`** (2026-07-28, owner request — *"a way to visualize
+**Tuning FX by hand: `Tools/fx_editor.tscn`** (2026-07-28, owner request — *"a way to visualize
 fire and juggling purely in editor … so I can fine tune parameters"*). Open the scene in the editor
 and it renders a burning card, a juggling card and a burning prop through the SHIPPING path
 (`FxFire.request` / `FxJuggle.requests` into a real `FxAttachment`) — never a private copy of the

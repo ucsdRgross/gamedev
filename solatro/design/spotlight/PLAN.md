@@ -149,7 +149,7 @@ accumulates ticks stops being diffable.
 | **S15** cue visuals | S13, S10 | light layer |
 | **S16** derived expansion | phase 1 green | `UI/play_area.gd` |
 | **S17** gutters + anchors | S16 | `UI/play_area.gd` |
-| **S18** the tool | S13, S16 | `UI/Fx/Tools/` |
+| **S18** the tool | S13, S16 | `Tools/` |
 
 **S1, S2 and S10 have no dependency on each other** and can be done in any order. **S3, S4** unblock
 once S2 lands. **S7 is the only step that can hang** (§1.5's unbounded loop) — do it after S6 so the

@@ -16,7 +16,7 @@ extends Node2D
 ## pixels are never clipped by the quad edge.
 const FX_MARGIN := 4.0
 
-## The settings the FX read. `@tool` because UI/Fx/Tools/fx_editor.tscn previews real effects in the
+## The settings the FX read. `@tool` because Tools/fx_editor.tscn previews real effects in the
 ## editor — and the editor instantiates NO autoloads, so `SettingsManager` is not there. The shipped
 ## defaults stand in, which is also what a tuning tool should be showing.
 static var _editor_settings : PlayerSettings = null
@@ -979,6 +979,18 @@ func _on_screen() -> bool:
 	# There is nothing to save here either: this cull exists for a board of 78 hosts, and
 	# `fx_editor.tscn` has six.
 	if Engine.is_editor_hint(): return true
+	# ⚠ **A NODE OUTSIDE THE TREE HAS NO VIEWPORT AND NO CANVAS, AND ASKING ANYWAY IS AN ERROR PER
+	# CALL PER FRAME.** `PropVisual._ready()` builds its half attachments on the `_PropHalf` nodes
+	# that `ensure_back()` / `ensure_front()` construct — and those are deliberately ORPHANS at that
+	# moment, because `PropLayer` parents them to `CardLayer` rather than to the prop (see
+	# `prop_visual.gd:299`). So the first `sync()` reaches here with the attachment outside the tree
+	# and `get_viewport_rect()` pushes `Condition "!is_inside_tree()" is true`, once per split-capable
+	# prop per act — the flood the owner saw during submit.
+	# "Not on screen" is the TRUE answer, not a workaround: nothing outside the tree is drawn. It is
+	# also self-healing, which is the reason this belongs here rather than at the call site — the
+	# skipped uploads resume on the frame the half is parented, exactly as they do for a host that
+	# scrolls back into view, because `_push_live` records a pose as sent only once it really was.
+	if not is_inside_tree(): return false
 	var scaled := _cull_reach * maxf(global_scale.x, global_scale.y) * 0.5
 	var at := get_global_transform_with_canvas().origin
 	return get_viewport_rect().grow(scaled).has_point(at)

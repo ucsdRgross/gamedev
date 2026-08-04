@@ -12,6 +12,44 @@ extends Node
 ## loads spotlit and transitions nothing (`Q248`=b — no suppression code, the case cannot arise).
 signal spotlight_cued(cards: Array[CardData])
 
+## THE SCORING BEAM'S MEMBERSHIP: every card in the section being scored right now, or EMPTY when
+## the act releases (design `Q16`=c, chart E, chart H/I; plan step S14). Emitted by
+## `Game._spotlight_section()` as each section takes the light, and once more empty from
+## `Game._release_spotlight()`.
+##
+## ⚠ **THIS IS NOT `spotlight_cued`, AND CONFLATING THE TWO IS GAP-005.** They answer different
+## questions and the difference is not cosmetic:
+##
+##   * `spotlight_cued` — *which cards have a TALENT to announce.* Correctly filtered by `Q246`=(a)
+##     to skills implementing `on_spotlight`, because a card with nothing to show should not flash.
+##   * `spotlight_section_changed` — *which cards are BEING SCORED.* Filtered by nothing: a scored
+##     row is mostly plain numeral cards with no skill at all, and the beam lights the row.
+##
+## S14's first build drew the beam from the cue, and since exactly one non-test skill in the shipped
+## game implements `on_spotlight` (a rules card, with no `CardVisual`), the light set was **always
+## empty and no beam ever appeared in the running game** — while every test passed, because the test
+## fixture skill does implement the hook. See `design/spotlight/gaps/GAP-005.md`.
+##
+## ⚠ **THE SET REPLACES, IT DOES NOT ACCUMULATE** — that is `Q16`=(c)'s travelling light: the beam
+## MOVES from section to section rather than the board filling up with lamps. An empty array is what
+## retires the light and lowers the dim (`QR2`=d); there is deliberately no separate "stop" signal,
+## because a second way to lower the dim is a second thing that can disagree with the light set.
+signal spotlight_section_changed(cards: Array[CardData])
+
+## The section's REVEAL is over and its scoring is about to happen — the beat where the spotlight and
+## the dim fade out (owner, 2026-08-04, GAP-006):
+##
+## > *"spotlight + dim occurs as cards of section get revealed, with both spotlight and dim effect
+## > fading away as scoring starts to happen. When next section is revealed, spotlight and dim effect
+## > are visible again, moving to new location, then fade away again."*
+##
+## ⚠ **THE LIGHTS ARE NOT RETIRED BY THIS — ONLY HIDDEN.** `spotlight_section_changed` still owns the
+## light SET; this owns its VISIBILITY. Keeping the set alive across the fade is what lets the next
+## section TRAVEL from these positions instead of respawning at new ones, which the brief forbids
+## outright (*"no instant movements or spawning in and out"*, chart E). A "fade out" that freed the
+## lights would make the travel impossible to build on top of.
+signal spotlight_reveal_ended()
+
 static var CURRENT : CardEnvironment = null
 
 static func get_current_game() -> Game:

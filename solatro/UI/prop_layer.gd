@@ -262,6 +262,7 @@ func _row_bounds(v: Vector3i) -> Array[int]:
 ## Free a split prop's half nodes together with the visual (called from the SAME tween callback
 ## that frees the prop, so all three disappear on the same frame after fading together via mirror).
 func _free_visual(vis: PropVisual) -> void:
+	EventLog.event(EventLog.CH_PROP, "prop_freed")
 	if not is_instance_valid(vis): return
 	for half : Node2D in [vis.back_node, vis.front_node]:
 		if half and is_instance_valid(half): half.queue_free()
@@ -353,6 +354,9 @@ func _drive_exiting(delta: float) -> void:
 ## `spawned` = props emitted this tick, `movers` = props that entered a new slot, `relocated` =
 ## [prop, from, to] teleport records (blink, never lerp).
 func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Array) -> Signal:
+	if EventLog.is_on(EventLog.CH_PROP):
+		EventLog.event(EventLog.CH_PROP, "prop_tick", "live=%d spawned=%d moving=%d relocated=%d"
+				% [live.size(), spawned.size(), movers.size(), relocated.size()])
 	if play_area: play_area.flush_rebuild()
 	# Mid-leg props (ticks_per_slot > 1) keep travelling through ticks that bring no new slot:
 	# each tick unlocks the next 1/span share of the leg, so motion is continuous instead of

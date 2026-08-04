@@ -817,9 +817,12 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 		cards.append(data)
 		if cards.size() >= 3: break
 	check(cards.size() > 0, "the dealt board has cards to light", str(cards.size()))
-	view.game.spotlight_cued.emit(cards)
+	# ⚠ `spotlight_section_changed`, NOT `spotlight_cued` — GAP-005. These board cards are ordinary
+	# numeral cards with no skill, which is exactly what a scored row is made of and exactly what the
+	# announcement cue would have filtered away to nothing.
+	view.game.spotlight_section_changed.emit(cards)
 	await get_tree().process_frame
-	check(layer.is_lit(), "emitting the cue LIGHTS the layer — the wire is connected",
+	check(layer.is_lit(), "the SECTION signal lights the layer — the wire is connected",
 			"lit=%s" % str(layer.is_lit()))
 	# ⚠ Every beam must point DOWN at its card (Q117). Asserted here as well as in the allocator,
 	# because this is the only place the real pairing exists.
@@ -844,6 +847,21 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 			"G2.4: fx_intensity 0 takes the lights to nothing", str(brightness))
 	check(layer._dim > 0.0, "G2.4: and the DIM still stands (Q83 keeps it)", str(layer._dim))
 	SettingsManager.settings.fx_intensity = prev_intensity
+	# ⚠ **THE DIM'S OFF SWITCH** (owner 2026-08-04: *"make sure dim can be turned off if needed by
+	# tunables, it just occured to me that dim might flash if speed is high"*). `spotlight_dim_target`
+	# = 0 must keep the LIGHTS and drop the DIM — the exact opposite split from G2.4's `fx_intensity`,
+	# which `Q83` forbids from removing the dim. Asserted because an off switch nothing tests is an
+	# off switch that quietly stops working.
+	var prev_dim_target := SettingsManager.settings.spotlight_dim_target
+	SettingsManager.settings.spotlight_dim_target = 0.0
+	var faded := 0.0
+	while faded < 1.0 and layer._dim > 0.0:
+		faded += await _tick_seconds()
+	check(is_equal_approx(layer._dim, 0.0),
+			"spotlight_dim_target = 0 turns the dim OFF entirely, at any speed", str(layer._dim))
+	check(layer.is_lit(),
+			"...and the beams and circles are STILL lit — it is the dim that went, not the show")
+	SettingsManager.settings.spotlight_dim_target = prev_dim_target
 	# Retiring the set is what lowers the dim — there is no second stop path.
 	view.spotlight_director.retire()
 	check(not layer.is_lit(), "retiring the lights is what lowers the dim, with no separate stop")

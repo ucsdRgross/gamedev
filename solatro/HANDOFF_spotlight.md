@@ -5,22 +5,29 @@
 satisfied by eye on the visual phases. (Phase 5, the film pipeline, is a separate deliverable and is
 NOT part of this stream.)
 
-**State: PHASE 1 DONE AND GREEN. PHASE 2 IS THROUGH S13 (2026-08-04).** S1–S10 passed every
-phase-1 gate (G1.1–G1.7). S11 shipped `FxGlowStyle` and its three `.tres` — the glow's colour ramp
-is an off-palette `Gradient` (GAP-003), which makes light the one thing in the game outside the
-palette contract. S12 shipped `Shaders/glow.gdshader`, **rendered and looked at**: the halo, the
-two-layer split and the `inverse_square` knob all read correctly on `09_glow_falloff`. S13 shipped
-`Shaders/light.gdshader`, `UI/light_layer.gd`, the `LightLayer` node as `SceneRoot`'s LAST child,
-and `LAYERING.md`'s entry for it — **rendered over a REAL board and looked at**: dim, crossing beams
-that brighten without blowing out, beams that stop on their circles' far arcs, and cards under
-circles that keep their rank, suit pip and art square.
+**State: PHASE 1 DONE AND GREEN. PHASE 2 IS THROUGH S14 EXCEPT CHART E (2026-08-04).** S1–S10 passed
+every phase-1 gate (G1.1–G1.7). S11–S13 shipped the glow style, `glow.gdshader`, `light.gdshader` and
+the `LightLayer` node, each **rendered and looked at**. S14 shipped the origin allocator and the
+wire; **the spotlight is now live in the running game and the owner has played it.**
 
-⚠ **NOBODY CALLS `LightLayer.set_lights()` YET, so the dim never rises in the running game.** The
-node, its shader, its placement and its tunables are all in and asserted; the wire from the
-spotlight cue to the layer is **S14**, which is the next step. Gate **G2.4** cannot run until
-something lights it, and gate **G2.2** (the readability call) is still unjudged — the circle blowout
-the real board surfaced is fixed, but confirming it is the owner's eye against the wired game, not
-mine against a snapshot.
+⚠ **THE LAST SESSION WAS MOSTLY BUG-FINDING, NOT STEP-SHIPPING, AND THAT IS THE HONEST SUMMARY.**
+Six gaps were filed across this stream and `DESIGN.md` v9's changelog calls them one defect — *a
+statement written before an answer and never revisited after it*. Three of them were found in the
+last session alone, two of those by the owner playing the game. **Expect more of the same shape; do
+not assume a green suite means the feature works.** The three tools that actually found things:
+the **visual/event log** (`EventLog`, see below), the **engine-error check** now wired into the
+suite, and the owner's eye.
+
+**WHAT IS LEFT, IN ORDER — this is the whole remaining stream:**
+
+1. **S18, the tuning tool** — the owner will not judge visuals any other way (*"I would rather do all
+   testing via the planned editor so dont ask me to check until it exists"*). **Everything visual is
+   gated behind it.** ⚠ Its FIRST job is tuning the GAP-006 pulse, which is shipped but untuned and
+   may read as a flash. See "Still owed" below.
+2. **Chart E, the travel** — specified in full, never built, and the current code actively
+   contradicts it (see Open bugs).
+3. **Gate G2.2** (readability), **G2.3** (the cost number), **S15**, **S16**, **S17**.
+4. **The log-parsing subagent** — deferred by the owner until logging was final; it now is.
 
 ⚠ **A SUITE-INTEGRITY DEFECT WAS FOUND AND FIXED ON RESUME (2026-08-04) — read this before trusting
 any older evidence line in this file.** Five phase-1 tests had been **aborting mid-function** on a
@@ -36,12 +43,45 @@ silent test LOSS that reads exactly like a pass.** Check a section's check COUNT
 file asserts, not the banner — and treat any `SCRIPT ERROR` on stderr as a failure even when the
 summary line is green.
 
-The design is confirmed (`DESIGN.md` **v9**, 255 answers, 0 open questions, no gap open); `PLAN.md`
-is the specification and has not moved except for its §0 opening prompt, rewritten to be stateless,
-and §1.8's one known-wrong row.
+The design is confirmed (`DESIGN.md` **v9**, 255 answers, 0 open questions); `PLAN.md` is the
+specification and has not moved except for its §0 opening prompt, §1.8's one known-wrong row, and
+§0b's S18 path.
+⚠ **GAP-005 AND GAP-006 ARE IMPLEMENTED BUT NOT YET FOLDED INTO `DESIGN.md`/`PLAN.md`.** Both are
+RESOLVED with the owner's answer recorded in their gap files, and the code and tests match. Folding
+them in (a v10 changelog, `Q16`'s and `Q246`'s nodes, `PLAN.md` §2's S14/S15) is **the first
+documentation task for the next agent** — the design currently understates what the code does.
+
+⚠ **`spotlight_dim_target = 0` IS THE DIM'S OFF SWITCH** (owner, 2026-08-04, anticipating that the
+per-section pulse *"might flash if speed is high"*). It keeps every beam, circle and glow and drops
+only the dim — the opposite split from `fx_intensity = 0`, which `Q83`/G2.4 forbid from removing the
+dim. Pinned by a check in the VISUAL LAYERS wire test.
 
 **Entry docs:** `solatro/START_HERE.md`, `solatro/VFX.md` (phases 2–4 only),
-`solatro/design/spotlight/PLAN.md`, `solatro/design/spotlight/DESIGN.md`
+`solatro/design/spotlight/PLAN.md`, `solatro/design/spotlight/DESIGN.md`,
+**`solatro/HEADLESS_TESTING.md` §0c** (the event log — read this before debugging any behaviour).
+
+## How to verify anything here — read this before running a thing
+
+```bash
+# The suite. WINDOWED, never --headless. ~60 s, self-quits, exits with the failure count.
+"<godot>_console" --path <abs path to solatro> res://Tests/all_tests.tscn
+# The spotlight scenario trace. Writes logs + a PNG per transition to user://logs/events/.
+"<godot>_console" --path <abs path to solatro> res://Tools/spotlight_trace.tscn
+```
+
+⚠ **ALWAYS launch with `WaitForExit(<ms>)` AND KILL ON TIMEOUT.** A parse error leaves a blank window
+open forever and no in-scene watchdog can save it — the script never loads. This cost the owner real
+time; they had to close windows by hand.
+⚠ **`--headless --path <solatro> --import` FIRST after adding any `class_name`**, or it resolves as a
+bare `Resource`/unknown identifier.
+⚠ **The suite now FAILS on unexpected engine errors**, deduplicated with counts, read from
+`user://logs/godot.log`. `ENGINE_ERROR_ALLOW` in `Tests/all_tests.gd` is the allowlist — **keep it
+narrow**; too broad and it restores the blindness it exists to remove. It has already caught a real
+parse error during this session's own work.
+⚠ **The check TOTAL varies run to run** (fuzz suites). **The SUITE COUNT is the stable number: 29.**
+A drop means a suite failed to LOAD while the banner still says PASSED.
+⚠ **Read `summary.log` FIRST** in any `user://logs/events/<run>/` folder — a few dozen lines however
+long the capture ran, and its per-event tally is often the whole diagnosis.
 
 ## Why this is a separate file from `PLAN.md`
 
@@ -138,7 +178,7 @@ so the stale-step report then names the wrong steps.
 - id: S14
   status: in_progress
   evidence: 'UI/spotlight_origins.gd (chart I) + UI/spotlight_director.gd (the wire) + GameView builds and binds it. SPOTLIGHT suite "S14: THE ORIGIN ALLOCATOR", 16 checks. VISUAL LAYERS test_the_spotlight_wire_lights_the_layer(): the REAL CardEnvironment cue on a REAL dealt board lights the layer, every live beam points DOWN at its target (Q117), the dim rises because something is lit (QR2=d), and retiring the set lowers it with no separate stop path. ⚠ GATE G2.4 PASSES in that test: fx_intensity 0 takes u_brightness to 0 and THE DIM STILL STANDS (Q83 "keeps beams glow and dim"). Full suite ALL 29 SUITES: 1724 CHECKS PASSED, exit 0, WINDOWED, errors log 0 bytes.'
-  notes: '⚠ REMAINING: chart E (the light TRAVELLING between sections with its own easing). What is in is chart I plus the wire — the per-frame pass re-reads each lit card position, so a beam follows a card that moves (the S7 slide, a jump, a scroll), but there is no eased travel between one section and the next yet. ⚠ THE WIRE BUG WORTH KNOWING: bind() first used CardEnvironment.get_current_game(), which is null at GameView._ready because the view deliberately builds and binds its Game BEFORE adding it to the tree. Nothing connected, and every other phase-2 test stayed green while the feature did nothing — the environment is now PASSED IN. ⚠ _origins is APPEND-ONLY: indices are permanent handles, and the first build sorted the store on subdivision, which re-pointed live handles (measured: two beams sharing one origin). ⚠ Q117 lives in the allocator, not the shader — two copies could disagree invisibly.'
+  notes: '✅ GAP-005 RESOLVED 2026-08-04 — the wire now reads CardEnvironment.spotlight_section_changed (the scored section, unfiltered) instead of spotlight_cued. Guarded by test_the_section_signal_carries_plain_cards(). ⚠ NOT YET SEEN IN THE RUNNING GAME BY EYE — that is what S18 (the tuning tool) is being built for, at the owner''s direction. ⚠ HISTORY, KEPT BECAUSE THE FAILURE MODE RECURS: THE WIRE WAS INERT IN THE REAL GAME. The director draws CardEnvironment.spotlight_cued, which Q246=a filters to skills implementing on_spotlight, and the shipped game has exactly ONE such skill (Cards/Skills/Rules/zone_adder.gd, a rules card with no CardVisual). Ordinary board cards have no skill at all, so set_lights() never gets a non-empty set and NO beam, circle or dim has ever appeared in the running game. Every test passes because the fixture skill implements the hook. Owner report: "see zero spotlight effects". Chart E travel is parked behind it — easing between two always-empty sets is nothing. ⚠ ORIGINAL REMAINING WORK, still true: chart E (the light TRAVELLING between sections with its own easing). What is in is chart I plus the wire — the per-frame pass re-reads each lit card position, so a beam follows a card that moves (the S7 slide, a jump, a scroll), but there is no eased travel between one section and the next yet. ⚠ THE WIRE BUG WORTH KNOWING: bind() first used CardEnvironment.get_current_game(), which is null at GameView._ready because the view deliberately builds and binds its Game BEFORE adding it to the tree. Nothing connected, and every other phase-2 test stayed green while the feature did nothing — the environment is now PASSED IN. ⚠ _origins is APPEND-ONLY: indices are permanent handles, and the first build sorted the store on subdivision, which re-pointed live handles (measured: two beams sharing one origin). ⚠ Q117 lives in the allocator, not the shader — two copies could disagree invisibly.'
 
 - id: S15
   status: pending
@@ -158,10 +198,20 @@ so the stale-step report then names the wrong steps.
 - id: S18
   status: pending
   evidence: ''
-  notes: 'PHASE 4 — blocked by S13, S16'
+  notes: '⚠ PROMOTED TO THE NEXT STEP by the owner 2026-08-04: "I would rather do all testing via the planned editor so dont ask me to check until it exists." THIS IS THE PLANNED EDITOR — PLAN.md §5, the scenario player, chart N (N1-N7) and Q173-Q182, scenario list S1-S17 from DESIGN.md §14. Everything visual is gated behind it now: G2.2 (readability), the S14 travel judgement, and the first by-eye look at the beam in a real act. ⚠ PLAN.md lists it as blocked by S16 (phase 3, not started) — only scenarios that need row expansion depend on that, so build it now and mark those scenarios unavailable rather than waiting. ⚠ ITS HOME IS solatro/Tools/, NOT PLAN.md §0b''s UI/Fx/Tools/ — see the tooling note below.'
 ```
 
 ## Verified vs assumed
+
+- **Verified 2026-08-04, THE HANDOVER STATE — this is the run the next agent should reproduce:**
+  ```
+  [engine-errors] clean — 0 unexpected lines in the engine stream
+  ======== ALL 29 SUITES: 1753 CHECKS PASSED [19 placeholder warnings] ========
+  ```
+  Command: `"<godot>_console" --path <abs solatro> res://Tests/all_tests.tscn`, WINDOWED, launched
+  with `WaitForExit` + kill-on-timeout. ⚠ **29 SUITES is the number to check**, not 1753 — the fuzz
+  suites make the check total drift run to run (1740 / 1753 / 1775 / 1779 all seen green this
+  session). A suite count below 29 means one failed to LOAD while the banner still said PASSED.
 
 - **Verified 2026-08-04 ON RESUME — the tree is green, and green for real this time:**
   ```
@@ -290,6 +340,102 @@ so the stale-step report then names the wrong steps.
 
 ## Open bugs
 
+✅ **FIXED 2026-08-04 — GAP-006: the show now PULSES PER SECTION.** Owner's spec: *"spotlight + dim
+occurs as cards of section get revealed, with both spotlight and dim effect fading away as scoring
+starts to happen. When next section is revealed, spotlight and dim effect are visible again, moving
+to new location, then fade away again."* Visibility is now an axis SEPARATE from the light set:
+`CardEnvironment.spotlight_reveal_ended` + `LightLayer._show`, which eases 0↔1 and multiplies both
+the dim target and every light's intensity.
+⚠ **The lights are not freed by the fade** — they survive at their positions so chart E can travel
+FROM them. Freeing them would make the travel unbuildable.
+⚠ **THE HOLD BEAT HAD NEVER BEEN BUILT, AND ONLY THE TRACE FOUND IT.** With the fade in, the log
+showed `revealed` and `reveal_faded` on the SAME FRAME at `show=0.000` — nothing waited between them,
+so the dim eased toward a target it was already leaving. Added `spotlight_hold_fraction` (chart D's
+**D13**, `Q68`=a, `PLAN.md` §1.11, default 0.5), gated `if view:` so headless still waits on nothing
+(`Q19`=a) and G1.7 parity holds.
+⚠ **UNTUNED.** In the trace the whole cycle takes 1–3 frames (`dim_rising span=0.005s`) because
+`get_delay()` is already compressed. Whether it reads as a spotlight or a flicker is a tuning
+question over `spotlight_hold_fraction`, the dim fractions and `base_delay` — **which is what S18 is
+for**, and the first thing to look at there.
+⚠ **The origin of the miss, worth keeping:** GAP-002's v7 resolution kept *"the light travels"* and
+dropped *"dims after initially showing"*, recording *"the implementation was already correct."* It
+never had been. Fifth instance of the same pattern.
+
+⚠ **OPEN — chart E (the TRAVEL) is unimplemented, and the current code actively contradicts it.**
+`SpotlightDirector._on_section_changed()` calls `_release_all()` and rebuilds the whole set from
+scratch every section, so every light dies and respawns. The brief forbids exactly that — *"no
+instant movements or spawning in and out"* — and **E3** requires that a card in BOTH the old and new
+set keeps its existing light without moving. This is the long-flagged remaining half of **S14**, not
+a regression; it was never built. Chart E is fully specified (E1–E11 plus the E2 assignment rule,
+`Q111`=a / option A: sort both by target x, which provably minimises beam crossings), so it needs no
+new design — just implementation.
+
+✅ **DIAGNOSED 2026-08-04 FROM THE VISUAL LOG — the beams are behaving correctly; the SECTIONS shrink.**
+`Tools/spotlight_trace.tscn`, 3 scenarios (empty board / one shallow row / deep columns), read from
+`user://logs/spotlight_trace/`. **Every section places ALL of its lights on ONE frame** — f=4 three
+lights, f=29 four, f=48 two, f=51 three, all same-frame. **The light is never sequential within a
+section.** What changes is section SIZE as the board empties: 3,1,1,1 then 4,2,1,3,2,1,1. A one-card
+section is one beam, which is what read as *"sequential and never parallel again"*. Sections are
+separated by ~19 frames of `prop_tick`, so section-to-section IS sequential — that is `Q16`=(c)'s
+travelling light working as designed.
+✅ **The owner's own hypothesis about the overlapping beams was RIGHT.** Column cards sit ~44 px apart
+in y (measured: centres 260 / 304 / 349 at x=520) while each circle is **r=40**, so two stacked cards
+in one section put two pools almost exactly on top of each other. **It resolves itself when S16 (row
+expansion) lands** and stops being reproducible then — do not "fix" it in the light layer.
+
+⚠ **STILL OPEN, LOWER PRIORITY — the light set is re-pushed EVERY FRAME.** `set_lights` appears on
+essentially every frame between sections (f=30..f=47 unbroken), because `SpotlightDirector._process`
+rebuilds and re-pushes the whole array to follow moving cards. Correct, but it is 2 `PackedVector4Array`
+uploads per frame for a set that usually has not changed. Worth a dirty check before **G2.3**, the
+cost gate.
+
+⚠ **HISTORICAL — the owner's original report, kept because it shows how it was answered:**
+Owner, watching a real act: *"at very start its parallel on all cards, but afterwards its sequential
+and never parallel again, also saw case where multiple spotlights on what looks like same card, but
+might be column scoring since expansion not working yet."*
+**Do not guess at this.** The instrument to answer it is `Tools/spotlight_trace.tscn` + the by-frame
+log — a section whose lights all land on one frame is parallel, one frame per light is sequential,
+and `lights_set`'s `requested=N placed=M` says whether cards are being dropped by `_visual_of`. The
+harness must place cards first (see above) before it can show any of this.
+⚠ The owner's own hypothesis about the overlapping beams is plausible and cheap to confirm from the
+log: a COLUMN section lights every card in that column, and with S16 (row expansion) not built those
+cards are still stacked, so several beams legitimately converge on nearly one screen point.
+`light_placed` records each card's `centre=(x,y)`, which settles it without anyone squinting.
+
+✅ **FIXED 2026-08-04 — GAP-005: THE SPOTLIGHT HAD NEVER BEEN VISIBLE IN THE RUNNING GAME.**
+`SpotlightDirector` listened to `spotlight_cued`, which the activation sweep filters to skills
+implementing `on_spotlight` (`Q246`=a). Exactly one non-test skill does
+(`Cards/Skills/Rules/zone_adder.gd`), it is a rules card, and it has no `CardVisual` — so the light
+set was always empty. Ordinary numeral cards, which is what a scored row *is*, have no skill at all.
+**The scoring beam had been wired to the announcement cue, and those are two different questions**
+(chart T vs `Q16`=c / chart E). Owner chose option (a): `CardEnvironment.spotlight_section_changed`
+now carries the scored section unfiltered, emitted from `Game._spotlight_section()` and empty from
+`_release_spotlight()`; `spotlight_cued` is untouched and becomes S15's alone. See `gaps/GAP-005.md`.
+⚠ **The regression guard is the point, not the fix:** `test_the_section_signal_carries_plain_cards()`
+scores a column of cards carrying NO skill. **Every pre-existing spotlight test supplies a fixture
+skill that implements `on_spotlight`, which is exactly why none of them could see this** — the same
+shape as S14's `bind()` bug. A test whose cards all have skills cannot detect a filter on skills.
+
+✅ **FIXED 2026-08-04 — `game_view.tscn` was completely white in the editor.** `LightLayer` is a
+`ColorRect`, whose `color` defaults to **opaque white**, and `light_layer.gd` is deliberately not
+`@tool` (`PLAN.md` §1.8 — `@tool` silently drops properties). So in the editor `_ready()` never runs,
+no shader material is assigned, and a full-rect white quad covers the scene. The scene now carries
+`color = Color(0, 0, 0, 0)`; `test_palette.gd`'s `ALLOW_LINES` carries that exact fragment, because a
+fully transparent colour is not a colour choice — placeholder warnings stay at 19.
+⚠ **The old comment in `light_layer.gd` argued FOR leaving `color` unset** (the shader writes `COLOR`
+outright, so at runtime it is inert). That reasoning was correct about runtime and blind to every
+context where the shader is not running. It is corrected in place.
+
+✅ **FIXED 2026-08-04 — the `_on_screen()` error flood during act submit** (owner: *"a ton of
+duplicate errors ... `Condition "!is_inside_tree()" is true`"*). `PropVisual._ready()` builds its half
+attachments onto the `_PropHalf` nodes from `ensure_back()` / `ensure_front()`, and those are
+**deliberately orphans at that moment** — `PropLayer` parents them to `CardLayer`, not to the prop.
+The first `sync()` therefore reached `_on_screen()` outside the tree and `get_viewport_rect()` raised,
+once per split-capable prop per act. `fx_attachment.gd:981` now answers `false` for a node outside the
+tree, which is the true answer rather than a workaround, and it is self-healing: uploads resume on the
+frame the half is parented, by the same mechanism that handles a host scrolling back into view.
+⚠ Verified: `SCRIPT ERROR` count on stderr is **0** across a full suite run, `is_inside_tree` hits 0.
+
 ⚠ **FLAKE SEEN ONCE, 2026-08-04, NOT REPRODUCED — record rather than lose it.** One run of the full
 suite failed `LEAK CANARY: OBJECT_COUNT returns to baseline after 3 full simulated play sessions —
 baseline 2701, after 2704 (growth 3)`, with three `Stray Node (Type: Node) (Source:
@@ -376,8 +522,21 @@ in phase 1 (it is a phase-2 knob).
 Also edited in the v7 fold-in: `design/spotlight/DESIGN.md`, `design/spotlight/PLAN.md` (and
 `PLAN.md` §0's opening prompt again on 2026-08-04, to make it stateless).
 
-**Edited on resume 2026-08-04:** `Tests/Engine/test_spotlight.gd` (`play_card()` now attaches a
-`TypePaper` — the suite-integrity fix at the head of this file).
+**New on 2026-08-04 (the logging + tooling session):** `Scripts/event_log.gd` (`EventLog`),
+`Tools/spotlight_trace.{gd,tscn}`, `design/spotlight/gaps/GAP-005.md`, `GAP-006.md`.
+**Moved:** `tools/*.py` → `Tools/*.py` (case rename, STAGED — see the tooling section),
+`Cards/Props/Tools/formation_editor.*` and `UI/Fx/Tools/fx_editor.*` → `Tools/`.
+**Edited on 2026-08-04:** `Tests/Engine/test_spotlight.gd` (the `TypePaper` suite-integrity fix, the
+GAP-005 guard, the GAP-006 guard), `Tests/all_tests.gd` (the engine-error scan),
+`Tests/Support/test_log.gd` (`logs/test/`), `Tests/Engine/test_game_headless.gd` (the debug-history
+test), `Tests/Engine/test_palette.gd` (ALLOW_LINES + `res://Tools` in SCAN_DIRS),
+`Tests/UI/test_visual_layers.gd` (the section-signal wire + the dim off switch),
+`Scripts/card_environment.gd` (two new signals), `Scripts/player_settings.gd`
+(`spotlight_hold_fraction`), `Levels/game.gd` (the signals, the hold beat, the debug history, the
+data-channel instrumentation), `Levels/game_view.gd` (the debug bar), `Levels/game_view.tscn`
+(`LightLayer` transparent), `UI/light_layer.gd` (`_show`), `UI/spotlight_director.gd`,
+`UI/play_area.gd`, `UI/prop_layer.gd`, `UI/Fx/fx_attachment.gd` (`_on_screen` tree guard),
+`Cards/card_data.gd` (`log_str()`), `Locale/localization.csv`, `HEADLESS_TESTING.md`, `VFX.md`.
 
 **Edited in S11/S12/S13:** `Tests/UI/test_fx_attachment.gd`, `Tests/Visual/fx_snapshot.gd` (shots
 `09_glow_falloff`, `09b_glow_over_art`, `10_light_layer`), `design/spotlight/ASSUMPTIONS.md`,
@@ -392,17 +551,199 @@ Also edited in the v7 fold-in: `design/spotlight/DESIGN.md`, `design/spotlight/P
 
 ⚠ **Nothing is committed** — the owner commits through GitHub Desktop.
 
+## The visual-layer log — started 2026-08-04, PARTLY DONE
+
+Owner: *"emit some sort of logs for you to read of literally every single thing that happens on
+visual layer and their timestamp ... The logging system sounds very valuable for testing purposes."*
+
+⚠ **SCOPE, owner 2026-08-04: *"visual log should track literally everything visible on visual layer,
+not just spotlight."*** Started — `board`, `prop` and `score` channels are wired at their main seams
+(`PlayArea.flush_rebuild` / `popup_score`, `PropLayer.begin_prop_tick` / `_free_visual`). **Not yet
+complete**: card visual moves/flips/pose, status layer, focus inspector, hover, gutter labels, the
+end-screen overlays. Each is a one-line `VisualLog.event(...)` at the seam; the pattern is set.
+
+**Size discipline is BUILT IN, because the owner asked for it** (*"Make sure log size is not massive
+before you read it"*): `max_events = 20000` stops recording with a `push_warning` rather than growing
+without bound (it does NOT ring-buffer — the start of a capture is the part that explains what
+happened), and **`VisualLog.summary()` is a few dozen lines however long the run was**. Read the
+summary FIRST, every time. Its per-event tally is frequently the whole diagnosis: `score_line 12`
+against `lights_set 4` says eight sections lit nothing, found without opening the event list.
+
+**Docs updated** so this is discoverable rather than folklore: `HEADLESS_TESTING.md` **§0c** (the full
+how-to, and why `f=` beats `t=`) and `VFX.md`'s instrument table.
+
+**Shipped and green:**
+- `Scripts/visual_log.gd` (`VisualLog`) — static, off by default, free when off. Channels
+  (`spotlight`/`light`/`board`/`prop`/`score`/`act`), `dump()`, `dump_by_frame()`, `filter()`,
+  `save()`. Typed `VisualLog.Event`, **not** a `Dictionary` — warnings-as-errors rejects every
+  `Variant` read out of one, so `int(e["f"])` does not compile.
+- Instrumented: `SpotlightDirector` (`section_changed`, `light_placed` per card with its origin
+  index, `lights_set` with **requested vs placed**, `retire`), `LightLayer` (`set_lights` as a
+  `was -> now` TRANSITION, `dim_rising`, `dim_settled`), `Game.score_line` (`score_line` with
+  row/col + index + card count, the spine everything else is read against).
+- `Tools/spotlight_trace.{gd,tscn}` — real `GameView`, real seeded deck, no mocks; writes
+  `visual_log.log`, `visual_log_by_frame.log` and a PNG per transition to **`user://logs/`**.
+
+⚠ **FRAME NUMBER IS THE ORDERING TRUTH, NOT THE TIMESTAMP** — and this corrects the assumption the
+feature was requested under. A wall-clock delta is ambiguous (0.3 ms apart is either one frame's work
+or two frames at 3000 fps), and under the act speed-up that ambiguity is the normal case.
+`Engine.get_process_frames()` is exact, is what the player perceives (same frame = one moment on
+screen), **and is frame-accurate headless**, where wall-clock means nothing. So the worry that this
+would not survive headless resolves the opposite way: the frame column always works, the microsecond
+column is the one to distrust. Read `f=` first. `dump_by_frame()` exists for exactly this question.
+
+⚠ **NOT FINISHED — `spotlight_trace` SUBMITS AN EMPTY BOARD.** Measured: `submit_begin` and
+`submit_end` land on the SAME frame with no `score_line` between them, because `Game.next()` deals a
+hand and the harness never PLACES any cards, and an empty board scores nothing. **The harness cannot
+answer the owner's parallel-vs-sequential question until it plays cards onto the board first.** That
+is the next concrete task, and it is small.
+
+## Logging work — what is DONE
+
+✅ **`VisualLog` → `EventLog`, one timeline, two channel GROUPS.** `GROUP_VISUAL`
+(`spotlight`/`light`/`board`/`prop`/`score`) and `GROUP_DATA` (`act`/`move`/`mod`/`state`/`input`),
+the latter firing headless. New data instrumentation: `Game.move_stack` (**logged for rejections
+too** — a refused move leaves no other trace, so "the card didn't go where I dragged it" is otherwise
+invisible), `Game._note_mod_fired` (**every** dispatch path funnels through it, so it is the one
+place that sees the whole firing order), and `try_place`/`submit`/`next`/`undo` on `input`.
+⚠ **The `input` channel is what makes a playtest log reproducible** — everything else is consequence;
+those are cause. ⚠ Logs moved to **`logs/events/`**, not `logs/visual/`: the log covers the data layer
+too, and naming the folder after one of its two groups would mislead exactly the way
+`logs/spotlight_trace/` did. Verified: a trace run populates both groups (`mod_fired` 96,
+`move_stack` 10, `submit` 3 alongside the visual channels).
+
+✅ **The record switch + 3 debug buttons** (`GameView._build_debug_bar`, debug builds only):
+`Rec` toggles a capture and writes it on stop with the folder printed, `<< Undo` is an **uncapped**
+rewind, `Redo >>` steps forward. Serves the owner's loop verbatim — *undo past the bug, record,
+repeat the action, send the log*.
+⚠ **`Game._debug_history` is a SECOND history, not a bigger `undo_cap`.** The production cap is a
+design decision about how far a PLAYER may rewind; raising it to serve debugging would change the
+game to serve the tool. The two histories can disagree, and that is correct.
+⚠ **It cannot recover snapshots the production cap already trimmed before the run resumed** — it is
+seeded from `save_history` and uncapped *from there on*, which is the honest promise.
+**Guarded by `test_debug_history_is_uncapped_and_redoable()`**, which commits 8 actions against a cap
+of 3 — *a test committing fewer actions than the cap would pass identically with the feature
+deleted*. 5 checks green, including that a fresh commit invalidates the redo future.
+
+✅ **The suite FAILS on unexpected engine errors** (`Tests/all_tests.gd::_scan_engine_errors`).
+GDScript cannot hook the error stream, so it reads **`user://logs/godot.log`** — the engine mirrors
+stderr there and `godot.log` is the current run, older sessions rotated to timestamped siblings.
+Unexpected lines are printed **deduplicated with counts** (the flood that prompted this was one bug
+repeated thousands of times) and added to the failure count. A clean run prints one line and nothing
+else, per *"include stream in output basically only if error"*.
+⚠ **`ENGINE_ERROR_ALLOW` is the whole design risk** — too broad and it restores the blindness it
+exists to remove. Verified 2026-08-04 that it is not vacuous: the run carried **3** engine ERROR
+lines and all 3 matched the allowlist (2 deliberate `Palette index` clamps, 1 `LeakSentinel`), so the
+scanner is demonstrably reading the stream rather than always saying "clean".
+✅ **`CardData.log_str()`** — `Hoop NumeralRank1.0 Extra Point  PLAY PLAY` → `Ho1*+`.
+⚠ **A SECOND METHOD, NOT AN EDIT TO `_to_string()`** — the verbose form feeds test assertions and the
+**G1.7 headless-parity diff**, which compares whole log sections between runs; shortening it would
+change what that gate compares without anyone noticing.
+✅ **Two log roots** — `logs/test/` (`TestLog`) and `logs/visual/<run>/` (`VisualLog`, which now owns
+its own path so a harness cannot claim it). Each run writes `summary.log` first.
+✅ **`spotlight_trace` self-closes** — on-screen status label, plus a `_Watchdog` node that quits even
+if a scenario wedges. ⚠ **Neither saves a PARSE ERROR**, which is what the owner actually hit: the
+script never loads, so nothing runs to quit it. **Always launch with `WaitForExit(<timeout>)` and
+kill the process if it outlives it** — a harness cannot rescue itself from failing to compile.
+
+## Still owed to the owner (asked 2026-08-04, NOT yet built)
+
+1. **The log-parsing subagent — EXPLICITLY DEFERRED by the owner until logging is finalized**, and
+   scoped: *"should only be used for massive logs such as recording an entire playthrough from start
+   to lose/win."* Not for ordinary captures, which `summary.log` already handles. **This is now the
+   only outstanding item**, and logging IS finalized, so it is unblocked.
+2. ~~`VisualLog` → `EventLog` with channel groups~~ ✅ **DONE.**
+3. ~~The playtest RECORD switch + 3 debug buttons~~ ✅ **DONE.**
+4. ~~**The suite must FAIL on unexpected engine errors.**~~ ✅ **DONE.**
+   Reasoning kept: **this was the root cause of two false greens this session.** *"suite should fail on unexpected errors in
+   error stream so visible to an agent testing to immediately fix, instead of current behavior where
+   I have to copy paste it to agent. suite tests should include stream in output basically only if
+   error."* ⚠ **This is the root cause of two false greens already this session** — the aborted
+   `is_spotlit` tests and the `_on_screen` flood. `test_output_errors.log` is the harness's OWN
+   channel (`TestLog` writes only `check()` FAIL lines); nothing reads stderr and no check asserts on
+   it. Needs an ALLOWLIST: `test_palette.gd` and `test_leak_canary.gd` push errors deliberately.
+2. **Compact log lines.** *"Logs should be as compact as possible, current card data to_str may need
+   changes."* `CardData._to_string()` currently yields e.g. `Input Zone ZONE PLAY` — verbose and it
+   repeats the stage twice. A short stable card id is wanted.
+3. **Owner-driven playtests hand logs to the agent.** *"I want to be able to playtest myself, then
+   hand off logs as evidence to agent to parse along with any issues I found."* ⚠ Implication:
+   `VisualLog` must be switchable ON IN THE REAL GAME (a setting or a launch flag), not only inside
+   `spotlight_trace`. Not wired yet.
+4. **A subagent that parses the logs.** *"likely need subagent to parse logs every time to find the
+   issues."* Suggests a `.claude/agents/log-parser.md` reading `user://logs/`.
+
+## Tooling consolidation — done 2026-08-04, owner's direction
+
+**Every parameter-tuning tool now lives in `solatro/Tools/`**, flat, one folder (owner: *"have every
+single editor/tool for modifying parameters scene in one easy to find folder"*).
+
+| Was | Now |
+|---|---|
+| `Cards/Props/Tools/formation_editor.{gd,tscn}` | `Tools/formation_editor.{gd,tscn}` |
+| `UI/Fx/Tools/fx_editor.{gd,tscn}` | `Tools/fx_editor.{gd,tscn}` |
+| `tools/*.py` (lowercase) | `Tools/*.py` |
+
+⚠ **The Python scripts are FLAT in `Tools/`, not in a `Tools/Scripts/` subfolder, and that is not a
+style choice** — `make_fx_noise.py` and `palette_conformance.py` resolve their assets with
+`Path(__file__).resolve().parent.parent / "Assets"`, so one extra directory level silently points
+them at `solatro/Tools/Assets`, which does not exist. Nesting them broke both; flattening fixed it.
+⚠ **`res://Tools` was added to `test_palette.gd`'s `SCAN_DIRS`.** The editors used to be scanned only
+as a side effect of sitting under `res://Cards` and `res://UI`; moving them out would have dropped
+them from the palette drift scan with no visible sign. Placeholder warnings stayed at 19 after the
+move, which is the evidence that `fx_editor` carries no drift of its own.
+⚠ **`tools` → `Tools` is a CASE-ONLY rename, and on Windows git cannot record it from the working
+tree alone** — it required `git mv`, which stages. That is the one staged change in the tree and the
+one deliberate exception to the no-staging rule; everything else is unstaged as usual. If it is
+unstaged, the rename silently reverts to a no-op and the folder stays lowercase on any case-sensitive
+machine.
+⚠ **`PLAN.md` §0b's S18 row said `UI/Fx/Tools/`** and now says `Tools/`. That is the owner's
+direction overriding the plan's path — recorded here rather than treated as plan drift.
+
+## Opening prompt for the next agent
+
+Copy-paste this. It stands alone.
+
+> Read `solatro/HANDOFF_spotlight.md` top to bottom, then `solatro/design/spotlight/PLAN.md` §0's
+> opening prompt, then `solatro/HEADLESS_TESTING.md` §0c. Confirm the tree is green before trusting
+> any status in the handoff: run the suite WINDOWED with a kill-on-timeout, check the SUITE count is
+> 29 (not the check total, which varies), and check `[engine-errors] clean`.
+>
+> Then do the first documentation task: **fold GAP-005 and GAP-006 into `DESIGN.md` (a v10 changelog)
+> and `PLAN.md` §2**. Both are implemented and tested; the design currently understates the code.
+>
+> Then build **S18, the scenario player** (`PLAN.md` §5, chart N, `Q173`–`Q182`, scenario list S1–S17
+> from `DESIGN.md` §14). Everything visual is gated behind it — the owner will not judge visuals any
+> other way. Its first job is tuning the GAP-006 per-section pulse, which is shipped but untuned and
+> may read as a flash at speed; `spotlight_dim_target = 0` is the off switch if it does.
+>
+> ⚠ Do not `git add` or commit. ⚠ Do not run Godot while the owner's editor is open. ⚠ When a
+> decision the design does not cover appears, file a gap — six have been filed on this stream and
+> every one was the same defect, a statement written before an answer and never revisited after it.
+
 ## Next up
 
-**Phases 1 and 2 through S13 are closed.** Next, in order:
+⚠ **THE ORDER CHANGED 2026-08-04.** The owner will not judge anything by eye until the tuning tool
+exists — *"I would rather do all testing via the planned editor so dont ask me to check until it
+exists"* — so **S18 comes before every remaining visual step**, and asking them to run the game or
+look at a snapshot is not an available move until it ships.
+
+0. **S18 — the scenario player** (`PLAN.md` §5, chart N, `Q173`–`Q182`). Real `PlayArea`, real
+   `CardVisual`s, real headless `Game` on a fixed deck — no mocks (`Q174`=a, `Q175`=a). `@tool` AND
+   runnable (`Q176`=a), viewport-size control (`Q177`=a), step (`Q178`=a), freeze (`Q179`=a), every
+   §16 tunable live and POLLED (a custom resource does not announce its own edits — `fx_editor`
+   already does this and is the model to copy). ⚠ **Scenario list is DATA, not code** (`Q182`: the
+   list is itself still reviewable). Lands in `solatro/Tools/`. Gate **G4.1**.
+   ⚠ Scenarios needing S16 (row expansion) cannot play yet — mark them unavailable, do not wait.
+
+Then, in order:
 
 1. **Finish S14 — chart E, the TRAVEL.** Chart I (origins) and the wire are in and asserted; what
    remains is the light EASING from one section to the next rather than cutting. `Q16`=(c)'s
    travelling light is already correct in the game state (S5) and in the light SET (the director
    replaces rather than accumulates) — this is the animation between the two positions, on
    `spotlight_travel_fraction` (§1.11, a fraction of `Game.get_delay()`, never wall-clock).
-   ⚠ **SEE IT FIRST.** The wire is live now, so the honest next move is to run the game, watch a
-   submit, and judge what travel is actually missing before writing an ease for it.
+   ⚠ **SEE IT FIRST — IN S18**, now that the wire genuinely lights the layer (GAP-005). Judge what
+   travel is actually missing before writing an ease for it.
 2. **S15 — the momentary cue's visuals.** S10 already emits `CardEnvironment.spotlight_cued(cards)`;
    this draws it, at `Q245`=(c)'s shallower dim outside scoring (`spotlight_dim_casual_scale`, which
    `LightLayer.set_lights(lights, scoring=false)` already selects).

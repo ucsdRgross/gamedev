@@ -25,6 +25,7 @@ func _ready() -> void:
 	await test_try_place_moves_and_commits()
 	await test_noop_place_commits_nothing()
 	await test_undo_reverts_state_and_history()
+	test_debug_history_is_uncapped_and_redoable()
 	await test_undo_rewinds_act_count()
 	await test_undo_cancels_resolving_submit()
 	await test_undo_at_game_over_rewinds_final_submit()
@@ -182,6 +183,57 @@ func test_noop_place_commits_nothing() -> void:
 	g.undo()
 	check(g.state.lower_zone[0].datas.size() == 2,
 			"undo restored the pre-move column", str(g.state.lower_zone[0].datas.size()))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+## ⚠ **THE DEBUG HISTORY OUTLIVES THE PRODUCTION CAP, WHICH IS THE ONLY REASON IT EXISTS.**
+## `save_history` is capped (`undo_cap`, `Game.save_state`), so a player's undo eventually stops
+## reaching backwards; the owner's playtest loop is *"undo, press record, repeat the action"*, which
+## needs to reach the setup BEFORE a bug however many actions ago that was.
+##
+## This drives more commits than the cap allows and asserts the two histories diverge in exactly the
+## intended way: the production one stops growing, the debug one does not. **A test that committed
+## fewer actions than the cap would pass identically with the feature deleted.**
+func test_debug_history_is_uncapped_and_redoable() -> void:
+	if not OS.is_debug_build():
+		check_impl(true, "debug history is debug-build only — SKIPPED in a release build")
+		return
+	var g := make_game()
+	g.undo_cap = 3   # a small cap so "more commits than the cap" stays a fast test
+	g.save_state()
+	var commits := 8
+	for i : int in commits:
+		var extra := TestFactories.m_card(float(9 + i), TestFactories.uc())
+		extra.stage = CardData.Stage.PLAY
+		g.state.lower_zone[0].datas.append(extra)
+		g.state.revision += 1
+		g.save_state()
+	check(g.save_history.size() <= 3,
+			"the PLAYER's history is capped and stops growing", str(g.save_history.size()))
+	check(g._debug_history.size() == commits + 1,
+			"the DEBUG history kept every commit", str(g._debug_history.size()))
+	var deep := g.state.lower_zone[0].datas.size()
+	# Rewind further back than the production cap could ever reach.
+	var steps := 0
+	while g.debug_undo(): steps += 1
+	check(steps > 3, "debug undo rewound PAST the production cap", "%d steps" % steps)
+	check(g.state.lower_zone[0].datas.size() < deep,
+			"...and the board really moved back",
+			"%d vs %d" % [g.state.lower_zone[0].datas.size(), deep])
+	# Redo walks forward again — the "repeat the action after undoing" half.
+	var forward := 0
+	while g.debug_redo(): forward += 1
+	check(forward == steps, "debug redo replays exactly as far as undo rewound",
+			"%d vs %d" % [forward, steps])
+	check(g.state.lower_zone[0].datas.size() == deep,
+			"...arriving back at the state it started from",
+			"%d vs %d" % [g.state.lower_zone[0].datas.size(), deep])
+	# ⚠ A fresh commit INVALIDATES the redo future — replaying it would restore a board that never
+	# followed from this one.
+	g.debug_undo()
+	g.state.revision += 1
+	g.save_state()
+	check(not g.debug_redo(), "a new action clears the redo future (it no longer follows)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
 

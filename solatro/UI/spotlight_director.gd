@@ -50,17 +50,30 @@ func bind(layer: LightLayer, play_area: PlayArea, env: CardEnvironment) -> void:
 	_layer = layer
 	_play_area = play_area
 	_env = env
-	if _env and not _env.spotlight_cued.is_connected(_on_spotlight_cued):
-		_env.spotlight_cued.connect(_on_spotlight_cued)
+	# ⚠ **`spotlight_section_changed`, NOT `spotlight_cued` — GAP-005.** The cue is filtered by
+	# `Q246`=(a) to skills implementing `on_spotlight`, and the shipped game has exactly ONE (a rules
+	# card, with no `CardVisual`), so binding the beam to it made the light set permanently empty and
+	# no beam ever appeared in the running game. The section signal carries the scored row or column
+	# unfiltered, which is what the beam lights. S15 is what will draw the cue, separately.
+	if _env and not _env.spotlight_section_changed.is_connected(_on_section_changed):
+		_env.spotlight_section_changed.connect(_on_section_changed)
+	# GAP-006: the reveal is a BEAT, not the whole act. The section signal says where the light is;
+	# this says whether the show is up.
+	if _env and not _env.spotlight_reveal_ended.is_connected(_on_reveal_ended):
+		_env.spotlight_reveal_ended.connect(_on_reveal_ended)
 
-## The cue: `cards` is every card that just BECAME spotlit, carried in one signal (`Q247`=a — one
-## dim, one cue, many lights).
+## The section took the light: `cards` is every card in the row or column being scored right now,
+## or EMPTY when the act releases it. **Unfiltered** — a scored row is mostly plain numeral cards
+## with no skill, and the beam lights all of them (GAP-005).
 ##
 ## ⚠ **THE SET REPLACES, IT DOES NOT ACCUMULATE.** That is `Q16`=(c)'s travelling light restated at
 ## the presentation layer: a section that has already scored is no longer lit, and the beam moves
 ## rather than the board filling up with lamps.
-func _on_spotlight_cued(cards: Array[CardData]) -> void:
+func _on_section_changed(cards: Array[CardData]) -> void:
 	if not _layer or not _play_area: return
+	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+		EventLog.event(EventLog.CH_SPOTLIGHT, "section_changed",
+				"cards=%d scoring=%s" % [cards.size(), str(_is_scoring())])
 	_release_all()
 	var lights : Array[LightLayer.Light] = []
 	var scale := SettingsManager.settings.card_scale
@@ -86,13 +99,40 @@ func _on_spotlight_cued(cards: Array[CardData]) -> void:
 		light.origin = SpotlightOrigins.edge_origin_for(centre, viewport.position.y,
 				viewport.position.y + viewport.size.y, _origins.origin_of(idx))
 		lights.append(light)
+		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+			# The CARD's identity, its screen position and which lamp it took — the three things a
+			# "why is that beam there" question ever needs.
+			EventLog.event(EventLog.CH_SPOTLIGHT, "light_placed",
+					"card=%s centre=(%.0f,%.0f) origin_idx=%d origin=(%.0f,%.0f) r=%.1f"
+					% [data.log_str(), centre.x, centre.y, idx,
+						light.origin.x, light.origin.y, light.radius])
+	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+		# ⚠ `requested` vs `placed` is the diagnostic that matters: a card with no live `CardVisual`
+		# is silently skipped by `_visual_of`, so a section of 5 that places 2 lights is a board
+		# problem, not a light problem, and the two numbers are the only way to tell them apart.
+		EventLog.event(EventLog.CH_SPOTLIGHT, "lights_set",
+				"requested=%d placed=%d" % [cards.size(), lights.size()])
 	# Scoring or not decides the dim's depth (`Q245`=c — a much shallower dim outside scoring, since
 	# otherwise the screen pulses dark on every single card you place).
 	_layer.set_lights(lights, _is_scoring())
+	# ⚠ A NEW SECTION RAISES THE SHOW AGAIN (GAP-006) — *"When next section is revealed, spotlight and
+	# dim effect are visible again"*. Raised AFTER the set is in place, so the fade-in is already
+	# pointing at the right cards.
+	_layer.set_revealed(not lights.is_empty())
+
+## The section's reveal is over and its scoring is starting: FADE the show, keep the set (GAP-006).
+##
+## ⚠ **KEEPING THE SET IS THE POINT, NOT AN OVERSIGHT.** The lights stay at their positions through
+## the fade so the next section can travel FROM them (chart E, *"no instant movements or spawning in
+## and out"*). Freeing them here would make the beams respawn at new positions every section — which
+## is what the brief forbids, and what the pre-GAP-006 `_release_all()`-and-rebuild already did.
+func _on_reveal_ended() -> void:
+	if _layer: _layer.set_revealed(false)
 
 ## Retire every light — which is also what lowers the dim, since the dim is a function of what is
 ## lit. Called when the act releases its spotlight (`_release_spotlight`, S9) or the board clears.
 func retire() -> void:
+	EventLog.event(EventLog.CH_SPOTLIGHT, "retire", "held=%d" % _held.size())
 	_release_all()
 	if _layer: _layer.set_lights([] as Array[LightLayer.Light], false)
 

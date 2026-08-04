@@ -99,6 +99,15 @@ signal settings_changed
 ## `.tres` are the GLOW's, and §16 keeps the layer's own knobs separate). Living here is the reading
 ## that exists; if that is wrong, file a gap rather than splitting the difference — see
 ## `design/spotlight/PLAN.md` §1.11's G0 note.
+## ⚠ **0.0 IS THE OFF SWITCH, AND IT IS SUPPORTED ON PURPOSE** (owner, 2026-08-04: *"make sure dim
+## can be turned off if needed by tunables, it just occured to me that dim might flash if speed is
+## high"*). `LightLayer._dim_target()` multiplies by this, so 0 means the dim never rises at any
+## speed while beams, circles and glow all still play. **That is the remedy if the per-section pulse
+## (GAP-006) reads as a flash at high act speed** — and it is a different control from `fx_intensity`,
+## which `Q83` forbids from removing the dim (gate G2.4). Between them: `fx_intensity = 0` keeps the
+## dim and drops the lights; `spotlight_dim_target = 0` keeps the lights and drops the dim.
+## ⚠ Pinned by `test_the_dim_can_be_turned_off_entirely()` — an off switch nothing asserts is an off
+## switch that quietly stops working.
 @export_range(0.0, 1.0, 0.01) var spotlight_dim_target : float = 0.75:
 	set(value):
 		spotlight_dim_target = value
@@ -121,6 +130,19 @@ signal settings_changed
 @export_range(0.0, 1.0, 0.01) var spotlight_dim_casual_scale : float = 0.35:
 	set(value):
 		spotlight_dim_casual_scale = value
+		settings_changed.emit()
+## **THE HOLD BEAT** — how long a revealed section stays lit before its scoring starts, as a fraction
+## of `Game.get_delay()` (design chart D's **D13**, `Q68`=a *"yes, ~half a delay"*, `PLAN.md` §1.11).
+##
+## ⚠ **WITHOUT THIS THE PER-SECTION PULSE IS INVISIBLE, WHICH IS HOW IT WAS FOUND.** GAP-006 made the
+## show fade as scoring begins; the trace then showed `revealed` and `reveal_faded` landing on the
+## SAME FRAME with `show=0.000`, because nothing between them ever waited. The dim eases toward a
+## target it was already being pulled away from, so it never left zero. A spotlight you cannot see is
+## the same as no spotlight.
+## ⚠ A FRACTION, never wall-clock: it compresses with the act speed-up like every other duration here.
+@export var spotlight_hold_fraction : float = 0.5:
+	set(value):
+		spotlight_hold_fraction = value
 		settings_changed.emit()
 
 @export_group("Act speed-up (per-activation compression)")
@@ -187,7 +209,7 @@ signal settings_changed
 		difficulty = value
 		settings_changed.emit()
 
-## Goal at the 20-card start deck (re-fit via `py solatro/tools/scoring_sim.py --final`).
+## Goal at the 20-card start deck (re-fit via `py solatro/Tools/scoring_sim.py --final`).
 @export var goal_g0 : float = 130.0:
 	set(value):
 		goal_g0 = value

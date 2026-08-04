@@ -12,8 +12,8 @@ the report is for is the LARGE clusters: a solid area of one off-palette colour 
 still choosing its own colour instead of pointing at the palette. The headless guarantee (every
 generated ramp texel is exactly an entry) lives in Tests/Engine/test_palette.gd.
 
-Run:  py solatro/tools/palette_conformance.py
-      py solatro/tools/palette_conformance.py --top 20 --min-count 50
+Run:  py solatro/Tools/palette_conformance.py
+      py solatro/Tools/palette_conformance.py --top 20 --min-count 50
 Reads: %APPDATA%/Godot/app_userdata/Solatro/{fx_snapshots,prop_art_snapshots}/*.png
 
 stdlib only — no PIL, no numpy, same rule the rest of tools/ follows.

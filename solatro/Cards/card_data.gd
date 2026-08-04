@@ -115,6 +115,31 @@ func with_status(status: CardModifierStatus) -> CardData:
 func _on_child_data_changed() -> void:
 	data_changed.emit()
 
+## **THE COMPACT FORM, FOR LOGS.** `Hoop NumeralRank1.0 Extra Point  PLAY PLAY` becomes `Ho1*+`.
+## Owner, 2026-08-04: *"Logs should be as compact as possible, current card data to_str may need
+## changes."* A log line repeated thousands of times is mostly card identifiers, and the verbose form
+## also prints the stage TWICE, which is pure noise in a per-frame record.
+##
+## ⚠ **THIS IS A SECOND METHOD RATHER THAN AN EDIT TO `_to_string()`, DELIBERATELY.** `_to_string()`
+## feeds test assertions and the **G1.7 headless-parity diff**, which compares whole log sections
+## between two runs — shortening it would either break those or, worse, change what the parity gate
+## compares without anyone noticing. The verbose form stays exactly as it is for those readers.
+##
+## Shape: `<suit 2 chars><rank><flags>`, e.g. `Kn3sR` = Knife, rank 3, Stone, Revealing. Stage is
+## appended ONLY when it is not `PLAY`, since almost every logged card is on the board.
+func log_str() -> String:
+	var s := ""
+	if suit: s += suit.get_str().substr(0, 2)
+	if rank: s += rank.get_str().trim_suffix(".0")
+	# One character per modifier, because WHICH skill it is almost never matters in a log line —
+	# that it HAS one is what changes behaviour, and the verbose form is one call away when it does.
+	if skill: s += "*"
+	if stamp: s += "+"
+	if type and not type.get_str().is_empty(): s += "^"
+	if not statuses.is_empty(): s += "#%d" % statuses.size()
+	if stage != Stage.PLAY: s += "/" + Stage.find_key(stage)
+	return s
+
 func _to_string() -> String:
 	var s : String
 	if suit: s += suit.get_str()

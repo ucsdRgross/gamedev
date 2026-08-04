@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://duhdrg0iroucb"]
 
-[ext_resource type="Script" uid="uid://bvc7g06k1bb5" path="res://Cards/Props/Tools/formation_editor.gd" id="1_fedit"]
+[ext_resource type="Script" uid="uid://bvc7g06k1bb5" path="res://Tools/formation_editor.gd" id="1_fedit"]
 
 [node name="FormationEditor" type="Node2D" unique_id=634773069]
 script = ExtResource("1_fedit")

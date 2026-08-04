@@ -10,8 +10,13 @@ extends RefCounted
 ##
 ## Terminal: ALL prints everything; ERRORS_ONLY prints only FAIL lines (files still get everything).
 
-const ALL_PATH := "user://test_output_all.log"
-const ERR_PATH := "user://test_output_errors.log"
+## ⚠ **TWO LOG ROOTS, AND THEY ARE DELIBERATELY SEPARATE** (owner, 2026-08-04): `logs/test/` is the
+## SUITE's own output — what `check()` said — and `logs/visual/` is `EventLog`'s record of what the
+## presentation layer DID. They answer different questions and get mixed up the moment they share a
+## folder, which is what happened when the visual log first landed in `logs/spotlight_trace/`.
+const DIR := "user://logs/test/"
+const ALL_PATH := DIR + "test_output_all.log"
+const ERR_PATH := DIR + "test_output_errors.log"
 
 static var terminal_errors_only := false
 ## The base_delay animated suites run at — set once by all_tests.gd's @export speed_base_delay
@@ -27,6 +32,9 @@ static var _started := false
 static func begin(errors_only: bool) -> void:
 	terminal_errors_only = errors_only
 	LeakSentinel.test_mode = true  # suites abandon cards on purpose — keep the sentinel quiet
+	# The folder may not exist on a fresh machine or after a `user://` wipe, and `FileAccess.open`
+	# does NOT create parents — it just returns null and the run logs nothing, silently.
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(DIR))
 	_all_file = FileAccess.open(ALL_PATH, FileAccess.WRITE)
 	_err_file = FileAccess.open(ERR_PATH, FileAccess.WRITE)
 	_started = true

@@ -200,14 +200,18 @@ func run_swap_tests() -> void:
 # they keep saying so every run.
 
 ## Directories whose drawing code is expected to be on the palette.
+## ⚠ `res://Tools` IS IN THE LIST DELIBERATELY. The tuning editors used to live under `res://Cards`
+## and `res://UI` and were scanned as a side effect of sitting there; consolidating them into one
+## folder (owner, 2026-08-04) would otherwise have dropped them out of the scan silently, which is
+## the kind of coverage loss a green run cannot show you.
 const SCAN_DIRS : Array[String] = [
-	"res://Cards", "res://Scripts", "res://UI", "res://Levels", "res://Shaders",
+	"res://Cards", "res://Scripts", "res://UI", "res://Levels", "res://Shaders", "res://Tools",
 ]
 const SCAN_EXTS : Array[String] = ["gd", "tscn", "tres"]
 
 ## Files exempt entirely, with the reason. Editor/debug tooling and art that does not exist yet.
 const ALLOW_FILES : Array[String] = [
-	"res://Cards/Props/Tools/formation_editor.gd",     # @tool debug overlay, never shipped
+	"res://Tools/formation_editor.gd",                 # @tool debug overlay, never shipped
 	"res://Cards/Props/Visuals/firework_visual.gd",    # placeholder polygon; no art authored
 	"res://Scripts/palette.gd",                        # the palette machinery itself
 	"res://Scripts/palette_ramp.gd",
@@ -224,6 +228,7 @@ const ALLOW_LINES : Array[String] = [
 	"\"modulate\", Color.WHITE",                       # tween back to no tint
 	"else Color.WHITE", "return Color.WHITE",          # untinted fallbacks (no ramp = no tint)
 	"@export var color : Color = Color.WHITE",         # untinted default; set by the visual
+	"color = Color(0, 0, 0, 0)",                       # fully transparent = NO colour at all
 ]
 
 func run_drift_scan() -> void:

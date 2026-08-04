@@ -28,7 +28,7 @@ rules live in [[solatro-structural-layering]].
 Act payout = R×C×(1+0.1·U) with meld-class combo; goal = G0·(N̂/N0)^ALPHA·difficulty·BOSS^b·LAP^lap
 from boosters_on_path. **Overscore was retired deliberately — never punish overperformance, it
 breeds sandbagging.** All knobs sit in `player_settings.gd` "Balance —" groups
-([[solatro-tuning-knobs-in-settings]]). Sim oracle: `py solatro/tools/scoring_sim.py --final
+([[solatro-tuning-knobs-in-settings]]). Sim oracle: `py solatro/Tools/scoring_sim.py --final
 --q 0.35`; known drift — it fits g0≈140/α≈2.03 against shipped G0=130/ALPHA=4.2, and the owner
 is not worried, so arbitrate with them before any recalibration. Remaining work is owner-side
 parameter tuning plus the playtest questions in `solatro/todo.md`; the playtest protocol and

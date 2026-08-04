@@ -48,6 +48,8 @@ func _ready() -> void:
 		failed_impl += suite._fail_impl
 		warned += suite._warn
 	TestLog.line("")
+	# ⚠ THE ENGINE'S OWN ERROR STREAM COUNTS AS A FAILURE — see _scan_engine_errors().
+	failed += _scan_engine_errors()
 	# Placeholder warnings are reported but never affect the verdict or the exit code — they mark
 	# surfaces still carrying hardcoded values, not breakage (TestSuite.warn).
 	var warn_tag := "" if warned == 0 else (" [%d placeholder warnings]" % warned)
@@ -62,3 +64,66 @@ func _ready() -> void:
 	# the play window unless close_when_done is turned off for live inspection).
 	if DisplayServer.get_name() == "headless" or close_when_done:
 		get_tree().quit(mini(failed, 125))
+
+## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
+## GREENS THROUGH** (owner, 2026-08-04: *"suite should fail on unexpected errors in error stream so
+## visible to an agent testing to immediately fix, instead of current behavior where I have to copy
+## paste it to agent"*).
+##
+## Before this, the verdict came only from `check()` calls. Godot's own errors — emitted from C++
+## straight to stderr — reached nobody: `test_output_errors.log` is `TestLog`'s OWN channel and holds
+## only FAIL lines. Both of this session's false greens were exactly that shape:
+##
+##   * five spotlight tests ABORTING on `Nonexistent function 'is_spotlit' in base 'Nil'` — an
+##     aborted test emits no failures, so the banner said PASSED with the checks simply never run;
+##   * an `_on_screen()` flood of `Condition "!is_inside_tree()" is true`, thousands of lines, which
+##     the owner had to paste in by hand because the run reported itself green.
+##
+## ⚠ **THE SOURCE IS GODOT'S OWN LOG FILE, NOT A HOOK.** GDScript cannot intercept the engine's error
+## stream, but the engine mirrors it to `user://logs/godot.log` (file logging is on by default in
+## debug builds) — and `godot.log` is THIS run, older sessions having been rotated to timestamped
+## siblings. So the check is: read it, subtract what is deliberate, fail on the rest.
+##
+## ⚠ **THE ALLOWLIST IS THE WHOLE DESIGN PROBLEM.** Several suites push errors ON PURPOSE — that is
+## what they assert. An allowlist that is too broad restores the blindness this exists to remove, so
+## every entry names the suite that owns it and must stay a SUBSTRING match, never a prefix wildcard.
+const ENGINE_ERROR_ALLOW : Array[String] = [
+	"Palette index",              # test_palette asserts the clamp WARNS — it is the behaviour
+	"LeakSentinel:",              # test_leak_canary deliberately abandons cards and reports it
+	"Condition \"p_index",        # bounds asserts inside deliberate degenerate-input suites
+]
+
+## Returns the number of unexpected engine errors, and prints them so the agent reading the run has
+## the actual text rather than a count.
+func _scan_engine_errors() -> int:
+	var text := FileAccess.get_file_as_string("user://logs/godot.log")
+	if text.is_empty():
+		# Not fatal, but say so — a silent zero here would be indistinguishable from a clean run, and
+		# that is the exact failure mode this function exists to end.
+		TestLog.line("[engine-errors] SKIPPED — user://logs/godot.log unreadable "
+				+ "(file logging off?). This run's engine stream was NOT checked.", true)
+		return 0
+	var bad : Array[String] = []
+	for raw : String in text.split("\n"):
+		var line := raw.strip_edges()
+		if not (line.begins_with("ERROR:") or line.begins_with("SCRIPT ERROR:")): continue
+		var allowed := false
+		for frag : String in ENGINE_ERROR_ALLOW:
+			if frag in line: allowed = true
+		if not allowed: bad.append(line)
+	if bad.is_empty():
+		TestLog.line("[engine-errors] clean — 0 unexpected lines in the engine stream")
+		return 0
+	# ⚠ Only ever printed when there ARE errors — the owner asked for the stream in the output
+	# "basically only if error", and a clean run has nothing to say beyond the one line above.
+	TestLog.line("======== %d UNEXPECTED ENGINE ERRORS ========" % bad.size(), true)
+	# Deduplicated with counts: the flood that started all this was one bug repeated thousands of
+	# times, and printing it thousands of times would bury every other error under it.
+	var seen : Dictionary[String, int] = {}
+	var order : Array[String] = []
+	for line : String in bad:
+		if not seen.has(line): order.append(line)
+		seen[line] = seen.get(line, 0) + 1
+	for line : String in order:
+		TestLog.line("  x%-5d %s" % [seen[line], line], true)
+	return order.size()

@@ -4,7 +4,7 @@ extends Resource
 ## the card anchor (CardVisual.CARD_SIZE footprint — every point must stay inside it; the
 ## whole formation fits one slot). A spawned batch maps onto these points (see
 ## PropFormationSet.offsets_for); card_scale is applied at use. Author these with the
-## standalone editor tool: res://Cards/Props/Tools/formation_editor.tscn.
+## standalone editor tool: res://Tools/formation_editor.tscn.
 
 enum Mode { ORDERED, RANDOM }
 

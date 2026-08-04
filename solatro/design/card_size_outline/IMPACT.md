@@ -602,9 +602,9 @@ so nobody "fixes" them.
 | [palette_roles.gd:22-46](Scripts/palette_roles.gd:22) | new `art_outline` role + `ROLE_NAMES` entry |
 | `Assets/Palette/roles.tres` | the chosen index |
 | [fire.gdshader:123](Shaders/fire.gdshader:123), [glow.gdshader:84](Shaders/glow.gdshader:84) | `u_body` **defaults** `vec2(38,50)` → `vec2(40,54)`. Cosmetic only — `FxAttachment` writes the real value every frame ([fx_attachment.gd:376,826](UI/Fx/fx_attachment.gd:376)) — but a wrong default is a wrong default |
-| [fx_editor.gd:108](UI/Fx/Tools/fx_editor.gd:108) | `@export var card_body := Vector2(38, 50)` |
+| [fx_editor.gd:108](Tools/fx_editor.gd:108) | `@export var card_body := Vector2(38, 50)` |
 | [hoop.tres:8](Cards/Props/Formations/hoop.tres:8) | formation points span exactly ±19 (the old card edge) → ±20 |
-| [formation_editor.tscn:7](Cards/Props/Tools/formation_editor.tscn:7) | same points, duplicated in the editor scene |
+| [formation_editor.tscn:7](Tools/formation_editor.tscn:7) | same points, duplicated in the editor scene |
 
 ### 3b. Derived — verified correct, do not touch
 

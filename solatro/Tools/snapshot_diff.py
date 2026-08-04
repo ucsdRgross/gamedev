@@ -1,7 +1,7 @@
 """Pixel-diff two runs of fx_snapshot.tscn / prop_art_snapshot.tscn.
 
-    py solatro/tools/snapshot_diff.py save          # stash the CURRENT PNGs as the baseline
-    py solatro/tools/snapshot_diff.py diff          # re-run the scene first, then compare
+    py solatro/Tools/snapshot_diff.py save          # stash the CURRENT PNGs as the baseline
+    py solatro/Tools/snapshot_diff.py diff          # re-run the scene first, then compare
 
 WHY THIS EXISTS. FX_HANDOFF's standing rule is "judge fire by EYE, never by counting columns" — two
 rejected builds were reported as successes by an instrument that counted. That rule is right for a

@@ -63,6 +63,7 @@ func _ready() -> void:
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
 	spotlight_director.bind(light_layer, play_area, game)
+	_build_debug_bar()
 
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
 	game.state_bound.connect(_on_state_bound)
@@ -330,3 +331,70 @@ func _on_data_selected(data: CardData) -> void:
 	else:
 		var grabbed := await game.try_grab(data)
 		play_area.grab_cards(grabbed)
+
+
+# ==============================================================================
+# THE DEBUG BAR (2026-08-04) — three buttons serving one workflow.
+#
+# Owner: *"If I see an issue during playtest, I can undo, press record, then repeat the action, and
+# then send log for debugging."* That sentence is the whole design:
+#
+#   ⏺ RECORD      start/stop an EventLog capture, and WRITE IT on stop
+#   ⏪ DEBUG UNDO  uncapped rewind, so the setup before the bug is always reachable
+#   ⏩ DEBUG REDO  step forward again, to repeat the action WHILE recording
+#
+# ⚠ **DEBUG BUILDS ONLY.** The bar is not built at all in an exported game — `Game`'s debug history
+# is also debug-only, so two of the three buttons would be dead controls there.
+# ⚠ **RECORD IS DELIBERATELY THE ONLY WAY THIS TURNS ON IN A REAL SESSION.** `EventLog` is off by
+# default and costs one static bool when off; a log that recorded every session would be a
+# performance cost paid forever to capture mostly nothing.
+# ==============================================================================
+
+var _debug_bar : HBoxContainer = null
+var _record_button : Button = null
+
+func _build_debug_bar() -> void:
+	if not OS.is_debug_build(): return
+	_debug_bar = HBoxContainer.new()
+	_debug_bar.name = "DebugBar"
+	# Top-right, away from the board and the HUD. MOUSE_FILTER_IGNORE on the CONTAINER so only the
+	# buttons themselves take clicks — a full-width bar would otherwise eat drags across the top.
+	_debug_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_record_button = _add_debug_button(TRANSLATION.find('DEBUG_RECORD'), _on_debug_record)
+	_add_debug_button(TRANSLATION.find('DEBUG_UNDO'), _on_debug_undo)
+	_add_debug_button(TRANSLATION.find('DEBUG_REDO'), _on_debug_redo)
+	add_child(_debug_bar)
+	# TOP-right, growing left — the same shape as `_add_prop_debug_controls`' bottom-right box, which
+	# is why they do not collide. Parented to the VIEW rather than to `SceneRoot`, exactly as the prop
+	# debug box is, so the two debug surfaces live in one place in the tree.
+	_debug_bar.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_debug_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT,
+			Control.PRESET_MODE_MINSIZE, 8)
+
+func _add_debug_button(text: String, handler: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE  # never steal focus from the board's keyboard/controller nav
+	b.pressed.connect(handler)
+	_debug_bar.add_child(b)
+	return b
+
+## Toggle the capture. Stopping WRITES it and prints the folder, so the owner has a path to send
+## without hunting for one.
+func _on_debug_record() -> void:
+	if EventLog.enabled:
+		EventLog.end()
+		var dir := EventLog.save("playtest_%d" % Time.get_unix_time_from_system())
+		_record_button.text = TRANSLATION.find('DEBUG_RECORD')
+		print("=== EventLog written ===\n%s\n%s" % [dir, EventLog.summary()])
+	else:
+		EventLog.begin()   # every channel: a playtest bug can be anywhere
+		_record_button.text = TRANSLATION.find('DEBUG_RECORD_STOP')
+
+func _on_debug_undo() -> void:
+	if not game.debug_undo():
+		print("debug_undo: nothing left to rewind to")
+
+func _on_debug_redo() -> void:
+	if not game.debug_redo():
+		print("debug_redo: nothing to replay")

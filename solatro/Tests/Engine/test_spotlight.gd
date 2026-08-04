@@ -43,6 +43,8 @@ func _ready() -> void:
 
 	behavior_section("S5: THE SECTION SPOTLIGHT PHASE")
 	await test_buried_card_lit_during_its_phase()
+	await test_the_section_signal_carries_plain_cards()
+	await test_each_section_reveals_then_ends_its_reveal()
 	await test_already_spotlit_card_fires_nothing()
 
 	behavior_section("S6: IMMEDIATE MUTATION + RE-DERIVE")
@@ -322,6 +324,82 @@ func test_buried_card_lit_during_its_phase() -> void:
 	check(not spy.is_spotlit() and not spy.spotlit and spy.unspotlight_calls == 1,
 			"and is dark again after the release (G1.4)",
 			"unspotlight_calls=%d" % spy.unspotlight_calls)
+	free_game(g)
+
+## ⚠ **THE GAP-005 REGRESSION GUARD, AND IT IS THE ONE TEST PHASE 2 DID NOT HAVE.** The beam lights
+## the SECTION BEING SCORED, whose cards are ordinary numerals with no skill at all — so this scores
+## a column of entirely PLAIN cards and asserts the signal carries every one of them.
+##
+## The bug this exists for: S14 drew the beam from `spotlight_cued`, which `Q246`=(a) filters to
+## skills implementing `on_spotlight`. Exactly one non-test skill in the shipped game does, so the
+## light set was permanently empty and no beam ever appeared in the running game — invisibly, because
+## every other spotlight test supplies a fixture skill that DOES implement the hook. **A test whose
+## cards all have skills cannot see this failure. That is why these have none.**
+func test_the_section_signal_carries_plain_cards() -> void:
+	var g := make_game()
+	var seen : Array[Array] = []
+	g.spotlight_section_changed.connect(func(cards: Array[CardData]) -> void: seen.append(cards))
+	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
+		return [play_card(3, TestFactories.uc()), play_card(4, TestFactories.uc()),
+				play_card(5, TestFactories.uc())] as Array[CardData])
+	var plain := col_cards(g, 0)
+	for data : CardData in plain:
+		check(data.skill == null, "precondition: this section's cards carry NO skill at all")
+	await score_column(g, 0)
+	check(not seen.is_empty(), "scoring a section of plain cards EMITS the beam's membership",
+			"emits=%d" % seen.size())
+	var first : Array[CardData] = seen[0] as Array[CardData]
+	check(first.size() == plain.size(),
+			"...carrying every card in the section, unfiltered (GAP-005)",
+			"%d of %d" % [first.size(), plain.size()])
+	# ⚠ A duplicate, not the section's live array: `refresh()` rebuilds `section.cards` in place, so
+	# a receiver holding the original would watch it mutate mid-frame.
+	check(not is_same(first, plain),
+			"...as a COPY, so a receiver cannot watch the section mutate under it")
+	seen.clear()
+	await g._release_spotlight()
+	check(seen.size() == 1 and (seen[0] as Array[CardData]).is_empty(),
+			"and the release emits an EMPTY set, which is the whole retirement (QR2=d)",
+			"emits=%d" % seen.size())
+	free_game(g)
+
+## ⚠ **GAP-006: THE SHOW PULSES PER SECTION, AND NOTHING ASSERTED THAT BEFORE.** Owner, 2026-08-04:
+## *"spotlight + dim occurs as cards of section get revealed, with both spotlight and dim effect
+## fading away as scoring starts to happen. When next section is revealed, spotlight and dim effect
+## are visible again, moving to new location, then fade away again."*
+##
+## The measured failure this pins: the dim rose ONCE and fell ONCE across EIGHT scored sections,
+## because `QR2`=(d) ties it to "are there beams" and `Q16`=(c) never empties the light set between
+## sections — so it could not fall mid-act at all. **Every piece was individually right; the
+## composition was never checked, and no test looked at the pairing.**
+##
+## Asserted at the SIGNAL seam rather than on pixels: one `reveal_ended` per scored section, each
+## after that section's `section_changed`. Headless, no light layer needed.
+func test_each_section_reveals_then_ends_its_reveal() -> void:
+	var g := make_game()
+	var order : Array[String] = []
+	g.spotlight_section_changed.connect(func(cards: Array[CardData]) -> void:
+		order.append("section:%d" % cards.size()))
+	g.spotlight_reveal_ended.connect(func() -> void: order.append("reveal_ended"))
+	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
+		return [play_card(3, TestFactories.uc()), play_card(4, TestFactories.uc()),
+				play_card(5, TestFactories.uc())] as Array[CardData])
+	await score_column(g, 0)
+	check(order.has("reveal_ended"),
+			"a scored section ENDS its reveal, so the show can fade before scoring (GAP-006)",
+			str(order))
+	# The ordering is the substance: the fade must follow the reveal it belongs to, never precede it.
+	var first_section := order.find("section:3")
+	var first_end := order.find("reveal_ended")
+	check(first_section >= 0 and first_end > first_section,
+			"...and it ends AFTER the section was revealed, not before",
+			"section at %d, reveal_ended at %d" % [first_section, first_end])
+	# ⚠ EXACTLY ONE per scored section — a reveal that ended twice would fade a show that was already
+	# down, and one that never ended is the bug this test exists for.
+	var ends := 0
+	for e : String in order:
+		if e == "reveal_ended": ends += 1
+	check(ends == 1, "exactly one reveal_ended for one scored section", "%d" % ends)
 	free_game(g)
 
 func test_already_spotlit_card_fires_nothing() -> void:

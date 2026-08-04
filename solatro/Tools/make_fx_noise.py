@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bake the seamless tiling FBM the fire shader scrolls (FX_HANDOFF §0e.1).
 
-    py solatro/tools/make_fx_noise.py
+    py solatro/Tools/make_fx_noise.py
 
 Writes `Assets/Fx/noise_fire.png` — a 128x128 greyscale, three octaves of value noise,
 SEAMLESS on both axes. `fire.gdshader` samples it with `filter_nearest, repeat_enable`.

@@ -2,7 +2,7 @@
 class_name FormationEditor
 extends Node2D
 ## Standalone formation AUTHORING + PREVIEW tool (owner spec 2026-07-13) — open
-## res://Cards/Props/Tools/formation_editor.tscn, select the root node, and work entirely
+## res://Tools/formation_editor.tscn, select the root node, and work entirely
 ## from the inspector: pick a prop kind, add/generate/hand-edit formations, save them to the
 ## kind's PropFormationSet .tres (what PropLayer loads in game), and spawn real prop visuals
 ## over the points to see the result — including OVERFLOW: preview counts beyond one

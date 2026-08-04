@@ -464,7 +464,7 @@ host's own visual and adds it BEFORE the attachment, so art draws under the effe
     `PipSuit`, `CardModifierStamp`, `CardModifierSkill` (`PipRank` and every concrete pip already had
     it). None of them needs a running game — the `CardEnvironment` reads are statics that answer null.
   - ✅ **A/B'd IN THE EDITOR, not argued**: `Godot --path solatro --editor --quit-after 400
-    res://UI/Fx/Tools/fx_editor.tscn` reproduces all six of the owner's errors with the flags reverted
+    res://Tools/fx_editor.tscn` reproduces all six of the owner's errors with the flags reverted
     and prints **zero** with them in, and a probe confirmed `type/rank/suit/art` all visible in editor
     mode. ⚠ **That command is the cheapest way to test an editor-only claim** — it needs the owner's
     editor CLOSED, and it is how any future `@tool` question should be settled.
@@ -568,7 +568,7 @@ body-plus-reach. The two values are `fx_balls_near`'s own box — half a span pl
 plus a ball, plus one flame for the plumes — so nothing the shader is willing to draw can fall outside.
 A 38x50 card's ball quads went from **112x125** to ~**54x80**.
 
-**Proof it changed nothing visible: `py solatro/tools/snapshot_diff.py` — ALL 18 PANELS BYTE-IDENTICAL**
+**Proof it changed nothing visible: `py solatro/Tools/snapshot_diff.py` — ALL 18 PANELS BYTE-IDENTICAL**
 with the lever on versus off. That is the honest instrument for an optimisation (§11), and it is a
 stronger statement than "no clipping was visible": the lattice is origin-anchored, so a correctly
 sized quad renders the same pixels as an oversized one.
@@ -1275,12 +1275,12 @@ instrument could fail.
 | `Shaders/fire.gdshader` | `u_poly` / `u_wedge` / `u_poly_count` / `u_inner` replace `u_radii`; `poly_solid` + `wedge_has` replace `radii_scale`; the RADII branch is two box tests around an exact polygon (§0c.1) |
 | `UI/Fx/fx_attachment.gd` | `_poly` / `_wedge` / `_poly_half` / `_poly_max` / `_poly_inner`; `_fill_poly_from_outline` and `_inner_box` replace `_fill_radii_from_outline`; `_push_poly` pushes the silhouette as ONE fact; winding normalized; `_rect_radius` deleted |
 | `Cards/card_visual.gd` | `star_outline`'s docstring carries the MEASURED gap to the real rig (2.3–3.3 art units) and names the check that uses a real card |
-| `UI/Fx/Tools/fx_editor.gd` | same warning on the `corner_warp` export — the tool cannot host a real `CardVisual` and now says why |
+| `Tools/fx_editor.gd` | same warning on the `corner_warp` export — the tool cannot host a real `CardVisual` and now says why |
 | **`Tests/Visual/test_pixels.gd`** | **`test_the_card_mask_is_the_card_the_player_sees` — the first real `CardVisual` in any harness (§0c.2)** |
 | `Tests/Visual/pixel_probe.gd` | `mask_contains` — the shader's mask, transcribed, shared by the two suites that need it |
 | `Tests/UI/test_fx_attachment.gd` | `test_the_mask_is_the_outline` — the mask against `Geometry2D.is_point_in_polygon`, plus the vertex-spacing invariant the two-candidate wedge test depends on; the enum-mirror pin follows POLY/WEDGES |
 | **`tools/snapshot_diff.py`** | **`_bbox` — compares EVERY channel. It compared alpha only, and said "identical" to anything that did not move alpha (§0d.4)** |
-| **`UI/Fx/Tools/fx_editor.gd`** | **real `CardVisual` hosts; `rig_pose` replaces `corner_warp`; the flat mock face and its palette index deleted; `_spawn_host` takes the host's own visual (§0c.4)** |
+| **`Tools/fx_editor.gd`** | **real `CardVisual` hosts; `rig_pose` replaces `corner_warp`; the flat mock face and its palette index deleted; `_spawn_host` takes the host's own visual (§0c.4)** |
 | `Cards/card_visual.gd` | `settings()` for the editor's missing autoload; `_bind_rig()` in either mode — both so the tool can stand up a REAL card |
 | `Cards/card_data.gd`, `card_modifier.gd`, `card_modifier_type.gd`, `card_modifier_stamp.gd`, `card_modifier_skill.gd`, `Pips/pip_suit.gd` | **`@tool` down the whole data chain** — without it a previewed card's suit/type/stamp are PLACEHOLDERS in the editor and its face stops drawing mid-`update_visual` (§0c.4) |
 | `Cards/card_modifier_type.gd` | **`corner_notch()`** — the bite each type's frame takes out of its corners, measured off the sheet's own alpha and cached per frame (§0c.5) |
@@ -1606,7 +1606,7 @@ this box while the timer holds to ~3 %.
 | 78 burning AND juggling, 5 lit balls each | 26.15 | **16.84** (1.55x) |
 | the same 78 plus **3x more OFF-SCREEN** (312 hosts), WALL clock | 24.70 | **18.33 — the same as 78** |
 
-**Two changes, and BOTH are provably pixel-identical** (`py solatro/tools/snapshot_diff.py`: all 18
+**Two changes, and BOTH are provably pixel-identical** (`py solatro/Tools/snapshot_diff.py`: all 18
 snapshot panels byte-for-byte unchanged, suite green at 28 suites / exit 0):
 
 1. **`body_near()` in `fire.gdshader` — the empty majority, rejected first.** `fx_balls_near`'s lever
@@ -1976,10 +1976,10 @@ Godot --path solatro res://Tests/Visual/fx_snapshot.tscn   # after ANY shader ed
 Godot --path solatro res://Tests/Visual/fx_behind.tscn     # the SEAM: hosts drawn FILLED (§0c)
 Godot --path solatro res://Tests/Visual/prop_art_snapshot.tscn
 Godot --path solatro res://Tests/Visual/fx_cost.tscn       # ms/frame per host kind — not a test
-py solatro/tools/palette_conformance.py
-py solatro/tools/snapshot_diff.py save                     # stash the PNGs you trust as a baseline
-py solatro/tools/snapshot_diff.py diff                     # re-run fx_snapshot, then prove nothing moved
-py solatro/tools/make_fx_noise.py                          # re-roll Assets/Fx/noise_fire.png
+py solatro/Tools/palette_conformance.py
+py solatro/Tools/snapshot_diff.py save                     # stash the PNGs you trust as a baseline
+py solatro/Tools/snapshot_diff.py diff                     # re-run fx_snapshot, then prove nothing moved
+py solatro/Tools/make_fx_noise.py                          # re-roll Assets/Fx/noise_fire.png
 ```
 
 ⚠ **`fx_cost.tscn` NEEDS THREE RUNS ON THIS BOX, AND YOU TAKE THE MINIMUM.** The GTX 1070 sits in two
@@ -2010,7 +2010,7 @@ honest claim is byte-identical, and an eye is far too generous for that.
 needs the owner's editor CLOSED:
 
 ```bash
-Godot --path solatro --editor --quit-after 400 res://UI/Fx/Tools/fx_editor.tscn
+Godot --path solatro --editor --quit-after 400 res://Tools/fx_editor.tscn
 ```
 
 It opens the project, builds the scene, prints every script error to stdout and quits. A/B it by

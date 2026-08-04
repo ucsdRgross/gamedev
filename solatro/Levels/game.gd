@@ -156,6 +156,15 @@ func register_combo(key: String) -> bool:
 ## dispatch path notifies (feeds_combo=false outside run_all_mods), which is how a placement's
 ## legality query can hold the counter.
 func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
+	# ⚠ EVERY dispatch path funnels through here (run_all_mods, return_first_*, run_card_mods — see
+	# the doc comment on CardEnvironment._note_mod_fired), which makes this the ONE place that sees
+	# the whole mod firing order. That order is the answer to most "why did this score that" and
+	# "why did this fire twice" questions, and it is the thing G1.7 diffs between runs.
+	# ⚠ HOT — this fires many times per act, so the detail string is built only behind is_on().
+	if EventLog.is_on(EventLog.CH_MOD):
+		var owner_card : CardData = mod.data
+		EventLog.event(EventLog.CH_MOD, "mod_fired", "%s on %s"
+				% [function, owner_card.log_str() if owner_card else "<no card>"])
 	if feeds_combo and _act_cancellable:
 		register_combo(mod.combo_key(function))
 	_note_patience_trigger(mod, function)
@@ -266,6 +275,11 @@ func _start_fresh_show() -> void:
 func _resume_show() -> void:
 	save_history = Main.save_info.game_history
 	history_trimmed = Main.save_info.game_history_trimmed
+	# ⚠ The debug history STARTS from whatever the save resumed to — it cannot recover snapshots the
+	# production cap already trimmed, and pretending otherwise would offer a rewind that silently
+	# stops working partway. Uncapped from HERE ON is the honest promise.
+	_debug_history = save_history.duplicate()
+	_debug_redo.clear()
 	state = _runtime_state(save_history[-1])
 	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
 	# into the state being replaced). The run save stays authoritative: snapshots from before
@@ -331,6 +345,11 @@ func try_grab(data: CardData) -> Array[CardData]:
 ## Also THE patience spend point: a move that changed the board either holds the counter (a
 ## qualifying modifier triggered) or costs one, and hitting 0 auto-presses Next.
 func try_place(stack: Array[CardData], target: CardData) -> bool:
+	# ⚠ THE `input` CHANNEL IS WHAT MAKES A PLAYTEST LOG REPRODUCIBLE. Everything else in the log is
+	# consequence; these five lines are CAUSE. Without them a recording says what the game did but
+	# not what the player pressed, and the owner's workflow is "repeat the action, send the log".
+	EventLog.event(EventLog.CH_INPUT, "try_place",
+			"stack=%d onto=%s" % [stack.size(), target.log_str() if target else "<null>"])
 	if processing: return false
 	_patience_active = true
 	_patience_fired_hold = false
@@ -411,6 +430,7 @@ func shuffle_deck(datas:Array[CardData]) -> void:
 		
 ## Command (view-called): advance to the next round.
 func next() -> void:
+	EventLog.event(EventLog.CH_INPUT, "next", "blocked=%s" % str(processing))
 	if processing:
 		return
 	await _perform_next()
@@ -462,6 +482,7 @@ func save_state() -> void:
 	if state.revision == _last_saved_revision:
 		return
 	save_history.append(state.to_saveable())
+	_debug_commit()
 	var cap : int = clampi(undo_cap, 1, MAX_UNDO_HISTORY)
 	if save_history.size() > cap:
 		history_trimmed += save_history.size() - cap
@@ -496,6 +517,7 @@ func _begin_action(action: StringName) -> void:
 ##     restores the pre-act board itself (_perform_submit/_perform_next).
 ##   - otherwise locked (resume load / replay tail): ignored.
 func undo() -> void:
+	EventLog.event(EventLog.CH_INPUT, "undo", "resolved=%s" % str(_resolved))
 	if _resolved:
 		_resolved = false
 		_won = false
@@ -525,6 +547,62 @@ func undo() -> void:
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
+
+# ==============================================================================
+# DEBUG HISTORY (2026-08-04) — the owner's playtest-debugging loop.
+#
+# Owner: *"If I see an issue during playtest, I can undo, press record, then repeat the action, and
+# then send log for debugging. Since undo will eventually be capped, we also need a separate debug
+# undo with unlimited uses, and a debug redo to repeat an action after undoing."*
+#
+# ⚠ **THIS IS A SECOND HISTORY, NOT A BIGGER `undo_cap`, AND THAT IS THE WHOLE POINT.** The
+# production cap is a design decision about how far a PLAYER may rewind; raising it to serve
+# debugging would change the game to serve the tool. `save_history` keeps its cap and its meaning;
+# `_debug_history` is uncapped and exists only to get back to the frame before a bug.
+#
+# ⚠ **DEBUG BUILDS ONLY.** Every entry is a full `GameData` snapshot and nothing ever trims them, so
+# an exported build would grow this without limit for no player-facing benefit.
+# ==============================================================================
+
+## Uncapped mirror of `save_history`. ⚠ Never persisted — `RunManager` writes `save_history`, and a
+## debug rewind must not be able to corrupt a real save file.
+var _debug_history : Array[GameData] = []
+## States popped by `debug_undo()`, newest last, so `debug_redo()` can walk forward again. ⚠ CLEARED
+## by any fresh commit: once the player acts, the future they undid away no longer exists, and
+## replaying a stale one would restore a board that never followed from the current one.
+var _debug_redo : Array[GameData] = []
+
+func _debug_commit() -> void:
+	if not OS.is_debug_build(): return
+	_debug_history.append(state.to_saveable())
+	_debug_redo.clear()
+
+## Rewind one committed board, with NO cap. Returns false when there is nothing left to rewind to.
+func debug_undo() -> bool:
+	if not OS.is_debug_build() or _debug_history.size() <= 1: return false
+	EventLog.event(EventLog.CH_INPUT, "debug_undo", "depth=%d" % _debug_history.size())
+	_debug_redo.append(_debug_history.pop_back())
+	_apply_debug_state(_debug_history[-1])
+	return true
+
+## Step forward again after a `debug_undo()` — the "repeat an action after undoing" half.
+func debug_redo() -> bool:
+	if not OS.is_debug_build() or _debug_redo.is_empty(): return false
+	EventLog.event(EventLog.CH_INPUT, "debug_redo", "pending=%d" % _debug_redo.size())
+	var forward : GameData = _debug_redo.pop_back()
+	_debug_history.append(forward)
+	_apply_debug_state(forward)
+	return true
+
+## ⚠ Deliberately does NOT touch `RunManager` — see `_debug_history`. It also leaves `save_history`
+## alone, so the player's own undo stack still describes the player's own actions; the two histories
+## can disagree, and that is correct rather than a bug.
+func _apply_debug_state(snapshot: GameData) -> void:
+	state = _runtime_state(snapshot)
+	_last_saved_revision = state.revision
+	_update_submit_label()
+	if view: view.rebuild()
+	debug_validate("debug_undo/redo")
 
 ## Undo pressed while an act was resolving: throw away the partially-resolved state and
 ## restore the last committed board — the pre-act snapshot save_state pushed (the act itself
@@ -558,6 +636,13 @@ func move_data_to_coord(moving:CardData, dest:Vector3i, cards_in_stack: int = 1,
 # Game fires the mod events afterwards, when the board is already consistent.
 func move_stack(moving:CardData, count:int, dest:Board.Anchor, trigger_mods: bool = true) -> void:
 	var result := Board.move_stack(state, moving, count, dest)
+	# ⚠ Logged for BOTH outcomes, and the rejection is the more useful half: a move the board refused
+	# leaves no trace anywhere else, so "the card did not go where I dragged it" is otherwise
+	# invisible in a log. The compact form keeps a per-move line affordable.
+	if EventLog.is_on(EventLog.CH_MOVE):
+		EventLog.event(EventLog.CH_MOVE, "move_stack",
+				"%s x%d -> %s : %s" % [moving.log_str(), count, dest,
+					"OK" if result.code == Board.OK else Board.ERROR_NAMES[result.code]])
 	if result.code == Board.OK_NOOP:
 		return
 	if result.code != Board.OK:
@@ -626,6 +711,7 @@ func draw_card() -> CardData:
 
 ## Command (view-called): perform a Submit act.
 func submit() -> void:
+	EventLog.event(EventLog.CH_INPUT, "submit", "blocked=%s" % str(processing))
 	if processing:
 		return
 	await _perform_submit()
@@ -735,6 +821,11 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 	# add_line_score, which always did. ⚠ Rows and columns are the only shapes today and
 	# NOTHING here may assume that stays true (Q260=a, Q266=a).
 	var section := ScoringSection.of_line(zone, is_row, index)
+	# The act's own spine in the visual log — every light, dim and popup below is read AGAINST this
+	# line, and without it a log of the presentation layer has no idea which line it is presenting.
+	if EventLog.is_on(EventLog.CH_ACT):
+		EventLog.event(EventLog.CH_ACT, "score_line",
+				"%s index=%d cards=%d" % ["row" if is_row else "col", index, section.cards.size()])
 	# An EMPTY section means the caller is not scoring a board line at all (a synthetic
 	# Result handed straight to score_line — the unit fixtures do exactly this). There is no
 	# section to light and nothing to re-evaluate, so the old path runs unchanged. A section
@@ -799,12 +890,33 @@ func _spotlight_section(section: ScoringSection) -> void:
 		state.forced_spotlight.clear()
 		for card : CardData in section.cards:
 			state.forced_spotlight[card] = true
+		# THE BEAM FOLLOWS THE SECTION, not the announcement cue (GAP-005, owner 2026-08-04). This
+		# is the same membership the loop just wrote, announced to the view layer — emitted BEFORE
+		# the sweep so the light is already on the cards whose hooks are about to fire, and re-emitted
+		# every iteration because `section.refresh()` may have changed who is in it.
+		# ⚠ A `duplicate()` of the array, not the section's own: `refresh()` REBUILDS `section.cards`
+		# in place, so a receiver holding the live array would see it mutate under them mid-frame.
+		spotlight_section_changed.emit(section.cards.duplicate())
 		await skill_spotlight_check()
 		if act_cancelled or act_overrun: return
 		# Q252=b: RE-READ the section from the board after every hook — never cache it across
 		# one. A handler may have added a card to the section or compacted one out of it, and
 		# an unchanged set is what ends the phase.
-		if not section.refresh(): return
+		if not section.refresh():
+			# D13, THE HOLD BEAT (`Q68`=a): let the reveal READ before scoring takes it away.
+			# ⚠ `if view:` — headless waits on nothing (`Q19`=a) and stays byte-identical, which is
+			# gate G1.7. A bare `create_timer` here would make the headless cascade take real seconds
+			# and would break that parity.
+			if view:
+				await get_tree().create_timer(
+						get_delay() * SettingsManager.settings.spotlight_hold_fraction).timeout
+			# THE REVEAL IS OVER — scoring happens next, so the light and the dim fade (GAP-006).
+			# ⚠ The forced set is deliberately NOT cleared here: `Q16`=(c) keeps it up for the whole
+			# act, and the mechanical spotlight is what makes buried cards fire. Only the SHOW fades.
+			if EventLog.is_on(EventLog.CH_ACT):
+				EventLog.event(EventLog.CH_ACT, "reveal_ended", "cards=%d" % section.cards.size())
+			spotlight_reveal_ended.emit()
+			return
 
 ## D22/D23 (spotlight S9): the act is over — drop every forced spotlight and re-run the sweep.
 ## ⚠ RECOMPUTE, never blanket-clear: a released card that is still NATURALLY spotlit must not
@@ -813,6 +925,11 @@ func _spotlight_section(section: ScoringSection) -> void:
 func _release_spotlight() -> void:
 	if state.forced_spotlight.is_empty(): return
 	state.forced_spotlight.clear()
+	# The beam goes out with the forced set (GAP-005). An EMPTY set is the whole retirement — there
+	# is no "stop" signal, because the dim is a function of what is lit (`QR2`=d) and a second way
+	# to lower it is a second thing that can disagree. Guarded by the same early return above: if
+	# nothing was forced, no beam was up and there is nothing to retire.
+	spotlight_section_changed.emit([] as Array[CardData])
 	await skill_spotlight_check()
 
 ## Bank `amount` into a row/col gutter + the matching act total; animate the label when a view

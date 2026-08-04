@@ -195,6 +195,11 @@ func visuals_ready() -> bool:
 
 func flush_rebuild() -> void:
 	if _rebuild_queued:
+		# A board rebuild is the single most disruptive thing the visual layer does — every pooled
+		# slot control is rebound, so any card position read before it is stale after it. Logged
+		# because "the beam was in the wrong place" and "the board moved under the beam" look
+		# identical on screen and are one line apart in the log.
+		EventLog.event(EventLog.CH_BOARD, "rebuild", "cards=%d" % data_card.size())
 		set_card_zones()
 
 ## The board Control at a slot coord (z == -1 header, z >= 0 row card), or null if the layout
@@ -670,6 +675,8 @@ func reset_meld(result : Scoring.Result) -> void:
 			data_card[data].anim_reset()
 
 func popup_score(result : Scoring.Result) -> void:
+	if EventLog.is_on(EventLog.CH_SCORE):
+		EventLog.event(EventLog.CH_SCORE, "popup_score", "meld=%d" % result.meld.size())
 	flush_rebuild() #reads data_card
 	if not result.meld: return
 	var combo_pos : Vector2 = Vector2.ZERO

@@ -163,4 +163,4 @@ C#/GDExtension migration candidates get flagged in comments, not converted ad ho
   A bare `& exe ...` / `WaitForExit` without a `Kill()` also leaves orphans that truncate
   the next run's log. Read only the FAIL lines (`test_output_errors.log`, empty = green)
   plus the final banner.
-- Scoring sim: `py solatro/tools/scoring_sim.py --final --q 0.35` (Python, safe anytime).
+- Scoring sim: `py solatro/Tools/scoring_sim.py --final --q 0.35` (Python, safe anytime).

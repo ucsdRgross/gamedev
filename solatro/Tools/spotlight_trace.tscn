@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8s2trace1spot"]
+
+[ext_resource type="Script" path="res://Tools/spotlight_trace.gd" id="1_trace"]
+
+[node name="SpotlightTrace" type="Node"]
+script = ExtResource("1_trace")
