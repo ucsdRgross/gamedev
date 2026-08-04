@@ -494,7 +494,35 @@ stage.addEventListener('wheel', (e) => {
 function select(id) {
   state.selected = id;
   redraw();
-  if (state.laid.positions[id]) centreOn(id);
+  if (state.laid.positions[id]) ensureVisible(id);
+}
+
+/**
+ * Bring a node into view — but ONLY if it is not already comfortably in it.
+ *
+ * ⚠ This used to be an unconditional `centreOn`, and that is a big part of the owner's report
+ * (2026-08-04): *"the flowchart is sometimes not automatically focused, so I have to pan chart back
+ * to center of screen"*. Every click on a node re-centred the view on that node — so clicking
+ * something already on screen SHOVED the chart, and the further from centre you clicked the further
+ * it moved. On a chart that fits the stage there is nothing to scroll to and the movement is pure
+ * annoyance; the selection outline already says what is selected.
+ *
+ * The margin means a node hugging the edge still gets pulled in, which is the case the centring was
+ * actually for — arrow-key navigation walking off the side.
+ */
+function ensureVisible(id) {
+  const p = state.laid.positions[id];
+  const size = state.laid.sizes[id];
+  if (!p || !size) return;
+  const rect = stage.getBoundingClientRect();
+  const margin = 24;
+  const x0 = state.view.x + p.x * state.view.k;
+  const y0 = state.view.y + p.y * state.view.k;
+  const x1 = x0 + size.w * state.view.k;
+  const y1 = y0 + size.h * state.view.k;
+  const inside = x0 >= margin && y0 >= margin
+    && x1 <= rect.width - margin && y1 <= rect.height - margin;
+  if (!inside) centreOn(id);
 }
 
 /** Arrow keys move the selection to the nearest visible node in that direction (Q113=a). */
@@ -537,10 +565,17 @@ search.addEventListener('keydown', (e) => {
   }
   // A hit inside a collapsed or hidden chart is useless unless the chart opens (F9).
   const chart = state.graph.nodes[hit].chart;
-  if (state.only && state.only !== chart) state.only = chart;
+  // ⚠ SWITCHING THE SINGLE-CHART VIEW MUST REFIT, and not doing so was the sharpest half of the
+  // owner's 2026-08-04 report. Searching a node in ANOTHER chart re-laid out that chart but left
+  // the zoom and pan that had been fitted to the PREVIOUS one — measured on Spotlight: the new
+  // chart landed 106 px off centre and did not fit in the stage at all, so the only way to see it
+  // was to pan by hand. The picker's own click handler always fitted; this path never did.
+  const chartChanged = state.only !== null && state.only !== chart;
+  if (chartChanged) state.only = chart;
   state.collapsed.delete(chart);
   if (isRuledOut(hit)) state.showRuledOut = true;
   redraw();
+  if (chartChanged) fit();
   select(hit);
 });
 
@@ -657,6 +692,19 @@ function toggleChrome(which, force = null) {
   // The stage changed size, so a fitted view is no longer fitted.
   fit();
 }
+
+// ⚠ THE WINDOW ITSELF RESIZES TOO, AND NOTHING WAS LISTENING (2026-08-04). Folding a panel called
+// `fit()`; dragging the window edge, changing zoom, or rotating a tablet did not — so the view kept
+// a scale and an offset computed for a stage that no longer existed, and the chart drifted off
+// centre with no way back but panning. It is the same staleness `toggleChrome` already guarded
+// against, from the one direction nobody had wired up.
+//
+// Debounced because a drag fires this continuously and `fit()` reflows the scene each time.
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(fit, 120);
+});
 
 function toggleAllChrome() {
   const anyShown = Object.values(CHROME).some((s) => !document.body.classList.contains(s.cls));

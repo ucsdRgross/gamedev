@@ -196,3 +196,19 @@ stale). `planSteps` now tolerates a leading `- [ ]` — it used to reject it and
 that step's citations to the step ABOVE. **The plan is the immutable spec; progress lives in
 `<project>/HANDOFF_<topic>.md` as an `id`/`status`/`evidence`/`notes` ledger, never restating the
 plan.** 136 tests.
+
+⚠ **CANVAS FOCUS FIXES (2026-08-04)** — owner: *"when looking at individual flowcharts the flowchart
+is sometimes not automatically focused, so I have to pan chart back to center of screen."* Three
+causes, all found by DRIVING the canvas in a browser and measuring node bounding boxes against the
+stage centre — `canvas.mjs` is browser code and **no node test imports it**, so the suite could never
+have caught any of them:
+1. **`select()` re-centred unconditionally**, so clicking an already-visible node shoved the chart.
+   Now `ensureVisible()` — only recentres when the node is outside a 24 px margin.
+2. **Search into a DIFFERENT chart never refitted**: it re-laid out the new chart but kept the zoom
+   and pan fitted to the previous one (measured: 106 px off centre, chart did not fit the stage).
+   The picker's own handler always fitted; that path never did.
+3. **No `window` resize listener existed at all** — folding a panel called `fit()`, dragging the
+   window edge did not. Added, debounced 120 ms.
+⚠ The browser harness's `resize_window` overrides the viewport WITHOUT dispatching a `resize` event,
+so verify that handler with a synthetic `window.dispatchEvent(new Event('resize'))`, not a viewport
+change — otherwise a working handler looks broken.
