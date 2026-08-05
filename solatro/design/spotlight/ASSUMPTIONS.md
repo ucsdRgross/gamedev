@@ -110,3 +110,25 @@ One line each, citing the node it was taken under.
   `show_meld_score` and `_run_score_effects` all read the new hand. `Q243`=(a) asks for the
   lights and jumps to re-cue when the meld changed; feeding every consumer the re-derived
   result is that, with no second code path.
+- **2026-08-05, S15 (chart T, `T10` / GAP-006).** The momentary cue's lights are **exempt from the
+  per-section reveal gate** — `LightLayer.Light.gated = false`, and `_dim_target()` takes
+  `max(_show, strongest ungated intensity)`. The design does not say how chart T's cue interacts with
+  GAP-006's `_show`, and the two readings are not close: a GATED cue is multiplied by `_show = 0`
+  outside a submit — nothing raises the gate in ordinary play — so it would be **perfectly invisible
+  while every headless assertion about the light set still passed**, which is GAP-005's failure shape
+  exactly. Raising `_revealed` for a cue instead would drag the previous section's faded beams back up
+  with it. `T10` settles it in the design's own words: the cue's dim *"rises with this spotlight's
+  BEAM and falls when it retires"* — its own life, not scoring's beat. `max` rather than a sum keeps
+  `Q247`=(a)'s *one* dim covering all of them. Reversible: one bool on `Light`.
+- **2026-08-05, S15 (chart T, `T6`).** The cue's hold reuses **`spotlight_hold_fraction`**. §16 lists
+  no cue-specific hold and `T6` only says *"spawn on it, hold, and retire"*. That knob is already
+  defined as *"the beat after `on_active`"*, and chart T's cue fires precisely when a card gains
+  `on_active` — so this is the same beat, not a second one invented for it. If the owner wants the
+  casual cue to hold longer or shorter than the scoring beat, it needs its own §16 row.
+- **2026-08-05, S15 (chart T, `T15`/`T16`).** A cue is **invisible to `_on_section_changed`**: never
+  taken as a leftover to travel, and it does not `claim` its card either. So a card both cued and
+  scored briefly carries **two lights**. The alternative — letting the cue claim the card — was
+  rejected because the cue then retires and leaves that card dark for the rest of its section, which
+  is a visible hole rather than a brief double brightness. `Q249`=(a)'s *"a second cue may start while
+  the first is still retiring"* is what forbids the cue from sharing the section's replace-the-set
+  semantics at all.

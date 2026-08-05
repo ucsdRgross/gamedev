@@ -69,6 +69,14 @@ class _Beam extends RefCounted:
 	## Spawn-in / retire-out, 0..1. Scales the light's INTENSITY, never its size (`Q63`=a).
 	var fade : float = 1.0
 	var retiring : bool = false
+	## **IS THIS CHART T'S MOMENTARY CUE RATHER THAN THE SCORING BEAM?** A cue is self-timed — it
+	## spawns, holds and retires on its own — and is INVISIBLE to `_on_section_changed`: it never
+	## travels, is never stolen as a section's leftover, and never blocks a section from lighting the
+	## same card. It is also ungated, so it does not ride the per-section reveal (`LightLayer.Light`).
+	var cue : bool = false
+	## Seconds of hold left before a cue starts retiring. Meaningless on a section beam, which holds
+	## until the section moves on or the act releases it.
+	var hold_left : float = 0.0
 
 var _beams : Array[_Beam] = []
 ## Has the allocator been laid out for the act in progress? ⚠ **`begin()` REBUILDS `_origins` AND
@@ -100,6 +108,12 @@ func bind(layer: LightLayer, play_area: PlayArea, env: CardEnvironment) -> void:
 	# this says whether the show is up.
 	if _env and not _env.spotlight_reveal_ended.is_connected(_on_reveal_ended):
 		_env.spotlight_reveal_ended.connect(_on_reveal_ended)
+	# **S15 — AND THIS IS THE OTHER HALF OF GAP-005, NOT A RELAPSE INTO IT.** Both signals reach this
+	# node, and the ruling was that they must not be CONFLATED: `spotlight_section_changed` drives the
+	# scoring beam above, `spotlight_cued` drives chart T's momentary cue below, and neither reads the
+	# other's. Binding the BEAM to the cue is what GAP-005 forbids.
+	if _env and not _env.spotlight_cued.is_connected(_on_cued):
+		_env.spotlight_cued.connect(_on_cued)
 
 ## The section took the light: `cards` is every card in the row or column being scored right now,
 ## or EMPTY when the act releases it. **Unfiltered** — a scored row is mostly plain numeral cards
@@ -130,14 +144,20 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 	# scoring rather than as a new rig per line.
 	var still : Dictionary[CardData, bool] = {}
 	for data : CardData in wanted: still[data] = true
+	# ⚠ **CUE BEAMS ARE INVISIBLE TO ALL OF THIS.** A momentary cue is not a section light: it must not
+	# be reassigned as a leftover (chart E's travel is `Q16`=(c)'s SCORING light moving section to
+	# section), and it must not `claim` its card either — claiming would deny the section a light on a
+	# card that happens to be cued, and then the cue's own retire would leave that card dark for the
+	# rest of the section. A card both cued and scored therefore carries two lights for the cue's
+	# lifetime, which is the harmless side of the two choices.
 	var leftover : Array[_Beam] = []          # E4: lights whose card left the set
 	for b : _Beam in _beams:
-		if b.retiring: continue
+		if b.retiring or b.cue: continue
 		if b.card != null and still.has(b.card): continue
 		leftover.append(b)
 	var claimed : Dictionary[CardData, bool] = {}
 	for b : _Beam in _beams:
-		if not b.retiring and b.card != null: claimed[b.card] = true
+		if not b.retiring and not b.cue and b.card != null: claimed[b.card] = true
 	var targets : Array[CardData] = []        # E4: targets with no light yet
 	for data : CardData in wanted:
 		if not claimed.has(data): targets.append(data)
@@ -195,7 +215,64 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 	# ⚠ A NEW SECTION RAISES THE SHOW AGAIN (GAP-006) — *"When next section is revealed, spotlight and
 	# dim effect are visible again"*. Raised AFTER the set is in place, so the fade-in already points
 	# at the right cards.
-	_layer.set_revealed(not _beams.is_empty())
+	# ⚠ SECTION beams only: a live cue must not hold the section gate up, or a cue arriving in the gap
+	# between two sections would re-raise the previous section's faded beams along with itself.
+	_layer.set_revealed(_section_beams() > 0)
+
+## How many live lights belong to the SCORING beam rather than to a cue. The reveal gate is theirs.
+func _section_beams() -> int:
+	var n := 0
+	for b : _Beam in _beams:
+		if not b.cue: n += 1
+	return n
+
+## **S15 — CHART T'S MOMENTARY CUE.** `cards` is every card that just transitioned into spotlit AND
+## has something to announce (`Q246`=(a) filters it to skills implementing `on_spotlight`; the filter
+## is `CardEnvironment`'s and this node does not repeat it).
+##
+## ⚠ **T12/T13 — ONE CUE, N SPOTLIGHTS, SPAWNING TOGETHER.** `Q247`=(a): a `Next` that drops four
+## stacks is *"N spotlights, ONE dim that covers all of them"*, not four cues in a row. They are built
+## on one frame with one hold, so they rise and fall as a single announcement — the dim is `LightLayer`'s
+## single value and needs nothing here to make that true.
+## ⚠ **T15/T16 — NOTHING IS BLOCKED AND NOTHING IS CANCELLED** (`Q249`=a). A second cue while the
+## first is still retiring simply adds lights; the earlier ones keep their own timers and are not
+## touched, which is why this APPENDS rather than replacing the way `_on_section_changed` does.
+func _on_cued(cards: Array[CardData]) -> void:
+	if not _layer or not _play_area: return
+	# THE CARDS THAT ACTUALLY HAVE A VISUAL TO LIGHT — same filter, same reason, as the section path.
+	var wanted : Array[CardData] = []
+	for data : CardData in cards:
+		if _visual_of(data): wanted.append(data)
+	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+		EventLog.event(EventLog.CH_SPOTLIGHT, "cued",
+				"cards=%d placed=%d scoring=%s" % [cards.size(), wanted.size(), str(_is_scoring())])
+	if wanted.is_empty(): return
+	var viewport := _layer.get_viewport_rect()
+	# ⚠ Same `_band_ready` rule as the section path, and for the same reason — `begin()` clears the
+	# taken-set, so it may run only when no light is holding an index.
+	if not _band_ready or _beams.is_empty():
+		_origins.begin(wanted.size(), viewport.size.x, viewport.position.y)
+		_band_ready = true
+	var hold := maxf(_delay() * SettingsManager.settings.spotlight_hold_fraction, 0.0)
+	for data : CardData in wanted:
+		var nb := _Beam.new()
+		nb.card = data
+		nb.cue = true
+		# `Q65`=(a)'s spawn shape, shared with the section path: ALREADY AIMED, faded in rather than
+		# swept in along the beam.
+		nb.t = 1.0
+		nb.fade = 0.0
+		nb.hold_left = hold
+		# ⚠ `take()`, NOT `assign()` — `SpotlightOrigins` says so in as many words: the one-at-a-time
+		# form is *"kept for callers that genuinely place a single light (chart T's momentary cue, where
+		# there is no set to sort)"*. A cue is a set of INDEPENDENT announcements, not a scored section
+		# whose fan has to read as one rig, so GAP-008's column fan does not apply to it.
+		nb.origin_idx = _origins.take(_centre_of(data))
+		_beams.append(nb)
+		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+			EventLog.event(EventLog.CH_SPOTLIGHT, "cue_spawn",
+					"card=%s origin_idx=%d hold=%.3fs" % [data.log_str(), nb.origin_idx, hold])
+	_push()
 
 ## Where a beam's circle is RIGHT NOW — its target's art square, or a point along its travel.
 ## ⚠ `Q63`=(a): full size the whole way. The ease is on POSITION only; nothing shrinks or dims in
@@ -269,6 +346,18 @@ func _process(delta: float) -> void:
 			if b.fade <= 0.0: done.append(b)
 		elif b.fade < 1.0:
 			b.fade = minf(b.fade + delta / spawn, 1.0)
+		elif b.cue:
+			# **T6 — THE CUE IS SPAWN, HOLD, RETIRE, AND ONLY IT HAS AN END OF ITS OWN.** A section
+			# beam holds until the section moves on or the act releases it; a cue answers to nothing
+			# outside itself, so its hold is counted here and it retires without anyone telling it to.
+			# ⚠ The hold starts only once the spawn has finished, so a speed-up that shortens the
+			# fade-in cannot eat the beat the player is meant to see.
+			b.hold_left -= delta
+			if b.hold_left <= 0.0:
+				b.retiring = true
+				if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+					EventLog.event(EventLog.CH_SPOTLIGHT, "cue_retiring",
+							"card=%s" % [b.card.log_str() if b.card else "<none>"])
 	for b : _Beam in done:
 		if b.origin_idx >= 0: _origins.release(b.origin_idx)
 		_beams.erase(b)
@@ -292,6 +381,9 @@ func _push() -> void:
 		# **`Q63`=(a): FULL SIZE IN TRANSIT.** The fade is the SPAWN and RETIRE envelope only — a
 		# travelling light does not dim, because a real followspot does not.
 		light.intensity = b.fade
+		# ⚠ A CUE DOES NOT RIDE THE PER-SECTION REVEAL — see `LightLayer.Light.gated`. Its whole
+		# envelope is `fade`, which is why it can be shown outside a submit at all.
+		light.gated = not b.cue
 		# ⚠ `Q117` IS APPLIED HERE, AT THE ONLY PLACE THAT KNOWS BOTH ENDS. A target below the viewport
 		# is lit from the screen EDGE rather than by tilting a rig lamp up to reach it.
 		# ⚠ **E10: the origin is FIXED while the wide end tracks the circle** — the beam pivots on its

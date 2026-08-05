@@ -77,6 +77,16 @@ class Light extends RefCounted:
 	var flare : float = 0.0
 	## This light's own strength, multiplying both its beam and its circle.
 	var intensity : float = 1.0
+	## **DOES THIS LIGHT RIDE THE PER-SECTION REVEAL GATE** (`_show`, GAP-006)? True for the scoring
+	## beam, whose whole point is to pulse with each section's reveal.
+	##
+	## ⚠ **FALSE FOR CHART T'S MOMENTARY CUE, AND THE TWO CANNOT SHARE ONE AXIS.** T10 ties the cue's
+	## life to *its own* beam — *"the dim rises with this spotlight's BEAM and falls when it retires"* —
+	## while `_show` is scoring's per-section pulse. A cue outside a submit arrives with `_revealed`
+	## false, so a gated cue would be multiplied by `_show = 0` and be invisible; and raising `_revealed`
+	## to fix that would drag the previous section's faded beams back up with it. An ungated light
+	## carries its whole envelope in `intensity`, which is the spawn/hold/retire the director runs.
+	var gated : bool = true
 
 ## Live lights, replaced wholesale every time the caller re-derives them. ⚠ Re-read, never cached
 ## across a hook — the same `Q252`=(b) discipline the activation sweep runs under.
@@ -191,6 +201,11 @@ func is_lit() -> bool:
 	# has not run yet, so `_show` is still exactly 0 for one frame. Asking only about `_show` would
 	# make the layer report itself dark on the very frame the section lit up — true of the eased
 	# value, false about the show, and a race for every caller.
+	# ⚠ **PRESENCE, not intensity, for an ungated light** — and for the same one-frame reason. A cue
+	# light spawns at `intensity = 0` and is FREED the moment its retire reaches 0, so it exists if and
+	# only if its show is up; asking about its eased value would report the board dark on the frame the
+	# cue appeared.
+	if not _lights.is_empty() and _has_ungated(): return true
 	return not _lights.is_empty() and (_revealed or _show > 0.0)
 
 func _process(delta: float) -> void:
@@ -240,7 +255,28 @@ func _dim_target() -> float:
 	# ⚠ SCALED BY `_show`, which is what makes the dim pulse per section instead of standing for the
 	# whole act (GAP-006). With `_show` at 1 this is exactly the pre-GAP-006 value, so the reveal beat
 	# itself is unchanged — only what happens between beats is new.
-	return s.spotlight_dim_target * (1.0 if _scoring else s.spotlight_dim_casual_scale) * _show
+	# ⚠ **AN UNGATED LIGHT CARRIES ITS OWN SHOW** (chart T's cue, T10: the dim rises with the cue's
+	# beam and falls when it retires). Taking the MAX rather than adding a second term keeps one dim
+	# for the whole board — `Q247`=(a)'s *"one dim covering all of them"* — so N cues do not stack into
+	# a darker screen than one, and a cue during a faded section gap raises the dim without re-raising
+	# that section's beams.
+	return s.spotlight_dim_target * (1.0 if _scoring else s.spotlight_dim_casual_scale) \
+			* maxf(_show, _ungated_show())
+
+## The strongest ungated light's own envelope, 0 when there is none. This is the cue's equivalent of
+## `_show`: the director eases each cue light's `intensity` through spawn, hold and retire, so the
+## brightest live cue is exactly how far up that show is.
+func _ungated_show() -> float:
+	var strongest := 0.0
+	for l : Light in _lights:
+		if not l.gated: strongest = maxf(strongest, l.intensity)
+	return strongest
+
+## Is any light exempt from the reveal gate — i.e. is a momentary cue live? See `is_lit`.
+func _has_ungated() -> bool:
+	for l : Light in _lights:
+		if not l.gated: return true
+	return false
 
 ## The two arrays the shader reads, padded to `MAX_LIGHTS`. ⚠ Godot matches an array uniform by
 ## DECLARED SIZE — a shorter array is rejected whole rather than partially filled, and the shader
@@ -255,7 +291,9 @@ func _push_lights() -> void:
 		# ⚠ `_show` SCALES THE INTENSITY rather than the count: fading a light to nothing must not
 		# change how many lights the shader is told about, or a fade would look like beams popping out
 		# of existence one at a time.
-		lights[i] = Vector4(l.centre.x, l.centre.y, l.radius, l.intensity * _show)
+		# ⚠ An UNGATED light skips `_show` — see `Light.gated`. Its envelope is already in `intensity`.
+		var show : float = _show if l.gated else 1.0
+		lights[i] = Vector4(l.centre.x, l.centre.y, l.radius, l.intensity * show)
 		beams[i] = Vector4(l.origin.x, l.origin.y, l.origin_width, l.flare)
 	_mat.set_shader_parameter(&"u_lights", lights)
 	_mat.set_shader_parameter(&"u_beams", beams)

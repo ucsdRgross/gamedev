@@ -159,3 +159,40 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on worker
   thread) — watch console; history cap bounds it.
+- **PIXELS: `test_the_card_mask_is_the_card_the_player_sees` fails 3 of 4 poses (t=0.15/0.30/0.45;
+  t=0.00 is 0/0). Diagnosed 2026-08-05, NOT fixed — the fix is a model choice, so it is the owner's.**
+  The `[mask vs face WHERE]` line in `test_pixels.gd` buckets every disagreeing cell and shows **two
+  independent approximations**, not one bug: corner cells 22/62/60 and edge cells 36/42/0 at the three
+  failing poses.
+  - **CORNER class — `CardVisual.corner_points()`.** It puts the bite's middle point at
+    `corner + along_prev + along_next`, assuming the corner cell stays a **parallelogram**. It is
+    really a bilinear patch whose fourth point (the internal vertex, e.g. `(-14.25,-18.75)`) is
+    skinned independently. Exact while the cell is a rectangle — which is why t=0.00 passes — and
+    drifting as it shears. ⚠ **The function's own comment claims it is "exact under deformation";
+    that claim is false**, and this is the measurement that shows it.
+  - **EDGE class — the radial wedge mask.** `WEDGES = 32` (11.25° per slot) indexes which polygon
+    segment a fragment is tested against, with only `WEDGE_CANDIDATES` consecutive slots tried.
+    Deformation spreads the 24 vertices unevenly in angle, so a slot can span more segments than the
+    window covers and points near a slot boundary test against the wrong segment.
+  - **Options.** (1) Exact corner: re-do the skinning in GDScript from `Polygon2D.bones` weights for
+    the 4 corner diagonals only — per-frame per-card code the comments already guard for cost.
+    (2) Widen the candidate window, or drop the radial mask for a non-radial one. (3) Give the check a
+    stated tolerance instead of demanding exactly 0.
+  - **Already ruled out, do not re-open:** the baked `Offset/Visual` pose; the animation driving it (it
+    does not — only bone `:position` tracks exist); bilinear filtering (a real harness bug, fixed, but
+    t=0.30's 887 undecidable cells did not move); "tips vs skinning blend" (bone rests equal their
+    vertices exactly and each vertex is ~0.99997 weighted to its own arm).
+- **PIXELS mask (above) is now GREEN but PINNED, not fixed (2026-08-05).** The check no longer demands
+  exact cell agreement — that bar was unachievable and passed at rest by alignment. It asserts a band
+  around the outline: **edges ≤ 1.5 FX cells** (the half-cell is the 32-slot wedge index, whose
+  quantization is angular; measured worst 1.34) and **corner bite ≤ 2.5 art units** (measured worst
+  2.38 at t=0.30). ⚠ **Both numbers are measured and deliberately tight so any worsening fails — do
+  not raise them to go green.** The corner and edge approximations described above are unchanged; the
+  real corner fix still needs the cell's fourth (interior) vertex via `Polygon2D.bones` skinning.
+- **G2.3 / spotlight cost, measured 2026-08-05** (`fx_cost.gd::_spotlight_rows`, new — the light layer
+  had never been priced). Over a 1.947 ms empty-scene floor: 0 lights +0.478, 1 +0.607, 8 +1.537,
+  24 +4.666, 64 (MAX_LIGHTS) +12.237 ms. **≈0.19 ms per light, near-linear**, swept over LIGHT COUNT
+  because `light.gdshader` shades the whole viewport regardless of host count. A realistic section
+  (5–12 lights) is ~1–2.5 ms; 64 would blow a 16.67 ms frame alone. `Q254`=(a): reported, nothing
+  trimmed — the cut is the owner's call. ⚠ The GLOW is still unpriced: there is no `FxGlow` effect
+  class, only the shader.

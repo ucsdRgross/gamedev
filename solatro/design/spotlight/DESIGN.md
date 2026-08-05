@@ -1485,16 +1485,21 @@ flowchart TD
                                         heights in different columns"]
   K8 --> K10["the reveal row's control height grows, tweened — by the DERIVED amount at K10b,
               never to a fixed full card height"]
-  K10 --> K10b["⚠ v6 — HOW FAR IT OPENS IS DERIVED (supersedes Q43=a). The covering cards duck
-                by exactly enough that there is NO VISIBLE GAP between the top of a ducking card
-                and the top of a lifted card, sized from the LOWEST lifted card in that row.
-                Where a row holds a card that did not lift, a gap is allowed there"]
+  K10 --> K10b["⚠ v13 / GAP-009 — HOW FAR IT OPENS IS A CHOICE BETWEEN TWO FIXED FORMULAS, and the
+                DERIVED 'no visible gap, sized from the lowest ___' model is RETIRED. Owner
+                2026-08-05: sizing from the lowest card meant a FLUSH (every card lit and jumping)
+                lifted rows with nothing to do with the scored set. spotlight_separation_mode:
+                CARD_HEIGHT = one full card height, or JUMP_ADJUSTED = card height minus jump
+                height, which leaves a non-jumping card slightly covered. Q43=a is NO LONGER
+                superseded — it is the CARD_HEIGHT mode"]
   K10b --> K10c["⚠ AND THE DUCK IS COMPUTED ONCE, NOT LIVE-TRACKED. Worked out from the geometry
                  at the moment the duck begins; once finished it stops tracking card bottoms, so
                  a card moving afterwards may open a gap under it and that is accepted"]
-  K10c --> K10d{"🔶 FOR REVIEW — under Q265=c only the MELD lifts, but the reveal exists to
-                 uncover a buried LIT card, and a lit non-meld card never lifts. Is the opening
-                 sized by the lifting cards, the lit cards, or the larger of the two?"}
+  K10d["✅ RESOLVED, GAP-009 (owner 2026-08-05) — the question 'lifted, lit, or the larger' is MOOT:
+        the opening is no longer sized from any card. Both modes are fixed amounts computed from the
+        card metrics, so a lit non-meld card is either fully uncovered (CARD_HEIGHT) or slightly
+        covered (JUMP_ADJUSTED), by the owner's choice rather than by which card sits lowest"]
+  K10c --> K10d
   K10d --> K11
   K9 --> K10
   K10 --> K11["cards below ease down to their new anchors —
@@ -2095,6 +2100,7 @@ delete the ones you do not want and add the ones I missed — **Q166–Q172**.
 
 | Knob | Meaning | Suggested |
 |---|---|---|
+| `spotlight_separation_mode` | **GAP-009** — how far a revealed row opens. `CARD_HEIGHT` = one full card height; `JUMP_ADJUSTED` = card height − jump rise, leaving a non-jumping card slightly covered. ⚠ Replaces K10b's derived opening, which a flush turned into a whole-board lift | `CARD_HEIGHT` |
 | `spotlight_expand_rows` | expand for ROW lines at all | true |
 | `spotlight_expand_cols` | expand for COLUMN lines at all | true |
 | `spotlight_skip_row_if_no_reactor` | skip a row expansion when nothing there can react | true |

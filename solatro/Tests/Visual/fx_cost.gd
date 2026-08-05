@@ -94,8 +94,52 @@ func _screen_rows(floor_ms: float) -> void:
 	# one above, lever B is not worth its lattice risk.
 	await _screen_row("burning + juggling, BOX-BOUND quads", floor_ms, _worst_host.bind(false), 0)
 	await _cpu_row()
+	await _spotlight_rows(floor_ms)
 	await _tap_rows(floor_ms)
 	await _noise_rows(floor_ms)
+
+## **GATE G2.3 — THE SPOTLIGHT'S LIGHT LAYER, WHICH HAD NEVER BEEN PRICED.**
+##
+## ⚠ **IT IS THE ONLY FULL-SCREEN PASS THE GAME ADDED, AND HOST COUNT IS THE WRONG AXIS FOR IT.**
+## Every other row here scales with hosts because the fire shader is fragment-bound *inside quads*;
+## `light.gdshader` shades the WHOLE viewport every frame regardless of how many cards are lit, and
+## its per-fragment work grows with the LIGHT COUNT (each fragment walks the live lights). So the
+## sweep is over lights, not hosts, and the interesting number is the slope.
+##
+## ⚠ `Q254`=(a): **measure, then decide what to cut — do not pre-emptively trim.** This function
+## reports; it changes nothing.
+func _spotlight_rows(floor_ms: float) -> void:
+	print("  --- SPOTLIGHT (G2.3): light.gdshader, FULL SCREEN, swept over LIGHT COUNT ---")
+	for n : int in [0, 1, 8, 24, 64] as Array[int]:
+		var ms := await _measure("light layer, %2d light(s), FULL SCREEN" % n,
+				func(h: Node2D) -> void: _light_layer_case(h, n))
+		print("      -> %+.3f ms over the empty-scene floor" % (ms - floor_ms))
+
+## A REAL `LightLayer` with the REAL shader, sized to the window, holding `count` live lights spread
+## across it. ⚠ Not a stand-in ColorRect with a hand-set material: the layer's own `set_lights` /
+## `_push_lights` is what decides the uniforms the shader actually reads, so anything else would be
+## pricing a different shader invocation than the game runs.
+func _light_layer_case(holder: Node2D, count: int) -> void:
+	var layer := LightLayer.new()
+	holder.add_child(layer)
+	layer.ensure_built()
+	var vp := get_viewport().get_visible_rect().size
+	layer.size = vp
+	var lights : Array[LightLayer.Light] = []
+	var scale : float = SettingsManager.settings.card_scale
+	for i : int in count:
+		var l := LightLayer.Light.new()
+		l.centre = Vector2(vp.x * (float(i) + 0.5) / float(maxi(count, 1)), vp.y * 0.6)
+		l.radius = 16.0 * scale
+		l.origin_width = 9.0 * scale
+		# Off the top of the window, the way `SpotlightOrigins` places a rig lamp.
+		l.origin = Vector2(l.centre.x, -600.0)
+		l.intensity = 1.0
+		lights.append(l)
+	layer.set_lights(lights, true)
+	# ⚠ The show gate must be UP or every light's intensity is multiplied by zero and the shader takes
+	# its cheap path — which would price the effect being INVISIBLE.
+	layer.set_revealed(true)
 
 ## THE CPU HALF, WHICH THE GPU TIMER STRUCTURALLY CANNOT SEE — and which became the binding constraint
 ## the moment the juggling layer stopped being fragment-bound (FX_HANDOFF §0d.6).

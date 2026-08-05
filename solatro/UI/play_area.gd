@@ -20,6 +20,70 @@ var separation : int = 4:
 	get():
 		return separation * SettingsManager.settings.card_scale
 
+## **S16 — THE REVEAL. Which board rows are held open, and how far.** Key is `(zone_x, row_z)`; value
+## is the eased 0..1 this row is through its opening. A row at 0 is absent from the map entirely, so
+## an un-revealed board carries no state and `slot_center_global` costs what it always did.
+##
+## ⚠ **A COLUMN OPENS EVERY ROW IT PASSES THROUGH**, not none — chart D4 defines the reveal set as
+## *"which board rows must expand to make every member of the spotlight set fully visible"*, and `Q52`
+## states the consequence outright: *"Column scoring on the longest column expands nearly every row at
+## once"*. This is keyed by ROW for exactly that reason.
+var _row_open : Dictionary[Vector2i, float] = {}
+## The rows that WANT to be open. Separate from `_row_open` because a row that has just left the set
+## still has to ease back down, and a map that only held the current set would snap it.
+var _row_open_wanted : Dictionary[Vector2i, bool] = {}
+
+## How tall a revealed row's strip becomes, in screen pixels — **GAP-009's knob, and the only place
+## either formula is written**.
+##
+## ⚠ **THE DERIVED OPENING IS RETIRED (GAP-009).** It used to be sized so there was *"no visible gap"*,
+## measured from the lowest card that had to be seen — but on a FLUSH every card in the row is lit and
+## jumps, so that card is the lowest on the board and the opening lifted rows *"that arent part of
+## actual scored set"*. Neither formula below looks at any card's position.
+func _row_open_height() -> float:
+	var full := CardVisual.card_size_play.y
+	if SettingsManager.settings.spotlight_separation_mode \
+			== PlayerSettings.SeparationMode.JUMP_ADJUSTED:
+		# The jumping cards clear the row while a card that does NOT jump stays slightly covered —
+		# which is the whole point of this mode, not a rounding artefact.
+		return full - CardVisual.card_jump_rise_play
+	return full
+
+## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
+## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
+func row_open_extra(zone_x: int, row_z: int) -> float:
+	var t : float = _row_open.get(Vector2i(zone_x, row_z), 0.0)
+	if t <= 0.0: return 0.0
+	# ⚠ **A ROW THAT COVERS NOTHING DOES NOT OPEN, AND LEAVING THIS OUT WAS A REAL BUG.** The opening
+	# exists to lift a covering card off a buried one. On a board one card deep there is nothing
+	# underneath, so growing the strip adds PURE EMPTY SPACE and the only visible result is the whole
+	# zone below being shoved down — which is exactly the *"shifting in cards that arent part of actual
+	# scored set"* the owner rejected when they retired the derived opening (GAP-009). Reported from a
+	# playtest of `reveal_shot.tscn`: *"lower zone input zone cards wiggle down and up twice ... seems
+	# impossible since zone cards shouldnt move like that"*. They were right — nothing was revealed.
+	# ⚠ Decided per ROW, never per column: every column's VBox must give row `row_z` the same height or
+	# the rows stop lining up across the board.
+	if not _row_covers_anything(zone_x, row_z): return 0.0
+	return maxf(_row_open_height() - float(CardVisual.card_separation_play_custom), 0.0) * t
+
+## Does any column in this zone hold a card BELOW `row_z` — i.e. is there anything for this row to
+## uncover? The bottom row of the deepest column covers nothing and must stay put.
+func _row_covers_anything(zone_x: int, row_z: int) -> bool:
+	var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
+	if not hbox: return false
+	# child 0 is the zone/type header, so a card at row `row_z + 1` is child `row_z + 2`.
+	for col : Node in hbox.get_children():
+		if col.get_child_count() > row_z + 2: return true
+	return false
+
+## Everything the rows ABOVE `row_z` in this zone have pushed down. ⚠ Rows above only: a row's own
+## opening grows the gap BELOW it, so it does not move its own card.
+func _row_open_offset(zone_x: int, row_z: int) -> float:
+	var sum := 0.0
+	for key : Vector2i in _row_open:
+		if key.x == zone_x and key.y < row_z: sum += row_open_extra(zone_x, key.y)
+	return sum
+
 var ui_data : Dictionary[Control, CardData]
 var data_ui : Dictionary[CardData, Control]
 var data_card : Dictionary[CardData, CardVisual]
@@ -232,6 +296,14 @@ func slot_center_global(v: Vector3i) -> Vector2:
 	var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
 	var x := origin.x + float(v.y) * (width + float(separation)) + width * 0.5
 	var y := origin.y + float(separation) + pitch * float(v.z) + CardVisual.card_size_play.y * 0.5
+	# ⚠ **K13 — THE UNIFORM PITCH IS NO LONGER THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** S16
+	# lets one row's strip grow, so the rows below it are pushed down by an amount the pitch does not
+	# describe. Without this term a prop anchored under an expanding row stays where the unexpanded
+	# maths says it should be and visibly detaches from its slot — which is the whole of gate G3.1, and
+	# why the design flagged this function by name rather than letting it be discovered.
+	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
+	# the controls, so geometry stays independent of container relayout timing (owner spec 2026-07-15).
+	y += _row_open_offset(v.x, v.z)
 	return Vector2(x, y)
 
 ## Every CardVisual on slot `v`'s ROW — same zone, row v.z across every column (z == -1 = the
@@ -451,6 +523,10 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 
 		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 
+	# ⚠ S16: the loop above resets every strip to its stacked height, so a rebuild that lands mid-act
+	# would slam an open row shut. Re-push the live openings over the top of it.
+	_apply_row_openings()
+
 	# 3. Focus neighborhood linking
 	for i in type.size() - 1:
 		var left: Control = hbox.get_child(i).get_child(0)
@@ -586,14 +662,103 @@ func _position_focus_info() -> void:
 		at.y -= overflow_y
 	_focus_info.global_position = at
 
+## **S16 — OPEN THE ROWS THESE CARDS SIT IN.** Called with the section being scored, or empty to close
+## everything again. The set REPLACES: a row that has left the set eases shut rather than being
+## dropped, which is why `_row_open` outlives `_row_open_wanted`.
+func set_reveal_cards(cards: Array[CardData]) -> void:
+	var wanted : Dictionary[Vector2i, bool] = {}
+	for data : CardData in cards:
+		var v := coord_of_data(data)
+		if v.z >= 0: wanted[Vector2i(v.x, v.z)] = true
+	_row_open_wanted = wanted
+	for key : Vector2i in wanted:
+		if not _row_open.has(key): _row_open[key] = 0.0
+	set_process(true)
+
+## Close every open row. ⚠ Eased, not snapped — same reason the lights fade rather than vanish.
+func clear_reveal() -> void:
+	_row_open_wanted = {}
+	set_process(true)
+
+## Which slot a card occupies, or `(-1,-1,-1)` if it is not on the board. Derived from the containers
+## rather than cached: a rebuild re-parents controls, and a stale coord map would open the wrong row.
+func coord_of_data(data: CardData) -> Vector3i:
+	for zone_x : int in 2:
+		var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
+		if not hbox: continue
+		for y : int in hbox.get_child_count():
+			var vbox := hbox.get_child(y)
+			for j : int in range(1, vbox.get_child_count()):
+				if ui_data.get(vbox.get_child(j)) == data:
+					return Vector3i(zone_x, y, j - 1)
+	return Vector3i(-1, -1, -1)
+
+## Push the current openings onto the row strips AND the row score gutters.
+##
+## ⚠ **K12 — THE GUTTER GROWS BY THE SAME AMOUNT OR THE SCORE NUMBERS DESYNC FROM THEIR ROWS.** The
+## labels are a parallel column with no knowledge of the cards, so nothing else would keep them level;
+## the design calls this out by name because it fails silently and looks like a labelling bug.
+func _apply_row_openings() -> void:
+	for zone_x : int in 2:
+		var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
+		if hbox:
+			for col : Node in hbox.get_children():
+				var last := col.get_child_count() - 1
+				for j : int in range(1, col.get_child_count()):
+					var c := col.get_child(j) as Control
+					if not c: continue
+					var base : float = CardVisual.card_size_play.y if j == last \
+							else float(CardVisual.card_separation_play_custom)
+					c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
+							base + row_open_extra(zone_x, j - 1))
+		var gutter : VBoxContainer = upper_zone_left if zone_x == 0 else lower_zone_left
+		if not gutter: continue
+		for i : int in gutter.get_child_count():
+			var label := gutter.get_child(i) as Control
+			if not label: continue
+			label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
+					float(CardVisual.card_separation_play_custom) + row_open_extra(zone_x, i))
+
+## One frame of the reveal. Returns whether anything is still open or moving.
+##
+## ⚠ **A FRACTION OF `Game.get_delay()` (`Q167`=a), never wall clock** — the expansion compresses with
+## the act speed-up exactly like the dim, the travel and the hold, so a long cascade cannot leave a
+## row still opening while the next section has already started.
+func _ease_row_openings(delta: float) -> bool:
+	if _row_open.is_empty(): return false
+	var game := CardEnvironment.get_current_game()
+	var unit : float = game.get_delay() if game else SettingsManager.settings.base_delay
+	var span := maxf(unit * SettingsManager.settings.spotlight_reveal_fraction, 0.0001)
+	var shut : Array[Vector2i] = []
+	var moved := false
+	for key : Vector2i in _row_open:
+		var target : float = 1.0 if _row_open_wanted.has(key) else 0.0
+		var now : float = _row_open[key]
+		if is_equal_approx(now, target):
+			# ⚠ A fully CLOSED row leaves the map, so an idle board holds no reveal state at all and
+			# `_row_open_offset` stays free. A fully OPEN one must stay — it is still displacing.
+			if target <= 0.0: shut.append(key)
+			continue
+		_row_open[key] = move_toward(now, target, delta / span)
+		moved = true
+	for key : Vector2i in shut: _row_open.erase(key)
+	if moved or not shut.is_empty(): _apply_row_openings()
+	return not _row_open.is_empty()
+
 ## The board itself has no per-frame work (rebuilds are signal-driven, see queue_rebuild);
-## this hook ONLY keeps the visible focus inspector pinned to its live anchor position.
-func _process(_delta: float) -> void:
+## this hook keeps the visible focus inspector pinned to its live anchor, and drives S16's reveal.
+func _process(delta: float) -> void:
 	_position_focus_info()
+	var revealing := _ease_row_openings(delta)
+	# ⚠ Both consumers have to be idle before processing stops, or whichever finishes first switches
+	# the other one off mid-animation.
+	if not revealing and _focus_info_anchor == null: set_process(false)
 
 func hide_focus_info() -> void:
 	_focus_info_anchor = null
-	set_process(false)  # nothing to pin while hidden
+	# ⚠ ONLY IF THE REVEAL IS ALSO IDLE. This used to be an unconditional `set_process(false)`, which
+	# with S16 would freeze a row mid-open the moment the focus panel closed.
+	if _row_open.is_empty(): set_process(false)  # nothing to pin while hidden
 	if not _focus_info or not is_instance_valid(_focus_info):
 		_focus_info = null
 		return

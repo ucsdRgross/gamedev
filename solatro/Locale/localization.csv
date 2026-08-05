@@ -17,6 +17,9 @@ DEBUG_RECORD,Rec,start an EventLog capture (debug builds only)
 DEBUG_RECORD_STOP,Stop,stop the capture and write it to user://logs/events/
 DEBUG_UNDO,<< Undo,uncapped debug rewind
 DEBUG_REDO,Redo >>,step forward after a debug rewind
+DEBUG_CUE,Cue,stamp the spotlight probe onto a board card so the momentary cue fires (debug builds only)
+SKILL_SPOTLIGHT_PROBE,Spotlight Probe,name of the do-nothing skill that exists only to trigger the momentary spotlight
+SKILL_SPOTLIGHT_PROBE_DESCRIPTION,Announces itself. Does nothing else.,description of the spotlight probe test skill
 GAME_WIN_FAME,Fame +%d,
 GAME_LOSE,You lose!,
 GAME_CONTINUE,Continue,

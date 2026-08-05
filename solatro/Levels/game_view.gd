@@ -63,6 +63,16 @@ func _ready() -> void:
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
 	spotlight_director.bind(light_layer, play_area, game)
+	# **S16 — THE REVEAL, which is the BOARD's half of the same beat.** Deliberately a second listener
+	# on the same signals rather than something the director calls: the director owns LIGHTS and the
+	# play area owns LAYOUT, and routing the opening through the director would make it the one place
+	# that has to know about both. Both derive from one signal, so they cannot disagree about which
+	# section is up.
+	game.spotlight_section_changed.connect(play_area.set_reveal_cards)
+	# ⚠ The rows close on the ACT's release (an empty section), not on `spotlight_reveal_ended` — that
+	# fires per section to fade the show, and closing there would slam every row shut between sections
+	# and re-open it, which is the flicker chart E forbids for the lights and looks far worse on the
+	# board. An empty `cards` array already routes through `set_reveal_cards` and closes everything.
 	_build_debug_bar()
 
 	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
@@ -363,6 +373,7 @@ func _build_debug_bar() -> void:
 	_record_button = _add_debug_button(TRANSLATION.find('DEBUG_RECORD'), _on_debug_record)
 	_add_debug_button(TRANSLATION.find('DEBUG_UNDO'), _on_debug_undo)
 	_add_debug_button(TRANSLATION.find('DEBUG_REDO'), _on_debug_redo)
+	_add_debug_button(TRANSLATION.find('DEBUG_CUE'), _on_debug_cue)
 	add_child(_debug_bar)
 	# TOP-right, growing left — the same shape as `_add_prop_debug_controls`' bottom-right box, which
 	# is why they do not collide. Parented to the VIEW rather than to `SceneRoot`, exactly as the prop
@@ -390,6 +401,43 @@ func _on_debug_record() -> void:
 	else:
 		EventLog.begin()   # every channel: a playtest bug can be anywhere
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD_STOP')
+
+## **STAMP `SpotlightProbe` ONTO A BOARD CARD AND RE-RUN THE SWEEP, SO S15's CUE ACTUALLY FIRES.**
+##
+## ⚠ **THE CUE IS OTHERWISE UNREACHABLE IN THE RUNNING GAME AND THAT IS A CONTENT FACT, NOT A BUG.**
+## `spotlight_cued` is `Q246`-filtered to skills implementing `on_spotlight`; before `SpotlightProbe`
+## the only one was a RULES card with no `CardVisual`, so the light set was always empty. See
+## `SpotlightProbe`'s header.
+##
+## ⚠ **IT PICKS A CARD THAT IS NOT ALREADY SPOTLIT, WHICH IS THE WHOLE TRICK.** The cue fires on the
+## EDGE — `skill_spotlight_check` only announces a card that TRANSITIONED into spotlit (`Q13`/`Q15`:
+## one already spotlit is not re-cued). A card that is uncovered when the probe lands is spotlit the
+## instant the sweep runs, so the transition happens on this click; press again and it lands on the
+## next card, so the button keeps producing cues instead of going quiet after the first.
+func _on_debug_cue() -> void:
+	if not game or not game.state: return
+	# ⚠ **STAMP, THEN ASK THE CARD WHETHER IT IS ACTUALLY SPOTLIT, AND UNSTAMP IF NOT.** Picking the
+	# first skill-free board card is NOT enough and the first version of this did exactly that: it
+	# landed on a **ZONE-stage column header**, which `_blocked_from_above()` reports as covered by the
+	# cards stacked on it, so `is_spotlit()` was false, the sweep correctly ignored it and NOTHING was
+	# drawn — which looks exactly like a broken cue. Only an UNCOVERED card transitions, so the choice
+	# has to be made by asking, not by guessing which stage is on top.
+	var chosen : CardData = null
+	for data : CardData in play_area.data_card.keys():
+		if data.skill != null: continue      # never replace a real skill — it would change the act
+		data.with_skill(SpotlightProbe.new())
+		if data.skill.is_spotlit():
+			chosen = data
+			break
+		data.with_skill(null)                # put it back exactly as it was
+	if chosen == null:
+		print("[debug cue] no UNCOVERED, skill-free board card to stamp — uncover one and retry")
+		return
+	print("[debug cue] probe -> %s; watch for the circle, the beam and the shallower casual dim"
+			% chosen.log_str())
+	# The REAL sweep, not a hand-built emit: this is the path chart T describes, so what you see is
+	# what a real activation would look like.
+	await game.skill_spotlight_check()
 
 func _on_debug_undo() -> void:
 	if not game.debug_undo():

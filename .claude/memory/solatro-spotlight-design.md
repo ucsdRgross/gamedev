@@ -12,11 +12,22 @@ metadata:
 `/flowchart-design` skill. **Design CONFIRMED 2026-08-03; `PLAN.md` is the execution spec and §1 of
 it is normative.**
 
-⚠ **DESIGN IS AT v12 (2026-08-04). PHASE 1 GREEN; PHASE 2 DONE EXCEPT S15; PHASE 4 (the tuning tool)
-DONE.** Chart E's travel, `FxSpotlightStyle` (§16's knob resource, which had never existed), `Q85`'s
-art-square centring and GAP-008's fan-by-depth origins all shipped. **All EIGHT gaps closed.**
-Remaining: S15, S16, S17, gates G2.2/G2.3/G3.x. Live status is
+⚠ **ALL FOUR PHASES ARE BUILT — every step S1–S18 is done (S15, S16, S17 all landed 2026-08-05).**
+Chart E's travel, `FxSpotlightStyle` (§16's knob resource, which had never existed), `Q85`'s
+art-square centring and GAP-008's fan-by-depth origins all shipped. **All NINE gaps closed.**
+**Nothing is left to BUILD — what remains is GATES (G2.2, G2.3, G3.1–G3.3, none closed) and two open
+bugs (the PIXELS mask, diagnosed; the LEAK CANARY intermittent).** Live status is
 `solatro/HANDOFF_spotlight.md`; it is a status ledger only.
+⚠ **GAP-009 — THE ROW OPENING IS A KNOB, NOT A DERIVATION.** The derived *"no visible gap, sized from
+the lowest ___"* model is retired: on a flush every card is lit and jumps, so the lowest such card is
+the lowest on the board and the opening lifted rows outside the scored set. `spotlight_separation_mode`
+= `CARD_HEIGHT` (a full card) or `JUMP_ADJUSTED` (card height − jump rise, leaving a non-jumping card
+slightly covered). ⚠ **S16 and S17 are ONE change**: `PlayArea.slot_center_global` is pure uniform-pitch
+maths that every prop anchors to, so it breaks on the first expanded row (K13).
+⚠ **S15's rule, and it is GAP-005's shape a third time: the momentary cue's lights are UNGATED.**
+Nothing raises GAP-006's per-section reveal gate outside a submit, so a cue that rode it would be
+multiplied by `_show = 0` and be **invisible while every headless assertion still passed**. The cue
+carries its own spawn/hold/retire envelope and `_dim_target` takes `max(_show, ungated)`.
 ⚠ **THE OWNER JUDGES EVERY VISUAL THROUGH THE TUNING TOOL** — *"I would rather do all testing via the
 planned editor so dont ask me to check until it exists"*. **It exists**: `solatro/Tools/spotlight_tool.tscn`
 (`@tool` + inspector, scenarios as JSON data, the old `spotlight_trace` merged in as `-- --trace`,

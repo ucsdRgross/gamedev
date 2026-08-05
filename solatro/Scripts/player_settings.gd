@@ -158,6 +158,28 @@ signal settings_changed
 	set(value):
 		spotlight_reveal_fraction = value
 		settings_changed.emit()
+## **HOW FAR A REVEALED ROW OPENS** — `DESIGN.md` chart K10b, **GAP-009**.
+##
+## ⚠ **THE DERIVED OPENING IS RETIRED, AND THE OWNER'S COUNTER-EXAMPLE IS WHY.** K10b used to size the
+## gap so there was *"no visible gap"*, measured from the lowest card that had to be seen. On a FLUSH
+## every card in the row is lit and jumps, so the lowest such card is the lowest card on the board —
+## and the opening then lifted rows *"that arent part of actual scored set"*. A rule meant to uncover
+## one buried card moved the whole board, so the size no longer depends on any card's position.
+##
+## ⚠ **"ALLOW CHOOSING BETWEEN" IS THE ANSWER ITSELF, WHICH IS WHY THIS IS A KNOB AND NOT A CONSTANT.**
+## The owner picks by eye in `Tools/spotlight_tool.tscn`.
+## ⚠ `Q43`=(a) (a fixed full card height) is NO LONGER superseded — it is `CARD_HEIGHT`.
+enum SeparationMode {
+	## One full card height: the row opens completely and nothing stays covered.
+	CARD_HEIGHT,
+	## Card height MINUS the jump rise, so a card that does not jump stays slightly covered — the
+	## jumping cards clear the row while the rest still read as stacked.
+	JUMP_ADJUSTED,
+}
+@export var spotlight_separation_mode : SeparationMode = SeparationMode.CARD_HEIGHT:
+	set(value):
+		spotlight_separation_mode = value
+		settings_changed.emit()
 ## **CHART E's TRAVEL** — how long a light takes to move from one card to the next, as a fraction of
 ## `Game.get_delay()`. The brief's whole requirement for it: *"spotlights spawned during scoring phase
 ## need to move their spotlights to next row/col after done with current set, **no instant movements

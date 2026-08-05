@@ -64,6 +64,9 @@ func _ready() -> void:
 	await test_light_layer_is_over_everything()
 	await test_the_spotlight_wire_lights_the_layer()
 	await test_the_light_travels_between_sections()
+	await test_the_momentary_cue_draws_outside_scoring()
+	await test_the_reveal_opens_a_row_and_moves_the_slots_below_it()
+	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
 	SettingsManager.settings.base_delay = prev_delay
 	_restore_settings()
 	finish()
@@ -897,11 +900,27 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	# spawning in and out"* applies to the end of an act too). So the claim is now two-sided, and the
 	# first half is the one that would catch a regression to snapping: the lights are STILL lit on the
 	# frame after `retire()`, and they go dark shortly after.
+	# ⚠ **THE RETIRE SPAN IS WIDENED FOR THE MEASUREMENT, AND THAT IS THE FIX FOR A REAL FLAKE.** This
+	# check read `is_lit()` one frame after `retire()` and failed ~1 run in 3 with *"went dark within
+	# one frame"*. It was the INSTRUMENT, not the fade: the envelope is `delay * spotlight_retire_fraction`
+	# (~0.3 of a short delay), so a single heavy frame's `delta` can consume the whole of it, free the
+	# beam and empty the light set before this line runs — the code was right and the test could not
+	# tell. Widening the knob makes one frame unable to swallow the envelope at any frame rate, which
+	# is what lets the check measure the CLAIM (a fade is applied) instead of the frame rate.
+	var prev_retire := SettingsManager.settings.spotlight_retire_fraction
+	SettingsManager.settings.spotlight_retire_fraction = 20.0
 	view.spotlight_director.retire()
 	await get_tree().process_frame
 	check(layer.is_lit(),
 			"retire() FADES the lights rather than snapping them off (chart E3)",
 			"went dark within one frame — the retire envelope is not being applied")
+	# ⚠ AND IT IS PARTWAY THROUGH, not merely still present: a light that never faded at all would
+	# also be `is_lit()`. This is the half that says the envelope is actually MOVING.
+	var mid := 0.0
+	for l : LightLayer.Light in layer._lights: mid = maxf(mid, l.intensity)
+	check(mid < 1.0, "...and the fade is partway down, so the envelope is moving, not merely present",
+			"brightest=%.3f" % mid)
+	SettingsManager.settings.spotlight_retire_fraction = prev_retire
 	var gone := 0.0
 	while gone < 2.0 and layer.is_lit():
 		gone += await _tick_seconds()
@@ -993,6 +1012,369 @@ func test_the_light_travels_between_sections() -> void:
 	check(arrived, "and the travelling light ARRIVES on its new card (E11)",
 			"never reached the target in %.1fs" % travelled)
 	await _teardown_view(view, prev_run, prev_save_info)
+
+## **S15 / CHART T — THE MOMENTARY CUE DRAWS, AND IT DRAWS OUTSIDE SCORING.**
+##
+## ⚠ **THIS IS THE CASE THE DESIGN'S WORKED EXAMPLE DOES NOT COVER, WHICH IS WHY IT IS THE TEST.**
+## Every existing spotlight test drives `spotlight_section_changed` inside an act, where the per-section
+## reveal gate (`_show`, GAP-006) is raised for it. Chart T's cue fires in ORDINARY PLAY — a card
+## placed, a stack dropped by `Next` — where nothing raises that gate at all. A cue that rode it would
+## be multiplied by `_show = 0` and be perfectly invisible, and every headless assertion about the
+## light set would still pass, because the set would be right and only its intensity would be zero.
+## That is `LightLayer.Light.gated`, and this is the input that separates it from the alternative.
+##
+## ⚠ **AND IT IS A DURATION, SO A STILL FRAME IS THE WRONG INSTRUMENT.** The cue spawns, HOLDS, and
+## RETIRES ITSELF with nobody telling it to — the section beam never does that. So the assertions
+## below are about what MOVED: lit at the start, still lit through the hold, dark on its own afterwards.
+func test_the_momentary_cue_draws_outside_scoring() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await view.game.next()
+	view.play_area.flush_rebuild()
+	await get_tree().process_frame
+	var layer := view.light_layer
+	check(not layer.is_lit(), "nothing is lit before the cue")
+	# NO section signal and NO submit — the game is sitting idle, which is chart T's whole setting.
+	check(not view.game.processing,
+			"the game is NOT scoring, so this is Q245=(c)'s casual case", str(view.game.processing))
+	var cards : Array[CardData] = []
+	for data : CardData in view.play_area.data_card.keys():
+		cards.append(data)
+		if cards.size() >= 2: break
+	check(cards.size() > 0, "the dealt board has cards to cue", str(cards.size()))
+
+	view.game.spotlight_cued.emit(cards)
+	await get_tree().process_frame
+	check(layer.is_lit(),
+			"S15: the CUE signal lights the layer with no section and no reveal raised",
+			"lit=%s lights=%d" % [str(layer.is_lit()), layer._lights.size()])
+	check(layer._lights.size() == cards.size(),
+			"T13: N cards cued produce N spotlights, spawned together",
+			"%d cued -> %d lights" % [cards.size(), layer._lights.size()])
+	var ungated := 0
+	for l : LightLayer.Light in layer._lights:
+		if not l.gated: ungated += 1
+	check(ungated == layer._lights.size(),
+			"...and every cue light is UNGATED — it does not ride the per-section reveal",
+			"%d of %d" % [ungated, layer._lights.size()])
+	# ⚠ THE MEASUREMENT THAT WOULD CATCH THE INVISIBLE-CUE BUG: the value the SHADER is handed. The
+	# light set being correct is not the claim; the claim is that it arrives with a non-zero intensity
+	# while `_show` is still 0, which is the one thing gating got wrong.
+	var settled := 0.0
+	while settled < 1.0 and layer._dim <= 0.0:
+		settled += await _tick_seconds()
+	var pushed : PackedVector4Array = layer._mat.get_shader_parameter(&"u_lights")
+	var brightest := 0.0
+	for i : int in layer._lights.size(): brightest = maxf(brightest, pushed[i].w)
+	check(brightest > 0.0,
+			"the cue reaches the SHADER at a visible intensity while the reveal gate is down",
+			"brightest=%.3f _show=%.3f" % [brightest, layer._show])
+	check(is_equal_approx(layer._show, 0.0),
+			"...and `_show` really is still down, so the check above could have failed",
+			str(layer._show))
+	# T10: the dim rises with the cue's own beam, in ordinary play rather than only during a submit.
+	check(layer._dim > 0.0, "T10: the dim rises with the cue's beam outside scoring", str(layer._dim))
+	# ⚠ `Q245`=(c): SHALLOWER than a scoring dim. Asserted against the knob rather than a literal, so
+	# the two cannot disagree.
+	var s := SettingsManager.settings
+	check(layer._dim <= s.spotlight_dim_target * s.spotlight_dim_casual_scale + 0.001,
+			"Q245=(c): and it is the SHALLOWER casual dim, not the scoring one",
+			"dim=%.3f cap=%.3f" % [layer._dim, s.spotlight_dim_target * s.spotlight_dim_casual_scale])
+
+	# **T6 — IT RETIRES ITSELF.** Nothing calls `retire()` here: the cue counts its own hold out and
+	# goes. This is the half no still frame can show.
+	var gone := 0.0
+	while gone < 6.0 and layer.is_lit():
+		gone += await _tick_seconds()
+	check(not layer.is_lit(),
+			"T6: the cue RETIRES ITSELF after its hold — nobody called retire()",
+			"still lit after %.2fs" % gone)
+	var fell := 0.0
+	while fell < 2.0 and layer._dim > 0.0:
+		fell += await _tick_seconds()
+	check(is_equal_approx(layer._dim, 0.0),
+			"T10: ...and the dim falls with it, because the dim is a function of what is lit (QR2=d)",
+			str(layer._dim))
+
+	# ⚠ **THE OTHER READING, AND THE INPUT THAT KILLS IT.** The cue could have reused the section path,
+	# in which case its cards would become the new light SET — and `_on_section_changed` replaces, so a
+	# cue arriving mid-section would steal the scoring beam's lamps and travel them onto the cued cards.
+	# T15/T16 (`Q249`=a — nothing is blocked, a second cue may start while the first retires) says the
+	# two coexist. So: light a section, cue a DIFFERENT card, and the section must be untouched.
+	var all : Array[CardData] = []
+	for data : CardData in view.play_area.data_card.keys(): all.append(data)
+	if all.size() >= 3:
+		var section : Array[CardData] = [all[0], all[1]]
+		view.game.spotlight_section_changed.emit(section)
+		await get_tree().process_frame
+		var section_lights := layer._lights.size()
+		view.game.spotlight_cued.emit([all[2]] as Array[CardData])
+		await get_tree().process_frame
+		check(layer._lights.size() == section_lights + 1,
+				"a cue mid-section ADDS a light rather than replacing the section's set",
+				"%d -> %d" % [section_lights, layer._lights.size()])
+		# ⚠ **BY CARD IDENTITY, NOT BY PIXEL POSITION.** The first draft compared the section lights'
+		# `centre` before and after and failed 1-of-2: a light's centre is re-read from its `CardVisual`
+		# every frame (`Q252`=b), so a board still settling moves it a pixel between the two samples and
+		# the comparison measures the board's animation rather than the claim. Which CARD each section
+		# beam is pointed at is the actual thing a stolen lamp would change.
+		var kept := 0
+		for b : RefCounted in view.spotlight_director._beams:
+			if b.get(&"cue"): continue
+			if section.has(b.get(&"card")): kept += 1
+		check(kept == section.size(),
+				"...and every section light stays on its own card — the cue steals no lamp",
+				"%d of %d kept" % [kept, section.size()])
+		view.spotlight_director.retire()
+	await _teardown_view(view, prev_run, prev_save_info)
+
+## **S16 / S17 — THE ROW OPENS, AND `slot_center_global` KNOWS IT (K13, gate G3.1).**
+##
+## ⚠ **THE SECOND HALF IS THE ONE THAT MATTERS AND IS THE EASIEST TO SHIP BROKEN.** Growing a row's
+## control is visible and obvious; `slot_center_global` is *pure uniform-pitch math* that every prop
+## anchors to, so if it does not learn about the expansion, every prop below an opening row silently
+## detaches from its slot while the board still looks right. The design flagged the function by name
+## (K13) for exactly this reason.
+func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _deal_until_stacked(view)
+	var pa := view.play_area
+
+	# A card in row 0, and the slot one row BELOW it.
+	# ⚠ **THAT SLOT NEED NOT HOLD A CARD, AND REQUIRING ONE IS WHAT MADE THE FIRST DRAFT FAIL** ("no
+	# stacked column found" — a freshly dealt board is one row deep until a `Next` drops a stack).
+	# `slot_center_global` is documented as pure math whose *"one formula covers occupied, empty, and
+	# off-board slots alike"*, and it is precisely the EMPTY case that props rely on — a prop crossing a
+	# short column anchors to a slot with no card in it. So the empty slot is the honest fixture here,
+	# not a weaker one.
+	# ⚠ **PICK A ROW THAT ACTUALLY COVERS SOMETHING.** Taking "any card at row 0" lands on whichever
+	# zone the iteration reaches first, which on this board is often the UNSTACKED one — and then the
+	# reveal correctly does nothing and every assertion below would be about the do-nothing case. The
+	# covered row is the only one the feature is for.
+	var target : CardData = null
+	var below := Vector3i(-1, -1, -1)
+	for data : CardData in pa.data_card.keys():
+		var v := pa.coord_of_data(data)
+		if v.z != 0 or not pa._row_covers_anything(v.x, 0): continue
+		target = data
+		below = Vector3i(v.x, v.y, 1)
+		break
+	check(target != null, "the dealt board has a COVERED row 0 to score — the case S16 exists for",
+			"no stacked column found even after dealing until stacked")
+	if target == null:
+		await _teardown_view(view, prev_run, prev_save_info)
+		return
+
+	check(is_equal_approx(pa.row_open_extra(below.x, 0), 0.0),
+			"nothing is open before the reveal, so the board is at its stacked layout",
+			str(pa.row_open_extra(below.x, 0)))
+	var closed_y := pa.slot_center_global(below).y
+
+	# ⚠ **A FRESHLY DEALT BOARD IS ONE CARD DEEP, SO THIS ROW COVERS NOTHING AND MUST NOT OPEN.**
+	# That is the corrected rule, not a limitation of the fixture: the opening exists to lift a
+	# covering card off a buried one, and growing a strip with nothing under it only adds empty space
+	# and shoves the zone below down. The owner caught exactly that in a playtest of
+	# `reveal_shot.tscn` — *"lower zone input zone cards wiggle down and up twice ... zone cards
+	# shouldnt move like that"* — and they were right: nothing was being revealed.
+	var stacked := pa._row_covers_anything(below.x, 0)
+	view.game.spotlight_section_changed.emit([target] as Array[CardData])
+	var opened := 0.0
+	while opened < 1.5 and pa.row_open_extra(below.x, 0) <= 0.0:
+		opened += await _tick_seconds()
+	if not stacked:
+		check(is_equal_approx(pa.row_open_extra(below.x, 0), 0.0),
+				"S16: a row that COVERS NOTHING does not open — no card is shoved for no reason",
+				"opened %.1f px on a board one card deep" % pa.row_open_extra(below.x, 0))
+		check(is_equal_approx(pa.slot_center_global(below).y, closed_y),
+				"...and nothing below it moves either")
+		# ⚠ **THE COVERED-CARD CASE — THE ONE THE FEATURE EXISTS FOR — IS NOT EXERCISED HERE.** It
+		# needs a board with a real stack (a `Next` that drops one). Until a fixture builds that, S16's
+		# headline behaviour is asserted only by the geometry test above, never end to end.
+		check(true, "NOTE: the covered-card reveal is UNTESTED — this fixture is one card deep")
+		await _teardown_view(view, prev_run, prev_save_info)
+		return
+	check(pa.row_open_extra(below.x, 0) > 0.0,
+			"S16: the scored card's row OPENS, driven by the section signal",
+			"still 0 after %.2fs" % opened)
+	# ⚠ EASED, NOT SNAPPED (chart K10, `spotlight_reveal_fraction`). The owner's report that produced
+	# that knob was *"cards jump to their new spot instantly"*, so partway-open is the claim.
+	check(pa.row_open_extra(below.x, 0) < pa._row_open_height(),
+			"...and it is EASING rather than snapping to its full opening",
+			"already at %.1f of %.1f" % [pa.row_open_extra(below.x, 0), pa._row_open_height()])
+
+	var settled := 0.0
+	while settled < 3.0 and pa._row_open.get(Vector2i(below.x, 0), 0.0) < 1.0:
+		settled += await _tick_seconds()
+	var open_y := pa.slot_center_global(below).y
+	check(open_y > closed_y,
+			"S17/K13: the slot BELOW it moved down by the opening — props anchored there follow",
+			"y %.1f -> %.1f (no movement means slot_center_global ignored the expansion)"
+			% [closed_y, open_y])
+	# ⚠ Against the KNOB's own formula, not a literal, so the two cannot drift apart.
+	var expect : float = pa._row_open_height() - float(CardVisual.card_separation_play_custom)
+	check(absf((open_y - closed_y) - expect) < 1.0,
+			"...by exactly the mode's opening (GAP-009), not an arbitrary amount",
+			"moved %.1f, expected %.1f" % [open_y - closed_y, expect])
+	# The row ABOVE the opening must not move — an opening pushes down, it does not recentre the board.
+	check(is_equal_approx(pa._row_open_offset(below.x, 0), 0.0),
+			"and row 0 itself does not move — a row's opening grows the gap BELOW it")
+
+	# JUMP_ADJUSTED is the other half of GAP-009's answer, and it must be a DIFFERENT number.
+	var prev_mode : int = SettingsManager.settings.spotlight_separation_mode
+	SettingsManager.settings.spotlight_separation_mode = PlayerSettings.SeparationMode.JUMP_ADJUSTED
+	check(pa._row_open_height() < CardVisual.card_size_play.y,
+			"GAP-009: JUMP_ADJUSTED opens LESS than a full card, so a non-jumping card stays covered",
+			"%.1f vs card %.1f" % [pa._row_open_height(), CardVisual.card_size_play.y])
+	check(is_equal_approx(CardVisual.card_size_play.y - pa._row_open_height(),
+			CardVisual.card_jump_rise_play),
+			"...by exactly the jump rise — 'card height - jump height', from the card's own constant")
+	SettingsManager.settings.spotlight_separation_mode = prev_mode
+
+	# AND IT CLOSES: an empty section releases the board.
+	view.game.spotlight_section_changed.emit([] as Array[CardData])
+	var closed := 0.0
+	while closed < 3.0 and not pa._row_open.is_empty():
+		closed += await _tick_seconds()
+	check(pa._row_open.is_empty(),
+			"the reveal CLOSES on release, and an idle board holds no reveal state at all",
+			"still open after %.2fs" % closed)
+	check(absf(pa.slot_center_global(below).y - closed_y) < 1.0,
+			"...and the slot below returns to exactly where it started",
+			"%.1f vs %.1f" % [pa.slot_center_global(below).y, closed_y])
+	await _teardown_view(view, prev_run, prev_save_info)
+
+## **GATE G3.1 + G3.2 — a prop anchored BELOW an expansion stays glued to its slot, and the row score
+## gutter stays level with its row, through the WHOLE expand/collapse cycle.**
+##
+## ⚠ **THROUGH THE CYCLE, NOT AT ITS ENDS, WHICH IS THE ONLY WAY THESE TWO CAN FAIL.** Both are
+## displacement bugs: if `slot_center_global` or the gutter learned about the opening but did so a
+## frame late, or eased on a different curve, the start and end states would still match perfectly and
+## the prop would swim against the board for the half-second in between. So this samples EVERY frame
+## from closed through fully open and back, and asserts the invariant on all of them.
+func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _deal_until_stacked(view)
+	var pa := view.play_area
+	var pl := pa.prop_layer
+
+	var target : CardData = null
+	var below := Vector3i(-1, -1, -1)
+	for data : CardData in pa.data_card.keys():
+		var v := pa.coord_of_data(data)
+		if v.z != 0: continue
+		target = data
+		below = Vector3i(v.x, v.y, 1)
+		break
+	check(target != null, "G3.1: the board has a row-0 card to score", "none found")
+	if target == null:
+		await _teardown_view(view, prev_run, prev_save_info)
+		return
+
+	# A REAL `PropVisual` on the REAL layer, pinned to the slot below the opening, exactly as
+	# `_spawn_visual` pins one. ⚠ Not a stand-in: `_repin` is the code under test and it only runs for
+	# visuals the layer actually holds, so a hand-rolled Node2D would prove nothing about it.
+	# ⚠ **REGISTERED IN `_visuals`, NOT MERELY PARENTED — the first draft only did `add_child` and
+	# measured a 90 px drift, which is the whole opening.** That was the harness, not the code:
+	# `PropLayer._process` repins `_visuals.values()`, so a visual that is only a CHILD is never
+	# followed. Worth keeping as a comment because the failure looked exactly like the bug this gate
+	# is for — the prop sitting still while its slot moved out from under it.
+	var prop := PropData.new()
+	var vis := PropVisual.new()
+	vis.anchor_coord = below
+	pl.add_child(vis)
+	vis.anchor_point = pl._slot_point(below)
+	vis.position = vis.anchor_point
+	pl._visuals[prop] = vis
+	var pinned_offset := vis.position - vis.anchor_point
+	await get_tree().process_frame
+
+	view.game.spotlight_section_changed.emit([target] as Array[CardData])
+	var worst_prop := 0.0
+	var worst_gutter := 0.0
+	var samples := 0
+	var saw_partial := false
+	var elapsed := 0.0
+	# Open, hold, then close — sampling the invariant on every frame of it.
+	while elapsed < 6.0:
+		elapsed += await _tick_seconds()
+		if not is_instance_valid(vis): break
+		samples += 1
+		var t : float = pa._row_open.get(Vector2i(below.x, 0), 0.0)
+		if t > 0.05 and t < 0.95: saw_partial = true
+		# G3.1: the prop's own pin must equal the live slot point every frame.
+		worst_prop = maxf(worst_prop,
+				(vis.position - pinned_offset).distance_to(pl._slot_point(below)))
+		# G3.2: the row gutter label for row 0 must carry the same opening the row card strip does.
+		var gutter : VBoxContainer = pa.upper_zone_left if below.x == 0 else pa.lower_zone_left
+		if gutter and gutter.get_child_count() > 0:
+			var label := gutter.get_child(0) as Control
+			if label:
+				var want : float = float(CardVisual.card_separation_play_custom) \
+						+ pa.row_open_extra(below.x, 0)
+				worst_gutter = maxf(worst_gutter, absf(label.custom_minimum_size.y - want))
+		if is_equal_approx(elapsed, 0.0): continue
+		if elapsed > 2.5 and not pa._row_open_wanted.is_empty():
+			view.game.spotlight_section_changed.emit([] as Array[CardData])
+		if elapsed > 2.5 and pa._row_open.is_empty(): break
+
+	check(samples > 10, "G3.1: the cycle was sampled frame by frame", "%d samples" % samples)
+	check(saw_partial,
+			"G3.1: ...and the sampling caught the row PARTWAY open, so the mid-cycle claim is real",
+			"never observed a partial opening — the ease was too fast to sample")
+	check(worst_prop < 1.0,
+			"G3.1: a prop anchored below the expansion stays glued to its slot all cycle",
+			"drifted %.2f px from its anchor at worst" % worst_prop)
+	check(worst_gutter < 1.0,
+			"G3.2: the row gutter label grows with its row on every frame (K12)",
+			"gutter was off its row by %.2f px at worst" % worst_gutter)
+	pl._visuals.erase(prop)
+	if is_instance_valid(vis): vis.queue_free()
+	await _teardown_view(view, prev_run, prev_save_info)
+
+
+## **DEAL UNTIL A COLUMN IS ACTUALLY STACKED — WITHOUT THIS, S16 CANNOT BE TESTED AT ALL.**
+##
+## ⚠ **ONE `next()` GIVES A BOARD ONE CARD DEEP, WHERE NOTHING IS COVERED**, so the reveal correctly
+## does nothing and every assertion about it passes for the wrong reason. That is exactly how S16 came
+## to be reported as verified while its whole purpose — lifting a covering card off a buried one — had
+## never run: the fixture could not express the case. Each `Next` drops another card onto the columns.
+func _deal_until_stacked(view: GameView) -> void:
+	for _n : int in 4:
+		await view.game.next()
+		view.play_area.flush_rebuild()
+		await get_tree().process_frame
+		for zx : int in 2:
+			for rz : int in 4:
+				if view.play_area._row_covers_anything(zx, rz): return
 
 ## A card's art-square centre, for comparing against what the layer was handed.
 func _centre_for(view: GameView, data: CardData) -> Vector2:
