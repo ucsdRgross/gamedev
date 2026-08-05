@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="FxGlowStyle" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="FxGlowStyle" format=3 uid="uid://bobxtae1v7wrs"]
 
-[ext_resource type="Script" path="res://UI/Fx/fx_glow_style.gd" id="1_glow"]
+[ext_resource type="Script" uid="uid://dqwrk7ksv5swl" path="res://UI/Fx/fx_glow_style.gd" id="1_glow"]
 
 [sub_resource type="Gradient" id="Gradient_glow"]
 offsets = PackedFloat32Array(0, 0.45, 1)
@@ -8,15 +8,6 @@ colors = PackedColorArray(0.45, 0.2, 0.06, 1, 1, 0.66, 0.25, 1, 1, 0.97, 0.88, 1
 
 [resource]
 script = ExtResource("1_glow")
-grid = 0.5
-dither = 1.0
-reach = 4.0
-sink = 4.0
-layers = 2
-layer_radius = PackedFloat32Array(0.35, 1.0)
-layer_gain = PackedFloat32Array(1.0, 0.4)
-inverse_square = 0.6
-inner_alpha = 0.35
+layer_radius = PackedFloat32Array(0.35, 1)
+layer_gain = PackedFloat32Array(1, 0.4)
 glow_ramp = SubResource("Gradient_glow")
-circle_radius = 16.0
-circle_inner_alpha = 0.5

@@ -48,6 +48,10 @@ func _ready() -> void:
 	test_glow_has_no_retired_knob()
 	test_glow_shader_declares_every_knob()
 	test_glow_shader_constants_mirror()
+	# The DESIGN ↔ CODE seam. ⚠ Both directions, because each catches what the other cannot: a
+	# documented knob with no property, and a written uniform the shader never declared.
+	test_the_design_16_knob_table_is_implemented()
+	test_light_shader_declares_every_spotlight_knob()
 	_host.queue_free()
 	finish()
 
@@ -805,6 +809,116 @@ func test_glow_shader_constants_mirror() -> void:
 	# built-in ignores the game's pacing, which is why it is banned across the whole FX layer.
 	check(light_code.contains("u_time") and not light_code.contains("TIME"),
 			"and it scrolls on u_time, never the built-in TIME (Q99=a)")
+
+## **THE DESIGN'S §16 KNOB TABLE IS A CONTRACT, AND UNTIL 2026-08-04 NOTHING CHECKED IT.**
+##
+## ⚠ **THIS TEST EXISTS BECAUSE THE TABLE WAS ASPIRATIONAL FOR THREE PHASES.** `DESIGN.md` §16 lists
+## the light layer's *"Look"* knobs and says outright that they *"belong on a `FxSpotlightStyle`
+## resource beside the other FX styles"*. That resource was never built: `light.gdshader` declared
+## **13** look uniforms and `LightLayer` pushed **six**, so every other knob sat at its shader default
+## with no way to reach it from GDScript, and `circle_radius` / `beam_width_at_origin` had become
+## `const`s on `SpotlightDirector`. The owner found it by trying to change the radius in the tuning
+## tool and watching nothing happen.
+##
+## ⚠ **THE POINT IS THE DIRECTION OF THE CHECK.** Reading the design more carefully would not have
+## caught this and did not — the table was read. What was missing is a mechanism that fails when a
+## documented knob has no implementation. **This reads the DESIGN DOCUMENT ITSELF**, so the table and
+## the code cannot drift apart silently: add a row to §16 without a property and this goes red.
+## Every §16 knob that is legitimately absent, and WHY. ⚠ **Delete an entry when its step lands** —
+## that is what turns this test on for that knob. An entry whose step is already done is a bug in
+## this list, not a licence.
+const PENDING_16 : Dictionary[String, String] = {
+	# --- waiting on a step that has not been built ---
+	"spotlight_expand_rows": "S16 / chart D5's skip tunables (phase 3)",
+	"spotlight_expand_cols": "S16 / chart D5's skip tunables (phase 3)",
+	"spotlight_skip_row_if_no_reactor": "S16 / D5, and Q47 (what 'can react' means) with it",
+	"spotlight_skip_col_if_no_reactor": "S16 / D5, same",
+	# --- implemented, but not as a settings property ---
+	"spotlight_max_lights": "shipped as LightLayer.MAX_LIGHTS — Q107 makes it a BOUND, not a policy, "
+			+ "and it must equal the shader's const, which a runtime setting could not guarantee",
+	"spotlight_initial_origins": "shipped as SpotlightOrigins' k0 — allocator state, not player tuning",
+	"origin_rise": "shipped inside SpotlightOrigins, which owns every origin rule (Q113/Q250/Q251)",
+	# --- retired by an answer ---
+	"breathe_amp": "Q126=a — the glow is STEADY. Deliberately absent; ASSUMPTIONS.md records it",
+	"light_colour": "British spelling in §16; the property is `light_color` on FxSpotlightStyle",
+}
+
+func test_the_design_16_knob_table_is_implemented() -> void:
+	implementation_section("EVERY §16 KNOB THE DESIGN LISTS EXISTS AS A REAL PROPERTY")
+	var pending := 0
+	var doc := FileAccess.get_file_as_string("res://design/spotlight/DESIGN.md")
+	check(not doc.is_empty(), "DESIGN.md is readable from the project")
+	if doc.is_empty(): return
+	# The three homes a §16 knob may legitimately have. A knob found on ANY of them is implemented;
+	# one found on none is the defect this test is for.
+	var style := FxSpotlightStyle.new()
+	var glow := FxGlowStyle.new()
+	var settings := PlayerSettings.new()
+	var homes : Array[Object] = [style, glow, settings]
+	# §16 runs from its own heading to the questionnaire. Rows are `| `name` | meaning | default |`.
+	var start := doc.find("## 16. Proposed tunables")
+	var stop := doc.find("## 17. THE QUESTIONNAIRE")
+	check(start > 0 and stop > start, "DESIGN.md §16 is locatable", "%d..%d" % [start, stop])
+	if start < 0 or stop <= start: return
+	var missing : Array[String] = []
+	var found := 0
+	for raw : String in doc.substr(start, stop - start).split("
+"):
+		var line := raw.strip_edges()
+		if not line.begins_with("| `"): continue
+		var name := line.substr(3, line.find("`", 3) - 3)
+		if name.is_empty(): continue
+		# Knobs the design names in prose form rather than as one property.
+		if name in ["layer_radius[i]", "layer_gain[i]", "light_colour / light_ramp",
+				"breathe_amp` / `breathe_speed", "beam_width_at_target"]:
+			continue
+		# ⚠ **NOT AN ESCAPE HATCH — A LEDGER, AND THE REASON IS THE POINT.** A §16 knob may be absent
+		# for exactly two honest reasons: its implementing STEP has not landed, or an ANSWER retired
+		# it. Both are named here with the step or the answer, so the entry is falsifiable and gets
+		# DELETED when that step lands — at which point this test starts enforcing the knob. A bare
+		# skip list would just be the original defect wearing a test's clothes.
+		if PENDING_16.has(name):
+			pending += 1
+			continue
+		var here := false
+		for home : Object in homes:
+			if name in home: here = true
+			# PlayerSettings prefixes the spotlight's own timing knobs; §16 lists them both ways.
+			if ("spotlight_" + name) in home: here = true
+		if here: found += 1
+		else: missing.append(name)
+	check(found > 15, "§16's table was actually parsed (not an empty scan)", "%d knobs read" % found)
+	check(missing.is_empty(),
+			"every §16 knob resolves to a property on FxSpotlightStyle, FxGlowStyle or PlayerSettings",
+			"UNIMPLEMENTED and unexplained: " + ", ".join(missing)
+			+ " — implement it, or add it to PENDING_16 WITH the step or answer that excuses it")
+	# ⚠ Reported, not asserted: the pending count is the honest size of the "documented but not built"
+	# residue, and it should FALL as phase 3 and chart E land. A silent skip list would hide that.
+	TestLog.line("    [§16] %d knob(s) implemented, %d pending with a recorded reason"
+			% [found, pending])
+
+## ⚠ **AND THE OTHER DIRECTION: every uniform `FxSpotlightStyle` writes must EXIST in the shader.**
+## Godot ignores a write to an undeclared uniform silently, which is how `FxStyle.apply()`'s
+## `u_opacity` would have gone into `light.gdshader` unnoticed — the light layer has no opacity, and
+## the style deliberately does not call `super()` for that reason.
+func test_light_shader_declares_every_spotlight_knob() -> void:
+	implementation_section("EVERY SPOTLIGHT UNIFORM THE STYLE WRITES EXISTS IN THE SHADER")
+	var shader := load("res://Shaders/light.gdshader") as Shader
+	check(shader != null, "light.gdshader loads")
+	if not shader: return
+	var declared : Array[String] = []
+	for u : Dictionary in shader.get_shader_uniform_list():
+		declared.append(str(u.get("name", "")))
+	var written : Array[String] = ["u_pixel", "u_circle_intensity", "u_circle_softness",
+			"u_beam_intensity", "u_beam_softness", "u_beam_noise", "u_beam_noise_scale",
+			"u_beam_noise_scroll", "u_dim_color", "u_dim_noise", "u_light_color"]
+	for name : String in written:
+		check(name in declared, "light.gdshader declares %s" % name,
+				"the style writes it and the shader has no such uniform — a silently ignored knob")
+	# The layer pushes these itself rather than through the style; they are the seam's other half.
+	for name : String in ["u_dim", "u_dim_scale", "u_brightness", "u_lights", "u_beams",
+			"u_light_count", "u_time"]:
+		check(name in declared, "light.gdshader declares %s (pushed by LightLayer)" % name)
 
 ## One request out of a juggling pair, BY ID. The pair's order is meaningful (plumes before balls, so
 ## the balls occlude them), so nothing here may depend on a position.

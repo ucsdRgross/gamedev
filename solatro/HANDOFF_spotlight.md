@@ -5,10 +5,77 @@
 satisfied by eye on the visual phases. (Phase 5, the film pipeline, is a separate deliverable and is
 NOT part of this stream.)
 
-**State: PHASE 1 DONE AND GREEN. PHASE 2 IS THROUGH S14 EXCEPT CHART E (2026-08-04).** S1–S10 passed
+**State (2026-08-04, end of session): PHASE 1 DONE. PHASE 2 DONE EXCEPT S15. PHASE 4 (S18) DONE.**
+Shipped this session: the v10–v12 doc fold-ins, **S18** the tuning tool (`@tool`, inspector-driven,
+merged with the trace), **chart E's travel** completing S14, `FxSpotlightStyle` (the §16 knob resource
+that had never existed), `Q85`'s art-square centring, GAP-008's fan-by-depth origin assignment, and
+two new mechanical seam checks. **Remaining: S15, S16, S17, and gates G2.2 / G2.3 / G3.x.**
+⚠ **The suite is green except three PIXELS checks caused by `Cards/card_visual.tscn`, which this
+stream did not touch** — see the note below; `git checkout --` on that one file clears them.
+
+**HISTORICAL STATE HEADER — PHASE 1 DONE AND GREEN, PHASE 2 THROUGH S14 EXCEPT CHART E:** S1–S10 passed
 every phase-1 gate (G1.1–G1.7). S11–S13 shipped the glow style, `glow.gdshader`, `light.gdshader` and
 the `LightLayer` node, each **rendered and looked at**. S14 shipped the origin allocator and the
 wire; **the spotlight is now live in the running game and the owner has played it.**
+
+## ⚠⚠ THE PATTERN BEHIND EVERY MISS ON THIS STREAM — READ THIS BEFORE WRITING ANY CODE
+
+**Eight gaps and a dozen non-gap defects, and they are one shape: TWO REPRESENTATIONS OF ONE FACT,
+WITH NOTHING THAT COMPARES THEM.** It is not "the agent did not read the design" — `Q85` and §16's
+knob table were both read in-session and contradicted an hour later. **The failure is BINDING, not
+reading**, and a 2400-line design re-read at session start binds nothing to the line of code written
+later.
+
+| Miss | A | B | compared by |
+|---|---|---|---|
+| GAP-001 | chart A8's polarity | `PLAN` §1.4's default | nothing |
+| GAP-003 | chart O11's premise | `Q134`/`Q135`/`Q214` | nothing |
+| GAP-004 | `Q73` dims the HUD | `Q74`–`Q76` exempt things above it | nothing |
+| GAP-005 | `Q246` filters the CUE | `Q16`/chart E drive the BEAM | nothing |
+| GAP-006 | `QR2`=(d) | `Q16`'s free text; `Q82` stranded by a gate | nothing |
+| GAP-007 | `Q176` (form) | `Q174`/`Q175` (fidelity) | nothing |
+| GAP-008 | `Q111`'s mechanism | `Q111`'s own stated rationale | nothing |
+| GAP-008 again | the rule's worked EXAMPLE (one column) | the general rule | nothing |
+| `Q85` | the answer | `SpotlightDirector`'s code | nothing |
+| §16 knob table | the design table | the shipped properties | nothing |
+| column reveal | chart D4, `Q46`, `Q52` | an invented `return -1` | nothing |
+| blank PNG ×2 | exit code 0 | the pixels | nothing |
+| dead cascade | a still frame | movement over time | nothing |
+| tool disagreement | `--shoot-all` | `--verify` | nothing |
+
+⚠ **A VARIANT THAT BIT TWICE: A RULE THAT ARRIVES WITH A WORKED EXAMPLE.** The example is one
+representation and the general rule is another. GAP-008's fan was described for a single column; I
+implemented "partition the bar by ROW", which reproduces that example exactly and is wrong for every
+other shape. **The test missed it because I tested the two shapes the rule was DESCRIBED with — a
+column and a row — and both readings agree on those.** Only an interleaved set separates them.
+**When implementing a rule from an example, the test that matters is the case the example does not
+cover**: name the readings you are choosing between, then test the input that tells them apart.
+
+⚠ **THE PAIRS THAT SURVIVE ARE THE CROSS-KIND ONES** — a chart against an answer, a doc table against
+a property list, a green banner against a frame. **Same-kind conflicts get caught** (two answers that
+disagree are noticed, because one tool reads both); cross-kind ones survive indefinitely because no
+single tool reads both representations, so the contradiction has nowhere to surface.
+
+**THE RULE: when a fact gains a SECOND representation, write the comparison AT THAT MOMENT.** Better,
+**delete the second one** — `circle_radius` as a `const` *and* a §16 row was two truths; one
+`FxSpotlightStyle` property is one. `CardVisual.spotlight_center()` beats an offset copied into the
+director.
+
+**Seam checks that now exist, and what each caught on its FIRST run:**
+- `npm --prefix designloop run check` → **`unclaimed`**: answered questions no plan step implements.
+  **190 of 255 unclaimed**, `Q85` among them. Triage into `design/spotlight/implements-nothing.txt`.
+- `test_the_design_16_knob_table_is_implemented()` — parses **`DESIGN.md` §16 itself** and asserts each
+  row resolves to a property. **Found 13 more.** `PENDING_16` records each legitimate absence WITH the
+  step that will retire it; delete an entry when that step lands and the check turns on.
+- `test_light_shader_declares_every_spotlight_knob()` — the style's writes ↔ the shader's declarations.
+  Godot ignores a write to an undeclared uniform in silence.
+- **`Tools/spotlight_tool.tscn -- --verify`** — runs every scenario and reports what MOVED. **Found a
+  thrown error on the retire beat that no still frame could show.**
+
+⚠ **THE EVIDENCE HIERARCHY, and the last rung is new: green suite < printed counts < a rendered pixel
+< movement measured over time.** `/fx-verify`'s "look at the PNG" is necessary and NOT sufficient — a
+still of a working loop and a still of a dead one are identical, so a pulse, a travel, a fade or a
+cascade needs an instrument that samples over time and reports what changed.
 
 ⚠ **THE LAST SESSION WAS MOSTLY BUG-FINDING, NOT STEP-SHIPPING, AND THAT IS THE HONEST SUMMARY.**
 Six gaps were filed across this stream and `DESIGN.md` v9's changelog calls them one defect — *a
@@ -18,16 +85,87 @@ not assume a green suite means the feature works.** The three tools that actuall
 the **visual/event log** (`EventLog`, see below), the **engine-error check** now wired into the
 suite, and the owner's eye.
 
+✅ **TWO MECHANICAL CHECKS ADDED 2026-08-04, AND THEY EXIST BECAUSE READING THE DESIGN IS NOT A
+MECHANISM.** The owner asked whether the repeated misses were a reading failure or a memory failure.
+Neither: `Q85` and §16's knob table were both READ in-session and then not applied. What was missing
+was anything that fails when a documented decision has no implementation.
+- **`designloop check` now reports `unclaimed`** — answered questions **no plan step cites**. Every
+  other check validated steps→nodes; nothing validated nodes→steps. Measured on this design:
+  **255 answered, 65 claimed, 190 unclaimed**, `Q85` among them. Free-text overrides rank first.
+  Triage into `design/spotlight/implements-nothing.txt` so the list converges. 152 designloop tests.
+- **`test_the_design_16_knob_table_is_implemented()`** parses **`DESIGN.md` §16 itself** and asserts
+  every knob resolves to a real property. It found **13 more** on its first run. `PENDING_16` carries
+  each legitimate absence **with the step that will implement it** — delete the entry when that step
+  lands and the check turns on for that knob. Currently `21 implemented, 13 pending`.
+- Plus the reverse seam: every uniform `FxSpotlightStyle` writes must be DECLARED by
+  `light.gdshader`, because Godot ignores a write to an undeclared uniform in silence.
+**FX ATTACHMENT went 157 → 180 checks.**
+
+⚠⚠ **RED SUITE RIGHT NOW, AND THE CAUSE IS `Cards/card_visual.tscn`, WHICH THIS STREAM DID NOT
+TOUCH.** `PIXELS` fails 3 checks (`t=0.15/0.30/0.45: the mask and the drawn face agree in EVERY FX
+cell`), reproduced on three consecutive runs. `git diff Cards/card_visual.tscn` shows the scene was
+saved with **a mid-animation pose baked into `Offset/Visual`** (`position.y` −0.052 → 0.628, a new
+`rotation`, `scale` 0.9999/0.9857 → 0.9947/0.9911, `skew` 0.0007 → 0.0139) and with **`Suit`, `Art`
+and `Skeleton2D` set `visible = false`**.
+⚠ **Both halves matter.** The baked transform offsets the DRAWN face against the rig the mask is
+built from, which is exactly what PIXELS measures. The hidden nodes mean **shipped cards render with
+no art square and no suit pip** — which is a gameplay-visible regression, not a test artefact.
+⚠ **NOT DIAGNOSED AS INTENTIONAL AND NOT REVERTED** — it is the owner's file and the revert is theirs
+to make (`git checkout -- solatro/Cards/card_visual.tscn` restores it). Everything else in the tree
+is green; this is the only failure.
+⚠ **THE LESSON FOR ANY AGENT RUNNING AN `@tool` SCENE: a `@tool` script that instantiates a shipped
+scene can leave the editor holding it dirty.** Whether that is what happened here is unproven, but
+`Tools/spotlight_tool.tscn` does instantiate `CardVisual` in the editor, so **check
+`git status Cards/` after working in it.**
+
+⚠ **A SHIPPED BUG THE TOOL FOUND IN ITS FIRST HOUR — `Q85` HAD NEVER BEEN IMPLEMENTED.** The circle
+is specified *"centred on the card's ART-SQUARE centre"*; `SpotlightDirector` centred it on the card's
+ORIGIN. Owner, looking at the tool: *"circles should be centered on the skill art, not on card
+center"*, *"hard to tell which card circle it is on currently"*. Fixed —
+**`CardVisual.spotlight_center()`** now owns the offset (`Art` sits at `(0,5)`, polygon ±16, so the
+square is 32 units across, exactly `Q85`'s diameter) and both the director and the tool ask the card.
+⚠ **It shipped through S13, S14, every phase-2 gate and two by-eye reviews**, because a circle on a
+card's origin looks fine **until there is a second card under it**. That is the seventh instance of
+the v9 pattern and the first found by LOOKING.
+⚠ **The guard is stated NEGATIVELY on purpose: "no light sits on a card ORIGIN".** The natural
+positive form (*every light sits on an art square*) is flaky — `PlayArea` controls are pooled, so a
+`CardVisual` can be re-bound between the emit and the check, and it failed 2-of-3 against correct
+code. Under the bug every centre was an origin, so the negative form is the one that fails loudly.
+
+✅ **THE TREE IS GREEN, OBSERVED 2026-08-04 — BUT SAY HOW MANY RUNS IT TOOK.** Four full-suite runs
+this session: **three green** (`1759`, `1771`, `1756` checks, `[engine-errors] clean`, SPOTLIGHT 86,
+0 `SCRIPT ERROR`, errors log 0 bytes) and **one FAILED the LEAK CANARY** — see Open bugs, where the
+flake is now reproduced rather than seen once. The owner has committed through `6766518 add logging`;
+the v10 documentation edits and S18 are uncommitted.
+
 **WHAT IS LEFT, IN ORDER — this is the whole remaining stream:**
 
-1. **S18, the tuning tool** — the owner will not judge visuals any other way (*"I would rather do all
-   testing via the planned editor so dont ask me to check until it exists"*). **Everything visual is
-   gated behind it.** ⚠ Its FIRST job is tuning the GAP-006 pulse, which is shipped but untuned and
-   may read as a flash. See "Still owed" below.
-2. **Chart E, the travel** — specified in full, never built, and the current code actively
-   contradicts it (see Open bugs).
-3. **Gate G2.2** (readability), **G2.3** (the cost number), **S15**, **S16**, **S17**.
-4. **The log-parsing subagent** — deferred by the owner until logging was final; it now is.
+0. ~~**Fold GAP-005 and GAP-006 into `DESIGN.md`/`PLAN.md`**~~ ✅ **DONE 2026-08-04.**
+   ~~**S18, the tuning tool**~~ ✅ **DONE 2026-08-04, G4.1 green** — `Tools/spotlight_tool.tscn`.
+   ⚠ **GAP-007 is open on its `@tool` half and needs the owner**, but the tool is usable now.
+
+1. ⚠ **THE OWNER'S FIRST JOB IN THE TOOL** — open `Tools/spotlight_tool.tscn` in the editor and pick
+   presets from the **Scenario** dropdown:
+   - **S17 with `play` on** — the GAP-006 per-section pulse at un-compressed pacing. Shipped,
+     mechanically correct, **untuned**: in a real act the beat is 1–3 frames. If it reads as a flash,
+     the knobs are `spotlight_hold_fraction` and the two dim fractions, and
+     **`spotlight_dim_target = 0` is the off switch**, which keeps every beam, circle and glow.
+   - **S15** — gate **G2.2**, now judgeable for the first time because the glow is in.
+   - **S2 vs S2b** — the buried row with row separation off and on; the case for S16, visible.
+   - **S5 with `play` on** — the whole act's shape, and **where chart E's missing travel shows**.
+2. ~~**Chart E, the travel**~~ ✅ **DONE 2026-08-04 — S14 is complete.** See Open bugs.
+3. **S15 — the momentary cue's visuals.** The next step to build. `spotlight_cued` is this step's
+   signal ALONE since GAP-005, so it is genuinely independent; draw it at `Q245`=(c)'s shallower dim,
+   which `LightLayer.set_lights(lights, scoring=false)` already selects.
+4. **S16 — derived row expansion**, then **S17** (gutters, `slot_center_global`, prop anchors).
+   ⚠ **The tuning tool already SIMULATES the reveal** (`row_separation`, eased over
+   `spotlight_reveal_fraction`), so the shape is decided and visible — S16 is making `PlayArea` do it
+   for real. ⚠ `slot_center_global` is pure uniform-pitch math and every prop anchors to it; that is
+   what S17 exists to fix, and it is the known hard part.
+5. **Gate G2.2** (readability — now judgeable, the glow is in the tool), **G2.3** (the cost number,
+   never measured — `Q254`=a says measure THEN cut, so report it and trim nothing pre-emptively),
+   **G3.1–G3.3** (phase 3).
+6. **The log-parsing subagent** — deferred by the owner until logging was final; it now is.
 
 ⚠ **A SUITE-INTEGRITY DEFECT WAS FOUND AND FIXED ON RESUME (2026-08-04) — read this before trusting
 any older evidence line in this file.** Five phase-1 tests had been **aborting mid-function** on a
@@ -43,13 +181,32 @@ silent test LOSS that reads exactly like a pass.** Check a section's check COUNT
 file asserts, not the banner — and treat any `SCRIPT ERROR` on stderr as a failure even when the
 summary line is green.
 
-The design is confirmed (`DESIGN.md` **v9**, 255 answers, 0 open questions); `PLAN.md` is the
-specification and has not moved except for its §0 opening prompt, §1.8's one known-wrong row, and
-§0b's S18 path.
-⚠ **GAP-005 AND GAP-006 ARE IMPLEMENTED BUT NOT YET FOLDED INTO `DESIGN.md`/`PLAN.md`.** Both are
-RESOLVED with the owner's answer recorded in their gap files, and the code and tests match. Folding
-them in (a v10 changelog, `Q16`'s and `Q246`'s nodes, `PLAN.md` §2's S14/S15) is **the first
-documentation task for the next agent** — the design currently understates what the code does.
+The design is confirmed (`DESIGN.md` **v10**, 255 answers, 0 open questions); `PLAN.md` is the
+specification and has moved only by correction-in-place: its §0 opening prompt, §1.8's one
+known-wrong row, §0b's S18 path, and the v10 fold-in below.
+
+✅ **GAP-005 AND GAP-006 ARE NOW FOLDED IN — `DESIGN.md` v10 + `PLAN.md`'s new §1.12, 2026-08-04.**
+Verified with `npm --prefix designloop run check -- solatro/spotlight`: **0 errors, 0 warnings,
+0 unresolved links, dag audit 0, stale 0, 18 plan steps / 0 bad citations**, question count unchanged
+at 272 live. What moved: `DESIGN.md`'s v10 changelog, chart C (C5/C16), chart D (D10, D13, the new
+**D13a** fade-out, D20, the forks list), chart E's entry note, chart T (T5 + its consequences list),
+`Q16`, `Q82`, `Q246`, §17.6b and §16; `PLAN.md`'s new **§1.12 the show axis**, §1.10's `u_dim` row,
+§1.11's `dim_target` correction, and S10 / S13 / S14 / S15.
+
+⚠ **THE FOLD-IN FOUND SOMETHING THAT CHANGES HOW THE GAP COUNT SHOULD BE READ: GAP-006's answer HAD
+ALREADY BEEN GIVEN, IN ROUND 1, AND A GATE HID IT.** `Q82` asks exactly *"does the dim raise once per
+act or per line"* and the owner answered it 2026-08-03 with an override — *"per anytime spotlight
+effect is happening"*. `answers.log` **seq 269** stranded it (`active: false`) along with 19 others
+when `QR2` moved to (d); §17.6's heading was later widened to `[QR2=a|c|d]` but `Q82`'s own gate stayed
+`[QR2=a & QR8=a]`, so it dropped out of every later reading of the document. **The act-long dim that
+shipped was chosen by nobody.** `Q82` is now gated `[QR2=a|d & QR8=a]` with an option (c) authoring the
+branch. I audited the other 19: only `Q78` and `Q81` are still inactive, both genuinely moot under a
+per-section pulse and neither an override — **`Q82` was the only stranded answer in the batch.**
+⚠ **So this is NOT the sixth instance of the "statement written before an answer" defect, and filing
+it as one is what would let it recur.** That defect is caught by re-reading; this one is invisible in
+the rendered document. **The check is mechanical and nobody has run it as a habit: after any `strand`
+event in `answers.log`, diff the stranded IDs against the gates that were later widened.** Both are
+recorded in the log, so it is a script, not a discipline.
 
 ⚠ **`spotlight_dim_target = 0` IS THE DIM'S OFF SWITCH** (owner, 2026-08-04, anticipating that the
 per-section pulse *"might flash if speed is high"*). It keeps every beam, circle and glow and drops
@@ -176,14 +333,14 @@ so the stale-step report then names the wrong steps.
   notes: '⚠ NO BOARD->SCREEN CONVERSION EXISTS AND NONE IS NEEDED: one canvas layer, no camera offset, so a card''s global_position IS the viewport pixel the shader''s SCREEN_UV resolves to, scroll already folded in. A second copy of the scroll here is the drift bug this avoids. ⚠ set_lights([]) is what RETIRES the dim — there is no stop() to disagree with the light set (QR2=d). ⚠ Q84/Q168 on dim_target: the light layer has NO style resource (FxGlowStyle''s three .tres are the GLOW''s), so Q84=(b) style-only has nowhere to live and it went into PlayerSettings as Q168 says. Flagged in the property''s own doc comment; if that reading is wrong, file a gap. ⚠ NOT YET DONE and NOT part of S13: nobody CALLS set_lights() — feeding it from the spotlight cue is S14/S15, and gate G2.4 needs that caller before it can run.'
 
 - id: S14
-  status: in_progress
+  status: done
   evidence: 'UI/spotlight_origins.gd (chart I) + UI/spotlight_director.gd (the wire) + GameView builds and binds it. SPOTLIGHT suite "S14: THE ORIGIN ALLOCATOR", 16 checks. VISUAL LAYERS test_the_spotlight_wire_lights_the_layer(): the REAL CardEnvironment cue on a REAL dealt board lights the layer, every live beam points DOWN at its target (Q117), the dim rises because something is lit (QR2=d), and retiring the set lowers it with no separate stop path. ⚠ GATE G2.4 PASSES in that test: fx_intensity 0 takes u_brightness to 0 and THE DIM STILL STANDS (Q83 "keeps beams glow and dim"). Full suite ALL 29 SUITES: 1724 CHECKS PASSED, exit 0, WINDOWED, errors log 0 bytes.'
   notes: '✅ GAP-005 RESOLVED 2026-08-04 — the wire now reads CardEnvironment.spotlight_section_changed (the scored section, unfiltered) instead of spotlight_cued. Guarded by test_the_section_signal_carries_plain_cards(). ⚠ NOT YET SEEN IN THE RUNNING GAME BY EYE — that is what S18 (the tuning tool) is being built for, at the owner''s direction. ⚠ HISTORY, KEPT BECAUSE THE FAILURE MODE RECURS: THE WIRE WAS INERT IN THE REAL GAME. The director draws CardEnvironment.spotlight_cued, which Q246=a filters to skills implementing on_spotlight, and the shipped game has exactly ONE such skill (Cards/Skills/Rules/zone_adder.gd, a rules card with no CardVisual). Ordinary board cards have no skill at all, so set_lights() never gets a non-empty set and NO beam, circle or dim has ever appeared in the running game. Every test passes because the fixture skill implements the hook. Owner report: "see zero spotlight effects". Chart E travel is parked behind it — easing between two always-empty sets is nothing. ⚠ ORIGINAL REMAINING WORK, still true: chart E (the light TRAVELLING between sections with its own easing). What is in is chart I plus the wire — the per-frame pass re-reads each lit card position, so a beam follows a card that moves (the S7 slide, a jump, a scroll), but there is no eased travel between one section and the next yet. ⚠ THE WIRE BUG WORTH KNOWING: bind() first used CardEnvironment.get_current_game(), which is null at GameView._ready because the view deliberately builds and binds its Game BEFORE adding it to the tree. Nothing connected, and every other phase-2 test stayed green while the feature did nothing — the environment is now PASSED IN. ⚠ _origins is APPEND-ONLY: indices are permanent handles, and the first build sorted the store on subdivision, which re-pointed live handles (measured: two beams sharing one origin). ⚠ Q117 lives in the allocator, not the shader — two copies could disagree invisibly.'
 
 - id: S15
   status: pending
   evidence: ''
-  notes: 'blocked by S13 and S10'
+  notes: 'blocked by S13 and S10. GAP-005 made it genuinely independent — `spotlight_cued` is this step''s signal alone and nothing else reads it. Draw it at Q245=(c)''s shallower casual dim, which LightLayer.set_lights(lights, scoring=false) already selects.'
 
 - id: S16
   status: pending
@@ -196,12 +353,66 @@ so the stale-step report then names the wrong steps.
   notes: 'blocked by S16; carries gates G3.1, G3.2'
 
 - id: S18
-  status: pending
-  evidence: ''
-  notes: '⚠ PROMOTED TO THE NEXT STEP by the owner 2026-08-04: "I would rather do all testing via the planned editor so dont ask me to check until it exists." THIS IS THE PLANNED EDITOR — PLAN.md §5, the scenario player, chart N (N1-N7) and Q173-Q182, scenario list S1-S17 from DESIGN.md §14. Everything visual is gated behind it now: G2.2 (readability), the S14 travel judgement, and the first by-eye look at the beam in a real act. ⚠ PLAN.md lists it as blocked by S16 (phase 3, not started) — only scenarios that need row expansion depend on that, so build it now and mark those scenarios unavailable rather than waiting. ⚠ ITS HOME IS solatro/Tools/, NOT PLAN.md §0b''s UI/Fx/Tools/ — see the tooling note below.'
+  status: done
+  evidence: 'Tools/spotlight_tool.{gd,tscn} + Tools/spotlight_scenarios.json, an @tool EDITOR scene (GAP-007 resolved). GATE G4.1: "<godot> --path solatro res://Tools/spotlight_tool.tscn -- --shoot-all" -> "SPOTLIGHT TOOL: 13 preset(s) shot", 0 SCRIPT ERROR, and a per-preset "cards=N lit=M sections=K" line. RENDERED AND LOOKED AT, several: S2 vs S2b is the stacked row with the S16 reveal off and on; S15 shows the circle ON THE ART SQUARE with the card glow rimming only the active card; S12 shows Q245=(c) casual dim visibly shallower than S1. Suite after every change: ALL 29 SUITES green, VISUAL LAYERS 141 -> 144, engine stream clean, errors log 0 bytes, PALETTE warnings unchanged at 19 (res://Tools IS in SCAN_DIRS).'
+  notes: '✅ GAP-007 IS RESOLVED — the owner chose a FOURTH shape none of my options offered: @tool + the inspector, with the FIDELITY answers giving way instead of the form. "Just play area simulating effects is enough, dont need full game_view with hud" / "trigger different preset scenarios using editor tool options". So Q174=(a) and Q175=(a) ARE SUPERSEDED: no Game, no GameView, no PlayArea, no HUD. Real CardVisuals on the REAL board pitch (PlayArea.slot_center_global''s own two constants), the real LightLayer, the real shader, the real SpotlightOrigins, and now the real glow. ⚠ THE STANDING LIMIT: THE CASCADE IS POSED, NOT RUN — section membership, the activation sweep and the hold beat are Game''s. A BEHAVIOUR question ("did the light travel when it should have") goes to Tools/spotlight_trace.tscn or the suite; THIS TOOL ANSWERS "DOES IT LOOK RIGHT" AND NOTHING ELSE. ⚠ Everything renders into a SubViewport, and that is not a detail: light.gdshader is screen-space, and the editor 2D view has its own pan and zoom, so a layer parented into an edited scene would slide against its cards the moment anyone scrolled. The SubViewport also IS Q177''s "dummy screen size", for free. ⚠ LightLayer GAINED @tool but its _ready() still does nothing in the editor — otherwise merely OPENING game_view.tscn would attach a ShaderMaterial to a node that scene OWNS and saving would write it in; the build moved to a public ensure_built(). ⚠ SIMULATED, AND NAMED AS SUCH: the cascade order, the mocked solo activation cue (casual: true, Q245=c), and ROW SEPARATION (the S16 reveal — PlayArea cannot do it yet, and slot_center_global is pure uniform-pitch math that a per-row expansion breaks, which is what plan step S17 has to solve). row_separation DEFAULTS ON at the owner''s direction: judging the light on a stack the reveal has not opened is judging the wrong picture. ⚠ HISTORY, kept because the failure recurs: GAP-007 WAS OPEN AND WAS THE ONE THING S18 DID NOT BUILD. Q176=(a) wants the tool @tool; Q174/Q175=(a) want a real PlayArea/CardVisual/Game. THEY CANNOT BOTH HOLD — measured: game.gd, game_view.gd, play_area.gd, light_layer.gd and spotlight_director.gd are all non-@tool (placeholder instances in the editor, every method call on one fails) and the editor instantiates no autoloads, while the director reads SettingsManager.settings.card_scale per light. Built RUNNABLE-ONLY with an IN-SCENE control panel, which serves both of Q176''s stated purposes and is strictly better here: inspector edits never reach a RUNNING scene, and tuning the GAP-006 pulse means moving a knob mid-cascade. Recommendation is option (a); if the owner picks otherwise the panel is what changes and nothing else. ⚠ THE SCENARIO LIST IS DATA (Q182) in spotlight_scenarios.json with a documented step grammar — adding a scenario needs no GDScript. ⚠ TWO TOOL DEFECTS FOUND ONLY BY LOOKING AT THE PNG, BOTH INVISIBLE TO A GREEN RUN: a Control parented straight to a CanvasLayer has no parent RECT, so PRESET_TOP_RIGHT put the whole panel off-screen; and a ScrollContainer has ZERO minimum height, so adding the scroll collapsed the panel to nothing. BOTH TIMES THE SCENARIO PLAYED GREEN AND REPORTED SUCCESS WITH NO PANEL ON SCREEN. ⚠ Capture fires 3 frames AFTER dim_rising, never on it — the event marks the START of the ease, so a shot on that frame catches the dim at 0 and reads exactly like the dim being broken. ⚠ HISTORY: PROMOTED TO THE NEXT STEP by the owner 2026-08-04: "I would rather do all testing via the planned editor so dont ask me to check until it exists." THIS IS THE PLANNED EDITOR — PLAN.md §5, the scenario player, chart N (N1-N7) and Q173-Q182, scenario list S1-S17 from DESIGN.md §14. Everything visual is gated behind it now: G2.2 (readability), the S14 travel judgement, and the first by-eye look at the beam in a real act. ⚠ PLAN.md lists it as blocked by S16 (phase 3, not started) — only scenarios that need row expansion depend on that, so build it now and mark those scenarios unavailable rather than waiting. ⚠ ITS HOME IS solatro/Tools/, NOT PLAN.md §0b''s UI/Fx/Tools/ — see the tooling note below.'
 ```
 
 ## Verified vs assumed
+
+- **Verified 2026-08-04 — S18's gate G4.1, and it is the tool's own exit code:**
+  ```
+  <godot>_console --path solatro res://Tools/spotlight_tool.tscn -- --autoplay all
+  ======== SPOTLIGHT TOOL: 11 scenario(s) played, 0 failed ========
+    skipped: S2 (unavailable), S4 (unavailable), S10 (unavailable), S13 (unavailable),
+             S15 (freezes by design), S16 (unavailable)
+  0 `SCRIPT ERROR` on stderr
+  ```
+  ⚠ **`--autoplay` EXITS WITH THE FAILURE COUNT**, and `_fail()` is the single place that both reports
+  and counts — an interpreter that pushed an error and still exited 0 would be the same false green
+  this stream has already paid for twice.
+  ⚠ **Scenarios that FREEZE are skipped and NAMED, never reported green.** S15 holds the act on one
+  frame on purpose; "plays to completion" is a category error for it, and an agent must neither pass
+  it nor hang on it.
+- **Verified 2026-08-04 BY EYE — `01_S17_dim_rising.png`, rendered and looked at.** What the image
+  actually shows, and it is the first sight of this feature at normal pacing:
+  - **the dim is up and clearly readable** as a darkening of the whole board, with cards outside the
+    light visibly darker than the ones inside it;
+  - **three soft-edged beams descend onto the scored row**, each with visible falloff along its
+    length — not flat cones;
+  - **the two cards mid-jump carry bright pools** and are the brightest thing on screen;
+  - **the control panel renders in full** — scenario list with S2/S4/S10 greyed, Play/Freeze/Step/
+    Shoot, the viewport selector, and the live knob sliders reading their real values.
+- ⚠ **STILL NOT JUDGED, AND NOT MINE TO JUDGE — whether the pulse READS as a spotlight.** I can say
+  the dim rises, the beams land and the pools are bright. Whether the beat is too fast at shipped
+  pacing is the owner's call in scenario S17, and it is the reason the tool exists. **Gate G2.2 is
+  likewise still unjudged** — scenario S15 freezes on the pool for exactly that call.
+- **Verified 2026-08-04 — the v10 fold-in parses and cites real nodes.**
+  ```
+  npm --prefix designloop run check -- solatro/spotlight
+  questions 272 live, 1 retired · errors 0 · warnings 0 · links 0 unresolved
+  dag audit 0 · stale 0 · plan 18 step(s), 0 bad citation(s), 0 uncited
+  ```
+  ⚠ **The first run of this after my edits had 3 ERRORS and they are worth knowing about**: a
+  `⚠ **note**` appended as a trailing ` · ` segment on a question line is an **unrecognised segment**,
+  and an unparsed question line does not merely lose its note — **the question vanishes from the DAG**,
+  which then reported `PLAN S10 cites Q246 — no such question`. A note about a question belongs in its
+  PROSE (before the first option), never after `notes`.
+- **Verified 2026-08-04 AFTER the v10 fold-in — the tree is green:**
+  ```
+  [engine-errors] clean — 0 unexpected lines in the engine stream
+  ======== ALL 29 SUITES: 1759 CHECKS PASSED [19 placeholder warnings] ========
+  ============ SPOTLIGHT: ALL 86 CHECKS PASSED ============
+  WINDOWED · test_output_errors.log 0 bytes · 0 `SCRIPT ERROR` lines on stderr
+  ```
+  Command: `"<godot>_console" --path solatro res://Tests/all_tests.tscn`, launched with
+  `Start-Process -RedirectStandardOutput -RedirectStandardError` and `WaitForExit(400000)` +
+  kill-on-timeout. **29 suites — the stable number.** SPOTLIGHT is 86 (76 → 83 at GAP-005 → 86 at
+  GAP-006), which is the count to diff against `test_spotlight.gd`'s `check(` calls if it ever drops.
+- ⚠ **ASSUMED, NOT CHECKED — `Q82`'s `active` flag in `answers.json` is still `false`.** I widened the
+  gate in `DESIGN.md`; the flag is recomputed by `designloop`'s server, not by `check`, so it will
+  flip the next time the questionnaire is served. The ANSWER itself is untouched and intact in
+  `answers.log` seq 164 — **do not hand-edit `answers.json` to force it.**
 
 - **Verified 2026-08-04, THE HANDOVER STATE — this is the run the next agent should reproduce:**
   ```
@@ -361,7 +572,26 @@ for**, and the first thing to look at there.
 dropped *"dims after initially showing"*, recording *"the implementation was already correct."* It
 never had been. Fifth instance of the same pattern.
 
-⚠ **OPEN — chart E (the TRAVEL) is unimplemented, and the current code actively contradicts it.**
+✅ **FIXED 2026-08-04 — CHART E, THE TRAVEL, IS BUILT. S14 IS COMPLETE.** `SpotlightDirector` now
+holds `_Beam` records that OUTLIVE the section that created them, instead of rebuilding the set every
+time. Per chart E and its answers: **E2/`Q61`=(a)** a card in both sections keeps its light and does
+not move; leftover lights are paired to leftover targets **sorted by x** (chart E2 option A — see
+GAP-008); **E3** surplus lights fade in place over `spotlight_retire_fraction`; **E4/`Q65`=(a)** a new
+light fades in **already aimed**, not travelling in along its beam; **E9/`Q64`=(a)** every travelling
+light moves on the same frame, smoothstepped over `spotlight_travel_fraction`; **`Q63`=(a)** full size
+the whole way — the fade is the spawn/retire envelope only, never transit; **E10** the ORIGIN stays
+put while the wide end tracks the circle.
+⚠ **`_origins.begin()` MAY ONLY RUN WHEN NOTHING IS LIT** (`_band_ready`). It rebuilds the origin
+array and clears the taken-set, so calling it per section — which the pre-travel build did — would
+re-point every live beam's index at somebody else's lamp. That was harmless only because that build
+also threw every light away each section.
+⚠ **`retire()` now FADES rather than vanishing**, so its test asserts two things: still lit one frame
+after, dark shortly after. The old one-line assertion would have passed against a snap.
+Guarded by `test_the_light_travels_between_sections()` — two DISJOINT sections, then: the light COUNT
+is unchanged, **no circle has snapped to its new card one frame in**, the origins have not moved, and
+the lights do arrive. VISUAL LAYERS 144 → 151.
+
+⚠ **HISTORICAL — chart E was unimplemented and the code actively contradicted it.**
 `SpotlightDirector._on_section_changed()` calls `_release_all()` and rebuilds the whole set from
 scratch every section, so every light dies and respawns. The brief forbids exactly that — *"no
 instant movements or spawning in and out"* — and **E3** requires that a card in BOTH the old and new
@@ -436,12 +666,35 @@ tree, which is the true answer rather than a workaround, and it is self-healing:
 frame the half is parented, by the same mechanism that handles a host scrolling back into view.
 ⚠ Verified: `SCRIPT ERROR` count on stderr is **0** across a full suite run, `is_inside_tree` hits 0.
 
-⚠ **FLAKE SEEN ONCE, 2026-08-04, NOT REPRODUCED — record rather than lose it.** One run of the full
-suite failed `LEAK CANARY: OBJECT_COUNT returns to baseline after 3 full simulated play sessions —
-baseline 2701, after 2704 (growth 3)`, with three `Stray Node (Type: Node) (Source:
-res://Levels/game.gd)`. The immediately preceding and following runs both passed, and **nothing in
-this stream touches `game.gd`**. It is logged because "it passed the second time" is how a real leak
-gets missed; if it recurs, `game.gd`'s bare `Node` children are where to look.
+⚠ **OPEN, LOW PRIORITY, AND THE GATE STRUCTURALLY CANNOT SEE IT — a leaked GLES3 texture at exit.**
+The 2026-08-04 fold-in run ends with, AFTER the green banner:
+```
+ERROR: 1 RID allocations of type 'N5GLES37TextureE' were leaked at exit.
+```
+⚠ **`_scan_engine_errors` reads `user://logs/godot.log` DURING the run, and this line is printed by the
+engine at SHUTDOWN — so every exit-time error is invisible to the gate by construction**, and
+`[engine-errors] clean` on the same run is not a contradiction. That blind spot is worth more
+attention than the one texture: **anything the engine reports at exit passes the suite silently.**
+⚠ **Cause unknown and I did not establish whether it is new.** Do not assume it is this stream's —
+but the obvious suspect is the glow's baked `GradientTexture1D` (GAP-003), which is the one texture
+this stream created and which `FxGlowStyle` holds through a preload. **The honest state is: seen once,
+observed, unattributed.** Cheapest next step is to diff a run of the tree before S11 against one after.
+
+⚠ **OPEN — THE LEAK CANARY FLAKE IS NOW REPRODUCED. ~1 RUN IN 4, AND THE SIGNATURE MOVES.**
+- **2026-08-04, run A:** `baseline 2701, after 2704 (growth 3)`, three `Stray Node (Type: Node)
+  (Source: res://Levels/game.gd)`.
+- **2026-08-04, run B (after S18):** `baseline 2560, after 2562 (growth 2)`, and the strays are
+  **different** — `/Fx (Type: Node2D) (Source: res://UI/Fx/fx_attachment.gd)` plus three anonymous
+  `Node`s with no source at all.
+- **Three further runs the same day passed** (`1771`, `1756`, and the earlier `1759`).
+⚠ **NOT ATTRIBUTABLE TO S18** — the tool is not loaded by the suite; `test_palette.gd` reads
+`res://Tools` as TEXT and instantiates nothing. But **"it passed the second time" is exactly how a
+real leak gets missed**, and this has now failed twice with two different sources, which is weaker
+evidence for a flaky test and stronger evidence for a real intermittent leak.
+⚠ **The next agent should not spend the session on it, and should not report a green suite without
+saying how many runs it took.** If it is picked up: the two signatures share nothing except that both
+are nodes whose parent died first, and `fx_attachment.gd`'s `/Fx` child is the half-attachment
+orphan that the `_on_screen` tree guard was about — that is where I would look first.
 
 No other bugs, and **no gap is open** — all four raised so far are closed.
 
@@ -549,7 +802,37 @@ data-channel instrumentation), `Levels/game_view.gd` (the debug bar), `Levels/ga
 `Tests/Engine/test_{dispatch,mods,comparator,game_headless,leak_canary,patience}.gd`,
 `ARCHITECTURE_REVIEW.md`, `DESIGN_DOC.md`.
 
-⚠ **Nothing is committed** — the owner commits through GitHub Desktop.
+**New 2026-08-04 (S18, the style resource, chart E):** `Tools/spotlight_tool.{gd,tscn}`,
+`Tools/spotlight_scenarios.json`, `UI/Fx/fx_spotlight_style.gd`,
+`Shaders/Styles/spotlight_default.tres`, `design/spotlight/gaps/GAP-007.md`, `GAP-008.md`.
+**Deleted:** `Tools/spotlight_trace.{gd,tscn,gd.uid}` — merged into the tool as `-- --trace`.
+**Also edited outside solatro:** `designloop/src/gaps.mjs` + `src/check.mjs` (the `unclaimed`
+inverse-citation report) and `designloop/test/gaps.test.mjs` (152 tests green).
+**Shipped code edited by S18 — NOT just tool files, read this before assuming the tool is isolated:**
+`Cards/card_visual.gd` (new `spotlight_center()`, the `Q85` fix), `UI/spotlight_director.gd` (calls
+it, twice — the initial place and the per-frame re-read), `UI/light_layer.gd` (`@tool`, `_ready()`
+inert in the editor, the build split into `ensure_built()`, public static `editor_settings`),
+`Tests/UI/test_visual_layers.gd` (the `Q85` guard, +3 checks).
+**Still owed on the glow:** `FxGlowStyle.GLOW_SHADER` is a stopgap preload and there is no `FxGlow`
+effect class. The tool builds the request directly. ⚠ **When a class is written, MOVE the tool's call
+site to it rather than copying** — two preloads of one shader are two `Shader` resources, and a style
+applied through the wrong one silently misses every uniform the other declares.
+
+**Edited 2026-08-04 (the v10 fold-in session — DOCUMENTATION ONLY, no code touched):**
+`design/spotlight/DESIGN.md` (v10), `design/spotlight/PLAN.md` (new §1.12 + corrections in place),
+`design/spotlight/gaps/GAP-005.md`, `GAP-006.md`, and this file.
+
+⚠ **NOT THIS STREAM'S, AND AN OWNER DECISION: two tracked `~`-prefixed DLLs show as DELETED** —
+`addons/big_number/bin/windows/~big_number.windows.template_debug.x86_64.single.dll` and
+`addons/worldgen/bin/~worldgen_native.windows.template_debug.x86_64.dll`. These are Godot's
+lock-rename artefacts: when a GDExtension `.dll` is replaced while the editor holds it open, the old
+one is renamed with a `~` prefix. **They were committed by accident and the deletion is almost
+certainly the right end state — they probably belong in `.gitignore`, not in the tree.** No agent
+should restore or stage either without the owner saying so. Untouched by any spotlight work.
+
+⚠ **Everything up to `6766518 add logging` IS committed** — `git status` was clean at the start of
+the 2026-08-04 fold-in session, so the "nothing is committed" note above is historical. The doc edits
+listed immediately above are uncommitted. The owner commits through GitHub Desktop; do not `git add`.
 
 ## The visual-layer log — started 2026-08-04, PARTLY DONE
 
@@ -592,11 +875,15 @@ screen), **and is frame-accurate headless**, where wall-clock means nothing. So 
 would not survive headless resolves the opposite way: the frame column always works, the microsecond
 column is the one to distrust. Read `f=` first. `dump_by_frame()` exists for exactly this question.
 
-⚠ **NOT FINISHED — `spotlight_trace` SUBMITS AN EMPTY BOARD.** Measured: `submit_begin` and
-`submit_end` land on the SAME frame with no `score_line` between them, because `Game.next()` deals a
-hand and the harness never PLACES any cards, and an empty board scores nothing. **The harness cannot
-answer the owner's parallel-vs-sequential question until it plays cards onto the board first.** That
-is the next concrete task, and it is small.
+✅ **FIXED — `spotlight_trace` places cards.** `_place_hand(count, per_col)` moves real hand cards to
+real column ends through `Game.move_data_to_coord`, and scenario 1 remaining an EMPTY board is
+deliberate (submit fires regardless of what is on the board, so "an act that scores nothing must
+light nothing" is a case to prove, not a blocker). This note previously said the harness was unable
+to place cards; that stopped being true in the same session and the note went stale.
+⚠ **`spotlight_trace` IS NOW THE LESSER OF TWO HARNESSES.** `Tools/spotlight_tool.tscn` (S18) does
+everything it does plus a scenario selector, freeze/step, viewport control, live knobs and an
+`--autoplay` gate. **The trace is kept because it is the ZERO-UI instrument** — nothing on screen but
+the board, so a capture from it has no panel in the way. Reach for the tool first.
 
 ## Logging work — what is DONE
 
@@ -708,10 +995,24 @@ Copy-paste this. It stands alone.
 > any status in the handoff: run the suite WINDOWED with a kill-on-timeout, check the SUITE count is
 > 29 (not the check total, which varies), and check `[engine-errors] clean`.
 >
-> Then do the first documentation task: **fold GAP-005 and GAP-006 into `DESIGN.md` (a v10 changelog)
-> and `PLAN.md` §2**. Both are implemented and tested; the design currently understates the code.
+> **DONE, DO NOT REDO:** the v10–v12 doc fold-ins; **S18** the tuning tool
+> (`Tools/spotlight_tool.tscn`, `@tool` + inspector, with the old `spotlight_trace` merged in as
+> `-- --trace`); **S14 including chart E's travel**; `FxSpotlightStyle`; `Q85`'s art-square centring;
+> GAP-008's fan-by-depth origins. **GAP-007 and GAP-008 are both RESOLVED.**
 >
-> Then build **S18, the scenario player** (`PLAN.md` §5, chart N, `Q173`–`Q182`, scenario list S1–S17
+> ⚠ **Read the handoff's "THE PATTERN BEHIND EVERY MISS" table before writing code.** Every defect on
+> this stream is two representations of one fact with nothing comparing them. Run
+> `npm --prefix designloop run check -- solatro/spotlight` and look at `unclaimed` before
+> implementing a step; run `Tools/spotlight_tool.tscn -- --verify` for anything with a duration.
+>
+> ⚠ **The next step is S15** (the momentary cue's visuals), then S16 and S17. Ask the owner to run
+> the tool's S17 preset with `play` on before any further tuning — the GAP-006 pulse is shipped,
+> mechanically correct and UNTUNED, and their judgement of it is the input the look depends on.
+> ⚠ **The suite has three PIXELS failures caused by `Cards/card_visual.tscn`, which this stream never
+> touched** — a mid-animation pose baked into `Offset/Visual`. `git checkout --` on that one file
+> clears them. Do not "fix" it in the FX code.
+>
+> ~~Build **S18, the scenario player**~~ (`PLAN.md` §5, chart N, `Q173`–`Q182`, scenario list S1–S17
 > from `DESIGN.md` §14). Everything visual is gated behind it — the owner will not judge visuals any
 > other way. Its first job is tuning the GAP-006 per-section pulse, which is shipped but untuned and
 > may read as a flash at speed; `spotlight_dim_target = 0` is the off switch if it does.
@@ -779,12 +1080,18 @@ because status lives here and a prompt that repeats it is wrong the moment a ste
 ## References
 
 - `solatro/design/spotlight/PLAN.md` — the specification. §1 is normative.
-- `solatro/design/spotlight/DESIGN.md` v9 — the authority on behaviour. Where the two disagree, the
-  design wins and the plan is wrong.
+- `solatro/design/spotlight/DESIGN.md` **v10** — the authority on behaviour. Where the two disagree,
+  the design wins and the plan is wrong.
 - `solatro/design/spotlight/ASSUMPTIONS.md` — decisions taken under gap-protocol rule 1.
-- `solatro/design/spotlight/gaps/` — **none open.** GAP-001, GAP-003 and GAP-004 answered and folded
-  in; GAP-002 withdrawn. ⚠ All four were the SAME defect — a statement written before an answer and
-  never revisited after it. See `DESIGN.md` v9's changelog.
+- `solatro/design/spotlight/gaps/` — ⚠ **GAP-007 IS OPEN** (S18's `@tool` half: `Q176`=(a) against
+  `Q174`/`Q175`=(a), a measured contradiction — recommendation option (a), runnable-only with the
+  in-scene panel that is already built). GAP-001, GAP-003, GAP-004, GAP-005 and GAP-006
+  answered, implemented and folded in; GAP-002 withdrawn. ⚠ **Five of them were one defect** — a
+  statement written before an answer and never revisited after it (`DESIGN.md` v9's changelog).
+  **GAP-006 is a second, different defect and the v10 changelog separates them**: an answer
+  *deactivated by a gate* and never re-activated when the gate's premise widened. Re-reading catches
+  the first; only a diff of `answers.log`'s `strand` events against later gate widenings catches the
+  second.
 - `solatro/design/spotlight/answers.json` — 255 answers, 0 open.
 - `solatro/START_HERE.md`, `solatro/VFX.md`, `solatro/LAYERING.md`,
   `solatro/ARCHITECTURE_REVIEW.md` §4g/§4h/§4i.

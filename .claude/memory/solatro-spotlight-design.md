@@ -12,20 +12,33 @@ metadata:
 `/flowchart-design` skill. **Design CONFIRMED 2026-08-03; `PLAN.md` is the execution spec and §1 of
 it is normative.**
 
-⚠ **PHASE 1 (S1–S10, the mechanical spotlight) IS IMPLEMENTED AND GREEN, 2026-08-04.** Live status
-is `solatro/HANDOFF_spotlight.md`; it is a status ledger only. Phases 2–4 (shader, light layer,
-reveal, tuning tool) are still pending and need the owner's eye — see [[verify-visuals-by-eye]].
+⚠ **DESIGN IS AT v12 (2026-08-04). PHASE 1 GREEN; PHASE 2 DONE EXCEPT S15; PHASE 4 (the tuning tool)
+DONE.** Chart E's travel, `FxSpotlightStyle` (§16's knob resource, which had never existed), `Q85`'s
+art-square centring and GAP-008's fan-by-depth origins all shipped. **All EIGHT gaps closed.**
+Remaining: S15, S16, S17, gates G2.2/G2.3/G3.x. Live status is
+`solatro/HANDOFF_spotlight.md`; it is a status ledger only.
+⚠ **THE OWNER JUDGES EVERY VISUAL THROUGH THE TUNING TOOL** — *"I would rather do all testing via the
+planned editor so dont ask me to check until it exists"*. **It exists**: `solatro/Tools/spotlight_tool.tscn`
+(`@tool` + inspector, scenarios as JSON data, the old `spotlight_trace` merged in as `-- --trace`,
+and `-- --verify` which runs every preset and reports what MOVED). Do not ask them to run the game or
+open a snapshot instead. See [[verify-visuals-by-eye]].
+⚠ **v10's real lesson is a workflow one, recorded in [[design-round-read-the-log]]: GAP-006's answer
+had been given in round 1 and a gate stranded it.** `Q82`'s override — *"per anytime spotlight effect
+is happening"* — went `active:false` at `answers.log` seq 269 and was never restored when the section
+heading was widened, so an act-long dim shipped that nobody chose. `check` cannot detect this.
 What shipped: `active` → **`spotlit`** everywhere (`is_spotlit`, `skill_spotlight_check`,
 `on_spotlight`/`on_unspotlight`), `GameData.forced_spotlight` (per-act, NOT `@export_storage`, never
 bumps `revision`), `ScoringSection` (`Scripts/scoring_section.gd` — the shape-agnostic "one scorer
 invocation's cards", re-read after every hook), and `score_line` now RE-EVALUATES the hand over the
 live section, so a synthetic `Scoring.Result` passed in for a populated zone is discarded.
-⚠ **Two owner rulings 2026-08-04 correct the documents and are NOT folded in yet** (gaps/GAP-001,
-GAP-002, both answered): `blocks_spotlight()` defaults **true** — a covering card hides the talent
-beneath, Kuroko overrides to false and unhides it, Revealing is a property of the card itself — so
-the seam REPLACES `is_data_topmost` and `PLAN.md` §1.4's `false` default is wrong; and
-`forced_spotlight` **moves with the scoring section, never accumulates**, so `PLAN.md` §1.3's
-"Q16 whole act" and `DESIGN.md` D19/D20 are wrong about membership.
+**The rulings that shape the code, all folded in:** `blocks_spotlight()` defaults **true** (a covering
+card hides the talent beneath; Kuroko overrides to false; Revealing is a property of the card itself),
+and the seam REPLACES `is_data_topmost`. `forced_spotlight` **moves with the scoring section, never
+accumulates**. **Two signals, and conflating them is GAP-005**: `spotlight_section_changed` carries
+the scored section UNFILTERED and feeds the beam; `spotlight_cued` is `Q246`-filtered to skills with
+an `on_spotlight` hook and is the momentary cue's alone. **The show PULSES PER SECTION** — visibility
+(`LightLayer._show`, driven by `spotlight_reveal_ended`) is an axis separate from the light SET, and
+the lights are never freed by the fade, because chart E has to travel from them.
 
 ⚠ **§17 is a branching DAG, not a list.** Measured by the parser, **version 6 (2026-08-03): 275 live
 questions, 30 `⚑gate` (all 30 gating questions marked), 19 charts, 0 errors/warnings.** (v1 was 195
@@ -103,3 +116,11 @@ Load-bearing facts the plan is built on, worth keeping even if the doc is delete
 
 See also [[solatro-game-view-split]], [[solatro-structural-layering]],
 [[solatro-pooled-board-controls]], [[solatro-tuning-knobs-in-settings]].
+
+⚠ **THE ONE LESSON THAT OUTLIVES THIS FEATURE — see [[seam-checks-not-rereading]].** All eight gaps
+and every non-gap defect are one shape: **two representations of one fact with nothing comparing
+them**, and the surviving ones are always CROSS-KIND (chart vs answer, doc table vs property list,
+exit code vs pixels). It is not a reading failure — `Q85` and §16 were both read in-session and
+contradicted an hour later. Checks added: `designloop check`'s `unclaimed` (190 of 255 answers were
+implemented by no plan step), a test that parses `DESIGN.md` §16 and asserts each knob exists, and
+`Tools/spotlight_tool.tscn -- --verify`, because a still frame cannot show a pulse or a dead cascade.

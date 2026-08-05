@@ -63,6 +63,7 @@ func _ready() -> void:
 	await test_end_screen_above_board()
 	await test_light_layer_is_over_everything()
 	await test_the_spotlight_wire_lights_the_layer()
+	await test_the_light_travels_between_sections()
 	SettingsManager.settings.base_delay = prev_delay
 	_restore_settings()
 	finish()
@@ -830,6 +831,35 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	for l : LightLayer.Light in layer._lights:
 		if not SpotlightOrigins.points_down(l.origin, l.centre): all_down = false
 	check(all_down, "and every live beam points DOWN at its target (Q117)")
+	# ⚠ **`Q85`: THE CIRCLE IS CENTRED ON THE ART SQUARE, NOT ON THE CARD'S ORIGIN** (owner
+	# 2026-08-04: *"circles should be centered on the skill art, not on card center"*). The two differ
+	# by the `Art` node's authored offset, and centring on the origin put the pool high enough that
+	# *"hard to tell which card circle it is on"*. Asserted against the CARD's own answer rather than
+	# a constant, so the authored offset stays the single source.
+	# ⚠ **STATED AS "NO LIGHT SITS ON A CARD ORIGIN", NOT "EVERY LIGHT SITS ON AN ART SQUARE".** The
+	# positive form looks stronger and is flaky: `PlayArea` controls are POOLED per slot, so a
+	# `CardVisual` can be re-bound between the emit and this check and a light legitimately stops
+	# matching any current card — measured, it failed 2-of-3 that way while the code was correct.
+	# The negative form is the actual regression: under the bug EVERY centre was a card origin.
+	var on_origin := 0
+	var on_art := 0
+	for l : LightLayer.Light in layer._lights:
+		for data : CardData in view.play_area.data_card.keys():
+			var cv : CardVisual = view.play_area.data_card[data]
+			if not is_instance_valid(cv) or not cv.is_inside_tree(): continue
+			if l.centre.is_equal_approx(cv.global_position): on_origin += 1
+			if l.centre.is_equal_approx(cv.spotlight_center()): on_art += 1
+	check(on_origin == 0,
+			"Q85: NO circle sits on a card's origin — they are on the ART SQUARE",
+			"%d light(s) on an origin" % on_origin)
+	check(on_art > 0,
+			"...and at least one circle is positively matched to an art square, so this can fail",
+			"%d of %d" % [on_art, layer._lights.size()])
+	# The two points must actually differ, or neither check above could ever catch the bug.
+	var probe : CardVisual = view.play_area.data_card.values()[0]
+	check(not probe.spotlight_center().is_equal_approx(probe.global_position),
+			"...and the art centre is a DIFFERENT point from the card origin (Art sits at y+5)",
+			"%s vs %s" % [str(probe.spotlight_center()), str(probe.global_position)])
 	# The dim RISES because something is lit, not because an act said so.
 	var settled := 0.0
 	while settled < 1.0 and is_equal_approx(layer._dim, 0.0):
@@ -863,9 +893,111 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 			"...and the beams and circles are STILL lit — it is the dim that went, not the show")
 	SettingsManager.settings.spotlight_dim_target = prev_dim_target
 	# Retiring the set is what lowers the dim — there is no second stop path.
+	# ⚠ **RETIRE FADES, IT DOES NOT VANISH** (chart E3, and the brief's *"no instant movements or
+	# spawning in and out"* applies to the end of an act too). So the claim is now two-sided, and the
+	# first half is the one that would catch a regression to snapping: the lights are STILL lit on the
+	# frame after `retire()`, and they go dark shortly after.
 	view.spotlight_director.retire()
-	check(not layer.is_lit(), "retiring the lights is what lowers the dim, with no separate stop")
+	await get_tree().process_frame
+	check(layer.is_lit(),
+			"retire() FADES the lights rather than snapping them off (chart E3)",
+			"went dark within one frame — the retire envelope is not being applied")
+	var gone := 0.0
+	while gone < 2.0 and layer.is_lit():
+		gone += await _tick_seconds()
+	check(not layer.is_lit(),
+			"...and once faded, retiring the lights is what lowers the dim — no separate stop path",
+			"still lit after %.2fs" % gone)
 	await _teardown_view(view, prev_run, prev_save_info)
+
+## **CHART E — THE TRAVEL.** The brief's requirement in one sentence: *"spotlights spawned during
+## scoring phase need to move their spotlights to next row/col after done with current set, **no
+## instant movements or spawning in and out**"*.
+##
+## ⚠ **THIS IS THE HALF OF S14 THAT DID NOT EXIST FOR THREE PHASES.** `_on_section_changed` used to
+## call `_release_all()` and rebuild the whole set, so every light died and respawned on every
+## section — the exact thing the brief forbids. Nothing caught it because a still frame of a rebuilt
+## set and a still frame of a travelled set are identical; only the frames BETWEEN them differ.
+func test_the_light_travels_between_sections() -> void:
+	backup_real_save()
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await view.game.next()
+	view.play_area.flush_rebuild()
+	await get_tree().process_frame
+	var layer := view.light_layer
+	var director := view.spotlight_director
+
+	# Two DISJOINT sections, so every light must move: no card is in both.
+	var all : Array[CardData] = []
+	for data : CardData in view.play_area.data_card.keys(): all.append(data)
+	check(all.size() >= 4, "the dealt board has enough cards for two disjoint sections", str(all.size()))
+	if all.size() < 4:
+		await _teardown_view(view, prev_run, prev_save_info)
+		return
+	var first : Array[CardData] = [all[0], all[1]]
+	var second : Array[CardData] = [all[2], all[3]]
+
+	view.game.spotlight_section_changed.emit(first)
+	await get_tree().process_frame
+	# Let the spawn envelope finish so the "did it move" measurement is not confused by a fade-in.
+	var settled := 0.0
+	while settled < 1.0:
+		settled += await _tick_seconds()
+	var before : Array[Vector2] = []
+	for l : LightLayer.Light in layer._lights: before.append(l.centre)
+	var origins_before : Array[Vector2] = []
+	for l : LightLayer.Light in layer._lights: origins_before.append(l.origin)
+	check(before.size() == 2, "the first section lit two cards", str(before.size()))
+
+	# THE SECOND SECTION. Nothing here is in the first, so both lights must TRAVEL.
+	view.game.spotlight_section_changed.emit(second)
+	await get_tree().process_frame
+	var during : Array[Vector2] = []
+	for l : LightLayer.Light in layer._lights: during.append(l.centre)
+	check(during.size() == before.size(),
+			"the light COUNT does not change across the section — the same lamps move",
+			"%d -> %d" % [before.size(), during.size()])
+	# ⚠ THE CLAIM THAT MATTERS: one frame in, the circles are NOT yet on the new cards. A rebuild
+	# would have them there already, which is precisely the defect this test exists for.
+	var target_a := _centre_for(view, second[0])
+	var snapped := 0
+	for c : Vector2 in during:
+		if c.is_equal_approx(target_a): snapped += 1
+	check(snapped == 0,
+			"one frame after the section changes, no circle has SNAPPED to its new card",
+			"%d light(s) teleported — the travel is not being applied" % snapped)
+	# ⚠ **E10: THE ORIGIN IS FIXED WHILE THE WIDE END TRACKS THE CIRCLE.** The lamp must not move with
+	# the light, or the whole rig reads as sliding rather than one beam pivoting.
+	var moved_origins := 0
+	for i : int in mini(origins_before.size(), layer._lights.size()):
+		if not layer._lights[i].origin.is_equal_approx(origins_before[i]): moved_origins += 1
+	check(moved_origins == 0, "E10: the ORIGINS stay put while the circles travel",
+			"%d origin(s) moved with their light" % moved_origins)
+
+	# And it ARRIVES: given time, the circles reach the new cards.
+	var travelled := 0.0
+	var arrived := false
+	while travelled < 3.0 and not arrived:
+		travelled += await _tick_seconds()
+		for l : LightLayer.Light in layer._lights:
+			if l.centre.is_equal_approx(_centre_for(view, second[0])): arrived = true
+	check(arrived, "and the travelling light ARRIVES on its new card (E11)",
+			"never reached the target in %.1fs" % travelled)
+	await _teardown_view(view, prev_run, prev_save_info)
+
+## A card's art-square centre, for comparing against what the layer was handed.
+func _centre_for(view: GameView, data: CardData) -> Vector2:
+	var cv : CardVisual = view.play_area.data_card.get(data)
+	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
 
 ## One frame of real time, and how long it took.
 func _tick_seconds() -> float:

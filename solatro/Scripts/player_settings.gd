@@ -144,6 +144,41 @@ signal settings_changed
 	set(value):
 		spotlight_hold_fraction = value
 		settings_changed.emit()
+## **HOW LONG A ROW TAKES TO EXPAND OR COLLAPSE** — `DESIGN.md` §16, chart D6 (*"PlayArea grows each
+## reveal row's gap to a full card, TWEENED over reveal_fraction"*), a fraction of `Game.get_delay()`
+## like everything else (`Q167`=a).
+##
+## ⚠ **THE REVEAL ITSELF (S16) IS NOT BUILT — this knob times the SIMULATION of it** in
+## `Tools/spotlight_tool.tscn`, which draws the answer so it can be judged before it is implemented.
+## It is here rather than in the tool because §16 says so and because S16 will want the same number:
+## a second copy in the tool would be a knob the shipped reveal then disagreed with.
+## ⚠ Added 2026-08-04 after the owner reported *"row separation is not smooth. cards jump to their new
+## spot instantly"* — there was no duration to ease over because there was no knob.
+@export var spotlight_reveal_fraction : float = 0.4:
+	set(value):
+		spotlight_reveal_fraction = value
+		settings_changed.emit()
+## **CHART E's TRAVEL** — how long a light takes to move from one card to the next, as a fraction of
+## `Game.get_delay()`. The brief's whole requirement for it: *"spotlights spawned during scoring phase
+## need to move their spotlights to next row/col after done with current set, **no instant movements
+## or spawning in and out**"*.
+## ⚠ `Q63`=(a) — it holds FULL SIZE in transit, like a real followspot; it does not dim or shrink.
+## ⚠ `Q64`=(a) — every travelling light moves at once, not staggered.
+@export var spotlight_travel_fraction : float = 0.5:
+	set(value):
+		spotlight_travel_fraction = value
+		settings_changed.emit()
+## A brand-new light fading in. ⚠ `Q65`=(a): it **fades in already aimed at its target**, rather than
+## travelling in along its beam from the origin — the searchlight-sweep reading was declined.
+@export var spotlight_spawn_fraction : float = 0.3:
+	set(value):
+		spotlight_spawn_fraction = value
+		settings_changed.emit()
+## A surplus light fading out, in place, on the card it was already on (chart E3).
+@export var spotlight_retire_fraction : float = 0.3:
+	set(value):
+		spotlight_retire_fraction = value
+		settings_changed.emit()
 
 @export_group("Act speed-up (per-activation compression)")
 ## Long/looping score cascades shrink their per-step delay per unit of WORK PROCESSED

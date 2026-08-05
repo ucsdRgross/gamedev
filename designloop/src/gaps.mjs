@@ -298,6 +298,47 @@ export async function readPlanSteps(dir, file = 'PLAN.md') {
   return text === null ? [] : planSteps(text);
 }
 
+/**
+ * **THE INVERSE CITATION CHECK: which ANSWERED questions does no plan step claim to implement?**
+ *
+ * ⚠ **THIS IS THE CHECK THAT WAS MISSING, AND ITS ABSENCE COST A FEATURE.** Everything else here
+ * validates STEPS → NODES: every citation resolves, no step cites nothing. Nothing validated
+ * NODES → STEPS, so an answered question that no step implements was invisible to every tool in the
+ * repo — and therefore invisible to the agent executing the plan.
+ *
+ * Measured on Spotlight, 2026-08-04: **255 answered questions, 65 cited by a step, 190 cited by
+ * none.** `Q85` (*"Radius 16 art units, centred on the card's ART-SQUARE centre"*) was one of the
+ * 190. It was read, not implemented, and shipped wrong through three phases and two by-eye reviews,
+ * because no step claimed it and so nothing could report it missing.
+ *
+ * ⚠ **NOT AN ERROR, AND DELIBERATELY SO.** Many answers are scope, context or rationale with nothing
+ * to build ("is this in this plan at all", "why we chose X"). The honest output is a REVIEWABLE LIST
+ * the owner triages once; what matters is that the residue is deliberate rather than unnoticed.
+ * `ignore` carries the ones already triaged, so the list converges on zero instead of being ignored
+ * wholesale — a list nobody can clear is a list nobody reads.
+ *
+ * @param {Array} questions parsed design questions
+ * @param {object} answers  the `answers` block of answers.json
+ * @param {Array} steps     from `planSteps()`
+ * @param {Set<string>} ignore ids already triaged as "nothing to implement"
+ */
+export function uncitedAnswers(questions, answers = {}, steps = [], ignore = new Set()) {
+  const cited = new Set();
+  for (const step of steps) for (const c of step.cites) cited.add(c);
+  const out = [];
+  for (const q of questions) {
+    if (q.retired) continue;
+    const a = answers[q.id];
+    if (!a || a.state !== 'chosen') continue;
+    // An INACTIVE answer is a different defect and `answers.log`'s strand report owns it — flagging
+    // it here too would bury the live ones.
+    if (a.active === false) continue;
+    if (cited.has(q.id) || ignore.has(q.id)) continue;
+    out.push({ id: q.id, title: (q.text || '').replace(/\s+/g, ' ').slice(0, 88), override: !!a.override });
+  }
+  return out;
+}
+
 /** The design node IDs an `(implements …)` clause names. Nothing else on the line counts. */
 function citations(text) {
   const m = /\(implements\s+([^)]*)\)/i.exec(String(text ?? ''));

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="FxSpotlightStyle" format=3 uid="uid://cqq02jq3ctefm"]
+
+[ext_resource type="Script" uid="uid://hj3fymhuoafv" path="res://UI/Fx/fx_spotlight_style.gd" id="1_spotstyle"]
+
+[resource]
+script = ExtResource("1_spotstyle")

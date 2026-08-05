@@ -1,6 +1,6 @@
 ---
 name: design-round-read-the-log
-description: Picking up a /flowchart-design round — read answers.log for override:true, not just answers.json, and widen gates rather than replacing options
+description: Picking up a /flowchart-design round — read answers.log for override:true and for stranded answers that widening never restored, not just answers.json, and widen gates rather than replacing options
 metadata:
   type: feedback
 ---
@@ -31,6 +31,24 @@ grew two report lines that did not exist when any of these defects shipped:
 - **`stale`** — chart nodes still posing an ANSWERED question as an open fork. Needs `answers.json`,
   so **re-run `check` after every answer round, not only after authoring** — that is exactly when
   nobody thinks to.
+
+⚠ **THE CASE NEITHER OF THEM CATCHES, MEASURED 2026-08-04: a stranded answer that widening never
+restored.** When `QR2` gained (d), `answers.log` seq 269 stranded 20 questions (`active: false`).
+§17.6's *heading* was then widened to `[QR2=a|c|d]` — so `dag audit` reads **0**, the heading is no
+longer narrower than its lines — but `Q82`'s **own** gate was left at `[QR2=a & QR8=a]`, and `Q82`
+held a free-text override answering the exact question that later shipped wrong: *"per anytime
+spotlight effect is happening"*, i.e. the per-section dim. It stayed inactive, vanished from every
+later reading of the document, and the act-long dim reached the running game **chosen by nobody**. It
+cost a playtest, a gap file (GAP-006) and a round trip to the owner to recover an answer they had
+already given. **`check` cannot see this: an inactive question with an answer is indistinguishable
+from an inactive question without one.**
+
+⚠ **The mechanical check, and run it on every pick-up — it is two greps, not a discipline:** for each
+`{"event":"strand"}` in `answers.log`, take its IDs and report any that are **still `active:false` in
+`answers.json` while holding an answer** — especially `override:true`. Each hit is either a gate that
+needs widening or a dead question you should be able to say why is dead. On Spotlight the batch of 20
+yielded exactly one live hit (`Q82`) and two genuinely-moot ones (`Q78`, `Q81`), so the signal is
+sharp rather than noisy.
 
 Neither blocks; each shape has a legitimate form. **A non-zero count is a defect until you have
 looked and said why not.** `grammar.auditGates()` is the implementation, with three tests pinning the

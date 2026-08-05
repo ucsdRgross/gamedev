@@ -358,7 +358,7 @@ everything, props included; `Q102`'s original wording is withdrawn).
 
 | Uniform | Meaning | From |
 |---|---|---|
-| `u_dim` | 0..1, **non-zero only while a BEAM is live** | `QR2`=d |
+| `u_dim` | 0..1, **non-zero only while a BEAM is live** — ⚠ **AND ONLY WHILE THE SECTION'S SHOW IS UP**: v10 / GAP-006 multiplies this by `_show`, which eases 0↔1 once per section (see the `spotlight_reveal_ended` row in §1.12) | `QR2`=d, `Q82`=c |
 | `u_dim_scale` | shallower outside scoring | `Q245`=c |
 | `u_lights[]` | per light: circle centre, radius, origin, widths, intensity | chart G |
 | `u_light_count` | sized to the **widest board that fits on screen** — `Q107`: no cap | `Q107` |
@@ -370,6 +370,35 @@ everything, props included; `Q102`'s original wording is withdrawn).
   origin is above the viewport** (`Q251`=b, `Q262`=a) — pinned again once on screen (`Q164`).
 - ⚠ **A beam never points upward** and only enters from the screen edge when the target is below the
   viewport bottom (`Q117`).
+
+### 1.10b `FxSpotlightStyle` — the light layer's LOOK (added 2026-08-04)
+
+⚠ **§16 SAID THIS RESOURCE EXISTS AND IT DID NOT, AND THAT IS WHY KNOBS DID NOTHING.** Audited after
+the owner asked *"why is tunables not its own resource"* and reported that changing the circle radius
+had no effect: **`light.gdshader` declares 13 look uniforms and `LightLayer` pushed six.** Everything
+else sat at its shader DEFAULT, unreachable from GDScript. `circle_radius` and `beam_width_at_origin`
+— both §16 knobs — had become `const`s on `SpotlightDirector`, and `Q85`'s own answer asks for the
+radius to be adjustable in the same breath as giving the number (*"16, make it adjustable so I can
+test slightly different radius"*).
+
+`UI/Fx/fx_spotlight_style.gd` + `Shaders/Styles/spotlight_default.tres`. **The split is the design's:**
+
+| Where | What | Why |
+|---|---|---|
+| `PlayerSettings` | timing fractions, `spotlight_dim_target`, `fx_intensity` | `Q167`=a (fractions of `get_delay()`), `Q168`=a (player-facing) |
+| `FxSpotlightStyle` | `circle_radius`, `circle_intensity`, `circle_softness`, `beam_intensity`, `beam_width_at_origin`, `flare`, `beam_softness`, the noise trio, `dim_color`, `dim_noise`, `light_color` | §16's *"Look"* group, §4g ruling 8 — *"one shared location for all effect tuning"* |
+
+- **`LightLayer.style` holds it; `restyle()` re-pushes.** A style is written ONCE on creation and on
+  swap, never per frame (the `FxStyle` contract).
+- ⚠ **`apply()` deliberately does NOT call `super()`.** `FxStyle.apply()` writes `u_opacity`, which
+  `light.gdshader` does not declare — and writing a uniform the shader lacks is silently ignored,
+  which is the exact class of drift this resource exists to end. `u_pixel` is pushed by name instead.
+- ⚠ **`u_brightness` is `style.brightness * fx_intensity`**, not `fx_intensity` alone: the setting is
+  the player's accessibility multiplier and the style's is the art decision. Dropping either is a
+  knob that silently does nothing.
+- ⚠ **`dim_color` and `light_color` are OFF-PALETTE and allowlisted by NAME** in `test_palette.gd`.
+  That is v8 / GAP-003's exception — granted once, scoped to light, does not travel. Any OTHER colour
+  in this file still trips the drift scan.
 
 ### 1.11 Tunables — `Scripts/player_settings.gd`
 
@@ -389,6 +418,32 @@ dim_target  (player setting, Q84=b → style only… ⚠ see G0 below)
 `dim_target` and `fx_intensity` are player settings. **These two answers conflict.** Resolve by the
 later, more specific answer — `Q84`=(b), style-only — and **file a gap if that reading is wrong**;
 do not split the difference.
+⚠ **CORRECTED IN PLACE, 2026-08-04 (S13):** `Q84`=(b) has nowhere to live — the light layer has no
+style resource at all (`FxGlowStyle`'s three `.tres` belong to the GLOW), so the shipped knob is
+`PlayerSettings.spotlight_dim_target`, which is `Q168`=(a). `spotlight_dim_casual_scale` (0.35) ships
+beside it for `Q245`=(c). **`spotlight_dim_target = 0` is the dim's OFF SWITCH** — it keeps every
+beam, circle and glow and drops only the dim, the opposite split from `fx_intensity = 0`, which
+`Q83` / G2.4 forbid from removing the dim.
+
+### 1.12 The show axis — `spotlight_reveal_ended` (v10 / GAP-006)
+
+⚠ **VISIBILITY IS NOT THE LIGHT SET, AND THIS IS THE CONTRACT THAT KEEPS THEM APART.**
+
+| Signal | Answers | Owned by |
+|---|---|---|
+| `CardEnvironment.spotlight_section_changed(cards)` | *which cards are lit, and where* — the scored section, **unfiltered** | S14 |
+| `CardEnvironment.spotlight_reveal_ended()` | *is the show up* — `LightLayer._show` eases 0↔1 | S14 |
+| `CardEnvironment.spotlight_cued(cards)` | *which cards have a TALENT to announce* — `Q246`=(a) filtered | S15 |
+
+- `_show` multiplies **both** `u_dim` and every light's intensity, so beams, circles and dim fade as
+  one show, once per scored section (`Q82`=c, `Q16`'s *"revealed again at start of next scoring
+  section"*).
+- ⚠ **`_show` scales light INTENSITY, never the light COUNT.** The lights are **not freed** by the
+  fade — they survive, dark, at their positions, which is the only reason chart E's travel is
+  buildable. A fade that freed them would force respawning, which the brief forbids outright.
+- ⚠ **`spotlight_hold_fraction` is what gives the show any duration.** Before it existed, the reveal
+  and its end landed on the same frame at `show=0.000`. Gated on `if view:` so headless waits on
+  nothing (`Q19`=a) and G1.7's parity holds.
 
 ---
 
@@ -441,6 +496,12 @@ does **not** fire `on_unspotlight` (`Q14`=a). `view == null` must behave identic
 **S10 — the momentary cue seam** (implements T1, T2, T3, T4, T5, T7, T14, Q149, Q246, Q247, Q248, Q249)
 `skill_spotlight_check()` emits a `spotlight_cued(cards)` signal on transition. **Phase 1 wires the
 signal only; phase 2 draws it.**
+⚠ **CORRECTED IN PLACE, v10 / GAP-005: THIS CUE IS S15'S ALONE AND THE SCORING BEAM MUST NOT READ
+IT.** `Q246`=(a) filters it to skills implementing `on_spotlight`; exactly one non-test card in the
+shipped game does, and it has no `CardVisual`. Wiring S14 to it left the running game with **no beam,
+circle or dim, ever**, while every test passed against a fixture skill that implements the hook. The
+beam reads `spotlight_section_changed` (§1.12). **A test whose cards all carry the thing being
+filtered on cannot detect the filter.**
 ⚠ **`Q248`=(b): no suppression on resume.** `spotlit` is `@export_storage`, so a saved-spotlit card
 loads spotlit and transitions nothing. Do not add code to prevent a flash that cannot happen.
 **Done when:** placing a card emits exactly one cue; loading a save emits **zero**.
@@ -473,13 +534,38 @@ Per §1.8. ⚠ `@tool` on the script or the editor silently drops properties (VF
 Per §1.9. Halo **and** inner lift (`Q122`=c) on the exact outline (`Q124`=b).
 
 **S13 — the light layer** (implements H1, H2, H3, H4, H5, H6, H7, H8, H9, G10, G11, G12, G13, G14, QR2, Q240, Q107, Q101)
-Per §1.10. ⚠ **The dim is driven by BEAM COUNT, not by act state.**
+Per §1.10. ⚠ **The dim is driven by BEAM COUNT, not by act state** — ⚠ **and by the SHOW, v10 /
+GAP-006: beam count alone gave a dim that stood for the whole act, because the light set is never
+empty between sections. See §1.12.**
 
-**S14 — origins and travel** (implements I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, Q113, Q250, Q251, Q117)
-Per §1.10's origin rules.
+**S14 — origins and travel** (implements I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, Q113, Q250, Q251, Q117, Q82)
+⚠ **CORRECTED IN PLACE 2026-08-04 — THE ORIGIN ASSIGNMENT IS A FAN BY DEPTH, NOT "NEAREST"
+(GAP-008).** §1.10 said origins are taken nearest-first (`Q111`=a). On a COLUMN every target shares
+one x, so "nearest" ties and the last card gets the farthest lamp, whose beam crosses every other —
+defeating the non-crossing property `Q111`=(a) names as its own reason. The owner's rule: **divide the
+top bar into SECTIONS BY COLUMN**, left to right, and inside each section fan by DEPTH — the topmost
+card takes the lamp nearest its own column (*"points straight down"*), each deeper card the next lamp
+outward, ordered by DISTANCE. ⚠ **Partitioning by ROW instead is wrong for anything but a single
+column** and inverted the x order on an interleaved set (corrected 2026-08-05, GAP-008). `SpotlightOrigins.assign()` implements it; `take()` keeps the
+nearest rule for the genuinely single-light case (chart T's cue). One depth degrades to one band, so a
+ROW still spreads across the full width.
+
+Per §1.10's origin rules, fed by `spotlight_section_changed` and `spotlight_reveal_ended` (§1.12) —
+⚠ **not by `spotlight_cued`, which is GAP-005.**
+✅ **CHART E (THE TRAVEL) IS BUILT, 2026-08-04 — S14 IS COMPLETE.** `SpotlightDirector` holds `_Beam`
+records that OUTLIVE their section instead of rebuilding the set. `Q61`=(a) a card in both sections
+keeps its light and does not move; E3 surplus lights fade in place over `spotlight_retire_fraction`;
+`Q65`=(a) a new light fades in ALREADY AIMED; `Q64`=(a) all travel on the same frame, smoothstepped
+over `spotlight_travel_fraction`; `Q63`=(a) FULL SIZE in transit — the fade is the spawn/retire
+envelope only; E10 the origin stays fixed while the wide end tracks the circle.
+⚠ **`_origins.begin()` MAY ONLY RUN WHEN NOTHING IS LIT.** It rebuilds the origin array and clears the
+taken-set, so calling it per section would re-point every live beam's index at another lamp — harmless
+before only because that build discarded all lights each section.
 
 **S15 — the momentary cue's visuals** (implements T6, T8, T9, T10, T11, T12, T13, T15, T16, Q245)
 Draw what S10 emits. Shallower dim outside scoring (`Q245`=c).
+⚠ **v10 / GAP-005 makes this genuinely independent of S14**: `spotlight_cued` is now this step's
+signal alone and nothing else reads it.
 
 ### Phase 2 acceptance gates
 
@@ -519,14 +605,36 @@ per-row expansion breaks it unless the formula learns about it.
 ## 5. PHASE 4 — the tuning tool
 
 **S18 — the scenario player** (implements N1, N2, N3, N4, N5, N6, N7, Q173, Q174, Q175, Q176, Q177, Q178, Q179, Q180, Q181, Q182)
-Standalone, hosting a **real** `PlayArea`, real `CardVisual`s and a real headless `Game` with a fixed
-deck (`Q174`=a, `Q175`=a — the no-mocks rule). `@tool` **and** runnable (`Q176`=a). Viewport-size
-control (`Q177`=a), step (`Q178`=a), freeze (`Q179`=a).
-⚠ Scenario list S1–S17 from the design's §14 — `Q182`: *"we are still on first review pass we could
-add more"*, so make the list data, not code.
+⚠ **CORRECTED IN PLACE 2026-08-04 — `Q174`=(a) AND `Q175`=(a) ARE SUPERSEDED BY THE OWNER (GAP-007).**
+This step originally read *"hosting a **real** `PlayArea`, real `CardVisual`s and a real headless
+`Game` with a fixed deck"*. The owner: *"Just play area simulating effects is enough, dont need full
+game_view with hud"* and *"trigger different preset scenarios using editor tool options"*. What ships
+is **`@tool` + the inspector**, with **no `Game`, no `GameView`, no `PlayArea` and no HUD** — real
+`CardVisual`s on the REAL board pitch, the real `LightLayer`, the real shader, the real
+`SpotlightOrigins`. `Q176`=(a)'s two answers could not both hold against `Q174`/`Q175`; the fidelity
+requirement gave way rather than the form. Lands in `solatro/Tools/`, not §0b's `UI/Fx/Tools/`.
+⚠ **THE CASCADE IS POSED, NOT RUN, AND THAT IS THE STANDING LIMIT OF THIS TOOL.** Section membership,
+the activation sweep, hand re-evaluation and the real hold beat are `Game`'s. **A behaviour question
+goes to `Tools/spotlight_tool.tscn -- --trace` or the suite, which run the real act; this tool answers "does it
+look right".**
+Also simulated, at the owner's direction the same day: the **real stacking pitch** (a covered card
+shows the same strip it does in play), a **cascade** preset (`sections`, walked in order, the set
+replaced without being freed), a **mocked solo activation trigger** (`casual`, at `Q245`=c's
+shallower dim), and **row separation** (the S16 reveal, drawn as the answer since `PlayArea` cannot
+do it yet).
+⚠ **THE GLOW IS NOT IN THE TOOL** and `Q83` makes the glow the point. There is no effect class for it
+yet, so **gate G2.2 cannot be finally settled from this tool until there is** — see §3's S15 note.
+Viewport-size control (`Q177`=a) falls out of the `SubViewport` the preview renders into.
+⚠ Scenario list from the design's §14 — `Q182`: *"we are still on first review pass we could
+add more"*, so the list is DATA (`Tools/spotlight_scenarios.json`), not code.
 
 ### Phase 4 gate
 - **G4.1** Every scenario plays to completion without an error, and S15 can be held on one frame.
+  ⚠ **Restated for what shipped (GAP-007):** `<godot> --path solatro res://Tools/spotlight_tool.tscn
+  -- --shoot-all` builds every preset, prints `cards=N lit=M sections=K` for each, saves a PNG, and
+  exits 0. **The counts are half the gate**: a blank frame at exit 0 is this tool's characteristic
+  failure — it happened twice while building it (cards deleting themselves, and a panel anchored off
+  screen) — and only the counts tell a picture that is blank from one that is merely dark.
 
 ---
 

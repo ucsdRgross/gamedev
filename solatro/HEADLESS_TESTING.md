@@ -131,7 +131,7 @@ nothing"* — those are questions about ORDER, and the instrument for them is `E
 (`Scripts/visual_log.gd`), not a picture and not a green test.
 
 ```bash
-"$GODOT_CONSOLE" --path solatro res://Tools/spotlight_trace.tscn   # -> user://logs/spotlight_trace/
+"$GODOT_CONSOLE" --path solatro res://Tools/spotlight_tool.tscn -- --trace   # -> user://logs/spotlight_trace/
 ```
 
 **Two log roots under `%APPDATA%\Godot\app_userdata\Solatro\logs\`, deliberately separate:**

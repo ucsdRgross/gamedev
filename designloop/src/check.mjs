@@ -14,7 +14,7 @@ import { parseDocument, reachability, nextQuestion, longestPath, auditGates } fr
 import { parseCharts, validate as validateGraph, describeGraph } from './graph.mjs';
 import { find } from './registry.mjs';
 import { readJson } from './store.mjs';
-import { readPlanSteps } from './gaps.mjs';
+import { readPlanSteps, uncitedAnswers } from './gaps.mjs';
 import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 
 const TOOL_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -159,6 +159,31 @@ async function main() {
         `  plan        ${steps.length} step(s), ${unknown.length} bad citation(s), ${uncited.length} uncited\n`,
       );
       for (const line of [...unknown, ...uncited]) process.stdout.write(`  PLAN    ${line}\n`);
+
+      // ⚠ **THE INVERSE: answered questions NO step implements.** See `uncitedAnswers` for why this
+      // exists — it is the check whose absence let `Q85` ship wrong through three phases. The list
+      // is reviewable, not fatal: many answers are scope or rationale with nothing to build. Triaged
+      // ids go in `<design>/implements-nothing.txt`, one per line, so the list converges on zero.
+      const ignoreText = design
+        ? await readFile(join(design.dir, 'implements-nothing.txt'), 'utf8').catch(() => '')
+        : '';
+      const ignore = new Set(
+        ignoreText.split(/\r?\n/).map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean),
+      );
+      const orphans = uncitedAnswers(parsed.questions, answers, steps, ignore);
+      process.stdout.write(
+        `  unclaimed   ${orphans.length} answered question(s) no step implements` +
+          `${ignore.size ? ` (${ignore.size} triaged)` : ''}\n`,
+      );
+      // The owner's own words are the ones most likely to carry a requirement nobody transcribed, so
+      // free-text overrides lead the list rather than being buried in ID order.
+      const ranked = [...orphans].sort((a, b) => Number(b.override) - Number(a.override));
+      for (const o of ranked.slice(0, 20)) {
+        process.stdout.write(`  UNCLAIMED  ${o.override ? '*' : ' '} ${o.id}  ${o.title}\n`);
+      }
+      if (ranked.length > 20) {
+        process.stdout.write(`  UNCLAIMED    … and ${ranked.length - 20} more\n`);
+      }
     }
 
     // PROVENANCE — the distance between an ANSWER and what the documents say it was.

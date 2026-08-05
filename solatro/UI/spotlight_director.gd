@@ -1,8 +1,12 @@
 class_name SpotlightDirector
 extends Node
 ## THE WIRE — the one thing that makes any of phase 2 visible in the running game. It listens for
-## `CardEnvironment.spotlight_cued(cards)` (S10 emits it), turns each cued card into a screen
-## position, takes an origin per card from `SpotlightOrigins`, and hands the set to `LightLayer`.
+## `CardEnvironment.spotlight_section_changed(cards)`, turns each card into a screen position, takes
+## an origin per card from `SpotlightOrigins`, and hands the set to `LightLayer`.
+##
+## ⚠ **NOT `spotlight_cued` — that was GAP-005 and it made the feature invisible for a whole phase.**
+## The cue is `Q246`-filtered to skills implementing `on_spotlight`, which no ordinary board card has,
+## so the light set was permanently empty in the running game. See `bind()`.
 ##
 ## THREE OBJECTS, THREE QUESTIONS, AND KEEPING THEM APART IS THE POINT:
 ##
@@ -20,23 +24,58 @@ extends Node
 ## "this card just became active" cue and scoring one caller of it — so this node never asks whether
 ## a submit is running, only whether the cue it just received belongs to one.
 
-## `Q85`: the circle is 16 ART units, centred on the card's art square. In SCREEN pixels that is
-## scaled by the live `card_scale`, which the player can change — hence a function of the setting
-## rather than a baked number.
-const CIRCLE_ART_UNITS := 16.0
+## ⚠ **THESE WERE `const`s AND SHOULD NEVER HAVE BEEN** — `DESIGN.md` §16 lists `circle_radius` and
+## `beam_width_at_origin` as tunables on a style resource, and `Q85`'s own answer asks for the radius
+## in the same breath as the number: *"16, make it adjustable so I can test slightly different
+## radius"*. Baked here, the tuning tool had nothing to change and the owner reported exactly that.
+## They now come from `FxSpotlightStyle` via the light layer, so there is ONE value rather than a
+## constant and a knob that can disagree.
+## ⚠ The FALLBACKS are the shipped defaults, used only when no layer or style is bound — a director
+## with no light layer draws nothing anyway.
+const CIRCLE_ART_UNITS_FALLBACK := 16.0
+const ORIGIN_WIDTH_ART_UNITS_FALLBACK := 9.0
 
-## How wide the cone is where it leaves its lamp, in art units. ⚠ Its width at the TARGET is not
-## here and must not be: the shader derives that from the circle's radius, so the cone's mouth
-## cannot disagree with the pool it opens onto.
-const ORIGIN_WIDTH_ART_UNITS := 9.0
+## The circle's radius in ART units, from the style. Screen pixels are this times the live
+## `card_scale`, which the player can change.
+func _circle_art_units() -> float:
+	var s : FxSpotlightStyle = _layer.style if _layer else null
+	return s.circle_radius if s else CIRCLE_ART_UNITS_FALLBACK
+
+## The cone's half-width where it leaves its lamp, in art units. ⚠ Its width at the TARGET is not
+## here and must not be: the shader derives that from the circle's radius, so the cone's mouth cannot
+## disagree with the pool it opens onto.
+func _origin_width_art_units() -> float:
+	var s : FxSpotlightStyle = _layer.style if _layer else null
+	return s.beam_width_at_origin if s else ORIGIN_WIDTH_ART_UNITS_FALLBACK
 
 var _layer : LightLayer = null
 var _play_area : PlayArea = null
 var _origins := SpotlightOrigins.new()
-## The origin index each lit card holds, so it can be released when the cue retires. ⚠ INDICES, not
-## points: `SpotlightOrigins.advance()` moves the off-screen ones every frame, so a stored point
-## stops identifying its lamp after one frame.
-var _held : Dictionary[CardData, int] = {}
+
+## **ONE LIVE LIGHT — chart E's unit.** A light OUTLIVES the section that created it: that is the
+## whole of the brief's *"no instant movements or spawning in and out"*, and it is why the director
+## holds records rather than rebuilding an array of `LightLayer.Light` every section.
+class _Beam extends RefCounted:
+	## The card it is lighting, or the last one it lit while retiring.
+	var card : CardData = null
+	## ⚠ AN INDEX, not a point: `SpotlightOrigins.advance()` moves the off-screen lamps every frame,
+	## so a stored point stops identifying its lamp after one frame.
+	var origin_idx : int = -1
+	## Where the travel started. Meaningless once `t` reaches 1.
+	var from : Vector2 = Vector2.ZERO
+	## Travel progress, 0..1. **1 means settled on its card** — a light that is not moving is simply
+	## one whose `t` is already 1, so there is no separate "settled" state to fall out of step.
+	var t : float = 1.0
+	## Spawn-in / retire-out, 0..1. Scales the light's INTENSITY, never its size (`Q63`=a).
+	var fade : float = 1.0
+	var retiring : bool = false
+
+var _beams : Array[_Beam] = []
+## Has the allocator been laid out for the act in progress? ⚠ **`begin()` REBUILDS `_origins` AND
+## CLEARS `_taken`, which invalidates every index a live beam is holding** — so it may run only when
+## nothing is lit. Calling it per section (which the pre-travel build did) is harmless only because
+## that build also threw every light away each section; with travel it would re-point live lamps.
+var _band_ready : bool = false
 ## The environment whose cue this director draws. Held rather than re-looked-up: see `bind`.
 var _env : CardEnvironment = null
 
@@ -74,51 +113,104 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
 		EventLog.event(EventLog.CH_SPOTLIGHT, "section_changed",
 				"cards=%d scoring=%s" % [cards.size(), str(_is_scoring())])
-	_release_all()
-	var lights : Array[LightLayer.Light] = []
-	var scale := SettingsManager.settings.card_scale
 	var viewport := _layer.get_viewport_rect()
-	_origins.begin(cards.size(), viewport.size.x, viewport.position.y)
+	# ⚠ ONLY when nothing is lit — see `_band_ready`. Re-laying the band mid-act would re-point every
+	# live beam's origin index at somebody else's lamp.
+	if not _band_ready or _beams.is_empty():
+		_origins.begin(cards.size(), viewport.size.x, viewport.position.y)
+		_band_ready = true
+
+	# THE NEXT SET N: every card that actually has a visual to light.
+	var wanted : Array[CardData] = []
 	for data : CardData in cards:
-		var visual := _visual_of(data)
-		if not visual: continue
-		# ⚠ **`global_position` IS ALREADY THE SCREEN PIXEL** the shader's `SCREEN_UV` resolves to —
-		# one canvas layer, no camera offset, and the board's scroll is inside the transform.
-		# Converting again here would be a second copy of the scroll that can disagree with the real
-		# one, which is the drift bug this whole layer is arranged to avoid.
-		var centre := visual.global_position
-		var light := LightLayer.Light.new()
-		light.centre = centre
-		light.radius = CIRCLE_ART_UNITS * scale
-		light.origin_width = ORIGIN_WIDTH_ART_UNITS * scale
-		var idx := _origins.take(centre)
-		_held[data] = idx
-		# ⚠ `Q117` IS APPLIED HERE, AT THE ONLY PLACE THAT KNOWS BOTH ENDS. A target below the
-		# viewport is lit from the screen edge rather than by tilting a rig lamp up to reach it —
-		# the beam can never point upward.
-		light.origin = SpotlightOrigins.edge_origin_for(centre, viewport.position.y,
-				viewport.position.y + viewport.size.y, _origins.origin_of(idx))
-		lights.append(light)
+		if _visual_of(data): wanted.append(data)
+
+	# **E2 — P ∩ N KEEPS ITS LIGHT AND DOES NOT MOVE** (`Q61`=a: *"a card spotlit in two consecutive
+	# lines keeps its own light"*). This is the case that makes a cascade read as one rig following the
+	# scoring rather than as a new rig per line.
+	var still : Dictionary[CardData, bool] = {}
+	for data : CardData in wanted: still[data] = true
+	var leftover : Array[_Beam] = []          # E4: lights whose card left the set
+	for b : _Beam in _beams:
+		if b.retiring: continue
+		if b.card != null and still.has(b.card): continue
+		leftover.append(b)
+	var claimed : Dictionary[CardData, bool] = {}
+	for b : _Beam in _beams:
+		if not b.retiring and b.card != null: claimed[b.card] = true
+	var targets : Array[CardData] = []        # E4: targets with no light yet
+	for data : CardData in wanted:
+		if not claimed.has(data): targets.append(data)
+
+	# **E2's ASSIGNMENT — sort both by x, pair in order** (chart E2 option A; GAP-008 is the open
+	# ruling on it). Two pairs cross only if their order is inverted, and pairing two sorted sequences
+	# inverts nothing — which is the property `Q111`=(a) names as its own reason.
+	leftover.sort_custom(func(a: _Beam, b: _Beam) -> bool:
+		return _beam_centre(a).x < _beam_centre(b).x)
+	targets.sort_custom(func(a: CardData, b: CardData) -> bool:
+		return _centre_of(a).x < _centre_of(b).x)
+
+	var pairs : int = mini(leftover.size(), targets.size())
+	for i : int in pairs:
+		# **E9 — THE LIGHT TRAVELS.** Its origin is kept, so the beam pivots on its own lamp rather
+		# than the lamp teleporting with it (E10: *"origin fixed, wide end tracks the circle"*).
+		var b : _Beam = leftover[i]
+		b.from = _beam_centre(b)
+		b.card = targets[i]
+		b.t = 0.0
+		b.retiring = false
 		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
-			# The CARD's identity, its screen position and which lamp it took — the three things a
-			# "why is that beam there" question ever needs.
-			EventLog.event(EventLog.CH_SPOTLIGHT, "light_placed",
-					"card=%s centre=(%.0f,%.0f) origin_idx=%d origin=(%.0f,%.0f) r=%.1f"
-					% [data.log_str(), centre.x, centre.y, idx,
-						light.origin.x, light.origin.y, light.radius])
+			EventLog.event(EventLog.CH_SPOTLIGHT, "light_travel",
+					"to=%s from=(%.0f,%.0f) origin_idx=%d" % [b.card.log_str(), b.from.x, b.from.y,
+						b.origin_idx])
+	# **E3 — SURPLUS LIGHTS RETIRE**, fading in place on the card they were already on.
+	for i : int in range(pairs, leftover.size()):
+		leftover[i].retiring = true
+		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+			EventLog.event(EventLog.CH_SPOTLIGHT, "light_retiring", "surplus")
+	# **E4 — SURPLUS TARGETS GET NEW LIGHTS.** `Q65`=(a): a new light FADES IN ALREADY AIMED at its
+	# target (`t = 1`), rather than travelling in along its beam from the origin — the searchlight
+	# sweep was the declined reading.
+	for i : int in range(pairs, targets.size()):
+		var data : CardData = targets[i]
+		var nb := _Beam.new()
+		nb.card = data
+		nb.t = 1.0
+		nb.fade = 0.0
+		# One light, so the single-light rule applies: the free origin NEAREST it (`Q111`=a, I7).
+		nb.origin_idx = _origins.take(_centre_of(data))
+		_beams.append(nb)
+		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
+			EventLog.event(EventLog.CH_SPOTLIGHT, "light_spawn",
+					"card=%s origin_idx=%d" % [data.log_str(), nb.origin_idx])
+
 	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
-		# ⚠ `requested` vs `placed` is the diagnostic that matters: a card with no live `CardVisual`
-		# is silently skipped by `_visual_of`, so a section of 5 that places 2 lights is a board
-		# problem, not a light problem, and the two numbers are the only way to tell them apart.
+		# ⚠ `requested` vs `placed` is the diagnostic that matters: a card with no live `CardVisual` is
+		# silently skipped, so a section of 5 that places 2 is a BOARD problem, not a light problem.
 		EventLog.event(EventLog.CH_SPOTLIGHT, "lights_set",
-				"requested=%d placed=%d" % [cards.size(), lights.size()])
-	# Scoring or not decides the dim's depth (`Q245`=c — a much shallower dim outside scoring, since
-	# otherwise the screen pulses dark on every single card you place).
-	_layer.set_lights(lights, _is_scoring())
+				"requested=%d placed=%d travelled=%d spawned=%d retiring=%d"
+				% [cards.size(), wanted.size(), pairs, maxi(targets.size() - pairs, 0),
+					maxi(leftover.size() - pairs, 0)])
+	_push()
 	# ⚠ A NEW SECTION RAISES THE SHOW AGAIN (GAP-006) — *"When next section is revealed, spotlight and
-	# dim effect are visible again"*. Raised AFTER the set is in place, so the fade-in is already
-	# pointing at the right cards.
-	_layer.set_revealed(not lights.is_empty())
+	# dim effect are visible again"*. Raised AFTER the set is in place, so the fade-in already points
+	# at the right cards.
+	_layer.set_revealed(not _beams.is_empty())
+
+## Where a beam's circle is RIGHT NOW — its target's art square, or a point along its travel.
+## ⚠ `Q63`=(a): full size the whole way. The ease is on POSITION only; nothing shrinks or dims in
+## transit, because a real followspot does not.
+func _beam_centre(b: _Beam) -> Vector2:
+	var target := _centre_of(b.card)
+	if b.t >= 1.0 or b.card == null: return target
+	# Smoothstep: the light accelerates off its old card and settles onto the new one rather than
+	# starting and stopping abruptly, which is what "no instant movements" is asking for.
+	return b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
+
+## A card's art-square centre in screen pixels, or the beam's last position if the card is gone.
+func _centre_of(data: CardData) -> Vector2:
+	var visual := _visual_of(data) if data else null
+	return visual.spotlight_center() if visual else Vector2.ZERO
 
 ## The section's reveal is over and its scoring is starting: FADE the show, keep the set (GAP-006).
 ##
@@ -131,35 +223,82 @@ func _on_reveal_ended() -> void:
 
 ## Retire every light — which is also what lowers the dim, since the dim is a function of what is
 ## lit. Called when the act releases its spotlight (`_release_spotlight`, S9) or the board clears.
+##
+## ⚠ **THE LIGHTS FADE, THEY DO NOT VANISH** (chart E3, and the brief's *"no instant movements or
+## spawning in and out"* applies to the END of an act as much as to the middle of one). Each beam is
+## marked retiring and fades over `spotlight_retire_fraction`; `_advance` frees them and releases
+## their origins when they reach zero.
 func retire() -> void:
-	EventLog.event(EventLog.CH_SPOTLIGHT, "retire", "held=%d" % _held.size())
-	_release_all()
-	if _layer: _layer.set_lights([] as Array[LightLayer.Light], false)
+	EventLog.event(EventLog.CH_SPOTLIGHT, "retire", "live=%d" % _beams.size())
+	for b : _Beam in _beams: b.retiring = true
 
+## Free everything immediately, with no fade — the board is gone, so there is nothing to fade ON.
 func _release_all() -> void:
-	for idx : int in _held.values(): _origins.release(idx)
-	_held = {}
+	for b : _Beam in _beams:
+		if b.origin_idx >= 0: _origins.release(b.origin_idx)
+	_beams.clear()
+	_band_ready = false
 
-## Per frame: the off-screen lamps re-spread, the on-screen ones are pinned (I10–I12). ⚠ The lit
-## cards' POSITIONS are re-read here too — a card moves while it is lit (the compact-and-follow
-## slide of S7, a jump, a scroll), and a beam that kept its first position would slide off its
-## target. `Q252`=(b)'s re-read discipline, at the presentation layer.
-func _process(_delta: float) -> void:
-	if not _layer or not _layer.is_lit() or _held.is_empty(): return
+## One unit of show time. Every duration here is a FRACTION of it (`Q167`=a), never wall-clock, so
+## the whole travel compresses with the act speed-up exactly like the dim and the hold beat.
+func _delay() -> float:
+	var game := _env as Game
+	return game.get_delay() if game else SettingsManager.settings.base_delay
+
+## Per frame: advance every travel and fade, drop the finished retirements, re-spread the off-screen
+## lamps (I10–I12), and re-push.
+##
+## ⚠ **THE LIT CARDS' POSITIONS ARE RE-READ EVERY FRAME** — a card moves while it is lit (the
+## compact-and-follow slide of S7, a jump, a scroll), and a beam that kept its first position would
+## slide off its target. `Q252`=(b)'s re-read discipline, at the presentation layer.
+func _process(delta: float) -> void:
+	if not _layer or _beams.is_empty(): return
 	_origins.advance(_layer.get_viewport_rect().position.y)
-	var lights : Array[LightLayer.Light] = []
+	var s := SettingsManager.settings
+	var unit := _delay()
+	var travel := maxf(unit * s.spotlight_travel_fraction, 0.0001)
+	var spawn := maxf(unit * s.spotlight_spawn_fraction, 0.0001)
+	var leave := maxf(unit * s.spotlight_retire_fraction, 0.0001)
+	var done : Array[_Beam] = []
+	for b : _Beam in _beams:
+		# **E9 / `Q64`=(a): every travelling light advances on the SAME frame** — simultaneous, not
+		# staggered, which is one loop rather than a per-light delay.
+		if b.t < 1.0: b.t = minf(b.t + delta / travel, 1.0)
+		if b.retiring:
+			b.fade = maxf(b.fade - delta / leave, 0.0)
+			if b.fade <= 0.0: done.append(b)
+		elif b.fade < 1.0:
+			b.fade = minf(b.fade + delta / spawn, 1.0)
+	for b : _Beam in done:
+		if b.origin_idx >= 0: _origins.release(b.origin_idx)
+		_beams.erase(b)
+	if _beams.is_empty(): _band_ready = false
+	_push()
+
+## Hand the live set to the layer. ⚠ ONE PLACE builds `LightLayer.Light`, so a travelling beam and a
+## settled one cannot be described differently by two code paths.
+func _push() -> void:
+	if not _layer: return
 	var scale := SettingsManager.settings.card_scale
 	var viewport := _layer.get_viewport_rect()
-	for data : CardData in _held:
-		var visual := _visual_of(data)
-		if not visual: continue
-		var centre := visual.global_position
+	var lights : Array[LightLayer.Light] = []
+	for b : _Beam in _beams:
+		var centre := _beam_centre(b)
 		var light := LightLayer.Light.new()
 		light.centre = centre
-		light.radius = CIRCLE_ART_UNITS * scale
-		light.origin_width = ORIGIN_WIDTH_ART_UNITS * scale
+		light.radius = _circle_art_units() * scale
+		light.origin_width = _origin_width_art_units() * scale
+		light.flare = _layer.style.flare if _layer.style else 0.0
+		# **`Q63`=(a): FULL SIZE IN TRANSIT.** The fade is the SPAWN and RETIRE envelope only — a
+		# travelling light does not dim, because a real followspot does not.
+		light.intensity = b.fade
+		# ⚠ `Q117` IS APPLIED HERE, AT THE ONLY PLACE THAT KNOWS BOTH ENDS. A target below the viewport
+		# is lit from the screen EDGE rather than by tilting a rig lamp up to reach it.
+		# ⚠ **E10: the origin is FIXED while the wide end tracks the circle** — the beam pivots on its
+		# own lamp through the whole travel, which is what makes it read as one light moving rather
+		# than as the whole rig sliding.
 		light.origin = SpotlightOrigins.edge_origin_for(centre, viewport.position.y,
-				viewport.position.y + viewport.size.y, _origins.origin_of(_held[data]))
+				viewport.position.y + viewport.size.y, _origins.origin_of(b.origin_idx))
 		lights.append(light)
 	_layer.set_lights(lights, _is_scoring())
 

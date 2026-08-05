@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { readFile as read } from 'node:fs/promises';
 
 import {
-  parseGap, readGaps, countGaps, scopedQuestions, nextGapQuestion, planSteps, staleSteps, staleFor,
+  parseGap, readGaps, countGaps, scopedQuestions, nextGapQuestion, planSteps, staleSteps, staleFor, uncitedAnswers,
   nextGapId, promoteAssumption, nodesIn, isGapId, readPlanSteps,
 } from '../src/gaps.mjs';
 
@@ -230,4 +230,36 @@ test('a gap ID is told apart from a question ID, because both key one answers fi
   assert.equal(isGapId('Q88b'), false);
   assert.equal(isGapId('QR1'), false);
   assert.deepEqual(nodesIn('J8–J10, Q86'), ['J8', 'J9', 'J10', 'Q86']);
+});
+
+// ⚠ THE INVERSE CITATION CHECK. Every other check here validates STEPS → NODES; this one is the only
+// thing that can see an ANSWER no step claims to implement. Its absence is why solatro/spotlight
+// shipped Q85 ("centred on the card's ART-SQUARE centre") wrong through three phases: it was read,
+// not implemented, and nothing in the toolchain could report it missing.
+test('uncitedAnswers finds an answered question no step implements', () => {
+  const questions = [
+    { id: 'Q1', text: 'implemented' },
+    { id: 'Q2', text: 'answered but claimed by nobody' },
+    { id: 'Q3', text: 'not answered at all' },
+    { id: 'Q4', text: 'answered, but its answer was stranded' },
+    { id: 'Q5', text: 'triaged as nothing-to-build' },
+    { id: 'Q6', text: 'retired', retired: true },
+  ];
+  const answers = {
+    Q1: { state: 'chosen', option: 'a' },
+    Q2: { state: 'chosen', option: null, override: true },
+    Q4: { state: 'chosen', option: 'a', active: false },
+    Q5: { state: 'chosen', option: 'a' },
+    Q6: { state: 'chosen', option: 'a' },
+  };
+  const steps = planSteps(['**S1 — a step** (implements Q1)'].join('\n'));
+
+  const out = uncitedAnswers(questions, answers, steps, new Set(['Q5']));
+  assert.deepEqual(out.map((o) => o.id), ['Q2']);
+  // The owner's own words are the likeliest to carry a requirement nobody transcribed, so the
+  // report ranks them first — the flag is what makes that possible.
+  assert.equal(out[0].override, true);
+
+  // Q3 is unanswered (nothing to implement yet), Q4 is INACTIVE — a stranded answer is a different
+  // defect with its own report, and duplicating it here would bury the live ones. Q6 is retired.
 });

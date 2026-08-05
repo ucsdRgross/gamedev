@@ -46,7 +46,7 @@ ARCHITECTURE_REVIEW, the latter wins.
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
 | `Cards/Pips/pip_suit.gd`, `Assets/color_picker.gdshader` | Suit pips and the palette recolour shader. |
 | `Tools/fx_editor.tscn` | **Live FX tuning in the editor** — open it, edit an `FxStyle`, watch the real shaders react. Start here for any art tuning (§4g). |
-| `Scripts/visual_log.gd` + `Tools/spotlight_trace.tscn` | **The visual log — behaviour over TIME, which no snapshot can show.** Timestamped, frame-numbered events for everything the presentation layer does. Use it for any "did these happen together or in sequence", "did the board move under this", or "why did that draw nothing" question. Logs land in `user://logs/`; read `EventLog.summary()` first. See `HEADLESS_TESTING.md` §0c. |
+| `Scripts/visual_log.gd` + `Tools/spotlight_tool.tscn -- --trace` | **The visual log — behaviour over TIME, which no snapshot can show.** Timestamped, frame-numbered events for everything the presentation layer does. Use it for any "did these happen together or in sequence", "did the board move under this", or "why did that draw nothing" question. Logs land in `user://logs/`; read `EventLog.summary()` first. See `HEADLESS_TESTING.md` §0c. |
 | `Tests/Visual/` | `test_pixels.gd` (asserting), `fx_snapshot.gd` + `prop_art_snapshot.gd` + `fx_behind.gd` (reviewable — the last one draws hosts FILLED, for the seam), `fx_cost.gd` (the GPU bench, asserts nothing), `pixel_probe.gd` (the shared oracle + image readers), `snapshot_scene.gd` (the harness base). |
 
 ---

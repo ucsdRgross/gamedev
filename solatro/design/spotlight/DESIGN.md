@@ -1,13 +1,19 @@
 # SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
 
-**Status: CONFIRMED, version 9. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
-2026-08-03. PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04, folded in as v7), and **S11–S12 of
-phase 2 — the glow style and its shader — are implemented (2026-08-04, v8).** This document still
-carries no code, no file plan, no step ordering and no test plan; those live in `PLAN.md`.
+**Status: CONFIRMED, version 12. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
+2026-08-03. PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04, folded in as v7), and **S11–S14 of
+phase 2 — the glow style, its shader, the light layer, the spotlight wire AND chart E's travel — are
+all implemented (2026-08-04, v8–v12). S18's tuning tool ships too; S15/S16/S17 remain.** This document still carries no code, no file plan,
+no step ordering and no test plan; those live in `PLAN.md`.
 
-⚠ **Status of the questionnaire itself is unchanged: 255 answers, 0 open.** v7 and v8 change three
-nodes' wording between them, plus one node's ARGUMENT that a later answer had overturned. **No
-answer changed.**
+⚠ **NO ANSWER CHANGED IN v10 EITHER, AND THAT IS THE FINDING.** GAP-006's per-section dim is not a
+new answer — it is **`Q82`'s answer of 2026-08-03, recovered**. The owner wrote *"per anytime
+spotlight effect is happening"* as an override at `Q82` in round 1; `answers.log` seq 269 then
+**stranded it** (`active: false`) along with 19 others when `QR2` moved to (d), and §17.6's heading
+was widened to `[QR2=a|c|d]` afterwards while `Q82`'s own gate was left at `[QR2=a & QR8=a]`. **The
+document held the answer the whole time and the gate hid it.** `Q82`'s gate is widened below.
+v10 also SCOPES `Q246`=(a) to the momentary cue alone (GAP-005) without altering it. Questionnaire
+status: **255 answers, 0 open**.
 
 ⚠ **Before handing this document over again, run the gating check** (§0b C8 is what happens when you
 do not): every question ID named in any `[gate]` must itself carry `⚑gate`. As of v4 that is 30 of
@@ -53,6 +59,211 @@ statements, and §0b C3 is where they are reconciled. QR2 has gained a **(d)** f
 everywhere (Q2=b), the Spotlight icon in card descriptions is IN (Q5=b, Q184=b), the "show all active
 abilities" board-spread toggle is IN (Q186), and the **full film pipeline is IN as a second
 deliverable shipped after Spotlight** (QR10=a, Q239=a).
+
+### Version 12 changelog (2026-08-04) — what USING the tuning tool found, and the pattern behind all of it
+
+**The tool was built, and then it immediately paid for itself.** Everything below was found by the
+owner driving it or by an instrument built because driving it was not enough.
+
+**1. The origin assignment is a FAN BY DEPTH, not "nearest" (`Q111`, chart E2, GAP-008).** `Q111`=(a)
+chose *"nearest to its target"* **and gave "keeps beams mostly vertical and non-crossing" as its
+reason.** On a COLUMN every target shares one x, so "nearest" is a tie and the last card gets the
+farthest lamp, whose beam crosses every other — the mechanism defeating its own stated purpose. The
+owner's rule replaces it:
+
+> *"we first divide top bar into sections, getting wider by row. middle of top gets first `-1-`, 2nd
+> row gets lamp area surrounding first row `-212-`, and so on with `-32123-`, with each lamp within a
+> row section choosing its closest."*
+
+⚠ **The allocation is driven by DEPTH, not proximity, and that is why it cannot cross:** a deeper
+card's lamp is always further from the column, and a lamp further out lands lower. One depth degrades
+to one band — the whole bar — so a ROW still spreads full width. ⚠ **An answer that states both a
+MECHANISM and a REASON is two claims, and they can diverge**; that is the transferable part.
+
+**2. Chart E's travel is built — S14 is complete.** Every branch against its own answers: `Q61`=(a) a
+card in both sections keeps its light and does not move, E3 surplus lights fade in place, `Q65`=(a) a
+new light fades in ALREADY AIMED, `Q64`=(a) all travel on one frame, `Q63`=(a) FULL SIZE in transit,
+E10 the origin stays fixed while the wide end tracks the circle.
+
+**3. `Q46`/`Q52`/chart D4 say a COLUMN expands every row it passes through**, and the tool had been
+written to do the opposite on an invention of mine. `Q52` states the consequence outright — *"Column
+scoring on the longest column expands nearly every row at once"*.
+
+⚠⚠ **THE PATTERN BEHIND ALL EIGHT GAPS, AND IT IS NOT "READ MORE CAREFULLY".** Tabulated across the
+whole stream, every miss is the same shape: **two representations of one fact, and nothing that
+compares them.** Chart vs answer (GAP-001, GAP-003), answer vs answer (GAP-004, GAP-005, GAP-007),
+answer vs its own rationale (GAP-008), design vs code (`Q85`, §16's knob table), exit code vs pixels
+(two blank captures), a still vs movement over time (a dead cascade), tool vs tool.
+⚠ **The pairs that survive are the CROSS-KIND ones** — a chart against an answer, a doc table against
+a property list, a green banner against a frame — because no single tool reads both, so the
+contradiction has nowhere to surface. Same-kind conflicts get caught.
+⚠ **The rule that follows: when a fact gains a SECOND representation, the comparison is written at
+that moment.** Better still, delete the second one — `circle_radius` as a `const` *and* a §16 row was
+two truths; one `FxSpotlightStyle` property is one. The checks this stream added on that principle:
+`designloop check`'s `unclaimed` (answers ↔ plan steps — 190 of 255 unclaimed when first run, `Q85`
+among them), `test_the_design_16_knob_table_is_implemented` (doc table ↔ properties — found 13 more
+on its first run), the light-shader uniform seam, and `--verify` (behaviour ↔ time).
+
+### Version 11 changelog (2026-08-04) — what building the tuning tool found
+
+**0. `Q85` WAS NEVER IMPLEMENTED, AND THE TOOL FOUND IT IN ITS FIRST HOUR.** `Q85` says the circle is
+*"Radius 16 art units, centred on the card's **art-square centre**"*. `SpotlightDirector` centred it
+on `visual.global_position` — the card's ORIGIN. Owner, looking at the tool:
+
+> *"circles should be centered on the skill art, not on card center"*
+> *"hard to tell which card circle it is on currently"*
+
+Measured: `Art` sits at `(0, 5)` inside `Visual` and its polygon spans ±16, so the square is 32 art
+units across — **exactly the diameter `Q85`'s radius of 16 describes**, which is the confirmation
+that the answer meant the art square and not the card. The pool sat high and, on a stacked column,
+ambiguously between two cards. Fixed: `CardVisual.spotlight_center()` now owns the offset and both
+the director and the tool ask the card for it.
+⚠ **THE OFFSET LIVES ON THE CARD, NOT IN THE DIRECTOR.** It is authored in `card_visual.tscn` and
+rides `Offset`'s transform, which is where the scoring jump lives — a constant copied into the
+director would silently disagree the moment a card jumped.
+⚠ **This is a SEVENTH instance of the v9 pattern**, and the first found by looking rather than by
+reading or playing: an answer recorded, a contract written past it, and nothing that compared the
+two. It shipped through S13, S14, every phase-2 gate and two by-eye reviews of `10_light_layer`,
+because a circle on a card's origin looks perfectly reasonable **until there is a second card under
+it**. The tool's stacked preset is what made it obvious.
+⚠ **The regression guard's SHAPE is the transferable part.** The natural assertion — *every light
+sits on an art square* — is flaky, because `PlayArea` controls are pooled per slot and a `CardVisual`
+can be re-bound between the emit and the check (measured: 2 of 3, with correct code). What is pinned
+instead is **no light sits on a card ORIGIN**, plus a probe proving the two points differ at all.
+Under the bug every centre was an origin, so the negative form is the one that fails loudly.
+
+**One node, and it is the first time a FIDELITY answer has given way rather than a form one
+(`Q174`, `Q175`, `Q176`, chart N, GAP-007).** `Q176`=(a) asked for the tool to be `@tool` *and*
+runnable; `Q174`=(a) and `Q175`=(a) asked it to host a real `PlayArea`, real `CardVisual`s and a real
+headless `Game`. **Measured: those cannot both hold.** `game.gd`, `game_view.gd`, `play_area.gd`,
+`light_layer.gd` and `spotlight_director.gd` are all non-`@tool`, so in the editor they load as
+placeholder instances where every method call fails — and the editor instantiates no autoloads, while
+the director reads `SettingsManager.settings.card_scale` on every light. Owner:
+
+> *"Just play area simulating effects is enough, dont need full game_view with hud"*
+> *"trigger different preset scenarios using editor tool options"*
+> *"simulation should include realistic stacking system from play area and cascade scenario and
+> mocked solo on active triggers and row separation if not already"*
+
+So **`Q174`=(a) and `Q175`=(a) are SUPERSEDED**: no `Game`, no `GameView`, no `PlayArea`, no HUD.
+What the tool hosts is real `CardVisual`s on the **real board pitch**, the real `LightLayer`, the real
+shader and the real `SpotlightOrigins`; what it SIMULATES is named — the cascade's order, the solo
+activation cue, and row separation.
+
+⚠ **THE COST, AND IT IS PERMANENT: the cascade in the tool is POSED, NOT RUN.** Section membership,
+the activation sweep, hand re-evaluation and the hold beat are `Game`'s. **A behaviour question —
+"did the light travel when it should have" — must go to `Tools/spotlight_tool.tscn -- --trace` or the suite,
+which run the real act. The tool answers "does it look right", and that is the only question it can
+answer.** Chart N's N2 (*"hosts a REAL board"*) is true of the geometry and false of the game, and
+that distinction is now the tool's own header comment.
+
+⚠ **`Q173`'s reasoning survives intact and is worth re-reading**: it chose the standalone player
+because *"a whole-board, multi-phase, screen-space effect cannot be shown on one 70-unit column
+beside a burning knife"*. That argument was about the LIGHT LAYER, not about the `Game` — which is
+exactly why dropping the game costs the tool nothing it was chosen for.
+
+⚠ **A NEW FAILURE SHAPE, AND IT IS THIS TOOL'S CHARACTERISTIC ONE: a blank frame at exit 0.** Twice
+while building it, every check passed, the run reported success, and the picture was empty — once
+because the cards deleted themselves (`CardVisual._ready` turns its own `_process` back on, and
+`delta_self_moving_logic` frees any non-play-area card with no `control_anchor`, so posing before
+`add_child` is undone), once because a `Control` parented straight to a `CanvasLayer` has no parent
+rect for its anchors to resolve against. **Neither is detectable from an exit code, and both are
+invisible to any assertion that does not read pixels.** The gate now prints `cards=N lit=M` per
+preset, which is what separates "nothing was built" from "built, but nothing is lit".
+
+**THE GLOW IS NOW IN THE TOOL, AND IT HAD NEVER BEEN SEEN ON A BOARD.** Owner: *"editor should
+include glowing effect on card as well for cards currently active. I believe previous part of plan
+had it implemented but havent seen it in action yet for adjustment."* **They are right that it was
+built** — S11 shipped `FxGlowStyle` and the three `.tres`, S12 shipped `glow.gdshader`, and both were
+rendered and looked at in `fx_snapshot`. **What never existed is the request path putting it on a
+card in a board context**: there is no `FxGlow` effect class, only `FxGlowStyle.GLOW_SHADER` as a
+stopgap preload. The tool builds the request directly, and this is the first time the glow, the
+circle, the beam and the dim have been on screen together.
+⚠ **When an effect class IS written, the tool's call site must MOVE to it, not be copied** — two
+preloads of one shader are two `Shader` resources, and a style applied through the wrong one silently
+misses every uniform the other declares.
+⚠ **Gate G2.2 is judgeable for the first time**, because `Q83` makes the glow the main event and the
+circle a helper; judging the circle alone was judging the helper.
+
+### Version 10 changelog (2026-08-04) — what implementing S14 and playing the game found
+
+**Two nodes, and both were found by RUNNING the thing, not by reading it.** GAP-005 came from the
+owner's report *"see zero spotlight effects"*; GAP-006 from their playtest *"dim and spotlights never
+disappear during act currently"*. Neither is a tuning miss and neither the suite nor this document
+could have caught either one — see the two ⚠ notes at the end.
+
+**1. The scoring beam and the momentary cue are TWO SIGNALS, and `Q246`'s filter belongs to only one
+of them (chart T, `Q246`, GAP-005).** S14 wired the beam to `CardEnvironment.spotlight_cued`, which
+`Q246`=(a) filters to skills implementing `on_spotlight`. Exactly one non-test card in the shipped
+game implements it, and it is a rules card with no `CardVisual` — **so the light set was empty in
+every real act, and no beam, circle or dim had ever appeared in the running game.** Owner's answer:
+option (a), a second signal.
+
+> `spotlight_cued` — *which cards have a TALENT to announce*, filtered by `Q246`=(a). Chart T, S15.
+> `spotlight_section_changed` — *which cards are BEING SCORED*, filtered by nothing. `Q16`=(c),
+> charts E and H/I, S14.
+
+⚠ **`Q246`=(a) is untouched and still right about what it was asked.** What was wrong is that its
+answer was applied to a question it was never asked about. A scored row is mostly plain numeral cards
+with no skill at all, and the beam lights the row.
+
+**2. The show PULSES PER SECTION — it is a separate axis from the light set (chart C's C5/C16, chart
+D's D13/D19/D20, `Q16`, `Q82`, GAP-006).** `QR2`=(d) *"the dim is active if there are BEAMS"* composed
+with `Q16`=(c) *"the forced spotlight is never torn down between sections"* to give a dim that is up
+for the entire act — which is exactly the reading `QR2` was moved OFF of. Measured in the owner's own
+recording: `dim_rising` once and `dim_settled` once across EIGHT scored sections. Owner:
+
+> *"spotlight + dim occurs as cards of section get revealed, with both spotlight and dim effect
+> fading away as scoring starts to happen. When next section is revealed, spotlight and dim effect
+> are visible again, moving to new location, then fade away again."*
+> *"this has always been what I intended so not sure what miss from your end is."*
+
+So **VISIBILITY is now its own axis**: `spotlight_section_changed` still answers *which cards are lit
+and where*, and the new `spotlight_reveal_ended` answers *is the show up*. `LightLayer._show` eases
+0↔1 on the `Q167` fractions and multiplies both the dim target and every light's intensity, so beams,
+circles and dim fade as one show, once per section.
+
+⚠ **`_show` scales light INTENSITY, never the light COUNT, and the lights are NOT freed by the fade.**
+They survive at their positions so the next section can TRAVEL from them — chart E's *"no instant
+movements or spawning in and out"*. A fade that freed the set would make chart E unbuildable on top of
+it. This is also why **option (a) of GAP-006 ("emit an empty set between sections") was not what was
+built**: emptying the set is what fights chart E.
+
+⚠ **`D13`'s hold beat had never been implemented, and only the event log found it.** With the fade in,
+the log showed `revealed` and `reveal_faded` on the SAME FRAME at `show=0.000` — nothing between them
+ever waited, so the dim eased toward a target it was already leaving and never left zero.
+`spotlight_hold_fraction` (`Q68`=a, §16) now exists in the code, gated on `if view:` so headless still
+waits on nothing (`Q19`=a) and G1.7's parity holds.
+
+⚠ **THE ANSWER WAS NEVER MISSING — A GATE HID IT, AND THIS IS A NEW FAILURE SHAPE.** `Q82` asks
+exactly this question ("once per act or per line") and the owner answered it in round 1 with an
+override: *"per anytime spotlight effect is happening"*. `answers.log` **seq 269** then stranded 20
+questions, `Q82` among them, when `QR2` moved to (d). §17.6's heading was widened to `[QR2=a|c|d]`
+afterwards — but `Q82`'s own gate was left at `[QR2=a & QR8=a]`, so it stayed `active: false` and
+dropped out of every later reading of this document. **The act-long dim was chosen by nobody: it is
+what the composition did in the absence of an answer that was sitting right there.** `Q82`'s gate is
+widened and its option (c) authored below.
+
+⚠ **So the previous five gaps and this one are NOT all one defect, and treating them as one is why the
+note kept failing.** Five were *a statement written before an answer, never revisited after it*. This
+one is *an answer deactivated by a gate and never re-activated when the gate's premise widened* —
+which no amount of re-reading the charts would catch, because the question is invisible in the
+rendered document. **The mechanism that would have caught it is mechanical: after any strand event,
+diff the stranded IDs against the gates that were subsequently widened.** `answers.log` records both,
+so this is checkable rather than remembered.
+
+⚠ **v7's resolution then compounded it.** GAP-002 reconciled `Q16` by keeping *"the light travels"*
+and dropping *"dims after initially showing, but gets revealed again at start of next scoring
+section"*, concluding *"the implementation was already correct."* It never had been — and `Q82`, which
+would have contradicted that conclusion outright, was already stranded by then.
+
+⚠ **What DID find them, and it is the transferable part: a test whose fixture supplies the thing being
+filtered on cannot detect the filter.** Every spotlight test supplies a fixture skill implementing
+`on_spotlight`, which is the only reason the cue ever had content. The regression guards are now
+written the other way round — `test_the_section_signal_carries_plain_cards()` scores a column of cards
+carrying no skill at all. Composition defects (GAP-006) need a different instrument again: two
+individually correct answers, and nothing asked what one implies for the other. The event log's
+per-section tally is what showed it.
 
 ### Version 9 changelog (2026-08-04) — what implementing S13 found
 
@@ -802,9 +1013,9 @@ flowchart TD
   C1["Submit pressed"] --> C2["Game._perform_submit()"]
   C2 --> C3["processing = true, _begin_act(), _begin_action(on_run_scorer)"]
   C3 --> C4["NEW: view.begin_spotlight_act()"]
-  C4 --> C5["NEW: no dim yet. QR2=d — the dim belongs to the BEAMS, not to the submit:
-             it rises when the first beam does and falls when the last one retires,
-             which is inside chart D, not here"]
+  C4 --> C5["NEW: no dim yet. QR2=d — the dim belongs to the BEAMS, not to the submit.
+             ⚠ v10 / GAP-006: it rises and falls ONCE PER SECTION, with that section's
+             REVEAL, not once per act — the whole show is inside chart D, not here"]
   C5 --> C6["run_all_mods(on_run_scorer) -> SkillScorerCascadeLower.on_run_scorer()"]
   C6 --> C7["ROW LOOP: row = 0"]
   C7 --> C8{"any column deeper than row?"}
@@ -820,10 +1031,10 @@ flowchart TD
                      -> Game.score_line(result, false, zone, col)"]
   C13 --> C14["col += 1"]
   C14 --> C12
-  C12 -- no --> C15["NEW: view.end_spotlight_act() — by now the last beam has retired,
-                      so the dim is already down (QR2=d)"]
+  C12 -- no --> C15["NEW: view.end_spotlight_act() — by now the last section's show has
+                      already faded, so the dim is already down (QR2=d, v10)"]
   C15 --> C16["NEW: last spotlights fade out and rows collapse.
-              The dim is NOT dropped here — it went with the beams"]
+              The dim is NOT dropped here — it went with the last section's show"]
   C16 --> C17["state.apply_act_score(), view.sync_scores(), state.discard_lower_board()"]
   C17 --> C18["submits_used += 1, save_state()"]
   C18 --> C19{"submits_used >= MAX_SUBMITS?"}
@@ -936,8 +1147,10 @@ flowchart TD
   D7 --> D8["NEW: spotlight TRANSITION — chart E
              (assign / travel / spawn / retire), concurrent with D6"]
   D8 --> D9["NEW: await every spotlight to arrive on its target"]
-  D9 --> D10["NEW: state.forced_spotlight = the spotlight set, and the FIRST beam
-              raising is what raises the dim (QR2=d). Per-act state, bumps nothing else"]
+  D9 --> D10["NEW: state.forced_spotlight = the spotlight set, announced to the view as
+              spotlight_section_changed(cards) — THE SECTION, UNFILTERED (v10 / GAP-005:
+              NOT spotlight_cued, whose Q246=a talent filter is chart T's alone).
+              This section's REVEAL raises the dim (QR2=d). Per-act state, bumps nothing else"]
   D10 --> D11["await skill_active_check()"]
   D11 --> D12["on_active fires for every card that was NOT already spotlit,
                in board order"]
@@ -945,8 +1158,15 @@ flowchart TD
                 sweep is walking can change under it. Q252=b: RE-DERIVE after every
                 hook, which is what lets a compacted-in card activate (chart R).
                 No per-section cap — Q201=b leaves only the act-level runaway guard"]
-  D12b --> D13["NEW: await spotlight_hold — the beat that lets those effects read"]
-  D13 --> D13b["NEW: Q22=b — RE-EVALUATE the hand now, ONCE (Q23=a), over whatever cards
+  D12b --> D13["NEW: await spotlight_hold — the beat that lets those effects read.
+                Q68=a, spotlight_hold_fraction. ⚠ v10 / GAP-006: WITHOUT THIS BEAT
+                THERE IS NO SHOW — the reveal and its end landed on one frame and the
+                dim never left zero. Gated on 'if view:' so headless waits on nothing (Q19=a)"]
+  D13 --> D13a["NEW v10 / GAP-006: spotlight_reveal_ended — THE SHOW FADES OUT HERE,
+                as this section's scoring begins. The dim and every light's INTENSITY ease
+                to 0 together; the light SET is untouched and the lights stay where they are,
+                so chart E can travel FROM them (no spawning in and out)"]
+  D13a --> D13b["NEW: Q22=b — RE-EVALUATE the hand now, ONCE (Q23=a), over whatever cards
                 are in the section after every effect has fired. Q244=a: whatever it
                 evaluates to is the score, including nothing at all — no floor.
                 If the hand changed, the lights and jumps RE-CUE (Q243=a)"]
@@ -965,9 +1185,12 @@ flowchart TD
                       moves to whichever section is being scored — Q16, 'increases or
                       decreases based on cards being scored'. It does NOT accumulate;
                       a section that has been scored is no longer force-spotlit.
-                      Rows stay expanded and the dim stays up because beams are still
-                      live (QR2=d). The set is revealed again at the start of the next
-                      section and moves down with the cards. v7 / GAP-002"]
+                      Rows stay expanded. ⚠ v10 / GAP-006 CORRECTS WHAT WAS HERE: the dim
+                      does NOT stay up between sections — this section's show already faded
+                      at D13a. The lights survive, dark, at their positions; the next
+                      section RE-REVEALS, which travels them and raises the dim again.
+                      'Visible again, moving to new location, then fade away again.'
+                      v7 / GAP-002, v10 / GAP-006"]
   D20 --> D21["the next section re-enters at D1;
                chart E decides what travels where"]
   D19 -- no --> D22["NEW: clear state.forced_spotlight"]
@@ -994,6 +1217,12 @@ flowchart TD
   being scored, AFTER the meld was already evaluated by `SkillEvalPokerBest`. **Q22–Q26.**
 - **D13 hold.** Owner: *"triggering spotlight effects first before any scoring happens."* The hold
   is what makes that readable. Length is a tunable fraction; **Q68**.
+  ⚠ **v10: it is also the only thing separating the reveal from its end.** Set it to 0 and the show
+  has no duration at all — measured, before it existed: `revealed` and `reveal_faded` on one frame.
+- **D13a fade-out — new in v10 (GAP-006).** The show is an axis of its own, `_show`, multiplying the
+  dim target and every light's intensity. **It does not touch the light set**, which is what keeps
+  chart E buildable. Whether the pulse READS as a spotlight or as a flicker at compressed act speed is
+  untuned and is the tuning tool's (chart L / S18) first job.
 - **D19/D20 hold-through.** Not collapsing between lines is what makes the light *travel* instead of
   strobing. But it means rows expanded for row 0 stay expanded while row 1 scores — the board keeps
   growing through the cascade. **Q49, Q50.**
@@ -1004,6 +1233,13 @@ flowchart TD
 
 The rule from the brief: *"spotlights spawned during scoring phase need to move their spotlights to
 next row/col after done with current set, no instant movements or spawning in and out."*
+
+⚠ **v10 — where P comes from, and what state it is in.** The previous set P is whatever
+`spotlight_section_changed` last carried (GAP-005 — the SECTION, not the talent cue), and by the time
+the next section arrives P's lights are still alive but FADED: GAP-006's show axis took their
+intensity to 0 without freeing them. **That is deliberate and this chart is the reason** — travel
+needs somewhere to travel from. So E2's `P ∩ N` and E4's "spawn a new light" are still exactly as
+drawn; what changed is that a light being invisible does not mean it is gone.
 
 ```mermaid
 flowchart TD
@@ -1472,7 +1708,9 @@ flowchart TD
   T2 --> T3{"did this card transition from not-spotlit to spotlit?"}
   T3 -- no --> T4["nothing. A card that was already spotlit is not re-cued (Q13, Q15)"]
   T3 -- yes --> T5{"does it have anything to announce? Q246=a — it must have a SKILL that
-                    implements on_active; anything else has nothing to show"}
+                    implements on_active; anything else has nothing to show.
+                    ⚠ v10 / GAP-005: THIS FILTER IS THIS CHART'S ALONE. The scoring beam
+                    reads spotlight_section_changed and is filtered by nothing"}
   T5 -- "it has an on_active hook" --> T6["MOMENTARY SPOTLIGHT: a circle and a beam
                                           spawn on it, hold, and retire"]
   T5 -- "no hook at all" --> T7["glow only — there is nothing to show happening"]
@@ -1509,6 +1747,10 @@ flowchart TD
 - **Chart D is no longer the entry point.** Scoring calls the same spotlight machinery every other
   activation calls; it differs only in that it force-spotlights a whole section at once and holds
   the lights between sections. §12's chart C becomes *a* caller.
+  ⚠ **v10 qualifies this and it is the whole of GAP-005: "the same machinery" is the LIGHT LAYER, not
+  the same SIGNAL.** Two signals reach it — `spotlight_cued` (this chart, `Q246`-filtered, S15) and
+  `spotlight_section_changed` (the scoring beam, unfiltered, S14). Building the beam on this chart's
+  cue is what left the running game with no visible spotlight at all.
 - **T14 is the one that will bite.** At the start of a game, and on every resume, `skill_active_check`
   runs over the whole board and every uncovered card is a fresh transition. Under a literal reading
   of Q149 that is a spotlight on every column at once, with the dim up, before the player has done
@@ -1516,7 +1758,8 @@ flowchart TD
 - **T5 matters because of your own words**: *"a card ... which has active hook"*. A card with no
   `on_active` has nothing to announce, and cueing it would make the cue meaningless. But Q10=(a) says
   only skills are gated on spotlight, so "has a hook" has to mean *has a skill with an `on_active`* —
-  **Q246** pins it.
+  **Q246** pins it. ⚠ **v10 / GAP-005: and it pins it for THIS chart only** — the scoring beam asks a
+  different question (*which cards are being scored*) and takes no filter at all.
 - ⚠ **This is the same machinery Q186 asks for.** *"show all active abilities spreads out all rows
   with active talent/skill and uses spotlight effect on all of them with no dimming at all until
   turned off"* — that is chart T's cue, held open, with the dim suppressed. It is in scope (Q186),
@@ -1846,7 +2089,7 @@ delete the ones you do not want and add the ones I missed — **Q166–Q172**.
 | `spotlight_travel_fraction` | a light moving card → card | 0.5 |
 | `spotlight_spawn_fraction` | a new light fading in | 0.3 |
 | `spotlight_retire_fraction` | a surplus light fading out | 0.3 |
-| `spotlight_hold_fraction` | the beat after `on_active` before scoring | 0.5 |
+| `spotlight_hold_fraction` | the beat after `on_active` before scoring. ⚠ **v10: also the only thing giving the per-section show any duration** — at 0, the reveal and its end land on one frame (GAP-006) | 0.5 |
 
 **Behaviour**
 
@@ -1862,9 +2105,17 @@ delete the ones you do not want and add the ones I missed — **Q166–Q172**.
 **Look** (these belong on a `FxSpotlightStyle` resource beside the other FX styles, not in
 settings — §4g owner ruling 8: one shared location for all effect tuning)
 
+⚠ **BUILT 2026-08-04, AND IT SHOULD HAVE BEEN BUILT IN S13.** `UI/Fx/fx_spotlight_style.gd` +
+`Shaders/Styles/spotlight_default.tres`. Until then this table was aspirational: `light.gdshader`
+declared **13** look uniforms and `LightLayer` pushed **six**, so every knob below sat at its shader
+default with no way to reach it, and `circle_radius` / `beam_width_at_origin` had become `const`s on
+`SpotlightDirector`. The owner found it by trying to change the radius in the tuning tool.
+**A knob in this table that is not written by `FxSpotlightStyle.apply()` does not exist.**
+
 | Knob | Meaning | Suggested |
 |---|---|---|
-| `dim_target` | how dark the dim goes | 0.75 |
+| `dim_target` | how dark the dim goes. ⚠ **shipped in `player_settings.gd` as `spotlight_dim_target`, not on a style** — the light layer has no style resource for `Q84`=(b) to live on, so `Q168`=(a) is what the code does. **`= 0` is the dim's off switch**: it keeps every beam, circle and glow and drops only the dim, which is the opposite split from `fx_intensity = 0` (`Q83` forbids that one from removing the dim) | 0.75 |
+| `spotlight_dim_casual_scale` | `Q245`=(c)'s shallower dim OUTSIDE scoring — multiplies `dim_target` when the cue is not part of an act. Selected by `LightLayer.set_lights(lights, scoring=false)` | 0.35 |
 | `circle_radius` | in ART units | 16 |
 | `circle_intensity` | brighter than the beam | 1.0 |
 | `beam_intensity` | | 0.45 |
@@ -1943,7 +2194,7 @@ braindump opens two forks nothing in v1 asked about.
 - **Q13** `[QR1=a]` — A card force-spotlit that was ALREADY naturally spotlit — does anything fire? · **(a)** nothing, it never changed state · **(b)** it re-fires · *default* (a)
 - **Q14** `[QR1=a]` — On release, a card still naturally spotlit must NOT fire `on_deactive`. · **(a)** confirmed, the release recomputes · **(b)** blanket-clear and let it re-activate · *default* (a)
 - **Q15** `[QR1=a]` — A card force-spotlit twice in one act (row pass, then column pass) · **(a)** `on_active` fires once per transition — nothing the second time if it stayed spotlit · **(b)** fires every time it is force-spotlit · *default* (a)
-- **Q16** `[QR1=a & QR8=a]` — Does the forced spotlight persist for the whole act or only its line? · **(a)** only its line · **(b)** the whole act, accumulating — every scored section's cards pile up · **(c)** THE WHOLE ACT, TRAVELLING — it is never torn down between sections, and its membership is whichever section is being scored, so a section that has already scored is no longer force-spotlit. Your own answer, added v7 · *default* (c) · notes
+- **Q16** `[QR1=a & QR8=a]` — Does the forced spotlight persist for the whole act or only its line? ⚠ **v10 / GAP-006 — (c) is about the light SET, and it never spoke to VISIBILITY.** The set travels and is never torn down; the SHOW (dim + light intensity) rises and falls once per section, on its reveal. Your free text said both — *"dims after initially showing, but gets revealed again at start of next scoring section"* — and only the first half survived into v7. Both halves are now drawn, at D13a and D20. · **(a)** only its line · **(b)** the whole act, accumulating — every scored section's cards pile up · **(c)** THE WHOLE ACT, TRAVELLING — it is never torn down between sections, and its membership is whichever section is being scored, so a section that has already scored is no longer force-spotlit. Your own answer, added v7 · *default* (c) · notes
 - **Q17** `[QR1=a]` ⚑contract — Does forced spotlight bump `GameData.revision`? · **(a)** no — not a board mutation, and a bump forces a rebuild mid-cascade · **(b)** yes · *default* (a)
 - **Q18** `[QR1=a]` ⚑contract — Does forced spotlight survive undo? · **(a)** no, per-act state · **(b)** yes · *default* (a)
 - **Q19** `[QR1=a]` — Headless: does the mechanical spotlight fire identically, with no waits? · **(a)** yes — otherwise headless scoring diverges and the resume-replay contract breaks · **(b)** no, headless skips it · *default* (a)
@@ -2074,11 +2325,21 @@ QR2 to (c)**. The four that are genuinely about a dim that lasts the whole act s
 - **Q79** `[QR2=a|c|d]` — Dim colour · **(a)** flat multiply toward a dark palette entry, not black · **(b)** a colour cast (cool blue "house lights down") · **(c)** pure black · *default* (a)
 - **Q80** `[QR2=a|c|d]` — Texture? · **(a)** uniform · **(b)** vignette · **(c)** subtle noise · *default* (a)
 - **Q81** `[QR2=a]` — Is the dim level constant through the act? · **(a)** constant · **(b)** deepens as the cascade proceeds · *default* (a)
-- **Q82** `[QR2=a & QR8=a]` — Does the dim raise once per act (C5) or per line? · **(a)** once per act · **(b)** per line · *default* (a)
+- **Q82** `[QR2=a|d & QR8=a]` — Does the dim raise once per act (C5) or per line? ⚠ **GATE WIDENED IN v10 (GAP-006), AND THIS IS THE WHOLE STORY OF THAT GAP.** Your override answer here has existed since 2026-08-03 and `answers.log` seq 269 stranded it when `QR2` moved to (d) — one of 20. §17.6's heading was widened to `[QR2=a|c|d]`; this question's own gate was not, so the answer stayed inactive and the act-long dim reached the running game **chosen by nobody**. Option (c) authors the branch the override always described, by the standing rule for this workflow: widen the gate and add the option, never replace. · **(a)** once per act · **(b)** per line · **(c)** PER SECTION, tied to that section's REVEAL — *"per anytime spotlight effect is happening"*, your own words, round 1. A section is the general form of "line" (`ScoringSection`, S1), so this is (b) stated shape-agnostically · *default* (c) · notes
 - **Q83** `[QR2=a|c|d]` — `fx_intensity = 0` (the accessibility floor) · **(a)** removes beams and glow, KEEPS a reduced dim — removing it entirely makes the mechanic invisible · **(b)** removes everything including the dim · **(c)** removes nothing, dim is not an "effect" · *default* (a) · notes
 - **Q84** `[QR2=a|c|d]` ⚑contract — A separate player setting for dim depth (a 75 % dim every submit may be fatiguing)? · **(a)** yes, `dim_target` is a player setting · **(b)** no, style-resource only · *default* (a)
 
 ### 17.6b The TRANSIENT dim `[QR2=c]`
+
+⚠ **v10 / GAP-006: these nine are still unasked, and the reason they stayed unasked is now the
+interesting part.** `QR2` settled at (d), which pruned this subtree — but (d) plus `Q16`=(c) composed
+into an act-long dim, and the owner's answer to that was a per-section pulse, i.e. **something much
+closer to (c) than to what shipped**. The subtree was pruned on the strength of a gate, not on the
+strength of the behaviour the gate implied. Of the nine, `Q189` (which beat is the last one under the
+dark) is now **answered by construction** — the show fades when the section's scoring begins, chart D
+D13a — and `Q190` (do the lights survive the dim) is answered **yes**: they survive, faded, so chart E
+can travel from them. `Q191`, `Q192` and the rest remain genuinely open should the pulse need shaping
+at S18.
 
 Nine questions that only exist because the dark is brief. Each is self-contained; §5b draws the same
 thing as a chart if you would rather look at it.
@@ -2294,7 +2555,7 @@ The 22 are self-contained; §0b has the collisions in table form.
 **C3 — what the dim actually belongs to** *(QR2 has gained option (d); these follow from it)*
 
 - **Q245** `[QR2=d]` — With the dim tied to the spotlight rather than to a submit, a card placed during ordinary play triggers a spotlight, and therefore a dim. Every placement dims the screen for a moment. · **(a)** yes — that is what "the dim is a helper that makes the glow prominent" means, and it is brief · **(b)** no — outside scoring the spotlight plays with no dim at all, exactly as Q186's board-spread toggle does · **(c)** a much shallower dim outside scoring than inside it · *default* (c) · notes ⇐ **the one to scrutinise: (a) means the screen pulses dark on every single card you place**
-- **Q246** `[Q149=b]` — You said a card gets a cue when it *"becomes active which has active hook"*. Only skills are gated on spotlight today (Q10=a), so what exactly qualifies? · **(a)** the card has a skill that implements `on_active` — anything else has nothing to announce · **(b)** any card that becomes spotlit, hook or not · **(c)** any card whose skill has *any* hook, since becoming active is what lets it run at all · *default* (a) — it is your own wording · notes
+- **Q246** `[Q149=b]` — You said a card gets a cue when it *"becomes active which has active hook"*. Only skills are gated on spotlight today (Q10=a), so what exactly qualifies? ⚠ **v10 / GAP-005 SCOPES (a), it does not change it.** This filter governs the MOMENTARY CUE only (`spotlight_cued`, chart T, S15). The scoring beam reads `spotlight_section_changed` and is filtered by nothing, because a scored row is mostly plain numeral cards. Applying (a) to the beam is what made the spotlight invisible in the running game. · **(a)** the card has a skill that implements `on_active` — anything else has nothing to announce · **(b)** any card that becomes spotlit, hook or not · **(c)** any card whose skill has *any* hook, since becoming active is what lets it run at all · *default* (a) — it is your own wording · notes
 - **Q247** `[Q149=b]` — Several cards become spotlit in the same instant (a Next drops four stacks). · **(a)** one dim covering all of them, one cue, the lights spawn together and retire together · **(b)** one cue per card, overlapping · **(c)** one cue per card, queued so they play in sequence · *default* (a) — (c) makes a four-stack Next four times as long
 - **Q248** `[Q149=b]` — At the start of a run, and on every resume, the activation check sweeps the whole board and **every uncovered card is a fresh transition at once**. Taken literally that is a spotlight on every column, with a dim, before the player has touched anything. · **(a)** suppress cues during a board build or resume — only a transition caused by a player action or an effect is announced · **(b)** cue them all; it reads as the show starting · **(c)** cue them all but with no dim and no beams, glow only · *default* (a) · notes
 - **Q249** `[Q149=b]` — Does a momentary cue block input while it plays? · **(a)** no — it is a flourish, the player keeps playing and a second cue can start while the first retires · **(b)** yes, a short lockout, so the cue is always seen · *default* (a) — (b) on a Next that drops four stacks is four lockouts in a row

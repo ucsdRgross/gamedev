@@ -1,3 +1,4 @@
+@tool
 class_name LightLayer
 extends ColorRect
 ## THE LIGHT LAYER — one full-screen surface carrying every live spotlight's dim, circle and beam
@@ -23,6 +24,32 @@ extends ColorRect
 ## cue, and scoring is one caller of it among several.
 
 const LIGHT_SHADER := preload("res://Shaders/light.gdshader")
+
+## **THE LOOK, AS A RESOURCE** — `DESIGN.md` §16's *"Look"* group and §4g ruling 8's *"one shared
+## location for all effect tuning"*.
+##
+## ⚠ **BEFORE THIS EXISTED, THIRTEEN OF THE SHADER'S UNIFORMS WERE UNREACHABLE.** `light.gdshader`
+## declares them; this node pushed six. Everything else sat at its shader default with no way to
+## change it from GDScript — which is why editing a circle radius did nothing, and why `Q85`'s own
+## note (*"make it adjustable so I can test slightly different radius"*) had never been honoured.
+## **If a knob is not in `FxSpotlightStyle.apply()`, it does not exist.**
+@export var style : FxSpotlightStyle = preload("res://Shaders/Styles/spotlight_default.tres"):
+	set(value):
+		style = value
+		_restyle()
+
+## Re-push the whole style. Cheap and rare — a style is written ONCE on creation and on swap, never
+## per frame (the `FxStyle` contract). A tuning tool calls this when it detects an edit, because a
+## custom resource does not announce its own property changes.
+func restyle() -> void:
+	_restyle()
+
+func _restyle() -> void:
+	if not _mat or not style: return
+	style.apply(_mat)
+	# `fx_intensity` folds into brightness exactly as `FxAttachment` does it — one multiplier is what
+	# lets a "reduce effects" setting reach every effect without editing a resource (`Q83` / G2.4).
+	_push_static()
 
 ## Must equal `MAX_LIGHTS` in `light.gdshader`. ⚠ **NOT A POLICY — `Q107`:** *"No cap. soft cap at
 ## how many cards can fit on screen."* It is sized to the widest board that fits on screen, and a
@@ -87,7 +114,21 @@ var _time : float = 0.0
 ## typed handle, set in `_ready`, is also one place a null would surface.
 var _mat : ShaderMaterial = null
 
+## ⚠ **`@tool`, BUT `_ready()` STILL DOES NOTHING IN THE EDITOR — AND THAT SPLIT IS LOAD-BEARING.**
+## The annotation exists so `Tools/spotlight_tool.tscn` can drive a REAL light layer in the editor
+## (S18 / GAP-007) rather than a re-implementation of it, which the no-mocks rule forbids. But if
+## `_ready()` assigned `material` under `Engine.is_editor_hint()`, then simply OPENING
+## `game_view.tscn` would attach a `ShaderMaterial` to a node the scene OWNS — and saving the scene
+## would write it in. The tool builds its own instance in code and calls `ensure_built()` on it;
+## nothing owned by an edited scene is ever touched.
 func _ready() -> void:
+	if Engine.is_editor_hint(): return
+	ensure_built()
+
+## Build the material and push the initial uniforms. Split out of `_ready()` so an editor-side tool
+## can ask for it explicitly on an instance it owns — see the note above for why `_ready()` may not.
+func ensure_built() -> void:
+	if _mat: return
 	# ⚠ **`color` IS TRANSPARENT IN `game_view.tscn`, AND THAT IS LOAD-BEARING — DO NOT "TIDY" IT
 	# AWAY.** `light.gdshader` WRITES `COLOR` outright rather than multiplying what arrives (unlike
 	# `glow.gdshader`, which folds its host's modulate back in, chart O18), so at RUNTIME the value is
@@ -104,7 +145,9 @@ func _ready() -> void:
 	_mat = ShaderMaterial.new()
 	_mat.shader = LIGHT_SHADER
 	material = _mat
-	_push_static()
+	# ⚠ THE STYLE FIRST: `_push_static` folds `fx_intensity` into the brightness the style just wrote,
+	# so applying the style afterwards would overwrite it with the un-scaled value.
+	_restyle()
 	_push_lights()
 
 ## Replace the live set. Passing an empty array is what RETIRES the dim — there is no separate
@@ -225,15 +268,35 @@ func _push_lights() -> void:
 ## about what it may NOT remove: *"keeps beams glow and dim"*, so it scales the LIGHTS and the dim
 ## stands (gate **G2.4**). The shader is where that split lives; this only supplies the number.
 func _push_static() -> void:
-	_mat.set_shader_parameter(&"u_brightness", _settings().fx_intensity)
+	# ⚠ **THE STYLE'S OWN BRIGHTNESS TIMES `fx_intensity`, not `fx_intensity` alone.** The setting is
+	# the player's accessibility multiplier; the style's is the art decision. Dropping either one is a
+	# knob that silently does nothing — which is the defect this whole style resource was built to fix.
+	var art_brightness : float = style.brightness if style else 1.0
+	_mat.set_shader_parameter(&"u_brightness", art_brightness * _settings().fx_intensity)
 	_mat.set_shader_parameter(&"u_dim", _dim)
+	# `Q245`=(c)'s casual scale reaches the shader too now. It was DECLARED and never pushed, so the
+	# CPU-side `_dim_target()` was the only thing applying it.
+	_mat.set_shader_parameter(&"u_dim_scale", 1.0)
+
+## ⚠ **THE EDITOR INSTANTIATES NO AUTOLOADS**, so `SettingsManager` does not exist there and a bare
+## read of it is a hard failure the moment an editor-side tool drives this layer. Same stand-in
+## `FxAttachment.settings()` uses, and for the same reason — one shared default rather than a second
+## set of numbers that can disagree with the shipped ones.
+## ⚠ PUBLIC so an editor-side tool can ASSIGN its own tunable instance here and have every knob it
+## drags reach the real layer. Ignored entirely outside the editor.
+static var editor_settings : PlayerSettings = null
 
 func _settings() -> PlayerSettings:
-	return SettingsManager.settings
+	if not Engine.is_editor_hint(): return SettingsManager.settings
+	if not editor_settings: editor_settings = PlayerSettings.new()
+	return editor_settings
 
 ## One unit of show time, the same number every other flourish is a fraction of.
 func _delay() -> float:
-	var game := CardEnvironment.get_current_game()
+	# No `Game` in the editor either — `get_current_game()` is set from `Game._enter_tree`, which
+	# never runs there. The setting's own `base_delay` is the honest fallback and is what the tool
+	# then makes tunable.
+	var game := CardEnvironment.get_current_game() if not Engine.is_editor_hint() else null
 	return game.get_delay() if game else _settings().base_delay
 
 ## The act speed-up's live compression, so the beam's grain scrolls at the pace the rest of the show

@@ -191,6 +191,23 @@ var hover : bool = false
 @onready var stamp: Polygon2D = $Offset/Visual/Stamp
 @onready var suit: Polygon2D  = $Offset/Visual/Suit
 @onready var art: Polygon2D = $Offset/Visual/Art
+
+## **WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD** — the centre of the ART SQUARE, not the card's own
+## origin (design `Q85`: *"Radius 16 art units, centred on the card's art-square centre"*).
+##
+## ⚠ **THE TWO ARE NOT THE SAME POINT AND THE DIFFERENCE IS VISIBLE.** `Art` sits at `(0, 5)` inside
+## `Visual` and its polygon spans ±16, so the square is 32 art units across — exactly the diameter
+## `Q85`'s radius of 16 describes. Centring on the card origin instead put the pool high and made it
+## ambiguous WHICH card in a stack was lit, which is what the owner reported on 2026-08-04:
+## *"hard to tell which card circle it is on currently"*.
+## ⚠ **ASKED OF THE CARD, never re-derived by the caller.** The offset is authored in
+## `card_visual.tscn` and rides `Offset`'s own transform (the scoring jump lives there), so a second
+## copy in the director would be a constant that silently disagrees the moment a card moves. Both
+## `SpotlightDirector` and `Tools/spotlight_tool.gd` call this.
+func spotlight_center() -> Vector2:
+	# `art` is `@onready`; a card asked before it is in the tree answers with the honest fallback
+	# rather than crashing, and the caller's own `is_inside_tree` guard is what normally prevents it.
+	return art.global_position if art else global_position
 ## Phase 5 status icons — created at runtime (no .tscn slot) so a status_pips.png asset isn't
 ## required; sits in the card's top-left corner and rides the offset like the polygons.
 var status_layer : StatusLayer

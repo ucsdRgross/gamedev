@@ -71,6 +71,7 @@ func _ready() -> void:
 	behavior_section("S14: THE ORIGIN ALLOCATOR")
 	test_origins_spread_and_never_share_a_y()
 	test_origins_take_the_nearest_free()
+	test_origins_assign_sorted_pairs_never_cross()
 	test_origins_subdivide_when_exhausted()
 	test_origins_respread_only_above_the_viewport()
 	test_a_beam_never_points_upward()
@@ -768,6 +769,124 @@ func test_origins_take_the_nearest_free() -> void:
 	check(again != left, "and an origin already in use is not handed out twice", str(again))
 	o.release(left)
 	check(o.take(Vector2(10.0, 400.0)) == left, "releasing puts it back in the pool")
+
+## **THE OWNER'S BAND RULE (GAP-008): the top bar is divided by ROW, widening outward.**
+##
+## > *"middle of top gets first `-1-`, 2nd row gets lamp area surrounding first row `-212-`, and so on
+## > with `-32123-`, with each lamp within a row section choosing its closest."*
+##
+## ⚠ **THE COLUMN IS THE CASE THAT MATTERS AND THE ONE "NEAREST" GOT WRONG.** Every card in a column
+## shares one x, so `Q111`=(a)'s "nearest free origin" is a four-way tie and the greedy order leaves
+## the FARTHEST lamp for the last card, whose beam then crosses all the others — the owner saw exactly
+## that (*"seeing beams cross over for no good reason in scenario s4 column section"*). Asserted on a
+## column, because a ROW passes under either rule, which is why this survived every row-shaped test.
+func test_origins_assign_sorted_pairs_never_cross() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(4, 1280.0, 100.0)
+	# A COLUMN: four targets, one x, descending the screen.
+	var column : Array[Vector2] = [Vector2(640.0, 200.0), Vector2(640.0, 260.0),
+			Vector2(640.0, 320.0), Vector2(640.0, 380.0)]
+	var idx := o.assign(column)
+	check(idx.size() == 4, "every card in the section is assigned a lamp", str(idx.size()))
+	var used : Dictionary[int, bool] = {}
+	for i : int in idx: used[i] = true
+	check(used.size() == 4, "and no lamp is handed out twice", str(used.size()))
+	# ⚠ NO CAP AND NO SUBDIVISION: `begin(4, …)` builds exactly four, so any index past 3 would mean
+	# the allocator grew when it did not need to — the owner's *"last spotlight is not part of initial
+	# even distribution"*.
+	var max_idx := 0
+	for i : int in idx: max_idx = maxi(max_idx, i)
+	check(max_idx <= 3,
+			"a 4-card column uses the 4 evenly-spread initial origins — no subdivision, no outlier",
+			"highest origin index %d of 4" % max_idx)
+
+	# **THE BAND PROPERTY: a DEEPER card's lamp is never CLOSER to the column than a shallower one's.**
+	# That is what makes the fan crossing-free — a lamp further out lands lower, so two beams on one
+	# side converge without meeting, and two on opposite sides can only meet at the column's x, which
+	# they reach at different heights.
+	var last_dist := -1.0
+	var monotone := true
+	for n : int in column.size():
+		var d := absf(o.origin_of(idx[n]).x - column[n].x)
+		if d + 0.001 < last_dist: monotone = false
+		last_dist = maxf(last_dist, d)
+	check(monotone,
+			"GAP-008: lamp distance from the column grows with DEPTH — the fan",
+			"a deeper card took a lamp closer in than a shallower one")
+	# ⚠ The topmost card's beam points STRAIGHT DOWN — the owner's *"beam right above it would point
+	# straight down to topmost card"*. It is the nearest lamp in the column's own section.
+	var top_dist := absf(o.origin_of(idx[0]).x - column[0].x)
+	var any_nearer := false
+	for n : int in column.size():
+		if absf(o.origin_of(idx[n]).x - column[n].x) + 0.001 < top_dist: any_nearer = true
+	check(not any_nearer,
+			"…and the TOPMOST card takes the lamp nearest its column — it points straight down")
+
+	# AND NO CROSSINGS, stated geometrically: for every pair of beams, they do not intersect between
+	# the bar and their targets.
+	var crossings := 0
+	for a : int in column.size():
+		for b : int in column.size():
+			if a >= b: continue
+			if _beams_cross(o.origin_of(idx[a]), column[a], o.origin_of(idx[b]), column[b]):
+				crossings += 1
+	check(crossings == 0, "…so no two beams in a column cross", "%d crossing pair(s)" % crossings)
+
+	# ⚠ **THE INTERLEAVED SET — THE CASE THAT CAUGHT THE FIRST IMPLEMENTATION.** Six cards alternating
+	# depth 0 / depth 1 across six columns. Partitioning the bar by ROW pulls the shallow cards to the
+	# middle and pushes the deep ones to the edges, which INVERTS the x order: measured, `col0 -> lamp2`
+	# while `col1 -> lamp0`, three crossings, and the owner saw it as *"beam separation looks wrong"*.
+	# Partitioning by COLUMN cannot do that, because the sections are disjoint and in x order.
+	var z := SpotlightOrigins.new()
+	z.begin(6, 1280.0, 100.0)
+	var zig : Array[Vector2] = [Vector2(100.0, 200.0), Vector2(240.0, 260.0),
+			Vector2(380.0, 200.0), Vector2(520.0, 260.0),
+			Vector2(660.0, 200.0), Vector2(800.0, 260.0)]
+	var zidx := z.assign(zig)
+	var zig_cross := 0
+	for a : int in zig.size():
+		for b : int in zig.size():
+			if a >= b: continue
+			if _beams_cross(z.origin_of(zidx[a]), zig[a], z.origin_of(zidx[b]), zig[b]):
+				zig_cross += 1
+	check(zig_cross == 0,
+			"an INTERLEAVED set (alternating depths across six columns) has no crossings either",
+			"%d crossing pair(s) — the bar is being partitioned by ROW, not by COLUMN" % zig_cross)
+	# And the lamps run left to right with the columns, which is what "no crossing" means here.
+	var ordered := true
+	for a : int in zig.size() - 1:
+		if z.origin_of(zidx[a]).x >= z.origin_of(zidx[a + 1]).x: ordered = false
+	check(ordered, "…because each column's section of the bar is left of the next column's")
+
+	# A ROW must still spread across the FULL width — every card is its own column, so the sections
+	# run left to right. This is the case the fan must not regress.
+	var w := SpotlightOrigins.new()
+	w.begin(4, 1280.0, 100.0)
+	var row : Array[Vector2] = [Vector2(1000.0, 300.0), Vector2(200.0, 300.0),
+			Vector2(600.0, 300.0), Vector2(80.0, 300.0)]
+	var widx := w.assign(row)
+	var row_cross := 0
+	for a : int in row.size():
+		for b : int in row.size():
+			if a >= b: continue
+			if _beams_cross(w.origin_of(widx[a]), row[a], w.origin_of(widx[b]), row[b]):
+				row_cross += 1
+	check(row_cross == 0, "a ROW still pairs across the whole bar with no crossings",
+			"%d crossing pair(s)" % row_cross)
+	# The leftmost card takes the leftmost lamp — the even spread a row has always had.
+	check(w.origin_of(widx[3]).x < w.origin_of(widx[0]).x,
+			"and the leftmost card's lamp is left of the rightmost card's",
+			"%f vs %f" % [w.origin_of(widx[3]).x, w.origin_of(widx[0]).x])
+
+## Do two beams cross between the lamp bar and their targets? Standard segment intersection —
+## written out rather than eyeballed from indices, because the CLAIM is geometric.
+func _beams_cross(o1: Vector2, t1: Vector2, o2: Vector2, t2: Vector2) -> bool:
+	var d := (t1 - o1).cross(t2 - o2)
+	if is_zero_approx(d): return false
+	var s : float = (o2 - o1).cross(t2 - o2) / d
+	var u : float = (o2 - o1).cross(t1 - o1) / d
+	# Strictly inside both segments: a shared endpoint is a convergence, not a crossing.
+	return s > 0.001 and s < 0.999 and u > 0.001 and u < 0.999
 
 ## I8 / I9: the pool empties, midpoints become candidates, and the rig GROWS rather than refusing.
 ## ⚠ `Q107` refuses a cap — *"No cap. soft cap at how many cards can fit on screen"* — so running out

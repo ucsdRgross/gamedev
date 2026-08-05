@@ -78,8 +78,108 @@ func _scatter(i: int) -> float:
 	var h := fmod(float(i) * 0.6180339887 + float(_rng.seed % 1024) * 0.0009765625, 1.0)
 	return h * SCATTER_SPAN * _rise
 
-## THE FREE ORIGIN NEAREST `target` (I7, `Q111`=a) — which is what keeps beams mostly vertical and
-## mostly non-crossing without any explicit rule about either. Subdivides when the pool is empty.
+## How close in x two targets must be to count as the same board COLUMN. A card is ~95 px wide at the
+## shipped `card_scale`, so half of that groups a column without merging two.
+const COLUMN_BUCKET_PX := 48.0
+
+## **ASSIGN A WHOLE SET AT ONCE — A SECTION OF THE BAR PER COLUMN, AND A FAN BY DEPTH INSIDE IT.**
+##
+## The owner's rule, 2026-08-04 (GAP-008):
+##
+## > *"given column position, beam right above it would point straight down to topmost card. Then
+## > alternating left and right from that center beam, go down column. However we need it to scale to
+## > any set... we first divide top bar into sections, getting wider by row. middle of top gets first
+## > `-1-`, 2nd row gets lamp area surrounding first row `-212-`, and so on with `-32123-`, with each
+## > lamp within a row section choosing its closest."*
+##
+## **Two levels, and getting the order of them wrong is what broke it the first time:**
+##
+##   1. **The bar is divided into SECTIONS BY COLUMN, left to right.** A column with three lit cards
+##      gets three adjacent lamps; the next column to its right gets the next three. Sections are
+##      disjoint and in x order, so **no beam from one column can cross a beam from another.**
+##   2. **Inside a section, the fan is by DEPTH**: the topmost card takes the lamp nearest its own
+##      column (*"points straight down"*), and each deeper card takes the next lamp outward.
+##
+## ⚠ **THE FIRST IMPLEMENTATION PARTITIONED BY ROW ACROSS THE WHOLE BAR AND THAT IS WRONG.** It gave
+## the shallowest ROW the centre of the entire bar and deeper rows the outer bands — which is correct
+## for ONE column and wrong for everything else. The owner caught it on the six-card preset (three at
+## depth 0, three at depth 1, interleaved across six columns): shallow cards were pulled to the middle
+## and deep cards pushed to the edges, **inverting the x order and producing three crossings**. The
+## picture was *"beam separation looks wrong here"*, and the arithmetic agreed — `col0 -> lamp2` while
+## `col1 -> lamp0`. **A rule stated for one column had to be read as a rule about columns, not rows.**
+##
+## ⚠ **WHY IT CANNOT CROSS.** Between columns: sections are disjoint x ranges taken in x order, so
+## the lamp order matches the column order by construction. Within a column: a deeper card's lamp is
+## always further from that column and a lamp further out lands lower, so two beams on the same side
+## converge without meeting, and two on opposite sides meet only at the column's x — which they reach
+## at different heights.
+##
+## ⚠ **IT DEGRADES TO THE RIGHT THING FOR A ROW.** Every card is its own column, so every section is
+## one lamp and the sections run left to right — the even spread a row has always had.
+##
+## Returns one origin index per target, in the CALLER'S order.
+func assign(targets: Array[Vector2]) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	out.resize(targets.size())
+	if targets.is_empty(): return out
+	while _origins.size() - _taken.size() < targets.size():
+		var before := _origins.size()
+		_subdivide()
+		if _origins.size() == before: break   # cannot grow — bail rather than spin
+	# Free lamps, left to right. ⚠ A SORTED VIEW, never a sorted store — `_origins` is append-only and
+	# its indices are permanent handles the caller holds across frames.
+	var free : Array[int] = []
+	for i : int in _origins.size():
+		if not _taken.has(i): free.append(i)
+	free.sort_custom(func(a: int, b: int) -> bool: return _origins[a].x < _origins[b].x)
+	if free.is_empty(): return out
+
+	# GROUP BY COLUMN. Cards in one board column share an x within a pixel or two, so the key is
+	# quantised — an unquantised key would make every card its own column and lose the fan entirely.
+	var columns : Dictionary[int, Array] = {}
+	for i : int in targets.size():
+		var key := roundi(targets[i].x / COLUMN_BUCKET_PX)
+		if not columns.has(key): columns[key] = ([] as Array[int])
+		var bucket : Array = columns[key]
+		bucket.append(i)
+	var keys : Array[int] = []
+	for k : int in columns: keys.append(k)
+	keys.sort()
+
+	var next_lamp := 0
+	for k : int in keys:
+		var members : Array = columns[k]
+		# This column's SECTION of the bar: the next `members.size()` lamps, left to right.
+		var section : Array[int] = []
+		for _n : int in members.size():
+			if next_lamp >= free.size(): break
+			section.append(free[next_lamp])
+			next_lamp += 1
+		if section.is_empty(): continue
+		# THE FAN: shallowest card first, and it takes the lamp NEAREST its own column — *"points
+		# straight down"*. Each deeper card takes the next lamp outward.
+		# ⚠ Ordered by DISTANCE, not by alternating left/right: strict alternation stops being
+		# monotone the moment the column is not centred in its own section (a column at the screen
+		# edge, or a ragged board), and monotone distance is the whole reason the fan cannot cross.
+		var column_x : float = targets[members[0]].x
+		section.sort_custom(func(a: int, b: int) -> bool:
+			return absf(_origins[a].x - column_x) < absf(_origins[b].x - column_x))
+		var by_depth : Array[int] = members.duplicate()
+		by_depth.sort_custom(func(a: int, b: int) -> bool: return targets[a].y < targets[b].y)
+		for n : int in by_depth.size():
+			var slot : int = by_depth[n]
+			if n >= section.size():
+				out[slot] = -1
+				continue
+			var idx : int = section[n]
+			_taken[idx] = true
+			out[slot] = idx
+	return out
+
+## THE FREE ORIGIN NEAREST `target` (I7) — the one-at-a-time form, kept for callers that genuinely
+## place a single light (chart T's momentary cue, where there is no set to sort).
+## ⚠ **DO NOT USE IT FOR A SECTION.** Calling it in a loop is what produced the column crossings —
+## see `assign()` above, and `gaps/GAP-008.md` for the ruling this is waiting on.
 ##
 ## ⚠ Returns the origin's INDEX, not the point: the caller needs the index to release it, and a
 ## point can no longer identify its origin once `advance` has re-spread the ones off screen.

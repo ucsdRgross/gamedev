@@ -229,6 +229,13 @@ const ALLOW_LINES : Array[String] = [
 	"else Color.WHITE", "return Color.WHITE",          # untinted fallbacks (no ramp = no tint)
 	"@export var color : Color = Color.WHITE",         # untinted default; set by the visual
 	"color = Color(0, 0, 0, 0)",                       # fully transparent = NO colour at all
+	# ⚠ **THE LIGHT LAYER'S OFF-PALETTE EXCEPTION — GRANTED ONCE, SCOPED HERE, DOES NOT TRAVEL.**
+	# `DESIGN.md` v8 / GAP-003: `Q134`=(b) *"light gets freedom to use off-palette colour from the
+	# start"* and `Q135`=(b) *"an off-palette exception for the light layer only"*. Light is the ONLY
+	# thing in this game outside the palette contract. These two are allowlisted BY NAME rather than
+	# by file, so any OTHER colour appearing in the spotlight style still trips the scan.
+	"var dim_color : Color", "dim_color = Color(",
+	"var light_color : Color", "light_color = Color(",
 ]
 
 func run_drift_scan() -> void:
