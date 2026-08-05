@@ -27,6 +27,18 @@ two disagree the answers win, and the correct move is a gap (GAP-003), not a tra
 Derived from: `solatro/design/spotlight/DESIGN.md`, version 6, confirmed 2026-08-03. Every step below
 cites the design node IDs it implements.
 
+**BEFORE implementing any rule, name the competing READINGS and test the input that separates them.**
+Two sentences in the commit or the test is enough. This is not the gap protocol — it is what you do
+when you think you already have the answer.
+
+⚠ **It is here because it has cost this stream twice, both times on a rule that arrived with a worked
+EXAMPLE.** GAP-008's fan was described for a single column; "partition the bar by ROW" and "partition
+by COLUMN" both reproduce that example exactly and differ on every other shape. I built the first,
+tested a column and a row — **the two shapes the example was described with, on which both readings
+agree** — and shipped three beam crossings. **The case that matters is the one the example does not
+cover.** `Q111` went the same way: its mechanism ("nearest") and its stated reason ("non-crossing")
+are two readings, and they diverge on a column.
+
 If you are executing this and you reach a decision the design does not cover:
 1. Reversible and clearly within intent → do it, and append one line to `ASSUMPTIONS.md` citing the
    node you were working on. Never silently.

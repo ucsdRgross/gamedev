@@ -65,12 +65,22 @@ The next 3 tasks in priority order, then a copy-paste opening prompt for the nex
 ## Per-task loop — never batch
 
 1. Set `status: in_progress`.
-2. Do the work.
-3. Run its `verification_command`. For `verification_kind: snapshot` that means the `/fx-verify`
-   gate — render and actually look at the PNG.
-4. Paste the real output or measured numbers into `evidence`. Never write evidence you did not
+2. **Before writing code: name the competing READINGS of whatever the step specifies, and test the
+   input that separates them.** Two sentences is enough. ⚠ Measured on the spotlight stream: a rule
+   that arrives with a worked example has two representations — the example and the general rule —
+   and they can differ. Both readings reproduce the example, so **the case that matters is the one the
+   example does not cover**, and that is exactly the case with no test.
+3. **If the design has a plan beside it, run its checks before starting** — for a `/flowchart-design`
+   stream that is `npm --prefix designloop run check -- <project>/<slug>`, and **read `unclaimed`**:
+   answered questions no plan step implements. First run on spotlight: 190 of 255, including the one
+   that had already shipped wrong through three phases.
+4. Do the work.
+5. Run its `verification_command`. For `verification_kind: snapshot` that means the `/fx-verify`
+   gate — render and actually look at the PNG. ⚠ **If the change has a DURATION, a still frame is the
+   wrong instrument**: run it and report what MOVED. See `/fx-verify`.
+6. Paste the real output or measured numbers into `evidence`. Never write evidence you did not
    observe; never paste a green banner from a different run.
-5. Set `status: done`, or `blocked` with the reason in `notes`.
+7. Set `status: done`, or `blocked` with the reason in `notes`.
 
 Update the file after **every** task and **at the 60% mark of the session at the latest** — not
 as an end-of-session artifact. Sessions here have died mid-handoff; the file existing early is
@@ -86,6 +96,17 @@ the entire point.
 - **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue
   into `ARCHITECTURE_REVIEW.md` / `todo.md` and delete the handoff — but run `git ls-files <path>`
   first, since deleting an untracked file destroys it.
+- ⚠ **KEEP IT UNDER ~300 LINES, AND PRUNE WHEN IT DRIFTS OVER.** Measured 2026-08-04: the spotlight
+  handoff reached **1097 lines** by appending `⚠ HISTORICAL` and `✅ FIXED` blocks instead of removing
+  them — every session then paid that cost to start, for content that was already in the gap files.
+  **A fixed bug's forensics belong in its `GAP-NNN.md`; a resolved decision's belong in the design's
+  changelog; an instrument's how-to belongs in the doc that owns it.** This file holds what is TRUE
+  NOW: goal, state, the ledger, current evidence, OPEN bugs, next up. When you find yourself writing
+  "historical, kept because", that content has a home and it is not here.
+- **Write the ledger so the tooling can still read it.** `designloop/src/gaps.mjs::planSteps()` reads
+  `id: Sn` out of the YAML, which is what keeps the stale-step report working from this file as well
+  as from the plan. Verify after any restructure:
+  `node --input-type=module -e "import {planSteps} from './designloop/src/gaps.mjs'; …"`.
 - Include a references/sources section; the owner expects plans and handoffs to carry them.
 - Keep going through mechanical work. Surface to the owner for subjective visual judgment, an
   architectural decision the plan does not cover, a failure suggesting the plan itself is wrong,

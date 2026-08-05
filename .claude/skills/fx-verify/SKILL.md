@@ -1,6 +1,6 @@
 ---
 name: fx-verify
-description: Verification gate for Solatro visual/shader/prop-art work — render the snapshot scenes, LOOK at the PNGs, and report what the image actually shows. Use before claiming any FX, shader, prop-art, or layering change works. Also use when asked to check whether an effect looks right.
+description: Verification gate for Solatro visual/shader/prop-art work — render the snapshot scenes, LOOK at the PNGs, and report what the image actually shows; for anything with a DURATION, run it and report what moved. Use before claiming any FX, shader, prop-art, or layering change works. Also use when asked to check whether an effect looks right.
 ---
 
 # FX verification gate
@@ -11,6 +11,30 @@ about pixels — that substitution is the single most common failure mode on thi
 
 If you cannot render, say **UNVERIFIED** in plain text and do not use the words "working",
 "fixed", or "correct".
+
+## ⚠ A STILL FRAME IS NECESSARY AND NOT SUFFICIENT
+
+**The evidence hierarchy: green suite < printed counts < a rendered pixel < movement measured over
+time.** A PNG settles a silhouette, an edge, a colour. **It cannot settle a pulse, a travel, a fade,
+or a sequence** — a still of a working loop and a still of a dead one are identical.
+
+Measured 2026-08-04: three defects survived a full set of "looked at and passed" captures — a
+per-section dim pulse, a retire beat that threw an error every frame, and a cascade stuck on its
+first section. The owner found all three by watching. **So for anything with a DURATION, rendering is
+the wrong verb:**
+
+```bash
+<binary> --path solatro res://Tools/spotlight_tool.tscn -- --verify
+```
+
+It plays every scenario and reports what MOVED — `sections=4/4 show_flips=14 max_dim=0.75
+max_open=1.00` — and flags anything that changed nothing over its whole loop. It found a real thrown
+error on its first run. **A capture harness for a temporal effect must report movement, not that it
+did not crash.** Add the same shape to any new harness: print the counts beside every shot, because
+a blank frame at exit 0 is this class of tool's characteristic failure.
+
+⚠ `-- --trace` runs a REAL act with `EventLog` recording when the question is about ORDER
+(`HEADLESS_TESTING.md` §0c). `-- --shoot-all` is the still-frame path.
 
 ## Preconditions
 
@@ -44,6 +68,9 @@ If you cannot render, say **UNVERIFIED** in plain text and do not use the words 
 4. **Measure cost if the change could affect performance.**
    `Tests/Visual/fx_cost.tscn` reports per-effect GPU cost. Quote before/after numbers measured
    on this machine's Intel UHD — never an estimate, never a ratio you reasoned your way to.
+
+5. **If the change has a duration, measure it over time** — see the section above. A rendered still
+   is not evidence about a pulse, a travel, a fade or a sequence.
 
 ## Reporting
 
