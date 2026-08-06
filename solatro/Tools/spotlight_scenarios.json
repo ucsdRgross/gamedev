@@ -1,138 +1,521 @@
 {
   "_README": [
-    "THE SCENARIO LIST IS DATA, NOT CODE — design Q182: 'we are still on first review pass we could",
-    "add more'. Adding a preset is editing this file: no GDScript change, and the inspector dropdown",
-    "in Tools/spotlight_tool.tscn is built from this list at load time.",
-    "",
-    "THE BOARD IS THE REAL PLAY-AREA GEOMETRY. A column stacks: each card past the first shows only",
-    "its top STRIP (CardVisual.card_separation_play_custom) while its art hangs a full card below —",
-    "PlayArea.slot_center_global's own pitch. 'depth' is how many cards deep every column is, so a",
-    "depth of 3 means two covered cards under each visible one.",
-    "",
-    "Fields:",
-    "  cols, depth      the board. depth is the STACK height, and stacking is what buries a card.",
-    "  lit              [[col, depth], ...] — one section. Slots are 0-based.",
-    "  sections         [ [[col,depth],...], ... ] — A CASCADE. Each entry is one scored section, and",
-    "                   the tool walks them in order, pulsing the show once per section (GAP-006) and",
-    "                   REPLACING the light set without freeing it (which is what chart E's travel",
-    "                   needs: 'no instant movements or spawning in and out'). Use this or 'lit'.",
-    "  casual           true = a MOCKED SOLO ACTIVATION TRIGGER, not scoring. Chart T's momentary cue,",
-    "                   which fires whenever a card becomes active in ordinary play, at Q245=(c)'s",
-    "                   shallower dim.",
-    "  row_separation   true = open the lit row from a strip to a full card (the S16 reveal,",
-    "                   SIMULATED — PlayArea cannot do this yet).",
-    "  proves           what you are meant to be looking at.",
-    "",
-    "Inspector toggles cut across every preset: 'play' walks the cascade, 'section' holds one,",
+	"THE SCENARIO LIST IS DATA, NOT CODE — design Q182: 'we are still on first review pass we could",
+	"add more'. Adding a preset is editing this file: no GDScript change, and the inspector dropdown",
+	"in Tools/spotlight_tool.tscn is built from this list at load time.",
+	"",
+	"THE BOARD IS THE REAL PLAY-AREA GEOMETRY. A column stacks: each card past the first shows only",
+	"its top STRIP (CardVisual.card_separation_play_custom) while its art hangs a full card below —",
+	"PlayArea.slot_center_global's own pitch. 'depth' is how many cards deep every column is, so a",
+	"depth of 3 means two covered cards under each visible one.",
+	"",
+	"Fields:",
+	"  cols, depth      the board. depth is the STACK height, and stacking is what buries a card.",
+	"  lit              [[col, depth], ...] — one section. Slots are 0-based.",
+	"  sections         [ [[col,depth],...], ... ] — A CASCADE. Each entry is one scored section, and",
+	"                   the tool walks them in order, pulsing the show once per section (GAP-006) and",
+	"                   REPLACING the light set without freeing it (which is what chart E's travel",
+	"                   needs: 'no instant movements or spawning in and out'). Use this or 'lit'.",
+	"  casual           true = a MOCKED SOLO ACTIVATION TRIGGER, not scoring. Chart T's momentary cue,",
+	"                   which fires whenever a card becomes active in ordinary play, at Q245=(c)'s",
+	"                   shallower dim.",
+	"  row_separation   true = open the lit row from a strip to a full card (the S16 reveal,",
+	"                   SIMULATED — PlayArea cannot do this yet).",
+	"  proves           what you are meant to be looking at.",
+	"",
+	"Inspector toggles cut across every preset: 'play' walks the cascade, 'section' holds one,",
     "'revealed' holds the show up for a still, and 'row_separation'/'separation_amount' open the row."
   ],
-
   "scenarios": [
-    {
-      "id": "S1",
-      "name": "Flat board, one row lit",
-      "proves": "The no-expansion path — the baseline every other preset is read against",
-      "cols": 5, "depth": 1,
-      "lit": [[1, 0], [2, 0], [3, 0]]
-    },
-    {
-      "id": "S2",
-      "name": "STACKED — a buried row lit, separation OFF",
-      "proves": "Why S16 is needed. Every column is 3 deep, so the lit cards show only their strip and their art square is hidden underneath. This is what a circle lands on today.",
-      "cols": 5, "depth": 3,
-      "lit": [[1, 1], [2, 1], [3, 1]]
-    },
-    {
-      "id": "S2b",
-      "name": "STACKED — the same row, separation ON",
-      "proves": "The S16 reveal, simulated: the lit row opens to a full card and the rows below move down. Compare directly against S2 — this is the before/after the reveal exists to produce.",
-      "cols": 5, "depth": 3,
-      "lit": [[1, 1], [2, 1], [3, 1]],
-      "row_separation": true
-    },
-    {
-      "id": "S3",
-      "name": "A full row of 5",
-      "proves": "Origin spread across the whole board width — change screen_size and watch the beams re-fan",
-      "cols": 5, "depth": 1,
-      "lit": [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
-    },
-    {
-      "id": "S4",
-      "name": "A COLUMN section, stacked",
-      "proves": "Beams converging down one x onto stacked cards. Measured on the real board: column cards sit ~44px apart and the circle is r=40, so the pools MUST overlap. This shows the current truth; it is not a bug report. Row separation does not address it — a column spans depths.",
-      "cols": 5, "depth": 4,
-      "lit": [[2, 0], [2, 1], [2, 2], [2, 3]]
-    },
-    {
-      "id": "S5",
-      "name": "THE CASCADE — rows then a column",
-      "proves": "The complete act's SHAPE: four sections in order, the show pulsing once per section (GAP-006) and the light set replacing without being freed. THIS IS WHERE CHART E'S MISSING TRAVEL IS VISIBLE — watch whether the light moves between sections or cuts.",
-      "cols": 5, "depth": 3,
-      "sections": [
-        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
-        [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
-        [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
-        [[2, 0], [2, 1], [2, 2]]
-      ]
-    },
-    {
-      "id": "S5b",
-      "name": "THE CASCADE, with row separation",
-      "proves": "The same cascade with the S16 reveal simulated — each section's row opens as it takes the light, and closes as the next one does. This is the whole act as the design intends it to look.",
-      "cols": 5, "depth": 3,
-      "row_separation": true,
-      "sections": [
-        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
-        [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
-        [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]]
-      ]
-    },
-    {
-      "id": "S6",
-      "name": "Six lights against four initial origins",
-      "proves": "The subdivision allocator — k0 is 4, so six lights force it to split",
-      "cols": 6, "depth": 2,
-      "lit": [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0], [5, 1]]
-    },
-    {
-      "id": "S7",
-      "name": "A deep board, the bottom row lit",
-      "proves": "Long beams, and Q117 — a beam never points upward",
-      "cols": 5, "depth": 6,
-      "lit": [[0, 5], [2, 5], [4, 5]]
-    },
-    {
-      "id": "S12",
-      "name": "MOCKED SOLO TRIGGER — one card becomes active",
-      "proves": "Chart T's momentary cue at Q245=(c)'s SHALLOWER dim. The spotlight fires whenever a card becomes active in ordinary play, including every placement — Q245's own scrutiny note is that a full-depth dim there 'means the screen pulses dark on every single card you place'. Compare the dim depth against S1.",
-      "cols": 5, "depth": 2,
-      "casual": true,
-      "lit": [[2, 0]]
-    },
-    {
-      "id": "S15",
-      "name": "ONE light on a card face — GATE G2.2",
-      "proves": "THE READABILITY CONSTRAINT (design 14b.3). Hold this and read the rank, the suit pip and the art square THROUGH the circle. ⚠ THE GLOW IS NOT IN THIS TOOL YET and QR9=(c) makes the glow the thing that draws the disc's light, where circle_inner_alpha lives — so this shows the light layer's contribution with nothing over it, and G2.2 cannot be finally settled here until the glow is in.",
-      "cols": 3, "depth": 1,
-      "lit": [[1, 0]]
-    },
-    {
-      "id": "S14",
-      "name": "The accessibility floor — set fx_intensity to 0",
-      "proves": "GATE G2.4: Q83 says fx_intensity=0 'keeps beams glow and dim'. Take the fx_intensity knob to 0 and THE DIM MUST STILL STAND.",
-      "cols": 5, "depth": 1,
-      "lit": [[1, 0], [2, 0], [3, 0]]
-    },
-    {
-      "id": "S17",
-      "name": "THE PER-SECTION PULSE at normal pacing — turn 'play' on",
-      "proves": "GAP-006, and it is the first thing to judge. In a real act this beat is 1-3 frames because get_delay() is already compressed; here it runs at base_delay uncompressed. If it reads as a flash rather than a spotlight, the knobs are spotlight_hold_fraction and the two dim fractions — and spotlight_dim_target = 0 is the off switch, which keeps every beam, circle and glow.",
-      "cols": 5, "depth": 2,
-      "sections": [
-        [[1, 0], [2, 0], [3, 0]],
-        [[1, 1], [2, 1], [3, 1]]
-      ]
-    }
+	{
+	  "id": "S1",
+	  "name": "Flat board, one row lit",
+	  "proves": "The no-expansion path — the baseline every other preset is read against",
+	  "cols": 5,
+	  "depth": 1,
+	  "lit": [
+		[
+		  1,
+		  0
+		],
+		[
+		  2,
+		  0
+		],
+		[
+		  3,
+		  0
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S2",
+	  "name": "STACKED — a buried row lit, separation OFF",
+	  "proves": "Why S16 is needed. Every column is 3 deep, so the lit cards show only their strip and their art square is hidden underneath. This is what a circle lands on today.",
+	  "cols": 5,
+	  "depth": 3,
+	  "lit": [
+		[
+		  1,
+		  1
+		],
+		[
+		  2,
+		  1
+		],
+		[
+		  3,
+		  1
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S2b",
+	  "name": "STACKED — the same row, separation ON",
+	  "proves": "The S16 reveal, simulated: the lit row opens to a full card and the rows below move down. Compare directly against S2 — this is the before/after the reveal exists to produce.",
+	  "cols": 5,
+	  "depth": 3,
+	  "lit": [
+		[
+		  1,
+		  1
+		],
+		[
+		  2,
+		  1
+		],
+		[
+		  3,
+		  1
+		]
+	  ],
+	  "row_separation": true
+	},
+	{
+	  "id": "S3",
+	  "name": "A full row of 5",
+	  "proves": "Origin spread across the whole board width — change screen_size and watch the beams re-fan",
+	  "cols": 5,
+	  "depth": 1,
+	  "lit": [
+		[
+		  0,
+		  0
+		],
+		[
+		  1,
+		  0
+		],
+		[
+		  2,
+		  0
+		],
+		[
+		  3,
+		  0
+		],
+		[
+		  4,
+		  0
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S4",
+	  "name": "A COLUMN section, stacked",
+	  "proves": "Beams converging down one x onto stacked cards. Measured on the real board: column cards sit ~44px apart and the circle is r=40, so the pools MUST overlap. This shows the current truth; it is not a bug report. Row separation does not address it — a column spans depths.",
+	  "cols": 5,
+	  "depth": 4,
+	  "lit": [
+		[
+		  2,
+		  0
+		],
+		[
+		  2,
+		  1
+		],
+		[
+		  2,
+		  2
+		],
+		[
+		  2,
+		  3
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S5",
+	  "name": "THE CASCADE — rows then a column",
+	  "proves": "The complete act's SHAPE: four sections in order, the show pulsing once per section (GAP-006) and the light set replacing without being freed. THIS IS WHERE CHART E'S MISSING TRAVEL IS VISIBLE — watch whether the light moves between sections or cuts.",
+	  "cols": 5,
+	  "depth": 3,
+	  "sections": [
+		[
+		  [
+			0,
+			0
+		  ],
+		  [
+			1,
+			0
+		  ],
+		  [
+			2,
+			0
+		  ],
+		  [
+			3,
+			0
+		  ],
+		  [
+			4,
+			0
+		  ]
+		],
+		[
+		  [
+			0,
+			1
+		  ],
+		  [
+			1,
+			1
+		  ],
+		  [
+			2,
+			1
+		  ],
+		  [
+			3,
+			1
+		  ],
+		  [
+			4,
+			1
+		  ]
+		],
+		[
+		  [
+			0,
+			2
+		  ],
+		  [
+			1,
+			2
+		  ],
+		  [
+			2,
+			2
+		  ],
+		  [
+			3,
+			2
+		  ],
+		  [
+			4,
+			2
+		  ]
+		],
+		[
+		  [
+			2,
+			0
+		  ],
+		  [
+			2,
+			1
+		  ],
+		  [
+			2,
+			2
+		  ]
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S5b",
+	  "name": "THE CASCADE, with row separation",
+	  "proves": "The same cascade with the S16 reveal simulated — each section's row opens as it takes the light, and closes as the next one does. This is the whole act as the design intends it to look.",
+	  "cols": 5,
+	  "depth": 3,
+	  "row_separation": true,
+	  "sections": [
+		[
+		  [
+			0,
+			0
+		  ],
+		  [
+			1,
+			0
+		  ],
+		  [
+			2,
+			0
+		  ],
+		  [
+			3,
+			0
+		  ],
+		  [
+			4,
+			0
+		  ]
+		],
+		[
+		  [
+			0,
+			1
+		  ],
+		  [
+			1,
+			1
+		  ],
+		  [
+			2,
+			1
+		  ],
+		  [
+			3,
+			1
+		  ],
+		  [
+			4,
+			1
+		  ]
+		],
+		[
+		  [
+			0,
+			2
+		  ],
+		  [
+			1,
+			2
+		  ],
+		  [
+			2,
+			2
+		  ],
+		  [
+			3,
+			2
+		  ],
+		  [
+			4,
+			2
+		  ]
+		]
+	  ]
+	},
+	{
+	  "id": "S8",
+	  "name": "TRAVEL — sections of MISMATCHED size (3 → 5 → 2)",
+	  "cols": 6,
+	  "depth": 2,
+	  "sections": [
+		[
+		  [
+			0,
+			0
+		  ],
+		  [
+			1,
+			0
+		  ],
+		  [
+			2,
+			0
+		  ]
+		],
+		[
+		  [
+			0,
+			1
+		  ],
+		  [
+			1,
+			1
+		  ],
+		  [
+			2,
+			1
+		  ],
+		  [
+			3,
+			1
+		  ],
+		  [
+			4,
+			1
+		  ]
+		],
+		[
+		  [
+			4,
+			0
+		  ],
+		  [
+			5,
+			0
+		  ]
+		]
+	  ],
+	  "row_separation": false,
+	  "proves": "CHART E, THE WHOLE OF IT, WITH THE COUNTS DELIBERATELY UNEQUAL. Turn 'play' on. 3 → 5: all three lights TRAVEL to the new row and TWO MORE fade in already aimed (E4, Q65=a). 5 → 2: two travel and THREE RETIRE where they stand (E3) — they do not vanish. ⚠ This is the preset that makes spotlight_travel_fraction, spotlight_spawn_fraction and spotlight_retire_fraction mean anything: before the tool had a beam model it REBUILT the set every section, so every transition was a snap and those three knobs did nothing on screen. Watch that no light ever jumps, and that the count changes by fading rather than popping."
+	},
+	{
+	  "id": "S6",
+	  "name": "Six lights across six columns",
+	  "proves": "Six lamps spread across the full width, one per column, with the fan taking them in x order. ⚠ IT DOES NOT EXERCISE SUBDIVISION, WHICH THE OLD TEXT CLAIMED: SpotlightOrigins.begin() sizes k0 to maxi(count, MIN_ORIGINS), so six lights get six origins and _subdivide() is never reached. Subdivision needs a section LARGER than the one begin() was sized for — which in the game happens because _band_ready keeps begin() from re-running mid-act, and this tool has no preset for it.",
+	  "cols": 6,
+	  "depth": 2,
+	  "lit": [
+		[
+		  0,
+		  0
+		],
+		[
+		  1,
+		  1
+		],
+		[
+		  2,
+		  0
+		],
+		[
+		  3,
+		  1
+		],
+		[
+		  4,
+		  0
+		],
+		[
+		  5,
+		  1
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S7",
+	  "name": "A deep board, the bottom row lit",
+	  "proves": "Long beams, and Q117 — a beam never points upward",
+	  "cols": 5,
+	  "depth": 6,
+	  "lit": [
+		[
+		  0,
+		  5
+		],
+		[
+		  2,
+		  5
+		],
+		[
+		  4,
+		  5
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S12",
+	  "name": "MOCKED SOLO TRIGGER — one card becomes active",
+	  "proves": "Chart T's momentary cue at Q245=(c)'s SHALLOWER dim. The spotlight fires whenever a card becomes active in ordinary play, including every placement — Q245's own scrutiny note is that a full-depth dim there 'means the screen pulses dark on every single card you place'. Compare the dim depth against S1.",
+	  "cols": 5,
+	  "depth": 2,
+	  "casual": true,
+	  "lit": [
+		[
+		  2,
+		  0
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S15",
+	  "name": "ONE light on a card face — GATE G2.2",
+	  "proves": "THE READABILITY CONSTRAINT (design 14b.3). Hold this and read the rank, the suit pip and the art square THROUGH the circle. ⚠ THE GLOW IS NOT IN THIS TOOL YET and QR9=(c) makes the glow the thing that draws the disc's light, where circle_inner_alpha lives — so this shows the light layer's contribution with nothing over it, and G2.2 cannot be finally settled here until the glow is in.",
+	  "cols": 3,
+	  "depth": 1,
+	  "lit": [
+		[
+		  1,
+		  0
+		]
+	  ],
+	  "row_separation": false
+	},
+	{
+	  "id": "S14",
+	  "name": "The accessibility floor — set fx_intensity to 0",
+	  "proves": "GATE G2.4: Q83 says fx_intensity=0 'keeps beams glow and dim'. The preset now SETS it to 0 itself — it used to be byte-identical to S1 and relied on you moving a slider, so it demonstrated nothing on its own. The beams and circles must go and THE DIM MUST STILL STAND.",
+	  "cols": 5,
+	  "depth": 1,
+	  "lit": [
+		[
+		  1,
+		  0
+		],
+		[
+		  2,
+		  0
+		],
+		[
+		  3,
+		  0
+		]
+	  ],
+	  "row_separation": false,
+	  "fx_intensity": 0.0
+	},
+	{
+	  "id": "S17",
+	  "name": "THE PER-SECTION PULSE at normal pacing — turn 'play' on",
+	  "proves": "GAP-006, and it is the first thing to judge. In a real act this beat is 1-3 frames because get_delay() is already compressed; here it runs at base_delay uncompressed. If it reads as a flash rather than a spotlight, the knobs are spotlight_hold_fraction and the two dim fractions — and spotlight_dim_target = 0 is the off switch, which keeps every beam, circle and glow.",
+	  "cols": 5,
+	  "depth": 2,
+	  "sections": [
+		[
+		  [
+			1,
+			0
+		  ],
+		  [
+			2,
+			0
+		  ],
+		  [
+			3,
+			0
+		  ]
+		],
+		[
+		  [
+			1,
+			1
+		  ],
+		  [
+			2,
+			1
+		  ],
+		  [
+			3,
+			1
+		  ]
+		]
+	  ],
+	  "row_separation": false
+	}
   ]
 }

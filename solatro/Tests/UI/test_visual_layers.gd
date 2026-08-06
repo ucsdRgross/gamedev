@@ -1229,11 +1229,45 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			"S17/K13: the slot BELOW it moved down by the opening — props anchored there follow",
 			"y %.1f -> %.1f (no movement means slot_center_global ignored the expansion)"
 			% [closed_y, open_y])
-	# ⚠ Against the KNOB's own formula, not a literal, so the two cannot drift apart.
-	var expect : float = pa._row_open_height() - float(CardVisual.card_separation_play_custom)
-	check(absf((open_y - closed_y) - expect) < 1.0,
-			"...by exactly the mode's opening (GAP-009), not an arbitrary amount",
-			"moved %.1f, expected %.1f" % [open_y - closed_y, expect])
+	# ⚠ **ASSERTED ON THE RESULTING ROW PITCH, NOT ON THE STRIP'S GROWTH — and that distinction caught a
+	# real bug.** The old form checked the movement against
+	# `_row_open_height() - card_separation_play_custom`, which is the STRIP's growth and quietly
+	# ignored the `separation` the VBox puts between rows. Sizing the strip to a full card therefore
+	# produced a row pitch of card + separation, and the owner saw *"an odd gap between the rows, looks
+	# like an extra few pixels of separation"*. The mode promises a TOTAL distance, so the total is what
+	# has to be measured.
+	var closed_pitch := closed_y - pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
+	var open_pitch := open_y - pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
+	check(absf(open_pitch - pa._row_open_height()) < 1.0,
+			"...leaving a row pitch of EXACTLY the mode's opening (GAP-009) — no stray separation",
+			"pitch %.1f -> %.1f, mode asks for %.1f" % [closed_pitch, open_pitch, pa._row_open_height()])
+	# ⚠ **AN ALREADY-OPEN ROW MUST FOLLOW A LIVE SETTINGS CHANGE.** Every term in the opening is read
+	# live — `separation` is a getter over `card_scale`, and the card metrics are static getters over
+	# the same — and `_row_open` stores only the eased 0..1, never pixels. But "read live" is a claim
+	# about a call path (`settings_changed -> update_gui -> set_card_zones_visuals ->
+	# update_card_zone_visuals -> _apply_row_openings`), and a path is exactly the kind of thing that
+	# is true until someone adds an early-out. Changing the scale MID-REVEAL is the input that tests it.
+	var prev_scale : float = SettingsManager.settings.card_scale
+	SettingsManager.settings.card_scale = prev_scale * 1.5
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var top_y := pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
+	var scaled_pitch := pa.slot_center_global(below).y - top_y
+	check(scaled_pitch > open_pitch + 1.0,
+			"a card_scale change mid-reveal actually MOVES the pitch, so the next check can fail",
+			"pitch %.1f -> %.1f" % [open_pitch, scaled_pitch])
+	check(absf(scaled_pitch - pa._row_open_height()) < 1.5,
+			"...and the OPEN row re-derives to the mode's new opening — nothing was captured at spawn",
+			"pitch %.1f, mode now asks for %.1f" % [scaled_pitch, pa._row_open_height()])
+	SettingsManager.settings.card_scale = prev_scale
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(absf((pa.slot_center_global(below).y
+			- pa.slot_center_global(Vector3i(below.x, below.y, 0)).y) - open_pitch) < 1.5,
+			"...and restoring the scale restores the pitch exactly",
+			"back to %.1f, was %.1f" % [pa.slot_center_global(below).y
+				- pa.slot_center_global(Vector3i(below.x, below.y, 0)).y, open_pitch])
+
 	# The row ABOVE the opening must not move — an opening pushes down, it does not recentre the board.
 	check(is_equal_approx(pa._row_open_offset(below.x, 0), 0.0),
 			"and row 0 itself does not move — a row's opening grows the gap BELOW it")
@@ -1244,9 +1278,15 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(pa._row_open_height() < CardVisual.card_size_play.y,
 			"GAP-009: JUMP_ADJUSTED opens LESS than a full card, so a non-jumping card stays covered",
 			"%.1f vs card %.1f" % [pa._row_open_height(), CardVisual.card_size_play.y])
+	# ⚠ **`card height - separation - jump rise`** (owner, 2026-08-06). `CARD_HEIGHT` opens to a pitch
+	# of exactly one card; this mode also gives up the inter-row gap, so the shortfall is the
+	# separation PLUS the jump. Asserted from the card's own constant and the live `separation` rather
+	# than a literal, so a change to `card_scale` cannot make this drift.
 	check(is_equal_approx(CardVisual.card_size_play.y - pa._row_open_height(),
-			CardVisual.card_jump_rise_play),
-			"...by exactly the jump rise — 'card height - jump height', from the card's own constant")
+			float(pa.separation) + CardVisual.card_jump_rise_play),
+			"...by exactly separation + jump rise — 'card height - separation - jump height'",
+			"shortfall %.1f, expected %.1f" % [CardVisual.card_size_play.y - pa._row_open_height(),
+				float(pa.separation) + CardVisual.card_jump_rise_play])
 	SettingsManager.settings.spotlight_separation_mode = prev_mode
 
 	# AND IT CLOSES: an empty section releases the board.

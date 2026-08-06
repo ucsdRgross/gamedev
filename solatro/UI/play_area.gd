@@ -46,7 +46,13 @@ func _row_open_height() -> float:
 			== PlayerSettings.SeparationMode.JUMP_ADJUSTED:
 		# The jumping cards clear the row while a card that does NOT jump stays slightly covered —
 		# which is the whole point of this mode, not a rounding artefact.
-		return full - CardVisual.card_jump_rise_play
+		# ⚠ **`separation` COMES OFF THIS MODE TOO** (owner, 2026-08-06: *"jump adjusted needs to be
+		# card height - separation - jump height then"*). `CARD_HEIGHT` opens to a pitch of exactly one
+		# card; this opens to a card LESS the inter-row gap and the jump rise, so a card that does not
+		# jump stays covered by that much. Both branches return a TOTAL pitch — `row_open_extra()`
+		# takes the container's `separation` off again to get the strip — so this is the distance you
+		# actually measure between two rows.
+		return full - float(separation) - CardVisual.card_jump_rise_play
 	return full
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
@@ -64,7 +70,15 @@ func row_open_extra(zone_x: int, row_z: int) -> float:
 	# ⚠ Decided per ROW, never per column: every column's VBox must give row `row_z` the same height or
 	# the rows stop lining up across the board.
 	if not _row_covers_anything(zone_x, row_z): return 0.0
-	return maxf(_row_open_height() - float(CardVisual.card_separation_play_custom), 0.0) * t
+	# ⚠ **THE VBOX ALREADY PUTS `separation` BETWEEN ROWS — SUBTRACT IT OR THE OPENING OVERSHOOTS.**
+	# `_row_open_height()` is the TOTAL distance the mode asks for (a full card, or a card minus the
+	# jump), but the row-to-row pitch is `strip + separation`: the containers get
+	# `add_theme_constant_override("separation", separation)` and `slot_center_global` adds the same
+	# term. Sizing the STRIP to the full height therefore produced height + separation — an extra
+	# `4 * card_scale` (10 px at the shipped scale), which the owner saw as *"an odd gap between the
+	# rows, looks like an extra few pixels of separation"*. The strip only has to supply the remainder.
+	var want := _row_open_height() - float(separation)
+	return maxf(want - float(CardVisual.card_separation_play_custom), 0.0) * t
 
 ## Does any column in this zone hold a card BELOW `row_z` — i.e. is there anything for this row to
 ## uncover? The bottom row of the deepest column covers nothing and must stay put.

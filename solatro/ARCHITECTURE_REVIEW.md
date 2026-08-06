@@ -1297,3 +1297,87 @@ Sharp edges:
   graph.json); bake once after initial generation, then `release_generator()`.
 - Deterministic Submit/Next is load-bearing for pending-action replay AND prop-side
   hashing — do not introduce RNG into act resolution.
+
+## 9. THE SPOTLIGHT — the defects, and the seam each one hid in (2026-08-05/06)
+
+Fifteen defects were found and fixed while finishing the spotlight stream. **Every one of them was
+green in the suite when it shipped**, and most were found by the owner LOOKING at the screen. They are
+recorded here rather than in `HANDOFF_spotlight.md` because that file is status, not history — but the
+*shapes* below recur, and each is a check worth writing before trusting a similar claim.
+
+### 9a. Two representations of one fact (the stream's dominant shape)
+
+| Defect | Where | Why every check passed |
+|---|---|---|
+| The scoring beams **crossed**: `SpotlightDirector` allocated origins with `take()` in a loop, which `SpotlightOrigins.take()`'s own header forbids for a section | `spotlight_director.gd` | GAP-008's fan was verified in `spotlight_tool.gd`, which calls `assign()` **itself** — tool and game reached the allocator by different routes and only the tool's was exercised |
+| The tool ran on **two clocks** when PLAYED: `LightLayer._settings()` consulted its override only under `is_editor_hint()`, so a played scene read `user://settings.tres` while the tool read its own embedded `SubResource` | `light_layer.gd`, `spotlight_tool.tscn` | Both resources held identical DEFAULTS — values agreed until one was tuned. `--verify` now asserts **identity**, not values |
+| Editor and game each held a **different `PlayerSettings`** — `FxAttachment.settings()` returned a fresh `PlayerSettings.new()` in the editor | `fx_attachment.gd` | Nothing compared them. Now one accessor loads the same `user://settings.tres` both sides use |
+| `spotlight_tool.tscn` carried a private settings `SubResource` with `null` fractions | (deleted) | It was never read against the shipped values |
+
+**The rule:** when a tool and the game both reach a fact, assert they reach the SAME OBJECT, not that
+their values match today.
+
+### 9b. Independent envelopes on one visual (three separate bugs)
+
+Visible intensity is `fade * _show`, and durations are independent fractions of one unit with no
+ordering enforced between them.
+
+- **The hold bought no time at full.** `Game`'s reveal beat waited `hold_fraction` while `_show` was
+  still climbing over `show_in_fraction` — both 0.5 at the defaults, so the show peaked exactly as the
+  reveal ended. `PlayerSettings.spotlight_reveal_beat_fraction()` is now `max(show_in, spawn, travel) +
+  hold`, read by `Game._score_section` AND the tool's `_beat()`.
+- **A surplus light was re-lit by the next section.** It faded over `retire_fraction` (0.3 s) while the
+  incoming `_show` rose over 0.5 s, so `fade * _show` CLIMBED. Surplus beams are now released outright;
+  GAP-006's show-fall already performs the visible fade.
+- **The retire beat lit up a second time.** `_advance_cascade` tested `_phase_t < beat` before
+  `_retiring`, so the act's ending raised the show against beams already fading — a complete effect at
+  ~2x speed. ⚠ The first fix for this put `if _retiring` at the TOP of the chain and made the branch
+  that CLEARS `_retiring` unreachable: the loop never restarted. **Gating the show is not gating the
+  clock.**
+
+**The rule:** a peak reading cannot tell a peak from a HELD peak. `--verify` reports `full_frames`
+(frames at `_show >= 0.99`) for exactly this.
+
+### 9c. Instruments that could not express the case they claimed to test
+
+- **S16's reveal was "verified" on a board one card deep**, where nothing is covered — so the assertion
+  passed for the wrong reason and the feature's whole purpose had never run. Fixtures now
+  `_deal_until_stacked()`.
+- **A row that covers nothing was still opening**, adding empty space and shoving the zone below.
+  `row_open_extra()` returns 0 unless `_row_covers_anything()`.
+- **The tool REBUILT its light set every section**, i.e. the pre-chart-E behaviour, so travel and the
+  spawn/retire knobs did nothing on screen. It now carries a beam model; `--verify` samples for a beam
+  with `0 < t < 1` and marks a multi-section preset SUSPECT if nothing ever travelled.
+- **Eleven of thirteen tool scenarios showed the wrong world**: `row_separation` was read from the
+  INSPECTOR, never from the scenario, so `S2` (*"separation OFF"*) showed it ON and `S2b`'s
+  before/after compared two identical boards. Every scenario now declares it; `--verify` flags any that
+  does not.
+- **`S14` was byte-identical to `S1`** — it claimed gate G2.4 but `fx_intensity` was not a scenario
+  field, so it demonstrated nothing until you moved a slider yourself.
+
+### 9d. Assertions that measured an intermediate instead of the claim
+
+- **The row opening overshot by the container's `separation`.** The test compared the STRIP's growth,
+  which ignores the inter-row gap by construction; it now asserts the resulting **row pitch**.
+- **`test_the_card_mask_is_the_card_the_player_sees` demanded exact agreement** between a 24-gon mask
+  and a bilinearly-skinned texture's alpha — unachievable, and passing at rest only by alignment. Now a
+  measured band; see `todo.md` for the two model approximations it pins.
+
+### 9e. Rendering that never reached a pixel
+
+- **A `SubViewport` carries its own `canvas_item_default_texture_filter`, defaulting to LINEAR** and
+  overriding the project's NEAREST for everything drawn inside it (`test_pixels.gd`, `spotlight_tool.gd`).
+- **`_rebuild()` frees the `LightLayer`** (it lives in the SubViewport), so every section change reset
+  `_show`/`_dim` to 0 and re-ramped the show from black — a blink invisible in the editor's irregular
+  `_process` and obvious at a played 60 fps. The eased values are now carried across.
+  ⚠ **Still true and worth fixing:** a section change tears down the whole board only to move the glow.
+  A `_refresh_glow()` is the proper fix.
+- **A beam travelled from `(0,0)`** — the screen's top-left — because `_slot_centre()` returns ZERO
+  while `_rebuild()` recreates the cards. It now appears already aimed when the source is unknown.
+
+### 9f. Content, not code
+
+**S15's cue was correct and inert**: `spotlight_cued` is `Q246`-filtered to skills implementing
+`on_spotlight`, and the only one in the game was a RULES-stage card with no `CardVisual`.
+`Cards/Skills/spotlight_probe.gd` plus the debug bar's **Cue** button exist to make it reachable.
+⚠ **Do NOT "fix" this by unfiltering the signal — that recreates GAP-005.**

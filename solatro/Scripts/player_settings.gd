@@ -1,3 +1,9 @@
+@tool
+# ⚠ **`@tool` BECAUSE EDITOR-SIDE TOOLS CALL METHODS ON THIS RESOURCE.** Without it the editor loads
+# PlayerSettings as a PLACEHOLDER instance: properties still read, but any method call throws
+# *"Attempt to call a method on a placeholder instance"* — which is exactly what
+# `spotlight_reveal_beat_fraction()` did from `spotlight_tool.gd` (owner report 2026-08-05). The other
+# resources these tools edit (`FxStyle` and every subclass) are already `@tool` for the same reason.
 class_name PlayerSettings
 # TODO: move settings that dont need to be saved back to their files after done testing
 
@@ -158,6 +164,48 @@ signal settings_changed
 	set(value):
 		spotlight_reveal_fraction = value
 		settings_changed.emit()
+## **HOW FAST THE LIGHTS THEMSELVES RISE AND FALL — separate from the DIM's own rate.**
+##
+## ⚠ **THESE EXIST BECAUSE THE TWO USED TO BE ONE PAIR.** `LightLayer._show` (which scales every
+## light's intensity) and `LightLayer._dim` both eased over `spotlight_dim_in_fraction` /
+## `spotlight_dim_out_fraction`, so the beams and the darkness always reached full at the same instant
+## and there was no way to separate them. Owner, 2026-08-05: *"allow tuning brightness and dimness to
+## reach their max effect at different rates instead of both lerping to full at exact same time, like
+## allowing dimness to happen twice as fast before beams finish"*.
+##
+## ⚠ **THE SPLIT IS SHOW vs DIM, NOT IN vs OUT.** `spotlight_dim_*_fraction` now drives ONLY the dim;
+## these drive the lights. Set `dim_in` to half of `show_in` and the room darkens before the beams
+## arrive, which is the effect asked for.
+## ⚠ Fractions of `Game.get_delay()` like every other duration (`Q167`=a), so they compress with the
+## act speed-up rather than running to a wall clock.
+@export var spotlight_show_in_fraction : float = 0.5:
+	set(value):
+		spotlight_show_in_fraction = value
+		settings_changed.emit()
+@export var spotlight_show_out_fraction : float = 0.5:
+	set(value):
+		spotlight_show_out_fraction = value
+		settings_changed.emit()
+## **HOW LONG A REVEAL BEAT ACTUALLY NEEDS — the RISE plus the HOLD, as one number both the game and
+## the tuning tool read.**
+##
+## ⚠ **THE HOLD RAN CONCURRENTLY WITH THE RISE, SO IT BOUGHT NO TIME AT FULL.** `Game`'s reveal beat
+## waited `get_delay() * spotlight_hold_fraction` and then ended the reveal — while `LightLayer._show`
+## was still climbing over `spotlight_show_in_fraction`, and the lights over `spawn`/`travel`. At the
+## shipped defaults those are all 0.5, so the show reached full at the exact instant the reveal ended:
+## the fade-out played honestly and the spotlight was never held. Owner, 2026-08-05: *"it doesnt cut
+## out immediately but still does the fadeout"*.
+##
+## ⚠ **ONE ACCESSOR, TWO CALLERS.** `Game._score_section`'s beat and `spotlight_tool._beat()` both use
+## it — a second copy of this arithmetic is the two-representations defect that produced most of this
+## stream's bugs, and it would let the tool show a hold the game does not have.
+## ⚠ `spotlight_hold_fraction` is TIME AT FULL (§16: *"the beat after `on_active`"*), which is why it
+## is ADDED rather than compared.
+func spotlight_reveal_beat_fraction() -> float:
+	var rise : float = maxf(spotlight_show_in_fraction,
+			maxf(spotlight_spawn_fraction, spotlight_travel_fraction))
+	return rise + maxf(spotlight_hold_fraction, 0.0)
+
 ## **HOW FAR A REVEALED ROW OPENS** — `DESIGN.md` chart K10b, **GAP-009**.
 ##
 ## ⚠ **THE DERIVED OPENING IS RETIRED, AND THE OWNER'S COUNTER-EXAMPLE IS WHY.** K10b used to size the

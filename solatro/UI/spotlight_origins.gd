@@ -264,6 +264,35 @@ func advance(viewport_top: float) -> void:
 		var i : int = above[slot]
 		_origins[i] = Vector2(_even_x(slot, above.size()), _origins[i].y)
 
+## **WHICH LIGHTS SURVIVE WHEN THE NEXT SECTION IS SMALLER — the start index of the contiguous run of
+## `sources` that should travel to `targets`. Both arrays are x-SORTED; both are screen x only.**
+##
+## ⚠ **TAKING THE FIRST N WAS A REAL BUG AND THE OWNER CAUGHT IT ON SCREEN:** *"when spotlight chooses
+## new targets and there are less cards, it doesnt choose nearest spotlights but leftmost ones, so left
+## beams cross all the way to right while right beams disappear."* Pairing two x-sorted lists cannot
+## CROSS, which is why chart E2 does it — but with unequal counts the old code paired
+## `leftover[0..pairs)` against the targets, so the survivors were always the LEFTMOST beams whatever
+## the targets' position, and the beams already sitting on the targets were the ones retired.
+##
+## ⚠ **A CONTIGUOUS WINDOW, NOT A NEAREST-EACH MATCH.** Picking each target's nearest source
+## independently re-introduces crossings the moment two targets want the same neighbourhood. A window
+## keeps both lists in order, so pairing inside it still inverts nothing — the choice is only WHICH
+## run, and the cheapest run by total travel is the one that leaves the beams closest to their work.
+## ⚠ Pure arithmetic over x, so it is headless-testable — which is the point of it living here rather
+## than inside either caller's frame loop.
+static func nearest_window(sources: PackedFloat32Array, targets: PackedFloat32Array) -> int:
+	var n := targets.size()
+	if n <= 0 or sources.size() <= n: return 0
+	var best := 0
+	var best_cost := INF
+	for start : int in range(sources.size() - n + 1):
+		var cost := 0.0
+		for i : int in n: cost += absf(sources[start + i] - targets[i])
+		if cost < best_cost:
+			best_cost = cost
+			best = start
+	return best
+
 ## ⚠ **A BEAM NEVER POINTS UPWARD** (`Q117`, the owner's own words: *"beam still draws from screen
 ## edge, but only if target is below viewport bottom. beam can never point upwards"*). An origin
 ## always sits above its target, so the only way to violate it is a target BELOW the viewport — and

@@ -19,11 +19,36 @@ const FX_MARGIN := 4.0
 ## The settings the FX read. `@tool` because Tools/fx_editor.tscn previews real effects in the
 ## editor — and the editor instantiates NO autoloads, so `SettingsManager` is not there. The shipped
 ## defaults stand in, which is also what a tuning tool should be showing.
+##
+## ⚠ **ONE INSTANCE, SHARED BY THE EDITOR AND THE GAME — owner 2026-08-05:** *"if playersettings is
+## ever in an editor then it should be shared globally and be the one used in actual games, so i never
+## need to duplicate settings across different contexts."* This used to return a fresh
+## `PlayerSettings.new()` in the editor, so the FX editor, the spotlight tool and the running game
+## each held a DIFFERENT settings object and tuning one changed nothing anywhere else. It now loads
+## **the same `user://settings.tres` the autoload does** — `user://` resolves to the same folder in
+## both — and saves edits back, so a knob turned in a tool is the knob the game runs with.
+## ⚠ `ResourceLoader.load` is cached, so every editor caller gets the SAME object rather than a copy.
 static var _editor_settings : PlayerSettings = null
 static func settings() -> PlayerSettings:
 	if not Engine.is_editor_hint(): return SettingsManager.settings
-	if not _editor_settings: _editor_settings = PlayerSettings.new()
+	if _editor_settings: return _editor_settings
+	if ResourceLoader.exists(SettingsManagerClass.SAVE_PATH):
+		_editor_settings = ResourceLoader.load(SettingsManagerClass.SAVE_PATH)
+	if not _editor_settings:
+		# First run in a fresh profile: create the shared file rather than an in-memory orphan, or the
+		# next context to ask would make its own and we are back to two.
+		_editor_settings = PlayerSettings.new()
+		ResourceSaver.save(_editor_settings, SettingsManagerClass.SAVE_PATH)
+	# Persist edits the same way `SettingsManagerClass.on_settings_changed` does at runtime — without
+	# this, tuning in a tool would live only until the editor closed.
+	if not _editor_settings.settings_changed.is_connected(_save_editor_settings):
+		_editor_settings.settings_changed.connect(_save_editor_settings)
 	return _editor_settings
+
+## Write the shared settings back. Editor-side twin of `SettingsManagerClass.save_settings()`.
+static func _save_editor_settings() -> void:
+	if _editor_settings:
+		ResourceSaver.save(_editor_settings, SettingsManagerClass.SAVE_PATH)
 
 ## Shape kinds, mirroring the constants in fire.gdshader. GDScript and GLSL cannot share an enum,
 ## so the mapping exists twice and can drift silently — the FX ATTACHMENT suite asserts it.

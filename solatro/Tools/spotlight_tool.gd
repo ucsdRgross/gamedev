@@ -92,6 +92,37 @@ var _layer : LightLayer = null
 var _slot_card : Dictionary[Vector2i, CardVisual] = {}
 var _origins := SpotlightOrigins.new()
 
+## **ONE LIVE LIGHT, WITH A LIFE OF ITS OWN — chart E's unit, mirroring `SpotlightDirector._Beam`.**
+##
+## ⚠ **THE TOOL USED TO REBUILD THE WHOLE LIGHT SET EVERY SECTION**, which is precisely the behaviour
+## chart E was written to replace (*"no instant movements or spawning in and out"*). It therefore
+## showed a SNAP where the game travels, and `spotlight_travel_fraction`, `spotlight_spawn_fraction`
+## and `spotlight_retire_fraction` had no effect on screen at all — three knobs the owner could turn
+## forever with nothing happening. Owner, 2026-08-05: *"I still want to see a scenario where forced
+## spotlights move from one section to another, adding or losing spotlights if sections are mismatched
+## in total cards"* — that is this class.
+class _TBeam extends RefCounted:
+	## The board slot it lights, or the last one it lit while retiring.
+	var slot : Vector2i = Vector2i.ZERO
+	## ⚠ AN INDEX, not a point — `SpotlightOrigins.advance()` moves off-screen lamps every frame.
+	var origin_idx : int = -1
+	## Where the travel started; meaningless once `t` is 1.
+	var from : Vector2 = Vector2.ZERO
+	## Travel progress 0..1. **1 means settled** — there is no separate "arrived" state to fall out of
+	## step with.
+	var t : float = 1.0
+	## Spawn-in / retire-out, 0..1. Scales INTENSITY only, never size (`Q63`=a).
+	var fade : float = 1.0
+	var retiring : bool = false
+
+## How many times the board has been torn down — a rebuild is meant to be RARE (a scenario or knob
+## change), and one per frame is a whole class of bug that reads as the effect running sped up.
+var _rebuild_count : int = 0
+var _beams : Array[_TBeam] = []
+## The slot set the beams were last matched against — the tool has no signal, so a CHANGE in this is
+## what stands in for `spotlight_section_changed`.
+var _last_wanted : Array[Vector2i] = []
+
 ## The sections this scenario walks, each a list of `Vector2i(col, depth)` slots. A single-section
 ## scenario is just a cascade of length one, so there is one code path rather than two.
 var _sections : Array[Array] = []
@@ -105,7 +136,43 @@ var _up : bool = true
 ## The list is DATA (`Q182`), loaded from `spotlight_scenarios.json`, so adding a preset is editing
 ## that file. The dropdown is built from it by `_get_property_list`.
 var scenario : int = 0:
-	set(v): scenario = v; _section = 0; _phase_t = 0.0; _touch()
+	set(v):
+		scenario = v
+		_section = 0
+		_phase_t = 0.0
+		_apply_scenario_knobs()
+		_touch()
+
+## **PUSH THE SELECTED SCENARIO'S OWN KNOBS ONTO THE TOOL.**
+##
+## ⚠ **WITHOUT THIS THE PRESETS LIE, AND THEY DID.** `_rebuild()` reads `cols`, `depth`, `lit` and
+## `sections` from the scenario, but `row_separation` was read from the INSPECTOR property alone — so
+## picking a preset in the editor never changed it. `S2` is named *"STACKED — a buried row lit,
+## separation OFF"* and showed it ON (the export defaults to `true`), and `S2b`'s *"compare directly
+## against S2 — this is the before/after"* compared two identical boards. Eleven of thirteen presets
+## were in that state, and which one you saw depended on what you had clicked before. Owner,
+## 2026-08-05: *"half the scenarios dont do anything or dont do what they claim"*.
+##
+## ⚠ **EVERY SCENARIO NOW DECLARES `row_separation` EXPLICITLY** and `--verify` marks any that does
+## not as SUSPECT. Absent-means-inherit was the previous attempt at this and it is what produced the
+## lie; a preset has to state its own world or the tool cannot show it.
+func _apply_scenario_knobs() -> void:
+	var s := _current_scenario()
+	if s.is_empty(): return
+	# ⚠ Typed local first: `bool(Variant)` is a warning-treated-as-error in this project.
+	var sep : bool = s.get("row_separation", false)
+	row_separation = sep
+	# ⚠ **`fx_intensity` IS A SCENARIO KNOB TOO, AND WITHOUT THIS `S14` WAS A DUPLICATE OF `S1`.** It
+	# claims to be gate G2.4's accessibility floor — *"take fx_intensity to 0 and THE DIM MUST STILL
+	# STAND"* — but the value lives on the settings resource, so the preset was byte-identical to `S1`
+	# and did nothing until you went and moved a slider yourself. Measured 2026-08-05: same `cols`,
+	# `depth`, `lit` and separation as `S1`.
+	# ⚠ **ALWAYS ASSIGNED, never only-when-present** — the same stickiness that made `row_separation`
+	# lie would otherwise leave the screen dark after you clicked away from `S14`.
+	if settings:
+		var fx : float = s.get("fx_intensity", 1.0)
+		settings.fx_intensity = fx
+		if is_instance_valid(_layer): _layer.restyle()
 
 @export_group("Playback")
 ## Walk the scenario's sections in order, pulsing the show once per section — **the cascade, and the
@@ -188,8 +255,21 @@ var scenario : int = 0:
 ##  * `glow_style` — the CARD GLOW's look, which `Q83` calls the most important part of the effect.
 ##
 ## ⚠ **POLLED, NOT LISTENED TO** — see `WATCH_SECS`. A custom resource does not announce its own edits.
+## ⚠ **LEAVE THIS EMPTY AND IT USES THE SHARED, GLOBAL `PlayerSettings` — WHICH IS THE POINT.**
+## Owner 2026-08-05: *"if playersettings is ever in an editor then it should be shared globally and be
+## the one used in actual games, so i never need to duplicate settings across different contexts."*
+## `spotlight_tool.tscn` used to carry its own embedded `SubResource` — a private duplicate that could
+## not agree with the game, and whose stored values were partly **`null`** (`spotlight_reveal_fraction`,
+## `travel`, `spawn`, `retire`) with `spotlight_separation_mode` pinned to 1. It has been deleted; the
+## accessor below returns `FxAttachment.settings()`, which in the editor loads the same
+## `user://settings.tres` the autoload loads at runtime and saves edits back to it.
+## ⚠ Assigning something here is still allowed, but it re-creates exactly the divergence that made the
+## played tool run on a different clock from its own preview.
 @export var settings : PlayerSettings = null:
 	set(v): settings = v; _touch()
+	get:
+		if settings: return settings
+		return FxAttachment.settings()
 @export var spotlight_style : FxSpotlightStyle = preload("res://Shaders/Styles/spotlight_default.tres"):
 	set(v): spotlight_style = v; _touch()
 
@@ -267,6 +347,9 @@ func _process(delta : float) -> void:
 	_ease_separation(delta)
 	_advance_cards(delta)
 	_track_glow_outlines()
+	# ⚠ TRAVEL AND FADE FIRST, then push — the same order `SpotlightDirector._process` uses, so a
+	# beam's position and its envelope come from the same frame rather than one behind.
+	_advance_beams(delta)
 	# ⚠ RE-PUSHED EVERY FRAME, exactly as `SpotlightDirector._process` does it: a card that moves must
 	# take its beam with it, and re-deriving is what makes that true by construction.
 	_push_lights()
@@ -277,20 +360,45 @@ func _process(delta : float) -> void:
 ## ⚠ **THE LIGHTS ARE NOT FREED BETWEEN SECTIONS** — the set is REPLACED while the show is down, which
 ## is GAP-006's rule and what chart E's travel needs (*"no instant movements or spawning in and out"*).
 ## Watching this is the point of the cascade preset.
+## **ONE SECTION'S VISIBLE BEAT — LONG ENOUGH THAT NO ENVELOPE IS EVER CUT SHORT.**
+##
+## ⚠ **THE HOLD ALONE IS NOT ENOUGH, AND THAT IS WHY INSTANCES LOOKED INCONSISTENT.** Owner,
+## 2026-08-05: *"I want to keep all instances of spawning spotlight effect to last same time
+## regardless of movement or not."* The beat used to be `hold_fraction` alone, while a light's arrival
+## takes `spawn_fraction` (a NEW light) or `travel_fraction` (a MOVING one) — three independent
+## fractions of the same unit with no ordering between them. At the shipped defaults `travel` (0.5)
+## already EQUALS `hold` (0.5), so a travelling light landed exactly as the show began to fade while a
+## spawning one had been full since 0.3 — the same section reading differently depending on whether
+## anything moved.
+##
+## Taking the MAX means every instance gets the same total on-screen time and none is truncated.
+## ⚠ It does not equalise the RAMPS, and it must not: chart E forbids a travelling light from
+## re-fading (*"no instant movements or spawning in and out"*), so a mover rides in at full intensity
+## while a new light fades up. What is now equal is the DURATION, which is what was asked for.
+func _beat() -> float:
+	var unit : float = settings.base_delay
+	# THE RISE: everything that must finish before the spotlight is fully up — the light's own arrival
+	# (a NEW light fades over `spawn`, a MOVER slides over `travel`) and the show's ramp, which scales
+	# every light's intensity and the dim with it.
+	# ⚠ Through `PlayerSettings.spotlight_reveal_beat_fraction()` — the SAME accessor `Game`'s reveal
+	# beat uses, so the tool cannot show a hold the game does not have.
+	return maxf(unit * settings.spotlight_reveal_beat_fraction(), 0.05)
+
 func _advance_cascade(delta : float) -> void:
 	_phase_t += delta
-	var beat := maxf(settings.base_delay * maxf(settings.spotlight_hold_fraction, 0.05), 0.05)
+	var beat := _beat()
 	# ⚠ **THE LOOP RUNS THE WHOLE ACT AND THEN RESETS, NOT JUST SECTION-TO-SECTION** (owner
 	# 2026-08-04: *"should constantly loop the animation of the scenario happening like a snapshot of
 	# it happening in game. should not be static since we need to see end to end"*). So after the LAST
 	# section there is a RETIRE beat — every light released, the dim all the way down — before the
 	# first section takes the light again. **That beat is part of the act** (`_release_spotlight`, S9)
 	# and leaving it out made the loop read as an endless middle with no beginning or end.
-	if _phase_t < beat:
-		_up = true
-	elif _phase_t < beat * 2.0:
-		_up = false
-	else:
+	# ⚠ **ADVANCE THE PHASE FIRST, THEN DECIDE THE SHOW — AND THE ORDER IS LOAD-BEARING.** A previous
+	# fix put `if _retiring: _up = false` at the TOP of this chain, which made the `else` that CLEARS
+	# `_retiring` unreachable: the loop entered the retire beat and stayed there forever (owner,
+	# 2026-08-05: *"play no longer loops in editor"*). Gating the show is not the same as gating the
+	# clock, and folding both into one if/elif chain conflated them.
+	if _phase_t >= beat * 2.0:
 		_phase_t = 0.0
 		if _retiring:
 			# The act is over; start the next pass.
@@ -300,11 +408,16 @@ func _advance_cascade(delta : float) -> void:
 			_retiring = true
 		else:
 			_section += 1
-		_up = not _retiring
 		# ⚠ ALWAYS rebuilt on a section change, not only when separation is on: the GLOW marks the
 		# ACTIVE cards, so it has to move with the section too. An earlier version rebuilt only for
 		# separation and left the glow behind on the first section for the whole cascade.
 		_dirty = true
+	# ⚠ **THE RETIRE BEAT STAYS DARK.** It used to fall through to `_phase_t < beat` and raise the show
+	# a SECOND time while every beam was already fading out over `spotlight_retire_fraction` — a 0.5 s
+	# ramp against a 0.3 s retire, which reads as a complete effect at double speed (owner: *"it
+	# specifically looks like a sped up version, not a cut"*). The retire beat is the act ENDING (S9's
+	# `_release_spotlight`); nothing lights during it.
+	_up = (not _retiring) and _phase_t < beat
 
 ## Between the last section and the first: every light retired and the dim down, which is the act's
 ## own ending (S9's `_release_spotlight`) and the thing that makes the loop legible as a loop.
@@ -335,6 +448,22 @@ func _rebuild() -> void:
 	# `_dirty` left standing made `_process` rebuild the board again next frame, discarding the one
 	# that had just been posed.
 	_dirty = false
+	_rebuild_count += 1
+	# ⚠ **CARRY THE SHOW ACROSS THE TEARDOWN — THIS SWEEP FREES THE `LightLayer` ITSELF.** The layer
+	# lives inside the `SubViewport` built below, so every rebuild destroys it and the replacement
+	# starts at `_show = 0`, `_dim = 0`. `_advance_cascade` marks `_dirty` on EVERY section change
+	# (only to move the glow), so each section began by re-ramping the whole show from black: the
+	# owner saw *"same section will do full spotlight effect, then a blinked spotlight effect, before
+	# moving on to next section"*. It is invisible in the editor because `_process` there runs
+	# irregularly, and obvious at a played 60 fps — which is exactly the editor-vs-played split that
+	# looked like a clock bug.
+	# ⚠ The eased VALUES are restored, not the node: rebuilding the board is still correct, only
+	# restarting its animation is not.
+	var carry_show := -1.0
+	var carry_dim := -1.0
+	if is_instance_valid(_layer):
+		carry_show = _layer._show
+		carry_dim = _layer._dim
 	for child : Node in get_children(): child.queue_free()
 	_slot_card.clear()
 	_glows.clear()
@@ -386,6 +515,13 @@ func _rebuild() -> void:
 	_root.add_child(_layer)
 	# ⚠ EXPLICIT, because `_ready()` deliberately does nothing in the editor — see the header.
 	_layer.ensure_built()
+	# ⚠ **RESTORE THE EASED SHOW so a rebuild does not restart the animation** — see the note by the
+	# teardown. Assigned before the first push, so the replacement layer's very first frame is the one
+	# the old layer would have drawn.
+	if carry_show >= 0.0:
+		_layer._show = carry_show
+		_layer._dim = carry_dim
+		_layer.set_revealed(_up)
 	_push_lights()
 
 ## Lay real `CardVisual`s out on the REAL board pitch, stacked exactly as a column stacks in play.
@@ -620,38 +756,153 @@ func _current_section() -> Array[Vector2i]:
 ## `SpotlightOrigins`, and a second copy here could disagree with the shipped one invisibly.
 func _push_lights() -> void:
 	if not is_instance_valid(_layer): return
+	_sync_beams()
 	var scale := settings.card_scale
 	var viewport := Rect2(Vector2.ZERO, Vector2(screen_size))
-	# The retire beat lights nothing — that is the act ending, and the dim falls with it.
-	# ⚠ A typed empty, not `[]`: an untyped literal cannot be assigned to `Array[Vector2i]` and threw
-	# every frame of the retire beat — invisible in a still, which is exactly why `--verify` exists.
-	var slots : Array[Vector2i] = ([] as Array[Vector2i]) if _retiring else _current_section()
 	var lights : Array[LightLayer.Light] = []
-	_origins.begin(slots.size(), viewport.size.x, viewport.position.y)
-	# ⚠ `assign()`, not `take()` in a loop — `Q111`=(a), chart E2 option A. The tool must use the
-	# same rule as the director or it would show a beam layout the game never produces.
-	var cards : Array[CardVisual] = []
-	var centres : Array[Vector2] = []
-	for slot : Vector2i in slots:
-		var cv : CardVisual = _slot_card.get(slot)
-		if not is_instance_valid(cv): continue
-		cards.append(cv)
-		# ⚠ `CardVisual.spotlight_center()` — the ART SQUARE (`Q85`). Using `cv.position` put the pool
-		# high on the card and made it ambiguous which card in a stack was lit.
-		centres.append(cv.spotlight_center())
-	var assigned := _origins.assign(centres)
-	for n : int in cards.size():
-		var centre : Vector2 = centres[n]
+	for b : _TBeam in _beams:
+		var centre := _beam_centre(b)
 		var light := LightLayer.Light.new()
 		light.centre = centre
 		# From the STYLE, so the tool and the shipped director read one value.
 		light.radius = _style().circle_radius * scale
 		light.origin_width = _style().beam_width_at_origin * scale
 		light.flare = _style().flare
+		# ⚠ **`Q63`=(a): FULL SIZE IN TRANSIT.** The fade is the spawn/retire envelope ONLY — a
+		# travelling light does not dim, because a real followspot does not.
+		light.intensity = b.fade
 		light.origin = SpotlightOrigins.edge_origin_for(centre, viewport.position.y,
-				viewport.position.y + viewport.size.y, _origins.origin_of(assigned[n]))
+				viewport.position.y + viewport.size.y, _origins.origin_of(b.origin_idx))
 		lights.append(light)
 	_layer.set_lights(lights, _scoring_now())
+
+## Where a beam's circle is RIGHT NOW — its slot's art square, or a point along its travel.
+func _beam_centre(b: _TBeam) -> Vector2:
+	var target := _slot_centre(b.slot)
+	if b.t >= 1.0: return target
+	# Smoothstep so the light accelerates off its old card and settles onto the new one, which is what
+	# "no instant movements" is asking for.
+	return b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
+
+## A slot's art-square centre (`Q85`), or ZERO if that slot has no card built.
+func _slot_centre(slot: Vector2i) -> Vector2:
+	var cv : CardVisual = _slot_card.get(slot)
+	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
+
+## **CHART E, RUN RATHER THAN POSED.** Re-match the live beams against the section that is lit now:
+## a slot in both keeps its light and does not move (E2), a light whose slot left TRAVELS to a slot
+## that gained one (E9), surplus lights RETIRE in place (E3) and surplus slots get NEW lights that
+## fade in already aimed (E4, `Q65`=a).
+##
+## ⚠ **THIS IS WHAT MAKES A MISMATCHED CASCADE LEGIBLE**: sections of 3 → 5 → 2 travel three, spawn
+## two, then retire three, which is exactly the case the owner asked to see.
+func _sync_beams() -> void:
+	var wanted : Array[Vector2i] = ([] as Array[Vector2i]) if _retiring else _current_section()
+	if wanted == _last_wanted: return
+	_last_wanted = wanted.duplicate()
+	# ⚠ **`begin()` ONLY WHEN NOTHING IS LIT** — it rebuilds the origin array and clears the taken-set,
+	# so calling it per section would re-point every live beam at somebody else's lamp. The old rebuild
+	# could call it every section only because it threw all the lights away each time.
+	if _beams.is_empty():
+		_origins.begin(wanted.size(), float(screen_size.x), 0.0)
+
+	var still : Dictionary[Vector2i, bool] = {}
+	for s : Vector2i in wanted: still[s] = true
+	var leftover : Array[_TBeam] = []
+	var claimed : Dictionary[Vector2i, bool] = {}
+	for b : _TBeam in _beams:
+		if b.retiring: continue
+		if still.has(b.slot):
+			claimed[b.slot] = true
+			continue
+		leftover.append(b)
+	var targets : Array[Vector2i] = []
+	for s : Vector2i in wanted:
+		if not claimed.has(s): targets.append(s)
+
+	# E2's assignment — sort both by x and pair in order; pairing two sorted sequences inverts nothing,
+	# which is the property that stops the travels crossing.
+	leftover.sort_custom(func(a: _TBeam, b: _TBeam) -> bool:
+		return _beam_centre(a).x < _beam_centre(b).x)
+	targets.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return _slot_centre(a).x < _slot_centre(b).x)
+
+	var pairs : int = mini(leftover.size(), targets.size())
+	# ⚠ Same rule as the director: with fewer targets, WHICH lights survive is chosen by proximity via
+	# `SpotlightOrigins.nearest_window`, not by keeping the leftmost `pairs`.
+	var src_x := PackedFloat32Array()
+	for b : _TBeam in leftover: src_x.append(_beam_centre(b).x)
+	var tgt_x := PackedFloat32Array()
+	for slot : Vector2i in targets: tgt_x.append(_slot_centre(slot).x)
+	# ⚠ Same both-sided rule as the director — see its note.
+	var window := 0
+	var tgt_window := 0
+	if leftover.size() >= targets.size():
+		window = SpotlightOrigins.nearest_window(src_x, tgt_x)
+	else:
+		tgt_window = SpotlightOrigins.nearest_window(tgt_x, src_x)
+	# ⚠ **SURPLUS LIGHTS ARE RELEASED, NOT LEFT FADING** — a retiring beam rides `_show`, so the next
+	# section's rise re-lights it before its own fade finishes. See the director's note.
+	for i : int in leftover.size():
+		if i >= window and i < window + pairs: continue
+		var dead : _TBeam = leftover[i]
+		if dead.origin_idx >= 0: _origins.release(dead.origin_idx)
+		_beams.erase(dead)
+	for i : int in pairs:
+		var b : _TBeam = leftover[window + i]
+		var from := _beam_centre(b)
+		b.slot = targets[tgt_window + i]
+		b.retiring = false
+		# ⚠ **NEVER TRAVEL FROM (0,0) — THAT IS THE TOP-LEFT OF THE SCREEN, NOT A BOARD POSITION.**
+		# `_slot_centre()` returns ZERO while a card is missing, and `_rebuild()` recreates every
+		# `CardVisual` on a section change — so a beam re-matched on that frame took ZERO as its start
+		# and slid in from off-board. Owner, 2026-08-05: *"seeing some spotlights flying into place
+		# from outside board now which should never happen vs spawning in place"*. With no known
+		# origin the honest move is `Q65`=(a)'s: appear ALREADY AIMED rather than invent a path.
+		if from == Vector2.ZERO:
+			b.t = 1.0
+		else:
+			b.from = from
+			b.t = 0.0
+	# E4 — surplus targets get NEW lights. ⚠ `assign()` for the batch, never `take()` in a loop:
+	# GAP-008, and the same defect that made the GAME cross its beams until 2026-08-05.
+	var fresh : Array[Vector2i] = []
+	var centres : Array[Vector2] = []
+	for i : int in targets.size():
+		if i >= tgt_window and i < tgt_window + pairs: continue
+		fresh.append(targets[i])
+		centres.append(_slot_centre(targets[i]))
+	var assigned := _origins.assign(centres)
+	for i : int in fresh.size():
+		var nb := _TBeam.new()
+		nb.slot = fresh[i]
+		nb.t = 1.0
+		nb.fade = 0.0
+		nb.origin_idx = assigned[i] if i < assigned.size() else -1
+		_beams.append(nb)
+
+## One frame of travel and fade. Mirrors `SpotlightDirector._process` — every duration is a FRACTION
+## of the show's unit (`Q167`=a), which is what makes `spotlight_travel_fraction`,
+## `spotlight_spawn_fraction` and `spotlight_retire_fraction` mean something in this tool at last.
+func _advance_beams(delta: float) -> void:
+	if _beams.is_empty(): return
+	_origins.advance(0.0)
+	var unit : float = settings.base_delay
+	var travel := maxf(unit * settings.spotlight_travel_fraction, 0.0001)
+	var spawn := maxf(unit * settings.spotlight_spawn_fraction, 0.0001)
+	var leave := maxf(unit * settings.spotlight_retire_fraction, 0.0001)
+	var done : Array[_TBeam] = []
+	for b : _TBeam in _beams:
+		# `Q64`=(a): every travelling light advances on the SAME frame, not staggered.
+		if b.t < 1.0: b.t = minf(b.t + delta / travel, 1.0)
+		if b.retiring:
+			b.fade = maxf(b.fade - delta / leave, 0.0)
+			if b.fade <= 0.0: done.append(b)
+		elif b.fade < 1.0:
+			b.fade = minf(b.fade + delta / spawn, 1.0)
+	for b : _TBeam in done:
+		if b.origin_idx >= 0: _origins.release(b.origin_idx)
+		_beams.erase(b)
 
 ## Scoring depth or `Q245`=(c)'s casual one. ⚠ **A SOLO ACTIVATION CUE IS NOT SCORING** — chart T's
 ## momentary spotlight fires whenever a card becomes active in ordinary play, and `Q245`'s own
@@ -874,6 +1125,16 @@ func _maybe_verify() -> void:
 		_rebuild()
 		var seen_sections : Dictionary[int, bool] = {}
 		var show_flips := 0
+		var travelled := false
+		var faded := false
+		var cut_travel := 0
+		var cut_spawn := 0
+		var peak_show := 0.0
+		var full_frames := 0
+		var rebuilds_at_start := _rebuild_count
+		var peaks : Array[String] = []
+		var last_section := _section
+		var last_retiring := _retiring
 		var last_up := _up
 		var max_dim := 0.0
 		var max_open := 0.0
@@ -881,8 +1142,9 @@ func _maybe_verify() -> void:
 		# Long enough for the whole loop plus a margin: every section gets two beats and the act adds
 		# a retire beat, so the pass is (sections + 1) * 2 beats.
 		var beats : int = (_sections.size() + 1) * 2
-		var frames : int = int(ceilf(beats * settings.base_delay
-				* maxf(settings.spotlight_hold_fraction, 0.05) * 60.0)) + 90
+		# ⚠ Through `_beat()`, so the sampler covers the SAME beat the cascade runs — a shorter
+		# estimate would stop mid-act and report sections that never took the light.
+		var frames : int = int(ceilf(beats * _beat() * 60.0)) + 90
 		for _f : int in mini(frames, 1800):
 			await get_tree().process_frame
 			seen_sections[_section] = true
@@ -892,22 +1154,96 @@ func _maybe_verify() -> void:
 			if _retiring: retired = true
 			max_dim = maxf(max_dim, _layer._dim)
 			for d : float in _open.values(): max_open = maxf(max_open, d)
+			# ⚠ **DID A LIGHT ACTUALLY MOVE, AND DID ANY FADE?** Section counts and dim depth cannot
+			# tell a TRAVEL from a SNAP — both end with the right lights in the right places, and that
+			# blindness is exactly how the tool shipped rebuilding its set every section while
+			# `--verify` reported every scenario `ok`. A beam mid-travel has `0 < t < 1`; a beam mid
+			# envelope has `0 < fade < 1`. Sampling for either is the seam check that was missing.
+			for b : _TBeam in _beams:
+				if b.t > 0.0 and b.t < 1.0: travelled = true
+				if b.fade > 0.0 and b.fade < 1.0: faded = true
+			# ⚠ **WAS A LIGHT STILL MOVING WHEN ITS SECTION ENDED?** Owner, 2026-08-05: *"timing of
+			# spotlights is not always consistent like its ending early"*. The cascade's beat and the
+			# envelopes are INDEPENDENT fractions of the same unit and nothing enforces an ordering —
+			# at the shipped defaults `spotlight_travel_fraction` (0.5) EQUALS `spotlight_hold_fraction`
+			# (0.5), so a travelling light lands exactly as the show begins to fade, and any travel
+			# longer than the hold is cut off in flight. That is a real tuning cliff, not a wobble.
+			# ⚠ **WHAT DID THE SHOW ACTUALLY REACH BEFORE ITS BEAT ENDED?** Owner: *"next one always
+			# ends halfway into spawning, so dimness and brightness only reaches halfway"*. `max_dim`
+			# over the whole run hides this — the FIRST section has slack and later ones may not.
+			if _up:
+				peak_show = maxf(peak_show, _layer._show)
+				# ⚠ **FRAMES AT FULL is the number that was silently zero.** A peak of 0.97 and a peak
+				# held for half a second look identical in `show_peaks`; only dwell time tells them
+				# apart, and dwell is what the owner was missing.
+				if _layer._show >= 0.99: full_frames += 1
+			if _section != last_section or _retiring != last_retiring:
+				peaks.append("%.2f" % peak_show)
+				peak_show = 0.0
+				# ⚠ **`> 0.0` MATTERS: a beam created on THIS very frame has `t`/`fade` at exactly 0
+				# and has not been truncated — it has not started.** Counting those made the first
+				# version report all 14 presets SUSPECT including single-section ones, where nothing
+				# can be cut off. Only a beam that had STARTED and not finished is a truncation.
+				for b : _TBeam in _beams:
+					if b.t > 0.0 and b.t < 1.0: cut_travel += 1
+					elif not b.retiring and b.fade > 0.0 and b.fade < 1.0: cut_spawn += 1
+				last_section = _section
+				last_retiring = _retiring
 		var sid : String = s.get("id", "?")
 		var lit_now := _current_section().size()
 		var suspect : Array[String] = []
 		if _sections.size() > 1 and seen_sections.size() < _sections.size():
 			suspect.append("only %d of %d sections took the light" % [seen_sections.size(), _sections.size()])
 		if show_flips == 0: suspect.append("the show never changed state — no pulse at all")
+		# ⚠ A MULTI-SECTION preset that never travels is a REBUILD wearing a cascade's clothes.
+		if _sections.size() > 1 and not travelled:
+			suspect.append("no light ever TRAVELLED — the set is snapping between sections (chart E)")
+		if not faded:
+			suspect.append("no light ever faded — the spawn/retire envelopes are not running")
+		if cut_travel > 0:
+			suspect.append(("%d light(s) were STILL TRAVELLING when the section changed — " % cut_travel)
+					+ "spotlight_travel_fraction (%.2f) is too long for the beat, which is "
+					% settings.spotlight_travel_fraction
+					+ "base_delay x spotlight_hold_fraction (%.2f)" % settings.spotlight_hold_fraction)
+		if cut_spawn > 0:
+			suspect.append("%d light(s) were still FADING IN when the section changed" % cut_spawn)
 		if max_dim <= 0.0: suspect.append("THE DIM NEVER ROSE")
 		if lit_now == 0 and not _retiring: suspect.append("nothing is lit")
+		# ⚠ **A SCENARIO THAT DOES NOT DECLARE ITS SEPARATION IS SUSPECT — that omission is what made
+		# half the presets lie.** Absent used to mean "keep the tool's current setting", which defaults
+		# ON, so `S2` (named *"separation OFF"*) showed it ON and `S2b`'s *"compare directly against
+		# S2"* compared two identical boards. Eleven of thirteen presets were in that state and what
+		# you saw depended on which preset you had clicked before. Owner, 2026-08-05: *"half the
+		# scenarios dont do anything or dont do what they claim"*.
+		if not s.has("row_separation"):
+			suspect.append("does not declare row_separation — it inherits, so it shows whatever the "
+					+ "previously selected preset left behind")
 		var sep : bool = s.get("row_separation", false)
 		if sep and max_open <= 0.0: suspect.append("row_separation is on but nothing opened")
+		# ⚠ And the other direction, which nothing checked: a preset that declares separation OFF but
+		# opens anyway is the same disagreement seen from the other side.
+		if not sep and max_open > 0.0:
+			suspect.append("row_separation is OFF but the board opened %.2f — the preset is not in "
+					% max_open + "the state it claims")
 		if _sections.size() > 1 and not retired:
 			suspect.append("the act never reached its retire beat — the loop has no end")
-		report.append("%-5s sections=%d/%d  show_flips=%d  max_dim=%.2f  max_open=%.2f  %s"
+		report.append("%-5s sections=%d/%d  flips=%d  dim=%.2f  open=%.2f  travel=%s fade=%s cut=%d/%d show_peaks=[%s] full=%d rebuilds=%d/%dframes  %s"
 				% [sid, seen_sections.size(), _sections.size(), show_flips, max_dim, max_open,
+					"Y" if travelled else "-", "Y" if faded else "-", cut_travel, cut_spawn,
+					", ".join(peaks.slice(0, 6)), full_frames,
+					_rebuild_count - rebuilds_at_start, mini(frames, 1800),
 					("SUSPECT: " + "; ".join(suspect)) if suspect else "ok"])
 		print("  " + report[report.size() - 1])
+	# ⚠ **THE SEAM THAT BROKE WHEN THE TOOL WAS PLAYED RATHER THAN PREVIEWED.** `LightLayer` used to
+	# consult `editor_settings` ONLY under `Engine.is_editor_hint()`, so a played tool scene read the
+	# player's saved `settings.tres` while the tool's own clock read its embedded `SubResource` — two
+	# instances, two clocks, and the show was cut off part-way up. Values alone cannot catch it (both
+	# resources hold the same defaults until one is tuned), so this asserts IDENTITY.
+	var same_settings : bool = is_instance_valid(_layer) and _layer._settings() == settings
+	print("
+  settings seam: LightLayer reads the tool's own resource = %s%s"
+			% [str(same_settings),
+				"" if same_settings else "   <-- BUG: the layer is on a DIFFERENT clock"])
 	print("\n======== SPOTLIGHT TOOL — SCENARIO VERIFY ========")
 	var bad := 0
 	for line : String in report:
@@ -925,14 +1261,9 @@ func _maybe_shoot_all() -> void:
 		# Held, not played: a still of a cascade mid-fade is a picture of nothing in particular.
 		play = false
 		revealed = true
-		# ⚠ **THE JSON FLAG IS AN OVERRIDE, NOT A DEFAULT.** It used to read `get("row_separation",
-		# false)`, which forced separation OFF for every preset that did not mention it — so the S4
-		# column shot showed an unseparated board while `--verify` reported `max_open=1.00`, and the two
-		# instruments disagreed about the same scenario. Absent key now means "use the tool's setting",
-		# which defaults ON.
-		if s.has("row_separation"):
-			var sep : bool = s["row_separation"]
-			row_separation = sep
+		# ⚠ ONE PATH for the scenario's knobs — the shoot loop and the inspector must not apply them
+		# differently, which is how the shot and `--verify` came to disagree about the same preset.
+		_apply_scenario_knobs()
 		_rebuild()
 		# Let the dim and the show finish easing before the shutter: both are `move_toward` over a
 		# fraction of `base_delay`, so a shot on the rebuild frame catches them at zero.

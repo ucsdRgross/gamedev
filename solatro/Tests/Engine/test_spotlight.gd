@@ -72,6 +72,7 @@ func _ready() -> void:
 	test_origins_spread_and_never_share_a_y()
 	test_origins_take_the_nearest_free()
 	test_origins_assign_sorted_pairs_never_cross()
+	test_a_shrinking_section_keeps_the_NEAREST_lights()
 	test_origins_subdivide_when_exhausted()
 	test_origins_respread_only_above_the_viewport()
 	test_a_beam_never_points_upward()
@@ -949,3 +950,54 @@ func test_a_beam_never_points_upward() -> void:
 	check(SpotlightOrigins.edge_origin_for(normal, 0.0, 760.0, Vector2(640.0, -500.0))
 			== Vector2(640.0, -500.0),
 			"while a target on screen keeps its rig lamp")
+
+
+## **A SHRINKING SECTION MUST KEEP THE LIGHTS ALREADY NEAREST ITS TARGETS.**
+##
+## ⚠ **THE BUG THIS PINS SHIPPED AND WAS FOUND BY EYE, NOT BY A TEST** (owner, 2026-08-05: *"when
+## spotlight chooses new targets and there are less cards, it doesnt choose nearest spotlights but
+## leftmost ones, so left beams cross all the way to right while right beams disappear"*). Pairing two
+## x-sorted lists cannot CROSS, which is why chart E2 does it — but with unequal counts the old code
+## paired `leftover[0..pairs)`, so the survivors were always the LEFTMOST beams however far away they
+## were, and the beams sitting on the targets retired. Non-crossing was true and still wrong.
+##
+## ⚠ Asserted on the ARITHMETIC (`nearest_window`) rather than through the director, because that is
+## the whole of the rule and it is decidable headlessly — no board, no frame, no pixels.
+func test_a_shrinking_section_keeps_the_NEAREST_lights() -> void:
+	# Five lit cards spread across the board; the next section is the two on the RIGHT.
+	var sources := PackedFloat32Array([100.0, 300.0, 500.0, 700.0, 900.0])
+	var targets := PackedFloat32Array([700.0, 900.0])
+	var start := SpotlightOrigins.nearest_window(sources, targets)
+	check(start == 3,
+			"a section shrinking to its RIGHT keeps the two RIGHTMOST lights",
+			"window starts at %d (0 means it kept the leftmost and crossed the board)" % start)
+	# ...and the mirror, so the fix cannot be "always take the last N" either.
+	targets = PackedFloat32Array([100.0, 300.0])
+	start = SpotlightOrigins.nearest_window(sources, targets)
+	check(start == 0, "and a section shrinking to its LEFT keeps the two LEFTMOST",
+			"window starts at %d" % start)
+	# A middle target set: neither end.
+	targets = PackedFloat32Array([300.0, 500.0])
+	start = SpotlightOrigins.nearest_window(sources, targets)
+	check(start == 1, "and a MIDDLE target set keeps the middle lights", "window starts at %d" % start)
+	# Equal counts must be a no-op — every light travels, none retires.
+	targets = PackedFloat32Array([1.0, 2.0, 3.0, 4.0, 5.0])
+	check(SpotlightOrigins.nearest_window(sources, targets) == 0,
+			"equal counts keep every light (window 0), so nothing is dropped")
+	# ⚠ The window stays CONTIGUOUS and in order, which is what preserves E2's non-crossing property:
+	# a nearest-each match would pick sources 4 and 3 for these targets and invert them.
+	sources = PackedFloat32Array([0.0, 10.0, 20.0])
+	targets = PackedFloat32Array([19.0, 21.0])
+	start = SpotlightOrigins.nearest_window(sources, targets)
+	check(start == 1, "the window is contiguous and ordered — no inversion is possible",
+			"window starts at %d" % start)
+
+	# **THE GROWING CASE — which TARGETS get the travelling lights** (owner: *"when spawning new
+	# spotlights it should also prioritize nearest"*). Same helper, arguments swapped: the sources are
+	# now the smaller list, so the window is over the TARGETS and the rest spawn in place.
+	var lights := PackedFloat32Array([800.0, 900.0])
+	var wanted := PackedFloat32Array([100.0, 300.0, 500.0, 800.0, 900.0])
+	var tgt_start := SpotlightOrigins.nearest_window(wanted, lights)
+	check(tgt_start == 3,
+			"a growing section sends its two live lights to the NEAREST targets, and spawns the rest",
+			"target window starts at %d (0 would drag both lights across the board)" % tgt_start)

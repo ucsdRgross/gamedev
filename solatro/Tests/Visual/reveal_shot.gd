@@ -127,6 +127,18 @@ func _ready() -> void:
 	await _shot("01_opening_%d" % roundi(_progress(pa) * 100.0), pa)
 	while waited < 6.0 and _progress(pa) < 0.999:
 		waited += await _tick()
+	# ⚠ **MEASURE THE LAMP SPREAD — chart I2/I12 says origins spread EVENLY across the band.** The
+	# owner read the evidence shot as *"the lights arent spread evenly"*, and a picture of overlapping
+	# cones cannot settle that: print the actual origin x of every live beam next to its target.
+	var ll0 := view.light_layer
+	var ox : Array[String] = []
+	var tx : Array[String] = []
+	for l : LightLayer.Light in ll0._lights:
+		ox.append("%.0f" % l.origin.x)
+		tx.append("%.0f" % l.centre.x)
+	print("[reveal_shot] lamps  origin_x = [%s]" % ", ".join(ox))
+	print("[reveal_shot] lamps  target_x = [%s]  (viewport width %.0f)"
+			% [", ".join(tx), get_viewport().get_visible_rect().size.x])
 	await _shot("02_open_full", pa)
 
 	# The other separation mode, on the same board, for a side-by-side.

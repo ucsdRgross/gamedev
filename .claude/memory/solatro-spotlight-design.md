@@ -12,22 +12,26 @@ metadata:
 `/flowchart-design` skill. **Design CONFIRMED 2026-08-03; `PLAN.md` is the execution spec and §1 of
 it is normative.**
 
-⚠ **ALL FOUR PHASES ARE BUILT — every step S1–S18 is done (S15, S16, S17 all landed 2026-08-05).**
-Chart E's travel, `FxSpotlightStyle` (§16's knob resource, which had never existed), `Q85`'s
-art-square centring and GAP-008's fan-by-depth origins all shipped. **All NINE gaps closed.**
-**Nothing is left to BUILD — what remains is GATES (G2.2, G2.3, G3.1–G3.3, none closed) and two open
-bugs (the PIXELS mask, diagnosed; the LEAK CANARY intermittent).** Live status is
-`solatro/HANDOFF_spotlight.md`; it is a status ledger only.
-⚠ **GAP-009 — THE ROW OPENING IS A KNOB, NOT A DERIVATION.** The derived *"no visible gap, sized from
-the lowest ___"* model is retired: on a flush every card is lit and jumps, so the lowest such card is
-the lowest on the board and the opening lifted rows outside the scored set. `spotlight_separation_mode`
-= `CARD_HEIGHT` (a full card) or `JUMP_ADJUSTED` (card height − jump rise, leaving a non-jumping card
-slightly covered). ⚠ **S16 and S17 are ONE change**: `PlayArea.slot_center_global` is pure uniform-pitch
-maths that every prop anchors to, so it breaks on the first expanded row (K13).
-⚠ **S15's rule, and it is GAP-005's shape a third time: the momentary cue's lights are UNGATED.**
-Nothing raises GAP-006's per-section reveal gate outside a submit, so a cue that rode it would be
-multiplied by `_show = 0` and be **invisible while every headless assertion still passed**. The cue
-carries its own spawn/hold/retire envelope and `_dim_target` takes `max(_show, ungated)`.
+⚠ **ALL FOUR PHASES ARE BUILT — every step S1–S18 is done (2026-08-06), suite green at 1867 checks,
+and THE WHOLE STREAM IS PARTLY COMMITTED (9cb8f59); check git status.** All NINE gaps closed. Gates G3.1,
+G3.2, G2.3 closed; **G2.2 and G3.3 are not**. Live status is `solatro/HANDOFF_spotlight.md`.
+⚠ **FIFTEEN DEFECTS WERE FOUND AND FIXED ON 2026-08-05/06, EVERY ONE GREEN IN THE SUITE WHEN IT
+SHIPPED, AND MOST FOUND BY THE OWNER LOOKING AT THE SCREEN.** Their forensics and the recurring shapes
+are `solatro/ARCHITECTURE_REVIEW.md` **§9** — read it before trusting any similar claim. The shapes:
+two representations of one fact (a tool and the game reaching the allocator/settings by different
+routes); **independent envelopes on one visual** (`fade * _show` — three separate bugs, none visible in
+either factor alone); fixtures that could not express the case they claimed to test (S16 "verified" on
+a board one card deep); assertions measuring an intermediate instead of the claim; and rendering that
+never reached a pixel (a zero-sized `ColorRect`, a `SubViewport`'s own LINEAR filter).
+⚠ **GAP-009 — the row opening is a KNOB, not a derivation.** `spotlight_separation_mode`:
+`CARD_HEIGHT` (pitch = one card) or `JUMP_ADJUSTED` (card − separation − jump rise). Both branches
+return a TOTAL pitch; `row_open_extra()` subtracts the container's `separation` to get the strip.
+⚠ **S16 and S17 are ONE change** — `slot_center_global` is uniform-pitch maths every prop anchors to.
+⚠ **S15's cue is reachable only via `Cards/Skills/spotlight_probe.gd`** + the debug bar's **Cue**
+button: `spotlight_cued` is `Q246`-filtered to skills implementing `on_spotlight` and the only shipped
+one is a RULES card with no `CardVisual`. **Do not "fix" that by unfiltering — it recreates GAP-005.**
+⚠ **`Tests/Visual/reveal_shot.tscn` is the ONLY instrument that shows the reveal in a real `GameView`**
+— the tuning tool draws its own simulation and has no `PlayArea`.
 ⚠ **THE OWNER JUDGES EVERY VISUAL THROUGH THE TUNING TOOL** — *"I would rather do all testing via the
 planned editor so dont ask me to check until it exists"*. **It exists**: `solatro/Tools/spotlight_tool.tscn`
 (`@tool` + inspector, scenarios as JSON data, the old `spotlight_trace` merged in as `-- --trace`,

@@ -171,34 +171,89 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 		return _centre_of(a).x < _centre_of(b).x)
 
 	var pairs : int = mini(leftover.size(), targets.size())
+	# ⚠ **WHICH leftovers survive is chosen by PROXIMITY, not by taking the first `pairs` in x order.**
+	# With fewer targets than lights the old code kept the LEFTMOST beams and retired the rest, so the
+	# survivors crossed the board while the beams already sitting on the targets vanished — owner,
+	# 2026-08-05. `nearest_window` picks the cheapest CONTIGUOUS run, which keeps E2's non-crossing
+	# property (both lists stay in x order inside the window).
+	var src_x := PackedFloat32Array()
+	for b : _Beam in leftover: src_x.append(_beam_centre(b).x)
+	var tgt_x := PackedFloat32Array()
+	for data : CardData in targets: tgt_x.append(_centre_of(data).x)
+	# ⚠ **BOTH SIDES PICK BY PROXIMITY, AND THE GROWING CASE NEEDS IT TOO** (owner, 2026-08-05: *"when
+	# spawning new spotlights it should also prioritize nearest"*). SHRINKING: choose which lights
+	# survive. GROWING: choose which TARGETS receive the travelling lights — the rest spawn in place.
+	# Without the second half a distant light travelled to `targets[0]` while a brand-new light spawned
+	# on the target it was already standing next to.
+	var window := 0
+	var tgt_window := 0
+	if leftover.size() >= targets.size():
+		window = SpotlightOrigins.nearest_window(src_x, tgt_x)
+	else:
+		tgt_window = SpotlightOrigins.nearest_window(tgt_x, src_x)
+	# **E3 — SURPLUS LIGHTS LEAVE. ⚠ RELEASED OUTRIGHT, NOT LEFT FADING INTO THE NEXT SECTION.**
+	#
+	# ⚠ **A RETIRING BEAM RIDES `_show`, SO THE NEXT SECTION RE-LIGHTS IT.** Its `fade` decays over
+	# `spotlight_retire_fraction` (0.3 s) while the incoming section's `_show` climbs over
+	# `spotlight_show_in_fraction` (0.5 s) — and the drawn intensity is `fade * _show`, so the product
+	# RISES as the new dim comes up. Owner, 2026-08-05: *"when spotlights despawn because next section
+	# has less cards, it reappears during new dim to move spotlights to new section then fades out when
+	# it should not appear at all."*
+	# ⚠ **THE FADE IS NOT LOST — GAP-006 ALREADY DID IT.** The show falls to zero between sections, so
+	# a surplus light has ALREADY faded out with everything else by the time this runs; giving it a
+	# second, independent envelope is what let it come back. Chart E3's *"fade in place"* is satisfied
+	# by the show's own fall.
+	# ⚠ `retire()` (the ACT's release, S9) still fades — that path has no incoming section to re-light
+	# it, and `test_..._retire_FADES_the_lights` pins it.
+	for i : int in leftover.size():
+		if i >= window and i < window + pairs: continue
+		var dead : _Beam = leftover[i]
+		if dead.origin_idx >= 0: _origins.release(dead.origin_idx)
+		_beams.erase(dead)
 	for i : int in pairs:
 		# **E9 — THE LIGHT TRAVELS.** Its origin is kept, so the beam pivots on its own lamp rather
 		# than the lamp teleporting with it (E10: *"origin fixed, wide end tracks the circle"*).
-		var b : _Beam = leftover[i]
+		var b : _Beam = leftover[window + i]
 		b.from = _beam_centre(b)
-		b.card = targets[i]
+		b.card = targets[tgt_window + i]
 		b.t = 0.0
 		b.retiring = false
 		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
 			EventLog.event(EventLog.CH_SPOTLIGHT, "light_travel",
 					"to=%s from=(%.0f,%.0f) origin_idx=%d" % [b.card.log_str(), b.from.x, b.from.y,
 						b.origin_idx])
-	# **E3 — SURPLUS LIGHTS RETIRE**, fading in place on the card they were already on.
-	for i : int in range(pairs, leftover.size()):
-		leftover[i].retiring = true
-		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
-			EventLog.event(EventLog.CH_SPOTLIGHT, "light_retiring", "surplus")
+	if EventLog.is_on(EventLog.CH_SPOTLIGHT) and leftover.size() > pairs:
+		EventLog.event(EventLog.CH_SPOTLIGHT, "light_retiring",
+				"surplus=%d window=%d" % [leftover.size() - pairs, window])
 	# **E4 — SURPLUS TARGETS GET NEW LIGHTS.** `Q65`=(a): a new light FADES IN ALREADY AIMED at its
 	# target (`t = 1`), rather than travelling in along its beam from the origin — the searchlight
 	# sweep was the declined reading.
-	for i : int in range(pairs, targets.size()):
-		var data : CardData = targets[i]
+	#
+	# ⚠ **`assign()` FOR THE WHOLE BATCH — NOT `take()` IN A LOOP, WHICH IS WHAT THIS USED TO DO AND IS
+	# EXACTLY WHAT GAP-008 FORBIDS.** `SpotlightOrigins.take()` says so in its own header: *"DO NOT USE
+	# IT FOR A SECTION. Calling it in a loop is what produced the column crossings."* Greedy nearest is
+	# order-dependent — each target takes the closest lamp still free, so by the time the right-hand
+	# cards are placed only the far-left lamps remain. Measured on a real five-card row, 2026-08-05:
+	# lamps spread perfectly evenly at 115/346/576/806/1037, and the pairing came out
+	# `519->576, 624->806, 729->1037, 834->346, 939->115` — the rightmost card lit from the LEFTMOST
+	# lamp. The owner spotted it in a render as *"the lights arent spread evenly"*; the lamps were even,
+	# the ASSIGNMENT was crossed. `assign()` partitions the bar into per-column sections in x order and
+	# fans by depth inside each, which cannot cross by construction.
+	var new_targets : Array[CardData] = []
+	var new_centres : Array[Vector2] = []
+	for i : int in targets.size():
+		# The ones inside the travelled window already have a light on the way.
+		if i >= tgt_window and i < tgt_window + pairs: continue
+		new_targets.append(targets[i])
+		new_centres.append(_centre_of(targets[i]))
+	var assigned := _origins.assign(new_centres)
+	for i : int in new_targets.size():
+		var data : CardData = new_targets[i]
 		var nb := _Beam.new()
 		nb.card = data
 		nb.t = 1.0
 		nb.fade = 0.0
-		# One light, so the single-light rule applies: the free origin NEAREST it (`Q111`=a, I7).
-		nb.origin_idx = _origins.take(_centre_of(data))
+		nb.origin_idx = assigned[i] if i < assigned.size() else -1
 		_beams.append(nb)
 		if EventLog.is_on(EventLog.CH_SPOTLIGHT):
 			EventLog.event(EventLog.CH_SPOTLIGHT, "light_spawn",

@@ -219,8 +219,12 @@ func _process(delta: float) -> void:
 	# section had already started.
 	var show_target := 1.0 if _revealed else 0.0
 	if not is_equal_approx(_show, show_target):
-		var show_fraction : float = _settings().spotlight_dim_in_fraction if show_target > _show \
-				else _settings().spotlight_dim_out_fraction
+		# ⚠ **THE SHOW HAS ITS OWN FRACTIONS NOW — it used to share the DIM's**, so the beams and the
+		# darkness always reached full together and neither could lead the other. Owner 2026-08-05:
+		# *"allowing dimness to happen twice as fast before beams finish"*. Set
+		# `spotlight_dim_in_fraction` below `spotlight_show_in_fraction` and the room darkens first.
+		var show_fraction : float = _settings().spotlight_show_in_fraction if show_target > _show \
+				else _settings().spotlight_show_out_fraction
 		_show = move_toward(_show, show_target,
 				delta / maxf(_delay() * show_fraction, 0.0001))
 		# Every light's intensity is scaled by `_show`, so the beams and circles fade WITH the dim
@@ -324,10 +328,24 @@ func _push_static() -> void:
 ## drags reach the real layer. Ignored entirely outside the editor.
 static var editor_settings : PlayerSettings = null
 
+## ⚠ **THE OVERRIDE WINS IN BOTH CONTEXTS, AND MAKING IT EDITOR-ONLY WAS A REAL BUG.** This used to
+## read `if not Engine.is_editor_hint(): return SettingsManager.settings` FIRST, so the moment
+## `Tools/spotlight_tool.tscn` was PLAYED rather than previewed in the inspector, this layer silently
+## stopped reading the tool's settings and read the player's saved `settings.tres` instead — while the
+## tool's own cascade clock (`_advance_cascade`, `_advance_beams`) kept using its embedded
+## `SubResource`. **Two PlayerSettings instances, two clocks**, so the section beat and the show/dim
+## eases disagreed and the show was cut off part-way up. Owner, 2026-08-05: *"still seeing half
+## spotlight effect ... but not in tool, but specifically when testing the scenarios during play ...
+## loop is restarting while spotlight effect is playing"* — the diagnosis was theirs and it was right.
+## ⚠ Only the tool ever assigns this; the shipped game leaves it null and gets `SettingsManager`.
+## ⚠ **DELEGATES TO `FxAttachment.settings()` RATHER THAN RE-DERIVING IT.** That accessor is now the
+## ONE place that answers "which PlayerSettings" (owner 2026-08-05: *"shared globally and be the one
+## used in actual games, so i never need to duplicate settings across different contexts"*), and it
+## loads the same `user://settings.tres` the autoload does. A second copy of the rule here is exactly
+## the two-representations defect this stream keeps producing.
 func _settings() -> PlayerSettings:
-	if not Engine.is_editor_hint(): return SettingsManager.settings
-	if not editor_settings: editor_settings = PlayerSettings.new()
-	return editor_settings
+	if editor_settings: return editor_settings
+	return FxAttachment.settings()
 
 ## One unit of show time, the same number every other flourish is a fraction of.
 func _delay() -> float:

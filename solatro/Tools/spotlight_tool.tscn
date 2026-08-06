@@ -1,16 +1,10 @@
 [gd_scene format=3 uid="uid://341npyq7asxl"]
 
 [ext_resource type="Script" uid="uid://rd5u78mfm5o2" path="res://Tools/spotlight_tool.gd" id="1_sptool"]
-[ext_resource type="Script" uid="uid://dqabanshf0pkl" path="res://Scripts/player_settings.gd" id="2_gone0"]
-
-[sub_resource type="Resource" id="Resource_y5u77"]
-script = ExtResource("2_gone0")
-spotlight_reveal_fraction = null
-spotlight_travel_fraction = null
-spotlight_spawn_fraction = null
-spotlight_retire_fraction = null
+[ext_resource type="Resource" path="user://settings.tres" id="2_gone0"]
 
 [node name="SpotlightTool" type="Node" unique_id=773136247]
 script = ExtResource("1_sptool")
-settings = SubResource("Resource_y5u77")
-scenario = 7
+row_separation = false
+settings = ExtResource("2_gone0")
+scenario = 13

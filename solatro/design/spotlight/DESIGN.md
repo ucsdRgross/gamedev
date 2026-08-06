@@ -2088,8 +2088,10 @@ delete the ones you do not want and add the ones I missed — **Q166–Q172**.
 
 | Knob | Meaning | Suggested |
 |---|---|---|
-| `spotlight_dim_in_fraction` | dim 0 → target at act start | 0.5 |
-| `spotlight_dim_out_fraction` | dim → 0 at act end | 0.5 |
+| `spotlight_dim_in_fraction` | **the DIM only** — 0 → target at act start. ⚠ Set BELOW `spotlight_show_in_fraction` to darken the room before the beams arrive (owner 2026-08-05) | 0.5 |
+| `spotlight_show_in_fraction` | **the LIGHTS only** — how fast every beam/circle rises. Split from the dim so the two need not peak together | 0.5 |
+| `spotlight_show_out_fraction` | the lights' fall, likewise | 0.5 |
+| `spotlight_dim_out_fraction` | **the DIM only** — → 0 at act end | 0.5 |
 | `spotlight_reveal_fraction` | a row's expand / collapse | 0.4 |
 | `spotlight_travel_fraction` | a light moving card → card | 0.5 |
 | `spotlight_spawn_fraction` | a new light fading in | 0.3 |
