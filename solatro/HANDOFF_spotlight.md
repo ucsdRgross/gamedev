@@ -5,12 +5,16 @@
 satisfied by eye on the visual phases. (Phase 5, the film pipeline, is a separate deliverable and is
 NOT part of this stream.)
 
-**State (2026-08-06):** **ALL FOUR PHASES ARE BUILT — every step S1–S18 is `done`, and the suite is
-green at 1867 checks.** `DESIGN.md` is at **v12** plus GAP-009; all **nine** gaps are closed. Gates
-**G3.1, G3.2 and G2.3 are closed**; **G2.2 and G3.3 are not** and G2.2 is the owner's alone.
-**Nothing is left to BUILD.** Fifteen defects were found and fixed on 2026-08-05/06 — every one green
-in the suite when it shipped, most found by the owner looking at the screen; their forensics are in
-`ARCHITECTURE_REVIEW.md` **§9**. ⚠ **PART OF THE STREAM IS ALREADY COMMITTED** in `9cb8f59` (the probe, `reveal_shot.tscn`, GAP-009,
+**State (2026-08-06, post-review):** **ALL FOUR PHASES ARE BUILT — every step S1–S18 is `done`,
+suite green (29 suites, 1871 checks, engine-errors clean).** `DESIGN.md` is at **v12** plus GAP-009.
+Gates **G3.1, G3.2, G2.3 and now G3.3 are closed**; **G2.2 is the owner's alone.** A same-day
+code-review pass fixed ten confirmed defects (cancelled-submit view leak, (0,0) beams, fx_intensity
+dark disc, gutter collapse on bank, --trace save overwrite, lamp teleport after subdivision, stale
+reveal bindings, fail-open spotlight lookups, tool/PlayArea separation divergence) plus the known
+tool teardown and push-every-frame items — see "For an agent APPLYING fixes" and `ASSUMPTIONS.md`
+(2026-08-06 entries). ⚠ **TWO NEW GAPS ARE OPEN — GAP-010 (does `act_overrun` void the line's
+score?) and GAP-011 (do score hooks fire on an emptied section?)** — behaviour unchanged pending
+the owner. Fifteen earlier defects' forensics are in `ARCHITECTURE_REVIEW.md` **§9**. ⚠ **PART OF THE STREAM IS ALREADY COMMITTED** in `9cb8f59` (the probe, `reveal_shot.tscn`, GAP-009,
 `game_view.gd`, `todo.md`, `test_pixels.gd`); the rest is still dirty — see **Files touched** for the
 exact audit surface, and trust `git status` over this file.
 
@@ -215,8 +219,18 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   exactly. Measured alongside: extra 0 → 41.3 → 90.0 px (`CARD_HEIGHT`) and 65.0 px (`JUMP_ADJUSTED`).
   ⚠ **CAVEAT — the fixture is ONE ROW DEEP per column, so these shots do NOT show the headline case:
   a BURIED card being uncovered.** That still needs a stacked board (a `Next` that drops a stack).
-- ⚠ **STILL OPEN — G3.3** (`snapshot_diff.py`) has **not been run**. **G2.2** (readability) is the
-  owner's call and cannot be closed here.
+- ✅ **G3.3 RUN 2026-08-06 (review pass).** All three snapshot sets re-rendered and diffed:
+  30 of 34 comparable panels byte-identical (both GLOW panels included); the 4 that differ are all
+  explained by COMMITTED intervening work, verified by eye — `10_light_layer` (the 38x52 art
+  refactor changed the card faces; the light rig itself is pixel-for-pixel the same look),
+  `17_prop_fire` + `behind_card_*` (fire-pass/art work since their 07-28/29 baselines). ⚠ No
+  pre-spotlight baseline ever existed for `prop_art`/`fx_behind`, so "the spotlight stream moved
+  nothing" is answerable only for `fx_snapshots` — where it holds. A fresh full baseline (36
+  panels) is saved as of this state. Also re-verified today: suite `ALL 29 SUITES: 1871 CHECKS
+  PASSED, [engine-errors] clean, 0 SCRIPT ERROR` (1 run); `--verify` `14 scenario(s), 0 SUSPECT,
+  rebuilds 0–1 per whole loop`; `reveal_shot` extras now 80.0 px (`CARD_HEIGHT`) / 45.0 px
+  (`JUMP_ADJUSTED`) — the post-GAP-009-final-form numbers (old 90/65 predate the `-separation`
+  correction). **G2.2** (readability) remains the owner's call.
 
 - **Verified 2026-08-05 BY EYE** — `04_S4` (a column: the fan, near-vertical onto the topmost card,
   each deeper one from further out, no crossings), `07_S6` (interleaved: six beams left-to-right,
@@ -248,9 +262,9 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
 | **Chart E TRAVEL — lights move section to section, surplus retire, new ones spawn** | ✅ *(built 2026-08-05)* | `_TBeam` + `_sync_beams()` + `_advance_beams()` mirror `SpotlightDirector`; `begin()` only when nothing is lit. **Preset `S8` is 3 → 5 → 2**, so it travels, spawns two, then retires three |
 | **Spawn / hold / retire ENVELOPES** | ✅ *(built 2026-08-05)* | `light.intensity = b.fade`; `--verify` now reports `fade=Y` for every preset |
 | **S15's momentary cue as a timed event** | ❌ | `casual` only changes the dim's depth; there is no spawn→hold→self-retire |
-| **GAP-009's separation MODE** (`CARD_HEIGHT` vs `JUMP_ADJUSTED`) | ❌ | `row_separation` is a BOOL; the tool has no mode and its opening is not `_row_open_height()` |
-| **"A row that covers nothing does not open"** (fixed in the game today) | ❌ **DIVERGES** | `_separated_depths()` opens every lit depth with no covers-anything test — the tool now shows an opening the game refuses |
-| Origin SUBDIVISION | ❌ | `begin()` sizes k0 to the request, so no preset can reach `_subdivide()` — see S6 |
+| **GAP-009's separation MODE** (`CARD_HEIGHT` vs `JUMP_ADJUSTED`) | ✅ *(fixed 2026-08-06)* | the tool's opening is `PlayArea.row_open_span()` — the game's own static, mode included |
+| **"A row that covers nothing does not open"** | ✅ *(fixed 2026-08-06)* | `_separated_depths()` skips the deepest row, mirroring `row_open_extra`'s guard |
+| Origin SUBDIVISION | ✅ | `S8` (3 → 5) reaches `assign()`'s growth loop — the old "unreachable" claim was false; see Open bugs |
 | Two zones (upper + lower) | ❌ | the tool builds one grid |
 | Cards moving while lit; board scroll | ❌ | the board is posed statically |
 
@@ -261,11 +275,11 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
   drives), and `spotlight_hold_fraction` + `spotlight_reveal_fraction` (used by the tool itself).
 - ✅ **Now tunable too (2026-08-05)** — `spotlight_travel_fraction`, `spotlight_spawn_fraction`,
   `spotlight_retire_fraction`, once the tool got a beam model. Judge them on **`S8`** with `play` on.
-- ❌ **Still has no effect in the tool** — `spotlight_separation_mode` (the tool's `row_separation` is
-  a bool, and its opening is not `_row_open_height()`). **Audited 2026-08-05: this is the ONLY dead
-  spotlight knob left.** All 13 `FxSpotlightStyle` knobs are live (10 as shader uniforms via
-  `apply()`, and `circle_radius` / `beam_width_at_origin` / `flare` read CPU-side when the light is
-  built); the other 9 `spotlight_*` settings all reach the tool or the `LightLayer` it drives.
+- ✅ **`spotlight_separation_mode` is live in the tool too (2026-08-06)** — its opening now routes
+  through `PlayArea.row_open_span()`. All 13 `FxSpotlightStyle` knobs are live (10 as shader uniforms
+  via `apply()`, and `circle_radius` / `beam_width_at_origin` / `flare` read CPU-side when the light
+  is built); the other 9 `spotlight_*` settings all reach the tool or the `LightLayer` it drives.
+  **No dead spotlight knob remains.**
   ⚠ On the GLOW, `ember` and `ember_rate_max` are inert — inherited from `FxStyle` (the ember emitter
   reads them off the base type) and never read by `glow.gdshader`.
 
@@ -320,19 +334,20 @@ unattributed; the suspect is the glow's baked `GradientTexture1D`. ⚠ **`_scan_
 `godot.log` DURING the run, so every exit-time error is invisible to the gate by construction** — that
 blind spot matters more than the one texture.
 
-⚠ **`_rebuild()` tears down the WHOLE board to move the glow** on every section change
-(`spotlight_tool.gd`). The eased show is now carried across so it no longer blinks, but the teardown
-itself is wrong; a `_refresh_glow()` is the proper fix. See `ARCHITECTURE_REVIEW.md` §9e.
+✅ **FIXED 2026-08-06 (review pass): `_rebuild()` no longer runs on a section change** — a section
+change calls `_refresh_glows()` (re-hangs the glow attachments only); `_dirty`/`_rebuild()` is for
+scenario/knob edits, where the show-carry still applies. The `(0,0)` travel guard stays — a SCENARIO
+change still rebuilds under live beams.
 
-⚠ **The origin SUBDIVISION path is unreachable by any preset and therefore untested.**
-`SpotlightOrigins.begin()` sizes k0 to `maxi(count, MIN_ORIGINS)`, so a section never needs more
-origins than it was sized for. It can only trigger in the GAME, where `_band_ready` keeps `begin()`
-from re-running mid-act and a later section can be larger. `S6`'s old claim to exercise it was false
-and is corrected in the JSON.
+✅ **CORRECTED 2026-08-06: the origin SUBDIVISION path WAS reachable all along** — preset `S8`
+(3 → 5) hits `assign()`'s growth loop: `begin(3)` lays out 4 lamps, the growth to 5 wants 2 with 1
+free. The old "unreachable by any preset" claim here was false. The `assign()`-side growth now has
+its own test (`test_origins_assign_subdivides_for_a_larger_section`), which also pins the
+`advance()`-after-subdivision x-order fix (lamps used to teleport: the re-spread walked INDEX order).
 
-⚠ **LOWER PRIORITY — the light set is re-pushed every frame.** `SpotlightDirector._process` rebuilds
-and re-pushes the whole array to follow moving cards. Correct, but two `PackedVector4Array` uploads per
-frame for a set that usually has not changed. Worth a dirty check.
+✅ **FIXED 2026-08-06: the light push is dirty-checked** — `LightLayer._push_lights` compares
+against the last-pushed arrays and skips identical uploads (covers the director's per-frame re-push
+AND the show ease's double push).
 
 ⚠ **S15's cue is reachable ONLY via `SpotlightProbe`.** `spotlight_cued` is `Q246`-filtered to skills
 implementing `on_spotlight`, and the only shipped one is a RULES-stage card with no `CardVisual`, so
@@ -340,7 +355,9 @@ the cue could never appear in play. `Cards/Skills/spotlight_probe.gd` + the debu
 exist to make it reachable. ⚠ **Do NOT "fix" this by unfiltering the signal — that recreates GAP-005.**
 It becomes live the moment any board-stage skill implements `on_spotlight`.
 
-**No gap is open.** GAP-001, 003–009 answered and folded in; GAP-002 withdrawn.
+**Two gaps are open (2026-08-06, from the review): GAP-010** (`act_overrun` banks a half-resolved
+section's score — void it or keep it?) and **GAP-011** (an emptied section skips `on_score` /
+`on_after_score` — should it?). GAP-001, 003–009 answered and folded in; GAP-002 withdrawn.
 
 
 ## Files touched
@@ -376,6 +393,15 @@ when this was written.
   scenario declares `row_separation`; S6/S14 corrected).
 - **Tests (dirty):** `Tests/UI/test_visual_layers.gd`, `Tests/Engine/test_spotlight.gd`.
 - **Docs (dirty):** `ARCHITECTURE_REVIEW.md` **§9**, `design/spotlight/DESIGN.md`, this file.
+- **2026-08-06 REVIEW PASS (dirty, on top of all of the above; rules in ARCHITECTURE_REVIEW §9g,
+  reasoning in ASSUMPTIONS.md):** `Levels/game.gd`, `UI/{spotlight_director,spotlight_origins,
+  light_layer,play_area}.gd`, `Cards/card_modifier.gd`, `Scripts/{scoring_section,event_log}.gd`,
+  `Shaders/{glow,light}.gdshader`, `UI/Fx/fx_spotlight_style.gd`, `Tools/spotlight_tool.gd`,
+  `Tests/Support/test_base.gd`, `Tests/Visual/{reveal_shot,test_pixels}.gd`,
+  `Tests/Engine/test_spotlight.gd`, `Tests/UI/{test_visual_layers,test_fx_attachment}.gd`,
+  `design/spotlight/{ASSUMPTIONS.md,gaps/GAP-010.md,gaps/GAP-011.md}`, docs
+  (`START_HERE`/`VFX`/`HEADLESS_TESTING`/`todo`/this file), and outside solatro:
+  `designloop/src/provenance.mjs`, `designloop/test/grammar.test.mjs`, `.claude/memory/`.
 
 
 ⚠ **Nothing new is committed** — the owner commits through GitHub Desktop.
@@ -403,16 +429,16 @@ the traps below are places where the obvious "cleanup" re-creates one of them.
 (WINDOWED, kill-on-timeout) **and** `... res://Tools/spotlight_tool.tscn -- --verify`. ⚠ Two tests
 flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `git add`, no commits.
 
-| # | Do | Where | Done when |
+| # | Do | Where | Status (2026-08-06 review pass) |
 |---|---|---|---|
-| 1 | Run **G3.3** — `snapshot_diff.py` — and report unintended panel changes | `tools/snapshot_diff.py` | The diff is reported; no unexplained panel moved |
-| 2 | **`_refresh_glow()`** — a section change tears the whole board down only to move the glow | `Tools/spotlight_tool.gd` `_advance_cascade` sets `_dirty`; `_rebuild()` | The glow follows the section with NO `_rebuild()`; `--verify` still shows `rebuilds` ~2/330 frames and no blink |
-| 3 | Make the **origin subdivision path reachable and tested** — no preset can reach `_subdivide()` because `begin()` sizes k0 to the request | `UI/spotlight_origins.gd`, a new scenario | A preset (or headless test) forces a section LARGER than `begin()` was sized for, and the extra lamps are placed |
-| 4 | Give the **tool** `spotlight_separation_mode`, and make its row-separation obey **covers-nothing** — the tool now DIVERGES from `PlayArea` | `Tools/spotlight_tool.gd` `_separated_depths()` | The tool opens the same rows by the same amounts as `PlayArea.row_open_extra()` |
-| 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | The retained objects are named from `print_orphan_nodes()` on a failing run |
-| 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | Either the band tightens toward one cell, or the decision is recorded |
-| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | An error printed after the banner fails the suite |
-| 8 | **Dirty-check the light push** — `_process` re-uploads two `PackedVector4Array`s per frame for an unchanged set | `UI/spotlight_director.gd::_push` | Uploads only on change; G2.3's numbers unchanged |
+| 1 | Run **G3.3** — `snapshot_diff.py` — and report unintended panel changes | `Tools/snapshot_diff.py` | See "Verified vs assumed" |
+| 2 | **`_refresh_glow()`** | `Tools/spotlight_tool.gd` | ✅ done — section change re-hangs glows only, no `_rebuild()` |
+| 3 | Origin subdivision reachable and tested | `UI/spotlight_origins.gd` | ✅ done — was already reachable via `S8` (claim was false); `assign()`-growth test added |
+| 4 | Tool `spotlight_separation_mode` + covers-nothing | `Tools/spotlight_tool.gd` | ✅ done — opening routes through `PlayArea.row_open_span()`, deepest row skipped |
+| 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | ⚠ OPEN — intermittent; needs `print_orphan_nodes()` off a failing run |
+| 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | ⚠ Band kept; count ceiling RESTORED (rest exact, deformed ≤130) and corner bound now in cells. Model itself unfixed — `todo.md` |
+| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ⚠ OPEN — needs an outer wrapper; the suite cannot see errors printed after it exits by construction |
+| 8 | **Dirty-check the light push** | `UI/light_layer.gd::_push_lights` | ✅ done — identical uploads skipped at the layer, covering both push paths |
 
 ### ⚠ DO NOT — each of these looks like a cleanup and re-breaks something measured
 
@@ -449,7 +475,7 @@ plus the open bugs above.**
    `reveal_shots/02_open_full.png`: the rank glyph must stay legible under the circle.
 3. **Pick `spotlight_separation_mode`** — `CARD_HEIGHT` (pitch = one card) vs `JUMP_ADJUSTED`
    (card − separation − jump rise). Both are captured in `user://reveal_shots/`.
-4. **G3.3** — run `snapshot_diff.py` and confirm no unintended panel changes.
+4. ~~G3.3~~ — **run 2026-08-06**, closed; see "Verified vs assumed". Answer **GAP-010 / GAP-011**.
 5. **Decide on G2.3's number**: ~0.19 ms per light, near-linear; 64 lights is 12.2 ms of a 16.67 ms
    frame. Nothing has been trimmed, per `Q254`=(a).
 6. **`DEBUG_CUE` renders as a raw key** until the editor re-imports `Locale/localization.csv` (all the

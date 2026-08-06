@@ -329,8 +329,11 @@ test('the Spotlight DESIGN.md parses clean and keeps its structural invariants',
   assert.ok(questions.length > qr.length, 'and there are numbered questions below them');
 
   // Q140 is retired IN PLACE. IDs are never renumbered, so a retired one may never come back to
-  // life or be reused — that is the invariant, not how many there are.
-  assert.ok(questions.filter((q) => q.retired).every((q) => q.id === 'Q140'));
+  // life or be reused. ⚠ deepEqual, not `.every()` — `every` on an empty array is vacuously true,
+  // so reviving Q140 would have passed silently. Retirements do not grow with the living document
+  // (unlike the counts above), so pinning the exact set is safe; a NEW deliberate retirement
+  // updates this line.
+  assert.deepEqual(questions.filter((q) => q.retired).map((q) => q.id), ['Q140']);
 });
 
 test('the Spotlight DAG validates: no cycle, no undefined ID or letter, nothing unreachable', () => {

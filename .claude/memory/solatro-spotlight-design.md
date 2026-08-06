@@ -12,9 +12,12 @@ metadata:
 `/flowchart-design` skill. **Design CONFIRMED 2026-08-03; `PLAN.md` is the execution spec and §1 of
 it is normative.**
 
-⚠ **ALL FOUR PHASES ARE BUILT — every step S1–S18 is done (2026-08-06), suite green at 1867 checks,
-and THE WHOLE STREAM IS PARTLY COMMITTED (9cb8f59); check git status.** All NINE gaps closed. Gates G3.1,
-G3.2, G2.3 closed; **G2.2 and G3.3 are not**. Live status is `solatro/HANDOFF_spotlight.md`.
+⚠ **ALL FOUR PHASES ARE BUILT — every step S1–S18 is done (2026-08-06), suite green (29 suites);
+check git status for what is committed.** Gates G3.1, G3.2, G2.3 and (2026-08-06 review pass) G3.3
+closed; **G2.2 is the owner's eye**. A same-day review fixed ten confirmed defects — the fixes and
+their reasoning are `design/spotlight/ASSUMPTIONS.md` (2026-08-06 entries) — and opened
+**GAP-010/GAP-011** (overrun banking; emptied-section hooks), which need the owner. Live status is
+`solatro/HANDOFF_spotlight.md`.
 ⚠ **FIFTEEN DEFECTS WERE FOUND AND FIXED ON 2026-08-05/06, EVERY ONE GREEN IN THE SUITE WHEN IT
 SHIPPED, AND MOST FOUND BY THE OWNER LOOKING AT THE SCREEN.** Their forensics and the recurring shapes
 are `solatro/ARCHITECTURE_REVIEW.md` **§9** — read it before trusting any similar claim. The shapes:

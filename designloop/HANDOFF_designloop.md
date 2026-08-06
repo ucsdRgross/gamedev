@@ -682,7 +682,10 @@ subcommands. The incident is written at the head of the module and it is worth r
 touching any of it: **one free-text answer, two documents paraphrasing it, both dropping the clause
 that settled it, and an executing agent filing a gap on the difference between the paraphrases.**
 The reports are `in prose`, `unquoted` and `contracts`; like every other audit here, none of them
-blocks. ⚠ **What is NOT built: the canvas has no contracts panel.** The owner reviews flowcharts;
+blocks. **2026-08-06 (review pass):** the ID scanner now matches GAP ids too — gap answers are
+free-text by construction and were invisible to every report, silently — and `quoteAudit` hoists
+its per-document work (was O(answers × doc bytes), ~700 ms on Spotlight per request; report counts
+may shift as gap citations now register. ⚠ **What is NOT built: the canvas has no contracts panel.** The owner reviews flowcharts;
 `PLAN.md` §1 — which is what an executor actually obeys — is still reviewed only by being read in
 chat. `GET /provenance` serves the data a panel would need. `.claude/skills/flowchart-design/`
 §8b item 9 carries the process half in the meantime.

@@ -121,12 +121,15 @@ func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 const REAL_RUN_PATH := "user://run_save/run.tres"
 const REAL_RUN_BAK := "user://run_save/run.tres.testbak"
 
-func backup_real_save() -> void:
+## ⚠ STATIC: harnesses outside the test tree (`spotlight_tool -- --trace`, `reveal_shot`) run
+## `RunManager.new_run()` too, and each hand-rolled its own park before this was callable — one of
+## them not at all, silently overwriting the player's run (reveal_shot.gd records the symptom).
+static func backup_real_save() -> void:
 	if FileAccess.file_exists(REAL_RUN_PATH):
 		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_PATH),
 				ProjectSettings.globalize_path(REAL_RUN_BAK))
 
-func restore_real_save() -> void:
+static func restore_real_save() -> void:
 	if not FileAccess.file_exists(REAL_RUN_BAK):
 		return
 	# a test may have left its own run.tres behind — clear it before restoring the real one

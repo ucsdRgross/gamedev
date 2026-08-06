@@ -7,4 +7,4 @@
 script = ExtResource("1_sptool")
 row_separation = false
 settings = ExtResource("2_gone0")
-scenario = 13
+scenario = 7

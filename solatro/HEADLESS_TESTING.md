@@ -128,7 +128,7 @@ The reverse also holds: for a change that is supposed to look different, the dif
 A PNG proves what one frame looked like. It cannot answer *"did those five beams appear together or
 one after another"*, *"did the board rebuild under the light"*, or *"why did that section light
 nothing"* — those are questions about ORDER, and the instrument for them is `EventLog`
-(`Scripts/visual_log.gd`), not a picture and not a green test.
+(`Scripts/event_log.gd`), not a picture and not a green test.
 
 ```bash
 "$GODOT_CONSOLE" --path solatro res://Tools/spotlight_tool.tscn -- --trace   # -> user://logs/spotlight_trace/

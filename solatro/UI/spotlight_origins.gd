@@ -258,8 +258,12 @@ func advance(viewport_top: float) -> void:
 	for i : int in _origins.size():
 		if _origins[i].y < viewport_top: above.append(i)
 	if above.is_empty(): return
-	# Re-spread only the invisible ones, across the same band, keeping their order. The on-screen
-	# ones keep their x exactly, so a pinned lamp is untouched by a neighbour's re-spread.
+	# Re-spread only the invisible ones, across the same band, keeping their X ORDER. ⚠ Sorted by x,
+	# never walked by index: `_subdivide()` appends midpoints at the END of the append-only store, so
+	# after any subdivision index order no longer matches x order — an index-order walk permuted the
+	# band, teleporting lamps that live beams were holding and re-crossing what `assign()` had just
+	# untangled. The on-screen ones keep their x exactly, so a pinned lamp is untouched.
+	above.sort_custom(func(a: int, b: int) -> bool: return _origins[a].x < _origins[b].x)
 	for slot : int in above.size():
 		var i : int = above[slot]
 		_origins[i] = Vector2(_even_x(slot, above.size()), _origins[i].y)

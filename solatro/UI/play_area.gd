@@ -41,19 +41,31 @@ var _row_open_wanted : Dictionary[Vector2i, bool] = {}
 ## jumps, so that card is the lowest on the board and the opening lifted rows *"that arent part of
 ## actual scored set"*. Neither formula below looks at any card's position.
 func _row_open_height() -> float:
+	return row_open_height(SettingsManager.settings, float(separation))
+
+## GAP-009's two modes, STATIC so the tuning tool reads the same formula instead of a hand copy
+## (its copy ignored the mode and kept the overshoot bug fixed below — the exact drift the tool
+## exists to rule out). `separation_px` is the SCALED inter-row gap (`PlayArea.separation`'s
+## getter applies `card_scale`; a caller without the node applies it itself).
+static func row_open_height(settings_res: PlayerSettings, separation_px: float) -> float:
 	var full := CardVisual.card_size_play.y
-	if SettingsManager.settings.spotlight_separation_mode \
-			== PlayerSettings.SeparationMode.JUMP_ADJUSTED:
+	if settings_res.spotlight_separation_mode == PlayerSettings.SeparationMode.JUMP_ADJUSTED:
 		# The jumping cards clear the row while a card that does NOT jump stays slightly covered —
 		# which is the whole point of this mode, not a rounding artefact.
 		# ⚠ **`separation` COMES OFF THIS MODE TOO** (owner, 2026-08-06: *"jump adjusted needs to be
 		# card height - separation - jump height then"*). `CARD_HEIGHT` opens to a pitch of exactly one
 		# card; this opens to a card LESS the inter-row gap and the jump rise, so a card that does not
-		# jump stays covered by that much. Both branches return a TOTAL pitch — `row_open_extra()`
+		# jump stays covered by that much. Both branches return a TOTAL pitch — `row_open_span`
 		# takes the container's `separation` off again to get the strip — so this is the distance you
 		# actually measure between two rows.
-		return full - float(separation) - CardVisual.card_jump_rise_play
+		return full - separation_px - CardVisual.card_jump_rise_play
 	return full
+
+## The strip-level EXTRA a fully open row adds over the stacked layout — the mode's total pitch
+## minus the separation the container already provides and the stacked strip itself.
+static func row_open_span(settings_res: PlayerSettings, separation_px: float) -> float:
+	return maxf(row_open_height(settings_res, separation_px) - separation_px \
+			- float(CardVisual.card_separation_play_custom), 0.0)
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
 ## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
@@ -71,23 +83,25 @@ func row_open_extra(zone_x: int, row_z: int) -> float:
 	# the rows stop lining up across the board.
 	if not _row_covers_anything(zone_x, row_z): return 0.0
 	# ⚠ **THE VBOX ALREADY PUTS `separation` BETWEEN ROWS — SUBTRACT IT OR THE OPENING OVERSHOOTS.**
-	# `_row_open_height()` is the TOTAL distance the mode asks for (a full card, or a card minus the
+	# `row_open_height` is the TOTAL distance the mode asks for (a full card, or a card minus the
 	# jump), but the row-to-row pitch is `strip + separation`: the containers get
 	# `add_theme_constant_override("separation", separation)` and `slot_center_global` adds the same
 	# term. Sizing the STRIP to the full height therefore produced height + separation — an extra
 	# `4 * card_scale` (10 px at the shipped scale), which the owner saw as *"an odd gap between the
-	# rows, looks like an extra few pixels of separation"*. The strip only has to supply the remainder.
-	var want := _row_open_height() - float(separation)
-	return maxf(want - float(CardVisual.card_separation_play_custom), 0.0) * t
+	# rows, looks like an extra few pixels of separation"*. `row_open_span` supplies the remainder.
+	return row_open_span(SettingsManager.settings, float(separation)) * t
 
 ## Does any column in this zone hold a card BELOW `row_z` — i.e. is there anything for this row to
 ## uncover? The bottom row of the deepest column covers nothing and must stay put.
+## ⚠ Read from STATE, not the control tree: rebuilds are DEFERRED, so mid-mutation the child counts
+## describe the previous board — and `slot_center_global` (pure math, prop-anchored every frame)
+## routes through here, so a tree read made its geometry depend on rebuild timing after all.
 func _row_covers_anything(zone_x: int, row_z: int) -> bool:
-	var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
-	if not hbox: return false
-	# child 0 is the zone/type header, so a card at row `row_z + 1` is child `row_z + 2`.
-	for col : Node in hbox.get_children():
-		if col.get_child_count() > row_z + 2: return true
+	var game := CardEnvironment.get_current_game()
+	if not game: return false
+	var zone : Array[ArrayCardData] = game.state.upper_zone if zone_x == 0 else game.state.lower_zone
+	for col : ArrayCardData in zone:
+		if col.datas.size() > row_z + 1: return true
 	return false
 
 ## Everything the rows ABOVE `row_z` in this zone have pushed down. ⚠ Rows above only: a row's own
@@ -680,6 +694,7 @@ func _position_focus_info() -> void:
 ## everything again. The set REPLACES: a row that has left the set eases shut rather than being
 ## dropped, which is why `_row_open` outlives `_row_open_wanted`.
 func set_reveal_cards(cards: Array[CardData]) -> void:
+	flush_rebuild()  # reads ui_data (via coord_of_data) — a hook may have just compacted the board
 	var wanted : Dictionary[Vector2i, bool] = {}
 	for data : CardData in cards:
 		var v := coord_of_data(data)
@@ -687,11 +702,6 @@ func set_reveal_cards(cards: Array[CardData]) -> void:
 	_row_open_wanted = wanted
 	for key : Vector2i in wanted:
 		if not _row_open.has(key): _row_open[key] = 0.0
-	set_process(true)
-
-## Close every open row. ⚠ Eased, not snapped — same reason the lights fade rather than vanish.
-func clear_reveal() -> void:
-	_row_open_wanted = {}
 	set_process(true)
 
 ## Which slot a card occupies, or `(-1,-1,-1)` if it is not on the board. Derived from the containers
@@ -785,7 +795,12 @@ func update_score_controls() -> void:
 	set_score_zone(true, upper_zone_left, game_state.scores_row_upper)
 	set_score_zone(true, lower_zone_left, game_state.scores_row_lower)
 	set_score_zone(false, middle_zone_right, game_state.scores_col)
-	
+	# K12: set_score_zone just reset every gutter to its base height, and banking a line score
+	# reaches here while the scored row is still OPEN (rows close on the act's release). Without
+	# this the open row's gutter collapsed and the score numbers desynced from their rows —
+	# `_ease_row_openings` never re-applies once a row has settled at its target.
+	_apply_row_openings()
+
 func set_score_zone(is_row:bool, zone:BoxContainer, scores:Array[BigNumber]) -> void:
 	var scores_size := scores.size()
 	if is_row and scores_size == 0: scores_size += 1 # there should always be at least 1 control as buffer

@@ -720,20 +720,8 @@ func test_hoop_short_column_row_hold() -> void:
 # FULL VIEW SNAPSHOTS (real GameView)
 # ==============================================================================
 func test_game_view_deal_snapshot() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var src_cards := TestDecks.seeded_deck()
-	var src_rules := TestDecks.standard_rules()
-	var run := RunManager.new_run(src_cards, src_rules)
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	seed(424242)
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	seed(424242)  # before stand-up is fine: new_run uses its own RNG, the tree work after uses this
+	var view : GameView = await _stand_up_view()
 	var g := view.game
 	await g.next()
 	await g.next()
@@ -749,7 +737,7 @@ func test_game_view_deal_snapshot() -> void:
 			"the real dealt board keeps every PlayArea CanvasItem at z 0",
 			"nonzero: %s" % str(pa_offenders.map(func(n: Node) -> String: return String(n.name))))
 	check(order.size() > 0, "the dumper walked the full GameView tree", str(order.size()))
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## ⚠ **THE LIGHT LAYER'S POSITION IS A CONTRACT AND IT FAILS SILENTLY.** `DESIGN.md` v9 / GAP-004:
 ## the dim exempts NOTHING — props, score popups, the focus panel, the HUD and the card glow all dim,
@@ -760,17 +748,7 @@ func test_game_view_deal_snapshot() -> void:
 ##
 ## It asserts the ORDER, not a pixel — a screen read is what this project does not have.
 func test_light_layer_is_over_everything() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	var root := view.get_node("SceneRoot")
 	var layer : LightLayer = root.get_node_or_null("LightLayer") as LightLayer
 	check(layer != null, "the GameView carries a LightLayer under SceneRoot",
@@ -786,7 +764,7 @@ func test_light_layer_is_over_everything() -> void:
 		# "stop" path that could disagree with the light set.
 		check(not layer.is_lit() and is_equal_approx(layer._dim, 0.0),
 				"a board with no spotlight is not dimmed at all (QR2=d)", str(layer._dim))
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## ⚠ **THE WHOLE LOOP, END TO END, AND IT IS THE ONLY TEST THAT CAN CATCH A BROKEN WIRE.** Every
 ## piece of phase 2 is asserted on its own — the cue emits (S10), the allocator places lamps (S14),
@@ -796,17 +774,7 @@ func test_light_layer_is_over_everything() -> void:
 ##
 ## It drives the REAL `CardEnvironment` cue on a REAL dealt board, then asserts the layer came up.
 func test_the_spotlight_wire_lights_the_layer() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	await view.game.next()
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
@@ -927,7 +895,7 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	check(not layer.is_lit(),
 			"...and once faded, retiring the lights is what lowers the dim — no separate stop path",
 			"still lit after %.2fs" % gone)
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## **CHART E — THE TRAVEL.** The brief's requirement in one sentence: *"spotlights spawned during
 ## scoring phase need to move their spotlights to next row/col after done with current set, **no
@@ -938,17 +906,7 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 ## section — the exact thing the brief forbids. Nothing caught it because a still frame of a rebuilt
 ## set and a still frame of a travelled set are identical; only the frames BETWEEN them differ.
 func test_the_light_travels_between_sections() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	await view.game.next()
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
@@ -960,7 +918,7 @@ func test_the_light_travels_between_sections() -> void:
 	for data : CardData in view.play_area.data_card.keys(): all.append(data)
 	check(all.size() >= 4, "the dealt board has enough cards for two disjoint sections", str(all.size()))
 	if all.size() < 4:
-		await _teardown_view(view, prev_run, prev_save_info)
+		await _teardown_view(view)
 		return
 	var first : Array[CardData] = [all[0], all[1]]
 	var second : Array[CardData] = [all[2], all[3]]
@@ -1011,7 +969,7 @@ func test_the_light_travels_between_sections() -> void:
 			if l.centre.is_equal_approx(_centre_for(view, second[0])): arrived = true
 	check(arrived, "and the travelling light ARRIVES on its new card (E11)",
 			"never reached the target in %.1fs" % travelled)
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## **S15 / CHART T — THE MOMENTARY CUE DRAWS, AND IT DRAWS OUTSIDE SCORING.**
 ##
@@ -1027,17 +985,7 @@ func test_the_light_travels_between_sections() -> void:
 ## RETIRES ITSELF with nobody telling it to — the section beam never does that. So the assertions
 ## below are about what MOVED: lit at the start, still lit through the hold, dark on its own afterwards.
 func test_the_momentary_cue_draws_outside_scoring() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	await view.game.next()
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
@@ -1135,7 +1083,7 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 				"...and every section light stays on its own card — the cue steals no lamp",
 				"%d of %d kept" % [kept, section.size()])
 		view.spotlight_director.retire()
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## **S16 / S17 — THE ROW OPENS, AND `slot_center_global` KNOWS IT (K13, gate G3.1).**
 ##
@@ -1145,17 +1093,7 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 ## detaches from its slot while the board still looks right. The design flagged the function by name
 ## (K13) for exactly this reason.
 func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
 	var pa := view.play_area
 
@@ -1181,7 +1119,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(target != null, "the dealt board has a COVERED row 0 to score — the case S16 exists for",
 			"no stacked column found even after dealing until stacked")
 	if target == null:
-		await _teardown_view(view, prev_run, prev_save_info)
+		await _teardown_view(view)
 		return
 
 	check(is_equal_approx(pa.row_open_extra(below.x, 0), 0.0),
@@ -1210,7 +1148,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 		# needs a board with a real stack (a `Next` that drops one). Until a fixture builds that, S16's
 		# headline behaviour is asserted only by the geometry test above, never end to end.
 		check(true, "NOTE: the covered-card reveal is UNTESTED — this fixture is one card deep")
-		await _teardown_view(view, prev_run, prev_save_info)
+		await _teardown_view(view)
 		return
 	check(pa.row_open_extra(below.x, 0) > 0.0,
 			"S16: the scored card's row OPENS, driven by the section signal",
@@ -1300,7 +1238,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(absf(pa.slot_center_global(below).y - closed_y) < 1.0,
 			"...and the slot below returns to exactly where it started",
 			"%.1f vs %.1f" % [pa.slot_center_global(below).y, closed_y])
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 ## **GATE G3.1 + G3.2 — a prop anchored BELOW an expansion stays glued to its slot, and the row score
 ## gutter stays level with its row, through the WHOLE expand/collapse cycle.**
@@ -1311,17 +1249,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 ## the prop would swim against the board for the half-second in between. So this samples EVERY frame
 ## from closed through fully open and back, and asserts the invariant on all of them.
 func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
 	var pa := view.play_area
 	var pl := pa.prop_layer
@@ -1336,7 +1264,7 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 		break
 	check(target != null, "G3.1: the board has a row-0 card to score", "none found")
 	if target == null:
-		await _teardown_view(view, prev_run, prev_save_info)
+		await _teardown_view(view)
 		return
 
 	# A REAL `PropVisual` on the REAL layer, pinned to the slot below the opening, exactly as
@@ -1398,7 +1326,7 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 			"gutter was off its row by %.2f px at worst" % worst_gutter)
 	pl._visuals.erase(prop)
 	if is_instance_valid(vis): vis.queue_free()
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
 
 ## **DEAL UNTIL A COLUMN IS ACTUALLY STACKED — WITHOUT THIS, S16 CANNOT BE TESTED AT ALL.**
@@ -1427,19 +1355,7 @@ func _tick_seconds() -> float:
 	return get_process_delta_time()
 
 func test_end_screen_above_board() -> void:
-	backup_real_save()
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var src_cards := TestDecks.seeded_deck()
-	var src_rules := TestDecks.standard_rules()
-	var run := RunManager.new_run(src_cards, src_rules)
-	Main.save_info = run
-	run.pending_goal = 1
-	run.pending_node_id = 2
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view : GameView = await _stand_up_view()
 	var g := view.game
 	await g.next()
 	await g.next()
@@ -1452,14 +1368,36 @@ func test_end_screen_above_board() -> void:
 	check(view.win_screen.visible, "the win overlay is shown")
 	check(win_rank > pa_rank, "the win/lose overlay renders above the whole PlayArea",
 			"win %d vs playarea %d" % [win_rank, pa_rank])
-	await _teardown_view(view, prev_run, prev_save_info)
+	await _teardown_view(view)
 
-func _teardown_view(view: GameView, prev_run: RunState, prev_save_info: RunState) -> void:
+## The stand-up's other half — stashed here so the eight GameView tests share ONE copy of the
+## twelve-line ceremony instead of eight slightly-divergeable ones.
+var _prev_run : RunState = null
+var _prev_save_info : RunState = null
+
+## Park the save, start a seeded run, instantiate a real GameView and settle it two frames.
+## Callers needing a deterministic global stream call `seed()` BEFORE this — `new_run` uses its
+## own RNG, so the order is safe.
+func _stand_up_view() -> GameView:
+	backup_real_save()
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return view
+
+func _teardown_view(view: GameView) -> void:
 	view.queue_free()
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save()
-	RunManager.run = prev_run
-	Main.save_info = prev_save_info
+	RunManager.run = _prev_run
+	Main.save_info = _prev_save_info

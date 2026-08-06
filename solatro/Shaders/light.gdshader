@@ -14,8 +14,9 @@ render_mode blend_premul_alpha, unshaded;
 //     additive light = clamp(coverage) * the light colour           (H8)
 //
 // ⚠ **THE DIM IS DRIVEN BY BEAM COUNT, NOT BY ACT STATE** (`QR2`=d). `u_dim` is non-zero exactly
-// while a light is live, wherever that happens — including outside scoring entirely, where
-// `u_dim_scale` makes it shallower (`Q245`=c). Nothing here knows what a submit is.
+// while a light is live, wherever that happens — including outside scoring, where the CPU-side
+// `_dim_target()` scales it shallower (`Q245`=c) before it is pushed. Nothing here knows what a
+// submit is.
 //
 // ⚠ **THIS SURFACE SITS ABOVE EVERYTHING, WITH NO EXEMPTIONS** — `DESIGN.md` v9, GAP-004, owner:
 // *"dim doesnt last long enough to matter for readability, dim everything without worrying about
@@ -57,11 +58,6 @@ uniform int u_light_count = 0;
 // 0..1, and **non-zero only while a BEAM is live** (`QR2`=d). The travel of this value is the whole
 // of the dim's timing; there is no act state anywhere in this file.
 uniform float u_dim : hint_range(0.0, 1.0) = 0.0;
-// A shallower dim outside scoring than inside it (`Q245`=c). The owner's scrutiny note on that
-// question is the reason it is a separate multiplier rather than folded into `u_dim`: *"(a) means
-// the screen pulses dark on every single card you place"*, so the shallow case has to be tunable
-// without touching the deep one.
-uniform float u_dim_scale : hint_range(0.0, 1.0) = 1.0;
 // ⚠ **A PALETTE ENTRY, NOT BLACK** (`Q79`=a), and UNIFORM, not a vignette (`Q80`=c chose subtle
 // noise — see `u_dim_noise`). Pushed by the CPU from the palette, because a shader may not resolve
 // a palette index.
@@ -200,6 +196,7 @@ void fragment() {
 	// literally. Logged in `design/spotlight/ASSUMPTIONS.md`.
 	float coverage = 0.0;
 	float add_cover = 0.0;
+	float grain = -1.0;  // beam grain, computed lazily below — see its note
 	for (int i = 0; i < MAX_LIGHTS; i++) {
 		if (i >= u_light_count) break;
 		vec4 L = u_lights[i];
@@ -228,9 +225,13 @@ void fragment() {
 			// ⚠ ONE factor for BOTH terms: the grain is in the light itself, so a beam that adds
 			// grainy light while punching a smooth hole in the dim would show its own noise as a
 			// second, contradictory texture.
-			vec2 q = fx_pixel_snap(p, max(u_pixel, 0.01)) * u_beam_noise_scale;
-			float n = fx_fbm(q + vec2(0.0, -u_time * u_beam_noise_scroll * u_beam_noise_scale));
-			beam *= mix(1.0, 0.55 + n * 0.9, u_beam_noise);
+			// ⚠ A function of the FRAGMENT and clock only — identical for every light — so the FBM
+			// (3 octaves, 12 hashes) runs at most once per fragment however many beams overlap.
+			if (grain < 0.0) {
+				vec2 q = fx_pixel_snap(p, max(u_pixel, 0.01)) * u_beam_noise_scale;
+				grain = fx_fbm(q + vec2(0.0, -u_time * u_beam_noise_scroll * u_beam_noise_scale));
+			}
+			beam *= mix(1.0, 0.55 + grain * 0.9, u_beam_noise);
 		}
 		float beam_add = beam * u_beam_intensity;
 		beam *= mix(u_beam_intensity, 1.0, along);
@@ -253,7 +254,7 @@ void fragment() {
 
 	// H7 and H8, as one premultiplied output: the alpha IS the dim and the rgb IS the light. The
 	// same `1 - lit` term darkens less where the light is, which is the hole the beam punches.
-	float dim = u_dim * u_dim_scale * (1.0 - lit);
+	float dim = u_dim * (1.0 - lit);
 	if (u_dim_noise > 0.0 && dim > 0.0) {
 		dim *= 1.0 + (fx_bayer(p) - 0.5) * u_dim_noise;
 	}

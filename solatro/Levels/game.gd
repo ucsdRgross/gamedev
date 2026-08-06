@@ -278,8 +278,9 @@ func _resume_show() -> void:
 	# ⚠ The debug history STARTS from whatever the save resumed to — it cannot recover snapshots the
 	# production cap already trimmed, and pretending otherwise would offer a rewind that silently
 	# stops working partway. Uncapped from HERE ON is the honest promise.
-	_debug_history = save_history.duplicate()
-	_debug_redo.clear()
+	if OS.is_debug_build():  # same guard as every other _debug_* member — release never reads these
+		_debug_history = save_history.duplicate()
+		_debug_redo.clear()
 	state = _runtime_state(save_history[-1])
 	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
 	# into the state being replaced). The run save stays authoritative: snapshots from before
@@ -734,6 +735,10 @@ func _perform_submit() -> void:
 		await _release_spotlight()
 	_act_cancellable = false
 	if act_cancelled:
+		# The restored snapshot fixes the MODEL, but the view is not derived from state: the
+		# empty section is the only thing that closes revealed rows and retires beams (QR2=d).
+		# No sweep — the doomed state's hooks must not fire.
+		spotlight_section_changed.emit([] as Array[CardData])
 		_restore_pre_act_board("cancelled submit")
 		return
 	state.apply_act_score()

@@ -103,12 +103,15 @@ func blocks_spotlight() -> bool:
 ## (`coord.z == -1`) is blocked by any card in its column, which is the same rule
 ## `is_data_topmost` expressed for headers ("topmost exactly when its column is empty").
 func _blocked_from_above() -> bool:
+	# ⚠ **DEGENERATE LOOKUPS FAIL CLOSED (blocked → dark), exactly as `is_data_topmost` did.**
+	# `position_of` is a revision-cached index, so a card read mid-mutation (before the bump) can
+	# miss — and failing OPEN would spotlight a card the board cannot even locate.
 	var coord := game.state.position_of(data)
-	if coord == Vector3i.MIN: return false
+	if coord == Vector3i.MIN: return true
 	var zone := game.get_zone_from_vec3(coord)
-	if coord.y < 0 or coord.y >= zone.size(): return false
+	if coord.y < 0 or coord.y >= zone.size(): return true
 	var col : ArrayCardData = zone[coord.y]
-	if not col: return false
+	if not col: return true
 	for z in range(maxi(coord.z + 1, 0), col.datas.size()):
 		if _card_blocks(col.datas[z]): return true
 	return false

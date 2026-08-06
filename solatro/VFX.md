@@ -45,8 +45,11 @@ ARCHITECTURE_REVIEW, the latter wins.
 | `UI/Fx/particle_engine.gd`, `particle_spec.gd` | The game's ONLY particle path (embers are its first client). |
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
 | `Cards/Pips/pip_suit.gd`, `Assets/color_picker.gdshader` | Suit pips and the palette recolour shader. |
+| `Shaders/glow.gdshader` + `UI/Fx/fx_glow_style.gd` + `Shaders/Styles/glow_{card,circle,beam}.tres` | **The spotlight GLOW** — the halo on a lit card's silhouette (peaks ON the outline, falls both ways). Rides the same `FxAttachment` path as fire. |
+| `Shaders/light.gdshader` + `UI/light_layer.gd` + `UI/Fx/fx_spotlight_style.gd` + `Shaders/Styles/spotlight_default.tres` | **The spotlight LIGHT LAYER** — one full-screen surface: the dim, every circle and beam. `UI/spotlight_director.gd` + `UI/spotlight_origins.gd` decide who is lit and where the lamps sit. See `HANDOFF_spotlight.md`. |
 | `Tools/fx_editor.tscn` | **Live FX tuning in the editor** — open it, edit an `FxStyle`, watch the real shaders react. Start here for any art tuning (§4g). |
-| `Scripts/visual_log.gd` + `Tools/spotlight_tool.tscn -- --trace` | **The visual log — behaviour over TIME, which no snapshot can show.** Timestamped, frame-numbered events for everything the presentation layer does. Use it for any "did these happen together or in sequence", "did the board move under this", or "why did that draw nothing" question. Logs land in `user://logs/`; read `EventLog.summary()` first. See `HEADLESS_TESTING.md` §0c. |
+| `Tools/spotlight_tool.tscn` | **Live SPOTLIGHT tuning** — real cards, real `LightLayer`, real glow; presets from `spotlight_scenarios.json`; `-- --verify` / `-- --trace` / `-- --shoot-all`. |
+| `Scripts/event_log.gd` (`EventLog`) + `Tools/spotlight_tool.tscn -- --trace` | **The visual log — behaviour over TIME, which no snapshot can show.** Timestamped, frame-numbered events for everything the presentation layer does. Use it for any "did these happen together or in sequence", "did the board move under this", or "why did that draw nothing" question. Logs land in `user://logs/`; read `EventLog.summary()` first. See `HEADLESS_TESTING.md` §0c. |
 | `Tests/Visual/` | `test_pixels.gd` (asserting), `fx_snapshot.gd` + `prop_art_snapshot.gd` + `fx_behind.gd` (reviewable — the last one draws hosts FILLED, for the seam), `fx_cost.gd` (the GPU bench, asserts nothing), `pixel_probe.gd` (the shared oracle + image readers), `snapshot_scene.gd` (the harness base). |
 
 ---

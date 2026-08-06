@@ -175,16 +175,6 @@ static func dump_by_frame() -> String:
 		out.append("f=%-7d (%d) %s" % [f, evs.size(), ", ".join(names)])
 	return "\n".join(out)
 
-## Every event on one channel whose `what` contains `needle`, as text. For asking one question of a
-## long log without reading it.
-static func filter(channel: StringName, needle: String = "") -> Array[Event]:
-	var out : Array[Event] = []
-	for e : Event in _events:
-		if e.channel != channel: continue
-		if not needle.is_empty() and not e.what.contains(needle): continue
-		out.append(e)
-	return out
-
 static func count() -> int:
 	return _events.size()
 

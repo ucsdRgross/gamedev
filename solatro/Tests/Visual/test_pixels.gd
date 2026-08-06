@@ -574,6 +574,22 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				% [no_art, worst_no_art, no_mask, worst_no_mask])
 		check(checked > 100, "t=%.2f: the real card's face rendered at all" % t,
 				"only %d cells were decidable — the card did not draw" % checked)
+		# ⚠ **THE COUNT IS STILL ASSERTED — the distance bars alone cannot see a SHALLOW, UNIFORM
+		# shift.** A boundary moved one unit along the whole silhouette keeps every miss under the
+		# distance bars while the disagreement count explodes; the old exact-zero bar caught that and
+		# its replacement must too. At REST the mask and face agreed exactly when this was pinned
+		# (2026-08-05), so rest keeps the exact bar; the deformed poses' measured totals were 58/104/60
+		# and get a pinned ceiling. ⚠ DO NOT RAISE IT TO GO GREEN.
+		if is_equal_approx(t, 0.0):
+			check(no_art == 0 and no_mask == 0,
+					"t=0.00: at rest the mask and the drawn face agree exactly",
+					"%d mask-without-art, %d art-without-mask at REST — alignment itself broke"
+					% [no_art, no_mask])
+		else:
+			check(no_art + no_mask <= 130,
+					"t=%.2f: the disagreement count stays at its measured scale" % t,
+					("%d cells disagree (measured worst was 104) — a shallow uniform boundary shift "
+					+ "the distance bars cannot see") % (no_art + no_mask))
 		# ⚠ **THE BAR IS A ONE-CELL BAND, NOT EXACT AGREEMENT, AND THE OLD BAR WAS UNACHIEVABLE.**
 		# This asserted `no_art == 0 and no_mask == 0`. That demands a 24-gon reproduce the alpha
 		# boundary of a BILINEARLY SKINNED TEXTURE to sub-cell precision, which no polygon can do:
@@ -632,8 +648,11 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 		# ⚠ **DO NOT RAISE IT TO GO GREEN.** If this fails, `corner_points()` changed; fix the model or
 		# re-measure deliberately. The real fix needs the corner cell's fourth (interior) vertex, which
 		# means re-doing the skinning from `Polygon2D.bones` weights.
+		# In CELLS, like EDGE_WEDGE_DRIFT above (`cell` is 1.0 today, so the numbers read the same) —
+		# two bounds in different units would silently invert their relative strictness the first
+		# time someone tunes `pixel` on fire_card.tres.
 		const CORNER_BITE_DRIFT := 2.5
-		check(worst_corner <= CORNER_BITE_DRIFT,
+		check(worst_corner <= cell * CORNER_BITE_DRIFT,
 				"t=%.2f: and the CORNER bite stays within its measured %.1f-unit approximation"
 				% [t, CORNER_BITE_DRIFT],
 				("worst is %.2f art units from the outline at %s — corner_points()'s parallelogram "

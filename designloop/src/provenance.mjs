@@ -25,8 +25,13 @@
 //
 // Pure except for the caller handing in document text; no I/O here.
 
-/** A question ID as it appears in prose. */
-const RE_ID = /\b(QR\d+|Q\d+[a-z]?)\b/g;
+/**
+ * A question ID as it appears in prose — the scanning form of `grammar.ID_PATTERN`, PLUS gap ids
+ * (`GAP-008`; `gaps.isGapId`'s alphabet). ⚠ Gap answers are agent-authored free text with no
+ * lettered option — precisely the population these audits exist for — and until gap ids matched
+ * here, `restatementsOf` returned nothing for them and `quoteAudit` skipped every one, silently.
+ */
+const RE_ID = /\b(QR\d+|Q\d+[a-z]?|[A-Z]+-\d+)\b/g;
 
 /**
  * Hedges that mark an answer as thinking-aloud rather than settled. `Q16`'s note opens with the
@@ -123,8 +128,12 @@ export function softAnswers(answers = {}, questions = []) {
  * answers "did someone carry the owner's actual wording across", not "do these mean the same".
  */
 export function sharesPhrase(a, b, words = 5) {
-  const left = normalise(a).split(' ').filter(Boolean);
-  const right = normalise(b).split(' ').filter(Boolean);
+  return sharesWords(normalise(a).split(' ').filter(Boolean),
+    normalise(b).split(' ').filter(Boolean), words);
+}
+
+/** The gram test over pre-split word arrays, so a caller scanning many pairs splits each side once. */
+function sharesWords(left, right, words = 5) {
   if (left.length < words || right.length < words) return false;
   const grams = new Set();
   for (let i = 0; i + words <= right.length; i++) grams.add(right.slice(i, i + words).join(' '));
@@ -148,17 +157,25 @@ export function sharesPhrase(a, b, words = 5) {
 export function quoteAudit(answers = {}, questions = [], docs = []) {
   const soft = softAnswers(answers, questions);
   const out = [];
+  if (!soft.length) return out;
+  // Per-DOC work hoisted out of the per-answer loop: DESIGN.md is ~256 KB, and re-splitting and
+  // re-normalising it for every (answer × doc) pair made this the whole cost of GET /provenance
+  // (measured ~700 ms; hoisted, ~half). Same result, byte for byte.
+  const prepared = docs.map((doc) => ({
+    doc,
+    cites: citationLines(doc.text),
+    words: normalise(doc.text).split(' ').filter(Boolean),
+  }));
   for (const entry of soft) {
-    for (const doc of docs) {
-      const cites = restatementsOf(entry.id, [doc], { includeSelf: false });
-      if (!cites.length) continue;
-      if (sharesPhrase(doc.text, entry.note)) continue;
-      out.push({
-        id: entry.id,
-        doc: doc.name,
-        lines: cites.map((c) => c.line),
-        note: entry.note,
-      });
+    const own = new RegExp(`^-\\s+\\*\\*${entry.id}\\*\\*`);
+    const noteWords = normalise(entry.note).split(' ').filter(Boolean);
+    for (const p of prepared) {
+      const lines = p.cites
+        .filter((c) => c.ids.includes(entry.id) && !own.test(c.text))
+        .map((c) => c.line);
+      if (!lines.length) continue;
+      if (sharesWords(p.words, noteWords)) continue;
+      out.push({ id: entry.id, doc: p.doc.name, lines, note: entry.note });
     }
   }
   return out;

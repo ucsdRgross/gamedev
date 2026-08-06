@@ -1369,9 +1369,9 @@ ordering enforced between them.
   overriding the project's NEAREST for everything drawn inside it (`test_pixels.gd`, `spotlight_tool.gd`).
 - **`_rebuild()` frees the `LightLayer`** (it lives in the SubViewport), so every section change reset
   `_show`/`_dim` to 0 and re-ramped the show from black — a blink invisible in the editor's irregular
-  `_process` and obvious at a played 60 fps. The eased values are now carried across.
-  ⚠ **Still true and worth fixing:** a section change tears down the whole board only to move the glow.
-  A `_refresh_glow()` is the proper fix.
+  `_process` and obvious at a played 60 fps. The eased values are carried across for the rebuilds that
+  remain (scenario/knob edits); **since 2026-08-06 a section change calls `_refresh_glows()` and
+  rebuilds nothing.**
 - **A beam travelled from `(0,0)`** — the screen's top-left — because `_slot_centre()` returns ZERO
   while `_rebuild()` recreates the cards. It now appears already aimed when the source is unknown.
 
@@ -1381,3 +1381,38 @@ ordering enforced between them.
 `on_spotlight`, and the only one in the game was a RULES-stage card with no `CardVisual`.
 `Cards/Skills/spotlight_probe.gd` plus the debug bar's **Cue** button exist to make it reachable.
 ⚠ **Do NOT "fix" this by unfiltering the signal — that recreates GAP-005.**
+
+### 9g. Rules the 2026-08-06 review pass added (each an instance of a shape above)
+
+Ten more defects, found by review rather than by eye; reasoning per fix is
+`design/spotlight/ASSUMPTIONS.md` (2026-08-06 entries). The standing rules they leave behind:
+
+- **A cancelled act must tear down the VIEW, not only the model** — the empty
+  `spotlight_section_changed` is the only thing that closes rows and retires beams, and a restored
+  snapshot does not reach the view (9a: model and view are two representations of "what is lit").
+- **Spotlight lookups FAIL CLOSED.** `_blocked_from_above()`'s degenerate branches return blocked —
+  `position_of` is a revision-cached index and can miss mid-mutation; failing open spotlights a card
+  the board cannot locate.
+- **Flush before reading slot bindings.** Any handler of a board signal that walks
+  `ui_data`/`data_card` calls `flush_rebuild()` first; coverage questions read `game.state`, never
+  control child counts (rebuilds are deferred, so tree reads describe the previous board).
+- **Board geometry the tool also draws lives in `PlayArea` statics** (`row_open_height` /
+  `row_open_span`) — a hand-copied formula in the tool is 9a's shape and diverged four ways before
+  it was shared.
+- **Any harness that runs `RunManager.new_run()` parks the player's save first** —
+  `test_base.gd`'s `backup_real_save`/`restore_real_save` are static for exactly this; preload the
+  script by path (the `SolatroTest` global name does not resolve from a `@tool` script).
+- **`LightLayer` skips identical uniform uploads and hides itself when idle** (`_push_lights`
+  compares against the last push; `visible` follows `lights-or-dim`, processing never stops). Do not
+  re-add per-frame pushes "for simplicity" — the director re-pushes every frame by design and relies
+  on the layer to dedupe.
+- **`glow.gdshader`'s over-art alpha rides `clamp(u_brightness, 0, 1)` and `COLOR.a`** — alpha
+  without brightness drew a DARK DISC at `fx_intensity = 0`, inverting gate G2.4 (9b's shape: two
+  channels of one visual scaled by different envelopes).
+- **`SpotlightOrigins.advance()` re-spreads a view sorted by x**, never by index — `_subdivide()`
+  appends, so index order and x order diverge and an index walk teleports taken lamps.
+- **A beam with no visual holds its `last_pos`** (`_Beam.last_pos`), never `(0,0)` — the 9e guard
+  the tool had and the shipped director lacked.
+- **Open design questions go to gaps, not code**: GAP-010 (does `act_overrun` void the line's
+  score?) and GAP-011 (do score hooks fire on an emptied section?) are open; the code deliberately
+  keeps the pre-review behaviour until answered.

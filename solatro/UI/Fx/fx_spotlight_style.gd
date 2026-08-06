@@ -11,9 +11,8 @@ extends FxStyle
 ## `LightLayer` was pushing **six** (`u_time`, `u_dim`, `u_lights`, `u_beams`, `u_light_count`,
 ## `u_brightness`). Every other one sat at its SHADER DEFAULT, unreachable from GDScript —
 ## `u_circle_intensity`, `u_beam_intensity`, `u_beam_softness`, `u_circle_softness`, `u_light_color`,
-## `u_dim_color`, `u_dim_noise`, `u_pixel` and the noise trio. `u_dim_scale` was declared and never
-## pushed at all. Meanwhile `circle_radius` and `beam_width_at_origin` — both §16 knobs — had become
-## `const`s in `SpotlightDirector`.
+## `u_dim_color`, `u_dim_noise`, `u_pixel` and the noise trio. Meanwhile `circle_radius` and
+## `beam_width_at_origin` — both §16 knobs — had become `const`s in `SpotlightDirector`.
 ##
 ## ⚠ **THE SPLIT WITH `PlayerSettings` IS NOT ARBITRARY AND IS THE DESIGN'S OWN:**
 ##   * **TIMING lives in `PlayerSettings`** — every duration is a fraction of `Game.get_delay()`

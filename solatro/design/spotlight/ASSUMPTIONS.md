@@ -132,3 +132,37 @@ One line each, citing the node it was taken under.
   is a visible hole rather than a brief double brightness. `Q249`=(a)'s *"a second cue may start while
   the first is still retiring"* is what forbids the cue from sharing the section's replace-the-set
   semantics at all.
+- **2026-08-06, review pass (G2.4, `Q83`).** `glow.gdshader`'s over-art ALPHA now rides
+  `clamp(u_brightness, 0, 1)` and the host's `COLOR.a`. At `fx_intensity = 0` the glow emitted
+  `rgb = 0` with alpha standing, and `blend_premul_alpha`'s `dst * (1 - a)` drew a DARK DISC over
+  every spotlit card — the inverse of G2.4's "scales the lights toward nothing". At the shipped
+  brightness (1.0) the output is bit-identical, so no look changed. Reversible: one factor.
+- **2026-08-06, review pass (D22/D23, `QR2`=d).** A CANCELLED submit now emits the empty
+  `spotlight_section_changed` before `_restore_pre_act_board` — view-only teardown, no sweep (the
+  doomed state's hooks must not fire). Without it the revealed rows stayed open forever and the
+  next act inherited the cancelled act's beams and origin band; nothing else closes the view
+  (`clear_reveal`/`retire()` had no callers, and the model restore does not reach the view).
+- **2026-08-06, review pass (A8, GAP-001).** `CardModifier._blocked_from_above()`'s three
+  degenerate-lookup branches return **blocked** (dark), restoring `is_data_topmost`'s fail-closed
+  default — the port had inverted them to fail-open, so a card the (revision-cached) index could
+  not locate read as spotlit mid-mutation.
+- **2026-08-06, review pass (`Q245`=c).** `u_dim_scale` DELETED from `light.gdshader` and the
+  layer: the casual scale is applied CPU-side in `_dim_target()` and the uniform was pushed as a
+  literal 1.0 forever — a dead multiply whose comment claimed the opposite.
+- **2026-08-06, review pass (K12).** `PlayArea.update_score_controls()` re-applies row openings
+  after `set_score_zone` — banking a line score reaches it while the scored row is still open and
+  the reset collapsed the gutters (the K12 silent desync its own header warns about).
+- **2026-08-06, review pass (`Q252`=b).** `set_reveal_cards` and the director's two signal
+  handlers `flush_rebuild()` before reading slot bindings; `_row_covers_anything` reads
+  `game.state` instead of control child counts. Both closed the same seam: a hook's compaction
+  queues a DEFERRED rebuild, so tree reads between mutation and flush described the previous board.
+- **2026-08-06, review pass (I10–I12, `Q251`=b).** `SpotlightOrigins.advance()` re-spreads in
+  x ORDER (sorted view), not index order — after `_subdivide()` appends midpoints the two diverge,
+  and the index-order walk permuted the band, teleporting taken lamps under live beams.
+- **2026-08-06, review pass (chart E).** `SpotlightDirector._Beam.last_pos`: a beam whose card
+  lost its visual holds its last drawn position instead of collapsing to `(0,0)` — the tool had
+  this guard, the shipped director did not (the owner's "flying in from outside the board").
+- **2026-08-06, review pass (`Q260`/`Q266`).** `ScoringSection.refresh()` re-collects through a
+  `Callable` captured by `of_line` instead of branching on `origin` — the field's own doc says
+  "NEVER branched on for behaviour", and a future non-line shape would have been silently re-read
+  as a column.

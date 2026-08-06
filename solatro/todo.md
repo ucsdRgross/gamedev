@@ -8,11 +8,14 @@ regression-critical residue in ARCHITECTURE_REVIEW.md instead of keeping a log h
 `--headless`): the new PIXELS suite asserts on rendered pixels and FAILS rather than skips under a
 dummy renderer. HEADLESS_TESTING.md §0.
 
-**The things actually waiting on someone (2026-07-28):** ⬜ **owner playtest** of the universal
+**The things actually waiting on someone (2026-08-06):** ⬜ **owner playtest** of the universal
 palette (below — the fire and ball colours CHANGED) · ⬜ **owner playtest** of the shader FX
 (FX_SHADER_PLAN §10, 17 steps) · ⬜ **delete
 FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes (their residue is already folded into
-ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step). Everything else below is unscheduled backlog.
+ARCHITECTURE_REVIEW §4g/§4h — that is T16's last step) · ⬜ **spotlight: answer GAP-010/GAP-011**
+(overrun banking; emptied-section hooks — `design/spotlight/gaps/`), **judge G2.2** (rank-glyph
+readability) and **pick `spotlight_separation_mode`** — all owner-only; status ledger is
+HANDOFF_spotlight.md. Everything else below is unscheduled backlog.
 
 **Anything visual-effects — fire, juggling, prop art, the FX shaders — starts at
 [VFX.md](VFX.md)**, which carries that whole backlog and its known bugs. **The fire emitter was
@@ -159,11 +162,12 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on worker
   thread) — watch console; history cap bounds it.
-- **PIXELS: `test_the_card_mask_is_the_card_the_player_sees` fails 3 of 4 poses (t=0.15/0.30/0.45;
-  t=0.00 is 0/0). Diagnosed 2026-08-05, NOT fixed — the fix is a model choice, so it is the owner's.**
+- **PIXELS: `test_the_card_mask_is_the_card_the_player_sees` is GREEN under pinned bounds (see the
+  next item); the two model approximations below are diagnosed 2026-08-05, NOT fixed — the fix is a
+  model choice, so it is the owner's.**
   The `[mask vs face WHERE]` line in `test_pixels.gd` buckets every disagreeing cell and shows **two
   independent approximations**, not one bug: corner cells 22/62/60 and edge cells 36/42/0 at the three
-  failing poses.
+  deformed poses.
   - **CORNER class — `CardVisual.corner_points()`.** It puts the bite's middle point at
     `corner + along_prev + along_next`, assuming the corner cell stays a **parallelogram**. It is
     really a bilinear patch whose fourth point (the internal vertex, e.g. `(-14.25,-18.75)`) is
@@ -182,13 +186,17 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
     does not — only bone `:position` tracks exist); bilinear filtering (a real harness bug, fixed, but
     t=0.30's 887 undecidable cells did not move); "tips vs skinning blend" (bone rests equal their
     vertices exactly and each vertex is ~0.99997 weighted to its own arm).
-- **PIXELS mask (above) is now GREEN but PINNED, not fixed (2026-08-05).** The check no longer demands
-  exact cell agreement — that bar was unachievable and passed at rest by alignment. It asserts a band
-  around the outline: **edges ≤ 1.5 FX cells** (the half-cell is the 32-slot wedge index, whose
-  quantization is angular; measured worst 1.34) and **corner bite ≤ 2.5 art units** (measured worst
-  2.38 at t=0.30). ⚠ **Both numbers are measured and deliberately tight so any worsening fails — do
-  not raise them to go green.** The corner and edge approximations described above are unchanged; the
-  real corner fix still needs the cell's fourth (interior) vertex via `Polygon2D.bones` skinning.
+- **PIXELS mask (above) is now GREEN but PINNED, not fixed (2026-08-05; bounds hardened 2026-08-06).**
+  The check no longer demands exact cell agreement — that bar was unachievable and passed at rest by
+  alignment. It asserts a band around the outline: **edges ≤ 1.5 FX cells** (the half-cell is the
+  32-slot wedge index, whose quantization is angular; measured worst 1.34) and **corner bite ≤ 2.5
+  cells** (measured worst 2.38 at t=0.30; both bounds are in CELL units since 2026-08-06 so one
+  `pixel` knob moves them together). The 2026-08-06 review pass also **re-asserted the COUNT** —
+  rest pose exact (0/0), deformed poses ≤ 130 disagreeing cells (measured worst 104) — because the
+  distance bars alone cannot see a shallow uniform boundary shift. ⚠ **All numbers are measured and
+  deliberately tight so any worsening fails — do not raise them to go green.** The corner and edge
+  approximations described above are unchanged; the real corner fix still needs the cell's fourth
+  (interior) vertex via `Polygon2D.bones` skinning.
 - **G2.3 / spotlight cost, measured 2026-08-05** (`fx_cost.gd::_spotlight_rows`, new — the light layer
   had never been priced). Over a 1.947 ms empty-scene floor: 0 lights +0.478, 1 +0.607, 8 +1.537,
   24 +4.666, 64 (MAX_LIGHTS) +12.237 ms. **≈0.19 ms per light, near-linear**, swept over LIGHT COUNT

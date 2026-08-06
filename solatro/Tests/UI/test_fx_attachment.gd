@@ -916,7 +916,7 @@ func test_light_shader_declares_every_spotlight_knob() -> void:
 		check(name in declared, "light.gdshader declares %s" % name,
 				"the style writes it and the shader has no such uniform — a silently ignored knob")
 	# The layer pushes these itself rather than through the style; they are the seam's other half.
-	for name : String in ["u_dim", "u_dim_scale", "u_brightness", "u_lights", "u_beams",
+	for name : String in ["u_dim", "u_brightness", "u_lights", "u_beams",
 			"u_light_count", "u_time"]:
 		check(name in declared, "light.gdshader declares %s (pushed by LightLayer)" % name)
 

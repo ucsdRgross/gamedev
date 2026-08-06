@@ -210,6 +210,10 @@ func is_lit() -> bool:
 
 func _process(delta: float) -> void:
 	if not _mat: return
+	# The full-screen pass is a no-op composite whenever nothing is lit and the dim has finished
+	# easing out — which is most of a session. Hide it then (processing continues, so the clock and
+	# the eases never stall); anything that lights or dims re-shows it the same frame.
+	visible = not _lights.is_empty() or _dim > 0.0
 	_time += delta * _pacing()
 	_mat.set_shader_parameter(&"u_time", _time)
 	# THE SHOW'S OWN EASE, ahead of the dim's — `_dim_target()` reads `_show`, so easing it first
@@ -282,6 +286,13 @@ func _has_ungated() -> bool:
 		if not l.gated: return true
 	return false
 
+## Last-pushed uniform state. The director re-pushes every frame to follow moving cards, and the
+## show ease pushes again — most frames nothing changed, so comparing here is what keeps that
+## correctness-first discipline from costing two redundant GPU uploads per frame.
+var _pushed_lights := PackedVector4Array()
+var _pushed_beams := PackedVector4Array()
+var _pushed_count : int = -1
+
 ## The two arrays the shader reads, padded to `MAX_LIGHTS`. ⚠ Godot matches an array uniform by
 ## DECLARED SIZE — a shorter array is rejected whole rather than partially filled, and the shader
 ## then runs on whatever it held before, with no error. The same trap `FxGlowStyle` pads around.
@@ -299,6 +310,11 @@ func _push_lights() -> void:
 		var show : float = _show if l.gated else 1.0
 		lights[i] = Vector4(l.centre.x, l.centre.y, l.radius, l.intensity * show)
 		beams[i] = Vector4(l.origin.x, l.origin.y, l.origin_width, l.flare)
+	if _lights.size() == _pushed_count and lights == _pushed_lights and beams == _pushed_beams:
+		return
+	_pushed_lights = lights
+	_pushed_beams = beams
+	_pushed_count = _lights.size()
 	_mat.set_shader_parameter(&"u_lights", lights)
 	_mat.set_shader_parameter(&"u_beams", beams)
 	_mat.set_shader_parameter(&"u_light_count", _lights.size())
@@ -316,9 +332,6 @@ func _push_static() -> void:
 	var art_brightness : float = style.brightness if style else 1.0
 	_mat.set_shader_parameter(&"u_brightness", art_brightness * _settings().fx_intensity)
 	_mat.set_shader_parameter(&"u_dim", _dim)
-	# `Q245`=(c)'s casual scale reaches the shader too now. It was DECLARED and never pushed, so the
-	# CPU-side `_dim_target()` was the only thing applying it.
-	_mat.set_shader_parameter(&"u_dim_scale", 1.0)
 
 ## ⚠ **THE EDITOR INSTANTIATES NO AUTOLOADS**, so `SettingsManager` does not exist there and a bare
 ## read of it is a hard failure the moment an editor-side tool drives this layer. Same stand-in

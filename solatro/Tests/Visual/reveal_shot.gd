@@ -19,9 +19,8 @@ extends Control
 
 const OUT_DIR := "user://reveal_shots"
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
-## The player's real run, and where this harness parks it. See `_ready`.
-const REAL_SAVE := "user://run_save/run.tres"
-const SAVE_BAK := "user://run_save/run.tres.revealbak"
+## The shared run-save park — preloaded by PATH, same as spotlight_tool (see its note).
+const _SAVE_GUARD := preload("res://Tests/Support/test_base.gd")
 
 ## The owner's own separation mode, put back before quitting — see `_ready`.
 var _prev_mode : int = 0
@@ -34,17 +33,11 @@ func _ready() -> void:
 	# thing it is measuring is worse than no harness.
 	_prev_mode = SettingsManager.settings.spotlight_separation_mode
 	# ⚠⚠ **PARK THE REAL RUN SAVE FIRST — `RunManager.new_run()` PERSISTS, AND THIS HARNESS DID NOT
-	# DO THIS AT FIRST AND OVERWROTE THE OWNER'S `run_save/run.tres`.** Every suite that touches a run
-	# goes through `SolatroTest.backup_real_save()` / `restore_real_save()` for exactly this reason;
-	# a bare harness is outside that machinery and has to do it by hand. It also explains a confusing
-	# symptom: once the real save had been replaced by a half-played harness run, later runs dealt
-	# against THAT and reported `row cards = 0`, which looked like a board-build bug and was not.
-	if FileAccess.file_exists(REAL_SAVE) and not FileAccess.file_exists(SAVE_BAK):
-		DirAccess.copy_absolute(REAL_SAVE, SAVE_BAK)
-	# ⚠ **CLEAR IT AFTER PARKING IT, OR THE VIEW RESUMES INSTEAD OF DEALING.** A save left by an
-	# earlier run of THIS harness made `GameView` come back to a played-out board, and the symptom was
-	# `row cards = 0` — which reads as a board-build bug and is really a stale save.
-	if FileAccess.file_exists(REAL_SAVE): DirAccess.remove_absolute(REAL_SAVE)
+	# DO THIS AT FIRST AND OVERWROTE THE OWNER'S `run_save/run.tres`.** The park moves the file aside,
+	# which also clears it — a save left behind would make `GameView` RESUME a played-out board
+	# instead of dealing (`row cards = 0`, which reads as a board-build bug and is really a stale
+	# save).
+	_SAVE_GUARD.backup_real_save()
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
@@ -217,10 +210,7 @@ func _ready() -> void:
 		print("[reveal_shot] no skill-free board card to stamp the probe onto")
 	SettingsManager.settings.spotlight_separation_mode = _prev_mode
 	# Put the player's run back exactly as it was — see the note in `_ready`.
-	if FileAccess.file_exists(SAVE_BAK):
-		DirAccess.copy_absolute(SAVE_BAK, REAL_SAVE)
-		DirAccess.remove_absolute(SAVE_BAK)
-		print("[reveal_shot] real run save restored")
+	_SAVE_GUARD.restore_real_save()
 	print("[reveal_shot] done (separation mode restored to %d)" % _prev_mode)
 	get_tree().quit()
 

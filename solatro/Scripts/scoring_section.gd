@@ -11,6 +11,9 @@ var cards : Array[CardData] = []
 var origin : StringName = &""          # e.g. &"row", &"col"
 var index : int = -1
 var zone : Array = []
+## How `refresh()` re-collects — captured at construction so `origin` stays pure provenance and a
+## future non-line shape supplies its own re-derivation instead of being misread as a column.
+var _recollect : Callable = Callable()
 
 ## The section one `Game.score_line(result, is_row, zone, index)` call evaluates, re-derived from
 ## the LIVE board. ⚠ Never cache the result across a hook — `Q252`=(b) requires a re-read after
@@ -22,6 +25,7 @@ static func of_line(zone: Array, is_row: bool, index: int) -> ScoringSection:
 	section.origin = &"row" if is_row else &"col"
 	section.index = index
 	section.zone = zone
+	section._recollect = collect.bind(zone, is_row, index)
 	section.cards = collect(zone, is_row, index)
 	return section
 
@@ -39,7 +43,8 @@ static func collect(zone: Array, is_row: bool, index: int) -> Array[CardData]:
 ## Re-read this section's cards from the board (`Q252`=b). Returns true when the set CHANGED,
 ## which is what ends the activation sweep's loop.
 func refresh() -> bool:
-	var fresh := collect(zone, origin == &"row", index)
+	if not _recollect.is_valid(): return false
+	var fresh : Array[CardData] = _recollect.call()
 	if fresh == cards:
 		return false
 	cards = fresh

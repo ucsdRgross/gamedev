@@ -69,6 +69,9 @@ extends Node
 
 const SCENARIOS_PATH := "res://Tools/spotlight_scenarios.json"
 const SHOT_DIR := "user://logs/events/spotlight_tool/"
+## The shared run-save park (`backup_real_save`/`restore_real_save`). Preloaded by PATH — the
+## `SolatroTest` global name does not resolve from this @tool script's parse.
+const _SAVE_GUARD := preload("res://Tests/Support/test_base.gd")
 
 ## ⚠ **THE CIRCLE'S RADIUS AND THE BEAM'S MOUTH COME FROM `FxSpotlightStyle`, NOT FROM A CONSTANT.**
 ## They were `const`s on `SpotlightDirector` until 2026-08-04, which is why the owner's *"tool not
@@ -76,9 +79,18 @@ const SHOT_DIR := "user://logs/events/spotlight_tool/"
 ## only a baked number in two places. `DESIGN.md` §16 lists both as style knobs and `Q85`'s answer
 ## asks for the radius to be adjustable in the same breath as giving the number.
 
-## `PlayArea.separation`'s shipped value — the one number the board formula needs that lives on the
-## node rather than on `CardVisual`.
+## `PlayArea.separation`'s shipped BASE value — the one number the board formula needs that lives
+## on the node rather than on `CardVisual`. ⚠ The node's getter multiplies it by `card_scale`, so
+## every use here goes through `_board_sep()` or the tool's pitch is wrong at any other scale.
 const BOARD_SEPARATION := 4.0
+
+func _board_sep() -> float:
+	return BOARD_SEPARATION * settings.card_scale
+
+## The fully-open extra a revealed row adds — `PlayArea`'s own formula, so the tool obeys
+## `spotlight_separation_mode` and cannot drift from the game's opening again.
+func _open_span() -> float:
+	return PlayArea.row_open_span(settings, _board_sep())
 
 func _touch(_v : Variant = null) -> void:
 	_dirty = true
@@ -408,10 +420,11 @@ func _advance_cascade(delta : float) -> void:
 			_retiring = true
 		else:
 			_section += 1
-		# ⚠ ALWAYS rebuilt on a section change, not only when separation is on: the GLOW marks the
-		# ACTIVE cards, so it has to move with the section too. An earlier version rebuilt only for
-		# separation and left the glow behind on the first section for the whole cascade.
-		_dirty = true
+		# ⚠ The GLOW moves with the section — but only the glow. This used to set `_dirty`, tearing
+		# the whole SubViewport down every beat just to re-hang the attachments, which is what
+		# restarted the show ("a blinked spotlight effect") until the eased values were carried
+		# across. `_dirty` is for scenario/knob edits; a section change re-points the glow in place.
+		_refresh_glows()
 	# ⚠ **THE RETIRE BEAT STAYS DARK.** It used to fall through to `_phase_t < beat` and raise the show
 	# a SECOND time while every beam was already fading out over `spotlight_retire_fraction` — a 0.5 s
 	# ramp against a 0.3 s retire, which reads as a complete effect at double speed (owner: *"it
@@ -450,15 +463,10 @@ func _rebuild() -> void:
 	_dirty = false
 	_rebuild_count += 1
 	# ⚠ **CARRY THE SHOW ACROSS THE TEARDOWN — THIS SWEEP FREES THE `LightLayer` ITSELF.** The layer
-	# lives inside the `SubViewport` built below, so every rebuild destroys it and the replacement
-	# starts at `_show = 0`, `_dim = 0`. `_advance_cascade` marks `_dirty` on EVERY section change
-	# (only to move the glow), so each section began by re-ramping the whole show from black: the
-	# owner saw *"same section will do full spotlight effect, then a blinked spotlight effect, before
-	# moving on to next section"*. It is invisible in the editor because `_process` there runs
-	# irregularly, and obvious at a played 60 fps — which is exactly the editor-vs-played split that
-	# looked like a clock bug.
-	# ⚠ The eased VALUES are restored, not the node: rebuilding the board is still correct, only
-	# restarting its animation is not.
+	# lives inside the `SubViewport` built below, so a rebuild destroys it and the replacement
+	# starts at `_show = 0`, `_dim = 0`. Rebuilds are now RARE (scenario/knob edits — a section
+	# change only calls `_refresh_glows()`), but a knob dragged mid-play would still blink the show
+	# from black without this.
 	var carry_show := -1.0
 	var carry_dim := -1.0
 	if is_instance_valid(_layer):
@@ -534,34 +542,15 @@ func _rebuild() -> void:
 func _build_board(current : Dictionary) -> void:
 	var cols : int = current.get("cols", 5)
 	var depth : int = current.get("depth", 3)
-	var card := CardVisual.card_size_play
-	var strip := float(CardVisual.card_separation_play_custom)
-	var col_pitch := card.x + BOARD_SEPARATION
-	var row_pitch := strip + BOARD_SEPARATION
-	# ⚠ **THE OPEN AMOUNT IS EASED, NOT SET** — owner 2026-08-04: *"row separation is not smooth. cards
-	# jump to their new spot instantly."* The reveal is a TWEEN in the design (chart D6: *"PlayArea
-	# grows each reveal row's gap to a full card, tweened over reveal_fraction"*), so a per-depth
-	# `_open` value eases toward its target every frame and the LAYOUT reads that, rather than the
-	# board being rebuilt at the final position.
-	var board_w := float(cols) * col_pitch
-	var board_h := float(depth) * row_pitch + _open_total(depth, card.y - strip)
-	var origin := Vector2(screen_size) * 0.5 - Vector2(board_w, board_h) * 0.5
-
 	for c : int in cols:
 		for d : int in depth:
-			# Everything BELOW an opened depth moves down by however far it has opened so far.
-			var extra := 0.0
-			for above : int in d:
-				var v : float = _open[above] if _open.has(above) else 0.0
-				extra += v * (card.y - strip)
-			var pos := origin + Vector2(
-					float(c) * col_pitch + card.x * 0.5,
-					BOARD_SEPARATION + float(d) * row_pitch + card.y * 0.5 + extra)
 			var cv := _new_card(c * 7 + d * 3)
-			cv.position = pos
 			_board.add_child(cv)
 			_pose(cv)
 			_slot_card[Vector2i(c, d)] = cv
+	# ONE copy of the layout formula — `_reposition` places what was just built, so a fresh board
+	# and an easing one cannot disagree about where a slot is.
+	_reposition()
 	# The glow marks which cards are ACTIVE, so it is attached after every slot exists and only to
 	# the ones this section lights.
 	if glow: _attach_glows()
@@ -596,6 +585,18 @@ func _attach_glows() -> void:
 		]
 		fx.sync(reqs)
 		_glows.append(cv)
+
+## Move the glow to the CURRENT section without touching the board — a section change moves which
+## cards are ACTIVE, nothing else (positions ease via `_reposition`), so this is all it costs.
+## ⚠ `free()`, not `queue_free()`: a dying child still named "Glow" would collide with the new
+## attachment's name and break `_track_glow_outlines`'s lookup for a frame.
+func _refresh_glows() -> void:
+	for cv : CardVisual in _glows:
+		if not is_instance_valid(cv): continue
+		var fx := cv.offset.get_node_or_null("Glow") as FxAttachment
+		if fx: fx.free()
+	_glows.clear()
+	if glow: _attach_glows()
 
 ## Cards carrying a live glow, so their outlines can be re-tracked each frame.
 var _glows : Array[CardVisual] = []
@@ -640,27 +641,32 @@ func _all_depths() -> Array[int]:
 	return out
 
 ## Move the existing cards to match `_open`, without rebuilding them.
+## ⚠ **THE OPEN AMOUNT IS EASED, NOT SET** — owner 2026-08-04: *"row separation is not smooth. cards
+## jump to their new spot instantly."* A per-depth `_open` value eases toward its target every frame
+## (chart D6's tween over `reveal_fraction`) and this layout reads that.
 func _reposition() -> void:
 	var current := _current_scenario()
 	var cols : int = current.get("cols", 5)
 	var depth : int = current.get("depth", 3)
 	var card := CardVisual.card_size_play
 	var strip := float(CardVisual.card_separation_play_custom)
-	var col_pitch := card.x + BOARD_SEPARATION
-	var row_pitch := strip + BOARD_SEPARATION
+	var span := _open_span()
+	var col_pitch := card.x + _board_sep()
+	var row_pitch := strip + _board_sep()
 	var board_w := float(cols) * col_pitch
-	var board_h := float(depth) * row_pitch + _open_total(depth, card.y - strip)
+	var board_h := float(depth) * row_pitch + _open_total(depth, span)
 	var origin := Vector2(screen_size) * 0.5 - Vector2(board_w, board_h) * 0.5
 	for slot : Vector2i in _slot_card:
 		var cv : CardVisual = _slot_card[slot]
 		if not is_instance_valid(cv): continue
+		# Everything BELOW an opened depth moves down by however far it has opened so far.
 		var extra := 0.0
 		for above : int in slot.y:
 			var v : float = _open[above] if _open.has(above) else 0.0
-			extra += v * (card.y - strip)
+			extra += v * span
 		cv.position = origin + Vector2(
 				float(slot.x) * col_pitch + card.x * 0.5,
-				BOARD_SEPARATION + float(slot.y) * row_pitch + card.y * 0.5 + extra)
+				_board_sep() + float(slot.y) * row_pitch + card.y * 0.5 + extra)
 
 ## **RE-READ THE DEFORMED OUTLINE EVERY FRAME, EXACTLY AS THE BOARD DOES** — `CardVisual`'s own
 ## `_track_fx_outline()`, which its comment describes as *"Every frame, because the rig's animation is
@@ -690,7 +696,13 @@ func _track_glow_outlines() -> void:
 func _separated_depths() -> Dictionary[int, bool]:
 	var out : Dictionary[int, bool] = {}
 	if not row_separation: return out
-	for s : Vector2i in _current_section(): out[s.y] = true
+	# ⚠ **A ROW THAT COVERS NOTHING DOES NOT OPEN** — `PlayArea.row_open_extra`'s own guard, mirrored
+	# here or the tool shows an opening the game refuses. The tool board is a full grid, so only the
+	# deepest row can cover nothing.
+	var depth : int = _current_scenario().get("depth", 3)
+	var deepest : int = depth - 1
+	for s : Vector2i in _current_section():
+		if s.y < deepest: out[s.y] = true
 	return out
 
 ## A real card, with real data behind it so the face under the circle is the one the player has to
@@ -854,11 +866,12 @@ func _sync_beams() -> void:
 		b.slot = targets[tgt_window + i]
 		b.retiring = false
 		# ⚠ **NEVER TRAVEL FROM (0,0) — THAT IS THE TOP-LEFT OF THE SCREEN, NOT A BOARD POSITION.**
-		# `_slot_centre()` returns ZERO while a card is missing, and `_rebuild()` recreates every
-		# `CardVisual` on a section change — so a beam re-matched on that frame took ZERO as its start
-		# and slid in from off-board. Owner, 2026-08-05: *"seeing some spotlights flying into place
-		# from outside board now which should never happen vs spawning in place"*. With no known
-		# origin the honest move is `Q65`=(a)'s: appear ALREADY AIMED rather than invent a path.
+		# `_slot_centre()` returns ZERO while a card is missing — a SCENARIO change rebuilds the
+		# board, leaving live beams pointing at slots the new board may not have — so a beam
+		# re-matched on that frame took ZERO as its start and slid in from off-board. Owner,
+		# 2026-08-05: *"seeing some spotlights flying into place from outside board now which should
+		# never happen vs spawning in place"*. With no known origin the honest move is `Q65`=(a)'s:
+		# appear ALREADY AIMED rather than invent a path.
 		if from == Vector2.ZERO:
 			b.t = 1.0
 		else:
@@ -976,7 +989,6 @@ func _get_property_list() -> Array[Dictionary]:
 ## ⚠ **A behaviour question must never be answered from the preview**, which draws what it is told.
 ## The trace is the instrument that can disagree with the code.
 func _maybe_trace() -> void:
-	if not "--trace" in OS.get_cmdline_user_args(): return
 	add_child(_Watchdog.new())
 	# Tear the preview down: the trace stands up a whole real `GameView` and the two must not both
 	# be on screen, nor both driving `LightLayer.editor_settings`.
@@ -986,6 +998,9 @@ func _maybe_trace() -> void:
 	await get_tree().process_frame
 	set_process(false)
 	EventLog.begin()
+	# ⚠ PARK THE PLAYER'S SAVE FIRST — `new_run()` clears and rewrites `user://run_save/run.tres`,
+	# and the trace's Game keeps saving over it on every submit. Restored before quit below.
+	_SAVE_GUARD.backup_real_save()
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
@@ -1018,6 +1033,7 @@ func _maybe_trace() -> void:
 	EventLog.event(EventLog.CH_ACT, "SCENARIOS done")
 	var dir := EventLog.save("spotlight_trace")
 	EventLog.end()
+	_SAVE_GUARD.restore_real_save()
 	print("=== SPOTLIGHT TRACE: %d events, %d shots ===" % [EventLog.count(), _shots])
 	print("logs:  " + dir)
 	print(EventLog.summary())
@@ -1111,7 +1127,6 @@ class _Watchdog extends Node:
 ## **A scenario that changes nothing over its whole loop is reported as SUSPECT**, which is the check
 ## `--shoot-all` structurally could not make.
 func _maybe_verify() -> void:
-	if not "--verify" in OS.get_cmdline_user_args(): return
 	add_child(_Watchdog.new())
 	var report : Array[String] = []
 	for i : int in _scenarios.size():

@@ -74,6 +74,7 @@ func _ready() -> void:
 	test_origins_assign_sorted_pairs_never_cross()
 	test_a_shrinking_section_keeps_the_NEAREST_lights()
 	test_origins_subdivide_when_exhausted()
+	test_origins_assign_subdivides_for_a_larger_section()
 	test_origins_respread_only_above_the_viewport()
 	test_a_beam_never_points_upward()
 
@@ -906,6 +907,38 @@ func test_origins_subdivide_when_exhausted() -> void:
 		for b : int in range(a + 1, handed.size()):
 			if handed[a] == handed[b]: dup = true
 	check(not dup, "and no lamp was handed out twice across the subdivision")
+
+## The GROWING section (chart E4, preset S8's 3 -> 5): `assign()` finds fewer free lamps than
+## targets and must subdivide — `take()` above exercises the other branch, and this one had no test
+## although it is the branch the GAME hits when a later section is larger than `begin()` was sized
+## for. Also pins the `advance()` regression: it used to re-spread by INDEX order, and after a
+## subdivision index order no longer matches x order, so every taken lamp teleported horizontally.
+func test_origins_assign_subdivides_for_a_larger_section() -> void:
+	var o := SpotlightOrigins.new()
+	o.begin(3, 1280.0, 100.0)   # lays out maxi(3, MIN_ORIGINS) = 4 lamps
+	var first_targets : Array[Vector2] = [
+		Vector2(200.0, 400.0), Vector2(400.0, 400.0), Vector2(600.0, 400.0)]
+	var first := o.assign(first_targets)
+	for idx : int in first:
+		check(idx >= 0, "the first section's three cards all get lamps")
+	# Two fresh targets with only one lamp free — assign() must grow the rig.
+	var second_targets : Array[Vector2] = [Vector2(800.0, 400.0), Vector2(1000.0, 400.0)]
+	var second := o.assign(second_targets)
+	check(o.count() > 4, "the rig grew past its initial four for the larger section", str(o.count()))
+	var seen : Dictionary[int, bool] = {}
+	for idx : int in first: seen[idx] = true
+	for idx : int in second:
+		check(idx >= 0, "every extra card is lamped after the subdivision")
+		check(not seen.has(idx), "and no lamp is shared with the first section")
+		seen[idx] = true
+	var taken : Array[int] = []
+	for idx : int in seen: taken.append(idx)
+	taken.sort_custom(func(a: int, b: int) -> bool: return o.origin_of(a).x < o.origin_of(b).x)
+	var order_before := taken.duplicate()
+	o.advance(0.0)
+	taken.sort_custom(func(a: int, b: int) -> bool: return o.origin_of(a).x < o.origin_of(b).x)
+	check(order_before == taken,
+			"an advance() after subdivision keeps every taken lamp's x order (no teleport)")
 
 ## I10–I12: ⚠ `Q164` (*an origin does not move once assigned*) and `Q251`=(b) (*x re-spreads every
 ## frame*) are ONE answer, not a conflict — the re-spread only ever touches origins ABOVE the

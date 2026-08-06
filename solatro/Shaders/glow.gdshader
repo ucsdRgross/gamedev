@@ -312,7 +312,12 @@ void fragment() {
 	// is 0, which is pure addition. Both halves, one pass.
 	float cover = intensity * ramp.a * u_opacity;
 	vec3 tint = ramp.rgb * u_brightness;
-	float a = over_art ? over_alpha * cover : 0.0;
+	// ⚠ **THE ALPHA RIDES `u_brightness` TOO (clamped — brightness may exceed 1 as an art choice,
+	// alpha may not), AND THE HOST'S OWN ALPHA.** Without the first, `fx_intensity = 0` zeroed the
+	// RGB but left `a` standing, and `dst * (1 - a)` drew a DARK DISC over every spotlit card — the
+	// exact inverse of G2.4's "scales the lights toward nothing". Without the second, a host fading
+	// out via modulate kept a full-strength tint over its vanishing art.
+	float a = over_art ? over_alpha * cover * clamp(u_brightness, 0.0, 1.0) * COLOR.a : 0.0;
 	vec3 lit = over_art ? tint * a : tint * cover;
 
 	// ⚠ THE HOST'S MODULATE IS MULTIPLIED BACK IN (O18), or the focus highlight never reaches the

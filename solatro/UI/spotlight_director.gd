@@ -77,6 +77,9 @@ class _Beam extends RefCounted:
 	## Seconds of hold left before a cue starts retiring. Meaningless on a section beam, which holds
 	## until the section moves on or the act releases it.
 	var hold_left : float = 0.0
+	## Last position actually drawn — the fallback when the card's visual is gone (freed by a hook's
+	## discard, or mid-deferred-add), so a retiring beam holds its place instead of swinging to (0,0).
+	var last_pos : Vector2 = Vector2.ZERO
 
 var _beams : Array[_Beam] = []
 ## Has the allocator been laid out for the act in progress? ⚠ **`begin()` REBUILDS `_origins` AND
@@ -124,6 +127,9 @@ func bind(layer: LightLayer, play_area: PlayArea, env: CardEnvironment) -> void:
 ## rather than the board filling up with lamps.
 func _on_section_changed(cards: Array[CardData]) -> void:
 	if not _layer or not _play_area: return
+	# A hook that compacted the board this frame queued a DEFERRED rebuild — flush it, or
+	# `_visual_of` reads the pre-mutation bindings and lights the wrong (or no) visuals.
+	_play_area.flush_rebuild()
 	if EventLog.is_on(EventLog.CH_SPOTLIGHT):
 		EventLog.event(EventLog.CH_SPOTLIGHT, "section_changed",
 				"cards=%d scoring=%s" % [cards.size(), str(_is_scoring())])
@@ -294,6 +300,7 @@ func _section_beams() -> int:
 ## touched, which is why this APPENDS rather than replacing the way `_on_section_changed` does.
 func _on_cued(cards: Array[CardData]) -> void:
 	if not _layer or not _play_area: return
+	_play_area.flush_rebuild()  # same stale-bindings hazard as the section path
 	# THE CARDS THAT ACTUALLY HAVE A VISUAL TO LIGHT — same filter, same reason, as the section path.
 	var wanted : Array[CardData] = []
 	for data : CardData in cards:
@@ -308,7 +315,7 @@ func _on_cued(cards: Array[CardData]) -> void:
 	if not _band_ready or _beams.is_empty():
 		_origins.begin(wanted.size(), viewport.size.x, viewport.position.y)
 		_band_ready = true
-	var hold := maxf(_delay() * SettingsManager.settings.spotlight_hold_fraction, 0.0)
+	var hold := maxf(_delay() * FxAttachment.settings().spotlight_hold_fraction, 0.0)
 	for data : CardData in wanted:
 		var nb := _Beam.new()
 		nb.card = data
@@ -329,17 +336,22 @@ func _on_cued(cards: Array[CardData]) -> void:
 					"card=%s origin_idx=%d hold=%.3fs" % [data.log_str(), nb.origin_idx, hold])
 	_push()
 
-## Where a beam's circle is RIGHT NOW — its target's art square, or a point along its travel.
+## Where a beam's circle is RIGHT NOW — its target's art square, a point along its travel, or its
+## last drawn position when the card's visual is gone (a hook's discard, a rebuild frame).
 ## ⚠ `Q63`=(a): full size the whole way. The ease is on POSITION only; nothing shrinks or dims in
 ## transit, because a real followspot does not.
 func _beam_centre(b: _Beam) -> Vector2:
-	var target := _centre_of(b.card)
-	if b.t >= 1.0 or b.card == null: return target
-	# Smoothstep: the light accelerates off its old card and settles onto the new one rather than
-	# starting and stopping abruptly, which is what "no instant movements" is asking for.
-	return b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
+	var visual := _visual_of(b.card) if b.card else null
+	var target := visual.spotlight_center() if visual else b.last_pos
+	if b.t < 1.0 and b.card != null:
+		# Smoothstep: the light accelerates off its old card and settles onto the new one rather than
+		# starting and stopping abruptly, which is what "no instant movements" is asking for.
+		target = b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
+	b.last_pos = target
+	return target
 
-## A card's art-square centre in screen pixels, or the beam's last position if the card is gone.
+## A card's art-square centre in screen pixels. ⚠ (0,0) when it has no live visual — callers must
+## filter by `_visual_of` first; a BEAM's position goes through `_beam_centre`, which falls back.
 func _centre_of(data: CardData) -> Vector2:
 	var visual := _visual_of(data) if data else null
 	return visual.spotlight_center() if visual else Vector2.ZERO
@@ -375,7 +387,7 @@ func _release_all() -> void:
 ## the whole travel compresses with the act speed-up exactly like the dim and the hold beat.
 func _delay() -> float:
 	var game := _env as Game
-	return game.get_delay() if game else SettingsManager.settings.base_delay
+	return game.get_delay() if game else FxAttachment.settings().base_delay
 
 ## Per frame: advance every travel and fade, drop the finished retirements, re-spread the off-screen
 ## lamps (I10–I12), and re-push.
@@ -386,7 +398,8 @@ func _delay() -> float:
 func _process(delta: float) -> void:
 	if not _layer or _beams.is_empty(): return
 	_origins.advance(_layer.get_viewport_rect().position.y)
-	var s := SettingsManager.settings
+	# `FxAttachment.settings()` — the ONE accessor for "which PlayerSettings" (see LightLayer).
+	var s := FxAttachment.settings()
 	var unit := _delay()
 	var travel := maxf(unit * s.spotlight_travel_fraction, 0.0001)
 	var spawn := maxf(unit * s.spotlight_spawn_fraction, 0.0001)
@@ -423,7 +436,7 @@ func _process(delta: float) -> void:
 ## settled one cannot be described differently by two code paths.
 func _push() -> void:
 	if not _layer: return
-	var scale := SettingsManager.settings.card_scale
+	var scale := FxAttachment.settings().card_scale
 	var viewport := _layer.get_viewport_rect()
 	var lights : Array[LightLayer.Light] = []
 	for b : _Beam in _beams:
