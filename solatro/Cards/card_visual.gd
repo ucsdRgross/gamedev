@@ -4,7 +4,7 @@ class_name CardVisual
 
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
-const CARD_SIZE := Vector2(38,50)
+const CARD_SIZE := Vector2(40,54)
 const CARD_SEPARATION : int = 14
 ## How far anim_jump lifts a card, in UNSCALED units. Shared, not a literal inside the animation:
 ## props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide —

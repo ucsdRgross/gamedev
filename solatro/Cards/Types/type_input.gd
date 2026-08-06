@@ -3,7 +3,7 @@ extends CardModifierType
 	
 func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_CARD')
 func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_CARD_DESCRIPTION')
-func get_frame() -> int: return 0
+func get_frame() -> int: return 2
 
 ## Engine zone-header machinery (§15a): the input row's on_next fires every act — never a
 ## combo class (would be a constant U baseline). Not in rules1, but same opt-out reasoning.
