@@ -10,4 +10,4 @@ const H_FRAMES: int = 8
 const V_FRAMES: int = 8
 
 func set_texture(polygon2d: Polygon2D) -> void:
-	update_polygon_uv_frame(polygon2d, STAMP_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
+	CardOutline.frame_polygon(polygon2d, STAMP_TEXTURE, H_FRAMES, V_FRAMES, get_frame())

@@ -8,7 +8,7 @@ const V_FRAMES: int = 5
 @export_storage var original_value : float
 func get_str() -> String: return "NumeralRank" + str(value)
 func set_texture(polygon2d:Polygon2D) -> void:
-	CardModifier.update_polygon_uv_frame(polygon2d, RANK_TEXTURE, H_FRAMES, V_FRAMES, value - 1)
+	CardOutline.frame_polygon(polygon2d, RANK_TEXTURE, H_FRAMES, V_FRAMES, value - 1)
 
 func with_random() -> PipRank:
 	return with_value(randi_range(1,13))

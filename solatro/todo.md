@@ -188,9 +188,9 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
     vertices exactly and each vertex is ~0.99997 weighted to its own arm).
 - **PIXELS mask (above) is now GREEN but PINNED, not fixed (2026-08-05; bounds hardened 2026-08-06).**
   The check no longer demands exact cell agreement — that bar was unachievable and passed at rest by
-  alignment. It asserts a band around the outline: **edges ≤ 1.5 FX cells** (the half-cell is the
-  32-slot wedge index, whose quantization is angular; measured worst 1.34) and **corner bite ≤ 2.5
-  cells** (measured worst 2.38 at t=0.30; both bounds are in CELL units since 2026-08-06 so one
+  alignment. It asserts a band around the outline: **edges ≤ 1.7 FX cells** (the fraction is the
+  32-slot wedge index, whose quantization is angular; measured worst 1.50) and **corner bite ≤ 2.6
+  cells** (measured worst 2.45 at t=0.30; both bounds are in CELL units since 2026-08-06 so one
   `pixel` knob moves them together). The 2026-08-06 review pass also **re-asserted the COUNT** —
   rest pose exact (0/0), deformed poses ≤ 130 disagreeing cells (measured worst 104) — because the
   distance bars alone cannot see a shallow uniform boundary shift. ⚠ **All numbers are measured and
@@ -204,3 +204,26 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
   (5–12 lights) is ~1–2.5 ms; 64 would blow a 16.67 ms frame alone. `Q254`=(a): reported, nothing
   trimmed — the cut is the owner's call. ⚠ The GLOW is still unpriced: there is no `FxGlow` effect
   class, only the shader.
+
+## Card size + outline (2026-08-06) — landed, one thing open
+
+Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules and landmines:
+**ARCHITECTURE_REVIEW §4j**. Design record: `design/card_size_outline/`. Tuning:
+`Shaders/Styles/outline_default.tres`, edited live on `tools/outline_atlas.tscn`.
+
+- ⚠ **OPEN — `design/card_size_outline/gaps/GAP-001.md`: a 7-column board is now WIDER THAN THE
+  WINDOW.** A fire prop spawns at x=1187 against a 1152-px viewport; the card gained 5 px per column
+  and the board was already exactly on the edge. `test_ui_props`'s *"every spawned fire entered the
+  visible viewport"* is **left FAILING on purpose** — it reports a true fact, and the three ways out
+  (narrow the test board, drop `card_scale`, tighten `PlayArea.separation`) are a game-feel call.
+  ⚠ The real finding is the zero margin: nothing asserts a full-width board fits the window.
+- ⚠ **ART, owner's call — the rim MERGES the dense `suit_art` frames.** The highest-rank frames pack
+  nine+ pips into 32x32 and invert into a dark lattice. Fix is art-side (space by 3) or scope-side
+  (exempt the 32x32 art). Nothing in code is wrong.
+- **Q6a / the alert's LOOK is unjudged.** GLARE and THROB are tunable live on the atlas; whether a
+  card-space glare reads on an 8x8 pip (lit ~25 % of the sweep) is the owner's eye. Escape hatch is a
+  per-host thickness scale.
+- **FX numbers are stale by ~12 % of fill.** `FX_HANDOFF.md` carries a banner; re-run `fx_cost.gd`
+  before spending that budget.
+- LEAK CANARY's object-count check is **intermittent** (growth 0-2 across runs, before and after this
+  work). Judge it across runs.

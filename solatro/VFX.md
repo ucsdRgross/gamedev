@@ -44,7 +44,10 @@ ARCHITECTURE_REVIEW, the latter wins.
 | `UI/Fx/fx_style.gd`, `fx_request.gd` | The lever resource, and the request a status hands to an attachment. |
 | `UI/Fx/particle_engine.gd`, `particle_spec.gd` | The game's ONLY particle path (embers are its first client). |
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
-| `Cards/Pips/pip_suit.gd`, `Assets/color_picker.gdshader` | Suit pips and the palette recolour shader. |
+| `Cards/Pips/pip_suit.gd` | Suit pips, and which elements get recoloured to the suit's role. |
+| `Shaders/outline.gdshader` + `Cards/card_outline.gd` + `Cards/outline_style.gd` | **THE CARD OUTLINE** — the 1-unit 8-directional rim on every element of a card, and the palette recolour it absorbed (`color_picker.gdshader` is deleted). Rules and landmines: ARCHITECTURE_REVIEW §4j. |
+| `Shaders/Styles/outline_default.tres` | **The single place outline tuning lives** — rim ink and width, and each alert kind's colour, tempo, thickness and side buffer. A card TYPE may override the whole style. |
+| `tools/outline_atlas.tscn` | **Live OUTLINE tuning** — every non-empty frame in the game (126) through the real draw path, plus one assembled `CardVisual` for judging the card-space alert. Edits the style above, so tuning here moves the board. Start here for any outline or alert work. |
 | `Shaders/glow.gdshader` + `UI/Fx/fx_glow_style.gd` + `Shaders/Styles/glow_{card,circle,beam}.tres` | **The spotlight GLOW** — the halo on a lit card's silhouette (peaks ON the outline, falls both ways). Rides the same `FxAttachment` path as fire. |
 | `Shaders/light.gdshader` + `UI/light_layer.gd` + `UI/Fx/fx_spotlight_style.gd` + `Shaders/Styles/spotlight_default.tres` | **The spotlight LIGHT LAYER** — one full-screen surface: the dim, every circle and beam. `UI/spotlight_director.gd` + `UI/spotlight_origins.gd` decide who is lit and where the lamps sit. See `HANDOFF_spotlight.md`. |
 | `Tools/fx_editor.tscn` | **Live FX tuning in the editor** — open it, edit an `FxStyle`, watch the real shaders react. Start here for any art tuning (§4g). |

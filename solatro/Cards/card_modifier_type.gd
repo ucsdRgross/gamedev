@@ -9,7 +9,29 @@ const H_FRAMES: int = 8
 const V_FRAMES: int = 8
 
 func set_texture(polygon2d: Polygon2D) -> void:
-	update_polygon_uv_frame(polygon2d, TYPE_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
+	CardOutline.frame_polygon(polygon2d, TYPE_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
+
+## THIS CARD'S WHOLE OUTLINE STYLE — its ink, its rim width, and both alert kinds' colours and tempos.
+## ONE ink rims the face AND every element on it, so the card reads as a single object drawn in a single
+## colour (design D7).
+##
+## ⚠ **THE TYPE IS THE RIGHT OWNER OF THE OVERRIDE, and that is not arbitrary.** The type is the card's
+## whole FACE, and the ink's job is to read against it — so the thing that decides the face is the thing
+## that must be able to decide the ink. A per-card override would be a colour chosen without knowing
+## what it sits on.
+##
+## ⚠ **AUTHORED, NOT DERIVED** (owner 2026-08-04: *"allow authoring with default to same one colour if
+## no authoring, I don't trust derived"*). An earlier design derived the ink from the frame's own colour
+## histogram, the way `corner_notch` below derives the corner bite from the frame's own alpha. It was
+## rejected: an automatic pick is a colour nobody chose, and across 126 frames of art that is 126 chances
+## to be surprised. Do not re-propose it on the grounds that it would "follow the art automatically".
+##
+## To override, a type returns its own `OutlineStyle` — a `.tres` beside the type, or one shared by a
+## family of types. **Override the whole style, not one field**: `OutlineStyle` is a Resource, so a
+## variant is `DEFAULT.duplicate()` with the one field changed, and that keeps every other number
+## following the shipped tuning when the atlas moves it.
+func outline_style() -> OutlineStyle:
+	return CardOutline.STYLE
 
 ## Per-frame cache for `corner_notch`, keyed by frame index. One `Texture2D.get_image()` plus a small
 ## pixel scan is a real hitch (the same reason `FxAttachment._sprite_cache` exists), and a card's type

@@ -421,19 +421,50 @@ func test_hoop_halves_reassemble() -> void:
 			"%d pixels differ" % diff)
 
 ## ONE PIXEL SIZE FOR ALL ART (owner 2026-07-27). The ball prop and the card's Ball pip are the SAME
-## source frame, so at any card_scale their drawn footprints must be identical — that is the whole
-## claim behind PropVisual.ART_PIXEL_SCALE, and it is only true if the prop scales WITH the cards.
+## source frame, so at any card_scale one source texel must come out the same size on both — that is
+## the whole claim behind PropVisual.ART_PIXEL_SCALE, and it is only true if the prop scales WITH the
+## cards.
+##
+## ⚠ **THE CHECK IS NO LONGER `box_pip == box_prop`, AND WHAT REPLACES IT IS STRONGER, NOT WEAKER.**
+## The card's pip is an outline client and the prop deliberately is NOT (design D3 — props are
+## temporary, so they do not need the same readability). Sharing a sheet with an outlined element and
+## not being outlined is exactly the asymmetry that reads as a bug later, so it is asserted rather than
+## excused: the pip's footprint must be the prop's plus EXACTLY one art unit on every side.
+##
+##     box_pip.size == box_prop.size + Vector2(2, 2) * card_scale
+##
+## That still pins pixel-size parity at every `card_scale` — the thing the equality was ever a proxy
+## for — and it additionally pins the rim at exactly one art unit, catching a 2-px or a half-px outline
+## that the old equality could not have seen either. Do NOT replace it with a tolerance.
+##
+## ⚠ **AND THE PIP IS NOW DRAWN THROUGH THE REAL PATH.** It used to be a `draw_texture_rect_region`
+## stand-in, which is why the equality kept passing after the pip grew a rim: the stand-in had no
+## material and could not disagree with the card. It is a real `Polygon2D` framed by the real
+## `CardOutline.frame_polygon` and wearing the real shader, so this check now measures what the card
+## actually draws (CLAUDE.md rule 5).
 func test_one_pixel_size_for_all_art() -> void:
 	behavior_section("A PROP TEXEL IS A CARD TEXEL, AT EVERY CARD SCALE")
 	var pip_frames := Vector2i(PipSuit.SUIT_TEXTURE_H_FRAMES, PipSuit.SUIT_TEXTURE_V_FRAMES)
 	var frame := CardModifier.frame_rect(PipSuit.SUIT_TEXTURE, pip_frames.x, pip_frames.y,
 			BallVisual.FRAME)
+	# ⚠ **PIN THE ZOOM, because the two subjects are no longer the same size and rounding no longer
+	# cancels.** While this compared two 8-unit draws of one frame, whatever zoom the previous shot
+	# happened to leave behind applied to both identically and dropped out of the equality. The pip is
+	# now 2 units bigger, so a fractional zoom rounds the two footprints by different amounts and the
+	# difference stops being a whole number of art units. `ZOOM` is 4 and integral, which keeps every
+	# expected figure below exact.
+	_zoom_to_fit(0.0)
 	for card_scale : float in [1.5, 2.5, 4.0]:
-		# The card's pip: one frame across an UNSCALED frame-sized quad, the card then scaled.
-		var pip := _Sprite.new()
-		pip.sheet = PipSuit.SUIT_TEXTURE
-		pip.src = frame
-		pip.dest = Rect2(-frame.size * 0.5, frame.size)
+		# The card's pip, exactly as the card builds it: a polygon one outline wider than its frame on
+		# every side, UV'd by the padded mapping, drawing the sheet's own colours.
+		var pip := Polygon2D.new()
+		var h := frame.size * 0.5 + Vector2.ONE * CardOutline.WIDTH
+		pip.polygon = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y),
+				Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+		CardOutline.frame_polygon(pip, PipSuit.SUIT_TEXTURE, pip_frames.x, pip_frames.y,
+				BallVisual.FRAME)
+		CardOutline.fill_texture(pip)
+		CardOutline.set_rim(pip, CardOutline.STYLE, CardVisual.CARD_SIZE)
 		_place(pip, card_scale)
 		var img_pip := await _shoot()
 		var box_pip := PixelProbe.bounds(img_pip, Rect2i(Vector2i.ZERO, img_pip.get_size()),
@@ -444,9 +475,17 @@ func test_one_pixel_size_for_all_art() -> void:
 		var img_prop := await _shoot()
 		var box_prop := PixelProbe.bounds(img_prop, Rect2i(Vector2i.ZERO, img_prop.get_size()),
 				PixelProbe.is_opaque)
-		check(box_pip.size == box_prop.size and box_pip.size.x > 0,
-				"card_scale %.1f: the prop's footprint matches the card pip's" % card_scale,
-				"pip %s vs prop %s" % [box_pip.size, box_prop.size])
+		# The ball frame's art touches NONE of its four frame edges (measured 2026-08-06), so its rim is
+		# a complete ring and the growth is the full 2 units on both axes. A frame whose art ran to an
+		# edge would grow by less on that side — which is why this test names the ball rather than
+		# "a pip".
+		var per_unit := card_scale * _zoom
+		var rim := Vector2i(Vector2.ONE * 2.0 * CardOutline.WIDTH * per_unit)
+		check(box_pip.size == box_prop.size + rim and box_prop.size.x > 0,
+				("card_scale %.1f: one source texel is one size on both, and the pip's rim is exactly "
+				+ "%.0f art unit") % [card_scale, CardOutline.WIDTH],
+				"pip %s vs prop %s + rim %s (%.1f px per art unit)"
+				% [box_pip.size, box_prop.size, rim, per_unit])
 
 ## THE GAP THIS SUITE EXISTED WITH FOR ITS WHOLE LIFE (owner 2026-07-29: *"has this issue this whole
 ## time been that fx editor doesnt use real card visual... because the card outline was never accurate
@@ -630,10 +669,19 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 		# radial: `WEDGES = 32` slots (11.25° each) decide which polygon segment a fragment tests
 		# against, so its quantization is ANGULAR, not linear, and near a slot boundary the miss is a
 		# chord across the slot rather than a pixel. A flat one-cell bar is the wrong SHAPE for that
-		# error, not merely too tight. Measured worst across the loop: 1.34 art units at t=0.30, ~0
-		# everywhere else. ⚠ DO NOT RAISE IT TO GO GREEN — if this fails, either the outline walk or
-		# the wedge table changed.
-		const EDGE_WEDGE_DRIFT := 1.5
+		# error, not merely too tight. Measured worst across the loop: **1.50 art units at t=0.30, and
+		# exactly 0.00 at rest**, ~0.48 at t=0.15.
+		#
+		# ⚠ **RE-MEASURED WHEN THE CARD GREW TO 40x54 (was 1.34 on the 38x50 card), AND THE INCREASE IS
+		# THE MODEL, NOT A REGRESSION.** The error is a chord across an angular slot, so it is
+		# proportional to the RADIUS at which it is taken: a wider card puts the same 11.25° of
+		# quantization across more art units. 1.34 -> 1.50 is +12 % against a card that grew +5 % in x
+		# and +8 % in y with a pinch pose that scales with it. A bar that stayed at 1.5 would have been
+		# a bar that got tighter every time the card changed size, for no reason anyone chose.
+		# ⚠ DO NOT RAISE IT TO GO GREEN — if this fails, either the outline walk or the wedge table
+		# changed. Re-measure deliberately (raise it, read the reported worst, put it back) as was done
+		# here, and say what moved.
+		const EDGE_WEDGE_DRIFT := 1.7
 		check(worst_edge <= cell * EDGE_WEDGE_DRIFT,
 				"t=%.2f: along the EDGES the mask tracks the drawn face to within the wedge index" % t,
 				("worst is %.2f art units from the outline at %s (cell = %.2f) — the edge mask is the "
@@ -642,7 +690,10 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				% [worst_edge, worst_edge_at, cell, no_art, no_mask])
 		# ⚠ **A PINNED, MEASURED ALLOWANCE — NOT A TOLERANCE PICKED TO GO GREEN.** The corner bite is a
 		# KNOWN approximation (see `solatro/todo.md`), and the number below is the measured worst drift
-		# across the rig's whole loop plus nothing: 2.38 art units at t=0.30, 2.18 at t=0.45, 0 at rest.
+		# across the rig's whole loop plus nothing: **2.45 at t=0.30, 2.39 at t=0.45, 1.21 at t=0.15 and
+		# exactly 0 at rest** — re-measured on the 40x54 card (it was 2.38 / 2.18 / 0 at 38x50). The
+		# parallelogram is a fraction OF THE CORNER CELL, so like the edge bar above it grows with the
+		# card rather than staying put; +3 % against a card that grew +5 %.
 		# It is deliberately tight so that any WORSENING of the corner model fails here, and it is
 		# stated rather than hidden so the next reader knows the bite is modelled and not exact.
 		# ⚠ **DO NOT RAISE IT TO GO GREEN.** If this fails, `corner_points()` changed; fix the model or
@@ -651,7 +702,7 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 		# In CELLS, like EDGE_WEDGE_DRIFT above (`cell` is 1.0 today, so the numbers read the same) —
 		# two bounds in different units would silently invert their relative strictness the first
 		# time someone tunes `pixel` on fire_card.tres.
-		const CORNER_BITE_DRIFT := 2.5
+		const CORNER_BITE_DRIFT := 2.6
 		check(worst_corner <= cell * CORNER_BITE_DRIFT,
 				"t=%.2f: and the CORNER bite stays within its measured %.1f-unit approximation"
 				% [t, CORNER_BITE_DRIFT],
@@ -764,7 +815,6 @@ func _real_card(secs: float) -> CardVisual:
 	card.type.show()
 	for poly : Polygon2D in [card.rank, card.suit, card.stamp, card.art] as Array[Polygon2D]:
 		poly.hide()
-	if card.status_layer: card.status_layer.hide()
 	# One frame for the seek to reach the skinned polygons, then re-read the rig into the mask — the
 	# same call `_process` makes every frame on a board card.
 	await RenderingServer.frame_post_draw

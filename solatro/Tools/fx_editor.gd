@@ -105,7 +105,7 @@ var _watched : Array = []
 
 @export_group("Stage")
 ## Card-sized host (CardVisual.CARD_SIZE). The props size themselves from their own sheets.
-@export var card_body : Vector2 = Vector2(38, 50):
+@export var card_body : Vector2 = Vector2(40, 54):
 	set(v): card_body = v; _touch()
 ## Zoom the whole preview. Art is authored at one pixel size; this only magnifies the view.
 @export_range(1.0, 12.0, 0.5) var zoom : float = 4.0:

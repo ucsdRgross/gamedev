@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://bhmmpv585nlqs"]
+
+[ext_resource type="Script" uid="uid://r6rml53qeh6u" path="res://tools/outline_atlas.gd" id="1"]
+
+[node name="OutlineAtlas" type="Node2D" unique_id=1459228526]
+position = Vector2(24, 24)
+script = ExtResource("1")
+alert_kind = 1
+animate = true
+phase = 0.6741199999999989

@@ -302,7 +302,7 @@ func _build_deck12() -> Array[CardData]:
 ## DECK 13 — status stress (16): four rank-4 Fires and four rank-4 Balls (max pips = max
 ## drops) plus plain hoop/knife targets at ranks 1-4.
 ## Tests: Burning/Juggling stacking on repeat targets, the Burning spawn-count bonus
-## feeding back into later fires, and StatusLayer rendering under many stacks. Balance:
+## feeding back into later fires, and status FX rendering under many stacks. Balance:
 ## how fast a status engine snowballs when half the deck feeds it.
 var deck13 : Array[CardData]:
 	get:

@@ -6,7 +6,7 @@ extends TestSuite
 # and order is decided purely by sibling position + parent nesting:
 #   TopLevelVBox children: … CardLayer -> PropLayer -> OverlayLayer  (later = on top)
 #   CardLayer children: CardVisuals in row-major order (+ hoop back-halves interleaved)
-#   inside a card: face polygons then StatusLayer (last = on top)
+#   inside a card: face polygons under Visual, then the FxAttachment under Offset (last = on top)
 #
 # A reusable dumper (dump_draw_order) prints the live draw-order tree at snapshot
 # moments so a human can eyeball layout; the invariant checks assert the parts
@@ -51,7 +51,6 @@ func _ready() -> void:
 	behavior_section("PROP / CARD / OVERLAY LAYERING")
 	await test_normal_prop_above_cards()
 	await test_held_card_above_resting()
-	await test_status_above_face()
 	await test_fx_inside_its_host()
 	await test_overlay_above_everything()
 	behavior_section("HOOP PASSES THROUGH A CARD (front/back split)")
@@ -350,25 +349,10 @@ func test_held_card_above_resting() -> void:
 	pa.ungrab_cards()
 	await cleanup(g, pa)
 
-## A card's StatusLayer draws above its own face polygons (last child of `visual`).
-func test_status_above_face() -> void:
-	var g := make_board_game(2)
-	var pa := make_play_area()
-	await settle(pa)
-	var card := g.state.upper_zone[0].datas[0]
-	card.add_status(CardModifierStatus.stacked(StatusJuggling, 2))
-	var vis : CardVisual = pa.data_card.get(card)
-	await get_tree().process_frame
-	check(vis != null and vis.status_layer != null and vis.status_layer.visible,
-			"the card shows its status layer")
-	var order := dump_draw_order("card with a status", vis)
-	var status_rank := draw_rank(order, vis.status_layer)
-	var art_rank := draw_rank(order, vis.art)
-	check(status_rank > art_rank,
-			"StatusLayer renders above the card's Art (and every face polygon)",
-			"status %d vs art %d" % [status_rank, art_rank])
-	check_impl(vis.status_layer.z_index == 0, "StatusLayer carries no z_index (last-child order)")
-	await cleanup(g, pa)
+# The StatusLayer's "status icons draw above the card's face" check lived here and is DELETED with
+# the layer itself (owner 2026-08-04: statuses are represented by their FX now, and their names and
+# stack counts by the inspector text). The claim it made is not lost — `test_fx_inside_its_host`
+# below asserts exactly the same ordering for what actually represents a status today.
 
 ## Shader FX is a CHILD of its host: above the card's own face, but still inside the CardVisual
 ## subtree, so a card that overlaps this one paints over the flames too (owner ruling 2). That is

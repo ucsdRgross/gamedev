@@ -1,5 +1,8 @@
 # FX_HANDOFF.md — live handoff, updated 2026-07-30 (FX PERFORMANCE IS **PAUSED**, not finished)
 
+> ⚠ **STALE SINCE 2026-08-06: the card is 40x54, not 38x50** (the outline change). Every measured FX number in this file was taken on a 38x50 card and is stale by **~12 % of fill** — the quad went 84.8² -> ~89.2², the diagonal 62.80 -> 67.20, the card area 1900 -> 2160 art². The ARGUMENTS all still hold; the NUMBERS want re-running with `fx_cost.gd` before any of that budget is spent again. They are deliberately left as measured rather than rescaled by hand.
+
+
 🟢 **THERE IS NO OPEN ENGINEERING TASK IN THIS FILE.** The fire effect's LOOK is closed (§0, §0c), and
 the performance pass of 2026-07-29/30 took the worst window the game can build from **12.07 to 5.82 ms of
 GPU**. Owner, 2026-07-30, after the last measurement: *"sure lets stop here then."*
@@ -1369,7 +1372,7 @@ driver, which is why the original measurement had to use wall-clock).
    the down-march, which is ~20 mask lookups.
 3. **THE QUADS TOOK THE BOX BOUND.** `FxRequest.rotates_with_host` is a per-REQUEST property now: the
    juggling quads set it false (the pattern does not turn with its host — §4 proves it), so they keep
-   the 38x50 box instead of the 62.4 diagonal, ~22 % of their fill. Fire on a card still needs the
+   the 38x50 box instead of the 62.80 diagonal (38x50; 67.20 at 40x54), ~22 % of their fill. Fire on a card still needs the
    diagonal, and still gets it.
 
 ### 1b. ✅ SUPERSEDED — THIS LEVER HAS SINCE SHIPPED, AND ITS "TRAP" WAS A HARNESS FLAKE (§0d)
@@ -1679,7 +1682,7 @@ window the game can build misses it by 1.5x.
 
 ⚠ **And that reframes what is worth fixing.** Fragment count, not lookup cost, is the multiplier:
 
-- **FILL.** A 38x50 card gets an **84.8 x 84.8** quad — `body.length()` (the 62.4 diagonal, because a
+- **FILL.** A 38x50 card gets an **84.8 x 84.8** quad — `body.length()` (the 62.80 diagonal (38x50; 67.20 at 40x54), because a
   card CAN spin) plus reach on all four sides. That is **3.8x the card's own area**, so a packed
   window draws the fire shader ~3.8 times over. Most of those fragments are empty quad corners that
   still run the whole march.

@@ -3,7 +3,7 @@ extends TestSuite
 # ==============================================================================
 # UI PROPS (SUIT_PROPS_PLAN Phases 4-5): the VIEW side of the prop pipeline —
 # PlayArea slot geometry, PropLayer's begin_prop_tick/tick_done contract (spawn,
-# travel, teleport blink, despawn, card reactions), the StatusLayer + tooltip
+# travel, teleport blink, despawn, card reactions), the status FX + tooltip
 # surfaces, the keyboard/controller focus inspector, and one full Submit through
 # a real GameView (the actual game_view.begin_prop_tick seam) under a watchdog.
 #
@@ -904,10 +904,14 @@ func test_status_and_description_surface() -> void:
 	var card := g.state.upper_zone[0].datas[0]
 	card.add_status(CardModifierStatus.stacked(StatusJuggling, 2))
 	var vis : CardVisual = pa.data_card.get(card)
-	check(vis != null and vis.status_layer.visible,
-			"a front-facing card with a status shows its status layer")
-	check_impl(vis != null and vis.status_layer.data == card,
-			"the status layer draws from the card's own data")
+	# A status's ONLY card-side presence is now its FX — the StatusLayer that drew a placeholder icon
+	# and a stack count in the card's top-left is deleted (owner 2026-08-04). So the surface to assert
+	# is that the status DECLARED something and the card is showing it; a status that declares no FX is
+	# deliberately invisible on the board, and `CardModifierStatus.fx_request` carries that rule.
+	check(vis != null and not vis._fx_requests().is_empty(),
+			"a card with a status collects that status's declared FX")
+	check_impl(vis != null and vis.fx != null and vis.fx.visible,
+			"the front-facing card is showing its FX attachment")
 	# describe_card is THE text every inspector surface shows (focus panel, viewers)
 	var text := ControlCard.describe_card(card)
 	check(text.contains(StatusJuggling.new().get_str()) and text.contains("×2"),

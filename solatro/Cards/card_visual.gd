@@ -4,8 +4,37 @@ class_name CardVisual
 
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
-const CARD_SIZE := Vector2(40,54)
-const CARD_SEPARATION : int = 14
+## THE CARD FACE AS THE SHEET DRAWS IT — one frame of `card_types.png`, in art units (= source texels).
+## The card the player sees is this plus the outline shader's rim on all four sides.
+const CARD_ART_SIZE := Vector2(38, 52)
+## The rim `Shaders/outline.gdshader` paints, in art units. Not a second opinion — `CardOutline` owns it.
+const ART_OUTLINE := CardOutline.WIDTH
+## The DRAWN card: 40x54, and stated as art + rim rather than typed as a number.
+##
+## ⚠ **THE MASK AND THE DRAWN EDGE AGREE ONLY BECAUSE THE RIM EXACTLY FILLS THE POLYGON, AND NOTHING
+## ELSE IN THE CODE SAYS SO.** A card's FX mask is GEOMETRY-derived — `_ready` hands `fx` the star rig's
+## arm tips, which know nothing about what a shader painted — so if the outline were ever switched off,
+## the art would shrink to 38x52 while the mask still said 40x54 and every flame would root itself one
+## art unit off the art on all four sides (2.5 screen px at the default card_scale, against a fire that
+## reaches 7 units). It would not snap back. Writing the size this way is what makes that coupling
+## visible; the mask insets by `ART_OUTLINE`, so setting the rim to zero moves both together.
+##
+## ⚠ **It is NOT a one-line "remove the outline", and should not be sold as one.** The 16 bones are
+## AUTHORED in card_visual.tscn, not derived from anything here, so a real removal is still a scene edit
+## plus a skin re-bake. This constant makes the shader and the mask follow; the skeleton cannot.
+##
+## ⚠ **And do not "fix" the mask by reading it from alpha instead.** The rig is what DEFORMS: alpha can
+## describe the shape at rest but cannot say where it went when `Arm_TopLeft` swings out 26 %. Reading
+## the mask from the rig is what makes flames track a bending card at all.
+const CARD_SIZE := CARD_ART_SIZE + Vector2.ONE * ART_OUTLINE * 2.0
+## The strip of a covered card that stays visible in a stack, in art units.
+##
+## ⚠ **14 -> 16 came with the outline, and it is a BOARD-LAYOUT change, not just a card change** (owner:
+## *"pip added 2 pixels, need 2 unit clearance to account for animations"*). The arithmetic lands
+## exactly: the outlined pip row now ends 14 units below the card's top edge (4 of margin + a 10-unit
+## outlined pip), and 14 + 2 of clearance for the idle rig = 16. Every stacked card therefore sits 2
+## units further down and a tall column grows ~14 %.
+const CARD_SEPARATION : int = 16
 ## How far anim_jump lifts a card, in UNSCALED units. Shared, not a literal inside the animation:
 ## props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide —
 ## `PropVisual.rides_card_jump` reads `jump_rise_play` for that. Change it here and the ring
@@ -107,10 +136,6 @@ func update_visual() -> void:
 	# a face already set during _ready (e.g. the instant-face snap for non-drawn cards).
 	if not is_node_ready():
 		await ready
-	if status_layer:
-		# Statuses show only on the card's front face.
-		status_layer.visible = show_front and data != null
-		if status_layer.visible: status_layer.refresh(data)
 	if fx:
 		# FX draws OUTSIDE the silhouette, so it would leak a face-down card's statuses unless
 		# gated — a hidden card must reveal zero information (owner ruling 23). This is the one
@@ -124,15 +149,19 @@ func update_visual() -> void:
 			rank.show()
 		else: rank.hide()
 		if data.suit:
-			# The pip keeps its OWN colours (set_texture clears the material); only the suit-agnostic
-			# art — the rank pip here, the card art below — is recoloured to the suit's palette entry.
+			# The pip keeps its OWN colours (its sheet is authored in the palette); only the
+			# suit-agnostic art — the rank pip here, the card art below — is recoloured to the suit's
+			# palette entry. Both wear the outline material either way; what differs is the fill mode.
 			data.suit.set_texture(suit)
 			data.suit.set_material(rank)
 			suit.show()
 		else:
 			suit.hide()
-			rank.material = null  # suitless preview cards render their rank uncolored
-			
+			# Suitless preview cards have no palette role to recolour their rank to, so it draws the
+			# sheet's own colours. NOT `material = null`: that would take the rim with it, and on a
+			# pooled polygon it would do so only for the cards that happened to land there.
+			CardOutline.fill_texture(rank)
+
 		if data.type:
 			data.type.set_texture(type)
 			type.show()
@@ -160,16 +189,100 @@ func update_visual() -> void:
 		art.hide()
 
 		#placeholder
-		CardModifier.update_polygon_uv_frame(
-			type,CardModifierType.TYPE_TEXTURE, 
+		CardOutline.frame_polygon(
+			type,CardModifierType.TYPE_TEXTURE,
 			CardModifierType.H_FRAMES,
 			CardModifierType.V_FRAMES,
 			1)
+		CardOutline.fill_texture(type)
 		type.show()
+	_push_outline_ink()
+
+## ONE OUTLINE INK PER CARD, resolved here and pushed to all five polygons (design D7 / §2e).
+##
+## ⚠ **THIS INVERTS WHO OWNS THE MATERIAL, and that is the structural half of this feature.** Every
+## modifier still sets its own polygon's TEXTURE and FILL — those are facts about the element. The
+## outline colour is a fact about the CARD, so resolving it inside each modifier would derive the same
+## thing five times and leave nowhere for a per-type override to land. It is resolved once, here.
+##
+## The value comes from the card's TYPE, because the type is the card's whole face and the ink has to
+## work against it. A card with no type (a placeholder, a stripped test card) falls back to the shared
+## `art_outline` role, which is the same default an unauthored type answers with.
+func _push_outline_ink() -> void:
+	var style := outline_style()
+	for poly : Polygon2D in [type, rank, stamp, suit, art]:
+		CardOutline.set_rim(poly, style, CARD_SIZE)
+	_push_alert()
+
+## THIS CARD'S OUTLINE STYLE — its TYPE's, or the shipped default when it has no type (a placeholder, a
+## stripped test card). The type owns it because the type is the card's face and the ink's job is to
+## read against that face.
+func outline_style() -> OutlineStyle:
+	if data and data.type: return data.type.outline_style()
+	return CardOutline.STYLE
+
+## THE LIVE ALERT, re-derived from the card's statuses and pushed to all five polygons.
+##
+## ⚠ **RE-DERIVED, NOT TOGGLED** — see `CardModifierStatus.alert_request`. Because this runs on every
+## refresh and reads the whole status list, an alert whose status was removed, merged away or rewound
+## is already off, and two simultaneous alerts cannot switch each other off. There is deliberately no
+## "stop alerting" method to call, and adding one would reintroduce exactly the leak this avoids.
+##
+## The shader runs ONE kind at a time, so when several statuses alert together the LAST declared wins —
+## the same "later draws on top" tie-break `_fx_requests` uses, for the same reason: the status list is
+## ordered and the order is the card's own.
+func _push_alert() -> void:
+	var reqs := _alert_requests()
+	_alert = reqs[reqs.size() - 1] if not reqs.is_empty() else null
+	var style := outline_style()
+	for poly : Polygon2D in [type, rank, stamp, suit, art]:
+		CardOutline.set_alert(poly, _alert, style)
+	if not _alert:
+		# Park the phase at rest so a card that alerted and stopped is bit-identical to one that never
+		# did — otherwise the next alert would start wherever the last one happened to be interrupted.
+		_alert_clock = 0.0
+		_push_alert_clock()
+
+## Every outline alert this card's statuses ask for, in status order. The alert twin of `_fx_requests`,
+## and generic in the same way: CardVisual never names an alert.
+func _alert_requests() -> Array[CardAlert]:
+	var reqs : Array[CardAlert] = []
+	if not data: return reqs
+	for status : CardModifierStatus in data.statuses:
+		reqs.append_array(status.alert_request())
+	return reqs
+
+func _push_alert_clock() -> void:
+	for poly : Polygon2D in [type, rank, stamp, suit, art]:
+		CardOutline.set_clock(poly, _alert_clock)
+
+## The alert currently running on this card's outline, or null. Null is the overwhelmingly common case
+## and is what makes the per-frame cost of this feature one null check on a resting board.
+var _alert : CardAlert = null
+## The alert's phase, in TURNS — one full bounce per unit. Advanced in `_process` while `_alert` is
+## live; the shader takes `fract()` of it, so it never needs wrapping here.
+var _alert_clock : float = 0.0
+
+## Advance the alert's phase over a period that is a FRACTION OF THE LIVE DELAY, so the cue quickens
+## with act compression exactly as the cascade it is announcing does (START_HERE rule 4).
+##
+## ⚠ Note this does NOT also multiply by `FxAttachment.pacing()`, and must not: `pacing()` IS
+## `base_delay / get_delay()`, so dividing by a period already built from `get_delay()` applies the
+## same compression a second time and the alert would race the board it is pacing against.
+func _advance_alert(delta : float) -> void:
+	var delay : float = settings().base_delay
+	if CardEnvironment.CURRENT: delay = CardEnvironment.CURRENT.get_delay()
+	# get_delay() reaches zero under the compression floor and on an undo-cancel snap; a zero period
+	# would divide by nothing and NaN the uniform, so floor it the way anim_spin_start does.
+	# The period follows the same three-layer resolution the colours do: this alert's own value if it
+	# named one, else THIS CARD's style — and glare and throb read different fields of it, because they
+	# are different cues and share no tempo.
+	var period := maxf(_alert.resolved_period(outline_style()) * delay, 0.05)
+	_alert_clock += delta / period
+	_push_alert_clock()
 
 ## Every visual effect this card's statuses ask for, in status order (later draws on top). Generic
-## by construction: CardVisual never names an effect — statuses declare their own via fx_request(),
-## exactly as they declare their own icon via draw_icon.
+## by construction: CardVisual never names an effect — statuses declare their own via fx_request().
 func _fx_requests() -> Array[FxRequest]:
 	var reqs : Array[FxRequest] = []
 	if not data: return reqs
@@ -195,9 +308,10 @@ var hover : bool = false
 ## **WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD** — the centre of the ART SQUARE, not the card's own
 ## origin (design `Q85`: *"Radius 16 art units, centred on the card's art-square centre"*).
 ##
-## ⚠ **THE TWO ARE NOT THE SAME POINT AND THE DIFFERENCE IS VISIBLE.** `Art` sits at `(0, 5)` inside
-## `Visual` and its polygon spans ±16, so the square is 32 art units across — exactly the diameter
-## `Q85`'s radius of 16 describes. Centring on the card origin instead put the pool high and made it
+## ⚠ **THE TWO ARE NOT THE SAME POINT AND THE DIFFERENCE IS VISIBLE.** `Art` sits at `(0, 6)` inside
+## `Visual` and its polygon spans ±17, so the square is 34 art units across — 32 of drawing plus the
+## shader's 1-unit rim on each side, which is why `Q85`'s radius of 16 became 17. Centring on the card
+## origin instead put the pool high and made it
 ## ambiguous WHICH card in a stack was lit, which is what the owner reported on 2026-08-04:
 ## *"hard to tell which card circle it is on currently"*.
 ## ⚠ **ASKED OF THE CARD, never re-derived by the caller.** The offset is authored in
@@ -208,11 +322,15 @@ func spotlight_center() -> Vector2:
 	# `art` is `@onready`; a card asked before it is in the tree answers with the honest fallback
 	# rather than crashing, and the caller's own `is_inside_tree` guard is what normally prevents it.
 	return art.global_position if art else global_position
-## Phase 5 status icons — created at runtime (no .tscn slot) so a status_pips.png asset isn't
-## required; sits in the card's top-left corner and rides the offset like the polygons.
-var status_layer : StatusLayer
-## Shader effects for this card's statuses — created at runtime like status_layer, and a child of
-## OFFSET rather than of `visual` (see _ready).
+## Shader effects for this card's statuses — created at runtime (no .tscn slot, and OWNERLESS: this
+## script is `@tool`, so an owned child would be written into card_visual.tscn by the editor), and a
+## child of OFFSET rather than of `visual` (see _ready).
+##
+## ⚠ **IT IS NOW A STATUS'S ONLY CARD-SIDE PRESENCE.** The `StatusLayer` that used to sit in the card's
+## top-left drawing a placeholder icon and a stack count per status is DELETED (owner 2026-08-04: *"no
+## more status icons, they are represented by status effects like fire and juggling shader... stack
+## count and status names stay in description at top"*). See `CardModifierStatus.fx_request` for the
+## standing rule that creates.
 var fx : FxAttachment
 
 # --- THE STAR RIG, AS THE FX SEE IT ---------------------------------------------------------------
@@ -317,9 +435,17 @@ func _bind_rig() -> void:
 	if data and data.type:
 		var frame_px := CardModifier.frame_size(CardModifierType.TYPE_TEXTURE,
 				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES)
-		# Texels into ART UNITS: the face is CARD_SIZE across the frame, so this is the size of one of
-		# the drawing's own pixels — 1.0 on a card, and derived rather than assumed.
-		var per_texel := CARD_SIZE / Vector2(maxf(frame_px.x, 1.0), maxf(frame_px.y, 1.0))
+		# Texels into ART UNITS: the size of one of the drawing's own pixels — 1.0 on a card, derived
+		# rather than assumed.
+		#
+		# ⚠ **DIVIDE BY THE INNER RECT, NOT BY `CARD_SIZE`.** This read `CARD_SIZE / frame_px` and was
+		# exactly 1.0 only because the type frame WAS the card. It is not any more: the frame is 38x52
+		# inside a 40x54 polygon, so the old expression gives (1.0526, 1.0385) and silently inflates
+		# every corner notch by 4-5 % — under a comment still asserting the value is 1.0. Nothing about
+		# the line looks size-dependent, which is what made it the likeliest thing in this change to be
+		# missed. `test_pixels` now asserts the 1.0 directly.
+		var inner := CARD_SIZE - Vector2.ONE * ART_OUTLINE * 2.0
+		var per_texel := inner / Vector2(maxf(frame_px.x, 1.0), maxf(frame_px.y, 1.0))
 		_notch_frac = notch_fraction(CARD_SIZE, data.type.corner_notch() * per_texel)
 	# Three points per corner instead of one, wherever there is a bite to describe.
 	var extra := 8 if _notch_frac.x > 0.0 and _notch_frac.y > 0.0 else 0
@@ -386,21 +512,11 @@ func _ready() -> void:
 	stamp.hide()
 	suit.hide()
 	art.hide()
-	status_layer = StatusLayer.new()
-	# Top-left of the card face in UNSCALED local coords (the root's `scale` applies card_scale,
-	# exactly like the polygon children) — using the scaled card_size here would double-apply it.
-	status_layer.position = Vector2(-CARD_SIZE.x * 0.5 + 3.0, -CARD_SIZE.y * 0.5 + 3.0)
-	# No z_index: added LAST under `visual` (after every face polygon), so it draws on top by
-	# tree order. A relative z here would resolve non-zero and jump the whole structural scheme
-	# (props/overlay), the global-z trap — see LAYERING.md.
-	visual.add_child(status_layer)
-	status_layer.refresh(data)
 	# FX hangs off OFFSET, never off `visual`: `visual` carries the basis3d flip, which squashes
 	# its basis to ZERO at edge-on (:66-71), and the effects' quads must never inherit a singular
 	# matrix. Added after `visual`, so it draws above the card's own face while the whole
-	# CardVisual subtree stays one unit in CardLayer's draw order. Runtime-only and OWNERLESS,
-	# exactly like status_layer: this script is @tool, and an owned child would be written into
-	# card_visual.tscn by the editor.
+	# CardVisual subtree stays one unit in CardLayer's draw order. Runtime-only and OWNERLESS: this
+	# script is @tool, and an owned child would be written into card_visual.tscn by the editor.
 	# THE RIG IS BOUND IN EITHER MODE, because the FX EDITOR previews a REAL card and needs the same
 	# outline the game hands over (owner 2026-07-29: *"no useless mocks when you can just use actual
 	# original scene"*). It is a `get_node_or_null` and a child walk; nothing about it needs a game.
@@ -503,6 +619,9 @@ func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
 	if floating: delta_floating_anim(delta)
 	_track_fx_outline()
+	# Gated on an alert being live, so a resting board — which is nearly every card, nearly always —
+	# pays one null check rather than five `set_shader_parameter` calls per frame.
+	if _alert: _advance_alert(delta)
 
 var rot_delta : float
 var y_delta : float
@@ -675,14 +794,22 @@ var editor_bake_mesh : Callable = func() -> void:
 	generate_editor_mesh(target_polygon_node, bake_sample_texture, bake_h_frames, bake_v_frames, subdivisions_x, subdivisions_y)
 	print("CardVisual Tool: Successfully baked ", target_polygon_node.name, " diamond grid structure!")
 
-## Bakes a pristine diamond grid while isolating internal vertices from the perimeter chain
+## Bakes a pristine diamond grid while isolating internal vertices from the perimeter chain.
+##
+## ⚠ **THE POLYGON IS THE FRAME PLUS THE OUTLINE'S MARGIN, NOT THE FRAME.** This built the mesh at
+## exactly frame size, which is correct for a polygon that draws nothing but its art and WRONG for
+## every polygon on a card, because `Shaders/outline.gdshader` can only write inside its own polygon:
+## with no margin there is nowhere for the rim to go, and `CardOutline.frame_polygon` would stretch the
+## art over the whole box instead. Re-baking without this pad is therefore a silent way to delete the
+## outline from one element and make its art 25 % too big — which is exactly the kind of thing that
+## gets found weeks later, so the pad lives here rather than in a checkbox someone has to remember.
 func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, subdiv_x: int, subdiv_y: int) -> void:
 	poly.texture = tex
-	
+
 	var sheet_size := tex.get_size()
-	var frame_w := sheet_size.x / h_f
-	var frame_h := sheet_size.y / v_f
-	
+	var frame_w := sheet_size.x / h_f + ART_OUTLINE * 2.0
+	var frame_h := sheet_size.y / v_f + ART_OUTLINE * 2.0
+
 	var x_segments := subdiv_x + 1
 	var y_segments := subdiv_y + 1
 	
@@ -764,13 +891,17 @@ func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, s
 	poly.internal_vertex_count = internal_vertices.size()
 
 	# --- STEP 3: ASSIGN FIXED BASELINE UV MAP (FRAME 0) ---
+	# The padded window of frame 0, so this baseline agrees with what `CardOutline.frame_polygon`
+	# writes at runtime: the frame's own texels sit in the middle and the polygon's outer ring hangs
+	# `ART_OUTLINE` texels OUTSIDE the sheet on the top and left. That overhang is intentional and
+	# harmless — the shader's frame clamp reads everything beyond the frame as empty either way.
 	var initial_uvs := PackedVector2Array()
 	initial_uvs.resize(final_vertices.size())
 	for i in range(final_vertices.size()):
 		var p := final_vertices[i]
 		var norm_x := (p.x / frame_w) + 0.5
 		var norm_y := (p.y / frame_h) + 0.5
-		initial_uvs[i] = Vector2(norm_x * frame_w, norm_y * frame_h)
+		initial_uvs[i] = Vector2(norm_x * frame_w, norm_y * frame_h) - Vector2.ONE * ART_OUTLINE
 	poly.uv = initial_uvs
 	poly.notify_property_list_changed()
 
@@ -816,12 +947,27 @@ var editor_setup_skeleton : Callable = func() -> void:
 	var br := Vector2(radius_horizontal, lowest_y)
 	var bl := Vector2(-radius_horizontal, lowest_y)
 
-	# 2. Reset and build the clean Skeleton2D node layer
-	var skeleton: Skeleton2D = get_node_or_null("Skeleton2D")
-	if skeleton: skeleton.queue_free()
+	# 2. Reset and build the clean Skeleton2D node layer.
+	#
+	# ⚠ **UNDER `Offset/Visual`, BESIDE THE POLYGONS — NOT UNDER THE ROOT.** This looked the skeleton up
+	# at `"Skeleton2D"` and re-added it with `add_child(self)`, while the shipped scene keeps it at
+	# `Offset/Visual/Skeleton2D` and `_bind_rig` looks it up at
+	# `Offset/Visual/Skeleton2D/Bone_Center`. So a re-bake found no existing skeleton to replace, left
+	# the real one in place, and parented a SECOND one at the root — where it inherits neither the bob
+	# nor the basis3d flip the polygons ride, and where `_bind_rig` never sees it.
+	#
+	# ⚠ It still `queue_free`s the outgoing skeleton, which orphans both animations' track paths until
+	# the regenerated bone names match. They do at `edge_subdivisions = 3`; at any other value the
+	# animation tracks must be re-pointed by hand.
+	var skeleton: Skeleton2D = visual_container.get_node_or_null("Skeleton2D") as Skeleton2D
+	if skeleton:
+		# Renamed before freeing: `queue_free` is deferred, so the outgoing node still holds the name
+		# when the new one is added and Godot would silently make the new one "Skeleton2D2".
+		skeleton.name = "Skeleton2D_outgoing"
+		skeleton.queue_free()
 	skeleton = Skeleton2D.new()
 	skeleton.name = "Skeleton2D"
-	add_child(skeleton)
+	visual_container.add_child(skeleton)
 	skeleton.owner = get_tree().edited_scene_root
 
 	# 3. CREATE THE SINGLE SHARED CENTRAL CORE ROOT BONE

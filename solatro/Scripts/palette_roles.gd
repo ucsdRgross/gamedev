@@ -20,7 +20,9 @@ extends Resource
 ## are listed in todo.md and warn every test run until their art exists.
 
 @export_group("Suits")
-## Rank pip + card art on each suit's cards, via Assets/color_picker.gdshader. NOT the suit pip itself:
+## Rank pip + card art on each suit's cards, via Shaders/outline.gdshader's PALETTE fill mode (which
+## absorbed the old standalone color_picker.gdshader — a Polygon2D has one material, and these two
+## elements need both the recolour and the rim). NOT the suit pip itself:
 ## suit_pips.png is authored in the palette and draws its own colours (ARCHITECTURE_REVIEW §4h).
 @export_range(0, 255, 1) var suit_hoop : int = 30
 @export_range(0, 255, 1) var suit_knife : int = 11
@@ -36,6 +38,20 @@ extends Resource
 @export_group("Effects")
 ## The juggled ball's specular dot. Its BODY tones are an ordered ramp, not a role — see PaletteRamp.
 @export_range(0, 255, 1) var ball_gloss : int = 31
+
+# ⚠ **`art_outline` AND `alert_glare` LIVED HERE AND WERE MOVED, NOT COPIED** (2026-08-06). They are the
+# card outline's ink and its glare band, and keeping them here split ONE effect's tuning across two
+# resources: judging an ink on `tools/outline_atlas.tscn` meant editing a different file from the one
+# holding the rim's width, tempo and buffer. They now live in `OutlineStyle`
+# (`Shaders/Styles/outline_default.tres`) with the rest of that effect.
+#
+# ⚠ **THAT IS NOT A BREACH OF §4i, AND THE PRECEDENT IS `PaletteRamp`.** The rule is *no raw `Color`
+# literals; every colour is a palette POINTER with exactly ONE home* — not *every pointer lives in this
+# file*. `ramp_fire.tres` has always held its own `Array[int]` of indices out here. This file keeps the
+# single semantic colours of THINGS (a suit, a status); an effect's own index set belongs with the
+# effect. They are still indices, so a palette swap still moves them.
+#
+# ⚠ Do not "restore" them here. Two homes for one pointer is worse than either home alone.
 
 ## Every role, in inspector order. The one list the previews, the range test and any future iteration
 ## read — adding a role means adding its @export above and its name here.

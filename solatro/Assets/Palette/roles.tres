@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PaletteRoles" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PaletteRoles" format=3 uid="uid://h64pclsbr0i4"]
 
-[ext_resource type="Script" path="res://Scripts/palette_roles.gd" id="1_roles"]
+[ext_resource type="Script" uid="uid://bmmt1n8hicp0l" path="res://Scripts/palette_roles.gd" id="1_roles"]
 
 [resource]
 script = ExtResource("1_roles")

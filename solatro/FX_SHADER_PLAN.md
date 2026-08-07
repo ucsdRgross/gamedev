@@ -1078,8 +1078,8 @@ Two consequences to handle rather than discover:
 ```gdscript
 ## The quad must bound the host AT EVERY ROTATION plus the flames above it, or its edge clips.
 ## The quad stays world-aligned (§2) while the host turns inside it, so the bound is the host's
-## CIRCUMSCRIBED extent — its DIAGONAL — not its box: a 38x50 card is 62x62 at 45 degrees, and
-## anim_spin_start turns it through every angle. Sizing to 38x50 would shear the corners off the
+## CIRCUMSCRIBED extent — its DIAGONAL — not its box: a 40x54 card is 67.2x67.2 at 45 degrees, and
+## anim_spin_start turns it through every angle. Sizing to 40x54 would shear the corners off the
 ## silhouette and cut the flames rooted there.
 ## Inputs exist already: CardVisual.CARD_SIZE for cards, PropVisual.body_size for props.
 func _extent(body: Vector2, height: float) -> Vector2:

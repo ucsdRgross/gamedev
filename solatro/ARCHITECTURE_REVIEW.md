@@ -740,7 +740,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
   between sizes.
   - **⚠ Undo the Y FLIP when snapping.** `fx_local` quantizes and THEN negates y, so the art-space y
     lattice is `extent.y/2 - (j+0.5)·cell` while x is `(k+0.5)·cell - extent.x/2`. Those coincide only
-    when `extent/pixel` is a whole number, which it generally is not (62.4 at pixel 1.0). Snapping y
+    when `extent/pixel` is a whole number, which it generally is not (67.20 at pixel 1.0 on a 40x54 card). Snapping y
     with the x formula lands between rows and the asymmetry survives — it did, on the first attempt.
   - **⚠ The ball-fire quad must snap on the BALL quad's lattice**, not its own: the two have different
     reaches and different `pixel`. `FxRequest.partner_reach` / `partner_pixel` carry it, pushed as
@@ -1014,13 +1014,18 @@ behind the occupied card, its RIGHT arc the near side, in front. That matches `f
 card too. `SHAPE_RING` is an **ellipse** from `u_body`, not a circle of its half-width — a circle sat
 the flames deep inside an 80×180 arc.
 
-**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** `Assets/color_picker.gdshader` replaces a
-polygon's RGB with a palette entry while the polygon's texture supplies the alpha, so it flattens
-whatever it touches to ONE colour. Therefore:
+**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** ⚠ Since 2026-08-06 this is
+`Shaders/outline.gdshader`'s PALETTE fill mode, not a shader of its own —
+`Assets/color_picker.gdshader` is DELETED, absorbed whole (§4j: a Polygon2D has one material, and the
+rank pip and the card art need both the recolour and the rim). The behaviour is unchanged: it replaces
+a polygon's RGB with a palette entry while the texture supplies the alpha, so it flattens whatever it
+touches to ONE colour. Therefore:
 
 - The **suit pip** draws the sheet's own colours — `suit_pips.png` is authored in the palette, each
-  frame already shaded with its suit's ramp. `PipSuit.set_texture()` CLEARS the material (these
-  polygons are pooled and reused, so a stale material from a previous binding would survive).
+  frame already shaded with its suit's ramp. ⚠ `PipSuit.set_texture()` used to CLEAR the material,
+  because these polygons are pooled and reused and a stale one would survive a rebind. It must NOT any
+  more — every element is an outline client, so a `null` there strips the rim off whichever cards land
+  on a recycled polygon. The stale-state problem is now solved by OVERWRITING the uniforms (§4j).
 - The **rank pip** and the **card art** are shared by every suit, so they are recoloured to that
   suit's `palette_role()` (§4i).
 - The palette IMAGE and `num_colors` are both pushed from `PaletteDB` at bind time. Neither is
@@ -1073,9 +1078,10 @@ reassign to different colors especially if the palette changes."*
   stacks means hotter bands rather than the same bands brightened. `FxStyle.ramp_window` /
   `ramp_edges` / `ramp_cut`; built by `PaletteRamp.window_texture()` at load and cached on the style.
   There is no build step and no baked ramp PNG any more (`tools/make_fx_ramp.py` deleted).
-- **The recolour shader is handed the palette; it does not own one.** `Assets/color_picker.gdshader`
-  (a plain shader now — the old VisualShader had the palette texture baked INSIDE it, which is why a
-  swap recoloured nothing). `PipSuit.set_material()` pushes `palette`, `color_x` and `num_colors`.
+- **The recolour shader is handed the palette; it does not own one.** `Shaders/outline.gdshader`
+  (the old VisualShader had the palette texture baked INSIDE it, which is why a swap recoloured
+  nothing). `CardOutline.material_of()` pushes `u_palette` and `u_num_colors` once per material;
+  `PipSuit.set_material()` pushes the entry via `CardOutline.fill_palette()`.
 - **Roles are named for MEANING** (`status_flame`), never for colour (`orange`) — a role called
   `orange` is a literal in a costume and stops surviving the first palette change. `ROLE_NAMES` lists
   every role; a role missing from it is never range-checked again (a test pins the two together).
@@ -1102,6 +1108,63 @@ touches the exit code. Pixels: `16_palette_swap` (§4h) and `tools/palette_confo
 reports off-palette pixels in the captured PNGs (a review instrument — FX quads alpha-blend, so
 blended pixels legitimately are not entries; look for LARGE single-colour clusters far from any
 entry).
+
+---
+
+## 4j. THE CARD OUTLINE — a shader draws the card's shape now (2026-08-06)
+
+`Shaders/outline.gdshader` rims every element of a card — face, rank/suit/stamp pips, art — with a
+1-unit 8-directional palette colour, and ABSORBED `Assets/color_picker.gdshader` (deleted): a
+Polygon2D has one material and the rank pip and card art need both the recolour and the rim. The card
+grew `38x50 -> 40x54` to make room. Design record: `design/card_size_outline/`.
+
+**THE ONE RULE: the source frame maps to the polygon's INNER rect, and the polygon extends
+`CardOutline.WIDTH` past it on all four sides** — 8x8 art in a 10x10 polygon, 32x32 in 34x34, the face
+38x52 in 40x54. `CardOutline.frame_polygon` is the only supported way to UV such a polygon;
+`CardModifier.update_polygon_uv_frame` (unpadded) stays for PROPS, which get no outline at all.
+
+**Tuning** is `Shaders/Styles/outline_default.tres` (`OutlineStyle`, instance `CardOutline.STYLE`):
+rim ink + width, and each alert kind's colour, tempo, thickness, side buffer. `tools/outline_atlas.tscn`
+edits it, so tuning there moves the board. Three override layers, resolved LATE: shipped style → the
+TYPE's own (`CardModifierType.outline_style()`) → an individual `CardAlert`'s fields.
+
+### The landmines
+
+| ⚠ | Why |
+|---|---|
+| **`CARD_SIZE` is DERIVED** (`CARD_ART_SIZE + 2 * ART_OUTLINE`) | The FX mask is geometry-derived (rig arm tips) and cannot see what a shader painted; it agrees with the drawn edge only because the rim fills the polygon exactly. Not a one-line "remove the outline" — the 16 bones are authored in the scene. Do NOT re-derive the mask from alpha; the rig is what DEFORMS. |
+| **No polygon on a card may be left MATERIAL-LESS** | The old `= null` was deliberate (pooled polygons, stale materials). Now it strips the rim off whichever cards land on a recycled node. Overwrite uniforms instead. |
+| **Every `CardAlert` field is the sentinel `-1` until PUSH time** | A status builds its request without knowing which card reads it. Resolving at construction bakes the shipped defaults in and makes the TYPE layer unreachable — looks right on the default type, wrong on every other. |
+| **Tap via `TEXTURE_PIXEL_SIZE`; write no `vertex()`** | Skinning moves vertices and leaves UVs, so a texture-space rim rides deformation. A screen-space one detaches — and passes every rest-pose check. A custom `vertex()` breaks Godot's 2D skinning. Both asserted in `test_outline.gd`. |
+| **Never pass `TEXTURE` to a shader function** | Compiles on GLES3, REJECTED by the editor's compiler. The suite went green while every `@tool` host threw. Tap inline in `fragment()`. |
+| **Sheets are NOT padded; the shader clamps to `u_frame_uv`** | Padding would forbid bleed by construction but pin the rim at 1px forever. Bleed is therefore introducible, and is tested against a CPU oracle. |
+| **`_bind_rig`'s `per_texel` divides by the INNER rect** | `CARD_SIZE / frame_px` was 1.0 only while the type frame WAS the card; it now inflates every corner notch 4-5 %. Nothing about the line looks size-dependent. |
+| **`OutlineStyle.width` cannot exceed `CardOutline.WIDTH`** | The const is geometry (polygons baked at `frame + 2*WIDTH`). Above it the rim clips; 0 turns it off. Wider = re-bake. Deliberately not clamped, so the cost is visible. |
+| **The alert is DECLARED by statuses, never pushed** | An imperative on/off leaks when a status is freed, merged or rewound mid-alert. `CardVisual` re-derives every refresh. There is no "stop" method; adding one reintroduces the leak. |
+| **Its clock is a fraction of `get_delay()` — and NOT also `pacing()`** | `pacing()` IS `base_delay / get_delay()`; both would compress twice and the cue would race its own cascade. |
+| **One effect across FIVE polygons** | Evaluated in CARD space (`u_card_offset`, taken from each node's real position), or a card shows five sweeps at different speeds. ⚠ A tool laying frames on a GRID must override it via `CardOutline.set_card_offset` — otherwise only frames landing inside ±20 light (measured: 3 of 126). |
+| **`glare_buffer` fixes a STRUCTURAL blink** | A card's side rims are vertical lines, so the band's centre reaching that x lights the whole side at once. The buffer clamps the sweep AND suppresses the glare in the dead zone, so it tapers. 0 = old behaviour. |
+| **The bake tool pads by `ART_OUTLINE`** | It built polygons at frame size; re-baking without the pad silently deletes an element's outline and makes its art 25 % too big. Unconditional, not a checkbox. |
+| **Add a `CardVisual` to the tree BEFORE assigning `data`** | `data`'s setter awaits `ready`; out-of-tree it suspends forever. Symptom: card and all five polygons report visible, textured, correct transforms — and draw NOTHING. `test_pixels._real_card` and `fx_editor` have the right order. |
+
+**Colours: `art_outline`/`alert_glare` MOVED OUT of `PaletteRoles`, not copied.** §4i's rule is *one
+home per palette pointer*, not *every pointer in that file* — `PaletteRamp` has always held its own
+indices. Roles keep the semantic colours of THINGS; an effect's index set lives with the effect.
+
+**Status icons are gone.** `StatusLayer` and `draw_icon` are deleted (statuses are their FX; names and
+counts are in the inspector text). ⚠ Standing rule: **a status declaring no `fx_request()` now has no
+card-side presence at all.**
+
+⚠ **`tools/` is LOWERCASE on disk and every `res://` path must match.** Old scenes survive a mismatch
+only via `uid=`; a NEW path-referenced scene registers the script twice → *"Class X hides a global
+script class"* → `palette_roles.gd` loads as a PLACEHOLDER → the editor re-saves `roles.tres` with
+every index dropped. `.godot/editor/*.cfg` caches the path too. `test_palette.gd`'s `SCAN_DIRS` must
+match its `ALLOW_FILES`. This is the START_HERE-rule-1 placeholder trap again; its signature is always
+*a `.tres` that comes back from the editor missing properties*.
+
+⚠ **A green suite says nothing about whether the EDITOR can open the project.** Both editor-only
+breakages above passed every test. After touching `@tool` scripts, shaders or `class_name`s, run
+`Godot -e --headless --path solatro --quit` and grep for `SCRIPT ERROR`.
 
 ---
 

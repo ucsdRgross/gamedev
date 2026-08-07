@@ -81,7 +81,7 @@ const int WEDGES = 32;
 const int WEDGE_CANDIDATES = 4;
 
 uniform vec2 u_extent = vec2(64.0);   // the quad's size in art units; UV maps across exactly this
-uniform vec2 u_body = vec2(38.0, 50.0);
+uniform vec2 u_body = vec2(40.0, 54.0);
 uniform vec2 u_inner = vec2(0.0);     // the largest box that fits INSIDE the silhouette
 uniform float u_shape_rot = 0.0;
 uniform vec2 u_poly[POLY];
@@ -101,7 +101,7 @@ uniform float u_layer_radius[MAX_LAYERS];
 uniform float u_layer_gain[MAX_LAYERS];
 uniform float u_inverse_square : hint_range(0.0, 1.0) = 0.6;
 uniform float u_inner_alpha : hint_range(0.0, 1.0) = 0.35;
-uniform float u_circle_radius = 16.0;
+uniform float u_circle_radius = 17.0;
 uniform float u_circle_inner_alpha : hint_range(0.0, 1.0) = 0.5;
 
 // ⚠ **DECLARED, AND THAT IS THE WHOLE POINT** (VFX.md §7.11). `FxAttachment._apply_static` writes
@@ -254,7 +254,7 @@ void fragment() {
 	//
 	// So the two sides use two spans. Outside, the layer's own radius (`Q207`'s multi-exposure).
 	// Inside, `sink` — which is also `Q122`=(c)'s INNER LIFT, a rim of light hugging the art's own
-	// edge rather than a wash filling the whole card. A card is 38x50 art units and sink ships at 4,
+	// edge rather than a wash filling the whole card. A card is 40x54 art units and sink ships at 4,
 	// so the lift is a border, not a fill.
 	float inner_span = max(u_sink, 1e-4);
 
@@ -287,8 +287,9 @@ void fragment() {
 	// real occlusion does.
 	//
 	// ⚠ ON THE LIGHT LAYER THERE IS NO HOST ART TO BE OVER (`u_space` = 1). The disc's own radius
-	// stands in: inside it, the circle is over the card's picture by construction — it is 16 art
-	// units centred on a 32x32 art square, so it covers the whole picture and nothing else — and
+	// stands in: inside it, the circle is over the card's picture by construction — it is 17 art
+	// units centred on the 34x34 art square (32 of drawing plus the outline's 1-unit rim each side),
+	// so it covers the whole picture and nothing else — and
 	// `circle_inner_alpha` is the knob for exactly that (`Q217`=a, its own knob, not the glow's).
 	vec2 raw = fx_local_raw(UV, u_extent);
 	bool over_art = mask_inside(raw);

@@ -23,7 +23,6 @@ const SUIT_TEXTURE_V_FRAMES : int = 8
 const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")     # 13x13 frames
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
-const COLOR_PICKER_SHADER = preload("res://Assets/color_picker.gdshader")
 
 ## 0..4 — art/palette slot ONLY, never orderable.
 @abstract func get_suit_index() -> int
@@ -41,30 +40,26 @@ func get_frame() -> int: return get_suit_index()
 
 ## The suit PIP draws the sheet's own colours: suit_pips.png is authored in the palette (each frame
 ## already shaded with its suit's ramp), so recolouring it would flatten that shading to one flat
-## index. Material explicitly cleared, not left alone — these polygons are POOLED and reused across
-## cards, so a stale ShaderMaterial from a previous binding would otherwise survive.
+## index.
+##
+## ⚠ This used to CLEAR the material (`polygon2d.material = null`), because these polygons are pooled
+## and reused across cards and a stale ShaderMaterial would otherwise survive a rebind. The pip is now
+## an outline client, so clearing it would strip the rim off whichever cards land on a recycled
+## polygon; the stale-state problem is handled by overwriting every uniform instead.
 func set_texture(polygon2d:Polygon2D) -> void:
-	CardModifier.update_polygon_uv_frame(
+	CardOutline.frame_polygon(
 		polygon2d, SUIT_TEXTURE, SUIT_TEXTURE_H_FRAMES, SUIT_TEXTURE_V_FRAMES, get_suit_index())
-	polygon2d.material = null
+	CardOutline.fill_texture(polygon2d)
 
 ## Recolour `polygon2d` to this suit's palette entry — for the SUIT-AGNOSTIC art it shares with
 ## every other suit (the rank pip and the card art), never for the suit pip itself.
 func set_material(polygon2d:Polygon2D) -> void:
-	var material := ShaderMaterial.new()
-	material.shader = COLOR_PICKER_SHADER
-	material.set_shader_parameter("color_x", palette_role())
-	# The palette IMAGE and its width both come from PaletteDB, never from the shader: the old
-	# VisualShader had the palette baked into itself and a hand-kept num_colors default, so swapping
-	# palettes recoloured nothing here (ARCHITECTURE_REVIEW §4h, proved by 16_palette_swap).
-	material.set_shader_parameter("palette", PaletteDB.PALETTE.texture)
-	material.set_shader_parameter("num_colors", PaletteDB.width())
-	polygon2d.material = material
+	CardOutline.fill_palette(polygon2d, palette_role())
 
 func set_art_texture(polygon2d:Polygon2D, rank:PipRank) -> void:
 	if rank is PipRankNumeral:
 		var numeral : PipRankNumeral = rank
-		CardModifier.update_polygon_uv_frame(
+		CardOutline.frame_polygon(
 			polygon2d, ART_TEXTURE, ART_TEXTURE_H_FRAMES, ART_TEXTURE_V_FRAMES,
 			13 * get_suit_index() + (numeral.value - 1))
 	else:

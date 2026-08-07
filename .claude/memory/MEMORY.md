@@ -33,3 +33,4 @@
 - [worldgen_native build env](worldgen-native-build-env.md) — python -m SCons, re-clone godot-cpp, --import before the dll registers
 - [Graph spec Step A](graph-spec-step-a.md) — graph_spec.gd abstract DAG: depth=rank, lane ramp, spread fan, width=target via ideal_reach, trim+re-add repair
 - [Graph placement Step B](graph-placement-step-b.md) — v4 ladder placement + edges-last forward sweep; standing rules and measured dead ends (worldgen dormant since ~2026-07-18)
+- [Solatro card outline](solatro-card-outline.md) — card 38x50→40x54 + shader outline on all five elements, landed 2026-08-06; rules in ARCHITECTURE_REVIEW §4j; **GAP-001 open and its test left RED on purpose** (7-column board wider than the window); outline_atlas tool is where the ink and the alert get judged

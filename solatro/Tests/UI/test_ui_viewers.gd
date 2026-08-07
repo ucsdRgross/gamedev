@@ -195,7 +195,15 @@ func test_partial_card_rendering() -> void:
 	await get_tree().process_frame
 	rank_only.child.show_front = true
 	suit_only.child.show_front = true
-	check(rank_only.child.rank.material == null, "suitless card renders its rank uncolored")
+	# "Uncolored" used to mean `material == null`, and it cannot any more: every element on a card wears
+	# the outline material, so a null there would mean the pip lost its RIM — and because these polygons
+	# are pooled, it would lose it only on whichever cards happened to land on a recycled node. The claim
+	# is now made against the fill MODE, which is the thing that was ever actually being asserted.
+	var rank_mat := rank_only.child.rank.material as ShaderMaterial
+	var rank_fill := -1
+	if rank_mat: rank_fill = rank_mat.get_shader_parameter(&"u_fill_mode")
+	check(rank_mat != null and rank_fill == int(CardOutline.Fill.TEXTURE),
+			"suitless card renders its rank uncolored (its sheet's own colours, no palette flatten)")
 	check(not suit_only.child.art.visible, "rankless card shows no art polygon")
 	rank_only.queue_free()
 	suit_only.queue_free()

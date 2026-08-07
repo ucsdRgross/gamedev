@@ -155,7 +155,7 @@ the ruling-2 logic does not apply to them.
   on one row coexist without churn). The bracket ROW is the prop's own ANCHOR SLOT row
   (`vis.anchor_coord`, re-pinned by every retarget/relocate — reroute modifiers move it with the
   data); GEOMETRY only decides WHETHER to split: the prop's authored body rect
-  (`PropVisual.body_size`, hardcoded per kind like CARD_SIZE) must overlap some card's footprint
+  (`PropVisual.body_size`, hardcoded per kind — CARD_SIZE is no longer the parallel: it is DERIVED now, as `CARD_ART_SIZE + 2 * ART_OUTLINE`) must overlap some card's footprint
   (`_body_over_any_card`). Never derive the row from what's under the prop — fanned cards are a
   full card tall behind their ~strip-high visible slice, so a ring crossing a SHORT column's
   empty row sat "inside" that column's top card's rect and bracketed the wrong row (2026-07-16).

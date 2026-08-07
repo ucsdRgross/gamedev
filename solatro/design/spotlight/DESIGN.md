@@ -1,5 +1,8 @@
 # SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
 
+> ⚠ **`Q85`'s "radius 16" SHIPS AS 17 SINCE 2026-08-06.** The number was never 16, it was HALF THE ART SQUARE — and the art square went 32x32 -> 34x34 when every card element gained the outline shader's 1-unit rim. A radius of 16 now stops one unit short and clips the picture's own outline. `Q85`'s and `Q217`'s reasoning is unchanged; only the arithmetic moved. See `design/card_size_outline/`.
+
+
 **Status: CONFIRMED, version 12. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
 2026-08-03. PHASE 1 OF `PLAN.md` IS IMPLEMENTED (2026-08-04, folded in as v7), and **S11–S14 of
 phase 2 — the glow style, its shader, the light layer, the spotlight wire AND chart E's travel — are

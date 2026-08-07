@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="OutlineStyle" format=3 uid="uid://ph474bienjde"]
+
+[ext_resource type="Script" uid="uid://b7l088vn54xvl" path="res://Cards/outline_style.gd" id="1_outline"]
+
+[resource]
+script = ExtResource("1_outline")
+glare_buffer = 2.0

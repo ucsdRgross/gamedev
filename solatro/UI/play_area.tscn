@@ -75,7 +75,7 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="MiddleZoneLeft" type="Control" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=737216612]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(14, 14)
+custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
 metadata/_smooth_scroll_default_mouse_filter_set = true
 

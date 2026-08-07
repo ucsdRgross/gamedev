@@ -200,18 +200,26 @@ func run_swap_tests() -> void:
 # they keep saying so every run.
 
 ## Directories whose drawing code is expected to be on the palette.
-## ⚠ `res://Tools` IS IN THE LIST DELIBERATELY. The tuning editors used to live under `res://Cards`
+## ⚠ `res://tools` IS IN THE LIST DELIBERATELY. The tuning editors used to live under `res://Cards`
 ## and `res://UI` and were scanned as a side effect of sitting there; consolidating them into one
 ## folder (owner, 2026-08-04) would otherwise have dropped them out of the scan silently, which is
 ## the kind of coverage loss a green run cannot show you.
+## ⚠ **LOWERCASE `tools`, MATCHING THE DIRECTORY ON DISK.** It read `res://Tools`, which resolves on a
+## case-insensitive filesystem but makes every path this scan yields disagree with `ALLOW_FILES`
+## below — so the exemptions silently stopped matching and six exempt files started warning again.
+## The whole project was normalised to the on-disk case on 2026-08-06 (see below).
 const SCAN_DIRS : Array[String] = [
-	"res://Cards", "res://Scripts", "res://UI", "res://Levels", "res://Shaders", "res://Tools",
+	"res://Cards", "res://Scripts", "res://UI", "res://Levels", "res://Shaders", "res://tools",
 ]
 const SCAN_EXTS : Array[String] = ["gd", "tscn", "tres"]
 
 ## Files exempt entirely, with the reason. Editor/debug tooling and art that does not exist yet.
 const ALLOW_FILES : Array[String] = [
-	"res://Tools/formation_editor.gd",                 # @tool debug overlay, never shipped
+	"res://tools/formation_editor.gd",                 # @tool debug overlay, never shipped
+	# @tool review surface, never shipped. Its colours are the BACKDROPS an authored outline ink is
+	# judged against, plus its own label chrome — deliberately arbitrary and deliberately editable,
+	# since the whole point of the tool is holding an ink up against more than one background.
+	"res://tools/outline_atlas.gd",
 	"res://Cards/Props/Visuals/firework_visual.gd",    # placeholder polygon; no art authored
 	"res://Scripts/palette.gd",                        # the palette machinery itself
 	"res://Scripts/palette_ramp.gd",

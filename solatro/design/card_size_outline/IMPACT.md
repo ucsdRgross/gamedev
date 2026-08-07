@@ -1,5 +1,22 @@
 # IMPACT MAP — card 38×50 → 40×54, and the shader-drawn art outline
 
+> ## ⚠ LANDED 2026-08-06 — THIS IS THE ORIGINAL INVENTORY, NOT THE CURRENT STATE
+>
+> Live rules and landmines: **ARCHITECTURE_REVIEW §4j**. Open items: **todo.md** and
+> **`gaps/GAP-001.md`**. What implementation decided beyond this doc: **`ASSUMPTIONS.md`**.
+>
+> Where it is now WRONG, because the owner's art and later decisions moved:
+> * §1e/§11 — `card_types.png` KEPT its painted perimeter ring, recoloured per type (owner confirmed
+>   painted inner line + shader outer rim is intended), and carries **27** frames, not 15. The atlas
+>   counts **126** non-empty frames, not 114.
+> * §2e/§4/D7 — the outline's colours are NOT palette roles. Everything the outline tunes lives in
+>   `Shaders/Styles/outline_default.tres` (`OutlineStyle`), which is what the atlas edits.
+> * D6 — GLARE and THROB have SEPARATE tempos and colours, plus a `glare_buffer` side dead zone that
+>   did not exist in this document.
+> * §7/§1c — the geometry landed as specified; the idle animation was rebuilt from the §1d ratios
+>   because the working copy had a half-converted key that popped once per loop.
+
+
 **Status:** inventory only. This is *not* a design decision record and *not* an implementation
 plan — it is the complete list of what the two changes touch, with the measured current values and
 the file:line where each one lives, so a `/flowchart-design` run or a plan can be written against

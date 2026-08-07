@@ -237,7 +237,7 @@ const WEDGE_CANDIDATES := 4
 var _poly_max : float = 0.0
 ## The deformed outline's tight half-extents. Pushed as `u_body` on the RADII quads, because that is
 ## what the outward fan is measured across and what `body_near` rejects against — a corner stretched 5
-## units out of the nominal 38x50 would otherwise sit outside the bound its own flames are built in.
+## units out of the nominal 40x54 would otherwise sit outside the bound its own flames are built in.
 var _poly_half : Vector2 = Vector2.ZERO
 ## The largest origin-centred box that fits INSIDE the silhouette. Pushed as `u_inner`, where it is the
 ## mask's early ACCEPT — see `_inner_box`.
@@ -732,14 +732,14 @@ func _make_quad(fx: Effect, req: FxRequest) -> void:
 
 ## Size the quad to bound the host AT EVERY ROTATION plus the effect's reach, or its edge clips.
 ## The quad stays world-aligned while the host turns INSIDE it, so a rotating host's bound is its
-## CIRCUMSCRIBED extent — its diagonal — not its box: a 38x50 card is 62x62 at 45 degrees, and
+## CIRCUMSCRIBED extent — its diagonal — not its box: a 40x54 card is 67.2x67.2 at 45 degrees, and
 ## anim_spin_start turns it through every angle. Pinned hosts skip that ~1.6x fill cost.
 ##
 ## ⚠ It takes BOTH a turning host and an effect that turns with it (`FxRequest.rotates_with_host`).
 ## A juggling pattern does not turn with its card, so it keeps the box bound even on a card that
 ## spins through every angle — ~22 % of that quad's fill, for free (FX_HANDOFF §1b.3).
 ## ⚠ A DEFORMED host is bounded by its LIVE reach, not by its authored box. The star rig stretches a
-## card's corners ~5 art units past the 38x50 it is authored as, and a quad built for the rest pose
+## card's corners ~5 art units past the 40x54 it is authored as, and a quad built for the rest pose
 ## clips the flames standing on the part that moved.
 ## ⚠ AN INSTANCED EFFECT IS SIZED TO ONE SUBJECT AND NOT TO THE HOST AT ALL — no body, no rotation
 ## bound, no `FX_MARGIN`. The mesh is one ball's box, the shader places a copy of it at each ball, and
@@ -754,7 +754,7 @@ func _size_quad(fx: Effect) -> void:
 		var bound := _poly_half * 2.0 if not _poly.is_empty() else body
 		# THE CIRCUMSCRIBED BOUND ONLY WHILE THE HOST IS ACTUALLY TURNED (FX_HANDOFF §10's lever B). A
 		# card CAN spin, but `anim_spin` is rare and `u_shape_rot` is ~0 the rest of the time — and the
-		# diagonal costs a 38x50 card 84.8² of quad against 56x68 of real bound, i.e. nearly twice the
+		# diagonal costs a card ~89.2² of quad against ~58x72 of real bound, i.e. nearly twice the
 		# fill, on every burning card that is merely sitting there. Measured ceiling: 0.455 ms of the
 		# worst window.
 		#

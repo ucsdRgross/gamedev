@@ -73,7 +73,7 @@ const GLOW_SHADER := preload("res://Shaders/glow.gdshader")
 ## quad has to hang off the host, and it is what `FxRequest.reach` is set from.
 ##
 ## ⚠ **SHIPPED AT 4, WHICH IS `Q210`'S "TIGHTER, A RIM RATHER THAN A HALO"** — owner: *"let me tune
-## myself, start with 4"*. For scale: a card is 38x50 art units and the fire on it reaches 7, held to
+## myself, start with 4"*. For scale: a card is 40x54 art units and the fire on it reaches 7, held to
 ## half a card separation so the card behind stays visible. A halo is the effect most likely to break
 ## that budget, so it starts below fire rather than beside it, and the owner raises it by eye.
 @export var reach : float = 4.0
@@ -146,11 +146,16 @@ const GLOW_SHADER := preload("res://Shaders/glow.gdshader")
 
 @export_group("Circle")
 ## The disc mask's radius, in ART units — used only by `glow_circle.tres`, where the mask kind is the
-## disc rather than the host's silhouette. 16 art units centred on a card's 32x32 art square covers
-## the whole picture and nothing else, which is why the circle and not the card glow is the worst
-## case for readability. Owner: *"16, make it adjustable so I can test slightly different radius"*
-## (`Q85`), so it is an export rather than a constant.
-@export var circle_radius : float = 16.0
+## disc rather than the host's silhouette. It is HALF THE ART SQUARE, so the disc covers the whole
+## picture and nothing else, which is why the circle and not the card glow is the worst case for
+## readability. Owner: *"16, make it adjustable so I can test slightly different radius"* (`Q85`), so
+## it is an export rather than a constant.
+##
+## ⚠ **16 -> 17 WITH THE OUTLINE.** The art square is 32x32 of drawing plus the shader's 1-unit rim on
+## every side — 34 across — so a radius of 16 now stops one unit short and clips the picture's own
+## outline, leaving a lit card with a rimless arc. The number was never "16"; it was "half the art
+## square", and the art square grew.
+@export var circle_radius : float = 17.0
 ## The circle's OWN over-art alpha (`Q217`=a — its own knob, not the glow's). The circle is doing a
 ## different job and covers a different thing: a halo around a silhouette barely covers art at all,
 ## while the circle covers the entire art square. Judged in the same S15 shot as `inner_alpha`, and

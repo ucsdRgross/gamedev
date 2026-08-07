@@ -62,16 +62,29 @@ func with_stacks(n: int) -> CardModifierStatus:
 func set_texture(_polygon2d: Polygon2D) -> void:
 	pass
 
-## The visual effects this status renders, or an empty array for statuses that only show an icon.
-## Mirrors draw_icon: the status owns its own presentation, so FxAttachment never learns which
-## effects exist and a new visual status is a NEW CLASS, not an edit to the FX layer. A status may
-## declare several (StatusJuggling declares its balls AND the fire riding them), which keeps the
-## knowledge that one depends on the other inside the one class that owns both.
+## The visual effects this status renders, or an empty array. The status owns its own presentation, so
+## FxAttachment never learns which effects exist and a new visual status is a NEW CLASS, not an edit to
+## the FX layer. A status may declare several (StatusJuggling declares its balls AND the fire riding
+## them), which keeps the knowledge that one depends on the other inside the one class that owns both.
+##
+## ⚠ **THIS IS NOW A STATUS'S ONLY PRESENCE ON THE CARD, AND THAT IS A STANDING RULE.** The
+## `StatusLayer` — a row of placeholder icons plus a stack count in the card's top-left — is deleted
+## (owner 2026-08-04: *"no more status icons, they are represented by status effects like fire and
+## juggling shader... stack count and status names stay in description at top"*), and with it the
+## `draw_icon` hook whose base implementation drew nothing while the layer still showed the count. That
+## backstop is what has gone: **a new status that declares no FX here is INVISIBLE on the board.** Its
+## name and stacks still reach the player through the inspector text (`ControlCard.describe_card`),
+## which is where the owner wants them, but nothing on the card itself will say it is there.
 func fx_request() -> Array[FxRequest]:
 	return []
 
-## Placeholder icon draw (Phase 5, pending a status_pips.png asset). Subclasses draw a
-## kind-distinct primitive into `canvas` anchored at `at`, spanning roughly `size` px wide.
-## Base draws nothing so an un-arted status simply shows its count label (StatusLayer).
-func draw_icon(_canvas: CanvasItem, _at: Vector2, _size: float) -> void:
-	pass
+## The OUTLINE ALERT this status asks its card to run — the "this card's ability is about to fire"
+## nudge — or an empty array, which is the default and what every status shipping today wants.
+##
+## ⚠ **DECLARED, NEVER PUSHED, and the difference is a leak.** An imperative `alert_on()` / `alert_off()`
+## pair leaks the moment a status is freed, merged away or rewound mid-alert: nothing is left to call
+## the "off". `CardVisual` re-derives this list from the LIVE status list on every refresh, so an alert
+## that no status still declares is already gone, and one of two simultaneous alerts clearing cannot
+## switch off the other. It is the same reasoning that makes `fx_request` a declaration.
+func alert_request() -> Array[CardAlert]:
+	return []

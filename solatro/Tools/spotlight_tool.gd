@@ -67,7 +67,7 @@ extends Node
 ##    and `delta_self_moving_logic` frees any non-play-area card with no `control_anchor` — so a card
 ##    parked before parenting deletes itself, leaving a blank frame at exit 0.
 
-const SCENARIOS_PATH := "res://Tools/spotlight_scenarios.json"
+const SCENARIOS_PATH := "res://tools/spotlight_scenarios.json"
 const SHOT_DIR := "user://logs/events/spotlight_tool/"
 ## The shared run-save park (`backup_real_save`/`restore_real_save`). Preloaded by PATH — the
 ## `SolatroTest` global name does not resolve from this @tool script's parse.
@@ -967,14 +967,14 @@ func _get_property_list() -> Array[Dictionary]:
 ## `Q176`=(a)'s *"runnable so an agent can screenshot it without opening the editor"*, and `Q181`=(a)'s
 ## *"the tool is also the source of reviewable snapshots"*.
 ##
-##     <godot> --path solatro res://Tools/spotlight_tool.tscn -- --shoot-all
+##     <godot> --path solatro res://tools/spotlight_tool.tscn -- --shoot-all
 ##
 ## ⚠ **Shoots the SubViewport's own texture, not the window** — the viewport is the thing whose
 ## dimensions the beams were spread against.
 ## **THE TRACE MODE — the second half of ONE tool** (owner 2026-08-04: *"was expecting spotlight tool
 ## and trace to be one tool, not two"*).
 ##
-##     <godot> --path solatro res://Tools/spotlight_tool.tscn -- --trace
+##     <godot> --path solatro res://tools/spotlight_tool.tscn -- --trace
 ##
 ## Runs a REAL act on a REAL `GameView` with `EventLog` recording, then writes the log, the by-frame
 ## view, and a PNG at every transition. This is what `Tools/spotlight_tool.tscn -- --trace` used to be, folded
@@ -1114,7 +1114,7 @@ class _Watchdog extends Node:
 
 ## **VERIFY EVERY SCENARIO BY WATCHING IT RUN, NOT BY LOOKING AT ONE FRAME OF IT.**
 ##
-##     <godot> --path solatro res://Tools/spotlight_tool.tscn -- --verify
+##     <godot> --path solatro res://tools/spotlight_tool.tscn -- --verify
 ##
 ## ⚠ **THIS EXISTS BECAUSE `--shoot-all` COULD NOT SEE A BROKEN SCENARIO** (owner 2026-08-04: *"some
 ## of the scenarios appear to be broken, such as solo activation, where nothing happens"*, *"cascade

@@ -70,11 +70,6 @@ func get_description() -> String:
 	return TRANSLATION.find('STATUS_JUGGLING_DESCRIPTION') % stacks
 func get_frame() -> int: return 0
 
-## Placeholder: a small ball (matches BallVisual's fill).
-func draw_icon(canvas: CanvasItem, at: Vector2, size: float) -> void:
-	canvas.draw_circle(at + Vector2(size, size) * 0.5, size * 0.4,
-			PaletteDB.color(PaletteDB.ROLES.status_ball))
-
 func on_score(target: CardData) -> void:
 	if target != data: return
 	if not game: return

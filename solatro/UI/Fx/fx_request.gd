@@ -86,7 +86,9 @@ var instance_bound : Vector2 = Vector2.ZERO
 ## The JUGGLING quads provably do not: `juggle.gdshader` never reads `u_shape_rot`, the pattern is
 ## defined in the quad's own space, and the attachment counter-rotates the quad — so the balls hold
 ## still in world space at every host angle (owner 2026-07-30: *"juggle effect doesn't rotate with
-## card"*). They were paying `body.length()` = 62.4 for a 38x50 card, ~22 % of their fill, for a bound
+## card"*). They were paying `body.length()` = 67.20 for a 40x54 card (it was 62.80 at 38x50 — the
+## 62.4 written here before was neither: 62.23 is the ROTATING bound (w+h)/√2, a different number),
+## ~22 % of their fill, for a bound
 ## that bought them nothing (FX_HANDOFF §1b.3).
 ##
 ## So this is a per-REQUEST property, not a per-host one: on ONE rotating card the fire quad needs the

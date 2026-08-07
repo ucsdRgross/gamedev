@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://341npyq7asxl"]
 
-[ext_resource type="Script" uid="uid://rd5u78mfm5o2" path="res://Tools/spotlight_tool.gd" id="1_sptool"]
+[ext_resource type="Script" uid="uid://rd5u78mfm5o2" path="res://tools/spotlight_tool.gd" id="1_sptool"]
 [ext_resource type="Resource" path="user://settings.tres" id="2_gone0"]
 
 [node name="SpotlightTool" type="Node" unique_id=773136247]

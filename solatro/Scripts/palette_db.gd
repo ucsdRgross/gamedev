@@ -32,7 +32,7 @@ const RAMP_EMBER : PaletteRamp = preload("res://Assets/Palette/ramp_ember.tres")
 static func color(index : int) -> Color:
 	return PALETTE.color(index)
 
-## How many entries the live palette has, from the IMAGE. This is what feeds color_picker.gdshader's
-## `num_colors`, which used to be a hand-kept shader default (ARCHITECTURE_REVIEW §4h).
+## How many entries the live palette has, from the IMAGE. This is what feeds outline.gdshader's
+## `u_num_colors`, which used to be a hand-kept shader default (ARCHITECTURE_REVIEW §4h).
 static func width() -> int:
 	return PALETTE.width()

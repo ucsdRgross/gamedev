@@ -40,7 +40,16 @@ func with_data(data:CardData) -> CardModifier:
 	self.data = data
 	return self
 
-func set_material(polygon2d:Polygon2D) -> void: polygon2d.material = null
+## How this modifier's element fills its BODY. The default draws the sheet's own colours, which is
+## right for every sheet authored in the palette (types, suit pips, stamps); `PipSuit` overrides it to
+## flatten the suit-agnostic art to the suit's role.
+##
+## ⚠ **This used to assign `null`,** deliberately — the polygons are pooled and reused across cards, so
+## a stale ShaderMaterial from a previous binding would survive a rebind. Every element is now an
+## outline client, so clearing the material is exactly what must not happen: it silently strips the rim
+## off whichever cards happen to land on a recycled polygon. The stale-state problem is solved by
+## OVERWRITING the uniforms instead (`CardOutline.material_of`).
+func set_material(polygon2d:Polygon2D) -> void: CardOutline.fill_texture(polygon2d)
 
 ## Combo identity for SCORING_MATH_PLAN §15a mod-activation U. Default: one combo class per
 ## modifier script, whatever hook fired. Overrides may return "" (opt this mod — or specific

@@ -17,4 +17,4 @@ const V_FRAMES: int = 16
 @export_storage var spotlit := false
 
 func set_texture(polygon2d: Polygon2D) -> void:
-	update_polygon_uv_frame(polygon2d, SKILL_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
+	CardOutline.frame_polygon(polygon2d, SKILL_TEXTURE, H_FRAMES, V_FRAMES, get_frame())

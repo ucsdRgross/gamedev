@@ -120,7 +120,7 @@ uniform vec2 u_extent = vec2(64.0);  // the quad's size in art units; UV maps ac
 // quads of different sizes centred on the same host share it exactly and only `pixel` can differ.
 // It existed solely because the grid used to be anchored on the quad's edge (fx_common §pixel grid).
 uniform float u_partner_pixel = 1.0;
-uniform vec2 u_body = vec2(38.0, 50.0);
+uniform vec2 u_body = vec2(40.0, 54.0);
 uniform float u_shape_rot = 0.0;
 uniform float u_time = 0.0;          // pacing-aware, script-driven — NEVER the built-in TIME
 uniform float u_seed = 0.0;
@@ -338,7 +338,7 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 		// neither can change an answer, so the polygon runs only in the band between them.
 		//
 		// ⚠ IT IS AN OPTIMISATION FOR THE COMMON CASE AND THE COMMON CASE IS A CARD AT REST, where the
-		// rig IS the 38x50 rectangle: the two boxes coincide, every tap is answered by four
+		// rig IS the 40x54 rectangle: the two boxes coincide, every tap is answered by four
 		// comparisons, and no wedge is ever built. Measured on the owner's Intel UHD, 78 burning cards:
 		// the retired 32-ray table cost 5.16 ms, the bare polygon 6.53, and these bring it to 5.46 — so
 		// an exact mask costs 6 % rather than 26 %. The band is only ever the corners of a card the rig
@@ -386,7 +386,8 @@ vec2 body_bound() {
 // AND IT MUST SURVIVE ONE (§0g.9).
 //
 // ⚠ THE QUAD IS SIZED FOR THE WORST CASE AND THE FRAGMENT IS NOT. A quad is the host's CIRCUMSCRIBED
-// bound plus reach on all four sides — 84.8 x 84.8 for a 38x50 card, because a card CAN spin — so a
+// bound plus reach on all four sides — ~89.2 x 89.2 for a 40x54 card (84.8² was the 38x50 figure;
+// the shape of the argument is unchanged, the number is stale until fx_cost.gd is re-run) — so a
 // card that is not currently turned leaves most of its quad empty, and every one of those empty
 // fragments would otherwise pay the whole cover ladder to find nothing.
 //
@@ -511,7 +512,9 @@ float cover_below(vec2 p, vec2 ball, float ball_level, out bool deep) {
 	// fragment is more than `sink` inside the art, where fire is not allowed — and `fragment()` discards
 	// it on exactly that flag — but the loop below ran first, all `u_taps` lookups of it. A card's
 	// INTERIOR is the largest contiguous region in its quad (~41 % of everything `body_near` accepts:
-	// 1564 art² of 3808 on a 38x50 card), so this is the single biggest block of wasted work in the
+	// 1564 art² of 3808 on a 38x50 card — MEASURED, so left as measured rather than rescaled by hand;
+	// the card is 40x54 now and this wants re-running, not arithmetic), so this is the single biggest
+	// block of wasted work in the
 	// shader, and it is wasted at full price.
 	//
 	// It is PIXEL-EXACT rather than an approximation: the caller's `|| deep` already threw this fragment
