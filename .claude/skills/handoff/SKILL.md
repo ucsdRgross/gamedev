@@ -5,7 +5,7 @@ description: The session-continuity loop for this repo — read a handoff doc to
 
 # Handoff
 
-One file per work stream: `<project>/HANDOFF_<topic>.md` (e.g. `solatro/HANDOFF_fx.md`). It is
+One file per work stream: `<project>/HANDOFF_<topic>.md` (e.g. `solatro/HANDOFF_spotlight.md`). It is
 both the resume point and the live journal — **never split state across two files**, and never
 create a parallel copy of an existing handoff. Update it in place.
 
@@ -96,7 +96,7 @@ the entire point.
 - **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue
   into `ARCHITECTURE_REVIEW.md` / `todo.md` and delete the handoff — but run `git ls-files <path>`
   first, since deleting an untracked file destroys it.
-- ⚠ **KEEP IT UNDER ~300 LINES, AND PRUNE WHEN IT DRIFTS OVER.** Measured 2026-08-04: the spotlight
+- ⚠ **KEEP IT UNDER ~300 LINES, AND PRUNE WHEN IT DRIFTS OVER.** Measured: the spotlight
   handoff reached **1097 lines** by appending `⚠ HISTORICAL` and `✅ FIXED` blocks instead of removing
   them — every session then paid that cost to start, for content that was already in the gap files.
   **A fixed bug's forensics belong in its `GAP-NNN.md`; a resolved decision's belong in the design's

@@ -1,6 +1,6 @@
 # Usefulness Audit — how to reach the palette you wanted, faster
 
-Audit date 2026-07-24, against the tool as built (72 parameters: 58 palette-shaping + 13
+Audited against the tool as built (72 parameters: 58 palette-shaping + 13
 recolour + `seed`; 34 gallery scenes; picker with maps/dither/15 layouts; recolour page;
 fitter; 8 export formats). **Not a performance audit.** Every item below is judged on one
 question:

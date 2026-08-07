@@ -20,7 +20,7 @@ exposed real defects that every metric had agreed were fine: inverted Y, a bad s
 dynamic array indexing in the shader. Their trust goes to their eyes, and they are right to.
 
 ⚠ **A STILL FRAME IS NECESSARY AND NOT SUFFICIENT — anything with a DURATION needs an instrument
-that samples over TIME.** Measured 2026-08-04: three defects in one session were invisible to a PNG
+that samples over TIME.** Measured: three defects in one session were invisible to a PNG
 by construction — a per-section dim pulse, a retire beat that threw an error every frame, and a
 cascade stuck on section 0 — because **a still of a working loop and a still of a dead one are
 identical**. The owner found all three by watching; every rendered panel had "passed".

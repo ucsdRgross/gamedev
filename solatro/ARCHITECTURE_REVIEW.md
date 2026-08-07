@@ -1,6 +1,6 @@
 # Solatro Architecture Reference
 
-Current-state reference (consolidated 2026-07-19 from the architecture review, scoring
+Current-state reference (consolidated from the architecture review, scoring
 plans, props handoffs, persistence handoff, and leak-prevention work — full historical
 docs live in git history; see START_HERE.md for the retired-doc map). Companion docs:
 [START_HERE.md](START_HERE.md) (agent rules + planning workflow), [LAYERING.md](LAYERING.md)
@@ -124,7 +124,7 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
    silently disables a mechanic; there is no signature check.
 3. Attach to a `CardData` in `rules_deck` (always spotlit), or rely on the default rule:
    **a play card's modifiers are SPOTLIT while the card is topmost/uncovered** (renamed off
-   `active` 2026-08-04, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
+   `active`, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
    is spotlit from anywhere (incl. decks), and `GameData.forced_spotlight` — the scoring beam —
    ORs on top of all of it.
 4. `combo_key(hook)` on the modifier controls combo participation (§3): default = the
@@ -205,7 +205,7 @@ history stored in forward orientation).
   `MOUSE_FILTER_IGNORE` and only `ungrab_cards` cleared it — by the card's NEW position — so a
   rebuild while a grab was live (auto-Next, §4e) stranded the filter on a control that then
   belonged to a different card: one permanently uninteractable card per auto-Next, surviving
-  undo, healed only by a restart (owner bug 2026-07-20). Pinned by INTERACTION's
+  undo, healed only by a restart (owner bug). Pinned by INTERACTION's
   `test_auto_next_leaves_no_dead_controls`. Game also tells the view to `release_grab()`
   before an auto-Next, so the board never mutates under a live grab in the first place.
 
@@ -231,7 +231,7 @@ container; I4 position index agrees with a full rescan; I5 no null entries.
   the coalesced PlayArea rebuild, keys the compare-implementer cache, AND invalidates the
   lazy position index (`position_of`) — a missed bump now returns STALE positions, not
   slow-but-correct scans.
-- `revision` is ALSO the change detector for commits (2026-07-20): `Game._last_saved_revision`
+- `revision` is ALSO the change detector for commits: `Game._last_saved_revision`
   holds the revision the last committed snapshot carried, and `save_state()` RETURNS EARLY
   when they match. So a legal-but-`OK_NOOP` placement pushes no undo entry ("an undo that
   visually does nothing") and does not advance the committed-action count
@@ -251,7 +251,7 @@ container; I4 position index agrees with a full rescan; I5 no null entries.
 
 ## 3. SCORING & GOALS (settled design; formerly SCORING_MATH_PLAN §15 / SCORING_IMPL_PLAN)
 
-Implemented 2026-07-17. `tools/scoring_sim.py` is the calibration oracle
+Implemented. `tools/scoring_sim.py` is the calibration oracle
 (`py tools/scoring_sim.py --final --q 0.35`); re-run and re-fit `goal_g0`/`goal_alpha`
 whenever deck/booster content changes. Do NOT touch `Scoring.ScoreModel` hand formulas
 casually — `test_scoring.gd` SECTION 8 leaderboard pins them.
@@ -388,7 +388,7 @@ never serialized); a quit mid-act replays the act from the pre-act board.
 11. **The hoop rides ONE CARD-JUMP above its slot centre** (`PropVisual.rides_card_jump` →
     `CardVisual.card_jump_rise_play`, applied through the live lane offset), so a card that
     jumps lands its centre exactly in the ring — the card jumps INTO the hoop (owner
-    2026-07-28). `CardVisual.CARD_JUMP_RISE` is the ONE source of that number: `anim_jump`
+   ). `CardVisual.CARD_JUMP_RISE` is the ONE source of that number: `anim_jump`
     tweens it and PropLayer reads it. Hardcode it in either place and the card jumps through
     the side of the ring. So a hoop's resting position is NOT its bare slot centre — tests that
     assert a landing point must add the visual's own `lane_offset`.
@@ -422,7 +422,7 @@ are PlayerSettings fractions of `get_delay()` — never wall-clock literals.
 
 ---
 
-## 4e. PATIENCE (idle-move pressure, 2026-07-20)
+## 4e. PATIENCE (idle-move pressure)
 
 "The audience won't watch you shuffle the board forever." Per-round counter on **GameData**
 (`patience`, `patience_seen_mods`) so undo/history/saves rewind it with the board.
@@ -463,7 +463,7 @@ are PlayerSettings fractions of `get_delay()` — never wall-clock literals.
 
 ---
 
-## 4f. BOOSTER REROLLS (2026-07-20)
+## 4f. BOOSTER REROLLS
 
 `ChoiceViewer.Data.rerolls` is ONE shared free-reroll pool for the whole pack, seeded from
 `settings.booster_reroll_pool` by `BoosterTemplate.on_map_picked`. `ChoiceViewer.reroll(i)`
@@ -476,7 +476,7 @@ Covered by `Tests/UI/test_ui_viewers.gd`.
 
 ---
 
-## 4g. VISUAL EFFECTS — the shader FX layer (2026-07-27)
+## 4g. VISUAL EFFECTS — the shader FX layer
 
 **Picking up visual-effects work? Start at [VFX.md](VFX.md)** — the map, the runbook, the open
 backlog and the known bugs. This section is the CONTRACT it sends you to; the two are not copies of
@@ -516,7 +516,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `fx_ball_at` from `fx_common.gdshaderinc`. Two copies of the arc maths is the bug that makes
   flames trail their balls by a frame — the shared include prevents it structurally.
 - **FIRE IS A COVER FIELD OVER THE ART'S MASK, CARVED BY NOISE — and that is the whole emitter**
-  (owner design 2026-07-29: *"no more individual tendrils, just average fire shader effects like
+  (owner design: *"no more individual tendrils, just average fire shader effects like
   moving noise"*; it replaces the tendril/comb/ogee/onion build whole, which had itself replaced the
   contour/skirt model). Per fragment:
 
@@ -569,9 +569,9 @@ the fire riding them), which keeps the dependency inside the one class that owns
   - **TIPS POINT UP BY CONSTRUCTION** (ruling 1) — because the taps step WORLD-down, not because of
     any per-shape branch. A rotating host turns only the mask LOOKUP (the no-rotating-grid rule), and
     the noise is sampled in the SAME already-quantized `p`, so the grain never goes diagonal either.
-  - ✅ **AND THE MASK IS THE ART, CLIPPED CORNERS INCLUDED (2026-07-29).** ⚠ **A card and a prop do NOT
+  - ✅ **AND THE MASK IS THE ART, CLIPPED CORNERS INCLUDED.** ⚠ **A card and a prop do NOT
     share the mask BRANCH, and that is the answer to "why was a non-rectangular card hard when the hoop
-    already works"** (owner asked, 2026-07-29). A prop is `Shape.SPRITE`: the mask SAMPLES the sheet's
+    already works"** (owner asked). A prop is `Shape.SPRITE`: the mask SAMPLES the sheet's
     alpha, so any silhouette and the hoop's hole come free. A card is `Shape.RADII`: an OUTLINE, because
     its face is skinned to a 16-arm rig on autoplay and a static alpha sample would burn the undeformed
     shape (§7's own bug). Everything above the mask is one code path for both. So a card gets none of what
@@ -588,7 +588,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
     which is what ruled out `measure_outline` and pointed at the interpolation. Two intermediate fixes
     are recorded in the shader as dead ends — more rays (converges far too slowly on a vertex) and a
     RADIAL SCALE against the rest rectangle, which was exact at rest and **still cut up to 26.9 art
-    units of a column off a REAL card's stretched corner** (measured 2026-07-29 by
+    units of a column off a REAL card's stretched corner** (measured by
     `test_pixels.gd`'s `test_the_card_mask_is_the_card_the_player_sees`, the one check that stands up a
     real `CardVisual`). The mask is now the union of the silhouette's wedges, exact at rest and
     deformed, and the two box tests around it make it cheaper than the table it replaced. ⚠ **Three
@@ -625,13 +625,13 @@ the fire riding them), which keeps the dependency inside the one class that owns
   `measure_sprite_silhouette` survives only to tighten `body` to the art's bounding box — a frame is
   mostly transparent padding, and a comb spanning the frame put flames in empty space beside the
   blade.
-  - **NO BALL SPECIAL CASE. `u_mode` and `MODE_BALLS` are deleted** (owner 2026-07-30: *"fire effect
+  - **NO BALL SPECIAL CASE. `u_mode` and `MODE_BALLS` are deleted** (owner: *"fire effect
     should be unified and identical in how it treats everything, so no special ball case"*). A ball
     is a `Shape` whose mask is a disc, and the cover field, the noise and the ramp above it are
     literally the same code a card runs. `FxRequest.shape` is how ball fire says "my mask is the balls,
     not the card I ride on".
-    - ⚠ **WHICH ball is no longer SEARCHED FOR — it is ONE INSTANCE PER BALL (2026-07-29,
-      FX_HANDOFF §0d.6).** `fx_nearest_ball` and `fx_balls_near` are deleted: the ball's index and its
+    - ⚠ **WHICH ball is no longer SEARCHED FOR — it is ONE INSTANCE PER BALL
+      (FX_HANDOFF §0d.6).** `fx_nearest_ball` and `fx_balls_near` are deleted: the ball's index and its
       own level arrive in `INSTANCE_CUSTOM`, `vertex()` places that one ball with `fx_ball_of`, and the
       plume quad is the size of a plume instead of the size of the whole pattern. It is still ONE shader
       and one cover field — only "who am I part of" changed, from a per-fragment inversion of the arc
@@ -639,7 +639,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
   - **`mask()` returns the LEVEL of the surface it hit**, which is ruling 21 as one rule instead of
     two code paths: a silhouette answers `u_level`, a ball answers **its own instance's level** (the
     `u_ball_fire` levels texture is deleted along with the search that needed to index it).
-    ⚠ **`MASK_DARK` IS GONE (2026-07-31).** It was solid-but-unlit, so an unlit ball occluded without
+    ⚠ **`MASK_DARK` IS GONE.** It was solid-but-unlit, so an unlit ball occluded without
     emitting (ruling 3) — and it was half of why a lit ball's plume disappeared and came back: an
     unlit ball won the one-ball-per-fragment lookup, the march reported "solid, emits nothing", and
     the fragment was forced dark. A plume is **one instance per LIT ball** now, so a fragment's ball is
@@ -651,7 +651,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
     closed-form ball lookup is by far the most expensive thing in the file and a march never leaves
     its column, so re-running it at every march step would cost more than the whole rest of the
     shader.
-- **THERE IS NO COMB, AND ONE FLAME PER BALL FALLS OUT RATHER THAN BEING ARRANGED** (2026-07-29).
+- **THERE IS NO COMB, AND ONE FLAME PER BALL FALLS OUT RATHER THAN BEING ARRANGED**.
   The retired build divided the host's bounding box at the live rotation into `u_count` cells and
   stood one arch in each. That is deleted, and with it the entire bug class of FX_HANDOFF §2:
   - ⚠ **A BALL USED TO BE TREATED AS A CELL OF THAT COMB, and that was the whole of the owner's
@@ -682,7 +682,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
 - **The mask MIRRORS with the art.** `FxAttachment.flipped` tracks `PropVisual.face_travel`, because
   the mask IS the drawing now — a blade heading right would otherwise emit off the outline it no
   longer has. One sign, re-pushed only when it actually changes.
-- **Embers come off EVERY fire, and their spec is split per host scale** (owner 2026-07-29: *"all
+- **Embers come off EVERY fire, and their spec is split per host scale** (owner: *"all
   fire effects should leave embers like card is currently"*). `ember.tres` is card-sized;
   `ember_prop.tres` serves props AND balls — ParticleEngine is a board-level node, so a spec's sizes
   and speeds are SCREEN units and the card's ember is ~2.5x too big beside a knife. Data, not a code
@@ -702,7 +702,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
     frame of a fresh attachment has emitted nothing. Like `02_fire_rotation` it is for EYE review, not
     for diffing.
 - **Fire draws BEHIND its host's art, and `sink` is the knob for how much of the flame is buried.**
-  Every shipped style leaves `inner_alpha` at **0** (owner 2026-07-29: *"I would prefer that fire effect
+  Every shipped style leaves `inner_alpha` at **0** (owner: *"I would prefer that fire effect
   always be behind main card art visually"*), so the flame is CUT at its host's mask and covers no art at
   any rotation or warp — the cut is tested at the UNQUANTIZED position, which is what makes the seam
   follow the art's own edge instead of a one-unit staircase (FX_HANDOFF §0c). ⚠ **An earlier edition of
@@ -724,19 +724,19 @@ the fire riding them), which keeps the dependency inside the one class that owns
   45°, and `anim_spin_start` turns it through every angle). Pinned hosts skip that ~1.6× fill.
   Props pass `host_rotates = false` — **no prop rotates any more**; directional art mirrors instead
   (see §4h) — so they all keep the cheaper box bound.
-- **COLOUR COMES FROM `heat` THROUGH THE RAMP, and there are no shells any more** (2026-07-29). The
+- **COLOUR COMES FROM `heat` THROUGH THE RAMP, and there are no shells any more**. The
   retired model made `heat` the distance ACROSS a flame relative to its own half-width at that
   height, so every iso-heat contour was a scaled copy of the arch — candle-like, and it needed the
   arch to exist. `heat` is now the shaped cover-times-noise value, so the bands follow the noise:
   hottest where cover is high and the noise is bright, falling to the ramp's transparent cut at the
   ragged outer edge. The one rule that survives unchanged is that the RAMP owns every colour
   (ruling 14, §4i) — the shader never writes an RGB of its own.
-- **A ball's CENTRE is snapped to the pixel lattice** (`fx_pixel_snap`, 2026-07-28). `fx_local`
+- **A ball's CENTRE is snapped to the pixel lattice** (`fx_pixel_snap`). `fx_local`
   quantizes to a grid anchored on the QUAD while the ball centre moves continuously, so without this
   every ball rasterizes at an arbitrary sub-pixel phase: measured on `05c_ball_sphere`, one ball's row
   widths ran `31/44/…/87` down one half and `87/…/34/9` up the other, and the silhouette wobbled as it
   travelled. Snapped, the same ball measures perfectly symmetric. The RADIUS is deliberately NOT
-  snapped (owner 2026-07-28) — it varies with the count and quantizing it would make balls pop
+  snapped (owner) — it varies with the count and quantizing it would make balls pop
   between sizes.
   - **⚠ Undo the Y FLIP when snapping.** `fx_local` quantizes and THEN negates y, so the art-space y
     lattice is `extent.y/2 - (j+0.5)·cell` while x is `(k+0.5)·cell - extent.x/2`. Those coincide only
@@ -773,11 +773,11 @@ the fire riding them), which keeps the dependency inside the one class that owns
   (pushed to every quad it owns, never per-quad — the balls and the flames riding them must agree),
   a per-host `_ball_dir`, and a RANDOM starting `_phase`. Any new motion term has to fold the seed in
   or it runs in lockstep across the board: that is what the fire's NOISE OFFSET, the whole-effect
-  pulse, and the ball spin all do (owner 2026-07-28 — the spin was keyed on the ball
+  pulse, and the ball spin all do (owner — the spin was keyed on the ball
   index alone, so every card's ball 0 turned together, and `_phase` starting at 0 meant two cards
   with the same count juggled as one).
 - **Balls cross because the ARC LADDER alternates, NOT because of a per-ball mirror** (fixed
-  2026-07-28). `fx_ball_dir` returns the host's own `u_ball_dir` for every ball; that direction is a
+ ). `fx_ball_dir` returns the host's own `u_ball_dir` for every ball; that direction is a
   coin flip per host, so the pattern runs one way on one card and the other on the next.
   **⚠ Do not reintroduce the odd-ball mirror.** It made sense when the loop was one throw plus one
   carry, but consecutive arcs already run opposite ways and consecutive balls sit in consecutive arcs
@@ -790,7 +790,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
 - **Turbulence scrolls UP.** Art y is negative upward, so the noise sample is `p.y + t·scroll`;
   minus (the original) drifted the grain DOWNWARD and read as the fire falling.
 - **Nothing may reach more than half a card separation past its host** — that is what keeps the card
-  behind visible (owner 2026-07-28). Card fire: `height` = `CARD_SEPARATION * 0.5` = 7. Juggling:
+  behind visible (owner). Card fire: `height` = `CARD_SEPARATION * 0.5` = 7. Juggling:
   `ball_arc_max` = 32 = half a card plus half a separation, measured to the topmost ball's EDGE
   (the radius comes out of the budget), which also ceilings the count-driven arc growth. Prop-hosted
   styles are in PROP art units (≈2.5× smaller than a card's), so the same rule is a different number
@@ -798,7 +798,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
 - **The ball loop is an ARC LADDER, not one throw and one carry.** Lanes appear between the two as
   the count rises (`FxJuggle.arcs`, tunable via `ball_arcs_per_count` / `ball_arcs_max`), at evenly
   spaced heights from the throw down to the carry, and the balls travel all of them — so a bigger
-  count spreads them through the space instead of stretching one arc (owner 2026-07-28). Every arc
+  count spreads them through the space instead of stretching one arc (owner). Every arc
   starts and ends at `(±span/2, 0)`, which is what lets any number of them chain into one closed
   loop; they ALTERNATE direction, so **the count must be even** or the loop would not close in x.
   Gravity eases every arc except the lowest. The arc count is where the shader's cost now lives —
@@ -842,7 +842,7 @@ nothing to release. `ParticleEngine.CURRENT` may be null (a viewer has no play a
 no-ops rather than crashing, and "no engine" is a supported state.
 
 **Tuning.** ~35 art levers per effect live in `.tres` presets under `Shaders/Styles/`, written to a
-material ONCE. **One class per EFFECT, not one class for all of them** (2026-07-31): `FxStyle` is the
+material ONCE. **One class per EFFECT, not one class for all of them**: `FxStyle` is the
 shared half — `pixel`, `brightness`, `opacity`, the embers, and a virtual `apply()` — and
 `FxFireStyle` / `FxJuggleStyle` carry their own knobs and override `apply()`. A flag on one fat class
 was tried first and reverted: the inspector filter needs a per-kind name table as soon as there is a
@@ -864,7 +864,7 @@ halves reassemble pixel-for-pixel, and a prop texel matches a card texel at thre
 FAILS rather than skips under a dummy renderer, which is why the suite runs windowed (§7). The
 snapshot harness below stays for the judgements a number cannot make.
 
-**Tuning FX by hand: `Tools/fx_editor.tscn`** (2026-07-28, owner request — *"a way to visualize
+**Tuning FX by hand: `Tools/fx_editor.tscn`** (owner request — *"a way to visualize
 fire and juggling purely in editor … so I can fine tune parameters"*). Open the scene in the editor
 and it renders a burning card, a juggling card and a burning prop through the SHIPPING path
 (`FxFire.request` / `FxJuggle.requests` into a real `FxAttachment`) — never a private copy of the
@@ -872,7 +872,7 @@ maths, which is the mistake that made flames trail their balls. Stacks, ball cou
 bodies, zoom and a `time_scale` (0 freezes the animation while the shapes stay live) are inspector
 knobs; editing any `FxStyle` re-pushes immediately.
 
-⚠ **EVERY HOST IN IT IS THE REAL SCENE — including the cards, since 2026-07-29** (owner: *"no
+⚠ **EVERY HOST IN IT IS THE REAL SCENE — including the cards** (owner: *"no
 placeholder art that isnt ever seen in game, and no useless mocks when you can just use actual original
 scene, just like how hoop knife use actual art"*). The card slots instantiate `card_visual.tscn` with real
 `CardData`, so the face under the flames is the TypePaper polygon skinned to the star rig — not a flat
@@ -884,7 +884,7 @@ bases) — without it a previewed card's suit is a placeholder and its face sile
 mid-`update_visual`. `test_card_preview_chain_is_tool` pins that.
 
 **⚠⚠ EVERY FX SCRIPT MUST STAY `@tool`, AND THIS ONE DESTROYS DATA.** A non-tool script loads in the
-editor as a PLACEHOLDER instance. Three consequences, all seen on 2026-07-28:
+editor as a PLACEHOLDER instance. Three consequences, all seen in practice:
 
 1. Calling anything on it fails — *"Attempt to call a method on a placeholder instance"* — so
    `FxStyle.apply()` never ran, no uniforms were pushed, and **every effect in the editor rendered
@@ -954,7 +954,7 @@ CANVAS units** (`get_viewport_rect().size`), because `window/stretch/mode = canv
 captured image is the canvas scaled to the window — convert by `img.get_width() / that` when reading
 pixels back, or the last column lands off the right edge.
 
-**Two harness traps, both of which masqueraded as shader bugs (2026-07-27):**
+**Two harness traps, both of which masqueraded as shader bugs:**
 
 - `FxAttachment._push_live()` ENDS with `set_process(not _fx.is_empty())`. Parking the clock by
   calling `set_process(false)` BEFORE the push silently re-enables it, the frames awaited before the
@@ -980,7 +980,7 @@ Covered by `Tests/UI/test_fx_attachment.gd` ("FX ATTACHMENT"), the FX section of
 
 ---
 
-## 4h. PIXEL ART — one pixel size, and how each surface gets its colour (2026-07-27)
+## 4h. PIXEL ART — one pixel size, and how each surface gets its colour
 
 **Picking up prop/pip art work? Start at [VFX.md](VFX.md)**; this section is the contract it sends
 you to.
@@ -1014,7 +1014,7 @@ behind the occupied card, its RIGHT arc the near side, in front. That matches `f
 card too. `SHAPE_RING` is an **ellipse** from `u_body`, not a circle of its half-width — a circle sat
 the flames deep inside an 80×180 arc.
 
-**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** ⚠ Since 2026-08-06 this is
+**Recolouring: only SUIT-AGNOSTIC art gets recoloured.** ⚠ This is
 `Shaders/outline.gdshader`'s PALETTE fill mode, not a shader of its own —
 `Assets/color_picker.gdshader` is DELETED, absorbed whole (§4j: a Polygon2D has one material, and the
 rank pip and the card art need both the recolour and the rim). The behaviour is unchanged: it replaces
@@ -1041,7 +1041,7 @@ palette SWAP (`16_palette_swap`, §4i).
 
 ---
 
-## 4i. THE UNIVERSAL PALETTE — every colour is a named pointer (T21, 2026-07-28)
+## 4i. THE UNIVERSAL PALETTE — every colour is a named pointer (T21)
 
 **Every colour the game draws resolves to an entry of one N×1 image.** Reassigning a colour is
 editing ONE named role; swapping the whole palette is repointing ONE resource. Owner's ask:
@@ -1058,7 +1058,7 @@ reassign to different colors especially if the palette changes."*
 
 **Rules that prevent regressions:**
 
-- **STATICS, not an autoload** (owner 2026-07-28: *"autoload seems kind of overkill and has bad code
+- **STATICS, not an autoload** (owner: *"autoload seems kind of overkill and has bad code
   smell"*). Nothing changes at runtime, the `@tool` FX hosts run with no autoloads (§4g's trap), and
   `preload` resolves at parse time — so no call site null-checks, and a null here is a bug to fix.
 - **⚠ `PaletteDB.PALETTE` is a `static var`, NOT a `const` — do not "tidy" it back.** A `const`
@@ -1095,7 +1095,7 @@ reassign to different colors especially if the palette changes."*
 role's dropdown from the live palette (`0 #1a0319`, `1 #700031`, …) and `_get_property_list()` adds a
 read-only swatch per role. Both read the image, so they cannot go stale.
 
-**Still hardcoded, deliberately** (owner 2026-07-28, *"Map and UI and background can be deferred to
+**Still hardcoded, deliberately** (owner, *"Map and UI and background can be deferred to
 some other day, I plan on adding custom art for those"*): the map screen, the in-game UI chrome, the
 status-count text, and `FireworkVisual`'s placeholder. They are NOT allowlisted — the drift scan
 reports each one every run as `[WARN][PLACEHOLDER]`, which is the standing reminder. When that art
@@ -1111,7 +1111,7 @@ entry).
 
 ---
 
-## 4j. THE CARD OUTLINE — a shader draws the card's shape now (2026-08-06)
+## 4j. THE CARD OUTLINE — a shader draws the card's shape now
 
 `Shaders/outline.gdshader` rims every element of a card — face, rank/suit/stamp pips, art — with a
 1-unit 8-directional palette colour, and ABSORBED `Assets/color_picker.gdshader` (deleted): a
@@ -1191,7 +1191,7 @@ re-enable it); `enable_board_focus()` on dismissal.
 
 ---
 
-## 6. MEMORY & LEAK RULES (weakref backrefs, 2026-07-18)
+## 6. MEMORY & LEAK RULES (weakref backrefs)
 
 - `CardModifier.data` is a **WeakRef-backed property** — the CardData↔modifier RefCounted
   cycle cannot exist; the old unlink-at-every-drop-site discipline is deleted. But:
@@ -1216,10 +1216,10 @@ re-enable it); `enable_board_focus()` on dismissal.
 ## 7. TESTING
 
 Run: `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
-(changed 2026-07-27: the PIXELS suite renders real effects and asserts on the image, and a
+(changed: the PIXELS suite renders real effects and asserts on the image, and a
 dummy renderer cannot compile a shader — headless it FAILS with an explanation rather than
 skipping, per the owner's rule that tests must run properly rather than be skipped). Exit code
-= failure count; the bar is ALL suites green (count the run's own banner; 27 as of 2026-07-27 —
+= failure count; the bar is ALL suites green (count the run's own banner —
 PATIENCE, FX ATTACHMENT and PIXELS joined, and all run unordered like the other engine suites).
 Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** Never
 run headless while the owner's editor has the project open (see START_HERE.md).
@@ -1288,14 +1288,14 @@ Standing owner rulings:
 - The Deck Maker (`UI/deck_builder.gd`) is kept for a future refactor despite being
   orphaned.
 
-Visual-effects rulings (2026-07-26/27 — the spec §4g implements; do not redesign around them):
+Visual-effects rulings (the spec §4g implements; do not redesign around them):
 
 1. Fire tips always point generally UPWARDS, allowing some angle skew as spread. **Reaffirmed for
-   CURVED hosts (2026-07-30)** after two rejected builds: the answer to a hoop's bare flanks is NOT
+   CURVED hosts** after two rejected builds: the answer to a hoop's bare flanks is NOT
    to tilt the flames along the normal, and NOT to shear their bases along the contour. *"I want
    version that covers hoop top completely with tendrils always pointing up. This may require base of
    fire to be able to spread out/sticky against any surface, not just flat bottom."* Coverage is the
-   BASE's job. **Satisfied 2026-07-30 by the MASK model** (§4g): the base is now whatever surface a
+   BASE's job. **Satisfied by the MASK model** (§4g): the base is now whatever surface a
    column's down-march lands on, so it sticks to any surface by construction — and the march being
    WORLD-down is what makes "tips point up" structural rather than a per-shape branch.
 2. Fire paints props and cards but, just like props, shows only BETWEEN cards — a card with FX
@@ -1333,7 +1333,7 @@ Visual-effects rulings (2026-07-26/27 — the spec §4g implements; do not redes
 24. Juggling keeps happening while the card is moving; no freezing ever, on any effect.
 25. Balls spin, faster as stacks increase. No trails — too noisy.
 
-- **Universal VFX rule (2026-07-27): no VFX pixel grid ever rotates** — fire, balls, particles, or
+- **Universal VFX rule: no VFX pixel grid ever rotates** — fire, balls, particles, or
   anything added later. Mechanically: **quantize first, rotate after.** Snap the sample point to
   the grid in the quad's own world-aligned space and let every rotation act on the
   already-quantized coordinate. Rotating a frame BEFORE quantizing rotates the grid (diagonal
@@ -1361,7 +1361,7 @@ Sharp edges:
 - Deterministic Submit/Next is load-bearing for pending-action replay AND prop-side
   hashing — do not introduce RNG into act resolution.
 
-## 9. THE SPOTLIGHT — the defects, and the seam each one hid in (2026-08-05/06)
+## 9. THE SPOTLIGHT — the defects, and the seam each one hid in
 
 Fifteen defects were found and fixed while finishing the spotlight stream. **Every one of them was
 green in the suite when it shipped**, and most were found by the owner LOOKING at the screen. They are
@@ -1433,7 +1433,7 @@ ordering enforced between them.
 - **`_rebuild()` frees the `LightLayer`** (it lives in the SubViewport), so every section change reset
   `_show`/`_dim` to 0 and re-ramped the show from black — a blink invisible in the editor's irregular
   `_process` and obvious at a played 60 fps. The eased values are carried across for the rebuilds that
-  remain (scenario/knob edits); **since 2026-08-06 a section change calls `_refresh_glows()` and
+  remain (scenario/knob edits); **a section change calls `_refresh_glows()` and
   rebuilds nothing.**
 - **A beam travelled from `(0,0)`** — the screen's top-left — because `_slot_centre()` returns ZERO
   while `_rebuild()` recreates the cards. It now appears already aimed when the source is unknown.
@@ -1445,10 +1445,10 @@ ordering enforced between them.
 `Cards/Skills/spotlight_probe.gd` plus the debug bar's **Cue** button exist to make it reachable.
 ⚠ **Do NOT "fix" this by unfiltering the signal — that recreates GAP-005.**
 
-### 9g. Rules the 2026-08-06 review pass added (each an instance of a shape above)
+### 9g. Rules the review pass added (each an instance of a shape above)
 
 Ten more defects, found by review rather than by eye; reasoning per fix is
-`design/spotlight/ASSUMPTIONS.md` (2026-08-06 entries). The standing rules they leave behind:
+`design/spotlight/ASSUMPTIONS.md` (entries). The standing rules they leave behind:
 
 - **A cancelled act must tear down the VIEW, not only the model** — the empty
   `spotlight_section_changed` is the only thing that closes rows and retires beams, and a restored

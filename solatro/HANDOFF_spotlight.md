@@ -5,14 +5,14 @@
 satisfied by eye on the visual phases. (Phase 5, the film pipeline, is a separate deliverable and is
 NOT part of this stream.)
 
-**State (2026-08-06, post-review):** **ALL FOUR PHASES ARE BUILT — every step S1–S18 is `done`,
+**State (post-review):** **ALL FOUR PHASES ARE BUILT — every step S1–S18 is `done`,
 suite green (29 suites, 1871 checks, engine-errors clean).** `DESIGN.md` is at **v12** plus GAP-009.
 Gates **G3.1, G3.2, G2.3 and now G3.3 are closed**; **G2.2 is the owner's alone.** A same-day
 code-review pass fixed ten confirmed defects (cancelled-submit view leak, (0,0) beams, fx_intensity
 dark disc, gutter collapse on bank, --trace save overwrite, lamp teleport after subdivision, stale
 reveal bindings, fail-open spotlight lookups, tool/PlayArea separation divergence) plus the known
 tool teardown and push-every-frame items — see "For an agent APPLYING fixes" and `ASSUMPTIONS.md`
-(2026-08-06 entries). ⚠ **TWO NEW GAPS ARE OPEN — GAP-010 (does `act_overrun` void the line's
+(entries). ⚠ **TWO NEW GAPS ARE OPEN — GAP-010 (does `act_overrun` void the line's
 score?) and GAP-011 (do score hooks fire on an emptied section?)** — behaviour unchanged pending
 the owner. Fifteen earlier defects' forensics are in `ARCHITECTURE_REVIEW.md` **§9**. ⚠ **PART OF THE STREAM IS ALREADY COMMITTED** in `9cb8f59` (the probe, `reveal_shot.tscn`, GAP-009,
 `game_view.gd`, `todo.md`, `test_pixels.gd`); the rest is still dirty — see **Files touched** for the
@@ -150,12 +150,12 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
 - id: S15
   status: done
   evidence: 'SpotlightDirector._on_cued + LightLayer.Light.gated; VISUAL LAYERS 151 -> 165, test_the_momentary_cue_draws_outside_scoring 14 checks green; ALL 29 SUITES 1836 passed, 3 FAILED (the PIXELS three, not this stream''s); spotlight_tool -- --verify still 13 scenario(s), 0 SUSPECT.'
-  notes: '⚠ THE CUE IS UNGATED (ASSUMPTIONS 2026-08-05): nothing raises the GAP-006 reveal gate outside a submit, so a gated cue is multiplied by _show=0 and is INVISIBLE while every headless check still passes — GAP-005''s shape again. T10 settles it: the cue''s dim rises and falls with its OWN beam. _dim_target takes max(_show, strongest ungated), not a sum, so Q247=a''s ONE dim survives. ⚠ Hold reuses spotlight_hold_fraction — §16 has no cue row. ⚠ The cue is INVISIBLE to _on_section_changed: never travels, never claims its card, so a card both cued and scored briefly carries two lights (the alternative leaves it dark mid-section). ⚠ Uses _origins.take(), not assign() — GAP-008''s column fan is a section rule, and a cue is independent announcements.'
+  notes: '⚠ THE CUE IS UNGATED (ASSUMPTIONS): nothing raises the GAP-006 reveal gate outside a submit, so a gated cue is multiplied by _show=0 and is INVISIBLE while every headless check still passes — GAP-005''s shape again. T10 settles it: the cue''s dim rises and falls with its OWN beam. _dim_target takes max(_show, strongest ungated), not a sum, so Q247=a''s ONE dim survives. ⚠ Hold reuses spotlight_hold_fraction — §16 has no cue row. ⚠ The cue is INVISIBLE to _on_section_changed: never travels, never claims its card, so a card both cued and scored briefly carries two lights (the alternative leaves it dark mid-section). ⚠ Uses _origins.take(), not assign() — GAP-008''s column fan is a section rule, and a cue is independent announcements.'
 
 - id: S16
   status: done
   evidence: 'play_area.gd _row_open/_ease_row_openings/_apply_row_openings + game_view.gd wiring; VISUAL LAYERS 165 -> 176, test_the_reveal_opens_a_row_and_moves_the_slots_below_it 11 checks green; ALL 29 SUITES 1823 passed, 3 FAILED (the PIXELS three).'
-  notes: '⚠ GAP-009 SETTLED 2026-08-05 (second answer; the first, "by the lowest card", was withdrawn by the owner because a FLUSH lights and jumps every card, so the lowest lit card is the lowest on the board and rows outside the scored set got lifted). ⚠ THE DERIVED OPENING IS RETIRED. The size is now a KNOB with two fixed formulas — spotlight_separation_mode in player_settings.gd, already added and in §16: CARD_HEIGHT = the row control opens to a full CardVisual.card_size_play.y; JUMP_ADJUSTED = that minus CardVisual.CARD_JUMP_RISE (= card_size_play.y/5), leaving a non-jumping card slightly covered. ⚠ Q43=a is NO LONGER superseded — it is CARD_HEIGHT. ⚠ K10c stands: computed ONCE, does not track card bottoms after. ⚠ IMPLEMENTATION SITE: play_area.gd:448-452 gives every row card control custom_minimum_size.y = CardVisual.card_separation_play_custom (and the LAST child a full card); the reveal grows that ONE row''s value, tweened over spotlight_reveal_fraction. ⚠ S17 IS NOT SEPARABLE FROM THIS: slot_center_global (play_area.gd:228) is pure UNIFORM-pitch math and every prop anchors to it, so it breaks on the first expanded row — K13 says so outright. Do S16 and S17 as one change. ⚠ The tuning tool already SIMULATES it (row_separation, eased over spotlight_reveal_fraction), so the shape is decided and visible — this is making PlayArea do it for real. A COLUMN expands every row it passes through (Q46, Q52, chart D4).'
+  notes: '⚠ GAP-009 SETTLED (second answer; the first, "by the lowest card", was withdrawn by the owner because a FLUSH lights and jumps every card, so the lowest lit card is the lowest on the board and rows outside the scored set got lifted). ⚠ THE DERIVED OPENING IS RETIRED. The size is now a KNOB with two fixed formulas — spotlight_separation_mode in player_settings.gd, already added and in §16: CARD_HEIGHT = the row control opens to a full CardVisual.card_size_play.y; JUMP_ADJUSTED = that minus CardVisual.CARD_JUMP_RISE (= card_size_play.y/5), leaving a non-jumping card slightly covered. ⚠ Q43=a is NO LONGER superseded — it is CARD_HEIGHT. ⚠ K10c stands: computed ONCE, does not track card bottoms after. ⚠ IMPLEMENTATION SITE: play_area.gd:448-452 gives every row card control custom_minimum_size.y = CardVisual.card_separation_play_custom (and the LAST child a full card); the reveal grows that ONE row''s value, tweened over spotlight_reveal_fraction. ⚠ S17 IS NOT SEPARABLE FROM THIS: slot_center_global (play_area.gd:228) is pure UNIFORM-pitch math and every prop anchors to it, so it breaks on the first expanded row — K13 says so outright. Do S16 and S17 as one change. ⚠ The tuning tool already SIMULATES it (row_separation, eased over spotlight_reveal_fraction), so the shape is decided and visible — this is making PlayArea do it for real. A COLUMN expands every row it passes through (Q46, Q52, chart D4).'
 
 - id: S17
   status: done
@@ -172,7 +172,7 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
 
 ## Verified vs assumed
 
-- **Verified 2026-08-05 (S15 session) — the tree, 3 runs:**
+- **Verified (S15 session) — the tree, 3 runs:**
   ```
   ALL 29 SUITES: 1836 passed, 3 FAILED  [19 placeholder warnings]
   [engine-errors] clean · 0 SCRIPT ERROR on stderr
@@ -180,23 +180,23 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   Tools/spotlight_tool.tscn -- --verify: 13 scenario(s), 0 SUSPECT (S12 max_dim 0.26 = the casual dim)
   ```
   **The 3 failures are PIXELS and are NOT this stream's** — see Open bugs.
-- **Verified 2026-08-05 — S15 OVER TIME, not from a still.** The cue's whole claim is a duration, so
+- **Verified — S15 OVER TIME, not from a still.** The cue's whole claim is a duration, so
   the test measures what MOVED: the value actually handed to the shader (`u_lights[i].w`) is non-zero
   **while `_show` is still exactly 0**, the dim rises to the casual cap, and the cue then **retires
   itself with nobody calling `retire()`** and the dim falls after it. A still frame cannot tell any of
   those from a stuck light.
-- **Verified 2026-08-05 — S16/S17 OVER TIME.** The row opens **partway** one moment and fully the
+- **Verified — S16/S17 OVER TIME.** The row opens **partway** one moment and fully the
   next (the ease, `spotlight_reveal_fraction` — the owner's report that produced that knob was *"cards
   jump to their new spot instantly"*), the slot below moves down by **exactly** the mode's opening,
   row 0 itself does not move, and everything returns to its starting y on release. Driven through the
   real `spotlight_section_changed`, not by calling the opener.
-- ✅ **G3.1 and G3.2 CLOSED 2026-08-05** by `test_the_reveal_keeps_props_and_gutters_glued_G31_G32`.
+- ✅ **G3.1 and G3.2 CLOSED** by `test_the_reveal_keeps_props_and_gutters_glued_G31_G32`.
   A REAL `PropVisual`, **registered in `PropLayer._visuals`** so the real `_repin` drives it, anchored
   to the slot below the opening; the invariant is sampled EVERY frame of open→hold→close (the test
   asserts it caught the row partway, so the mid-cycle claim is real): prop drift **< 1 px**, gutter
   off its row **< 1 px**. ⚠ The first draft only `add_child`ed the visual and measured a **90 px**
   drift — the whole opening. That was the HARNESS, not the code: `_repin` only walks `_visuals`.
-- ✅ **G2.3 MEASURED 2026-08-05 — the number `Q254`=(a) asked for, and nothing is trimmed.**
+- ✅ **G2.3 MEASURED — the number `Q254`=(a) asked for, and nothing is trimmed.**
   `fx_cost.gd` gained `_spotlight_rows`; the light layer had **never been priced**. Swept over LIGHT
   COUNT, because `light.gdshader` shades the whole viewport every frame and host count is the wrong
   axis for it. Empty-scene floor 1.947 ms; over it:
@@ -210,7 +210,7 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   12.2 ms and would blow the frame on its own.** `MAX_LIGHTS` is a shader-array bound, not a policy
   (`Q107` refuses a cap) — so **the owner decides whether anything gets cut.** Not measured: the GLOW,
   because there is still no `FxGlow` effect class (`PLAN.md` §3 says so) — only the shader.
-- ✅ **THE REVEAL HAS NOW BEEN LOOKED AT (2026-08-05), via `Tests/Visual/reveal_shot.tscn` — a new
+- ✅ **THE REVEAL HAS NOW BEEN LOOKED AT, via `Tests/Visual/reveal_shot.tscn` — a new
   harness that is the ONLY thing in the repo that can show it** (the tuning tool draws its own
   simulation and has no `PlayArea`). Real `GameView`, real board, real signal; shots in
   `user://reveal_shots/`. **Read by eye:** closed → the lower zone sits directly under the upper row;
@@ -219,7 +219,7 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   exactly. Measured alongside: extra 0 → 41.3 → 90.0 px (`CARD_HEIGHT`) and 65.0 px (`JUMP_ADJUSTED`).
   ⚠ **CAVEAT — the fixture is ONE ROW DEEP per column, so these shots do NOT show the headline case:
   a BURIED card being uncovered.** That still needs a stacked board (a `Next` that drops a stack).
-- ✅ **G3.3 RUN 2026-08-06 (review pass).** All three snapshot sets re-rendered and diffed:
+- ✅ **G3.3 RUN (review pass).** All three snapshot sets re-rendered and diffed:
   30 of 34 comparable panels byte-identical (both GLOW panels included); the 4 that differ are all
   explained by COMMITTED intervening work, verified by eye — `10_light_layer` (the 38x52 art
   refactor changed the card faces; the light rig itself is pixel-for-pixel the same look),
@@ -232,7 +232,7 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   (`JUMP_ADJUSTED`) — the post-GAP-009-final-form numbers (old 90/65 predate the `-separation`
   correction). **G2.2** (readability) remains the owner's call.
 
-- **Verified 2026-08-05 BY EYE** — `04_S4` (a column: the fan, near-vertical onto the topmost card,
+- **Verified BY EYE** — `04_S4` (a column: the fan, near-vertical onto the topmost card,
   each deeper one from further out, no crossings), `07_S6` (interleaved: six beams left-to-right,
   cleanly separated), `02_S2b` (a buried row with the reveal simulated, glow rims on the lit cards),
   `10_S15` (the circle on the art square with the glow's warm rim), `09_S12` (the casual dim visibly
@@ -250,7 +250,7 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
 
 ## Tool coverage — what the GAME does that the TOOL cannot show
 
-⚠ **AUDITED 2026-08-05 against the owner's question: *"check that everything possible in game is
+⚠ **AUDITED against the owner's question: *"check that everything possible in game is
 possible in scenarios, otherwise whats the point."* Each row below was read in the code, not assumed.**
 
 | Game behaviour | Tool | Evidence |
@@ -259,11 +259,11 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
 | Per-section pulse (GAP-006) | ✅ | `revealed`, `show_flips` |
 | Casual dim depth (`Q245`=c) | ✅ | `casual` |
 | `fx_intensity` floor (G2.4) | ✅ *(fixed today)* | `fx_intensity` on S14 |
-| **Chart E TRAVEL — lights move section to section, surplus retire, new ones spawn** | ✅ *(built 2026-08-05)* | `_TBeam` + `_sync_beams()` + `_advance_beams()` mirror `SpotlightDirector`; `begin()` only when nothing is lit. **Preset `S8` is 3 → 5 → 2**, so it travels, spawns two, then retires three |
-| **Spawn / hold / retire ENVELOPES** | ✅ *(built 2026-08-05)* | `light.intensity = b.fade`; `--verify` now reports `fade=Y` for every preset |
+| **Chart E TRAVEL — lights move section to section, surplus retire, new ones spawn** | ✅ *(built)* | `_TBeam` + `_sync_beams()` + `_advance_beams()` mirror `SpotlightDirector`; `begin()` only when nothing is lit. **Preset `S8` is 3 → 5 → 2**, so it travels, spawns two, then retires three |
+| **Spawn / hold / retire ENVELOPES** | ✅ *(built)* | `light.intensity = b.fade`; `--verify` now reports `fade=Y` for every preset |
 | **S15's momentary cue as a timed event** | ❌ | `casual` only changes the dim's depth; there is no spawn→hold→self-retire |
-| **GAP-009's separation MODE** (`CARD_HEIGHT` vs `JUMP_ADJUSTED`) | ✅ *(fixed 2026-08-06)* | the tool's opening is `PlayArea.row_open_span()` — the game's own static, mode included |
-| **"A row that covers nothing does not open"** | ✅ *(fixed 2026-08-06)* | `_separated_depths()` skips the deepest row, mirroring `row_open_extra`'s guard |
+| **GAP-009's separation MODE** (`CARD_HEIGHT` vs `JUMP_ADJUSTED`) | ✅ *(fixed)* | the tool's opening is `PlayArea.row_open_span()` — the game's own static, mode included |
+| **"A row that covers nothing does not open"** | ✅ *(fixed)* | `_separated_depths()` skips the deepest row, mirroring `row_open_extra`'s guard |
 | Origin SUBDIVISION | ✅ | `S8` (3 → 5) reaches `assign()`'s growth loop — the old "unreachable" claim was false; see Open bugs |
 | Two zones (upper + lower) | ❌ | the tool builds one grid |
 | Cards moving while lit; board scroll | ❌ | the board is posed statically |
@@ -273,9 +273,9 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
   softness, noise, colours), plus `spotlight_dim_target`, `spotlight_dim_in_fraction`,
   `spotlight_dim_out_fraction`, `spotlight_dim_casual_scale` (eased by `LightLayer`, which the tool
   drives), and `spotlight_hold_fraction` + `spotlight_reveal_fraction` (used by the tool itself).
-- ✅ **Now tunable too (2026-08-05)** — `spotlight_travel_fraction`, `spotlight_spawn_fraction`,
+- ✅ **Now tunable too** — `spotlight_travel_fraction`, `spotlight_spawn_fraction`,
   `spotlight_retire_fraction`, once the tool got a beam model. Judge them on **`S8`** with `play` on.
-- ✅ **`spotlight_separation_mode` is live in the tool too (2026-08-06)** — its opening now routes
+- ✅ **`spotlight_separation_mode` is live in the tool too** — its opening now routes
   through `PlayArea.row_open_span()`. All 13 `FxSpotlightStyle` knobs are live (10 as shader uniforms
   via `apply()`, and `circle_radius` / `beam_width_at_origin` / `flare` read CPU-side when the light
   is built); the other 9 `spotlight_*` settings all reach the tool or the `LightLayer` it drives.
@@ -283,7 +283,7 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
   ⚠ On the GLOW, `ember` and `ember_rate_max` are inert — inherited from `FxStyle` (the ember emitter
   reads them off the base type) and never read by `glow.gdshader`.
 
-**GAP-009's TWO MODES, FINAL FORM (owner 2026-08-06).** Both `PlayArea._row_open_height()` branches
+**GAP-009's TWO MODES, FINAL FORM (owner).** Both `PlayArea._row_open_height()` branches
 return a **TOTAL ROW PITCH**; `row_open_extra()` takes the container's `separation` off again to get
 the strip.
 - `CARD_HEIGHT` -> `card_size_play.y`
@@ -298,7 +298,7 @@ cannot pass trivially.
 
 ## What was fixed this session, and why every check missed it
 
-⚠ **FIFTEEN defects were found and fixed on 2026-08-05/06. EVERY ONE WAS GREEN IN THE SUITE, and most
+⚠ **FIFTEEN defects were found and fixed. EVERY ONE WAS GREEN IN THE SUITE, and most
 were found by the owner LOOKING at the screen.** Their forensics — the mechanism, the file, and the
 seam each one hid in — are in **`solatro/ARCHITECTURE_REVIEW.md` §9**, grouped by the shape that
 recurs: two representations of one fact (§9a), independent envelopes on one visual (§9b), instruments
@@ -334,18 +334,18 @@ unattributed; the suspect is the glow's baked `GradientTexture1D`. ⚠ **`_scan_
 `godot.log` DURING the run, so every exit-time error is invisible to the gate by construction** — that
 blind spot matters more than the one texture.
 
-✅ **FIXED 2026-08-06 (review pass): `_rebuild()` no longer runs on a section change** — a section
+✅ **FIXED (review pass): `_rebuild()` no longer runs on a section change** — a section
 change calls `_refresh_glows()` (re-hangs the glow attachments only); `_dirty`/`_rebuild()` is for
 scenario/knob edits, where the show-carry still applies. The `(0,0)` travel guard stays — a SCENARIO
 change still rebuilds under live beams.
 
-✅ **CORRECTED 2026-08-06: the origin SUBDIVISION path WAS reachable all along** — preset `S8`
+✅ **CORRECTED: the origin SUBDIVISION path WAS reachable all along** — preset `S8`
 (3 → 5) hits `assign()`'s growth loop: `begin(3)` lays out 4 lamps, the growth to 5 wants 2 with 1
 free. The old "unreachable by any preset" claim here was false. The `assign()`-side growth now has
 its own test (`test_origins_assign_subdivides_for_a_larger_section`), which also pins the
 `advance()`-after-subdivision x-order fix (lamps used to teleport: the re-spread walked INDEX order).
 
-✅ **FIXED 2026-08-06: the light push is dirty-checked** — `LightLayer._push_lights` compares
+✅ **FIXED: the light push is dirty-checked** — `LightLayer._push_lights` compares
 against the last-pushed arrays and skips identical uploads (covers the director's per-frame re-push
 AND the show ease's double push).
 
@@ -355,7 +355,7 @@ the cue could never appear in play. `Cards/Skills/spotlight_probe.gd` + the debu
 exist to make it reachable. ⚠ **Do NOT "fix" this by unfiltering the signal — that recreates GAP-005.**
 It becomes live the moment any board-stage skill implements `on_spotlight`.
 
-**Two gaps are open (2026-08-06, from the review): GAP-010** (`act_overrun` banks a half-resolved
+**Two gaps are open (from the review): GAP-010** (`act_overrun` banks a half-resolved
 section's score — void it or keep it?) and **GAP-011** (an emptied section skips `on_score` /
 `on_after_score` — should it?). GAP-001, 003–009 answered and folded in; GAP-002 withdrawn.
 
@@ -376,7 +376,7 @@ section's score — void it or keep it?) and **GAP-011** (an emptied section ski
 `Tests/UI/test_{visual_layers,fx_attachment}.gd`, `Tests/Engine/test_palette.gd`.
 **Outside solatro:** `designloop/src/{gaps,check}.mjs` + `test/gaps.test.mjs` (the `unclaimed` report).
 
-**THE AUDIT SURFACE (2026-08-06).** ⚠ **Check `git status` first — it is the authority, not this
+**THE AUDIT SURFACE.** ⚠ **Check `git status` first — it is the authority, not this
 list.** Part of the session is already committed in `9cb8f59`; what follows is what was still dirty
 when this was written.
 - **Shipped game (dirty):** `UI/spotlight_director.gd` (S15's cue; `assign()` for section origins;
@@ -393,7 +393,7 @@ when this was written.
   scenario declares `row_separation`; S6/S14 corrected).
 - **Tests (dirty):** `Tests/UI/test_visual_layers.gd`, `Tests/Engine/test_spotlight.gd`.
 - **Docs (dirty):** `ARCHITECTURE_REVIEW.md` **§9**, `design/spotlight/DESIGN.md`, this file.
-- **2026-08-06 REVIEW PASS (dirty, on top of all of the above; rules in ARCHITECTURE_REVIEW §9g,
+- **REVIEW PASS (dirty, on top of all of the above; rules in ARCHITECTURE_REVIEW §9g,
   reasoning in ASSUMPTIONS.md):** `Levels/game.gd`, `UI/{spotlight_director,spotlight_origins,
   light_layer,play_area}.gd`, `Cards/card_modifier.gd`, `Scripts/{scoring_section,event_log}.gd`,
   `Shaders/{glow,light}.gdshader`, `UI/Fx/fx_spotlight_style.gd`, `Tools/spotlight_tool.gd`,
@@ -421,7 +421,7 @@ lose/win."* `EventLog.summary()` already handles ordinary captures.
 
 ## For an agent APPLYING fixes — the actionable list
 
-⚠ **Read `ARCHITECTURE_REVIEW.md` §9 first.** Fifteen defects were fixed here on 2026-08-05/06 and
+⚠ **Read `ARCHITECTURE_REVIEW.md` §9 first.** Fifteen defects were fixed here and
 **every one was green in the suite when it shipped**; §9 groups them by the shape that recurs. Most of
 the traps below are places where the obvious "cleanup" re-creates one of them.
 
@@ -429,7 +429,7 @@ the traps below are places where the obvious "cleanup" re-creates one of them.
 (WINDOWED, kill-on-timeout) **and** `... res://Tools/spotlight_tool.tscn -- --verify`. ⚠ Two tests
 flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `git add`, no commits.
 
-| # | Do | Where | Status (2026-08-06 review pass) |
+| # | Do | Where | Status (review pass) |
 |---|---|---|---|
 | 1 | Run **G3.3** — `snapshot_diff.py` — and report unintended panel changes | `Tools/snapshot_diff.py` | See "Verified vs assumed" |
 | 2 | **`_refresh_glow()`** | `Tools/spotlight_tool.gd` | ✅ done — section change re-hangs glows only, no `_rebuild()` |
@@ -475,7 +475,7 @@ plus the open bugs above.**
    `reveal_shots/02_open_full.png`: the rank glyph must stay legible under the circle.
 3. **Pick `spotlight_separation_mode`** — `CARD_HEIGHT` (pitch = one card) vs `JUMP_ADJUSTED`
    (card − separation − jump rise). Both are captured in `user://reveal_shots/`.
-4. ~~G3.3~~ — **run 2026-08-06**, closed; see "Verified vs assumed". Answer **GAP-010 / GAP-011**.
+4. ~~G3.3~~ — **run**, closed; see "Verified vs assumed". Answer **GAP-010 / GAP-011**.
 5. **Decide on G2.3's number**: ~0.19 ms per light, near-linear; 64 lights is 12.2 ms of a 16.67 ms
    frame. Nothing has been trimmed, per `Q254`=(a).
 6. **`DEBUG_CUE` renders as a raw key** until the editor re-imports `Locale/localization.csv` (all the

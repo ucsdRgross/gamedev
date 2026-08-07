@@ -104,7 +104,7 @@ Breaking this fails SILENTLY. A free-text answer has **no letter**, so a gate re
 never be true. On a `⚑gate` question that is handled — free text ends the round and you author the
 branch. On an *unmarked* one it is not handled at all: the answer is recorded, the round rolls on,
 and **the entire subtree below it is amputated with no warning and nothing on screen.** Measured on
-Spotlight 2026-08-03: six unmarked gating questions, **20 questions never asked**, and the round
+Spotlight: six unmarked gating questions, **20 questions never asked**, and the round
 still reported `done (complete)`.
 
 ⚠⚠ **AND THE OBVIOUS RECOVERY DOES NOT WORK.** The question screen presents only *UNANSWERED*
@@ -140,8 +140,8 @@ against answers, so it only turns red once answers exist — which is exactly wh
 run it. Spotlight accumulated **20 stale nodes across 11 charts** over four rounds and the owner
 found them by eye.
 
-**A `⚑gate` option with no `→ next:` is a warning, not a parse error** (`GAP-001`, resolved
-2026-08-01). The document still parses and the owner can still answer it — blocking the person who
+**A `⚑gate` option with no `→ next:` is a warning, not a parse error** (`GAP-001`, resolved).
+The document still parses and the owner can still answer it — blocking the person who
 cannot fix it helps nobody — but the shortfall is *yours* to fix: `run check` names the question and
 its line, and the design's card in the index carries a warning badge until it is gone. The owner
 sees the option marked **→ next: not described**, which is exactly the blind choice rule 5 exists to
@@ -153,7 +153,7 @@ returns to the agent to author the new branch, rather than being queued until th
 questions are answered. Design for that: keep `⚑gate` questions few, put them early, and make their
 option sets genuinely exhaustive.
 
-⚠ **READ `answers.log`, NOT ONLY `answers.json` (2026-08-03).** `answers.json` is the CURRENT state;
+⚠ **READ `answers.log`, NOT ONLY `answers.json`.** `answers.json` is the CURRENT state;
 the log is what actually happened. Spotlight's log held a free-text answer at `QR2` — a real new
 branch — and then, four minutes later, the owner going back and picking `(a)` so they could keep
 answering instead of sitting blocked. `answers.json` therefore showed a clean `QR2=a` and **the
@@ -167,7 +167,7 @@ owner switches.
 
 ⚠⚠ **AND THE SECTION HEADING CARRIES A GATE TOO.** `reachability()` evaluates
 `q.effectiveGate || q.gate`, and `effectiveGate` folds in the `### 17.6 The dim [QR2=a|c]` heading.
-Measured on Spotlight 2026-08-03: 17 question lines were widened to `a|c|d`, the heading was not,
+Measured on Spotlight: 17 question lines were widened to `a|c|d`, the heading was not,
 and **all 12 of §17.6 stayed pruned anyway** — the owner clicked the option I told them to click and
 watched 20 answers go inactive. Widen the heading in the same edit, always.
 
@@ -244,7 +244,7 @@ architecture ones. If a structural choice has a behavioural consequence, ask abo
 
 ### 3. SKETCH the flow to find the questions — do NOT ship it yet
 
-⚠⚠ **CHARTS GO IN AFTER THE FIRST ANSWER ROUND, NOT BEFORE IT** (owner, 2026-08-03: *"no way will
+⚠⚠ **CHARTS GO IN AFTER THE FIRST ANSWER ROUND, NOT BEFORE IT** (owner: *"no way will
 chart ever be accurate before first question round"*). This reverses what this step used to say, and
 the reversal was earned: Spotlight's charts were authored up front, patched across four rounds, and
 ended with **20 stale nodes across 11 charts** that the owner found by eye. A chart of behaviour
@@ -330,7 +330,7 @@ Per the grammar above. Additional rules:
   inactive, never deleted, and are restored if they come back. Say so where the questionnaire is
   presented.
 - **Count the worst path, not the total** — and **measure it, never estimate it.** Report "196
-  lines, longest path 194". ⚠ A hand estimate of Spotlight's was wrong by 44 (2026-08-01: guessed
+  lines, longest path 194". ⚠ A hand estimate of Spotlight's was wrong by 44 (guessed
   ~150, measured 194), because path length is a property of the whole DAG and intuition is bad at it.
 - ⚠ **Gate weight only pays off when a root's DEFAULT is the pruning branch.** Spotlight's eight
   roots all default to "include this sub-feature", so the all-defaults path answers nearly
@@ -630,7 +630,7 @@ recommendation, and a copy-paste prompt. Do not stop at the plan and wait to be 
 
 ### 8a. The implementation plan is NOT bound by the design doc's no-code rule
 
-⚠ **This is the mistake that produced this section (2026-08-01).** The no-code rule belongs to the
+⚠ **This is the mistake that produced this section.** The no-code rule belongs to the
 *design* document only. The *implementation plan* is the last document anyone should need to build
 the thing, and it must carry every normative contract:
 
@@ -710,7 +710,7 @@ policy, code style) propagate through directory-keyed memory and do not need res
 
 ## ⚠ A questionnaire settles what a thing DOES, not whether anyone can tell
 
-Learned twice, on the tool this skill drives (2026-08-02 and 2026-08-03), and it is the most
+Learned twice, on the tool this skill drives (and), and it is the most
 reliable class of miss in the whole procedure. Both owner reviews of built screens produced findings
 that were **already decided in the design and simply never shown**:
 

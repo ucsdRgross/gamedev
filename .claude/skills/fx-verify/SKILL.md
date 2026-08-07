@@ -18,7 +18,7 @@ If you cannot render, say **UNVERIFIED** in plain text and do not use the words 
 time.** A PNG settles a silhouette, an edge, a colour. **It cannot settle a pulse, a travel, a fade,
 or a sequence** — a still of a working loop and a still of a dead one are identical.
 
-Measured 2026-08-04: three defects survived a full set of "looked at and passed" captures — a
+Measured: three defects survived a full set of "looked at and passed" captures — a
 per-section dim pulse, a retire beat that threw an error every frame, and a cascade stuck on its
 first section. The owner found all three by watching. **So for anything with a DURATION, rendering is
 the wrong verb:**
@@ -42,8 +42,9 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
   `Get-Process | Where-Object { $_.ProcessName -like '*odot*' } | Select-Object Id, MainWindowTitle`
   An editor/scene title is their session — stop and ask. Never kill by name (a hook blocks it).
 - `cd` to the **repo root** — `--path solatro` is relative and fails from inside `solatro/`.
-- Binary: glob `C:\Users\khanr\Desktop\Godot_v4.7*` (the Desktop binary set churns; there is a
-  `_console` twin beside the main exe for redirectable output).
+- Binary: the per-machine path is in `.claude/memory/machine-profiles.md` — glob `Godot_v4.7*` in
+  the directory it names, since the binary set churns. There is a `_console` twin beside the main
+  exe for redirectable output.
 - **Never `--headless`** for anything pixel-related: a dummy renderer cannot compile a shader,
   so a headless pass proves nothing.
 

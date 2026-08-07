@@ -10,7 +10,7 @@ after it bites.** Re-reading does not work and has now demonstrably not worked e
 
 ## The measurement
 
-Every gap filed on [[solatro-spotlight-design]] plus every non-gap miss in the 2026-08-04 session
+Every gap filed on the Solatro spotlight stream, plus every non-gap miss in its review session,
 fits one table. The columns are two places that had to agree; the last column is always the same.
 
 | Miss | Representation A | Representation B | Compared by |

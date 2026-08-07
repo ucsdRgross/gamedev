@@ -1,11 +1,10 @@
 # START HERE — worldgen agent guide & reference
 
-**Read this first if you are new to this directory.** Consolidated 2026-07-19 from the
-GDExtension port handoffs (Phases 1–4 + NoiseBake), the determinism port, and the
-efficiency audit — the full historical docs live in git history (map at the bottom).
-**Keep it current:** when work lands, fold its regression-critical residue in here,
-update the addon README if user-facing, and delete the temporary plan doc (git keeps the
-text). Never keep dated "what happened" logs in living docs.
+**Read this first if you are new to this directory.** It is the distillation of the GDExtension
+port, the determinism port and the efficiency audit; the retired plan docs live in git history.
+**Keep it current:** when work lands, fold its regression-critical residue in here, update the
+addon README if user-facing, and delete the temporary plan doc. Never keep dated "what happened"
+logs in living docs.
 
 ## What this project is
 
@@ -47,8 +46,8 @@ fallback when the dll is missing.
 6. **Every native call site keeps its GDScript fallback** behind
    `if GenerationStep._native:` — the addon must work with the dlls deleted (rename
    them to `.off` to test; `generate_up_to_test` then takes ~150 s — slow, NOT hung).
-7. Docs referencing `C:\richard\gamedev\...` mean the owner's other machine; real paths
-   here are `C:\Users\khanr\Documents\GitHub\gamedev\`.
+7. **No doc here may hard-code an absolute path.** Repo root, Godot binary and toolchain
+   locations differ per computer and live only in `../.claude/memory/machine-profiles.md`.
 
 ## worldgen_native — what is ported (all validated, vendored into Solatro)
 
@@ -144,21 +143,18 @@ class-cache "Could not find type X" cascades).
   (GPU path) — regenerate with the toggle on before treating them as current.
 - `worldgen_native/.sconsign.dblite` probably shouldn't be tracked.
 
-## Doc hygiene & retired docs
+## Doc map
 
-Same policy as `solatro/START_HERE.md`: plan/handoff docs are temporary — once landed,
-fold the residue here and delete them; git history keeps the full text. Retired
-2026-07-19: `GDEXTENSION_PORT_HANDOFF.md`, `GDEXTENSION_PHASE2_HANDOFF.md`,
-`GDEXTENSION_PHASE4_HANDOFF.md`, `DETERMINISM_PORT_HANDOFF.md`,
-`DETERMINISM_PORT_REVIEW_REQUEST.md`, `DETERMINISM_FINDINGS.md`,
-`EFFICIENCY_AUDIT_TRACKER.md`, `UPSTREAM_EFFICIENCY_TODO.md`, `CPP_SETUP_FOR_OWNER.md`
-(toolchain is installed: VS Build Tools 2022 + `pip install scons`), `PIPELINE.md` and
-`criteria.txt` (stale pre-implementation specs — the addon README documents the real
-pipeline; graph constraints live in `GraphRules`/`graph_spec.gd`).
+Same policy as `solatro/START_HERE.md`: plan and handoff docs are temporary — once landed,
+fold the residue here and delete them; git history keeps the full text.
 
-Other references: `tuning/HOW_TO_READ.txt` + `tuning/best_ranges.*` (graph parameter
-search artifacts — start at best_ranges.txt); memory notes `graph-spec-step-a` /
-`graph-placement-step-b` cover the graph algorithm design.
+- `GRAPH_DESIGN.md` — the graph algorithm: Steps A/B/C, the standing rules, the cost-model
+  rulings not to undo, and the measured dead ends not to retry.
+- `worldgen_native/BUILD.md` — building the GDExtension.
+- The addon README documents the real pipeline; graph constraints live in
+  `GraphRules` / `graph_spec.gd`.
+- `tuning/HOW_TO_READ.txt` + `tuning/best_ranges.*` — graph parameter search artifacts;
+  start at `best_ranges.txt`.
 
 ## Build quick facts (details: worldgen_native/BUILD.md)
 

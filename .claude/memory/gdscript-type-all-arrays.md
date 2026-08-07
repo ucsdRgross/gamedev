@@ -26,4 +26,4 @@ build outright, not just a lint nag.
 **How to apply:** when writing GDScript here, type the array on creation AND type every loop
 variable at the `in`. Ranges/ints (`for i in n`) infer fine and don't need it. Class-ref arrays
 in a function body must be `var … : Array[GDScript]`, never `const` (see [[code-style-lean-documented]]).
-Related: [[solatro-project-facts]].
+Related: [[architecture-map]].

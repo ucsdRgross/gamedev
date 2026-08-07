@@ -9,7 +9,7 @@ metadata:
 ---
 
 Tools, editors and test harnesses must stand up the **real scene with real data**, not a hand-built
-model of it. Owner, 2026-07-29 (about the FX editor drawing a flat polygon where a card goes): *"no
+model of it. Owner (about the FX editor drawing a flat polygon where a card goes): *"no
 placeholder art that isnt ever seen in game, and no useless mocks when you can just use actual original
 scene, just like how hoop knife use actual art."*
 

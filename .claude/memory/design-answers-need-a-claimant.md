@@ -5,13 +5,13 @@ metadata:
   type: feedback
 ---
 
-**Reading the whole design does not make you implement it.** Measured on
-[[solatro-spotlight-design]] 2026-08-04: **255 answered questions, 65 cited by a plan step, 190 cited
-by none.** `Q85` — *"Radius 16 art units, centred on the card's ART-SQUARE centre"* — was one of the
-190. It was read in-session, then the code centred the circle on the card's origin, and it shipped
-wrong through three phases and two by-eye reviews before the owner spotted it on a stacked board.
+**Reading the whole design does not make you implement it.** Measured on the Solatro spotlight
+design: **255 answered questions, 65 cited by a plan step, 190 cited by none.** `Q85` —
+*"Radius 16 art units, centred on the card's ART-SQUARE centre"* — was one of the 190. It was read
+in-session, then the code centred the circle on the card's origin, and it shipped wrong through
+three phases and two by-eye reviews before the owner spotted it on a stacked board.
 
-**Why:** every check in [[designloop-tool]] validated **steps → nodes** (every citation resolves, no
+**Why:** every check in the designloop tool validated **steps → nodes** (every citation resolves, no
 step cites nothing). Nothing validated **nodes → steps**, so an answer no step claimed was invisible
 to the whole toolchain — and therefore to the agent executing the plan. The owner's hypothesis was
 "the agent isn't reading the design"; the evidence said otherwise, and that distinction mattered,

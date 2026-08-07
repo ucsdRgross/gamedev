@@ -4,7 +4,7 @@ Third companion doc (after `DESIGN_DOC.md` — your organized ideas — and
 `DESIGN_RECOMMENDATIONS.md` — my curated recommendations). This one is a **quarry, not a
 plan**: every thematic and historical reference I can surface from the worldwide history
 of circus, magic, sideshow, fairground, street performance, gambling, and card culture —
-plus (2026-07-06 expansion) theater and opera, pro wrestling and kayfabe, dance and
+plus theater and opera, pro wrestling and kayfabe, dance and
 ballroom, concerts and festivals, puppetry, mime, film stunts, and the modern era from
 Cirque du Soleil to drone swarms — each mapped to the *type of effect it could support
 or become*. Coverage is deliberately global: Parts A11–A16 fill in South America,

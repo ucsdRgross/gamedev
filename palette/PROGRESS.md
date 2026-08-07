@@ -47,7 +47,7 @@ and prints the layout ranking, the map coverage figures and the recolour mode de
 coherence is not a `map`, the LZW performance trap that cost 76 seconds a frame, external
 palette extraction, and the two generator/test bugs the phase surfaced.
 
-**Spec change, 2026-07-22, by the repo owner:** a GIF is recoloured **whole and shown
+**Spec change by the repo owner:** a GIF is recoloured **whole and shown
 animated**, superseding the original "single frame, no encoder" decision. PLAN §19.2 and
 ARCHITECTURE §12.1 are both marked where they changed.
 
@@ -56,15 +56,14 @@ records what the ranking actually measured, the three dead ends that cost real t
 Hilbert and treemap are classified the way they are, and why the baseline bar is asserted
 over K ≥ 32 rather than at every size.
 
-### Environment note (this machine, 2026-07-22)
-Node lives at `C:\Program Files\nodejs` and is **not on the tool-shell PATH** — prepend it
-on every command: `$env:Path = "C:\Program Files\nodejs;$env:Path"`.
+### Environment note
+Node may not be on the tool-shell PATH — the per-machine prefix is in
+`../.claude/memory/machine-profiles.md`.
 
-Node was upgraded from v20.18.0 to **v26.4.0** (`winget install --id OpenJS.NodeJS`) on
-2026-07-22, because the `test` script (`node --test test/*.test.js`) needs the runner's
-built-in glob expansion: npm runs scripts through `cmd.exe` on Windows, which does not
-expand globs, and Node 20's runner does not either — so `npm test` silently failed to find
-any test file. Node ≥ 22 expands it internally. **Do not downgrade below Node 22.**
+**Needs Node ≥ 22; do not downgrade.** The `test` script (`node --test test/*.test.js`) relies on
+the runner's built-in glob expansion: npm runs scripts through `cmd.exe` on Windows, which does not
+expand globs, and Node 20's runner does not either — so on Node 20 `npm test` silently finds no
+test file and passes vacuously.
 
 `npm` must be run from `palette/`, not the repo root — there is an unrelated `package.json`
 in the user's home directory that npm walks up to and finds instead.
@@ -88,7 +87,7 @@ in the user's home directory that npm walks up to and finds instead.
 Work done after the plan was complete, in response to the repo owner using the tool. Each is
 built, tested and documented; this is the list to extend when the next one lands.
 
-- **Context-aware recolouring** (2026-07-23, `src/core/recolor/context.js`). Recolouring was
+- **Context-aware recolouring** (`src/core/recolor/context.js`). Recolouring was
   layer-blind — it read `rgb8 / lab / hex` and discarded `entry.layer` even when the target was
   the generated palette — so a source *background* colour routinely landed on a target
   *foreground* slot and `fg_bg_separation_min` did not survive. `recolor_context`
@@ -123,7 +122,7 @@ built, tested and documented; this is the list to extend when the next one lands
   composed into the same label buffer so they hover and copy through the one `pickAt` path.
   Tests: `test/colorspace.test.js` (bands partition the palette exactly; every entry hit-testable).
   Usage rules in `COLOR_GUIDE.md`; design notes ARCHITECTURE §11 (Phase 4b).
-- **Two parameter ceilings raised** (2026-07-23), both measured rather than guessed:
+- **Two parameter ceilings raised**, both measured rather than guessed:
   `l_mid_base` 0.80 → **0.92** (0.80 made high-key palettes impossible and blocked centring a ramp
   on the gamut cusp for the whole yellow→cyan arc, cusps at L 0.86–0.96) and `l_variance_per_hue`
   0.15 → **0.30** (fitting real reference palettes pinned it at the old ceiling). Seed payloads are
@@ -258,7 +257,7 @@ built, tested and documented; this is the list to extend when the next one lands
 
 The default picker view. A picker geometry, every pixel painted with the nearest palette colour.
 Rendered per output pixel, so edges are exact and smooth for free and there is no cell grid, no
-upsampling and no smoothing pass. **No outlines, ever.** Coloured in **OKHSL** since 2026-07-24
+upsampling and no smoothing pass. **No outlines, ever.** Coloured in **OKHSL**
 (was plain HSL — see task 4c.9 and ARCHITECTURE §14.10).
 
 Measured coverage at K=48, both geometries: **17–45 of 48 per slice, 48/48 across the four

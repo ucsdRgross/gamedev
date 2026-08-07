@@ -35,8 +35,8 @@ ARCHITECTURE_REVIEW, the latter wins.
 
 | Path | What |
 |---|---|
-| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at_ladder` / `fx_ball_pos_ladder` / `fx_ball_of` / the arc ladder), plus `fx_cell_round` — the whole-cell placement an INSTANCED effect needs to stay on its host's lattice. Included by both shaders so the maths cannot exist twice. ⚠ **`fx_nearest_ball` and `fx_balls_near` are GONE (2026-07-29): the juggling layer is ONE INSTANCE PER BALL and a fragment's ball arrives in `INSTANCE_CUSTOM`, so nothing searches for it. FX_HANDOFF §0d.6 is the live description.** |
-| `Shaders/fire.gdshader` | Fire. ONE path for every host: a COVER FIELD sampled from the art's MASK, carved by two layers of scrolling noise (2026-07-29 — the tendril/comb/ogee/onion build is retired). `mask_level()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
+| `Shaders/fx_common.gdshaderinc` | The pixel grid, noise, dither, and **the one definition of the ball path** (`fx_ball_at_ladder` / `fx_ball_pos_ladder` / `fx_ball_of` / the arc ladder), plus `fx_cell_round` — the whole-cell placement an INSTANCED effect needs to stay on its host's lattice. Included by both shaders so the maths cannot exist twice. ⚠ **`fx_nearest_ball` and `fx_balls_near` are GONE: the juggling layer is ONE INSTANCE PER BALL and a fragment's ball arrives in `INSTANCE_CUSTOM`, so nothing searches for it. FX_HANDOFF §0d.6 is the live description.** |
+| `Shaders/fire.gdshader` | Fire. ONE path for every host: a COVER FIELD sampled from the art's MASK, carved by two layers of scrolling noise (the tendril/comb/ogee/onion build is retired). `mask_level()` is the only extension point — one branch per shape, and a juggled ball is one of those shapes, not a mode. |
 | `Shaders/juggle.gdshader` | The juggled balls — ONE INSTANCE PER BALL on a `MultiMeshInstance2D`, placed by `vertex()`. The fragment is a disc test and the sphere shading, nothing more. |
 | `Shaders/Styles/*.tres` | Every art lever, per effect (`FxStyle`), plus `ember.tres` (a `ParticleSpec`). Colours point at `Assets/Palette/` ramps (§4i). **The single place FX tuning lives** (owner ruling 8). |
 | `UI/Fx/fx_attachment.gd` | One host's effects: builds the quads (a `MeshInstance2D`, or a `MultiMeshInstance2D` for an instanced effect), owns the clock, the per-host randomness, the lag spring. ⚠ `_push_live` sends only the two genuinely per-frame uniforms; everything else goes on CHANGE (FX_HANDOFF §0d.7 — it was 4.2 ms per frame on a full board). |
@@ -99,8 +99,12 @@ asserts nothing. This is what answered "does the per-cell anchor fit" with a num
 turned up the ball-fire figure in §7.
 
 ```bash
-timeout 600 "/c/Users/khanr/Desktop/Godot_v4.7.1-stable_win64_console.exe" --path solatro res://Tests/Visual/fx_cost.tscn 2>&1 | grep -E "ms/frame|->"
+timeout 600 "$GODOT" --path solatro res://Tests/Visual/fx_cost.tscn 2>&1 | grep -E "ms/frame|->"
 ```
+
+`$GODOT` is this machine's console binary — the path differs per computer, so look it up in
+`.claude/memory/machine-profiles.md` rather than pasting one here. On a box whose GPU timer is
+bimodal (Box B), **run this three times and take the minimum**; one run is not evidence.
 
 **Prop-art snapshots — after any change to prop art, `art_size`, or the facing rule.**
 
@@ -125,8 +129,8 @@ py solatro/Tools/snapshot_diff.py save     # then make the change and re-run the
 py solatro/Tools/snapshot_diff.py diff     # -> "0 of 27 comparable panels differ (4 known-noisy skipped)"
 ```
 
-⚠ **It has been blind twice** — alpha-only until 2026-07-29, and scanning `fx_snapshots` alone until
-2026-07-30 — so any "panels identical" claim older than that measured less than it claimed
+⚠ **It has been blind twice** — once comparing alpha only, and once scanning `fx_snapshots` alone —
+so any "panels identical" claim predating those fixes measured less than it claimed
 (FX_HANDOFF §12). ⚠ **Four panels differ on unchanged code** and print as `noisy` instead of counting:
 the three ROTATED ones (cause unknown — todo.md) and `09_embers` (randomised by design).
 
@@ -165,7 +169,7 @@ actually cost time.
   - ⚠ **Do not add your knobs to `FxStyle` itself.** The base is the shared half only. A knob on the
     base is a knob every other effect's inspector shows and every other effect's material is handed —
     which is exactly the confusion, and the per-material waste, the subclasses exist to end
-    (2026-07-31; `FxStyle`'s own doc comment has the measurements).
+    (`FxStyle`'s own doc comment has the measurements).
 - **A new lever on an existing effect** = an `@export` on `FxFireStyle` / `FxJuggleStyle`, one
   `set_shader_parameter` in that class's `apply()`, one uniform. Never a literal in the shader.
 - **A new prop shape** = usually NOTHING. A textured kind overrides `measure_fx_silhouette()` to
@@ -180,9 +184,9 @@ actually cost time.
 
 ## 6. Open work
 
-🟢 **THE FIRE EFFECT IS CLOSED (owner, 2026-07-29: *"with this we are done with fire effect changes"*)
-AND FX PERFORMANCE IS PAUSED, NOT FINISHED (owner, 2026-07-30: *"sure lets stop here then"*). THERE IS NO
-OPEN ENGINEERING TASK.** The 2026-07-29/30 pass took the worst window the game can build from **12.07 to
+🟢 **THE FIRE EFFECT IS CLOSED (owner: *"with this we are done with fire effect changes"*)
+AND FX PERFORMANCE IS PAUSED, NOT FINISHED (owner: *"sure lets stop here then"*). THERE IS NO
+OPEN ENGINEERING TASK.** The performance pass took the worst window the game can build from **12.07 to
 5.82 ms of GPU** — one instance per ball, the CPU uniform push, and two card fire levers.
 
 ⬜ **TO SPEND MORE BUDGET, GO STRAIGHT TO FX_HANDOFF §0d.10.** It is one page: today's measured numbers,
@@ -224,14 +228,14 @@ Ordered roughly by what a session should pick up first.
 
 ### 6.2 The one open feature
 
-- **✅ T21 — the universal palette. LANDED 2026-07-28.** Every FX colour now comes from a
+- **✅ T21 — the universal palette. LANDED.** Every FX colour now comes from a
   `PaletteRamp` of exact palette entries; the contract is **ARCHITECTURE_REVIEW §4i**. What is still
   hardcoded, deliberately: the map screen and the in-game UI chrome, deferred until the owner's custom
   art for them exists — the PALETTE suite reports each one as a `[WARN][PLACEHOLDER]` every run.
 
-### 6.2b Open after the 2026-07-28/29 tuning review
+### 6.2b Open after the tuning review
 
-**✅ THE FIRE EMITTER WAS REPLACED — "RAISE THE MASK" LANDED 2026-07-30.** The contour model was
+**✅ THE FIRE EMITTER WAS REPLACED — "RAISE THE MASK" LANDED.** The contour model was
 wrong at the root: it knew one top contour per column, so a shape with two upward-facing surfaces in
 one column — the hoop's inner-bottom arc — could only ever light the upper one. Fire is now the art's
 MASK raised by the ogee and minus the mask, which lights every upward-facing surface anywhere in the
@@ -254,7 +258,7 @@ hole.
 2. Consequently the arch **rides** the surface it stands on, so flames on a steep flank are shorter
    than flames on the apex. Tips still point straight up everywhere.
 
-**✅ AND THEN THE EMITTER ITSELF WAS REPLACED — THE NOISE FIRE LANDED 2026-07-29.** Owner: *"Fire
+**✅ AND THEN THE EMITTER ITSELF WAS REPLACED — THE NOISE FIRE LANDED.** Owner: *"Fire
 effect no longer has tendrils at all, just average fire shader effects like moving noise instead...
 make sure all params have scaling ratios as stacks increase"*. The mask stayed; what sits on it is
 now a COVER FIELD (how far above the nearest surface below me am I, in `cover_taps` fixed lookups)
@@ -270,10 +274,10 @@ ring — both arcs alight, the hole's middle always empty at every count), `04_s
 `02_fire_rotation`, and `prop_art_snapshot`'s `17_prop_fire` at real size. **Never count columns** —
 that instrument reported two rejected builds as successes.
 
-- **✅ FIXED — hoop fire left the ring's flanks bare.** Superseded twice: first by a SKIRT (2026-07-30,
-  now deleted), then properly by the mask model above. The skirt covered the outer arc by ANGLE and
+- **✅ FIXED — hoop fire left the ring's flanks bare.** Superseded twice: first by a SKIRT
+  (now deleted), then properly by the mask model above. The skirt covered the outer arc by ANGLE and
   could never reach an upward surface elsewhere in the art; the mask reaches all of them.
-- **✅ FIXED — embers only came off the card (2026-07-30).** Props and balls now carry
+- **✅ FIXED — embers only came off the card.** Props and balls now carry
   `ember_prop.tres` (the card's spec is in screen units and ~2.5x too big beside a knife), and ball
   embers spawn on the LIT BALLS via `FxJuggle.ball_pos` — the one script-side copy of the path, pinned
   to the independent oracle by `test_ball_pos_matches_the_oracle`. New shot: `fx_snapshot` `09_embers`,
@@ -290,7 +294,7 @@ that instrument reported two rejected builds as successes.
   destroys data — see the loud block in §4g before removing `@tool` from anything.
 
 
-- **✅ `fx_editor.tscn` IS verified inside the editor, and it hosts the REAL SCENES (2026-07-29).** Both
+- **✅ `fx_editor.tscn` IS verified inside the editor, and it hosts the REAL SCENES.** Both
   card slots instantiate `card_visual.tscn` with real `CardData` — the TypePaper face skinned to the star
   rig, which is **not a rectangle** (the frame clips one texel off each corner) — and `rig_pose` seeks the
   card's own animation instead of warping a hand-built star (owner: *"no useless mocks when you can just
@@ -301,7 +305,7 @@ that instrument reported two rejected builds as successes.
   `Godot --path solatro --editor --quit-after 400 res://Tools/fx_editor.tscn` prints every script
   error and quits. ⚠ Running that scene as a GAME is fair for the cards and the fire but **not for the
   balls** — they do not render in a runtime run, and that is an artefact of the harness, not a bug.
-- **⬜ THE THREE FIRE `.tres` WERE MIGRATED, NOT TUNED (2026-07-29).** The retired knobs were dropped
+- **⬜ THE THREE FIRE `.tres` WERE MIGRATED, NOT TUNED.** The retired knobs were dropped
   and the new ones given plausible starting values; only `noise_scale` was actually re-derived, and
   only because the retired build's value was ~6x too fine for a model where the noise IS the shape
   (it read as one-pixel static). **This is the biggest thing waiting on the owner** — FX_HANDOFF §0f.
@@ -313,7 +317,7 @@ that instrument reported two rejected builds as successes.
   mask to carry the silhouette's **own vertices** (`u_poly` + `u_wedge` + two box tests), which is exact at
   every pose and, measured on a REAL card, took **26.9 art units of unlit column down to 1.0** — one FX
   pixel, i.e. quantization. FX_HANDOFF §0c.1.
-- **✅ FIXED — the fire stood one pixel of flame on nothing at each card corner (2026-07-29).** Every card
+- **✅ FIXED — the fire stood one pixel of flame on nothing at each card corner.** Every card
   type's frame clips its corners and the mask was the RIG, which is the full rectangle. ⚠ **A card and a
   prop do not share the mask BRANCH** — a prop SAMPLES its sheet's alpha (`Shape.SPRITE`, which is why
   hoops and blades were never a problem), a card carries an OUTLINE because its face is skinned to a rig
@@ -347,10 +351,10 @@ that instrument reported two rejected builds as successes.
 
 ### 6.3 Measurements nobody has taken
 
-- **✅ MEASURED 2026-07-30 — `Tests/Visual/fx_cost.tscn`, 20 burning hosts each, Intel UHD.** Card
+- **✅ MEASURED — `Tests/Visual/fx_cost.tscn`, 20 burning hosts each, Box A.** Card
   fire 1.53 ms, hoop 1.21 ms, knife 0.36 ms — all comfortable against a 16.7 ms frame. **Ball fire is
   28.5 ms and always was** (26.6 ms before the mask model): the biggest number in the layer.
-- **✅ THE THREE LEVERS WERE TAKEN, 2026-07-31 — the juggling layer is ~2.4x cheaper on the GPU.**
+- **✅ THE THREE LEVERS WERE TAKEN — the juggling layer is ~2.4x cheaper on the GPU.**
   Re-measured on a **GTX 1070**, NOT the Intel UHD above, so read the ratios rather than the
   absolutes. The bench now prices the two juggling quads separately, and this machine's driver does
   implement `viewport_get_measured_render_time_gpu`, so the GPU column means something here.
@@ -391,7 +395,7 @@ that instrument reported two rejected builds as successes.
   deformation from the star rig is not tracked — re-call it if anything ever re-bakes a card shape
   at runtime.
 
-### 6.5 Cleanups left on the table by the 2026-07-30 `/simplify` pass
+### 6.5 Cleanups left on the table by the `/simplify` pass
 
 Reviewed and deliberately NOT applied. Each was judged, not missed — the reason is the useful part.
 
@@ -431,7 +435,7 @@ Reviewed and deliberately NOT applied. Each was judged, not missed — the reaso
   attachment build repeats `_attach_for` **including its documented "disable the process LAST" ordering
   trap**. ~90 lines. If that trap is ever fixed in one copy only, the two harnesses shoot different
   frames of the same noise and neither is comparable to the other.
-  **⚠ THAT PREDICTION CAME TRUE ON 2026-07-30, AND IT HAD ALREADY HAPPENED WHEN THIS WAS WRITTEN**
+  **⚠ THAT PREDICTION CAME TRUE, AND IT HAD ALREADY HAPPENED WHEN THIS WAS WRITTEN**
   (FX_HANDOFF §12b). The two copies had diverged on the OTHER per-host random: `fx_behind` set
   `att._seed` BELOW its `sync` — a no-op, since `u_seed` is written to the material inside
   `_make_quad` — while `fx_snapshot` pinned `_ball_dir` with a comment stating that exact rule and
@@ -460,7 +464,7 @@ Reviewed and deliberately NOT applied. Each was judged, not missed — the reaso
 
 Nothing here is secretly broken — each is understood, and each is either accepted or scoped.
 
-1. **✅ FIXED 2026-07-28 — FX colours were OFF-PALETTE.** `fire_ramp.png` held 64 colours, none of
+1. **✅ FIXED — FX colours were OFF-PALETTE.** `fire_ramp.png` held 64 colours, none of
    them a CircusCrayon entry, and the ball tones were hand-picked (40–80 from the nearest entry). Both
    generated their in-between colours (the ramp baker's COLD→HOT interpolation, `juggle.gdshader`'s
    `mix(shade, lit, …)`), which is why on-palette endpoints were never going to be enough. Fire and
@@ -489,21 +493,21 @@ Nothing here is secretly broken — each is understood, and each is either accep
    `fire.gdshader`). The FX ATTACHMENT suite reads the constants out of the shader source and asserts
    the mapping — keep that test alive if you add a shape. It also asserts that `u_mode` never comes
    BACK: one code path for every host is the point of the mask model.
-8. **✅ CLOSED 2026-07-29/30 — the juggling layer is now ~1.7 ms of the worst window and the search is
+8. **✅ CLOSED — the juggling layer is now ~1.7 ms of the worst window and the search is
    DELETED.** ⚠ **Everything below this line is the history of an intermediate build; the live account is
    FX_HANDOFF §0d.6 (one instance per ball) and §0d.7 (the CPU push).** What finally did it was neither
    of the two levers described below: the layer's cost was *guard-box area x one nearest-ball search*,
    and instancing removed both factors at once. Measured on the Intel UHD: `juggle both x20`
    1.822 → 0.220, the juggling half of a full window 5.46 → ~1.7, and `_push_live` 4.21 → 1.14.
-   Original report — **ball fire cost 28.5 ms per frame for 20 juggling cards** (measured
-   2026-07-30, integrated graphics). It was **pre-existing**: the shipped contour build measured
+   Original report — **ball fire cost 28.5 ms per frame for 20 juggling cards** (measured on
+   Box A's integrated graphics). It was **pre-existing**: the shipped contour build measured
    26.6 ms on the same bench, so the mask model added ~2 ms to an already-broken number rather than
    causing it. The cost was `fx_nearest_ball` — `O(arcs²)` in `sqrt`-carrying arc weights, none of
    which varied across a fragment — run over a quad sized by the ARC HEIGHT on every side, nine
    tenths of which no ball could ever occupy. §6.3 has the three levers that took it, the new table,
    and what is left. ⚠ **Re-measured on a GTX 1070, not on the Intel UHD the 28.5 came from.**
 9. **⚠ `all_tests.tscn`'s `speed_base_delay` DECIDES WHETHER SOME UI CHECKS CAN PASS AT ALL, and the
-   editor drops it (2026-07-30).** The committed scene sets `speed_base_delay = 0.1`; the script's
+   editor drops it.** The committed scene sets `speed_base_delay = 0.1`; the script's
    own default is 0.01, and re-saving the scene in the editor wrote the property out entirely, so the
    suite silently dropped to 0.01. **PROVEN, not inferred:** restoring only that one property — with
    every other change in place and the test edit below reverted — turned a reproducible failure into
@@ -520,7 +524,7 @@ Nothing here is secretly broken — each is understood, and each is either accep
    - The general rule: **a check that polls for a transient must be slower than a frame, or it is
      measuring the frame budget rather than the behaviour.** Grep the UI suites for `WATCHDOG_SECS`
      polls before trusting a similar failure.
-10. **✅ FIXED 2026-07-30 — `PIXELS / the highlight sits OFF-CENTRE` had a RANDOM INPUT.** It failed
+10. **✅ FIXED — `PIXELS / the highlight sits OFF-CENTRE` had a RANDOM INPUT.** It failed
    intermittently (4.5 px against an 8 px bound) because `FxAttachment._seed` is rolled with `randf()`
    per host, the seed drives the ball's SPIN, and the spin rotates the shading frame the highlight
    sits in — so some runs put the highlight near the ball's centre through no fault of the shader.
@@ -537,7 +541,7 @@ Nothing here is secretly broken — each is understood, and each is either accep
    that claim is false. Fix is either `uniform float u_brightness = 1.0;` folded into `col.rgb` beside
    `u_opacity` (juggle.gdshader:148), or a decision that brightness is fire-only — in which case move it
    off `FxStyle` onto `FxFireStyle`, where a shader-less uniform cannot be written by accident.
-   Found by the 2026-07-30 `/simplify` pass; deliberately NOT fixed there because it changes what renders.
+   Found by the `/simplify` pass; deliberately NOT fixed there because it changes what renders.
 12. **⬜ `FxAttachment` KNOWS ABOUT JUGGLING, in the ember emitter only.** The class's headline contract is
    "it does not know which effects exist", and `sync`/`_apply_static`/`_push_live` all honour it. Then
    `_emit_embers` branches on `fx.req.shape == Shape.BALLS`, `_ember_origin` casts `fx.req.style as

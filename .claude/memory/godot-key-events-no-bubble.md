@@ -14,10 +14,10 @@ fall through the Viewport's focus-navigation pass into `_unhandled_input` — pu
 keyboard/controller handling there (guard on `get_viewport().gui_get_focus_owner()` and
 `set_input_as_handled()` when acting).
 
-**Why:** bit Solatro 2026-07-13 — keyboard/controller card selection was dead code for its
-whole life; only the interaction test suite (synthesized events via
-`Input.parse_input_event`) exposed it. Fixed in `UI/play_area.gd _unhandled_input`.
+**Why:** it made Solatro's keyboard/controller card selection dead code for its whole life;
+only the interaction test suite (synthesized events via `Input.parse_input_event`) exposed
+it. The working handler is `UI/play_area.gd _unhandled_input`.
 
 **How to apply:** never handle focus-driven key actions in a parent's `gui_input`; test
 input paths with real synthesized events (see `Tests/Interaction/test_interaction.gd`),
-not direct handler calls. Related: [[solatro-multimodal-input]].
+not direct handler calls. Related: [[architecture-map]].

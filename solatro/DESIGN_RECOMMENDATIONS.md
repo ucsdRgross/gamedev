@@ -2,7 +2,7 @@
 
 Companion to `DESIGN_DOC.md` (the organized record of your ideas). Everything in THIS file
 is my interpretation, recommendation, or invention — kept separate on purpose so it never
-contaminates the record of what you actually designed. Written 2026-07-05 against the
+contaminates the record of what you actually designed. Written against the
 code of that date — implementation-status remarks (e.g. "fix N5 spotlight", "wire the
 worldgen map", §12 build-order steps 1–3) are OUTDATED: spotlight, the worldgen map/run
 layer, suit props, and the combo scoring formula have since shipped (see
@@ -357,9 +357,9 @@ hoped for:
    testable until skills on ordinary cards fire. (~days)
 2. **Adopt the scoring formula (§2.1)** in `SkillScorerCascadeLower`/`ScoreModel` —
    effects-as-points, melds-as-combo. Retune deck1 around it. (~days)
-3. **Wire the worldgen map**: nodes → {town, shop, event, pack}; fame goal per node;
-   replace `triangle_map.gd` screen. The addon's `graph.json` bake + overlay API is
-   ready for this. (~1–2 weeks)
+3. **Wire the worldgen map**: nodes → {town, shop, event, pack}; fame goal per node,
+   replacing the old triangle-map screen (since removed). The addon's `graph.json` bake +
+   overlay API is ready for this. (~1–2 weeks)
 4. **Ship the "First Season" card set**: ~40 cards — 4 base suits renamed, 4 classes
    (Producer, Clown, Acrobat, Fortune Teller), 2 leaders (Showman, Joey), 6 stamps,
    4 types, 3 town bosses (Hey Rube, Blowdown, John Robinson). Small enough to balance,

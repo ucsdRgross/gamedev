@@ -1,6 +1,6 @@
 # FX_SHADER_PLAN.md — pixelated fire + juggling balls as composable shader overlays
 
-⚠ **THE FIRE HALF OF THIS PLAN IS SUPERSEDED — TWICE (last on 2026-07-29).** §4c's comb of ogee
+⚠ **THE FIRE HALF OF THIS PLAN IS SUPERSEDED — TWICE (last on).** §4c's comb of ogee
 tendrils was replaced first by "raise the mask" and then by the **noise fire**: a cover field
 sampled from the art's mask and carved by scrolling noise, with no comb, no tendril, no ogee and no
 onion shells. **The live description is FX_HANDOFF §0 and the contract is ARCHITECTURE_REVIEW §4g.**
@@ -19,8 +19,8 @@ verification script.
 
 ## HANDOFF — read this first if you just picked this up
 
-**Status (2026-07-27): BUILT.** T1–T14 and T17–T20 are done, verified on a GPU, full suite green.
-T21 (the universal palette) landed 2026-07-28 — its contract is ARCHITECTURE_REVIEW §4i. What
+**Status: BUILT.** T1–T14 and T17–T20 are done, verified on a GPU, full suite green.
+T21 (the universal palette) landed — its contract is ARCHITECTURE_REVIEW §4i. What
 remains is **T15** (the owner plays §10), then **T16** (which deletes this file).
 
 **This document is now the SPEC AND THE RATIONALE, not the instructions.** The living contract — the
@@ -67,7 +67,7 @@ walked §10, and §7's T16 docs pass is complete — including deleting this fil
 
 ---
 
-## 0. Audit facts this plan is built on (verified 2026-07-26, from code not docs)
+## 0. Audit facts this plan is built on (verified, from code not docs)
 
 | Fact | Where |
 |---|---|
@@ -90,7 +90,7 @@ walked §10, and §7's T16 docs pass is complete — including deleting this fil
 
 ---
 
-## 0b. Owner rulings (2026-07-26) — recorded verbatim, these are §8 material
+## 0b. Owner rulings — recorded verbatim, these are §8 material
 
 1. *"fire tips should always point upwards generally, allowing for some angle skew as spread."*
 2. *"fire paints props and cards, but just like props, should only show between cards. A card
@@ -123,7 +123,7 @@ walked §10, and §7's T16 docs pass is complete — including deleting this fil
 18. *"any view that shows cards. If a card has a status effect and can be viewed, it should show
     status effect instead of hiding it behind selecting and reading description."*
 
-**Universal rule (2026-07-27):** *"i dont want diagonal fire pixels, same for other vfx, it
+**Universal rule:** *"i dont want diagonal fire pixels, same for other vfx, it
 should not rotate like that."* **No VFX pixel grid ever rotates — fire, balls, particles, or
 anything added later.** This is a project rule, not a fire decision; see §2's rotation split and
 §11.6.
@@ -329,7 +329,7 @@ float fx_bayer(vec2 frag) { /* 0..1 */ }
 // A real cascade is a CLOSED LOOP, not a ball bouncing along one line: a TALL arc carries balls
 // one way across the top, and a SHALLOWER return arc carries them back the other way along the
 // bottom. Balls are spread evenly around the whole loop, so at any moment roughly half are
-// travelling each direction (owner spec 2026-07-26).
+// travelling each direction (owner spec).
 //   `f`     = share of the cycle spent on the tall arc. 0.5 = even; > 0.5 = longer hang time,
 //             which is what real juggling looks like (the throw takes longer than the carry).
 //   h_bot   = the "flat" return — a small upward arc, not a straight line.
@@ -670,7 +670,7 @@ Four decisions worth locking in:
   This is what makes "lots of particles" a non-issue and removes the CPU-vs-GPU question the
   earlier per-emitter node design raised.
 - **`ParticleSpec` is a `Resource`** — lifetime, gravity, drag, spread, size curve, colour ramp,
-  texture region. Kinds are `.tres` files (`ember.tres`, `dust.tres`), never code, consistent with
+  texture region. Kinds are `.tres` files (`ember.tres` and siblings), never code, consistent with
   `FxStyle` (§5g).
 - **It renders on its own layer**, a `Node2D` sibling after `PropLayer` inside the scroll content.
   Detached particles have no host to be occluded by — they are world debris — so the ruling-2
@@ -839,10 +839,10 @@ FX nodes `PROCESS_MODE_ALWAYS`.
 for free, frees it with its parent automatically, and avoids a `RefCounted` owning `Node`s with
 unclear teardown.
 
-**It does not know what effects exist.** Statuses declare their own, exactly as they already
-declare their own icon: `StatusLayer` iterates `data.statuses` and calls `draw_icon`
-(`status_layer.gd:17-26`, `card_modifier_status.gd`). FX mirrors that idiom, so adding frost or
-poison later touches **only the new status class**:
+**It does not know what effects exist.** Statuses declare their own, the same way they declared
+their own icon back when a card-side status layer existed (that layer has since been removed —
+see `card_modifier_status.gd`). FX mirrors that idiom, so adding frost or poison later touches
+**only the new status class**:
 
 ```gdscript
 # card_modifier_status.gd — alongside the existing draw_icon / get_frame slots
@@ -919,7 +919,7 @@ It also makes FX pause with the game and replay deterministically. The same rati
 ### 5d. Counts — no arbitrary caps (rulings 4 and 5)
 
 **Tendrils.** The tendril budget is **one constant for every host**, not derived per host
-(owner ruling 2026-07-26):
+(owner ruling):
 
 > Flame size already scales linearly with the host (§5f). If a knife's flames are proportionally
 > smaller, its tendrils are proportionally *narrower* too — so the number that fits is **the same
@@ -930,7 +930,7 @@ It also makes FX pause with the game and replay deterministically. The same rati
 ```gdscript
 ## One tendril budget for every host: flame WIDTH scales with the host exactly like flame
 ## height, so the same count fits everywhere and a small object simply gets a small version of
-## the same fire (owner correction 2026-07-26). Surplus stacks make the fire FIERCER rather than
+## the same fire (owner correction). Surplus stacks make the fire FIERCER rather than
 ## sprouting more slivers (ruling #4) — no hard cap exists anywhere in the pipeline.
 const FX_MAX_TENDRILS := 12   ## how many flames still read as distinct; the ONLY number to tune
 
@@ -1341,13 +1341,13 @@ that bites.
   *(Write each task's tests as you go — this task is the sweep for what slipped, not the first
   time tests appear.)*
 
-### Phase F — added 2026-07-27 (owner, after seeing the first snapshots)
+### Phase F — added (owner, after seeing the first snapshots)
 
-T17–T20 landed 2026-07-27; their contracts live in **ARCHITECTURE_REVIEW §4g**. T21's audit and the
-decisions it needed were ruled on 2026-07-28; it landed, and its contract is
+T17–T20 landed; their contracts live in **ARCHITECTURE_REVIEW §4g**. T21's audit and the
+decisions it needed were ruled; it landed, and its contract is
 **ARCHITECTURE_REVIEW §4i**.
 
-- [x] **T17 · Fix ball positions at low counts** — 2026-07-27. **It was the HARNESS, not the
+- [x] **T17 · Fix ball positions at low counts** — **It was the HARNESS, not the
   shader.** `fx_nearest_ball` and `fx_ball_at` were correct at every count; nothing in
   `Shaders/` changed. `FxAttachment._push_live()` ends with `set_process(not _fx.is_empty())`, so
   `fx_snapshot.gd` disabling the process BEFORE its push silently re-enabled it, and the two frames
@@ -1359,7 +1359,7 @@ decisions it needed were ruled on 2026-07-28; it landed, and its contract is
   with each ball's disagreement in art units. Every ball at 1 / 3 / 8 / 50 now lands within 0.6 art
   units (sub-pixel) of its oracle position.
 
-- [x] **T18 · Spherical balls** — 2026-07-27. `juggle.gdshader` lifts the fragment onto the
+- [x] **T18 · Spherical balls** — `juggle.gdshader` lifts the fragment onto the
   hemisphere (`z = sqrt(1 - |nd|²)`) and shades by that normal: the Lambert term is quantized into
   `u_ball_bands` hard tones spanning `ball_shade → ball_lit`, and a half-vector threshold
   (`u_ball_spec`) puts the highlight ON the surface. The spin rotates the LIGHT — the shading frame
@@ -1367,19 +1367,19 @@ decisions it needed were ruled on 2026-07-28; it landed, and its contract is
   `ball_spec`. New shot **`05c_ball_sphere`** (r = 14 / 7 / 3 / 1) — a big ball reads as a sphere and
   the 1-unit floor still shades.
 
-- [x] **T19 · Onion-layered fire (not row-layered)** — 2026-07-27. `tendril()`'s heat is now
+- [x] **T19 · Onion-layered fire (not row-layered)** — `tendril()`'s heat is now
   `pow(1 - across, u_onion_power) * (1 - u_onion_rise * k)`, where `across = |u| / half_at_k` and
   `half_at_k` INVERTS the same ogee the outline uses — so every iso-heat contour is a scaled copy of
   the outline and each colour wraps the one inside it. Height is the weak secondary term only.
   Verified in `00_tendril_count.png` (noise off): pale core spine, wrapped by orange, then red at
   the rim, converging at the tip — no horizontal stripes.
 
-- [x] **T20 · Every effect's height stays adjustable** — 2026-07-27. Nothing added by T18/T19 bakes
+- [x] **T20 · Every effect's height stays adjustable** — Nothing added by T18/T19 bakes
   a size: the four new ball levers are shading-only and the two onion levers are unitless shape
   exponents. `height`, `ball_radius`, `ball_arc_height`, `ball_return_height` are untouched
   `FxStyle` levers, and `Shaders/Styles/*.tres` remains the single place FX tuning lives.
 
-- [x] **T21 · Universal palette system** — LANDED 2026-07-28. Contract: ARCHITECTURE_REVIEW §4i.
+- [x] **T21 · Universal palette system** — LANDED. Contract: ARCHITECTURE_REVIEW §4i.
   Built as `Palette` + `PaletteRoles` + `PaletteRamp` + a STATIC `PaletteDB` (the owner ruled against
   the autoload this plan sketched: nothing changes at runtime and the `@tool` hosts have no
   autoloads). `num_colors` and the palette image now come from `PaletteDB`, `fire_ramp.png` and its
@@ -1406,16 +1406,17 @@ decisions it needed were ruled on 2026-07-28; it landed, and its contract is
 
 ---
 
-### Handoff log
+### Deviations from this plan, all commented in code
 
-Append a line per session so the next person knows where things stand.
-
-| Date | Tasks done | State / next step | Notes for the next person |
-|---|---|---|---|
-| 2026-07-26 | — | Plan written and fully ruled; nothing implemented. Next: **T1**. | 25 owner rulings in §0b are the spec. Risk is concentrated in T7 (save data) and T11a (shared particle infrastructure). |
-| 2026-07-27 (2) | — | Snapshot harness added and four render bugs fixed; ogee profile landed. | Owner added T17–T21. (This row's warning that the file was untracked is now stale — the owner committed it in `22f2aac "VFX plan"`, so git has it.) |
-| 2026-07-27 (3) | T17, T18, T19, T20 (+ prop/pip ART) | Implemented; full suite green (26 suites / 0 failures); all verified on a GPU. Next: **T21** (needs its own plan doc + owner approval), then **T15**, then T16. | T17 was a HARNESS bug, not a shader one — see its board entry; no `Shaders/fx_common.gdshaderinc` change was needed and the previous "already ruled out" list was reasoning from a print taken before the drift. The snapshot harness now measures its own capture (`PROBE` lines, art units) — trust those, never a by-eye read of the PNGs. Also landed this session, outside this plan: the owner's real hoop/knife prop art, ball+fire props drawing their suits' pips, one-pixel-size scaling (`PropVisual.ART_PIXEL_SCALE`), mirror-instead-of-rotate facing, suit pips keeping their own colours, `SHAPE_RING` as an ellipse, and `Tests/Visual/prop_art_snapshot.tscn`. All of it is written up in ARCHITECTURE_REVIEW §4g/§4h. |
-| 2026-07-27 | T1–T14 | Implemented; full suite green (26 suites). Next: **T15** (owner walks §10), then T16. | Docs pass for LAYERING/ARCHITECTURE_REVIEW/todo is already written — only "delete this file" is outstanding, and it is BLOCKED on owner review. ⚠ This file was never committed; do not `rm` it assuming git has it. Deviations from the plan, all commented in code: shape enum is BOX/RING/RADII (a blade and an undeformed card are both boxes) with a test reading the constants out of the shader; the lag spring gained a restoring term (§4f's version has no force returning the flames upright, so `_lag` drifts permanently); `fire_tips` renamed `fire_stacks` (§12.4). Shader PIXELS are still unverified — see the snapshot harness in §9. |
+- The shape enum is BOX/RING/RADII (a blade and an undeformed card are both boxes), with a test
+  reading the constants out of the shader.
+- The lag spring gained a restoring term — §4f's version has no force returning the flames upright,
+  so `_lag` drifts permanently.
+- `fire_tips` was renamed `fire_stacks` (§12.4).
+- T17 turned out to be a HARNESS bug, not a shader one; no `fx_common.gdshaderinc` change was
+  needed, and the "already ruled out" list it contradicted was reasoning from a print taken before
+  the drift. The snapshot harness measures its own capture (`PROBE` lines, art units) — trust
+  those, never a by-eye read of the PNGs.
 
 ---
 
@@ -1483,7 +1484,7 @@ will be.
 FX **below** the cards that overlap it and above its own card; the hoop's FX halves bracketing
 the occupied card like the ring itself.
 
-**Snapshot harness (added 2026-07-27) — `Tests/Visual/fx_snapshot.tscn`.** "Shader pixels aren't
+**Snapshot harness (added) — `Tests/Visual/fx_snapshot.tscn`.** "Shader pixels aren't
 headless-testable" is true of the HEADLESS suite and was wrong as a reason to test nothing: run
 the same scene **windowed** and the GPU compiles and renders for real. The harness builds a grid
 of cases, captures the viewport and writes PNGs to `user://fx_snapshots/`, then quits. It catches
@@ -1536,7 +1537,7 @@ bounded by a killing timeout and grepped for `Parse Error` — HEADLESS_TESTING.
 11. Focus a burning card → the card and its flames brighten together (ruling 10).
 12. Undo mid-act → flames, balls and props all clear; embers finish their lifetime and vanish.
 
-**Added 2026-07-27 with T17–T20 and the prop/pip art pass** (this list is the ONE copy — todo.md
+**Added with T17–T20 and the prop/pip art pass** (this list is the ONE copy — todo.md
 points here rather than restating it):
 
 13. Look INTO a flame → the colours are nested **shells wrapping each other**, pale core through to a
@@ -1639,7 +1640,7 @@ anything that has integrated time.
 
 ### 11.6 The pixel grid never rotates — the rule, and how to keep it
 
-Project rule (owner, 2026-07-27): **no VFX pixel grid ever rotates.** The mechanical form of it:
+Project rule (owner): **no VFX pixel grid ever rotates.** The mechanical form of it:
 
 > **Quantize first, rotate after.** Snap the sample point to the grid in the quad's own
 > world-aligned space, and let every rotation act on the *already-quantized* coordinate.
@@ -1669,7 +1670,7 @@ moves smoothly would make the fire visibly detach from it.
 
 ---
 
-## 12. Code smells found on review (2026-07-27)
+## 12. Code smells found on review
 
 Fixed in place above:
 
@@ -1692,13 +1693,13 @@ Still open — decide when you reach them:
   `player_settings.gd`, but §5g's own rule is that player settings hold what the *player* moves.
   Density is an art decision → it belongs in `FxStyle` with the other ~35 levers. Only
   `fx_intensity` (an accessibility control) is genuinely a player setting.
-  *(Resolved 2026-07-27: `pixel` is an `FxStyle` lever; only `fx_intensity` and
+  *(Resolved: `pixel` is an `FxStyle` lever; only `fx_intensity` and
   `fx_transition_fraction` are player settings.)*
 - **12.2 Two style systems, two locations.** `FxStyle` lives in `Shaders/Styles/` and
   `ParticleSpec` has no home, yet ruling 8 asked for *one* place for all visual-effect tuning.
   Put shaders, styles and specs under a single `res://Fx/` tree — `ember.tres` living in a folder
   called `Shaders/` is already wrong.
-  *(Still open 2026-07-27: everything DOES live in one place — `Shaders/Styles/` — which is what
+  *(Still open: everything DOES live in one place — `Shaders/Styles/` — which is what
   ruling 8 asked for, but the folder name is now wrong. Renaming the tree to `res://Fx/` is a
   separate mechanical change.)*
 - **12.3 `u_mode` / `u_shape` are magic ints duplicated across the language boundary.** GDScript
@@ -1707,15 +1708,15 @@ Still open — decide when you reach them:
   shapes into `#include` variants and delete the switch. The one-shader-with-branches version is
   cheap at runtime (the branch is uniform across the quad) — this is a maintainability cost, not
   a performance one.
-  *(Resolved 2026-07-27: named `const int` in the shader, `enum` in `FxAttachment`, and the FX
+  *(Resolved: named `const int` in the shader, `enum` in `FxAttachment`, and the FX
   ATTACHMENT suite reads the constants out of the shader source and asserts the mapping.)*
 - **12.4 `PropVisual.fire_tips` becomes a misnomer at T10**, once `_draw_fire_tips` is deleted and
-  it is only a stack count. Rename to `fire_stacks`, matching `PropData`. *(Done 2026-07-27.)*
+  it is only a stack count. Rename to `fire_stacks`, matching `PropData`. *(Done.)*
 - **12.5 `_transition_secs()` reaches through `play_area.prop_layer`** — two hops through
   unrelated objects, and it returns 0 in every viewer (no play area), so viewer cards would snap
   where board cards ease. Ruling 18 wants them identical. Read the tick duration from the Game via
   `CardEnvironment`, with a settings fallback when there is no game.
-  *(Resolved 2026-07-27: `FxAttachment.transition_secs()` reads the Game via `CardEnvironment`
+  *(Resolved: `FxAttachment.transition_secs()` reads the Game via `CardEnvironment`
   and falls back to `settings.base_delay`.)*
 - **12.6 Some shader constants are levers and some are baked, with no principle.**
   `0.6 + 0.4 * dome` (shoulder falloff) and the `* 0.15` dither scale are hardcoded while
@@ -1728,11 +1729,11 @@ Two real bugs the review turned up:
   fire *without* the ball count changing would never refresh the data texture — the plume would
   simply not appear until something else touched the card. Route `ball_fire` writes through a
   setter that emits, and test exactly that case: change `ball_fire` alone, assert the texture
-  updated. *(Fixed 2026-07-27, with that exact test.)*
+  updated. *(Fixed, with that exact test.)*
 - **12.8 ⚠ Ember spawn position is undefined.** §4e says "call `ParticleEngine.emit(...)`" and
   never says *where*. The visually correct answer is "from the flame tips", but tip positions are
   computed in the shader, and replicating `tendril()` in GDScript to find them would be exactly
   the duplicated-motion bug that `fx_common.gdshaderinc` exists to prevent (§6). **Decide
   explicitly and cheaply:** spawn from a random point along the host's top contour, scattered by
   `u_height`. It is an approximation, it is one line, and writing that down stops the next person
-  from trying to mirror the shader on the CPU. *(Implemented as specified 2026-07-27.)*
+  from trying to mirror the shader on the CPU. *(Implemented as specified.)*

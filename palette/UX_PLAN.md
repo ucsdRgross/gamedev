@@ -29,8 +29,8 @@ Not in scope (not approved): 12, 16, 23, 24, 25, 29, 30.
 4. **`npm test` stays green** (370 tests at the start of this phase). Snapshot changes get
    reviewed and re-recorded deliberately (`UPDATE_SNAPSHOTS=1 npm test`), never blindly.
 5. **No existing functionality is removed** — every new view is additive or a toggle.
-6. Environment: prepend `C:\Program Files\nodejs` to `PATH`; run npm from `palette/`, not the
-   home directory. `PALETTE_FUZZ_N=200 npm test` while iterating.
+6. Environment: the per-machine Node PATH prefix is in `../.claude/memory/machine-profiles.md`;
+   run npm from `palette/`, not the home directory. `PALETTE_FUZZ_N=200 npm test` while iterating.
 
 ---
 
@@ -81,7 +81,7 @@ Shared machinery the later phases lean on. All the computation is core; only dra
       `test/randomize.test.js` covers: strength monotonicity, fixed-set respect, determinism.
 - [x] **U3.2** Variant grid (`src/ui/variants.js`): 12 live thumbnails around the current
       palette, click to adopt, strength control, "more like this". Each tile shows the
-      **context colour-space maps** (repo owner, 2026-07-24: a single scene is "way too simple
+      **context colour-space maps** (repo owner: a single scene is "way too simple
       and doesn't show the whole palette in different scenarios") — one map per context at the
       top saturation only, since all four saturations would be 24 pictures per tile. The
       gallery scenes stay available in the same selector.
@@ -159,10 +159,10 @@ Shared machinery the later phases lean on. All the computation is core; only dra
 
 Append here as work lands: what changed, what surprised, what the next agent must read first.
 
-- **2026-07-24 — phase opened.** Baseline before any change: git clean at `f50d830`
+- **phase opened.** Baseline before any change: git clean at `f50d830`
   (only IMPROVEMENTS.md untracked), `npm test` reported green at 370 tests by PROGRESS.md.
   Audit in IMPROVEMENTS.md; the approved subset above is the scope. Starting at U1.1.
-- **2026-07-24 — U1 done. `npm test` green at 377** (`PALETTE_FUZZ_N=200`, 17 s).
+- **U1 done. `npm test` green at 377** (`PALETTE_FUZZ_N=200`, 17 s).
   - New `src/core/paramui.js` holds `PARAM_UI` (label / hint / low / high / enum option
     labels for all 72 parameters) and `BASIC_PARAMS` (11 names). It is a **separate file from
     `params.js` on purpose**: wording gets edited often, and `params.js` is the file where a
@@ -181,7 +181,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
   - Seven new assertions in `test/params.test.js` cover the metadata (unique labels, both
     ends named, every enum option explained, `PARAM_UI` covers the schema exactly, Basics is
     a strict subset containing the five big movers, payload order unmoved).
-- **2026-07-24 — U2 done. `npm test` green at 401**; `npm run build` green (81 modules).
+- **U2 done. `npm test` green at 401**; `npm run build` green (81 modules).
   - Core, all DOM-free and tested: `preview.js` (`sweepValues`/`paramSweep`/`sweepPalettes`/
     `sizeSweep`, honouring locks and overrides so a preview shows what you would actually
     get), `describe.js` (`describePalette`, `hueName`, `paramDiff`, `describeChange`,
@@ -206,7 +206,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
   - Verified live: sweep shows 5 rows × 32 cells with one marked current; Sizes applies 16;
     loading Neon Cyberpunk notes "Colour of the world +265 · Colour of the light +240 · How
     the hues relate → Split complement · +22 more".
-- **2026-07-24 — U3 done. `npm test` green at 411.**
+- **U3 done. `npm test` green at 411.**
   - `varyParams(params, rng, { strength, includeStructure, fixed })` perturbs around the
     current values (gaussian, σ = strength × range; enums flip with probability = strength)
     instead of resampling uniformly, and holds `hue_scheme`/`hue_count`/`tier_priority` unless
@@ -234,7 +234,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     and now scores a `seed` change as magnitude 0 — a reroll is not a described change, and
     its 0–65535 range made it outrank everything real.
 
-- **2026-07-24 — U4 done. `npm test` green at 422**; `npm run build` green (85 modules);
+- **U4 done. `npm test` green at 422**; `npm run build` green (85 modules);
   snapshots untouched.
   - **U4.2 was already in the tree** — `src/scenes/mockup.js` and its `scenes.test.js`
     assertions landed with the U1–U3 commit but the box was never ticked. Verified rather than
@@ -276,7 +276,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     recoloured 256×256 `doom-knight-default.png` is a palette colour (zero strays); Freeze
     round-trips the seed byte-for-byte; a pinned folder image survives a reload.
 
-- **2026-07-24 — U5 done. `npm test` green at 437**; `npm run build` green (89 modules);
+- **U5 done. `npm test` green at 437**; `npm run build` green (89 modules);
   snapshots untouched. **One piece is deliberately outstanding**: U5.2's shift-click-to-Compare,
   because Compare does not exist until U6.2. Everything else in U5 is on screen and driven.
   - **The diagnosis in the handoff was right, and it was only half the story.** `saved/` was
@@ -328,7 +328,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     tiles, a 10-colour Lospec dump becomes a recolour target, an 8-colour paste fits at ΔE 5.8,
     and with `fetch` stubbed to fail the store falls back to `localStorage` and round-trips.
 
-- **2026-07-24 — U6 done. `npm test` green at 460**; `npm run build` green (92 modules).
+- **U6 done. `npm test` green at 460**; `npm run build` green (92 modules).
   Snapshots re-recorded **deliberately** — see the append note below. U5.2's deferred
   shift-click-to-Compare is now done, so nothing is outstanding from U5 either.
   - **The hue-wrap bug is fixed and the search re-tuned.** `fit.js` now uses `isAngularParam`,
@@ -392,7 +392,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     and on the wheel a click pins, a drag moves and a click removes — round-tripping through
     the seed with the palette's hues coming out exactly as pinned.
 
-- **2026-07-24 — U7 done. `npm test` green at 493** (was 460); `npm run build` green
+- **U7 done. `npm test` green at 493** (was 460); `npm run build` green
   (97 modules); `npm run render` green; **snapshots untouched** — nothing in this phase moves a
   colour. Every phase of the UX plan is now complete.
   - **The rule the whole phase turns on: a fix is a claim that has been tested.** Every check in
@@ -463,7 +463,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     the generated colour; and moving `chroma_cap` with `chroma_base` below it produced
     "clamped by Saturation" with the verified value in the tooltip.
 
-- **2026-07-24 — cross-phase consistency pass.** Each phase was written by a different agent,
+- **cross-phase consistency pass.** Each phase was written by a different agent,
   so the whole project was read for drift once U7 landed. `npm test` still green at 493,
   `npm run build` and `npm run render` green, snapshots untouched, and the app re-driven
   afterwards.
@@ -490,7 +490,7 @@ Append here as work lands: what changed, what surprised, what the next agent mus
     IMPROVEMENTS.md and the dated notes above were left alone: they are records of what was
     true when they were written, and rewriting them would destroy the only evidence of it.
 
-### Open note for U6.1 — the fitter's own hue-wrap bug — RESOLVED 2026-07-24
+### Open note for U6.1 — the fitter's own hue-wrap bug — RESOLVED
 
 Fixed, re-tuned and re-baselined in U6.1; the note below is kept as the record of what was
 measured before, because the numbers are the reason the fix took the shape it did.

@@ -1,3 +1,7 @@
+⚠ **Archive — every session below is done and the tool is finished.** Kept only as examples of how
+a multi-session build was split and handed over. Nothing here is a live instruction; read
+`HANDOFF_designloop.md` for actual state. Safe to delete.
+
 Session 1 is running. Here are the rest.
 
 | # | Session | Effort | Blocked by |
@@ -29,7 +33,7 @@ Then Phase 3. PLAN.md is self-contained; DESIGN.md beside it is the authority on
 Sections 4-7 are normative - graph.json's shape (4.6), versions/NNN/ and layout.json (4.7), the
 API (4.8), the mermaid subset (6) and the graph.mjs API (7) are specified, not suggestions.
 
-Hard gate: S11 is not done until all 14 mermaid charts in solatro/SPOTLIGHT_DESIGN.md and all 10
+Hard gate: S11 is not done until all 14 mermaid charts in solatro/design/spotlight/DESIGN.md and all 10
 in design/designloop/DESIGN.md ingest with zero unknown constructs - 24 real charts. Anything
 outside the subset in section 6 must throw naming the file and line, never guess.
 
@@ -63,7 +67,7 @@ S15 - the gap surface: read gaps/*.md, badge the index (Q89b=c), build a SCOPED 
 gap's own options, mark plan steps citing changed nodes as stale, keep closed gaps with their
 resolutions.
 
-S16 - migrate Spotlight for real: move solatro/SPOTLIGHT_DESIGN.md to
+S16 - migrate Spotlight for real: move solatro/design/spotlight/DESIGN.md to
 solatro/design/spotlight/DESIGN.md and change meta.json's "doc" to "DESIGN.md". A meta.json
 already exists pointing at the old path (see ASSUMPTIONS.md, S3/Q104). Do NOT edit the document's
 content to make anything parse - if it does not parse, the grammar is wrong. Preserve the
@@ -89,7 +93,7 @@ memory lives (authoritative over any machine-local copy).
 
 Resume the Solatro Spotlight design review using the Design Loop tool.
 
-Read solatro/design/spotlight/DESIGN.md (the design, paused since 2026-08-01) and
+Read solatro/design/spotlight/DESIGN.md (the design, currently paused) and
 .claude/skills/flowchart-design/SKILL.md (the workflow you are running).
 
 Start the designloop server and give me the URL for the spotlight design. Then park on

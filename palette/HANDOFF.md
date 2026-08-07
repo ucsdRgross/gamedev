@@ -227,9 +227,9 @@ fourteen dead sliders; a dead control is sometimes held down by *two* knobs at o
 palette-pane blocks crushed the swatch grid to 16 px before the report card was made a
 collapsed `<details>` and both lists were capped.
 
-### The cross-phase consistency pass (2026-07-24)
+### The cross-phase consistency pass
 
-Done after U7, since each phase was written by a different agent. What changed:
+Done once every phase had landed, since each was written by a different agent. What changed:
 `layout/reach.js`'s `rampsOf` is now `rampIndices` — it collided by name with the one in
 `analysis.js` while returning something else entirely; `clamp` and `meanHue` had second
 implementations inside core and now come from `oklch.js`; `src/ui/dom.js` replaced seven
@@ -268,7 +268,7 @@ build's save behaviour were all describing the tool as it was before U1).
 and then clamped to the parameter's *maximum*. That accidental "jump to an extreme" was
 load-bearing exploration, and the fit thresholds had been tuned around it against a single seed.
 
-**Fixed 2026-07-24.** `fit.js` now uses `isAngularParam`; the exploration it lost is replaced by
+**Fixed.** `fit.js` now uses `isAngularParam`; the exploration it lost is replaced by
 an explicit annealed jump (one knob per candidate, rate 0.2 falling to 0 across each restart);
 and the thresholds are a mean over three seeds plus a per-seed ceiling. The full eight-seed
 table is in UX_PLAN's U6 note.

@@ -24,6 +24,6 @@ state how it generalizes — and if a fix only works for the current prop, say s
 general form instead of shipping it. For anything load-bearing, offer 2-3 architectures with
 their tradeoffs (generalization, where the data/visual boundary sits, GPU cost, failure mode),
 recommend one, and say what would falsify the recommendation — cheaper than a rewrite chain.
-Layering uses structural ordering, never hardcoded z-index ([[solatro-structural-layering]]);
-game logic stays headless-safe with no node/render dependencies ([[solatro-game-view-split]]);
-shared tunables go in player_settings.gd ([[solatro-tuning-knobs-in-settings]]).
+The recurring concrete forms of this — structural ordering rather than hardcoded z-index,
+headless-safe game logic with no node/render dependencies, shared tunables in
+`player_settings.gd` — are in [[architecture-map]].

@@ -20,7 +20,7 @@ else.
 `palette/PLAN.md` started as a copy of the original planning document. Six changes
 were made so the committed copy is self-contained and does not mislead:
 
-- **§19.2, GIF handling** — rewritten 2026-07-22 on the repo owner's instruction. A GIF is
+- **§19.2, GIF handling** — rewritten on the repo owner's instruction. A GIF is
   now recoloured **whole and shown animated**, which reverses the "single frame, no encoder"
   decision the section originally recorded (and which ARCHITECTURE §12.1 had agreed with).
   The superseded text is marked in place rather than deleted.
@@ -242,7 +242,7 @@ CSS Color 4 accepts an early clipped result within 2.0 ΔE. This uses 0.1, becau
 fixed ΔE budget buys a large *angular* error at low chroma, and the generator's
 hue-shift invariants are asserted in degrees.
 
-### 3.8 Hue-adaptive midtone lightness (`hue_lightness_follow`, added 2026-07-23)
+### 3.8 Hue-adaptive midtone lightness (`hue_lightness_follow`, added post-plan)
 
 The plan builds every foreground hue around one global `l_mid_base`. That is wrong for a
 whole arc of hues: in sRGB, yellow/yellow-green/green/cyan only hold chroma at high
@@ -275,7 +275,7 @@ Two consequences worth knowing:
   0–1 range is still fuzzed for well-formedness in the other three-quarters of cases. Same
   class of adjustment as §12.7.
 
-### 3.9 Two parameter ceilings raised, and what the fuzz said about it (2026-07-23)
+### 3.9 Two parameter ceilings raised, and what the fuzz said about it
 
 `l_mid_base` 0.80 → **0.92** and `l_variance_per_hue` 0.15 → **0.30**. The first was a real
 blocker: 0.80 made high-key palettes impossible and stopped a ramp being centred on the gamut
@@ -721,7 +721,7 @@ arranged, nothing is optimized, no cell grid exists.
 
 This was verified by prototyping it before committing to the design; it reproduced the
 reference panels closely, including the polar wheels. The one deviation from that reference,
-made 2026-07-24, is the colour space: the geometry is coloured in **OKHSL** rather than the
+is the colour space: the geometry is coloured in **OKHSL** rather than the
 `retroactive.me` tool's plain HSL (§14.10), so it is perceptually even — a colour's *area* on
 the map reflects how much perceptual space it owns, not how much HSL stretches its hue. Position
 is still fixed and predictable; only the projection changed, and it now matches the OKLab ΔE the
@@ -778,7 +778,7 @@ coverage account; `buildMapSlices` runs the default four saturations and unions 
   and no drawing step can introduce a colour that is not in the palette.
 
 **Measured coverage, default parameters at K=48** (`npm run render` prints this; OKHSL geometry
-since 2026-07-24 — the figures shifted from the old HSL ones, the low-saturation slice most,
+— the figures shifted from the old HSL ones, the low-saturation slice most,
 because the perceptually-even projection samples a different region there):
 
 ```
@@ -798,7 +798,7 @@ sheet's label buffer, so they are hoverable and copyable exactly like the map it
 what makes the coverage trade acceptable: nothing is unreachable from the default view, and
 nothing had to be forced into the geometry to achieve it.
 
-**The "which colours go where" bands (added 2026-07-23).** `layerBands()` in `render.js` groups
+**The "which colours go where" bands.** `layerBands()` in `render.js` groups
 every entry by its `layer` and `mapSheet` draws them as labelled rows under the slices. This
 exists because the map answers *where a colour is* but cannot answer *what it is for* — position
 there means hue and lightness and nothing else, so an artist reading it has no way to tell a
@@ -815,7 +815,7 @@ the actual usage rule that separation buys. Note the four saturation slices are 
 foreground/background device — they are the coverage mechanism described above, and conflating
 the two is the misreading the bands exist to prevent.
 
-**The by-context maps (added 2026-07-23) — the bands' answer, given the map's readability.** The
+**The by-context maps — the bands' answer, given the map's readability.** The
 bands say *which* colours do a job but are a flat list, losing the one property that makes a map
 readable: similar colours adjacent, position meaning hue and lightness. So `buildColorMap` gained
 an `entries` pool — restrict which slots may be painted and the geometry is untouched, which
@@ -893,8 +893,7 @@ Spec is [PLAN.md](PLAN.md) §19. What follows is the reasoning behind the shape 
   platform dependency, and putting it in `src/core/gif.js` means the browser and the tests
   share one implementation and a committed `.gif` fixture proves both.
 
-~~**Decided: GIF is read-only and single-frame**~~ — **superseded 2026-07-22 by the repo
-owner.** A GIF is recoloured *whole* and shown animated, so `src/core/gif.js` carries an LZW
+~~**Decided: GIF is read-only and single-frame**~~ — **superseded by the repo owner.** A GIF is recoloured *whole* and shown animated, so `src/core/gif.js` carries an LZW
 **encoder** as well as the decoder. Both are pure arithmetic and belong in core by the same
 argument that put the decoder there; having the pair also means the round trip is a test
 rather than a hope. `gif_frame` survives only for outputs that cannot animate — the headless
@@ -1101,7 +1100,7 @@ random stream into corners it had not previously reached.
   moves lightness to reach the gamut by design. `generate.test.js` still asserts the
   achieved ordering under default parameters, which is where it has to hold.
 
-### 12.8 Context-aware recolouring (`recolor/context.js`, added 2026-07-23)
+### 12.8 Context-aware recolouring (`recolor/context.js`)
 
 Recolouring was **purely colorimetric and layer-blind**: the pipeline read `entries[].rgb8 /
 lab / hex` and nothing else, so even when the target was the generated palette — which carries
@@ -1201,7 +1200,7 @@ colours**, because the decoder fills missing trailing fields with defaults.
 
 ---
 
-## 13. Parameters from an image — the fitter (`fit.js`, added 2026-07-23)
+## 13. Parameters from an image — the fitter (`fit.js`)
 
 `src/core/fit.js` inverts the generator: given a list of target hexes it searches the
 parameter space for the set whose generated palette is perceptually closest. DOM-free and
@@ -1237,7 +1236,7 @@ searches) is the same pipeline for any dropped image.
 
 ---
 
-## 14. Phase 4c — the dithering reference (`patterns.js`, `layout/reach.js`, `okhsl.js`, added 2026-07-23)
+## 14. Phase 4c — the dithering reference (`patterns.js`, `layout/reach.js`, `okhsl.js`)
 
 The picker's four earlier views all answer questions about the colours the palette **literally
 contains**. None answers the one an artist asks when a palette feels short: *is this colour
@@ -1437,7 +1436,7 @@ Four things worth knowing:
   white/black/grey endpoints, and a CIE-L\* measurement that OKHSL's lightness is markedly more even
   than HSL's. CIE L\* (not OKLab L) is the yardstick, because OKHSL deliberately makes OKLab L
   *non*-uniform via the toe — measuring evenness in OKLab L would be measuring the wrong axis.
-- **Every picker map moved to OKHSL with it** (`map-rect`/`map-polar` in `colorspace.js`, 2026-07-24),
+- **Every picker map moved to OKHSL with it** (`map-rect`/`map-polar` in `colorspace.js`),
   so a colour keeps its position across all of them — the alternative was a view-to-view mismatch
   with the dither map, since the reference *has* to be OKHSL to be smooth. Those maps already matched
   colours perceptually (nearest by OKLab ΔE); only the geometry was HSL, so the switch un-warps the

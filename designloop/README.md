@@ -201,7 +201,7 @@ An entry counts as **unanswered until it is answered in that round**, which does
   owner is declared finished when the agent's whole ask is satisfied — not the instant the reachable
   set happens to empty.
 
-⚠ **Both halves came from one owner report (2026-08-03):** *"This workflow of going into history to
+⚠ **Both halves came from one owner report:** *"This workflow of going into history to
 find the question you are talking about then changing previous choice to unlock questions is pretty
 bad UX. If you need me to answer new questions, every question that needs to be answered needs to be
 given in one go, and you only pick up its finished when I finish answering all new questions you want

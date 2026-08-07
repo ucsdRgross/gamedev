@@ -1,6 +1,6 @@
 # SOLATRO — Organized Design Document
 
-Compiled 2026-07-05 from the raw idea-dump notes ("gam draf 17"), cross-referenced against
+Compiled from the raw idea-dump notes ("gam draf 17"), cross-referenced against
 the implementation (`solatro/`, see `ARCHITECTURE_REVIEW.md`) and the map addon
 (`worldgen/addons/worldgen/`). The source notes are chronological (oldest → newest) with
 superseded ideas never deleted; this document preserves that history as **mini-timelines**
@@ -77,7 +77,7 @@ Symphony*, Neon Nightlife (Disconauts).
    (`Game.MAX_SUBMITS`; after the 3rd act the goal check wins → fame → map, or loses →
    run over → menu); each act (or only the final act) could carry an increasing score
    multiplier 💭.
-4. **Undo is always live** ✅ (2026-07-13): pressing Undo DURING a resolving act cancels it
+4. **Undo is always live** ✅: pressing Undo DURING a resolving act cancels it
    (the resolution fast-forwards and the pre-act board restores — no act consumed, nothing
    committed), and pressing it AT the win/lose screen dismisses the outcome and rewinds the
    final Submit. The outcome overlay covers only the board (card input of every mode is
@@ -165,7 +165,7 @@ all cards are trying to do."
    - Open TODO from notes: check whether scoring should also scan the draw deck and
 	 discard pile 💭; "every 5 rows make row red / increase points by layer" 💭 → later
 	 matured into Performance Rings (below).
-3. **v3 — Combo/damage recontextualization (partially ✅ 2026-07-17):** the combo half
+3. **v3 — Combo/damage recontextualization (partially ✅):** the combo half
    SHIPPED as the settled aggregation: **act payout = R × C × combo**, where
    `combo = 1 + 0.1·U` and U = distinct combo classes scored this act (meld classes via
    `Scoring.class_key` — archetype+size+copies, rank/suit-blind — plus first-activation
@@ -375,7 +375,7 @@ ARCHITECTURE_REVIEW §4; the full plan/spec is in git history):**
   subclass — `PipSuitHoop/Knife/Ball/Fire/Firework` — with a palette/art index only; there is
   **no `value`** and no suit ordering. Construct the exact class (`PipSuitHoop.new()`, …) or
   pick from `PipSuit.STANDARD`, never `value ± 1` (the old ordinal `compare_suits` is gone;
-  `from_index` was deleted 2026-07-13 — an index hid which suit a call site produced).
+  `from_index` was deleted — an index hid which suit a call site produced).
 - **Factory switching + random roster.** `PipSuit.STANDARD = [Hoop, Knife, Ball, Fire]`;
   `random_standard()` rolls only those four. **Firework is special and excluded** — never rolled
   randomly; it rises up its column and banks column score at the top.
@@ -633,7 +633,7 @@ assigns show/booster/anchor roles from the seed, shows launch `Game` with
 (RunState + map bake), and finishing a lap enters endless mode: the tour reverses
 end→start on the same map, goals scale per lap, traveled history accumulates. Goals come
 from the map-structure curve `G0·(N̂/N0)^ALPHA·difficulty·BOSS·LAP^lap`
-(ARCHITECTURE_REVIEW §3b) baked per progress step with a monotone clamp ✅ 2026-07-17; the overscore tax is
+(ARCHITECTURE_REVIEW §3b) baked per progress step with a monotone clamp ✅; the overscore tax is
 retired (§8c′) — wins bank the full score as fame, nothing else ✅; fame raises `RunManager.luck()`
 which gates stamp/skill/type rolls in packs ✅ (rarity tiers still 📋). Not built yet:
 tips, fog of war, hype/wagering, tour planning. 📋
@@ -896,7 +896,7 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | Check scoring in deck and discard | 💭 |
 | Add all cards to map | 🔨 map offers exist |
 
-### 25.2 Where the dream and the build currently disagree (updated 2026-07-19)
+### 25.2 Where the dream and the build currently disagree
 - Spotlight default ("active while unblocked"): ✅ implemented (with Revealing/Global
   overrides), so ordinary card skills fire.
 - Rule-deck-driven layout, input-as-cards, resolver-based legality, whole-board cascade

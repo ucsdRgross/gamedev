@@ -1,168 +1,147 @@
 # START HERE — Solatro agent guide & planning playbook
 
-**Read this first if you are new to this directory.** It is the distillation of every
-plan, handoff, and audit this project has run (2026-07). It exists so future work does
-not re-learn the same lessons or re-clutter the repo with plan files. **Keep it current:
-whenever a feature lands or a ruling changes, update this file + ARCHITECTURE_REVIEW.md,
-and fold/delete any temporary plan docs (see "Doc hygiene" below).**
+**Read this first if you are new to this directory.** It is the distillation of every plan,
+handoff and audit this project has run, so future work does not re-learn the same lessons or
+re-clutter the repo with plan files. **Keep it current:** when a feature lands or a ruling
+changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the temporary plan doc.
 
 ## Read-first map
 
 | Doc | What it is |
 |---|---|
-| [START_HERE.md](START_HERE.md) | This file — rules, workflow, learnings. |
-| [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, palette §4i, undo §5, memory §6, testing §7, owner rulings §8). |
-| [HANDOFF_spotlight.md](HANDOFF_spotlight.md) | **LIVE handoff (2026-08-06): the SPOTLIGHT mechanic + visuals — all phases S1–S18 built, suite green.** Open: G2.2 rank-glyph readability and the `spotlight_separation_mode` pick (both the owner's eye), plus the Open bugs list in the file. |
-| [FX_HANDOFF.md](FX_HANDOFF.md) | **Fire/FX-performance handoff (2026-07-30): the FIRE effect is CLOSED and FX PERFORMANCE IS PAUSED, not finished — no open engineering task on that stream.** The 2026-07-29/30 pass took the worst window the game can build from **12.07 → 5.82 ms of GPU**. ⬜ **To spend more budget, start at its §0d.10**: today's numbers, every remaining lever priced, and the list of things that LOOK like levers and are measured not to be. ⬜ Two LOOK calls are waiting on the owner (§0f.5). |
-| [VFX.md](VFX.md) | **Visual effects: read FIRST for any fire / juggling / prop-art / outline / FX-shader work.** The map, the runbook, the open backlog and the known bugs. (The rules themselves live in ARCHITECTURE_REVIEW §4g/§4h/§4j; VFX.md points at them.) |
-| [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no z_index). |
-| [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps on this machine. READ BEFORE DEBUGGING A "HANGING" TEST. |
-| `design/card_size_outline/` | **Card 40x54 + the shader OUTLINE on every card element — LANDED 2026-08-06.** Rules: ARCHITECTURE_REVIEW §4j. Tune it on `tools/outline_atlas.tscn`. One open item (GAP-001: a full-width board no longer fits the window) and two art/eye calls, all in todo.md. |
-| [todo.md](todo.md) | Open backlog. |
-| [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (owner's ideas). |
-| [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / historical-reference quarry. |
+| [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Current-state architecture + every regression-critical rule (scoring §3a/§3b, props §4, palette §4i, outline §4j, undo §5, memory §6, testing §7, owner rulings §8). |
+| [VFX.md](VFX.md) | **Read FIRST for any fire / juggling / prop-art / outline / FX-shader work.** The map, the runbook, the backlog and the known bugs; the rules themselves are ARCHITECTURE_REVIEW §4g/§4h/§4j. |
+| [FX_HANDOFF.md](FX_HANDOFF.md) | The fire/FX-performance stream. §0d.10 prices every remaining lever and lists the things that look like levers and measure as none. |
+| [HANDOFF_spotlight.md](HANDOFF_spotlight.md) | The spotlight mechanic + visuals: status ledger, open bugs, what is still owed. |
+| [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no `z_index`). |
+| [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps. **Read before debugging a "hanging" test.** |
+| [todo.md](todo.md) | Open backlog — the single place open items live. |
+| [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (the owner's ideas). |
+| [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / reference quarry. |
 
-## Hard project rules (non-negotiable — every past handoff restated these)
+## Hard project rules (non-negotiable)
 
-1. **The editor being open is mostly FINE for running things — but it REWRITES FILES.**
-   Measured 2026-07-29 with the owner's editor open on a scene: `--import` 26 s, the full
-   windowed suite 84 s, exit 0, 28 suites green. The old "the two instances starve each
-   other" claim did NOT reproduce; the agent that wrote it had mistaken **the Bash tool's
-   own 120 s default timeout** for GPU starvation. Bound long runs with an explicit
-   `timeout` parameter, not by blaming the editor.
-   What IS real, and both cost time this week:
-   - The open editor **rewrites `.tscn`/`.tres`/`project.godot` on disk**. If a resource's
-     script is not `@tool` it loads as a PLACEHOLDER and the editor saves back only the
-     properties it could see, **silently dropping the rest** — `fire_card.tres` lost
-     `pixel` and `dither` that way. Re-read files from disk before diagnosing, and keep
-     every script an editor tool touches `@tool` (ARCHITECTURE_REVIEW §4g).
-   - It **LOCKS vendored dlls** (copies fail).
-   - ⚠ **Never kill a Godot process without reading `MainWindowTitle` FIRST.** An agent
-     killed the owner's editor on 2026-07-29 with a blanket `Get-Process *odot* | Kill()`,
-     on a misdiagnosis. Filter to titles that are NOT an editor window, or ask.
-   Run the suite yourself (see Environment facts) — that is the expected verification, not
-   a handoff. Only the *game* still needs the owner (an agent shouldn't play it).
-2. **No `git add`, no commits, no staging** — the owner commits via GitHub Desktop.
-   Just edit files.
+1. **The editor being open is fine for running things — but it REWRITES FILES.**
+   - It rewrites `.tscn` / `.tres` / `project.godot` on disk. If a resource's script is not
+     `@tool` it loads as a PLACEHOLDER and the editor saves back only the properties it could
+     see, **silently dropping the rest**. Re-read files from disk before diagnosing, and keep
+     every script the editor touches `@tool` (ARCHITECTURE_REVIEW §4g).
+   - It **LOCKS vendored dlls**, so copies fail.
+   - ⚠ **Never kill a Godot process without reading `MainWindowTitle` first.** Filter to titles
+     that are not an editor window, or ask. A blanket `Get-Process *odot* | Kill()` has closed
+     the owner's editor with unsaved work.
+   - Long runs need an explicit `timeout` parameter. A run that outlives the Bash tool's 120 s
+     default is not GPU starvation — it is the default.
+   Run the suite yourself; that is the expected verification, not a handoff. Only the *game*
+   still needs the owner.
+2. **No `git add`, no commits, no staging** — the owner commits via GitHub Desktop. Just edit.
 3. **Warnings are errors:** type EVERY array and EVERY for-loop variable
    (`for col : ArrayCardData in ...`).
-4. **User-facing strings** go through `TRANSLATION.find` + `Locale/localization.csv`,
-   never literals. **Tuning knobs** live in `Scripts/player_settings.gd` via
-   `SettingsManager.settings` (setters emit `settings_changed`); animation timings are
-   FRACTIONS of `get_delay()`, never wall-clock literals.
-5. **Commented-out code policy:** TODO comment if unimplemented, delete if implemented
-   elsewhere. `##` purpose comments on every new method.
-6. **Board mutations** go through `Board.*`/Game deck functions and bump
-   `GameData.revision` AFTER consistency (ARCHITECTURE_REVIEW §2 — a miss = stuck UI +
-   stale caches + stale positions). Per-act/per-show state that undo must rewind lives on
-   **GameData**, never on Game.
-7. **After every deep copy of cards, relink backrefs** (`duplicate_deep` does not remap
-   WeakRefs — ARCHITECTURE_REVIEW §6).
-8. **Tests:** TestSuite pattern, never `Decks/deck.gd` in tests (use TestDecks — frozen
-   replay contracts), mind the DEADLOCK RULE, `await` every coroutine test, compare
-   failure SETS not check totals. Full suite green after every landed step, and the suite
-   runs **WINDOWED** now (no `--headless` — see Environment facts). **A test that cannot run
-   under the current renderer FAILS with the reason; it never skips** (owner 2026-07-27:
-   "prioritize running all tests properly over skipping them"). A skipped check is
-   indistinguishable from a passing one in a log.
-9. `addons/worldgen/` is **vendored** — never edit it here. Land changes in the
-   `worldgen` project, validate there, re-copy changed files (never its README), run
-   `--import`, then the full suite. See `../worldgen/START_HERE.md`.
+4. **User-facing strings** go through `TRANSLATION.find` + `Locale/localization.csv`, never
+   literals. **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`
+   (setters emit `settings_changed`); animation timings are FRACTIONS of `get_delay()`, never
+   wall-clock literals.
+5. **Commented-out code:** TODO comment if unimplemented, delete if implemented elsewhere.
+   `##` purpose comments on every new method.
+6. **Board mutations** go through `Board.*` / Game deck functions and bump `GameData.revision`
+   AFTER consistency (ARCHITECTURE_REVIEW §2 — a miss gives stuck UI, stale caches, stale
+   positions). Per-act/per-show state that undo must rewind lives on **GameData**, never on Game.
+7. **After every deep copy of cards, relink backrefs** — `duplicate_deep` does not remap WeakRefs
+   (ARCHITECTURE_REVIEW §6).
+8. **Tests:** TestSuite pattern; never `Decks/deck.gd` in tests (use TestDecks — frozen replay
+   contracts); mind the DEADLOCK RULE; `await` every coroutine test; compare failure SETS, not
+   check totals. Full suite green after every landed step, and it runs **WINDOWED**.
+   **A test that cannot run under the current renderer FAILS with the reason; it never skips** —
+   the owner's ruling is "prioritize running all tests properly over skipping them", because a
+   skipped check is indistinguishable from a passing one in a log.
+9. `addons/worldgen/` is **vendored** — never edit it here. Land changes in the `worldgen`
+   project, validate there, re-copy changed files (never its README), run `--import`, then the
+   full suite. See `../worldgen/START_HERE.md`.
 10. Multi-modal input (mouse + keyboard + controller) is required for every UI.
 11. After adding a `class_name` or editing the vendored addon: delete `.godot/` or run
     `--headless --path . --import` before trusting any run (stale class cache).
 
-## How to plan & implement a feature here (the distilled workflow)
+## How to plan & implement a feature here
 
 Every successful plan in this repo followed the same shape; repeat it:
 
-1. **Verify current code first.** Read the actual files and pin line numbers / signatures
-   the plan touches ("Audit facts this plan is built on"). Docs go stale — code wins.
-   Check ARCHITECTURE_REVIEW §8 owner rulings before "fixing" anything odd-looking.
-2. **Measure before designing balance.** For scoring/economy work, extend
-   `tools/scoring_sim.py` (Python, safe to run anytime) and get numbers before proposing
-   formulas. Mark every number with how it was produced so it can be re-run.
-3. **Write the plan as steps that each leave the game runnable**, with per-file
-   pseudocode, a migration/save-compat section, and a test plan (new suites + which
-   existing suites must stay green). Put behavior changes and architecture changes behind
-   explicit **owner APPROVAL lines** (yes/no per item) — the owner rules on each;
-   implement only the YES items. Record rulings verbatim; they become §8 material.
-4. **Ask the grill questions early.** Ambiguities (identity rules, opt-in vs opt-out,
-   UI placement) got resolved fastest as a numbered question list with recommended
-   defaults.
-5. **Implement in order, full suite after each step.** New per-act state → GameData.
-   New strings → localization CSV. New knobs → player_settings. New tests follow the
-   conventions in ARCHITECTURE_REVIEW §7.
-6. **Owner verification script:** end the work with a short numbered in-game checklist
-   the owner can run (they run scenes; you don't).
-7. **Docs pass (mandatory):** update ARCHITECTURE_REVIEW.md (current state + new
-   landmines/rulings), todo.md (close items, add follow-ups), DESIGN_DOC.md if design
-   settled, and this file if the workflow/rules changed.
+1. **Verify current code first.** Read the actual files and pin the line numbers and signatures
+   the plan touches. Docs go stale — code wins. Check ARCHITECTURE_REVIEW §8 owner rulings before
+   "fixing" anything odd-looking.
+2. **Measure before designing balance.** For scoring/economy work, extend `tools/scoring_sim.py`
+   and get numbers before proposing formulas. Mark every number with how it was produced so it
+   can be re-run.
+3. **Write the plan as steps that each leave the game runnable**, with per-file pseudocode, a
+   migration/save-compat section, and a test plan (new suites + which existing suites must stay
+   green). Put behavior and architecture changes behind explicit **owner APPROVAL lines** (yes/no
+   per item); implement only the YES items. Record rulings verbatim — they become §8 material.
+4. **Ask the grill questions early.** Ambiguities (identity rules, opt-in vs opt-out, UI
+   placement) resolve fastest as a numbered question list with recommended defaults.
+5. **Implement in order, full suite after each step.** New per-act state → GameData. New strings →
+   localization CSV. New knobs → player_settings. New tests follow ARCHITECTURE_REVIEW §7.
+6. **Owner verification script:** end with a short numbered in-game checklist the owner can run.
+7. **Docs pass (mandatory):** update ARCHITECTURE_REVIEW.md (current state + new landmines and
+   rulings), todo.md (close items, add follow-ups), DESIGN_DOC.md if the design settled, and this
+   file if the workflow or rules changed.
 
-## Doc hygiene (prevents the clutter this file replaced)
+## Doc hygiene
 
-- Temporary plan/handoff docs are fine WHILE work is in flight, but once landed and
-  verified: fold the regression-critical residue into ARCHITECTURE_REVIEW.md (rules,
-  landmines, contracts — not the story of how it was built), move open items to todo.md,
-  then **delete the plan doc**. Git history keeps the full text.
-- Never keep "what happened on date X" logs in living docs — git has them. A living doc
-  states what IS, plus the rules that prevent regressions.
-- Periodically (or when root-level .md files exceed ~8), repeat the consolidation this
-  file came from: read everything, merge, delete.
+- Temporary plan/handoff docs are fine WHILE work is in flight. Once landed and verified: fold
+  the regression-critical residue into ARCHITECTURE_REVIEW.md (rules, landmines, contracts — not
+  the story of how it was built), move open items to todo.md, then **delete the plan doc.**
+- **Never keep "what happened on date X" logs in a living doc.** A living doc states what IS, plus
+  the rules that prevent regressions. Git history has the rest.
+- Every reference must resolve: if a doc names a file, section or tool, it exists.
+- When root-level `.md` files exceed ~8, repeat the consolidation this file came from: read
+  everything, merge, delete.
 
-## Retired docs → where their content lives now
+## Decoding old §citations in code comments
 
-Code comments still cite these by section number; the full texts are in git history
-(deleted 2026-07-19):
+Code comments still cite plan docs that no longer exist. Their content lives here now:
 
-| Retired doc | Live home |
+| Cited as | Live home |
 |---|---|
-| SCORING_MATH_PLAN.md §15a/§15b (+§8c′ overscore rationale) | ARCHITECTURE_REVIEW §3a/§3b |
-| SCORING_IMPL_PLAN.md, SCORING_AUDIT.md | ARCHITECTURE_REVIEW §3 + todo.md test gaps |
-| SUIT_PROPS_PLAN.md (§1.3/§1.5/§1.6/§4.x, Phases) | ARCHITECTURE_REVIEW §4 |
-| PROPS_BUGFIX_HANDOFF.md (landmines, R1–R8 reference) | ARCHITECTURE_REVIEW §4 |
-| UNIT_TESTS_PLAN.md (§1–§8 suite specs, conventions) | ARCHITECTURE_REVIEW §7 |
-| HANDOFF_worldgen_map.md (map/run/persistence) | ARCHITECTURE_REVIEW §1.5 |
-| FORMATION_LAYERING_HANDOFF.md | ARCHITECTURE_REVIEW §4c + LAYERING.md |
-| AUDIT_PROPOSALS_HANDOFF.md, EFFICIENCY_AUDIT_TRACKER.md, efficiency_audit.txt | ARCHITECTURE_REVIEW §2/§8 + todo.md; coding best practices below |
-| LEAK_PREVENTION_HANDOFF.md, PRODUCTION_LEAK_CANARY_HANDOFF.md | ARCHITECTURE_REVIEW §6 |
+| SCORING_MATH_PLAN §15a/§15b, §8c′ | ARCHITECTURE_REVIEW §3a/§3b |
+| SCORING_IMPL_PLAN, SCORING_AUDIT | ARCHITECTURE_REVIEW §3 + todo.md test gaps |
+| SUIT_PROPS_PLAN §1.3/§1.5/§1.6/§4.x | ARCHITECTURE_REVIEW §4 |
+| PROPS_BUGFIX_HANDOFF (R1–R8) | ARCHITECTURE_REVIEW §4 |
+| UNIT_TESTS_PLAN §1–§8 | ARCHITECTURE_REVIEW §7 |
+| HANDOFF_worldgen_map | ARCHITECTURE_REVIEW §1.5 |
+| FORMATION_LAYERING_HANDOFF | ARCHITECTURE_REVIEW §4c + LAYERING.md |
+| AUDIT_PROPOSALS_HANDOFF, EFFICIENCY_AUDIT_TRACKER | ARCHITECTURE_REVIEW §2/§8 + todo.md |
+| LEAK_PREVENTION_HANDOFF, PRODUCTION_LEAK_CANARY_HANDOFF | ARCHITECTURE_REVIEW §6 |
 
-## Coding best practices (kept from the efficiency-audit charter)
+## Coding best practices
 
 O(n) max in hot paths (flag nested scans); no recursion (flat while loops); single-pass
-traversals; type everything (arrays, dicts, loop vars); PackedArrays for heavy numeric
-data; `&"StringName"` for engine-name APIs in hot loops; `"%d" %` formatting over `+`
-concatenation in loops; native engine methods over hand-rolled utilities; signal-driven
-logic over `_process` polling (`set_process(false)` when idle); threaded file I/O;
-preload assets; composition over deep inheritance; data in Resources, not hardcoded in
-nodes; no silent failures (push_error / explicit Error returns — never bare `pass` in an
-error path; note `assert()` strips in release, don't put side effects in it); dirty flags
-over cascading signal storms; `@tool` scripts idle cheaply; strict logic preservation in
-refactors; new files / architecture changes need owner approval + a design doc first.
-C#/GDExtension migration candidates get flagged in comments, not converted ad hoc.
+traversals; type everything (arrays, dicts, loop vars); PackedArrays for heavy numeric data;
+`&"StringName"` for engine-name APIs in hot loops; `"%d" %` formatting over `+` concatenation in
+loops; native engine methods over hand-rolled utilities; signal-driven logic over `_process`
+polling (`set_process(false)` when idle); threaded file I/O; preload assets; composition over deep
+inheritance; data in Resources, not hardcoded in nodes; no silent failures (`push_error` or
+explicit Error returns — never a bare `pass` in an error path; `assert()` strips in release, so no
+side effects in it); dirty flags over cascading signal storms; `@tool` scripts idle cheaply; strict
+logic preservation in refactors. New files and architecture changes need owner approval and a
+design doc first. C#/GDExtension migration candidates get flagged in comments, not converted ad hoc.
 
 ## Environment facts
 
-- Godot 4.7.1, `C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64.exe`. The console
-  variant (`Godot_v4.7.1-stable_win64_console.exe`) is the one whose stdout can be
-  redirected to a file — it must sit in the SAME folder as the main exe (it launches it
-  by name); a copy lives on the Desktop next to it. Repo:
-  `C:\Users\khanr\Documents\GitHub\gamedev` (docs mentioning `C:\richard\gamedev` are
-  from the owner's other machine — same repo).
-- Full suite: `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no
-  `--headless`** since 2026-07-27 (the PIXELS suite asserts on rendered pixels; headless it
-  fails loudly instead of skipping — HEADLESS_TESTING.md §0). Exit code =
-  failure count. Logs: `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`.
-  **An agent may and should run this itself** whenever the owner's editor is closed
-  (verified 2026-07-20: clean self-terminating run, 25 suites / 0 failures, ~40 s; the
-  check total drifts between runs — judge by the suite count and the failure set).
-  ⚠️ **ALWAYS bound the launch with a hard timeout that KILLS, and grep the log for
-  `Parse Error` in the same command** — a parse error in `Tests/Support/test_base.gd` does
-  not fail the run, it makes it hang FOREVER (every suite degrades to plain `Node` and the
-  sibling-waiters never finish). There is no working pre-flight check: `--check-only`
-  false-positives on autoloads and `--import` misses script errors entirely. The exact
-  commands, the log signature, and how to kill it safely: **HEADLESS_TESTING.md §0a.**
-  A bare `& exe ...` / `WaitForExit` without a `Kill()` also leaves orphans that truncate
-  the next run's log. Read only the FAIL lines (`test_output_errors.log`, empty = green)
-  plus the final banner.
-- Scoring sim: `py solatro/Tools/scoring_sim.py --final --q 0.35` (Python, safe anytime).
+Binary paths and hardware differ per computer — see `../.claude/memory/machine-profiles.md`. The
+**console** variant of the Godot exe is the one whose stdout can be redirected to a file, and it
+must sit in the SAME folder as the main exe, which it launches by name.
+
+- **Full suite:** `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
+  (the PIXELS suite asserts on rendered pixels; headless it fails loudly instead of skipping —
+  HEADLESS_TESTING.md §0). Exit code = failure count. Logs:
+  `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`. Run it yourself whenever the owner's
+  editor is closed. The check total drifts between runs — judge by the suite count and the failure
+  set.
+- ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`
+  in the same command.** A parse error in `Tests/Support/test_base.gd` does not fail the run — it
+  hangs FOREVER (every suite degrades to plain `Node` and the sibling-waiters never finish). There
+  is no working pre-flight check: `--check-only` false-positives on autoloads and `--import` misses
+  script errors entirely. Exact commands, log signature and how to kill it safely:
+  **HEADLESS_TESTING.md §0a.** A bare `& exe ...` / `WaitForExit` without a `Kill()` leaves orphans
+  that truncate the next run's log. Read only the FAIL lines (`test_output_errors.log`, empty =
+  green) plus the final banner.
+- **Scoring sim:** `py solatro/Tools/scoring_sim.py --final --q 0.35` (Python, safe anytime).

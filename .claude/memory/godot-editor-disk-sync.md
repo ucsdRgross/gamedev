@@ -16,13 +16,15 @@ When the user's Godot editor is open while I edit project files, two things bite
    `Flush (%s)` in old context but disk had `Flush %s`), and the running game can use
    **stale imported resources** (`.translation` from `TranslationServer`, not the CSV).
 
+3. **A `--import` run is itself a writer.** It rewrites tracked files —
+   `Locale/localization.en.translation` and two `~`-prefixed GDExtension DLLs. Check
+   `git status` afterwards and revert them, or they land in the owner's next commit.
+
 **Why:** the live editor is a second writer/runtime I don't control.
 
 **How to apply:** before diagnosing a "wrong output," re-Read the actual on-disk file
 (don't trust prior context), and prefer explicit type annotations over `:=` in
 hot numeric code. Localization names come from imported `.translation`, not CSV text —
-a CSV edit needs reimport to affect runtime. (Superseded detail: this memory originally
-said the user runs the tests — since 2026-07-20 Claude runs the Solatro suite itself, see
-[[running-godot-scenes]]. What still holds is that a headless run alongside their OPEN
-editor hangs, so check for editor processes first and never kill one.) See
-[[solatro-shipped-workstreams]], [[no-mocks-in-tools]].
+a CSV edit needs reimport to affect runtime. A headless run alongside their OPEN editor hangs,
+so check for editor processes first and never kill one — [[running-godot-scenes]] has the full
+procedure. See [[architecture-map]], [[no-mocks-in-tools]].

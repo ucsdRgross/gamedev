@@ -10,8 +10,8 @@ metadata:
 
 **Never edit a source file with `(Get-Content f) -replace ... | Set-Content f` on this box.** Windows
 PowerShell 5.1 reads with the system ANSI codepage, so every non-ASCII character comes back mangled
-(`⚠` → `âš `, `§` → `Â§`, `—` → `â€"`). Hit 2026-07-29 on `solatro/Tests/Visual/fx_cost.gd`, whose
-comments are full of all three; the whole file was corrupted in one command.
+(`⚠` → `âš `, `§` → `Â§`, `—` → `â€"`). It has corrupted a whole file in one command —
+`solatro/Tests/Visual/fx_cost.gd`, whose comments are full of all three.
 
 **Why:** these projects' files are heavily commented with `⚠`/`§`/em-dashes, and the corruption is
 silent — the file still parses and the tests still pass, so nothing catches it but a diff.

@@ -6,8 +6,8 @@ contracts: `../START_HERE.md`). Ships as
 so the vendor-copy into Solatro carries it. GDScript fallbacks remain at every
 call site — the addon works with the dll deleted.
 
-Toolchain (installed 2026-07-17): Visual Studio Build Tools 2022 ("Desktop
-development with C++" workload) + `pip install scons` + git on PATH.
+Toolchain: Visual Studio Build Tools 2022 ("Desktop development with C++" workload)
++ `pip install scons` + git on PATH.
 
 ## Layout
 

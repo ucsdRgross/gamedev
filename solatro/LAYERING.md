@@ -1,7 +1,7 @@
 # LAYERING.md — board rendering order (draw-order reference)
 
 The `solatro` board (`Levels/game_view.tscn` → `UI/play_area.tscn`) draws its whole board on
-**one canvas layer** — there is **no `CanvasLayer` anywhere**. Since 2026-07-15 the entire board
+**one canvas layer** — there is **no `CanvasLayer` anywhere**. The entire board
 draw order is **structural**: every board `CanvasItem` stays at **`z_index == 0`** and order is
 decided purely by **sibling position + parent nesting** (Godot draws a parent before its
 children, and earlier siblings before later ones; ties at equal effective z break by tree
@@ -85,7 +85,7 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
 
 ---
 
-## Shader FX is a CHILD of its host (2026-07-27)
+## Shader FX is a CHILD of its host
 
 Status effects (fire, juggled balls) render as shader quads on an `FxAttachment`, and it is a
 **child of the host**, never a board-level layer:
@@ -135,7 +135,7 @@ the ruling-2 logic does not apply to them.
 - **Board rebuild** (`board_changed` → `queue_rebuild` → `set_card_zones_visuals` →
   `_order_board_cards`, `play_area.gd`): re-orders every CardVisual in CardLayer via
   **guarded `move_child`s** in ascending target order (a still board does zero moves). Order is
-  ROW-MAJOR ACROSS COLUMNS per zone since 2026-07-16 — headers, then row 0 of every column, then
+  ROW-MAJOR ACROSS COLUMNS per zone — headers, then row 0 of every column, then
   row 1, … (upper zone before lower): cards only overlap within a column, so this renders
   identically for cards, but each row is CONTIGUOUS so a split prop can bracket a whole row.
   Targets are assigned only to visuals verified in CardLayer at that moment (deduped), so a
@@ -158,7 +158,7 @@ the ruling-2 logic does not apply to them.
   (`PropVisual.body_size`, hardcoded per kind — CARD_SIZE is no longer the parallel: it is DERIVED now, as `CARD_ART_SIZE + 2 * ART_OUTLINE`) must overlap some card's footprint
   (`_body_over_any_card`). Never derive the row from what's under the prop — fanned cards are a
   full card tall behind their ~strip-high visible slice, so a ring crossing a SHORT column's
-  empty row sat "inside" that column's top card's rect and bracketed the wrong row (2026-07-16).
+  empty row sat "inside" that column's top card's rect and bracketed the wrong row.
   Over nothing → unsplit, whole ring above the board. It also
   mirrors the prop's transform + modulate onto both halves each frame (single fade source).
   Movement is position-only.
@@ -209,7 +209,7 @@ the ruling-2 logic does not apply to them.
    it as two `_PropHalf` nodes that BRACKET the occupied card in CardLayer (back just below, front
    just above), so the card passes through the ring and the front stays behind the row below.
    Non-split props still draw their whole body on the PropVisual (above all cards).
-   Since the real hoop art landed (2026-07-27) the halves are the sheet's LEFT and RIGHT arcs — the
+   The halves are the sheet's LEFT and RIGHT arcs — the
    ring is a foreshortened oval, so left is its far side and right its near side (ARCHITECTURE_REVIEW
    §4h). The bracket mechanism is unchanged; only which pixels each half draws moved.
 5. **Scattered absolute-z constants (cards 1..N, props 100, popup 100, panel 300, status 1).**

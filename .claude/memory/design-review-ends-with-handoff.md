@@ -18,7 +18,7 @@ confirmation rather than assuming it**.
 
 Once confirmed, the next message must contain **the implementation plan, a scope recommendation,
 and a copy-paste prompt for the implementing agent** — all three, together. Stopping at the plan and
-waiting for "is this ready to hand off?" is friction the owner called out by name (2026-08-01).
+waiting for "is this ready to hand off?" is friction the owner has called out by name.
 
 **Why:** the point of the questionnaire is that answering it is the owner's whole job. Making them
 then chase readiness, discover the plan is under-specified, and ask again for a prompt re-imports

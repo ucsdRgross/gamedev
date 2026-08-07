@@ -1,36 +1,31 @@
 <!-- SOURCE OF TRUTH. This directory travels in git; the per-user memory directory is a cache that a
-     second computer does not have. Write new and updated memories HERE. See /CLAUDE.md. -->
+     second computer does not have. Write new and updated memories HERE. See /CLAUDE.md.
 
-- [Repo Claude tooling](repo-claude-tooling.md) — gamedev/.claude/ has the /handoff (write+resume, one file), /fx-verify and /flowchart-design skills, the plan-auditor subagent, and a hook blocking name-based process kills
-- [Spotlight design + phase 1](solatro-spotlight-design.md) — design CONFIRMED 2026-08-03, **v12**; **ALL FOUR PHASES BUILT — S1–S18 done, suite green (29/1871)** ; **2026-08-06 review pass fixed 10 confirmed defects + the tool teardown/push items, G3.3 RUN and closed; GAP-010/011 OPEN (overrun banking, emptied-section hooks) — owner's answer needed**; G2.2 (readability) still the owner's eye; **15 earlier defects' forensics in ARCHITECTURE_REVIEW.md §9**; status ledger is solatro/HANDOFF_spotlight.md
-- [Design Loop tool](designloop-tool.md) — designloop/: the local web front end for the questionnaire workflow — questions, review canvas, gap surface; **all 19 steps DONE + S20 provenance, 151 tests green (2026-08-04)**; both gaps closed; two owner reviews → design v3 (derived cross-chart links) and v4 (the answering screen: visit-stack BACK, visible Enter target, history sidebar, session heartbeat); read designloop/README.md, then HANDOFF_designloop.md
-- [Seam checks, not re-reading](seam-checks-not-rereading.md) — **every recurring miss here is one shape: two representations of one fact with nothing comparing them.** Write the comparison when the SECOND representation is created; prefer deleting it. Includes the evidence hierarchy and why a still frame cannot verify anything with a duration
-- [Design answers need a claimant](design-answers-need-a-claimant.md) — an answered question no plan step cites is invisible to every tool; **check nodes→steps, not just steps→nodes** (measured: 190 of 255 unclaimed, and that is how Q85 shipped wrong)
-- [Resuming a design round: read the log](design-round-read-the-log.md) — `answers.log` `override:true` is a branch to author even when `answers.json` shows a clean option; add options and widen gates, never replace; **and diff every `strand` event against later widenings — `check` cannot see an answer a gate left stranded**
-- [Design review ends with a handoff](design-review-ends-with-handoff.md) — handoff fires on CONFIRMING the flowcharts (not the last answer); then plan + scope + copy-paste prompt in ONE message
-- [Verify visuals by eye](verify-visuals-by-eye.md) — render a snapshot and describe the image; metrics and green tests are not evidence about pixels, say UNVERIFIED instead. ⚠ **A still cannot verify a pulse, travel or fade — for anything with a duration, run it and report what MOVED**
-- [General, not shape-specific](general-not-shape-specific.md) — owner rejects one-silhouette hacks and coupled designs; propose the general form or 2-3 options before implementing
-- [Running Godot scenes](running-godot-scenes.md) — Claude runs the Solatro suite itself, WINDOWED (not headless) since 2026-07-27; runs snapshot scenes and READS the PNGs; only gameplay/generation scenes go to the user; ⚠ a green banner is NOT proof the tests ran — a runtime error aborts a test silently, redirect stderr and check per-section counts
-- [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files, hangs headless runs, and locks dlls; re-read disk before diagnosing, never kill their editor
-- [No mocks in tools](no-mocks-in-tools.md) — tools/harnesses host the real scene + real data; a stand-in can't disagree with what it models
-- [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never Get-Content | Set-Content a source file; use Edit
-- [No git staging](no-git-staging.md) — user runs GitHub Desktop; don't `git add`, just edit files; ask before committing
-- [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments on methods, plans need handoff references
-- [Type all arrays + iterators](gdscript-type-all-arrays.md) — warnings-as-errors: type every Array element + every for-loop variable
-- [Solatro project facts](solatro-project-facts.md) — read solatro/START_HERE.md first, VFX.md for effects work; mutation guidelines; owner rulings; BigNumber gotchas
-- [Solatro shipped workstreams](solatro-shipped-workstreams.md) — suit-props (2026-07-13) and scoring/goal rework (2026-07-17) are DONE; live spec ARCHITECTURE_REVIEW §4/§3; don't relitigate
-- [Solatro Game/GameView split](solatro-game-view-split.md) — Game=headless logic, GameView=UI; view==null seam; commands/signals/paced contract
-- [Solatro structural layering](solatro-structural-layering.md) — board draw order is all-structural (no z_index); hoop pass-through via bracket nodes; TestSuite deadlock rule + TestLog
-- [Pooled board controls](solatro-pooled-board-controls.md) — PlayArea controls are per-slot & reused; re-derive per-card state in _bind_slot
-- [Solatro persistence gotchas](solatro-persistence-gotchas.md) — ResourceSaver format=extension, has_save=run.tres only, map is regenerable cache, pending_action replay, packed score arrays
-- [Solatro .tres cyclic backrefs](solatro-tres-cyclic-backrefs.md) — CardModifier.data is a WeakRef since 2026-07-18; don't reintroduce unlink/relink; relink after every duplicate_deep
-- [Tuning knobs in settings](solatro-tuning-knobs-in-settings.md) — shared adjustable/speedup knobs live in player_settings.gd; no wall-clock pacing; durations derive from get_delay()
-- [Localize UI strings](solatro-localize-ui-strings.md) — user-facing text goes in Locale/localization.csv via TRANSLATION.find, never a literal
-- [Solatro multi-modal input](solatro-multimodal-input.md) — all UI needs mouse+keyboard+controller; focus steal/restore, ui_cancel closes
-- [Godot key events don't bubble](godot-key-events-no-bubble.md) — key/joypad events reach ONLY the focused control; area-wide ui_accept/ui_cancel goes in _unhandled_input
-- [Palette project facts](palette-project-facts.md) — palette/ generator: all phases + external-palette recolour and param fitter shipped; read ARCHITECTURE.md first; npm test ~6min (PALETTE_FUZZ_N shortens)
-- [Palette recolour context inference](palette-recolor-context-inference.md) — measured: auto source-context inference infeasible; disjoint target pools work, MAP_CONTEXTS overlap does not
-- [worldgen_native build env](worldgen-native-build-env.md) — python -m SCons, re-clone godot-cpp, --import before the dll registers
-- [Graph spec Step A](graph-spec-step-a.md) — graph_spec.gd abstract DAG: depth=rank, lane ramp, spread fan, width=target via ideal_reach, trim+re-add repair
-- [Graph placement Step B](graph-placement-step-b.md) — v4 ladder placement + edges-last forward sweep; standing rules and measured dead ends (worldgen dormant since ~2026-07-18)
-- [Solatro card outline](solatro-card-outline.md) — card 38x50→40x54 + shader outline on all five elements, landed 2026-08-06; rules in ARCHITECTURE_REVIEW §4j; **GAP-001 open and its test left RED on purpose** (7-column board wider than the window); outline_atlas tool is where the ink and the alert get judged
+     SCOPE RULE: memory holds only what applies ACROSS projects — working agreements, engine
+     practice, the machine profiles, and the architecture map. Anything specific to one project
+     (its contracts, status, backlog, design decisions) belongs in that project's own docs.
+     INDEX RULE: one line per memory, a hook only. No status, dates, counts or gap IDs. -->
+
+**Orientation**
+- [Architecture map](architecture-map.md) — what each project is, where they collide, which doc to read
+- [Machine profiles](machine-profiles.md) — per-box repo root, Godot binary, GPU, Node; the ONLY home for absolute paths
+
+**Working agreements**
+- [No git staging](no-git-staging.md) — never `git add` or commit; the owner uses GitHub Desktop
+- [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments
+- [Verify visuals by eye](verify-visuals-by-eye.md) — describe the rendered image; a still cannot verify a duration
+- [No mocks in tools](no-mocks-in-tools.md) — harnesses host the real scene and real data
+- [General, not shape-specific](general-not-shape-specific.md) — no one-silhouette hacks; offer the general form first
+- [Seam checks, not re-reading](seam-checks-not-rereading.md) — two representations of one fact need a comparison
+
+**Godot practice** (applies to solatro and worldgen alike)
+- [Running Godot scenes](running-godot-scenes.md) — run the suite yourself, WINDOWED; a green banner is not proof
+- [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files and locks dlls; never kill it
+- [Key events don't bubble](godot-key-events-no-bubble.md) — area-wide accept/cancel goes in `_unhandled_input`
+- [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
+- [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
+
+**Design workflow** (the `/flowchart-design` loop)
+- [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes
+- [Resuming a design round](design-round-read-the-log.md) — `answers.log` overrides are branches to author
+- [Design review ends with a handoff](design-review-ends-with-handoff.md) — fires on CONFIRMING the flowcharts

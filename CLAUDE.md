@@ -1,38 +1,44 @@
 # CLAUDE.md — repo entry point
 
-**Read this first. It is loaded automatically in every session in this directory, on every
-machine.** Everything an agent needs to work here is inside this git repository — nothing depends
-on machine-local state.
+**Loaded automatically in every session in this directory, on every machine.** Everything an agent
+needs is inside this git repository; nothing depends on machine-local state. The owner works across
+more than one computer — **the git directory is the only shared state.** Absolute paths and hardware
+quirks live in exactly one file: `.claude/memory/machine-profiles.md`.
 
-## Portable by design
+## ⚠ Memory rule
 
-The owner works across more than one computer. **The git directory is the only shared state.**
+Claude Code's per-user memory directory is **a cache, not the record** — a second computer has none
+of it.
 
-| What | Where | Portable |
-|---|---|---|
-| Skills (`/handoff`, `/fx-verify`, `/flowchart-design`) | `.claude/skills/` | ✅ tracked |
-| Subagent (`plan-auditor`) | `.claude/agents/` | ✅ tracked |
-| Hooks + settings | `.claude/hooks/`, `.claude/settings.json` | ✅ tracked |
-| Dev-server launch configs | `.claude/launch.json` | ✅ tracked |
-| **Project memory** | **`.claude/memory/`** | ✅ tracked — **this is the source of truth** |
-| Handoff / resume state | `<project>/HANDOFF_*.md` | ✅ tracked |
-| Design + execution plans | `<project>/design/<slug>/` | ✅ tracked |
-| `settings.local.json` | machine-local | ❌ deliberately not tracked |
+- **Read `.claude/memory/MEMORY.md`** at the start of substantive work. It is the index: one line
+  per memory, a hook only.
+- **Write new and updated memories into `.claude/memory/`**, never the machine-local directory.
+  Same frontmatter (`name` / `description` / `metadata.type`), plus a one-line index entry.
+- If a machine-local memory disagrees with the repo copy, **the repo copy wins.**
 
-**⚠ MEMORY RULE.** Claude Code's per-user memory directory is **a cache, not the record**. A second
-computer has none of it. Therefore:
+**Memory holds only what applies ACROSS projects** — working agreements, Godot practice, the
+machine profiles, and `architecture-map.md` (what each project is and where they collide).
+Anything specific to one project — its contracts, conventions, design decisions, status,
+backlog — belongs in **that project's own docs**, and memory just points at them. Start from
+`architecture-map.md` to know what a change can break, then read the doc it names.
 
-- **Read `.claude/memory/MEMORY.md`** at the start of substantive work — it is the index, one line
-  per memory.
-- **Write new or updated memories into `.claude/memory/`**, not into the machine-local directory.
-  Same format (frontmatter with `name` / `description` / `metadata.type`), same one-line index entry
-  in `.claude/memory/MEMORY.md`.
-- If a machine-local memory disagrees with the repo copy, **the repo copy wins** — the local one is
-  from another machine or another day.
+## Doc hygiene
 
-Anything a future session needs and cannot re-derive from the code belongs in `.claude/memory/`.
-Machine-specific facts (absolute paths, installed binary locations) belong in the memory file that
-already covers that topic, labelled as machine-specific, never assumed.
+Docs describe the system as it is now, for someone about to change it.
+
+- **No history.** No dated session logs, no "landed on <date>", no changelog of what was fixed
+  when, no lists of retired files. Git has that.
+- **No dead references.** If a doc names a file, section or tool, it must exist.
+- Keep: contracts, gotchas, non-default conventions, owner rulings, levers and their defaults,
+  measured dead ends, and what is still open.
+- A date earns its place only when the fact is *about* a moment (a measurement's conditions, a
+  version boundary). "The suite runs windowed" needs no date; "measured on Box A" does.
+- Plan and handoff docs are temporary: once landed, fold the residue into the living doc and
+  delete them.
+
+`py .claude/tools/doc_check.py` enforces the mechanical half — dangling `[[memory links]]`, an
+index out of sync with disk, references to files that do not exist, hard-coded absolute paths,
+and dated lines. Run it after any docs change. The judgement half is the `/docs` skill.
 
 ## Hard rules (they override defaults)
 
@@ -47,39 +53,27 @@ already covers that topic, labelled as machine-specific, never assumed.
 5. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
    disagree with what it models.
 
-## The projects
+## Where to start
 
-| Directory | What | Read first |
-|---|---|---|
-| `solatro/` | Godot 4.7 card game — the main project | `solatro/START_HERE.md`, then `VFX.md` for effects work |
-| `palette/` | Node/npm procedural palette generator (zero dependencies) | `palette/ARCHITECTURE.md` |
-| `worldgen/` | Godot map generation addon, vendored into solatro | `worldgen/START_HERE.md` |
-| `designloop/` | Node tool: the branching-questionnaire design front end — built and working | `designloop/README.md` |
-| others | smaller game-jam and study projects | — |
+| Project | Read first |
+|---|---|
+| `solatro/` | `START_HERE.md`, then `VFX.md` for effects work — the main project |
+| `palette/` | `ARCHITECTURE.md` |
+| `worldgen/` | `START_HERE.md` — vendored into solatro |
+| `designloop/` | `README.md` |
 
-## The design workflow
+Everything else is a smaller game-jam or study project.
 
-Feature design in this repo runs through **`/flowchart-design`** (`.claude/skills/flowchart-design/`):
-braindump → research → numbered mermaid flowcharts + a branching question DAG → the owner answers →
-flowcharts reviewed and **confirmed** → implementation plan + a copy-paste handoff prompt.
+## Workflows (skills — invoke, don't reimplement)
 
-The owner answers in **`designloop/`** — `npm --prefix designloop start`, then hand over
-`http://localhost:5273/web/question.html?key=<project>/<slug>`. It parses the markdown you wrote;
-there is never a second authored copy. **It is optional**: with the server down, the document is
-still answerable by ID in chat exactly as before.
-
-Two rules from that skill that reach beyond it:
-
-- **Design docs carry no code; implementation plans carry everything** — schemas, formal grammars,
-  module APIs, per-step done-when, hard self-checking acceptance gates. A plan that names a file
-  without specifying it guarantees two incompatible inventions of the same thing.
-- **The gap protocol.** An agent executing a plan that meets a decision the design does not cover
-  does not invent it: reversible and clearly within intent → do it and log one line in that design's
-  `ASSUMPTIONS.md`; otherwise → park that thread only, file `gaps/GAP-NNN.md` in the questionnaire
-  grammar, keep working everything else, and tell the owner. The full protocol travels in a block at
-  the head of every plan.
-
-## Resuming work
-
-Look for `<project>/HANDOFF_*.md` — that is the live state of any multi-session work stream, written
-to stand alone with zero prior context. `/handoff` is the skill that reads and maintains it.
+- **`/flowchart-design`** — feature design: braindump → flowcharts + question DAG → confirm → plan
+  and handoff prompt. It also carries the two rules that reach beyond it: design docs carry no code
+  while implementation plans carry everything, and the **gap protocol** for decisions a design does
+  not cover.
+- **`/handoff`** — session continuity. `<project>/HANDOFF_*.md` is the live state of any
+  multi-session work stream; start there when resuming.
+- **`/fx-verify`** — the verification gate for any visual, shader or prop-art change.
+- **`/docs`** — audit and consolidate the docs and memory. Run it when a work stream lands, when
+  the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
+  `py .claude/tools/doc_check.py`, which proves every reference still resolves.
+- **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
