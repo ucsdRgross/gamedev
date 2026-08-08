@@ -40,9 +40,6 @@ const WATCHDOG_SECS := 10.0
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const HOVER_PANEL_SCENE := preload("res://UI/map_hover_panel.tscn")
 
-const REAL_SETTINGS_PATH := "user://settings.tres"
-const REAL_SETTINGS_BAK := "user://settings.tres.testbak3"
-
 ## LEAK SENTINEL section fixture: cards deliberately held alive-but-unreachable.
 var _sentinel_leaked : Array[CardData] = []
 
@@ -70,25 +67,26 @@ func _ready() -> void:
 	# caches, static registries) that must not count against the loop.
 	_clean_cycle()
 	await _settle()
-	var baseline := _object_count()
+	var baseline_census := _object_census()
+	var baseline : int = baseline_census.total
 
 	# 2. N clean build/teardown cycles must return to the warm baseline.
 	for i in range(CYCLES):
 		_clean_cycle()
 	await _settle()
-	var after := _object_count()
+	var after_census := _object_census()
+	var after : int = after_census.total
 	check_impl(after <= baseline,
 			"OBJECT_COUNT returns to baseline after %d clean Game build/free cycles" % CYCLES,
 			"baseline %d, after %d (growth %d)" % [baseline, after, after - baseline])
 	if after > baseline:
-		# Orphan NODES only (RefCounted cycles won't show here, but stray nodes will).
-		print_orphan_nodes()
+		_report_growth(baseline_census, after_census)
 
 	implementation_section("PRODUCTION SESSION CANARY")
 	# Isolation: the cycles write run.tres + settings.tres and swap the run singletons —
 	# park the real ones and restore after (same discipline as VISUAL LAYERS / E2E).
 	backup_real_save()
-	_backup_settings()
+	backup_real_settings()
 	var real_run : RunState = RunManager.run
 	var real_save_info : RunState = Main.save_info
 	var prev_delay : float = SettingsManager.settings.base_delay
@@ -98,18 +96,20 @@ func _ready() -> void:
 	# state, translation table, static registries) that must not count against the loop.
 	await _session_cycle()
 	await _drain()
-	var session_baseline := _object_count()
+	var session_baseline_census := _object_census()
+	var session_baseline : int = session_baseline_census.total
 
 	for i : int in range(SESSION_CYCLES):
 		await _session_cycle()
 	await _drain()
-	var session_after := _object_count()
+	var session_after_census := _object_census()
+	var session_after : int = session_after_census.total
 	check_impl(session_after <= session_baseline,
 			"OBJECT_COUNT returns to baseline after %d full simulated play sessions" % SESSION_CYCLES,
 			"baseline %d, after %d (growth %d)"
 			% [session_baseline, session_after, session_after - session_baseline])
 	if session_after > session_baseline:
-		print_orphan_nodes()
+		_report_growth(session_baseline_census, session_after_census)
 
 	implementation_section("LEAK SENTINEL")
 	# The sentinel is quiet under the test runner (TestLog._started), so drive tick()
@@ -133,7 +133,7 @@ func _ready() -> void:
 	_sentinel_leaked.clear()
 
 	SettingsManager.settings.base_delay = prev_delay
-	_restore_settings()
+	restore_real_settings()
 	restore_real_save()
 	RunManager.run = real_run
 	Main.save_info = real_save_info
@@ -141,6 +141,37 @@ func _ready() -> void:
 
 func _object_count() -> int:
 	return int(Performance.get_monitor(Performance.OBJECT_COUNT))
+
+## OBJECT_COUNT split by what the engine can actually distinguish, for the failure report below.
+## Nodes and Resources are counted separately by the engine; everything else (plain RefCounted —
+## Tweens, Callables' bound objects, WeakRefs, script instances) is the remainder.
+func _object_census() -> Dictionary:
+	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var resources := int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))
+	var total := _object_count()
+	return {
+		"total": total,
+		"nodes": nodes,
+		"resources": resources,
+		"other": total - nodes - resources,
+		"orphans": int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
+	}
+
+## ⚠ **`print_orphan_nodes()` IS THE WRONG INSTRUMENT FOR THIS CHECK, AND WAS THE STANDING "NEXT
+## THING TO TRY" FOR MONTHS.** Measured 2026-08-07 on a run that FAILED with growth 2: it printed
+## exactly four strays, and all four are the DELIBERATE ones this suite abandons above to prove the
+## canary can see a leak at all. The real growth showed up in none of them — because it is not a
+## Node, so an orphan-node dump cannot contain it however many times it is run.
+##
+## So report the CENSUS instead: which of the three classes the growth actually landed in. That is
+## the fact that narrows the search, and it is one subtraction rather than a hunt.
+func _report_growth(before: Dictionary, after: Dictionary) -> void:
+	TestLog.line("  [leak census] growth by class — total %+d: nodes %+d, resources %+d, other %+d"
+			% [after.total - before.total, after.nodes - before.nodes,
+			   after.resources - before.resources, after.other - before.other], true)
+	TestLog.line("  [leak census] orphan nodes %d -> %d. ⚠ A growth of 0 in `nodes` means "
+			% [before.orphans, after.orphans]
+			+ "print_orphan_nodes() cannot help — the leak is a Resource or a plain RefCounted.", true)
 
 ## Two idle frames so queued deletions/refcount releases settle before counting. Also
 ## prunes the sentinel registry: its per-card WeakRefs are benign growth that would
@@ -357,22 +388,6 @@ func _line_export(max_depth: int) -> Dictionary:
 		nodes.append({"id": i, "pos": Vector2(i * 10, 0), "depth": i,
 				"landmass": 0, "height": 0.5, "biome": -1, "out": outs})
 	return {"start": 0, "end": max_depth, "max_depth": max_depth, "biomes": [], "nodes": nodes}
-
-# ==============================================================================
-# SETTINGS ISOLATION (SettingsManager writes settings.tres on every change)
-# ==============================================================================
-func _backup_settings() -> void:
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
-				ProjectSettings.globalize_path(REAL_SETTINGS_BAK))
-
-func _restore_settings() -> void:
-	if not FileAccess.file_exists(REAL_SETTINGS_BAK):
-		return
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_BAK),
-			ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 
 func _rules_card(skill: CardModifierSkill) -> CardData:
 	var c := CardData.new().with_skill(skill)

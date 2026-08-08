@@ -19,6 +19,7 @@ func _ready() -> void:
 	await run_predicate_tests()
 	await run_scorable_tests()
 	await run_mod_override_tests()
+	await run_end_to_end_scoring_under_mod()
 	finish()
 
 
@@ -230,6 +231,115 @@ func run_mod_override_tests() -> void:
 	remove_child(env)
 	env.free()
 	check(CardEnvironment.CURRENT == null, "removing FakeEnvironment restores CURRENT = null")
+
+# ==============================================================================
+# SECTION 5 (G1): END-TO-END SCORING UNDER AN ACTIVE COMPARATOR MOD
+#
+# ⚠ **SECTION 4 PROVES THE MOD REACHES `PipComparator`. IT DOES NOT PROVE IT REACHES THE SCORE** —
+# and those are different claims with a whole hand-building engine between them. `Scoring` reads
+# ranks and suits through `is_rank_same` / `is_suit_same`, so a mod that rewrites comparison must
+# change WHICH HAND a set of cards forms, not merely what a comparison returns. Nothing asserted
+# that, which is todo.md's G1: *"end-to-end scoring under an active comparator mod"*.
+#
+# ⚠ **EVERY CASE IS PAIRED WITH THE SAME CARDS UNMODDED.** A hand that is five-of-a-kind under the
+# mod proves nothing on its own — the fixture might simply be five of a kind. The control is what
+# makes the mod the cause, and it runs on the SAME CardData instances.
+# ==============================================================================
+func run_end_to_end_scoring_under_mod() -> void:
+	behavior_section("SECTION 5 (G1): SCORING UNDER AN ACTIVE COMPARATOR MOD")
+	var env := FakeEnvironment.new()
+	add_child(env)
+
+	# Five distinct ranks in five distinct suits: no pair, no flush, no straight by default.
+	var hand : Array[CardData] = []
+	for i : int in 5:
+		var c := CardData.new()
+		c.rank = PipRankNumeral.new().with_value(float(2 + i * 2))   # 2,4,6,8,10
+		c.suit = PipSuitTest.with_id(900 + i)
+		hand.append(c)
+
+	# --- control: the same cards with NO mod installed -----------------------------------------
+	var plain := await Scoring.PokerHands.score(hand)
+	var plain_types : Array[Scoring.MELD_TYPE] = plain[0].types if not plain.is_empty() \
+			else [] as Array[Scoring.MELD_TYPE]
+	check(not plain_types.has(Scoring.MELD_TYPE.X_OF_KIND),
+			"G1 control: five distinct ranks are NOT a set without a mod",
+			"got '%s' %s" % [plain[0].name if not plain.is_empty() else "<none>", str(plain_types)])
+	check(not plain_types.has(Scoring.MELD_TYPE.FLUSH),
+			"G1 control: five distinct suits are NOT a flush without a mod")
+
+	# ⚠⚠ **THE MOD DOES NOT REACH HAND BUILDING, AND THIS SECTION PINS THAT AS IT STANDS.**
+	# Measured 2026-08-07, writing this test: a mod returning 0.0 from `on_compare_ranks` ("every
+	# rank is the same") leaves `PokerHands.score` returning High Card, NOT five of a kind.
+	#
+	# It is not a dispatch failure — the hooks fire, as section 4 proves. There are simply TWO
+	# representations of "are these the same?" and only one of them is overridable:
+	#
+	#   * PAIRWISE — `compare_ranks` / `is_rank_same` / `is_suit_same`, which the hooks DO override,
+	#     and which `Scoring.is_flush` calls. This is also the path the placement legality query
+	#     uses, so the hooks are live in the game today.
+	#   * PROFILE — `get_rank_profile(card.rank)` / `get_suit_profile(card.suit)` in
+	#     `_get_hand_profiles_async`, which derive per-card bucket KEYS and never consult a hook.
+	#     All grouping (sets, straights, houses) is built from these buckets.
+	#
+	# So `is_flush` obeys a suit mod while the hand that flush is attached to is grouped without it.
+	# ⚠ **IT IS ENTIRELY LATENT: no shipped card implements either hook** (grep `func
+	# on_compare_ranks` under Cards/ — nothing). The first rules card that says "all ranks count as
+	# the same" will land on this, and it will look like the card doing nothing.
+	#
+	# ⚠ **DELIBERATELY PINNED, NOT ASSERTED AS DESIRED.** Whether a comparator mod SHOULD restructure
+	# hands is a design call the owner has not made (todo.md, "Scoring engine test gaps"). These
+	# checks assert what is true today so the split is visible and any change to it is loud; they are
+	# written so that WIRING grouping through the hooks makes them fail and demand a decision.
+	var spy := SpyCompare.new()
+	var carrier : Array[CardData] = [CardData.new().with_type(spy)]
+	env.card_collections.append(carrier)
+	spy.rank_result = 0.0            # 0 == "these ranks are the same"
+	spy.suit_result = NAN            # suits keep default behaviour
+	var ranked := await Scoring.PokerHands.score(hand)
+	var ranked_types : Array[Scoring.MELD_TYPE] = ranked[0].types if not ranked.is_empty() \
+			else [] as Array[Scoring.MELD_TYPE]
+	check(not ranked_types.has(Scoring.MELD_TYPE.X_OF_KIND),
+			"G1 PINNED: a rank mod does NOT regroup the hand (grouping uses get_rank_profile, "
+			+ "not the pairwise hook) — change this only with an owner ruling",
+			"got '%s' %s" % [ranked[0].name if not ranked.is_empty() else "<none>", str(ranked_types)])
+	check(not ranked.is_empty() and ranked[0].score == plain[0].score,
+			"G1 PINNED: and the score is therefore unchanged by the rank mod",
+			"modded %d vs plain %d"
+			% [ranked[0].score if not ranked.is_empty() else -1, plain[0].score])
+
+	# --- suits: the OTHER half of the split, and the one that DOES honour the mod --------------
+	spy.rank_result = NAN
+	spy.suit_result = 0.0
+	# This is the pairwise path, so the mod lands...
+	check(await Scoring.is_flush(hand),
+			"G1 a suit mod DOES reach Scoring.is_flush (the pairwise path)")
+	# ...while the hand built around it is grouped from suit PROFILE keys and stays unflushed.
+	# ⚠ These two checks are the seam itself, asserted side by side ON THE SAME CARDS so the
+	# disagreement cannot be explained away by a different fixture.
+	var suited := await Scoring.PokerHands.score(hand)
+	var suited_types : Array[Scoring.MELD_TYPE] = suited[0].types if not suited.is_empty() \
+			else [] as Array[Scoring.MELD_TYPE]
+	check(not suited_types.has(Scoring.MELD_TYPE.FLUSH),
+			"G1 PINNED: the SAME cards do NOT score as a flush — is_flush and the scored hand "
+			+ "disagree under one mod, which is the seam this section exists to make visible",
+			"got '%s' %s" % [suited[0].name if not suited.is_empty() else "<none>", str(suited_types)])
+
+	# --- and it must be REVERSIBLE: clearing the mod restores the control result ---------------
+	# ⚠ A cached profile or a static comparator result would keep the modded answer alive for every
+	# later suite, which is the kind of leak a one-way test never sees.
+	env.card_collections.clear()
+	var restored := await Scoring.PokerHands.score(hand)
+	var restored_types : Array[Scoring.MELD_TYPE] = restored[0].types if not restored.is_empty() \
+			else [] as Array[Scoring.MELD_TYPE]
+	check(not restored_types.has(Scoring.MELD_TYPE.X_OF_KIND)
+			and not restored_types.has(Scoring.MELD_TYPE.FLUSH),
+			"G1 removing the mod restores the unmodded hand (no cached comparison survives)",
+			"got '%s' %s" % [restored[0].name if not restored.is_empty() else "<none>",
+					str(restored_types)])
+
+	remove_child(env)
+	env.free()
 
 ## Skill-flavored spy for the spotlit-flag gate.
 class SpySkillCompare extends CardModifierSkill:

@@ -145,11 +145,15 @@ static func restore_real_save() -> void:
 ## values. So park the real file aside for the duration — every write during the suite lands in
 ## a throwaway settings.tres that restore deletes. Pair with snapshot_settings()/
 ## restore_settings_snapshot(), which put the LIVE resource back for later suites in the run.
-## NOTE the deliberately un-obvious name: three older suites (UI PROPS, VISUAL LAYERS, LEAK
-## CANARY) still declare their own `REAL_SETTINGS_PATH`/`REAL_SETTINGS_BAK` pair, and GDScript
-## rejects a child const that shadows a parent's. Renaming here keeps them compiling; they can
-## migrate onto these helpers later (todo.md).
-const SETTINGS_FILE := "user://settings.tres"
+##
+## ⚠ **EVERY SUITE USES THESE NOW** (2026-08-07). UI PROPS, VISUAL LAYERS and LEAK CANARY used to
+## carry their own copy-pasted `REAL_SETTINGS_PATH`/`REAL_SETTINGS_BAK` pair, which forced the
+## awkward `SETTINGS_FILE` name here — GDScript rejects a child const that shadows a parent's. The
+## copies are gone and the const has its obvious name back. **Do not reintroduce a local pair:** the
+## copies hardcoded ONE backup path each (`.testbak`, `.testbak2`, `.testbak3`), so two suites
+## running concurrently could park and restore across each other; `_settings_bak_path()` below
+## derives the name from the suite, which is why it is a function and not a constant.
+const REAL_SETTINGS_PATH := "user://settings.tres"
 
 ## Per-SUITE backup name. Suites that don't await_siblings_except run CONCURRENTLY, so a single
 ## shared backup path would let one suite's park/restore swallow another's.
@@ -160,8 +164,8 @@ func backup_real_settings() -> void:
 	# self-healing: a previously ABORTED run may have left the real file parked in this suite's
 	# backup, so put it back before parking again (else that run's throwaway becomes "real")
 	_move_settings_backup_home()
-	if FileAccess.file_exists(SETTINGS_FILE):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(SETTINGS_FILE),
+	if FileAccess.file_exists(REAL_SETTINGS_PATH):
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
 				ProjectSettings.globalize_path(_settings_bak_path()))
 
 func restore_real_settings() -> void:
@@ -172,10 +176,10 @@ func _move_settings_backup_home() -> void:
 	var bak := _settings_bak_path()
 	if not FileAccess.file_exists(bak):
 		return
-	if FileAccess.file_exists(SETTINGS_FILE):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_FILE))
+	if FileAccess.file_exists(REAL_SETTINGS_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(bak),
-			ProjectSettings.globalize_path(SETTINGS_FILE))
+			ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 
 ## Current values of every knob whose name starts with `prefix`, so a suite can scribble on the
 ## live settings and put them back without naming fields (a hand-listed restore silently leaks

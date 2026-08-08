@@ -53,6 +53,28 @@ func _count_viewers() -> int:
 			n += 1
 	return n
 
+## ⚠ **THE DETAIL LINE FOR AN INTERMITTENT NOBODY HAS CAUGHT.** `repeated show_deck replaces instead
+## of stacking` failed once in four runs (2026-08-06) and did not recur in ~20 consecutive runs on
+## 2026-08-07, so the next occurrence has to carry its own evidence or it costs another twenty runs.
+##
+## What was RULED OUT on 2026-08-07, so it is not re-tried from scratch: "a concurrent suite hijacks
+## the static `DeckViewer._open`". UI VIEWERS is the one UI suite with NO `await_siblings_except`, so
+## it does run beside everything — but the three `show_deck` calls have **no `await` between them**,
+## and GDScript suites can only interleave at an await. Within that frame the sequence is atomic, and
+## a viewer opened by another suite is parented to that suite, not counted here.
+##
+## What that leaves is the state of OUR OWN children, which is what this prints: every DeckViewer
+## under this node with its queued-for-deletion flag, plus who `_open` currently points at.
+func _viewer_detail() -> String:
+	var parts : Array[String] = []
+	for child : Node in get_children():
+		if child is DeckViewer:
+			parts.append("%s(queued=%s)" % [child.name, child.is_queued_for_deletion()])
+	var open_desc := "<null>"
+	if is_instance_valid(DeckViewer._open):
+		open_desc = "%s(mine=%s)" % [DeckViewer._open.name, DeckViewer._open.get_parent() == self]
+	return "live %d | children: [%s] | _open=%s" % [_count_viewers(), ", ".join(parts), open_desc]
+
 func test_deck_viewer_singleton() -> void:
 	var deck: Array[CardData] = [_card()]
 	DeckViewer.show_deck(self, deck)
@@ -60,7 +82,7 @@ func test_deck_viewer_singleton() -> void:
 	DeckViewer.show_deck(self, deck)
 	await get_tree().process_frame
 	check(_count_viewers() == 1, "repeated show_deck replaces instead of stacking",
-			"live viewers: %d" % _count_viewers())
+			_viewer_detail())
 	if is_instance_valid(DeckViewer._open):
 		DeckViewer._open.queue_free()
 	await get_tree().process_frame

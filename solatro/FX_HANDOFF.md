@@ -1407,6 +1407,45 @@ in or out FIRST — run the same build twice — before believing either result.
 upright panel in all three sets came back byte-identical.** So the warning generalizes, and a pixel
 diff of any rotated panel is worth nothing whichever way it comes out.
 
+⚠ **RE-MEASURED 2026-08-07 OVER THREE RUNS, AND "ROTATED HOST" IS THE WRONG FRAME.** Every pair of
+three consecutive runs of an unchanged build, whole set: **18 of 21 `fx_snapshots` panels identical
+in all three pairs.** `05f_ball_rotation` was **stable** in all three, while **`10_light_layer` —
+upright, and never on the noisy list — moved by up to 78834 px (8.1% of the frame)**, far more than
+anything here. So the rule is not "rotated hosts are flaky".
+- **Newly ruled out:** `_push_live`'s `rotation = -parent.global_rotation`, which `fx_snapshot.gd`
+  names as "the only place that can happen". Every CPU-side value the harness prints — host/att/slot
+  rotations, every shader uniform, every probe reading — was **identical** across all three runs, so
+  the divergence is not in game logic at all.
+- Every differing pixel differs by **more than 8/255** (max 195): a different rendered STATE, not
+  edge jitter.
+- **Run B was the outlier for BOTH `02_fire_rotation` and `10_light_layer` while A and C agreed**, so
+  the condition is **per-RUN, not per-panel** — which is what makes a "which panels are cursed" list
+  the wrong model.
+
+✅ **`10_light_layer` FIXED — 78834 px → 0, byte-identical over three runs**
+(`fx_snapshot.gd::_park_cards`). Cause: UNPARKED CARD CLOCKS. That shot's shader side is fully pinned
+(fixed centres and radii, `u_time = SHOT_TIME`), so the light could never vary — what varied were the
+**18 real `ControlCard`s staged under it**, which is also why it was the only panel affected: it is
+the one shot staging real cards instead of `_ghost_for` stand-ins. `_shot()` parks every effect clock
+it builds and says why — real deltas *"would make every run differ"* — while `_shot_light_layer()`
+parked nothing. TWO clocks were live:
+- `CardVisual.delta_floating_anim` drifts and bobs on **`Time.get_ticks_msec()`** — ABSOLUTE wall
+  clock, not delta, and `floating` defaults to true. No fixed-delta stepping can reproduce that; the
+  clock had to leave the shot.
+- **`card_visual.tscn`'s AnimationPlayer is on `autoplay`**, advancing independently of the script,
+  so `set_process(false)` never reached the skinned bone pose. That was the entire residual once
+  `floating` was handled: 78834 px → ~6-31 px → 0.
+
+Re-read by eye after the fix, per the standing rule: crossing beams with the overlap brighter and not
+blown out, all three circle radii, the dim a dark palette colour rather than black, rank glyphs still
+legible under the lights, no straight edge at a beam end. ⚠ The panel is **back in the diff** — it
+should not be on the noisy list.
+- ⚠ **`02_fire_rotation` is NOT explained by this and stays open.** `_shot` does park it, and its
+  A^C diff was exactly **0** while A^B and B^C were both exactly **8248** — two discrete outcomes,
+  not drift, which is a different shape from the light layer's.
+
+Full evidence: the `NOISY` comment in `Tools/snapshot_diff.py`.
+
 ---
 
 ## 2. ✅ FIXED — a lit ball's plume disappeared and came back
@@ -1859,7 +1898,7 @@ owner's, safe housekeeping, and what is closed.**
 |---|---|
 | ⬜ **Three harnesses still use the stand-in** | `fx_snapshot`, `fx_behind` and `fx_cost` feed `star_outline` to a bare `Node2D`. They run in a real scene tree where a `CardVisual` needs none of the editor guards (`test_pixels` does it in ~10 lines), so the swap is mechanical — pin the card's seed and clock the way `_park` does. It would make `fx_behind`'s seam shots the real thing (its "filled host" is a filled polygon today) and delete `star_outline`'s last users. |
 | ⬜ **Two stale snapshot panels** | `00_tendril_count` and `00b_ogee_profile` are still in `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots` from the retired build. They are never rewritten, so they compare identical for ever and pad the count from 18 to 20. Delete them. |
-| ⬜ **THE ROTATED-PANEL NONDETERMINISM IS STILL UNEXPLAINED** | §12. It is not one panel, it is every rotated host in all three harnesses, and the cause the docs carried since that fix (screen-space `fx_bayer(FRAGCOORD.xy)`) is RETIRED — the dither moved onto the FX pixel grid in the simplify pass and the flakiness did not go with it. Pinning `_seed` does not remove it either. It already cost one real optimisation a revert (§1b), so it is worth an hour: two runs of an unchanged build and a diff is the whole experiment. |
+| ⬜ **THE SNAPSHOT NONDETERMINISM IS STILL UNEXPLAINED — but it is NOT "rotated panels"** | §1b/§12, re-measured over THREE runs 2026-08-07. 18 of 21 panels identical across every pair; `05f_ball_rotation` was stable while **upright `10_light_layer` moved 78834 px (8.1% of frame)** and had never been listed as noisy. Ruled out so far: screen-space `fx_bayer` (retired), pinning `_seed`, and now **`_push_live`'s counter-rotation** — every CPU-side value the harness prints was identical across all three runs, so the divergence is not in game logic. Differences exceed 8/255 (max 195), so it is a different rendered STATE, not edge jitter. **Run B was the outlier for two independent panels while A and C agreed ⇒ the condition is per-RUN.** Next lead: this box's GPU sits in two power states (`machine-profiles`), and the 18 stable panels are exactly the ones whose clock the harness parks — so suspect an unparked, still-animating effect being captured on a different frame. |
 | ⬜ **Known limitation** | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
 | ⬜ **Deferred by the owner** | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
 
@@ -1999,9 +2038,13 @@ all (§12). Any "N of N panels identical" claim predating both fixes means nothi
 of dropping it.
 
 ⚠ **FOUR PANELS DIFFER ON UNCHANGED CODE and the tool lists them as `noisy` rather than counting
-them**: the three ROTATED ones (§1b) plus `09_embers` (randomised particles, by design). A clean run
-now reads `0 of 27 comparable panels differ (4 known-noisy skipped, 3 of 3 sets compared)`. Two stale
-retired-build panels still pad `fx_snapshots` (§8c).
+them**: the three ROTATED ones (§1b) plus `09_embers` (randomised particles, by design).
+⚠ **`10_light_layer` was a FIFTH and nobody had noticed** — upright, and the worst of the set at 8.1%
+of the frame. It is now FIXED (§1b) and back in the diff. Its late discovery still matters:
+HANDOFF_spotlight's G3.3 pass had explained that exact panel's difference as the 38x52 art refactor,
+"verified by eye", which a panel moving 78k px between two runs of ONE unchanged build could not
+support — that claim is now re-testable. Two stale retired-build panels still pad `fx_snapshots`
+(§8c).
 
 **For a change that must not alter the picture, `snapshot_diff.py` is the instrument, not your eye.**
 "Judge fire by EYE" is right for a change that is SUPPOSED to look different; an optimisation's only

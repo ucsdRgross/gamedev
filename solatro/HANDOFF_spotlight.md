@@ -66,7 +66,9 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   window open forever and no in-scene watchdog can save it — the script never loads.
 - ⚠ **`--headless --path <solatro> --import` FIRST after adding any `class_name`**, or it resolves as
   a bare `Resource`.
-- ⚠ **The SUITE COUNT is the stable number: 29.** The check total drifts run to run (fuzz suites). A
+- ⚠ **The SUITE COUNT is the stable number: 30** (it was 29 when the entries below were written;
+  the historical `ALL 29 SUITES` lines in the ledger are left as they were recorded). The check total
+  drifts run to run (fuzz suites). A
   drop means a suite failed to LOAD while the banner still says PASSED.
 - ⚠ **The suite FAILS on unexpected engine errors**, read from `user://logs/godot.log`.
   `ENGINE_ERROR_ALLOW` in `Tests/all_tests.gd` is the allowlist — keep it narrow.
@@ -219,6 +221,16 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   exactly. Measured alongside: extra 0 → 41.3 → 90.0 px (`CARD_HEIGHT`) and 65.0 px (`JUMP_ADJUSTED`).
   ⚠ **CAVEAT — the fixture is ONE ROW DEEP per column, so these shots do NOT show the headline case:
   a BURIED card being uncovered.** That still needs a stacked board (a `Next` that drops a stack).
+- ⚠ **G3.3's `10_light_layer` CLAIM IS UNPROVEN — AND IS NOW RE-TESTABLE (2026-08-07).** That panel
+  was NONDETERMINISTIC: three runs of one unchanged build put it at up to **78834 px (8.1% of the
+  frame)** between pairs, so the entry below — which attributes its difference to the 38x52 art
+  refactor and calls the light rig "pixel-for-pixel the same look" — **could not have been
+  established by eye**, because the panel moved that far with no code change at all.
+  ✅ The nondeterminism is FIXED (`fx_snapshot.gd::_park_cards`: the staged cards' floating anim runs
+  on `Time.get_ticks_msec()`, and their bone rig is on autoplay; both are now parked). The panel is
+  byte-identical over three runs and back in `snapshot_diff`. **Re-run G3.3 — it will now give a real
+  answer for this panel.** The other three panels' explanations are unaffected. Evidence: the `NOISY`
+  comment in `Tools/snapshot_diff.py`, FX_HANDOFF §1b, `todo.md`.
 - ✅ **G3.3 RUN (review pass).** All three snapshot sets re-rendered and diffed:
   30 of 34 comparable panels byte-identical (both GLOW panels included); the 4 that differ are all
   explained by COMMITTED intervening work, verified by eye — `10_light_layer` (the 38x52 art
@@ -323,16 +335,36 @@ took.** The clean-cycle check (10 build/frees) passes throughout — only the SE
 (DeckPicker / DeckViewer / full show) grows, so the retention is in the menu or show path.
 ⚠ **RULED OUT — "the count is read before deferred frees flush".** A settle-until-stable drain still
 failed, and draining harder before the BASELINE lowers it and makes the bound stricter. **Reverted; do
-not redo it.** Next thing to try: `print_orphan_nodes()`'s output on a failing run, which it emits.
+not redo it.**
+⚠ **ALSO RULED OUT (2026-08-07) — `print_orphan_nodes()`, which this file named as the next thing to
+try. IT CANNOT WORK.** Run on a genuinely FAILING run it printed exactly four strays, and all four are
+the ones the suite abandons ON PURPOSE before the baseline to prove the canary can see a leak at all.
+**The growth is not a Node**, so an orphan-node dump cannot contain it however often it is run.
+✅ Replaced by `_object_census()` / `_report_growth()` in the suite: on a failure it splits the growth
+across NODE / RESOURCE / other (plain RefCounted) from the engine's own performance monitors and says
+which class it landed in. Verified by forcing the branch. **The class is still unknown** — the next
+failing run reports it with no extra work. Details: `todo.md`.
 
+⚠ **(2026-08-07: did NOT recur in ~20 consecutive runs. "A concurrent suite hijacks the static
+`DeckViewer._open`" is RULED OUT — the three `show_deck` calls have no `await` between them, so the
+sequence is atomic within a frame. The check now prints every DeckViewer under the suite with its
+queued flag plus who `_open` points at, so the next occurrence carries its own evidence.)**
 ⚠ **A SECOND INTERMITTENT: `UI VIEWERS: repeated show_deck replaces instead of stacking`.** Seen once
 in four runs, NOT this stream's. **So "the suite is green" is a per-run statement here** — at least two
 unrelated tests flake and a clean run does not predict the next one.
 
-⚠ **A leaked GLES3 texture at exit** (`1 RID allocations of type 'N5GLES37TextureE'`), cause
-unattributed; the suspect is the glow's baked `GradientTexture1D`. ⚠ **`_scan_engine_errors` reads
-`godot.log` DURING the run, so every exit-time error is invisible to the gate by construction** — that
-blind spot matters more than the one texture.
+✅ **BOTH FIXED 2026-08-07 — and the suspect named here was wrong.** The leaked GLES3 texture was
+**`res://Assets/hoop_prop.png`**, not the glow's `GradientTexture1D` (that ramp is 64x1 = 256 bytes;
+the leak was 36844, which is 96x72 plus its full mipmap chain, to the byte). Cause: `PropVisual`'s
+split half-nodes are parented to CardLayer and handed out unparented, and their only free path was
+`PropLayer._free_visual`'s tween callback — so a torn-down tree orphaned both halves, and each
+half's `prop` backref held the PropVisual, the texture and `fx_attachment.gd` alive. Freed on
+PREDELETE now (`prop_visual.gd`; the general rule is ARCHITECTURE_REVIEW §6). Leaked ObjectDB at
+exit went 14 -> 4, and the 4 that remain are LEAK CANARY's deliberate strays.
+
+The blind spot that hid it is closed too: **`Tools/run_tests.py`** gates the exit-time stream from
+outside the process. ⚠ Note re-reading `godot.log` after exit does NOT work — the engine closes that
+file during the same cleanup that emits these errors. See ARCHITECTURE_REVIEW §7.
 
 ✅ **FIXED (review pass): `_rebuild()` no longer runs on a section change** — a section
 change calls `_refresh_glows()` (re-hangs the glow attachments only); `_dirty`/`_rebuild()` is for
@@ -435,9 +467,9 @@ flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `
 | 2 | **`_refresh_glow()`** | `Tools/spotlight_tool.gd` | ✅ done — section change re-hangs glows only, no `_rebuild()` |
 | 3 | Origin subdivision reachable and tested | `UI/spotlight_origins.gd` | ✅ done — was already reachable via `S8` (claim was false); `assign()`-growth test added |
 | 4 | Tool `spotlight_separation_mode` + covers-nothing | `Tools/spotlight_tool.gd` | ✅ done — opening routes through `PlayArea.row_open_span()`, deepest row skipped |
-| 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | ⚠ OPEN — intermittent; needs `print_orphan_nodes()` off a failing run |
+| 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | ⚠ OPEN — but `print_orphan_nodes()` is RULED OUT (the growth is not a Node; see Open bugs). A per-class census now reports node/resource/other on failure |
 | 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | ⚠ Band kept; count ceiling RESTORED (rest exact, deformed ≤130) and corner bound now in cells. Model itself unfixed — `todo.md` |
-| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ⚠ OPEN — needs an outer wrapper; the suite cannot see errors printed after it exits by construction |
+| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ✅ done — `Tools/run_tests.py` is the outer wrapper. ⚠ It could NOT be done by re-reading `godot.log` (the engine closes it during the same cleanup); it diffs the process streams against `godot.log`. Found and fixed the hoop half-node leak immediately |
 | 8 | **Dirty-check the light push** | `UI/light_layer.gd::_push_lights` | ✅ done — identical uploads skipped at the layer, covering both push paths |
 
 ### ⚠ DO NOT — each of these looks like a cleanup and re-breaks something measured

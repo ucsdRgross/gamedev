@@ -559,6 +559,50 @@ func _shot_embers() -> void:
 ##    feeds it, at every one of the three radii, while the card under it keeps its rank and pips.
 ##  * the beams carry visible grain that is not screen static (`Q98`=b, volumetric from the start);
 ##  * the dim is a dark palette colour, NOT black (`Q79`=a), and uniform rather than a vignette.
+## Take the CLOCK out of a staged board of real cards, so the shot is reproducible.
+##
+## ⚠ **THIS IS THE `_shot()` DISCIPLINE APPLIED TO CARDS.** `_shot` parks every effect clock it
+## builds because "driving it from real frame deltas would make every run differ, and a snapshot that
+## changes on its own cannot be diffed" — the same sentence is true of a `CardVisual`, and until
+## 2026-08-07 nothing applied it, which is why `10_light_layer` moved by up to 78834 px between runs
+## of one unchanged build.
+##
+## ⚠ **ORDER MATTERS, exactly as it does in `_shot`.** `floating` must go FIRST: it is the wall-clock
+## term (`Time.get_ticks_msec()`), and leaving it on means the pose keeps moving under everything
+## else set here. `set_process(false)` must go LAST, or the next frame re-advances what was just
+## pinned.
+##
+## ⚠ It pins a REST pose rather than freezing whatever the cards drifted into — a frozen arbitrary
+## pose is reproducible only if the freeze happens at a reproducible moment, which is the thing that
+## does not hold here. `basis3d`'s rest is `delta_floating_anim`'s own target with x = y = 0.
+func _park_cards(root: Node) -> void:
+	for node : Node in root.get_children():
+		if not (node is ControlCard): continue
+		# `ControlCard.child` rather than a tree walk: the visual is add_child'ed DEFERRED onto the
+		# control, so the tree shape is a timing detail while this reference is the contract.
+		var card : CardVisual = (node as ControlCard).child
+		if not card or not is_instance_valid(card): continue
+		card.floating = false
+		# The drift target with no bob: face the viewer, front side out.
+		card.basis3d = Basis.looking_at(Vector3(0.0, 0.0, -3.5))
+		if card.visual: card.visual.position.y = 0.0
+		# Snap to the anchor instead of easing toward it (`exp(-10 * delta)` is frame dependent, and
+		# two frames leave it visibly short of its slot).
+		if card.control_anchor and is_instance_valid(card.control_anchor):
+			card.global_position = card.get_card_control_center(card.control_anchor)
+		card.rotation_degrees = 0.0
+		# ⚠ **THE BONE RIG IS ON AUTOPLAY AND `set_process(false)` DOES NOT REACH IT.** `card_visual.tscn`
+		# carries an AnimationPlayer with `autoplay`, which advances on its own clock (see the
+		# `_track_fx_outline` comment: "every frame, because the rig's animation is on autoplay"), so
+		# parking only the script left the SKINNED POSE still drifting. That was the whole residual
+		# after `floating` was dealt with: 78834 px -> ~6-31 px -> 0. Seek to a fixed time with
+		# `update = true` so the pose is applied, then pause.
+		var rig := card.get_node_or_null(^"AnimationPlayer") as AnimationPlayer
+		if rig:
+			rig.seek(0.0, true)
+			rig.pause()
+		card.set_process(false)
+
 func _shot_light_layer() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
@@ -587,8 +631,30 @@ func _shot_light_layer() -> void:
 			control.position = Vector2(70.0 + float(col) * 190.0, 130.0 + float(row) * 180.0)
 	# The visuals are added with `call_deferred`, so they do not exist until the next frame — and a
 	# capture taken before that would be the empty board this shot exists to stop being.
+	#
+	# ⚠⚠ **THIS IS WHY `10_light_layer` IS NONDETERMINISTIC, MEASURED 2026-08-07: THE CARD CLOCKS ARE
+	# NEVER PARKED.** Everything about the LIGHT here is pinned — fixed centres, fixed radii,
+	# `u_time = SHOT_TIME` — so the shader cannot vary. The 18 `ControlCard`s under it can, and do:
+	# `CardVisual._process` -> `delta_self_moving_logic` eases with `lerpf(..., 15 * delta)` (its own
+	# comment says "lerp is bad, frame dependent") and `delta_floating_anim` bobs at `6.5 * delta`.
+	# Awaiting exactly two frames captures 18 cards mid-settle at whatever pose two RUN-DEPENDENT
+	# deltas happened to reach — three runs of this unchanged build differed by up to 78834 px, 8.1%
+	# of the frame, with the diff bbox over the CARD GRID and not the beams. `_shot()` above does not
+	# have this problem because it parks every clock it builds (`att.set_process(false)`) for exactly
+	# this reason, and says so.
+	# ⚠ **AND THE REAL TERM IS WALL-CLOCK, NOT DELTA — `delta_floating_anim` READS
+	# `Time.get_ticks_msec()`.** `floating` defaults to TRUE, so all 18 cards drift and bob on
+	# `sin(num + Time.get_ticks_msec() / 2000)`: their `basis3d` and `visual.position.y` are a
+	# function of ABSOLUTE time since engine start. Two runs reach this line at different wall-clock
+	# times (startup, shader compiles), so no amount of parking or fixed-delta stepping can reproduce
+	# the pose — the clock has to be taken out of the shot. That is also exactly WHY this is the only
+	# panel with the problem: it is the one shot staging real `ControlCard`s (owner rule 5, above)
+	# instead of `_ghost_for` stand-ins.
+	# Background, and the still-unexplained `02_fire_rotation` case: the NOISY comment in
+	# `Tools/snapshot_diff.py`, FX_HANDOFF §1b, todo.md.
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_park_cards(holder)
 	var rect := ColorRect.new()
 	rect.size = size
 	var mat := ShaderMaterial.new()

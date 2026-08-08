@@ -49,6 +49,55 @@ SETS = ("fx_snapshots", "prop_art_snapshots", "fx_behind")
 # still unknown — its stated one (screen-space `fx_bayer(FRAGCOORD.xy)`) stopped applying when the
 # dither moved onto the FX pixel grid, and the flakiness did not go with it.
 #
+# Re-measured 2026-08-07, THREE consecutive runs of an unchanged build (A, B, C), every pair diffed
+# across the whole set. 18 of 21 fx_snapshots panels were byte-identical in all three pairs. The
+# three that were not:
+#   02_fire_rotation    A^B  8248   A^C   0   B^C  8248
+#   09_embers           A^B  1015   A^C 983   B^C   142
+#   10_light_layer      A^B 78834   A^C 796   B^C 78362    <-- was never listed, and was the worst
+#
+# ✅ **`10_light_layer` IS FIXED AND IS BACK IN THE DIFF — 78834 px -> 0, byte-identical over three
+# runs.** It had never been recorded as noisy at all despite being the worst panel in the set, and
+# that mattered beyond this file: HANDOFF_spotlight's G3.3 pass explained this exact panel's
+# difference as the 38x52 art refactor, "verified by eye", which a panel moving 78k px between two
+# runs of one unchanged build could not support. **That attribution is now testable again** — re-run
+# G3.3 and the panel either matches or it does not.
+#
+# ⚠ **`05f_ball_rotation` was STABLE in all three runs** despite being listed here since 2026-07-30.
+# Left in the list deliberately: three runs is not enough to prove a flake gone, and removing it
+# risks re-burying the thing it was added for. Worth re-testing over more runs.
+#
+# ⚠ **THE "ROTATED HOST" STORY IS NOT THE WHOLE STORY**, and that pass narrowed it a long way:
+#   * Every CPU-side value the harness prints — host/att/slot rotations, every shader uniform, every
+#     probe measurement — was IDENTICAL across all three runs. The divergence is not in game logic,
+#     and `_push_live`'s `rotation = -parent.global_rotation`, which `fx_snapshot.gd` names as "the
+#     only place that can happen", is therefore RULED OUT.
+#   * Every differing pixel differs by MORE than 8/255 (max delta 195). This is not rasterisation
+#     jitter along an edge; it is content rendering in a different STATE.
+#   * Run B was the outlier for BOTH 02_fire_rotation and 10_light_layer while A and C agreed with
+#     each other, so the condition is PER-RUN, not per-panel.
+#
+# ✅ **ROOT CAUSE, AND THE FIX (`fx_snapshot.gd::_park_cards`): UNPARKED CARD CLOCKS.** That shot's
+# shader side is fully pinned — fixed centres, fixed radii, `u_time = SHOT_TIME` — so the LIGHT
+# cannot vary. What varied was the 18 real `ControlCard`s staged UNDER it, which is also why this was
+# the only panel affected: it is the one shot staging real cards rather than `_ghost_for` stand-ins.
+# `_shot()` parks every effect clock it builds, warning that real deltas "would make every run
+# differ"; `_shot_light_layer()` parked nothing and just awaited two frames. TWO independent clocks
+# were running:
+#   * `CardVisual.delta_floating_anim` drifts and bobs on **`Time.get_ticks_msec()`** — ABSOLUTE
+#     wall clock, not delta. `floating` defaults to true, so every card's `basis3d` and
+#     `visual.position.y` depended on when the run happened to reach the capture. No amount of
+#     fixed-delta stepping can reproduce that; the clock has to leave the shot.
+#   * `card_visual.tscn`'s **AnimationPlayer is on `autoplay`** and advances independently of the
+#     script, so `set_process(false)` does not reach the skinned bone pose. This was the entire
+#     residual once `floating` was handled: 78834 px -> ~6-31 px -> 0.
+# Fix = `floating = false`, pin the rest pose, snap to the anchor, `seek(0, true)` + `pause()` the
+# rig, then `set_process(false)` LAST. Verified: three runs byte-identical, and the panel re-read by
+# eye (crossing beams, three radii, dim not black, glyphs legible under the lights).
+#   ⚠ `02_fire_rotation` is NOT explained by this and is still open — `_shot` DOES park it, and its
+#   A^C was exactly 0 while A^B and B^C were both exactly 8248 (two discrete outcomes, not drift).
+#   It reappeared at 5159/10386/10884 in a later three-run batch, so it is genuinely intermittent.
+#
 # ⚠ ADDING A NAME HERE IS GIVING UP ON DIFFING THAT PANEL. Do it only with two runs of an UNCHANGED
 # build to point at, as above.
 NOISY = ("02_fire_rotation.png", "05f_ball_rotation.png", "behind_prop_turned.png",

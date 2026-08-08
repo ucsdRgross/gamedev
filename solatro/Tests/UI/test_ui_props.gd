@@ -27,9 +27,6 @@ const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 ## TestLog.speed_base_delay for the whole suite, so real completions are far quicker than this).
 const WATCHDOG_SECS := 10.0
 
-const REAL_SETTINGS_PATH := "user://settings.tres"
-const REAL_SETTINGS_BAK := "user://settings.tres.testbak"
-
 func suite_name() -> String:
 	return "UI PROPS"
 
@@ -38,7 +35,7 @@ func _ready() -> void:
 	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["VISUAL LAYERS", "E2E RUN", "LEAK CANARY"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
-	_backup_settings()
+	backup_real_settings()
 	var prev_delay := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("SLOT GEOMETRY")
@@ -62,26 +59,8 @@ func _ready() -> void:
 	await test_game_view_submit_with_props()
 	await test_all_kinds_live_in_game_view()
 	SettingsManager.settings.base_delay = prev_delay
-	_restore_settings()
+	restore_real_settings()
 	finish()
-
-# ==============================================================================
-# SETTINGS ISOLATION — SettingsManager writes settings.tres on EVERY change, so the
-# suite's speed knob must never clobber the player's file (same pattern as
-# backup_real_save for run.tres).
-# ==============================================================================
-func _backup_settings() -> void:
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
-				ProjectSettings.globalize_path(REAL_SETTINGS_BAK))
-
-func _restore_settings() -> void:
-	if not FileAccess.file_exists(REAL_SETTINGS_BAK):
-		return
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_BAK),
-			ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 
 # ==============================================================================
 # FIXTURE — a bare Game (one upper zone of one-card columns, exactly like
@@ -1101,6 +1080,29 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 	c.stage = CardData.Stage.PLAY
 	return c
 
+## ⚠ **GAP-001's REAL FINDING, AS A CHECK OF ITS OWN: NOTHING ASSERTED THAT A FULL-WIDTH BOARD FITS
+## THE WINDOW.** The 40x54 card pushed a 7-column board 35 px past a 1152-px viewport, and the way
+## that surfaced was a FIRE PROP being invisible — a prop-visibility check reporting a layout fact,
+## three steps from the cause. The board had been sitting on exactly zero margin before that change,
+## so the outline did not introduce the problem, it consumed the last of a margin nobody was watching.
+##
+## ⚠ Measured through `slot_center_global`, which is the board's OWN slot math and what every prop
+## anchors to — NOT a re-derived `columns * (width + separation)` here. Two copies of that formula is
+## the seam this repo keeps getting caught by: a copy would keep passing while the real board moved.
+##
+## Reports the signed margin either way, so a run says how much room is left rather than only
+## flagging the crossing — zero margin is the condition worth seeing BEFORE it goes negative.
+func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void:
+	var half := CardVisual.card_size_play.x * 0.5
+	var left := pa.slot_center_global(Vector3i(0, 0, 0)).x - half
+	var right := pa.slot_center_global(Vector3i(0, columns - 1, 0)).x + half
+	var view_width := pa.get_viewport_rect().size.x
+	var margin := minf(left, view_width - right)
+	check(right <= view_width and left >= 0.0,
+			"a full-width board fits the window (%s)" % label,
+			"%d columns span x %.1f..%.1f in a %.1f px viewport — margin %.1f px"
+			% [columns, left, right, view_width, margin])
+
 func test_all_kinds_live_in_game_view() -> void:
 	backup_real_save()
 	var prev_run : RunState = RunManager.run
@@ -1151,6 +1153,9 @@ func test_all_kinds_live_in_game_view() -> void:
 	var pa := view.play_area
 	pa.set_card_zones()
 	await settle(pa)
+	# The board GAP-001 was measured on. Checked here rather than in a layout suite because this is
+	# the widest board the suite builds, and the overflow is a property of the board, not of a prop.
+	_check_board_fits_window(pa, plan.size(), "the 7-column all-kinds board")
 	var result := Scoring.Result.new()
 	result.meld = [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]
 	var finished : Array[bool] = [false]

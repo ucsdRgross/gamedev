@@ -383,6 +383,10 @@ that instrument reported two rejected builds as successes.
     `FxRequest.reach` and in FX_HANDOFF §1. Then `fx_fbm` at one octave. Only then features.
 - **⬜ Still unmeasured: 50 burning cards in the DECK VIEWER**, the densest screen in the game. The
   bench takes a `HOSTS` constant; raise it and re-run.
+- **⬜ Still unmeasured: the CARD LAYER ITSELF** — ~390 individually-materialled skinned polygons and
+  78 autoplaying rigs on a full board, which no instrument in this repo can see. The bench that would
+  have to exist, and why every estimate about it is unfounded until it does, is
+  [PERFORMANCE.md](PERFORMANCE.md) §4. **The GLOW is unpriced too** (§2c).
 
 ### 6.4 Deferred by design
 

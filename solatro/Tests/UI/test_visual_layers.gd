@@ -32,9 +32,6 @@ const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 
 const WATCHDOG_SECS := 10.0
 
-const REAL_SETTINGS_PATH := "user://settings.tres"
-const REAL_SETTINGS_BAK := "user://settings.tres.testbak2"
-
 func suite_name() -> String:
 	return "VISUAL LAYERS"
 
@@ -43,7 +40,7 @@ func _ready() -> void:
 	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["E2E RUN", "LEAK CANARY"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
-	_backup_settings()
+	backup_real_settings()
 	var prev_delay := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("STRUCTURAL ORDER (no z_index anywhere)")
@@ -67,24 +64,8 @@ func _ready() -> void:
 	await test_the_reveal_opens_a_row_and_moves_the_slots_below_it()
 	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
 	SettingsManager.settings.base_delay = prev_delay
-	_restore_settings()
+	restore_real_settings()
 	finish()
-
-# ==============================================================================
-# SETTINGS ISOLATION (SettingsManager writes settings.tres on every change)
-# ==============================================================================
-func _backup_settings() -> void:
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
-				ProjectSettings.globalize_path(REAL_SETTINGS_BAK))
-
-func _restore_settings() -> void:
-	if not FileAccess.file_exists(REAL_SETTINGS_BAK):
-		return
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_BAK),
-			ProjectSettings.globalize_path(REAL_SETTINGS_PATH))
 
 # ==============================================================================
 # THE REUSABLE DRAW-ORDER DUMPER
@@ -1311,7 +1292,6 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 	pl._visuals.erase(prop)
 	if is_instance_valid(vis): vis.queue_free()
 	await _teardown_view(view)
-
 
 ## **DEAL UNTIL A COLUMN IS ACTUALLY STACKED — WITHOUT THIS, S16 CANNOT BE TESTED AT ALL.**
 ##

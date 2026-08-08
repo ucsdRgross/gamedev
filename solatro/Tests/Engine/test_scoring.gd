@@ -41,6 +41,9 @@ func _ready() -> void:
 	await run_chaos_tests()
 	await run_subhand_structure_tests()
 	await run_meld_integrity_tests()
+	run_score_model_table()
+	run_loc_name_table()
+	run_compare_results_chain()
 	await run_leaderboard()
 	finish()
 
@@ -816,6 +819,228 @@ func run_meld_integrity_tests() -> void:
 	check(not has_dup_instances(rt6.meld), "T6 overlapping multi-meld hand returns no duplicated card instance", \
 			"%s meld=%d" % [rt6.name, rt6.meld.size()])
 
+
+# ==============================================================================
+# G3/G4/G5 — THE THREE UNIT-LEVEL GAPS (todo.md "Scoring engine test gaps")
+#
+# ⚠ **EVERYTHING ABOVE REACHES THESE THREE THROUGH `PokerHands.score`**, which picks a hand first.
+# That is the right way to test what a hand PAYS, and it is why these gaps survived: a scoring rule
+# that only fires for a hand the picker never chooses is untested, and a picker that never builds
+# the losing candidate hides an ordering bug. Each section below calls the unit DIRECTLY, so the
+# input is chosen rather than discovered.
+#
+# ⚠ **THESE ASSERT THE DOCUMENTED CONTRACT, NOT THE FORMULA.** Re-deriving `n * (n - 1)` in the test
+# would pass for any implementation that contains the same typo as the code — the seam this repo
+# keeps getting caught by. Rows are the worked values the class comments state (`house_base` s=1 ->
+# 12, s=5 -> 450), and the properties are the ones prose promises.
+# ==============================================================================
+func run_score_model_table() -> void:
+	implementation_section("G3: ScoreModel DIRECT TABLE (no picker in the loop)")
+	var SM := Scoring.ScoreModel
+
+	# --- base_per_copy: one sub-hand's structural base, suits and copies ignored --------------
+	# X_OF_KIND is n*(n-1); the doc's own worked figures are the gate.
+	for row : Array in [[2, 2], [3, 6], [4, 12], [5, 20]]:
+		var n : int = row[0]
+		var want : int = row[1]
+		var got := SM.base_per_copy([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], n)
+		check(got == want, "G3 base_per_copy X_OF_KIND n=%d is %d" % [n, want], "got %d" % got)
+	check(SM.base_per_copy([Scoring.MELD_TYPE.FLUSH] as Array[Scoring.MELD_TYPE], 5) == 10,
+			"G3 base_per_copy pure FLUSH n=5 is 2n = 10")
+	check(SM.base_per_copy([Scoring.MELD_TYPE.HIGH_CARD] as Array[Scoring.MELD_TYPE], 1) == 1,
+			"G3 base_per_copy HIGH_CARD is 1")
+	# ⚠ SC7: FULL_HOUSE reads n as 5*s. n=5 -> s=1 -> 12, n=25 -> s=5 -> 450, both stated in the
+	# house_base docstring. A non-multiple of 5 floors rather than erroring — pinned so a future
+	# "helpful" round-up is a failure and not a silent rescore.
+	check(SM.base_per_copy([Scoring.MELD_TYPE.FULL_HOUSE] as Array[Scoring.MELD_TYPE], 5) == 12,
+			"G3 base_per_copy FULL_HOUSE n=5 is house_base(1) = 12")
+	check(SM.base_per_copy([Scoring.MELD_TYPE.FULL_HOUSE] as Array[Scoring.MELD_TYPE], 25) == 450,
+			"G3 base_per_copy FULL_HOUSE n=25 is house_base(5) = 450")
+	check(SM.base_per_copy([Scoring.MELD_TYPE.FULL_HOUSE] as Array[Scoring.MELD_TYPE], 9)
+			== SM.house_base(1),
+			"G3 SC7 FULL_HOUSE n=9 FLOORS to s=1 rather than rounding up")
+	# Precedence: a types array carrying several structures resolves in the order the code checks.
+	check(SM.base_per_copy([Scoring.MELD_TYPE.FULL_HOUSE, Scoring.MELD_TYPE.X_OF_KIND]
+			as Array[Scoring.MELD_TYPE], 5) == 12,
+			"G3 FULL_HOUSE outranks X_OF_KIND when both are present")
+
+	# --- copy_escalation: sets ramp from the 3rd copy, everything else from the 2nd ------------
+	check(SM.copy_escalation([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], 1) == 1.0
+			and SM.copy_escalation([Scoring.MELD_TYPE.STRAIGHT] as Array[Scoring.MELD_TYPE], 1) == 1.0,
+			"G3 copy_escalation m=1 is 1.0 for every type")
+	check(SM.copy_escalation([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], 2) == 1.0,
+			"G3 copy_escalation SETS do not ramp on the 2nd copy")
+	check(SM.copy_escalation([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], 3) == 1.5,
+			"G3 copy_escalation SETS ramp from the 3rd copy")
+	check(SM.copy_escalation([Scoring.MELD_TYPE.STRAIGHT] as Array[Scoring.MELD_TYPE], 2) == 1.5,
+			"G3 copy_escalation NON-sets ramp from the 2nd copy")
+
+	# --- straight_len_esc: stated as a property, because it reads the live wrap span ------------
+	# ⚠ NOT a hardcoded number: get_wrap_top_value() is content-driven, so a table would pin the
+	# deck rather than the rule. n <= W must not escalate at all; 2W must be one full ESC_STEP.
+	var w := PipComparator.get_wrap_top_value()
+	check(SM.straight_len_esc(int(w)) == 1.0,
+			"G3 straight_len_esc does not escalate at n = wrap span (W=%d)" % int(w))
+	check(is_equal_approx(SM.straight_len_esc(int(w * 2)), 1.0 + SM.ESC_STEP),
+			"G3 straight_len_esc at n = 2W is exactly one ESC_STEP",
+			"got %f" % SM.straight_len_esc(int(w * 2)))
+
+	# --- final_score: the branch table, each row picked to reach ONE branch --------------------
+	var xk := [Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE]
+	check(SM.final_score(xk, 1, 2) == 2, "G3 final_score single pair is 2")
+	check(SM.final_score(xk, 3, 2) == 9,
+			"G3 final_score 3x pair is base 2 * m 3 * esc 1.5 = 9",
+			"got %d" % SM.final_score(xk, 3, 2))
+	# Pure flush short-circuits BEFORE escalation: m * base, flat.
+	var pure_flush := [Scoring.MELD_TYPE.FLUSH] as Array[Scoring.MELD_TYPE]
+	check(SM.final_score(pure_flush, 3, 5) == 30,
+			"G3 final_score pure FLUSH is m * base with NO escalation",
+			"got %d" % SM.final_score(pure_flush, 3, 5))
+	# ALL_SAME_SUIT doubles the escalated total.
+	var full_flush := [Scoring.MELD_TYPE.X_OF_KIND, Scoring.MELD_TYPE.FLUSH,
+			Scoring.MELD_TYPE.ALL_SAME_SUIT] as Array[Scoring.MELD_TYPE]
+	check(SM.final_score(full_flush, 1, 5) == 40,
+			"G3 final_score ALL_SAME_SUIT doubles (20 -> 40)",
+			"got %d" % SM.final_score(full_flush, 1, 5))
+	# Multi-flush takes the BETTER of escalated-plain and additive base*MULT per copy.
+	var multi_flush := [Scoring.MELD_TYPE.X_OF_KIND, Scoring.MELD_TYPE.FLUSH,
+			Scoring.MELD_TYPE.MULTI] as Array[Scoring.MELD_TYPE]
+	check(SM.final_score(multi_flush, 2, 2) == 8,
+			"G3 final_score MULTI-FLUSH takes max(plain 4, additive 8) = 8",
+			"got %d" % SM.final_score(multi_flush, 2, 2))
+	# ⚠ The max() matters in BOTH directions — at high m the escalated plain wins, and a test that
+	# only ever exercised the additive side would not notice the branch being replaced by it.
+	check(SM.final_score(multi_flush, 6, 5)
+			== maxi(int(SM.base_per_copy(multi_flush, 5) * 6 * SM.copy_escalation(multi_flush, 6)),
+					6 * SM.base_per_copy(multi_flush, 5) * SM.MULTI_FLUSH_COPY_MULT),
+			"G3 final_score MULTI-FLUSH keeps the escalated side when it is the larger")
+
+## ⚠ **A NAME TABLE CANNOT ASSERT ENGLISH.** Every string here comes from
+## `TRANSLATION.find` + `Locale/localization.csv`, so pinning "Two Pair" would fail the moment the
+## project is translated, and asserting `== TRANSLATION.find(KEY)` just restates the implementation.
+## So this asserts the two things that are actually the CONTRACT: which BRANCH a shape lands in
+## (by requiring shapes that must read differently to produce different strings) and the SIZE-SUFFIX
+## rule, which is arithmetic the locale does not own.
+func run_loc_name_table() -> void:
+	behavior_section("G4: get_loc_name BRANCH TABLE")
+	var T := Scoring.MELD_TYPE
+
+	# Every row is a shape the player must be able to tell apart on the scoreboard.
+	var shapes : Array = [
+		["pair",            [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        1, 2],
+		["trips",           [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        1, 3],
+		["quads",           [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        1, 4],
+		["five of a kind",  [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        1, 5],
+		["two pair",        [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        2, 2],
+		["3x pair",         [T.X_OF_KIND] as Array[Scoring.MELD_TYPE],                        3, 2],
+		["straight",        [T.STRAIGHT] as Array[Scoring.MELD_TYPE],                         1, 5],
+		["flush",           [T.FLUSH] as Array[Scoring.MELD_TYPE],                            1, 5],
+		["full house",      [T.FULL_HOUSE] as Array[Scoring.MELD_TYPE],                       1, 5],
+		["straight flush",  [T.STRAIGHT, T.FLUSH, T.ALL_SAME_SUIT] as Array[Scoring.MELD_TYPE], 1, 5],
+		["flush house",     [T.FULL_HOUSE, T.FLUSH, T.ALL_SAME_SUIT] as Array[Scoring.MELD_TYPE], 1, 5],
+		["flush five",      [T.X_OF_KIND, T.FLUSH, T.ALL_SAME_SUIT] as Array[Scoring.MELD_TYPE],  1, 5],
+		["high card",       [T.HIGH_CARD] as Array[Scoring.MELD_TYPE],                        1, 1],
+	]
+	var seen : Dictionary[String, String] = {}
+	for row : Array in shapes:
+		var label : String = row[0]
+		var shape_types : Array[Scoring.MELD_TYPE] = row[1]
+		var shape_m : int = row[2]
+		var shape_n : int = row[3]
+		var name := Scoring.get_loc_name(shape_types, shape_m, shape_n)
+		check(not name.is_empty(), "G4 %s produces a name" % label)
+		if seen.has(name):
+			check(false, "G4 %s has its own name" % label,
+					"collides with '%s' — both render as '%s'" % [seen[name], name])
+		else:
+			check(true, "G4 %s has its own name (%s)" % [label, name])
+			seen[name] = label
+
+	# --- the size-suffix rule, which is arithmetic rather than vocabulary ---------------------
+	# A plain single shows its size ONLY above the 5-card base; a straight flush likewise.
+	var straight := [T.STRAIGHT] as Array[Scoring.MELD_TYPE]
+	check(not Scoring.get_loc_name(straight, 1, 5).contains("(5)"),
+			"G4 a 5-card straight carries NO size suffix")
+	check(Scoring.get_loc_name(straight, 1, 7).contains("(7)"),
+			"G4 a 7-card straight carries its size",
+			Scoring.get_loc_name(straight, 1, 7))
+	var sflush := [T.STRAIGHT, T.FLUSH, T.ALL_SAME_SUIT] as Array[Scoring.MELD_TYPE]
+	check(not Scoring.get_loc_name(sflush, 1, 5).contains("(5)"),
+			"G4 a 5-card straight flush carries NO size suffix")
+	check(Scoring.get_loc_name(sflush, 1, 6).contains("(6)"),
+			"G4 a 6-card straight flush carries its size",
+			Scoring.get_loc_name(sflush, 1, 6))
+	# ⚠ TWO PAIR is a SPECIAL CASE with three conditions (set, n==2, m==2, not flush). Adding a
+	# flush must leave it, or a two-pair flush silently reads as plain two pair.
+	var xk := [T.X_OF_KIND] as Array[Scoring.MELD_TYPE]
+	var xk_flush := [T.X_OF_KIND, T.FLUSH] as Array[Scoring.MELD_TYPE]
+	check(Scoring.get_loc_name(xk, 2, 2) != Scoring.get_loc_name(xk_flush, 2, 2),
+			"G4 a FLUSHED two pair does not borrow the plain two-pair name",
+			"%s vs %s" % [Scoring.get_loc_name(xk, 2, 2), Scoring.get_loc_name(xk_flush, 2, 2)])
+	# Copy count must reach the name: 3x pair and 4x pair are different classes (§15a).
+	check(Scoring.get_loc_name(xk, 3, 2) != Scoring.get_loc_name(xk, 4, 2),
+			"G4 copy count reaches the name (3x pair != 4x pair)")
+
+## ⚠ **THE SORT IS `sort_custom`, WHICH GODOT DOES NOT GUARANTEE TO BE STABLE** — that is stated on
+## the function itself and is exactly why every tier is explicit. So each tier is checked in
+## ISOLATION, with the tiers ABOVE it held equal; a tier that never gets a case where it is the
+## deciding one is a tier the suite cannot claim to cover.
+func run_compare_results_chain() -> void:
+	implementation_section("G5: _compare_results FULL ORDERING CHAIN")
+	var T := Scoring.MELD_TYPE
+
+	var one := [m_card(5, 1)] as Array[CardData]
+	var two := [m_card(5, 1), m_card(6, 1)] as Array[CardData]
+
+	# Tier 1 — score decides, and outranks every later tier (here it contradicts meld size).
+	var lo_big := Scoring.Result.create("lo", two, 10, 9.0, [] as Array[Scoring.MELD_TYPE])
+	var hi_small := Scoring.Result.create("hi", one, 20, 1.0, [] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(hi_small, lo_big) and not Scoring.PokerHands._compare_results(lo_big, hi_small),
+			"G5 tier 1: higher score wins even with fewer cards and a worse high card")
+
+	# Tier 2 — equal score, more cards scored wins.
+	var same_a := Scoring.Result.create("a", two, 10, 1.0, [] as Array[Scoring.MELD_TYPE])
+	var same_b := Scoring.Result.create("b", one, 10, 9.0, [] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(same_a, same_b) and not Scoring.PokerHands._compare_results(same_b, same_a),
+			"G5 tier 2: on equal score, more cards scored wins over a better high card")
+
+	# Tier 3 — equal score AND size, high card decides.
+	var hc_hi := Scoring.Result.create("hi", two, 10, 9.0, [] as Array[Scoring.MELD_TYPE])
+	var hc_lo := Scoring.Result.create("lo", two, 10, 2.0, [] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(hc_hi, hc_lo) and not Scoring.PokerHands._compare_results(hc_lo, hc_hi),
+			"G5 tier 3: on equal score and size, the higher tie-breaker card wins")
+
+	# Tier 4 — one unified structure beats many copies worth the same.
+	var unified := Scoring.Result.create("one", two, 10, 5.0, [] as Array[Scoring.MELD_TYPE])
+	var copies := Scoring.Result.create("many", two, 10, 5.0, [T.MULTI] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(unified, copies) and not Scoring.PokerHands._compare_results(copies, unified),
+			"G5 tier 4: a single unified structure beats an equal-scoring MULTI")
+
+	# Tier 5 — flush label preferred, and ONLY once everything above ties.
+	var flushed := Scoring.Result.create("f", two, 10, 5.0, [T.FLUSH] as Array[Scoring.MELD_TYPE])
+	var plain := Scoring.Result.create("p", two, 10, 5.0, [] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(flushed, plain) and not Scoring.PokerHands._compare_results(plain, flushed),
+			"G5 tier 5: on a full tie, the flush label is preferred")
+	# ⚠ Tier 4 must OUTRANK tier 5 — a MULTI flush must still lose to a unified non-flush, or the
+	# preference for one structure is quietly reversed by adding a suit.
+	var multi_flush := Scoring.Result.create("mf", two, 10, 5.0,
+			[T.MULTI, T.FLUSH] as Array[Scoring.MELD_TYPE])
+	check(Scoring.PokerHands._compare_results(unified, multi_flush) and not Scoring.PokerHands._compare_results(multi_flush, unified),
+			"G5 tier 4 outranks tier 5: unified non-flush beats a MULTI flush")
+
+	# Total-order sanity — irreflexive, and a full duplicate is not "less than" itself either way.
+	# A comparator that returns true for equals makes sort_custom's result input-order dependent.
+	var twin_a := Scoring.Result.create("t", two, 10, 5.0, [T.FLUSH] as Array[Scoring.MELD_TYPE])
+	var twin_b := Scoring.Result.create("t", two, 10, 5.0, [T.FLUSH] as Array[Scoring.MELD_TYPE])
+	check(not Scoring.PokerHands._compare_results(twin_a, twin_a), "G5 the comparator is irreflexive")
+	check(not Scoring.PokerHands._compare_results(twin_a, twin_b) and not Scoring.PokerHands._compare_results(twin_b, twin_a),
+			"G5 fully equal results compare equal in BOTH directions (no order dependence)")
+
+	# And the chain end to end: a shuffled set sorts into exactly the tier order above.
+	var deck : Array[Scoring.Result] = [plain, hi_small, same_a, hc_lo, unified, flushed]
+	deck.sort_custom(Scoring.PokerHands._compare_results)
+	check(deck[0] == hi_small, "G5 the full chain sorts the top score first",
+			"got '%s'" % deck[0].name)
 
 # ==============================================================================
 # SECTION 8: COMBINED SELF-CHECKING LEADERBOARD

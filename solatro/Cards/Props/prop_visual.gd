@@ -277,6 +277,28 @@ func _draw_back(_into: CanvasItem) -> void:
 func _draw_front(_into: CanvasItem) -> void:
 	pass
 
+## ⚠ **THE HALVES ARE NOT THIS NODE'S CHILDREN, SO NOTHING ELSE FREES THEM WITH IT.** They are
+## parented to CardLayer (draw order is structural — LAYERING.md), and `ensure_back`/`ensure_front`
+## below hand them out UNPARENTED, so between creation and PropLayer's `add_child` they are in no
+## tree at all. Their only other free path is `PropLayer._free_visual`, which runs from a tween
+## callback — so every way a prop dies WITHOUT that tween (a torn-down tree at the end of a run, a
+## cancelled exit) left both halves orphaned, holding `prop` and through it the whole PropVisual,
+## its `hoop_prop.png` texture and its FxAttachment script.
+##
+## Measured 2026-08-07: that is exactly the suite's exit-time leak — 4 orphaned Node2Ds with empty
+## node paths, `Texture with GL ID of 29: leaked 36844 bytes` (96x72 plus its mipmap chain, to the
+## byte) and `res://Assets/hoop_prop.png` + `res://UI/Fx/fx_attachment.gd` still in use at exit.
+## ⚠ It was invisible for as long as it existed because `all_tests.gd::_scan_engine_errors` runs
+## before `quit()` and the engine closes `godot.log` during the same cleanup that reports it;
+## `Tools/run_tests.py` is what made it observable.
+##
+## PREDELETE rather than `_exit_tree`: the halves are not children, so this node leaving the tree
+## says nothing about them, while being deleted always does — whichever path did the deleting.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for half : Node2D in [back_node, front_node]:
+			if half and is_instance_valid(half): half.queue_free()
+
 ## Lazily build the back/front half nodes. PropLayer owns their parent + transform.
 func ensure_back() -> Node2D:
 	if not has_back_half():

@@ -1210,21 +1210,44 @@ re-enable it); `enable_board_focus()` on dismissal.
   test-only leaks do not matter; production coverage is what counts.
 - Anywhere a modifier/status is held WITHOUT its card, the weakref lets the card die
   early — such a holder must keep the CardData itself.
+- ⚠ **A NODE WHOSE OWNER IS NOT ITS PARENT MUST BE FREED FROM THE OWNER'S `NOTIFICATION_PREDELETE`,
+  NOT FROM A TWEEN CALLBACK.** `PropVisual`'s split halves (`back_node`/`front_node`, the hoop) are
+  parented to **CardLayer** because draw order is structural (LAYERING.md), and `ensure_back()` /
+  `ensure_front()` hand them out **unparented**. Their only free path used to be
+  `PropLayer._free_visual`, which runs from the exit tween — so every way a prop died without that
+  tween (a torn-down tree, a cancelled exit) orphaned both halves, and each half's `prop` backref
+  then held the whole PropVisual, its texture and its FxAttachment alive.
+  Fixed 2026-08-07 in `prop_visual.gd::_notification`. ⚠ **The general rule is the point:** if a node
+  is created by X but parented to Y, tree teardown frees it only while it is actually in the tree,
+  and X must free it on PREDELETE — `_exit_tree` is the wrong hook, because X leaving the tree says
+  nothing about a node that was never X's child.
 
 ---
 
 ## 7. TESTING
 
-Run: `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
+Run: `py solatro/Tools/run_tests.py` (wrapper, preferred — see below) or
+`Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
 (changed: the PIXELS suite renders real effects and asserts on the image, and a
 dummy renderer cannot compile a shader — headless it FAILS with an explanation rather than
 skipping, per the owner's rule that tests must run properly rather than be skipped). Exit code
 = failure count; the bar is ALL suites green (count the run's own banner —
 PATIENCE, FX ATTACHMENT and PIXELS joined, and all run unordered like the other engine suites).
-Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** Never
-run headless while the owner's editor has the project open (see START_HERE.md).
-Environment traps (stale class cache, frame_post_draw, headless window size):
-**HEADLESS_TESTING.md**.
+Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** ⚠ **The SUITE
+count is the stable number and it is 30**; a drop means a suite failed to LOAD (a parse error in one
+suite still lets the others report "PASSED"). Never run headless while the owner's editor has the
+project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw, headless
+window size): **HEADLESS_TESTING.md**.
+
+⚠ **TWO GATES, AND THE SUITE CAN ONLY BE ONE OF THEM.** `all_tests.gd::_scan_engine_errors` fails the
+run on unexpected engine errors, read from `user://logs/godot.log` — but it runs inside `_ready`,
+BEFORE `get_tree().quit()`, so **everything the engine prints while tearing down is invisible to it
+by construction**, and no in-engine check can ever fix that (by then every GDScript object is gone).
+⚠ Re-reading `godot.log` after exit does not work either: the engine CLOSES that file during the
+same cleanup that emits those errors. `Tools/run_tests.py` is the outer gate — it scans the captured
+stdout+stderr (teardown errors are split across both) for error lines **absent from `godot.log`**,
+which is definitionally what the in-run gate could not see, and parses the allowlist out of
+`all_tests.gd` rather than restating it. Added 2026-08-07; it found a real leak on its first run.
 
 Conventions (formerly UNIT_TESTS_PLAN):
 - Every suite extends `Tests/Support/test_base.gd` (`SolatroTest`); non-freezing

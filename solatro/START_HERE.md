@@ -13,6 +13,7 @@ changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the tempor
 | [VFX.md](VFX.md) | **Read FIRST for any fire / juggling / prop-art / outline / FX-shader work.** The map, the runbook, the backlog and the known bugs; the rules themselves are ARCHITECTURE_REVIEW §4g/§4h/§4j. |
 | [FX_HANDOFF.md](FX_HANDOFF.md) | The fire/FX-performance stream. §0d.10 prices every remaining lever and lists the things that look like levers and measure as none. |
 | [HANDOFF_spotlight.md](HANDOFF_spotlight.md) | The spotlight mechanic + visuals: status ledger, open bugs, what is still owed. |
+| [PERFORMANCE.md](PERFORMANCE.md) | The optimisation survey — the measured baseline, what each instrument is blind to, every angle with an honest price, and the ⛔ list. A map of angles, not an open task. |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no `z_index`). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps. **Read before debugging a "hanging" test.** |
 | [todo.md](todo.md) | Open backlog — the single place open items live. |
@@ -130,12 +131,19 @@ Binary paths and hardware differ per computer — see `../.claude/memory/machine
 **console** variant of the Godot exe is the one whose stdout can be redirected to a file, and it
 must sit in the SAME folder as the main exe, which it launches by name.
 
-- **Full suite:** `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
+- **Full suite:** `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py` — the preferred entry
+  point. It runs the suite windowed with a kill-on-timeout AND gates the exit-time engine errors the
+  suite cannot see itself (`all_tests.gd`'s own scan runs before `quit()`, and the engine closes
+  `godot.log` during the same cleanup that emits them, so neither the suite nor a naive re-read of
+  that log can ever catch them — ARCHITECTURE_REVIEW §7). Exit code = suite failures + exit-time
+  errors.
+  The raw form is `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
   (the PIXELS suite asserts on rendered pixels; headless it fails loudly instead of skipping —
-  HEADLESS_TESTING.md §0). Exit code = failure count. Logs:
+  HEADLESS_TESTING.md §0). Logs:
   `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`. Run it yourself whenever the owner's
-  editor is closed. The check total drifts between runs — judge by the suite count and the failure
-  set.
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (30) and the
+  failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
+  PASSED.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`
   in the same command.** A parse error in `Tests/Support/test_base.gd` does not fail the run — it
   hangs FOREVER (every suite degrades to plain `Node` and the sibling-waiters never finish). There
