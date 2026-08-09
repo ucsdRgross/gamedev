@@ -1220,16 +1220,23 @@ re-enable it); `enable_board_focus()` on dismissal.
   SESSION CANARY (full simulated session per cycle, asserts OBJECT_COUNT returns to
   baseline). Runs LAST and ALONE (OBJECT_COUNT is engine-global). Owner ruling:
   test-only leaks do not matter; production coverage is what counts.
-  - ⚠ **THE SESSION CHECK IS INTERMITTENT, AND ITS FORENSICS ARE BUILT FOR THE UNWATCHED RUN.** On
-    failure it prints AND writes `user://logs/leak_forensics_<timestamp>.txt`: growth split by
-    node/resource/other, a phase × cycle OBJECT_COUNT table over the 6 session phases, and a
-    node-class histogram diff. **If that file exists, it IS the finding — attach it rather than
-    trying to reproduce** (chasing it live once cost ~30 runs and caught nothing). Healthy shape:
-    cycle 1 steps (lazy init), cycles 2–3 flat at +0; a leak is a non-zero delta in ONE phase at the
-    later cycles.
-  - ⚠ **`print_orphan_nodes()` cannot diagnose this and is NOT the next thing to try** — measured on
-    a real failure, it printed only the four strays the suite abandons on purpose. The growth is not
-    an orphan Node, and a node still parented to something retained never appears in that dump.
+  - ⚠ **`_drain()`'s WAIT MUST OUTLAST THE LONGEST ONE-SHOT TIMER ANY STARTUP PATH CREATES, AND THAT
+    IS WHY IT IS 0.6 s.** `PlayArea._ready()` calls `FxAttachment.warm()`, which walks
+    `[FxFire.FIRE_SHADER, FxJuggle.JUGGLE_SHADER]` and creates a **0.5 s `SceneTreeTimer` per shader**
+    to free its warm-up quad. **A `SceneTreeTimer` is RefCounted**, so two pending ones sit in
+    OBJECT_COUNT — as neither nodes nor resources — and a drain shorter than 0.5 s returned while they
+    were still alive. That was the whole of this suite's long-standing intermittent "growth 2": two
+    pending warm-up timers, not a leak. Raise the wait if a longer startup timer is ever added.
+  - ⚠ **DO NOT FIX A COUNT DISCREPANCY BY DRAINING REPEATEDLY.** Each `_drain()` creates a
+    `SceneTreeTimer` of its own, so a retry loop allocates into the very bucket it measures —
+    measured: growth went 2 → 3 and the failure rate doubled. One LONGER wait is correct; more waits
+    are not. (This also explains an earlier "settle until stable" attempt that failed.)
+  - **On failure it writes `user://logs/leak_forensics_<timestamp>.txt`**: growth split by
+    node/resource/other, a phase × cycle OBJECT_COUNT table, and a node-class histogram diff.
+    **If that file exists, it IS the finding — attach it rather than trying to reproduce.**
+  - ⚠ **`print_orphan_nodes()` cannot diagnose a growth here** — on a real failure it printed only the
+    four strays the suite abandons on purpose. A non-Node growth cannot appear in it at all, and a
+    node still parented to something retained never appears either.
 - Anywhere a modifier/status is held WITHOUT its card, the weakref lets the card die
   early — such a holder must keep the CardData itself.
 - ⚠ **A NODE WHOSE OWNER IS NOT ITS PARENT MUST BE FREED FROM THE OWNER'S `NOTIFICATION_PREDELETE`,

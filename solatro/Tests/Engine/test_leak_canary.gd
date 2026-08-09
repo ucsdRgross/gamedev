@@ -275,6 +275,7 @@ func _report_growth(before: Dictionary, after: Dictionary) -> void:
 			+ " it keeps ITSELF alive while running — if this delta matches the `other` delta above,")
 	lines.append("  the 'leak' is simply a tween still ticking when _drain() gave up, and the fix is"
 			+ " the DRAIN (wait for tweens), not a retained reference anywhere.")
+	# IS the leak; all-zero means the suspect list is wrong and needs widening.
 
 	# --- WHERE IN THE SESSION, and IS IT LINEAR -------------------------------------------------
 	# One row per phase, one column per cycle. A real per-cycle leak climbs steadily along a row;
@@ -370,8 +371,21 @@ func _clean_cycle() -> void:
 ## so this only catches the last self-freeing popup/tween queue_free tails; the settle
 ## frames then flush queued deletions. Identical before the baseline and the final count,
 ## so any steady-state floor cancels out.
+## ⚠ **0.6 s, AND THE NUMBER IS LOAD-BEARING: IT MUST OUTLAST THE LONGEST ONE-SHOT TIMER THE GAME
+## CREATES.** `PlayArea._ready()` calls `FxAttachment.warm()`, which walks
+## `[FxFire.FIRE_SHADER, FxJuggle.JUGGLE_SHADER]` and creates a **0.5 s** `SceneTreeTimer` per shader
+## to free its warm-up quad. A `SceneTreeTimer` is **RefCounted**, so two of them pending land in the
+## census's `other` bucket — not `nodes`, not `resources` — and at 0.25 s this drain returned while
+## they were still alive. That is the whole of the canary's intermittent "growth 2": two pending
+## warm-up timers, not a leak. Every property matches — RefCounted, exactly 2, invisible to
+## `print_orphan_nodes()`, absent from the exit-time dump because they fire long before exit.
+##
+## ⚠ **DO NOT "FIX" THIS BY DRAINING REPEATEDLY.** Each `_drain()` creates a timer of its own, so a
+## retry loop allocates into the very bucket it measures — measured: growth went 2 -> 3 and the
+## failure rate doubled. One LONGER wait is correct; more waits are not.
+## ⚠ If a new one-shot timer longer than 0.6 s is ever added to a startup path, raise this to match.
 func _drain() -> void:
-	await get_tree().create_timer(0.25).timeout
+	await get_tree().create_timer(0.6).timeout
 	await _settle()
 
 ## ⚠⚠ **DEAD END — DO NOT ADD A "DRAIN HARDER / RETRY THE DRAIN" REMEDY. IT IS SELF-DEFEATING, AND

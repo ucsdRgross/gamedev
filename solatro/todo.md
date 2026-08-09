@@ -253,38 +253,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
-- ⬜ **LEAK CANARY's session check is INTERMITTENT and the cause is still unknown.** Observed growth
-  is 2 or 3; failure rate has ranged from ~0 in 30 consecutive runs to 5 in 10. **Judge it across
-  runs, and never report a count without saying how many runs it took.**
-  - **On failure it writes `user://logs/leak_forensics_<timestamp>.txt`** — growth split by
-    node/resource/other, a phase x cycle table, a node-class histogram diff, and a running-tween
-    count. **If that file exists it IS the finding; attach it rather than trying to reproduce.**
-  - **Eliminated on evidence from real failures — do not re-try any of these:**
-    - **NOT a Node.** `nodes +0`. This is why `print_orphan_nodes()` can never find it: on a failing
-      run it prints only the four strays this suite abandons on purpose.
-    - **NOT a Resource.** `resources +0` — so not a CardData / `.tres` graph, which is what the suite
-      was originally built to watch.
-    - **NOT a Tween.** `RUNNING TWEENS 0 -> 0`. (A Tween is RefCounted and keeps itself alive while
-      running, so one still ticking at drain time would have read exactly like this.)
-    - **NOT phase-localised.** All six session phases are identical across cycles, so it is not the
-      menus, run start, map, show, loss path or `clear_save` accumulating.
-    - **NOT a deferred-free straggler.** `queue_free` deferral applies to NODES; a RefCounted dies the
-      instant its refcount hits zero. If it is alive after the drain, something still HOLDS it.
-    - **NOT held to process exit.** `--verbose`'s exit ObjectDB dump on a FAILING run listed exactly
-      `4x Node` (the deliberate strays) and nothing else, while non-Node leaks do appear there. So it
-      is released during shutdown — which also kills the "coroutine that never resumes" theory, since
-      that would pin its locals all the way to exit.
-    - **NOT fixable by draining harder.** Retrying the drain up to 6 extra times left the growth in
-      place on every failure. ⚠ **And the remedy back-fires: growth went 2 -> 3 and the failure rate
-      roughly doubled**, because `_drain()` calls `create_timer()` and a `SceneTreeTimer` is itself
-      RefCounted — so extra drains allocate into the very bucket being measured, asymmetrically
-      (baseline drains once, the after-path seven times). This very likely explains the earlier
-      "settle until stable" attempt too. Any future drain remedy must be allocation-free first.
-  - **What is left:** a plain RefCounted, not a Tween, held by something alive at the check and
-    released by shutdown — e.g. a `WeakRef`, a bound `Callable`'s object, or a script instance
-    (`Scoring.Result`, `ArrayCardData`, `HandProfile`, `CardDataIterator`, `LightLayer.Light`).
-    The next instrument would have to name RefCounted instances, which GDScript cannot enumerate;
-    the practical route is a debug instance counter on the few suspect classes.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
