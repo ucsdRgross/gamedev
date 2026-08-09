@@ -439,8 +439,9 @@ var _retiring : bool = false
 ## **DRIVE THE CARD RIG BY HAND — AUTOPLAY DOES NOT RUN IN THE EDITOR.**
 ##
 ## ⚠ Two separate reasons the cards would otherwise be frozen, and both had to be fixed for the loop
-## to show anything: **autoplay is a runtime thing** (`fx_editor`'s header records the same finding),
-## and this tool sets `set_process(false)` on every card because `delta_self_moving_logic` frees any
+## to show anything: the idle rig is not playing (it was `autoplay`-only and never ran in the editor;
+## as of 2026-08-07 it does not autoplay at RUNTIME either — see `CardVisual.RIG_ANIM`, which is now
+## the only place its name lives), and this tool sets `set_process(false)` on every card because `delta_self_moving_logic` frees any
 ## non-play-area card with no `control_anchor`. So the rig is advanced here, per frame, per card.
 ## ⚠ **This is also what makes the glow's warp visible**: the halo tracks the DEFORMED silhouette, and
 ## with a frozen rig there is no deformation to track.
@@ -448,8 +449,8 @@ func _advance_cards(delta : float) -> void:
 	for cv : CardVisual in _slot_card.values():
 		if not is_instance_valid(cv): continue
 		var ap := cv.get_node_or_null("AnimationPlayer") as AnimationPlayer
-		if ap == null or ap.autoplay.is_empty(): continue
-		if not ap.is_playing(): ap.play(ap.autoplay)
+		if ap == null or not ap.has_animation(CardVisual.RIG_ANIM): continue
+		if not ap.is_playing(): ap.play(CardVisual.RIG_ANIM)
 		# `advance` ticks the animation without depending on the engine calling the player, which the
 		# editor does not do for an instanced scene.
 		ap.advance(delta)

@@ -362,6 +362,17 @@ never serialized); a quit mid-act replays the act from the pre-act board.
 1. **SmoothScrollContainer rewrites every entering Control to `MOUSE_FILTER_PASS`** —
    display-only Controls under the scroll content MUST
    `set_meta("_smooth_scroll_default_mouse_filter_set", true)` BEFORE `add_child`.
+   ⚠ **BOARD WIDTH IS CONTENT, AND "THE BOARD FITS THE WINDOW" IS NOT AN INVARIANT.** Columns are
+   added by the `SkillAdderInput*` rules cards, so a rules change can widen the board without limit,
+   and `PlayArea` sits in the scroll container precisely so a board wider than the window is a
+   SUPPORTED state (owner ruling: *"it should be possible for there to be x-column wide boards if I
+   decide to change rules, with side scrolling allowed"*). **The invariant to assert is REACHABILITY
+   — every column inside the scrollable extent**; a column outside it is unreachable, which IS a bug
+   at any width. Never assert fits-the-window: that fails on the first added adder, a config change
+   rather than a regression.
+   ⚠ The shipped ceiling is **6 columns** (`Decks/deck.gd::_build_rules1`, the only rules set, ships
+   5 upper + 6 lower adders) and it clears a 1152 px window by **25 px**. `test_ui_props` prints that
+   margin every run and separately covers a deliberately over-wide 12-column board.
 2. **The play-area rect clips** everything (cards AND props). Off-rect staging/exits are
    invisible; staging is compressed to ≤ ~1.5 slot pitches behind the route entry. If
    props "disappear", suspect clipping before code.
@@ -573,7 +584,8 @@ the fire riding them), which keeps the dependency inside the one class that owns
     share the mask BRANCH, and that is the answer to "why was a non-rectangular card hard when the hoop
     already works"** (owner asked). A prop is `Shape.SPRITE`: the mask SAMPLES the sheet's
     alpha, so any silhouette and the hoop's hole come free. A card is `Shape.RADII`: an OUTLINE, because
-    its face is skinned to a 16-arm rig on autoplay and a static alpha sample would burn the undeformed
+    its face is skinned to a 16-arm rig (posed by jumps/spins/warps; the idle no longer autoplays, see
+    `CardVisual.RIG_ANIM`) and a static alpha sample would burn the undeformed
     shape (§7's own bug). Everything above the mask is one code path for both. So a card gets none of what
     the alpha gives a prop, including the fact that every type frame BITES a texel out of each corner —
     `CardModifierType.corner_notch` measures that off the sheet and `CardVisual._rig_outline` carries it as
@@ -1208,6 +1220,16 @@ re-enable it); `enable_board_focus()` on dismissal.
   SESSION CANARY (full simulated session per cycle, asserts OBJECT_COUNT returns to
   baseline). Runs LAST and ALONE (OBJECT_COUNT is engine-global). Owner ruling:
   test-only leaks do not matter; production coverage is what counts.
+  - ⚠ **THE SESSION CHECK IS INTERMITTENT, AND ITS FORENSICS ARE BUILT FOR THE UNWATCHED RUN.** On
+    failure it prints AND writes `user://logs/leak_forensics_<timestamp>.txt`: growth split by
+    node/resource/other, a phase × cycle OBJECT_COUNT table over the 6 session phases, and a
+    node-class histogram diff. **If that file exists, it IS the finding — attach it rather than
+    trying to reproduce** (chasing it live once cost ~30 runs and caught nothing). Healthy shape:
+    cycle 1 steps (lazy init), cycles 2–3 flat at +0; a leak is a non-zero delta in ONE phase at the
+    later cycles.
+  - ⚠ **`print_orphan_nodes()` cannot diagnose this and is NOT the next thing to try** — measured on
+    a real failure, it printed only the four strays the suite abandons on purpose. The growth is not
+    an orphan Node, and a node still parented to something retained never appears in that dump.
 - Anywhere a modifier/status is held WITHOUT its card, the weakref lets the card die
   early — such a holder must keep the CardData itself.
 - ⚠ **A NODE WHOSE OWNER IS NOT ITS PARENT MUST BE FREED FROM THE OWNER'S `NOTIFICATION_PREDELETE`,
@@ -1217,7 +1239,7 @@ re-enable it); `enable_board_focus()` on dismissal.
   `PropLayer._free_visual`, which runs from the exit tween — so every way a prop died without that
   tween (a torn-down tree, a cancelled exit) orphaned both halves, and each half's `prop` backref
   then held the whole PropVisual, its texture and its FxAttachment alive.
-  Fixed 2026-08-07 in `prop_visual.gd::_notification`. ⚠ **The general rule is the point:** if a node
+  Freed in `prop_visual.gd::_notification`. ⚠ **The general rule is the point:** if a node
   is created by X but parented to Y, tree teardown frees it only while it is actually in the tree,
   and X must free it on PREDELETE — `_exit_tree` is the wrong hook, because X leaving the tree says
   nothing about a node that was never X's child.
@@ -1247,7 +1269,7 @@ by construction**, and no in-engine check can ever fix that (by then every GDScr
 same cleanup that emits those errors. `Tools/run_tests.py` is the outer gate — it scans the captured
 stdout+stderr (teardown errors are split across both) for error lines **absent from `godot.log`**,
 which is definitionally what the in-run gate could not see, and parses the allowlist out of
-`all_tests.gd` rather than restating it. Added 2026-08-07; it found a real leak on its first run.
+`all_tests.gd` rather than restating it.
 
 Conventions (formerly UNIT_TESTS_PLAN):
 - Every suite extends `Tests/Support/test_base.gd` (`SolatroTest`); non-freezing
@@ -1287,6 +1309,13 @@ Conventions (formerly UNIT_TESTS_PLAN):
   coordinates, not canvas (`to_window()` helper; headless window is (0,0)).
 - Leak attribution: `Tests/Support/leak_probe.tscn -- <suite.tscn>` runs one suite and
   quits; exit-leak count attributes per suite.
+- ⚠ **A SNAPSHOT HARNESS MUST SETTLE A FRAME BEFORE IT PARKS A POSE.** `fx_snapshot` / `fx_behind`
+  pose a host, push the pose, then `set_process(false)` — so that push is the only one the
+  attachment ever gets. `FxAttachment._push_live` SKIPS ITS UPLOADS ENTIRELY when `_on_screen()` is
+  false, and in the frame a node is added the canvas transform is not settled, so the push can be
+  silently dropped and a ROTATED host keeps the upright quad bound (`_rot_tight`) and renders
+  clipped flames. Settle two frames, re-push, then park — `fx_snapshot.gd::_settle_poses`. This is a
+  HARNESS rule: in play nothing parks the attachment, so the flag re-evaluates by itself.
 - The prop flight-sampling pattern for "prop moved weirdly" reports:
   `test_ui_props._sample_flight` — continuous per-frame sampler against a row band +
   x-span envelope with a mid-flight relayout poke. Extend it, don't invent new rigs.

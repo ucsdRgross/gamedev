@@ -319,14 +319,15 @@ func _build_card_preview(at : Vector2) -> Vector2:
 	# AFTER `_ready`, which sets `scale` from `card_scale` — this tool works in art units at its own zoom.
 	card.scale = Vector2.ONE * float(zoom)
 	card.position = at + CardVisual.CARD_SIZE * 0.5 * float(zoom)
-	# The animation does NOT autoplay in the editor (autoplay is a runtime thing), which is what makes
+	# The idle animation never plays by itself here — it was editor-inert already, and since 2026-08-07
+	# it does not autoplay at runtime either (`CardVisual.RIG_ANIM`) — which is what makes
 	# `rig_pose` the honest knob: every pose it seeks is one the shipped idle actually passes through,
 	# and it holds still while an ink is judged (§11 rule 3, "pin the pose").
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap and ap.autoplay != "":
-		var anim := ap.get_animation(ap.autoplay)
+	if ap and ap.has_animation(CardVisual.RIG_ANIM):
+		var anim := ap.get_animation(CardVisual.RIG_ANIM)
 		if anim:
-			ap.play(ap.autoplay)
+			ap.play(CardVisual.RIG_ANIM)
 			ap.seek(rig_pose * anim.length, true)
 			ap.pause()
 	card.show_front = true

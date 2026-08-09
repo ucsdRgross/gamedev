@@ -522,9 +522,27 @@ func test_one_pixel_size_for_all_art() -> void:
 ## exact agreement rather than a tolerance.
 func test_the_card_mask_is_the_card_the_player_sees() -> void:
 	behavior_section("A REAL CardVisual: THE MASK IS THE SILHOUETTE THE PLAYER SEES")
-	# Four times across the 0.6 s loop, because the deformation is not monotonic: the corner arms and
-	# the mid-edge arms peak at different phases, and a single time would test one shape.
-	for t : float in [0.0, 0.15, 0.30, 0.45] as Array[float]:
+	# ⚠ **REST POSE ONLY, BECAUSE THE SHIPPED CARD NO LONGER DEFORMS** (owner, 2026-08-07: *"tests
+	# should work without animation playing, dont understand point of pointing tests at an animated
+	# version"* — and they are right). This used to run `[0.0, 0.15, 0.30, 0.45]` across the idle's
+	# 0.6 s loop.
+	#
+	# ⚠ **VERIFIED, NOT ASSUMED: NOTHING ELSE POSES THE RIG.** `card_visual.tscn` holds exactly two
+	# animations — `RESET` and the idle `new_animation_2` — and no code anywhere writes a `Bone2D`
+	# position (the only `Bone_*` references in GDScript are `_bind_rig` READING them). With the idle
+	# no longer autoplaying (`CardVisual.RIG_ANIM`), the 16-arm rig is always at rest in game, so the
+	# deformed poses were testing a shape the player can no longer be shown. An earlier comment here
+	# claiming jumps/spins/warps also pose it was WRONG: those move the card's own transform, not its
+	# bones.
+	#
+	# ⚠ **WHAT THIS GIVES UP, AND HOW TO GET IT BACK.** The deformed poses were the only exercise of
+	# `corner_points()`'s parallelogram approximation and the 32-slot radial wedge mask — the two
+	# unfixed model approximations behind the pinned tolerance band. At REST both are EXACT (measured:
+	# 0 disagreeing cells, 0.00 art units), which is why the rest branch asserts exact agreement and
+	# needs no tolerance at all. **If the idle is ever re-enabled, restore the pose list on this line**
+	# — the deformed branches below are deliberately left intact and their measured bounds still stand
+	# (worst edge 1.50 and corner 2.45 at t=0.30). ⚠ Do not delete them.
+	for t : float in [0.0] as Array[float]:
 		var card := await _real_card(t)
 		if not card: return
 		var poly := (card.fx._poly as PackedVector2Array).duplicate()
@@ -800,8 +818,10 @@ func _real_card(secs: float) -> CardVisual:
 	card.scale = Vector2.ONE
 	card.position = Vector2.ZERO
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap and ap.autoplay != "":
-		ap.play(ap.autoplay)
+	# ⚠ NOT `ap.autoplay` — the idle is no longer autoplayed (CardVisual.RIG_ANIM says why). Reading
+	# the flag here would make this whole loop measure the REST pose at every t and still pass.
+	if ap and ap.has_animation(CardVisual.RIG_ANIM):
+		ap.play(CardVisual.RIG_ANIM)
 		ap.seek(secs, true)
 		ap.pause()
 	# THE FACE AS THE PLAYER SEES IT — its own TypePaper texture on its own skinned grid, so the drawn

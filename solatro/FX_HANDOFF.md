@@ -506,7 +506,8 @@ card as non rect?"*
 
 Everything above the mask — the cover field, the taps, the noise, the ramp, the cut — is one code path
 for every host. **The branch differs for exactly one reason: a prop's art never changes shape, and a
-card's is skinned to a 16-arm rig on autoplay.** The SPRITE branch samples a static sheet through a fixed
+card's is skinned to a 16-arm rig** (posed by jumps, spins and warps; the idle does not autoplay —
+`CardVisual.RIG_ANIM`). The SPRITE branch samples a static sheet through a fixed
 transform, so a card on it would burn its UNDEFORMED shape — which is precisely the report §7 exists for
 (*"I don't see the fire effect warping with the card during playtesting"*). Putting a card on that branch
 means inverting a 16-bone skin per fragment.
@@ -1407,44 +1408,34 @@ in or out FIRST — run the same build twice — before believing either result.
 upright panel in all three sets came back byte-identical.** So the warning generalizes, and a pixel
 diff of any rotated panel is worth nothing whichever way it comes out.
 
-⚠ **RE-MEASURED 2026-08-07 OVER THREE RUNS, AND "ROTATED HOST" IS THE WRONG FRAME.** Every pair of
-three consecutive runs of an unchanged build, whole set: **18 of 21 `fx_snapshots` panels identical
-in all three pairs.** `05f_ball_rotation` was **stable** in all three, while **`10_light_layer` —
-upright, and never on the noisy list — moved by up to 78834 px (8.1% of the frame)**, far more than
-anything here. So the rule is not "rotated hosts are flaky".
-- **Newly ruled out:** `_push_live`'s `rotation = -parent.global_rotation`, which `fx_snapshot.gd`
-  names as "the only place that can happen". Every CPU-side value the harness prints — host/att/slot
-  rotations, every shader uniform, every probe reading — was **identical** across all three runs, so
-  the divergence is not in game logic at all.
-- Every differing pixel differs by **more than 8/255** (max 195): a different rendered STATE, not
-  edge jitter.
-- **Run B was the outlier for BOTH `02_fire_rotation` and `10_light_layer` while A and C agreed**, so
-  the condition is **per-RUN, not per-panel** — which is what makes a "which panels are cursed" list
-  the wrong model.
+✅ **ROOT-CAUSED AND FIXED — AND THE REVERT IN §1b WAS UNNECESSARY.**
+Both harnesses are deterministic now: 20 of 21 `fx_snapshots` panels identical over 3 runs (only
+`09_embers`, randomised by design), 5 of 5 `fx_behind` panels over 4 runs.
 
-✅ **`10_light_layer` FIXED — 78834 px → 0, byte-identical over three runs**
-(`fx_snapshot.gd::_park_cards`). Cause: UNPARKED CARD CLOCKS. That shot's shader side is fully pinned
-(fixed centres and radii, `u_time = SHOT_TIME`), so the light could never vary — what varied were the
-**18 real `ControlCard`s staged under it**, which is also why it was the only panel affected: it is
-the one shot staging real cards instead of `_ghost_for` stand-ins. `_shot()` parks every effect clock
-it builds and says why — real deltas *"would make every run differ"* — while `_shot_light_layer()`
-parked nothing. TWO clocks were live:
-- `CardVisual.delta_floating_anim` drifts and bobs on **`Time.get_ticks_msec()`** — ABSOLUTE wall
-  clock, not delta, and `floating` defaults to true. No fixed-delta stepping can reproduce that; the
-  clock had to leave the shot.
-- **`card_visual.tscn`'s AnimationPlayer is on `autoplay`**, advancing independently of the script,
-  so `set_process(false)` never reached the skinned bone pose. That was the entire residual once
-  `floating` was handled: 78834 px → ~6-31 px → 0.
+**The cause.** `FxAttachment._rot_tight` defaults TRUE and is re-evaluated in exactly one place,
+guarded by `if moved and on_screen:` — and `_push_live` skips its uploads ENTIRELY when
+`_on_screen()` is false. Both harnesses pushed the pose in the same frame the node was added, before
+the canvas transform had settled, then PARKED the attachment (`set_process(false)`), so that single
+call was the only chance the flag ever got. A rotated host therefore kept the UPRIGHT quad bound
+(lever B in `_size_quad` only widens to the diagonal `if ... and not _rot_tight`) and rendered
+CLIPPED flames — at random. Fix: settle two frames, then re-push and re-park
+(`fx_snapshot.gd::_settle_poses`, mirrored in `fx_behind.gd`).
 
-Re-read by eye after the fix, per the standing rule: crossing beams with the overlap brighter and not
-blown out, all three circle radii, the dim a dark palette colour rather than black, rank glyphs still
-legible under the lights, no straight edge at a beam end. ⚠ The panel is **back in the diff** — it
-should not be on the noisy list.
-- ⚠ **`02_fire_rotation` is NOT explained by this and stays open.** `_shot` does park it, and its
-  A^C diff was exactly **0** while A^B and B^C were both exactly **8248** — two discrete outcomes,
-  not drift, which is a different shape from the light layer's.
+**Why it resisted diagnosis for six weeks.** It is BISTABLE, not drifting: two runs differed by the
+SAME count every time (8248 px on `02_fire_rotation`), which is one boolean rather than a continuum.
+Only rotated hosts were ever affected because an upright host is legitimately `_rot_tight`, so the
+branch is a no-op — which made "rotated hosts are cursed" look like the phenomenon instead of a
+symptom. Ruled out along the way: screen-space `fx_bayer` (retired), pinning `_seed`, and
+`_push_live`'s counter-rotation (every CPU-side value the harness prints was identical across runs).
+
+⚠ **A GAME BUG WAS NOT INVOLVED.** In play nothing parks the attachment, so the flag re-evaluates
+on the frame the host is next on screen. **Do not "fix" `fx_attachment.gd` for this.**
+⚠ **§1b's quad-extent lever can be re-tried.** It was reverted because it "moved the rendered balls
+on a ROTATED host" — measured on the instrument that was itself unreliable for exactly those panels.
+That evidence no longer stands; re-measure before accepting the revert as final.
 
 Full evidence: the `NOISY` comment in `Tools/snapshot_diff.py`.
+
 
 ---
 
@@ -1898,7 +1889,7 @@ owner's, safe housekeeping, and what is closed.**
 |---|---|
 | ⬜ **Three harnesses still use the stand-in** | `fx_snapshot`, `fx_behind` and `fx_cost` feed `star_outline` to a bare `Node2D`. They run in a real scene tree where a `CardVisual` needs none of the editor guards (`test_pixels` does it in ~10 lines), so the swap is mechanical — pin the card's seed and clock the way `_park` does. It would make `fx_behind`'s seam shots the real thing (its "filled host" is a filled polygon today) and delete `star_outline`'s last users. |
 | ⬜ **Two stale snapshot panels** | `00_tendril_count` and `00b_ogee_profile` are still in `%APPDATA%\Godot\app_userdata\Solatro\fx_snapshots` from the retired build. They are never rewritten, so they compare identical for ever and pad the count from 18 to 20. Delete them. |
-| ⬜ **THE SNAPSHOT NONDETERMINISM IS STILL UNEXPLAINED — but it is NOT "rotated panels"** | §1b/§12, re-measured over THREE runs 2026-08-07. 18 of 21 panels identical across every pair; `05f_ball_rotation` was stable while **upright `10_light_layer` moved 78834 px (8.1% of frame)** and had never been listed as noisy. Ruled out so far: screen-space `fx_bayer` (retired), pinning `_seed`, and now **`_push_live`'s counter-rotation** — every CPU-side value the harness prints was identical across all three runs, so the divergence is not in game logic. Differences exceed 8/255 (max 195), so it is a different rendered STATE, not edge jitter. **Run B was the outlier for two independent panels while A and C agreed ⇒ the condition is per-RUN.** Next lead: this box's GPU sits in two power states (`machine-profiles`), and the 18 stable panels are exactly the ones whose clock the harness parks — so suspect an unparked, still-animating effect being captured on a different frame. |
+| ✅ **SNAPSHOT NONDETERMINISM — ROOT-CAUSED AND FIXED** | §1b/§12. `FxAttachment._rot_tight` defaults TRUE and is only re-evaluated under `if moved and on_screen:`, while `_push_live` skips its uploads entirely when `_on_screen()` is false. Both snapshot harnesses pushed the pose in the frame the node was added — before the canvas transform settled — then PARKED the attachment, so that call was the flag's only chance; a ROTATED host kept the upright quad bound and rendered clipped flames at random. Fix: settle TWO frames, then re-push and re-park (`fx_snapshot.gd::_settle_poses`, mirrored in `fx_behind.gd`). Verified 20/21 fx_snapshots panels identical over 3 runs and 5/5 fx_behind over 4. NOISY is down to `09_embers` alone. ⚠ **Not a game bug** — in play nothing parks the attachment. |
 | ⬜ **Known limitation** | Ball highlight is a quantized ellipse at small radii — pixel-art resolution, not a defect. Levers: `ball_spec`, or a smaller `pixel` on the juggle style. |
 | ⬜ **Deferred by the owner** | Map screen + in-game UI chrome still hardcoded (they warn `[WARN][PLACEHOLDER]` every run); `FireworkVisual` has no art; `suit_pips.png` has a few off-palette pixels. |
 

@@ -20,6 +20,16 @@ a Variant into a typed-subtype parameter raises "supertype Variant was provided"
 typed-dict methods like `.get()`/`.keys()` still RETURN `Variant` — assign to an explicitly typed
 local (`var v : PropVisual = dict.get(k)`).
 
+Two more Variant sources that read as ordinary code: **a built-in constructor** (`int(d[k])` fails
+with *"argument 1 of the constructor int() requires the subtype int/bool/float but the supertype
+Variant was provided"*) and **`Callable.call()`**, which always returns Variant. So `int(dict[k])`,
+`check(cmp.call(a, b), …)` and `var s := node.get_script()` all fail. Assign to a typed local
+first rather than wrapping in a converter.
+
+⚠ **All of these are PARSE errors, so the script never loads at all — and that is SILENT.** The rest
+of the run behaves normally and still reports success, just with that file's work missing. Judge a
+run by a stable structural count (how many suites/scenes reported), never by the word PASSED.
+
 **Why:** the project compiles with warnings-as-errors; an untyped array or loop var fails the
 build outright, not just a lint nag.
 

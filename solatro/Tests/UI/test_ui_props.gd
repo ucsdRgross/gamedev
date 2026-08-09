@@ -40,6 +40,7 @@ func _ready() -> void:
 	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("SLOT GEOMETRY")
 	await test_slot_geometry()
+	await test_a_board_wider_than_the_window_stays_reachable()
 	behavior_section("PROP VISUAL LIFECYCLE")
 	await test_prop_visual_lifecycle()
 	await test_slow_props_move_continuously()
@@ -328,6 +329,48 @@ func test_slot_geometry() -> void:
 				"row pitch = card strip + separation at separation %.1f" % sep_scale, str(pitch))
 		await cleanup(g, pa)
 	SettingsManager.settings.card_separation_scale = prev_sep
+
+## ⚠ **A BOARD WIDER THAN THE WINDOW IS A SUPPORTED STATE, AND NOTHING COVERED IT.**
+## Owner, 2026-08-07: *"it should be possible for there to be x-column wide boards if I decide to
+## change rules, with side scrolling allowed in order to see those cards. Tests should reflect that
+## instead of hardcoding to 6 wide, but 6 wide should be fine for most tests, just dont assume that
+## its always true."*
+##
+## The shipped rules set happens to cap the board at 6 columns today (5 upper + 6 lower
+## `SkillAdderInput*` cards in `Decks/deck.gd::_build_rules1`), and most fixtures here use widths at
+## or under that on purpose — a board that FITS is the only way to test prop VISIBILITY. But 6 is a
+## content fact, not a layout law, and a test suite that only ever sees 6 would report a rules change
+## as a UI regression. **This is the case that proves the design's own answer works:** the columns
+## still lay out on the same uniform pitch, and every one of them is inside the scrollable extent.
+##
+## ⚠ Deliberately far past the window (12 columns ≈ 1310 px of board against a 1152 px viewport), so
+## the overflow is not marginal and the check cannot pass by accident.
+func test_a_board_wider_than_the_window_stays_reachable() -> void:
+	const WIDE := 12
+	var g := make_board_game(WIDE)
+	var pa := make_play_area()
+	await settle(pa)
+
+	var half := CardVisual.card_size_play.x * 0.5
+	var first := pa.slot_center_global(Vector3i(0, 0, 0)).x
+	var last := pa.slot_center_global(Vector3i(0, WIDE - 1, 0)).x
+	var view_width := pa.get_viewport_rect().size.x
+	# The premise: this really is wider than the window, or the rest of the test proves nothing.
+	check(last + half > view_width,
+			"the %d-column fixture really does overflow the window (else this test is vacuous)" % WIDE,
+			"right edge %.1f vs viewport %.1f" % [last + half, view_width])
+
+	# Uniform pitch all the way out — a board that overflows must not start compressing or wrapping.
+	var pitch := (last - first) / float(WIDE - 1)
+	var expected := CardVisual.card_size_play.x + float(pa.separation)
+	check(is_equal_approx(pitch, expected),
+			"every column keeps the normal pitch past the window edge",
+			"pitch %.2f vs expected %.2f" % [pitch, expected])
+
+	# THE INVARIANT: reachable by scrolling. A column outside the scrollable extent is unreachable,
+	# which IS a bug — at 6 columns or 60.
+	_check_board_fits_window(pa, WIDE, "a deliberately over-wide %d-column board" % WIDE)
+	await cleanup(g, pa)
 
 func test_prop_visual_lifecycle() -> void:
 	var g := make_board_game(3)
@@ -1090,18 +1133,45 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 ## anchors to — NOT a re-derived `columns * (width + separation)` here. Two copies of that formula is
 ## the seam this repo keeps getting caught by: a copy would keep passing while the real board moved.
 ##
-## Reports the signed margin either way, so a run says how much room is left rather than only
-## flagging the crossing — zero margin is the condition worth seeing BEFORE it goes negative.
+## ⚠ **"THE BOARD FITS THE WINDOW" IS NOT AN INVARIANT AND MUST NEVER BE ASSERTED AS ONE**
+## (owner, 2026-08-07: *"it should be possible for there to be x-column wide boards if I decide to
+## change rules, with side scrolling allowed in order to see those cards"*). Column count is content:
+## it grows through the `SkillAdderInput*` rules cards, and the rules set is free to change. `PlayArea`
+## lives in a `ScrollContainer` precisely so a board wider than the window is a SUPPORTED state, not
+## a bug. A hard fits-the-window check would fail the first time a 7th adder is added — a config
+## change, not a regression — and the first instinct would be to "fix" the game to satisfy the test.
+##
+## ⚠ **SO THE ASSERTION IS REACHABILITY, WHICH HOLDS AT EVERY WIDTH:** the scroll container's content
+## must be at least as wide as the board, so every column can be scrolled to. That is the property
+## that actually protects the player — a column outside the SCROLLABLE extent is unreachable, and
+## that is a real bug at 6 columns or 60.
+##
+## Overflow past the viewport is reported as a WARNING, never a failure: it is information (GAP-001's
+## real lesson was that the board sat on exactly ZERO margin with nothing watching), but at some
+## column count it is simply what the design does.
 func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void:
 	var half := CardVisual.card_size_play.x * 0.5
 	var left := pa.slot_center_global(Vector3i(0, 0, 0)).x - half
 	var right := pa.slot_center_global(Vector3i(0, columns - 1, 0)).x + half
 	var view_width := pa.get_viewport_rect().size.x
 	var margin := minf(left, view_width - right)
-	check(right <= view_width and left >= 0.0,
-			"a full-width board fits the window (%s)" % label,
-			"%d columns span x %.1f..%.1f in a %.1f px viewport — margin %.1f px"
-			% [columns, left, right, view_width, margin])
+
+	# THE REAL INVARIANT: every column sits inside the scrollable content, so it can be reached.
+	var scroll := pa.get_node_or_null(^"SmoothScrollContainer") as ScrollContainer
+	check(scroll != null, "the play area has its scroll container (%s)" % label)
+	if scroll:
+		var content_right := scroll.global_position.x + maxf(scroll.size.x,
+				float(scroll.get_h_scroll_bar().max_value))
+		check(right <= content_right + 1.0,
+				"every column is reachable by scrolling (%s)" % label,
+				"board right edge %.1f vs scrollable right %.1f (%d columns)"
+				% [right, content_right, columns])
+	# ⚠ Information only, and deliberately NOT `warn()`: that channel is the PLACEHOLDER list (surfaces
+	# still carrying hardcoded colours), and a supported layout state does not belong in it — routing
+	# it there inflates a count the palette work reads as its own backlog.
+	TestLog.line("    [board width] %s — %d columns span x %.1f..%.1f in a %.1f px viewport, margin %.1f px%s"
+			% [label, columns, left, right, view_width, margin,
+			   "" if margin >= 0.0 else "  (SCROLLING REQUIRED — supported, not a failure)"])
 
 func test_all_kinds_live_in_game_view() -> void:
 	backup_real_save()
@@ -1123,9 +1193,22 @@ func test_all_kinds_live_in_game_view() -> void:
 	check(g != null and g.view == view, "the all-kinds view binds its Game (seam wired)")
 	CardEnvironment.CURRENT = g
 	# Crafted upper zone (row z=0 spans every column, incl. the EMPTY edge one):
-	#   col0 EMPTY | col1 hoop3 | col2 knife2 | col3 talent | col4 plain
-	#   col5 [talent, ball2]   (ball at z=1 mancala-targets the talent below it)
-	#   col6 [plain,  fire2]   (fire at z=1 targets the plain below it)
+	#   col0 EMPTY | col1 hoop3 | col2 knife2 | col3 talent
+	#   col4 [talent, ball2]   (ball at z=1 mancala-targets the talent below it)
+	#   col5 [plain,  fire2]   (fire at z=1 targets the plain below it)
+	#
+	# ⚠ **SIX COLUMNS, NOT SEVEN — THE SEVENTH WAS WIDER THAN THE GAME CAN BUILD** (2026-08-07).
+	# The old fixture put a 7th column's card at x 1187..1237 against a 1152 px viewport, so its fire
+	# prop could never enter the view: `every spawned fire entered the visible viewport` was left
+	# FAILING ON PURPOSE and GAP-001 was opened as a game-feel decision between shrinking `card_scale`,
+	# tightening `PlayArea.separation`, and accepting off-screen props.
+	# ⚠ **NONE OF THOSE WERE NEEDED — SEVEN COLUMNS IS UNREACHABLE.** Column count grows only through
+	# the `SkillAdderInput*` rules cards, and `Decks/deck.gd::_build_rules1` — the ONLY rules set in
+	# the project — ships exactly **5 upper adders and 6 lower adders**. The widest board any run can
+	# reach is therefore 6 columns, and this fixture was asserting prop visibility on a board one
+	# column wider than the game has ever been able to produce. A fixture bug, not a layout decision.
+	# ⚠ Nothing asserted is lost by narrowing: the empty edge column, all four prop kinds and both
+	# mancala targets are still here — only the redundant second `plain` single column is gone.
 	var hoop_c := _suited(3, PipSuitHoop.new())
 	var knife_c := _suited(2, PipSuitKnife.new())
 	var ball_c := _suited(2, PipSuitBall.new())
@@ -1135,7 +1218,6 @@ func test_all_kinds_live_in_game_view() -> void:
 		[hoop_c] as Array[CardData],
 		[knife_c] as Array[CardData],
 		[_suited(5, PipSuitHoop.new()).with_skill(ProbeSkill.new())] as Array[CardData],
-		[_suited(5, PipSuitHoop.new())] as Array[CardData],
 		[_suited(5, PipSuitHoop.new()).with_skill(ProbeSkill.new()), ball_c] as Array[CardData],
 		[_suited(5, PipSuitHoop.new()), fire_c] as Array[CardData],
 	]
@@ -1155,7 +1237,9 @@ func test_all_kinds_live_in_game_view() -> void:
 	await settle(pa)
 	# The board GAP-001 was measured on. Checked here rather than in a layout suite because this is
 	# the widest board the suite builds, and the overflow is a property of the board, not of a prop.
-	_check_board_fits_window(pa, plan.size(), "the 7-column all-kinds board")
+	# ⚠ 6 columns IS the shipped ceiling (5 upper + 6 lower adders in the only rules set), so this is
+	# the real worst case and not an arbitrary fixture width.
+	_check_board_fits_window(pa, plan.size(), "the all-kinds board at the shipped 6-column ceiling")
 	var result := Scoring.Result.new()
 	result.meld = [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]
 	var finished : Array[bool] = [false]

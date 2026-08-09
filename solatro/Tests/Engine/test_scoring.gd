@@ -1155,7 +1155,12 @@ func run_leaderboard() -> void:
 	var uniq := {}
 	var order: Array = []
 	for e in rows:
-		var ok: bool = (e.name as String).contains(e.expected as String)
+		# ⚠ **SD6: EXACT, NOT `contains()`.** A substring match cannot tell a hand from a hand whose
+		# name CONTAINS it, and this table is full of those pairs: "Pair" sits inside "Two Pair",
+		# "Flush" inside "Straight Flush" / "Flush House" / "Flush Five", "Full House" inside "Flush
+		# Full House". Under `contains` a mis-named hand passes as long as the right word appears
+		# somewhere, which is exactly the class of error a NAME table exists to catch.
+		var ok: bool = (e.name as String) == (e.expected as String)
 		if ok: _pass += 1  # silent: one [PASS] line per row would drown the output
 		else:
 			check(false, "leaderboard row: got '%s', expected '%s'" % [e.name, e.expected])

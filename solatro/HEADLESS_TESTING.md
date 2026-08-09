@@ -27,7 +27,7 @@ ever catch it.
 
 ⚠ **Re-reading `user://logs/godot.log` after the process exits does NOT work**, which is the obvious
 wrapper and is just as blind: the engine CLOSES that log during the same cleanup that emits these
-errors. Measured 2026-08-07 — a clean-looking run's `godot.log` ended at its `full logs:` line while
+errors. Measured on a clean-looking run: its `godot.log` ended at the `full logs:` line while
 the process streams carried three more errors after it. So the wrapper reads the captured STDOUT and
 STDERR (the engine splits teardown errors across both) and reports any error line **absent from
 `godot.log`**, which is by definition one the in-run gate could not have seen. Its allowlist is
@@ -89,16 +89,14 @@ cascade noise. Two parse-error classes worth knowing: passing a `Variant` where 
 declared (warnings-as-errors — `Callable.call()` and an element of an untyped `Array` each return
 one, so `check(rows[i] == x, ...)` and `check(cmp.call(a, b), ...)` are BOTH parse errors rather
 than runtime ones), and a child suite declaring a `const` that already exists in `TestSuite` —
-GDScript forbids shadowing an inherited const. ⚠ The three suites that used to declare their own
-`REAL_SETTINGS_PATH` were migrated onto `TestSuite`'s helpers on 2026-08-07, so that name now lives
-in the base class ALONE — do not reintroduce a local copy.
+GDScript forbids shadowing an inherited const. ⚠ `REAL_SETTINGS_PATH` lives in `TestSuite` ALONE — do not reintroduce
+a local copy in a suite.
 
 ⚠ **A PARSE ERROR CAN ALSO PRESENT AS A GREEN-LOOKING RUN WITH A SMALLER SUITE COUNT.** When the
 broken script is one suite rather than `test_base.gd`, that suite simply fails to LOAD, every other
 suite finishes normally, and the banner reads `ALL 29 SUITES: ... PASSED` instead of 30. **The SUITE
 count is the stable number — the check total drifts run to run**, so only the suite count can catch
-this. Seen 2026-08-07: a `Variant` typing error in `test_scoring.gd` dropped the count to 29 and the
-run otherwise read as a pass.
+this. A `Variant` typing error in one suite drops the count to 29 while the run still reads as a pass.
 
 **There is no working pre-flight parse check.** Both obvious candidates are useless here:
 

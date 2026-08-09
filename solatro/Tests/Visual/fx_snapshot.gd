@@ -591,12 +591,15 @@ func _park_cards(root: Node) -> void:
 		if card.control_anchor and is_instance_valid(card.control_anchor):
 			card.global_position = card.get_card_control_center(card.control_anchor)
 		card.rotation_degrees = 0.0
-		# ⚠ **THE BONE RIG IS ON AUTOPLAY AND `set_process(false)` DOES NOT REACH IT.** `card_visual.tscn`
-		# carries an AnimationPlayer with `autoplay`, which advances on its own clock (see the
-		# `_track_fx_outline` comment: "every frame, because the rig's animation is on autoplay"), so
-		# parking only the script left the SKINNED POSE still drifting. That was the whole residual
-		# after `floating` was dealt with: 78834 px -> ~6-31 px -> 0. Seek to a fixed time with
-		# `update = true` so the pose is applied, then pause.
+		# ⚠ **THE BONE RIG HAS ITS OWN CLOCK AND `set_process(false)` DOES NOT REACH IT.** When this was
+		# written `card_visual.tscn` autoplayed its idle, so the AnimationPlayer advanced independently
+		# and parking only the script left the SKINNED POSE drifting — that was the entire residual
+		# after `floating` was handled (78834 px -> ~6-31 px -> 0).
+		# ⚠ **KEPT DELIBERATELY THOUGH THE IDLE NO LONGER AUTOPLAYS** (owner cleared it 2026-08-07 —
+		# `CardVisual.RIG_ANIM`). It is now belt-and-braces rather than load-bearing, and it is what
+		# makes this shot's determinism independent of that flag: if the idle is ever turned back on,
+		# or any caller poses the rig before staging, the pose is still pinned here rather than
+		# silently reintroducing the 78k-px drift. Seek with `update = true` so the pose is applied.
 		var rig := card.get_node_or_null(^"AnimationPlayer") as AnimationPlayer
 		if rig:
 			rig.seek(0.0, true)
@@ -852,6 +855,47 @@ func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
 	att.sync(case.requests)
 	return att
 
+## ⚠⚠ **THE CAUSE OF THE ROTATED-PANEL NONDETERMINISM, OPEN SINCE 2026-07-27 — FOUND 2026-08-08.**
+##
+## `FxAttachment._rot_tight` defaults to **true** and is re-evaluated in exactly one place, guarded by
+## `if moved and on_screen:`. `_on_screen()` reads `get_global_transform_with_canvas()` and
+## `get_viewport_rect()`. `_shot` poses a card and calls `_push_live(0.0)` **in the same frame it is
+## added**, before this SubViewport's canvas transform has settled — so `_on_screen()` can be FALSE at
+## that instant, and then `_rot_tight` never flips.
+##
+## For a ROTATED host that is the whole ballgame: `_size_quad`'s lever B only widens the quad to the
+## diagonal bound `if rotates and req.rotates_with_host and not _rot_tight`. Left tight, a turned
+## card's flames render against a quad sized for an upright one. And because the harness PARKS each
+## attachment (`set_process(false)`) immediately afterwards, that single call is the only chance the
+## flag ever gets — nothing re-evaluates it before the capture.
+##
+## That accounts for every symptom the docs recorded and could not explain:
+##   * only ROTATED hosts (an upright host is legitimately `_rot_tight`, so the branch is a no-op) —
+##     which is exactly the historic noisy set, `02_fire_rotation` / `05f_ball_rotation` /
+##     `behind_prop_turned`;
+##   * BISTABLE rather than drifting, with the two runs differing by the SAME count every time (8248
+##     px for `02_fire_rotation`), because it is one boolean and not a continuum;
+##   * upright panels byte-identical in every run.
+##
+## ⚠ **IT IS A HARNESS BUG, NOT A GAME BUG.** In play the attachment is never parked, so the frame the
+## host comes back on screen re-evaluates the flag (`_sent_rot` is only recorded when it really was
+## sent, so `moved` is still true on return). Do not "fix" `fx_attachment.gd` for this.
+##
+## The fix: settle one frame so the canvas transform is real, then re-push and re-park.
+## ⚠ ORDER IS THE SAME RULE AS THE BUILD LOOP'S — push FIRST, disable the process LAST, or
+## `_push_live`'s trailing `set_process(not _fx.is_empty())` silently re-enables it and the awaited
+## frames advance the clocks off `SHOT_TIME`.
+func _settle_poses(atts: Array[FxAttachment]) -> void:
+	# ⚠ TWO frames, not one. `_push_live` SKIPS ITS UPLOADS ENTIRELY when `_on_screen()` is
+	# false, and one frame was not always enough for the canvas transform to settle —
+	# measured on `behind_prop_turned`, which stayed bistable at one frame.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for att : FxAttachment in atts:
+		if not is_instance_valid(att): continue
+		att._push_live(0.0)
+		att.set_process(false)
+
 ## Lay the cases out across the viewport, drive every clock to the SAME fixed time, wait for the
 ## frame to actually reach the screen, then capture it.
 func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
@@ -909,6 +953,8 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		att._phase = case.phase if case.phase >= 0.0 else 0.13
 		att._push_live(0.0)
 		att.set_process(false)
+		# ⚠ Re-pushed after a settle frame below — see `_settle_poses()`. This first push is kept
+		# because it seeds `_time`/`_phase` before anything can read them.
 		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
 		# THE COUNTER-ROTATION, PRINTED — because the rotated panels of this shot have a standing
 		# "not reproducible" warning and it was never run to ground. Two consecutive runs of ONE
@@ -931,6 +977,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 					" u_top_fraction=", m.get_shader_parameter("u_top_fraction"),
 					" u_return_height=", m.get_shader_parameter("u_return_height"),
 					" u_extent=", m.get_shader_parameter("u_extent"))
+	await _settle_poses(atts)
 	var img : Image = await capture(file_name, caption)
 	for att : FxAttachment in atts:
 		print("  [", file_name, "] POST-CAPTURE att.rotation=", att.rotation, " global=",

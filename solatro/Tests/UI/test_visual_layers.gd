@@ -63,6 +63,8 @@ func _ready() -> void:
 	await test_the_momentary_cue_draws_outside_scoring()
 	await test_the_reveal_opens_a_row_and_moves_the_slots_below_it()
 	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
+	await test_lights_stay_glued_to_cards_that_move_while_lit()
+	await test_lights_track_a_scrolled_board()
 	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	finish()
@@ -1291,6 +1293,157 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 			"gutter was off its row by %.2f px at worst" % worst_gutter)
 	pl._visuals.erase(prop)
 	if is_instance_valid(vis): vis.queue_free()
+	await _teardown_view(view)
+
+## **A LIT CARD THAT MOVES MUST KEEP ITS LIGHT — the one row of the tool-coverage table that was a
+## REAL gap rather than a tuning-tool limitation.**
+##
+## `HANDOFF_spotlight`'s coverage table lists three things the spotlight tool cannot pose: the cue as
+## a timed event, two zones, and *"cards moving while lit; board scroll"*. Checked 2026-08-07, the
+## first two are covered on the REAL board regardless of the tool —
+## `test_the_momentary_cue_draws_outside_scoring` measures the cue over time, and both this suite and
+## `reveal_shot` walk `for zx in 2` (reveal_shot actually reveals in zone 1). **Only this one had no
+## coverage anywhere**, and its ❌ read like missing coverage rather than "the tool poses a static
+## board".
+##
+## ⚠ **IT IS ALSO THE ONE MOST LIKELY TO BREAK SILENTLY.** Beams and circles are pushed to the shader
+## as ABSOLUTE screen positions, re-derived every frame from `CardVisual.spotlight_center()`. Nothing
+## structural ties a light to its card — if that push is ever skipped, cached, or dirty-checked on
+## the wrong key, the light simply stays where the card USED to be. On a still board that is
+## invisible, and a card only moves while lit during a reveal, which is exactly when the eye is on
+## the beam rather than the card. ⚠ `LightLayer._push_lights` now has a dirty-check (added
+## 2026-08-07's review pass) — precisely the class of change that could break this.
+func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
+	var view : GameView = await _stand_up_view()
+	await _deal_until_stacked(view)
+	var pa := view.play_area
+	var layer := view.light_layer
+
+	# Light a row-0 card AND the card buried directly under it. Row 0 then opens to uncover the lower
+	# one, and THAT card is lit while it moves — which is the case. Lighting row 0 alone moves
+	# nothing that carries a light.
+	var at : Dictionary[Vector3i, CardData] = {}
+	for data : CardData in pa.data_card.keys():
+		at[pa.coord_of_data(data)] = data
+	var lit : Array[CardData] = []
+	var mover : CardData = null
+	for coord : Vector3i in at:
+		if coord.z != 0: continue
+		if not pa._row_covers_anything(coord.x, 0): continue
+		var under : CardData = at.get(Vector3i(coord.x, coord.y, 1))
+		if under == null: continue
+		lit = [at[coord], under] as Array[CardData]
+		mover = under
+		break
+	check(mover != null, "a covered row-0 card with a card beneath it exists to light", "none found")
+	if mover == null:
+		await _teardown_view(view)
+		return
+
+	var open_key := Vector2i(pa.coord_of_data(mover).x, 0)
+	view.game.spotlight_section_changed.emit(lit)
+	var worst := 0.0
+	var moved := 0.0
+	var saw_partial := false
+	var samples := 0
+	var start_centre := _centre_for(view, mover)
+	var elapsed := 0.0
+	while elapsed < 6.0:
+		elapsed += await _tick_seconds()
+		if not is_instance_valid(layer) or not is_instance_valid(view): break
+		samples += 1
+		var t : float = pa._row_open.get(open_key, 0.0)
+		if t > 0.05 and t < 0.95: saw_partial = true
+		var want := _centre_for(view, mover)
+		moved = maxf(moved, start_centre.distance_to(want))
+		# Some light must be sitting on this card's CURRENT art square, not the one it left.
+		var nearest := INF
+		for l : LightLayer.Light in layer._lights:
+			nearest = minf(nearest, l.centre.distance_to(want))
+		if not layer._lights.is_empty(): worst = maxf(worst, nearest)
+		if elapsed > 2.5 and not pa._row_open_wanted.is_empty():
+			view.game.spotlight_section_changed.emit([] as Array[CardData])
+		if elapsed > 2.5 and pa._row_open.is_empty(): break
+
+	check(samples > 10, "the lit-and-moving cycle was sampled frame by frame", "%d samples" % samples)
+	check(saw_partial,
+			"...and the sampling caught the row PARTWAY open, so this is a mid-MOTION claim",
+			"never observed a partial opening — the ease was too fast to sample")
+	# ⚠ THE GUARD AGAINST A VACUOUS PASS: if the card never actually moved, a light that never moved
+	# either would sail through. A full opening is ~85 px, so anything under a fraction of that means
+	# the fixture stopped exercising the case and the assertion below would prove nothing.
+	check(moved > 20.0,
+			"the lit card really did MOVE while lit (else this whole test is vacuous)",
+			"it shifted only %.1f px over the cycle" % moved)
+	check(worst < 1.0,
+			"a light stays on its card's art square every frame while that card moves",
+			"the nearest light was %.2f px off the moving card's centre at worst" % worst)
+	await _teardown_view(view)
+
+## **THE OTHER HALF OF "cards moving while lit; board SCROLL".**
+##
+## The reveal test above moves a card by growing a row. Scrolling moves EVERY card at once, and by a
+## different mechanism — the canvas transform rather than the layout — so a light that tracked one
+## could still miss the other. Lights are pushed in absolute screen space, so the question is real.
+##
+## ⚠ **THE BOARD HAS TO BE MADE SCROLLABLE FIRST, OR THIS TEST IS VACUOUS.** The shipped board fits
+## the window (the 6-column ceiling clears it by 25 px), so `scroll_horizontal` would clamp to 0, the
+## cards would not move, and a light that never moved either would sail through. `card_scale` is
+## doubled to force real overflow, and the test ASSERTS the overflow exists before it asserts
+## anything about lights.
+## ⚠ `card_scale` is a SHARED settings knob — restored immediately, and the suite's
+## `backup_real_settings()` keeps the player's file out of it either way.
+func test_lights_track_a_scrolled_board() -> void:
+	var view : GameView = await _stand_up_view()
+	await _deal_until_stacked(view)
+	var pa := view.play_area
+	var layer := view.light_layer
+	var scroll := pa.get_node_or_null(^"SmoothScrollContainer") as ScrollContainer
+	check(scroll != null, "the play area has its scroll container")
+	if scroll == null:
+		await _teardown_view(view)
+		return
+
+	var prev_scale : float = SettingsManager.settings.card_scale
+	SettingsManager.settings.card_scale = prev_scale * 2.0
+	pa.flush_rebuild()
+	for _i : int in 3: await _tick_seconds()
+
+	var bar := scroll.get_h_scroll_bar()
+	var scrollable : bool = bar != null and bar.max_value > scroll.size.x + 1.0
+	check(scrollable, "the widened board really does overflow its container (else this is vacuous)",
+			"content %.1f vs container %.1f" % [bar.max_value if bar else -1.0, scroll.size.x])
+
+	var target : CardData = null
+	for data : CardData in pa.data_card.keys():
+		target = data
+		break
+	check(target != null, "there is a card to light on the scrolled board")
+	var worst := 0.0
+	var moved := 0.0
+	if target != null and scrollable:
+		view.game.spotlight_section_changed.emit([target] as Array[CardData])
+		for _i : int in 3: await _tick_seconds()
+		var before := _centre_for(view, target)
+		# Scroll to the far end — every card slides under the lights at once.
+		scroll.scroll_horizontal = int(bar.max_value)
+		for _i : int in 3: await _tick_seconds()
+		var after := _centre_for(view, target)
+		moved = before.distance_to(after)
+		var nearest := INF
+		for l : LightLayer.Light in layer._lights:
+			nearest = minf(nearest, l.centre.distance_to(after))
+		worst = nearest if not layer._lights.is_empty() else 0.0
+		view.game.spotlight_section_changed.emit([] as Array[CardData])
+		for _i : int in 2: await _tick_seconds()
+
+	check(moved > 20.0, "scrolling really did move the lit card (else this is vacuous)",
+			"it shifted only %.1f px" % moved)
+	check(worst < 1.0, "a light follows its card across a board SCROLL, not just a layout move",
+			"the nearest light was %.2f px off the scrolled card's centre" % worst)
+
+	SettingsManager.settings.card_scale = prev_scale
+	pa.flush_rebuild()
 	await _teardown_view(view)
 
 ## **DEAL UNTIL A COLUMN IS ACTUALLY STACKED — WITHOUT THIS, S16 CANNOT BE TESTED AT ALL.**

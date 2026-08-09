@@ -66,10 +66,9 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   window open forever and no in-scene watchdog can save it — the script never loads.
 - ⚠ **`--headless --path <solatro> --import` FIRST after adding any `class_name`**, or it resolves as
   a bare `Resource`.
-- ⚠ **The SUITE COUNT is the stable number: 30** (it was 29 when the entries below were written;
-  the historical `ALL 29 SUITES` lines in the ledger are left as they were recorded). The check total
-  drifts run to run (fuzz suites). A
-  drop means a suite failed to LOAD while the banner still says PASSED.
+- ⚠ **The SUITE COUNT is the stable number: 30.** The check total drifts run to run (fuzz suites).
+  A drop means a suite failed to LOAD while the banner still says PASSED. (Ledger entries below
+  quote `ALL 29 SUITES` from when they were recorded.)
 - ⚠ **The suite FAILS on unexpected engine errors**, read from `user://logs/godot.log`.
   `ENGINE_ERROR_ALLOW` in `Tests/all_tests.gd` is the allowlist — keep it narrow.
 - ⚠ **Never run Godot while the owner's editor is open.** ⚠ **No `git add`, no commits.**
@@ -219,9 +218,20 @@ still cannot show a pulse, a travel, a fade or a dead cascade.
   open → it has moved down by the full opening and the gap is clean; `JUMP_ADJUSTED` puts it back up
   by ~25 px (exactly `card_jump_rise_play`), visibly distinct from `CARD_HEIGHT`; closing returns it
   exactly. Measured alongside: extra 0 → 41.3 → 90.0 px (`CARD_HEIGHT`) and 65.0 px (`JUMP_ADJUSTED`).
-  ⚠ **CAVEAT — the fixture is ONE ROW DEEP per column, so these shots do NOT show the headline case:
-  a BURIED card being uncovered.** That still needs a stacked board (a `Next` that drops a stack).
-- ⚠ **G3.3's `10_light_layer` CLAIM IS UNPROVEN — AND IS NOW RE-TESTABLE (2026-08-07).** That panel
+  ✅ **THE BURIED CASE IS SHOT AND HAS BEEN LOOKED AT.** The
+  fixture is no longer one row deep: `reveal_shot.gd` deals up to 4 `Next`s until
+  `_row_covers_anything` is true, and the run prints `revealing zone=1 row=0 (5 cards); buried below
+  = true`. **Read by eye on `00_closed` vs `02_open_full`:** closed, the middle row sits tight under
+  the top row with each card roughly 40 % covered; open, that buried row has separated and its cards
+  are FULLY visible — whole face, rank, pips and art — with five beams landing on them and the
+  bottom row pushed down to make the space. That is the headline case the whole reveal exists for,
+  and it behaves.
+  ⚠ **THE OPENING NUMBERS MOVED AND THE ONES RECORDED ABOVE ARE STALE:** now **85.0 px**
+  (`CARD_HEIGHT`) and **48.0 px** (`JUMP_ADJUSTED`), against the 80.0/45.0 recorded earlier — the
+  40x54 card grew them. Both modes are still captured in `user://reveal_shots/`.
+  ⚠ **Bearing on G2.2 (still the owner's call):** on `02_open_full` the rank glyphs of all five lit
+  cards stay legible under the circle. That is an observation, not the judgement.
+- ⚠ **G3.3's `10_light_layer` CLAIM IS UNPROVEN, AND IS NOW RE-TESTABLE.** That panel
   was NONDETERMINISTIC: three runs of one unchanged build put it at up to **78834 px (8.1% of the
   frame)** between pairs, so the entry below — which attributes its difference to the 38x52 art
   refactor and calls the light rig "pixel-for-pixel the same look" — **could not have been
@@ -273,12 +283,12 @@ possible in scenarios, otherwise whats the point."* Each row below was read in t
 | `fx_intensity` floor (G2.4) | ✅ *(fixed today)* | `fx_intensity` on S14 |
 | **Chart E TRAVEL — lights move section to section, surplus retire, new ones spawn** | ✅ *(built)* | `_TBeam` + `_sync_beams()` + `_advance_beams()` mirror `SpotlightDirector`; `begin()` only when nothing is lit. **Preset `S8` is 3 → 5 → 2**, so it travels, spawns two, then retires three |
 | **Spawn / hold / retire ENVELOPES** | ✅ *(built)* | `light.intensity = b.fade`; `--verify` now reports `fade=Y` for every preset |
-| **S15's momentary cue as a timed event** | ❌ | `casual` only changes the dim's depth; there is no spawn→hold→self-retire |
+| **S15's momentary cue as a timed event** | ❌ tool / ✅ COVERED | The TOOL cannot pose it (`casual` only changes the dim's depth; no spawn→hold→self-retire) — but the behaviour IS covered on the real board by `test_the_momentary_cue_draws_outside_scoring`, which measures it OVER TIME, plus `reveal_shot`'s `05_cue_probe`. A tuning-tool limitation, not a coverage gap |
 | **GAP-009's separation MODE** (`CARD_HEIGHT` vs `JUMP_ADJUSTED`) | ✅ *(fixed)* | the tool's opening is `PlayArea.row_open_span()` — the game's own static, mode included |
 | **"A row that covers nothing does not open"** | ✅ *(fixed)* | `_separated_depths()` skips the deepest row, mirroring `row_open_extra`'s guard |
 | Origin SUBDIVISION | ✅ | `S8` (3 → 5) reaches `assign()`'s growth loop — the old "unreachable" claim was false; see Open bugs |
-| Two zones (upper + lower) | ❌ | the tool builds one grid |
-| Cards moving while lit; board scroll | ❌ | the board is posed statically |
+| Two zones (upper + lower) | ❌ tool / ✅ COVERED | The tool builds one grid — but both VISUAL LAYERS and `reveal_shot` walk `for zx in 2` on a REAL PlayArea, and `reveal_shot` actually reveals in **zone 1**. A tuning-tool limitation, not a coverage gap |
+| Cards moving while lit; board scroll | ❌ tool / ✅ NOW COVERED | The board is posed statically here. ⚠ **This was the one row that WAS a real gap** — nothing anywhere asserted that a light follows a card moving under it, and lights are pushed as ABSOLUTE positions re-derived every frame, so a skipped or wrongly-keyed push leaves the beam where the card used to be. Closed by `test_lights_stay_glued_to_cards_that_move_while_lit` (real reveal, sampled every frame, anti-vacuity guards; mutation-tested — aimed at the stale centre it fails by 27 px). ⚠ **Board SCROLL is still unposed and unasserted** |
 
 **WHICH KNOBS THE TOOL CAN ACTUALLY TUNE** (grepped, not assumed):
 - ✅ **Tunable now** — every `FxSpotlightStyle` look knob (circle radius, beam widths, intensities,
@@ -320,7 +330,12 @@ instead of the claim (§9d), rendering that never reached a pixel (§9e), and co
 
 ## Open bugs
 
-⚠ **PIXELS is GREEN but PINNED, not fixed.** `test_the_card_mask_is_the_card_the_player_sees` no longer
+✅ **PIXELS: the band is retired.** The check runs the REST POSE ONLY and asserts
+EXACT agreement (0 cells, 0.00) — the shipped rig no longer deforms (the idle animation is off and
+nothing else writes a Bone2D position), so the two model approximations cannot manifest. The record
+below stands for if the idle is ever re-enabled; the deformed branches are left in the test.
+
+⚠ **PIXELS WAS GREEN but PINNED, not fixed.** `test_the_card_mask_is_the_card_the_player_sees` no longer
 demands exact agreement — that bar was unachievable (a 24-gon vs a bilinearly-skinned texture's alpha)
 and passed at rest only by alignment. It now asserts a measured band: **edges <= 1.5 cells** (the
 32-slot wedge index, angular quantization; worst 1.34) and **corner bite <= 2.5 art units**
@@ -336,8 +351,8 @@ took.** The clean-cycle check (10 build/frees) passes throughout — only the SE
 ⚠ **RULED OUT — "the count is read before deferred frees flush".** A settle-until-stable drain still
 failed, and draining harder before the BASELINE lowers it and makes the bound stricter. **Reverted; do
 not redo it.**
-⚠ **ALSO RULED OUT (2026-08-07) — `print_orphan_nodes()`, which this file named as the next thing to
-try. IT CANNOT WORK.** Run on a genuinely FAILING run it printed exactly four strays, and all four are
+⚠ **ALSO RULED OUT — `print_orphan_nodes()`, which this file once named as the next thing to try.
+IT CANNOT WORK.** Run on a genuinely FAILING run it printed exactly four strays, and all four are
 the ones the suite abandons ON PURPOSE before the baseline to prove the canary can see a leak at all.
 **The growth is not a Node**, so an orphan-node dump cannot contain it however often it is run.
 ✅ Replaced by `_object_census()` / `_report_growth()` in the suite: on a failure it splits the growth
@@ -345,7 +360,7 @@ across NODE / RESOURCE / other (plain RefCounted) from the engine's own performa
 which class it landed in. Verified by forcing the branch. **The class is still unknown** — the next
 failing run reports it with no extra work. Details: `todo.md`.
 
-⚠ **(2026-08-07: did NOT recur in ~20 consecutive runs. "A concurrent suite hijacks the static
+⚠ **(Did NOT recur in ~20 consecutive runs. "A concurrent suite hijacks the static
 `DeckViewer._open`" is RULED OUT — the three `show_deck` calls have no `await` between them, so the
 sequence is atomic within a frame. The check now prints every DeckViewer under the suite with its
 queued flag plus who `_open` points at, so the next occurrence carries its own evidence.)**
@@ -353,7 +368,7 @@ queued flag plus who `_open` points at, so the next occurrence carries its own e
 in four runs, NOT this stream's. **So "the suite is green" is a per-run statement here** — at least two
 unrelated tests flake and a clean run does not predict the next one.
 
-✅ **BOTH FIXED 2026-08-07 — and the suspect named here was wrong.** The leaked GLES3 texture was
+✅ **BOTH FIXED.** The leaked GLES3 texture was
 **`res://Assets/hoop_prop.png`**, not the glow's `GradientTexture1D` (that ramp is 64x1 = 256 bytes;
 the leak was 36844, which is 96x72 plus its full mipmap chain, to the byte). Cause: `PropVisual`'s
 split half-nodes are parented to CardLayer and handed out unparented, and their only free path was
@@ -468,7 +483,7 @@ flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `
 | 3 | Origin subdivision reachable and tested | `UI/spotlight_origins.gd` | ✅ done — was already reachable via `S8` (claim was false); `assign()`-growth test added |
 | 4 | Tool `spotlight_separation_mode` + covers-nothing | `Tools/spotlight_tool.gd` | ✅ done — opening routes through `PlayArea.row_open_span()`, deepest row skipped |
 | 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | ⚠ OPEN — but `print_orphan_nodes()` is RULED OUT (the growth is not a Node; see Open bugs). A per-class census now reports node/resource/other on failure |
-| 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | ⚠ Band kept; count ceiling RESTORED (rest exact, deformed ≤130) and corner bound now in cells. Model itself unfixed — `todo.md` |
+| 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | ✅ MOOT — the owner turned the idle rig animation off, and nothing else writes a Bone2D position, so the shipped card never deforms. The check is REST-POSE ONLY and asserts EXACT agreement (0 cells, 0.00); no band, no bound to protect. Both model approximations return if the idle is re-enabled — the deformed branches are left in the test for that |
 | 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ✅ done — `Tools/run_tests.py` is the outer wrapper. ⚠ It could NOT be done by re-reading `godot.log` (the engine closes it during the same cleanup); it diffs the process streams against `godot.log`. Found and fixed the hoop half-node leak immediately |
 | 8 | **Dirty-check the light push** | `UI/light_layer.gd::_push_lights` | ✅ done — identical uploads skipped at the layer, covering both push paths |
 

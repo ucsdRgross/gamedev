@@ -157,6 +157,8 @@ func _shot(file_name: String, caption: String, panels: Array[_Panel]) -> void:
 	var size := canvas()
 	var step := size.x / float(panels.size())
 	var zoom := _zoom_for(panels, step)
+	# Collected so every pose can be re-pushed after a settle frame — see the block below the loop.
+	var atts : Array[FxAttachment] = []
 	for i : int in panels.size():
 		var panel : _Panel = panels[i]
 		var slot := Node2D.new()
@@ -199,8 +201,22 @@ func _shot(file_name: String, caption: String, panels: Array[_Panel]) -> void:
 		att._time = SHOT_TIME
 		att._push_live(0.0)
 		att.set_process(false)
+		atts.append(att)
 		label(holder, panel.label, Vector2(step * (i + 0.5), size.y * 0.93))
 	print("  [", file_name, "] zoom=", zoom, " (", zoom, " screen px per art unit)")
+	# ⚠ **SETTLE, THEN RE-PUSH AND RE-PARK — `behind_prop_turned`'s nondeterminism, same cause as
+	# `fx_snapshot`'s rotated panels (2026-08-08).** `FxAttachment._rot_tight` defaults TRUE and is
+	# only re-evaluated under `if moved and on_screen:`; the loop above pushes in the frame the node
+	# is added, when `get_global_transform_with_canvas()` is not settled yet, so `_on_screen()` can
+	# be false and a ROTATED host keeps the tight quad bound. Parking immediately after means that
+	# push is the only chance the flag gets. Full write-up: `fx_snapshot.gd::_settle_poses`.
+	# ⚠ Push FIRST, disable the process LAST — `_push_live` re-enables it.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for att : FxAttachment in atts:
+		if not is_instance_valid(att): continue
+		att._push_live(0.0)
+		att.set_process(false)
 	await capture(file_name, caption)
 	holder.queue_free()
 	await get_tree().process_frame

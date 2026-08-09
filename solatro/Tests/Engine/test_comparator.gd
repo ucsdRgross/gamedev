@@ -320,9 +320,16 @@ func run_end_to_end_scoring_under_mod() -> void:
 	var suited := await Scoring.PokerHands.score(hand)
 	var suited_types : Array[Scoring.MELD_TYPE] = suited[0].types if not suited.is_empty() \
 			else [] as Array[Scoring.MELD_TYPE]
+	# ⚠ **AND THE REASON MATTERS — IT IS NOT "build_multi IGNORES THE HOOK".** `build_multi` DOES ask
+	# `Scoring.is_flush` for its Full-Flush branch (`scoring.gd:273`), so a suit mod genuinely can turn
+	# an existing structure into a Full Flush and double its score. This fixture never gets there: five
+	# distinct ranks form no structure at all, so it takes the High Card path, and the PURE-flush
+	# handlers group from suit BUCKETS (`scoring.gd:412` / `:731`), which no hook can reach.
+	# So the split is FORMATION vs CLASSIFICATION, not "scoring ignores comparison". Corrected
+	# 2026-08-08 after tracing every call site; the earlier reading was too broad. See todo.md.
 	check(not suited_types.has(Scoring.MELD_TYPE.FLUSH),
-			"G1 PINNED: the SAME cards do NOT score as a flush — is_flush and the scored hand "
-			+ "disagree under one mod, which is the seam this section exists to make visible",
+			"G1 PINNED: the SAME cards do NOT score as a flush — a suit mod cannot FORM one, though "
+			+ "it can still classify an existing structure as a Full Flush elsewhere",
 			"got '%s' %s" % [suited[0].name if not suited.is_empty() else "<none>", str(suited_types)])
 
 	# --- and it must be REVERSIBLE: clearing the mod restores the control result ---------------

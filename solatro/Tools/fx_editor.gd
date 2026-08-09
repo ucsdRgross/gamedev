@@ -380,7 +380,8 @@ func _new_card() -> CardVisual:
 
 ## Park a real card at `rig_pose` of its own animation and hand the FX its live outline.
 ##
-## ⚠ THE ANIMATION DOES NOT AUTOPLAY IN THE EDITOR (autoplay is a runtime thing), which is what makes
+## ⚠ THE ANIMATION NEVER PLAYS BY ITSELF — editor-inert before, and since 2026-08-07 not autoplayed at
+## runtime either (`CardVisual.RIG_ANIM` is now the only home for its name) — which is what makes
 ## `rig_pose` the honest knob: every pose it seeks is one the shipped animation actually passes through,
 ## and it holds still while a style is tuned.
 func _pose_card(card : CardVisual, fx : FxAttachment) -> void:
@@ -404,10 +405,10 @@ func _pose_card(card : CardVisual, fx : FxAttachment) -> void:
 		card.fx.queue_free()
 		card.fx = null
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap and ap.autoplay != "":
-		var anim := ap.get_animation(ap.autoplay)
+	if ap and ap.has_animation(CardVisual.RIG_ANIM):
+		var anim := ap.get_animation(CardVisual.RIG_ANIM)
 		if anim:
-			ap.play(ap.autoplay)
+			ap.play(CardVisual.RIG_ANIM)
 			ap.seek(rig_pose * anim.length, true)
 			ap.pause()
 	# The card's OWN rig, the same array `_track_fx_outline` hands over on the board every frame.

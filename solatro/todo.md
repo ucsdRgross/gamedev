@@ -65,39 +65,114 @@ the full record, including what only the owner can decide, is FX_HANDOFF §0.
 
 ## Scoring engine test gaps
 
-- ✅ G3/G4/G5 **CLOSED** 2026-08-07 — `test_scoring.gd`: `run_score_model_table` (ScoreModel branch
-  table, direct), `run_loc_name_table` (`get_loc_name` branch/distinctness + the size-suffix rule),
-  `run_compare_results_chain` (every `_compare_results` tier in isolation, plus irreflexivity).
-  All three were mutation-tested — each section was made to fail on purpose and did.
-- ✅ G1 **CLOSED** 2026-08-07 — `test_comparator.gd::run_end_to_end_scoring_under_mod`, and it
-  **found a real seam, which is now PINNED and needs an owner ruling** (below).
-- SD5 test-file section renumbering · SD6 exact-name leaderboard asserts · SE4 single-walk
-  `_scan_wrap` (micro).
+- ⚠ **SE4 IS NOT A TEST GAP AND SHOULD NOT SIT UNDER THIS HEADING.** "single-walk `_scan_wrap`" is a
+  micro-OPTIMISATION of `Scripts/scoring.gd`: the scan restarts its walk from every rank
+  (`for start in range(A, W + 1)`), where one pass could find the longest wrap-around run. Nothing
+  about coverage. ⚠ **No benchmark exists for the scoring path**, so doing it now would be
+  speculative — measure first, and only if a real board's scoring shows up in a profile.
+- ⬜ SD5 test-file section renumbering — cosmetic only, and `test_scoring.gd`'s own header already
+  says the section numbers are historical and `_ready` order is the real one. Churn on a 1200-line
+  file for no behavioural gain; left deliberately.
 
-### ⬜ OWNER DECISION — comparator mods do not reach hand building
+### ⬜ OWNER DECISION — comparator hooks reach CLASSIFICATION but not FORMATION
 
-Writing G1 turned up two representations of *"are these the same?"*, with only one of them
-overridable, and nothing comparing them:
+**Where `on_compare_ranks` / `on_compare_suits` DO land:**
 
-- **Pairwise** — `compare_ranks` / `is_rank_same` / `is_suit_same`. The `on_compare_ranks` /
-  `on_compare_suits` hooks DO override these, and `Scoring.is_flush` plus the placement legality
-  query both use them, so the hooks are live in the game today.
-- **Profile** — `get_rank_profile` / `get_suit_profile` in `Scoring._get_hand_profiles_async`, which
-  derive per-card bucket keys and never consult a hook. **All grouping — sets, straights, houses —
-  is built from these buckets.**
+| Site | What it governs |
+|---|---|
+| `skill_grabber_og_lower`, `skill_placer_og_lower` | whether a grab / place is legal (shipped rules cards) |
+| `scoring.gd:273` (`build_multi` -> `Scoring.is_flush`) | whether a structure counts as a **Full Flush** — a x2 score multiplier |
+| `scoring.gd:351`, `scoring.gd:796` | rank sort order; best-high-card choice |
+| the placement legality query | feeds PATIENCE (see the patience section) |
 
-Measured: a mod returning `0.0` from `on_compare_ranks` ("every rank is the same") leaves
-`PokerHands.score` returning **High Card** on five distinct ranks. With a suit mod, `is_flush(hand)`
-returns **true** while the hand scored from those same cards carries **no FLUSH type** — the two
-disagree under one mod.
+**Where they do NOT:** hand FORMATION. Every cluster is built from profile bucket keys, and
+`PipComparator.get_rank_profile` / `get_suit_profile` are PURE — they read `r.value` / `s.get_str()`
+and are not even `async`, so they cannot dispatch to a mod without being rewritten.
+- `scoring.gd:460` X-of-a-kind — rank buckets (`cluster.datas.size() >= 2` IS the definition of a set)
+- `scoring.gd:412` / `:731` pure flush — suit buckets
+- straights — rank buckets
 
-⚠ **Entirely latent: no shipped card implements either hook** (`grep "func on_compare_ranks" Cards/`
-is empty). The first rules card that rewrites rank equality will land on this, and it will present
-as the card doing nothing.
+**So the seam, stated precisely: within scoring, "are these the same?" is answered TWO WAYS — bucket
+keys when FORMING a hand, the hook when CLASSIFYING or MULTIPLYING one.** Consequences:
+- A **suit mod** cannot make five distinct suits into a flush (buckets), but CAN turn an existing
+  structure into a Full Flush and double its score. ⚠ **This is the one that looks like a genuine
+  inconsistency** — the same question about the same cards, answered differently at two steps.
+- A **rank mod** cannot make five distinct ranks into a Five of a Kind, but does change sort order,
+  high-card choice and move legality. That reads more like a deliberate boundary than a bug.
 
-The question is whether a comparator mod SHOULD restructure hands. `test_comparator.gd` SECTION 5
-pins today's answer (mods do not regroup) so the split is visible and any change to it is loud —
-those checks are written to FAIL if grouping is ever wired through the hooks, which is the point.
+Measured (`test_comparator.gd` SECTION 5): a mod returning `0.0` from `on_compare_ranks` leaves five
+distinct ranks scoring as **High Card**; with a suit mod, `is_flush(hand)` returns **true** while the
+scored hand carries **no FLUSH type**. ⚠ That second result is explained by the fixture having no
+structure at all (High Card never reaches `build_multi`), NOT by `build_multi` ignoring the hook.
+
+⚠ **Entirely latent: no shipped card implements either hook.** The first one that does will land on
+this, and it will look like a broken card rather than an engine boundary.
+
+**OWNER RULING — this is a BUG:** *"If I wanted to override on compare,
+I would not expect a valid hand to fail because it went down high card path instead before ever
+checking valid on compare."* A hook that says "override rank comparison" and is then skipped by the
+one step the player judges it on is a trap, whatever the implementation. **Owner has accepted this as
+a BUG. Not resolved — implement later.**
+
+⚠ **PROFILE KEYS ARE NOT THE ANSWER HERE.** They express *which equivalence classes a card belongs to*: right for WILD cards, half-step ranks and
+multi-suit cards, wrong for a comparison override. "All ranks are the same" would need every card to
+emit every rank key (degenerate), and "ranks within 1 are the same" is relational and cannot be
+expressed as class membership at all.
+
+---
+
+#### ⬜ THE PLAN — build the buckets THROUGH the hooks, before the meld makers ever see them
+
+Owner's framing: *"premake buckets already influenced by hooks such as on compare before sending it
+to the meld makers."* That is exactly the shape — and it is a ONE-SITE change, because every handler
+already reads its clusters out of one place.
+
+**1. The site.** `Scoring._get_hand_profiles_async` is the only place buckets are built
+(`profile.ranks.map` / `profile.suits.map`). Every handler downstream — `ExpandedGridHandler` (:460),
+the pure-flush gate (:412), `MultiStraightHandler` (:570), `MultiFlushHandler` (:731) — consumes those
+maps and nothing else. Fix it there and every meld maker inherits it; no handler needs touching.
+
+**2. The gate, which is what makes this free today.**
+```
+if CardEnvironment.CURRENT._compare_implementers(&"on_compare_ranks").is_empty():
+        -> current path: key = r.value           # bit-identical, zero cost
+else:
+        -> derive buckets from the comparator    # only when a mod actually exists
+```
+`_compare_implementers` is **cached per board revision** (`_revision_key()`, invalidated by
+`GameData.revision`), so the gate is a dictionary lookup. No shipped card implements either hook, so
+the fast path is always taken today and behaviour cannot change until content asks for it.
+
+**3. The slow path: TRANSITIVE CLOSURE (union-find), not naive pairwise.** Walk the cards, union any
+pair the comparator calls the same, then each disjoint set becomes one bucket.
+⚠ This is what dissolves the transitivity objection: for a non-transitive hook like "within 1" on
+1,2,3 the closure merges all three — a DEFINED answer rather than an order-dependent one. A bucket
+must be an equivalence class or grouping means nothing. **Document the consequence:** such a rule
+swallows a whole run.
+
+**4. Do SUITS the same way**, and the second half of the seam closes with it: formation and
+classification would both derive from one hook, so `is_flush` saying "yes" while the scored hand
+carries no FLUSH type becomes impossible instead of merely tested-for.
+
+**5. ⚠ Keep the reverse maps consistent.** `profile.card_rank_keys[card]` / `card_suit_keys[card]` are
+the O(1) reverse index `HandProfile.remove_card` relies on. Closure-derived buckets must populate
+them too, or removal silently leaves cards in buckets.
+
+**6. Cost.** O(n²) comparisons, each possibly an async mod dispatch — but ONLY when a comparator mod
+is present. Worth a bench before shipping content that uses it; scoring runs over the whole board
+(30+ cards in the macro tests), so n² is not free at that size.
+
+**7. Tests that must change when this lands.** `test_comparator.gd` SECTION 5 pins TODAY'S behaviour
+and its checks are written to FAIL the moment grouping consults the hooks — that is deliberate. When
+implementing, invert them: five distinct ranks under an "all ranks equal" mod must become a
+Five of a Kind, and the suit-mod case must FORM a flush. The G1 fixture is already built for it.
+
+**Alternatives, kept for the record:** **B** keep today's split (cheapest, trap stays);
+**C** route `is_flush` through profiles so mods affect neither (removes the contradiction, costs
+suit mods their Full-Flush effect).
+
+`test_comparator.gd` SECTION 5 pins today's behaviour, and those checks FAIL if grouping is ever
+wired through the hooks — which is the point.
 
 ## Props / UI (owner has NOT re-verified)
 
@@ -153,14 +228,6 @@ Full behavior and the settings list: ARCHITECTURE_REVIEW §4e.
   matters if `SettingsManager.settings` is ever reassigned at runtime (its setter supports it).
 - Two gaps documented in ARCHITECTURE_REVIEW: the auto-Next pending-action replay caveat (§1.5) and
   the seen-set-only commit gap in `_perform_next` (§4e).
-- ✅ Test hygiene **DONE 2026-08-07**: settings isolation lives on `TestSuite`
-  (`backup_real_settings` / `restore_real_settings` + `snapshot_settings(prefix)`) and **every suite
-  now uses it** — UI PROPS, VISUAL LAYERS and LEAK CANARY had their copy-pasted
-  `REAL_SETTINGS_PATH` / `REAL_SETTINGS_BAK` pairs removed, which freed the base const back to the
-  obvious name (`TestSuite.REAL_SETTINGS_PATH`; the awkward `SETTINGS_FILE` is gone).
-  ⚠ **Do not reintroduce a local pair:** each copy hardcoded ONE backup path (`.testbak`,
-  `.testbak2`, `.testbak3`), so two suites running concurrently could park and restore across each
-  other. `_settings_bak_path()` derives the name from `suite_name()`, which is why it is a function.
 
 ## Card size + outline — landed, one thing open
 
@@ -168,13 +235,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 **ARCHITECTURE_REVIEW §4j**. Design record: `design/card_size_outline/`. Tuning:
 `Shaders/Styles/outline_default.tres`, edited live on `tools/outline_atlas.tscn`.
 
-- ⚠ **OPEN — `design/card_size_outline/gaps/GAP-001.md`: a 7-column board is now WIDER THAN THE
-  WINDOW.** A fire prop spawns at x=1187 against a 1152-px viewport; the card gained 5 px per
-  column and the board was already exactly on the edge. `test_ui_props`'s *"every spawned fire
-  entered the visible viewport"* is **left FAILING on purpose** — it reports a true fact, and the
-  three ways out (narrow the test board, drop `card_scale`, tighten `PlayArea.separation`) are a
-  game-feel call. ⚠ The real finding is the zero margin: **nothing asserts a full-width board fits
-  the window.**
 - ⚠ **ART, owner's call — the rim MERGES the dense `suit_art` frames.** The highest-rank frames
   pack nine+ pips into 32x32 and invert into a dark lattice. The fix is art-side (space by 3) or
   scope-side (exempt the 32x32 art). Nothing in code is wrong.
@@ -193,62 +253,42 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
-- **Snapshot nondeterminism — RE-MEASURED 2026-08-07, and it is not the "rotated host" story**
-  (FX_HANDOFF §12; full evidence in the `NOISY` comment in `Tools/snapshot_diff.py`). Three
-  consecutive runs of an unchanged build, every pair diffed: **18 of 21 panels byte-identical in all
-  three pairs.** The exceptions: `02_fire_rotation` (8248 px, and A^C was **0** — bistable),
-  `09_embers` (142–1015 px, randomised by design), and **`10_light_layer` (up to 78834 px = 8.1% of
-  the frame), which was never on the noisy list at all.** `05f_ball_rotation` was stable in all three.
-  **`10_light_layer` is now FIXED (below); `02_fire_rotation` remains the open one.**
-  - ⚠ **This unblocks the diagnosis rather than closing it.** Newly RULED OUT: `_push_live`'s
-    `rotation = -parent.global_rotation` — every CPU-side value the harness prints (rotations,
-    every shader uniform, every probe reading) was IDENTICAL across all three runs, so the
-    divergence is not in game logic, even though `fx_snapshot.gd` names that line as "the only place
-    that can happen". Also ruled out earlier: screen-space `fx_bayer`, pinning `_seed`.
-  - ✅ **`10_light_layer` FIXED — 78834 px → 0, byte-identical over three runs, and it is back in
-    the diff instead of on the noisy list.** Cause: UNPARKED CARD CLOCKS. That shot's shader side is
-    fully pinned (fixed centres and radii, `u_time = SHOT_TIME`), so the light could never vary —
-    what varied were the 18 real `ControlCard`s staged under it, which is also why it was the only
-    panel affected (it is the one shot using real cards rather than ghost stand-ins). TWO clocks
-    were live: `CardVisual.delta_floating_anim` drifts/bobs on **`Time.get_ticks_msec()`** (absolute
-    WALL CLOCK, and `floating` defaults to true), and `card_visual.tscn`'s **AnimationPlayer is on
-    autoplay**, so `set_process(false)` never reached the skinned bone pose — that was the whole
-    residual after the first fix (78834 → ~6-31 → 0). Fix is `fx_snapshot.gd::_park_cards`.
-    Re-read by eye afterwards: crossing beams, three radii, dim not black, glyphs still legible.
-    - ⚠ **This makes G3.3's `10_light_layer` claim testable again** — re-run it and the panel either
-      matches its baseline or it does not.
-  - ⚠ **`02_fire_rotation` is still unexplained** and is a different shape: `_shot` DOES park it, and
-    its A^C diff was exactly **0** while A^B and B^C were both exactly 8248 — two discrete outcomes,
-    not drift. Run B was the outlier for this and `10_light_layer` alike, so a per-run condition is
-    still in play for it.
-  - ⚠ **It also invalidates a closed gate:** HANDOFF_spotlight's G3.3 attributed `10_light_layer`'s
-    difference to the 38x52 art refactor, "verified by eye". That panel moves by 78k px between two
-    runs of one unchanged build, so **G3.3 for `10_light_layer` is UNPROVEN, not closed.**
-- **LEAK CANARY's object-count check is intermittent** (growth 0–2 across runs). Judge it across
-  runs. **2026-08-07 tally, and the shape of it is worth more than the count: 3 failures (growth 2
-  each time) in the session's first ~8 runs, then 0 in the following ~30 consecutive runs**
-  (including one deliberate 14-run hunt that never tripped).
-  - ⚠ **A CORRELATION, EXPLICITLY NOT A CLAIM OF CAUSE:** every failure predates that session's
-    settings-isolation migration, which moved this suite off its own hardcoded `settings.tres.testbak3`
-    onto `TestSuite`'s per-suite, self-healing backup. A stale backup left by an aborted run used to
-    be able to make the "real" settings file for the next run be a previous run's throwaway, and the
-    session cycles read settings. That is a plausible mechanism and nothing more — the flake was
-    always intermittent (the handoff records 6 consecutive passes then a failure), so ~30 clean runs
-    is suggestive, not proof. **Do not mark this fixed on that basis; let the census report the next
-    real failure.**
-  - ⚠ **`print_orphan_nodes()` IS A DEAD END — do not spend another session on it.** It was the
-    standing "next thing to try". Run on a genuinely FAILING run it printed exactly four strays, and
-    all four are the ones `test_leak_canary` abandons ON PURPOSE before the baseline to prove the
-    canary works. **The real growth is not a Node**, so an orphan-node dump cannot ever contain it.
-  - ✅ Replaced with `_object_census()` / `_report_growth()`, which split the growth across
-    NODE / RESOURCE / other (plain RefCounted) using the engine's own performance monitors and say
-    which class it landed in. Verified by forcing the branch — it prints and the monitors resolve.
-    It has not yet caught a live failure, so **the class of the leaked objects is still unknown**;
-    the next failing run will name it without any extra work.
+- ⬜ **LEAK CANARY's session check is INTERMITTENT and the cause is still unknown.** Observed growth
+  is 2 or 3; failure rate has ranged from ~0 in 30 consecutive runs to 5 in 10. **Judge it across
+  runs, and never report a count without saying how many runs it took.**
+  - **On failure it writes `user://logs/leak_forensics_<timestamp>.txt`** — growth split by
+    node/resource/other, a phase x cycle table, a node-class histogram diff, and a running-tween
+    count. **If that file exists it IS the finding; attach it rather than trying to reproduce.**
+  - **Eliminated on evidence from real failures — do not re-try any of these:**
+    - **NOT a Node.** `nodes +0`. This is why `print_orphan_nodes()` can never find it: on a failing
+      run it prints only the four strays this suite abandons on purpose.
+    - **NOT a Resource.** `resources +0` — so not a CardData / `.tres` graph, which is what the suite
+      was originally built to watch.
+    - **NOT a Tween.** `RUNNING TWEENS 0 -> 0`. (A Tween is RefCounted and keeps itself alive while
+      running, so one still ticking at drain time would have read exactly like this.)
+    - **NOT phase-localised.** All six session phases are identical across cycles, so it is not the
+      menus, run start, map, show, loss path or `clear_save` accumulating.
+    - **NOT a deferred-free straggler.** `queue_free` deferral applies to NODES; a RefCounted dies the
+      instant its refcount hits zero. If it is alive after the drain, something still HOLDS it.
+    - **NOT held to process exit.** `--verbose`'s exit ObjectDB dump on a FAILING run listed exactly
+      `4x Node` (the deliberate strays) and nothing else, while non-Node leaks do appear there. So it
+      is released during shutdown — which also kills the "coroutine that never resumes" theory, since
+      that would pin its locals all the way to exit.
+    - **NOT fixable by draining harder.** Retrying the drain up to 6 extra times left the growth in
+      place on every failure. ⚠ **And the remedy back-fires: growth went 2 -> 3 and the failure rate
+      roughly doubled**, because `_drain()` calls `create_timer()` and a `SceneTreeTimer` is itself
+      RefCounted — so extra drains allocate into the very bucket being measured, asymmetrically
+      (baseline drains once, the after-path seven times). This very likely explains the earlier
+      "settle until stable" attempt too. Any future drain remedy must be allocation-free first.
+  - **What is left:** a plain RefCounted, not a Tween, held by something alive at the check and
+    released by shutdown — e.g. a `WeakRef`, a bound `Callable`'s object, or a script instance
+    (`Scoring.Result`, `ArrayCardData`, `HandProfile`, `CardDataIterator`, `LightLayer.Light`).
+    The next instrument would have to name RefCounted instances, which GDScript cannot enumerate;
+    the practical route is a debug instance counter on the few suspect classes.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
-- **PIXELS `test_the_card_mask_is_the_card_the_player_sees` is GREEN but PINNED, not fixed.** The
+- **PIXELS `test_the_card_mask_is_the_card_the_player_sees` WAS GREEN but PINNED, not fixed.** The
   check no longer demands exact cell agreement — that bar was unachievable and passed at rest by
   alignment. It asserts a band around the outline: **edges ≤ 1.7 FX cells** (the fraction is the
   32-slot wedge index, whose quantization is angular; measured worst 1.50) and **corner bite ≤ 2.6

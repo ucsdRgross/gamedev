@@ -143,8 +143,12 @@ On a full board that is:
 
 - **~390 canvas items with 390 distinct materials**, none of which can batch with any other
 - **390 skinned polygons**, whose vertices Godot recomputes on the CPU whenever the rig moves
-- **78 `AnimationPlayer`s on autoplay**, each driving 17 bones — the rig animation is *always
-  running*, which is why the FX layer has to re-read the deformed outline every frame
+- **78 `AnimationPlayer`s, each driving 17 bones — but they sit IDLE.** `card_visual.tscn` does not
+  autoplay its idle animation (`CardVisual.RIG_ANIM`) and nothing else writes a `Bone2D` position, so
+  a card with no active tween is genuinely AT REST. ⚠ **The skinned-polygon recompute above and the
+  FX layer's per-frame outline re-read are therefore far cheaper than a moving rig would make them —
+  re-measure before pricing either.** `CardVisual._track_fx_outline` could be skipped entirely while
+  the rig is unposed; not taken, because FX perf is paused (VFX.md §6).
 
 `ESTIMATE`, from node arithmetic. No bench exists.
 

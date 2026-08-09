@@ -41,6 +41,23 @@ const CARD_SEPARATION : int = 16
 ## follows; hardcode it in either place and the card jumps through the side of the hoop.
 const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 
+## The rig's idle ("wiggle") animation in `card_visual.tscn`.
+##
+## ⚠ **NAMED HERE BECAUSE IT IS NO LONGER ON `autoplay`, AND FIVE INSTRUMENTS USED TO DISCOVER IT
+## THROUGH THAT FLAG** (owner 2026-08-07: the idle was only ever on to eyeball that the VFX overlay
+## tracked a moving rig, so it is off in the shipped card). `test_pixels`, `tools/fx_editor`,
+## `tools/outline_atlas` and `tools/spotlight_tool` all read `AnimationPlayer.autoplay` purely to
+## learn the animation's NAME and then seek it themselves.
+##
+## ⚠ **CLEARING `autoplay` WITHOUT THIS CONSTANT SILENTLY GUTS THE PIXELS SUITE.** Every one of those
+## sites is guarded by `if ap.autoplay != ""`, so an empty flag skips the seek, the card stays at its
+## REST pose, and `test_the_card_mask_is_the_card_the_player_sees` goes on "passing" at t=0.15 / 0.30
+## / 0.45 while measuring the rest pose three more times — the pose where the corner model is exact
+## by construction, which is the one case that proves nothing. The deformed-pose signature to check
+## after any change here is the suite's own printout: worst edge/corner **0.00/0.00 at t=0.00,
+## 0.48/1.21 at t=0.15, 1.50/2.45 at t=0.30**. All-zero everywhere means the rig stopped moving.
+const RIG_ANIM : StringName = &"new_animation_2"
+
 @export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
 
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
@@ -489,9 +506,19 @@ func _rig_outline() -> PackedVector2Array:
 			at += 1
 	return _rig_outline_buf
 
-## Hand the DEFORMED outline to the effects. Every frame, because the rig's animation is on autoplay
-## and a card is never actually at rest; the attachment early-outs when nothing moved, so a settled
-## card costs the walk below and no upload.
+## Hand the DEFORMED outline to the effects. Every frame, because the rig can be posed by a jump, a
+## spin or a warp at any time; the attachment early-outs when nothing moved, so a settled card costs
+## the walk below and no upload.
+##
+## ⚠ **THIS USED TO SAY "because the rig's animation is on autoplay and a card is never actually at
+## rest". THAT IS NO LONGER TRUE** — the idle was cleared 2026-08-07 (owner: it was only ever on to
+## eyeball that the VFX overlay tracked a moving rig; see [[RIG_ANIM]] above). A card with no active
+## tween now IS at rest, which makes the early-out fire far more often than the comment assumed.
+## ⚠ **There is a real optimisation sitting here and it is deliberately NOT taken:** with the idle
+## off, this walk could be skipped entirely while the rig is unposed rather than merely uploading
+## nothing. FX performance is PAUSED by owner ruling (VFX.md §6) and PERFORMANCE.md's "78
+## AnimationPlayers on autoplay, the rig animation is *always* running" figure is now stale — re-read
+## that section before pricing anything here.
 func _track_fx_outline() -> void:
 	if not fx or _rig_arms.is_empty(): return
 	fx.track_outline(_rig_outline())
@@ -530,9 +557,10 @@ func _ready() -> void:
 		fx.configure(CARD_SIZE, true, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 				current_context == DisplayContext.PLAY_AREA)
 		offset.add_child(fx)
-		# The real card outline, taken from the STAR RIG rather than from the rest polygon: the rig
-		# is what deforms the card, it runs on autoplay, and a silhouette baked once left the flames
-		# standing on a shape the card no longer had. Re-read every frame by _track_fx_outline.
+		# The real card outline, taken from the STAR RIG rather than from the rest polygon: the rig is
+		# what deforms the card, and a silhouette baked once left the flames standing on a shape the
+		# card no longer had. Re-read every frame by _track_fx_outline. (The rig no longer autoplays —
+		# see RIG_ANIM — but jumps, spins and warps still pose it, so the outline is still live.)
 		if _rig_arms.is_empty(): fx.measure_silhouette(type.polygon)
 		else: fx.measure_outline(_rig_outline())
 		fx.visible = show_front and data != null
