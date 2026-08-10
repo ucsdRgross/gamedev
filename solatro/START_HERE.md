@@ -141,7 +141,7 @@ must sit in the SAME folder as the main exe, which it launches by name.
   (the PIXELS suite asserts on rendered pixels; headless it fails loudly instead of skipping —
   HEADLESS_TESTING.md §0). Logs:
   `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`. Run it yourself whenever the owner's
-  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (30) and the
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (31) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`

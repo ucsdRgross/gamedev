@@ -122,6 +122,11 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
    `on_get_possible_*` (boosters), `on_prop_passing/on_prop_passed` (props),
    `on_mod_triggered`. Dispatch is duck-typed via `has_method` — a typo in a StringName
    silently disables a mechanic; there is no signature check.
+   **The comparator surface** — "are these two cards the same?" — is a separate family with one
+   hook PER SITUATION and no fallback between them (`on_meld_*`, `on_stack_*`); a card wanting
+   both implements both, and `on_compare_ranks/suits` stay the ORDERING hooks with no grouping
+   power. Spellings live once as `PipComparator` constants, and **the contracts and landmines are
+   §3c** — do not restate them here.
 3. Attach to a `CardData` in `rules_deck` (always spotlit), or rely on the default rule:
    **a play card's modifiers are SPOTLIT while the card is topmost/uncovered** (renamed off
    `active`, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
@@ -311,6 +316,50 @@ Open playtest questions (not decidable in the sim): arrangement capacity reality
 where in the 1.0–1.6 dump-vs-even range the game sits), difficulty default, combo_step
 0.1 vs 0.2 feel, mod-activation U generosity, Burning/prop cascades as a combo source,
 the δ trigger, spread-extension boosters as archetype pivots.
+
+
+### 3c. COMPARATOR BUCKETS — mods decide which cards count as the same
+
+Meld FORMATION consults the mods. `HandProfile` holds **class lists** (`RankClass` /
+`SuitClass`), not value-keyed buckets, because two classes may carry one printed value.
+Behaviour authority: `design/comparator_buckets/DESIGN.md`; contracts: its `PLAN.md` §1.
+
+**The pipeline, in order** — identity classes (one per printed value) → **stage 0**, the two
+pairwise passes closing over distinct keys → **stage 1**, whole-hand rules through `sanitize`
+→ the straight position model → `is_flush`. With no card implementing a meld hook, every stage
+short-circuits on one implementer-cache lookup: zero dispatches, scoring unchanged.
+
+**Landmines. Every one of these was a shipped defect or a near miss.**
+
+- **The hooks are declared as COMMENTS on `CardModifier`, never as methods.** Dispatch asks
+  `has_method`, so a real no-op on the base opts EVERY modifier in and the zero-dispatch
+  identity path can never be taken again.
+- **A verdict is fixed for the HAND** (`PipComparator.begin_pass` / `ask_pass`). Not the board:
+  one scored line rebuilds its profile several times, so a looser scope lets the straight scan
+  and the flush scan form different partitions of the same cards. There is deliberately no
+  cacheability opt-out — a random rule is decided before meld finding, by construction.
+- **`mixed` is decided on PRINTED values, and `member_keys` is class-OWNED** — seeded at
+  creation, unioned only on a real merge. Deriving it from the members' values marks every
+  class holding an extra-value card mixed, and the straight search is a cartesian product over
+  mixed classes: that turned one scan into 2^16 and one scoring pass into 23 seconds.
+- **ONE CARD IS ONE STEP.** Extra rank values and dual suits put one card in several classes,
+  so every site that builds a meld from several classes must refuse to spend it twice —
+  `_unused_at` in both scanners, the `used` set in `best_uniform_multi`, the `spent` set in
+  `_form_houses_at_scale`. Otherwise a 5-card straight forms from 3 cards and a full house's
+  trip and pair are the same card. That is multiplicity, which QR5(a) put OUT of scope.
+- **`is_flush` needs an UNCONSUMED profile.** The straight and flush handlers eat their working
+  profile through `remove_card`, so each builds a separate classification profile for it.
+- **In `sanitize`: test `is Array` before casting.** `as Array` on a non-Array Variant is a
+  runtime error, not null — and a rule returning null is a supported answer ("no meld possible").
+  Its overlap union is TRANSITIVE: one group can overlap several, and all must fold in.
+- **Stage 1 flattens multi-key membership** — a partition puts each card in one class, so a
+  card's extra POSITIONS do not survive a whole-hand grouping rule.
+
+**Tests.** `test_comparator.gd` sections 6–12 (dispatch ceiling, stage 1, the pass memo,
+straights/adjacency/classification, the roster, search size, one-card-one-step);
+`test_mod_fuzz.gd` for the rule SPACE — a generated rule set per round, every permutation, twelve
+invariants, run once uncached and once on a cacheable board; `test_game_headless.gd`'s
+"COMPARATOR RULES CARDS, THROUGH A REAL GAME" for the end-to-end act.
 
 ---
 

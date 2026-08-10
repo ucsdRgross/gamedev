@@ -4,15 +4,33 @@ Add new items here; **delete an item when it lands**, recording the regression-c
 ARCHITECTURE_REVIEW.md rather than keeping a log here. Current-state facts live in
 ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
+## Known intermittent test failures (not owned by any current work stream)
+
+- ⬜ **The run-save layer flakes under the suite, ~1 run in 4–6.** Two symptoms seen, both while the
+  persistence suites run: `test_persistence_fuzz: wrote run.tres — no file on disk`, and
+  `ERROR: user://run_save/run.tres:NNNN - Parse Error: Extra tag found when parsing main resource
+  file` (a partially-written file being read back). ⚠ **Reproduces under STRICTLY SEQUENTIAL runs**,
+  so it is not the overlapping-runs artefact it first looked like. `RunManager.save_run` is
+  synchronous but `request_save` writes on a background thread, which is the obvious suspect.
+  `run_save/` is empty afterwards, so no real save is at risk — but a green suite is not currently
+  reliable on one run.
+
 ## Waiting on the owner
 
 - ⬜ **Playtest the universal palette** (below) — the fire and ball colours changed.
 - ⬜ **Playtest the shader FX** (FX_SHADER_PLAN §10, 17 steps).
 - ⬜ **Delete FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes. Their residue is
   already folded into ARCHITECTURE_REVIEW §4g/§4h.
+- ⬜ **Delete HANDOFF_comparator_buckets.md** once the comparator playtest passes. Its residue is
+  already folded into ARCHITECTURE_REVIEW §3c. ⚠ Keep `design/comparator_buckets/` — plan steps and
+  code comments cite its question IDs (`Q85`, `Q96`) and its three gap files.
 - ⬜ **Spotlight: answer GAP-010 / GAP-011** (overrun banking; emptied-section hooks —
   `design/spotlight/gaps/`), **judge G2.2** (rank-glyph readability), **pick
   `spotlight_separation_mode`**. Status ledger: HANDOFF_spotlight.md.
+- ⬜ **Comparator buckets: PLAYTEST it.** `PLAN.md` §6's six checks now run automatically through a
+  real `Game` (`test_game_headless.gd`), so the mechanics are proven. What is left is the judgement
+  they cannot make: whether a merging card is fun or broken, and whether a SPLIT meld — three
+  matching cards on screen, two counted, no cue explaining it (`DEFERRED.md` R2) — reads as a bug.
 
 Everything below is unscheduled backlog.
 
@@ -74,105 +92,67 @@ the full record, including what only the owner can decide, is FX_HANDOFF §0.
   says the section numbers are historical and `_ready` order is the real one. Churn on a 1200-line
   file for no behavioural gain; left deliberately.
 
-### ⬜ OWNER DECISION — comparator hooks reach CLASSIFICATION but not FORMATION
+### ⬜ Comparator buckets — **implemented and verified; awaiting a playtest**
 
-**Where `on_compare_ranks` / `on_compare_suits` DO land:**
+Meld FORMATION now consults the mods. A card decides which cards count as the same through a
+surface of its own: `on_meld_ranks_deny/_allow` and the suit pair (two ordered passes — first deny
+forbids, then first allow merges, otherwise printed values decide), `on_meld_group_ranks/_suits`
+for whole-hand rewrites, `on_meld_extra_rank_values` and `on_meld_wrap_bounds` for adjacency.
+`on_compare_ranks/suits` stay the ORDERING hooks and grant no grouping power — each situation has
+its own hooks with no fallback between them, so a card wanting both implements both.
+⚠ Still entirely latent in SHIPPED CONTENT: no authored card implements any of them, so the identity
+path runs and scoring is unchanged until content asks otherwise. That is not the same as untested —
+`test_game_headless.gd` runs PLAN §6's six checks by putting comparator rules cards in a real
+`Game`'s `rules_deck` and calling `submit()`, through the real cascade scorer, `score_line` and
+gutters.
 
-| Site | What it governs |
-|---|---|
-| `skill_grabber_og_lower`, `skill_placer_og_lower` | whether a grab / place is legal (shipped rules cards) |
-| `scoring.gd:273` (`build_multi` -> `Scoring.is_flush`) | whether a structure counts as a **Full Flush** — a x2 score multiplier |
-| `scoring.gd:351`, `scoring.gd:796` | rank sort order; best-high-card choice |
-| the placement legality query | feeds PATIENCE (see the patience section) |
+The behaviour authority is [design/comparator_buckets/DESIGN.md](design/comparator_buckets/DESIGN.md);
+build order and normative contracts are [design/comparator_buckets/PLAN.md](design/comparator_buckets/PLAN.md);
+current state, evidence per step and what is still open are in
+[HANDOFF_comparator_buckets.md](HANDOFF_comparator_buckets.md).
 
-**Where they do NOT:** hand FORMATION. Every cluster is built from profile bucket keys, and
-`PipComparator.get_rank_profile` / `get_suit_profile` are PURE — they read `r.value` / `s.get_str()`
-and are not even `async`, so they cannot dispatch to a mod without being rewritten.
-- `scoring.gd:460` X-of-a-kind — rank buckets (`cluster.datas.size() >= 2` IS the definition of a set)
-- `scoring.gd:412` / `:731` pure flush — suit buckets
-- straights — rank buckets
+Everything scoped OUT — multiplicity, class tags, town hazards, multi-meld membership, the
+scoring bench — is indexed with its blocked cards and its seam in
+[design/comparator_buckets/DEFERRED.md](design/comparator_buckets/DEFERRED.md). Do not re-derive
+that list; add to it.
 
-**So the seam, stated precisely: within scoring, "are these the same?" is answered TWO WAYS — bucket
-keys when FORMING a hand, the hook when CLASSIFYING or MULTIPLYING one.** Consequences:
-- A **suit mod** cannot make five distinct suits into a flush (buckets), but CAN turn an existing
-  structure into a Full Flush and double its score. ⚠ **This is the one that looks like a genuine
-  inconsistency** — the same question about the same cards, answered differently at two steps.
-- A **rank mod** cannot make five distinct ranks into a Five of a Kind, but does change sort order,
-  high-card choice and move legality. That reads more like a deliberate boundary than a bug.
+**Open items, all tracked here rather than only in the handoff:**
 
-Measured (`test_comparator.gd` SECTION 5): a mod returning `0.0` from `on_compare_ranks` leaves five
-distinct ranks scoring as **High Card**; with a suit mod, `is_flush(hand)` returns **true** while the
-scored hand carries **no FLUSH type**. ⚠ That second result is explained by the fixture having no
-structure at all (High Card never reaches `build_multi`), NOT by `build_multi` ignoring the hook.
+- ⬜ **LEAK CANARY grows by 1 object, intermittently** — roughly 1 run in 6. Not attributed; this
+  work adds `RankClass` / `SuitClass` per profile build. Next step is `LeakSentinel --verbose` on a
+  failing run to name the survivor.
+- ⬜ **DEFERRED E1 — a benchmark for the scoring path.** Everything measured is hands of ≤8 cards;
+  a 30-card board in a real `Game` is unmeasured in both directions.
+- ⬜ **DEFERRED E3 — the repeated profile rebuild.** It now multiplies rule DISPATCH too, and it is
+  why a run formed under a subset partition is classified against the full-hand one — which is what
+  forced the fuzz's invariant 8 onto the position model instead of the finished meld.
+- ⬜ **Three fuzz invariants remain scoped rather than absolute** (3's held-cards set, 8's position
+  model, 1's declared multi-key exception). Each is documented with why; each is also a place a real
+  defect could hide. Invariant 9 is unrestricted again now that the generator's random predicate is
+  a pure function.
+- ⬜ **The fuzz's carrier axis is still not a full cross-product.** `stamp` / `status` / `skill` are
+  typed to their own `CardModifier` subclasses, so one shim cannot hang in every slot; the generator
+  rides on the type slot. The mounts that behave DIFFERENTLY are covered explicitly (all four for a
+  pair rule, plus a skill carrying a whole-hand rule, which has its own dispatch and spotlit gate),
+  so what is missing is combinations, not code paths.
 
-⚠ **Entirely latent: no shipped card implements either hook.** The first one that does will land on
-this, and it will look like a broken card rather than an engine boundary.
+**Closed while writing this list**, kept only as pointers to what now guards them:
 
-**OWNER RULING — this is a BUG:** *"If I wanted to override on compare,
-I would not expect a valid hand to fail because it went down high card path instead before ever
-checking valid on compare."* A hook that says "override rank comparison" and is then skipped by the
-one step the player judges it on is a trap, whatever the implementation. **Owner has accepted this as
-a BUG. Not resolved — implement later.**
-
-⚠ **PROFILE KEYS ARE NOT THE ANSWER HERE.** They express *which equivalence classes a card belongs to*: right for WILD cards, half-step ranks and
-multi-suit cards, wrong for a comparison override. "All ranks are the same" would need every card to
-emit every rank key (degenerate), and "ranks within 1 are the same" is relational and cannot be
-expressed as class membership at all.
-
----
-
-#### ⬜ THE PLAN — build the buckets THROUGH the hooks, before the meld makers ever see them
-
-Owner's framing: *"premake buckets already influenced by hooks such as on compare before sending it
-to the meld makers."* That is exactly the shape — and it is a ONE-SITE change, because every handler
-already reads its clusters out of one place.
-
-**1. The site.** `Scoring._get_hand_profiles_async` is the only place buckets are built
-(`profile.ranks.map` / `profile.suits.map`). Every handler downstream — `ExpandedGridHandler` (:460),
-the pure-flush gate (:412), `MultiStraightHandler` (:570), `MultiFlushHandler` (:731) — consumes those
-maps and nothing else. Fix it there and every meld maker inherits it; no handler needs touching.
-
-**2. The gate, which is what makes this free today.**
-```
-if CardEnvironment.CURRENT._compare_implementers(&"on_compare_ranks").is_empty():
-        -> current path: key = r.value           # bit-identical, zero cost
-else:
-        -> derive buckets from the comparator    # only when a mod actually exists
-```
-`_compare_implementers` is **cached per board revision** (`_revision_key()`, invalidated by
-`GameData.revision`), so the gate is a dictionary lookup. No shipped card implements either hook, so
-the fast path is always taken today and behaviour cannot change until content asks for it.
-
-**3. The slow path: TRANSITIVE CLOSURE (union-find), not naive pairwise.** Walk the cards, union any
-pair the comparator calls the same, then each disjoint set becomes one bucket.
-⚠ This is what dissolves the transitivity objection: for a non-transitive hook like "within 1" on
-1,2,3 the closure merges all three — a DEFINED answer rather than an order-dependent one. A bucket
-must be an equivalence class or grouping means nothing. **Document the consequence:** such a rule
-swallows a whole run.
-
-**4. Do SUITS the same way**, and the second half of the seam closes with it: formation and
-classification would both derive from one hook, so `is_flush` saying "yes" while the scored hand
-carries no FLUSH type becomes impossible instead of merely tested-for.
-
-**5. ⚠ Keep the reverse maps consistent.** `profile.card_rank_keys[card]` / `card_suit_keys[card]` are
-the O(1) reverse index `HandProfile.remove_card` relies on. Closure-derived buckets must populate
-them too, or removal silently leaves cards in buckets.
-
-**6. Cost.** O(n²) comparisons, each possibly an async mod dispatch — but ONLY when a comparator mod
-is present. Worth a bench before shipping content that uses it; scoring runs over the whole board
-(30+ cards in the macro tests), so n² is not free at that size.
-
-**7. Tests that must change when this lands.** `test_comparator.gd` SECTION 5 pins TODAY'S behaviour
-and its checks are written to FAIL the moment grouping consults the hooks — that is deliberate. When
-implementing, invert them: five distinct ranks under an "all ranks equal" mod must become a
-Five of a Kind, and the suit-mod case must FORM a flush. The G1 fixture is already built for it.
-
-**Alternatives, kept for the record:** **B** keep today's split (cheapest, trap stays);
-**C** route `is_flush` through profiles so mods affect neither (removes the contradiction, costs
-suit mods their Full-Flush effect).
-
-`test_comparator.gd` SECTION 5 pins today's behaviour, and those checks FAIL if grouping is ever
-wired through the hooks — which is the point.
+- ✅ One card spending several steps in one meld — extra rank values (§1.7) and dual suits put one
+  card in several classes, and the straight scanners, `best_uniform_multi` and the full-house
+  builder each spent it once per class. That is multiplicity (QR5=a, DEFERRED D1) arriving through a
+  third door, after Q89(b) closed the grouping one. Guards: `Scoring._unused_at`, the `used` /
+  `spent` sets in `best_uniform_multi` and `_form_houses_at_scale`, `test_comparator.gd` section 12,
+  and fuzz invariant 7b.
+- ✅ The pair-verdict and implementer caches being reachable by only one double — `test_mod_fuzz.gd`
+  now runs its whole generator a second time under a `CachingEnvironment`, so every invariant is
+  asserted on the `Game` cache shape as well as the uncached one.
+- ✅ Genuine nondeterminism going unexercised — the owner rescoped the verdict cache to the SCORING
+  PASS (`gaps/GAP-003.md`), so a rule's answer is fixed for the hand, `compare_uncacheable` is
+  deleted, and the fuzz's random predicate is now genuinely random with all twelve invariants armed
+  against it. ⚠ That also fixed a scope bug the old design could not see: a scored line rebuilds its
+  profile several times, so a rule asked afresh each time could hand the straight scan and the flush
+  scan different partitions of the same cards.
 
 ## Props / UI (owner has NOT re-verified)
 

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c3mdfz1qkxw7n"]
+
+[ext_resource type="Script" path="res://Tests/Engine/test_mod_fuzz.gd" id="1"]
+
+[node name="TestModFuzz" type="Node"]
+script = ExtResource("1")

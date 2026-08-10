@@ -1,0 +1,11 @@
+{
+  "slug": "comparator_buckets",
+  "title": "Comparator buckets — how mods decide which cards count as the same",
+  "projects": [
+    "solatro"
+  ],
+  "doc": "DESIGN.md",
+  "created": "2026-08-09T00:00:00Z",
+  "rounds": 3,
+  "confirmed_version": 1
+}

@@ -91,6 +91,7 @@ const ENGINE_ERROR_ALLOW : Array[String] = [
 	"Palette index",              # test_palette asserts the clamp WARNS — it is the behaviour
 	"LeakSentinel:",              # test_leak_canary deliberately abandons cards and reports it
 	"Condition \"p_index",        # bounds asserts inside deliberate degenerate-input suites
+	"comparator_buckets:",        # test_comparator asserts a grouping rule's invented card is REFUSED
 ]
 
 ## Returns the number of unexpected engine errors, and prints them so the agent reading the run has

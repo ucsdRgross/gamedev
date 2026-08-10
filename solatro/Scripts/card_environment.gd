@@ -138,6 +138,10 @@ var _compare_cache_key : Array = []
 func _revision_key() -> Array:
 	return []
 
+# TODO(non-card rule sources, QR7=a / comparator_buckets DEFERRED.md D3): The Fire Marshal is a
+# TOWN HAZARD — a modifier with no board card to live on — and this walk only ever visits
+# `CardDataIterator`, i.e. board and rules cards. It needs a run-level modifier list the iterator
+# also visits, plus a ruling on whether undo rewinds it (design Q69, Q70, both written and unasked).
 func _compare_implementers(function: StringName) -> Array:
 	var key := _revision_key()
 	if key:
@@ -164,6 +168,89 @@ func return_first_compare_mod_result(function: StringName, ...params:Array) -> f
 		_note_mod_fired(mod, function, false)
 		return result
 	return NAN
+
+# ==============================================================================
+# THE TWO-PASS SAMENESS QUESTION, AND ITS CACHE
+#    (comparator_buckets DESIGN charts D and I, PLAN §1.2 / §1.8)
+# ==============================================================================
+
+## ⚠ **THE VERDICT CACHE LIVES ON `PipComparator`, NOT HERE, AND IT IS SCOPED TO THE SCORING
+## PASS** (owner ruling, `design/comparator_buckets/gaps/GAP-003.md`). A board-revision cache
+## used to live here alongside a `compare_uncacheable` opt-out and a spotlight-epoch key; all
+## three are gone. A rule's answer is fixed for the HAND, which is both the right scope — one
+## scored line rebuilds its profile several times, so anything looser lets the straight scan
+## and the flush scan see different partitions of the same cards — and the reason nothing needs
+## to opt out any more. The SE1 implementer cache below is unaffected: "does anything implement
+## this hook" is a different question with a different lifetime.
+
+## C3/C4: does anything on the board implement EITHER pass of this situation? On Game this is
+## a dictionary lookup (the SE1 implementer cache). When it answers NO, profiling takes the
+## identity path — zero dispatches, byte-identical to the buckets that preceded this feature,
+## which is the whole safety argument for the change.
+func any_pair_implementer(deny: StringName, allow: StringName) -> bool:
+	return not _compare_implementers(deny).is_empty() \
+			or not _compare_implementers(allow).is_empty()
+
+## The WHOLE-HAND grouping rules on this board, in BOARD ORDER (Q10=a), with unspotlit skills
+## already dropped (Q5=a). Any board or rules card's hook applies whether or not its own card
+## is in the hand being scored (Q18=a) — it is a rule, not a participant.
+## ⚠ Unlike the pair passes there is no stopping at the first answer: a whole-hand rule is a
+## rewrite, not a vote, and each one sees what the previous one left (Q16=a).
+func group_rule_implementers(hook: StringName) -> Array[CardModifier]:
+	var out : Array[CardModifier] = []
+	for mod : CardModifier in _compare_implementers(hook):
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+		out.append(mod)
+	return out
+
+## First implementer wins, its answer returned verbatim; null when nothing implements `hook`.
+## The Q84 shape for hooks whose answer is NOT a boolean pass — the wrap bounds. Skills gated
+## on spotlit (Q5=a).
+func return_first_mod_variant(hook: StringName, ...params: Array) -> Variant:
+	for mod : CardModifier in _compare_implementers(hook):
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+		var result : Variant = await Callable(mod, hook).callv(params)
+		_note_mod_fired(mod, hook, false)
+		return result
+	return null
+
+## EVERY implementer's answer, in board order — for hooks whose answers COMPOSE rather than
+## take precedence. Extra rank values are class MEMBERSHIPS, not a scalar verdict, so a second
+## card offering another value must not be silenced by the first.
+func collect_mod_results(hook: StringName, ...params: Array) -> Array:
+	var out : Array = []
+	for mod : CardModifier in _compare_implementers(hook):
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+		out.append(await Callable(mod, hook).callv(params))
+		_note_mod_fired(mod, hook, false)
+	return out
+
+## Q89(b): is this CardData actually somewhere in this environment's collections? THE check
+## that lets a grouping rule PULL a board card into a meld while refusing to let it INVENT
+## one — and that refusal is what keeps multiplicity (QR5=a, DEFERRED D1) genuinely out of
+## scope rather than reachable through the back door.
+func has_card_data(data: CardData) -> bool:
+	if not data: return false
+	for d in CardDataIterator.new(self):
+		if d == data: return true
+	return false
+
+## ONE pass of the two-pass sameness question (PLAN §1.2). Every implementer of `hook` in
+## board order; the FIRST true ANSWERS and STOPS the pass (Q84=a) — the rest are never asked,
+## so their side effects do not fire and they do not feed the patience counter. Skills are
+## skipped while not spotlit (Q5=a).
+## ⚠ Callers go through `PipComparator.ask_pass`, which memoises the answer for the hand — this
+## is the raw dispatch and does not remember anything.
+func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> bool:
+	var impl := _compare_implementers(hook)
+	if impl.is_empty(): return false
+	for mod : CardModifier in impl:
+		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+		var verdict : bool = await Callable(mod, hook).call(a, b)
+		_note_mod_fired(mod, hook, false)
+		if verdict: return true
+	return false
+
 
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
 	for data in CardDataIterator.new(self):

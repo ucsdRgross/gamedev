@@ -32,6 +32,8 @@ func _ready() -> void:
 	test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
 	await test_submit_headless_full_act()
+	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
+	await test_comparator_rules_change_a_real_act()
 	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
@@ -404,3 +406,155 @@ func test_submit_headless_full_act() -> void:
 	check(g.state.validate().is_empty(), "board validates after submit")
 	CardEnvironment.CURRENT = null
 	free_game(g)
+
+
+# ==============================================================================
+# COMPARATOR RULES CARDS, THROUGH A REAL GAME
+#
+# ⚠ **THIS IS `design/comparator_buckets/PLAN.md` §6, RUN.** Every other comparator test drives
+# `Scoring` under a `FakeEnvironment`. That leaves the whole feature asserted only against a
+# stand-in: `Game` is the environment with a REAL `_revision_key()`, a real `CardDataIterator`
+# over draw deck / zones / rules deck, real `spotlit` resolution, and a real `score_line` that
+# banks into the gutters. A rules card that works in the fake and not in the game would pass
+# every other suite in this repo.
+#
+# The rules cards below are SKILLS in `rules_deck`, which is how the shipped engine rules cards
+# are carried and which makes them always spotlit — so this also exercises the carrier and the
+# spotlight path the fake never touches.
+#
+# §6's six checks, mechanically: 1 and 2 are `merge_makes_a_set` + `removing_it_restores`,
+# 3 is `suit_merge_makes_a_flush`, 4 is `deny_splits_a_pair`, 5 is `merge_kills_the_straight`,
+# 6 is the unmodded baseline every one of them is paired against. What CANNOT be automated —
+# whether it FEELS right — is still the owner's, and stays in todo.md.
+# ==============================================================================
+
+class RulesAllRanksSame extends CardModifierSkill:
+	func get_str() -> String: return "All Ranks Same"
+	func get_description() -> String: return "Every rank counts as every other"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_ranks_allow(_r1: PipRank, _r2: PipRank) -> bool: return true
+
+class RulesAllSuitsSame extends CardModifierSkill:
+	func get_str() -> String: return "All Suits Same"
+	func get_description() -> String: return "Every suit counts as every other"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_suits_allow(_s1: PipSuit, _s2: PipSuit) -> bool: return true
+
+class RulesDenySevens extends CardModifierSkill:
+	func get_str() -> String: return "No Two Sevens"
+	func get_description() -> String: return "Two 7s never count as the same"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_ranks_deny(r1: PipRank, r2: PipRank) -> bool:
+		return float(r1.value) == 7.0 and float(r2.value) == 7.0
+
+## A real Game whose LOWER zone is one row of `ranks`/`suits`, plus any extra rules cards.
+## One row of five columns, so the cascade scorer scores a five-card row through score_line.
+func comparator_game(ranks: Array[int], suits: Array[int], extra: Array[CardData]) -> Game:
+	var g := Game.new()
+	var s := GameData.new()
+	s.rules_deck = [
+		rules_card(SkillScorerCascadeLower.new()),
+		rules_card(SkillEvalPokerBest.new()),
+	] as Array[CardData]
+	for c : CardData in extra: s.rules_deck.append(c)
+	for zone_x in 2:
+		var types: Array[CardData] = []
+		var cols: Array[ArrayCardData] = []
+		for i in range(ranks.size()):
+			var h := TestFactories.m_card(1, TestFactories.uc())
+			h.stage = CardData.Stage.ZONE
+			types.append(h)
+			if zone_x == 0:
+				cols.append(TestFactories.col([] as Array[CardData]))
+				continue
+			var card := TestFactories.m_card(float(ranks[i]), suits[i])
+			card.stage = CardData.Stage.PLAY
+			cols.append(TestFactories.col([card] as Array[CardData]))
+		if zone_x == 0:
+			s.upper_zone_type = types
+			s.upper_zone = cols
+		else:
+			s.lower_zone_type = types
+			s.lower_zone = cols
+	g.state = s
+	CardEnvironment.CURRENT = g
+	return g
+
+## Score one act and report what the lower row banked. The REAL path: submit -> cascade scorer
+## -> SkillEvalPokerBest -> Scoring.PokerHands.score -> Game.score_line -> gutters.
+func act_score(g: Game) -> int:
+	await g.submit()
+	return g.state.total_score
+
+func test_comparator_rules_change_a_real_act() -> void:
+	# 2,4,6,8,10 in five DIFFERENT suits: no pair, no flush, no straight. High Card.
+	var ranks : Array[int] = [2, 4, 6, 8, 10]
+	var suits : Array[int] = [901, 902, 903, 904, 905]
+
+	# --- §6.6 the baseline: a normal board with no comparator rules card at all --------------
+	var plain := comparator_game(ranks, suits, [] as Array[CardData])
+	var plain_score := await act_score(plain)
+	check(plain_score > 0, "§6.6 REAL GAME: an unmodded board scores through the whole act",
+			str(plain_score))
+	check(plain.state.validate().is_empty(), "§6.6 REAL GAME: and the board still validates")
+	free_game(plain)
+
+	# --- §6.1 a rank-merging rules card makes those five distinct ranks a SET ----------------
+	var merged := comparator_game(ranks, suits, [rules_card(RulesAllRanksSame.new())] as Array[CardData])
+	var merged_score := await act_score(merged)
+	check(merged_score > plain_score,
+			"§6.1 REAL GAME: a rank-merging RULES CARD turns five distinct ranks into a set, "
+			+ "and the act pays more than the same board unmodded",
+			"modded %d vs plain %d" % [merged_score, plain_score])
+	free_game(merged)
+
+	# --- §6.2 remove it and the same board scores exactly as it did before -------------------
+	# ⚠ Built from the same fixture, not the same instance: this is what proves no partition or
+	# verdict outlived the card that caused it, through a REAL board revision.
+	var restored := comparator_game(ranks, suits, [] as Array[CardData])
+	var restored_score := await act_score(restored)
+	check(restored_score == plain_score,
+			"§6.2 REAL GAME: removing the rules card restores the unmodded payout exactly",
+			"%d vs %d" % [restored_score, plain_score])
+	free_game(restored)
+
+	# --- §6.3 a suit-merging rules card makes five distinct suits a FLUSH --------------------
+	var flushed := comparator_game(ranks, suits, [rules_card(RulesAllSuitsSame.new())] as Array[CardData])
+	var flushed_score := await act_score(flushed)
+	check(flushed_score > plain_score,
+			"§6.3 REAL GAME: a suit-merging RULES CARD forms a flush from five distinct suits "
+			+ "and takes the Full Flush multiplier",
+			"modded %d vs plain %d" % [flushed_score, plain_score])
+	free_game(flushed)
+
+	# --- §6.5 a merging card kills a straight -----------------------------------------------
+	# 3,4,5,6,7 one suit apiece IS a straight; merged into one rank class it cannot be.
+	var run_ranks : Array[int] = [3, 4, 5, 6, 7]
+	var straight := comparator_game(run_ranks, suits, [] as Array[CardData])
+	var straight_score := await act_score(straight)
+	free_game(straight)
+	var killed := comparator_game(run_ranks, suits, [rules_card(RulesAllRanksSame.new())] as Array[CardData])
+	var killed_score := await act_score(killed)
+	check(straight_score != killed_score,
+			"§6.5 REAL GAME: a rank-merging card changes what a five-card RUN scores as — one "
+			+ "rank class left, so the straight is gone (Q3=a, Q93=d)",
+			"straight %d vs merged %d" % [straight_score, killed_score])
+	free_game(killed)
+
+	# --- §6.4 a deny rule stops two printed 7s counting as a pair ----------------------------
+	var pair_ranks : Array[int] = [7, 7, 2, 4, 9]
+	var paired := comparator_game(pair_ranks, suits, [] as Array[CardData])
+	var paired_score := await act_score(paired)
+	free_game(paired)
+	var split := comparator_game(pair_ranks, suits, [rules_card(RulesDenySevens.new())] as Array[CardData])
+	var split_score := await act_score(split)
+	check(split_score < paired_score,
+			"§6.4 REAL GAME: a deny rules card stops two printed 7s counting as a pair, so the "
+			+ "act pays LESS than the same board without it (Q82=a)",
+			"denied %d vs paired %d" % [split_score, paired_score])
+	check(split.state.validate().is_empty(),
+			"§6.4 REAL GAME: and the board validates after an act scored under a deny rule")
+	free_game(split)

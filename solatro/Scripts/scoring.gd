@@ -128,29 +128,113 @@ class Result:
 class HandProfile:
 	var ranks : RankMap = RankMap.new()
 	var suits : SuitMap = SuitMap.new()
-	## Reverse maps recorded at profiling time (card -> the bucket keys it was appended to),
-	## so remove_card touches only its own buckets instead of walking every key. Only
+	## Reverse maps recorded at profiling time (card -> the CLASSES it was appended to), so
+	## remove_card touches only its own classes instead of walking every one. Direct object
+	## references, so removal stays O(1) even though classes are no longer keyed. Only
 	## _get_hand_profiles_async populates the maps, so these can never go stale.
-	var card_rank_keys : Dictionary[CardData, Array] = {}   # -> Array[float]
-	var card_suit_keys : Dictionary[CardData, Array] = {}   # -> Array[String]
+	## (Untyped Array values: Godot cannot express Array[RankClass] as a Dictionary value type.)
+	var card_rank_keys : Dictionary[CardData, Array] = {}   # -> Array[RankClass]
+	var card_suit_keys : Dictionary[CardData, Array] = {}   # -> Array[SuitClass]
+	## THE NO_MELD SENTINEL (Q13=d, Q85=a). A whole-hand rule that returns an empty grouping is
+	## not saying "no change" and not saying "every card alone" — it is saying NO MELD IS
+	## POSSIBLE from this hand. `PokerHands.score` then returns [], and `Game.score_line` banks
+	## ZERO for the line: not even the High Card survives.
+	var no_meld : bool = false
+	## The rank values each card actually participates at — its printed value plus anything
+	## `on_meld_extra_rank_values` added (§1.7). Recorded at profiling time because it is the
+	## ONLY place the hook is asked: a class's key is derived from this, never re-derived from
+	## the printed rank, or an extra-value class would be keyed on a value no member declares.
+	var card_rank_values : Dictionary[CardData, Array] = {}   # -> Array[float]
+
+	## The values `card` participates at, falling back to its printed value for a card that
+	## was pulled in by a rule and so never went through profiling.
+	func rank_values_of(card: CardData) -> Array:
+		if card_rank_values.has(card): return card_rank_values[card]
+		return PipComparator.get_rank_profile(card.rank)
+
+	## The suit class this card sits in, or null. What Multi-Flush counts instead of printed
+	## suits (Q27=a). A card in several suit classes (Harlequin) reports the first.
+	func suit_class_of(card: CardData) -> SuitClass:
+		var refs : Array = card_suit_keys.get(card, [])
+		return refs[0] as SuitClass if not refs.is_empty() else null
 
 	## SE2: incremental removal so extraction loops can consume the profile
 	## instead of rebuilding it from the shrinking pool every iteration.
 	func remove_card(card: CardData) -> void:
-		for key : float in card_rank_keys.get(card, []):
-			if ranks.map.has(key):
-				ranks.map[key].datas.erase(card)
-				if ranks.map[key].datas.is_empty(): ranks.map.erase(key)
-		for key : String in card_suit_keys.get(card, []):
-			if suits.map.has(key):
-				suits.map[key].datas.erase(card)
-				if suits.map[key].datas.is_empty(): suits.map.erase(key)
+		for cls : RankClass in card_rank_keys.get(card, []):
+			cls.datas.erase(card)
+			if cls.datas.is_empty(): ranks.classes.erase(cls)
+		for cls : SuitClass in card_suit_keys.get(card, []):
+			cls.datas.erase(card)
+			if cls.datas.is_empty(): suits.classes.erase(cls)
 		card_rank_keys.erase(card)
 		card_suit_keys.erase(card)
+
+# ==============================================================================
+# THE CLASS PARTITION (comparator_buckets PLAN §1.4)
+# ------------------------------------------------------------------------------
+# A CLASS is "the cards that count as the same" for one domain. Splitting is allowed
+# (QR2=a), so TWO classes may carry the same printed value and a dictionary keyed by
+# value cannot hold them — hence a LIST, not a map. With no rule installed there is
+# exactly one class per distinct printed value and `mixed` is always false, which is
+# byte-identical to the buckets this replaced.
+# ==============================================================================
+class RankClass:
+	var key : float                       # identity: the SMALLEST printed value in this class
+	var mixed : bool = false              # true when members do NOT share one printed value
+	var member_keys : Array[float] = []   # every printed value present; the Q96 candidate set
+	var datas : Array[CardData] = []      # members, always in HAND ORDER
+
+	## Q21: tie-breaks and "the meld's high card" read the class MAXIMUM, never datas[0].
+	func max_key() -> float:
+		var top := key
+		for k : float in member_keys: top = max(top, k)
+		return top
+
 class RankMap:
-	var map : Dictionary[float,ArrayCardData] = {} # float -> ArrayCardData
+	var classes : Array[RankClass] = []   # NOT keyed — two classes may share a key
+
+	## The class holding `key`, or null. Only meaningful while nothing has split a value;
+	## profiling uses it to append into the class it already made for this printed value.
+	func find(key: float) -> RankClass:
+		for c : RankClass in classes:
+			if c.key == key: return c
+		return null
+
+	## Every distinct class key, ascending — the POSITIONS a straight may stand on. Not
+	## classes.size(): two split classes sharing a value are one position (Q22 gives them
+	## two cards there, not two positions).
+	func distinct_keys() -> Array[float]:
+		var out : Array[float] = []
+		for c : RankClass in classes:
+			if not out.has(c.key): out.append(c.key)
+		out.sort()
+		return out
+
+	## Distinct POSITIONS the straight scanners could stand on — the union of every class's
+	## member_keys, because a MIXED class offers each of its members as a candidate (Q96=c).
+	## Deliberately permissive: it gates whether the straight handler runs at all, so it must
+	## never be smaller than the positions a scan can actually use.
+	func position_count() -> int:
+		var seen : Array[float] = []
+		for c : RankClass in classes:
+			for k : float in c.member_keys:
+				if not seen.has(k): seen.append(k)
+		return seen.size()
+
+class SuitClass:
+	var key : String                      # identity: the lexicographically smallest member key
+	var mixed : bool = false
+	var member_keys : Array[String] = []
+	var datas : Array[CardData] = []
+
 class SuitMap:
-	var map : Dictionary[String,ArrayCardData] = {} # String -> ArrayCardData
+	var classes : Array[SuitClass] = []
+
+	func find(key: String) -> SuitClass:
+		for c : SuitClass in classes:
+			if c.key == key: return c
+		return null
 
 # Maps logical concepts to your CSV Translation Keys
 const LOC_KEYS = {
@@ -241,13 +325,24 @@ static func get_loc_name(types: Array[MELD_TYPE], m: int = 1, n: int = 0, distin
 		return TRANSLATION.find(LOC_KEYS.FMT_MULTI_FLUSH) % [m, sized]  # "Nx (Flush hand)"
 	return core_multi
 
-static func is_flush(meld: Array[CardData]) -> bool:
-	if meld.is_empty(): return false
-	var first_suit: PipSuit = meld[0].suit
-	for i in range(1, meld.size()):
-		if not await PipComparator.is_suit_same(first_suit, meld[i].suit):
-			return false
-	return true
+## G1–G6 (Q25=a): this NO LONGER WALKS PAIRS. It asks the SAME partition formation used —
+## true iff every card in the meld sits in ONE suit class — so formation and classification
+## can never disagree again. The round-1 bug this whole change exists to remove becomes
+## unrepresentable rather than merely tested for.
+## The Full Flush x2 applies even when a RULE is what merged those suits (Q26=a).
+## ⚠ **NO CALLER MAY ASK WITHOUT A PROFILE.** A profile-less answer would be the old pairwise
+## one, and having both available at once IS the seam. A null profile answers false rather
+## than quietly falling back.
+static func is_flush(meld: Array[CardData], profile: HandProfile) -> bool:
+	if meld.is_empty() or not profile: return false
+	for cls : SuitClass in profile.suits.classes:
+		var all_in := true
+		for card : CardData in meld:
+			if not cls.datas.has(card):
+				all_in = false
+				break
+		if all_in: return true
+	return false
 
 ## Shared packager for any "multiple" archetype (Sets, Straights, Houses). Detects the
 ## flush interpretation from the actual cards, builds the matching MELD_TYPEs, and gets
@@ -256,7 +351,12 @@ static func is_flush(meld: Array[CardData]) -> bool:
 ##   - Full Flush:  entire meld one suit AND total >= MIN_FLUSH_CARDS.
 ##   - Multi-Flush: m>=2, every copy single-suit, >=2 distinct suits, copy size n>=MIN_FLUSH_CARDS.
 ## copies: Array of Array[CardData]; base_types: the structural core, e.g. [X_OF_KIND].
-static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[MELD_TYPE], max_rank: float) -> Result:
+## ⚠ `profile` is the CLASSIFICATION profile and must be UNCONSUMED: the straight and flush
+## handlers eat their working profile through `remove_card`, so passing that one would ask
+## whether cards that are no longer in any class share a class. Each handler builds one clean
+## profile for this and threads it down (DEFERRED.md E3 is the pass that would share them).
+static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[MELD_TYPE],
+		max_rank: float, profile: HandProfile) -> Result:
 	var m := copies.size()
 	if m == 0: return null
 
@@ -270,7 +370,7 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 	var best_score := ScoreModel.final_score(best_types, m, n)
 
 	# Full Flush: whole meld one suit, >= MIN_FLUSH_CARDS.
-	if total >= ScoreModel.MIN_FLUSH_CARDS and await Scoring.is_flush(all_cards):
+	if total >= ScoreModel.MIN_FLUSH_CARDS and Scoring.is_flush(all_cards, profile):
 		var ff_types: Array[MELD_TYPE] = base_types.duplicate()
 		if m > 1: ff_types.append(MELD_TYPE.MULTI)
 		ff_types.append(MELD_TYPE.FLUSH)
@@ -285,16 +385,16 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 	# Multi-Flush: each copy internally one suit, copies span >= 2 distinct suits, n >= 5.
 	if m >= 2 and n >= ScoreModel.MIN_FLUSH_CARDS:
 		var mf_ok := true
-		var suits_seen: Array[PipSuit] = []
+		#Q27(a): Multi-Flush needs >= 2 DISTINCT suits, and "distinct" now means distinct SUIT
+		#CLASSES. A suit-merging rule collapses them into one, so Multi-Flush disappears —
+		#merged suits are one suit for every purpose, not just for forming the flush.
+		var classes_seen: Array[SuitClass] = []
 		for c in copies:
 			var cc := c.datas
-			if cc.is_empty() or not await Scoring.is_flush(cc): mf_ok = false; break
-			var s: PipSuit = cc[0].suit
-			var seen := false
-			for x in suits_seen:
-				if await PipComparator.is_suit_same(x, s): seen = true; break
-			if not seen: suits_seen.append(s)
-		if mf_ok and suits_seen.size() >= 2:
+			if cc.is_empty() or not Scoring.is_flush(cc, profile): mf_ok = false; break
+			var cls := profile.suit_class_of(cc[0])
+			if cls and not classes_seen.has(cls): classes_seen.append(cls)
+		if mf_ok and classes_seen.size() >= 2:
 			var mf_types: Array[MELD_TYPE] = base_types.duplicate()
 			mf_types.append(MELD_TYPE.MULTI)
 			mf_types.append(MELD_TYPE.FLUSH)
@@ -326,7 +426,7 @@ static func build_multi(copies: Array[ArrayCardData], n: int, base_types: Array[
 ## first-wins tie order matters. prefer_larger_meld_on_tie mirrors the straight/flush
 ## sites; the grid site keeps its historical strict-> comparison.
 static func best_uniform_multi(groups: Array[ArrayCardData], base_types: Array[MELD_TYPE],
-		max_rank: float, min_size: int = 2, min_copies: int = 2,
+		max_rank: float, profile: HandProfile, min_size: int = 2, min_copies: int = 2,
 		prefer_larger_meld_on_tie: bool = true) -> Result:
 	var sizes: Array[int] = []
 	for g in groups:
@@ -335,11 +435,24 @@ static func best_uniform_multi(groups: Array[ArrayCardData], base_types: Array[M
 	var best: Result = null
 	for cand in sizes:
 		var copies: Array[ArrayCardData] = []
+		# ⚠ **THE COPIES MUST BE DISJOINT.** A card carrying extra rank values (§1.7) or two
+		# suits (Harlequin) sits in SEVERAL classes at once, so the same physical card can be
+		# offered by two groups here — and taking it into both would make one card count twice
+		# in one meld. That is multiplicity (The Forged Ace), out of scope at QR5(a) and already
+		# barred from the grouping route at Q89(b). Adjacency and multi-suit must not reopen it.
+		# With disjoint classes this is exactly the old `slice(0, cand)`.
+		var used : Array[CardData] = []
 		for g in groups:
-			if g.datas.size() >= cand:
-				copies.append(ArrayCardData.new().with_datas(g.datas.slice(0, cand)))
+			var take : Array[CardData] = []
+			for c : CardData in g.datas:
+				if used.has(c): continue
+				take.append(c)
+				if take.size() == cand: break
+			if take.size() < cand: continue
+			used.append_array(take)
+			copies.append(ArrayCardData.new().with_datas(take))
 		if copies.size() < min_copies: continue
-		var r := await build_multi(copies, cand, base_types, max_rank)
+		var r := await build_multi(copies, cand, base_types, max_rank, profile)
 		if best == null or r.score > best.score \
 				or (prefer_larger_meld_on_tie and r.score == best.score and r.meld.size() > best.meld.size()):
 			best = r
@@ -354,31 +467,578 @@ static func rank_sort_desc_async(a: CardData, b: CardData) -> bool:
 
 ## Processes a raw card array into abstract comparative mapping blocks
 static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
+	#GAP-003: a rule's answer is fixed for the HAND. Opening the pass here as well as in
+	#PokerHands.score covers direct callers (the handlers' sub-pool rebuilds, and tests); the
+	#depth counter means the OUTERMOST caller owns the scope, so every rebuild inside one
+	#scored line shares one set of verdicts instead of re-rolling per profile.
+	PipComparator.begin_pass()
+	var profile := await _build_profile(cards)
+	PipComparator.end_pass()
+	return profile
+
+static func _build_profile(cards: Array[CardData]) -> HandProfile:
 	var profile := HandProfile.new()
-	
+	# TODO(multiplicity, QR5=a / DEFERRED.md D1): a card counting as SEVERAL cards in a meld
+	# (The Forged Ace, Flea Circus) materialises its extra instances HERE, before profiling —
+	# a partition puts each card in one class exactly once and cannot express it. Q89(b)
+	# deliberately closed the back door: a grouping rule may pull a board card in, never
+	# invent one, so this cannot arrive by accident.
+	var hand_order : Dictionary[CardData, int] = {}
+
 	for card in cards:
+		hand_order[card] = hand_order.size()
 		# CENTRAL CONTRACT: Filter out unscorable items (Stone Cards) dynamically
 		if not PipComparator.is_scorable(card): continue
 		
 		# --- PHASE A: DECOUPLED RANK PROFILING BUCKETS ---
 		# Ask the comparator which structural numeric keys this rank represents
 		var placement_keys: Array[float] = PipComparator.get_rank_profile(card.rank)
-		profile.card_rank_keys[card] = placement_keys  # reverse map for O(1) remove_card
+		#H2/H3 (Q71=c): extra printed values a card ALSO counts as become ordinary class keys,
+		#so the existing scan finds them with no change to adjacency logic at all. A card
+		#carrying them sits in SEVERAL classes at once — the same path Harlequin's dual suits
+		#already use, which is why remove_card clears every class a card is in.
+		for extra : float in await PipComparator.get_extra_rank_values(card):
+			if not placement_keys.has(extra): placement_keys.append(extra)
+		profile.card_rank_values[card] = placement_keys
+		var rank_classes: Array[RankClass] = []   # reverse map for O(1) remove_card
 		for scalar_key in placement_keys:
-			if not profile.ranks.map.has(scalar_key):
-				profile.ranks.map[scalar_key] = ArrayCardData.new()
-			profile.ranks.map[scalar_key].datas.append(card)
+			var cls := profile.ranks.find(scalar_key)
+			if not cls:
+				cls = RankClass.new()
+				cls.key = scalar_key
+				cls.member_keys = [scalar_key]
+				profile.ranks.classes.append(cls)
+			cls.datas.append(card)
+			if not rank_classes.has(cls): rank_classes.append(cls)
+		profile.card_rank_keys[card] = rank_classes
 
 		# --- PHASE B: DECOUPLED SUIT PROFILING BUCKETS ---
 		# Ask the comparator which suit key strings this card satisfies simultaneously
 		var suit_keys: Array[String] = PipComparator.get_suit_profile(card.suit)
-		profile.card_suit_keys[card] = suit_keys
+		var suit_classes: Array[SuitClass] = []
 		for st in suit_keys:
-			if not profile.suits.map.has(st):
-				profile.suits.map[st] = ArrayCardData.new()
-			profile.suits.map[st].datas.append(card)
-			
+			var cls := profile.suits.find(st)
+			if not cls:
+				cls = SuitClass.new()
+				cls.key = st
+				cls.member_keys = [st]
+				profile.suits.classes.append(cls)
+			cls.datas.append(card)
+			if not suit_classes.has(cls): suit_classes.append(cls)
+		profile.card_suit_keys[card] = suit_classes
+
+	# --- STAGE 0: the two passes close over distinct keys (chart C5, chart D) ---
+	# ⚠ C4 IS THE WHOLE SAFETY ARGUMENT: with nothing on the board implementing a meld hook
+	# both calls return after one implementer-cache lookup, ZERO comparators are dispatched,
+	# and the partition is the one-class-per-printed-value identity this file always built.
+	await _close_rank_classes(profile, hand_order)
+	await _close_suit_classes(profile, hand_order)
+
+	# --- STAGE 1: the whole-hand rules rewrite the partition (chart E) ---
+	await _apply_group_rules(profile, cards, hand_order, true)
+	if not profile.no_meld:
+		await _apply_group_rules(profile, cards, hand_order, false)
 	return profile
+
+
+# ==============================================================================
+# STAGE 1 — WHOLE-HAND GROUPING RULES (chart E, PLAN §1.3)
+# ==============================================================================
+
+## Each implementer in BOARD ORDER (Q10=a), each seeing the partition the previous one left
+## (Q16=a), with `sanitize` run after EVERY stage. `use_ranks` picks the domain; the two
+## domains have their own hook, their own deny pass and their own partition.
+## ⚠ NEVER CACHED (Q42=a). These rules read board state by design — Humbug reads cover, The
+## Turk reads the card beneath — so a remembered answer is a wrong answer.
+## ⚠ NO DEPTH LIMIT AND NO RUNAWAY ACCOUNTING (Q15=b, Q19=b, Q92=b). A rule may call
+## `Scoring.PokerHands.score` from inside its own hook, without bound, and these dispatches do
+## not feed the per-act event cap. That is DEFERRED.md R1, an accepted risk and not an
+## oversight: a pathological rule can hang a submit, and the only thing standing between that
+## and a hung test run is the fuzz suite's wall-clock bound.
+static func _apply_group_rules(profile: HandProfile, cards: Array[CardData],
+		hand_order: Dictionary[CardData, int], use_ranks: bool) -> void:
+	var env := CardEnvironment.CURRENT
+	if not env: return
+	var hook := PipComparator.MELD_GROUP_RANKS if use_ranks else PipComparator.MELD_GROUP_SUITS
+	var rules := env.group_rule_implementers(hook)
+	if rules.is_empty(): return
+	var deny := PipComparator.MELD_RANKS_DENY if use_ranks else PipComparator.MELD_SUITS_DENY
+
+	var groups := _groups_of_classes(profile, use_ranks)
+	for mod : CardModifier in rules:
+		#a COPY of both the hand and the partition: a rule that mutates what it was handed
+		#(the MutatingMod double) must not be able to corrupt the engine's own state
+		var proposed : Variant = await Callable(mod, hook).call(cards.duplicate(),
+				_copy_groups(groups))
+		env._note_mod_fired(mod, hook, false)
+		var next := await sanitize(proposed, groups, cards, deny, use_ranks, hand_order)
+		if next.is_empty():
+			#Q13(d) + Q85(a): "no meld is possible from this hand" — the line banks ZERO
+			profile.no_meld = true
+			return
+		groups = next
+	_rebuild_classes(profile, groups, hand_order, use_ranks)
+
+
+## Sanitize a whole-hand rule's answer. Runs after EVERY stage.
+## ⚠ PLAN §1.3 lists this signature without the deny hook, while step 4 of the same section
+## mandates the deny re-check — so the hook name and the domain are parameters.
+## 1. EMPTY RETURN (Q13=d, Q85=a) — an empty or absent array is not an error and not "no
+##    change": it means NO MELD IS POSSIBLE from this hand. Signalled by returning empty;
+##    the caller sets `HandProfile.no_meld`, `PokerHands.score` returns [], and
+##    `Game.score_line` banks ZERO for the line.
+## 2. FOREIGN CARDS (Q14=d, Q89=b) — a named CardData that is not in this hand is ACCEPTED
+##    and joins the meld, provided it is reachable from the environment's collections. A
+##    CardData that is not on the board at all is REFUSED with push_error: a rule may pull a
+##    card in, never invent one.
+## 3. OVERLAPS (Q12=a) — groups sharing a card are unioned into one.
+## 4. DENY RE-CHECK (Q94=a) — after unioning, every pair the union created is re-asked
+##    against the DENY pass only. A denied pair splits the union back apart; the deny wins,
+##    the groups stay separate, and the overlap is dropped from the later one.
+## 5. OMISSIONS (Q11=a) — a card the rule did not name keeps its grouping with the other cards
+##    its previous group still holds. Naming three cards means "put these three together",
+##    never "shatter the rest".
+## 6. ORDER (landmine) — members are re-sorted into hand order before the next stage, so a
+##    rule's return order can never change which card a handler picks first.
+static func sanitize(proposed: Variant, previous: Array[Array], hand: Array[CardData],
+		deny: StringName, use_ranks: bool,
+		hand_order: Dictionary[CardData, int]) -> Array[Array]:
+	# 1. an absent or empty answer is a real effect, not a malformed one
+	#⚠ `is Array` first, never `as Array`: casting a non-Array Variant to a BUILTIN type is a
+	#runtime "Invalid cast" error, not a null — and a rule returning null is a case §1.3
+	#step 1 explicitly names, so the obvious spelling would fail on a supported input.
+	if not (proposed is Array): return [] as Array[Array]
+	var raw : Array = proposed
+	if raw.is_empty(): return [] as Array[Array]
+
+	# 2. keep the cards a rule may legitimately name, and refuse the ones it invented
+	var env := CardEnvironment.CURRENT
+	var clean : Array[Array] = []
+	for item : Variant in raw:
+		if not (item is Array): continue
+		var g : Array = item
+		var members : Array[CardData] = []
+		for entry : Variant in g:
+			var card := entry as CardData
+			if not card or members.has(card): continue
+			if not hand.has(card) and not (env and env.has_card_data(card)):
+				push_error("comparator_buckets: a grouping rule named a CardData that is on "
+						+ "no collection — a rule may pull a board card in, never invent one (Q89=b)")
+				continue
+			members.append(card)
+		if not members.is_empty(): clean.append(members)
+
+	# 3 + 4. union what overlaps, unless the union would create a pair the deny pass forbids
+	# ⚠ **AN INCOMING GROUP CAN OVERLAP SEVERAL EXISTING ONES, AND ALL OF THEM MUST FOLD IN.**
+	# Merging into only the first would leave the shared card in two groups at once — the
+	# result would not be a partition, and `_rebuild_classes` would hand one card to two
+	# classes. Q12(a)'s "groups sharing a card are unioned into one" is transitive.
+	var unioned : Array[Array] = []
+	for g : Array in clean:
+		var hits : Array[int] = []
+		for i in range(unioned.size()):
+			for card : CardData in g:
+				if unioned[i].has(card):
+					hits.append(i)
+					break
+		if hits.is_empty():
+			unioned.append(g)
+			continue
+		# the candidate union: every group g touches, plus g itself
+		var sources : Array[Array] = []
+		for i : int in hits: sources.append(unioned[i])
+		sources.append(g)
+		var candidate : Array[CardData] = []
+		for src : Array in sources:
+			for card : CardData in src:
+				if not candidate.has(card): candidate.append(card)
+		#⚠ only the pairs the union CREATED — across two different source groups. Re-asking the
+		#pairs already inside one group would let a deny break apart a grouping that was
+		#already settled, which is more than §1.3 step 4 licenses (and more dispatches).
+		var denied := false
+		for x in range(sources.size()):
+			for y in range(x + 1, sources.size()):
+				for a : CardData in sources[x]:
+					for b : CardData in sources[y]:
+						if a == b: continue
+						if await _pair_denied(a, b, deny, use_ranks):
+							denied = true
+							break
+					if denied: break
+				if denied: break
+			if denied: break
+		if denied:
+			#Q94(a): the deny wins — the groups stay separate and the overlap is dropped
+			var trimmed : Array[CardData] = []
+			for card : CardData in g:
+				var elsewhere := false
+				for i : int in hits:
+					if unioned[i].has(card): elsewhere = true
+				if not elsewhere: trimmed.append(card)
+			if not trimmed.is_empty(): unioned.append(trimmed)
+		else:
+			#fold every touched group into the first, then drop the emptied ones
+			for i in range(hits.size() - 1, -1, -1):
+				unioned.remove_at(hits[i])
+			unioned.append(candidate)
+
+	# 5. everything the rule did not name keeps the company it already had
+	var placed : Array[CardData] = []
+	for g : Array in unioned: placed.append_array(g)
+	for g : Array in previous:
+		var rest : Array[CardData] = []
+		for card : CardData in g:
+			if not placed.has(card): rest.append(card)
+		if not rest.is_empty(): unioned.append(rest)
+
+	# 6. hand order, always
+	var out : Array[Array] = []
+	for g : Array in unioned:
+		var members : Array[CardData] = []
+		members.assign(g)
+		_sort_into_hand_order(members, hand_order)
+		out.append(members)
+	return out
+
+
+## Step 4's question, on the pips of the domain being sanitized.
+static func _pair_denied(a: CardData, b: CardData, deny: StringName, use_ranks: bool) -> bool:
+	if use_ranks:
+		if not a.rank or not b.rank: return false
+		return await PipComparator.pair_is_denied(a.rank, b.rank, deny)
+	if not a.suit or not b.suit: return false
+	return await PipComparator.pair_is_denied(a.suit, b.suit, deny)
+
+
+## The current partition as plain arrays — what a whole-hand rule is handed and what sanitize
+## compares against. ⚠ Each card appears EXACTLY ONCE even when it holds several class keys
+## (a dual-suit Harlequin): a partition is what the hook's contract promises, and listing a
+## card twice would make step 3 union its own two classes together.
+static func _groups_of_classes(profile: HandProfile, use_ranks: bool) -> Array[Array]:
+	var out : Array[Array] = []
+	var seen : Array[CardData] = []
+	if use_ranks:
+		for cls : RankClass in profile.ranks.classes:
+			var g : Array[CardData] = []
+			for card : CardData in cls.datas:
+				if seen.has(card): continue
+				seen.append(card)
+				g.append(card)
+			if not g.is_empty(): out.append(g)
+	else:
+		for cls : SuitClass in profile.suits.classes:
+			var g : Array[CardData] = []
+			for card : CardData in cls.datas:
+				if seen.has(card): continue
+				seen.append(card)
+				g.append(card)
+			if not g.is_empty(): out.append(g)
+	return out
+
+
+static func _copy_groups(groups: Array[Array]) -> Array[Array]:
+	var out : Array[Array] = []
+	for g : Array in groups: out.append(g.duplicate())
+	return out
+
+
+## Replace the domain's classes with the sanitized partition, rebuilding the reverse index so
+## remove_card still finds every class a card sits in. A card the rules PULLED IN joins here
+## and contributes its points like any other member (Q88=a); it is not removed from its own
+## row or column and scores there in the same pass too (Q87=a) — the double count is the
+## intended effect, not a bug to guard.
+static func _rebuild_classes(profile: HandProfile, groups: Array[Array],
+		hand_order: Dictionary[CardData, int], use_ranks: bool) -> void:
+	if use_ranks:
+		profile.ranks.classes = []
+		profile.card_rank_keys.clear()
+	else:
+		profile.suits.classes = []
+		profile.card_suit_keys.clear()
+	for g : Array in groups:
+		var members : Array[CardData] = []
+		for card : CardData in g:
+			if PipComparator.is_scorable(card): members.append(card)
+		if members.is_empty(): continue
+		if use_ranks:
+			var cls := RankClass.new()
+			cls.datas = members
+			#A stage-1 group has no prior key structure to inherit — the rule PUT these cards
+			#together — so its positions come from the members. ⚠ PRINTED values only, via
+			#get_rank_profile, NOT `rank_values_of`: §1.4 defines `mixed` as "members do not
+			#share one printed value", and a card's EXTRA values (§1.7) are its own, not a
+			#disagreement between members. Seeding them here made a SINGLE-CARD group `mixed`
+			#with one key per extra value, and §1.5's product is over mixed classes — three
+			#values on eight singletonised cards is 3^8 straight scans for a partition that
+			#merged nothing. Same defect as gaps/GAP-002.md, one stage later.
+			#⚠ Consequence, and it is the flattening stage 1 already does: a card's extra
+			#POSITIONS do not survive a grouping rule, because a partition puts it in one class.
+			for card : CardData in members:
+				for k : float in PipComparator.get_rank_profile(card.rank):
+					if not cls.member_keys.has(k): cls.member_keys.append(k)
+			profile.ranks.classes.append(cls)
+			for card : CardData in members:
+				if not profile.card_rank_keys.has(card):
+					profile.card_rank_keys[card] = [] as Array
+				profile.card_rank_keys[card].append(cls)
+			_finalize_rank_class(profile, cls, hand_order)
+		else:
+			var cls := SuitClass.new()
+			cls.datas = members
+			for card : CardData in members:
+				for k : String in PipComparator.get_suit_profile(card.suit):
+					if not cls.member_keys.has(k): cls.member_keys.append(k)
+			profile.suits.classes.append(cls)
+			for card : CardData in members:
+				if not profile.card_suit_keys.has(card):
+					profile.card_suit_keys[card] = [] as Array
+				profile.card_suit_keys[card].append(cls)
+			_finalize_suit_class(cls, hand_order)
+
+
+## Fold rank classes the two passes merged, then split the ones a deny refused to hold
+## together (C5, Q1, Q2, Q3, Q82). Order matters: MERGE FIRST, SPLIT SECOND, so a deny beats
+## a merge — the same precedence Q94(a) gives it over a sanitize union (owner, GAP-001).
+static func _close_rank_classes(profile: HandProfile, hand_order: Dictionary[CardData, int]) -> void:
+	var env := CardEnvironment.CURRENT
+	if not env: return
+	if not env.any_pair_implementer(PipComparator.MELD_RANKS_DENY, PipComparator.MELD_RANKS_ALLOW):
+		return
+	var keys := profile.ranks.distinct_keys()      # ascending: the smallest value roots its class
+	if keys.is_empty(): return
+	# TODO(class tags, QR6=a / DEFERRED.md D2): a third domain closes exactly like these two —
+	# the closure takes `reps` and two hook names and knows nothing about ranks or suits, so
+	# The Jongleur and Greasepaint need a new caller here, not a rewrite of PipComparator.
+	var reps : Array = []
+	for k : float in keys: reps.append(profile.ranks.find(k).datas[0].rank)
+
+	var self_denied : Array[float] = []
+	var refused := await PipComparator.deny_self_pairs(reps,
+			PipComparator.MELD_RANKS_DENY, PipComparator.MELD_RANKS_ALLOW)
+	for i in range(keys.size()):
+		if refused[i]: self_denied.append(keys[i])
+
+	var parent := await PipComparator.close_over_keys(reps,
+			PipComparator.MELD_RANKS_DENY, PipComparator.MELD_RANKS_ALLOW)
+	var survivor : Dictionary[int, RankClass] = {}
+	for i in range(keys.size()):
+		var cls := profile.ranks.find(keys[i])
+		var root := PipComparator.find_root(parent, i)
+		if not survivor.has(root):
+			survivor[root] = cls
+			continue
+		var into : RankClass = survivor[root]
+		#⚠ DEDUPE, do not append_array. A card carrying EXTRA rank values (§1.7) sits in
+		#several classes at once, so merging two of them would list it twice in the survivor —
+		#one physical card spending two steps in a straight and counting twice in a set. The
+		#suit half is the same case: Harlequin's two suits merged is ONE appearance, not two.
+		for card : CardData in cls.datas:
+			if not into.datas.has(card): into.datas.append(card)
+		#the survivor now OCCUPIES both classes' positions — this is the only thing that ever
+		#makes a class `mixed`, and it is exactly Q96's "merged across different values"
+		for mk : float in cls.member_keys:
+			if not into.member_keys.has(mk): into.member_keys.append(mk)
+		for card : CardData in cls.datas:
+			var refs : Array = profile.card_rank_keys[card]
+			refs.erase(cls)
+			if not refs.has(into): refs.append(into)
+		profile.ranks.classes.erase(cls)
+
+	_split_denied_rank_classes(profile, self_denied)
+	for cls : RankClass in profile.ranks.classes: _finalize_rank_class(profile, cls, hand_order)
+
+
+## Q82(a) / chart D3: a deny may forbid a pairing the PRINTED values already make the same, so
+## two ordinary 7s stop counting as a pair. Q1(a) makes every card printing 7 interchangeable
+## to the rule, so the deny can only mean NO TWO of them may share a class.
+## ⚠ A class can hold denied and undenied values at once when a merge rule built it, and the
+## owner's answer does not reach that collision. Shipped rule (ASSUMPTIONS.md): cards go into
+## sub-classes in HAND ORDER, each taking the first sub-class holding no card it shares a
+## denied value with. That satisfies every deny exactly, keeps the class count minimal, and
+## leaves cards whose values were never denied together — a deny forbids the pairing it was
+## asked about and nothing else.
+static func _split_denied_rank_classes(profile: HandProfile, denied: Array[float]) -> void:
+	if denied.is_empty(): return
+	for cls : RankClass in profile.ranks.classes.duplicate():
+		if cls.datas.size() < 2: continue
+		var buckets : Array[Array] = []          # Array[Array[CardData]]
+		var bucket_keys : Array[Array] = []      # the denied values each bucket already holds
+		for card : CardData in cls.datas:
+			var mine : Array[float] = []
+			for k : float in profile.rank_values_of(card):
+				if denied.has(k): mine.append(k)
+			var placed := false
+			for b in range(buckets.size()):
+				var clash := false
+				for k : float in mine:
+					if bucket_keys[b].has(k): clash = true; break
+				if clash: continue
+				buckets[b].append(card)
+				for k : float in mine: bucket_keys[b].append(k)
+				placed = true
+				break
+			if not placed:
+				buckets.append([card] as Array[CardData])
+				bucket_keys.append(mine.duplicate())
+		if buckets.size() < 2: continue
+		#the first bucket keeps the original class object, so nothing else has to be repointed
+		cls.datas = buckets[0]
+		for b in range(1, buckets.size()):
+			var split := RankClass.new()
+			split.datas = buckets[b]
+			#every part inherits the parent's positions; _finalize narrows each to the ones
+			#its own members still sit at
+			split.member_keys = cls.member_keys.duplicate()
+			profile.ranks.classes.append(split)
+			for card : CardData in split.datas:
+				var refs : Array = profile.card_rank_keys[card]
+				refs.erase(cls)
+				refs.append(split)
+
+
+## A class's key and shape are DERIVED from the cards it ended up holding, never propagated
+## through the merges — so a split cannot leave behind a member key no member has (§1.4).
+## ⚠ **`member_keys` IS THE SET OF POSITIONS THIS CLASS OCCUPIES, NOT THE UNION OF ITS MEMBERS'
+## VALUES, AND CONFLATING THEM IS A COMBINATORIAL TRAP.** A card carrying an extra rank value
+## (§1.7) sits in SEVERAL classes at once — its other value belongs to the OTHER class, not to
+## this one. Deriving member_keys from the cards therefore marked every class holding such a
+## card `mixed`, and §1.5's cartesian product is `prod(member_keys.size())` over mixed classes:
+## eight dual-value cards turned one straight scan into 2^16 of them. Measured before the fix:
+## 23 s for one scoring pass; after: single-digit ms.
+## So a class OWNS its keys — seeded with the key it was created at, unioned when two classes
+## merge, and narrowed here to the ones its members actually still sit at (which is what a
+## split leaves behind). `mixed` then means what Q96 means by it: a class a rule MERGED across
+## different printed values.
+static func _finalize_rank_class(profile: HandProfile, cls: RankClass,
+		hand_order: Dictionary[CardData, int]) -> void:
+	var kept : Array[float] = []
+	for k : float in cls.member_keys:
+		for card : CardData in cls.datas:
+			if profile.rank_values_of(card).has(k):
+				kept.append(k)
+				break
+	#⚠ `mixed` is about MEMBERS DISAGREEING (§1.4), so it is decided on PRINTED values. A class
+	#can legitimately occupy several positions without being mixed — a same-value class whose
+	#members declare extra values — and calling that mixed costs a cartesian factor for a
+	#merge that never happened (gaps/GAP-002.md).
+	var printed : Array[float] = []
+	for card : CardData in cls.datas:
+		for k : float in PipComparator.get_rank_profile(card.rank):
+			if not printed.has(k): printed.append(k)
+	cls.member_keys = kept
+	cls.member_keys.sort()
+	cls.key = cls.member_keys[0] if not cls.member_keys.is_empty() else 0.0
+	cls.mixed = printed.size() > 1
+	#⚠ ALWAYS, not just when mixed: a split reorders members too, and the order two classes
+	#happened to be folded in must never decide which card a handler picks first
+	#(PLAN §1.3 step 6 — the same landmine sanitize guards against in stage 1).
+	_sort_into_hand_order(cls.datas, hand_order)
+
+
+## The suit half of the same fold. Keys are Strings, so "smallest" is lexicographic (§1.4).
+static func _close_suit_classes(profile: HandProfile, hand_order: Dictionary[CardData, int]) -> void:
+	var env := CardEnvironment.CURRENT
+	if not env: return
+	if not env.any_pair_implementer(PipComparator.MELD_SUITS_DENY, PipComparator.MELD_SUITS_ALLOW):
+		return
+	var keys : Array[String] = []
+	for c : SuitClass in profile.suits.classes:
+		if not keys.has(c.key): keys.append(c.key)
+	if keys.is_empty(): return
+	keys.sort()
+	var reps : Array = []
+	for k : String in keys: reps.append(profile.suits.find(k).datas[0].suit)
+
+	var self_denied : Array[String] = []
+	var refused := await PipComparator.deny_self_pairs(reps,
+			PipComparator.MELD_SUITS_DENY, PipComparator.MELD_SUITS_ALLOW)
+	for i in range(keys.size()):
+		if refused[i]: self_denied.append(keys[i])
+
+	var parent := await PipComparator.close_over_keys(reps,
+			PipComparator.MELD_SUITS_DENY, PipComparator.MELD_SUITS_ALLOW)
+	var survivor : Dictionary[int, SuitClass] = {}
+	for i in range(keys.size()):
+		var cls := profile.suits.find(keys[i])
+		var root := PipComparator.find_root(parent, i)
+		if not survivor.has(root):
+			survivor[root] = cls
+			continue
+		var into : SuitClass = survivor[root]
+		#dedupe: see the rank half — a dual-suit card in both classes appears ONCE in the merge
+		for card : CardData in cls.datas:
+			if not into.datas.has(card): into.datas.append(card)
+		for card : CardData in cls.datas:
+			var refs : Array = profile.card_suit_keys[card]
+			refs.erase(cls)
+			if not refs.has(into): refs.append(into)
+		for mk : String in cls.member_keys:
+			if not into.member_keys.has(mk): into.member_keys.append(mk)
+		profile.suits.classes.erase(cls)
+
+	_split_denied_suit_classes(profile, self_denied)
+	for cls : SuitClass in profile.suits.classes: _finalize_suit_class(cls, hand_order)
+
+
+## The suit half of the split. Same rule, same reasons — see _split_denied_rank_classes.
+static func _split_denied_suit_classes(profile: HandProfile, denied: Array[String]) -> void:
+	if denied.is_empty(): return
+	for cls : SuitClass in profile.suits.classes.duplicate():
+		if cls.datas.size() < 2: continue
+		var buckets : Array[Array] = []
+		var bucket_keys : Array[Array] = []
+		for card : CardData in cls.datas:
+			var mine : Array[String] = []
+			for k : String in PipComparator.get_suit_profile(card.suit):
+				if denied.has(k): mine.append(k)
+			var placed := false
+			for b in range(buckets.size()):
+				var clash := false
+				for k : String in mine:
+					if bucket_keys[b].has(k): clash = true; break
+				if clash: continue
+				buckets[b].append(card)
+				for k : String in mine: bucket_keys[b].append(k)
+				placed = true
+				break
+			if not placed:
+				buckets.append([card] as Array[CardData])
+				bucket_keys.append(mine.duplicate())
+		if buckets.size() < 2: continue
+		cls.datas = buckets[0]
+		for b in range(1, buckets.size()):
+			var split := SuitClass.new()
+			split.datas = buckets[b]
+			split.member_keys = cls.member_keys.duplicate()
+			profile.suits.classes.append(split)
+			for card : CardData in split.datas:
+				var refs : Array = profile.card_suit_keys[card]
+				refs.erase(cls)
+				refs.append(split)
+
+
+## The suit half: same rule as _finalize_rank_class — a class OWNS its keys, narrowed to the
+## ones its members still sit at. A dual-suit Harlequin belongs to two classes; its other suit
+## is that other class's position, not this one's.
+static func _finalize_suit_class(cls: SuitClass, hand_order: Dictionary[CardData, int]) -> void:
+	var kept : Array[String] = []
+	for k : String in cls.member_keys:
+		for card : CardData in cls.datas:
+			if PipComparator.get_suit_profile(card.suit).has(k):
+				kept.append(k)
+				break
+	cls.member_keys = kept
+	cls.member_keys.sort()
+	cls.key = cls.member_keys[0] if not cls.member_keys.is_empty() else ""
+	cls.mixed = cls.member_keys.size() > 1
+	_sort_into_hand_order(cls.datas, hand_order)
+
+
+## Members sit in HAND ORDER before anything reads them (PLAN §1.3 step 6).
+static func _sort_into_hand_order(datas: Array[CardData], hand_order: Dictionary[CardData, int]) -> void:
+	datas.sort_custom(func(a: CardData, b: CardData) -> bool:
+		return hand_order.get(a, 0) < hand_order.get(b, 0)
+	)
 
 # ==============================================================================
 # CENTRAL STRATEGY ROUTER PARALLEL ENGINE
@@ -386,7 +1046,16 @@ static func _get_hand_profiles_async(cards: Array[CardData]) -> HandProfile:
 class PokerHands:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.is_empty(): return []
-		
+		#GAP-003: ONE set of rule verdicts for this whole hand, across every profile this pass
+		#rebuilds — otherwise the straight scan and the flush scan can form different
+		#partitions of the same cards.
+		PipComparator.begin_pass()
+		var out := await _score_inner(cards)
+		PipComparator.end_pass()
+		return out
+
+	static func _score_inner(cards: Array[CardData]) -> Array[Result]:
+
 		var real_cards: Array[CardData] = []
 		for card in cards:
 			if not card: continue #or not card.rank or not card.suit: continue
@@ -397,20 +1066,23 @@ class PokerHands:
 		#SE3: profile once, gate the expensive handlers, and hand the grid handler
 		#the same profile instead of letting it rebuild it
 		var gate := await Scoring._get_hand_profiles_async(real_cards)
+		#Q13(d)/Q85(a): a rule said no meld is possible, so the line scores absolutely nothing —
+		#High Card does NOT survive, because the answer is about the hand, not about a meld.
+		if gate.no_meld: return []
 
 		var grid_res := await ExpandedGridHandler.score(real_cards, gate)
 		if not grid_res.is_empty(): candidates.append_array(grid_res)
 
 		#a straight of length >= 5 needs >= 5 distinct rank keys (values only repeat
 		#across full wrap loops, which are longer than the cycle)
-		if real_cards.size() >= 5 and gate.ranks.map.size() >= 5:
+		if real_cards.size() >= 5 and gate.ranks.position_count() >= 5:
 			var straight_res := await MultiStraightHandler.score(real_cards)
 			if not straight_res.is_empty(): candidates.append_array(straight_res)
 
 		#a flush needs at least one suit bucket of >= 5 cards
 		var flush_possible := false
-		for suit_id in gate.suits.map:
-			if gate.suits.map[suit_id].datas.size() >= 5:
+		for suit_cls : SuitClass in gate.suits.classes:
+			if suit_cls.datas.size() >= 5:
 				flush_possible = true
 				break
 		if flush_possible:
@@ -455,17 +1127,23 @@ class ExpandedGridHandler:
 	static func score(cards: Array[CardData], profiles: Scoring.HandProfile = null) -> Array[Result]:
 		if not profiles:
 			profiles = await Scoring._get_hand_profiles_async(cards)
+		# One cluster per CLASS, not per printed value: two split classes sharing a value are
+		# two independent sets and both keep all their cards (Q22=a, Q24=a).
+		var classes: Array[RankClass] = []
 		var clusters: Array[ArrayCardData] = []
 
-		for rank_val in profiles.ranks.map:
-			var cluster: ArrayCardData = profiles.ranks.map[rank_val]
-			if cluster.datas.size() >= 2: clusters.append(cluster)
+		for cls : RankClass in profiles.ranks.classes:
+			if cls.datas.size() >= 2:
+				classes.append(cls)
+				#shares the class's live `datas` array, exactly as the bucket did
+				clusters.append(ArrayCardData.new().with_datas(cls.datas))
 
 		if clusters.is_empty(): return []
 
-		# Pre-compute scorable values (no awaits inside the sort).
+		# Pre-compute scorable values (no awaits inside the sort). Q21: a class reports its
+		# MAXIMUM member key, which for an unmixed class is its one printed value.
 		var val_map : Dictionary[ArrayCardData, float] = {}
-		for c in clusters: val_map[c] = await PipComparator.get_scorable_value(c.datas[0].rank)
+		for i in range(clusters.size()): val_map[clusters[i]] = classes[i].max_key()
 
 		clusters.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool:
 			if a.datas.size() != b.datas.size(): return a.datas.size() > b.datas.size()
@@ -478,12 +1156,12 @@ class ExpandedGridHandler:
 		# --- 1. SINGLE BEST SET (largest cluster) ---
 		var big := clusters[0].datas
 		var bn := big.size()
-		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank))
+		possible_outcomes.append(await Scoring.build_multi([clusters[0]], bn, [MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank, profiles))
 
 		# --- 2. UNIFORM MULTI-SET (m copies of the same size, via the shared SD2 search;
 		# strict-> tie policy preserved from the original loop) ---
 		var best_set := await Scoring.best_uniform_multi(clusters,
-				[MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank, 2, 2, false)
+				[MELD_TYPE.X_OF_KIND] as Array[MELD_TYPE], absolute_max_rank, profiles, 2, 2, false)
 		if best_set != null: possible_outcomes.append(best_set)
 
 		# --- 3. FULL-HOUSE FAMILY (m houses, each of size 5s; best scale s wins) ---
@@ -492,7 +1170,7 @@ class ExpandedGridHandler:
 		for s in range(1, int(max_cluster / 3) + 1):
 			var house_copies := _form_houses_at_scale(clusters, s)
 			if house_copies.is_empty(): continue
-			var r := await Scoring.build_multi(house_copies, 5 * s, [MELD_TYPE.FULL_HOUSE] as Array[MELD_TYPE], absolute_max_rank)
+			var r := await Scoring.build_multi(house_copies, 5 * s, [MELD_TYPE.FULL_HOUSE] as Array[MELD_TYPE], absolute_max_rank, profiles)
 			if best_house == null or r.score > best_house.score: best_house = r
 		if best_house != null: possible_outcomes.append(best_house)
 
@@ -510,6 +1188,11 @@ class ExpandedGridHandler:
 		for c in clusters:
 			work.append({"rem": c.datas.size(), "src": c.datas, "off": 0})
 
+		# ⚠ Every card spent, across every house built here. A card in two classes (extra rank
+		# values, §1.7) is offered by two clusters, and a house taking it for its trip AND its
+		# pair would count one card twice in one meld — the multiplicity QR5(a) excluded. See
+		# best_uniform_multi for the same guard on the copies path.
+		var spent : Array[CardData] = []
 		var houses: Array[ArrayCardData] = []
 		while true:
 			# Trip: most remaining, >= trip_n.
@@ -525,15 +1208,35 @@ class ExpandedGridHandler:
 				if pair_idx == -1 or work[i].rem < work[pair_idx].rem: pair_idx = i
 			if pair_idx == -1: break
 
-			var house: Array[CardData] = []
 			var t : Dictionary = work[trip_idx]
-			for k in range(trip_n): house.append(t.src[t.off + k])
-			t.off += trip_n; t.rem -= trip_n
 			var p : Dictionary = work[pair_idx]
-			for k in range(pair_n): house.append(p.src[p.off + k])
-			p.off += pair_n; p.rem -= pair_n
+			var trip_cards := _take_unspent(t, trip_n, spent)
+			if trip_cards.size() < trip_n: break
+			#⚠ the trip's cards join `spent` BEFORE the pair is drawn — the pair's cluster can
+			#offer the very same card (one card, two classes), and drawing both is the
+			#duplicate this guard exists to stop
+			spent.append_array(trip_cards)
+			var pair_cards := _take_unspent(p, pair_n, spent)
+			if pair_cards.size() < pair_n: break
+			spent.append_array(pair_cards)
+			var house: Array[CardData] = []
+			house.append_array(trip_cards)
+			house.append_array(pair_cards)
 			houses.append(ArrayCardData.new().with_datas(house))
 		return houses
+
+	## Take `count` cards from one cluster's remaining window, skipping any already spent in
+	## this meld, and advance that cluster's cursor past everything it walked.
+	static func _take_unspent(w: Dictionary, count: int, spent: Array[CardData]) -> Array[CardData]:
+		var out : Array[CardData] = []
+		var src : Array[CardData] = w.src
+		while w.off < src.size() and out.size() < count:
+			var card : CardData = src[w.off]
+			w.off += 1
+			w.rem -= 1
+			if spent.has(card): continue
+			out.append(card)
+		return out
 
 
 # ==============================================================================
@@ -548,8 +1251,12 @@ class MultiStraightHandler:
 	static func score(cards: Array[CardData]) -> Array[Result]:
 		if cards.size() < 5: return []
 		
-		var path_a_results := await _evaluate_straight_flushes_first(cards)
-		var path_b_results := await _evaluate_mixed_straights_first(cards)
+		#the CLASSIFICATION profile: built once from the whole hand and never consumed, so
+		#is_flush is asked about the partition the cards actually formed under (S14). The
+		#working profiles below are eaten by remove_card and cannot answer that question.
+		var classify := await Scoring._get_hand_profiles_async(cards)
+		var path_a_results := await _evaluate_straight_flushes_first(cards, classify)
+		var path_b_results := await _evaluate_mixed_straights_first(cards, classify)
 		
 		var optimal: Array[Result] = []
 		if path_a_results != null: optimal.append(path_a_results)
@@ -559,7 +1266,8 @@ class MultiStraightHandler:
 		optimal.sort_custom(PokerHands._compare_results)
 		return optimal
 
-	static func _evaluate_straight_flushes_first(cards: Array[CardData]) -> Result:
+	static func _evaluate_straight_flushes_first(cards: Array[CardData],
+			classify: Scoring.HandProfile) -> Result:
 		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
 		#SE2: one profile, consumed incrementally — no per-iteration rebuild of the pool
@@ -567,8 +1275,8 @@ class MultiStraightHandler:
 
 		while true:
 			var best_sf: Array[CardData] = []
-			for suit_id in profiles.suits.map:
-				var s_cards: Array[CardData] = profiles.suits.map[suit_id].datas
+			for suit_cls : SuitClass in profiles.suits.classes:
+				var s_cards: Array[CardData] = suit_cls.datas
 				if s_cards.size() >= 5:
 					var test := await _find_best_unbounded_sequence(s_cards)
 					if test.size() > best_sf.size(): best_sf = test
@@ -588,9 +1296,10 @@ class MultiStraightHandler:
 			for c in mixed: profiles.remove_card(c)
 
 		if straights_found.is_empty(): return null
-		return await _package_straight_result(straights_found, absolute_max_rank)
+		return await _package_straight_result(straights_found, absolute_max_rank, classify)
 
-	static func _evaluate_mixed_straights_first(cards: Array[CardData]) -> Result:
+	static func _evaluate_mixed_straights_first(cards: Array[CardData],
+			classify: Scoring.HandProfile) -> Result:
 		var straights_found: Array[ArrayCardData] = []
 		var absolute_max_rank := -INF
 		var profiles := await Scoring._get_hand_profiles_async(cards)
@@ -604,18 +1313,19 @@ class MultiStraightHandler:
 			for c in run: profiles.remove_card(c)
 
 		if straights_found.is_empty(): return null
-		return await _package_straight_result(straights_found, absolute_max_rank)
+		return await _package_straight_result(straights_found, absolute_max_rank, classify)
 
 	## Packages found runs into the best result: searches uniform copy sizes
 	## (truncating longer runs) and routes through the shared flush model.
-	static func _package_straight_result(straights: Array[ArrayCardData], max_rank: float) -> Result:
+	static func _package_straight_result(straights: Array[ArrayCardData], max_rank: float,
+			classify: Scoring.HandProfile) -> Result:
 		straights.sort_custom(func(a: ArrayCardData, b: ArrayCardData) -> bool: return a.datas.size() > b.datas.size())
 		# Length escalation lives in ScoreModel.straight_len_esc: a single long straight
 		# escalates so it is never beaten by splitting the same cards into copies, and
 		# Straight(26) ties 2x Straight(13) (winning on the non-multi tie-break).
 		# min_copies 1: a lone straight is a valid (single-copy) result here.
 		return await Scoring.best_uniform_multi(straights,
-				[MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], max_rank, 5, 1)
+				[MELD_TYPE.STRAIGHT] as Array[MELD_TYPE], max_rank, classify, 5, 1)
 
 	## Best straight from a pool = longer of the linear scan and the wrap/multi-loop walk.
 	static func _find_best_unbounded_sequence(card_pool: Array[CardData]) -> Array[CardData]:
@@ -624,78 +1334,141 @@ class MultiStraightHandler:
 		return await _best_sequence_from_profiles(profiles)
 
 	## SE2 variant for callers that already hold a (possibly consumed) profile.
+	## ⚠ **THIS IS A SEARCH, NOT A WALK** (PLAN §1.5, chart node F8). A MIXED class has several
+	## candidate positions and the longest run depends on which one it takes, so every
+	## assignment is tried and the best kept. The product is **1 when nothing is mixed**, so
+	## the un-modded path runs the existing scan exactly once and is unchanged.
 	static func _best_sequence_from_profiles(profiles: Scoring.HandProfile) -> Array[CardData]:
-		var linear := await _scan_linear(profiles)
-		var wrap := await _scan_wrap(profiles)
-		return wrap if wrap.size() > linear.size() else linear
+		var best : Array[CardData] = []
+		for assignment : Array in _straight_assignments(profiles):
+			var positions := _positions_for(profiles, assignment)
+			#linear first, then wrap only on a STRICT improvement — the original tie policy
+			var linear := _scan_linear(positions)
+			if linear.size() > best.size(): best = linear
+			var wrap := await _scan_wrap(positions)
+			if wrap.size() > best.size(): best = wrap
+		return best
 
-	## Longest consecutive run over present rank keys (adjacency via comparator).
-	## One card per rank value; handles negatives, ranks beyond the wrap top, and the wheel.
-	static func _scan_linear(profiles: Scoring.HandProfile) -> Array[CardData]:
-		var keys: Array[float] = []
-		for k in profiles.ranks.map: keys.append(k)
+	## Every way to place the MIXED classes, one member_key each — the cartesian product of
+	## their candidate positions (§1.5). Enumerated in ASCENDING member_key order (member_keys
+	## are sorted by _finalize_rank_class) so the result is deterministic.
+	## ⚠ NO CAP, deliberately. Bounded in practice by thirteen positions and by how many mixed
+	## classes a board holds; if a real board ever makes this expensive that is a gap to file,
+	## not a bound to invent (PLAN §1.5, DEFERRED.md E2).
+	static func _straight_assignments(profiles: Scoring.HandProfile) -> Array[Array]:
+		var out : Array[Array] = [[] as Array[float]]
+		for cls : Scoring.RankClass in profiles.ranks.classes:
+			if not cls.mixed or cls.datas.is_empty(): continue
+			var next : Array[Array] = []
+			for partial : Array in out:
+				for k : float in cls.member_keys:
+					var extended : Array[float] = []
+					extended.assign(partial)
+					extended.append(k)
+					next.append(extended)
+			out = next
+		return out
+
+	## The positions one assignment offers the scanners, and how many cards each can spend.
+	## SAME-VALUE class (mixed == false): position = key, and it contributes EVERY card it
+	##   holds — three 7s still give the wrap scan three steps at position 7, exactly as
+	##   today (Q95=a). Two split classes sharing a value both spend here (Q22=a).
+	## MIXED class (mixed == true): contributes EXACTLY ONE card (Q93=d), at the member_key
+	##   this assignment gave it (Q96=c). It is NOT invisible — Q96 supersedes Q20(c).
+	##   The card spent is `datas[0]`, the first in HAND ORDER, so the choice is deterministic.
+	## ⚠ Consumes `assignment` in the same class order _straight_assignments produced it in;
+	## both skip empty mixed classes, or the indices would drift apart.
+	static func _positions_for(profiles: Scoring.HandProfile,
+			assignment: Array) -> Dictionary[float, ArrayCardData]:
+		var out : Dictionary[float, ArrayCardData] = {}
+		var taken := 0
+		for cls : Scoring.RankClass in profiles.ranks.classes:
+			if cls.datas.is_empty(): continue
+			if cls.mixed:
+				if taken >= assignment.size(): continue
+				var at : float = assignment[taken]
+				taken += 1
+				if not out.has(at): out[at] = ArrayCardData.new()
+				out[at].datas.append(cls.datas[0])
+			else:
+				if not out.has(cls.key): out[cls.key] = ArrayCardData.new()
+				out[cls.key].datas.append_array(cls.datas)
+		return out
+
+	## The first card sitting at `key` that this run has not already spent, or null.
+	## ⚠ **THE `used` CHECK IS WHAT KEEPS ONE CARD FROM BECOMING A WHOLE STRAIGHT.** A card
+	## declaring extra rank values (§1.7) sits in one class PER VALUE, so several positions can
+	## offer the SAME physical card. Spending it at each would give one card several steps in a
+	## run — which is multiplicity (The Forged Ace, Flea Circus), deliberately out of scope at
+	## QR5(a) and with its grouping back door already closed at Q89(b). Adjacency must not
+	## reopen it. Pinned by test_comparator.gd section 12.
+	static func _unused_at(at: Dictionary[float, ArrayCardData], key: float,
+			used: Array[CardData]) -> CardData:
+		if not at.has(key): return null
+		for c : CardData in at[key].datas:
+			if not used.has(c): return c
+		return null
+
+	## Longest consecutive run over the positions this assignment offers, spending each physical
+	## card at most once. Handles negatives, ranks beyond the wrap top, and the wheel.
+	## ⚠ A run now BREAKS when the next position has only cards it has already spent, so the
+	## walk restarts from every position instead of scanning the key list once — a position
+	## being present is no longer the same fact as a card being available there.
+	static func _scan_linear(at: Dictionary[float, ArrayCardData]) -> Array[CardData]:
+		var keys : Array[float] = []
+		for k : float in at: keys.append(k)
 		if keys.is_empty(): return []
 		keys.sort()
 
-		var best: Array[float] = []
-		var curr: Array[float] = [keys[0]]
-		for i in range(1, keys.size()):
-			#SD3: keys are plain floats from get_rank_profile — compare directly instead
-			#of allocating synthetic PipRankNumerals (which comparator mods would see
-			#with no owning card). Mod-warped adjacency must act via get_rank_profile.
-			if is_equal_approx(keys[i] - keys[i - 1], 1.0):
-				curr.append(keys[i])
-			else:
-				if curr.size() > best.size(): best = curr.duplicate()
-				curr = [keys[i]]
-		if curr.size() > best.size(): best = curr
-
-		var out: Array[CardData] = []
-		for v in best: out.append(profiles.ranks.map[v].datas[0])
-		return out
+		var best : Array[CardData] = []
+		for start in range(keys.size()):
+			var used : Array[CardData] = []
+			var i := start
+			while i < keys.size():
+				#SD3: keys are plain floats from get_rank_profile — compare directly instead
+				#of allocating synthetic PipRankNumerals (which comparator mods would see
+				#with no owning card). Mod-warped adjacency must act via get_rank_profile.
+				if i > start and not is_equal_approx(keys[i] - keys[i - 1], 1.0): break
+				var pick := _unused_at(at, keys[i], used)
+				if not pick: break
+				used.append(pick)
+				i += 1
+			#`>` keeps the EARLIEST of equally long runs, as the single-pass scan did
+			if used.size() > best.size(): best = used
+		return best
 
 	## Longest wrap-around / multi-loop walk over the cycle [A..W] (W -> A wrap).
 	## Each step consumes one physical card; a rank value may repeat once per loop.
-	static func _scan_wrap(profiles: Scoring.HandProfile) -> Array[CardData]:
-		var A := int(PipComparator.get_ace_base_value())
-		var W := int(PipComparator.get_wrap_top_value())
+	static func _scan_wrap(at: Dictionary[float, ArrayCardData]) -> Array[CardData]:
+		#Q72(b): a card may extend the cycle, or BREAK it — Vector2(NAN, NAN) means no run
+		#may cross the top, so there is no wrap walk to make at all.
+		var bounds := await PipComparator.get_wrap_bounds()
+		if is_nan(bounds.x) or is_nan(bounds.y): return []
+		var A := int(bounds.x)
+		var W := int(bounds.y)
 		if W < A: return []
 
-		var cnt : Dictionary[int, int] = {}
-		var max_steps := 0
-		var any := false
-		for v in range(A, W + 1):
-			var c := 0
-			if profiles.ranks.map.has(float(v)): c = profiles.ranks.map[float(v)].datas.size()
-			cnt[v] = c
-			max_steps += c
-			if c > 0: any = true
-		if not any: return []
-
-		var best_path: Array[int] = []
+		# ⚠ The walk spends CARDS, not counts. Counting cards per position and decrementing let
+		# one physical card be spent once per position it appears at (§1.7 extra values put the
+		# same card at several), which is the multiplicity QR5(a) excluded — see _unused_at.
+		# Tracking the cards themselves also terminates the loop for free: a walk can never be
+		# longer than the number of distinct cards on offer.
+		# ⚠ Q95(a) is UNCHANGED by this: three 7s are three DIFFERENT cards at position 7, so a
+		# multi-loop wrap still takes all three, one per loop.
+		var best_path : Array[CardData] = []
 		for start in range(A, W + 1):
-			if cnt[start] == 0: continue
-			var rem := cnt.duplicate()
-			var path: Array[int] = []
+			var used : Array[CardData] = []
 			var pos := start
-			var steps := 0
-			while rem[pos] > 0 and steps <= max_steps:
-				rem[pos] -= 1
-				path.append(pos)
-				steps += 1
+			while true:
+				var pick := _unused_at(at, float(pos), used)
+				if not pick: break
+				used.append(pick)
 				pos = A if pos == W else pos + 1
-			if path.size() > best_path.size(): best_path = path
+			if used.size() > best_path.size(): best_path = used
 
 		# A single rank is not a straight; require the walk to actually advance.
 		if best_path.size() < 2: return []
-
-		var used : Dictionary[int, int] = {}
-		var out: Array[CardData] = []
-		for v in best_path:
-			var idx: int = used.get(v, 0)
-			out.append(profiles.ranks.map[float(v)].datas[idx])
-			used[v] = idx + 1
-		return out
+		return best_path
 
 	static func _get_max_value_of_run_async(run_cards: Array[CardData], original_pool: Array[CardData]) -> float:
 		# Ace counts high only when the run actually uses it high, i.e. the run wraps
@@ -725,11 +1498,13 @@ class MultiFlushHandler:
 		var absolute_max_rank := -INF
 		#SE2: one profile, consumed incrementally
 		var profiles := await Scoring._get_hand_profiles_async(cards)
+		#unconsumed twin for classification — `profiles` below is eaten by remove_card (S14)
+		var classify := await Scoring._get_hand_profiles_async(cards)
 
 		while true:
 			var best_flush: Array[CardData] = []
-			for suit_id in profiles.suits.map:
-				var s_cards: Array[CardData] = profiles.suits.map[suit_id].datas
+			for suit_cls : SuitClass in profiles.suits.classes:
+				var s_cards: Array[CardData] = suit_cls.datas
 				if s_cards.size() > best_flush.size(): best_flush = s_cards
 
 			if best_flush.size() < 5: break
@@ -771,7 +1546,7 @@ class MultiFlushHandler:
 		# before the ALL_SAME_SUIT doubling in ScoreModel).
 		if flushes_found.size() >= 2:
 			var best_mf := await Scoring.best_uniform_multi(flushes_found,
-					[MELD_TYPE.FLUSH] as Array[MELD_TYPE], absolute_max_rank, 5, 2)
+					[MELD_TYPE.FLUSH] as Array[MELD_TYPE], absolute_max_rank, classify, 5, 2)
 			if best_mf != null: candidates.append(best_mf)
 
 		candidates.sort_custom(PokerHands._compare_results)

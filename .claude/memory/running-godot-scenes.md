@@ -40,7 +40,15 @@ So:
 - **Never pass `--quit-after <ms>`** to force-quit a scene: it keeps the process alive for the
   full duration regardless of when tests finish, which is what makes runs look hung. Individual
   suite `.tscn`s do not self-quit — run `all_tests.tscn` instead of a lone suite.
-- **One run at a time.** Concurrent instances starve each other.
+- **One run at a time.** ⚠ Not merely slower — **overlapping runs FABRICATE FAILURES in suites that
+  have nothing to do with your change**, because they share `user://logs/godot.log`, the test output
+  logs and `user://run_save/run.tres`. Measured: whole runs printing `NO SUITE BANNER — the run did
+  not reach its own verdict`, which vanished on serialising. **A failure observed while two runs
+  overlapped is not evidence.** `tasklist | grep Godot_v4` (or `Get-Process *odot*`) before starting,
+  including before a background batch — the easy way to break this is to start a second batch while
+  the first is still draining.
+  ⚠ **The converse trap:** do not then explain away a real intermittent failure as "that was the
+  concurrency". The persistence suite's flakes reproduce under strictly sequential runs too.
 - **Before any run, check no editor has the project open** — `Get-Process *odot*`, inspect
   `MainWindowTitle`. A run alongside the open editor hangs indefinitely. **Never kill a process
   whose title shows an editor window**; an orphan titled `Solatro (DEBUG)` is safe to kill.

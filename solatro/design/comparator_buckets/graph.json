@@ -1,0 +1,1760 @@
+{
+  "doc_hash": "sha256:29eca0ce24fbbc5283951f55842687b165f3112161e99c7b6ff39d830d5b1409",
+  "charts": [
+    {
+      "id": "A",
+      "name": "A",
+      "title": "TODAY: how a hand becomes buckets, and who reads them",
+      "line": 325,
+      "nodes": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "title": "TODAY: where the compare hooks DO reach",
+      "line": 369,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "title": "where a hand's groups now come from",
+      "line": 430,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "D",
+      "title": "one pairwise question, under the two passes",
+      "line": 459,
+      "nodes": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D10"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "E",
+      "title": "a whole-hand rule's answer, and what the engine does with it",
+      "line": 488,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "F",
+      "title": "what a group is, and how a straight reads it",
+      "line": 520,
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "G",
+      "title": "classification can no longer disagree with formation",
+      "line": 551,
+      "nodes": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7"
+      ]
+    },
+    {
+      "id": "H",
+      "name": null,
+      "title": "Flowcharts H and I — adjacency, and the cache",
+      "line": 572,
+      "nodes": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6"
+      ]
+    },
+    {
+      "id": "I",
+      "name": null,
+      "title": "Flowcharts H and I — adjacency, and the cache",
+      "line": 587,
+      "nodes": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I9"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "Game.score_line — one row or column (game.gd:821)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 327
+    },
+    "A2": {
+      "chart": "A",
+      "label": "Scoring.PokerHands.score (scoring.gd:387)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 328
+    },
+    "A3": {
+      "chart": "A",
+      "label": "Scoring._get_hand_profiles_async — THE only place buckets are built (scoring.gd:356)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 329
+    },
+    "A4": {
+      "chart": "A",
+      "label": "PipComparator.get_rank_profile — pure, no mod dispatch (pip_comparator.gd:5)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 330
+    },
+    "A5": {
+      "chart": "A",
+      "label": "PipComparator.get_suit_profile — pure, no mod dispatch (pip_comparator.gd:18)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 331
+    },
+    "A6": {
+      "chart": "A",
+      "label": "HandProfile.ranks.map — rank value to cards (scoring.gd:151)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 332
+    },
+    "A7": {
+      "chart": "A",
+      "label": "HandProfile.suits.map — suit name to cards (scoring.gd:153)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 333
+    },
+    "A8": {
+      "chart": "A",
+      "label": "ExpandedGridHandler — sets and full houses (scoring.gd:453)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 334
+    },
+    "A9": {
+      "chart": "A",
+      "label": "MultiStraightHandler — linear and wrap scans (scoring.gd:542)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 335
+    },
+    "A10": {
+      "chart": "A",
+      "label": "MultiFlushHandler — pure flushes (scoring.gd:722)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 336
+    },
+    "A11": {
+      "chart": "A",
+      "label": "Scoring.build_multi — packages any meld (scoring.gd:259)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 337
+    },
+    "A12": {
+      "chart": "A",
+      "label": "whole meld one suit? (scoring.gd:273)",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 338
+    },
+    "A13": {
+      "chart": "A",
+      "label": "Scoring.is_flush — asks PipComparator.is_suit_same (scoring.gd:244)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 339
+    },
+    "A14": {
+      "chart": "A",
+      "label": "CardEnvironment.return_first_compare_mod_result — FIRST implementer wins (card_environment.gd:160)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 340
+    },
+    "A15": {
+      "chart": "A",
+      "label": "on_compare_suits on a board card — the ONLY mod dispatch in this chart",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 341
+    },
+    "A16": {
+      "chart": "A",
+      "label": "Full Flush x2",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 342
+    },
+    "B1": {
+      "chart": "B",
+      "label": "on_compare_ranks / on_compare_suits on a board card",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 371
+    },
+    "B2": {
+      "chart": "B",
+      "label": "CardEnvironment.return_first_compare_mod_result (card_environment.gd:160)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 372
+    },
+    "B3": {
+      "chart": "B",
+      "label": "PipComparator.is_suit_same (pip_comparator.gd:59)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 373
+    },
+    "B4": {
+      "chart": "B",
+      "label": "PipComparator.compare_ranks (pip_comparator.gd:77)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 374
+    },
+    "B5": {
+      "chart": "B",
+      "label": "skill_grabber_og_lower — may this stack be grabbed (skill_grabber_og_lower.gd:20)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 375
+    },
+    "B6": {
+      "chart": "B",
+      "label": "skill_placer_og_lower — may this stack be placed (skill_placer_og_lower.gd:19)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 376
+    },
+    "B7": {
+      "chart": "B",
+      "label": "Scoring.is_flush — the Full Flush x2 (scoring.gd:244)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 377
+    },
+    "B8": {
+      "chart": "B",
+      "label": "Scoring.rank_sort_desc_async — display and scan order (scoring.gd:349)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 378
+    },
+    "B9": {
+      "chart": "B",
+      "label": "HighCardHandler — which card is the high card (scoring.gd:796)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 379
+    },
+    "B10": {
+      "chart": "B",
+      "label": "patience counter — an interesting move was made",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 380
+    },
+    "B11": {
+      "chart": "B",
+      "label": "meld FORMATION — chart A",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 381
+    },
+    "C1": {
+      "chart": "C",
+      "label": "Scoring._get_hand_profiles_async — still the ONLY place groups are built (scoring.gd:356)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 432
+    },
+    "C2": {
+      "chart": "C",
+      "label": "default keys from get_rank_profile and get_suit_profile — unchanged (pip_comparator.gd:5, :18)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 433
+    },
+    "C3": {
+      "chart": "C",
+      "label": "does any card on the board implement a meld grouping hook?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 434
+    },
+    "C4": {
+      "chart": "C",
+      "label": "NEW — identity: one group per printed value, zero dispatch, byte-identical to today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 435
+    },
+    "C5": {
+      "chart": "C",
+      "label": "NEW — pairwise pass, every distinct key pair asked once — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 436
+    },
+    "C6": {
+      "chart": "C",
+      "label": "NEW — whole-hand rules applied in board order — chart E",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 437
+    },
+    "C7": {
+      "chart": "C",
+      "label": "NEW — the final partition: groups, each carrying a representative key — chart F",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 438
+    },
+    "C8": {
+      "chart": "C",
+      "label": "ExpandedGridHandler, MultiStraightHandler, MultiFlushHandler read the groups, unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 439
+    },
+    "C9": {
+      "chart": "C",
+      "label": "NEW — Scoring.is_flush reads the SAME groups — chart G",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 440
+    },
+    "C10": {
+      "chart": "C",
+      "label": "NEW — the implementer check is cached per board revision, so C3 is a dictionary lookup",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 441
+    },
+    "D1": {
+      "chart": "D",
+      "label": "a pair is asked: are these two the same?",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 461
+    },
+    "D2": {
+      "chart": "D",
+      "label": "does any BLACKLIST rule say yes?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 462
+    },
+    "D3": {
+      "chart": "D",
+      "label": "NEW — FORBIDDEN: not the same, even when printed values match (Q82=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q82",
+        "QR2",
+        "Q4"
+      ],
+      "line": 463
+    },
+    "D4": {
+      "chart": "D",
+      "label": "does any WHITELIST rule say yes?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 464
+    },
+    "D5": {
+      "chart": "D",
+      "label": "NEW — SAME: the pair merges",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 465
+    },
+    "D6": {
+      "chart": "D",
+      "label": "printed values decide, exactly as today (Q81=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q81"
+      ],
+      "line": 466
+    },
+    "D7": {
+      "chart": "D",
+      "label": "NEW — board order within each pass, and the first yes stops that pass (Q84=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q84"
+      ],
+      "line": 467
+    },
+    "D8": {
+      "chart": "D",
+      "label": "NEW — kind is declared by which hook a card implements (Q80=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q80"
+      ],
+      "line": 468
+    },
+    "D9": {
+      "chart": "D",
+      "label": "NEW — each situation has its OWN pair of hooks: melding, stacking, ordering (QR3=c)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "QR3"
+      ],
+      "line": 469
+    },
+    "D10": {
+      "chart": "D",
+      "label": "NEW — a meld hook grants NO stacking or ordering behaviour; a card wanting both implements both (Q62=a, Q97)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q62",
+        "Q97"
+      ],
+      "line": 470
+    },
+    "E1": {
+      "chart": "E",
+      "label": "a whole-hand rule returns a partition",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 490
+    },
+    "E2": {
+      "chart": "E",
+      "label": "did it return nothing at all?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 491
+    },
+    "E3": {
+      "chart": "E",
+      "label": "NEW — no meld is possible from this hand; the line banks zero (Q13=d, Q85=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q13",
+        "Q85"
+      ],
+      "line": 492
+    },
+    "E4": {
+      "chart": "E",
+      "label": "NEW — overlapping groups merge into one (Q12=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q12"
+      ],
+      "line": 493
+    },
+    "E5": {
+      "chart": "E",
+      "label": "does a blacklist rule forbid a pairing that merge just created?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 494
+    },
+    "E6": {
+      "chart": "E",
+      "label": "NEW — the blacklist wins; those groups stay separate (Q94=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q94"
+      ],
+      "line": 495
+    },
+    "E7": {
+      "chart": "E",
+      "label": "did it name a card that is not in this hand?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 496
+    },
+    "E8": {
+      "chart": "E",
+      "label": "NEW — a card from elsewhere on the board joins this meld (Q14=d)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q14"
+      ],
+      "line": 497
+    },
+    "E9": {
+      "chart": "E",
+      "label": "NEW — it still scores in its own line the same pass, and contributes its points (Q87=a, Q88=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q87",
+        "Q88"
+      ],
+      "line": 498
+    },
+    "E10": {
+      "chart": "E",
+      "label": "NEW — inventing a card is refused; only cards already on the board may be pulled in (Q89=b)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q89"
+      ],
+      "line": 499
+    },
+    "E11": {
+      "chart": "E",
+      "label": "NEW — cards the rule did not name keep their grouping among themselves (Q11=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q11"
+      ],
+      "line": 500
+    },
+    "E12": {
+      "chart": "E",
+      "label": "NEW — members re-sorted into hand order, then the next rule in board order runs (Q10=a, Q16=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q10",
+        "Q16"
+      ],
+      "line": 501
+    },
+    "E13": {
+      "chart": "E",
+      "label": "NEW — no depth limit on a rule that scores, and no runaway accounting (Q15=b, Q19=b, Q92=b)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q15",
+        "Q19",
+        "Q92"
+      ],
+      "line": 502
+    },
+    "F1": {
+      "chart": "F",
+      "label": "a group: the cards the rules put together",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 522
+    },
+    "F2": {
+      "chart": "F",
+      "label": "tie-breaks and the meld's high card read the group MAXIMUM (Q21=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q21"
+      ],
+      "line": 523
+    },
+    "F3": {
+      "chart": "F",
+      "label": "do the group's members share one printed value?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 524
+    },
+    "F4": {
+      "chart": "F",
+      "label": "same-value group: contributes EVERY one of its cards to a straight, exactly as today (Q95=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q95"
+      ],
+      "line": 525
+    },
+    "F5": {
+      "chart": "F",
+      "label": "NEW — mixed group: acts as ANY ONE of its members' positions, whichever makes the longest run (Q96=c)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q96"
+      ],
+      "line": 526
+    },
+    "F6": {
+      "chart": "F",
+      "label": "NEW — a group supplies ONE card to a straight; five consecutive groups make one, a card from each (Q93=d)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q93"
+      ],
+      "line": 527
+    },
+    "F7": {
+      "chart": "F",
+      "label": "NEW — two split groups sharing a value are two positions, both cards available (Q22=a, Q24=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q22",
+        "Q24"
+      ],
+      "line": 528
+    },
+    "F8": {
+      "chart": "F",
+      "label": "NEW — so the scan becomes a SEARCH over each mixed group's candidate positions, not one linear walk",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 529
+    },
+    "F9": {
+      "chart": "F",
+      "label": "an all-ranks-are-the-same card leaves one group, so it kills straights (Q3=a, Q93=d)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q3",
+        "Q93"
+      ],
+      "line": 530
+    },
+    "F10": {
+      "chart": "F",
+      "label": "NEW — Q96 SUPERSEDES Q20=c: a mixed group is no longer invisible to straights",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q96",
+        "Q20"
+      ],
+      "line": 531
+    },
+    "G1": {
+      "chart": "G",
+      "label": "Scoring.build_multi packages a meld (scoring.gd:259)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 553
+    },
+    "G2": {
+      "chart": "G",
+      "label": "do all its cards share ONE suit group?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 554
+    },
+    "G3": {
+      "chart": "G",
+      "label": "NEW — answered from the same groups formation used, not by asking pairs again (Q25=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q25"
+      ],
+      "line": 555
+    },
+    "G4": {
+      "chart": "G",
+      "label": "Full Flush x2 — even when a rule is what merged those suits (Q26=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q26"
+      ],
+      "line": 556
+    },
+    "G5": {
+      "chart": "G",
+      "label": "plain meld, no flush label",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 557
+    },
+    "G6": {
+      "chart": "G",
+      "label": "NEW — merged suits are one suit for Multi-Flush too, so a suit-merging rule removes Multi-Flush (Q27=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q27"
+      ],
+      "line": 558
+    },
+    "G7": {
+      "chart": "G",
+      "label": "NEW — the round-1 bug is now unrepresentable, not merely tested for",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 559
+    },
+    "H1": {
+      "chart": "H",
+      "label": "the straight scan needs to know what counts as consecutive",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 574
+    },
+    "H2": {
+      "chart": "H",
+      "label": "NEW — a card declares EXTRA VALUES it counts as (Q71=c)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q71"
+      ],
+      "line": 575
+    },
+    "H3": {
+      "chart": "H",
+      "label": "NEW — those declared values are ordinary bucket keys, so the existing scan finds them",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 576
+    },
+    "H4": {
+      "chart": "H",
+      "label": "NEW — a card may extend or break the wrap-around cycle (Q72=b)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q72"
+      ],
+      "line": 577
+    },
+    "H5": {
+      "chart": "H",
+      "label": "The Red Wagon becomes shippable: gold cards count as wild toward runs",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 578
+    },
+    "H6": {
+      "chart": "H",
+      "label": "no pairwise adjacency hook and no whole-run hook — neither was needed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 579
+    },
+    "I1": {
+      "chart": "I",
+      "label": "a pairwise answer is needed — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 589
+    },
+    "I2": {
+      "chart": "I",
+      "label": "is the answering card declared uncacheable?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 590
+    },
+    "I3": {
+      "chart": "I",
+      "label": "NEW — a property on the card, read once per board revision (Q90=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q90"
+      ],
+      "line": 591
+    },
+    "I4": {
+      "chart": "I",
+      "label": "NEW — ask every time; this answer is never stored",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 592
+    },
+    "I5": {
+      "chart": "I",
+      "label": "has this pair been asked already this board revision?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 593
+    },
+    "I6": {
+      "chart": "I",
+      "label": "NEW — reuse the stored answer, no dispatch (Q40=b)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q40"
+      ],
+      "line": 594
+    },
+    "I7": {
+      "chart": "I",
+      "label": "NEW — ask, then store until the board revision changes",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 595
+    },
+    "I8": {
+      "chart": "I",
+      "label": "NEW — a card that consults randomness and forgets to declare it gets a stale answer: a content bug, like any other (Q91=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q91"
+      ],
+      "line": 596
+    },
+    "I9": {
+      "chart": "I",
+      "label": "NEW — whole-hand rules are NEVER cached; they read board state by design (Q42=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q42"
+      ],
+      "line": 597
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 343
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "",
+      "chart": "A",
+      "line": 344
+    },
+    {
+      "key": "A3->A4",
+      "from": "A3",
+      "to": "A4",
+      "label": "",
+      "chart": "A",
+      "line": 345
+    },
+    {
+      "key": "A3->A5",
+      "from": "A3",
+      "to": "A5",
+      "label": "",
+      "chart": "A",
+      "line": 346
+    },
+    {
+      "key": "A4->A6",
+      "from": "A4",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 347
+    },
+    {
+      "key": "A5->A7",
+      "from": "A5",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 348
+    },
+    {
+      "key": "A6->A8",
+      "from": "A6",
+      "to": "A8",
+      "label": "",
+      "chart": "A",
+      "line": 349
+    },
+    {
+      "key": "A6->A9",
+      "from": "A6",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 350
+    },
+    {
+      "key": "A7->A9",
+      "from": "A7",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 351
+    },
+    {
+      "key": "A7->A10",
+      "from": "A7",
+      "to": "A10",
+      "label": "",
+      "chart": "A",
+      "line": 352
+    },
+    {
+      "key": "A8->A11",
+      "from": "A8",
+      "to": "A11",
+      "label": "",
+      "chart": "A",
+      "line": 353
+    },
+    {
+      "key": "A9->A11",
+      "from": "A9",
+      "to": "A11",
+      "label": "",
+      "chart": "A",
+      "line": 354
+    },
+    {
+      "key": "A10->A11",
+      "from": "A10",
+      "to": "A11",
+      "label": "",
+      "chart": "A",
+      "line": 355
+    },
+    {
+      "key": "A11->A12",
+      "from": "A11",
+      "to": "A12",
+      "label": "",
+      "chart": "A",
+      "line": 356
+    },
+    {
+      "key": "A12->A13",
+      "from": "A12",
+      "to": "A13",
+      "label": "yes",
+      "chart": "A",
+      "line": 357
+    },
+    {
+      "key": "A13->A14",
+      "from": "A13",
+      "to": "A14",
+      "label": "",
+      "chart": "A",
+      "line": 358
+    },
+    {
+      "key": "A14->A15",
+      "from": "A14",
+      "to": "A15",
+      "label": "",
+      "chart": "A",
+      "line": 359
+    },
+    {
+      "key": "A15->A16",
+      "from": "A15",
+      "to": "A16",
+      "label": "",
+      "chart": "A",
+      "line": 360
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 382
+    },
+    {
+      "key": "B2->B3",
+      "from": "B2",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 383
+    },
+    {
+      "key": "B2->B4",
+      "from": "B2",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 384
+    },
+    {
+      "key": "B3->B5",
+      "from": "B3",
+      "to": "B5",
+      "label": "",
+      "chart": "B",
+      "line": 385
+    },
+    {
+      "key": "B3->B6",
+      "from": "B3",
+      "to": "B6",
+      "label": "",
+      "chart": "B",
+      "line": 386
+    },
+    {
+      "key": "B3->B7",
+      "from": "B3",
+      "to": "B7",
+      "label": "",
+      "chart": "B",
+      "line": 387
+    },
+    {
+      "key": "B4->B8",
+      "from": "B4",
+      "to": "B8",
+      "label": "",
+      "chart": "B",
+      "line": 388
+    },
+    {
+      "key": "B4->B9",
+      "from": "B4",
+      "to": "B9",
+      "label": "",
+      "chart": "B",
+      "line": 389
+    },
+    {
+      "key": "B5->B10",
+      "from": "B5",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 390
+    },
+    {
+      "key": "B6->B10",
+      "from": "B6",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 391
+    },
+    {
+      "key": "B11->B1",
+      "from": "B11",
+      "to": "B1",
+      "label": "never reached",
+      "chart": "B",
+      "line": 392
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 442
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "",
+      "chart": "C",
+      "line": 443
+    },
+    {
+      "key": "C3->C4",
+      "from": "C3",
+      "to": "C4",
+      "label": "no",
+      "chart": "C",
+      "line": 444
+    },
+    {
+      "key": "C3->C5",
+      "from": "C3",
+      "to": "C5",
+      "label": "yes",
+      "chart": "C",
+      "line": 445
+    },
+    {
+      "key": "C5->C6",
+      "from": "C5",
+      "to": "C6",
+      "label": "",
+      "chart": "C",
+      "line": 446
+    },
+    {
+      "key": "C4->C7",
+      "from": "C4",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 447
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 448
+    },
+    {
+      "key": "C7->C8",
+      "from": "C7",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 449
+    },
+    {
+      "key": "C7->C9",
+      "from": "C7",
+      "to": "C9",
+      "label": "",
+      "chart": "C",
+      "line": 450
+    },
+    {
+      "key": "C3->C10",
+      "from": "C3",
+      "to": "C10",
+      "label": "",
+      "chart": "C",
+      "line": 451
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 471
+    },
+    {
+      "key": "D2->D3",
+      "from": "D2",
+      "to": "D3",
+      "label": "yes",
+      "chart": "D",
+      "line": 472
+    },
+    {
+      "key": "D2->D4",
+      "from": "D2",
+      "to": "D4",
+      "label": "no",
+      "chart": "D",
+      "line": 473
+    },
+    {
+      "key": "D4->D5",
+      "from": "D4",
+      "to": "D5",
+      "label": "yes",
+      "chart": "D",
+      "line": 474
+    },
+    {
+      "key": "D4->D6",
+      "from": "D4",
+      "to": "D6",
+      "label": "no",
+      "chart": "D",
+      "line": 475
+    },
+    {
+      "key": "D2->D7",
+      "from": "D2",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 476
+    },
+    {
+      "key": "D4->D7",
+      "from": "D4",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 477
+    },
+    {
+      "key": "D7->D8",
+      "from": "D7",
+      "to": "D8",
+      "label": "",
+      "chart": "D",
+      "line": 478
+    },
+    {
+      "key": "D8->D9",
+      "from": "D8",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 479
+    },
+    {
+      "key": "D9->D10",
+      "from": "D9",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 480
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "",
+      "chart": "E",
+      "line": 503
+    },
+    {
+      "key": "E2->E3",
+      "from": "E2",
+      "to": "E3",
+      "label": "yes",
+      "chart": "E",
+      "line": 504
+    },
+    {
+      "key": "E2->E4",
+      "from": "E2",
+      "to": "E4",
+      "label": "no",
+      "chart": "E",
+      "line": 505
+    },
+    {
+      "key": "E4->E5",
+      "from": "E4",
+      "to": "E5",
+      "label": "",
+      "chart": "E",
+      "line": 506
+    },
+    {
+      "key": "E5->E6",
+      "from": "E5",
+      "to": "E6",
+      "label": "yes",
+      "chart": "E",
+      "line": 507
+    },
+    {
+      "key": "E5->E7",
+      "from": "E5",
+      "to": "E7",
+      "label": "no",
+      "chart": "E",
+      "line": 508
+    },
+    {
+      "key": "E7->E8",
+      "from": "E7",
+      "to": "E8",
+      "label": "yes",
+      "chart": "E",
+      "line": 509
+    },
+    {
+      "key": "E7->E11",
+      "from": "E7",
+      "to": "E11",
+      "label": "no",
+      "chart": "E",
+      "line": 510
+    },
+    {
+      "key": "E8->E9",
+      "from": "E8",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 511
+    },
+    {
+      "key": "E8->E10",
+      "from": "E8",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 512
+    },
+    {
+      "key": "E9->E11",
+      "from": "E9",
+      "to": "E11",
+      "label": "",
+      "chart": "E",
+      "line": 513
+    },
+    {
+      "key": "E11->E12",
+      "from": "E11",
+      "to": "E12",
+      "label": "",
+      "chart": "E",
+      "line": 514
+    },
+    {
+      "key": "E12->E13",
+      "from": "E12",
+      "to": "E13",
+      "label": "",
+      "chart": "E",
+      "line": 515
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 532
+    },
+    {
+      "key": "F1->F3",
+      "from": "F1",
+      "to": "F3",
+      "label": "",
+      "chart": "F",
+      "line": 533
+    },
+    {
+      "key": "F3->F4",
+      "from": "F3",
+      "to": "F4",
+      "label": "yes",
+      "chart": "F",
+      "line": 534
+    },
+    {
+      "key": "F3->F5",
+      "from": "F3",
+      "to": "F5",
+      "label": "no",
+      "chart": "F",
+      "line": 535
+    },
+    {
+      "key": "F4->F6",
+      "from": "F4",
+      "to": "F6",
+      "label": "",
+      "chart": "F",
+      "line": 536
+    },
+    {
+      "key": "F5->F6",
+      "from": "F5",
+      "to": "F6",
+      "label": "",
+      "chart": "F",
+      "line": 537
+    },
+    {
+      "key": "F5->F10",
+      "from": "F5",
+      "to": "F10",
+      "label": "",
+      "chart": "F",
+      "line": 538
+    },
+    {
+      "key": "F6->F7",
+      "from": "F6",
+      "to": "F7",
+      "label": "",
+      "chart": "F",
+      "line": 539
+    },
+    {
+      "key": "F5->F8",
+      "from": "F5",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 540
+    },
+    {
+      "key": "F6->F9",
+      "from": "F6",
+      "to": "F9",
+      "label": "",
+      "chart": "F",
+      "line": 541
+    },
+    {
+      "key": "G1->G2",
+      "from": "G1",
+      "to": "G2",
+      "label": "",
+      "chart": "G",
+      "line": 560
+    },
+    {
+      "key": "G2->G3",
+      "from": "G2",
+      "to": "G3",
+      "label": "",
+      "chart": "G",
+      "line": 561
+    },
+    {
+      "key": "G3->G4",
+      "from": "G3",
+      "to": "G4",
+      "label": "yes",
+      "chart": "G",
+      "line": 562
+    },
+    {
+      "key": "G3->G5",
+      "from": "G3",
+      "to": "G5",
+      "label": "no",
+      "chart": "G",
+      "line": 563
+    },
+    {
+      "key": "G4->G6",
+      "from": "G4",
+      "to": "G6",
+      "label": "",
+      "chart": "G",
+      "line": 564
+    },
+    {
+      "key": "G4->G7",
+      "from": "G4",
+      "to": "G7",
+      "label": "",
+      "chart": "G",
+      "line": 565
+    },
+    {
+      "key": "H1->H2",
+      "from": "H1",
+      "to": "H2",
+      "label": "",
+      "chart": "H",
+      "line": 580
+    },
+    {
+      "key": "H2->H3",
+      "from": "H2",
+      "to": "H3",
+      "label": "",
+      "chart": "H",
+      "line": 581
+    },
+    {
+      "key": "H3->H4",
+      "from": "H3",
+      "to": "H4",
+      "label": "",
+      "chart": "H",
+      "line": 582
+    },
+    {
+      "key": "H3->H5",
+      "from": "H3",
+      "to": "H5",
+      "label": "",
+      "chart": "H",
+      "line": 583
+    },
+    {
+      "key": "H2->H6",
+      "from": "H2",
+      "to": "H6",
+      "label": "",
+      "chart": "H",
+      "line": 584
+    },
+    {
+      "key": "I1->I2",
+      "from": "I1",
+      "to": "I2",
+      "label": "",
+      "chart": "I",
+      "line": 598
+    },
+    {
+      "key": "I2->I4",
+      "from": "I2",
+      "to": "I4",
+      "label": "yes",
+      "chart": "I",
+      "line": 599
+    },
+    {
+      "key": "I2->I5",
+      "from": "I2",
+      "to": "I5",
+      "label": "no",
+      "chart": "I",
+      "line": 600
+    },
+    {
+      "key": "I2->I3",
+      "from": "I2",
+      "to": "I3",
+      "label": "",
+      "chart": "I",
+      "line": 601
+    },
+    {
+      "key": "I5->I6",
+      "from": "I5",
+      "to": "I6",
+      "label": "yes",
+      "chart": "I",
+      "line": 602
+    },
+    {
+      "key": "I5->I7",
+      "from": "I5",
+      "to": "I7",
+      "label": "no",
+      "chart": "I",
+      "line": 603
+    },
+    {
+      "key": "I4->I8",
+      "from": "I4",
+      "to": "I8",
+      "label": "",
+      "chart": "I",
+      "line": 604
+    },
+    {
+      "key": "I1->I9",
+      "from": "I1",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 605
+    }
+  ],
+  "links": [
+    {
+      "key": "B11~>A",
+      "from": "B11",
+      "fromChart": "B",
+      "toChart": "A",
+      "ref": "A",
+      "line": 381
+    },
+    {
+      "key": "C5~>D",
+      "from": "C5",
+      "fromChart": "C",
+      "toChart": "D",
+      "ref": "D",
+      "line": 436
+    },
+    {
+      "key": "C6~>E",
+      "from": "C6",
+      "fromChart": "C",
+      "toChart": "E",
+      "ref": "E",
+      "line": 437
+    },
+    {
+      "key": "C7~>F",
+      "from": "C7",
+      "fromChart": "C",
+      "toChart": "F",
+      "ref": "F",
+      "line": 438
+    },
+    {
+      "key": "C9~>G",
+      "from": "C9",
+      "fromChart": "C",
+      "toChart": "G",
+      "ref": "G",
+      "line": 440
+    },
+    {
+      "key": "I1~>D",
+      "from": "I1",
+      "fromChart": "I",
+      "toChart": "D",
+      "ref": "D",
+      "line": 589
+    }
+  ]
+}

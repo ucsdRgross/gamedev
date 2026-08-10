@@ -66,6 +66,54 @@ func combo_key(_hook: StringName = &"") -> String:
 # list with signatures lives in ARCHITECTURE_REVIEW.md §1.4; keep THAT current when
 # adding events. (The stale copy that used to sit here was purged 2026-07-16, D7 override.)
 
+# ==============================================================================
+# THE COMPARATOR SURFACE — "are these two cards the same?" (comparator_buckets PLAN §1.1)
+# ------------------------------------------------------------------------------
+# ⚠ **DECLARED HERE AS COMMENTS, NOT METHODS, AND THAT IS THE WHOLE MECHANISM.** Dispatch
+# asks `has_method`, so a real no-op on this base would opt EVERY modifier in and the
+# identity path (chart C4 — zero dispatch, byte-identical scoring) would never be taken.
+# A subclass declaring one of these spellings is what turns the rule on; a typo silently
+# disables it, which is why the spellings below are the contract and no call site retypes
+# them (PipComparator.MELD_RANKS_DENY and friends hold them once).
+#
+# QR3(c)/Q62(a)/Q97: SEPARATE HOOKS PER SITUATION, WITH NO FALLBACK BETWEEN THEM. A card
+# implementing a meld hook gets meld behaviour and nothing else; a card that also wants
+# stacking rules implements the stacking hook too. Q80(a): a rule declares whether it is a
+# blacklist or a whitelist BY WHICH HOOK IT IMPLEMENTS, never by a flag or a return value.
+#
+#   # MELD sameness, two passes. true = "this pass answers yes for this pair".
+#   func on_meld_ranks_deny(r1: PipRank, r2: PipRank) -> bool
+#   func on_meld_ranks_allow(r1: PipRank, r2: PipRank) -> bool
+#   func on_meld_suits_deny(s1: PipSuit, s2: PipSuit) -> bool
+#   func on_meld_suits_allow(s1: PipSuit, s2: PipSuit) -> bool
+#
+#   # STACK legality sameness — the same two passes, its OWN hooks. No fallback from meld.
+#   func on_stack_ranks_deny(r1: PipRank, r2: PipRank) -> bool
+#   func on_stack_ranks_allow(r1: PipRank, r2: PipRank) -> bool
+#   func on_stack_suits_deny(s1: PipSuit, s2: PipSuit) -> bool
+#   func on_stack_suits_allow(s1: PipSuit, s2: PipSuit) -> bool
+#
+#   # WHOLE-HAND grouping, stage 1.
+#   func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]
+#   func on_meld_group_suits(cards: Array[CardData], groups: Array[Array]) -> Array[Array]
+#
+#   # ADJACENCY.
+#   func on_meld_extra_rank_values(card: CardData) -> Array[float]
+#   func on_meld_wrap_bounds(low: float, high: float) -> Vector2
+#
+# ⚠ ORDERING is UNCHANGED and is NOT part of this surface: `on_compare_ranks` /
+# `on_compare_suits` keep their current meaning, their current callers and their
+# first-implementer-wins composition (Q55=a). They ask "which is greater", which has
+# nothing to deny or allow. Melding no longer calls them.
+# ==============================================================================
+
+# ⚠ **THERE IS NO `compare_uncacheable`, AND NOTHING NEEDS ONE** (owner ruling,
+# `design/comparator_buckets/gaps/GAP-003.md`, superseding Q41(c)/Q90(a)/Q91(a)). Every rule's
+# answer is fixed for the HAND being scored — a rule consulting randomness has already been
+# decided before meld finding starts, so it cannot disagree with itself between the straight
+# scan and the flush scan. Write a random rule freely; there is nothing to declare, and no
+# stale-answer footgun to step on.
+
 ## THE spotlight rule (design chart A). Renamed off the old `active` vocabulary 2026-08-04 (Q2=b):
 ## "spotlit" is the one word for it everywhere — the mechanical state and the light show are the
 ## same fact. Effective spotlight = NATURAL (this rule) OR FORCED (GameData.forced_spotlight, the

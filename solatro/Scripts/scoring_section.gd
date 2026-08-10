@@ -20,6 +20,11 @@ var _recollect : Callable = Callable()
 ## every one, because a handler may have added a card to the section or compacted one out of it.
 ## Ragged rows are the reason for the `row < a.size()` guard: it mirrors `SkillEvalPokerBest`
 ## exactly, so the section is the same card list the scorer evaluated.
+# TODO(multi-meld membership, Q54=a / comparator_buckets DEFERRED.md D4): The Courier straddles two
+# columns and The Puszta Five belongs to every one — one card scoring in SEVERAL MELDS. That is
+# "which hand is this card in", which is decided HERE and in `Game.score_line`, not by grouping.
+# ⚠ Do not conflate it with multiplicity (D1) or with a grouping rule's pull-in (Q14=d): those are
+# one meld reaching outward, this is one card belonging to several.
 static func of_line(zone: Array, is_row: bool, index: int) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.origin = &"row" if is_row else &"col"

@@ -1,0 +1,592 @@
+{
+  "slug": "comparator_buckets",
+  "doc_hash": "sha256:8e49c5eece718d99d82ecb25db89a1c3a0adf1c218e005dd8456a305903b32cd",
+  "updated": "2026-08-10T03:24:52Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:08:13Z"
+    },
+    "Q1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:14:42Z"
+    },
+    "Q2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:15:40Z"
+    },
+    "Q3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:16:08Z"
+    },
+    "Q5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:16:52Z"
+    },
+    "Q10": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:17:05Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:17:23Z"
+    },
+    "Q12": {
+      "state": "chosen",
+      "option": "a",
+      "note": "as long as resulting merged group is legal according to the rules",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:20:31Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "d",
+      "note": "I assume this would be an effect that removes certain cards from being allowed in meld? assuming an actual no grouping would be 1 group of 1 card per card in meld. If mod is basically saying, ignore all cards in this hand, no meld possible, then allow it.",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:10:43Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "d",
+      "note": "Why not? if a mod purposely adds an extra invisible card or chooses an existing card on the board to participate in the meld as well, why reject it?",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:11:04Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:31:44Z"
+    },
+    "Q16": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:32:05Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:32:19Z"
+    },
+    "Q18": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:32:30Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:32:50Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:34:48Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:34:59Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:35:15Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:36:11Z"
+    },
+    "Q26": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:36:18Z"
+    },
+    "Q27": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:36:32Z"
+    },
+    "Q30": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:38:04Z"
+    },
+    "Q34": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:39:48Z"
+    },
+    "Q40": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:40:29Z"
+    },
+    "Q41": {
+      "state": "chosen",
+      "option": "c",
+      "note": "cache everything except cards that consult rng then",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:14:33Z"
+    },
+    "Q42": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:41:48Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:42:13Z"
+    },
+    "Q4": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:42:20Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:42:41Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:42:49Z"
+    },
+    "Q33": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:43:17Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-10T02:43:59Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "d",
+      "note": "On first returned true. Certain types of legality are either blacklist or whitelist types. First checks blacklist type mods, first true means effect is blacklisted. Then checks whitelist, where first returned true is accepted.",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:54:42Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:55:45Z"
+    },
+    "QR6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:55:59Z"
+    },
+    "QR7": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:56:22Z"
+    },
+    "QR8": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:56:48Z"
+    },
+    "Q62": {
+      "state": "chosen",
+      "option": "a",
+      "note": "then only effects dependent on meld hooks are affected. A hook cannot have multiple potential implementers or implement different hooks at the same time.",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-10T03:20:57Z"
+    },
+    "Q63": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:58:32Z"
+    },
+    "Q71": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:58:44Z"
+    },
+    "Q72": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:58:53Z"
+    },
+    "Q80": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:59:05Z"
+    },
+    "Q81": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:59:24Z"
+    },
+    "Q82": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T02:59:57Z"
+    },
+    "Q83": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:00:29Z"
+    },
+    "Q84": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:00:39Z"
+    },
+    "Q94": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:01:20Z"
+    },
+    "Q92": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:02:31Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "d",
+      "note": "Q3. groupings count as 1 card in a straight. 5 groupings where each one is connected straight wise should be a straight choosing 1 card from each grouping.",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-10T03:24:52Z"
+    },
+    "Q50": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:08:14Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:08:18Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:08:29Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:08:38Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:09:14Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:09:25Z"
+    },
+    "Q57": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:10:16Z"
+    },
+    "Q85": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:10:51Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:11:20Z"
+    },
+    "Q88": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:11:49Z"
+    },
+    "Q89": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:14:17Z"
+    },
+    "Q90": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:14:47Z"
+    },
+    "Q91": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-10T03:15:14Z"
+    },
+    "Q95": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-10T03:21:37Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-10T03:22:32Z"
+    },
+    "Q97": {
+      "state": "chosen",
+      "option": null,
+      "note": "I only meant that you cannot directly reuse a card with a meld hook for stuff like stacking hooks. if i wanted a card to also have stacking rules then it needs to implement stacking hook too.",
+      "override": true,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-10T03:24:28Z"
+    }
+  }
+}
