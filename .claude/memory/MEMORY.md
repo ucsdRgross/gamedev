@@ -25,7 +25,5 @@
 - [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
 - [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
 
-**Design workflow** (the `/flowchart-design` loop)
+**Design workflow** (everything else lives in the `/flowchart-design` skill)
 - [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes
-- [Resuming a design round](design-round-read-the-log.md) — `answers.log` overrides are branches to author
-- [Design review ends with a handoff](design-review-ends-with-handoff.md) — fires on CONFIRMING the flowcharts

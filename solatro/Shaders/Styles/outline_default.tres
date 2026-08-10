@@ -4,4 +4,6 @@
 
 [resource]
 script = ExtResource("1_outline")
+glare_thickness = 12.0
 glare_buffer = 2.0
+throb_color = 30

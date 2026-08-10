@@ -38,7 +38,7 @@ is not the mechanism. **A check that fails is.**
 4. Writing a line that decides a number, a position or a name? **Grep the design for that concept at
    that moment.** The up-front read is necessary and not sufficient.
 
-⚠ **Related but distinct:** [[design-round-read-the-log]] covers an answer *stranded by a gate*
-(`active:false`, never restored). That one is also invisible, and also needs a mechanical check, but
-it is a different query — strand events in `answers.log` vs citation coverage in `PLAN.md`. Both bit
-this project inside one week.
+⚠ **Related but distinct:** an answer *stranded by a gate* (`active:false`, never restored) is also
+invisible and also needs a mechanical check, but it is a different query — strand events in
+`answers.log` vs citation coverage in `PLAN.md`. Both bit this project inside one week; that one
+lives in `.claude/skills/flowchart-design/SKILL.md`, beside the widening rule it belongs to.

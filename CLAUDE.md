@@ -77,3 +77,7 @@ Everything else is a smaller game-jam or study project.
   the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
   `py .claude/tools/doc_check.py`, which proves every reference still resolves.
 - **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
+
+Deliberately NOT installed: a PostToolUse hook that runs the test suite after every Edit. The
+Solatro suite takes ~60 s and must run WINDOWED, so per-edit runs would fight the owner's editor.
+Run the suite at task boundaries instead.

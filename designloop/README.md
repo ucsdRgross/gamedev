@@ -127,6 +127,7 @@ automated, and none showed up in any other check, test or round summary.
   in prose    0 answered with no option (0 not promoted to one)
   unquoted    0 document(s) paraphrasing a free-text answer
   contracts   7 normative block(s) in PLAN §1, 0 unauthorised, 0 uncontracted
+  unclaimed   0 answered question(s) no step implements
 ```
 
 | Reported as | The defect |
@@ -138,6 +139,7 @@ automated, and none showed up in any other check, test or round summary.
 | `PLAN …` | Once a `PLAN.md` exists beside the design: a step citing an ID that is **no design node or question**, or citing **nothing at all** — which means it can never be reported stale when the node it was built on changes. The gap protocol's whole blast-radius mechanism is those `(implements …)` clauses. |
 | `PROSE …` | An answer with a note and **no lettered option**. Not a defect in itself — it is how the owner corrects a premise, and it is where the best answers come from. The defect is leaving it there: no gate can read it, no document can cite it, and every restatement has to paraphrase it. The fix the workflow already knows is to promote the owner's words to a new option. Marked `PROVISIONAL` when the note reads as thinking aloud — *`Q16`'s opens with the literal word "whole act?"*. |
 | `QUOTE …` | A document **relies on a free-text answer and carries none of the owner's words**. This is the one that cost the most: `Q16` became *"Q16 whole act"* in the plan and *"stays set for the whole act"* in the design, both dropped *"increases or decreases based on cards being scored"*, and an executing agent read the two summaries, saw a contradiction that **does not exist in `answers.json`**, and filed a gap on it. Paste the note; do not summarise it. |
+| `UNCLAIMED …` | An **answered question no plan step cites**. The mirror of `PLAN …`: that one checks steps → nodes, this one checks nodes → steps, and nothing checked this direction until `Q85` — *"centred on the card's ART-SQUARE centre"* — went uncited, got centred on the card origin instead, and shipped wrong through three phases and two by-eye reviews. Free-text overrides rank first; they carry the requirements nobody transcribed. Triaged ids go in `<design>/implements-nothing.txt`, one per line, so the list converges on zero rather than being ignored wholesale. |
 | `CONTRACT …` | A normative code block in `PLAN.md` §1 that **no `⚑contract` question authorises** — an invented contract — or a `⚑contract` question no block writes down. `Q9` asked *whether* to ship a seam and never what its default was, so §1 invented one, inverted, which would have lit up every covered card on the board. |
 
 ⚠ **None of them blocks, deliberately** — each shape has a legitimate form (a "decline this

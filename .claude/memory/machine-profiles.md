@@ -33,6 +33,9 @@ Other per-box notes:
   `node -v` rather than trusting a note; `palette/` needs **≥ 22** (`palette/ARCHITECTURE.md`).
 - **SCons** is a Python module only on Box A — `python -m SCons ...`, never bare `scons`
   (`worldgen/worldgen_native/BUILD.md`).
+- ⚠ **Box A has TWO disagreeing Pythons**: `py` is 3.9.7, `python` is 3.14.6. They do not share
+  installed modules, which is why SCons runs under `python` and `doc_check.py` under `py`. Check
+  `py --version` / `python --version` before assuming a script will find its imports.
 - Godot versions differ (4.7.1 vs 4.7). If a `class_name` suddenly won't resolve, it is the
   import cache, not the version — see [[running-godot-scenes]].
 

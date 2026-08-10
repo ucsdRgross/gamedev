@@ -195,6 +195,21 @@ already told you what they want. Everything else stays untouched, so the re-ask 
 questions whose option sets changed. Name that list in the changelog and in `status.agent.json`'s
 summary; two IDs is a very different message from "the round restarts".
 
+⚠⚠ **THE CASE `check` CANNOT SEE: a stranded answer that widening never restored.** `dag audit`
+reads 0 as soon as the *heading* is widened — but a child's OWN gate may still be narrow, and
+**an inactive question holding an answer is indistinguishable from an inactive question holding
+none.** Measured on Spotlight: widening `QR2` stranded 20 questions; §17.6's heading was widened to
+`[QR2=a|c|d]` so the audit went clean, while `Q82`'s own gate stayed `[QR2=a & QR8=a]`. `Q82` held a
+free-text override — *"per anytime spotlight effect is happening"*, the per-section dim — which went
+inactive, vanished from every later reading, and the act-long dim shipped **chosen by nobody**. It
+cost a playtest, `GAP-006`, and a round trip to recover an answer the owner had already given.
+
+**So run this on every pick-up — it is two greps, not a discipline:** for each
+`{"event":"strand"}` in `answers.log`, take its IDs and report any still `active:false` in
+`answers.json` **while holding an answer**, `override:true` first. Each hit is either a gate that
+needs widening or a dead question you should be able to say why is dead. On Spotlight the batch of
+20 yielded exactly one live hit (`Q82`) and two genuinely moot ones — the signal is sharp, not noisy.
+
 ### Root questions
 
 Open the question section with a short **§ Root forks** group: the 4–8 `⚑gate` questions that gate
@@ -668,7 +683,8 @@ the documents speak for it.
 8. **`npm --prefix designloop run check -- <slug>` is clean on the four provenance lines**, not just
    on errors: `in prose` (answers with no letter), `unquoted` (a document paraphrasing a free-text
    answer instead of quoting it), `contracts … unauthorised` (a normative block no `⚑contract`
-   question covers), and `uncontracted`.
+   question covers), `uncontracted`, and **`unclaimed`** (an answered question no step cites — the
+   nodes → steps direction, see [[design-answers-need-a-claimant]]).
 9. ⚠ **THE OWNER HAS REVIEWED §1, not only the flowcharts.** Both of Spotlight's phase-1 gaps were
    in the plan's normative section, which is written *after* confirmation and goes straight to an
    executor — the design was reviewed and was right both times. Present §1's contracts with the
