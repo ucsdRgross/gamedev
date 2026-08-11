@@ -161,7 +161,17 @@ def main():
         out.seek(0)
         stdout_text = out.read()
 
-    suite_failures = process.returncode if process.returncode and process.returncode > 0 else 0
+    # ⚠ THE EXIT CODE IS A FAILURE COUNT ONLY INSIDE 0..125. `all_tests.gd` quits with
+    # `mini(failed, 125)`, so anything ABOVE that is not a count at all — it is an abnormal
+    # termination, and on Windows a crash arrives as the raw status (an access violation is
+    # 0xC0000005 = 3221225477). Treating it as a count silently reported "125 suite failures"
+    # for a run whose own banner said PASSED, which is the worst kind of wrong: it disagrees
+    # with the suite about whether the suite passed. Observed once in a 4-run batch — Godot
+    # segfaulting during final teardown, AFTER printing its banner and log paths.
+    SUITE_FAILURE_CAP = 125
+    code = process.returncode or 0
+    crashed = code < 0 or code > SUITE_FAILURE_CAP
+    suite_failures = code if 0 < code <= SUITE_FAILURE_CAP else 0
 
     # ⚠ BOTH streams, because the engine splits its teardown errors across them.
     streams = stdout_text + "\n" + stderr_text
@@ -189,6 +199,14 @@ def main():
         print("[exit-time] TIMEOUT — killed after %ds. Nothing below is a complete picture."
               % args.timeout)
 
+    if crashed:
+        print("[exit-time] ⚠ THE ENGINE TERMINATED ABNORMALLY — exit status %d (0x%X), which is "
+              "NOT a suite failure count (those are capped at %d). %s"
+              % (code, code & 0xFFFFFFFF, SUITE_FAILURE_CAP,
+                 "The suite printed its banner first, so its verdict above stands and the crash "
+                 "is in teardown." if saw_banner else
+                 "No banner was printed, so the run did not reach its own verdict."))
+
     if errors:
         print("======== %d ENGINE ERRORS THE IN-RUN GATE COULD NOT SEE ========" % len(errors))
         seen = {}
@@ -202,8 +220,9 @@ def main():
     else:
         print("[exit-time] clean — every engine error this run was already visible to the in-run gate")
 
-    total = suite_failures + len(errors) + (1 if timed_out or not saw_banner else 0)
-    return min(total, 125)
+    total = suite_failures + len(errors) \
+            + (1 if timed_out or not saw_banner else 0) + (1 if crashed else 0)
+    return min(total, SUITE_FAILURE_CAP)
 
 
 if __name__ == "__main__":

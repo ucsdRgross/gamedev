@@ -27,6 +27,16 @@ One line per assumption. If one of these turns out wrong, it is a bug in exactly
   from PRINTED values only. Q71(c) routes adjacency through stage-0 class membership and the design
   never says what a stage-1 rewrite does to it; seeding extra values here also made single-card
   groups `mixed`, which is the cost defect in `gaps/GAP-002.md`. `Scoring._rebuild_classes`.
+- **S21 (§1.1, Q62, Q97)** — `PipComparator.is_suit_same` and `is_rank_same` are **deleted**, not
+  kept as helpers. S21 removed their last production callers, and both answered a SAMENESS question
+  by dispatching the ORDERING hooks — the cross-situation reuse Q62(a) removed and Q97 named. Keeping
+  them keeps the trap that produced F1: the next stacking or melding call site reaches for the
+  familiar name and silently gets the wrong hook. Callers now split three ways by what they actually
+  mean — `stack_*_same` (stacking), `pair_is_same` with the meld hooks (melding), `printed_same`
+  (no dispatch at all). Rank adjacency is untouched and still uses `compare_ranks` (Q55=a).
+- **S23** — the wrap-bounds hook is hoisted to one ask per `_best_sequence_from_profiles` call, the
+  same fix F2 names for extra values. `_compare_implementers` is uncached in base environments, and
+  the assignment count is a cartesian product, so per-scan asking multiplies a full board walk by it.
 - **S14 (§1.6)** — each consuming handler builds ONE unconsumed "classification" profile and threads
   it into `build_multi`. `is_flush` must read the partition the cards formed under, and the straight
   and flush handlers eat their working profile through `remove_card`. Sharing a single profile

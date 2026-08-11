@@ -37,6 +37,13 @@ var _saver_sem : Semaphore = null
 var _saver_mutex : Mutex = null
 var _pending_payload : RunState = null
 var _saver_exit := false
+## ⚠ Serializes `_write_payload` itself, which the SAVER THREAD and the MAIN THREAD both call —
+## `request_save` goes through the thread, `save_run` writes inline. They shared one temp file,
+## so two overlapping writes interleaved into it and then one renamed the mess into place.
+## Created eagerly, not in `_ensure_saver`: `save_run` can run before any async save ever queues.
+## ⚠ Deliberately NOT `_saver_mutex` — that one guards the pending payload and must never be
+## held across disk IO, or `request_save` would block on the very write it exists to avoid.
+var _write_mutex := Mutex.new()
 # Cached serialization-ready copies of the run deck; rebuilt only when the deck changes
 # (mark_deck_dirty), so in-show saves don't re-copy the (stable) deck every action.
 var _saveable_deck : Array[CardData] = []
@@ -146,10 +153,18 @@ func _write_payload(payload: RunState) -> void:
 	# half-written run.tres. The temp MUST keep a .tres extension: ResourceSaver picks its
 	# format from the extension, so "run.tres.tmp" fails with ERR_FILE_UNRECOGNIZED (15) and
 	# nothing is ever written — the bug that left no run.tres and disabled Continue.
+	# ⚠ ONE WRITER AT A TIME. The temp path is fixed, and both the saver thread and the main
+	# thread reach this function, so without the lock two writes interleave INTO THE SAME TEMP
+	# and the survivor renames a corrupt document into place. Measured symptoms, both from this:
+	# `run.tres:NNNN - Parse Error: Extra tag found when parsing main resource file` (interleaved
+	# content) and `wrote run.tres — no file on disk` (one writer renaming the temp out from
+	# under the other, so the second rename finds nothing).
+	_write_mutex.lock()
 	var tmp := RUN_PATH.get_basename() + ".tmp.tres"
 	if ResourceSaver.save(payload, tmp) == OK:
 		DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp),
 			ProjectSettings.globalize_path(RUN_PATH))
+	_write_mutex.unlock()
 
 func _ensure_saver() -> void:
 	if _saver_thread != null: return

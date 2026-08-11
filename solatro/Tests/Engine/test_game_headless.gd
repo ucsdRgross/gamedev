@@ -34,6 +34,7 @@ func _ready() -> void:
 	await test_submit_headless_full_act()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
 	await test_comparator_rules_change_a_real_act()
+	await test_authored_card_doubles()
 	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
@@ -558,3 +559,263 @@ func test_comparator_rules_change_a_real_act() -> void:
 	check(split.state.validate().is_empty(),
 			"§6.4 REAL GAME: and the board validates after an act scored under a deny rule")
 	free_game(split)
+
+
+# ==============================================================================
+# THE AUTHORED-CARD DOUBLES (PLAN §3 stage 1) — CAN THE ENGINE EXPRESS THEM?
+#
+# ⚠ **THAT QUESTION IS THE POINT OF THIS ROSTER, AND IT IS WORTH ANSWERING BEFORE THE CARDS ARE
+# AUTHORED, NOT AFTER.** Each double below is written straight from DESIGN §1e's catalog table —
+# nothing here is invented — and each one's job is to prove the hook surface can carry that card.
+# If The Turk cannot be written, the design is wrong NOW, and discovering that when someone tries
+# to author it is the expensive version.
+#
+# ⚠ They are also the only doubles anywhere that read REAL BOARD POSITION — the card beneath in a
+# stack, the cards in a row, whether this card is covered. `test_comparator.gd`'s
+# `BoardDependentGroup` fakes that with a flag; these read a real `Game`, which is the only way to
+# learn whether the information a rule needs is even reachable from inside a grouping hook.
+# ==============================================================================
+
+## Groups itself with the card BENEATH it in its own stack — "its rank is the rank of the card
+## beneath it" (DESIGN §1e). At the bottom of a column it does nothing.
+class TurkCopiesBelow extends CardModifierSkill:
+	func get_str() -> String: return "The Turk"
+	func get_description() -> String: return "Rank of the card beneath it"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		var g := CardEnvironment.get_current_game()
+		if not g or not data: return groups
+		var pos := g.find_data_vec3(data)
+		if pos == Vector3i.MIN or pos.z <= 0: return groups
+		var col : ArrayCardData = g.get_zone_from_vec3(pos)[pos.y]
+		var below : CardData = col.datas[pos.z - 1]
+		if not cards.has(data) or not cards.has(below): return groups
+		var pair : Array[CardData] = [data, below]
+		var out : Array[Array] = [pair]
+		out.append_array(groups)
+		return out
+
+## "Copies its highest adjacent neighbour's rank; alone, it is rank 1" — adjacency here is the
+## card directly above or below in its own column.
+class CleverHansCopiesNeighbour extends CardModifierSkill:
+	func get_str() -> String: return "Clever Hans"
+	func get_description() -> String: return "Copies its highest neighbour"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		var g := CardEnvironment.get_current_game()
+		if not g or not data: return groups
+		var pos := g.find_data_vec3(data)
+		if pos == Vector3i.MIN: return groups
+		var col : ArrayCardData = g.get_zone_from_vec3(pos)[pos.y]
+		var best : CardData = null
+		for dz : int in [-1, 1]:
+			var z : int = pos.z + dz
+			if z < 0 or z >= col.datas.size(): continue
+			var n : CardData = col.datas[z]
+			if not cards.has(n) or not n.rank: continue
+			if best == null or float(n.rank.value) > float(best.rank.value): best = n
+		#alone -> it is rank 1, i.e. it joins nothing
+		if best == null or not cards.has(data): return groups
+		var pair : Array[CardData] = [data, best]
+		var out : Array[Array] = [pair]
+		out.append_array(groups)
+		return out
+
+## "While COVERED, copies the most valuable card in its row." Uncovered it does nothing at all,
+## which is what makes it the cover-state double.
+class HumbugWhileCovered extends CardModifierSkill:
+	func get_str() -> String: return "Humbug"
+	func get_description() -> String: return "While covered, copies the best in its row"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		var g := CardEnvironment.get_current_game()
+		if not g or not data: return groups
+		if g.is_data_topmost(data): return groups
+		var best : CardData = null
+		for c : CardData in cards:
+			if c == data or not c.rank: continue
+			if best == null or float(c.rank.value) > float(best.rank.value): best = c
+		if best == null or not cards.has(data): return groups
+		var pair : Array[CardData] = [data, best]
+		var out : Array[Array] = [pair]
+		out.append_array(groups)
+		return out
+
+## "Becomes a rank present in its row, chosen deterministically." Deterministic here = the LOWEST
+## rank present, so two identical boards always agree.
+class WildcardJoinsRow extends CardModifierSkill:
+	func get_str() -> String: return "The Wildcard"
+	func get_description() -> String: return "Becomes a rank present in its row"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		if not data or not cards.has(data): return groups
+		var pick : CardData = null
+		for c : CardData in cards:
+			if c == data or not c.rank: continue
+			if pick == null or float(c.rank.value) < float(pick.rank.value): pick = c
+		if pick == null: return groups
+		var pair : Array[CardData] = [data, pick]
+		var out : Array[Array] = [pair]
+		out.append_array(groups)
+		return out
+
+## Unsourced (PLAN §3 marks it so): a STAMP-carried rule that keeps its own card out of every
+## group. The split exerciser, on a carrier the other doubles do not use.
+class StampedLoner extends CardModifierStamp:
+	func get_str() -> String: return "Stamped Loner"
+	func get_description() -> String: return "Never groups with anything"
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_group_ranks(_cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		if not data: return groups
+		var out : Array[Array] = []
+		for g : Array in groups:
+			var rest : Array[CardData] = []
+			for c : CardData in g:
+				if c != data: rest.append(c)
+			if not rest.is_empty(): out.append(rest)
+		out.append([data] as Array[CardData])
+		return out
+
+## A real Game whose lower zone is `cols` columns of stacked ranks, so a rule can read the card
+## beneath it, its row, and whether it is covered.
+func stacked_game(cols: Array, extra: Array[CardData]) -> Game:
+	var g := Game.new()
+	var s := GameData.new()
+	s.rules_deck = [
+		rules_card(SkillScorerCascadeLower.new()),
+		rules_card(SkillEvalPokerBest.new()),
+	] as Array[CardData]
+	for c : CardData in extra: s.rules_deck.append(c)
+	for zone_x in 2:
+		var types: Array[CardData] = []
+		var zone_cols: Array[ArrayCardData] = []
+		for i in range(cols.size()):
+			var h := TestFactories.m_card(1, TestFactories.uc())
+			h.stage = CardData.Stage.ZONE
+			types.append(h)
+			var stack : Array[CardData] = []
+			if zone_x == 1:
+				for rank : int in (cols[i] as Array):
+					var card := TestFactories.m_card(float(rank), TestFactories.uc())
+					card.stage = CardData.Stage.PLAY
+					stack.append(card)
+			zone_cols.append(TestFactories.col(stack))
+		if zone_x == 0:
+			s.upper_zone_type = types
+			s.upper_zone = zone_cols
+		else:
+			s.lower_zone_type = types
+			s.lower_zone = zone_cols
+	g.state = s
+	CardEnvironment.CURRENT = g
+	return g
+
+## How many cards share `card`'s rank class. 1 means it grouped with nobody.
+func _class_size_of(profile: Scoring.HandProfile, card: CardData) -> int:
+	var refs : Array = profile.card_rank_keys.get(card, [])
+	if refs.is_empty(): return 0
+	return (refs[0] as Scoring.RankClass).datas.size()
+
+func test_authored_card_doubles() -> void:
+	# --- The Turk: a rule reading THE CARD BENEATH IT, from inside a grouping hook -----------
+	var turk := TurkCopiesBelow.new()
+	var turk_rules : Array[CardData] = [rules_card(turk)]
+	var g := stacked_game([[4, 9]], turk_rules)
+	var column : Array[CardData] = g.state.lower_zone[0].datas
+	var plain := await Scoring._get_hand_profiles_async(column)
+	check(plain.ranks.classes.size() == 2,
+			"1e control: 4 and 9 in a column are two rank classes with no rule",
+			"%d classes" % plain.ranks.classes.size())
+	turk.data = column[1]
+	var turked := await Scoring._get_hand_profiles_async(column)
+	check(turked.ranks.classes.size() == 1 and turked.ranks.classes[0].datas.size() == 2,
+			"1e THE TURK is expressible: a grouping rule can read the card BENEATH it on the "
+			+ "board and take that card's rank",
+			"%d classes" % turked.ranks.classes.size())
+	free_game(g)
+
+	# --- Clever Hans: highest adjacent neighbour, and ALONE it stays rank 1 ------------------
+	var hans := CleverHansCopiesNeighbour.new()
+	var hans_rules : Array[CardData] = [rules_card(hans)]
+	g = stacked_game([[2, 7, 5]], hans_rules)
+	column = g.state.lower_zone[0].datas
+	hans.data = column[1]
+	var hansed := await Scoring._get_hand_profiles_async(column)
+	var hans_cls : Scoring.RankClass = hansed.card_rank_keys[column[1]][0]
+	var five_cls : Scoring.RankClass = hansed.card_rank_keys[column[2]][0]
+	check(_class_size_of(hansed, column[1]) == 2 and hans_cls == five_cls,
+			"1e CLEVER HANS is expressible: it joins its HIGHEST neighbour (the 5, not the 2)",
+			"class of %d members" % _class_size_of(hansed, column[1]))
+	free_game(g)
+
+	g = stacked_game([[7]], hans_rules)
+	column = g.state.lower_zone[0].datas
+	hans.data = column[0]
+	var lonely := await Scoring._get_hand_profiles_async(column)
+	check(lonely.ranks.classes.size() == 1 and lonely.ranks.classes[0].datas.size() == 1,
+			"1e CLEVER HANS alone joins nothing — the 'alone, it is rank 1' clause",
+			"%d classes" % lonely.ranks.classes.size())
+	free_game(g)
+
+	# --- Humbug: DORMANT while uncovered, live while covered ---------------------------------
+	# ⚠ The paired control is the same card in the same hand, differing ONLY in whether something
+	# sits on top of it — which is the whole claim.
+	var humbug := HumbugWhileCovered.new()
+	var humbug_rules : Array[CardData] = [rules_card(humbug)]
+	g = stacked_game([[3], [11]], humbug_rules)
+	var row : Array[CardData] = [g.state.lower_zone[0].datas[0], g.state.lower_zone[1].datas[0]]
+	humbug.data = row[0]
+	var uncovered := await Scoring._get_hand_profiles_async(row)
+	check(uncovered.ranks.classes.size() == 2,
+			"1e HUMBUG uncovered is DORMANT — 3 and 11 stay two classes",
+			"%d classes" % uncovered.ranks.classes.size())
+	var lid := TestFactories.m_card(6, TestFactories.uc())
+	lid.stage = CardData.Stage.PLAY
+	g.state.lower_zone[0].datas.append(lid)
+	g.state.revision += 1
+	var covered := await Scoring._get_hand_profiles_async(row)
+	check(covered.ranks.classes.size() == 1,
+			"1e HUMBUG is expressible: COVERING it makes the same cards one class — a grouping "
+			+ "rule can read its own cover state",
+			"%d classes" % covered.ranks.classes.size())
+	free_game(g)
+
+	# --- The Wildcard: a rank present in its row, deterministically ---------------------------
+	var wild := WildcardJoinsRow.new()
+	var wild_rules : Array[CardData] = [rules_card(wild)]
+	g = stacked_game([[12], [5], [9]], wild_rules)
+	row = [g.state.lower_zone[0].datas[0], g.state.lower_zone[1].datas[0],
+			g.state.lower_zone[2].datas[0]]
+	wild.data = row[0]
+	var wilded := await Scoring._get_hand_profiles_async(row)
+	var wilded_again := await Scoring._get_hand_profiles_async(row)
+	check(_class_size_of(wilded, row[0]) == 2,
+			"1e THE WILDCARD is expressible: it joins a rank present in its row",
+			"class of %d" % _class_size_of(wilded, row[0]))
+	check(_class_size_of(wilded, row[0]) == _class_size_of(wilded_again, row[0]),
+			"1e and it is DETERMINISTIC — 'chosen deterministically, on every board change'")
+	free_game(g)
+
+	# --- StampedLoner: the split exerciser, on a STAMP carrier --------------------------------
+	var loner := StampedLoner.new()
+	g = stacked_game([[8], [8], [8]], [] as Array[CardData])
+	row = [g.state.lower_zone[0].datas[0], g.state.lower_zone[1].datas[0],
+			g.state.lower_zone[2].datas[0]]
+	var trio := await Scoring._get_hand_profiles_async(row)
+	check(trio.ranks.classes.size() == 1 and trio.ranks.classes[0].datas.size() == 3,
+			"3 control: three printed 8s are one class of three")
+	row[0].stamp = loner
+	loner.data = row[0]
+	g.state.revision += 1
+	var split := await Scoring._get_hand_profiles_async(row)
+	check(split.ranks.classes.size() == 2 and _class_size_of(split, row[0]) == 1,
+			"3 STAMPED LONER is expressible: a STAMP-carried rule pulls its own card out of a "
+			+ "printed-identical group, leaving the other two together",
+			"%d classes, its own holds %d" % [split.ranks.classes.size(),
+					_class_size_of(split, row[0])])
+	free_game(g)

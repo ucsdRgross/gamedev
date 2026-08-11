@@ -19,6 +19,15 @@ editor drew the card's face from *the same array* the fire's mask was built from
 was invisible by construction), and the harnesses' `star_outline` card was 2.3–3.3 art units from any
 pose the real rig makes — which made a 26.9-art-unit mask error look like a 2-unit one for weeks.
 
+⚠ **The sharpest form: a stand-in that cannot ENTER the state you are testing.** Solatro's
+`FakeEnvironment` returns an empty `_revision_key()`, which the engine reads as "never cache" — so a
+whole caching mechanism was asserted only where caching was switched off, and the agent wrote it up as
+*"assumed, not checked"* instead of fixing it. Two rules follow, and both are cheap:
+**subclass the double rather than declaring the case untestable** (that one was four lines), and
+**"no shipped content uses this yet" is a statement about CONTENT, never about testability** — a rules
+card written in a test is a real rules card, and the real `Game` runs headless
+(`test_game_headless.gd::make_game()`). Full write-up: `solatro/ARCHITECTURE_REVIEW.md` §10a.
+
 **How to apply:** prefer instantiating the shipped scene even when it costs guards. Cost paid once for
 `CardVisual` in the editor: `Engine.is_editor_hint()`-safe settings access, and `@tool` down the whole
 data class chain (a non-`@tool` BASE makes every subclass a placeholder — the type name survives and no

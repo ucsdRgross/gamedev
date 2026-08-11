@@ -166,6 +166,14 @@ history stored in forward orientation).
 - `ResourceSaver.save` picks format from the EXTENSION — the atomic-write temp file must
   be `run.tmp.tres`, never `run.tres.tmp` (fails `ERR_FILE_UNRECOGNIZED`, silently writes
   nothing).
+- ⚠ **ONE WRITER AT A TIME, AND THE LOCK IS NOT THE PAYLOAD LOCK.** `_write_payload` is reached
+  from BOTH the saver thread (`request_save`) and the main thread (`save_run`), and the temp path
+  is fixed — so without `_write_mutex` two writes interleave into that one temp and the survivor
+  renames a corrupt document into place. Both observed symptoms came from this: a `Parse Error:
+  Extra tag` on read-back, and `wrote run.tres — no file on disk` when one writer renamed the temp
+  out from under the other. ⚠ It must stay SEPARATE from `_saver_mutex`, which guards the pending
+  payload and must never be held across disk IO, or `request_save` would block on the very write
+  it exists to avoid. All three call sites release the payload lock before entering the write.
 - `has_save()` gates on `run.tres` ALONE — the `map/` bake is a regenerable deterministic
   cache of `world_seed`; requiring it makes Continue fragile.
 - `BigNumber` is RefCounted (not serializable): score arrays persist as parallel
@@ -329,6 +337,24 @@ pairwise passes closing over distinct keys → **stage 1**, whole-hand rules thr
 → the straight position model → `is_flush`. With no card implementing a meld hook, every stage
 short-circuits on one implementer-cache lookup: zero dispatches, scoring unchanged.
 
+**One hook family PER SITUATION, and no fallback between them.** Melding asks `on_meld_*`;
+stacking legality asks `on_stack_*` (`PipComparator.stack_suits_same` / `stack_ranks_same`, called
+by the placer and grabber rules cards); ordering asks `on_compare_ranks/suits` and grants no
+grouping power at all. A card wanting two situations implements two hooks.
+⚠ `is_suit_same` / `is_rank_same` were **deleted** for this reason — they answered a sameness
+question through the ordering hook, and their existence is what left stacking wired to the wrong
+family for a whole phase. "Do these print the same value", with no dispatch, is `printed_same`.
+⚠ Rank ADJACENCY still uses `compare_ranks`: "one step away" is a scalar, not sameness (Q55=a).
+
+**A whole-hand rule returning an empty grouping means NO MELD IS POSSIBLE** (Q13=d/Q85=a) — not
+"no change", not "every card alone". The line banks ZERO and not even High Card survives.
+⚠ **It is made true of the PARTITION, not just flagged on it** (`Scoring._mark_no_meld`): the flag
+alone was not enough, because `PokerHands.score` checks it but the straight and flush handlers
+rebuild profiles from SUB-POOLS and none of them read it. Emptying both domains' classes and
+reverse indexes makes every consumer inert by construction — no rank classes is no sets and no
+straights, no suit classes is no flushes — and drops the half-applied partition the early return
+used to leave behind.
+
 **Landmines. Every one of these was a shipped defect or a near miss.**
 
 - **The hooks are declared as COMMENTS on `CardModifier`, never as methods.** Dispatch asks
@@ -354,6 +380,14 @@ short-circuits on one implementer-cache lookup: zero dispatches, scoring unchang
   Its overlap union is TRANSITIVE: one group can overlap several, and all must fold in.
 - **Stage 1 flattens multi-key membership** — a partition puts each card in one class, so a
   card's extra POSITIONS do not survive a whole-hand grouping rule.
+- **Hoist every implementer check out of per-card and per-iteration loops.** On `Game` it is a
+  dictionary lookup, but base environments (tests, map) return an empty revision key, so
+  `_compare_implementers` caches nothing and walks the whole board. Asking per card, per profile
+  build, per scored line is how a hook nobody implements becomes the dominant cost of a test run.
+  `CardEnvironment.has_implementer` is the gate; extra values and wrap bounds both use it.
+- **`PipComparator._pass_memo` is a static shared by DEPTH, not by pass** (risk R6). Nested
+  re-entrancy sharing it is deliberate. **Do not start a scoring pass from a coroutine that another
+  pass may be suspended inside** — two concurrently suspended passes would pollute each other.
 
 **Tests.** `test_comparator.gd` sections 6–12 (dispatch ceiling, stage 1, the pass memo,
 straights/adjacency/classification, the roster, search size, one-card-one-step);
@@ -1312,7 +1346,7 @@ skipping, per the owner's rule that tests must run properly rather than be skipp
 = failure count; the bar is ALL suites green (count the run's own banner —
 PATIENCE, FX ATTACHMENT and PIXELS joined, and all run unordered like the other engine suites).
 Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** ⚠ **The SUITE
-count is the stable number and it is 30**; a drop means a suite failed to LOAD (a parse error in one
+count is the stable number and it is 31**; a drop means a suite failed to LOAD (a parse error in one
 suite still lets the others report "PASSED"). Never run headless while the owner's editor has the
 project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw, headless
 window size): **HEADLESS_TESTING.md**.
@@ -1358,6 +1392,22 @@ Conventions (formerly UNIT_TESTS_PLAN):
      `"booster_"`): suites that don't `await_siblings_except` run CONCURRENTLY against ONE
      shared PlayerSettings, so restoring a full snapshot stomps another suite's in-flight
      knobs. Only a suite that waits for its siblings (INTERACTION) may snapshot everything.
+- ⚠ **`FakeEnvironment` IS NOT `Game`, AND THE DIFFERENCES ARE LOAD-BEARING.** Before writing
+  "this cannot be tested without a running game", check these — a whole feature shipped once with
+  its caching asserted only against a stand-in that does not cache:
+  - `_revision_key()` is **empty** in base environments, which means "never cache". Any
+    revision-keyed cache is therefore DEAD under `FakeEnvironment`, and a suite built only on it
+    exercises a path the game never takes. A cacheable double is four lines:
+    `class X extends FakeEnvironment: var revision := 1` + `func _revision_key() -> Array: return
+    [get_instance_id(), revision]`.
+  - **A real `Game` is available headless and cheap** — `test_game_headless.gd::make_game()` builds
+    one with `rules_deck`, both zones and `view == null`, and `submit()` runs the whole act. That is
+    the harness for "does this rules card actually change a score", and `test_game_headless.gd`'s
+    comparator section is the worked example. **A rules card written in a test is a real rules
+    card**; "no shipped card implements this hook yet" is not a reason to skip the end-to-end test.
+  - A suite must **never `await` a FRAME while it owns `CardEnvironment.CURRENT`** — the runner
+    starts the next suite and CURRENT becomes someone else's, silently invalidating every later
+    check. Suspend on a coroutine instead.
 - Test speed: `all_tests.gd @export speed_base_delay` → `TestLog.speed_base_delay`;
   deliberately-slow sampling tests keep their own absolute delays (they need real
   frames).
@@ -1587,3 +1637,70 @@ Ten more defects, found by review rather than by eye; reasoning per fix is
 - **Open design questions go to gaps, not code**: GAP-010 (does `act_overrun` void the line's
   score?) and GAP-011 (do score hooks fire on an emptied section?) are open; the code deliberately
   keeps the pre-review behaviour until answered.
+
+---
+
+## 10. COMPARATOR BUCKETS — the assumptions that cost time, and what catches each one
+
+⚠ **The contracts are §3c. This section is the ASSUMPTIONS an implementer made and should not make
+again** — same purpose as §9, different stream. Every one produced correct-looking results: the
+scores were right the whole time, so nothing here would have been caught by "does the suite pass".
+
+### 10a. "It cannot be tested without a running game" — twice, both false
+
+- **The cache was asserted only against a double that cannot cache.** `FakeEnvironment._revision_key()`
+  is empty, which means "never cache", so the revision-keyed verdict cache was DEAD in every test
+  while being live in `Game`. This was written up as "assumed, not checked" rather than fixed; the
+  fix was a four-line subclass overriding `_revision_key()`. **A stand-in that cannot enter the state
+  you are testing does not test it** — §9c's shape, and `.claude/memory/no-mocks-in-tools.md`.
+- **"No shipped card implements these hooks, so §6's in-game checks cannot be run."** A rules card
+  written in a test *is* a rules card, and `test_game_headless.gd::make_game()` already stood up a
+  real `Game` headless. All six checks now run there in about sixty lines. ⚠ **"No content uses this
+  yet" is a statement about content, never about testability.**
+
+### 10b. A declared surface nobody routed
+
+`Q83`(a) gives every situation its own deny/allow pair. The four `on_stack_*` hooks were added as
+contract constants and documentation — and **nothing in production ever asked them**, while move
+legality kept calling the ORDERING hook the design had just stopped it from reusing. The plan said
+"add the hook names" and no step said "route stacking through them", so the surface was built exactly
+as written and left inert. **A step list is not a coverage proof.** The mechanical catch is the
+designloop `unclaimed` report (answered questions no step cites) — one command, and step 3 of the
+`/handoff` per-task loop. See `.claude/memory/design-answers-need-a-claimant.md`, where this is now
+the second measured instance of the same shape.
+
+### 10c. A performance number nobody sanity-checked against the design
+
+A scoring pass measured **23 seconds**, and it was filed as a gap against the DESIGN's uncapped
+straight search — a defensible-sounding escalation that was simply wrong. `PLAN.md` §1.5 already
+specified *"the product is 1 when no rule merged anything"*, and a hand with no merge rule was
+producing 65536 scans, so the design's own words were the failing test. The bug: `member_keys` was
+derived from the union of a class's MEMBERS' values, and a card carrying extra rank values sits in
+several classes at once, so its other value leaked in and marked every class `mixed`. ⚠ **Before
+escalating a measurement, check it against what the design says the number should be.**
+
+### 10d. Reasoning about a defect instead of testing it
+
+"One card could be spent at two positions" was noticed while reading the scanners and left as a
+thought. It was real, in three places (both scanners, `best_uniform_multi`, `_form_houses_at_scale`)
+— a five-card straight from three cards, and a full house whose trip and pair were the same card.
+**A suspicion costs one fixture; carrying it costs a release.**
+
+### 10e. Explaining away an intermittent failure
+
+Persistence-suite flakes were attributed to overlapping suite runs. Overlapping runs *do* fabricate
+failures (`.claude/memory/running-godot-scenes.md`) — but the flake reproduced under strictly
+sequential runs too, so the explanation was wrong while sounding right. It is now tracked as a real
+open bug in `todo.md`. ⚠ **A plausible cause you did not test is a hypothesis, not a finding** — and
+having one makes you stop looking, which is the actual cost.
+
+### 10f. What each of these is now caught by
+
+| assumption | the check that fails now |
+|---|---|
+| a double that cannot cache | `test_mod_fuzz.gd` runs its whole generator twice, once on a `CachingEnvironment` |
+| "cannot run in the game" | `test_game_headless.gd`, "COMPARATOR RULES CARDS, THROUGH A REAL GAME" |
+| an unrouted hook surface | designloop `unclaimed`; `test_comparator.gd`'s stacking section |
+| the search exploding | `test_comparator.gd` §11 asserts the ASSIGNMENT COUNT, not a timing |
+| one card spent twice | `test_comparator.gd` §12, and fuzz invariant 7b (needs no partition knowledge) |
+| a stranded pass memo | `PipComparator.pass_is_closed()`, asserted in `test_comparator.gd` §8 |

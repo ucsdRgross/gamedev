@@ -1,16 +1,24 @@
 # HANDOFF — comparator buckets
 
 **Goal:** wire meld FORMATION to the mod comparator surface, so a rules card can decide which cards
-count as the same. Done = `design/comparator_buckets/PLAN.md` phases 1–6 landed, GATES 1–7 green.
+count as the same. Done = `design/comparator_buckets/PLAN.md` phases 1–8 landed, GATES 1–8 green.
 
-**State: landed and verified.** All twenty steps, all seven gates. `HandProfile` holds class lists;
+**State: landed and verified.** All twenty-six steps, all eight gates. `HandProfile` holds class lists;
 stage 0 closes them over a two-pass deny/allow surface whose verdicts are fixed for the hand; stage 1
 lets whole-hand rules rewrite the partition through `sanitize`; the straight scan searches over mixed
 classes' candidate positions; adjacency arrives as extra class keys and a wrap-bounds hook; and
 `is_flush` reads the same partition formation used. With no card implementing a meld hook the whole
 pipeline is the identity path — zero dispatches, scoring unchanged. Suite count **31**.
 **The contracts and landmines now live in `ARCHITECTURE_REVIEW.md` §3c** — this file is the stream's
-state, not its rules. What remains is a playtest.
+state, not its rules.
+
+**What remains is a BALANCE call and one UX call — not functionality.** Two adversarial reviews have run against this work. The first opened
+Phase 7 and found the real defect — S21: Q83(a) gives every situation its own deny/allow pair, and the
+four `on_stack_*` hooks were declared, documented and **dispatched by nothing**, while the placer and
+grabber still asked `is_suit_same`, the ORDERING hook. ⚠ **That omission was PLAN's, not the
+executor's** — S3 said "add the hook names" and no step said "route stacking through them". The second
+review opened Phase 8: GATE 8 proved a meld rule cannot reach stacking, but nothing proved the
+converse. Both phases are landed; both directions are now asserted.
 
 **Entry docs:** `ARCHITECTURE_REVIEW.md` §3c (contracts), `design/comparator_buckets/DESIGN.md`
 (behaviour authority), its `PLAN.md` (build order; ⚠ §1.8 superseded by GAP-003), `DEFERRED.md`
@@ -92,6 +100,53 @@ the hand; `compare_uncacheable` deleted).
   description: Register the suite; expected suite count 30 -> 31.
   status: done
   evidence: '======== ALL 31 SUITES: ... CHECKS PASSED ========'
+
+# --- Phase 7, added after the adversarial review of the landed commit --------------------
+- id: S21
+  description: Route stacking legality through the STACK hooks (F1 — the surface was inert).
+  status: done
+  evidence: 'GATE 8 both halves [PASS]: a stack deny flips a placement; the same rule as a MELD hook does not'
+  notes: >-
+    The placer and grabber called `is_suit_same`, which dispatches the ORDERING hook — the
+    cross-situation reuse Q62(a) removed. Both now call `PipComparator.stack_suits_same`.
+    ⚠ `is_suit_same` and `is_rank_same` are DELETED, not kept: they answered a sameness
+    question through the ordering hook, which is the trap that left this inert for a whole
+    phase. Rank ADJACENCY still uses `compare_ranks` (Q55=a). Recorded in ASSUMPTIONS.md.
+- id: S22
+  description: Test the stacking situation — the file contained "stack" zero times.
+  status: done
+  evidence: 'test_comparator.gd section 13, 8 checks [PASS]'
+- id: S23
+  description: Gate the extra-values dispatch (F2); same fix applied to wrap bounds.
+  status: done
+  notes: >-
+    Both are now asked ONCE per profile build / per sequence call instead of per card / per
+    assignment. `CardEnvironment.has_implementer` is the gate the closures already used.
+- id: S24
+  description: Attribute the leak (F3).
+  status: done
+  evidence: 'exit-time ObjectDB leak is 4 BEFORE any of this work and 4 now — unchanged, pre-existing'
+  notes: >-
+    The review noted no pre-commit baseline had been measured. There was one: the very first
+    suite run of this stream, before any edit, already reported "4 ObjectDB instances were
+    leaked at exit". The intermittent CANARY +1 is a separate measure and already
+    self-attributes via `_report_growth` when it fires; see todo.md for the hunt's outcome.
+- id: S25
+  description: Strike the dead §1.8 contract (F5).
+  status: done
+  notes: 'Done in the plan itself by the owner; the shipped pass-memo API is what §1.8 now prints.'
+
+# --- Phase 8, from the second review ------------------------------------------------------
+- id: S26
+  description: Assert the situation isolation in BOTH directions, not just meld-does-not-reach-stack.
+  status: done
+  evidence: 'a stack deny rule that would shatter every suit leaves both partitions and the score byte-identical [PASS]; fuzz invariant 13 exercised on ~50 of 400 rounds'
+  notes: >-
+    GATE 8 proved only one direction. The partitions are compared as class keys PLUS member
+    identities, not counts — a reshuffle preserving counts is the only interesting way this
+    could break. The fuzz covered partition VALIDITY under stack rules but never INVARIANCE;
+    invariant 13 adds it, and the suite REPORTS how many rounds actually drew a meld-blind
+    rule set, because an invariant that never runs reads exactly like one that passes.
 ```
 
 ## Verified
@@ -126,12 +181,24 @@ the check total varies because the fuzz suites randomise.
 
 ## Next up
 
-1. **Playtest** (todo.md, "Waiting on the owner"). The mechanics are proven; whether a merging card
-   is fun, and whether a split meld reads as a bug (`DEFERRED.md` R2), are not test questions.
+1. **The balance call** (todo.md). `Tests/Engine/scoring_cost.tscn` prints what a rule is WORTH:
+   a rank-merging rule multiplies a scored line by x2.0 / x3.5 / x6.0 / x5.1 at 5 / 8 / 13 / 30
+   cards, and every line of a submit gets it. Extra rank values alone are x1.0. ⚠ The only other
+   open judgement is `DEFERRED.md` R2 — whether an unexplained split reads as a bug to a human.
+   Everything else about this feature is asserted in the suite.
 2. **Chase the leak canary** above.
 3. **`DEFERRED.md` E1**, a benchmark for the scoring path — everything measured is hands of ≤8 cards.
 
-## What this stream got wrong, and the shape of it
+## What this stream got wrong — now folded into ARCHITECTURE_REVIEW §10
+
+⚠ **§10 is the durable copy; this file gets deleted after the playtest.** It catalogues the
+assumptions that cost time (a double that could not cache, "cannot run in the real game", a hook
+surface nobody routed, a 23 s measurement escalated without checking it against the design's own
+words, a suspected defect never tested, an intermittent failure explained away) and names the check
+that now fails for each. The cross-project halves went into
+`.claude/memory/no-mocks-in-tools.md` and `design-answers-need-a-claimant.md`.
+
+## The short version
 
 Worth two minutes before trusting the rest. Three defects reached "reported as done":
 

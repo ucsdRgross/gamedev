@@ -69,17 +69,15 @@ func combo_key(_hook: StringName = &"") -> String:
 # ==============================================================================
 # THE COMPARATOR SURFACE — "are these two cards the same?" (comparator_buckets PLAN §1.1)
 # ------------------------------------------------------------------------------
-# ⚠ **DECLARED HERE AS COMMENTS, NOT METHODS, AND THAT IS THE WHOLE MECHANISM.** Dispatch
-# asks `has_method`, so a real no-op on this base would opt EVERY modifier in and the
-# identity path (chart C4 — zero dispatch, byte-identical scoring) would never be taken.
-# A subclass declaring one of these spellings is what turns the rule on; a typo silently
-# disables it, which is why the spellings below are the contract and no call site retypes
-# them (PipComparator.MELD_RANKS_DENY and friends hold them once).
+# ⚠ **COMMENTS, NOT METHODS, AND THAT IS THE MECHANISM.** Dispatch asks `has_method`, so a real
+# no-op here would opt EVERY modifier in and the identity path (chart C4 — zero dispatch,
+# unchanged scoring) could never be taken. Declaring a spelling in a subclass is what turns the
+# rule on; a typo silently disables it, so call sites name `PipComparator.MELD_RANKS_DENY` and
+# friends rather than retyping.
 #
-# QR3(c)/Q62(a)/Q97: SEPARATE HOOKS PER SITUATION, WITH NO FALLBACK BETWEEN THEM. A card
-# implementing a meld hook gets meld behaviour and nothing else; a card that also wants
-# stacking rules implements the stacking hook too. Q80(a): a rule declares whether it is a
-# blacklist or a whitelist BY WHICH HOOK IT IMPLEMENTS, never by a flag or a return value.
+# QR3(c)/Q62(a)/Q97: SEPARATE HOOKS PER SITUATION, NO FALLBACK BETWEEN THEM — a card wanting
+# both melding and stacking rules implements both. Q80(a): blacklist or whitelist is declared BY
+# WHICH HOOK IT IMPLEMENTS, never by a flag or a return value.
 #
 #   # MELD sameness, two passes. true = "this pass answers yes for this pair".
 #   func on_meld_ranks_deny(r1: PipRank, r2: PipRank) -> bool
@@ -107,12 +105,8 @@ func combo_key(_hook: StringName = &"") -> String:
 # nothing to deny or allow. Melding no longer calls them.
 # ==============================================================================
 
-# ⚠ **THERE IS NO `compare_uncacheable`, AND NOTHING NEEDS ONE** (owner ruling,
-# `design/comparator_buckets/gaps/GAP-003.md`, superseding Q41(c)/Q90(a)/Q91(a)). Every rule's
-# answer is fixed for the HAND being scored — a rule consulting randomness has already been
-# decided before meld finding starts, so it cannot disagree with itself between the straight
-# scan and the flush scan. Write a random rule freely; there is nothing to declare, and no
-# stale-answer footgun to step on.
+# ⚠ **NO `compare_uncacheable`, and nothing needs one** (gaps/GAP-003.md). A rule's answer is
+# fixed for the hand being scored, so a random rule is safe to write and has nothing to declare.
 
 ## THE spotlight rule (design chart A). Renamed off the old `active` vocabulary 2026-08-04 (Q2=b):
 ## "spotlit" is the one word for it everywhere — the mechanical state and the light show are the

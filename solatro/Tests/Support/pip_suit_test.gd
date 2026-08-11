@@ -1,7 +1,7 @@
 class_name PipSuitTest
 extends PipSuit
 ## Test-only suit: one parameterized class standing in for unlimited distinct suits.
-## `id` drives get_str() so PipComparator.is_suit_same treats distinct ids as distinct
+## `id` drives get_str() so PipComparator.printed_same treats distinct ids as distinct
 ## suits (the nominal-identity rule), letting scoring tests avoid accidental flushes.
 ## Real suit-behaviour tests (Phase 3) use the real Hoop/Knife/Ball/Fire classes instead.
 

@@ -484,6 +484,11 @@ static func _build_profile(cards: Array[CardData]) -> HandProfile:
 	# deliberately closed the back door: a grouping rule may pull a board card in, never
 	# invent one, so this cannot arrive by accident.
 	var hand_order : Dictionary[CardData, int] = {}
+	#S23/C4: ask the extra-values hook ONCE per profile build, not once per card. The closures
+	#below are gated the same way; this one was not, and in a base environment that is a full
+	#board walk per card per build per scored line for a hook nothing implements.
+	var env := CardEnvironment.CURRENT
+	var extras_live := env != null and env.has_implementer(PipComparator.MELD_EXTRA_RANK_VALUES)
 
 	for card in cards:
 		hand_order[card] = hand_order.size()
@@ -497,8 +502,9 @@ static func _build_profile(cards: Array[CardData]) -> HandProfile:
 		#so the existing scan finds them with no change to adjacency logic at all. A card
 		#carrying them sits in SEVERAL classes at once — the same path Harlequin's dual suits
 		#already use, which is why remove_card clears every class a card is in.
-		for extra : float in await PipComparator.get_extra_rank_values(card):
-			if not placement_keys.has(extra): placement_keys.append(extra)
+		if extras_live:
+			for extra : float in await PipComparator.get_extra_rank_values(card):
+				if not placement_keys.has(extra): placement_keys.append(extra)
 		profile.card_rank_values[card] = placement_keys
 		var rank_classes: Array[RankClass] = []   # reverse map for O(1) remove_card
 		for scalar_key in placement_keys:
@@ -560,7 +566,7 @@ static func _apply_group_rules(profile: HandProfile, cards: Array[CardData],
 	var env := CardEnvironment.CURRENT
 	if not env: return
 	var hook := PipComparator.MELD_GROUP_RANKS if use_ranks else PipComparator.MELD_GROUP_SUITS
-	var rules := env.group_rule_implementers(hook)
+	var rules := env.active_implementers(hook)
 	if rules.is_empty(): return
 	var deny := PipComparator.MELD_RANKS_DENY if use_ranks else PipComparator.MELD_SUITS_DENY
 
@@ -574,10 +580,56 @@ static func _apply_group_rules(profile: HandProfile, cards: Array[CardData],
 		var next := await sanitize(proposed, groups, cards, deny, use_ranks, hand_order)
 		if next.is_empty():
 			#Q13(d) + Q85(a): "no meld is possible from this hand" — the line banks ZERO
-			profile.no_meld = true
+			_mark_no_meld(profile)
 			return
 		groups = next
 	_rebuild_classes(profile, groups, hand_order, use_ranks)
+
+
+## "No meld is possible from this hand" (Q13=d), made TRUE OF THE PARTITION and not merely
+## flagged on it. ⚠ **The flag alone was not enough.** `PokerHands.score` checks it, but the
+## straight and flush handlers rebuild profiles from SUB-POOLS and none of them read it — so a
+## rule whose empty answer depends on the pool it is shown could veto the whole hand and still
+## have a run formed out of three of its cards. Emptying the classes makes every consumer inert
+## by construction: no rank classes is no sets and no straights, no suit classes is no flushes.
+## Clearing BOTH domains also drops the half-applied partition the early return used to leave
+## behind — state that reflected neither the rules that had already run nor the one that vetoed.
+static func _mark_no_meld(profile: HandProfile) -> void:
+	profile.no_meld = true
+	profile.ranks.classes = []
+	profile.suits.classes = []
+	profile.card_rank_keys.clear()
+	profile.card_suit_keys.clear()
+
+
+## Break one proposed group into the fewest parts that hold no pairing the deny pass forbids.
+## Cards go in hand order, each taking the first part it is not denied against — the same greedy
+## rule `_split_denied_rank_classes` uses, so a deny splits identically wherever it arrives from.
+## A group with no denied pair comes back as itself, one part, unchanged.
+## ⚠ **COST: O(n²) pair questions per group, per rule, per profile build.** The DISPATCHES are
+## capped — `ask_pass` memoises per hand, so distinct hook calls stay at k(k+1)/2 — but the memo
+## LOOKUPS are not, and a 30-card group is 435 of them per pass. Only reachable once deny content
+## exists (the caller gates on `has_implementer`). If a bench row ever shows it, the fix is the
+## one stage 0 already uses: ask per distinct KEY pair (Q1=a makes same-value pips
+## interchangeable) and bucket cards by their key's verdict, turning n² into k².
+static func _split_group_on_deny(group: Array, deny: StringName, use_ranks: bool) -> Array[Array]:
+	#a lone card has no pair to forbid, and this is the common shape once a rule singletonises
+	if group.size() < 2: return [group] as Array[Array]
+	var parts : Array[Array] = []
+	for card : CardData in group:
+		var placed := false
+		for part : Array in parts:
+			var clash := false
+			for other : CardData in part:
+				if await _pair_denied(card, other, deny, use_ranks):
+					clash = true
+					break
+			if clash: continue
+			part.append(card)
+			placed = true
+			break
+		if not placed: parts.append([card] as Array[CardData])
+	return parts
 
 
 ## Sanitize a whole-hand rule's answer. Runs after EVERY stage.
@@ -627,6 +679,17 @@ static func sanitize(proposed: Variant, previous: Array[Array], hand: Array[Card
 				continue
 			members.append(card)
 		if not members.is_empty(): clean.append(members)
+
+	# 2b. ⚠ **A RULE'S OWN GROUP IS SUBJECT TO THE DENY PASS TOO.** Only the union below used to
+	# ask, so a pairing the deny forbids was split when an overlap produced it and kept when the
+	# rule simply named it — the same board answering two ways depending on a route the card
+	# author picks. Q94(a) gives the deny precedence over grouping; that has to mean grouping of
+	# every origin. Gated on an implementer existing, so the un-modded path asks nothing.
+	if env and env.has_implementer(deny):
+		var split_clean : Array[Array] = []
+		for g : Array in clean:
+			split_clean.append_array(await _split_group_on_deny(g, deny, use_ranks))
+		clean = split_clean
 
 	# 3 + 4. union what overlaps, unless the union would create a pair the deny pass forbids
 	# ⚠ **AN INCOMING GROUP CAN OVERLAP SEVERAL EXISTING ONES, AND ALL OF THEM MUST FOLD IN.**
@@ -1339,13 +1402,17 @@ class MultiStraightHandler:
 	## assignment is tried and the best kept. The product is **1 when nothing is mixed**, so
 	## the un-modded path runs the existing scan exactly once and is unchanged.
 	static func _best_sequence_from_profiles(profiles: Scoring.HandProfile) -> Array[CardData]:
+		#S23, same shape as the extra-values gate: the wrap-bounds hook is asked ONCE per call,
+		#not once per assignment. In a base environment each ask walks the whole board, and the
+		#assignment count is a cartesian product — the two multiply.
+		var bounds := await PipComparator.get_wrap_bounds()
 		var best : Array[CardData] = []
 		for assignment : Array in _straight_assignments(profiles):
 			var positions := _positions_for(profiles, assignment)
 			#linear first, then wrap only on a STRICT improvement — the original tie policy
 			var linear := _scan_linear(positions)
 			if linear.size() > best.size(): best = linear
-			var wrap := await _scan_wrap(positions)
+			var wrap := _scan_wrap(positions, bounds)
 			if wrap.size() > best.size(): best = wrap
 		return best
 
@@ -1439,10 +1506,9 @@ class MultiStraightHandler:
 
 	## Longest wrap-around / multi-loop walk over the cycle [A..W] (W -> A wrap).
 	## Each step consumes one physical card; a rank value may repeat once per loop.
-	static func _scan_wrap(at: Dictionary[float, ArrayCardData]) -> Array[CardData]:
+	static func _scan_wrap(at: Dictionary[float, ArrayCardData], bounds: Vector2) -> Array[CardData]:
 		#Q72(b): a card may extend the cycle, or BREAK it — Vector2(NAN, NAN) means no run
 		#may cross the top, so there is no wrap walk to make at all.
-		var bounds := await PipComparator.get_wrap_bounds()
 		if is_nan(bounds.x) or is_nan(bounds.y): return []
 		var A := int(bounds.x)
 		var W := int(bounds.y)

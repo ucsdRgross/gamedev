@@ -27,6 +27,8 @@ func _ready() -> void:
 	await run_roster_and_combinations()
 	await run_search_cost()
 	await run_one_card_one_step()
+	await run_stacking_situation()
+	await run_roster_gaps()
 	finish()
 
 
@@ -106,7 +108,12 @@ func run_no_environment_tests() -> void:
 
 
 # ==============================================================================
-# SECTION 2: PREDICATES (is_rank_same / next_to / suit_same / is_ace)
+# SECTION 2: PREDICATES (adjacency, printed sameness, is_ace)
+#
+# ⚠ `is_rank_same` / `is_suit_same` were DELETED by plan step S21. They answered a SAMENESS
+# question by dispatching the ORDERING hooks, which is the cross-situation reuse Q62(a) removed —
+# stacking now asks `stack_*_same`, melding asks the meld hooks, and "do these print the same
+# value" with no dispatch at all is `printed_same`. The checks below moved with them.
 # ==============================================================================
 func run_predicate_tests() -> void:
 	behavior_section("SECTION 2: PREDICATES")
@@ -114,10 +121,10 @@ func run_predicate_tests() -> void:
 	var b := PipRankNumeral.new().with_value(9)
 	var c := PipRankNumeral.new().with_value(8)
 
-	check(await PipComparator.is_rank_same(a, a), "is_rank_same identity")
-	check(await PipComparator.is_rank_same(a, b), "is_rank_same equal values, distinct objects")
-	check(not await PipComparator.is_rank_same(a, c), "is_rank_same 9 vs 8 false")
-	check_impl(not await PipComparator.is_rank_same(null, a), "is_rank_same null false")
+	check(PipComparator.printed_same(a, a), "printed_same identity")
+	check(PipComparator.printed_same(a, b), "printed_same equal values, distinct objects")
+	check(not PipComparator.printed_same(a, c), "printed_same 9 vs 8 false")
+	check_impl(not PipComparator.printed_same(null, a), "printed_same null false")
 
 	check(await PipComparator.is_rank_next_to(a, c), "is_rank_next_to 9,8 (diff +1) true")
 	check(not await PipComparator.is_rank_next_to(c, a), "is_rank_next_to 8,9 (diff -1) false")
@@ -127,17 +134,17 @@ func run_predicate_tests() -> void:
 
 	var h1 : PipSuit = PipSuitKnife.new()
 	var h2 : PipSuit = PipSuitKnife.new()
-	check(await PipComparator.is_suit_same(h1, h1), "is_suit_same identity")
-	check(await PipComparator.is_suit_same(h1, h2), "is_suit_same same class (nominal)")
-	check(not await PipComparator.is_suit_same(h1, PipSuitBall.new()),
-			"is_suit_same different class false")
-	check_impl(not await PipComparator.is_suit_same(null, h1), "is_suit_same null false")
+	check(PipComparator.printed_same(h1, h1), "printed_same suit identity")
+	check(PipComparator.printed_same(h1, h2), "printed_same same suit class (nominal)")
+	check(not PipComparator.printed_same(h1, PipSuitBall.new()),
+			"printed_same different suit class false")
+	check_impl(not PipComparator.printed_same(null, h1), "printed_same null suit false")
 	var wa := WeirdSuit.with_id(0)
-	check_impl(await PipComparator.is_suit_same(wa, wa), "is_suit_same identity (parameterized) true")
-	check_impl(await PipComparator.is_suit_same(WeirdSuit.with_id(5), WeirdSuit.with_id(5)),
-			"is_suit_same same id (same name) true")
-	check_impl(not await PipComparator.is_suit_same(WeirdSuit.with_id(1), WeirdSuit.with_id(2)),
-			"is_suit_same distinct ids false")
+	check_impl(PipComparator.printed_same(wa, wa), "printed_same identity (parameterized) true")
+	check_impl(PipComparator.printed_same(WeirdSuit.with_id(5), WeirdSuit.with_id(5)),
+			"printed_same same id (same name) true")
+	check_impl(not PipComparator.printed_same(WeirdSuit.with_id(1), WeirdSuit.with_id(2)),
+			"printed_same distinct ids false")
 
 	check(PipComparator.is_ace(PipRankNumeral.new().with_value(1)), "is_ace value 1 true")
 	check(PipComparator.is_ace(PipRankNumeral.new().with_value(1.0)), "is_ace 1.0 float true")
@@ -190,7 +197,10 @@ func run_mod_override_tests() -> void:
 	#override wins over default math (BEHAVIOR: rules cards CAN rewrite comparisons)
 	spy.rank_result = 0.0
 	check_behavior(await PipComparator.compare_ranks(r9, r2) == 0.0, "mod override: ranks 9,2 -> 0")
-	check_behavior(await PipComparator.is_rank_same(r9, r2), "is_rank_same true under 'all same' mod")
+	#S21: the ORDERING hook no longer answers any SAMENESS question — the delta it returns is
+	#all it governs, and `printed_same` (no dispatch) is what silence falls through to.
+	check_behavior(not PipComparator.printed_same(r9, r2),
+			"printed_same ignores the ordering mod entirely: 9 and 2 still print differently")
 	check((spy.last_rank_args.size() == 2 and spy.last_rank_args[0] == r9 and spy.last_rank_args[1] == r2) as bool,
 			"hook receives TWO pip args, not one array (vararg regression)",
 			str(spy.last_rank_args))
@@ -244,7 +254,7 @@ func run_mod_override_tests() -> void:
 #
 # ⚠ **SECTION 4 PROVES THE MOD REACHES `PipComparator`. IT DOES NOT PROVE IT REACHES THE SCORE** —
 # and those are different claims with a whole hand-building engine between them. `Scoring` reads
-# ranks and suits through `is_rank_same` / `is_suit_same`, so a mod that rewrites comparison must
+# ranks and suits through the MELD hooks, so a mod that rewrites comparison must
 # change WHICH HAND a set of cards forms, not merely what a comparison returns. Nothing asserted
 # that, which is todo.md's G1: *"end-to-end scoring under an active comparator mod"*.
 #
@@ -282,7 +292,7 @@ func run_end_to_end_scoring_under_mod() -> void:
 	# It is not a dispatch failure — the hooks fire, as section 4 proves. There are simply TWO
 	# representations of "are these the same?" and only one of them is overridable:
 	#
-	#   * PAIRWISE — `compare_ranks` / `is_rank_same` / `is_suit_same`, which the hooks DO override,
+	#   * PAIRWISE — `compare_ranks`, which the ordering hooks DO override,
 	#     and which `Scoring.is_flush` calls. This is also the path the placement legality query
 	#     uses, so the hooks are live in the game today.
 	#   * PROFILE — `get_rank_profile(card.rank)` / `get_suit_profile(card.suit)` in
@@ -313,11 +323,12 @@ func run_end_to_end_scoring_under_mod() -> void:
 	var ranked_types : Array[Scoring.MELD_TYPE] = ranked[0].types if not ranked.is_empty() \
 			else [] as Array[Scoring.MELD_TYPE]
 	check(not ranked_types.has(Scoring.MELD_TYPE.X_OF_KIND),
-			"G1 PINNED: a rank mod does NOT regroup the hand (grouping uses get_rank_profile, "
-			+ "not the pairwise hook) — change this only with an owner ruling",
+			"G1 PINNED: an ORDERING rank hook cannot regroup the hand — melding has its own hooks "
+			+ "and there is no fallback between situations (QR3=c, Q62=a). GATE 3 in section 7 is "
+			+ "where a real MELD rank rule makes the set",
 			"got '%s' %s" % [ranked[0].name if not ranked.is_empty() else "<none>", str(ranked_types)])
 	check(not ranked.is_empty() and ranked[0].score == plain[0].score,
-			"G1 PINNED: and the score is therefore unchanged by the rank mod",
+			"G1 PINNED: and the score is therefore unchanged by the ordering hook",
 			"modded %d vs plain %d"
 			% [ranked[0].score if not ranked.is_empty() else -1, plain[0].score])
 
@@ -1028,7 +1039,7 @@ func run_straights_and_classification() -> void:
 	check(is_nan(bounds.x) and is_nan(bounds.y),
 			"Q72(b): a card may BREAK the wrap-around cycle outright", "got %s" % str(bounds))
 	var wrapless := Scoring.MultiStraightHandler._positions_for(sev_profile, [] as Array[float])
-	check((await Scoring.MultiStraightHandler._scan_wrap(wrapless)).is_empty(),
+	check(Scoring.MultiStraightHandler._scan_wrap(wrapless, bounds).is_empty(),
 			"Q72(b): and with it broken the wrap walk finds nothing — no run crosses the top")
 
 	# --- GATE 5: a suit rule forms a flush, and is_flush AGREES on the same cards -----------
@@ -1370,7 +1381,8 @@ func run_one_card_one_step() -> void:
 			+ "positions, not copies (QR5=a is still out of scope)",
 			"run of %d used %d cards twice" % [linear.size(), repeated])
 
-	var wrap := await Scoring.MultiStraightHandler._scan_wrap(positions)
+	var wrap := Scoring.MultiStraightHandler._scan_wrap(positions,
+			await PipComparator.get_wrap_bounds())
 	var wseen : Array[CardData] = []
 	var wrepeat := 0
 	for c : CardData in wrap:
@@ -1389,6 +1401,282 @@ func run_one_card_one_step() -> void:
 
 	remove_child(env)
 	env.free()
+
+# ==============================================================================
+# SECTION 13 (GATE 8, S22): THE STACKING SITUATION
+#
+# ⚠ **THIS FILE CONTAINED THE STRING "stack" ZERO TIMES BEFORE THIS SECTION.** The stack hooks
+# shipped as contract constants and documentation with NOTHING in production asking them, while
+# the placer and grabber still routed "same suit?" through `on_compare_suits` — the ORDERING
+# hook. That is exactly the cross-situation reuse QR3(c)/Q62(a) removed and the owner's Q97 note
+# named: *"you cannot directly reuse a card with a meld hook for stuff like stacking hooks."*
+#
+# **GATE 8 is the pair of checks in the middle**: a stack deny rule flips a placement from legal
+# to illegal, and the SAME predicate implemented as a MELD hook leaves that placement alone.
+# ==============================================================================
+
+class StackDenyAllSuits extends CardModifierSkill:
+	func get_str() -> String: return "StackDenyAllSuits"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_stack_suits_deny(_s1: PipSuit, _s2: PipSuit) -> bool: return true
+
+## The same predicate on the MELD hook. Melding must change; stacking must not.
+class MeldDenyAllSuits extends CardModifierSkill:
+	func get_str() -> String: return "MeldDenyAllSuits"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_meld_suits_deny(_s1: PipSuit, _s2: PipSuit) -> bool: return true
+
+## "Every suit is the same" for STACKING — the placer forbids repeated suits, so this makes a
+## previously LEGAL pairing illegal from the allow side.
+class StackAllowAllSuits extends CardModifierSkill:
+	func get_str() -> String: return "StackAllowAllSuits"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_stack_suits_allow(_s1: PipSuit, _s2: PipSuit) -> bool: return true
+
+func run_stacking_situation() -> void:
+	behavior_section("SECTION 13 (GATE 8): STACKING LEGALITY HAS ITS OWN HOOKS")
+	var env := FakeEnvironment.new()
+	add_child(env)
+
+	# two DIFFERENT suits: `stack_suits_same` is false by printed values (Q81=a)
+	var s_a : PipSuit = PipSuitTest.with_id(940)
+	var s_b : PipSuit = PipSuitTest.with_id(941)
+	check(not await PipComparator.stack_suits_same(s_a, s_b),
+			"stacking: with no rule, two distinct suits are NOT the same — printed values decide")
+	check(await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
+			"stacking: and two of the same printed suit ARE")
+
+	# --- an ALLOW rule merges them, which is what the placer reads as "repeated suit" ---------
+	var carrier : Array[CardData] = [CardData.new()]
+	env.card_collections.append(carrier)
+	var allow_skill := StackAllowAllSuits.new()
+	carrier[0].skill = allow_skill
+	allow_skill.data = carrier[0]
+	allow_skill.spotlit = true
+	check(await PipComparator.stack_suits_same(s_a, s_b),
+			"stacking: a stack ALLOW rule makes two distinct suits count as the same (Q83=a)")
+
+	# --- GATE 8, half one: a stack DENY rule beats the allow, and printed sameness ------------
+	var deny_skill := StackDenyAllSuits.new()
+	carrier[0].skill = deny_skill
+	deny_skill.data = carrier[0]
+	deny_skill.spotlit = true
+	check(not await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
+			"GATE 8: a stack DENY rule splits even two IDENTICAL printed suits — deny beats "
+			+ "allow and beats printed values (Q84=a, Q82=a)")
+
+	# --- GATE 8, half two: the SAME predicate as a MELD hook does NOT reach stacking ----------
+	# ⚠ This is the whole point of QR3(c): one hook per situation, no fallback between them.
+	var meld_skill := MeldDenyAllSuits.new()
+	carrier[0].skill = meld_skill
+	meld_skill.data = carrier[0]
+	meld_skill.spotlit = true
+	check(await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
+			"GATE 8: the SAME rule on the MELD hook leaves stacking untouched — a card wanting "
+			+ "both implements both (Q62=a, Q97)")
+	var hand : Array[CardData] = [
+		TestFactories.m_card(5, 940), TestFactories.m_card(6, 940),
+		TestFactories.m_card(7, 940), TestFactories.m_card(8, 940),
+		TestFactories.m_card(9, 940)]
+	var profile := await Scoring._get_hand_profiles_async(hand)
+	check(profile.suits.classes.size() == 5,
+			"GATE 8: ...while that same meld rule DOES split the suit classes it was asked about",
+			"%d suit classes from 5 one-suit cards" % profile.suits.classes.size())
+
+	# --- Q5(a): an unspotlit skill's stacking rule is dormant ---------------------------------
+	deny_skill.spotlit = false
+	carrier[0].skill = deny_skill
+	check(await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
+			"stacking: an UNSPOTLIT skill's stack rule is dormant, like every other skill effect")
+
+	# --- and the rank pair exists too, though the shipped rules cards use adjacency -----------
+	# ⚠ Rank ADJACENCY deliberately still goes through `compare_ranks` (Q55=a): "one step away"
+	# is a scalar, not a sameness question. This asserts the SAMENESS pair is wired anyway.
+	env.card_collections.clear()
+	check(await PipComparator.stack_ranks_same(PipRankNumeral.new().with_value(4),
+			PipRankNumeral.new().with_value(4)),
+			"stacking: the rank pair is wired too — printed 4s are the same with no rule")
+
+	# --- S26: the isolation runs BOTH WAYS ---------------------------------------------------
+	# ⚠ GATE 8 proved a MELD rule does not reach stacking. The converse had no test: nothing
+	# proved a STACK rule leaves MELDING alone. The mechanism is symmetric by construction —
+	# different hook-name constants — but every other claim in this work carries its paired
+	# control, and "symmetric by construction" is exactly the kind of reasoning that left the
+	# stack hooks inert for a whole phase.
+	var iso_hand : Array[CardData] = [
+		TestFactories.m_card(3, 950), TestFactories.m_card(3, 951),
+		TestFactories.m_card(8, 950), TestFactories.m_card(8, 952),
+		TestFactories.m_card(11, 951)]
+	env.card_collections.clear()
+	var control_profile := await Scoring._get_hand_profiles_async(iso_hand)
+	var control_suits := _partition_fingerprint(control_profile, false)
+	var control_ranks := _partition_fingerprint(control_profile, true)
+	var control_score := await Scoring.PokerHands.score(iso_hand)
+
+	var iso_skill := StackDenyAllSuits.new()
+	var iso_card := CardData.new()
+	iso_card.skill = iso_skill
+	iso_skill.data = iso_card
+	iso_skill.spotlit = true
+	env.card_collections.append([iso_card] as Array[CardData])
+	check_impl(not await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
+			"S26 precondition: the stack rule really is live")
+	var under_stack := await Scoring._get_hand_profiles_async(iso_hand)
+	check(_partition_fingerprint(under_stack, false) == control_suits,
+			"S26: a stack deny rule that would shatter EVERY suit leaves the suit partition "
+			+ "byte-identical to no rule at all",
+			"%s vs %s" % [_partition_fingerprint(under_stack, false), control_suits])
+	check(_partition_fingerprint(under_stack, true) == control_ranks,
+			"S26: ...and the rank partition too",
+			"%s vs %s" % [_partition_fingerprint(under_stack, true), control_ranks])
+	var stacked_score := await Scoring.PokerHands.score(iso_hand)
+	check(stacked_score[0].name == control_score[0].name
+			and stacked_score[0].score == control_score[0].score,
+			"S26: so the hand scores exactly as it did unmodded — stacking rules are invisible "
+			+ "to melding, which is the other half of GATE 8's claim",
+			"'%s'/%d vs '%s'/%d" % [stacked_score[0].name, stacked_score[0].score,
+					control_score[0].name, control_score[0].score])
+
+	remove_child(env)
+	env.free()
+
+# ==============================================================================
+# SECTION 14: THE ROSTER ENTRIES THAT PINNED AN ANSWER AND HAD NO TEST
+#
+# ⚠ Found by auditing PLAN §3's named doubles against the suite. Most of the "missing" names were
+# shipped under other names (`NeverSame` is `DenyNever`, `DenyTwoSevens` is `DenyThrees`,
+# `AliasingMod` is `IdentityPartition`, `RedWagonRuns` is `ExtraValues`) and one is obsolete
+# (`LyingUncacheable` — GAP-003 deleted the opt-out it lied about). These four were genuinely
+# absent, and each pins a CONFIRMED ANSWER rather than a nice-to-have.
+# ==============================================================================
+
+## `WithinOne` — the non-transitive rule Q2 is about: 1↔2 and 2↔3, but NOT 1↔3.
+class WithinOne extends CardModifierType:
+	func get_str() -> String: return "WithinOne"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_meld_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return absf(float(r1.value) - float(r2.value)) <= 1.0
+
+## `ParityMatch` — merges odds with odds and evens with evens: TWO classes, not one.
+class ParityMatch extends CardModifierType:
+	func get_str() -> String: return "ParityMatch"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_meld_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return int(r1.value) % 2 == int(r2.value) % 2
+
+## `UnrelatedHook` — implements a hook that has nothing to do with comparison. The gate must not
+## fire for it, and it must not be mistaken for an implementer of anything.
+class UnrelatedHook extends CardModifierType:
+	var scored := 0
+	func get_str() -> String: return "UnrelatedHook"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_score() -> void: scored += 1
+
+## A whole-hand rule whose answer depends on LIVE BOARD STATE — the Turk / Humbug shape. Q42(a)
+## says these are never memoised precisely because of this.
+class BoardDependentGroup extends CardModifierType:
+	var merge_everything := false
+	func get_str() -> String: return "BoardDependentGroup"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
+		if not merge_everything: return groups
+		var one : Array[CardData] = cards.duplicate()
+		return [one] as Array[Array]
+
+func run_roster_gaps() -> void:
+	behavior_section("SECTION 14: ROSTER ENTRIES THAT PINNED AN ANSWER")
+	var env := FakeEnvironment.new()
+	add_child(env)
+	var carrier : Array[CardData] = [CardData.new()]
+	env.card_collections.append(carrier)
+
+	# --- Q2(a): a NON-TRANSITIVE rule still yields ONE group, and the answer does not depend
+	# on which pair the engine happened to check first. This is what union-find is FOR, and the
+	# closure's whole reason to exist had no test.
+	var chain : Array[CardData] = [
+		TestFactories.m_card(1, 930), TestFactories.m_card(2, 931), TestFactories.m_card(3, 932)]
+	carrier[0].with_type(WithinOne.new())
+	var chained := await Scoring._get_hand_profiles_async(chain)
+	check(chained.ranks.classes.size() == 1 and chained.ranks.classes[0].datas.size() == 3,
+			"Q2(a) `WithinOne`: 1-2-3 under a non-transitive 'within 1' rule CHAINS into one "
+			+ "class — the answer is defined, not dependent on probe order",
+			"%d classes" % chained.ranks.classes.size())
+	# and reversing the hand order must not change it (the "two identical boards" clause)
+	var reversed_chain : Array[CardData] = [chain[2], chain[1], chain[0]]
+	var rev := await Scoring._get_hand_profiles_async(reversed_chain)
+	check(rev.ranks.classes.size() == 1,
+			"Q2(a): and the same cards in the opposite order close to the same single class")
+
+	# --- `ParityMatch`: the closure must not OVER-merge — two classes, not one ---------------
+	var parity : Array[CardData] = [
+		TestFactories.m_card(2, 930), TestFactories.m_card(4, 931),
+		TestFactories.m_card(3, 932), TestFactories.m_card(5, 933)]
+	carrier[0].with_type(ParityMatch.new())
+	var parted := await Scoring._get_hand_profiles_async(parity)
+	check(parted.ranks.classes.size() == 2,
+			"`ParityMatch`: odds and evens close into TWO classes — the closure merges what the "
+			+ "rule joins and nothing more",
+			"%d classes" % parted.ranks.classes.size())
+
+	# --- `UnrelatedHook`: a card implementing something else entirely must not trip the gate --
+	var unrelated := UnrelatedHook.new()
+	carrier[0].with_type(unrelated)
+	check(not env.any_pair_implementer(PipComparator.MELD_RANKS_DENY,
+			PipComparator.MELD_RANKS_ALLOW),
+			"`UnrelatedHook`: a card implementing an unrelated hook is NOT a comparator "
+			+ "implementer — the identity path stays taken")
+	var untouched := await Scoring._get_hand_profiles_async(parity)
+	check(untouched.ranks.classes.size() == 4,
+			"`UnrelatedHook`: so the partition is the plain one-class-per-value identity",
+			"%d classes" % untouched.ranks.classes.size())
+
+	# --- Q42(a): a board-reading whole-hand rule is NEVER memoised across passes --------------
+	# ⚠ The Turk reads the card beneath it and Humbug reads its row, so their answers change
+	# without any pair verdict changing. If stage 1 were memoised like stage 0, the second pass
+	# would replay the first pass's board.
+	var live := BoardDependentGroup.new()
+	carrier[0].with_type(live)
+	live.merge_everything = false
+	var before := await Scoring._get_hand_profiles_async(parity)
+	live.merge_everything = true
+	var after := await Scoring._get_hand_profiles_async(parity)
+	check(before.ranks.classes.size() == 4 and after.ranks.classes.size() == 1,
+			"Q42(a): a whole-hand rule reading LIVE board state is re-run every pass — the same "
+			+ "cards regroup when the state it reads changes, with no verdict changing",
+			"%d classes then %d" % [before.ranks.classes.size(), after.ranks.classes.size()])
+
+	remove_child(env)
+	env.free()
+
+## A partition rendered as a stable string: class keys and their members, in class order. What
+## "byte-identical" means for S26 — comparing counts alone would miss a reshuffle that preserved
+## them, which is the only interesting way this could break.
+func _partition_fingerprint(profile: Scoring.HandProfile, ranks: bool) -> String:
+	var parts : Array[String] = []
+	if ranks:
+		for cls : Scoring.RankClass in profile.ranks.classes:
+			var ids : Array[int] = []
+			for c : CardData in cls.datas: ids.append(c.get_instance_id())
+			ids.sort()
+			parts.append("%s%s|%s" % [cls.key, "*" if cls.mixed else "", str(ids)])
+	else:
+		for cls : Scoring.SuitClass in profile.suits.classes:
+			var ids : Array[int] = []
+			for c : CardData in cls.datas: ids.append(c.get_instance_id())
+			ids.sort()
+			parts.append("%s%s|%s" % [cls.key, "*" if cls.mixed else "", str(ids)])
+	parts.sort()
+	return " ".join(parts)
 
 ## Gives EVERY card a second rank value — the shape that used to detonate the search.
 class AllCardsExtraValue extends CardModifierType:

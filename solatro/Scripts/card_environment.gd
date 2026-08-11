@@ -170,82 +170,72 @@ func return_first_compare_mod_result(function: StringName, ...params:Array) -> f
 	return NAN
 
 # ==============================================================================
-# THE TWO-PASS SAMENESS QUESTION, AND ITS CACHE
-#    (comparator_buckets DESIGN charts D and I, PLAN §1.2 / §1.8)
+# THE COMPARATOR SURFACE'S DISPATCH (comparator_buckets DESIGN charts D and I)
+# ⚠ The verdict cache is NOT here: it lives on PipComparator and is scoped to the scoring pass
+# (owner ruling, gaps/GAP-003.md). The SE1 implementer cache below is a different question with
+# a different lifetime — "does anything implement this hook", not "what did it answer".
 # ==============================================================================
 
-## ⚠ **THE VERDICT CACHE LIVES ON `PipComparator`, NOT HERE, AND IT IS SCOPED TO THE SCORING
-## PASS** (owner ruling, `design/comparator_buckets/gaps/GAP-003.md`). A board-revision cache
-## used to live here alongside a `compare_uncacheable` opt-out and a spotlight-epoch key; all
-## three are gone. A rule's answer is fixed for the HAND, which is both the right scope — one
-## scored line rebuilds its profile several times, so anything looser lets the straight scan
-## and the flush scan see different partitions of the same cards — and the reason nothing needs
-## to opt out any more. The SE1 implementer cache below is unaffected: "does anything implement
-## this hook" is a different question with a different lifetime.
+## Shared empty result, so the overwhelmingly common "nothing implements this" answer costs no
+## allocation on a path asked once per pair per pass. ⚠ Never mutate it.
+const _NO_IMPLEMENTERS : Array[CardModifier] = []
 
-## C3/C4: does anything on the board implement EITHER pass of this situation? On Game this is
-## a dictionary lookup (the SE1 implementer cache). When it answers NO, profiling takes the
-## identity path — zero dispatches, byte-identical to the buckets that preceded this feature,
-## which is the whole safety argument for the change.
-func any_pair_implementer(deny: StringName, allow: StringName) -> bool:
-	return not _compare_implementers(deny).is_empty() \
-			or not _compare_implementers(allow).is_empty()
-
-## The WHOLE-HAND grouping rules on this board, in BOARD ORDER (Q10=a), with unspotlit skills
-## already dropped (Q5=a). Any board or rules card's hook applies whether or not its own card
-## is in the hand being scored (Q18=a) — it is a rule, not a participant.
-## ⚠ Unlike the pair passes there is no stopping at the first answer: a whole-hand rule is a
-## rewrite, not a vote, and each one sees what the previous one left (Q16=a).
-func group_rule_implementers(hook: StringName) -> Array[CardModifier]:
+## Every implementer of `hook` that may act right now: board order (Q10=a), unspotlit skills
+## dropped (Q5=a). ⚠ The ONE walk every helper below shares — the spotlit gate lived in four
+## copies before. A rule applies whether or not its own card is in the hand (Q18=a).
+func active_implementers(hook: StringName) -> Array[CardModifier]:
+	var all := _compare_implementers(hook)
+	if all.is_empty(): return _NO_IMPLEMENTERS
 	var out : Array[CardModifier] = []
-	for mod : CardModifier in _compare_implementers(hook):
+	for mod : CardModifier in all:
 		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
 		out.append(mod)
 	return out
 
-## First implementer wins, its answer returned verbatim; null when nothing implements `hook`.
-## The Q84 shape for hooks whose answer is NOT a boolean pass — the wrap bounds. Skills gated
-## on spotlit (Q5=a).
+## ⚠ **HOIST OUT OF PER-CARD AND PER-ITERATION LOOPS.** A dictionary lookup on Game, but base
+## environments (tests, map) return an empty revision key, so `_compare_implementers` caches
+## nothing and WALKS EVERY BOARD CARD.
+func has_implementer(hook: StringName) -> bool:
+	return not _compare_implementers(hook).is_empty()
+
+## C3/C4: does either pass of this situation have an implementer? When no, profiling takes the
+## identity path — zero dispatches, byte-identical to the buckets this replaced.
+func any_pair_implementer(deny: StringName, allow: StringName) -> bool:
+	return has_implementer(deny) or has_implementer(allow)
+
+## First implementer wins, answer returned verbatim; null when nothing implements `hook`.
+## The Q84 shape for hooks whose answer is not a boolean pass — the wrap bounds.
 func return_first_mod_variant(hook: StringName, ...params: Array) -> Variant:
-	for mod : CardModifier in _compare_implementers(hook):
-		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+	for mod : CardModifier in active_implementers(hook):
 		var result : Variant = await Callable(mod, hook).callv(params)
 		_note_mod_fired(mod, hook, false)
 		return result
 	return null
 
-## EVERY implementer's answer, in board order — for hooks whose answers COMPOSE rather than
-## take precedence. Extra rank values are class MEMBERSHIPS, not a scalar verdict, so a second
-## card offering another value must not be silenced by the first.
+## EVERY implementer's answer — for hooks whose answers COMPOSE rather than take precedence.
+## Extra rank values are class MEMBERSHIPS, not a scalar verdict, so a second card offering
+## another value must not be silenced by the first.
 func collect_mod_results(hook: StringName, ...params: Array) -> Array:
 	var out : Array = []
-	for mod : CardModifier in _compare_implementers(hook):
-		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+	for mod : CardModifier in active_implementers(hook):
 		out.append(await Callable(mod, hook).callv(params))
 		_note_mod_fired(mod, hook, false)
 	return out
 
-## Q89(b): is this CardData actually somewhere in this environment's collections? THE check
-## that lets a grouping rule PULL a board card into a meld while refusing to let it INVENT
-## one — and that refusal is what keeps multiplicity (QR5=a, DEFERRED D1) genuinely out of
-## scope rather than reachable through the back door.
+## Q89(b): is this CardData somewhere in this environment's collections? THE check that lets a
+## grouping rule PULL a board card into a meld while refusing to let it INVENT one — the refusal
+## that keeps multiplicity (QR5=a, DEFERRED D1) out of scope rather than reachable sideways.
 func has_card_data(data: CardData) -> bool:
 	if not data: return false
 	for d in CardDataIterator.new(self):
 		if d == data: return true
 	return false
 
-## ONE pass of the two-pass sameness question (PLAN §1.2). Every implementer of `hook` in
-## board order; the FIRST true ANSWERS and STOPS the pass (Q84=a) — the rest are never asked,
-## so their side effects do not fire and they do not feed the patience counter. Skills are
-## skipped while not spotlit (Q5=a).
-## ⚠ Callers go through `PipComparator.ask_pass`, which memoises the answer for the hand — this
-## is the raw dispatch and does not remember anything.
+## ONE pass of the two-pass sameness question (PLAN §1.2): the FIRST true answers and STOPS the
+## pass (Q84=a), so later rules are never asked and do not feed the patience counter.
+## ⚠ Raw dispatch — callers go through `PipComparator.ask_pass`, which memoises for the hand.
 func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> bool:
-	var impl := _compare_implementers(hook)
-	if impl.is_empty(): return false
-	for mod : CardModifier in impl:
-		if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+	for mod : CardModifier in active_implementers(hook):
 		var verdict : bool = await Callable(mod, hook).call(a, b)
 		_note_mod_fired(mod, hook, false)
 		if verdict: return true

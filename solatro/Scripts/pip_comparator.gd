@@ -55,18 +55,11 @@ static func compare_suits(s1: PipSuit, s2: PipSuit) -> float:
 	return NAN
 
 
-## Returns true if two suit references belong to one logical color or tracking group.
-static func is_suit_same(s1: PipSuit, s2: PipSuit) -> bool:
-	if not s1 or not s2: return false
-	if s1 == s2: return true
-
-	var env := CardEnvironment.CURRENT
-	var mod_result : float = (await env.return_first_compare_mod_result(&"on_compare_suits", s1, s2)) if env else NAN
-	if not is_nan(mod_result): return is_equal_approx(mod_result, 0.0)
-
-	# Nominal identity: same class + same name. One parameterized test-suit class can thus
-	# stand in for unlimited distinct suits; real suits have a constant get_str() per class.
-	return s1.get_script() == s2.get_script() and s1.get_str() == s2.get_str()
+# ⚠ **`is_suit_same` / `is_rank_same` ARE GONE** — they answered a sameness question through the
+# ORDERING hooks, the cross-situation reuse Q62(a) removed. Ask what you actually mean:
+#   * stacking legality → `stack_suits_same` / `stack_ranks_same`;
+#   * melding → `pair_is_same` with the MELD hooks, via the profile closures;
+#   * same printed value, no dispatch → `printed_same`.
 
 
 # ==============================================================================
@@ -86,20 +79,6 @@ static func compare_ranks(r1: PipRank, r2: PipRank) -> float:
 		[var a, var b] when "value" in a and "value" in b:
 			return a.value - b.value
 	return NAN
-
-
-## Returns true if two ranks map to the same denomination bucket.
-static func is_rank_same(r1: PipRank, r2: PipRank) -> bool:
-	if not r1 or not r2: return false
-	if r1 == r2: return true
-	
-	var diff := await compare_ranks(r1, r2)
-	if not is_nan(diff) and is_equal_approx(diff, 0.0): 
-		return true
-		
-	# TODO(half-step ranks): a half-step rank should also equal both neighbors
-	# (|v1 - v2| == 0.5) — no HalfStepRank class yet.
-	return false
 
 
 ## Decouples geometric bucket allocation from hardcoded class profiles.
@@ -252,79 +231,95 @@ static func printed_same(a: Variant, b: Variant) -> bool:
 
 # ==============================================================================
 # THE PASS MEMO — a rule's answer is fixed for the HAND (owner ruling, gaps/GAP-003.md)
-# ------------------------------------------------------------------------------
-# > *"If a hand is chosen and is about to be scored, the random rule should already have been
-# > decided before the meld finding happens. Its not like the random rule will change whether
-# > looking for a straight vs flush or whatever. In that case, all rules can be cached always
-# > and be deterministic per hand, no need for some cases to be uncached."*
-#
-# The unit is the SCORING PASS. Every rule is asked at most once per distinct key pair per
-# hand, and its answer is fixed for that hand — so a rule consulting randomness has already
-# been decided before meld finding starts, and there is nothing left for an opt-out to opt out
-# of. `compare_uncacheable` is gone, and so is the board-revision verdict cache it existed to
-# make safe (⚠ that one also cached NOTHING in base environments, so tests exercised a path
-# the game never took; this one is identical everywhere).
-#
-# ⚠ **THE SCOPE IS WHY THIS IS CORRECT, NOT MERELY FASTER.** One scored line rebuilds its
-# profile several times (DEFERRED.md E3), so without a pass-wide memo the straight scan and
-# the flush scan could form two different partitions OF THE SAME CARDS.
-#
-# Re-entrancy shares the memo rather than nesting a new one: a skill scoring from inside
-# scoring (`skill_eval_poker_best`) is part of the same decision, and Q15(b) allows it without
-# bound, so a depth counter is what keeps the scope open until the outermost caller is done.
+# ⚠ **THE SCOPE IS CORRECTNESS, NOT SPEED.** One scored line rebuilds its profile several times
+# (DEFERRED.md E3), so without a pass-wide memo the straight scan and the flush scan could form
+# two different partitions OF THE SAME CARDS. Re-entrancy shares the memo rather than nesting:
+# a skill scoring from inside scoring is part of the same decision (Q15=b), so the depth counter
+# keeps the scope open until the outermost caller finishes.
+# ==============================================================================
 static var _pass_memo : Dictionary = {}
 static var _pass_depth : int = 0
 
 ## Open a pass. Every profile build inside it sees one set of verdicts.
-## ⚠ Clearing at depth 0 is not redundant with `end_pass`: a coroutine ABANDONED mid-`await`
-## (a test freeing its environment while scoring is in flight) never reaches its `end_pass`,
-## which would strand the depth and carry one hand's verdicts into the next. This bounds that
-## to the abandoned pass instead of forever, and `pass_is_closed()` lets a suite assert it.
+## ⚠ Clearing at depth 0 is not redundant with `end_pass`: a coroutine abandoned mid-`await`
+## never reaches its `end_pass`, and this bounds the stranded depth to that pass instead of
+## carrying one hand's verdicts into the next. `pass_is_closed()` lets a suite assert it.
 static func begin_pass() -> void:
 	if _pass_depth == 0: _pass_memo.clear()
 	_pass_depth += 1
 
-## Every pass opened has been closed. A suite asserts this so a stranded depth — which would
-## silently share verdicts between hands — is loud instead of invisible.
+## Every pass opened has been closed — a suite asserts this, so a stranded depth is loud.
 static func pass_is_closed() -> bool:
 	return _pass_depth == 0
 
-## Close it; the memo is dropped when the OUTERMOST caller finishes, so the next hand re-asks.
+## Close it; the memo drops when the OUTERMOST caller finishes, so the next hand re-asks.
 static func end_pass() -> void:
 	_pass_depth = maxi(0, _pass_depth - 1)
 	if _pass_depth == 0: _pass_memo.clear()
 
 
 ## Is this pair the same, for the situation whose hooks are `deny` / `allow`? Chart D.
-## PASS 1 — every deny implementer in board order; the FIRST true forbids the pair outright
-##          and stops the pass (Q84=a). A deny beats printed sameness too (Q82=a), which is
-##          how a rule splits two ordinary 7s.
-## PASS 2 — every allow implementer in board order; the FIRST true merges the pair, stopping.
-## NEITHER — printed values decide, exactly as today (Q81=a).
-## Skills are skipped while not spotlit (Q5=a). Deny and allow are separate implementer
-## lists, each cached per board revision by the existing SE1 mechanism.
+## Deny pass first — the first true FORBIDS the pair (Q84=a), beating printed sameness too, which
+## is how a rule splits two ordinary 7s (Q82=a). Then allow — the first true MERGES. If neither
+## speaks, printed values decide (Q81=a).
 ## Asked once per DISTINCT PRINTED VALUE PAIR, never per card pair (Q1=a).
-static func pair_is_same(a: Variant, b: Variant, deny: StringName, allow: StringName) -> bool:
+## `memoise` false asks live every time — for questions answered OUTSIDE a scored hand, where a
+## remembered verdict would outlast the board state it was about (stacking legality, S21).
+static func pair_is_same(a: Variant, b: Variant, deny: StringName, allow: StringName,
+		memoise := true) -> bool:
 	var env := CardEnvironment.CURRENT
 	if env:
 		var a_key : Variant = pip_cache_key(a)
 		var b_key : Variant = pip_cache_key(b)
-		if await ask_pass(deny, a, b, a_key, b_key): return false
-		if await ask_pass(allow, a, b, a_key, b_key): return true
+		if await ask_pass(deny, a, b, a_key, b_key, memoise): return false
+		if await ask_pass(allow, a, b, a_key, b_key, memoise): return true
 	return printed_same(a, b)
 
 
 ## ONE pass of the two, memoised for the hand (GAP-003). The key is [hook, ordered key pair] —
 ## the order ASKED, never canonicalised, because nothing promises a rule is symmetric.
 static func ask_pass(hook: StringName, a: Variant, b: Variant,
-		a_key: Variant, b_key: Variant) -> bool:
+		a_key: Variant, b_key: Variant, memoise := true) -> bool:
 	var env := CardEnvironment.CURRENT
 	if not env: return false
+	#⚠ `memoise` is not the same test as `_pass_depth > 0`. Stage 1 runs INSIDE the scoring
+	#pass, so a grouping rule that asks a stacking question would otherwise have that verdict
+	#frozen for the rest of the hand — the opposite of what stack_*_same promises.
+	if not memoise: return await env.return_first_true_pair_result(hook, a, b)
 	var memo_key : Array = [hook, a_key, b_key]
 	if _pass_depth > 0 and _pass_memo.has(memo_key): return _pass_memo[memo_key]
 	var verdict := await env.return_first_true_pair_result(hook, a, b)
 	if _pass_depth > 0: _pass_memo[memo_key] = verdict
 	return verdict
+
+
+## STACK LEGALITY sameness — the same two passes as melding, over the STACK hooks (S21).
+## Q83(a) gives every SAMENESS situation its own deny/allow pair; Q62(a) and the owner's Q97 note
+## forbid a meld rule answering here, so a card wanting both implements both. Silence falls
+## through to printed values (Q81=a), and unspotlit skills are skipped (Q5=a) — both inside
+## `pair_is_same`.
+## ⚠ Rank ADJACENCY for a run still goes through `compare_ranks`: "is this one step away" is a
+## scalar, not a sameness question, and Q55(a) deliberately left ordering alone.
+## ⚠ NEVER memoised, and the `false` below is what enforces it: the board is live when a move is
+## being judged, and a grouping rule asking this from inside a scoring pass must not get a
+## verdict frozen for the rest of the hand.
+## ⚠ GATED like the profiling closures are (`scoring.gd` :811 / :948). A legality query runs on
+## every candidate placement, and `_compare_implementers` caches nothing in a base environment —
+## so reaching the two passes unconditionally walked the board twice per query for hooks no
+## shipped card implements. With the gate, the miss costs the gate alone.
+static func stack_suits_same(s1: PipSuit, s2: PipSuit) -> bool:
+	if not s1 or not s2: return false
+	var env := CardEnvironment.CURRENT
+	if not env or not env.any_pair_implementer(STACK_SUITS_DENY, STACK_SUITS_ALLOW):
+		return printed_same(s1, s2)
+	return await pair_is_same(s1, s2, STACK_SUITS_DENY, STACK_SUITS_ALLOW, false)
+
+static func stack_ranks_same(r1: PipRank, r2: PipRank) -> bool:
+	if not r1 or not r2: return false
+	var env := CardEnvironment.CURRENT
+	if not env or not env.any_pair_implementer(STACK_RANKS_DENY, STACK_RANKS_ALLOW):
+		return printed_same(r1, r2)
+	return await pair_is_same(r1, r2, STACK_RANKS_DENY, STACK_RANKS_ALLOW, false)
 
 
 ## Transitive closure over DISTINCT KEYS — never over card pairs (Q1=a, Q2=a), so the

@@ -181,11 +181,12 @@ repeated at the guard site in the code; read it before touching this.
 The *contents* of a card are pooled (polygons, per-slot controls, materials). **The card scene
 itself is not.** `ESTIMATE` — churn is visible in the code, its frame cost is not.
 
-### 4d. The bench that would have to exist
+### 4d. The benches — one that exists, one that does not
 
-`Tests/Visual/fx_cost.gd` is the template: an empty-scene floor, `WARMUP`/`FRAMES` averaging, a
-`_cpu_row` that times a real call in a loop against `Time.get_ticks_usec()`. A board bench would
-add rows for:
+**Scoring: `Tests/Engine/scoring_cost.tscn` exists** (numbers below). **The CARD LAYER bench does
+not**, and this is what it would need. `Tests/Visual/fx_cost.gd` is the template: an empty-scene
+floor, `WARMUP`/`FRAMES` averaging, a `_cpu_row` that times a real call in a loop against
+`Time.get_ticks_usec()`. A board bench would add rows for:
 
 - N cards at rest, rig autoplay ON vs OFF — isolates skinning + animation
 - N cards with `_process` on vs off — isolates §4b
@@ -194,6 +195,50 @@ add rows for:
 - an instantiate/free churn row — cards cycling in and out
 
 ⚠ It must obey trap 1: **assert something is actually drawn**, or a culled board will read fast.
+
+**The SCORING half of this now exists**: `Tests/Engine/scoring_cost.tscn` times
+`PokerHands.score` per scored line — the CPU path, not the card layer, so §4d's card-layer rows
+above are still unwritten.
+
+⚠⚠ **THE COMPARATOR WORK ROUGHLY DOUBLED THE COST OF THE PATH THAT RUNS TODAY.** No shipped card
+implements a meld hook, so every real game takes the "no rules" column — and that column is where
+the regression is. `MEASURED` on Box A, both columns in ONE session on the SAME box, current tree vs a `HEAD~1`
+worktree of the commit before `comparator plan implemented`.
+⚠ **Run-to-run spread is ~15%, not the ~1% two adjacent runs suggest.** Six samples of the
+30-card no-rules row read 9.00 / 9.12 / 9.14 / 9.19 / 10.43 / 11.32 ms; the two highest both
+followed a full suite run. Take a median of three on a settled machine, and read the RATIO —
+it survives the noise, the third decimal does not:
+
+| hand, NO rules | before | after | |
+|---|---|---|---|
+| 5 cards | 0.61 ms | 1.26 ms | **2.1x** |
+| 8 cards | 0.89 ms | 1.73 ms | **1.9x** |
+| 13 cards | 1.29 ms | 3.48 ms | **2.7x** |
+| 30 cards — the macro board | **5.01 ms** | **~9.15 ms** (median of six) | **1.8x** |
+
+The identity path was verified byte-identical in RESULTS and never in COST; this is that gap
+closed. Suspects, in the order worth measuring: the extra unconsumed CLASSIFICATION profile each
+consuming handler now builds (`ASSUMPTIONS.md` S14) — strictly more profile builds per line than
+before; `RankMap.find()` linear scans where a `Dictionary` lookup used to be; `distinct_keys()` and
+`position_count()` doing O(k²) `has()` walks; and per-call `begin_pass`/`end_pass` churn, which the
+doubled 5-card floor points at.
+
+With rules installed, same instrument, current tree only:
+
+| hand | no rules | + a rank-merging rule | + merging AND extra rank values |
+|---|---|---|---|
+| 8 cards | 1.7 ms | 3.1 ms | 5.9 ms |
+| 30 cards | 9.1 ms | 14.5 ms | 27.7 ms |
+
+⚠ **Read the multiplier, not the absolute.** The bench runs under `FakeEnvironment`, which is the
+SLOW environment by design — base environments return an empty revision key, so the implementer
+walk is uncached. A real `Game` caches it and is faster **by an unmeasured amount**, so these
+absolutes are an upper bound. What DOES transfer is the count: `Game.score_line` runs once per
+scored row AND column, and `skill_eval_poker_best` scores rows and columns again from inside
+scoring, so a 5x5 board is ~20 of these calls. **That is tens to hundreds of ms of submit — the
+range is honest, and narrowing it needs a real-`Game` row on this bench** (`test_game_headless.gd`
+already builds one headless). This is the first real evidence for
+`design/comparator_buckets/DEFERRED.md` E3, which until now was argued from arithmetic alone.
 
 ---
 

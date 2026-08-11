@@ -99,13 +99,13 @@ func on_meld_group_suits(cards: Array[CardData], groups: Array[Array]) -> Array[
 func on_meld_extra_rank_values(card: CardData) -> Array[float]
 func on_meld_wrap_bounds(low: float, high: float) -> Vector2
 
-# CACHE opt-out (§1.8) — a property, not a hook.
-var compare_uncacheable : bool = false
+# ⚠ NO `compare_uncacheable`. GAP-003 deleted it along with the board-revision cache it existed
+# to make safe; a verdict is fixed for the HAND, so there is nothing to opt out of (§1.8, S25).
 ```
 
 ⚠ The two existing hook names `on_compare_ranks` / `on_compare_suits` **keep their current meaning
-and their current callers** (`pip_comparator.gd:77`, `:47`). Nothing about ordering, sort or high
-card changes. Melding stops calling them.
+and their current callers** (`PipComparator.compare_ranks` / `compare_suits`). Nothing about
+ordering, sort or high card changes. Melding stops calling them, and so does stacking (S21).
 
 ### 1.2 The two passes (QR4=d, Q81=a, Q82=a, Q84=a, Q1=a)
 
@@ -123,7 +123,10 @@ The owner's QR4 answer, verbatim:
 ## PASS 2 — every allow implementer in board order; the FIRST true merges the pair, stopping.
 ## NEITHER — printed values decide, exactly as today (Q81=a).
 ## Skills are skipped while not spotlit (Q5=a). Deny and allow are separate implementer lists,
-## each cached per board revision by the existing SE1 mechanism.
+## each cached per board revision by the existing SE1 mechanism. ⚠ That is the IMPLEMENTER list
+## only; the VERDICTS are memoised per scoring pass instead — §1.8, GAP-003.
+## Stacking legality asks the same function with the STACK hooks, via
+## `stack_suits_same` / `stack_ranks_same` (S21).
 ## Asked once per DISTINCT PRINTED VALUE PAIR, never per card pair (Q1=a): pips printing the
 ## same value are interchangeable to the rule, exactly as they already share a bucket today.
 static func pair_is_same(a: Variant, b: Variant, deny: StringName, allow: StringName) -> bool
@@ -276,21 +279,26 @@ Q40(b) builds it now rather than waiting for a benchmark. The owner's Q41 answer
 
 > *"cache everything except cards that consult rng then"*
 
+⚠ **THE BLOCK THAT USED TO SIT HERE SPECIFIED CODE THAT WAS NEVER BUILT AND MUST NOT BE** —
+`compare_cache_get` / `compare_cache_put` on `CardEnvironment`, a board-revision key, a spotlight
+epoch and a `compare_uncacheable` opt-out. GAP-003 deleted all of it. A banner alone was not
+enough: a fenced contract under a banner still reads as a contract (review finding F5, step S25).
+What shipped, and what this section now specifies:
+
 ```gdscript
-## CardEnvironment — pair-verdict cache. Key: [deny/allow hook name, ordered key pair].
-## Invalidated when _revision_key() changes, exactly like the SE1 implementer cache, and ALSO
-## when any skill's spotlit flag flips (a spotlight epoch counter joins the key) — spotlit
-## changes without a revision bump (card_environment.gd:162) and a cached verdict would go stale.
-## Base environments (tests, map) return an empty revision key and are NEVER cached.
-##
-## OPT-OUT (Q90=a): `compare_uncacheable` is a property on CardModifier, read once per board
-## revision. If ANY implementer of the hook being asked is uncacheable, that hook's verdicts are
-## not stored at all for that revision.
-## A card that consults randomness and forgets to set it gets a stale answer for the rest of the
-## revision — a content bug like any other, not an engine guard (Q91=a).
-## WHOLE-HAND rules are NEVER cached (Q42=a): they read board state by design.
-func compare_cache_get(hook: StringName, a_key: Variant, b_key: Variant) -> Variant
-func compare_cache_put(hook: StringName, a_key: Variant, b_key: Variant, verdict: bool) -> void
+## PipComparator — the PASS memo. The unit is the SCORING PASS, not the board revision: one
+## scored line rebuilds its profile several times, so anything looser lets the straight scan and
+## the flush scan form different partitions OF THE SAME CARDS.
+## Key: [hook, a_key, b_key] in the order ASKED, never canonicalised — nothing promises a rule
+## answers (a, b) the way it answers (b, a).
+## Identical in every environment, including base ones. Re-entrancy SHARES the memo via a depth
+## counter, so a skill scoring from inside scoring is part of the same decision (Q15=b).
+## Nothing opts out: a rule consulting randomness was already decided before meld finding began.
+## WHOLE-HAND rules are still never memoised (Q42=a) — they read board state by design.
+static func begin_pass() -> void
+static func end_pass() -> void
+static func pass_is_closed() -> bool
+static func ask_pass(hook: StringName, a: Variant, b: Variant, a_key: Variant, b_key: Variant) -> bool
 ```
 
 ### 1.9 Pulled-in cards (Q14=d, Q87=a, Q88=a, Q89=b)
@@ -336,9 +344,14 @@ re-baselined.
 
 ### Phase 2 — stage 0: the two passes and the cache
 
-- **S3 — the hook surface.** (implements §1.1, QR3, Q62, Q97, Q80, Q83) Add the ten hook names and
-  `compare_uncacheable` to `Cards/card_modifier.gd` as documented no-ops. Leave
-  `on_compare_ranks/suits` untouched (Q55).
+- **S3 — the hook surface.** (implements §1.1, QR3, Q62, Q97, Q80) The hook spellings are declared
+  on `Cards/card_modifier.gd` **as comments, never as methods** — dispatch asks `has_method`, so a
+  real no-op would opt EVERY modifier in and the identity path (C4) could never be taken. The
+  original step said "as documented no-ops" and was wrong. No `compare_uncacheable`: GAP-003
+  deleted it. `on_compare_ranks/suits` untouched (Q55).
+  ⚠ **This step no longer claims Q83.** It declares names; Q83 asks that *every situation* actually
+  route through them, which is S21's job. The original citation is why `unclaimed` read 0 while the
+  stack hooks sat inert for a whole phase — see [[design-answers-need-a-claimant]].
 - **S4 — `pair_is_same`.** (implements D1, D2, D3, D4, D5, D6, D7, QR4, Q81, Q82, Q84, Q5) The two
   passes per §1.2, over deny/allow implementer lists, skills gated on spotlit.
 - **S5 — the closure.** (implements C5, Q1, Q2, Q3) Transitive closure over **distinct keys**, one
@@ -433,7 +446,91 @@ holds for any rule set by construction, so a failure is a real defect in the pip
 
 ---
 
+### Phase 7 — post-review fixes  ✅ LANDED
+
+⚠ **Added after an adversarial review of the commit "comparator plan implemented", which found
+phases 1–6 green — 31 suites, `test_scoring.gd` untouched, no assertion weakened anywhere — and
+one design-mandated piece never wired.** The review's own conclusion about fault: **F1 was this
+plan's omission, not the implementer's.** S3 said "add the hook names" and no step ever said "route
+stacking through them", so the surface was built exactly as written and left inert.
+
+**Stated in the past tense on purpose.** These steps describe what the code now does; the
+instructions they replaced described a bug that no longer exists, under a LANDED banner, which is
+its own trap for anyone reading before this plan is folded away.
+
+- **S21 — stacking legality goes through the STACK hooks.** (implements D9, D10, Q83, Q62, Q97, QR3, Q17)
+  `skill_placer_og_lower.gd:21` and `skill_grabber_og_lower.gd:21` call
+  `PipComparator.stack_suits_same`, which runs the same two passes as melding over
+  `on_stack_suits_deny` / `_allow`. ⚠ **`is_suit_same` and `is_rank_same` are DELETED**, not kept
+  as helpers: they answered a sameness question by dispatching the ORDERING hooks, and leaving the
+  familiar name in reach is what would re-create F1. Callers split three ways by what they mean —
+  `stack_*_same`, `pair_is_same` with the meld hooks, or `printed_same` with no dispatch at all.
+  Rank adjacency is untouched and still uses `compare_ranks` (Q55=a). Choice recorded in
+  `ASSUMPTIONS.md`.
+- **S22 — the stacking situation has a test section.** (implements D10, Q5, Q81, Q84)
+  `test_comparator.gd` section 13: silence falls to printed values; an allow rule merges distinct
+  suits; a deny rule splits two IDENTICAL printed suits (deny beats allow and beats printed
+  sameness); an unspotlit skill rule is dormant; and the same predicate on the MELD hook leaves
+  stacking alone **while still splitting the suit classes it was asked about** — the positive
+  control that makes the isolation claim mean something.
+- **S23 — the per-card hook asks are gated and hoisted.** (implements C3, C4, Q71)
+  `get_extra_rank_values` is asked once per profile build behind `has_implementer`, not once per
+  card; `get_wrap_bounds` is asked once per `_best_sequence_from_profiles` call, not once per
+  assignment. ⚠ The second was NOT in the review's finding and matters more: the assignment count
+  is a cartesian product, so a per-scan ask multiplied a full uncached board walk by it.
+  `has_implementer` carries the warning about base environments at its definition.
+- **S24 — the exit-time leak is not a regression.** (implements Q92) 4 ObjectDB instances at exit
+  before this work and 4 after, unchanged across every run. ⚠ **The baseline is a recollection, not
+  a retained artefact** — `test_output_all.log` is overwritten each run, so the pre-change figure
+  cannot be re-read. It agrees with two independent post-change runs and with commit `74be14c`
+  ("test leak found, was timer"). The intermittent canary +1 is a DIFFERENT measure and is **open,
+  not closed**: 0 in 8 runs after S23 is not evidence of a fix, because a timing-sensitive race
+  that stops firing when timing changes is still a race.
+- **S25 — §1.8 prints the contract that shipped.** (implements Q40, Q41, Q42) The dead
+  `compare_cache_get` / `compare_cache_put` block and §1.1's `compare_uncacheable` line are gone,
+  replaced by the pass-scoped memo. A fenced contract under a supersession banner still reads as a
+  contract.
+
+⚠ **GATE 8 — PASSED.** A stack deny rule splits two identical printed suits; the same rule on the
+meld hook leaves that question alone and splits suit classes instead. Full suite **31 suites, 2469
+checks, exit 0**, exit-time clean. (The check total drifts run to run because the fuzz suites
+randomise.)
+
+⚠ **NOT in Phase 7, deliberately.** The review's fourth finding — `PipComparator._pass_memo` is a
+static shared by depth, so two *concurrently suspended* scoring passes would pollute each other —
+has **no reproduction**. Everything awaits sequentially today and nested re-entrancy sharing the
+memo is the documented intent. It is risk R6 in §5, not a fix: inventing a guard for an unreachable
+state is how speculative complexity gets in.
+
+### Phase 8 — the residue of the second review  ✅ LANDED
+
+- **S26 — the isolation is asserted in BOTH directions.** (implements D10, Q62, Q97, Q83)
+  Section 13 proved a MELD rule does not reach stacking; it now also proves a **STACK** rule does
+  not reach melding. A stack deny rule that would shatter every suit leaves both partitions
+  byte-identical to the unmodded control — compared as class keys plus member identities, not
+  counts, since a reshuffle preserving counts is the only interesting way it could break — and the
+  hand scores the same.
+  ⚠ **The fuzz covered the validity of a partition under stack rules, never its INVARIANCE.** It
+  now carries invariant 13: a rule set whose every member touches only stacking (or nothing)
+  produces the unmodded fingerprint. The count of rounds that actually drew such a set is
+  REPORTED — ~50 of 400 — because an invariant that never runs reads exactly like one that
+  passes (ARCHITECTURE_REVIEW §9c).
+
 ## 3. Test plan
+
+⚠ **THE NAMES BELOW ARE THE DESIGN'S, NOT THE SUITE'S — audit by BEHAVIOUR, not by grep.** Several
+doubles shipped under a different name, and one is obsolete. The mapping, so the next audit does not
+re-derive it:
+
+| roster name | shipped as | where |
+|---|---|---|
+| `NeverSame` | `DenyNever` | test_comparator §6 (the dispatch ceiling) |
+| `DenyTwoSevens` | `DenyThrees` | test_comparator §6 (a deny splitting printed-same cards) |
+| `AliasingMod` | `IdentityPartition` | test_comparator §7 — it returns the handed arrays verbatim, which IS the aliasing case |
+| `RedWagonRuns` | `ExtraValues` / `LadderValues` / `AllCardsExtraValue` | test_comparator §9, §11, §12 |
+| `LyingUncacheable` | **obsolete** | GAP-003 deleted the opt-out it was lying about |
+| `WithinOne`, `ParityMatch`, `UnrelatedHook`, board-reading stage 1 | added late — they were genuinely missing | test_comparator §14 |
+| `StampedLoner`, `TurkCopiesBelow`, `CleverHansCopiesNeighbour`, `HumbugWhileCovered`, `WildcardJoinsRow` | written, against a REAL `Game` | `test_game_headless.gd` — "THE AUTHORED-CARD DOUBLES". ⚠ Each is transcribed from DESIGN §1e, not invented, and each ANSWERS A FEASIBILITY QUESTION: can the hook surface carry that card? All five can. They are also the only doubles that read real board POSITION — the card beneath in a stack, the row, cover state — which is the one thing a `FakeEnvironment` cannot supply |
 
 The roster from the confirmed answers. Doubles model authored cards where one exists; the
 unsourced ones are marked. **Every case is paired with the same cards unmodded, on the same
@@ -510,12 +607,16 @@ hold no matter what the rules do, which is what makes them worth asserting again
    reverse maps empty — the check that catches a card being handed to two melds.
 4. **Determinism.** The same seed, board and rule order produce an identical Result name, score and
    meld set across two consecutive runs.
-5. **Order changes the answer, never the stability.** Two different permutations may legitimately
-   differ (Q10=a), but each permutation is identical to itself across runs.
+5. *(folded into 4 as shipped — determinism runs INSIDE the order loop, so per-permutation
+   stability is what 4 already asserts. The suite's numbering is 1, 2, 3, 4, 6, 7, 7b, 8, 9, 10,
+   12, 13; it is still twelve, but not this list's twelve.)*
 6. **Reversibility.** Removing every rule restores the unmodded baseline exactly — name, score and
    meld. A cached partition surviving a rule's removal fails here.
 7. **Meld membership is legal.** Every card in `Result.meld` is in the hand, or is a board card a
    pull-in rule named (Q14=d). An invented `CardData` never appears (Q89=b).
+7b. **One card is one step.** No single run spends the same physical card twice, however many
+   positions it occupies. Added during implementation, and it earns its place: it needs no
+   partition knowledge, which is exactly what the subset-rebuild caveat took away from 8.
 8. **Straights obey the position model.** Any `STRAIGHT` result occupies consecutive positions and
    takes **at most one card** from each mixed class (Q93=d, Q96=c), and every card from a
    same-value class it uses (Q95=a).
@@ -523,8 +624,13 @@ hold no matter what the rules do, which is what makes them worth asserting again
    profile (Q25=a) — formation and classification cannot disagree.
 10. **Score sanity.** Finite, non-negative, and `copies_count` × `copy_size` consistent with the
     meld size.
-11. **The engine error stream is clean**, except for the `push_error` cases a rule deliberately
-    provokes, which are allowlisted by message.
+11. *(not a per-round invariant as shipped: `all_tests.gd::_scan_engine_errors` gates the whole
+    run on unexpected engine errors and `run_tests.py` gates the exit-time ones, which is
+    strictly wider than checking after each pass.)*
+13. **A rule set touching NO meld hook leaves the scored hand identical to the baseline** — the
+    converse of GATE 8, generalised over the rule space. Added during implementation; the suite
+    reports how many rounds actually drew such a set, because an invariant that never runs is
+    indistinguishable from one that passes.
 12. **Termination.** Each scoring pass completes inside a wall-clock bound. ⚠ **This is the only
     thing standing between R1 and a hung suite** — Q92(b) declined a runtime backstop, so a
     runaway grouping rule is caught at test time or not at all. A timeout here is a real finding,
@@ -549,6 +655,12 @@ per scored line (Q57). Player-facing cues for merges, splits and rule order (Q30
 - **A split meld is invisible to the player** (Q33=a): three matching cards on screen, two counted,
   nothing explaining it.
 - **Double-counted points** (Q87=a, Q88=a): a pulled-in card banks in two lines.
+- **R6 — `PipComparator._pass_memo` is a static shared by DEPTH, not by pass.** Nested
+  re-entrancy sharing it is deliberate (GAP-003). Two *concurrently suspended* scoring passes
+  would pollute each other's verdicts, and the inner `end_pass` would not clear. ⚠ **No
+  reproduction exists** — every caller awaits sequentially and `skill_eval_poker_best` nests
+  rather than races. Recorded as a constraint on future callers: **do not start a scoring pass
+  from a coroutine that another pass may be suspended inside.**
 
 ## 6. Owner verification, in the running game
 

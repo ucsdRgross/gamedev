@@ -21,6 +21,28 @@ because "read it all first" would not have prevented either miss.
 contract written an hour later are not connected by anything. The design is 2400 lines; re-reading it
 is not the mechanism. **A check that fails is.**
 
+⚠⚠ **MEASURED A SECOND TIME ON COMPARATOR BUCKETS — AND THAT ONE PROVES THE CHECK IS NOT ENOUGH.**
+`Q83`(a) — *every* situation gets a deny/allow pair — shipped with the four `on_stack_*` hooks
+**declared, documented, and never dispatched by anything in production**, move legality still
+calling the ORDERING hook it was supposed to stop using. **`unclaimed` was 0 throughout.** It could
+not have caught it: `PLAN.md`'s `S3` cited `Q83` from the day the plan was written, while its body
+said only *"add the hook names"*. The answer had a claimant; the claimant implemented a third of it.
+
+> **A citation is a CLAIM, not a proof. `unclaimed` finds answers nobody claimed — it cannot find
+> an answer someone claimed and half-built, and no tool in the repo can.**
+
+Two corollaries, both cheap:
+- **Cite narrowly.** A step that declares names cites the question about names. If a question says
+  "every situation gets X", the step that satisfies it is the one that makes X *happen* at every
+  situation — and if no step does that, leave it uncited so the check can see it.
+- **A question containing "every", "all", "each" is an ENUMERATION.** Write down the list it
+  quantifies over and check the list, the way rule 2 below does for design tables. `Q83`'s list was
+  three situations long and two of them were wired.
+
+⚠ **Do not record "we forgot to run the check" when the check was green.** That was this memory's
+own first draft, and it would have taught the next session to trust a passing `unclaimed` — the
+exact instrument that missed it.
+
 **How to apply:**
 
 1. `npm --prefix designloop run check` now reports **`unclaimed`** — answered questions no step

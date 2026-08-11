@@ -6,14 +6,18 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
 ## Known intermittent test failures (not owned by any current work stream)
 
-- ⬜ **The run-save layer flakes under the suite, ~1 run in 4–6.** Two symptoms seen, both while the
-  persistence suites run: `test_persistence_fuzz: wrote run.tres — no file on disk`, and
-  `ERROR: user://run_save/run.tres:NNNN - Parse Error: Extra tag found when parsing main resource
-  file` (a partially-written file being read back). ⚠ **Reproduces under STRICTLY SEQUENTIAL runs**,
-  so it is not the overlapping-runs artefact it first looked like. `RunManager.save_run` is
-  synchronous but `request_save` writes on a background thread, which is the obvious suspect.
-  `run_save/` is empty afterwards, so no real save is at risk — but a green suite is not currently
-  reliable on one run.
+- ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the suite has finished. Seen
+  once in a 4-run batch: the banner, the log paths and the usual `4 ObjectDB instances were leaked
+  at exit` all printed normally, then the process died. ✅ **`run_tests.py` no longer
+  misreports it**: an exit status outside 0..125 is not a failure count (`all_tests.gd` quits with
+  `mini(failed, 125)`), so a crash is now named as a crash instead of being read as 125 suite
+  failures under a banner saying PASSED. The CRASH itself is still unattributed — likely the same
+  family as the exit-time leak, objects surviving into `cleanup()`.
+- ⬜ **LEAK CANARY +1, intermittent** — same story: previously ~1 run in 6, then 0 in 8 after S23.
+  Not attributed and not closed. When it fires the suite already prints `_report_growth` naming
+  what survived, so the next occurrence should be self-explaining — capture that output.
+  ⚠ The **exit-time** ObjectDB count is a different measure and is **not** a regression: 4 at the
+  pre-change baseline and 4 now, unchanged across every run of this work.
 
 ## Waiting on the owner
 
@@ -27,11 +31,20 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 - ⬜ **Spotlight: answer GAP-010 / GAP-011** (overrun banking; emptied-section hooks —
   `design/spotlight/gaps/`), **judge G2.2** (rank-glyph readability), **pick
   `spotlight_separation_mode`**. Status ledger: HANDOFF_spotlight.md.
-- ⬜ **Comparator buckets: PLAYTEST it.** `PLAN.md` §6's six checks now run automatically through a
-  real `Game` (`test_game_headless.gd`), so the mechanics are proven. What is left is the judgement
-  they cannot make: whether a merging card is fun or broken, and whether a SPLIT meld — three
-  matching cards on screen, two counted, no cue explaining it (`DEFERRED.md` R2) — reads as a bug.
-
+- ⬜ **Comparator buckets: a BALANCE call and one UX call.** ⚠ **Not a functionality question —
+  the functionality is tested.** PLAN §6's six meld checks run through a real `Game`, stacking
+  routes through its own hooks with GATE 8 asserting the isolation both ways, and the five authored
+  cards from DESIGN §1e (Turk, Clever Hans, Humbug, Wildcard, plus StampedLoner) are each proven
+  expressible. What is left is the two things a test cannot answer:
+  - **Balance.** `Tests/Engine/scoring_cost.tscn` now prints the impact: a rank-merging rule
+    multiplies a scored LINE by **x2.0 (5 cards) → x3.5 (8) → x6.0 (13) → x5.1 (30)**, and every
+    line of a submit gets it. Extra rank values alone are **x1.0** — they move positions, not
+    score. Whether x5 per line is too strong is the same kind of call as everything under
+    "Scoring / balance" below, which the sim explicitly cannot make.
+  - **One UX judgement, `DEFERRED.md` R2.** A split meld shows three matching cards and counts
+    two, with no cue explaining it (Q33=a chose that). That the cue is ABSENT is pinned by tests
+    (`test_comparator.gd` §10 asserts the ordinary meld name, no marker); whether its absence reads
+    as a scoring bug to a human is not a test's question.
 Everything below is unscheduled backlog.
 
 ## Visual effects
@@ -86,46 +99,44 @@ the full record, including what only the owner can decide, is FX_HANDOFF §0.
 - ⚠ **SE4 IS NOT A TEST GAP AND SHOULD NOT SIT UNDER THIS HEADING.** "single-walk `_scan_wrap`" is a
   micro-OPTIMISATION of `Scripts/scoring.gd`: the scan restarts its walk from every rank
   (`for start in range(A, W + 1)`), where one pass could find the longest wrap-around run. Nothing
-  about coverage. ⚠ **No benchmark exists for the scoring path**, so doing it now would be
-  speculative — measure first, and only if a real board's scoring shows up in a profile.
+  about coverage. ⚠ **A benchmark now EXISTS** (`Tests/Engine/scoring_cost.tscn`, DEFERRED E1), so
+  this is measurable rather than speculative — but measure before optimising: the wrap scan is one
+  term inside a call that costs 9.1 ms on 30 cards, and E3 (the repeated profile rebuild) and E6
+  (the ~2x identity-path regression) are both larger.
 - ⬜ SD5 test-file section renumbering — cosmetic only, and `test_scoring.gd`'s own header already
   says the section numbers are historical and `_ready` order is the real one. Churn on a 1200-line
   file for no behavioural gain; left deliberately.
 
-### ⬜ Comparator buckets — **implemented and verified; awaiting a playtest**
+### ⬜ Comparator buckets — **phases 1–8 landed and verified; a playtest is what remains**
 
-Meld FORMATION now consults the mods. A card decides which cards count as the same through a
-surface of its own: `on_meld_ranks_deny/_allow` and the suit pair (two ordered passes — first deny
-forbids, then first allow merges, otherwise printed values decide), `on_meld_group_ranks/_suits`
-for whole-hand rewrites, `on_meld_extra_rank_values` and `on_meld_wrap_bounds` for adjacency.
-`on_compare_ranks/suits` stay the ORDERING hooks and grant no grouping power — each situation has
-its own hooks with no fallback between them, so a card wanting both implements both.
-⚠ Still entirely latent in SHIPPED CONTENT: no authored card implements any of them, so the identity
-path runs and scoring is unchanged until content asks otherwise. That is not the same as untested —
-`test_game_headless.gd` runs PLAN §6's six checks by putting comparator rules cards in a real
-`Game`'s `rules_deck` and calling `submit()`, through the real cascade scorer, `score_line` and
-gutters.
+How the surface works and every landmine in it: **ARCHITECTURE_REVIEW §3c**. Behaviour authority:
+[design/comparator_buckets/DESIGN.md](design/comparator_buckets/DESIGN.md); contracts and build
+order: its [PLAN.md](design/comparator_buckets/PLAN.md); per-step evidence:
+[HANDOFF_comparator_buckets.md](HANDOFF_comparator_buckets.md). Everything scoped OUT — with the
+cards blocked on each and the seam it would land at — is
+[DEFERRED.md](design/comparator_buckets/DEFERRED.md); add to that list rather than re-deriving it.
 
-The behaviour authority is [design/comparator_buckets/DESIGN.md](design/comparator_buckets/DESIGN.md);
-build order and normative contracts are [design/comparator_buckets/PLAN.md](design/comparator_buckets/PLAN.md);
-current state, evidence per step and what is still open are in
-[HANDOFF_comparator_buckets.md](HANDOFF_comparator_buckets.md).
+⚠ **Latent in shipped content, which is not the same as untested.** No authored card implements a
+meld hook, so the identity path runs and scoring is unchanged until content asks otherwise —
+while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`'s `submit()`.
 
-Everything scoped OUT — multiplicity, class tags, town hazards, multi-meld membership, the
-scoring bench — is indexed with its blocked cards and its seam in
-[design/comparator_buckets/DEFERRED.md](design/comparator_buckets/DEFERRED.md). Do not re-derive
-that list; add to it.
+**Open:**
 
-**Open items, all tracked here rather than only in the handoff:**
+- ⚠ **OWNER CALL — the identity path costs ~2x what it did before this work** (`DEFERRED.md` E6,
+  numbers in PERFORMANCE.md §4d). No shipped card implements a meld hook, so **every real game
+  today takes the path that got slower**: 30 cards with no rules went **5.01 ms → 9.15 ms** per
+  scored line, 1.9–2.7x at every smaller size, measured current-tree vs a `HEAD~1` worktree in one
+  session on one box, two runs each. C4's safety claim was verified byte-identical in RESULTS and
+  never in COST — this is that gap closed, and it is a decision, not a bug: accept the 2x, or open
+  a perf phase. Not diagnosed; E6 lists the suspects in the order worth measuring, and the extra
+  classification profile per handler (ASSUMPTIONS S14) is first.
 
-- ⬜ **LEAK CANARY grows by 1 object, intermittently** — roughly 1 run in 6. Not attributed; this
-  work adds `RankClass` / `SuitClass` per profile build. Next step is `LeakSentinel --verbose` on a
-  failing run to name the survivor.
-- ⬜ **DEFERRED E1 — a benchmark for the scoring path.** Everything measured is hands of ≤8 cards;
-  a 30-card board in a real `Game` is unmeasured in both directions.
-- ⬜ **DEFERRED E3 — the repeated profile rebuild.** It now multiplies rule DISPATCH too, and it is
-  why a run formed under a subset partition is classified against the full-hand one — which is what
-  forced the fuzz's invariant 8 onto the position model instead of the finished meld.
+- ⬜ **DEFERRED E3 is now the biggest lever in the scoring path, and it is sized.** `Tests/Engine/scoring_cost.tscn`
+  (E1, written): a scored line costs 9.5 ms on 30 cards unmodded, 16.2 ms with a rank-merging rule,
+  31.9 ms with merging plus extra rank values. ⚠ `Game.score_line` runs per row AND column and
+  `skill_eval_poker_best` scores both again from inside scoring, so a wide board with a merging
+  rules card is HUNDREDS of ms per submit. Numbers in PERFORMANCE.md §4d. Q57(a) scoped E3 out —
+  reopening it is an owner call, but it is no longer an argument from arithmetic.
 - ⬜ **Three fuzz invariants remain scoped rather than absolute** (3's held-cards set, 8's position
   model, 1's declared multi-key exception). Each is documented with why; each is also a place a real
   defect could hide. Invariant 9 is unrestricted again now that the generator's random predicate is
@@ -135,24 +146,6 @@ that list; add to it.
   rides on the type slot. The mounts that behave DIFFERENTLY are covered explicitly (all four for a
   pair rule, plus a skill carrying a whole-hand rule, which has its own dispatch and spotlit gate),
   so what is missing is combinations, not code paths.
-
-**Closed while writing this list**, kept only as pointers to what now guards them:
-
-- ✅ One card spending several steps in one meld — extra rank values (§1.7) and dual suits put one
-  card in several classes, and the straight scanners, `best_uniform_multi` and the full-house
-  builder each spent it once per class. That is multiplicity (QR5=a, DEFERRED D1) arriving through a
-  third door, after Q89(b) closed the grouping one. Guards: `Scoring._unused_at`, the `used` /
-  `spent` sets in `best_uniform_multi` and `_form_houses_at_scale`, `test_comparator.gd` section 12,
-  and fuzz invariant 7b.
-- ✅ The pair-verdict and implementer caches being reachable by only one double — `test_mod_fuzz.gd`
-  now runs its whole generator a second time under a `CachingEnvironment`, so every invariant is
-  asserted on the `Game` cache shape as well as the uncached one.
-- ✅ Genuine nondeterminism going unexercised — the owner rescoped the verdict cache to the SCORING
-  PASS (`gaps/GAP-003.md`), so a rule's answer is fixed for the hand, `compare_uncacheable` is
-  deleted, and the fuzz's random predicate is now genuinely random with all twelve invariants armed
-  against it. ⚠ That also fixed a scope bug the old design could not see: a scored line rebuilds its
-  profile several times, so a rule asked afresh each time could hand the straight scan and the flush
-  scan different partitions of the same cards.
 
 ## Props / UI (owner has NOT re-verified)
 
@@ -196,10 +189,20 @@ Full behavior and the settings list: ARCHITECTURE_REVIEW §4e.
   `luck()`-style content hook) not written yet.
 - Watch existing suites for auto-Next fallout: any test that makes 3+ boring moves in one round now
   advances the round mid-test.
-- Comparator hooks reach patience: `on_compare_ranks/suits` fire through
-  `return_first_compare_mod_result` during the placement legality query, so ANY board card with a
-  comparator modifier holds the counter (once per round under uniques). Decide whether that is the
-  intended "interesting move" bar or belongs in `patience_disabled_hooks`.
+- Comparator hooks reach patience, and **plan step S21 changed WHICH ones**. During the placement
+  legality query:
+  - `on_compare_ranks` still fires (`return_first_compare_mod_result`) — the placer asks
+    `compare_ranks` for run adjacency, which is a scalar and was deliberately left alone (Q55=a);
+  - `on_compare_suits` **no longer fires there at all** — the suit question now goes through
+    `stack_suits_same`, i.e. the STACK hooks;
+  - the four `on_stack_*` hooks fire instead, through `return_first_true_pair_result`, which calls
+    `_note_mod_fired` exactly as the old path did.
+
+  So ANY board card with one of those modifiers still holds the counter (once per round under
+  uniques) — but the decision this item is asking for now concerns a different set of hooks than it
+  used to. Decide whether that is the intended "interesting move" bar or whether some of them
+  belong in `patience_disabled_hooks`. ⚠ Note the two situations differ: a MELD rule fires during
+  scoring, a STACK rule during the legality query, and only the second is a "move".
 - `Game._on_patience_max_increased` edits `state.patience` with no commit — a mid-round grant is
   lost on quit and reverted by undo. Fine for a settings knob; revisit when a rule CARD grants
   patience (that grant should ride a committed action).

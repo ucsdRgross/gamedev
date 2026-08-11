@@ -37,6 +37,10 @@ extends TestSuite
 ## The slowest scoring pass this run saw, printed at the end. The honest cost signal.
 var _slowest_ms : int = 0
 var _slowest_label : String = ""
+## How many rounds actually exercised invariant 13 (a rule set that touches no meld hook).
+## ⚠ Reported because an invariant that never runs is indistinguishable from one that passes —
+## ARCHITECTURE_REVIEW §9c, "instruments that could not express the case they claimed to test".
+var _meld_blind_rounds : int = 0
 
 const LOG_TAIL := 40
 
@@ -56,6 +60,10 @@ func _ready() -> void:
 	TestLog.line("seed: %d, iterations: %d" % [fuzz_seed, iterations])
 	await run_rounds()
 	TestLog.line("slowest scoring pass: %d ms — %s" % [_slowest_ms, _slowest_label])
+	check(_meld_blind_rounds > 0,
+			"invariant 13 was actually exercised: %d rounds drew a rule set touching no meld hook"
+			% _meld_blind_rounds,
+			"zero such rounds — the invariant asserted nothing this run")
 	if _fail == 0:
 		TestLog.line("(mod fuzz seed %d)" % fuzz_seed)
 	finish()
@@ -388,9 +396,11 @@ func _check_carriers(env: FakeEnvironment) -> bool:
 				% [dormant.ranks.classes.size(), live.ranks.classes.size()])
 		return false
 
-	# --- the STAGE 1 path has its own dispatch and its own spotlit gate ----------------------
-	# ⚠ `group_rule_implementers` is a different function from the pair passes' walk, so a skill
-	# carrying a GROUPING rule is a genuinely separate case — not covered by the check above.
+	# --- the STAGE 1 path is a separate CONSUMER of the shared walk --------------------------
+	# ⚠ Both stages now filter unspotlit skills through `CardEnvironment.active_implementers`,
+	# so this no longer covers a second copy of that gate. It still earns its place: stage 1
+	# dispatches whole-hand rewrites, and a dormant skill must leave the PARTITION untouched,
+	# which is a different observable from a pair verdict.
 	var gsk_mod := ShimGroupSkill.new()
 	var gsk := CardData.new()
 	gsk.skill = gsk_mod
@@ -563,6 +573,26 @@ func _one_round(env: FakeEnvironment, round_index: int) -> void:
 		#previous check just consumed.
 		if not _check_meld(first, hand, neighbour, profile, order): return
 		if not _check_partition(profile, hand, order): return
+
+	# --- 13. NON-MELD RULE SETS CHANGE NOTHING (S26's claim, over the rule SPACE) -----------
+	# ⚠ The generator draws stack-hook rules, but every invariant above asks whether the
+	# partition is VALID — none asks whether it is UNCHANGED. A rule set whose every member
+	# touches only stacking (or nothing at all) must leave melding exactly where it found it,
+	# which is the converse of GATE 8 and the half that had no coverage anywhere.
+	var meld_blind := true
+	for b : FuzzBrain in brains:
+		if not (b.hook == HOOK.STACK_DENY or b.hook == HOOK.STACK_ALLOW or b.hook == HOOK.NONE):
+			meld_blind = false
+			break
+	if meld_blind and not brains.is_empty():
+		_meld_blind_rounds += 1
+		reset.call()
+		var blind := _fingerprint(await Scoring.PokerHands.score(hand))
+		if blind != baseline:
+			fail("13 isolation: a rule set touching NO meld hook changed the scored hand",
+					"'%s' vs baseline '%s', rules %s" % [blind, baseline,
+							str(brains.map(func(b: FuzzBrain) -> String: return b.label))])
+			return
 
 	# --- 6. REVERSIBILITY — removing every rule restores the baseline exactly ---------------
 	# ⚠ A cached partition or verdict outliving its rule fails HERE and nowhere else.

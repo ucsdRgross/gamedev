@@ -17,7 +17,8 @@ func on_can_grab_stack(target : CardData) -> Array[CardData]:
 	var zone := game.get_zone_from_vec3(vec3)
 	var stack: Array[CardData] = zone[vec3.y].datas.slice(vec3.z)
 	for i in stack.size() - 1:
-		var same_suit := await PipComparator.is_suit_same(stack[i].suit,stack[i+1].suit)
+		#S21: the STACK sameness hooks, not the ordering ones (QR3=c, Q62=a, Q83=a, Q97).
+		var same_suit := await PipComparator.stack_suits_same(stack[i].suit,stack[i+1].suit)
 		var rank_diff := await PipComparator.compare_ranks(stack[i].rank,stack[i+1].rank)
 		#incomparable (NAN) ranks / repeated suits never form a valid run
 		if is_nan(rank_diff): return []
