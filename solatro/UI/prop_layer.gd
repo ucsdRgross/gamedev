@@ -29,7 +29,7 @@ func tick_pending() -> bool:
 var _visuals : Dictionary[PropData, PropVisual] = {}
 ## Cards currently HELD in a prop-driven pose, as bitflags (HOLD_JUMP | HOLD_SPIN): JUMP holds
 ## while a jump-hinting prop OCCUPIES the card; SPIN loops while any spin-hinting prop is
-## still INBOUND (on the card or with it in its remaining route — owner spec 2026-07-13:
+## still INBOUND (on the card or with it in its remaining route — owner spec:
 ## keep spinning until no more are coming, then settle once). Only cards a reaction actually
 ## animated are ever tracked here: props crossing a card with NO reaction must never reset a
 ## pose they don't own (that stomped the meld-score jump of cards knives merely passed over).
@@ -86,13 +86,13 @@ func current_tick_seconds() -> float:
 ## The shortest a despawn flourish may be, in REAL seconds. These are decorations — nothing awaits
 ## them, unlike the tick-synced animations — and `base_delay` is a player speed knob that goes as low
 ## as 0.1, where a 0.12 fraction is 12 ms: under one frame, so the prop blinked out instead of
-## poofing (owner report 2026-07-28). The fraction still governs everywhere above the floor, so
+## poofing (owner report). The fraction still governs everywhere above the floor, so
 ## pacing and compression are unchanged at normal speeds.
 const MIN_FLOURISH_SECS := 0.12
 
 ## Seconds for a short prop flourish (the ballistic poof): a FRACTION of the live get_delay, so
 ## every animation respects the global pacing and the act compression — nothing runs on a fixed
-## wall-clock length (owner spec 2026-07-16) — but never so short it cannot be seen.
+## wall-clock length (owner spec) — but never so short it cannot be seen.
 func _anim_secs(fraction: float) -> float:
 	var game := _game()
 	var secs : float = (game.get_delay() if game else SettingsManager.settings.base_delay) * fraction
@@ -101,7 +101,7 @@ func _anim_secs(fraction: float) -> float:
 func _process(delta: float) -> void:
 	# EVERY visual follows the live board every frame — staged trains and mid-leg waits
 	# included, whether or not a tick is running — and void exits keep travelling. Art scale and
-	# formation offsets are LIVE settings reads, like the cards' own sizing (owner 2026-07-15:
+	# formation offsets are LIVE settings reads, like the cards' own sizing (owner:
 	# capture-at-spawn ignored mid-run setting changes). Despawn poofs tween scale themselves,
 	# so only live + exiting visuals are written here (poofing ones left _visuals already).
 	var art_scale := Vector2.ONE \
@@ -147,7 +147,7 @@ func _process(delta: float) -> void:
 ## cover some card's footprint. Never guess the row from what's under the prop — fanned cards
 ## are a full card tall behind their visible strip, so a ring crossing a SHORT column's empty
 ## row sat "inside" that column's top card's rect and got bracketed to the wrong row, behind the
-## zone header (owner report 2026-07-16). Over NO card at all (row edge, off-board, exiting past
+## zone header (owner report). Over NO card at all (row edge, off-board, exiting past
 ## the edge) the halves are HIDDEN and the PropVisual draws the whole ring itself (PropLayer,
 ## above cards) — stale half ordering once left the ring floating over the board.
 func _update_back_halves() -> void:
@@ -172,7 +172,7 @@ func _update_back_halves() -> void:
 
 ## True while the prop's BODY rect (body_size, authored per kind like card sizes) overlaps any
 ## board card's footprint. A center-point test read a ring hanging between two cards as "over
-## nothing" (props have width — owner spec 2026-07-16); this is the split's ONLY geometry input.
+## nothing" (props have width — owner spec); this is the split's ONLY geometry input.
 func _body_over_any_card(vis: PropVisual) -> bool:
 	var reach := CardVisual.card_size_play * 0.5 + vis.body_size * 0.5 * vis.scale
 	for cvis : CardVisual in play_area.data_card.values():
@@ -196,7 +196,7 @@ func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 	half.modulate = vis.modulate
 
 ## Split the prop when its BODY covers any card (_body_over_any_card) and bracket the halves
-## around its ANCHOR SLOT's whole ROW (owner spec 2026-07-16): the back half sits anywhere in
+## around its ANCHOR SLOT's whole ROW (owner spec): the back half sits anywhere in
 ## the gap BEFORE the row's first card — behind every card in the row, above every earlier row,
 ## and therefore IN FRONT of a short column's fanned card poking down through this row — and the
 ## front half in the gap AFTER its last card — in front of the whole row, below the rows
@@ -308,7 +308,7 @@ func _live_lane_offset(vis: PropVisual) -> Vector2:
 ## Follow the live SETTINGS the way _repin follows the live board: re-derive the pixel lane
 ## offset each frame and shift the whole leg by the delta. Changing card separation mid-run now
 ## re-spreads formation heights immediately — in lockstep with the cards re-fanning on the same
-## settings signal — and changing card scale rescales the offsets (owner report 2026-07-15:
+## settings signal — and changing card scale rescales the offsets (owner report:
 ## offsets captured at spawn ignored both).
 func _refresh_lane_offset(vis: PropVisual) -> void:
 	# No has_formation_point early-out: the offset also carries the card-jump rise, which a kind can
@@ -340,7 +340,7 @@ func _drive_exiting(delta: float) -> void:
 		vis.position = vis.travel_curve(vis.from, vis.target, minf(vis.t, 1.0))
 		# Fade ALONG the leg, not after it. The void point is a card-width past the last slot and
 		# the play-area rect clips there, so a fade that started on arrival played entirely
-		# off-screen and the prop just blinked out (owner report 2026-07-28). Driven here rather
+ # off-screen and the prop just blinked out (owner report). Driven here rather
 		# than tweened so it stays in lockstep with the leg at any pacing, and _update_back_halves
 		# mirrors the alpha onto a split prop's halves for free.
 		var share := SettingsManager.settings.prop_exit_fade_share
@@ -380,7 +380,7 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 		vis.lane_offset = _live_lane_offset(vis)
 		# Appear directly AT the staged spot — no pop-out-of-the-card flight. The earlier
 		# card->staging leg made row props visibly shoot to one end and REVERSE (owner report
-		# 2026-07-12); a burst now just materializes as a train behind its row entry.
+ # 2026-07-12); a burst now just materializes as a train behind its row entry.
 		var staged := _staged_point(prop, origin) + vis.lane_offset
 		vis.position = staged
 		vis.exits_into_void = prop.route.size() >= 2   # capture NOW; the route pops as it moves
@@ -482,7 +482,7 @@ func _assign_formation_points(spawned: Array) -> Dictionary[PropData, Array]:
 	for key : String in batches:
 		var batch : Array = batches[key]
 		var kind := (batch[0] as PropData).kind
-		# Hoops NEVER take a formation offset (owner spec 2026-07-15): the ring must always thread
+ # Hoops NEVER take a formation offset (owner spec): the ring must always thread
 		# the card CENTER — the slot point itself — regardless of separation, or the card can't
 		# pass through it (TASK 3a). Their lane_offset stays ZERO even if a set is authored.
 		if kind == 0: continue
@@ -584,11 +584,11 @@ func _spawn_origin_of(prop: PropData) -> Vector3i:
 
 # --- card reactions -----------------------------------------------------------
 
-## Reactions run as HELD group animations, not per-prop restarts (owner spec 2026-07-13:
+## Reactions run as HELD group animations, not per-prop restarts (owner spec:
 ## "keeps spinning until no more is coming"). JUMP: each arrival re-pulses the pose (a train
 ## re-hops per prop) AND the raised pose holds while any jump-hinting prop OCCUPIES the card.
 ## SPIN: the card starts a LOOP (CardVisual.anim_spin_start) when the FIRST spin-hinting prop
-## arrives over it — never before (owner report 2026-07-14: cards spun at knife spawn) — and
+## arrives over it — never before (owner report: cards spun at knife spawn) — and
 ## keeps looping while more spin props still have it in their remaining route, winding down
 ## once (anim_spin_stop) when the last has passed; individual knives never restart the spin.
 ## JUGGLE/BURN are one-shots handed to the status visuals; they don't drive poses.

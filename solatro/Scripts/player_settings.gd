@@ -2,7 +2,7 @@
 # ⚠ **`@tool` BECAUSE EDITOR-SIDE TOOLS CALL METHODS ON THIS RESOURCE.** Without it the editor loads
 # PlayerSettings as a PLACEHOLDER instance: properties still read, but any method call throws
 # *"Attempt to call a method on a placeholder instance"* — which is exactly what
-# `spotlight_reveal_beat_fraction()` did from `spotlight_tool.gd` (owner report 2026-08-05). The other
+# `spotlight_reveal_beat_fraction` did from `spotlight_tool.gd` (owner report). The other
 # resources these tools edit (`FxStyle` and every subclass) are already `@tool` for the same reason.
 class_name PlayerSettings
 # TODO: move settings that dont need to be saved back to their files after done testing
@@ -66,7 +66,7 @@ signal settings_changed
 ## fraction of get_delay like its neighbours: the fade has to happen WHILE the prop is still
 ## crossing the last visible strip. It used to be a short tween that started only once the prop had
 ## already reached its void point, which the play-area rect clips — so props read as vanishing
-## rather than leaving (owner report 2026-07-28).
+## rather than leaving (owner report).
 @export_range(0.05, 1.0, 0.05) var prop_exit_fade_share : float = 1.0:
 	set(value):
 		prop_exit_fade_share = value
@@ -105,7 +105,7 @@ signal settings_changed
 ## `.tres` are the GLOW's, and §16 keeps the layer's own knobs separate). Living here is the reading
 ## that exists; if that is wrong, file a gap rather than splitting the difference — see
 ## `design/spotlight/PLAN.md` §1.11's G0 note.
-## ⚠ **0.0 IS THE OFF SWITCH, AND IT IS SUPPORTED ON PURPOSE** (owner, 2026-08-04: *"make sure dim
+## ⚠ **0.0 IS THE OFF SWITCH, AND IT IS SUPPORTED ON PURPOSE** (owner: *"make sure dim
 ## can be turned off if needed by tunables, it just occured to me that dim might flash if speed is
 ## high"*). `LightLayer._dim_target()` multiplies by this, so 0 means the dim never rises at any
 ## speed while beams, circles and glow all still play. **That is the remedy if the per-section pulse
@@ -158,7 +158,7 @@ signal settings_changed
 ## `Tools/spotlight_tool.tscn`, which draws the answer so it can be judged before it is implemented.
 ## It is here rather than in the tool because §16 says so and because S16 will want the same number:
 ## a second copy in the tool would be a knob the shipped reveal then disagreed with.
-## ⚠ Added 2026-08-04 after the owner reported *"row separation is not smooth. cards jump to their new
+## ⚠ Added after the owner reported *"row separation is not smooth. cards jump to their new
 ## spot instantly"* — there was no duration to ease over because there was no knob.
 @export var spotlight_reveal_fraction : float = 0.4:
 	set(value):
@@ -169,7 +169,7 @@ signal settings_changed
 ## ⚠ **THESE EXIST BECAUSE THE TWO USED TO BE ONE PAIR.** `LightLayer._show` (which scales every
 ## light's intensity) and `LightLayer._dim` both eased over `spotlight_dim_in_fraction` /
 ## `spotlight_dim_out_fraction`, so the beams and the darkness always reached full at the same instant
-## and there was no way to separate them. Owner, 2026-08-05: *"allow tuning brightness and dimness to
+## and there was no way to separate them. Owner: *"allow tuning brightness and dimness to
 ## reach their max effect at different rates instead of both lerping to full at exact same time, like
 ## allowing dimness to happen twice as fast before beams finish"*.
 ##
@@ -193,7 +193,7 @@ signal settings_changed
 ## waited `get_delay() * spotlight_hold_fraction` and then ended the reveal — while `LightLayer._show`
 ## was still climbing over `spotlight_show_in_fraction`, and the lights over `spawn`/`travel`. At the
 ## shipped defaults those are all 0.5, so the show reached full at the exact instant the reveal ended:
-## the fade-out played honestly and the spotlight was never held. Owner, 2026-08-05: *"it doesnt cut
+## the fade-out played honestly and the spotlight was never held. Owner: *"it doesnt cut
 ## out immediately but still does the fadeout"*.
 ##
 ## ⚠ **ONE ACCESSOR, TWO CALLERS.** `Game._score_section`'s beat and `spotlight_tool._beat()` both use
@@ -351,7 +351,7 @@ enum SeparationMode {
 		settings_changed.emit()
 
 @export_group("Patience (idle-move pressure)")
-## Emitted when patience_max GROWS, with the increase. Owner ruling A1 (2026-07-20): raising the
+## Emitted when patience_max GROWS, with the increase. Owner ruling A1: raising the
 ## cap also raises the LIVE counter by the same amount (a rule card granting patience takes effect
 ## this round); lowering it does NOT touch the live counter. Game listens and edits state.patience.
 signal patience_max_increased(delta: int)

@@ -1,6 +1,6 @@
 extends TestSuite
 # res://Tests/Engine/test_iterator.gd
-# CardDataIterator suite (UNIT_TESTS_PLAN.md §2): every case compares the iterator's
+# CardDataIterator suite: every case compares the iterator's
 # output to a naive flatten oracle (1D in order; 2D row-major across columns).
 #
 # CATEGORY MAP: this whole suite is IMPLEMENTATION — it pins the iterator's internal

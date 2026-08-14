@@ -5,7 +5,7 @@ extends FxStyle
 ## how a ball is shaded. Read by `juggle.gdshader` and by `FxJuggle`.
 ##
 ## What is NOT here is fire (`FxFireStyle`), and that separation is the point: a juggling style has no
-## use for `aperture` (owner 2026-07-31). See `FxStyle` for why this is a subclass rather than a flag.
+## use for `aperture` (owner). See `FxStyle` for why this is a subclass rather than a flag.
 ##
 ## ⚠ THE BALL PATH LIVES HERE AND ONLY HERE. A lit ball's PLUME is drawn by the fire shader from a
 ## `FxFireStyle`, and that style deliberately has no path knobs: `FxJuggle.geometry()` hands the same
@@ -26,9 +26,9 @@ extends FxStyle
 ## CEILING on the TOPMOST BALL, measured from the host's centre — the ball's radius comes out of it,
 ## so this is where the drawn pixels stop, not where a centre does. On a card the budget is half a
 ## card plus half the default separation — `(50 + 14) * 0.5` = 32: the pattern still peaks above the
-## card's top edge (ruling 13) but never far enough to cover the card behind (owner 2026-07-28).
+## card's top edge (ruling 13) but never far enough to cover the card behind (owner).
 ## Growth with the count runs into this; the balls' 1/sqrt(n) shrink is what makes room past it.
-## Bounds the BALLS only — a lit ball's plume is deliberately outside the budget (owner 2026-07-28).
+## Bounds the BALLS only — a lit ball's plume is deliberately outside the budget (owner).
 @export var ball_arc_max : float = 32.0
 ## The shallow return arc — the "flat part", a small upward arc rather than a straight line.
 @export var ball_return_height : float = 6.0
@@ -39,7 +39,7 @@ extends FxStyle
 @export_range(0.2, 0.8, 0.01) var ball_top_fraction : float = 0.6
 ## Seconds for one full loop at ONE ball. REAL seconds, not a fraction of get_delay(): juggling
 ## speed is an ART decision, and `base_delay` is a player speed knob that goes down to 0.1 — where
-## the old fraction made a whole cycle 0.12 s and the balls were a blur (owner report 2026-07-28).
+## the old fraction made a whole cycle 0.12 s and the balls were a blur (owner report).
 ## Act compression still quickens the pattern, because the clock feeding it is already pacing-scaled
 ## (FxAttachment.pacing) — this is only what one loop costs at rest. The pattern also quickens with
 ## the count on top of this (owner ruling 12).
@@ -72,7 +72,7 @@ extends FxStyle
 		_tones_tex = null
 ## The specular dot, as a palette role index (PaletteDB.ROLES.ball_gloss by default).
 @export_range(0, 255, 1) var ball_gloss_role : int = 31
-## SPHERE shading (owner 2026-07-27: "balls need to be spherical"). `light` is the direction the
+## SPHERE shading (owner: "balls need to be spherical"). `light` is the direction the
 ## light comes from in ART space (-y is UP, as everywhere else in 2-D) and `light_z` how head-on it
 ## is; `spec` is the highlight threshold — higher is a tighter dot. The spin rotates this whole
 ## frame, so the bands and the highlight sweep round the ball as it rolls.

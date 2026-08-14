@@ -177,7 +177,7 @@ func _aperture_profile() -> Array[Case]:
 		out.append(_card_case("aperture %.2f / gain %.1f" % [pair.x, pair.y], [req]))
 	return out
 
-## THE STACK RATIOS, WHICH ARE THE HEADLINE OF THE NOISE BUILD (owner 2026-07-29: *"make sure all
+## THE STACK RATIOS, WHICH ARE THE HEADLINE OF THE NOISE BUILD (owner: *"make sure all
 ## params have scaling ratios as stacks increase"*). Every knob with a ratio in `FxFireStyle`'s
 ## "Stack scaling" group is driven from this one slider, in `FxFire.stacks_live`.
 ##
@@ -204,7 +204,7 @@ func _fire_rotation() -> Array[Case]:
 		out.append(case)
 	return out
 
-## THE DEFORMING CARD (owner 2026-07-29: *"I don't see fire effect warping with the card during
+## THE DEFORMING CARD (owner: *"I don't see fire effect warping with the card during
 ## playtesting"*). A card is skinned to a star rig whose animation is on AUTOPLAY, so its top edge is
 ## never where the authored 38x50 rectangle says it is — and a silhouette baked once at rest left the
 ## flames standing on a shape the card no longer had.
@@ -229,7 +229,7 @@ func _card_warp() -> Array[Case]:
 ## (FX_HANDOFF §1.3), on the shape that has it: the ring holds its outer top arc high up and the
 ## upward-facing inner arc at the bottom of its hole far below, in the SAME columns.
 ##
-## ⚠ IT STOPPED BEING A SPECIAL CASE (2026-07-29). The retired build had to argue that a comb cell
+## ⚠ IT STOPPED BEING A SPECIAL CASE. The retired build had to argue that a comb cell
 ## spanning the ring grew one tendril on each arc; the cover field simply asks "how far above the
 ## nearest surface BELOW me am I", which every fragment in the hole answers with the inner arc and
 ## every fragment above the ring answers with the outer one. The stack sweep is kept because it is
@@ -356,7 +356,7 @@ func _ball_arcs() -> Array[Case]:
 ## answers are on purpose:
 ##  * fire follows its host's silhouette (the mask is the art) while keeping its flames upright;
 ##  * the juggling pattern does not turn at all — *"juggle effect doesn't rotate with card"* (owner
-##    2026-07-30). `juggle.gdshader` never reads `u_shape_rot` and `FxAttachment._push_live`
+## 2026-07-30). `juggle.gdshader` never reads `u_shape_rot` and `FxAttachment._push_live`
 ##    counter-rotates the quad, so the loop holds still in world space, centred on the card.
 ##
 ## The oracle crosses are drawn WORLD-UPRIGHT here (`_Ghost.ball_rot`), which is what makes the shot
@@ -431,7 +431,7 @@ func _stacked_case() -> Array[FxRequest]:
 
 ## Mid-ease frames — owner ruling 16, "a stack change eases, it never jumps".
 ##
-## ⚠ WHAT IS IN FLIGHT CHANGED WITH THE MODEL (2026-07-29). It used to be ONE number: a fractional
+## ⚠ WHAT IS IN FLIGHT CHANGED WITH THE MODEL. It used to be ONE number: a fractional
 ## `u_count` grew the newest tendril out of the surface while the established ones shuffled. There
 ## are no tendrils and the shader does not read `u_count` at all; what eases now is the whole
 ## "Stack scaling" group at once — reach, aperture, gain, intensity, grain and scroll — so this shot
@@ -473,7 +473,7 @@ func _counted(style: FxFireStyle, count: float) -> FxRequest:
 	req.live = live
 	return req
 
-## EMBERS, from every fire that throws them (owner 2026-07-29: *"all fire effects should leave embers
+## EMBERS, from every fire that throws them (owner: *"all fire effects should leave embers
 ## like card is currently. dont see embers on props or balls"*). A burning card, a burning hoop, a
 ## burning knife and a pair of lit balls, side by side.
 ##
@@ -552,7 +552,7 @@ func _shot_embers() -> void:
 ##    once the circle's light itself comes from the glow shader — see ASSUMPTIONS.md), and the beam
 ##    is WIDER at the card than at its origin;
 ##  * **the beam STOPS on its circle's FAR ARC and its mouth is exactly the circle's width** —
-##    owner, 2026-08-04. ⚠ Two earlier builds cut it at `t = 1`, which is the circle's CENTRE, so the
+## owner, 2026-08-04. ⚠ Two earlier builds cut it at `t = 1`, which is the circle's CENTRE, so the
 ##    cone ended on a straight chord halfway across the pool. **A straight edge anywhere near a beam
 ##    end is that bug back.** Crop and magnify before judging: at full-shot scale it is easy to miss.
 ##  * **the circle READS as its own pool inside the beam** (chart H5) — brighter than the shaft that
@@ -595,7 +595,7 @@ func _park_cards(root: Node) -> void:
 		# written `card_visual.tscn` autoplayed its idle, so the AnimationPlayer advanced independently
 		# and parking only the script left the SKINNED POSE drifting — that was the entire residual
 		# after `floating` was handled (78834 px -> ~6-31 px -> 0).
-		# ⚠ **KEPT DELIBERATELY THOUGH THE IDLE NO LONGER AUTOPLAYS** (owner cleared it 2026-08-07 —
+ # ⚠ **KEPT DELIBERATELY THOUGH THE IDLE NO LONGER AUTOPLAYS** (owner cleared it 2026-08-07 —
 		# `CardVisual.RIG_ANIM`). It is now belt-and-braces rather than load-bearing, and it is what
 		# makes this shot's determinism independent of that flag: if the idle is ever turned back on,
 		# or any caller poses the rig before staging, the pose is still pinned here rather than
@@ -958,7 +958,7 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
 		# THE COUNTER-ROTATION, PRINTED — because the rotated panels of this shot have a standing
 		# "not reproducible" warning and it was never run to ground. Two consecutive runs of ONE
-		# unchanged build (2026-07-29) put the 05f_ball_rotation probes at 1.0 / 2.0 / 5.8 art units for
+ # unchanged build put the 05f_ball_rotation probes at 1.0 / 2.0 / 5.8 art units for
 		# 30 / 45 / 90 degrees in the first and 0.1 in the second — the SAME grows-with-the-angle
 		# displacement along +x that got FX_HANDOFF §1b's quad-extent lever reverted. So the pattern
 		# rotated with its host in one run and not the other, and these two numbers are the only place

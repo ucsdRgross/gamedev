@@ -337,7 +337,7 @@ def build_board(chunk, arrange, rng, degrade_f=0.6):
     if arrange == 'degraded':
         return arrange_degraded(chunk, degrade_f, rng)
     if arrange == 'capacity':
-        # Fixed arrangement budget (owner model 2026-07-17): the player can ideally
+ # Fixed arrangement budget (owner model 2026-07-17): the player can ideally
         # place ~degrade_f CARDS per act; the rest fall as dealt. A small act is fully
         # arranged, a dump is mostly chaos — bigger boards are inherently harder.
         return arrange_degraded(chunk, min(1.0, degrade_f / max(len(chunk), 1)), rng)
@@ -400,7 +400,7 @@ class Variant:
 V0 = Variant('V0')
 V2A = Variant('V2A')
 V7 = Variant('V7', name='V7')
-# Finalists calibrated by the Stage 1-3 sweeps (see SCORING_MATH_PLAN.md):
+# Finalists calibrated by the Stage 1-3 sweeps:
 # w=0.5 measured concentration 2.6x (out of band); w=0.25 lands in [1.3, 1.8].
 # Both finalists defang overscore: per-show ratio cap 1.0, exponent 1.0.
 V2A25 = Variant('V2A', w_r=0.25, w_c=0.25, overscore_cap=1.0, overscore_exp=1.0,

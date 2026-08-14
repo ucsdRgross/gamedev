@@ -25,29 +25,26 @@ signal spotlight_cued(cards: Array[CardData])
 ##   * `spotlight_section_changed` — *which cards are BEING SCORED.* Filtered by nothing: a scored
 ##     row is mostly plain numeral cards with no skill at all, and the beam lights the row.
 ##
-## S14's first build drew the beam from the cue, and since exactly one non-test skill in the shipped
-## game implements `on_spotlight` (a rules card, with no `CardVisual`), the light set was **always
-## empty and no beam ever appeared in the running game** — while every test passed, because the test
-## fixture skill does implement the hook. See `design/spotlight/gaps/GAP-005.md`.
+## ⚠ Drawing the beam from the cue instead makes it **invisible in the running game while every
+## test passes** — no shipped board-stage skill implements `on_spotlight`, but the test fixture does
+## (`design/spotlight/gaps/GAP-005.md`).
 ##
-## ⚠ **THE SET REPLACES, IT DOES NOT ACCUMULATE** — that is `Q16`=(c)'s travelling light: the beam
-## MOVES from section to section rather than the board filling up with lamps. An empty array is what
-## retires the light and lowers the dim (`QR2`=d); there is deliberately no separate "stop" signal,
-## because a second way to lower the dim is a second thing that can disagree with the light set.
+## ⚠ **THE SET REPLACES, IT DOES NOT ACCUMULATE** — `Q16`=(c)'s travelling light. An empty array is
+## what retires the light and lowers the dim (`QR2`=d); there is deliberately no separate "stop"
+## signal, because a second way to lower the dim can disagree with the light set.
 signal spotlight_section_changed(cards: Array[CardData])
 
 ## The section's REVEAL is over and its scoring is about to happen — the beat where the spotlight and
-## the dim fade out (owner, 2026-08-04, GAP-006):
+## the dim fade out (owner, GAP-006):
 ##
 ## > *"spotlight + dim occurs as cards of section get revealed, with both spotlight and dim effect
 ## > fading away as scoring starts to happen. When next section is revealed, spotlight and dim effect
 ## > are visible again, moving to new location, then fade away again."*
 ##
-## ⚠ **THE LIGHTS ARE NOT RETIRED BY THIS — ONLY HIDDEN.** `spotlight_section_changed` still owns the
-## light SET; this owns its VISIBILITY. Keeping the set alive across the fade is what lets the next
-## section TRAVEL from these positions instead of respawning at new ones, which the brief forbids
-## outright (*"no instant movements or spawning in and out"*, chart E). A "fade out" that freed the
-## lights would make the travel impossible to build on top of.
+## ⚠ **THE LIGHTS ARE NOT RETIRED BY THIS — ONLY HIDDEN.** `spotlight_section_changed` owns the light
+## SET; this owns its VISIBILITY. Keeping the set alive across the fade is what lets the next section
+## TRAVEL from these positions rather than respawn at new ones, which chart E forbids outright
+## (*"no instant movements or spawning in and out"*).
 signal spotlight_reveal_ended()
 
 static var CURRENT : CardEnvironment = null
@@ -122,7 +119,7 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 				await Callable(skill, function).callv(params)
 				_note_mod_fired(skill, function)
 				await skill_spotlight_check()
-	# P1 owner ruling (2026-07-16): the passive on_anything tail only runs when this event
+	# P1 owner ruling: the passive on_anything tail only runs when this event
 	# actually invoked a mod — if nothing ran, nothing could have changed.
 	if triggered and function != &"on_anything":
 		await run_all_mods(&"on_anything")

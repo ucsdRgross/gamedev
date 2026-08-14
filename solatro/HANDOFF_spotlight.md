@@ -423,9 +423,10 @@ section's score — void it or keep it?) and **GAP-011** (an emptied section ski
 `Tests/UI/test_{visual_layers,fx_attachment}.gd`, `Tests/Engine/test_palette.gd`.
 **Outside solatro:** `designloop/src/{gaps,check}.mjs` + `test/gaps.test.mjs` (the `unclaimed` report).
 
-**THE AUDIT SURFACE.** ⚠ **Check `git status` first — it is the authority, not this
-list.** Part of the session is already committed in `9cb8f59`; what follows is what was still dirty
-when this was written.
+**THE AUDIT SURFACE — NOW HISTORICAL.** ⚠ **Check `git status` first — it is the authority, not
+this list.** Everything below is committed and the working tree is clean; the dirty/committed split
+the list records was true when it was written and is not a live distinction any more. Keep it only
+as the map of what the stream touched.
 - **Shipped game (dirty):** `UI/spotlight_director.gd` (S15's cue; `assign()` for section origins;
   `nearest_window` survivor/target choice; surplus lights released), `UI/light_layer.gd`
   (`Light.gated`, `_ungated_show`, one shared settings accessor), `UI/play_area.gd` (all of S16/S17),
@@ -514,10 +515,13 @@ flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `
 **Every step S1–S18 is `done`; G3.1, G3.2 and G2.3 are closed. What is left needs the owner's eyes,
 plus the open bugs above.**
 
-1. **AUDIT the uncommitted diff** — see "Files touched". Start with `UI/play_area.gd` (S16/S17) and
-   `UI/spotlight_director.gd` (S15 + the origin/travel changes). ⚠ **The judgement call most worth
-   challenging is the PIXELS band** in `Tests/Visual/test_pixels.gd`: an unachievable exact-match
-   assertion was replaced with two measured bounds. Reasoning in `todo.md`.
+1. ~~AUDIT the uncommitted diff~~ — **nothing is uncommitted.** The whole stream is in the tree
+   (`spotlight ready for tuning`, `spotlight beam bugfixes`, `spotlight code reviewed`), the working
+   tree is clean, and "Files touched" below is therefore a record of what the stream changed, not a
+   live audit surface. ⚠ The judgement call still worth challenging on its merits is the **PIXELS
+   band** in `Tests/Visual/test_pixels.gd` — but see Open bugs: the owner turned the idle rig
+   animation off, so the check is rest-pose-only and asserts EXACT agreement with no band left to
+   protect. Reasoning in `todo.md`.
 2. **G2.2 — READABILITY, and only the owner can close it.** Scenario `S15` in the tool, or
    `reveal_shots/02_open_full.png`: the rank glyph must stay legible under the circle.
 3. **Pick `spotlight_separation_mode`** — `CARD_HEIGHT` (pitch = one card) vs `JUMP_ADJUSTED`

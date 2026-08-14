@@ -1,7 +1,7 @@
 extends TestSuite
 # res://Tests/Engine/test_mods.gd
 # ==============================================================================
-# RULES CARDS / MODIFIERS (UNIT_TESTS_PLAN.md §7) — the shipped mods driven through
+# RULES CARDS / MODIFIERS — the shipped mods driven through
 # a real (headless, out-of-tree) Game, exactly the wiring the rules deck uses:
 #   * SkillGrabberOgLower / SkillPlacerOgLower — the core solitaire legality rules
 #   * TypeInput — input-zone placement + the Next drop/draw cycle

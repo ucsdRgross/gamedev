@@ -42,25 +42,25 @@ var revision : int = 0:
 		state_changed.emit()
 ## Acts used this show. Lives ON the board state so every undo/history snapshot carries it:
 ## undoing across a Submit rewinds the act count together with the board (it used to be a
-## Game-level counter that undo never touched — owner bug report 2026-07-12).
+## Game-level counter that undo never touched — owner bug report).
 @export_storage var submits_used : int = 0
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
 ## submits_used lives here.
 @export_storage var combo_classes : Array[String] = []
-## PATIENCE (2026-07-20) — "the audience won't watch you shuffle the board forever": idle card
+## PATIENCE — "the audience won't watch you shuffle the board forever": idle card
 ## moves tick this down; a move that triggers a qualifying card modifier holds it. At 0 the game
 ## auto-presses Next, which resets it to settings.patience_max. Lives ON the board state (like
 ## submits_used) so undo/history snapshots rewind it with the board.
-## NOTE (owner ruling A2, 2026-07-20): the patience mutators deliberately do NOT bump `revision`.
+## NOTE (owner ruling A2): the patience mutators deliberately do NOT bump `revision`.
 ## Patience only ever moves together with a real board change, so the change-detector that keys
 ## Game.save_state() stays the single signal; a snapshot where ONLY patience differs cannot exist.
 ## 0 = never seeded (a bare fixture, or a save written before patience existed): the first move
 ## seeds it from settings. Every committed board otherwise carries at least 1 — see the auto-Next
 ## rule in Game._spend_patience_for_move.
 @export_storage var patience : int = 0
-## SPOTLIGHT (2026-08-04) — the cards the scoring beam is on RIGHT NOW. Effective spotlight is
+## SPOTLIGHT — the cards the scoring beam is on RIGHT NOW. Effective spotlight is
 ## `is_spotlit()` OR a key in here (design §2), and that one line is the whole mechanical change.
 ## ⚠ Deliberately NOT `@export_storage`: it is per-act state, so undo rewinds it by simply not
 ## saving it (`Q18`=a), and a resume replays the act from the pre-act board with it empty.
@@ -92,7 +92,7 @@ func mark_seen(key: String) -> void:
 func clear_seen() -> void:
 	patience_seen_mods.clear()
 
-#const COMBO_STEP := 0.1   # moved to PlayerSettings.combo_step 2026-07-17 (all knobs in one place)
+#const COMBO_STEP := 0.1 # moved to PlayerSettings.combo_step (all knobs in one place)
 
 ## Current act multiplier: 1.0 + combo_step per distinct class scored this act (§15a).
 func combo_mult() -> float:

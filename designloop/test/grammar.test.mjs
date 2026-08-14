@@ -309,7 +309,7 @@ test('audit: a section heading narrower than its own question lines', () => {
 // --- THE ACCEPTANCE TEST (PLAN S2, §5.6) ------------------------------------------------------
 // The document is not edited to make it parse. If it does not parse, the grammar is wrong.
 
-// ⚠ THESE ASSERT PROPERTIES, NOT COUNTS, AND THAT IS THE POINT (2026-08-03).
+// ⚠ THESE ASSERT PROPERTIES, NOT COUNTS, AND THAT IS THE POINT.
 // They used to pin `188 questions + 8 QR gates`, `195 live` and `longestPath === 194`. Spotlight is
 // a LIVING document: it went 195 -> 275 questions across four ordinary design revisions and broke
 // five tests in this suite every time, none of which had found a defect. A tool's suite that fails

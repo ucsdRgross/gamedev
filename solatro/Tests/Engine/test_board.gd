@@ -1,6 +1,6 @@
 extends TestSuite
 # res://Tests/Engine/test_board.gd
-# Board / move-logic suite (UNIT_TESTS_PLAN.md §1) against the CURRENT
+# Board / move-logic suite against the CURRENT
 # Game.move_data_to_coord, using GameData.validate() after every action.
 # Uses a bare Game.new() that is never added to the tree (its state setter and
 # pure board functions are tree-safe); CardEnvironment.CURRENT is only set

@@ -170,9 +170,9 @@ the check total varies because the fuzz suites randomise.
 
 ## Open
 
-- **LEAK CANARY, +1 object, intermittent** — about 1 run in 6, unattributed. This work allocates
-  `RankClass`/`SuitClass` per profile build. Next step: `LeakSentinel --verbose` on a failing run to
-  name the survivor.
+- **LEAK CANARY, +1 object, intermittent** — unattributed, and this stream is a suspect because it
+  allocates `RankClass`/`SuitClass` per profile build. Rate, instrumentation and next step live in
+  `todo.md` under "Known intermittent test failures"; do not restate them here.
 - **A playtest**, and the backlog items — both in `todo.md` under the comparator entry.
 - ⚠ **The suite is not reliably green on a single run**, for reasons outside this stream: the
   run-save layer flakes about 1 run in 4–6 (`todo.md`, "Known intermittent test failures"). It
@@ -187,7 +187,11 @@ the check total varies because the fuzz suites randomise.
    open judgement is `DEFERRED.md` R2 — whether an unexplained split reads as a bug to a human.
    Everything else about this feature is asserted in the suite.
 2. **Chase the leak canary** above.
-3. **`DEFERRED.md` E1**, a benchmark for the scoring path — everything measured is hands of ≤8 cards.
+3. **`DEFERRED.md` E6 — an owner call, and the one number this stream owes.** The IDENTITY path is
+   the path every real game takes (no shipped card implements a meld hook) and it costs **~2x what
+   it did before this work**: 30 cards, no rules, 5.01 ms → 9.15 ms, and 1.9–2.7x at every smaller
+   size. Measured, not diagnosed — suspects in `DEFERRED.md` E6, numbers in `PERFORMANCE.md` §4d.
+   ⚠ E1 is DONE (`Tests/Engine/scoring_cost.tscn`, 5/8/13/30 cards), so E2/E3/E4 are measured now.
 
 ## What this stream got wrong — now folded into ARCHITECTURE_REVIEW §10
 

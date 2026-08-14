@@ -31,6 +31,9 @@ Docs describe the system as it is now, for someone about to change it.
 - **No dead references.** If a doc names a file, section or tool, it must exist.
 - Keep: contracts, gotchas, non-default conventions, owner rulings, levers and their defaults,
   measured dead ends, and what is still open.
+- **Say it in as few words as carry the rule.** This applies to code comments too. Keep the rule and
+  the measured number; drop the story of how it was found, who reported it, and what it used to do.
+  State a fact once, at the site that enforces it, and point at that name from anywhere else.
 - A date earns its place only when the fact is *about* a moment (a measurement's conditions, a
   version boundary). "The suite runs windowed" needs no date; "measured on Box A" does.
 - Plan and handoff docs are temporary: once landed, fold the residue into the living doc and
@@ -38,7 +41,14 @@ Docs describe the system as it is now, for someone about to change it.
 
 `py .claude/tools/doc_check.py` enforces the mechanical half — dangling `[[memory links]]`, an
 index out of sync with disk, references to files that do not exist, hard-coded absolute paths,
-and dated lines. Run it after any docs change. The judgement half is the `/docs` skill.
+and dated lines. It covers **code comments as well as `.md` files**: a comment is a doc that lives
+in a source file, and a comment deferring to a doc is only useful if the doc resolves. Run it after
+any docs change. The judgement half is the `/docs` skill.
+
+A **`Stop` hook runs `--changed --warn-only` at every task boundary** — only the files you touched,
+only the findings that are always bugs, and it never blocks. ⚠ **A silent hook is not a clean
+repo:** it says nothing about the standing style backlog (hundreds of dated and over-long comments,
+`solatro/todo.md`). Run the full check by hand for that.
 
 ## Hard rules (they override defaults)
 

@@ -116,7 +116,18 @@ if (!data.gaps.length) {
 }
 
 if (open.length) {
-  body.append(el('h2', null, `${open.length} open`));
+  // The count says where it came from: an unstated gap is open by fallback, not by decision
+  // (UNSTATED in src/gaps.mjs). A bare "11 open" reads as a fact about the design, not the parser.
+  const unstated = open.filter((g) => !g.statusStated).length;
+  body.append(el('h2', null, unstated
+    ? `${open.length} open — ⚠ ${unstated} of them only because the file carries no <code>status:</code> line`
+    : `${open.length} open`));
+  if (unstated) {
+    body.append(el('p', 'muted', 'A gap with no <code>status:</code> line is treated as open, and '
+      + 'makes every plan step in its blast radius stale, by default rather than by decision. '
+      + 'Add <code>status: open|questioned|resolved|withdrawn</code> to each file below whose badge '
+      + 'reads <strong>unstated</strong>. The tool never edits a gap, so it cannot do this for you.'));
+  }
   // Q90b=b / J12 — the scoped round, in the website. Only these questions and whatever they open.
   if (answerable.length) {
     const row = el('div', 'row');

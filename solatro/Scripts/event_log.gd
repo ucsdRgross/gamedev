@@ -43,7 +43,7 @@ extends RefCounted
 ## The master switch. Static, so a call site needs no reference to anything.
 static var enabled := false
 
-## ⚠ **A HARD CAP, BECAUSE AN UNBOUNDED LOG IS A LOG NOBODY CAN READ** (owner, 2026-08-04: *"Make
+## ⚠ **A HARD CAP, BECAUSE AN UNBOUNDED LOG IS A LOG NOBODY CAN READ** (owner: *"Make
 ## sure log size is not massive before you read it to avoid overloading your context"*). The visual
 ## layer emits per-frame events, so a 60-second capture is tens of thousands of lines — enough to
 ## bury an agent's whole context in noise and enough to make the file itself slow to open.
@@ -207,7 +207,7 @@ static func summary() -> String:
 		out.append("  %-20s %d" % [w, by_what[w]])
 	return "\n".join(out)
 
-## ⚠ **THE VISUAL LOG'S OWN ROOT, AND IT IS GENERIC ON PURPOSE** (owner, 2026-08-04: *"visual logs
+## ⚠ **THE VISUAL LOG'S OWN ROOT, AND IT IS GENERIC ON PURPOSE** (owner: *"visual logs
 ## should not be under spotlight trace since it should be 100% generic and reusable for all visual
 ## elements including player actions and all mods"*). The first version wrote to
 ## `logs/spotlight_trace/`, which quietly told every future reader that this instrument belongs to

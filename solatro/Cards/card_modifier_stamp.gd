@@ -1,9 +1,8 @@
 @tool
 @abstract class_name CardModifierStamp
 extends CardModifier
-## `@tool` for the same reason as its siblings — a placeholder base strips every member of every
-## concrete stamp/skill in the editor, where the FX editor and CardVisual's own preview button both
-## stand up real cards. See `CardData`.
+## `@tool` for the reason spelled out in `CardData`: without it a placeholder base strips every
+## member of every concrete stamp/skill in the editor.
 
 const STAMP_TEXTURE : Texture2D = preload("res://Assets/stamp_pips.png")
 const H_FRAMES: int = 8

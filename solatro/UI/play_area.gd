@@ -52,7 +52,7 @@ static func row_open_height(settings_res: PlayerSettings, separation_px: float) 
 	if settings_res.spotlight_separation_mode == PlayerSettings.SeparationMode.JUMP_ADJUSTED:
 		# The jumping cards clear the row while a card that does NOT jump stays slightly covered —
 		# which is the whole point of this mode, not a rounding artefact.
-		# ⚠ **`separation` COMES OFF THIS MODE TOO** (owner, 2026-08-06: *"jump adjusted needs to be
+ # ⚠ **`separation` COMES OFF THIS MODE TOO** (owner: *"jump adjusted needs to be
 		# card height - separation - jump height then"*). `CARD_HEIGHT` opens to a pitch of exactly one
 		# card; this opens to a card LESS the inter-row gap and the jump rise, so a card that does not
 		# jump stays covered by that much. Both branches return a TOTAL pitch — `row_open_span`
@@ -130,7 +130,7 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## CardVisual host INSIDE the scroll content (a Node2D the containers ignore, like PropLayer):
 ## the scroll transform carries cards, controls, and props together. Parented to the PlayArea
 ## root, cards chased their anchors' scrolled globals through the _process ease and visibly
-## lagged every scroll (owner report 2026-07-12).
+## lagged every scroll (owner report).
 @onready var card_layer: Node2D = %CardLayer
 ## Always-on-top surface (last sibling of TopLevelVBox): the focus inspector panel and score
 ## popups live here so they render above every card and prop by TREE ORDER — no z_index needed.
@@ -296,7 +296,7 @@ func flush_rebuild() -> void:
 
 ## The board Control at a slot coord (z == -1 header, z >= 0 row card), or null if the layout
 ## has no control there (empty slot past the built rows). Focus/input helpers use this;
-## slot GEOMETRY does not — slot_center_global below is pure math (owner spec 2026-07-15).
+## slot GEOMETRY does not — slot_center_global below is pure math (owner spec).
 func control_for_coord(v: Vector3i) -> Control:
 	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
 	if v.y < 0 or v.y >= hbox.get_child_count(): return null
@@ -330,7 +330,7 @@ func slot_center_global(v: Vector3i) -> Vector2:
 	# maths says it should be and visibly detaches from its slot — which is the whole of gate G3.1, and
 	# why the design flagged this function by name rather than letting it be discovered.
 	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
-	# the controls, so geometry stays independent of container relayout timing (owner spec 2026-07-15).
+	# the controls, so geometry stays independent of container relayout timing (owner spec).
 	y += _row_open_offset(v.x, v.z)
 	return Vector2(x, y)
 
@@ -445,7 +445,7 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	# grab_cards puts on a held card's control must be re-derived here — otherwise a rebuild
 	# that happens while a grab is live (auto-Next folds a Next into try_place) leaves the
 	# filter on a control that now belongs to a DIFFERENT card, which becomes permanently
-	# uninteractable and survives undo (owner bug report 2026-07-20).
+	# uninteractable and survives undo (owner bug report).
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
 	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
@@ -456,7 +456,7 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 			card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 
 ## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
-## (owner spec 2026-07-16): per zone, the type/zone headers first, then row 0 of every column,
+## (owner spec): per zone, the type/zone headers first, then row 0 of every column,
 ## then row 1, and so on — upper zone before lower. Cards only overlap WITHIN a column, so this
 ## renders identically to the old column-major order for the cards themselves, but it makes each
 ## row CONTIGUOUS in CardLayer: a split prop (hoop) brackets a whole ROW — back half before the
@@ -485,7 +485,7 @@ func _order_board_cards(game_state: GameData) -> void:
 	# Freshly created CardVisuals enter the tree via call_deferred and were skipped above — but
 	# their creation order is COLUMN-major, so without a follow-up pass a fresh board keeps the
 	# wrong row order until some unrelated rebuild happens (which nothing guarantees: hoop halves
-	# then bracketed scattered indices — back arcs behind the row above, owner report 2026-07-16).
+	# then bracketed scattered indices — back arcs behind the row above, owner report).
 	# Queue exactly ONE re-order behind the pending add_childs (deferred FIFO: adds run first).
 	if pending[0] and not _reorder_queued:
 		_reorder_queued = true

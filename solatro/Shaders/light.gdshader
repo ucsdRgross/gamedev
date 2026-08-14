@@ -84,14 +84,14 @@ uniform float u_beam_softness : hint_range(0.0, 1.0) = 0.35;
 // and circle overlap"*), but that arc was a step between two VALUES, and it is now gone
 // structurally — the beam's coverage converges on the circle's, so they are equal where they meet
 // whatever this is set to. Blurring the edge was treating the symptom, and it cost the pool its
-// shape (owner, 2026-08-04: *"circle edges are way too soft now, earlier it was better"*).
+// shape (owner: *"circle edges are way too soft now, earlier it was better"*).
 // 0.4 is between the two: a real penumbra, still a circle. Judged by eye, and fully tunable.
 uniform float u_circle_softness : hint_range(0.0, 1.0) = 0.4;
 
 // ⚠ **VOLUMETRIC NOISE FROM THE START, NOT ADDED LATER** (`Q98`=b), and it SCROLLS (`Q99`=a). The
 // scroll is on `u_time`, which the CPU pushes with the game's own pacing — **never GLSL `TIME`**,
 // which ignores it.
-// ⚠ **THE GRAIN'S SIZE, AND THE FIRST DEFAULTS WERE MISTUNED — OWNER-REPORTED, 2026-08-04:**
+// ⚠ **THE GRAIN'S SIZE, AND THE FIRST DEFAULTS WERE MISTUNED — OWNER-REPORTED:**
 // *"pixelated hard edge noise inside the light ... some sort of mistuned noise map or something at
 // wrong resolution."* Isolated by rendering with `u_beam_noise = 0` (the patches vanished, so it
 // was this and not the dim's dither): `scale` was **0.02**, which puts `fx_fbm`'s base cell at 50
@@ -117,7 +117,7 @@ uniform float u_pixel = 1.0;
 // the circle it serves** and STOPPING THERE. Distance is measured across the cone's axis and the
 // width is interpolated along it, so the edges are straight lines rather than a widening capsule.
 //
-// ⚠ **THE CONE ENDS AT THE CIRCLE AND ITS MOUTH IS THE CIRCLE'S WIDTH** (owner, 2026-08-04:
+// ⚠ **THE CONE ENDS AT THE CIRCLE AND ITS MOUTH IS THE CIRCLE'S WIDTH** (owner:
 // *"shouldnt beams cut off at the circle? They reach max width at the circle then keep going for
 // some reason. beam edges should match circle"*). Two consequences, and the second is why this is
 // not just a clamp:
@@ -125,7 +125,7 @@ uniform float u_pixel = 1.0;
 //  * **THE CONE ENDS ON THE CIRCLE'S FAR ARC, NOT ON ITS CENTRE.** ⚠ The target point IS the
 //    circle's centre, so cutting the cone at `t = 1` ends it on a CHORD THROUGH THE MIDDLE OF THE
 //    POOL — a straight line halfway across the circle, which is exactly what the owner saw twice
-//    (2026-08-04: *"Beam hard cuts into a straight line when it reaches halfway into circle instead
+// (2026-08-04: *"Beam hard cuts into a straight line when it reaches halfway into circle instead
 //    of covering entire circle"*). Past the centre plane the cross-section is therefore measured
 //    from the CENTRE rather than across the axis, which continues the cone as the circle's own far
 //    half. The two agree exactly at `t = 1` — there the across-axis distance and the distance from
@@ -183,7 +183,7 @@ void fragment() {
 	// `coverage * light colour`, and `QR9`=(c) has the GLOW shader drawing the same circle as
 	// `MASK_DISC`, held down over art by `circle_inner_alpha`. Both lighting one circle is twice the
 	// light for the one client that has no room for it — measured on `10_light_layer` over a real
-	// board, 2026-08-04: **a card under a beam kept its rank and pips, a card under a circle lost
+	// board: **a card under a beam kept its rank and pips, a card under a circle lost
 	// them entirely**, washed to near-white. `Q218`'s note is explicit: *"dont want blowout to
 	// white."*
 	//
@@ -204,7 +204,7 @@ void fragment() {
 		float along = 0.0;
 		float beam = beam_cover(p, B.xy, L.xy, B.z, L.z, B.w, along);
 		// ⚠ **THE BEAM'S DIM-PUNCH CONVERGES ON THE CIRCLE'S; ITS ADDED LIGHT DOES NOT.** Owner,
-		// 2026-08-04: *"there is clear semicircle where beam and circle overlap"* — and that arc was
+ // 2026-08-04: *"there is clear semicircle where beam and circle overlap"* — and that arc was
 		// the whole of this. Two coverage sources met at one edge with different magnitudes: inside
 		// the disc the dim was punched to ZERO, and one pixel outside it, still inside the beam,
 		// only to `u_beam_intensity` (0.45). A step that size along a circular boundary reads as a

@@ -10,7 +10,7 @@ extends CardModifier
 ## or pick from STANDARD, never value ± 1. from_index was deleted: an index hid WHICH suit
 ## a call site actually produced.
 
-## CardData.suit's setter connects this (card_data.gd:9-13). Suits no longer mutate
+## CardData.suit's setter connects this (`CardData.suit`'s setter). Suits no longer mutate
 ## themselves, but the seam stays for future dynamic suits.
 signal data_changed
 
@@ -28,7 +28,7 @@ const ART_TEXTURE_V_FRAMES : int = 13
 @abstract func get_suit_index() -> int
 ## This suit's PaletteDB role, for the polygons that are RECOLOURED (rank pips and card art — both
 ## drawn as single-colour silhouettes shared by every suit). The suit PIP itself is not recoloured:
-## its frames are painted in the palette already, so it draws its own colours (owner 2026-07-27).
+## its frames are painted in the palette already, so it draws its own colours (owner).
 ## Each suit names its own role rather than indexing a magic array — reassigning the colour is
 ## editing that one named entry in Assets/Palette/roles.tres (T21).
 @abstract func palette_role() -> int

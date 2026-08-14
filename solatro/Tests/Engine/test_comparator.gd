@@ -1,6 +1,6 @@
 extends TestSuite
 # res://Tests/Engine/test_comparator.gd
-# PipComparator suite (UNIT_TESTS_PLAN.md §4): default comparisons without an
+# PipComparator suite: default comparisons without an
 # environment, then mod overrides through a FakeEnvironment.
 # Non-freezing checks, every coroutine awaited (SC1 convention).
 #
@@ -659,7 +659,7 @@ class SuspendingMod extends GroupRuleBase:
 				PipRankNumeral.new().with_value(3),
 				PipComparator.MELD_RANKS_DENY, PipComparator.MELD_RANKS_ALLOW)
 
-## ⚠ NOT HYPOTHETICAL — `skill_eval_poker_best.gd:18` already scores rows and columns from
+## ⚠ NOT HYPOTHETICAL — `SkillEvalPokerBest` already scores rows and columns from
 ## inside scoring. This double scores from inside a GROUPING call, which Q15(b) allows with no
 ## depth limit at all.
 ## ⚠ **IT GUARDS ITS OWN DEPTH, AND IT HAS TO.** Scoring always runs the grouping rules, so an

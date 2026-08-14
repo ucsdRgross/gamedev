@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Terminal: ALL prints everything; ERRORS_ONLY prints only FAIL lines (files still get everything).
 
-## ⚠ **TWO LOG ROOTS, AND THEY ARE DELIBERATELY SEPARATE** (owner, 2026-08-04): `logs/test/` is the
+## ⚠ **TWO LOG ROOTS, AND THEY ARE DELIBERATELY SEPARATE** (owner): `logs/test/` is the
 ## SUITE's own output — what `check()` said — and `logs/visual/` is `EventLog`'s record of what the
 ## presentation layer DID. They answer different questions and get mixed up the moment they share a
 ## folder, which is what happened when the visual log first landed in `logs/spotlight_trace/`.

@@ -66,7 +66,7 @@ func _ready() -> void:
 		get_tree().quit(mini(failed, 125))
 
 ## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
-## GREENS THROUGH** (owner, 2026-08-04: *"suite should fail on unexpected errors in error stream so
+## GREENS THROUGH** (owner: *"suite should fail on unexpected errors in error stream so
 ## visible to an agent testing to immediately fix, instead of current behavior where I have to copy
 ## paste it to agent"*).
 ##

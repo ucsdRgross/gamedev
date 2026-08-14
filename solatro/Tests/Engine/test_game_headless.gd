@@ -158,7 +158,7 @@ class PlacerAcceptsOwnSpot extends CardModifierSkill:
 		if src == Vector3i.MIN or dst != src - Vector3i(0, 0, 1): return []
 		return stack
 
-## Task 1 (2026-07-20): a legal placement that moves nothing (Board.OK_NOOP — a stack dropped
+## Task 1: a legal placement that moves nothing (Board.OK_NOOP — a stack dropped
 ## back onto its own spot) must NOT push an undo entry, or Undo appears to do nothing. The
 ## action count entity_side_for_row hashes must not advance either: it never was an action.
 func test_noop_place_commits_nothing() -> void:
@@ -265,7 +265,7 @@ func test_undo_reverts_state_and_history() -> void:
 	free_game(g)
 
 ## submits_used lives on GameData so history snapshots carry it: undoing across a Submit must
-## rewind the act count together with the board (owner bug report 2026-07-12 — the old
+## rewind the act count together with the board (owner bug report — the old
 ## Game-level counter survived undo, permanently eating acts).
 func test_undo_rewinds_act_count() -> void:
 	var g := make_game()

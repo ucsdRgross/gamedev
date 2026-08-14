@@ -30,7 +30,7 @@ func size() -> int:
 ## gradient each resolved through a pointer of their own, three of which no test pinned: repoint one
 ## `.tres` and it emits off-palette colours while the "every colour is a palette entry" suite passes,
 ## which is the precise failure T21 exists to end. `PaletteDB.PALETTE` is a static var for exactly this
-## reason — one storage slot every reader shares (palette_db.gd:17-22).
+## reason — one storage slot every reader shares (`PaletteDB`'s static var).
 func colors() -> PackedColorArray:
 	var out := PackedColorArray()
 	var pal := PaletteDB.PALETTE

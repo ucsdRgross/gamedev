@@ -70,10 +70,34 @@ test('a step line with a list or checkbox marker parses instead of corrupting it
     'each step keeps its OWN citations — no attribution leaks to the step above');
 });
 
+test('a gap with no `status:` line is UNSTATED, not silently open', () => {
+  // ⚠ THE DEFECT THIS PINS: the fallback and a real `status: open` produced byte-identical objects,
+  // so solatro/spotlight's eleven prose-status files read as "11 open" for a stream with two.
+  // Unstated stays OPEN — it is the safe default — but it must never again be indistinguishable.
+  const gap = parseGap('GAP-042.md', [
+    '# GAP-042 — the status is written in prose, the way spotlight writes it',
+    '',
+    '- **Status:** answered, folded into DESIGN v12.',
+    '',
+    '**Why it blocks** — it does not; that is the point.',
+  ].join('\n'));
+  assert.equal(gap.status, 'unstated');
+  assert.equal(gap.statusStated, false, 'the FILE did not say this — the parser did');
+  assert.equal(gap.open, true, 'unreadable is treated as open: it demands attention, safely');
+
+  const stated = parseGap('GAP-043.md', '# GAP-043 — stated\nstatus: open\n');
+  assert.equal(stated.status, 'open');
+  assert.equal(stated.statusStated, true);
+
+  assert.deepEqual(countGaps([gap, stated]), { open: 2, closed: 0, total: 2, unstated: 1 },
+    'the unstated one is counted inside `open` AND named, so a badge cannot hide which it is');
+});
+
 test('a hand-written gap parses into a question in the questionnaire grammar (J8)', () => {
   const gap = parseGap('GAP-002.md', OPEN_GAP);
   assert.equal(gap.id, 'GAP-002');
   assert.equal(gap.status, 'open');
+  assert.equal(gap.statusStated, true);
   assert.equal(gap.open, true);
   assert.equal(gap.severity, 'GAP');
   assert.equal(gap.title, 'the empty deck case is not covered');
@@ -133,7 +157,7 @@ test('a closed gap keeps its resolution and is not asked again (Q96b=a, Q91b=a)'
   assert.match(closed.resolution, /the owner chose \(b\)/);
   assert.equal(scopedQuestions([closed]).length, 0, 'a closed gap is kept, not re-asked');
   const counts = countGaps([closed, parseGap('GAP-002.md', OPEN_GAP)]);
-  assert.deepEqual(counts, { open: 1, closed: 1, total: 2 });
+  assert.deepEqual(counts, { open: 1, closed: 1, total: 2, unstated: 0 });
 });
 
 test('the scoped round asks the open gaps and stops (chart J12)', () => {

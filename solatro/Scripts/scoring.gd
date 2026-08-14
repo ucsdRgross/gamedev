@@ -82,7 +82,7 @@ class ScoreModel:
 ## §15a combo identity: archetype + sub-hand size + copy count, with flush-variant
 ## flags appended so straight flush / full flush / multi-flush stay distinct classes.
 ## Rank and suit do NOT differentiate (pair of 2s == pair of 3s). Both copy_size AND
-## copies_count differentiate (owner ruling 2026-07-17): 1× pair ≠ 5× pair ≠ 10× pair,
+## copies_count differentiate (owner ruling): 1× pair ≠ 5× pair ≠ 10× pair,
 ## pair ≠ trips ≠ quad, 5-straight ≠ 6-straight. MULTI is redundant with copies_count
 ## and is not encoded separately.
 static func class_key(r: Result) -> String:
@@ -557,10 +557,9 @@ static func _build_profile(cards: Array[CardData]) -> HandProfile:
 ## ⚠ NEVER CACHED (Q42=a). These rules read board state by design — Humbug reads cover, The
 ## Turk reads the card beneath — so a remembered answer is a wrong answer.
 ## ⚠ NO DEPTH LIMIT AND NO RUNAWAY ACCOUNTING (Q15=b, Q19=b, Q92=b). A rule may call
-## `Scoring.PokerHands.score` from inside its own hook, without bound, and these dispatches do
-## not feed the per-act event cap. That is DEFERRED.md R1, an accepted risk and not an
-## oversight: a pathological rule can hang a submit, and the only thing standing between that
-## and a hung test run is the fuzz suite's wall-clock bound.
+## `Scoring.PokerHands.score` from inside its own hook without bound, and these dispatches do not
+## feed the per-act event cap. DEFERRED.md R1 accepts the risk: a pathological rule can hang a
+## submit, and only the fuzz suite's wall-clock bound stands between that and a hung test run.
 static func _apply_group_rules(profile: HandProfile, cards: Array[CardData],
 		hand_order: Dictionary[CardData, int], use_ranks: bool) -> void:
 	var env := CardEnvironment.CURRENT
@@ -607,11 +606,10 @@ static func _mark_no_meld(profile: HandProfile) -> void:
 ## rule `_split_denied_rank_classes` uses, so a deny splits identically wherever it arrives from.
 ## A group with no denied pair comes back as itself, one part, unchanged.
 ## ⚠ **COST: O(n²) pair questions per group, per rule, per profile build.** The DISPATCHES are
-## capped — `ask_pass` memoises per hand, so distinct hook calls stay at k(k+1)/2 — but the memo
-## LOOKUPS are not, and a 30-card group is 435 of them per pass. Only reachable once deny content
-## exists (the caller gates on `has_implementer`). If a bench row ever shows it, the fix is the
-## one stage 0 already uses: ask per distinct KEY pair (Q1=a makes same-value pips
-## interchangeable) and bucket cards by their key's verdict, turning n² into k².
+## capped (`ask_pass` memoises per hand, k(k+1)/2), the memo LOOKUPS are not — 435 per pass on a
+## 30-card group. Unreachable until deny content exists; the caller gates on `has_implementer`.
+## If a bench row ever shows it, the fix is stage 0's: ask per distinct KEY pair and bucket cards
+## by their key's verdict (Q1=a makes same-value pips interchangeable), turning n² into k².
 static func _split_group_on_deny(group: Array, deny: StringName, use_ranks: bool) -> Array[Array]:
 	#a lone card has no pair to forbid, and this is the common shape once a rule singletonises
 	if group.size() < 2: return [group] as Array[Array]
@@ -635,23 +633,19 @@ static func _split_group_on_deny(group: Array, deny: StringName, use_ranks: bool
 ## Sanitize a whole-hand rule's answer. Runs after EVERY stage.
 ## ⚠ PLAN §1.3 lists this signature without the deny hook, while step 4 of the same section
 ## mandates the deny re-check — so the hook name and the domain are parameters.
-## 1. EMPTY RETURN (Q13=d, Q85=a) — an empty or absent array is not an error and not "no
-##    change": it means NO MELD IS POSSIBLE from this hand. Signalled by returning empty;
-##    the caller sets `HandProfile.no_meld`, `PokerHands.score` returns [], and
-##    `Game.score_line` banks ZERO for the line.
-## 2. FOREIGN CARDS (Q14=d, Q89=b) — a named CardData that is not in this hand is ACCEPTED
-##    and joins the meld, provided it is reachable from the environment's collections. A
-##    CardData that is not on the board at all is REFUSED with push_error: a rule may pull a
-##    card in, never invent one.
+## 1. EMPTY RETURN (Q13=d, Q85=a) — empty or absent is not an error and not "no change": it means
+##    NO MELD IS POSSIBLE. The caller sets `HandProfile.no_meld`, `PokerHands.score` returns [],
+##    and `Game.score_line` banks ZERO for the line.
+## 2. FOREIGN CARDS (Q14=d, Q89=b) — a card not in this hand is ACCEPTED and joins the meld if it
+##    is reachable from the environment's collections; one not on the board at all is REFUSED with
+##    push_error. A rule may pull a card in, never invent one.
 ## 3. OVERLAPS (Q12=a) — groups sharing a card are unioned into one.
-## 4. DENY RE-CHECK (Q94=a) — after unioning, every pair the union created is re-asked
-##    against the DENY pass only. A denied pair splits the union back apart; the deny wins,
-##    the groups stay separate, and the overlap is dropped from the later one.
-## 5. OMISSIONS (Q11=a) — a card the rule did not name keeps its grouping with the other cards
-##    its previous group still holds. Naming three cards means "put these three together",
-##    never "shatter the rest".
-## 6. ORDER (landmine) — members are re-sorted into hand order before the next stage, so a
-##    rule's return order can never change which card a handler picks first.
+## 4. DENY RE-CHECK (Q94=a) — every pair the union created is re-asked against the DENY pass only.
+##    The deny wins: the groups stay separate and the overlap is dropped from the later one.
+## 5. OMISSIONS (Q11=a) — a card the rule did not name keeps its grouping. Naming three cards means
+##    "put these three together", never "shatter the rest".
+## 6. ORDER (landmine) — members are re-sorted into hand order before the next stage, so a rule's
+##    return order can never change which card a handler picks first.
 static func sanitize(proposed: Variant, previous: Array[Array], hand: Array[CardData],
 		deny: StringName, use_ranks: bool,
 		hand_order: Dictionary[CardData, int]) -> Array[Array]:
@@ -828,14 +822,12 @@ static func _rebuild_classes(profile: HandProfile, groups: Array[Array],
 			cls.datas = members
 			#A stage-1 group has no prior key structure to inherit — the rule PUT these cards
 			#together — so its positions come from the members. ⚠ PRINTED values only, via
-			#get_rank_profile, NOT `rank_values_of`: §1.4 defines `mixed` as "members do not
-			#share one printed value", and a card's EXTRA values (§1.7) are its own, not a
-			#disagreement between members. Seeding them here made a SINGLE-CARD group `mixed`
-			#with one key per extra value, and §1.5's product is over mixed classes — three
-			#values on eight singletonised cards is 3^8 straight scans for a partition that
-			#merged nothing. Same defect as gaps/GAP-002.md, one stage later.
-			#⚠ Consequence, and it is the flattening stage 1 already does: a card's extra
-			#POSITIONS do not survive a grouping rule, because a partition puts it in one class.
+			#get_rank_profile, NOT `rank_values_of`: a card's EXTRA values (§1.7) are its own,
+			#not a disagreement between members, and seeding them makes a SINGLE-CARD group
+			#`mixed` (3^8 straight scans for a partition that merged nothing). The combinatorial
+			#trap is spelled out at `_finalize_rank_class`; this is it one stage later.
+			#⚠ Consequence: a card's extra POSITIONS do not survive a grouping rule, because a
+			#partition puts it in one class.
 			for card : CardData in members:
 				for k : float in PipComparator.get_rank_profile(card.rank):
 					if not cls.member_keys.has(k): cls.member_keys.append(k)
@@ -962,16 +954,13 @@ static func _split_denied_rank_classes(profile: HandProfile, denied: Array[float
 ## A class's key and shape are DERIVED from the cards it ended up holding, never propagated
 ## through the merges — so a split cannot leave behind a member key no member has (§1.4).
 ## ⚠ **`member_keys` IS THE SET OF POSITIONS THIS CLASS OCCUPIES, NOT THE UNION OF ITS MEMBERS'
-## VALUES, AND CONFLATING THEM IS A COMBINATORIAL TRAP.** A card carrying an extra rank value
-## (§1.7) sits in SEVERAL classes at once — its other value belongs to the OTHER class, not to
-## this one. Deriving member_keys from the cards therefore marked every class holding such a
-## card `mixed`, and §1.5's cartesian product is `prod(member_keys.size())` over mixed classes:
-## eight dual-value cards turned one straight scan into 2^16 of them. Measured before the fix:
-## 23 s for one scoring pass; after: single-digit ms.
-## So a class OWNS its keys — seeded with the key it was created at, unioned when two classes
-## merge, and narrowed here to the ones its members actually still sit at (which is what a
-## split leaves behind). `mixed` then means what Q96 means by it: a class a rule MERGED across
-## different printed values.
+## VALUES, AND CONFLATING THEM IS A COMBINATORIAL TRAP.** A card with an extra rank value (§1.7)
+## sits in SEVERAL classes; its other value belongs to the OTHER class. Deriving member_keys from
+## the cards marks every class holding such a card `mixed`, and §1.5's product is
+## `prod(member_keys.size())` over mixed classes — eight dual-value cards turn one straight scan
+## into 2^16. Measured: 23 s per scoring pass, against single-digit ms once fixed.
+## So a class OWNS its keys — seeded at creation, unioned on merge, narrowed here to the ones its
+## members still sit at. `mixed` then means Q96's meaning: MERGED across different printed values.
 static func _finalize_rank_class(profile: HandProfile, cls: RankClass,
 		hand_order: Dictionary[CardData, int]) -> void:
 	var kept : Array[float] = []

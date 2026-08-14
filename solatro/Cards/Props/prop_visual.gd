@@ -73,7 +73,7 @@ var anchor_coord : Vector3i = Vector3i.MIN
 var anchor_point : Vector2
 ## This prop's personal offset from every slot point it travels through, in PIXELS — derived
 ## LIVE every frame by PropLayer._refresh_lane_offset from formation_point + the current
-## card_scale / card_separation_scale settings (owner report 2026-07-15: capture-at-spawn made
+## card_scale / card_separation_scale settings (owner report: capture-at-spawn made
 ## props ignore mid-run setting changes the cards respond to). ZERO when the kind has no
 ## authored formation. A batch reads as a condensed formation instead of a single-file line.
 var lane_offset : Vector2 = Vector2.ZERO
@@ -88,7 +88,7 @@ var formation_spread : bool = false
 var has_formation_point : bool = false
 
 ## Prop art was authored against the DEFAULT card_scale — the live prop scale is
-## card_scale / this, so props grow and shrink WITH the cards (owner report 2026-07-15) while
+## card_scale / this, so props grow and shrink WITH the cards (owner report) while
 ## keeping their authored size at default settings. PropLayer writes `scale` every frame; the
 ## formation editor applies the same rule to its preview (preview_scale stands in for card_scale).
 const AUTHORED_CARD_SCALE := 2.5
@@ -98,7 +98,7 @@ const AUTHORED_CARD_SCALE := 2.5
 ## AUTHORED_CARD_SCALE` — so a prop texel is the same size on screen as a card texel only when the
 ## prop draws its frame at `frame_px * AUTHORED_CARD_SCALE`. Every kind sizes its art through
 ## art_size_for() below and never with raw pixel numbers, so all of the game's pixel art stays ONE
-## pixel size at every card_scale setting (owner 2026-07-27).
+## pixel size at every card_scale setting (owner).
 const ART_PIXEL_SCALE := AUTHORED_CARD_SCALE
 
 ## The `art_size` a sheet's frames want: its frame size (read FROM the image) at the game's one pixel

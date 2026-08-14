@@ -265,7 +265,7 @@ func _burning_host_styled(host: Node2D, style: FxFireStyle) -> void:
 	var att := _card_attachment(host)
 	att.sync([FxFire.request(&"fire", 8, style)] as Array[FxRequest])
 
-## THE WORST HOST THE GAME CAN MAKE (owner 2026-07-29: *"assume every card on screen is burning and
+## THE WORST HOST THE GAME CAN MAKE (owner: *"assume every card on screen is burning and
 ## juggling fire balls"*): three quads on one deformed card — the crown, the balls, and the fire
 ## riding every one of them.
 ## `turns` false is the same host with its quads PINNED to the box bound — the ceiling of lever B, not a

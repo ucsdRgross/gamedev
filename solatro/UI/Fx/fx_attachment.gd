@@ -20,7 +20,7 @@ const FX_MARGIN := 4.0
 ## editor — and the editor instantiates NO autoloads, so `SettingsManager` is not there. The shipped
 ## defaults stand in, which is also what a tuning tool should be showing.
 ##
-## ⚠ **ONE INSTANCE, SHARED BY THE EDITOR AND THE GAME — owner 2026-08-05:** *"if playersettings is
+## ⚠ **ONE INSTANCE, SHARED BY THE EDITOR AND THE GAME — owner:** *"if playersettings is
 ## ever in an editor then it should be shared globally and be the one used in actual games, so i never
 ## need to duplicate settings across different contexts."* This used to return a fresh
 ## `PlayerSettings.new()` in the editor, so the FX editor, the spotlight tool and the running game
@@ -57,7 +57,7 @@ static func _save_editor_settings() -> void:
 ## than every card paying for a lookup it does not use. Every TEXTURED kind is a SPRITE and answers
 ## with its own alpha — which is the only representation that knows a hoop has a hole in it. BALLS
 ## is a shape too, not a mode: the fire shader treats a juggled ball exactly like a card
-## (owner 2026-07-30, *"no special ball case"*).
+## (owner, *"no special ball case"*).
 enum Shape { BOX = 0, RADII = 1, SPRITE = 2, BALLS = 3 }
 
 ## Split-prop halves: which side of the silhouette this quad is allowed to emit from.
@@ -65,7 +65,7 @@ enum Half { WHOLE = 0, BACK = 1, FRONT = 2 }
 
 ## Art units per second of host travel below which the flames ignore the motion entirely. NOT
 ## optional: a board card is never still — delta_floating_anim bobs and drifts it every frame
-## (card_visual.gd:311) — so an unfiltered velocity makes the flames jitter permanently.
+## (`CardVisual.delta_floating_anim`) — so an unfiltered velocity makes the flames jitter permanently.
 const LAG_DEADZONE := 8.0
 ## How far the tips lag per unit of host speed, and the spring that carries them there. The spring
 ## is what sells it: a raw velocity snaps to zero the instant the card stops, which reads as the
@@ -151,7 +151,7 @@ var ambient : bool = true
 ## a paused SceneTree — the classic "paused game with a still-flickering fire" bug.
 var _time : float = 0.0
 
-# --- per-HOST randomness (owner 2026-07-28: effects must not sync up across cards) --------------
+# --- per-HOST randomness (owner: effects must not sync up across cards) --------------
 ## This host's random seed, pushed to EVERY quad it owns rather than rolled per quad: the balls and
 ## the flames riding them have to agree on it, and two hosts must not share it. Every phase in both
 ## shaders — the fire's noise offset, the whole-effect pulse, ball spin — is keyed on it.
@@ -305,7 +305,7 @@ func measure_silhouette(points: PackedVector2Array) -> void:
 	shape = Shape.RADII
 	_restyle()
 
-# --- THE DEFORMING SILHOUETTE (owner 2026-07-29) --------------------------------------------------
+# --- THE DEFORMING SILHOUETTE (owner) --------------------------------------------------
 #
 # A card is NOT the 38x50 rectangle it is authored as: its face polygons are skinned to a star rig
 # whose arms stretch the corners out and pull them back every frame, and the shipped animation is on
@@ -406,7 +406,7 @@ func _push_poly(mat: ShaderMaterial) -> void:
 ## ⚠ THE VERTICES ARE STORED, NOT SAMPLED, AND THAT IS THE WHOLE POINT (FX_HANDOFF §0c.1). This used to
 ## resample the outline into 32 rays of radial SCALE, and no interpolation between two rays can
 ## reproduce a VERTEX — so a corner the rig had pulled out was chamfered off the mask. Measured on a
-## REAL `CardVisual` (`test_the_card_mask_is_the_card_the_player_sees`, 2026-07-29): at one point of the
+## REAL `CardVisual` (`test_the_card_mask_is_the_card_the_player_sees`): at one point of the
 ## card's own autoplay animation the stretched corner stood **26.9 art units of a column outside its own
 ## mask**, carrying no flame at all, and the mask hung ~2 units past the art on the other side. The
 ## polygon is exact at rest AND deformed, and it costs the same `atan` the table cost.
@@ -540,7 +540,7 @@ func _ray_hit(a: float, p: Vector2, q: Vector2) -> float:
 ## what lets a host turn without going stale, and what lets a shape with a HOLE in it (the hoop) be
 ## represented at all. What is measured here is only the art's tight bounding box, and only because a
 ## frame is mostly transparent padding: the ball pip is a small blob in an 8x8 cell, so a comb spanning
-## the frame put flames in empty space beside the drawing (owner report 2026-07-29).
+## the frame put flames in empty space beside the drawing (owner report).
 ##
 ## `src` is the frame's rect in sheet pixels; `size` is the art units that frame is drawn at.
 ##
@@ -832,7 +832,7 @@ func _apply_static(fx: Effect, req: FxRequest) -> void:
 			fx.multi.set_instance_custom_data(i, req.instances[i])
 	if req.style: req.style.apply(mat)
 	# A request may override the host's shape — that is how ball fire says "my mask is the balls, not
-	# the card I am riding on" without the shader needing a mode (owner 2026-07-30).
+	# the card I am riding on" without the shader needing a mode (owner).
 	mat.set_shader_parameter(&"u_shape", req.shape if req.shape >= 0 else int(shape))
 	mat.set_shader_parameter(&"u_half", int(half))
 	# ⚠ THE HOST'S POSE IS SEEDED HERE, because `_push_live` only sends it when it CHANGES and a
@@ -883,7 +883,7 @@ const EMBER_PER_STACK := 3.0
 ## exactly the duplicated-motion bug the shared include exists to prevent.
 ##
 ## BALL fire is the exception, and it has to be: the host is the CARD, so the host's top edge would
-## pour embers off the card while the flames are out on the balls (owner 2026-07-29 wanted embers on
+## pour embers off the card while the flames are out on the balls (owner wanted embers on
 ## *props and balls* too). Those spawn on a randomly chosen ALIGHT ball, whose position comes from
 ## FxJuggle.ball_pos — the one script-side copy of the path, and the one this may call.
 func _emit_embers(fx: Effect, scaled_delta: float, vals: Dictionary[StringName, float]) -> void:
@@ -992,7 +992,7 @@ func _update_lag(delta: float) -> void:
 ## only ever GROWS for that reason — a host whose quads shrink keeps the older, larger margin, which is
 ## the harmless direction and saves recomputing it.
 func _on_screen() -> bool:
-	# ⚠ NEVER CULL IN THE EDITOR — it FROZE THE TUNING TOOL (owner report 2026-07-29: *"card fire not
+	# ⚠ NEVER CULL IN THE EDITOR — it FROZE THE TUNING TOOL (owner report: *"card fire not
 	# animating in fx editor... juggling balls not animating either, just static"*). Both spaces this
 	# reads belong to the running game: `get_viewport_rect()` is the editor WINDOW rather than the 2D
 	# view, and `get_global_transform_with_canvas()` carries the editor's own pan and zoom — so a host
@@ -1008,7 +1008,7 @@ func _on_screen() -> bool:
 	# CALL PER FRAME.** `PropVisual._ready()` builds its half attachments on the `_PropHalf` nodes
 	# that `ensure_back()` / `ensure_front()` construct — and those are deliberately ORPHANS at that
 	# moment, because `PropLayer` parents them to `CardLayer` rather than to the prop (see
-	# `prop_visual.gd:299`). So the first `sync()` reaches here with the attachment outside the tree
+	# `PropVisual`'s CardLayer parenting). So the first `sync()` reaches here with the attachment outside the tree
 	# and `get_viewport_rect()` pushes `Condition "!is_inside_tree()" is true`, once per split-capable
 	# prop per act — the flood the owner saw during submit.
 	# "Not on screen" is the TRUE answer, not a workaround: nothing outside the tree is drawn. It is

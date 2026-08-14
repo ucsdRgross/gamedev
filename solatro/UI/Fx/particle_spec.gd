@@ -2,7 +2,7 @@
 class_name ParticleSpec
 extends Resource
 ## One KIND of particle, as data. Every particle in the game is described by one of these and
-## simulated by ParticleEngine; kinds are .tres files (ember.tres, dust.tres), never code — the
+## simulated by ParticleEngine; kinds are .tres files (ember.tres), never code — the
 ## same rule FxStyle follows, so all visual-effect tuning stays in one place.
 
 ## Seconds a particle lives, and how much that varies per particle (0 = every one identical).

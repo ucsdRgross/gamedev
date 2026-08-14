@@ -1,7 +1,7 @@
 extends TestSuite
 # res://Tests/Engine/test_patience.gd
 # ==============================================================================
-# PATIENCE (2026-07-20) — the per-round idle-move pressure: card moves tick a counter down, a
+# PATIENCE — the per-round idle-move pressure: card moves tick a counter down, a
 # move that triggers a qualifying card modifier holds it, and 0 auto-presses Next. Runs fully
 # headless (view == null), like test_game_headless: a bare Game.new() never added to the tree,
 # with CardEnvironment.CURRENT set by hand so rules skills resolve `game`.

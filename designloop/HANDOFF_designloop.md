@@ -102,9 +102,14 @@ before you finish.
 
 - **Physical keypresses.** Handlers are exercised with dispatched `KeyboardEvent`s in the real page,
   which runs the real code, but OS-level input has never been tried.
-- **The gaps page and the scoped round have never been looked at** — they are text-verified only.
-  The canvas and the question screen were both reviewed by eye, and both reviews found things no
-  test would have. `designloop/tools/shot.mjs` makes looking cheap.
+- ~~The gaps page and the scoped round have never been looked at~~ — **both have now been, and
+  looking found a defect no test would have.** The page said **"11 open"** for `solatro/spotlight`, a
+  stream with two: those eleven files write their status in prose instead of the template's
+  `status:` key, and `parseGap`'s missing-key fallback produced an object byte-identical to a real
+  `status: open` — so `staleFor` marked plan steps stale on nine answered gaps. Fixed by making the
+  fallback SAY so (`unstated`, `gap.statusStated`, a badge, a `gaps` line in `run check`); it stays
+  OPEN, because an unreadable status is not evidence of closure. ⚠ **The gap FILES were not edited**
+  — "the tool never edits a gap" is absolute; recording their real statuses is the owner's call.
 - **A second author's charts.** Only the two real documents have been ingested, and both are written
   by the same hand — so the mermaid subset is proven against this repo's dialect, not against
   mermaid.
@@ -162,9 +167,12 @@ it — so the next job is that design, not this tool.
 1. **`solatro/design/spotlight/` is IN PROGRESS.** Do not reset it, do not answer it, and do not
    delete its `answers.*`. Park on `npm --prefix designloop run watch -- solatro/spotlight` —
    parking is visible to the owner: the screen's chip goes green while a watch is beating.
-2. **Fix QR8** while doing that: it is the one live authoring warning in the repo (its option (a)
-   carries no `→ next:`), and it shows on the index card until it is gone.
-3. **Look at the gaps page and the scoped round** — see "What is NOT verified".
+2. ~~Fix QR8~~ and ~~look at the gaps page~~ — **both done.** `run check` reports `warnings 0` on all
+   three real designs.
+3. **This tool's OWN DESIGN.md has four defects its check reports and nobody has acted on** — the
+   dogfood failing: `Q10` and `QR6` gate questions (1 and 7) without being marked `⚑gate`, so a
+   free-text answer to either prunes them silently; `S15` cites `Q95`/`Q96`/`Q97`, which do not
+   exist; `S17` cites nothing and can never be reported stale.
 
 ### S20 — PROVENANCE
 

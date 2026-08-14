@@ -205,7 +205,7 @@ func _shot(file_name: String, caption: String, panels: Array[_Panel]) -> void:
 		label(holder, panel.label, Vector2(step * (i + 0.5), size.y * 0.93))
 	print("  [", file_name, "] zoom=", zoom, " (", zoom, " screen px per art unit)")
 	# ⚠ **SETTLE, THEN RE-PUSH AND RE-PARK — `behind_prop_turned`'s nondeterminism, same cause as
-	# `fx_snapshot`'s rotated panels (2026-08-08).** `FxAttachment._rot_tight` defaults TRUE and is
+	# `fx_snapshot`'s rotated panels.** `FxAttachment._rot_tight` defaults TRUE and is
 	# only re-evaluated under `if moved and on_screen:`; the loop above pushes in the frame the node
 	# is added, when `get_global_transform_with_canvas()` is not settled yet, so `_on_screen()` can
 	# be false and a ROTATED host keeps the tight quad bound. Parking immediately after means that

@@ -15,7 +15,7 @@ render_mode blend_mix, unshaded;
 //
 // All balls pass IN FRONT of the card (owner ruling 11): no depth split, no second bracket node.
 // When two overlap the LAST instance drawn wins, and FxJuggle orders them so that is the ball with
-// the highest level (owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*).
+// the highest level (owner: *"if overlapping, ball with highest stacks win"*).
 
 #include "res://Shaders/fx_common.gdshaderinc"
 
@@ -47,10 +47,10 @@ uniform float u_top_fraction : hint_range(0.2, 0.8) = 0.6;
 // acceleration out of it look like. See fx_arc_ease in fx_common.gdshaderinc.
 uniform float u_ball_gravity : hint_range(1.0, 3.0) = 1.0;
 // How many ARCS the loop is made of — 2 is the original throw-and-carry, and GDScript adds lanes
-// between them as the ball count rises (owner 2026-07-28). Always EVEN, or the loop would not close
+// between them as the ball count rises (owner). Always EVEN, or the loop would not close
 // in x. Both quads read it, for the same reason they share the gravity.
 uniform float u_ball_arcs = 2.0;
-// SPHERE shading (owner 2026-07-27: "balls need to be spherical"). bands = how many hard tones the
+// SPHERE shading (owner: "balls need to be spherical"). bands = how many hard tones the
 // terminator is quantized into; light is the direction it comes from in ART space (so -y is UP,
 // like everywhere else in 2-D), light_z is how head-on it is, and spec is the threshold that sets
 // how big the highlight is (higher = tighter). All four are FxStyle levers — nothing baked.
@@ -64,7 +64,7 @@ uniform float u_ball_spec : hint_range(0.5, 0.999) = 0.965;
 // The body TONES are an N x 1 strip of EXACT palette entries, darkest first (FxStyle.ball_tones, a
 // PaletteRamp), sampled with filter_nearest — one texel per band. They used to be mix(shade, lit),
 // and the in-between colours that produced were off-palette by up to 49/255 even though both
-// endpoints were hand-picked (owner 2026-07-28: "blending can create unpredictable and bad looking
+// endpoints were hand-picked (owner: "blending can create unpredictable and bad looking
 // colors"). A texture rather than a vec4 array because a dynamically indexed array returned garbage
 // on GLES3 once already (ARCHITECTURE_REVIEW §4g).
 uniform sampler2D u_ball_tones : source_color, filter_nearest, repeat_disable;
@@ -100,7 +100,7 @@ void vertex() {
 void fragment() {
 	// The host's MODULATE, which the renderer folds into COLOR before this function runs. Both
 	// branches below OVERWRITE COLOR, which silently threw it away — so the focus highlight (owner
-	// ruling 10) never reached the balls (owner report 2026-07-28). Multiplied back in at the end.
+	// ruling 10) never reached the balls (owner report). Multiplied back in at the end.
 	vec4 tint = COLOR;
 	float n = max(u_count, 1.0);
 	float id = v_id;

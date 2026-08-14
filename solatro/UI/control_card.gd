@@ -38,7 +38,7 @@ static func describe_card(data: CardData) -> String:
 	if data.rank: lines.append(data.rank.get_str())
 	# Suit now describes its prop effect too (Phase 5): "Knife — <what it does>".
 	if data.suit: lines.append("%s — %s" % [data.suit.get_str(), data.suit.get_description()])
-	# Patience (2026-07-20): inside a show with unique-tracking on, each modifier line says
+	# Patience: inside a show with unique-tracking on, each modifier line says
 	# whether the audience has already seen it this round (a seen mod no longer holds patience).
 	# Preview contexts (booster/deck viewers, no Game) show nothing.
 	var g := CardEnvironment.get_current_game()

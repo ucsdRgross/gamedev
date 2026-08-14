@@ -3,7 +3,7 @@ class_name OutlineAtlas
 extends Node2D
 ## **EVERY OUTLINED FRAME IN THE GAME, ON ONE SCREEN, THROUGH THE REAL DRAW PATH** — open
 ## `outline_atlas.tscn`, change the ink in the inspector, and see it against every non-empty frame
-## at once (owner 2026-08-04: *"seems like this will need its own tool editor to check outline against
+## at once (owner: *"seems like this will need its own tool editor to check outline against
 ## all art in the entire game as a massive recreated sprite sheet and test different outlines and
 ## outline shader effects against all sprites at same time"*).
 ##
@@ -17,7 +17,7 @@ extends Node2D
 ## into the place a bad ink gets caught.
 ##
 ## ── THE SCALE IS KNOWN, NOT GUESSED ───────────────────────────────────────────────────────────────
-## 126 non-empty frames (2026-08-06) — one screen at a readable size, which is what makes this a review
+## 126 non-empty frames — one screen at a readable size, which is what makes this a review
 ## surface rather than a spot check: it shows every frame every time instead of sampling. ⚠ The count is
 ## PRINTED on each rebuild, never written down — IMPACT.md §11's "114" is already stale.
 ##

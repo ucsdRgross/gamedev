@@ -1,6 +1,6 @@
 ---
 name: code-style-lean-documented
-description: "User wants low line count (delete unused code) but doc comments on every method's purpose; plans need references/sources for handoff"
+description: "User wants low line count (delete unused code) but doc comments on every method's purpose, kept SHORT — state the rule, not the story; plans need references/sources for handoff"
 metadata: 
   node_type: memory
   type: feedback
@@ -9,6 +9,12 @@ metadata:
 ---
 
 Keep lines of code low by REMOVING old unused code outright (no dormant paths), while ADDING `##` doc comments that explain each method's intended purpose. Plans should include a references/sources section for easy handoff.
+
+⚠ **A doc comment is a rule, not a story. Go straight to the point.** Same content, fewer words — every time. Cut in particular:
+- **The narrative of how a bug was found** ("the first build did X, and that was wrong twice over"). Keep the rule it produced and the number it measured; drop the plot.
+- **Facts that change nothing for the reader** — who reported it, what the old behaviour was, which session it landed in. Git has that.
+- **The same fact restated at a second site.** State it once where it is enforced; elsewhere point at that name.
+- **Line-number references** (`scoring.gd:811`) — they are dead references waiting to happen.
 
 **Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
 

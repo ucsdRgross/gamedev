@@ -44,7 +44,7 @@ const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 ## The rig's idle ("wiggle") animation in `card_visual.tscn`.
 ##
 ## ⚠ **NAMED HERE BECAUSE IT IS NO LONGER ON `autoplay`, AND FIVE INSTRUMENTS USED TO DISCOVER IT
-## THROUGH THAT FLAG** (owner 2026-08-07: the idle was only ever on to eyeball that the VFX overlay
+## THROUGH THAT FLAG** (owner: the idle was only ever on to eyeball that the VFX overlay
 ## tracked a moving rig, so it is off in the shipped card). `test_pixels`, `tools/fx_editor`,
 ## `tools/outline_atlas` and `tools/spotlight_tool` all read `AnimationPlayer.autoplay` purely to
 ## learn the animation's NAME and then seek it themselves.
@@ -344,7 +344,7 @@ func spotlight_center() -> Vector2:
 ## child of OFFSET rather than of `visual` (see _ready).
 ##
 ## ⚠ **IT IS NOW A STATUS'S ONLY CARD-SIDE PRESENCE.** The `StatusLayer` that used to sit in the card's
-## top-left drawing a placeholder icon and a stack count per status is DELETED (owner 2026-08-04: *"no
+## top-left drawing a placeholder icon and a stack count per status is DELETED (owner: *"no
 ## more status icons, they are represented by status effects like fire and juggling shader... stack
 ## count and status names stay in description at top"*). See `CardModifierStatus.fx_request` for the
 ## standing rule that creates.
@@ -511,7 +511,7 @@ func _rig_outline() -> PackedVector2Array:
 ## the walk below and no upload.
 ##
 ## ⚠ **THIS USED TO SAY "because the rig's animation is on autoplay and a card is never actually at
-## rest". THAT IS NO LONGER TRUE** — the idle was cleared 2026-08-07 (owner: it was only ever on to
+## rest". THAT IS NO LONGER TRUE** — the idle was cleared (owner: it was only ever on to
 ## eyeball that the VFX overlay tracked a moving rig; see [[RIG_ANIM]] above). A card with no active
 ## tween now IS at rest, which makes the early-out fire far more often than the comment assumed.
 ## ⚠ **There is a real optimisation sitting here and it is deliberately NOT taken:** with the idle
@@ -545,7 +545,7 @@ func _ready() -> void:
 	# CardVisual subtree stays one unit in CardLayer's draw order. Runtime-only and OWNERLESS: this
 	# script is @tool, and an owned child would be written into card_visual.tscn by the editor.
 	# THE RIG IS BOUND IN EITHER MODE, because the FX EDITOR previews a REAL card and needs the same
-	# outline the game hands over (owner 2026-07-29: *"no useless mocks when you can just use actual
+	# outline the game hands over (owner: *"no useless mocks when you can just use actual
 	# original scene"*). It is a `get_node_or_null` and a child walk; nothing about it needs a game.
 	_bind_rig()
 	if not Engine.is_editor_hint():

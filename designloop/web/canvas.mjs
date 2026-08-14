@@ -566,7 +566,7 @@ search.addEventListener('keydown', (e) => {
   // A hit inside a collapsed or hidden chart is useless unless the chart opens (F9).
   const chart = state.graph.nodes[hit].chart;
   // ⚠ SWITCHING THE SINGLE-CHART VIEW MUST REFIT, and not doing so was the sharpest half of the
-  // owner's 2026-08-04 report. Searching a node in ANOTHER chart re-laid out that chart but left
+ // owner's 2026-08-04 report. Searching a node in ANOTHER chart re-laid out that chart but left
   // the zoom and pan that had been fitted to the PREVIOUS one — measured on Spotlight: the new
   // chart landed 106 px off centre and did not fit in the stage at all, so the only way to see it
   // was to pan by hand. The picker's own click handler always fitted; this path never did.
@@ -693,7 +693,7 @@ function toggleChrome(which, force = null) {
   fit();
 }
 
-// ⚠ THE WINDOW ITSELF RESIZES TOO, AND NOTHING WAS LISTENING (2026-08-04). Folding a panel called
+// ⚠ THE WINDOW ITSELF RESIZES TOO, AND NOTHING WAS LISTENING. Folding a panel called
 // `fit()`; dragging the window edge, changing zoom, or rotating a tablet did not — so the view kept
 // a scale and an offset computed for a stage that no longer existed, and the chart drifted off
 // centre with no way back but panning. It is the same staleness `toggleChrome` already guarded

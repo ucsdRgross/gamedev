@@ -224,7 +224,7 @@ func _drive_route_flight(pl: PropLayer, p: PropData, flag: Array[bool]) -> void:
 ## Per-frame RAW position sampler: captures the prop visual's GLOBAL position EVERY frame from
 ## the moment it appears until the node frees — staging, sweep, AND the despawn exit, in ONE
 ## continuous loop with no per-tick gaps (a per-tick poll missed frames between ticks and let
-## diagonal drift through: owner report 2026-07-12). This is the raw visual output the
+## diagonal drift through: owner report). This is the raw visual output the
 ## envelope/direction checks read. `poll`, when valid, runs each sampled frame with the visual.
 ## `origin`, when valid, is subtracted from every sample: measuring relative to a live board
 ## point cancels WHOLE-BOARD motion (smooth-scroll settle, relayout shifts move every global
@@ -293,7 +293,7 @@ func test_slot_geometry() -> void:
 	# A COMPLETELY EMPTY column: its header is that column's LAST control, so the
 	# "last control is full card height" rule inflates it — the fallback must anchor to
 	# the header TOP or every row bends a full card downward at empty columns (the live
-	# diagonal-knife/invisible-hoop staging bug, owner report 2026-07-13).
+	# diagonal-knife/invisible-hoop staging bug, owner report).
 	g = make_board_game(3, [1] as Array[int])
 	pa = make_play_area()
 	await settle(pa)
@@ -303,7 +303,7 @@ func test_slot_geometry() -> void:
 			"an empty column's row-0 slot sits ON the row line of its occupied neighbors",
 			"occupied y %.1f vs empty-column y %.1f" % [occupied_y, empty_y])
 	await cleanup(g, pa)
-	# TASK 3 (owner spec 2026-07-15): slot centers are PURE MATH (zone origin + indices), no
+	# TASK 3 (owner spec): slot centers are PURE MATH (zone origin + indices), no
 	# control reads — verify the math reproduces the CONTROL layout at MULTIPLE card-separation
 	# levels, since the row pitch folds in card_separation_play_custom. The math must match the
 	# built controls' card anchors (control top + half a card) and keep empty columns on the row
@@ -331,7 +331,7 @@ func test_slot_geometry() -> void:
 	SettingsManager.settings.card_separation_scale = prev_sep
 
 ## ⚠ **A BOARD WIDER THAN THE WINDOW IS A SUPPORTED STATE, AND NOTHING COVERED IT.**
-## Owner, 2026-08-07: *"it should be possible for there to be x-column wide boards if I decide to
+## Owner: *"it should be possible for there to be x-column wide boards if I decide to
 ## change rules, with side scrolling allowed in order to see those cards. Tests should reflect that
 ## instead of hardcoding to 6 wide, but 6 wide should be fine for most tests, just dont assume that
 ## its always true."*
@@ -396,14 +396,14 @@ func test_prop_visual_lifecycle() -> void:
 		check(ok, "a mover tick completes (slot %s)" % str(p.at))
 	var vis : PropVisual = pl._visuals.get(p)
 	if vis:
-		# NOTE (2026-07-15): this landing check and the "arrives exactly" check in
+ # NOTE: this landing check and the "arrives exactly" check in
 		# test_slow_props have been observed FAILING independent of the z→structure layering
 		# migration (their prop kinds/paths don't touch that code). They are timing-sensitive
 		# ([[running-godot-scenes]]): after the last tick the board can still be settling and
 		# _repin chases the live slot for a frame or two. Poll briefly for the position to settle,
 		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
 		# Slot centre PLUS this kind's lane offset — for the hoop that is the card-jump rise it now
-		# rides at (owner 2026-07-28), so the bare slot centre is no longer where it parks.
+ # rides at (owner), so the bare slot centre is no longer where it parks.
 		var want := pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		var w := 0.0
 		while (vis.position - want).length() >= 1.0 and w < 1.0:
@@ -597,7 +597,7 @@ func test_reactions_drive_card_pose() -> void:
 ## Sample the RAW global position EVERY frame of a row prop's whole flight — staging, sweep,
 ## despawn tween, one continuous sampler with no per-tick gaps — and hold it to the LIVE row
 ## envelope. Mid-flight a focus grab resizes the layout exactly like a player hovering a card;
-## a leg locked to stale pixels then walks a diagonal off its row (owner report 2026-07-12) —
+## a leg locked to stale pixels then walks a diagonal off its row (owner report) —
 ## the prop must ride the shifted row instead. The sweep must also never reverse direction
 ## (derived from the raw samples, printed with positions).
 func test_row_prop_never_leaves_its_row() -> void:
@@ -767,7 +767,7 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 			"a ballistic prop poofs AT its target (no random exit direction)", strayed)
 	await cleanup(g, pa)
 
-## A batch's props map onto their kind's PropFormationData points (owner spec 2026-07-13):
+## A batch's props map onto their kind's PropFormationData points (owner spec):
 ## with an authored formation, a burst reads as a condensed formation instead of a single-file
 ## line; kinds with NO authored set (the default — no .tres shipped) fly the exact slot line.
 ## The set is injected into the layer's cache here, never loaded from disk.
@@ -802,7 +802,7 @@ func test_batch_props_stagger() -> void:
 			"%s vs %s" % [va.position if va else Vector2.INF, vb.position if vb else Vector2.INF])
 	await cleanup(g, pa)
 
-## TASK 2 (owner spec 2026-07-15): spread_by_separation points are STORED separation-agnostically
+## TASK 2 (owner spec): spread_by_separation points are STORED separation-agnostically
 ## in FULL-CARD normalized space — ratio 1 when the separation equals the card height. Placing the
 ## same visual pattern at ANY separation stores the SAME points, and offsets_for re-projects them
 ## into whatever strip the live separation gives (same strip FRACTION at every level).
@@ -858,7 +858,7 @@ func test_formation_separation_agnostic() -> void:
 	check_impl(fixed_a.is_equal_approx(fixed_b),
 			"a non-spread formation ignores the separation factor entirely")
 
-## Formation offsets and prop art must track LIVE settings mid-flight (owner report 2026-07-15:
+## Formation offsets and prop art must track LIVE settings mid-flight (owner report:
 ## separation/card-scale changes did nothing until the next spawn). Root cause was
 ## capture-at-spawn — and it is exactly why the earlier tests missed it: none of them touched a
 ## setting while a prop was airborne. This one does: spawn a spread-formation knife, then move
@@ -927,7 +927,7 @@ func test_status_and_description_surface() -> void:
 	card.add_status(CardModifierStatus.stacked(StatusJuggling, 2))
 	var vis : CardVisual = pa.data_card.get(card)
 	# A status's ONLY card-side presence is now its FX — the StatusLayer that drew a placeholder icon
-	# and a stack count in the card's top-left is deleted (owner 2026-08-04). So the surface to assert
+	# and a stack count in the card's top-left is deleted (owner). So the surface to assert
 	# is that the status DECLARED something and the card is showing it; a status that declares no FX is
 	# deliberately invisible on the board, and `CardModifierStatus.fx_request` carries that rule.
 	check(vis != null and not vis._fx_requests().is_empty(),
@@ -1134,7 +1134,7 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 ## the seam this repo keeps getting caught by: a copy would keep passing while the real board moved.
 ##
 ## ⚠ **"THE BOARD FITS THE WINDOW" IS NOT AN INVARIANT AND MUST NEVER BE ASSERTED AS ONE**
-## (owner, 2026-08-07: *"it should be possible for there to be x-column wide boards if I decide to
+## (owner: *"it should be possible for there to be x-column wide boards if I decide to
 ## change rules, with side scrolling allowed in order to see those cards"*). Column count is content:
 ## it grows through the `SkillAdderInput*` rules cards, and the rules set is free to change. `PlayArea`
 ## lives in a `ScrollContainer` precisely so a board wider than the window is a SUPPORTED state, not
@@ -1197,7 +1197,7 @@ func test_all_kinds_live_in_game_view() -> void:
 	#   col4 [talent, ball2]   (ball at z=1 mancala-targets the talent below it)
 	#   col5 [plain,  fire2]   (fire at z=1 targets the plain below it)
 	#
-	# ⚠ **SIX COLUMNS, NOT SEVEN — THE SEVENTH WAS WIDER THAN THE GAME CAN BUILD** (2026-08-07).
+	# ⚠ **SIX COLUMNS, NOT SEVEN — THE SEVENTH WAS WIDER THAN THE GAME CAN BUILD**.
 	# The old fixture put a 7th column's card at x 1187..1237 against a 1152 px viewport, so its fire
 	# prop could never enter the view: `every spawned fire entered the visible viewport` was left
 	# FAILING ON PURPOSE and GAP-001 was opened as a game-feel decision between shrinking `card_scale`,

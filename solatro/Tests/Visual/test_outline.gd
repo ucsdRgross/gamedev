@@ -58,7 +58,7 @@ func _ready() -> void:
 
 ## The guard, copied in shape from `test_pixels`: a dummy renderer compiles no shader and rasterizes
 ## no triangle, so an outline check under `--headless` would be reported green having looked at
-## nothing. It FAILS with the fix in the message; it never skips (owner 2026-07-27).
+## nothing. It FAILS with the fix in the message; it never skips (owner).
 func _check_renderer() -> bool:
 	var display := DisplayServer.get_name()
 	var live := display != "headless"

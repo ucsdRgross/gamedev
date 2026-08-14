@@ -2,7 +2,7 @@
 class_name FxEditor
 extends Node2D
 ## LIVE FX TUNING IN THE EDITOR — open `fx_editor.tscn`, edit an `FxStyle` in the inspector, watch
-## the real shaders react (owner 2026-07-28: *"a way to visualize fire and juggling purely in editor
+## the real shaders react (owner: *"a way to visualize fire and juggling purely in editor
 ## for debugging purposes, similar to formation editor, so I can fine tune parameters"*).
 ##
 ## "React" means WITHIN A QUARTER SECOND, without reopening the scene: the tool polls every resource
@@ -29,7 +29,7 @@ extends Node2D
 ##    instance"*, so `FxStyle.apply()` never runs and every quad renders with default uniforms —
 ##    pure white. Worse, saving a `.tres` whose script is a placeholder writes back only the
 ##    properties the editor could see and SILENTLY DROPS THE REST; that is how `fire_card.tres` lost
-##    its `pixel` and `dither` on 2026-07-28. FxStyle, FxRequest, FxFire, FxJuggle, ParticleSpec,
+## its `pixel` and `dither` on 2026-07-28. FxStyle, FxRequest, FxFire, FxJuggle, ParticleSpec,
 ##    ParticleEngine and FxAttachment are all `@tool` for this reason. Do not remove it from any of
 ##    them.
 ##  * The editor instantiates NO autoloads, so `SettingsManager` / `CardEnvironment` are absent.
@@ -50,7 +50,7 @@ var _particles : ParticleEngine = null
 # --- LIVE RESOURCE WATCH -------------------------------------------------------------------------
 ## How often the tool re-reads the resources it is previewing, in seconds.
 ##
-## ⚠ THIS EXISTS BECAUSE A CUSTOM RESOURCE DOES NOT TELL ANYONE IT CHANGED (owner 2026-07-31:
+## ⚠ THIS EXISTS BECAUSE A CUSTOM RESOURCE DOES NOT TELL ANYONE IT CHANGED (owner:
 ## *"changing vfx parameters in editor does not update in real time, requiring closing scene and
 ## reopening each time"*). `Resource.changed` is only emitted by `emit_changed()`, which built-in
 ## resources call from their setters and a script's `@export var` does NOT — so editing `height` on
@@ -113,11 +113,11 @@ var _watched : Array = []
 ## Art units between subjects.
 @export_range(30.0, 200.0, 1.0) var spacing : float = 70.0:
 	set(v): spacing = v; _touch()
-## TURN EVERY HOST, to see how each effect handles a rotated host (owner 2026-07-30). Two different
+## TURN EVERY HOST, to see how each effect handles a rotated host (owner). Two different
 ## answers are correct here, and this is how you tell them apart:
 ##  * FIRE turns WITH its host — the mask is the art, and the march is world-down, so the flames stay
 ##    upright and their pixels stay square while the silhouette under them tilts (ruling 1).
-##  * JUGGLING does NOT turn at all: *"juggle effect doesn't rotate with card"* (owner 2026-07-30).
+## * JUGGLING does NOT turn at all: *"juggle effect doesn't rotate with card"* (owner).
 ##    The pattern is defined in the quad's own space and `juggle.gdshader` never reads `u_shape_rot`,
 ##    while `FxAttachment._push_live` counter-rotates the quad — so the balls hold their loop, upright
 ##    and centred on the card, at every angle. This slider is here to PROVE that, not to fix it.
@@ -126,7 +126,7 @@ var _watched : Array = []
 @export_range(-180.0, 180.0, 1.0) var host_rotation : float = 0.0:
 	set(v): host_rotation = v; _touch()
 ## WHERE IN THE CARD'S OWN ANIMATION THE RIG SITS, 0 to 1 across `new_animation_2` — which is how you
-## see whether the fire follows a card that is no longer a rectangle (owner 2026-07-29: *"I don't see
+## see whether the fire follows a card that is no longer a rectangle (owner: *"I don't see
 ## fire effect warping with the card during playtesting"*).
 ##
 ## ⚠ IT REPLACED A `corner_warp` SLIDER, AND THAT SLIDER WAS THE TOOL'S LAST MOCK. It stretched the four
@@ -152,17 +152,17 @@ var _watched : Array = []
 ## effect misbehaving.
 ##
 ## ⚠ IT USED TO BE A FLAT PALETTE-COLOURED POLYGON, and it was drawn from THE SAME ARRAY the mask was
-## built from — so the tool could not show a face-versus-mask disagreement at all (owner 2026-07-29:
+## built from — so the tool could not show a face-versus-mask disagreement at all (owner:
 ## *"no placeholder art that isnt ever seen in game"*). The real face is not even a rectangle: the
 ## TypePaper frame clips one texel off each corner, which a flat polygon could never have shown.
 @export var show_card_face : bool = true:
 	set(v): show_card_face = v; _touch()
 ## Embers, through the real ParticleEngine. EVERY fire that carries an `FxStyle.ember` throws them —
-## the card, the props and the lit balls (owner 2026-07-29). Card fire uses `ember.tres`; props and
+## the card, the props and the lit balls (owner). Card fire uses `ember.tres`; props and
 ## balls use the prop-scaled `ember_prop.tres`.
 @export var show_embers : bool = true:
 	set(v): show_embers = v; _touch()
-## THE EMBER TUNABLES, one click away (owner 2026-07-30: *"only see show embers in editor and not the
+## THE EMBER TUNABLES, one click away (owner: *"only see show embers in editor and not the
 ## tunables"*). These are the same `ParticleSpec` resources `FxStyle.ember` points at — expand one and
 ## every ember knob (lifetime, speed, spread, gravity, drag, sizes, `ramp_source`, `ramp_alphas`) is
 ## editable while the preview is on screen. Editing the resource retunes the running game, because the
@@ -352,7 +352,7 @@ func _drop_ramp_caches() -> void:
 		if spec: spec.ramp_source = spec.ramp_source
 
 ## A REAL CardVisual carrying the card fire style — its TypePaper face, its star rig, its own
-## animation. The card equivalent of `_add_prop`, and for the same reason (owner 2026-07-29: *"no
+## animation. The card equivalent of `_add_prop`, and for the same reason (owner: *"no
 ## useless mocks when you can just use actual original scene"*).
 func _add_card_fire(slot : int) -> int:
 	var reqs : Array[FxRequest] = []
@@ -507,7 +507,7 @@ func _x(slot : int) -> float:
 	return (float(slot) - 2.5) * spacing
 
 ## Backdrop and body outlines, drawn under everything. No captions: the subjects are recognisable
-## from their art and the labels were just clutter (owner 2026-07-29).
+## from their art and the labels were just clutter (owner).
 func _draw() -> void:
 	var half := spacing * 3.5
 	draw_rect(Rect2(-half, -spacing * 1.6, half * 2.0, spacing * 3.2),

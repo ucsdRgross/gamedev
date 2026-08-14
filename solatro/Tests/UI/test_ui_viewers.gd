@@ -54,7 +54,7 @@ func _count_viewers() -> int:
 	return n
 
 ## ⚠ **THE DETAIL LINE FOR AN INTERMITTENT NOBODY HAS CAUGHT.** `repeated show_deck replaces instead
-## of stacking` failed once in four runs (2026-08-06) and did not recur in ~20 consecutive runs on
+## of stacking` failed once in four runs and did not recur in ~20 consecutive runs on
 ## 2026-08-07, so the next occurrence has to carry its own evidence or it costs another twenty runs.
 ##
 ## What was RULED OUT on 2026-08-07, so it is not re-tried from scratch: "a concurrent suite hijacks
@@ -136,7 +136,7 @@ func test_choice_viewer_take_all() -> void:
 	check(viewer.is_queued_for_deletion(), "viewer frees itself after confirming")
 	await get_tree().process_frame
 
-## Booster rerolls (2026-07-20): a pack opens with a SHARED pool of free rerolls; each slot's
+## Booster rerolls: a pack opens with a SHARED pool of free rerolls; each slot's
 ## Reroll re-rolls that slot through the same generator, spending from the one pool, and the
 ## buttons gray out at zero. Driven through the data API (reroll()) — the buttons are thin
 ## wrappers over it.

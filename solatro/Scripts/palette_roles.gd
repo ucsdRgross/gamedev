@@ -39,7 +39,7 @@ extends Resource
 ## The juggled ball's specular dot. Its BODY tones are an ordered ramp, not a role — see PaletteRamp.
 @export_range(0, 255, 1) var ball_gloss : int = 31
 
-# ⚠ **`art_outline` AND `alert_glare` LIVED HERE AND WERE MOVED, NOT COPIED** (2026-08-06). They are the
+# ⚠ **`art_outline` AND `alert_glare` LIVED HERE AND WERE MOVED, NOT COPIED**. They are the
 # card outline's ink and its glare band, and keeping them here split ONE effect's tuning across two
 # resources: judging an ink on `tools/outline_atlas.tscn` meant editing a different file from the one
 # holding the rim's width, tempo and buffer. They now live in `OutlineStyle`

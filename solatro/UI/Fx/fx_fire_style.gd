@@ -17,7 +17,7 @@ extends FxStyle
 ##
 ## What is NOT here is the juggling pattern (`FxJuggleStyle`), and that separation is the point: a
 ## fire style has no use for `ball_radius`, and showing both halves made every resource read like the
-## union of two unrelated things (owner 2026-07-31). See `FxStyle` for why this is a subclass rather
+## union of two unrelated things (owner). See `FxStyle` for why this is a subclass rather
 ## than a flag.
 
 ## The baked seamless tile the texture noise path samples. Re-roll it with
@@ -37,7 +37,7 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 ##
 ## For a CARD-hosted effect the budget is half the default card separation —
 ## `CardVisual.CARD_SEPARATION * 0.5` = 7 — so the flames never reach the card behind and cover it
-## (owner 2026-07-28). Prop-hosted styles are in PROP art units (screen pixels at the default
+## (owner). Prop-hosted styles are in PROP art units (screen pixels at the default
 ## card_scale, ~2.5x smaller), so their number is not the same number.
 @export var height : float = 7.0
 ## ⚠ THE COST KNOB, AND THE ONLY ONE THAT MATTERS. This shader is `mask_level` call count times cost
@@ -58,7 +58,7 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 ## Turn it to 0 only to LOOK at the raw ladder (`00_cover_field` does exactly that).
 @export_range(0.0, 1.0, 0.01) var cover_dither : float = 1.0
 ## HOW FAR THE FIRE IS ALLOWED DOWN INTO THE HOST'S ART, in art units — the encroachment knob
-## (owner 2026-07-29). Positive sinks the base below the surface, which is what guarantees no seam
+## (owner). Positive sinks the base below the surface, which is what guarantees no seam
 ## where flame meets host; 0 plants it exactly on the surface; NEGATIVE lifts it clear so the flames
 ## sit above the art and cover nothing at all.
 ##
@@ -72,7 +72,7 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 ## Opacity where the effect overlays the host's body — i.e. **whether the fire draws IN FRONT OF the
 ## art or gets out of its way.**
 ##
-## ⚠ **EVERY SHIPPED STYLE SETS THIS TO 0.0** (owner 2026-07-29: *"I would prefer that fire effect
+## ⚠ **EVERY SHIPPED STYLE SETS THIS TO 0.0** (owner: *"I would prefer that fire effect
 ## always be behind main card art visually, so it never covers art and hides jaggedness of fire
 ## bottom vs object tops when rotating or warping"*). At 0 the flame is cut exactly at the host's
 ## mask, so:
@@ -178,7 +178,7 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 @export var noise_tile : float = 32.0
 
 @export_group("Stack scaling")
-## HOW FAST EACH KNOB RAMPS AS STACKS RISE (owner 2026-07-29: *"just increasing shader params as
+## HOW FAST EACH KNOB RAMPS AS STACKS RISE (owner: *"just increasing shader params as
 ## intensity/stacks increase... make sure all params have scaling ratios as stacks increase"*).
 ##
 ## Every one is a multiplier on `log(stacks)`, applied in ONE place — `FxFire.stacks_live` — as
@@ -219,7 +219,7 @@ const NOISE_TILE := preload("res://Assets/Fx/noise_fire.png")
 		ramp_source = value
 		_ramp_tex = null
 ## How many of the ramp's entries one flame shows at once. The window SLIDES toward the hot end as
-## the stack level rises (owner 2026-07-28: *"ramp could have 10 colors, and fire ramp can focus on
+## the stack level rises (owner: *"ramp could have 10 colors, and fire ramp can focus on
 ## window of 3 and move through the ramp when intensity increases"*), so more stacks means hotter
 ## bands rather than the same bands brightened.
 @export_range(1, 12, 1) var ramp_window : int = 4:

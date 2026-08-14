@@ -96,7 +96,7 @@ func rules_card(skill: CardModifierSkill) -> CardData:
 ## `TestFactories.m_card` builds a card with no type at all. Without this, `card.type.is_spotlit()`
 ## is a call on `Nil` — a RUNTIME error that aborts the test function silently, leaving the suite
 ## banner saying PASSED with five tests' worth of checks simply never run. Every real card has a
-## type (`Decks/deck.gd:36`), so this makes the fixture match the game rather than working around it.
+## type (`Deck`'s starting-card builder), so this makes the fixture match the game rather than working around it.
 func play_card(rank: int, suit_id: int) -> CardData:
 	var c := TestFactories.m_card(float(rank), suit_id)
 	c.with_type(TypePaper.new())
@@ -366,7 +366,7 @@ func test_the_section_signal_carries_plain_cards() -> void:
 			"emits=%d" % seen.size())
 	free_game(g)
 
-## ⚠ **GAP-006: THE SHOW PULSES PER SECTION, AND NOTHING ASSERTED THAT BEFORE.** Owner, 2026-08-04:
+## ⚠ **GAP-006: THE SHOW PULSES PER SECTION, AND NOTHING ASSERTED THAT BEFORE.** Owner:
 ## *"spotlight + dim occurs as cards of section get revealed, with both spotlight and dim effect
 ## fading away as scoring starts to happen. When next section is revealed, spotlight and dim effect
 ## are visible again, moving to new location, then fade away again."*
@@ -987,7 +987,7 @@ func test_a_beam_never_points_upward() -> void:
 
 ## **A SHRINKING SECTION MUST KEEP THE LIGHTS ALREADY NEAREST ITS TARGETS.**
 ##
-## ⚠ **THE BUG THIS PINS SHIPPED AND WAS FOUND BY EYE, NOT BY A TEST** (owner, 2026-08-05: *"when
+## ⚠ **THE BUG THIS PINS SHIPPED AND WAS FOUND BY EYE, NOT BY A TEST** (owner: *"when
 ## spotlight chooses new targets and there are less cards, it doesnt choose nearest spotlights but
 ## leftmost ones, so left beams cross all the way to right while right beams disappear"*). Pairing two
 ## x-sorted lists cannot CROSS, which is why chart E2 does it — but with unequal counts the old code

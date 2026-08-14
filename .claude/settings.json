@@ -10,6 +10,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py \"$CLAUDE_PROJECT_DIR/.claude/tools/doc_check.py\" --changed --warn-only",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }

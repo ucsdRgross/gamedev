@@ -11,15 +11,13 @@ design: **255 answered questions, 65 cited by a plan step, 190 cited by none.** 
 in-session, then the code centred the circle on the card's origin, and it shipped wrong through
 three phases and two by-eye reviews before the owner spotted it on a stacked board.
 
-**Why:** every check in the designloop tool validated **steps → nodes** (every citation resolves, no
-step cites nothing). Nothing validated **nodes → steps**, so an answer no step claimed was invisible
-to the whole toolchain — and therefore to the agent executing the plan. The owner's hypothesis was
-"the agent isn't reading the design"; the evidence said otherwise, and that distinction mattered,
-because "read it all first" would not have prevented either miss.
+**Why:** every designloop check validated **steps → nodes** (every citation resolves, no step cites
+nothing). Nothing validated **nodes → steps**, so an answer no step claimed was invisible to the
+whole toolchain, and therefore to the agent executing the plan.
 
 ⚠ **The failure mode is BINDING, not reading.** An answer read at the start of a session and a
-contract written an hour later are not connected by anything. The design is 2400 lines; re-reading it
-is not the mechanism. **A check that fails is.**
+contract written an hour later are not connected by anything. The design is 2400 lines; re-reading
+it is not the mechanism. **A check that fails is.**
 
 ⚠⚠ **MEASURED A SECOND TIME ON COMPARATOR BUCKETS — AND THAT ONE PROVES THE CHECK IS NOT ENOUGH.**
 `Q83`(a) — *every* situation gets a deny/allow pair — shipped with the four `on_stack_*` hooks
@@ -39,9 +37,8 @@ Two corollaries, both cheap:
   quantifies over and check the list, the way rule 2 below does for design tables. `Q83`'s list was
   three situations long and two of them were wired.
 
-⚠ **Do not record "we forgot to run the check" when the check was green.** That was this memory's
-own first draft, and it would have taught the next session to trust a passing `unclaimed` — the
-exact instrument that missed it.
+⚠ **Do not record "we forgot to run the check" when the check was green** — that teaches the next
+session to trust the exact instrument that missed it.
 
 **How to apply:**
 

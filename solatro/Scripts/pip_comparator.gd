@@ -294,19 +294,15 @@ static func ask_pass(hook: StringName, a: Variant, b: Variant,
 
 
 ## STACK LEGALITY sameness — the same two passes as melding, over the STACK hooks (S21).
-## Q83(a) gives every SAMENESS situation its own deny/allow pair; Q62(a) and the owner's Q97 note
-## forbid a meld rule answering here, so a card wanting both implements both. Silence falls
-## through to printed values (Q81=a), and unspotlit skills are skipped (Q5=a) — both inside
-## `pair_is_same`.
-## ⚠ Rank ADJACENCY for a run still goes through `compare_ranks`: "is this one step away" is a
-## scalar, not a sameness question, and Q55(a) deliberately left ordering alone.
-## ⚠ NEVER memoised, and the `false` below is what enforces it: the board is live when a move is
-## being judged, and a grouping rule asking this from inside a scoring pass must not get a
-## verdict frozen for the rest of the hand.
-## ⚠ GATED like the profiling closures are (`scoring.gd` :811 / :948). A legality query runs on
-## every candidate placement, and `_compare_implementers` caches nothing in a base environment —
-## so reaching the two passes unconditionally walked the board twice per query for hooks no
-## shipped card implements. With the gate, the miss costs the gate alone.
+## Q83(a) gives every SAMENESS situation its own deny/allow pair; Q62(a) and Q97 forbid a meld rule
+## answering here, so a card wanting both implements both.
+## ⚠ Rank ADJACENCY still goes through `compare_ranks`: "is this one step away" is a scalar, not a
+## sameness question, and Q55(a) left ordering alone.
+## ⚠ NEVER memoised — the `false` below enforces it. The board is live when a move is judged, so a
+## verdict must not freeze for the rest of the hand.
+## ⚠ GATED like the profiling closures. A legality query runs on every candidate placement and
+## `_compare_implementers` caches nothing in a base environment, so an ungated call walks the board
+## twice per query for hooks no shipped card implements.
 static func stack_suits_same(s1: PipSuit, s2: PipSuit) -> bool:
 	if not s1 or not s2: return false
 	var env := CardEnvironment.CURRENT

@@ -10,7 +10,7 @@ extends Resource
 ## `FxFireStyle` for the fire, `FxJuggleStyle` for the balls — and a `.tres` is one of those, never
 ## a bare `FxStyle`.
 ##
-## WHY SUBCLASSES AND NOT ONE CLASS WITH A `kind` FLAG (owner 2026-07-31: *"both fire and ball effects
+## WHY SUBCLASSES AND NOT ONE CLASS WITH A `kind` FLAG (owner: *"both fire and ball effects
 ## existing in same location for editing is confusing. Why does fire effects allow tuning ball and
 ## ball effects allow tuning fire? it should be separate"*). A flag was tried for a day and does work
 ## at two kinds — `_validate_property` hid the half that did not apply — but it does not scale, and

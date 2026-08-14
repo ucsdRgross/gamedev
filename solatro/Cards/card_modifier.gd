@@ -62,22 +62,19 @@ func combo_key(_hook: StringName = &"") -> String:
 
 
 # Hooks are duck-typed: implementing a method named after an event opts the modifier in
-# (dispatch checks has_method — see CardEnvironment.run_all_mods). The MAINTAINED hook
-# list with signatures lives in ARCHITECTURE_REVIEW.md §1.4; keep THAT current when
-# adding events. (The stale copy that used to sit here was purged 2026-07-16, D7 override.)
+# (dispatch checks has_method — see CardEnvironment.run_all_mods). ⚠ The maintained hook list
+# with signatures lives in ARCHITECTURE_REVIEW.md §1.4 — keep THAT current, never a copy here.
 
 # ==============================================================================
 # THE COMPARATOR SURFACE — "are these two cards the same?" (comparator_buckets PLAN §1.1)
 # ------------------------------------------------------------------------------
 # ⚠ **COMMENTS, NOT METHODS, AND THAT IS THE MECHANISM.** Dispatch asks `has_method`, so a real
-# no-op here would opt EVERY modifier in and the identity path (chart C4 — zero dispatch,
-# unchanged scoring) could never be taken. Declaring a spelling in a subclass is what turns the
-# rule on; a typo silently disables it, so call sites name `PipComparator.MELD_RANKS_DENY` and
-# friends rather than retyping.
+# no-op here would opt EVERY modifier in and the identity path (chart C4) could never be taken.
+# ⚠ A typo silently disables a rule — call sites name `PipComparator.MELD_RANKS_DENY` and friends
+# rather than retyping the spelling.
 #
-# QR3(c)/Q62(a)/Q97: SEPARATE HOOKS PER SITUATION, NO FALLBACK BETWEEN THEM — a card wanting
-# both melding and stacking rules implements both. Q80(a): blacklist or whitelist is declared BY
-# WHICH HOOK IT IMPLEMENTS, never by a flag or a return value.
+# QR3(c)/Q62(a)/Q97: SEPARATE HOOKS PER SITUATION, NO FALLBACK BETWEEN THEM. Q80(a): blacklist or
+# whitelist is declared BY WHICH HOOK IS IMPLEMENTED, never by a flag or a return value.
 #
 #   # MELD sameness, two passes. true = "this pass answers yes for this pair".
 #   func on_meld_ranks_deny(r1: PipRank, r2: PipRank) -> bool
@@ -99,16 +96,15 @@ func combo_key(_hook: StringName = &"") -> String:
 #   func on_meld_extra_rank_values(card: CardData) -> Array[float]
 #   func on_meld_wrap_bounds(low: float, high: float) -> Vector2
 #
-# ⚠ ORDERING is UNCHANGED and is NOT part of this surface: `on_compare_ranks` /
-# `on_compare_suits` keep their current meaning, their current callers and their
-# first-implementer-wins composition (Q55=a). They ask "which is greater", which has
-# nothing to deny or allow. Melding no longer calls them.
+# ⚠ ORDERING is NOT part of this surface. `on_compare_ranks` / `on_compare_suits` keep their
+# meaning, callers and first-implementer-wins composition (Q55=a): they ask "which is greater",
+# which has nothing to deny or allow. Melding no longer calls them.
 # ==============================================================================
 
 # ⚠ **NO `compare_uncacheable`, and nothing needs one** (gaps/GAP-003.md). A rule's answer is
 # fixed for the hand being scored, so a random rule is safe to write and has nothing to declare.
 
-## THE spotlight rule (design chart A). Renamed off the old `active` vocabulary 2026-08-04 (Q2=b):
+## THE spotlight rule (design chart A). Renamed off the old `active` vocabulary (Q2=b):
 ## "spotlit" is the one word for it everywhere — the mechanical state and the light show are the
 ## same fact. Effective spotlight = NATURAL (this rule) OR FORCED (GameData.forced_spotlight, the
 ## scoring beam) — see design §2.

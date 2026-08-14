@@ -14,7 +14,7 @@ import { parseDocument, reachability, nextQuestion, longestPath, auditGates } fr
 import { parseCharts, validate as validateGraph, describeGraph } from './graph.mjs';
 import { find } from './registry.mjs';
 import { readJson } from './store.mjs';
-import { readPlanSteps, uncitedAnswers } from './gaps.mjs';
+import { readPlanSteps, uncitedAnswers, readGaps, countGaps } from './gaps.mjs';
 import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 
 const TOOL_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -183,6 +183,24 @@ async function main() {
       }
       if (ranked.length > 20) {
         process.stdout.write(`  UNCLAIMED    … and ${ranked.length - 20} more\n`);
+      }
+    }
+
+    // THE GAP FILES' OWN STATUS. A file with no `status:` line counts as open everywhere (see
+    // UNSTATED in gaps.mjs). Named here so an authoring agent writes the key — never guessed from
+    // the prose, because the tool does not edit gaps.
+    const gaps = design ? await readGaps(design.dir) : [];
+    if (gaps.length) {
+      const counts = countGaps(gaps);
+      process.stdout.write(
+        `  gaps        ${counts.open} open, ${counts.closed} closed, ${counts.unstated} with no status: line\n`,
+      );
+      for (const gap of gaps.filter((g) => !g.statusStated)) {
+        process.stdout.write(
+          `  GAPSTATUS ${gap.id} (${gap.file}) has no \`status:\` line, so it counts as open and`
+          + ' makes its blast radius stale by default.\n'
+          + '            Add `status: open|questioned|resolved|withdrawn`.\n',
+        );
       }
     }
 

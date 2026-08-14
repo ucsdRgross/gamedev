@@ -1,7 +1,7 @@
 @tool
 class_name FormationEditor
 extends Node2D
-## Standalone formation AUTHORING + PREVIEW tool (owner spec 2026-07-13) — open
+## Standalone formation AUTHORING + PREVIEW tool (owner spec) — open
 ## res://tools/formation_editor.tscn, select the root node, and work entirely
 ## from the inspector: pick a prop kind, add/generate/hand-edit formations, save them to the
 ## kind's PropFormationSet .tres (what PropLayer loads in game), and spawn real prop visuals
@@ -83,7 +83,7 @@ enum Pattern { GRID, RING, SCATTER, LINE }
 @export var preview_seed : int = 0
 ## Stand-in for the game's card_scale: scales the card footprint, the point offsets, AND the
 ## prop art relative to PropVisual.AUTHORED_CARD_SCALE — exactly like in game (PropLayer writes
-## vis.scale = card_scale / AUTHORED_CARD_SCALE every frame, owner spec 2026-07-15). Default =
+## vis.scale = card_scale / AUTHORED_CARD_SCALE every frame, owner spec). Default =
 ## the game's default card_scale for exact parity.
 @export var preview_scale : float = 2.5
 ## Debug stack scenery: cards drawn per column and their vertical separation (unscaled).

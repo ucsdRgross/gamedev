@@ -18,7 +18,7 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	var geo := geometry(stacks, balls_style)
 	var reach : float = geo[&"u_arc_height"] + geo[&"u_ball_radius"]
 	var balls := FxRequest.make(&"balls", JUGGLE_SHADER, balls_style, reach)
-	# The pattern does NOT turn with its host (owner 2026-07-30), so this quad keeps the cheap box
+	# The pattern does NOT turn with its host (owner), so this quad keeps the cheap box
 	# bound even on a spinning card — see FxRequest.rotates_with_host. Both quads of the pair must
 	# say the same thing, or their lattices differ and the plume anchors off its ball.
 	balls.rotates_with_host = false
@@ -45,12 +45,12 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 		return out
 	# ⚠ `+ sink` for the same reason `FxFire.request` carries it: the cover ladder is measured from
 	# `p.y - sink`, so a plume reaches `height + sink` above its ball and a quad sized for `height`
-	# alone cuts the top off square (owner report 2026-07-29, *"fire is clipped at edges"*).
+	# alone cuts the top off square (owner report, *"fire is clipped at edges"*).
 	var fire := FxRequest.make(&"ball_fire", FxFire.FIRE_SHADER, fire_style,
 			reach + fire_style.height + maxf(fire_style.sink, 0.0))
 	# The fire shader has no emitter modes: a ball is a SHAPE whose mask is the union of the discs,
 	# and everything above that mask — the cover field, the noise and the ramp — is literally the
-	# same code a card runs (owner 2026-07-30).
+	# same code a card runs (owner).
 	fire.shape = FxAttachment.Shape.BALLS
 	# Its mask is the BALLS, and `mask_level`'s ball branch returns before `u_shape_rot` is ever read
 	# — so this quad does not turn with the host either, and must match the balls quad exactly.
@@ -83,7 +83,7 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	# centre mid-transition while the box itself was sized for one end of it. A plume's height is a flat
 	# style value — it carries no stack scaling, unlike a card's — so `FxStyle.apply` pushing it once is
 	# both cheaper and the only version that cannot disagree with the box.
-	# ⚠ ONE FLAME PER BALL IS NOT ARRANGED ANY MORE — IT FALLS OUT (2026-07-29). The retired build
+	# ⚠ ONE FLAME PER BALL IS NOT ARRANGED ANY MORE — IT FALLS OUT. The retired build
 	# had to say so explicitly, with a `u_emit_width` that tiled a comb at ball pitch and then, when
 	# that turned out to BE the "fire on balls disappears and reappears" bug, with an arch anchored
 	# to the ball's own centre. The noise fire has no comb and no arch: the cover field is sampled
@@ -102,7 +102,7 @@ static func requests(stacks: int, levels: PackedInt32Array, balls_style: FxJuggl
 	fire.live[&"u_intensity"] = fire_style.intensity
 	fire.lit = alight
 	fire.phase_period = balls.phase_period
-	# ⚠ THE PLUMES GO IN BEFORE THE BALLS, AND THE ORDER IS THE WHOLE MECHANISM (owner 2026-07-29:
+	# ⚠ THE PLUMES GO IN BEFORE THE BALLS, AND THE ORDER IS THE WHOLE MECHANISM (owner:
 	# *"fire not behind props and balls?"*). `FxAttachment.sync` builds quads in this order and they
 	# are siblings at equal z, so tree order decides: fire first means **every ball draws OVER every
 	# plume**, lit or not.
@@ -128,7 +128,7 @@ static func geometry(stacks: int, style: FxJuggleStyle) -> Dictionary[StringName
 	# The throw arc gets TALLER to hold more balls without bunching (owner ruling 13); log, not
 	# linear, or 50 balls would throw the arc off the top of the screen. CAPPED at ball_arc_max: the
 	# pattern may peak above the card's top edge but not far enough to cover the card behind it
-	# (owner 2026-07-28) — past the cap, the balls' own shrink is what makes room. The return arc
+	# (owner) — past the cap, the balls' own shrink is what makes room. The return arc
 	# stays shallow — it is the "flat part", riding across the card's centre.
 	# The ceiling applies to the drawn BALL, not its centre, so the radius comes out of the budget —
 	# otherwise the topmost ball overshoots by its own radius.
@@ -149,7 +149,7 @@ static func geometry(stacks: int, style: FxJuggleStyle) -> Dictionary[StringName
 	return geo
 
 ## How many ARCS the loop is made of at this ball count. Lanes appear between the throw and the carry
-## as the count rises (owner 2026-07-28) so the balls have more of the space to travel through
+## as the count rises (owner) so the balls have more of the space to travel through
 ## instead of one arc getting ever taller. ALWAYS EVEN — arcs alternate direction, so an odd count
 ## would leave the loop open in x — and capped by the style, which is also the shader's cost ceiling
 ## (the nearest-ball lookup does fixed work per arc).
@@ -240,7 +240,7 @@ static func ball_pos(i: float, n: float, phase: float, span: float, h_top: float
 ## drops the dark ones, which is what makes the plume quad cover one or two balls instead of all of
 ## them.
 ##
-## ⚠ SORTED BY LEVEL, ASCENDING, AND THAT IS THE OVERLAP RULE (owner, 2026-07-29: *"if overlapping,
+## ⚠ SORTED BY LEVEL, ASCENDING, AND THAT IS THE OVERLAP RULE (owner: *"if overlapping,
 ## ball with highest stacks win"*). Instances composite in buffer order, so the last one drawn is the
 ## one seen — this replaces the nearest-centre tie-break the retired per-fragment search gave for
 ## free, and it is a rule the owner picked rather than a side effect of the arithmetic.

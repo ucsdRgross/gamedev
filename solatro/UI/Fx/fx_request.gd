@@ -19,7 +19,7 @@ var style : FxStyle = null
 
 ## Which SHAPE this effect's mask is, overriding the host's own: an FxAttachment.Shape value, or -1
 ## for "whatever the host is". Ball fire is the one user — its mask is the BALLS, not the card it
-## rides on — which is what lets the fire shader have no emitter modes at all (owner 2026-07-30,
+## rides on — which is what lets the fire shader have no emitter modes at all (owner,
 ## *"no special ball case"*). Typed as int rather than as the enum so FxRequest and FxAttachment do
 ## not reference each other's class_names in a cycle.
 var shape : int = -1
@@ -46,7 +46,7 @@ var reach : float = 0.0
 ##
 ## ⚠ DRAW ORDER IS OVERLAP ORDER. Instances composite in the order they appear here, so a caller with
 ## overlapping subjects owns the tie-break: FxJuggle sorts by level so the highest-level ball draws
-## last and wins (owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*). This replaces
+## last and wins (owner: *"if overlapping, ball with highest stacks win"*). This replaces
 ## the nearest-centre tie-break the search used to give for free.
 var instances : PackedColorArray = PackedColorArray()
 
@@ -85,7 +85,7 @@ var instance_bound : Vector2 = Vector2.ZERO
 ##
 ## The JUGGLING quads provably do not: `juggle.gdshader` never reads `u_shape_rot`, the pattern is
 ## defined in the quad's own space, and the attachment counter-rotates the quad — so the balls hold
-## still in world space at every host angle (owner 2026-07-30: *"juggle effect doesn't rotate with
+## still in world space at every host angle (owner: *"juggle effect doesn't rotate with
 ## card"*). They were paying `body.length()` = 67.20 for a 40x54 card (it was 62.80 at 38x50 — the
 ## 62.4 written here before was neither: 62.23 is the ROTATING bound (w+h)/√2, a different number),
 ## ~22 % of their fill, for a bound

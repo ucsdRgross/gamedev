@@ -1,7 +1,7 @@
 @tool
 class_name PaletteDB
 ## The one place the game's palette and its role map are named. STATICS, deliberately not an autoload
-## (owner 2026-07-28: *"autoload seems kind of overkill and has bad code smell ... don't expect colors
+## (owner: *"autoload seems kind of overkill and has bad code smell ... don't expect colors
 ## or ramps to change at runtime"*):
 ##
 ##   * nothing here changes while the game runs, so there is no state to hold and no signal to emit;

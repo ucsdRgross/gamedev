@@ -1,7 +1,7 @@
 shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
-// THE SPOTLIGHT GLOW — a distance field around a host, coloured by a ramp and drawn at two
-// different blends depending on whether it is over the host's own art.
+// THE SPOTLIGHT GLOW — a distance field around a host, coloured by a ramp, drawn at two different
+// blends depending on whether it is over the host's own art.
 // Design: solatro/design/spotlight/DESIGN.md §14b, chart O (O1-O21). Plan: PLAN.md §1.9.
 //
 // THE MODEL, IN FOUR LINES:
@@ -11,46 +11,34 @@ render_mode blend_premul_alpha, unshaded;
 //     intensity = sum over layers of falloff(e / (reach * radius_i)) * gain_i        (O7-O10)
 //     COLOR     = texture(u_ramp, intensity) ... premultiplied, see THE BLEND below  (O11-O21)
 //
-// ⚠ **IT IS NOT A SECOND COPY OF `fire.gdshader`**, and the difference is one question. Fire asks
-// *"how far above the nearest surface BELOW me am I"* — directional, answered by `u_taps` downward
-// mask lookups, and that call count is the entire cost of that shader. A glow asks *"how far from
-// the mask am I, in ANY direction"*, which is one polygon distance (or, for the disc, one
-// subtraction). The mask machinery is shared — the same 24-vertex silhouette, the same wedge
-// table, the same `fx_common.gdshaderinc` — and the field over it is not.
+// ⚠ **NOT A SECOND COPY OF `fire.gdshader`.** Fire asks "how far above the nearest surface BELOW me
+// am I" — directional, and its `u_taps` mask lookups are that shader's entire cost. A glow asks
+// "how far from the mask am I, in ANY direction": one polygon distance. The mask machinery is
+// shared, the field over it is not.
 //
-// ===== THE BLEND, WHICH IS THE ONE NON-OBVIOUS DECISION IN THIS FILE ============================
+// ===== THE BLEND, THE ONE NON-OBVIOUS DECISION IN THIS FILE =====================================
 //
-// `Q218` asks for **additive OUTSIDE the silhouette, tinted OVER the art**, with the owner's
-// condition: *"(c) is fine if it doesnt lead to visible seam between additive and tinted parts,
-// otherwise just tint, dont want blowout to white"*. A canvas quad has ONE blend mode for the whole
-// material and there is no screen read (DESIGN.md §1.6 fact 1), so "two blends in one pass" looks
-// impossible — and with `blend_mix` or `blend_add` it is.
+// `Q218` wants additive OUTSIDE the silhouette and tinted OVER the art, with no visible seam and no
+// blowout to white. A canvas quad has ONE blend mode and there is no screen read (DESIGN.md §1.6
+// fact 1), so "two blends in one pass" looks impossible — with `blend_mix` or `blend_add` it is.
 //
-// **`blend_premul_alpha` IS EXACTLY BOTH OF THEM, ON A KNOB.** Its equation is
+// **`blend_premul_alpha` IS EXACTLY BOTH, ON A KNOB.** Its equation is
 //
 //     result = src.rgb + dst * (1 - src.a)
 //
-// so at `src.a = 0` it is PURE ADDITION, at `src.a = 1` it is an opaque draw, and in between it is
-// a true lerp toward `src.rgb / src.a`. The fragment therefore chooses its own blend by choosing
-// its alpha: **0 outside the silhouette (additive, correct for a lamp, and harmless because there
-// is no art under it) and `u_inner_alpha` over the art (a tint that cannot blow out, which is what
-// keeps the rank glyph legible).** The RGB is premultiplied by that alpha on the way out.
+// so `src.a = 0` is PURE ADDITION, `src.a = 1` is an opaque draw, and between is a true lerp toward
+// `src.rgb / src.a`. A fragment picks its own blend by picking its alpha: **0 outside the silhouette
+// (additive, correct for a lamp, harmless with no art under it) and `u_inner_alpha` over the art (a
+// tint that cannot blow out, which is what keeps the rank glyph legible).**
 //
-// ⚠ THE SEAM THE OWNER WARNED ABOUT IS THEREFORE A CONTINUOUS KNOB, NOT A CLIFF — but it is still
-// visible if `inner_alpha` is far from 0, because the two sides of the silhouette then genuinely do
-// different arithmetic. **This is gate G2.2 and it is an eye call**: render the circle over a busy
-// card face, look at the boundary, and if it reads as a seam, raise nothing — set `u_inner_alpha`
-// toward 0 or tint both sides. Do not resolve it from a description.
+// ⚠ The seam is therefore a continuous KNOB, not a cliff — but still visible if `inner_alpha` sits
+// far from 0, because the two sides then genuinely do different arithmetic. **This is gate G2.2 and
+// it is an eye call**: render the circle over a busy card face and look. If it reads as a seam, set
+// `u_inner_alpha` toward 0 or tint both sides. Do not resolve it from a description.
 //
-// ===== WHAT IS DELIBERATELY ABSENT ==============================================================
-//
-//  * **No fade.** `Q264`=(a): the glow snaps on and snaps off. There is no `u_fade`, and the style
-//    has no fade knob to push into one.
-//  * **No animation.** `Q126`=(a): steady. No `u_time` is read here at all — which also means this
-//    shader has no pacing hazard, unlike every other effect in the layer.
-//  * **No `TIME`.** For the same reason it is banned everywhere else: the built-in ignores the
-//    game's own pacing. There is nothing here that needs a clock.
-//  * **No prop client.** `Q221` / `Q257`: card, circle and beam only.
+// ⚠ DELIBERATELY ABSENT: no fade (`Q264`=a, it snaps), no animation (`Q126`=a, steady), no `TIME`
+// read at all — so unlike every other effect in this layer it has no pacing hazard — and no prop
+// client (`Q221` / `Q257`: card, circle and beam only).
 
 #include "res://Shaders/fx_common.gdshaderinc"
 

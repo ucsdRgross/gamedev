@@ -20,7 +20,7 @@ func set_texture(polygon2d: Polygon2D) -> void:
 ## that must be able to decide the ink. A per-card override would be a colour chosen without knowing
 ## what it sits on.
 ##
-## ⚠ **AUTHORED, NOT DERIVED** (owner 2026-08-04: *"allow authoring with default to same one colour if
+## ⚠ **AUTHORED, NOT DERIVED** (owner: *"allow authoring with default to same one colour if
 ## no authoring, I don't trust derived"*). An earlier design derived the ink from the frame's own colour
 ## histogram, the way `corner_notch` below derives the corner bite from the frame's own alpha. It was
 ## rejected: an automatic pick is a colour nobody chose, and across 126 frames of art that is 126 chances
@@ -39,7 +39,7 @@ func outline_style() -> OutlineStyle:
 static var _notch_cache : Dictionary[int, Vector2] = {}
 
 ## HOW MUCH OF EACH CORNER THIS TYPE'S ART CLIPS, in TEXELS — measured off the sheet's own alpha, never
-## typed in (owner 2026-07-29: *"fx editor shows corner texel not being accounted for"*).
+## typed in (owner: *"fx editor shows corner texel not being accounted for"*).
 ##
 ## ⚠ **A CARD IS NOT A RECTANGLE, AND THE FIRE HAS TO KNOW.** Every shipped type frame bites a corner
 ## out: `TypePaper` and most others one texel, `TypeInput` three by one, the boosters none. The fire's

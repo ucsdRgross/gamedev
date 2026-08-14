@@ -179,7 +179,7 @@ func run_swap_tests() -> void:
 
 	# A ramp follows the palette too — the indices are the pointer, the colours are not stored. Swapping
 	# means moving the ONE storage slot every reader shares, which is why PaletteDB.PALETTE is a static
-	# var and not a const (palette_db.gd:17-22); a ramp has no palette pointer of its own to set.
+	# var and not a const (`PaletteDB`'s static var); a ramp has no palette pointer of its own to set.
 	var live_cols := PaletteDB.RAMP_FIRE.colors()
 	var original := PaletteDB.PALETTE
 	PaletteDB.PALETTE = swapped
@@ -202,12 +202,12 @@ func run_swap_tests() -> void:
 ## Directories whose drawing code is expected to be on the palette.
 ## ⚠ `res://tools` IS IN THE LIST DELIBERATELY. The tuning editors used to live under `res://Cards`
 ## and `res://UI` and were scanned as a side effect of sitting there; consolidating them into one
-## folder (owner, 2026-08-04) would otherwise have dropped them out of the scan silently, which is
+## folder (owner) would otherwise have dropped them out of the scan silently, which is
 ## the kind of coverage loss a green run cannot show you.
 ## ⚠ **LOWERCASE `tools`, MATCHING THE DIRECTORY ON DISK.** It read `res://Tools`, which resolves on a
 ## case-insensitive filesystem but makes every path this scan yields disagree with `ALLOW_FILES`
 ## below — so the exemptions silently stopped matching and six exempt files started warning again.
-## The whole project was normalised to the on-disk case on 2026-08-06 (see below).
+## The whole project was normalised to the on-disk case on (see below).
 const SCAN_DIRS : Array[String] = [
 	"res://Cards", "res://Scripts", "res://UI", "res://Levels", "res://Shaders", "res://tools",
 ]

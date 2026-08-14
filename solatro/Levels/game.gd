@@ -48,7 +48,7 @@ var state : GameData = GameData.new():
 		state_bound.emit(value)
 		_emit_patience()
 
-## THE change detector (2026-07-20): the `state.revision` the last committed snapshot carried.
+## THE change detector: the `state.revision` the last committed snapshot carried.
 ## `state.revision != _last_saved_revision` ⇔ the board actually changed since that commit, which
 ## is what makes save_state() skip a no-op action's identical snapshot ("an undo that does
 ## nothing") and what tells try_place whether a placement moved anything at all. Re-baselined by
@@ -170,7 +170,7 @@ func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := tru
 	_note_patience_trigger(mod, function)
 
 # ==============================================================================
-# PATIENCE (2026-07-20) — idle-move pressure. The counter lives on GameData (undo rewinds it);
+# PATIENCE — idle-move pressure. The counter lives on GameData (undo rewinds it);
 # Game owns the accounting scope, the spend point, and the auto-Next trip.
 # ==============================================================================
 ## True only across ONE try_place resolution: patience only ever reacts to card moves (owner
@@ -550,7 +550,7 @@ func undo() -> void:
 		debug_validate("undo")
 
 # ==============================================================================
-# DEBUG HISTORY (2026-08-04) — the owner's playtest-debugging loop.
+# DEBUG HISTORY — the owner's playtest-debugging loop.
 #
 # Owner: *"If I see an issue during playtest, I can undo, press record, then repeat the action, and
 # then send log for debugging. Since undo will eventually be capped, we also need a separate debug
@@ -895,7 +895,7 @@ func _spotlight_section(section: ScoringSection) -> void:
 		state.forced_spotlight.clear()
 		for card : CardData in section.cards:
 			state.forced_spotlight[card] = true
-		# THE BEAM FOLLOWS THE SECTION, not the announcement cue (GAP-005, owner 2026-08-04). This
+ # THE BEAM FOLLOWS THE SECTION, not the announcement cue (GAP-005, owner). This
 		# is the same membership the loop just wrote, announced to the view layer — emitted BEFORE
 		# the sweep so the light is already on the cards whose hooks are about to fire, and re-emitted
 		# every iteration because `section.refresh()` may have changed who is in it.

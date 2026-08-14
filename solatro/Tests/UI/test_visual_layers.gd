@@ -333,7 +333,7 @@ func test_held_card_above_resting() -> void:
 	await cleanup(g, pa)
 
 # The StatusLayer's "status icons draw above the card's face" check lived here and is DELETED with
-# the layer itself (owner 2026-08-04: statuses are represented by their FX now, and their names and
+# the layer itself (owner: statuses are represented by their FX now, and their names and
 # stack counts by the inspector text). The claim it made is not lost — `test_fx_inside_its_host`
 # below asserts exactly the same ordering for what actually represents a status today.
 
@@ -525,7 +525,7 @@ func test_hoop_split_multi_column() -> void:
 		check(ok, "hoop spawn tick completes (separation %.1f)" % sep_scale)
 		var vis : PropVisual = pl._visuals.get(p)
 		# A hoop still takes no FORMATION offset — its whole lane offset is the card-jump rise, the
-		# one thing it does ride (owner 2026-07-28: the card jumps INTO the ring, so the two centres
+ # one thing it does ride (owner: the card jumps INTO the ring, so the two centres
 		# must coincide). Anything else here would be a formation leaking in.
 		var jump_rise := Vector2(0.0, -CardVisual.card_jump_rise_play)
 		check(vis != null and vis.lane_offset.is_equal_approx(jump_rise),
@@ -556,7 +556,7 @@ func test_hoop_split_multi_column() -> void:
 				and back_rank < occ_rank and occ_rank < front_rank,
 				"the halves bracket the occupied card (separation %.1f)" % sep_scale,
 				"back %d occ %d front %d" % [back_rank, occ_rank, front_rank])
-		# ROW-WIDE consistency (owner spec 2026-07-16): the back half renders behind EVERY card of
+ # ROW-WIDE consistency (owner spec): the back half renders behind EVERY card of
 		# the hoop's row and the front half in front of EVERY card of the row — not just the
 		# threaded one — so the ring can never show an arc sandwiched wrongly near a column gap.
 		for col : int in 3:
@@ -596,7 +596,7 @@ func test_hoop_split_multi_column() -> void:
 		check(overlaps.is_empty(),
 				"the ring overlaps no card outside its own column (separation %.1f)" % sep_scale,
 				"; ".join(overlaps))
-		# MID-GAP (owner 2026-07-15: "back should always be behind"): the visual sits between two
+ # MID-GAP (owner: "back should always be behind"): the visual sits between two
 		# columns' cards — the column gap is narrower than the ring, so it touches BOTH. The back
 		# half must render behind EVERY card the ring touches; whatever the data slot says, the
 		# bracket follows the ring's geometry.
@@ -815,7 +815,7 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 			"G2.4: fx_intensity 0 takes the lights to nothing", str(brightness))
 	check(layer._dim > 0.0, "G2.4: and the DIM still stands (Q83 keeps it)", str(layer._dim))
 	SettingsManager.settings.fx_intensity = prev_intensity
-	# ⚠ **THE DIM'S OFF SWITCH** (owner 2026-08-04: *"make sure dim can be turned off if needed by
+	# ⚠ **THE DIM'S OFF SWITCH** (owner: *"make sure dim can be turned off if needed by
 	# tunables, it just occured to me that dim might flash if speed is high"*). `spotlight_dim_target`
 	# = 0 must keep the LIGHTS and drop the DIM — the exact opposite split from G2.4's `fx_intensity`,
 	# which `Q83` forbids from removing the dim. Asserted because an off switch nothing tests is an
@@ -1183,7 +1183,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(pa._row_open_height() < CardVisual.card_size_play.y,
 			"GAP-009: JUMP_ADJUSTED opens LESS than a full card, so a non-jumping card stays covered",
 			"%.1f vs card %.1f" % [pa._row_open_height(), CardVisual.card_size_play.y])
-	# ⚠ **`card height - separation - jump rise`** (owner, 2026-08-06). `CARD_HEIGHT` opens to a pitch
+	# ⚠ **`card height - separation - jump rise`** (owner). `CARD_HEIGHT` opens to a pitch
 	# of exactly one card; this mode also gives up the inter-row gap, so the shortfall is the
 	# separation PLUS the jump. Asserted from the card's own constant and the live `separation` rather
 	# than a literal, so a change to `card_scale` cannot make this drift.

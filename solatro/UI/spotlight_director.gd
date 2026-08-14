@@ -186,7 +186,7 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 	for b : _Beam in leftover: src_x.append(_beam_centre(b).x)
 	var tgt_x := PackedFloat32Array()
 	for data : CardData in targets: tgt_x.append(_centre_of(data).x)
-	# ⚠ **BOTH SIDES PICK BY PROXIMITY, AND THE GROWING CASE NEEDS IT TOO** (owner, 2026-08-05: *"when
+	# ⚠ **BOTH SIDES PICK BY PROXIMITY, AND THE GROWING CASE NEEDS IT TOO** (owner: *"when
 	# spawning new spotlights it should also prioritize nearest"*). SHRINKING: choose which lights
 	# survive. GROWING: choose which TARGETS receive the travelling lights — the rest spawn in place.
 	# Without the second half a distant light travelled to `targets[0]` while a brand-new light spawned
@@ -202,7 +202,7 @@ func _on_section_changed(cards: Array[CardData]) -> void:
 	# ⚠ **A RETIRING BEAM RIDES `_show`, SO THE NEXT SECTION RE-LIGHTS IT.** Its `fade` decays over
 	# `spotlight_retire_fraction` (0.3 s) while the incoming section's `_show` climbs over
 	# `spotlight_show_in_fraction` (0.5 s) — and the drawn intensity is `fade * _show`, so the product
-	# RISES as the new dim comes up. Owner, 2026-08-05: *"when spotlights despawn because next section
+	# RISES as the new dim comes up. Owner: *"when spotlights despawn because next section
 	# has less cards, it reappears during new dim to move spotlights to new section then fades out when
 	# it should not appear at all."*
 	# ⚠ **THE FADE IS NOT LOST — GAP-006 ALREADY DID IT.** The show falls to zero between sections, so

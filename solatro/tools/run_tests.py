@@ -7,39 +7,25 @@
 Exit code = the suite's own failure count PLUS the exit-time errors found here (capped at 125, the
 same cap `all_tests.gd` uses). 0 means both gates are clean.
 
-WHY THIS EXISTS. `all_tests.gd::_scan_engine_errors` fails the run on unexpected engine errors, but
-it runs INSIDE `_ready`, before `get_tree().quit()`. Everything the engine prints while tearing
-itself down therefore lands after the gate has already reported, and no in-engine check can ever
-catch it — by the time those lines exist, every GDScript object is gone. That blind spot was known
-(HANDOFF_spotlight "Open bugs"); this is the outer wrapper it asked for.
+WHY THIS EXISTS. `all_tests.gd::_scan_engine_errors` runs inside `_ready`, before
+`get_tree().quit()`, so everything the engine prints while tearing itself down lands after the gate
+has reported. No in-engine check can ever catch those lines — by the time they exist, every GDScript
+object is gone.
 
-⚠ **THE EXIT-TIME LINES ARE NOT IN `godot.log`.** The obvious wrapper — re-read `user://logs/godot.log`
-after the process exits — is exactly as blind as the in-engine scan, because the engine CLOSES its
-log file during the same cleanup that emits these errors. Measured 2026-08-07: a clean-looking run's
-`godot.log` ends at the `full logs:` line, while the process streams carried three more lines after it:
+⚠ **THE EXIT-TIME LINES ARE NOT IN `godot.log`.** Re-reading the log after the process exits is
+exactly as blind as the in-engine scan: the engine CLOSES that file during the same cleanup that
+emits these errors (RID allocation leaks, leaked ObjectDB instances, resources still in use).
 
-    ERROR: 1 RID allocations of type 'N5GLES37TextureE' were leaked at exit.
-    WARNING: 14 ObjectDB instances were leaked at exit (run with `--verbose` for details).
-    ERROR: 2 resources still in use at exit (run with --verbose for details).
+⚠ **THE DISCRIMINATOR IS `godot.log` MEMBERSHIP, NOT POSITION IN THE STREAM.** `_scan_engine_errors`
+reads `godot.log` and nothing else, so an error in the process streams that is absent from the log
+is exactly one the gate could not have seen. Order-independent, and it survives the two things that
+broke the first build: the exit-time errors are split across BOTH stdout and stderr, and the banner
+reaches stderr only when the run FAILS, so a green run has no banner there to anchor to.
+Errors DURING the run are in `godot.log`, already gated in-engine, and are not re-counted.
 
-⚠ **THE DISCRIMINATOR IS `godot.log` MEMBERSHIP, NOT POSITION IN THE STREAM.** The first build of
-this script scanned for lines appearing after the suite's banner, and that was wrong twice over:
-the exit-time errors are split across BOTH stdout and stderr (the `RID allocations` line went to
-stdout, `Texture with GL ID` to stderr), and `TestLog.line(..., true)` routes the banner to stderr
-only when the run FAILS — so on a green run there is no banner in stderr to anchor to at all.
-Both bugs are the same shape: inferring "the gate could not see this" from where a line sits.
-
-So the rule here is definitional instead. `_scan_engine_errors` reads `godot.log` and nothing else,
-therefore **an error line in the process streams that is absent from `godot.log` is exactly one the
-gate could not have seen.** That is order-independent, survives the stdout/stderr split, and stays
-true if the engine's teardown order ever changes. Errors DURING the run are in `godot.log`, were
-already gated in-engine, and are not re-counted here.
-
-⚠ **THE ALLOWLIST IS PARSED OUT OF `Tests/all_tests.gd`, NEVER RESTATED.** Two copies of one
-allowlist is the seam that produced most of this repo's defects (`.claude/memory/seam-checks-not-
-rereading.md`): the copies drift, and the drift shows up as a suite that is green in one gate and red
-in the other. If the parse fails, this script FAILS LOUDLY rather than falling back to a built-in
-list — a wrong allowlist is worse than no run.
+⚠ **THE ALLOWLIST IS PARSED OUT OF `Tests/all_tests.gd`, NEVER RESTATED.** Two copies drift, and the
+drift reads as a suite green in one gate and red in the other (`.claude/memory/seam-checks-not-
+rereading.md`). If the parse fails this script FAILS LOUDLY — a wrong allowlist is worse than no run.
 
 ⚠ It gates the engine's stream, not the tests. A green run here still means only "no unexpected
 engine error"; the suite's own PASS/FAIL verdict is `all_tests.gd`'s.
@@ -121,6 +107,12 @@ def scan_unseen(stream_text, log_text, allowlist):
 
 
 def main():
+    # ⚠ The engine's error lines are quoted verbatim and are not always cp1252-encodable. Without
+    # this the gate CRASHES while reporting the error it exists to report.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except AttributeError:
+        pass
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--godot", default=os.environ.get("GODOT_BIN"),
@@ -162,12 +154,10 @@ def main():
         stdout_text = out.read()
 
     # ⚠ THE EXIT CODE IS A FAILURE COUNT ONLY INSIDE 0..125. `all_tests.gd` quits with
-    # `mini(failed, 125)`, so anything ABOVE that is not a count at all — it is an abnormal
-    # termination, and on Windows a crash arrives as the raw status (an access violation is
-    # 0xC0000005 = 3221225477). Treating it as a count silently reported "125 suite failures"
-    # for a run whose own banner said PASSED, which is the worst kind of wrong: it disagrees
-    # with the suite about whether the suite passed. Observed once in a 4-run batch — Godot
-    # segfaulting during final teardown, AFTER printing its banner and log paths.
+    # `mini(failed, 125)`; anything above is an abnormal termination, since on Windows a crash
+    # arrives as the raw status (access violation = 0xC0000005). Read as a count, a teardown
+    # segfault reported "125 suite failures" under a banner saying PASSED — a wrapper disagreeing
+    # with the suite about whether the suite passed.
     SUITE_FAILURE_CAP = 125
     code = process.returncode or 0
     crashed = code < 0 or code > SUITE_FAILURE_CAP

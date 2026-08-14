@@ -4,68 +4,36 @@ extends Node
 ## **THE SPOTLIGHT TUNING TOOL** — `PLAN.md` §5 / S18, design chart N, `Q173`–`Q182`.
 ##
 ## Open `Tools/spotlight_tool.tscn`, pick a **Scenario** in the inspector, drag the knobs, watch the
-## real light shader react. The tool the owner asked for: *"add new editor similar to fx editor as
-## effect in next column with parameters for tuning, with dummy card stack simulating exactly how it
-## looks in game, and dummy screen size to dictate beam origins"* — and then, decisively:
-## *"I would rather do all testing via the planned editor so dont ask me to check until it exists"*.
+## real light shader react. ⚠ **What this tool can and cannot show is tabulated in
+## `HANDOFF_spotlight.md` ("Tool coverage") — read that before concluding a case is untestable.**
 ##
-## ⚠ **SCOPE, OWNER 2026-08-04.** *"Just play area simulating effects is enough, dont need full
-## game_view with hud"*, *"trigger different preset scenarios using editor tool options"*, and
-## *"simulation should include realistic stacking system from play area and cascade scenario and
-## mocked solo on active triggers and row separation"*. So: **no `Game`, no `GameView`, no HUD** —
-## real `CardVisual`s on the real board geometry, the real `LightLayer`, the real shader, and the
-## four things above simulated. That **supersedes `Q174`=(a) and `Q175`=(a)** (a real `PlayArea` and
-## a real headless `Game`) — see `gaps/GAP-007.md`, resolved.
+## ⚠ **SCOPE: no `Game`, no `GameView`, no HUD** — real `CardVisual`s on the real board geometry, the
+## real `LightLayer`, the real shader, with the cascade order, the solo cue and row separation
+## simulated. Supersedes `Q174`=(a) and `Q175`=(a); see `gaps/GAP-007.md`, resolved.
 ##
-## ⚠ **WHAT THAT COSTS, STATED PLAINLY: THE CASCADE HERE IS POSED, NOT RUN.** Section membership, the
-## activation sweep, hand re-evaluation and the real hold beat are all `Game`'s. This tool plays the
-## SEQUENCE so the look can be judged; it does not derive it. **A behaviour question — "did the light
-## travel when it should have", "was that the right section" — belongs to
-## `Tools/spotlight_tool.tscn -- --trace` or the suite, both of which run the real act.** This tool answers
-## "does it look right", and that is the only question it can answer.
-##
-## ⚠ **THE STACKING IS THE REAL FORMULA, NOT AN APPROXIMATION.** `PlayArea.slot_center_global` is
-## pure uniform-pitch math, and this tool uses the same two constants it does: column pitch is
-## `CardVisual.card_size_play.x + separation`, and ROW pitch is
-## `CardVisual.card_separation_play_custom + separation` — the thin STRIP, which is why a covered card
-## shows only its top sliver while its art hangs a full card below. That gap between strip and card is
-## the whole reason a spotlight circle on a buried card cannot read, and it is what row separation
-## exists to open.
+## ⚠ **THE CASCADE IS POSED, NOT RUN.** Section membership, the activation sweep, hand re-evaluation
+## and the hold beat are `Game`'s. This tool answers "does it look right" and nothing else — a
+## BEHAVIOUR question goes to `-- --trace` or the suite, both of which run the real act.
 ##
 ## ⚠ **EVERYTHING RENDERS INSIDE A `SubViewport`, AND THAT IS NOT A DETAIL.** `light.gdshader` is
-## SCREEN-SPACE: it resolves `SCREEN_UV` against whatever viewport it draws into, and a card's
-## position is only "the screen pixel" because the game has one canvas layer and no camera offset.
-## **The editor's own 2D view has a pan and a zoom**, so a light layer parented straight into an
-## edited scene slides against its cards the moment anyone scrolls. The `SubViewport` restores the
-## game's assumption exactly — and its size IS the brief's *"dummy screen size to dictate beam
-## origins"* (`Q177`=a), for free rather than as a separate control.
+## SCREEN-SPACE, and a card's position is only "the screen pixel" because the game has one canvas
+## layer and no camera offset. The editor's 2D view has its own pan and zoom, so a light layer
+## parented straight into an edited scene slides against its cards on any scroll. The `SubViewport`
+## restores the game's assumption, and its size IS `Q177`=a's dummy screen size for free.
 ##
-## ⚠ **NO MOCKS WHERE IT COUNTS** (project rule 5): the real `CardVisual` scene with real `CardData`,
-## the real `LightLayer`, the real `SpotlightOrigins` allocator, the real shader, the real board
-## pitch. What IS simulated is named on the tin — the cascade's ORDER, the solo activation cue, and
-## row separation — because the code that would produce them is `Game`'s (cascade), S15's (the cue)
-## and unbuilt (S16, separation).
-##
-## ⚠ **THE GLOW IS IN, AND `Q83` MAKES IT THE MAIN EVENT** (*"the glow is most important. Beam and
-## circle and dim are helper"*). It is hung on the cards the current section lights, through a real
-## `FxAttachment` carrying the real `glow.gdshader`. ⚠ **There is still no `FxGlow` EFFECT CLASS** —
-## `FxGlowStyle.GLOW_SHADER` is a stopgap preload, the way `FxFire` holds `FIRE_SHADER` — so this file
-## builds the request itself. **When a class is written, MOVE this call site to it rather than copying
-## it**: two preloads of one shader are two `Shader` resources, and a style applied through the wrong
-## one silently misses every uniform the other declares.
+## ⚠ **THERE IS STILL NO `FxGlow` EFFECT CLASS** — `FxGlowStyle.GLOW_SHADER` is a stopgap preload, so
+## this file builds the glow request itself. **When a class is written, MOVE this call site to it
+## rather than copying it**: two preloads of one shader are two `Shader` resources, and a style
+## applied through the wrong one silently misses every uniform the other declares.
 ##
 ## ⚠ Editor facts, each of which cost time elsewhere in this repo:
-##  * **`LightLayer` is `@tool`, but its `_ready()` deliberately does nothing in the editor.**
-##    Otherwise opening `game_view.tscn` would attach a `ShaderMaterial` to a node that scene OWNS,
-##    and saving would write it in. This tool builds its own instance and calls `ensure_built()`.
-##  * **The editor instantiates no autoloads**, so `SettingsManager` is absent. `CardVisual` and
-##    `LightLayer` both fall back to an editor stand-in; this tool drives ONE shared instance so the
-##    card geometry and the light cannot disagree about `card_scale`.
-##  * **Every node built here is OWNERLESS and rebuilt from scratch.** An owned child would be SAVED
-##    into `spotlight_tool.tscn` by the editor.
-##  * **Pose a card only AFTER `add_child`.** `CardVisual._ready` turns its own `_process` back on,
-##    and `delta_self_moving_logic` frees any non-play-area card with no `control_anchor` — so a card
-##    parked before parenting deletes itself, leaving a blank frame at exit 0.
+##  * **`LightLayer` is `@tool`, but its `_ready()` deliberately does nothing in the editor** — else
+##    opening `game_view.tscn` would attach a `ShaderMaterial` that scene OWNS and save it in.
+##  * **The editor instantiates no autoloads**, so `SettingsManager` is absent. This tool drives ONE
+##    shared stand-in so card geometry and light cannot disagree about `card_scale`.
+##  * **Every node built here is OWNERLESS** — an owned child would be SAVED into the .tscn.
+##  * **Pose a card only AFTER `add_child`.** `CardVisual._ready` re-enables its own `_process`, and
+##    `delta_self_moving_logic` frees any non-play-area card with no `control_anchor`.
 
 const SCENARIOS_PATH := "res://tools/spotlight_scenarios.json"
 const SHOT_DIR := "user://logs/events/spotlight_tool/"
@@ -110,7 +78,7 @@ var _origins := SpotlightOrigins.new()
 ## chart E was written to replace (*"no instant movements or spawning in and out"*). It therefore
 ## showed a SNAP where the game travels, and `spotlight_travel_fraction`, `spotlight_spawn_fraction`
 ## and `spotlight_retire_fraction` had no effect on screen at all — three knobs the owner could turn
-## forever with nothing happening. Owner, 2026-08-05: *"I still want to see a scenario where forced
+## forever with nothing happening. Owner: *"I still want to see a scenario where forced
 ## spotlights move from one section to another, adding or losing spotlights if sections are mismatched
 ## in total cards"* — that is this class.
 class _TBeam extends RefCounted:
@@ -191,7 +159,7 @@ func _apply_scenario_knobs() -> void:
 ## GAP-006 per-section beat, which is the first thing to judge.** ⚠ In a real act this beat is 1–3
 ## frames because `get_delay()` is already compressed; here it runs at `base_delay` uncompressed,
 ## which is `Q167`=(a)'s honest shape.
-## ⚠ **DEFAULTS ON AND SHOULD USUALLY STAY ON** — owner 2026-08-04: *"should constantly loop the
+## ⚠ **DEFAULTS ON AND SHOULD USUALLY STAY ON** — owner: *"should constantly loop the
 ## animation of the scenario happening like a snapshot of it happening in game. should not be static
 ## since we need to see end to end."* A still frame cannot show a pulse, a travel or a retire, which
 ## between them are most of what there is to judge. Turn it off only to hold one frame.
@@ -231,7 +199,7 @@ func _apply_scenario_knobs() -> void:
 	set(v): screen_size = v; _touch()
 
 @export_group("Glow")
-## **THE GLOW ON AN ACTIVE CARD** — owner 2026-08-04: *"editor should include glowing effect on card
+## **THE GLOW ON AN ACTIVE CARD** — owner: *"editor should include glowing effect on card
 ## as well for cards currently active. I believe previous part of plan had it implemented but havent
 ## seen it in action yet for adjustment."* They are right that it was built: S11 shipped `FxGlowStyle`
 ## and the three `.tres`, S12 shipped `Shaders/glow.gdshader`, and both were rendered and looked at in
@@ -642,7 +610,7 @@ func _all_depths() -> Array[int]:
 	return out
 
 ## Move the existing cards to match `_open`, without rebuilding them.
-## ⚠ **THE OPEN AMOUNT IS EASED, NOT SET** — owner 2026-08-04: *"row separation is not smooth. cards
+## ⚠ **THE OPEN AMOUNT IS EASED, NOT SET** — owner: *"row separation is not smooth. cards
 ## jump to their new spot instantly."* A per-depth `_open` value eases toward its target every frame
 ## (chart D6's tween over `reveal_fraction`) and this layout reads that.
 func _reposition() -> void:
@@ -687,7 +655,7 @@ func _track_glow_outlines() -> void:
 
 ## **EVERY DEPTH THE CURRENT SECTION LIGHTS — a COLUMN OPENS THEM ALL.**
 ##
-## ⚠ **THIS RETURNED -1 FOR A COLUMN AND THAT WAS MY INVENTION, NOT THE DESIGN'S** (owner 2026-08-04:
+## ⚠ **THIS RETURNED -1 FOR A COLUMN AND THAT WAS MY INVENTION, NOT THE DESIGN'S** (owner:
 ## *"not seeing any row separation when scoring columns"*). Chart D4 defines the reveal set as
 ## *"which board rows must expand to make every member of the spotlight set fully visible"* — for a
 ## column that is every row it passes through, not none. `Q46` gives expand-for-ROW and
@@ -870,7 +838,7 @@ func _sync_beams() -> void:
 		# `_slot_centre()` returns ZERO while a card is missing — a SCENARIO change rebuilds the
 		# board, leaving live beams pointing at slots the new board may not have — so a beam
 		# re-matched on that frame took ZERO as its start and slid in from off-board. Owner,
-		# 2026-08-05: *"seeing some spotlights flying into place from outside board now which should
+ # 2026-08-05: *"seeing some spotlights flying into place from outside board now which should
 		# never happen vs spawning in place"*. With no known origin the honest move is `Q65`=(a)'s:
 		# appear ALREADY AIMED rather than invent a path.
 		if from == Vector2.ZERO:
@@ -972,7 +940,7 @@ func _get_property_list() -> Array[Dictionary]:
 ##
 ## ⚠ **Shoots the SubViewport's own texture, not the window** — the viewport is the thing whose
 ## dimensions the beams were spread against.
-## **THE TRACE MODE — the second half of ONE tool** (owner 2026-08-04: *"was expecting spotlight tool
+## **THE TRACE MODE — the second half of ONE tool** (owner: *"was expecting spotlight tool
 ## and trace to be one tool, not two"*).
 ##
 ##     <godot> --path solatro res://tools/spotlight_tool.tscn -- --trace
@@ -1117,7 +1085,7 @@ class _Watchdog extends Node:
 ##
 ##     <godot> --path solatro res://tools/spotlight_tool.tscn -- --verify
 ##
-## ⚠ **THIS EXISTS BECAUSE `--shoot-all` COULD NOT SEE A BROKEN SCENARIO** (owner 2026-08-04: *"some
+## ⚠ **THIS EXISTS BECAUSE `--shoot-all` COULD NOT SEE A BROKEN SCENARIO** (owner: *"some
 ## of the scenarios appear to be broken, such as solo activation, where nothing happens"*, *"cascade
 ## scoring scenarios has not actual cascade scoring"*). A still frame with `play = false` shows one
 ## posed section, so a cascade that never advances and a cascade that advances correctly produce the
@@ -1178,7 +1146,7 @@ func _maybe_verify() -> void:
 			for b : _TBeam in _beams:
 				if b.t > 0.0 and b.t < 1.0: travelled = true
 				if b.fade > 0.0 and b.fade < 1.0: faded = true
-			# ⚠ **WAS A LIGHT STILL MOVING WHEN ITS SECTION ENDED?** Owner, 2026-08-05: *"timing of
+ # ⚠ **WAS A LIGHT STILL MOVING WHEN ITS SECTION ENDED?** Owner: *"timing of
 			# spotlights is not always consistent like its ending early"*. The cascade's beat and the
 			# envelopes are INDEPENDENT fractions of the same unit and nothing enforces an ordering —
 			# at the shipped defaults `spotlight_travel_fraction` (0.5) EQUALS `spotlight_hold_fraction`
@@ -1229,7 +1197,7 @@ func _maybe_verify() -> void:
 		# half the presets lie.** Absent used to mean "keep the tool's current setting", which defaults
 		# ON, so `S2` (named *"separation OFF"*) showed it ON and `S2b`'s *"compare directly against
 		# S2"* compared two identical boards. Eleven of thirteen presets were in that state and what
-		# you saw depended on which preset you had clicked before. Owner, 2026-08-05: *"half the
+ # you saw depended on which preset you had clicked before. Owner: *"half the
 		# scenarios dont do anything or dont do what they claim"*.
 		if not s.has("row_separation"):
 			suspect.append("does not declare row_separation — it inherits, so it shows whatever the "
@@ -1303,11 +1271,9 @@ func _maybe_shoot_all() -> void:
 ## anything about the spotlight.
 const _BACKDROP_ROLE := 17
 
-## Every inspector-visible value of every resource this preview reads, flattened into one array. Two
-## of these compare unequal exactly when something the owner edited would change what is on screen.
-##
-## `PROPERTY_USAGE_EDITOR` is the filter, which is the same thing as "is in the inspector": it keeps
-## plain script vars out, and those include cache fields a poll would otherwise see change every time.
+## Every inspector-visible value of every resource this preview reads, flattened into one array.
+## Same signature scheme as `fx_editor.gd`'s, which carries the reasoning — including why nested
+## resources are followed and why `PROPERTY_USAGE_EDITOR` is the filter.
 func _fingerprint() -> Array:
 	var out : Array = []
 	for res : Resource in [settings, spotlight_style, glow_style]:

@@ -94,7 +94,7 @@ func _ready() -> void:
 	# a fresh goal / resumed score shows immediately.
 	_refresh_hud.call_deferred()
 
-## Debug prop stepping (owner tool, 2026-07-13): a toggle that holds every finished prop tick
+## Debug prop stepping (owner tool): a toggle that holds every finished prop tick
 ## open (PropLayer.manual_step — the whole run_props loop pauses at its SYNC await), and a
 ## step button that releases exactly one tick, so a prop run can be watched tick by tick.
 ## Mouse-only (FOCUS_NONE) so keyboard/controller navigation never lands on them.
@@ -164,7 +164,7 @@ var _combo_tween : Tween = null
 
 func _on_combo_changed(_count: int) -> void:
 	_refresh_hud()
-	# pulse: same shape as BigNumberLabel.anim_pop (UI/big_number_label.gd:21-26)
+	# pulse: same shape as BigNumberLabel.anim_pop (`BigNumberLabel.anim_pop`)
 	var delay := game.get_delay()
 	if _combo_tween and _combo_tween.is_running():
 		_combo_tween.custom_step(INF)
@@ -344,7 +344,7 @@ func _on_data_selected(data: CardData) -> void:
 
 
 # ==============================================================================
-# THE DEBUG BAR (2026-08-04) — three buttons serving one workflow.
+# THE DEBUG BAR — three buttons serving one workflow.
 #
 # Owner: *"If I see an issue during playtest, I can undo, press record, then repeat the action, and
 # then send log for debugging."* That sentence is the whole design:

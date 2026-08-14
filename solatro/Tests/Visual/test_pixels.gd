@@ -12,7 +12,7 @@ extends TestSuite
 # So this suite renders the real effects into a SubViewport and ASSERTS on the resulting image. It is
 # the reason all_tests.tscn now needs a real renderer.
 #
-# ⚠ IT FAILS, LOUDLY, UNDER A DUMMY RENDERER — it does not skip (owner 2026-07-27: "prioritize
+# ⚠ IT FAILS, LOUDLY, UNDER A DUMMY RENDERER — it does not skip (owner: "prioritize
 # running all tests properly over skipping them, even if that means all tests never run headless
 # anymore"). A skipped pixel check is indistinguishable from a passing one in a log, which is exactly
 # how the four bugs above survived. Run the suite WINDOWED:
@@ -331,7 +331,7 @@ func test_balls_sit_on_their_oracle() -> void:
 					"%d missing, worst offset %.2f art units" % [missing, worst])
 
 ## THE SAME CLAIM ON A TURNING HOST, AND IT IS HERE BECAUSE THE SNAPSHOT THAT USED TO CARRY IT IS
-## FLAKY. The juggling pattern does not rotate with its card (owner 2026-07-30, §4): `juggle.gdshader`
+## FLAKY. The juggling pattern does not rotate with its card (owner, §4): `juggle.gdshader`
 ## never reads `u_shape_rot` and `FxAttachment._push_live` counter-rotates the quad, so the balls must
 ## sit on the WORLD-UPRIGHT oracle no matter how far the host is turned.
 ##
@@ -371,7 +371,7 @@ func test_balls_ignore_their_hosts_rotation() -> void:
 				% [deg, BALL_TOLERANCE],
 				"%d missing, worst offset %.2f art units" % [missing, worst])
 
-## A ball must read as a SPHERE, not a disc (owner 2026-07-27): banded curvature plus a highlight
+## A ball must read as a SPHERE, not a disc (owner): banded curvature plus a highlight
 ## sitting ON the surface. Measurable form: at least three distinct tones inside one ball (a flat
 ## two-tone split has two), and the brightest tone is OFF CENTRE — a centred dot is a disc's gloss.
 func test_ball_reads_as_a_sphere() -> void:
@@ -420,7 +420,7 @@ func test_hoop_halves_reassemble() -> void:
 	check(diff == 0, "back half + front half == the whole ring, pixel for pixel",
 			"%d pixels differ" % diff)
 
-## ONE PIXEL SIZE FOR ALL ART (owner 2026-07-27). The ball prop and the card's Ball pip are the SAME
+## ONE PIXEL SIZE FOR ALL ART (owner). The ball prop and the card's Ball pip are the SAME
 ## source frame, so at any card_scale one source texel must come out the same size on both — that is
 ## the whole claim behind PropVisual.ART_PIXEL_SCALE, and it is only true if the prop scales WITH the
 ## cards.
@@ -487,7 +487,7 @@ func test_one_pixel_size_for_all_art() -> void:
 				"pip %s vs prop %s + rim %s (%.1f px per art unit)"
 				% [box_pip.size, box_prop.size, rim, per_unit])
 
-## THE GAP THIS SUITE EXISTED WITH FOR ITS WHOLE LIFE (owner 2026-07-29: *"has this issue this whole
+## THE GAP THIS SUITE EXISTED WITH FOR ITS WHOLE LIFE (owner: *"has this issue this whole
 ## time been that fx editor doesnt use real card visual... because the card outline was never accurate
 ## to real cards and therefore tests nothing?"*). FX_HANDOFF §0c.2.
 ##
@@ -522,7 +522,7 @@ func test_one_pixel_size_for_all_art() -> void:
 ## exact agreement rather than a tolerance.
 func test_the_card_mask_is_the_card_the_player_sees() -> void:
 	behavior_section("A REAL CardVisual: THE MASK IS THE SILHOUETTE THE PLAYER SEES")
-	# ⚠ **REST POSE ONLY, BECAUSE THE SHIPPED CARD NO LONGER DEFORMS** (owner, 2026-08-07: *"tests
+	# ⚠ **REST POSE ONLY, BECAUSE THE SHIPPED CARD NO LONGER DEFORMS** (owner: *"tests
 	# should work without animation playing, dont understand point of pointing tests at an animated
 	# version"* — and they are right). This used to run `[0.0, 0.15, 0.30, 0.45]` across the idle's
 	# 0.6 s loop.
@@ -1010,7 +1010,7 @@ func _check_directions_split() -> void:
 ## Ruling 10 — the focus highlight reaches the EFFECTS, not just the card art. A card is highlighted
 ## by its `modulate`, which the renderer folds into COLOR before the fragment function; both FX
 ## shaders used to OVERWRITE COLOR, so a selected card lit up while its fire and balls did not
-## (owner report 2026-07-28). The same multiply is what makes a prop's exit fade carry its flames.
+## (owner report). The same multiply is what makes a prop's exit fade carry its flames.
 ##
 ## Stated as pixels: render each effect twice, once plain and once under the card's own highlight
 ## modulate, and require the highlighted one to come out BRIGHTER. Alpha is checked the same way

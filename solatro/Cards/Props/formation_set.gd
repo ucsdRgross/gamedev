@@ -1,7 +1,7 @@
 @tool
 class_name PropFormationSet
 extends Resource
-## All formations one prop KIND can spawn in (owner spec 2026-07-13). Saved per kind as
+## All formations one prop KIND can spawn in (owner spec). Saved per kind as
 ## res://Cards/Props/Formations/<kind_name>.tres by the formation editor tool; a MISSING file
 ## means the kind has NO formation and its props fly the exact slot line (the default for
 ## every kind until the owner authors one). Each batch picks ONE formation (seeded random
@@ -31,7 +31,7 @@ func pick_formation(seed_value: int) -> PropFormationData:
 	rng.seed = seed_value
 	return formations[rng.randi() % formations.size()]
 
-## SEPARATION-AGNOSTIC point storage (owner spec 2026-07-15): spread_by_separation points are
+## SEPARATION-AGNOSTIC point storage (owner spec): spread_by_separation points are
 ## STORED in FULL-CARD normalized space — "ratio 1 when separation == card height", i.e. a point
 ## authored while the visible strip equals the whole card is stored 1:1; authored in a smaller
 ## strip it is stored scaled UP into full-card space. Consumers project stored points into the

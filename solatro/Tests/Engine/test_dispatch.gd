@@ -1,6 +1,6 @@
 extends TestSuite
 # res://Tests/Engine/test_dispatch.gd
-# Dispatch / CardEnvironment suite (UNIT_TESTS_PLAN.md §3): run_all_mods ordering,
+# Dispatch / CardEnvironment suite: run_all_mods ordering,
 # skill_spotlight_check spotlight edges, on_anything non-recursion, first-result
 # semantics, CURRENT lifecycle. Uses FakeEnvironment + spy modifiers.
 #
@@ -124,7 +124,7 @@ func run_order_tests() -> void:
 			"c1.type.anything", "c2.type.anything"],
 			"type, stamp, skill per card, in iterator order (+ on_anything pass)", str(log))
 
-	#hook nobody implements: no error, and (P1 owner ruling 2026-07-16) the passive
+	#hook nobody implements: no error, and (P1 owner ruling) the passive
 	#on_anything tail is SKIPPED — no mod ran, so nothing could have changed
 	log.clear()
 	await env.run_all_mods(&"on_unimplemented_hook")

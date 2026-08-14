@@ -6,18 +6,38 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
 ## Known intermittent test failures (not owned by any current work stream)
 
-- ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the suite has finished. Seen
-  once in a 4-run batch: the banner, the log paths and the usual `4 ObjectDB instances were leaked
-  at exit` all printed normally, then the process died. ✅ **`run_tests.py` no longer
-  misreports it**: an exit status outside 0..125 is not a failure count (`all_tests.gd` quits with
-  `mini(failed, 125)`), so a crash is now named as a crash instead of being read as 125 suite
-  failures under a banner saying PASSED. The CRASH itself is still unattributed — likely the same
-  family as the exit-time leak, objects surviving into `cleanup()`.
-- ⬜ **LEAK CANARY +1, intermittent** — same story: previously ~1 run in 6, then 0 in 8 after S23.
-  Not attributed and not closed. When it fires the suite already prints `_report_growth` naming
-  what survived, so the next occurrence should be self-explaining — capture that output.
-  ⚠ The **exit-time** ObjectDB count is a different measure and is **not** a regression: 4 at the
-  pre-change baseline and 4 now, unchanged across every run of this work.
+⚠ **All three need the failing run's own `godot.log`, and a batch must COPY it per run.**
+`run_tests.py` discards the suite's stdout by design and prints only the banner, so the evidence is
+gone by the time you know you wanted it.
+
+- ⬜ **The suite intermittently HANGS — a third mode, distinct from the segfault and the leak.** Seen
+  once: killed at the 600 s timeout with **no banner**, so it never reached its own verdict. ⚠ A hang
+  is not a crash and not a failure count — the wrapper prints `NO SUITE BANNER` + `TIMEOUT` with both
+  gates "clean" underneath, which skims as healthy. Where it stopped: 23 suites had banners, `PIXELS`
+  and `OUTLINE` had opened and never finished, and the four that finish last on a healthy run never
+  printed. That points at one renderer suite blocking on an `await`, not a general stall.
+  **Not reproduced in 7 runs since.**
+- ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
+  normally. Still unattributed — likely the exit-time leak's family, objects surviving into
+  `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
+  failure count, so a crash is named as a crash rather than read as 125 failures under a banner
+  saying PASSED. **One observation total; did not recur in 7 runs.**
+- ⬜ **LEAK CANARY +1, intermittent.** Rate has moved: ~1 run in 6, then 0 in 8 after S23, now **0 in
+  7 more**. ⚠ Not fixed — it once passed 6 consecutively before failing. The suite prints
+  `_report_growth` on the failing run (node/resource/other split, plus a running-tween count — a
+  `Tween` is RefCounted and self-sustaining, which fits every observed property), so the next
+  occurrence explains itself if the log is kept.
+  ⚠ The **exit-time** ObjectDB count is a different measure and **not** a regression: 4 before this
+  work and 4 now.
+
+## Doc hygiene backlog (code comments — measured, not yet triaged)
+
+- ⬜ **`doc_check.py` scans code comments; the standing count over 230 source files is 138 dated ·
+  101 blocks over 16 lines · 78 history · 13 restated · 0 line refs.** Zero errors — every reference
+  resolves. ⚠ **A BACKLOG, not a regression**: the rules postdate the comments. Work it
+  opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
+  ⚠ **`dated` will not go to zero and should not**: 43 of them are measurements, where the date is
+  part of the fact, and the checker cannot tell those from bookkeeping.
 
 ## Waiting on the owner
 

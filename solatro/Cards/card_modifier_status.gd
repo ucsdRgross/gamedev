@@ -69,7 +69,7 @@ func set_texture(_polygon2d: Polygon2D) -> void:
 ##
 ## ⚠ **THIS IS NOW A STATUS'S ONLY PRESENCE ON THE CARD, AND THAT IS A STANDING RULE.** The
 ## `StatusLayer` — a row of placeholder icons plus a stack count in the card's top-left — is deleted
-## (owner 2026-08-04: *"no more status icons, they are represented by status effects like fire and
+## (owner: *"no more status icons, they are represented by status effects like fire and
 ## juggling shader... stack count and status names stay in description at top"*), and with it the
 ## `draw_icon` hook whose base implementation drew nothing while the layer still showed the count. That
 ## backstop is what has gone: **a new status that declares no FX here is INVISIBLE on the board.** Its

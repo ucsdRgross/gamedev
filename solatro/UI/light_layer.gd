@@ -70,7 +70,7 @@ class Light extends RefCounted:
 	var origin : Vector2 = Vector2.ZERO
 	## The beam's width where it leaves its origin. ⚠ Its width at the TARGET is not here: the
 	## shader derives that from `radius`, so the cone's mouth cannot disagree with the pool it opens
-	## onto (owner, 2026-08-04).
+	## onto (owner).
 	var origin_width : float = 26.0
 	## Extra half-width beyond the circle at the target end. 0 is the owner's answer — the cone's
 	## mouth is exactly the circle.
@@ -224,7 +224,7 @@ func _process(delta: float) -> void:
 	var show_target := 1.0 if _revealed else 0.0
 	if not is_equal_approx(_show, show_target):
 		# ⚠ **THE SHOW HAS ITS OWN FRACTIONS NOW — it used to share the DIM's**, so the beams and the
-		# darkness always reached full together and neither could lead the other. Owner 2026-08-05:
+ # darkness always reached full together and neither could lead the other. Owner 2026-08-05:
 		# *"allowing dimness to happen twice as fast before beams finish"*. Set
 		# `spotlight_dim_in_fraction` below `spotlight_show_in_fraction` and the room darkens first.
 		var show_fraction : float = _settings().spotlight_show_in_fraction if show_target > _show \
@@ -347,12 +347,12 @@ static var editor_settings : PlayerSettings = null
 ## stopped reading the tool's settings and read the player's saved `settings.tres` instead — while the
 ## tool's own cascade clock (`_advance_cascade`, `_advance_beams`) kept using its embedded
 ## `SubResource`. **Two PlayerSettings instances, two clocks**, so the section beat and the show/dim
-## eases disagreed and the show was cut off part-way up. Owner, 2026-08-05: *"still seeing half
+## eases disagreed and the show was cut off part-way up. Owner: *"still seeing half
 ## spotlight effect ... but not in tool, but specifically when testing the scenarios during play ...
 ## loop is restarting while spotlight effect is playing"* — the diagnosis was theirs and it was right.
 ## ⚠ Only the tool ever assigns this; the shipped game leaves it null and gets `SettingsManager`.
 ## ⚠ **DELEGATES TO `FxAttachment.settings()` RATHER THAN RE-DERIVING IT.** That accessor is now the
-## ONE place that answers "which PlayerSettings" (owner 2026-08-05: *"shared globally and be the one
+## ONE place that answers "which PlayerSettings" (owner: *"shared globally and be the one
 ## used in actual games, so i never need to duplicate settings across different contexts"*), and it
 ## loads the same `user://settings.tres` the autoload does. A second copy of the rule here is exactly
 ## the two-representations defect this stream keeps producing.

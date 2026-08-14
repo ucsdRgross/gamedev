@@ -38,14 +38,33 @@ measured numbers, dead ends already tried, and what is still open.
 A date earns its place only when the fact is *about* a moment — a measurement's conditions, a
 version boundary. "The suite runs windowed" needs no date. "Measured on Box A" does.
 
+**Then cut the words, not just the categories.** A kept fact still has a shortest form: state the
+rule and its number, not the narrative that produced them, and state it ONCE — a fact repeated at a
+second site is the same drift risk as two copies of an allowlist. This covers **code comments**, not
+only `.md` files; a 38-line block explaining one seam is in scope. The exception is a
+`flowchart-design` question, which is read alone and must stay self-contained even if that repeats a
+paragraph.
+
 ## Procedure
 
 ### 1. Check
 
 ```bash
-py .claude/tools/doc_check.py            # audit, exits 1 if anything is broken
-py .claude/tools/doc_check.py --verbose  # also lists every date-stamped line
+py .claude/tools/doc_check.py             # audit, exits 1 if anything is broken
+py .claude/tools/doc_check.py --verbose   # list every finding instead of the per-category counts
+py .claude/tools/doc_check.py --docs-only # skip the code-comment scan
+py .claude/tools/doc_check.py --changed   # only what git reports changed, broken refs only
 ```
+
+⚠ **The `--changed` pass already ran** — a `Stop` hook fires it at every task boundary, warn-only.
+So a clean hook means "no broken reference in what I touched", NOT "the docs are healthy". This
+skill is the full pass, and it is the only thing that looks at the style findings at all.
+
+It scans **code comments as well as `.md` files** — same rules, since a comment is a doc that lives
+in a source file. A comment referencing a file that does not exist is an ERROR, like anywhere else:
+a comment deferring to a doc is only useful if the doc resolves. The five style findings (`restated`,
+`line ref`, `history`, `long block`, `dated`) are counted by category rather than listed, because
+there are hundreds and a wall of warnings is a wall nobody reads.
 
 Broken references and dangling links are always bugs — fix them. Scope violations and date
 density are prompts to look, not verdicts.

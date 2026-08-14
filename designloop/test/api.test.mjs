@@ -446,7 +446,7 @@ test('a hand-written gap is a badge, a scoped round, and a stale plan step (S15)
 
     // J16 — the plan step that cites A2 is stale; the one that does not is untouched.
     const gaps = await s.get('/gaps');
-    assert.deepEqual(gaps.counts, { open: 1, closed: 0, total: 1 });
+    assert.deepEqual(gaps.counts, { open: 1, closed: 0, total: 1, unstated: 0 });
     assert.deepEqual(gaps.stale.map((x) => [x.id, x.gap, x.because]), [['S4', 'GAP-009', ['A2']]]);
     assert.equal(gaps.steps, 2, 'both steps were read; only one of them is stale');
     assert.equal(gaps.gaps[0].question.options.length, 2);
@@ -494,7 +494,7 @@ test('promoting an assumption from the canvas files an open gap (Q95b=a)', async
     assert.equal(r.body.id, 'GAP-001');
 
     const gaps = await s.get('/gaps');
-    assert.deepEqual(gaps.counts, { open: 1, closed: 0, total: 1 });
+    assert.deepEqual(gaps.counts, { open: 1, closed: 0, total: 1, unstated: 0 });
     assert.equal(gaps.gaps[0].question, null, 'no options: the owner asked for a say, not for one');
     assert.deepEqual(gaps.stale.map((x) => x.id), ['S4'], 'and the step that relied on it is stale');
     assert.equal((await s.post('/promote', {})).status, 400, 'a promotion must name its assumption');

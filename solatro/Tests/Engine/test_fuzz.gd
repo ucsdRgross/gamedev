@@ -1,6 +1,6 @@
 extends TestSuite
 # res://Tests/Engine/test_fuzz.gd
-# F1 random-walk board fuzz (UNIT_TESTS_PLAN.md §8) against Board.move_stack +
+# F1 random-walk board fuzz against Board.move_stack +
 # GameData.validate(). Seeded and deterministic: on failure it prints the seed and
 # the last actions — rerun with that seed in `fuzz_seed` to reproduce.
 # Pure GameData/Board layer (no Game node, no mods) so every state is fully checked.

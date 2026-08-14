@@ -48,7 +48,7 @@ extends Resource
 @export_range(0.5, 40.0, 0.25) var glare_thickness : float = 8.0
 
 ## How far from each SIDE the glare stops, in card-space units.
-## ⚠ **IT FIXES A STRUCTURAL BLINK, not a tuning accident** (owner 2026-08-06): a card's side rims are
+## ⚠ **IT FIXES A STRUCTURAL BLINK, not a tuning accident** (owner): a card's side rims are
 ## VERTICAL LINES, so the band's centre reaching that x lights the whole side at once and off again - a
 ## flash, not a sweep. (Top and bottom never do it: they span the width, so the band crosses gradually.)
 ## The buffer clamps the sweep's endpoints AND suppresses the glare in the dead zone, so the band tapers
@@ -57,7 +57,7 @@ extends Resource
 
 @export_group("Throb")
 ## ONE FULL PULSE, as a fraction of `get_delay()` - its own knob: a sweeping band and a pulsing rim are
-## different cues with no reason to share a tempo (owner 2026-08-06).
+## different cues with no reason to share a tempo (owner).
 @export_range(0.1, 8.0, 0.05) var throb_period_fraction : float = 0.5
 
 ## The entry the rim pulses to. THROB exists so a notification can name a hue (*"like red"*), so unlike

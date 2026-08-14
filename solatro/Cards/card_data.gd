@@ -116,7 +116,7 @@ func _on_child_data_changed() -> void:
 	data_changed.emit()
 
 ## **THE COMPACT FORM, FOR LOGS.** `Hoop NumeralRank1.0 Extra Point  PLAY PLAY` becomes `Ho1*+`.
-## Owner, 2026-08-04: *"Logs should be as compact as possible, current card data to_str may need
+## Owner: *"Logs should be as compact as possible, current card data to_str may need
 ## changes."* A log line repeated thousands of times is mostly card identifiers, and the verbose form
 ## also prints the stage TWICE, which is pure noise in a per-frame record.
 ##

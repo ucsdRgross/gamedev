@@ -86,7 +86,7 @@ func check_impl(ok: bool, ctx: String, detail: String = "") -> void:
 
 ## A PLACEHOLDER notice, not a failure. `ok == false` prints [WARN][PLACEHOLDER] and is counted
 ## separately: it never touches _fail, so the exit code (= failure count) is unchanged and nobody's
-## build breaks (owner 2026-07-28: warnings mean *"something in scene is still a placeholder"*, not
+## build breaks (owner: warnings mean *"something in scene is still a placeholder"*, not
 ## something is broken). Use it for drift that is real but deliberate — a colour still hardcoded in a
 ## surface whose art has not been made yet. Anything that is actually WRONG is a check(), not a warn.
 func warn(ok: bool, ctx: String, detail: String = "") -> void:
@@ -138,7 +138,7 @@ static func restore_real_save() -> void:
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_BAK),
 			ProjectSettings.globalize_path(REAL_RUN_PATH))
 
-## Settings isolation (2026-07-20). SettingsManager writes user://settings.tres on EVERY knob
+## Settings isolation. SettingsManager writes user://settings.tres on EVERY knob
 ## write (on_settings_changed -> save_settings), so a suite that scribbles on the live
 ## PlayerSettings is editing the player's real file line by line. Restoring the VALUES at the
 ## end is not enough: a suite killed midway (or a crash) leaves the player's knobs on test
@@ -146,7 +146,7 @@ static func restore_real_save() -> void:
 ## a throwaway settings.tres that restore deletes. Pair with snapshot_settings()/
 ## restore_settings_snapshot(), which put the LIVE resource back for later suites in the run.
 ##
-## ⚠ **EVERY SUITE USES THESE NOW** (2026-08-07). UI PROPS, VISUAL LAYERS and LEAK CANARY used to
+## ⚠ **EVERY SUITE USES THESE NOW**. UI PROPS, VISUAL LAYERS and LEAK CANARY used to
 ## carry their own copy-pasted `REAL_SETTINGS_PATH`/`REAL_SETTINGS_BAK` pair, which forced the
 ## awkward `SETTINGS_FILE` name here — GDScript rejects a child const that shadows a parent's. The
 ## copies are gone and the const has its obvious name back. **Do not reintroduce a local pair:** the

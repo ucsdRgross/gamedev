@@ -112,7 +112,7 @@ func _teardown_view() -> void:
 # 0x0 (Godot clamps the root to 100x100) while canvas_items stretch keeps the
 # canvas at 1152 wide, so the window->canvas inverse transform blows raw canvas
 # positions ~11x past every control and no positioned click ever lands (all 10
-# position-based checks failed headless, 2026-07-16). to_window() maps canvas ->
+# position-based checks failed headless). to_window maps canvas ->
 # window via the root's final transform; identity in a normal window, so this
 # is correct everywhere, not a headless special case.
 # ==============================================================================

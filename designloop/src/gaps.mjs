@@ -41,7 +41,17 @@ const RE_NODE = /\b([A-Z]{1,2}\d+[a-z]?)\b/g;
 const RE_STEP = /\bS(\d+)\b/g;
 
 /** Statuses that still want an answer. `resolved` and `withdrawn` are kept, not asked (Q96b=a). */
-const OPEN_STATES = new Set(['open', 'questioned']);
+const OPEN_STATES = new Set(['open', 'questioned', 'unstated']);
+
+/**
+ * A gap file with no `status:` line. Still treated as OPEN — an unreadable status is not evidence
+ * of closure — but NAMED, so the fallback cannot pass for a real `status: open`.
+ *
+ * ⚠ It defaulted to `open` silently until 2026-08-14. solatro/spotlight's eleven gap files write
+ * their status in prose instead of the key, so the page said "11 open" for a stream with two, and
+ * `staleFor` marked plan steps stale on nine answered gaps.
+ */
+const UNSTATED = 'unstated';
 
 /** Is this ID a gap's, rather than a question's? Answers of both kinds share one file (§4.3). */
 export function isGapId(id) {
@@ -163,12 +173,15 @@ export function gapQuestion(gap) {
 export function parseGap(name, text) {
   const heading = (/^#\s+(.*)$/m.exec(text)?.[1] || name).trim();
   const id = RE_GAP_ID.exec(heading)?.[1] || name.replace(/\.md$/i, '');
-  const status = (field(text, 'status') || 'open').split(/\s/)[0].toLowerCase();
+  const stated = field(text, 'status');
+  const status = (stated || UNSTATED).split(/\s/)[0].toLowerCase();
   const gap = {
     id,
     file: name,
     title: heading.replace(/^[A-Z]+-\d+\s*[—-]\s*/, ''),
     status,
+    // Did the FILE say this, or is it the UNSTATED fallback?
+    statusStated: !!stated,
     open: OPEN_STATES.has(status),
     // How it ENDED, once it has (`answered` | `withdrawn` | `superseded`). Distinct from `status`,
     // which is where it sits in the round: a gap withdrawn because the design answered it and a gap
@@ -221,7 +234,9 @@ export async function readGaps(dir) {
 /** Open / closed / total, which is what the index badge says (Q89b=c, Q96b=a). */
 export function countGaps(gaps) {
   const open = gaps.filter((g) => g.open).length;
-  return { open, closed: gaps.length - open, total: gaps.length };
+  // Inside `open`, and reported beside it — a bare "11 open" hides which kind they are.
+  const unstated = gaps.filter((g) => !g.statusStated).length;
+  return { open, closed: gaps.length - open, total: gaps.length, unstated };
 }
 
 /**
@@ -258,7 +273,7 @@ export function planSteps(markdown) {
     steps.set(id, step);
   };
   lines.forEach((raw, i) => {
-    // ⚠ THE LEADING LIST / CHECKBOX MARKER IS TOLERATED ON PURPOSE (2026-08-03).
+ // ⚠ THE LEADING LIST / CHECKBOX MARKER IS TOLERATED ON PURPOSE.
     // It used to be rejected, and rejection here is not benign: an unmatched step line falls
     // through to the `citations(raw)` branch below, which attributes whatever it finds to the
     // PREVIOUS step. Measured — `**S1**`, `- [ ] **S2**`, `- [x] **S3**` parsed as ONE step citing

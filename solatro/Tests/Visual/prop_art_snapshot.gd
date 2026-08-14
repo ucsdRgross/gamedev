@@ -206,7 +206,7 @@ func _shot_palette_swap() -> void:
 ## What to look for: every flame's BASE sits on the drawing, not on the frame's bounding box. A
 ## prop's frame is mostly transparent padding — the ball pip is a small blob in an 8x8 cell — so
 ## before the alpha-derived radius table the flames hung in the air above the art with a visible gap
-## (owner report 2026-07-29). The hoop keeps its ellipse and should be unchanged.
+## (owner report). The hoop keeps its ellipse and should be unchanged.
 func _shot_prop_fire() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
@@ -239,7 +239,7 @@ func _quad(holder: Node2D, size_px: Vector2, at: Vector2, zoom: float) -> Polygo
 	return poly
 
 ## THE JUMP-THROUGH: a card jumps INTO the hoop, so the ring rides one card-jump above the slot
-## centre and a jumped card's centre is the ring's centre (owner 2026-07-28). Left panel is the card
+## centre and a jumped card's centre is the ring's centre (owner). Left panel is the card
 ## at rest with the ring already up at travel height; right panel is the same card mid-jump, where
 ## the two centres coincide and the ring frames it. The green cross is that shared centre — in the
 ## right-hand panel it must pass through the middle of BOTH the card outline and the ring.

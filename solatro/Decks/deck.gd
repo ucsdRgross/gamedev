@@ -3,7 +3,7 @@ class_name Deck
 ## Starter/test deck definitions, built by LOOPS over exact PipSuit classes (never suit
 ## indices — PipSuit.from_index was deleted because the index hid which suit came back).
 ## Every deck documents its testing + balance niche above its builder. REACTION RULE that
-## bit us (2026-07-13): hoops JUMP talents, knives SPIN talents — a deck with NO skill
+## bit us: hoops JUMP talents, knives SPIN talents — a deck with NO skill
 ## cards shows zero jump/spin poses, and a deck where EVERY card of a suit carries a skill
 ## suppresses that suit's props entirely (talented cards skip their own suit effect).
 

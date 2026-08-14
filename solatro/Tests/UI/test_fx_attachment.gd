@@ -204,7 +204,7 @@ func test_balls_uncapped() -> void:
 			maxf(style.ball_radius / sqrt(1.0), style.ball_radius_min)),
 			"the shrink is area-preserving (1/sqrt n)")
 	# The arc grows with the count (ruling 13) but is CEILINGED at `ball_arc_max`, because the pattern
-	# may not reach far enough above the card to cover the card behind it (owner 2026-07-28) — past
+	# may not reach far enough above the card to cover the card behind it (owner) — past
 	# the ceiling the balls' own 1/sqrt(n) shrink is what makes room. So the contract is now
 	# "never shrinks, never exceeds the ceiling, and does grow somewhere below it".
 	check(lots[&"u_arc_height"] >= one[&"u_arc_height"]
@@ -218,7 +218,7 @@ func test_balls_uncapped() -> void:
 			> FxJuggle.geometry(1, tall)[&"u_arc_height"],
 			"and it is a real growth curve, not a constant — it is only the ceiling that flattens it")
 	check(lots[&"u_ball_spin"] > one[&"u_ball_spin"], "and the balls spin faster")
-	# The ARC LADDER (owner 2026-07-28): lanes appear between the throw and the carry as the count
+	# The ARC LADDER (owner): lanes appear between the throw and the carry as the count
 	# rises, rather than one arc growing without limit. Always EVEN — arcs alternate direction, so an
 	# odd count would leave the loop open in x — and capped, because the shader's nearest-ball lookup
 	# does a fixed amount of work per arc.
@@ -269,7 +269,7 @@ func test_quads_share_geometry() -> void:
 	check(fire.live[&"u_ball_count"] == balls.live[&"u_count"],
 			"and it is told the ball count in its own uniform, which is what its MASK reads",
 			"%f vs %f" % [fire.live[&"u_ball_count"], balls.live[&"u_count"]])
-	# ⚠ THE OLD `u_emit_width` CHECK IS GONE WITH THE COMB, not ported (2026-07-29). It asserted that
+	# ⚠ THE OLD `u_emit_width` CHECK IS GONE WITH THE COMB, not ported. It asserted that
 	# the comb's pitch was one ball diameter — the workaround for a comb anchored to the QUAD while
 	# its balls travelled, which is what made plumes blink in and out (FX_HANDOFF §2). The cover
 	# field samples the ball mask and its taps step straight down, so a plume is as wide as its ball
@@ -346,7 +346,7 @@ func test_per_ball_levels() -> void:
 	check(int(fire.instances[0].r) == 0 and int(fire.instances[1].r) == 2,
 			"and its own INDEX, which is what the vertex stage places it from",
 			"%d %d" % [int(fire.instances[0].r), int(fire.instances[1].r)])
-	# Owner, 2026-07-29: *"if overlapping, ball with highest stacks win"*. Instances composite in
+	# Owner: *"if overlapping, ball with highest stacks win"*. Instances composite in
 	# buffer order, so the highest level must be LAST — this is the whole tie-break now that no
 	# fragment resolves a nearest ball.
 	var mixed : FxRequest = FxJuggle.requests(4, PackedInt32Array([9, 2, 30, 5]), juggle, style)[0]
@@ -482,7 +482,7 @@ func test_enum_mirror() -> void:
 ## THE FX EDITOR PREVIEWS A REAL CARD, SO THE CARD'S DATA CHAIN MUST STAY `@tool` — and this is the pin,
 ## because the failure is invisible everywhere else. A class whose chain is not `@tool` loads in the
 ## EDITOR as a placeholder: the type name survives and every member does not. Measured in the owner's
-## editor, 2026-07-29, before the flags were added: *"Invalid access to property or key 'data_changed' on
+## editor, before the flags were added: *"Invalid access to property or key 'data_changed' on
 ## a base object of type 'Resource (CardData)'"* and *"Nonexistent function 'set_texture' in base
 ## 'Resource'"* on a `PipSuitHoop` that was already `@tool` — a non-tool BASE is enough to do it.
 ##
@@ -598,7 +598,7 @@ func _two_requests() -> Array[FxRequest]:
 ## ⚠ AN EFFECT'S PIXEL MUST BE THE GAME'S PIXEL, and this is the check that would have caught the
 ## owner's *"fires not pixelated"* report before it shipped.
 ##
-## The project has ONE pixel size for all art (owner 2026-07-27, pinned on the art side by
+## The project has ONE pixel size for all art (owner, pinned on the art side by
 ## `test_pixels.test_one_pixel_size_for_all_art`). A card draws its pixel art one texel per UNSCALED
 ## unit, so a card-hosted effect's pixel is 1.0; a prop's art is drawn at `frame_px *
 ## ART_PIXEL_SCALE` in the prop's own local space, so a prop-hosted effect's pixel is that constant.

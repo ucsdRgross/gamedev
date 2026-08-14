@@ -5,7 +5,7 @@ extends RefCounted
 ## in `CardModifierStatus.alert_request()`, mirroring `FxRequest`: the status owns its own presentation,
 ## so `CardVisual` never learns which alerts exist.
 ##
-## ⚠ **AN ALERT IS A MODE, NOT A COLOUR** (owner 2026-08-04). What makes it read as an alert is that it
+## ⚠ **AN ALERT IS A MODE, NOT A COLOUR** (owner). What makes it read as an alert is that it
 ## MOVES, so it stays distinguishable whatever colour it lands on - which is why the outline's
 ## readability guarantee is never traded away to get attention.
 ##
@@ -49,7 +49,7 @@ static func glare(period_fraction := -1.0, thickness := -1.0, color := -1,
 
 ## A throbbing rim. Its PERIOD resolves against `throb_period_fraction`, not the glare's: a sweeping
 ## band and a pulsing rim are different cues and there is no reason they should share a tempo
-## (owner 2026-08-06).
+## (owner).
 static func throb(color := -1, period_fraction := -1.0) -> CardAlert:
 	var a := CardAlert.new()
 	a.kind = CardOutline.Alert.THROB

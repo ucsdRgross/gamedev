@@ -84,7 +84,7 @@ const COLUMN_BUCKET_PX := 48.0
 
 ## **ASSIGN A WHOLE SET AT ONCE — A SECTION OF THE BAR PER COLUMN, AND A FAN BY DEPTH INSIDE IT.**
 ##
-## The owner's rule, 2026-08-04 (GAP-008):
+## The owner's rule, (GAP-008):
 ##
 ## > *"given column position, beam right above it would point straight down to topmost card. Then
 ## > alternating left and right from that center beam, go down column. However we need it to scale to

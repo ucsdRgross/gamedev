@@ -6,7 +6,7 @@ extends RefCounted
 ## same stack count show the same fire, only sized differently.
 ##
 ## ⚠ THERE IS NO TENDRIL BUDGET ANY MORE. `FX_MAX_TENDRILS` was a cap on how many flames a crown
-## grew before surplus stacks were spent on intensity instead; with the comb retired (2026-07-29)
+## grew before surplus stacks were spent on intensity instead; with the comb retired
 ## there is nothing to count, and every knob now ramps continuously from ONE stack rather than
 ## sitting flat until the twelfth. Owner: *"make sure all params have scaling ratios as stacks
 ## increase"*.
@@ -21,7 +21,7 @@ static func request(id: StringName, stacks: int, style: FxFireStyle) -> FxReques
 	# `height + sink` above the surface and none can sit higher. The retired build padded this by
 	# `height_var` instead, which no longer exists.
 	#
-	# ⚠ `sink` BELONGS IN HERE AND LEAVING IT OUT CLIPPED THE FLAMES (owner report 2026-07-29: *"fire
+	# ⚠ `sink` BELONGS IN HERE AND LEAVING IT OUT CLIPPED THE FLAMES (owner report: *"fire
 	# is clipped at edges"*). It shifts the whole ladder UP, so a prop at `sink = 1.5` drew 1.5 art
 	# units of flame outside a quad sized for `height` alone and the top of every plume came off
 	# square. `body_near` in the shader has carried the `+ sink` margin all along; the QUAD is what

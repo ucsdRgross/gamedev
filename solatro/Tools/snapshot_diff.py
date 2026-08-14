@@ -47,7 +47,7 @@ SETS = ("fx_snapshots", "prop_art_snapshots", "fx_behind")
 # `_rot_tight`. A separate find in the same pass: `10_light_layer` was ALSO nondeterministic and had
 # never been listed, for an unrelated reason (unparked card clocks - see fx_snapshot's _park_cards).
 # It is fixed too, which makes HANDOFF_spotlight's G3.3 claim about that panel testable again.
-# ✅ **THE ROTATED-PANEL NONDETERMINISM IS FIXED (2026-08-08) AND THE LIST IS DOWN TO ONE ENTRY.**
+# ✅ **THE ROTATED-PANEL NONDETERMINISM IS FIXED AND THE LIST IS DOWN TO ONE ENTRY.**
 # `02_fire_rotation`, `05f_ball_rotation` and `behind_prop_turned` are all deterministic now —
 # verified 20 of 21 `fx_snapshots` panels identical across 3 runs and 5 of 5 `fx_behind` panels
 # identical across 4 runs, on an unchanged build. Cause and fix: `fx_snapshot.gd::_settle_poses`.

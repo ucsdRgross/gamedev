@@ -1,12 +1,7 @@
 shader_type canvas_item;
 render_mode blend_mix, unshaded;
-// Pixelated fire as a decorator over a SHAPE — GENERIC NOISE FIRE OVER A COVER FIELD
-// (owner design, 2026-07-29, replacing the tendril/comb/ogee/onion build).
-//
-// Owner: *"Fire effect no longer has tendrils at all, just average fire shader effects like moving
-// noise instead... just increasing shader params as intensity/stacks increase, no more individual
-// tendrils, make sure all params have scaling ratios as stacks increase"* — and *"should still be
-// form fitting to any shape and rotation. Do this for all current fire effects card prop ball."*
+// Pixelated fire as a decorator over a SHAPE — generic noise fire over a COVER FIELD.
+// Ported from Fire Shader by Yui Kinomoto @arlez80, MIT.
 //
 // THE MODEL, IN FOUR LINES:
 //
@@ -15,47 +10,34 @@ render_mode blend_mix, unshaded;
 //     shape    = cover * (((cover + aperture) * n - aperture) * gain)     // the Kinomoto form
 //     heat     = clamp(shape, 0, 1)  ->  COLOR = texture(u_ramp, vec2(heat, u_level))
 //
-// `cover` is 1 at the surface and falls to 0 at full reach, which is exactly the role `UV.y` plays
-// in the reference this is ported from (Fire Shader by Yui Kinomoto @arlez80, MIT). Substituting
-// the MASK-derived cover for the QUAD's `UV.y` is the whole port: the same arithmetic that burns a
-// rectangle in the original burns the HOST'S OWN SHAPE here.
+// `cover` is 1 at the surface and falls to 0 at full reach — exactly the role `UV.y` plays in the
+// reference. Substituting the MASK-derived cover for the QUAD's `UV.y` IS the port: the arithmetic
+// that burns a rectangle in the original burns the HOST'S OWN SHAPE here.
 //
-// ⚠ `cover` REPLACES THE DOWN-MARCH AND THE TENDRIL IN ONE MOVE, and the two are worthless apart.
-// Measured on the retired build (FX_HANDOFF §9, 78 burning cards, GPU timer): deleting every
-// tendril computation on its own was worth 4 %, and replacing the march with 4 shifted mask taps
-// was worth 1.7x. The march could not be cut while a tendril needed a surface located to 0.4 art
-// units (~11 effective taps); noise does not need that, so it can. THE COST OF THIS SHADER IS
-// `mask_level` CALL COUNT x COST PER CALL AND NOTHING ELSE — every design decision below is about
-// keeping the call count down.
+// ⚠ **THE COST OF THIS SHADER IS `mask_level` CALL COUNT x COST PER CALL AND NOTHING ELSE** — every
+// decision below is about keeping the call count down. Measured on the retired tendril build
+// (FX_HANDOFF §9, 78 burning cards, GPU timer): dropping tendrils alone was worth 4%, replacing the
+// down-march with 4 shifted mask taps was worth 1.7x. ⚠ The two are worthless apart — the march
+// could not go while a tendril needed a surface located to ~0.4 art units (~11 taps); noise does
+// not need that precision, so it can.
 //
-// What that model buys, and each line is a property the retired build had to argue for:
-//  * FORM-FITTING IS FREE. `cover` is sampled from the mask itself, so fire hugs whatever
-//    `mask_level` answers — card, deformed card, blade, ring, ball — with no per-shape code.
-//  * EVERY UPWARD-FACING SURFACE BURNS, anywhere in the art. The taps are local and vertical, so a
-//    hoop's inner-bottom arc (the inside of the hole, which faces up) lights from the same code
-//    that lights the outer top arc. Multiple surfaces in one column stop being a special case:
-//    they are simply more body below a fragment.
+// What the model buys, each a property that needs no per-shape code:
+//  * FORM-FITTING IS FREE. `cover` comes from the mask, so fire hugs whatever `mask_level` answers.
+//  * EVERY UPWARD-FACING SURFACE BURNS, anywhere in the art — a hoop's inner-bottom arc lights from
+//    the same code as its outer top arc. Several surfaces in one column is just more body below.
 //  * NO FLAME CAN LEAP A HOLE, structurally: no tap reaches further than `u_height`.
-//  * NO CORNER CHAMFER — but ⚠ THAT TOOK A MASK CHANGE, NOT A FLAME ONE, and every earlier draft of
-//    this header got it wrong. "Fire licks DOWN the side of a card from each top corner" was never
-//    the flame model: the mask used to be a table of 32 RAYS, and interpolating between two rays
-//    cannot reproduce a vertex — which cut a genuine upward-facing slope that every correct flame
-//    model then stood fire on. The mask carries the outline's OWN VERTICES now (see poly_solid), so
-//    it is exact at rest and exact deformed. FX_HANDOFF §0c.1.
-//  * TIPS POINT UP BY CONSTRUCTION — the taps step WORLD-down and only the mask LOOKUP rotates
-//    (owner ruling 1). A spinning knife needs no per-shape branch.
+//  * NO CORNER CHAMFER — ⚠ but that took a MASK change, not a flame one. A mask of 32 interpolated
+//    RAYS cannot reproduce a vertex, and the cut corner was a genuine upward slope that every
+//    correct flame model then stood fire on. The mask carries the outline's OWN VERTICES now
+//    (`poly_solid`), exact at rest and deformed. FX_HANDOFF §0c.1.
+//  * TIPS POINT UP BY CONSTRUCTION — taps step WORLD-down and only the mask LOOKUP rotates.
 //
-// There is no ball special case (owner 2026-07-30: *"fire effect should be unified and identical in
-// how it treats everything"*). A ball is a SHAPE whose mask is the union of the discs; the cover
-// field, the noise and the ramp above it are literally the same code for a card, a knife, a hoop
-// and a ball. ⚠ The ball-fire quad USED to carry a comb tiled at ball pitch, and that was the cause
-// of "fire on balls sometimes disappears, then reappears later" (FX_HANDOFF §2). With no comb the
-// entire bug class is deleted by construction rather than fixed: one flame per ball is just noise
-// over the ball mask.
+// ⚠ NO BALL SPECIAL CASE, by owner ruling: a ball is a SHAPE whose mask is the union of its discs,
+// and the cover field, noise and ramp are literally the same code as for a card or a knife.
 //
-// This shader is NEVER a material on the host. A ShaderMaterial on a CardVisual polygon is clipped
-// to that polygon's UV rect (fire could not rise above the card) and inherits the card's rotation,
-// offset spin and basis3d squash (flames would tumble and flatten). It is its own quad.
+// ⚠ NEVER a material on the host. A ShaderMaterial on a CardVisual polygon is clipped to that
+// polygon's UV rect (fire could not rise above the card) and inherits the card's rotation, offset
+// spin and basis3d squash (flames would tumble and flatten). It is its own quad.
 
 #include "res://Shaders/fx_common.gdshaderinc"
 
@@ -164,7 +146,7 @@ uniform float u_top_fraction : hint_range(0.2, 0.8) = 0.6;
 uniform float u_ball_gravity : hint_range(1.0, 3.0) = 1.0;
 uniform float u_ball_dir = 1.0;
 uniform float u_ball_arcs = 2.0;
-// ⚠ THE PER-BALL LEVELS TEXTURE IS GONE (2026-07-29). `u_ball_fire` held one texel per ball so a
+// ⚠ THE PER-BALL LEVELS TEXTURE IS GONE. `u_ball_fire` held one texel per ball so a
 // fragment could look up the level of whichever ball the closed-form search had picked for it. A
 // plume is ONE INSTANCE per lit ball now and carries its own level in INSTANCE_CUSTOM.y (owner ruling
 // 21 unchanged: a ball's flame is the level that ball was lit with, never the card's Burning), so
@@ -441,7 +423,7 @@ float cover_below(vec2 p, vec2 ball, float ball_level, out bool deep) {
 	float n = float(clamp(u_taps, 2, COVER_TAPS_MAX));
 	float step_y = max(u_height, 1e-4) / n;
 	// ⚠ THE LADDER'S PHASE IS DITHERED PER FX PIXEL, AND THAT IS WHAT STOPS `u_taps` FROM BEING
-	// VISIBLE AS HARD CONCENTRIC SHELLS (owner report 2026-07-29: *"multiple stacked masks whose
+	// VISIBLE AS HARD CONCENTRIC SHELLS (owner report: *"multiple stacked masks whose
 	// edges are hard defined and with large spaces in between"*).
 	//
 	// `cover` can only take `taps + 1` values, and `u_ramp` is `filter_nearest`, so without this
@@ -539,7 +521,7 @@ float cover_below(vec2 p, vec2 ball, float ball_level, out bool deep) {
 //
 // The turbulence scrolls UP, with the flame. Art y is NEGATIVE upward, so a feature held at a fixed
 // noise coordinate sits at `p.y = y_noise - t * scroll` — MINUS made the grain drift DOWNWARD,
-// which read as the fire FALLING (owner report 2026-07-28). PLUS carries it up.
+// which read as the fire FALLING (owner report). PLUS carries it up.
 //
 // Two layers at different scales AND different speeds. One layer scrolling rigidly reads as a
 // texture sliding past, not as fire; the beat between two is what makes it churn.
@@ -682,7 +664,7 @@ void fragment() {
 		COLOR = vec4(0.0);
 	} else {
 		// Where the fire overlays the body it is drawn at u_inner_alpha. ⚠ THE LOOKUP IS SKIPPED
-		// WHOLE when the style is opaque, and every shipped style is (owner 2026-07-29: seeing the
+ // WHOLE when the style is opaque, and every shipped style is (owner: seeing the
 		// art through the flame "looks very bad") — a uniform branch, so it costs nothing and saves
 		// a full mask call on every lit fragment. How far the flames come down over the art is
 		// u_sink's job, not the alpha's.
@@ -697,7 +679,7 @@ void fragment() {
 		// line, with backdrop showing through every tread.
 		//
 		// ⚠ A SPRITE PROP NEEDS THE UNQUANTIZED POINT TOO, AND THE FIRST DRAFT OF THIS GOT IT WRONG
-		// (owner report, 2026-07-29: *"props did not get same treatment as card and dont have nice
+ // (owner report: *"props did not get same treatment as card and dont have nice
 		// seams"*). The reasoning that excluded them — "a prop's art is pixel art at `pixel` 2.5, so the
 		// quantized test agrees with the drawing" — holds ONLY at zero rotation. **The art turns with its
 		// host and the FX grid never turns** (the universal rule), so on a knife at 25 degrees the art's
@@ -734,7 +716,7 @@ void fragment() {
 		// mask-derived `cover` for `UV.y` burns the HOST. Nothing else about the maths changes.
 		//
 		// ⚠ THE APERTURE IS WEIGHTED BY `k`, SO IT EATS THE TIP AND NEVER THE BASE — and that is a bug
-		// fix, not a flourish (owner report 2026-07-29: *"transparency when it should be opaque"*).
+ // fix, not a flourish (owner report: *"transparency when it should be opaque"*).
 		//
 		// With a constant aperture the shaped value at the surface is `((1 + ap) * n - ap) * gain`,
 		// which goes NEGATIVE whenever `n < ap / (1 + ap)` — about a quarter of the time at the
