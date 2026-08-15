@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S3 done, S4 next. **S2 parked partial (needs the owner)** |
+| Current phase | Phase 1 — S3 done, **S4 PARKED on GAP-006**, S5 running. S2 parked partial |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -83,11 +83,31 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | S1 shader `TIME` under pause | done | flame does **NOT** advance. Overseer-verified: the t=0 and t=+20 s captures are **byte-identical**, `md5 4552e02bfa198039feb4e371219d5d1f` for both (implementer measured 0/746496 px). | `Tests/Visual/pause_time_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | none outstanding | NONE |
 | S2 `accessibility_should_reduce_animation()` | **partial — BLOCKED ON THE OWNER** | read-only half only: query = `false`; Windows `SPI_GETCLIENTAREAANIMATION` = `true` (animations enabled); query confirmed present on 4.7.1 via `has_method`. Consistent with tracking, **does not prove it** — one datapoint cannot answer a tracking question. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | see below | NONE |
 | S3 `PictureEntry` + `WallLayout` | done | overseer-verified by name: `@export` counts **10** (PE) and **6** (WL), every §1.1/§1.2 field present exactly once, every specified default literal present, **0 methods** in either file, `picture_rect.gd` correctly absent. Suite `ALL 31 SUITES: 2501 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/{picture_entry,wall_layout}.gd(+.uid)`, `Tests/Visual/wall_resource_load_spike.{gd,gd.uid,tscn}` | `class_name`/`extends` on separate lines, matching the repo's universal convention — syntax only, no field changed | NONE |
-| S4 `WallPacker` (owes P1–P12) | pending | — | — | — | — |
+| S4 `WallPacker` (owes P1–P12) | **PARKED — GAP-006, owner decision** | not started; nothing written | — | — | **GAP-006** |
 | S5 `FocusStack` (owes F1–F7) | pending | — | — | — | — |
 | S6 `Pacing` + `create_timer` sweep | pending | — | — | — | — |
 | S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | pending | — | — | — | — |
 | S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |
+
+### GAP-006 — S4 is parked, and this is the run's one real blocker
+
+**Nothing fixes a ring's radius.** `Q10`=(c) fixes the ellipse's *aspect* — a ratio — and
+`WallLayout` carries `gap_px`, `home_id`, the two aspect clamps and `view_margin`, none of
+which set a scale. §1.3 rule 3 fills a ring "until the next picture's outer width plus `gap_px`
+would exceed the ring's circumference" without saying what that circumference is.
+
+It cannot be resolved locally, and the circularity is why: derive the radius from a ring's
+contents and capacity becomes vacuous — no ring ever overflows, so `Q11`=(b), `G2`, **P2** and
+**P3** describe behaviour that cannot occur; fix the radius first and capacity computes exactly
+as written, but nothing fixes it. **P2's fixture ("ring 0 circumference fitting exactly 6")
+cannot be constructed at all** until this is answered.
+
+Options and a recommendation are in `gaps/GAP-006.md`. **Do not resolve it by picking one** —
+it is closed by a new design version. §1.8's no-literals rule means the answer must land as
+authored fields, not as constants in a `.gd`.
+
+**Downstream and equally parked:** S10, S36, and the S34 tool all consume ring geometry.
+Everything else in this run — S5, S6, S7, S8 — is untouched by it.
 
 ### S2 — what remains, and who can do it
 
