@@ -19,3 +19,20 @@
   `pause_time_spike.tscn` live under `solatro/Tests/Visual/`, matching the existing one-off windowed
   diagnostic scenes there (`fx_snapshot`, `prop_art_snapshot`, `reveal_shot`) — PLAN.md's SETUP note
   for this run permits `Tests/` or `Tools/` for the S1 spike and does not fix a name for it.
+- **S2 (K8, GAP-005) — ⚠ INCOMPLETE, READ-ONLY HALF ONLY, by owner instruction:** the toggle half of
+  S2's done-when ("toggle the Windows animation setting, print again") is deliberately NOT done here
+  — the owner is running it by hand. Do not read this entry as a conclusion about whether the query
+  tracks the OS setting; one reading cannot answer that.
+  Observed just now, this machine, Godot 4.7.1.stable, via `Tests/Visual/reduce_animation_spike.gd`
+  (a real windowed run, killed by an external hard timeout rather than relying on the scene to close
+  its own window — it does call `get_tree().quit()`, but the caller still bounds it):
+    - `DisplayServer.has_method(&"accessibility_should_reduce_animation")` = **true**, and the direct
+      typed call compiles and runs (this is more than GAP-005's "arrived in 4.5" claim — it is
+      confirmed present and callable on this exact 4.7.1 build, not inferred from the version number).
+    - `DisplayServer.accessibility_should_reduce_animation()` = **false**, right now, on this machine.
+    - The corresponding OS-level setting, read via `user32.dll SystemParametersInfo` with
+      `SPI_GETCLIENTAREAANIMATION` (0x1042) — a GET, never a SET — = **true** (animations enabled).
+      Read-only; nothing was written. This is the "before" half of the clean before/after pair the
+      owner asked for; the "after" half is theirs once they toggle the Windows setting and this
+      script is re-run unchanged.
+  Toggle half outstanding. Neither eventual answer (tracks / does not track) is a gap per GAP-005.

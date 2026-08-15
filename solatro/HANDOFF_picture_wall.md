@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 0 — S1 done, S2 next |
+| Current phase | Phase 1 — S1 done, **S2 parked partial (needs the owner)**, S3 next |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -32,6 +32,12 @@ Box A (see `.claude/memory/machine-profiles.md`). Runs WINDOWED, needs a killing
 ```
 "<godot console exe>" --path solatro --import
 ```
+
+⚠ **Any one-off diagnostic scene must quit itself, and every Godot invocation needs an explicit
+killing timeout.** A scene left sitting in its main loop hangs the run with no error and looks
+like host flakiness; it is not. If a run stops producing output, check for live Godot pids and
+kill them **by explicit `-Id <pid>`** — never by image name or wildcard, which
+`.claude/hooks/block-process-kill.ps1` blocks outright.
 
 ## Baseline, before any step
 
@@ -70,13 +76,27 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | Step | Status | Evidence proving the done-when | Files touched | Deviations | Gaps |
 |---|---|---|---|---|---|
 | S1 shader `TIME` under pause | done | flame does **NOT** advance. Overseer-verified: the t=0 and t=+20 s captures are **byte-identical**, `md5 4552e02bfa198039feb4e371219d5d1f` for both (implementer measured 0/746496 px). | `Tests/Visual/pause_time_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | none outstanding | NONE |
-| S2 `accessibility_should_reduce_animation()` | pending | — | — | — | — |
+| S2 `accessibility_should_reduce_animation()` | **partial — BLOCKED ON THE OWNER** | read-only half only: query = `false`; Windows `SPI_GETCLIENTAREAANIMATION` = `true` (animations enabled); query confirmed present on 4.7.1 via `has_method`. Consistent with tracking, **does not prove it** — one datapoint cannot answer a tracking question. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | see below | NONE |
 | S3 `PictureEntry` + `WallLayout` | pending | — | — | — | — |
 | S4 `WallPacker` (owes P1–P12) | pending | — | — | — | — |
 | S5 `FocusStack` (owes F1–F7) | pending | — | — | — | — |
 | S6 `Pacing` + `create_timer` sweep | pending | — | — | — | — |
 | S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | pending | — | — | — | — |
 | S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |
+
+### S2 — what remains, and who can do it
+
+**The overseer cannot finish S2.** Its done-when requires toggling the Windows animation
+setting, and modifying a system/accessibility setting is the owner's action — not something the
+overseer performs or delegates. The read-only half is done and committed.
+
+**To close it:** the owner flips "Show animations in Windows", then the spike is re-run and the
+second reading recorded. Same value as before → it does NOT track; flipped → it DOES track.
+
+Blocks nothing in this run: S2's only consumer is **S18**, which is Phase 3 and out of scope.
+Neither outcome is a gap — tracks → it seeds the first-launch default per GAP-005; does not
+track → the seed is skipped and `wall_reduced_motion` defaults `false`, GAP-005's stated
+fallback.
 
 ### What S1 established — later steps depend on this
 
