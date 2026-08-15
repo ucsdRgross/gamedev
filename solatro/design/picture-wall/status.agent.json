@@ -1,0 +1,7 @@
+{
+  "state": "ready",
+  "mode": "review",
+  "round": 5,
+  "at": "2026-08-15T09:00:00Z",
+  "summary": "Correction: I asked you to review PLAN.md §1 and I should not have. The workflow does specify that gate — SKILL.md line 695, added after two Spotlight bugs that were in the plan's normative section — but the gate belongs to the TOOL, not to you, and I failed to run it before asking. It now runs: 8 normative blocks, 0 unauthorised, meaning every contract in §1 traces to a question you already answered. Nothing there for you to read. Two real defects came out of actually running it. First, the audit had been silently vacuous: it scans a section headed '## 1.' and mine said '## §1.', so it found zero blocks and reported zero unauthorised — identical output to a clean pass. With the heading fixed it immediately found THREE unauthorised blocks, now cited properly. Second, your point about knobs was right and broader than the six literals I listed: every one of them was already a tunable or became one, and S34 now requires the layout tool to expose EVERY WallLayout field, every PictureEntry field, and every Picture-wall PlayerSettings knob live, with save and revert, so no value needs a .tres or .gd edited by hand. The rule is in the skill now: if a number is worth arguing with, it is a knob, not a contract — the test being whether you could tell it was wrong from a screenshot. Handoff is ready; nothing is blocked on you."
+}

@@ -468,6 +468,13 @@ function centreOn(id) {
 let dragging = null;
 stage.addEventListener('pointerdown', (e) => {
   if (e.target.closest('.node') || e.target.closest('.frame-hit') || e.target.closest('.edge')) return;
+  // ⚠ A pan is a drag across text. Without this the browser ALSO starts a native selection, so
+  // panning sweeps every label it crosses into a highlight. `preventDefault` stops the selection
+  // from starting; `.grabbing` carries `user-select: none` for the browsers that begin one anyway.
+  // Focus is restored by hand because preventDefault suppresses that too, and the svg is the
+  // focusable element — the arrow keys listen on `document`, so only the focus ring is at stake.
+  e.preventDefault();
+  svg.focus({ preventScroll: true });
   dragging = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y };
   stage.setPointerCapture(e.pointerId);
   stage.classList.add('grabbing');

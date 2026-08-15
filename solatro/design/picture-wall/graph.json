@@ -1,0 +1,2981 @@
+{
+  "doc_hash": "sha256:b517f1c2805e09a9df449364fb499104542a141844d3cd5dc2a56feb48e2d680",
+  "charts": [
+    {
+      "id": "A",
+      "name": "A",
+      "title": "how navigation works TODAY",
+      "line": 461,
+      "nodes": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "title": "what the shell is made of",
+      "line": 486,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "title": "the transition, the core loop",
+      "line": 512,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14",
+        "C15",
+        "C16",
+        "C17"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "D",
+      "title": "pause, and the one live screen",
+      "line": 551,
+      "nodes": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D10",
+        "D11"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "E",
+      "title": "what a picture shows",
+      "line": 577,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "F",
+      "title": "focus, Back, Forward, Wall",
+      "line": 601,
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "G",
+      "title": "layout and re-packing",
+      "line": 629,
+      "nodes": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "G12",
+        "G13",
+        "G14"
+      ]
+    },
+    {
+      "id": "H",
+      "name": "H",
+      "title": "resolution and sharpness",
+      "line": 659,
+      "nodes": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7"
+      ]
+    },
+    {
+      "id": "I",
+      "name": "I",
+      "title": "input routing",
+      "line": 678,
+      "nodes": [
+        "I1",
+        "I1b",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I8b",
+        "I8c",
+        "I9",
+        "I10",
+        "I11",
+        "I12",
+        "I13"
+      ]
+    },
+    {
+      "id": "J",
+      "name": "J",
+      "title": "Info mode",
+      "line": 715,
+      "nodes": [
+        "J1",
+        "J2",
+        "J3",
+        "J4",
+        "J5",
+        "J6",
+        "J7",
+        "J8",
+        "J9",
+        "J10",
+        "J11",
+        "J12"
+      ]
+    },
+    {
+      "id": "K",
+      "name": "K",
+      "title": "unlocks, persistence, motion",
+      "line": 744,
+      "nodes": [
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5",
+        "K6",
+        "K7",
+        "K8",
+        "K9",
+        "K10",
+        "K11"
+      ]
+    },
+    {
+      "id": "L",
+      "name": "L",
+      "title": "the board as a picture",
+      "line": 770,
+      "nodes": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "L7",
+        "L8",
+        "L9",
+        "L10",
+        "L11",
+        "L12",
+        "L13"
+      ]
+    },
+    {
+      "id": "M",
+      "name": "M",
+      "title": "startup, and the tool",
+      "line": 800,
+      "nodes": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7",
+        "M8",
+        "M9",
+        "M10"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "Main._ready main.gd:18 — switch_scene to the pre-instantiated menu",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 463
+    },
+    "A2": {
+      "chart": "A",
+      "label": "Menu emits continue_requested or new_run_requested menu.gd:7",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 464
+    },
+    "A3": {
+      "chart": "A",
+      "label": "Main._on_continue main.gd:29 — RunManager.load_run",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 465
+    },
+    "A4": {
+      "chart": "A",
+      "label": "Main.enter_map main.gd:41 — switch_scene to the pre-instantiated map",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 466
+    },
+    "A5": {
+      "chart": "A",
+      "label": "Map._start_show map.gd:67 — persists pending_goal and node id, emits enter_game",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 467
+    },
+    "A6": {
+      "chart": "A",
+      "label": "Main.enter_game main.gd:45 — instantiates a FRESH GameView every show",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 468
+    },
+    "A7": {
+      "chart": "A",
+      "label": "Main.switch_scene main.gd:76 — add_sibling then remove_child. The old scene stays ALIVE and unfreed, which is why menu and map already keep their state",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 469
+    },
+    "A8": {
+      "chart": "A",
+      "label": "Main.game_ended main.gd:53 — back to the map, queue_free the GameView and its Game child",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 470
+    },
+    "A9": {
+      "chart": "A",
+      "label": "LeakSentinel.request_check main.gd:43,59,74 — the quiescent moments",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 471
+    },
+    "B1": {
+      "chart": "B",
+      "label": "NEW Wall — Node2D, the whole app. QR1=a: nothing is ever drawn straight to the window again",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "QR1"
+      ],
+      "line": 488
+    },
+    "B2": {
+      "chart": "B",
+      "label": "NEW Camera2D on the wall. The project's second camera; the map keeps its own inside its picture, Q31=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q31"
+      ],
+      "line": 489
+    },
+    "B3": {
+      "chart": "B",
+      "label": "NEW WallLayout Resource — the authored PATTERN: ring slots, per-picture size multiplier Q16=c, per-picture frame thickness Q36, home picture Q9=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q16",
+        "Q36",
+        "Q9"
+      ],
+      "line": 490
+    },
+    "B4": {
+      "chart": "B",
+      "label": "NEW Packer — pure function of layout plus unlocked set plus window aspect. Q21=a runtime, Q18=a strictly deterministic, Q20=a never overlapping",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q21",
+        "Q18",
+        "Q20"
+      ],
+      "line": 491
+    },
+    "B5": {
+      "chart": "B",
+      "label": "NEW Picture — one per screen. A Sprite2D in wall space carrying a ViewportTexture. GAP-001=b: SubViewportContainer is documented as distorting when scaled, and the camera scales every picture continuously",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 492
+    },
+    "B6": {
+      "chart": "B",
+      "label": "NEW Frame — one shared style parameterised by size and colour QR4=b. Thickness authored per picture and per side Q36 Q37=a, entirely outside the picture rect Q38=a, no mat Q39=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "QR4",
+        "Q36",
+        "Q37",
+        "Q38",
+        "Q39"
+      ],
+      "line": 493
+    },
+    "B7": {
+      "chart": "B",
+      "label": "Screen — the existing scene, unchanged. Q211=a: no screen is redesigned, only reparented",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q211"
+      ],
+      "line": 494
+    },
+    "B8": {
+      "chart": "B",
+      "label": "NEW Overlay — its own CanvasLayer Q202=a, so it does not ride the wall camera. Carries Back, Forward, Wall and the Info toggle per Q67 note and Q135 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q202",
+        "Q67",
+        "Q135"
+      ],
+      "line": 495
+    },
+    "B9": {
+      "chart": "B",
+      "label": "NEW Profile — user://profile.tres beside settings, same ResourceSaver pattern Q152=a. Holds the unlocked set, keyed per save slot Q151=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q152",
+        "Q151"
+      ],
+      "line": 496
+    },
+    "B10": {
+      "chart": "B",
+      "label": "Wall surface — a flat colour from the palette Q2=b, with per-picture drop shadows from one authored light position Q7=b and unlockable set dressing Q6=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q2",
+        "Q7",
+        "Q6"
+      ],
+      "line": 497
+    },
+    "B11": {
+      "chart": "B",
+      "label": "render gating — chart E",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 506
+    },
+    "B12": {
+      "chart": "B",
+      "label": "pause — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 507
+    },
+    "C1": {
+      "chart": "C",
+      "label": "A destination is requested — click Q88=a, keyboard Q99=a, controller, pinch Q119=a, or Back",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q88",
+        "Q99",
+        "Q119"
+      ],
+      "line": 514
+    },
+    "C2": {
+      "chart": "C",
+      "label": "already the focused picture",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 515
+    },
+    "C3": {
+      "chart": "C",
+      "label": "Nothing happens, silently. Q55=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q55"
+      ],
+      "line": 516
+    },
+    "C4": {
+      "chart": "C",
+      "label": "a transition is already running",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 517
+    },
+    "C5": {
+      "chart": "C",
+      "label": "Input is ignored. Q56=b — no retargeting mid-flight",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q56"
+      ],
+      "line": 518
+    },
+    "C6": {
+      "chart": "C",
+      "label": "NEW Build the destination screen NOW, synchronously, during the zoom-out. Q205=a places the cost under motion; Q206=b keeps the build one synchronous pass",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q205",
+        "Q206"
+      ],
+      "line": 519
+    },
+    "C7": {
+      "chart": "C",
+      "label": "NEW One continuous tween. Q47=b: travel starts before the zoom-out ends and the zoom-in starts before the travel ends, so the camera arcs",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q47"
+      ],
+      "line": 520
+    },
+    "C8": {
+      "chart": "C",
+      "label": "NEW Zoom out far enough to show BOTH frames. Q48=b — distance decides the zoom, so a far jump reads as a journey. TRANS_EXPO EASE_OUT, Q52=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q48",
+        "Q52"
+      ],
+      "line": 521
+    },
+    "C9": {
+      "chart": "C",
+      "label": "NEW Source screen PAUSES the instant its frame's outer edge enters the view. Q72=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q72"
+      ],
+      "line": 522
+    },
+    "C10": {
+      "chart": "C",
+      "label": "NEW Travel in a straight line across the wall. Q51=a. TRANS_SINE EASE_IN_OUT, Q53=b. Fixed duration regardless of distance, Q50=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q51",
+        "Q53",
+        "Q50"
+      ],
+      "line": 523
+    },
+    "C11": {
+      "chart": "C",
+      "label": "NEW Destination UNPAUSES as soon as it is visible in the camera window at all. Q73=c — early, during the travel",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q73"
+      ],
+      "line": 524
+    },
+    "C12": {
+      "chart": "C",
+      "label": "NEW Zoom in. TRANS_EXPO EASE_IN, Q52=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q52"
+      ],
+      "line": 525
+    },
+    "C13": {
+      "chart": "C",
+      "label": "NEW Input unlocks BEFORE the tween ends — the moment the picture and its frame are fully in view. Q58 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q58"
+      ],
+      "line": 526
+    },
+    "C14": {
+      "chart": "C",
+      "label": "NEW Landed. The picture overfills the window so no frame is visible at rest. Q176=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q176"
+      ],
+      "line": 527
+    },
+    "C15": {
+      "chart": "C",
+      "label": "All durations are fractions of settings.base_delay. Q46=b — the wall paces with the game speed setting but never compresses like Game.get_delay does",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q46"
+      ],
+      "line": 528
+    },
+    "C16": {
+      "chart": "C",
+      "label": "window resized mid-flight, retarget and continue Q26=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q26"
+      ],
+      "line": 543
+    },
+    "C17": {
+      "chart": "C",
+      "label": "reduced motion replaces all of this with a cross-fade at a fixed zoom — chart K",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 544
+    },
+    "D1": {
+      "chart": "D",
+      "label": "NEW get_tree().paused = true, held for the entire session. QR6=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "QR6"
+      ],
+      "line": 553
+    },
+    "D2": {
+      "chart": "D",
+      "label": "NEW Wall, camera and overlay are PROCESS_MODE_ALWAYS, so the shell keeps running while everything else is stopped",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 554
+    },
+    "D3": {
+      "chart": "D",
+      "label": "NEW Every screen root is PROCESS_MODE_PAUSABLE by default. QR6=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "QR6"
+      ],
+      "line": 555
+    },
+    "D4": {
+      "chart": "D",
+      "label": "NEW The live screen's root is flipped to ALWAYS. Exactly one screen is ever ALWAYS",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 556
+    },
+    "D5": {
+      "chart": "D",
+      "label": "Tweens need nothing — a tween made by node.create_tween is bound to its node and pauses with it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 557
+    },
+    "D6": {
+      "chart": "D",
+      "label": "NEW ESCAPE 1: SceneTree.create_timer defaults process_always = true and runs straight through the pause. One helper that passes false replaces every direct call. Q75=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q75"
+      ],
+      "line": 558
+    },
+    "D7": {
+      "chart": "D",
+      "label": "NEW ESCAPE 2: shader TIME keeps advancing while paused. Accepted and hidden — a non-live picture is a frozen texture the whole time, so the jump can only land at unpause, under the zoom-in. Q222=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q222"
+      ],
+      "line": 559
+    },
+    "D8": {
+      "chart": "D",
+      "label": "Wall view: NOTHING is live. Q74=a — no screen is ALWAYS while the wall is being looked at",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q74"
+      ],
+      "line": 560
+    },
+    "D9": {
+      "chart": "D",
+      "label": "Info mode does NOT pause the focused screen. Q138=a — the pause rule keys off the transition, not off the zoom",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q138"
+      ],
+      "line": 561
+    },
+    "D10": {
+      "chart": "D",
+      "label": "UNVERIFIED — whether a PAUSABLE material's TIME really stops is disputed. Check by eye before building on D7",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 562
+    },
+    "D11": {
+      "chart": "D",
+      "label": "the board freezing mid-act — chart L",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 572
+    },
+    "E1": {
+      "chart": "E",
+      "label": "is this the live screen",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 579
+    },
+    "E2": {
+      "chart": "E",
+      "label": "Rendering runs normally at the screen's own design resolution. Q29=b, per-screen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q29"
+      ],
+      "line": 580
+    },
+    "E3": {
+      "chart": "E",
+      "label": "NEW SubViewport.render_target_update_mode = UPDATE_DISABLED. Q82=a — the texture persists, and that frozen last frame IS what the wall shows. QR8=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q82",
+        "QR8"
+      ],
+      "line": 581
+    },
+    "E4": {
+      "chart": "E",
+      "label": "NEW At wall construction every picture is force-rendered ONCE so nothing is ever blank. Q78=b — costs one frame each at startup",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q78"
+      ],
+      "line": 582
+    },
+    "E5": {
+      "chart": "E",
+      "label": "Wall-view resolution is SubViewport.size written directly, derived from the picture's on-screen pixel size. Q86=a, Q87=b, GAP-002 — one property, no manager, and any size rather than the integer divisor stretch_shrink would have given",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q86",
+        "Q87"
+      ],
+      "line": 583
+    },
+    "E6": {
+      "chart": "E",
+      "label": "No render budget and no cap. Q85=b — frozen textures are cheap by construction",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q85"
+      ],
+      "line": 584
+    },
+    "E7": {
+      "chart": "E",
+      "label": "NEW On window restore from minimise, every frozen texture is re-rendered; the GPU may have discarded them. Q208=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q208"
+      ],
+      "line": 585
+    },
+    "E8": {
+      "chart": "E",
+      "label": "All screens stay instantiated for the whole session. Q203=a — nothing is ever torn down",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q203"
+      ],
+      "line": 586
+    },
+    "E9": {
+      "chart": "E",
+      "label": "NEW Memory is instrumented anyway, behind the leak-sentinel debug gate. Q79 note, Q210=a — so the unload-to-placeholder fallback stays a measurement away",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q79",
+        "Q210"
+      ],
+      "line": 587
+    },
+    "E10": {
+      "chart": "E",
+      "label": "A torn-down screen would write a state blob first. Q143=a — unreachable under Q203=a, kept as the contract if the cap ever arrives",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q143",
+        "Q203"
+      ],
+      "line": 588
+    },
+    "F1": {
+      "chart": "F",
+      "label": "NEW Back stack of picture ids. Q63=a full history",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q63"
+      ],
+      "line": 603
+    },
+    "F2": {
+      "chart": "F",
+      "label": "NEW Depth is bounded by the number of pictures. Revisiting a picture already in the stack MOVES it to the top rather than appending. Q64 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q64"
+      ],
+      "line": 604
+    },
+    "F3": {
+      "chart": "F",
+      "label": "NEW A Forward button, so the picture you just left is one press away. Q64 note — a control the braindump did not have",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q64"
+      ],
+      "line": 605
+    },
+    "F4": {
+      "chart": "F",
+      "label": "Wall view is NOT on the stack. Q66=b — it is only ever reached by the Wall button",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q66"
+      ],
+      "line": 606
+    },
+    "F5": {
+      "chart": "F",
+      "label": "Back at the bottom of the stack goes to wall view. Q65=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q65"
+      ],
+      "line": 607
+    },
+    "F6": {
+      "chart": "F",
+      "label": "Wall button toggles — press again to return where you were. Q68=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q68"
+      ],
+      "line": 608
+    },
+    "F7": {
+      "chart": "F",
+      "label": "NEW Back, Forward, Wall and the Info toggle all live on the persistent overlay. Q67, Q135 — a top-right magnifying glass for Info, always accessible",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q67",
+        "Q135"
+      ],
+      "line": 609
+    },
+    "F8": {
+      "chart": "F",
+      "label": "Back closes an open popup first; a second Back leaves the picture. Q164=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q164"
+      ],
+      "line": 610
+    },
+    "F9": {
+      "chart": "F",
+      "label": "Wall button leaves the popup open behind it, still there on return. Q165=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q165"
+      ],
+      "line": 611
+    },
+    "F10": {
+      "chart": "F",
+      "label": "NEW Each view keeps its OWN focus — the wall remembers its selected picture, and every picture remembers its internal focus for the session. Q107 note, Q58 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q107",
+        "Q58"
+      ],
+      "line": 612
+    },
+    "F11": {
+      "chart": "F",
+      "label": "In wall view exactly one picture is selected, starting at the one you came from. Q69=a. Highlight is a frame glow plus a lift off the wall, shape and motion not colour. Q70=c, Q178=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q69",
+        "Q70",
+        "Q178"
+      ],
+      "line": 613
+    },
+    "F12": {
+      "chart": "F",
+      "label": "Every picture is always enterable. Q71=c — no disabled pictures",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q71"
+      ],
+      "line": 614
+    },
+    "G1": {
+      "chart": "G",
+      "label": "NEW Ellipse aspect follows the live window aspect, clamped to an authored min and max. Q10=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q10"
+      ],
+      "line": 631
+    },
+    "G2": {
+      "chart": "G",
+      "label": "NEW Ring capacity is computed — as many as fit given picture sizes and the gap. Q11=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q11"
+      ],
+      "line": 632
+    },
+    "G3": {
+      "chart": "G",
+      "label": "NEW Position within a ring is an authored slot index. Q12=a — the same on every player's wall, fixed art direction",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q12"
+      ],
+      "line": 633
+    },
+    "G4": {
+      "chart": "G",
+      "label": "NEW A partial ring stays at its authored angles and reads as visibly unfinished. Q13=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q13"
+      ],
+      "line": 634
+    },
+    "G5": {
+      "chart": "G",
+      "label": "NEW One uniform gap for the whole wall, measured between FRAME OUTER EDGES so uneven frame widths still space evenly. Q14=a, Q36 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q14",
+        "Q36"
+      ],
+      "line": 635
+    },
+    "G6": {
+      "chart": "G",
+      "label": "Locked pictures are not drawn at all. Q158=a — no empty slots",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q158"
+      ],
+      "line": 636
+    },
+    "G7": {
+      "chart": "G",
+      "label": "NEW On resize, both the ellipse and every picture's aspect change so a picture always matches the window shape. Q22=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q22"
+      ],
+      "line": 637
+    },
+    "G8": {
+      "chart": "G",
+      "label": "Re-pack snaps instantly. Q25=a. Fullscreen toggle also snaps. Q28=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q25",
+        "Q28"
+      ],
+      "line": 638
+    },
+    "G9": {
+      "chart": "G",
+      "label": "NEW Wall view FILLS the window, cropping the wall's long axis. Q5=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q5"
+      ],
+      "line": 639
+    },
+    "G10": {
+      "chart": "G",
+      "label": "NEW Free pan is allowed ONLY when pictures fall outside the view; on a large screen everything is visible and panning is off. Q1 note, Q3 note. Never pans into void",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q1",
+        "Q3"
+      ],
+      "line": 640
+    },
+    "G11": {
+      "chart": "G",
+      "label": "No free zoom in wall view — any zoom input is a request to enter a picture. Q4=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q4"
+      ],
+      "line": 641
+    },
+    "G12": {
+      "chart": "G",
+      "label": "Pictures are square to the wall, no tilt, no parallax. Q15=a, Q8=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q15",
+        "Q8"
+      ],
+      "line": 642
+    },
+    "G13": {
+      "chart": "G",
+      "label": "Floor is 1280x720. Q23 note. Aspect range 4:3 to 32:9. Q24=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q23",
+        "Q24"
+      ],
+      "line": 643
+    },
+    "G14": {
+      "chart": "G",
+      "label": "a new unlock re-packs the wall — chart K",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 654
+    },
+    "H1": {
+      "chart": "H",
+      "label": "Each screen has its OWN authored design resolution. Q29=b — the map is visually dense and gets more room than the deck viewer",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q29"
+      ],
+      "line": 661
+    },
+    "H2": {
+      "chart": "H",
+      "label": "A picture's aspect need not be the window's. Q32=b — a square map picture and portrait pictures are allowed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q32"
+      ],
+      "line": 662
+    },
+    "H3": {
+      "chart": "H",
+      "label": "NEW At rest the focused picture OVERFILLS the window whenever its aspect does not match, so no frame is ever visible at rest. Q27 note, Q176=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q27",
+        "Q176"
+      ],
+      "line": 663
+    },
+    "H4": {
+      "chart": "H",
+      "label": "NEW Every SubViewport sets canvas_item_default_texture_filter EXPLICITLY. A SubViewport defaults to LINEAR and does not inherit the project NEAREST — documented four times in this repo",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 664
+    },
+    "H5": {
+      "chart": "H",
+      "label": "NEW The FOCUSED picture at rest samples NEAREST. Everything else — wall view, out of view, and any picture while the zoom is changing — samples LINEAR. Q34 note, QR7=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q34",
+        "QR7"
+      ],
+      "line": 665
+    },
+    "H6": {
+      "chart": "H",
+      "label": "NEW The swap is driven by ZOOM change only. Pure translation stays as it is, so travelling does not flicker the filter. Q34 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q34"
+      ],
+      "line": 666
+    },
+    "H7": {
+      "chart": "H",
+      "label": "A screen needing more room than its picture pans with its own internal camera. Q31=a — exactly what world_map_controller.gd does today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q31"
+      ],
+      "line": 667
+    },
+    "I1": {
+      "chart": "I",
+      "label": "NEW The wall routes input itself. An event over the focused picture is converted to the SubViewport's space with make_input_local against the sprite's transform, then handed over with SubViewport.push_input. GAP-001=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 680
+    },
+    "I1b": {
+      "chart": "I",
+      "label": "NEW The screen's own Controls are untouched — they see ordinary events in their own viewport's coordinates, so no screen changes. This is what replaces the container doing it for us",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 681
+    },
+    "I2": {
+      "chart": "I",
+      "label": "Non-focused pictures receive no input at all — the wall never pushes to them, and only its own picture-picking sees the event. Q95=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q95"
+      ],
+      "line": 682
+    },
+    "I3": {
+      "chart": "I",
+      "label": "Mouse: click enters immediately Q88=a. The wheel always belongs to the focused screen Q89=a. Right-click does nothing Q91=b. Clicking bare wall does nothing Q93=a. Pointing cursor over an enterable picture Q97=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q88",
+        "Q89",
+        "Q91",
+        "Q93",
+        "Q97"
+      ],
+      "line": 683
+    },
+    "I4": {
+      "chart": "I",
+      "label": "Keyboard: arrows move the selection SPATIALLY to the nearest picture in that direction Q98=a, wrapping Q106=a. ui_accept enters Q99=a. Number keys 1 to 9 jump directly Q104=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q98",
+        "Q106",
+        "Q99",
+        "Q104"
+      ],
+      "line": 684
+    },
+    "I5": {
+      "chart": "I",
+      "label": "ui_cancel is Back, but the focused screen gets FIRST REFUSAL through _unhandled_input — a screen that uses Escape keeps it. Q100=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q100"
+      ],
+      "line": 685
+    },
+    "I6": {
+      "chart": "I",
+      "label": "Tab is a new wall_overview action for wall view. Q101=a. All wall actions are ordinary rebindable InputMap actions. Q102=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q101",
+        "Q102"
+      ],
+      "line": 686
+    },
+    "I7": {
+      "chart": "I",
+      "label": "Controller: left stick and d-pad both move the selection Q108=a, one step per press with a repeat after a hold delay Q116=a. Back is a shoulder button so B stays with the screens Q109=b. Wall is the Select or View button Q110=b. Always discrete, never a virtual cursor Q113=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q108",
+        "Q116",
+        "Q109",
+        "Q110",
+        "Q113"
+      ],
+      "line": 687
+    },
+    "I8": {
+      "chart": "I",
+      "label": "Touch: fully supported, wall AND every screen Q118=a. Tap enters immediately Q120=a. Swipes belong to the screen Q121=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q118",
+        "Q120",
+        "Q121"
+      ],
+      "line": 688
+    },
+    "I8b": {
+      "chart": "I",
+      "label": "NEW Pinch is derived BY HAND from InputEventScreenTouch and ScreenDrag — two tracked touch ids and a distance delta. GAP-003=a: InputEventMagnifyGesture never fires on Windows, which is where this is built and tested. A gesture addon is a later testing convenience, never a shipping dependency",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 689
+    },
+    "I8c": {
+      "chart": "I",
+      "label": "NEW Touch targets are 9 mm from screen_get_dpi, CLAMPED to a pixel floor and ceiling. GAP-004=b: reported DPI is wrong on bad EDID, on multi-monitor Windows, and on Android, so the clamp is what makes the rule safe",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 690
+    },
+    "I9": {
+      "chart": "I",
+      "label": "The wall never listens while a screen is focused, on any device. Q103=a, Q115=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q103",
+        "Q115"
+      ],
+      "line": 691
+    },
+    "I10": {
+      "chart": "I",
+      "label": "The keyboard and controller cursor appears only after the first such input, so a mouse player never sees it. Q105=b. Most recent device wins and the other indicator hides. Q124=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q105",
+        "Q124"
+      ],
+      "line": 692
+    },
+    "I11": {
+      "chart": "I",
+      "label": "One neutral icon per control, not per-device glyphs. Q125=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q125"
+      ],
+      "line": 693
+    },
+    "I12": {
+      "chart": "I",
+      "label": "During a transition input is inert. Q96=a — until C13 unlocks it early",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q96"
+      ],
+      "line": 694
+    },
+    "I13": {
+      "chart": "I",
+      "label": "the transition — chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 710
+    },
+    "J1": {
+      "chart": "J",
+      "label": "A persistent toggle. Q127=a — a top-right magnifying glass on the overlay, always accessible, NOT persisted across sessions. Q135 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q127",
+        "Q135"
+      ],
+      "line": 717
+    },
+    "J2": {
+      "chart": "J",
+      "label": "NEW Zooms out just enough to reveal the BOTTOM frame only. Top, left and right stay covered — deliberately not a full frame reveal. Q128 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q128"
+      ],
+      "line": 718
+    },
+    "J3": {
+      "chart": "J",
+      "label": "NEW The notecard is anchored to the bottom of the WINDOW in screen space, over the wall. Q129=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q129"
+      ],
+      "line": 719
+    },
+    "J4": {
+      "chart": "J",
+      "label": "NEW The notecard SIZES ITSELF to its contents, so each one reads as unique, and shows a copy of the hovered item as a visual beside the description. Q130 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q130"
+      ],
+      "line": 720
+    },
+    "J5": {
+      "chart": "J",
+      "label": "NEW It shows nothing until something is hovered, then KEEPS showing the last card — so crossing empty space does not blink it in and out. Q131 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q131"
+      ],
+      "line": 721
+    },
+    "J6": {
+      "chart": "J",
+      "label": "Leaving info mode resets it to nothing. Q131 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q131"
+      ],
+      "line": 722
+    },
+    "J7": {
+      "chart": "J",
+      "label": "NEW Screens publish hoverables through a get_info interface. Q132=a, Q133=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q132",
+        "Q133"
+      ],
+      "line": 723
+    },
+    "J8": {
+      "chart": "J",
+      "label": "NEW The existing tooltips MIGRATE to become the info card — map_hover_panel.gd and the board focus panel stop being separate systems. Q134=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q134"
+      ],
+      "line": 724
+    },
+    "J9": {
+      "chart": "J",
+      "label": "Toggling mid-transition takes effect IMMEDIATELY, retargeting the camera. Q136=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q136"
+      ],
+      "line": 725
+    },
+    "J10": {
+      "chart": "J",
+      "label": "With info mode on a transition is a pure travel — the camera never leaves the info zoom. Q137=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q137"
+      ],
+      "line": 726
+    },
+    "J11": {
+      "chart": "J",
+      "label": "The focused screen stays LIVE at the info zoom. Q138=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q138"
+      ],
+      "line": 727
+    },
+    "J12": {
+      "chart": "J",
+      "label": "Text size never shrinks. On a small screen or a long translation the card SCROLLS UPWARD over the whole picture, and must be scrolled back to see the picture again. Q140 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q140"
+      ],
+      "line": 728
+    },
+    "K1": {
+      "chart": "K",
+      "label": "NEW Profile.unlock is called from game code; the condition lives wherever the feature does. Q153=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q153"
+      ],
+      "line": 746
+    },
+    "K2": {
+      "chart": "K",
+      "label": "No reveal ceremony — the picture is simply there next time the wall is seen. Q154=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q154"
+      ],
+      "line": 747
+    },
+    "K3": {
+      "chart": "K",
+      "label": "If the player is IN wall view when it happens, the re-pack animates live in front of them. Q155=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q155"
+      ],
+      "line": 748
+    },
+    "K4": {
+      "chart": "K",
+      "label": "If they are inside a picture, the wall re-packs silently. Back still works because the stack holds ids, not positions. Q156=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q156"
+      ],
+      "line": 749
+    },
+    "K5": {
+      "chart": "K",
+      "label": "NEW user://profile.tres, per save slot. Q152=a, Q151=b — even though only one slot exists today, Q213=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q152",
+        "Q151",
+        "Q213"
+      ],
+      "line": 750
+    },
+    "K6": {
+      "chart": "K",
+      "label": "Wall state does NOT survive a quit. Every launch starts at the start menu, as main.gd:22 does now. Q145=b, Q149=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q145",
+        "Q149"
+      ],
+      "line": 751
+    },
+    "K7": {
+      "chart": "K",
+      "label": "The run save gains no wall fields. Q150=a — wall state is profile-level",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q150"
+      ],
+      "line": 752
+    },
+    "K8": {
+      "chart": "K",
+      "label": "NEW Reduced motion is a PlayerSettings flag that replaces every transition with a cross-fade at a fixed zoom. Q172=a. Its FIRST-LAUNCH default is read from DisplayServer.accessibility_should_reduce_animation, then it is an ordinary stored setting the moment the player touches it. GAP-005=a supersedes Q174=a. Falls back to OFF where the query is unavailable, and is UNVERIFIED on Windows",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q172",
+        "Q174"
+      ],
+      "line": 753
+    },
+    "K9": {
+      "chart": "K",
+      "label": "Wall view still exists under reduced motion, reached by cross-fade. Q173=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q173"
+      ],
+      "line": 754
+    },
+    "K10": {
+      "chart": "K",
+      "label": "There is no separate transition-speed knob — the always-instant setting IS the reduced-motion flag. Q175=b resolves Q59=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q175",
+        "Q59"
+      ],
+      "line": 755
+    },
+    "K11": {
+      "chart": "K",
+      "label": "NEW A debug flag unlocks everything. Q159=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q159"
+      ],
+      "line": 756
+    },
+    "L1": {
+      "chart": "L",
+      "label": "The board is an ordinary picture WITH a frame — the proscenium reading. Q189=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q189"
+      ],
+      "line": 772
+    },
+    "L2": {
+      "chart": "L",
+      "label": "GameView is still built fresh per show and freed after, exactly as main.gd:45 and :53 do now. Q191 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q191"
+      ],
+      "line": 773
+    },
+    "L3": {
+      "chart": "L",
+      "label": "NEW When there is no GameView the picture shows an authored default background image, which GameView may update. Q191 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q191"
+      ],
+      "line": 774
+    },
+    "L4": {
+      "chart": "L",
+      "label": "Leaving mid-act FREEZES the act where it stands and resumes from the identical instant. Q186=d",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q186"
+      ],
+      "line": 775
+    },
+    "L5": {
+      "chart": "L",
+      "label": "The guarantee covers everything the board owns — the coroutine chain, every tween, every timer, prop motion and the FX ease clocks. Bit-identical. Q221=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q221"
+      ],
+      "line": 776
+    },
+    "L6": {
+      "chart": "L",
+      "label": "No moment refuses to freeze. Wall and Back are live at every instant of a show, including inside a modal choice. Q223=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q223"
+      ],
+      "line": 777
+    },
+    "L7": {
+      "chart": "L",
+      "label": "Nothing announces a suspended act — the picture literally shows the board stopped mid-act. Q224=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q224"
+      ],
+      "line": 778
+    },
+    "L8": {
+      "chart": "L",
+      "label": "A frozen act does NOT survive a quit. Mid-act state stays unpersisted, exactly as today. Q225=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q225"
+      ],
+      "line": 779
+    },
+    "L9": {
+      "chart": "L",
+      "label": "Undo is unaffected — a frozen act completes on resume and is undoable as it would have been. Q226=a, Q190=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q226",
+        "Q190"
+      ],
+      "line": 780
+    },
+    "L10": {
+      "chart": "L",
+      "label": "The spotlight dim stops at the frame. LightLayer stays the last sibling inside the screen; the wall never darkens. Q194=a, Q195=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q194",
+        "Q195"
+      ],
+      "line": 781
+    },
+    "L11": {
+      "chart": "L",
+      "label": "FxAttachment._on_screen now culls against the SCREEN rect, and that is the correct answer with no code change. Q193=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q193"
+      ],
+      "line": 782
+    },
+    "L12": {
+      "chart": "L",
+      "label": "After a lost run the map picture STAYS, showing its last state. Re-entering the game picture shows the game-over screen. The map is replaced only when a new run starts. Q157 note",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q157"
+      ],
+      "line": 783
+    },
+    "L13": {
+      "chart": "L",
+      "label": "the two escapes from pause — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 795
+    },
+    "M1": {
+      "chart": "M",
+      "label": "Cold launch: the camera starts already zoomed into the start-menu picture. It is an ordinary picture; there is simply nothing else on the wall yet. Q60=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q60"
+      ],
+      "line": 802
+    },
+    "M2": {
+      "chart": "M",
+      "label": "Choosing a save triggers a one-off longer, slower zoom-out to wall view, distinct from an ordinary Wall press. Q61=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q61"
+      ],
+      "line": 803
+    },
+    "M3": {
+      "chart": "M",
+      "label": "That reveal happens on EVERY launch. Q62=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q62"
+      ],
+      "line": 804
+    },
+    "M4": {
+      "chart": "M",
+      "label": "Wall view is hidden entirely while only one picture exists. Q19=b",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q19"
+      ],
+      "line": 805
+    },
+    "M5": {
+      "chart": "M",
+      "label": "NEW A tool scene beside Tools/fx_editor.tscn. Edits layout, slots, gaps, sizes AND per-picture frame parameters. Q179=c, QR5=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q179",
+        "QR5"
+      ],
+      "line": 806
+    },
+    "M6": {
+      "chart": "M",
+      "label": "NEW It uses PLACEHOLDERS, with an option to swap in snapshots of the real scenes for colour comparison. Q180 note — a deliberate exception to the no-mocks rule, and the snapshot option is what keeps it honest",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q180"
+      ],
+      "line": 807
+    },
+    "M7": {
+      "chart": "M",
+      "label": "Simulates window aspect Q181=a and unlock state Q182=a, and previews a transition with the real curves Q183=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q181",
+        "Q182",
+        "Q183"
+      ],
+      "line": 808
+    },
+    "M8": {
+      "chart": "M",
+      "label": "Writes the same resource the game loads. Q185=a — so every script it touches must be @tool",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q185"
+      ],
+      "line": 809
+    },
+    "M9": {
+      "chart": "M",
+      "label": "Never reads or writes profile data. Q200=a",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q200"
+      ],
+      "line": 810
+    },
+    "M10": {
+      "chart": "M",
+      "label": "Per-picture music, cross-faded during transitions, with subtle distance attenuation and no new audio bus. Q167=c, Q170=b, Q171=b. A paused screen's audio fades out over the zoom-out Q168=c. Transitions themselves are silent Q169=c",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q167",
+        "Q170",
+        "Q171",
+        "Q168",
+        "Q169",
+        "Q27",
+        "Q176",
+        "Q13",
+        "Q158",
+        "Q17",
+        "Q29",
+        "Q86",
+        "Q87",
+        "Q118",
+        "Q211",
+        "Q212",
+        "Q214"
+      ],
+      "line": 811
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 472
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "",
+      "chart": "A",
+      "line": 473
+    },
+    {
+      "key": "A3->A4",
+      "from": "A3",
+      "to": "A4",
+      "label": "",
+      "chart": "A",
+      "line": 474
+    },
+    {
+      "key": "A4->A5",
+      "from": "A4",
+      "to": "A5",
+      "label": "",
+      "chart": "A",
+      "line": 475
+    },
+    {
+      "key": "A5->A6",
+      "from": "A5",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 476
+    },
+    {
+      "key": "A6->A8",
+      "from": "A6",
+      "to": "A8",
+      "label": "",
+      "chart": "A",
+      "line": 477
+    },
+    {
+      "key": "A8->A4",
+      "from": "A8",
+      "to": "A4",
+      "label": "",
+      "chart": "A",
+      "line": 478
+    },
+    {
+      "key": "A4->A7",
+      "from": "A4",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 479
+    },
+    {
+      "key": "A6->A7",
+      "from": "A6",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 480
+    },
+    {
+      "key": "A8->A9",
+      "from": "A8",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 481
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 498
+    },
+    {
+      "key": "B1->B10",
+      "from": "B1",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 499
+    },
+    {
+      "key": "B3->B4",
+      "from": "B3",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 500
+    },
+    {
+      "key": "B4->B5",
+      "from": "B4",
+      "to": "B5",
+      "label": "",
+      "chart": "B",
+      "line": 501
+    },
+    {
+      "key": "B5->B6",
+      "from": "B5",
+      "to": "B6",
+      "label": "",
+      "chart": "B",
+      "line": 502
+    },
+    {
+      "key": "B5->B7",
+      "from": "B5",
+      "to": "B7",
+      "label": "",
+      "chart": "B",
+      "line": 503
+    },
+    {
+      "key": "B1->B8",
+      "from": "B1",
+      "to": "B8",
+      "label": "",
+      "chart": "B",
+      "line": 504
+    },
+    {
+      "key": "B9->B4",
+      "from": "B9",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 505
+    },
+    {
+      "key": "B5->B11",
+      "from": "B5",
+      "to": "B11",
+      "label": "",
+      "chart": "B",
+      "line": 506
+    },
+    {
+      "key": "B7->B12",
+      "from": "B7",
+      "to": "B12",
+      "label": "",
+      "chart": "B",
+      "line": 507
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 529
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "yes",
+      "chart": "C",
+      "line": 530
+    },
+    {
+      "key": "C2->C4",
+      "from": "C2",
+      "to": "C4",
+      "label": "no",
+      "chart": "C",
+      "line": 531
+    },
+    {
+      "key": "C4->C5",
+      "from": "C4",
+      "to": "C5",
+      "label": "yes",
+      "chart": "C",
+      "line": 532
+    },
+    {
+      "key": "C4->C6",
+      "from": "C4",
+      "to": "C6",
+      "label": "no",
+      "chart": "C",
+      "line": 533
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 534
+    },
+    {
+      "key": "C7->C8",
+      "from": "C7",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 535
+    },
+    {
+      "key": "C8->C9",
+      "from": "C8",
+      "to": "C9",
+      "label": "",
+      "chart": "C",
+      "line": 536
+    },
+    {
+      "key": "C9->C10",
+      "from": "C9",
+      "to": "C10",
+      "label": "",
+      "chart": "C",
+      "line": 537
+    },
+    {
+      "key": "C10->C11",
+      "from": "C10",
+      "to": "C11",
+      "label": "",
+      "chart": "C",
+      "line": 538
+    },
+    {
+      "key": "C11->C12",
+      "from": "C11",
+      "to": "C12",
+      "label": "",
+      "chart": "C",
+      "line": 539
+    },
+    {
+      "key": "C12->C13",
+      "from": "C12",
+      "to": "C13",
+      "label": "",
+      "chart": "C",
+      "line": 540
+    },
+    {
+      "key": "C13->C14",
+      "from": "C13",
+      "to": "C14",
+      "label": "",
+      "chart": "C",
+      "line": 541
+    },
+    {
+      "key": "C7->C15",
+      "from": "C7",
+      "to": "C15",
+      "label": "",
+      "chart": "C",
+      "line": 542
+    },
+    {
+      "key": "C8->C16",
+      "from": "C8",
+      "to": "C16",
+      "label": "",
+      "chart": "C",
+      "line": 543
+    },
+    {
+      "key": "C7->C17",
+      "from": "C7",
+      "to": "C17",
+      "label": "",
+      "chart": "C",
+      "line": 544
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 563
+    },
+    {
+      "key": "D1->D3",
+      "from": "D1",
+      "to": "D3",
+      "label": "",
+      "chart": "D",
+      "line": 564
+    },
+    {
+      "key": "D3->D4",
+      "from": "D3",
+      "to": "D4",
+      "label": "",
+      "chart": "D",
+      "line": 565
+    },
+    {
+      "key": "D1->D5",
+      "from": "D1",
+      "to": "D5",
+      "label": "",
+      "chart": "D",
+      "line": 566
+    },
+    {
+      "key": "D1->D6",
+      "from": "D1",
+      "to": "D6",
+      "label": "",
+      "chart": "D",
+      "line": 567
+    },
+    {
+      "key": "D1->D7",
+      "from": "D1",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 568
+    },
+    {
+      "key": "D7->D10",
+      "from": "D7",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 569
+    },
+    {
+      "key": "D4->D8",
+      "from": "D4",
+      "to": "D8",
+      "label": "",
+      "chart": "D",
+      "line": 570
+    },
+    {
+      "key": "D4->D9",
+      "from": "D4",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 571
+    },
+    {
+      "key": "D4->D11",
+      "from": "D4",
+      "to": "D11",
+      "label": "",
+      "chart": "D",
+      "line": 572
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "yes",
+      "chart": "E",
+      "line": 589
+    },
+    {
+      "key": "E1->E3",
+      "from": "E1",
+      "to": "E3",
+      "label": "no",
+      "chart": "E",
+      "line": 590
+    },
+    {
+      "key": "E4->E3",
+      "from": "E4",
+      "to": "E3",
+      "label": "",
+      "chart": "E",
+      "line": 591
+    },
+    {
+      "key": "E3->E5",
+      "from": "E3",
+      "to": "E5",
+      "label": "",
+      "chart": "E",
+      "line": 592
+    },
+    {
+      "key": "E3->E6",
+      "from": "E3",
+      "to": "E6",
+      "label": "",
+      "chart": "E",
+      "line": 593
+    },
+    {
+      "key": "E3->E7",
+      "from": "E3",
+      "to": "E7",
+      "label": "",
+      "chart": "E",
+      "line": 594
+    },
+    {
+      "key": "E8->E9",
+      "from": "E8",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 595
+    },
+    {
+      "key": "E9->E10",
+      "from": "E9",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 596
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 615
+    },
+    {
+      "key": "F2->F3",
+      "from": "F2",
+      "to": "F3",
+      "label": "",
+      "chart": "F",
+      "line": 616
+    },
+    {
+      "key": "F1->F5",
+      "from": "F1",
+      "to": "F5",
+      "label": "",
+      "chart": "F",
+      "line": 617
+    },
+    {
+      "key": "F4->F6",
+      "from": "F4",
+      "to": "F6",
+      "label": "",
+      "chart": "F",
+      "line": 618
+    },
+    {
+      "key": "F1->F7",
+      "from": "F1",
+      "to": "F7",
+      "label": "",
+      "chart": "F",
+      "line": 619
+    },
+    {
+      "key": "F7->F8",
+      "from": "F7",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 620
+    },
+    {
+      "key": "F7->F9",
+      "from": "F7",
+      "to": "F9",
+      "label": "",
+      "chart": "F",
+      "line": 621
+    },
+    {
+      "key": "F6->F11",
+      "from": "F6",
+      "to": "F11",
+      "label": "",
+      "chart": "F",
+      "line": 622
+    },
+    {
+      "key": "F11->F12",
+      "from": "F11",
+      "to": "F12",
+      "label": "",
+      "chart": "F",
+      "line": 623
+    },
+    {
+      "key": "F10->F11",
+      "from": "F10",
+      "to": "F11",
+      "label": "",
+      "chart": "F",
+      "line": 624
+    },
+    {
+      "key": "G1->G2",
+      "from": "G1",
+      "to": "G2",
+      "label": "",
+      "chart": "G",
+      "line": 644
+    },
+    {
+      "key": "G2->G3",
+      "from": "G2",
+      "to": "G3",
+      "label": "",
+      "chart": "G",
+      "line": 645
+    },
+    {
+      "key": "G3->G4",
+      "from": "G3",
+      "to": "G4",
+      "label": "",
+      "chart": "G",
+      "line": 646
+    },
+    {
+      "key": "G4->G5",
+      "from": "G4",
+      "to": "G5",
+      "label": "",
+      "chart": "G",
+      "line": 647
+    },
+    {
+      "key": "G6->G4",
+      "from": "G6",
+      "to": "G4",
+      "label": "",
+      "chart": "G",
+      "line": 648
+    },
+    {
+      "key": "G7->G8",
+      "from": "G7",
+      "to": "G8",
+      "label": "",
+      "chart": "G",
+      "line": 649
+    },
+    {
+      "key": "G1->G7",
+      "from": "G1",
+      "to": "G7",
+      "label": "",
+      "chart": "G",
+      "line": 650
+    },
+    {
+      "key": "G9->G10",
+      "from": "G9",
+      "to": "G10",
+      "label": "",
+      "chart": "G",
+      "line": 651
+    },
+    {
+      "key": "G10->G11",
+      "from": "G10",
+      "to": "G11",
+      "label": "",
+      "chart": "G",
+      "line": 652
+    },
+    {
+      "key": "G13->G1",
+      "from": "G13",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 653
+    },
+    {
+      "key": "G8->G14",
+      "from": "G8",
+      "to": "G14",
+      "label": "",
+      "chart": "G",
+      "line": 654
+    },
+    {
+      "key": "H1->H2",
+      "from": "H1",
+      "to": "H2",
+      "label": "",
+      "chart": "H",
+      "line": 668
+    },
+    {
+      "key": "H2->H3",
+      "from": "H2",
+      "to": "H3",
+      "label": "",
+      "chart": "H",
+      "line": 669
+    },
+    {
+      "key": "H1->H4",
+      "from": "H1",
+      "to": "H4",
+      "label": "",
+      "chart": "H",
+      "line": 670
+    },
+    {
+      "key": "H4->H5",
+      "from": "H4",
+      "to": "H5",
+      "label": "",
+      "chart": "H",
+      "line": 671
+    },
+    {
+      "key": "H5->H6",
+      "from": "H5",
+      "to": "H6",
+      "label": "",
+      "chart": "H",
+      "line": 672
+    },
+    {
+      "key": "H2->H7",
+      "from": "H2",
+      "to": "H7",
+      "label": "",
+      "chart": "H",
+      "line": 673
+    },
+    {
+      "key": "I1->I1b",
+      "from": "I1",
+      "to": "I1b",
+      "label": "",
+      "chart": "I",
+      "line": 695
+    },
+    {
+      "key": "I1b->I2",
+      "from": "I1b",
+      "to": "I2",
+      "label": "",
+      "chart": "I",
+      "line": 696
+    },
+    {
+      "key": "I1->I3",
+      "from": "I1",
+      "to": "I3",
+      "label": "",
+      "chart": "I",
+      "line": 697
+    },
+    {
+      "key": "I1->I4",
+      "from": "I1",
+      "to": "I4",
+      "label": "",
+      "chart": "I",
+      "line": 698
+    },
+    {
+      "key": "I4->I5",
+      "from": "I4",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 699
+    },
+    {
+      "key": "I4->I6",
+      "from": "I4",
+      "to": "I6",
+      "label": "",
+      "chart": "I",
+      "line": 700
+    },
+    {
+      "key": "I1->I7",
+      "from": "I1",
+      "to": "I7",
+      "label": "",
+      "chart": "I",
+      "line": 701
+    },
+    {
+      "key": "I1->I8",
+      "from": "I1",
+      "to": "I8",
+      "label": "",
+      "chart": "I",
+      "line": 702
+    },
+    {
+      "key": "I8->I8b",
+      "from": "I8",
+      "to": "I8b",
+      "label": "",
+      "chart": "I",
+      "line": 703
+    },
+    {
+      "key": "I8->I8c",
+      "from": "I8",
+      "to": "I8c",
+      "label": "",
+      "chart": "I",
+      "line": 704
+    },
+    {
+      "key": "I3->I9",
+      "from": "I3",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 705
+    },
+    {
+      "key": "I4->I9",
+      "from": "I4",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 706
+    },
+    {
+      "key": "I7->I9",
+      "from": "I7",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 707
+    },
+    {
+      "key": "I8->I9",
+      "from": "I8",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 708
+    },
+    {
+      "key": "I10->I11",
+      "from": "I10",
+      "to": "I11",
+      "label": "",
+      "chart": "I",
+      "line": 709
+    },
+    {
+      "key": "I12->I13",
+      "from": "I12",
+      "to": "I13",
+      "label": "",
+      "chart": "I",
+      "line": 710
+    },
+    {
+      "key": "J1->J2",
+      "from": "J1",
+      "to": "J2",
+      "label": "",
+      "chart": "J",
+      "line": 729
+    },
+    {
+      "key": "J2->J3",
+      "from": "J2",
+      "to": "J3",
+      "label": "",
+      "chart": "J",
+      "line": 730
+    },
+    {
+      "key": "J3->J4",
+      "from": "J3",
+      "to": "J4",
+      "label": "",
+      "chart": "J",
+      "line": 731
+    },
+    {
+      "key": "J4->J5",
+      "from": "J4",
+      "to": "J5",
+      "label": "",
+      "chart": "J",
+      "line": 732
+    },
+    {
+      "key": "J5->J6",
+      "from": "J5",
+      "to": "J6",
+      "label": "",
+      "chart": "J",
+      "line": 733
+    },
+    {
+      "key": "J7->J4",
+      "from": "J7",
+      "to": "J4",
+      "label": "",
+      "chart": "J",
+      "line": 734
+    },
+    {
+      "key": "J8->J7",
+      "from": "J8",
+      "to": "J7",
+      "label": "",
+      "chart": "J",
+      "line": 735
+    },
+    {
+      "key": "J1->J9",
+      "from": "J1",
+      "to": "J9",
+      "label": "",
+      "chart": "J",
+      "line": 736
+    },
+    {
+      "key": "J9->J10",
+      "from": "J9",
+      "to": "J10",
+      "label": "",
+      "chart": "J",
+      "line": 737
+    },
+    {
+      "key": "J10->J11",
+      "from": "J10",
+      "to": "J11",
+      "label": "",
+      "chart": "J",
+      "line": 738
+    },
+    {
+      "key": "J4->J12",
+      "from": "J4",
+      "to": "J12",
+      "label": "",
+      "chart": "J",
+      "line": 739
+    },
+    {
+      "key": "K1->K2",
+      "from": "K1",
+      "to": "K2",
+      "label": "",
+      "chart": "K",
+      "line": 757
+    },
+    {
+      "key": "K2->K3",
+      "from": "K2",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 758
+    },
+    {
+      "key": "K2->K4",
+      "from": "K2",
+      "to": "K4",
+      "label": "",
+      "chart": "K",
+      "line": 759
+    },
+    {
+      "key": "K1->K5",
+      "from": "K1",
+      "to": "K5",
+      "label": "",
+      "chart": "K",
+      "line": 760
+    },
+    {
+      "key": "K5->K6",
+      "from": "K5",
+      "to": "K6",
+      "label": "",
+      "chart": "K",
+      "line": 761
+    },
+    {
+      "key": "K5->K7",
+      "from": "K5",
+      "to": "K7",
+      "label": "",
+      "chart": "K",
+      "line": 762
+    },
+    {
+      "key": "K8->K9",
+      "from": "K8",
+      "to": "K9",
+      "label": "",
+      "chart": "K",
+      "line": 763
+    },
+    {
+      "key": "K9->K10",
+      "from": "K9",
+      "to": "K10",
+      "label": "",
+      "chart": "K",
+      "line": 764
+    },
+    {
+      "key": "K5->K11",
+      "from": "K5",
+      "to": "K11",
+      "label": "",
+      "chart": "K",
+      "line": 765
+    },
+    {
+      "key": "L1->L2",
+      "from": "L1",
+      "to": "L2",
+      "label": "",
+      "chart": "L",
+      "line": 784
+    },
+    {
+      "key": "L2->L3",
+      "from": "L2",
+      "to": "L3",
+      "label": "",
+      "chart": "L",
+      "line": 785
+    },
+    {
+      "key": "L1->L4",
+      "from": "L1",
+      "to": "L4",
+      "label": "",
+      "chart": "L",
+      "line": 786
+    },
+    {
+      "key": "L4->L5",
+      "from": "L4",
+      "to": "L5",
+      "label": "",
+      "chart": "L",
+      "line": 787
+    },
+    {
+      "key": "L5->L6",
+      "from": "L5",
+      "to": "L6",
+      "label": "",
+      "chart": "L",
+      "line": 788
+    },
+    {
+      "key": "L6->L7",
+      "from": "L6",
+      "to": "L7",
+      "label": "",
+      "chart": "L",
+      "line": 789
+    },
+    {
+      "key": "L7->L8",
+      "from": "L7",
+      "to": "L8",
+      "label": "",
+      "chart": "L",
+      "line": 790
+    },
+    {
+      "key": "L8->L9",
+      "from": "L8",
+      "to": "L9",
+      "label": "",
+      "chart": "L",
+      "line": 791
+    },
+    {
+      "key": "L1->L10",
+      "from": "L1",
+      "to": "L10",
+      "label": "",
+      "chart": "L",
+      "line": 792
+    },
+    {
+      "key": "L1->L11",
+      "from": "L1",
+      "to": "L11",
+      "label": "",
+      "chart": "L",
+      "line": 793
+    },
+    {
+      "key": "L2->L12",
+      "from": "L2",
+      "to": "L12",
+      "label": "",
+      "chart": "L",
+      "line": 794
+    },
+    {
+      "key": "L5->L13",
+      "from": "L5",
+      "to": "L13",
+      "label": "",
+      "chart": "L",
+      "line": 795
+    },
+    {
+      "key": "M1->M2",
+      "from": "M1",
+      "to": "M2",
+      "label": "",
+      "chart": "M",
+      "line": 812
+    },
+    {
+      "key": "M2->M3",
+      "from": "M2",
+      "to": "M3",
+      "label": "",
+      "chart": "M",
+      "line": 813
+    },
+    {
+      "key": "M3->M4",
+      "from": "M3",
+      "to": "M4",
+      "label": "",
+      "chart": "M",
+      "line": 814
+    },
+    {
+      "key": "M5->M6",
+      "from": "M5",
+      "to": "M6",
+      "label": "",
+      "chart": "M",
+      "line": 815
+    },
+    {
+      "key": "M6->M7",
+      "from": "M6",
+      "to": "M7",
+      "label": "",
+      "chart": "M",
+      "line": 816
+    },
+    {
+      "key": "M7->M8",
+      "from": "M7",
+      "to": "M8",
+      "label": "",
+      "chart": "M",
+      "line": 817
+    },
+    {
+      "key": "M8->M9",
+      "from": "M8",
+      "to": "M9",
+      "label": "",
+      "chart": "M",
+      "line": 818
+    },
+    {
+      "key": "M2->M10",
+      "from": "M2",
+      "to": "M10",
+      "label": "",
+      "chart": "M",
+      "line": 819
+    }
+  ],
+  "links": [
+    {
+      "key": "B11~>E",
+      "from": "B11",
+      "fromChart": "B",
+      "toChart": "E",
+      "ref": "E",
+      "line": 506
+    },
+    {
+      "key": "B12~>D",
+      "from": "B12",
+      "fromChart": "B",
+      "toChart": "D",
+      "ref": "D",
+      "line": 507
+    },
+    {
+      "key": "C17~>K",
+      "from": "C17",
+      "fromChart": "C",
+      "toChart": "K",
+      "ref": "K",
+      "line": 544
+    },
+    {
+      "key": "D11~>L",
+      "from": "D11",
+      "fromChart": "D",
+      "toChart": "L",
+      "ref": "L",
+      "line": 572
+    },
+    {
+      "key": "G14~>K",
+      "from": "G14",
+      "fromChart": "G",
+      "toChart": "K",
+      "ref": "K",
+      "line": 654
+    },
+    {
+      "key": "I13~>C",
+      "from": "I13",
+      "fromChart": "I",
+      "toChart": "C",
+      "ref": "C",
+      "line": 710
+    },
+    {
+      "key": "L13~>D",
+      "from": "L13",
+      "fromChart": "L",
+      "toChart": "D",
+      "ref": "D",
+      "line": 795
+    }
+  ]
+}

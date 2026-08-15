@@ -1,0 +1,210 @@
+{"seq":1,"at":"2026-08-15T00:07:24Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":2,"at":"2026-08-15T00:09:09Z","event":"answer","id":"Q186","state":"chosen","option":null,"note":"yes, it should pause in the middle of whatever its doing. unpause starts up again at exactly same moment of pausing","override":true,"round":1}
+{"seq":3,"at":"2026-08-15T00:14:17Z","event":"answer","id":"Q189","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":4,"at":"2026-08-15T00:14:43Z","event":"answer","id":"Q190","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":5,"at":"2026-08-15T00:16:10Z","event":"answer","id":"Q191","state":"chosen","option":null,"note":"Yes. When no gameview, it will show a default background image given by me. Gameview should be able to update this background if necessary","override":true,"round":1}
+{"seq":6,"at":"2026-08-15T00:16:29Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":7,"at":"2026-08-15T00:16:44Z","event":"answer","id":"Q152","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":8,"at":"2026-08-15T00:16:54Z","event":"answer","id":"Q153","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":9,"at":"2026-08-15T00:17:57Z","event":"answer","id":"Q154","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":10,"at":"2026-08-15T00:18:14Z","event":"answer","id":"Q155","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":11,"at":"2026-08-15T00:18:39Z","event":"answer","id":"Q156","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":12,"at":"2026-08-15T00:21:21Z","event":"answer","id":"Q157","state":"chosen","option":null,"note":"stays on wall and shows last state. \ngame over stays on game view, reusing map to attempt re-entering game just goes to game over screen. Map stays and is generally interactable with no changes for player to review before starting new game.\nmap only replaced on starting new run.","override":true,"round":1}
+{"seq":13,"at":"2026-08-15T00:21:36Z","event":"answer","id":"Q158","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":14,"at":"2026-08-15T00:21:42Z","event":"answer","id":"Q159","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":15,"at":"2026-08-15T00:21:49Z","event":"answer","id":"QR3","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":16,"at":"2026-08-15T00:22:00Z","event":"answer","id":"Q127","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":17,"at":"2026-08-15T00:23:33Z","event":"answer","id":"Q128","state":"chosen","option":null,"note":"Enough to show bottom frame, regardless of top right left sides. This means top should remain covered so we dont zoom out too much","override":true,"round":1}
+{"seq":18,"at":"2026-08-15T00:24:13Z","event":"answer","id":"Q129","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":19,"at":"2026-08-15T00:26:27Z","event":"answer","id":"Q130","state":"chosen","option":null,"note":"I'm thinking a notecard whose size scales with its contents, giving impression that each notecard is unique. Should show copy of hovered item as a visual to go with the description.","override":true,"round":1}
+{"seq":20,"at":"2026-08-15T00:28:55Z","event":"answer","id":"Q131","state":"chosen","option":null,"note":"Nothing by default until something is hovered, then always shows last notecard. This way if mouse goes over empty space while going to next card, notecard doesn't blink in and out of existence. Resetting info view resets back to nothing by default.","override":true,"round":1}
+{"seq":21,"at":"2026-08-15T00:29:14Z","event":"answer","id":"Q132","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":22,"at":"2026-08-15T00:29:39Z","event":"answer","id":"Q133","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":23,"at":"2026-08-15T00:29:58Z","event":"answer","id":"Q134","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":24,"at":"2026-08-15T00:32:16Z","event":"answer","id":"Q135","state":"chosen","option":null,"note":"non persisting always on screen top right toggle button. Magnifying glass icon. Always accessible regardless of screen.","override":true,"round":1}
+{"seq":25,"at":"2026-08-15T00:32:45Z","event":"answer","id":"Q136","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":26,"at":"2026-08-15T00:32:58Z","event":"answer","id":"Q137","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":27,"at":"2026-08-15T00:33:50Z","event":"answer","id":"Q138","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":28,"at":"2026-08-15T00:35:04Z","event":"answer","id":"Q139","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":29,"at":"2026-08-15T00:37:35Z","event":"answer","id":"Q140","state":"chosen","option":null,"note":"text size should remain same. In unavoidable cases like small screens such as phones or different language text, allow scrolling notecard upwards to reveal bottom of notecard, covering entire picture screen, requiring scrolling back to original position to view entire picture.","override":true,"round":1}
+{"seq":30,"at":"2026-08-15T00:38:46Z","event":"answer","id":"QR4","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":31,"at":"2026-08-15T00:39:11Z","event":"answer","id":"Q45","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":32,"at":"2026-08-15T00:39:27Z","event":"answer","id":"QR5","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":33,"at":"2026-08-15T00:39:40Z","event":"answer","id":"Q179","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":34,"at":"2026-08-15T00:43:51Z","event":"answer","id":"Q180","state":"chosen","option":null,"note":"placeholders. Allow tool option to have placeholders be replaced by snapshots of the actual real scenes for color comparing.","override":true,"round":1}
+{"seq":35,"at":"2026-08-15T00:43:57Z","event":"answer","id":"Q181","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":36,"at":"2026-08-15T00:44:10Z","event":"answer","id":"Q182","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":37,"at":"2026-08-15T00:44:16Z","event":"answer","id":"Q183","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":38,"at":"2026-08-15T00:44:27Z","event":"answer","id":"Q185","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":39,"at":"2026-08-15T00:50:44Z","event":"answer","id":"QR6","state":"chosen","option":null,"note":"according to https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html this should be easy with simple get_tree().paused = true and process_mode = Node.PROCESS_MODE_PAUSABLE\npossible answers you gave me dont seem to reflect this knowledge","override":true,"round":1}
+{"seq":40,"at":"2026-08-15T00:52:27Z","event":"answer","id":"QR7","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":41,"at":"2026-08-15T00:52:48Z","event":"answer","id":"QR8","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":42,"at":"2026-08-15T00:53:57Z","event":"answer","id":"Q1","state":"chosen","option":null,"note":"edges are decided by existing pictures\nthis way on small screens it can pan around but not pan into void.","override":true,"round":1}
+{"seq":43,"at":"2026-08-15T00:54:19Z","event":"answer","id":"Q2","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":44,"at":"2026-08-15T00:55:28Z","event":"answer","id":"Q3","state":"chosen","option":null,"note":"yes free pan is allowed but only if pictures start going past edges. On larger screens panning shouldnt be available since every picture should be visible","override":true,"round":1}
+{"seq":45,"at":"2026-08-15T00:55:47Z","event":"answer","id":"Q4","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":46,"at":"2026-08-15T00:56:33Z","event":"answer","id":"Q5","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":47,"at":"2026-08-15T00:57:07Z","event":"answer","id":"Q6","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":48,"at":"2026-08-15T00:57:59Z","event":"answer","id":"Q7","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":49,"at":"2026-08-15T00:58:32Z","event":"answer","id":"Q8","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":50,"at":"2026-08-15T00:58:49Z","event":"answer","id":"Q9","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":51,"at":"2026-08-15T00:59:10Z","event":"answer","id":"Q10","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":52,"at":"2026-08-15T00:59:28Z","event":"answer","id":"Q11","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":53,"at":"2026-08-15T00:59:39Z","event":"answer","id":"Q12","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":54,"at":"2026-08-15T01:00:19Z","event":"answer","id":"Q13","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":55,"at":"2026-08-15T01:00:29Z","event":"answer","id":"Q14","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":56,"at":"2026-08-15T01:00:43Z","event":"answer","id":"Q15","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":57,"at":"2026-08-15T01:01:27Z","event":"answer","id":"Q16","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":58,"at":"2026-08-15T01:04:39Z","event":"answer","id":"Q17","state":"chosen","option":null,"note":"picture has different resolution such as map view which is visually dense, so naturally picture view should be larger than other views. So b more likely? But possibly a for performance to reduce frozen picture resolution kind of like mipmap which linear should do","override":true,"round":1}
+{"seq":59,"at":"2026-08-15T01:04:45Z","event":"answer","id":"Q18","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":60,"at":"2026-08-15T01:05:06Z","event":"answer","id":"Q19","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":61,"at":"2026-08-15T01:05:12Z","event":"answer","id":"Q20","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":62,"at":"2026-08-15T01:05:21Z","event":"answer","id":"Q21","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":63,"at":"2026-08-15T01:05:34Z","event":"answer","id":"Q22","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":64,"at":"2026-08-15T01:07:41Z","event":"answer","id":"Q23","state":"chosen","option":null,"note":"lets go with 1280x720 as floor which is standard even for phones","override":true,"round":1}
+{"seq":65,"at":"2026-08-15T01:08:07Z","event":"answer","id":"Q24","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":66,"at":"2026-08-15T01:08:36Z","event":"answer","id":"Q25","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":67,"at":"2026-08-15T01:08:58Z","event":"answer","id":"Q26","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":68,"at":"2026-08-15T01:10:51Z","event":"answer","id":"Q27","state":"chosen","option":null,"note":"yes by default. but map picture which is perfectly square will require overfill, so (b) for edge cases.","override":true,"round":1}
+{"seq":69,"at":"2026-08-15T01:11:04Z","event":"answer","id":"Q28","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":70,"at":"2026-08-15T01:11:11Z","event":"answer","id":"Q29","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":71,"at":"2026-08-15T01:11:22Z","event":"answer","id":"Q31","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":72,"at":"2026-08-15T01:11:29Z","event":"answer","id":"Q32","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":73,"at":"2026-08-15T01:15:39Z","event":"answer","id":"Q34","state":"chosen","option":null,"note":"everything should be linear except for nearest for focused picture. If nearest picture is out of view or in wall view, then linear. Dont want any visible swaps, so (c) for zoom changes. position shouldnt change it","override":true,"round":1}
+{"seq":74,"at":"2026-08-15T01:17:12Z","event":"answer","id":"Q35","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":75,"at":"2026-08-15T01:20:45Z","event":"answer","id":"Q36","state":"chosen","option":null,"note":"should be authored per picture. different pictures have different frame widths which causes distance to other pictures to be different since overall size of frame + picture is not same across each picture. Gap between frame outer edges of different pictures should remain a single number though","override":true,"round":1}
+{"seq":76,"at":"2026-08-15T01:20:54Z","event":"answer","id":"Q37","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":77,"at":"2026-08-15T01:21:10Z","event":"answer","id":"Q38","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":78,"at":"2026-08-15T01:22:06Z","event":"answer","id":"Q39","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":79,"at":"2026-08-15T01:22:13Z","event":"answer","id":"Q40","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":80,"at":"2026-08-15T01:22:18Z","event":"answer","id":"Q41","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":81,"at":"2026-08-15T01:23:28Z","event":"answer","id":"Q46","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":82,"at":"2026-08-15T01:24:41Z","event":"answer","id":"Q47","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":83,"at":"2026-08-15T01:28:48Z","event":"answer","id":"Q48","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":84,"at":"2026-08-15T01:28:55Z","event":"answer","id":"Q50","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":85,"at":"2026-08-15T01:30:38Z","event":"answer","id":"Q51","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":86,"at":"2026-08-15T01:31:48Z","event":"answer","id":"Q52","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":87,"at":"2026-08-15T01:31:55Z","event":"answer","id":"Q53","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":88,"at":"2026-08-15T01:32:04Z","event":"answer","id":"Q54","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":89,"at":"2026-08-15T01:33:51Z","event":"answer","id":"Q55","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":90,"at":"2026-08-15T01:34:09Z","event":"answer","id":"Q56","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":91,"at":"2026-08-15T01:38:22Z","event":"answer","id":"Q58","state":"chosen","option":null,"note":"allow input once picture is unpaused, which should not be at end of transition, but right before end of transition when picture and frame is fully in view, unpause then finish zooming in to finish transition.\nfocus per picture should persist during a session, so going back and forth between pictures persists what was last selected. if app is quit dont bother saving it.","override":true,"round":1}
+{"seq":92,"at":"2026-08-15T01:38:36Z","event":"answer","id":"Q59","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":93,"at":"2026-08-15T01:38:55Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":94,"at":"2026-08-15T01:42:37Z","event":"answer","id":"Q61","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":95,"at":"2026-08-15T01:43:19Z","event":"answer","id":"Q62","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":96,"at":"2026-08-15T01:45:11Z","event":"answer","id":"Q63","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":97,"at":"2026-08-15T01:47:28Z","event":"answer","id":"Q64","state":"chosen","option":null,"note":"can only be as deep as amount of pictures\nif newly visited picture is already in history, that history stack is removed/moved to latest location, so stack is always rearranging\nalso add forwards button to revisit picture you were just on before pressing back.","override":true,"round":1}
+{"seq":98,"at":"2026-08-15T01:47:50Z","event":"answer","id":"Q65","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":99,"at":"2026-08-15T01:48:00Z","event":"answer","id":"Q66","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":100,"at":"2026-08-15T01:48:17Z","event":"answer","id":"Q67","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":101,"at":"2026-08-15T01:48:39Z","event":"answer","id":"Q67","state":"chosen","option":null,"note":"on a persistent overlay just like info toggle","override":true,"round":1}
+{"seq":102,"at":"2026-08-15T01:48:50Z","event":"answer","id":"Q68","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":103,"at":"2026-08-15T01:49:22Z","event":"answer","id":"Q69","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":104,"at":"2026-08-15T01:49:43Z","event":"answer","id":"Q70","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":105,"at":"2026-08-15T01:50:14Z","event":"answer","id":"Q71","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":106,"at":"2026-08-15T01:51:31Z","event":"answer","id":"Q72","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":107,"at":"2026-08-15T01:51:59Z","event":"answer","id":"Q73","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":108,"at":"2026-08-15T01:52:05Z","event":"answer","id":"Q74","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":109,"at":"2026-08-15T01:53:44Z","event":"answer","id":"Q75","state":"chosen","option":null,"note":"use godot pause system as I mentioned in separate question answer","override":true,"round":1}
+{"seq":110,"at":"2026-08-15T01:54:18Z","event":"answer","id":"Q78","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":111,"at":"2026-08-15T01:57:03Z","event":"answer","id":"Q79","state":"chosen","option":null,"note":"no, but track how much memory is being used anyways in case we want to switch to system where a paused scene gets unloaded with a placeholder screenshot in case memory becomes a concern","override":true,"round":1}
+{"seq":112,"at":"2026-08-15T01:57:09Z","event":"answer","id":"Q82","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":113,"at":"2026-08-15T01:57:20Z","event":"answer","id":"Q85","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":114,"at":"2026-08-15T01:57:48Z","event":"answer","id":"Q86","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":115,"at":"2026-08-15T01:57:54Z","event":"answer","id":"Q87","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":116,"at":"2026-08-15T01:58:00Z","event":"answer","id":"Q88","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":117,"at":"2026-08-15T01:58:18Z","event":"answer","id":"Q89","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":118,"at":"2026-08-15T01:58:28Z","event":"answer","id":"Q91","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":119,"at":"2026-08-15T01:58:44Z","event":"answer","id":"Q92","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":120,"at":"2026-08-15T01:58:56Z","event":"answer","id":"Q93","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":121,"at":"2026-08-15T01:59:26Z","event":"answer","id":"Q94","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":122,"at":"2026-08-15T02:00:15Z","event":"answer","id":"Q95","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":123,"at":"2026-08-15T02:00:22Z","event":"answer","id":"Q96","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":124,"at":"2026-08-15T02:00:36Z","event":"answer","id":"Q97","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":125,"at":"2026-08-15T02:00:44Z","event":"answer","id":"Q98","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":126,"at":"2026-08-15T02:00:47Z","event":"answer","id":"Q99","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":127,"at":"2026-08-15T02:00:56Z","event":"answer","id":"Q99","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":128,"at":"2026-08-15T02:01:22Z","event":"answer","id":"Q100","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":129,"at":"2026-08-15T02:02:05Z","event":"answer","id":"Q100","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":130,"at":"2026-08-15T02:02:12Z","event":"answer","id":"Q101","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":131,"at":"2026-08-15T02:02:18Z","event":"answer","id":"Q102","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":132,"at":"2026-08-15T02:02:27Z","event":"answer","id":"Q103","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":133,"at":"2026-08-15T02:02:44Z","event":"answer","id":"Q104","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":134,"at":"2026-08-15T02:03:11Z","event":"answer","id":"Q105","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":135,"at":"2026-08-15T02:03:28Z","event":"answer","id":"Q106","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":136,"at":"2026-08-15T02:04:53Z","event":"answer","id":"Q107","state":"chosen","option":null,"note":"each view, wall and pictures, has its own focus","override":true,"round":1}
+{"seq":137,"at":"2026-08-15T02:05:27Z","event":"answer","id":"Q108","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":138,"at":"2026-08-15T02:05:45Z","event":"answer","id":"Q109","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":139,"at":"2026-08-15T02:05:58Z","event":"answer","id":"Q110","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":140,"at":"2026-08-15T02:06:08Z","event":"answer","id":"Q111","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":141,"at":"2026-08-15T02:06:16Z","event":"answer","id":"Q112","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":142,"at":"2026-08-15T02:06:21Z","event":"answer","id":"Q113","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":143,"at":"2026-08-15T02:06:51Z","event":"answer","id":"Q114","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":144,"at":"2026-08-15T02:07:00Z","event":"answer","id":"Q115","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":145,"at":"2026-08-15T02:07:32Z","event":"answer","id":"Q116","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":146,"at":"2026-08-15T02:07:36Z","event":"answer","id":"Q117","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":147,"at":"2026-08-15T02:08:09Z","event":"answer","id":"Q118","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":148,"at":"2026-08-15T02:08:13Z","event":"answer","id":"Q119","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":149,"at":"2026-08-15T02:08:20Z","event":"answer","id":"Q120","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":150,"at":"2026-08-15T02:08:47Z","event":"answer","id":"Q121","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":151,"at":"2026-08-15T02:08:58Z","event":"answer","id":"Q122","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":152,"at":"2026-08-15T02:09:32Z","event":"answer","id":"Q123","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":153,"at":"2026-08-15T02:10:02Z","event":"answer","id":"Q123","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":154,"at":"2026-08-15T02:10:27Z","event":"answer","id":"Q124","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":155,"at":"2026-08-15T02:10:50Z","event":"answer","id":"Q125","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":156,"at":"2026-08-15T02:11:03Z","event":"answer","id":"Q126","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":157,"at":"2026-08-15T02:11:33Z","event":"answer","id":"Q141","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":158,"at":"2026-08-15T02:11:50Z","event":"answer","id":"Q143","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":159,"at":"2026-08-15T02:12:59Z","event":"answer","id":"Q145","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":160,"at":"2026-08-15T02:13:08Z","event":"answer","id":"Q149","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":161,"at":"2026-08-15T02:13:16Z","event":"answer","id":"Q150","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":162,"at":"2026-08-15T02:13:32Z","event":"answer","id":"Q151","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":163,"at":"2026-08-15T02:13:53Z","event":"answer","id":"Q160","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":164,"at":"2026-08-15T02:14:12Z","event":"answer","id":"Q161","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":165,"at":"2026-08-15T02:14:29Z","event":"answer","id":"Q162","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":166,"at":"2026-08-15T02:14:53Z","event":"answer","id":"Q164","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":167,"at":"2026-08-15T02:15:02Z","event":"answer","id":"Q165","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":168,"at":"2026-08-15T02:15:12Z","event":"answer","id":"Q166","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":169,"at":"2026-08-15T02:15:38Z","event":"answer","id":"Q167","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":170,"at":"2026-08-15T02:15:47Z","event":"answer","id":"Q168","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":171,"at":"2026-08-15T02:16:02Z","event":"answer","id":"Q169","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":172,"at":"2026-08-15T02:16:14Z","event":"answer","id":"Q170","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":173,"at":"2026-08-15T02:16:26Z","event":"answer","id":"Q171","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":174,"at":"2026-08-15T02:16:37Z","event":"answer","id":"Q172","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":175,"at":"2026-08-15T02:16:49Z","event":"answer","id":"Q173","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":176,"at":"2026-08-15T02:16:54Z","event":"answer","id":"Q174","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":177,"at":"2026-08-15T02:17:23Z","event":"answer","id":"Q175","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":178,"at":"2026-08-15T02:18:17Z","event":"answer","id":"Q176","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":179,"at":"2026-08-15T02:18:24Z","event":"answer","id":"Q177","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":180,"at":"2026-08-15T02:18:33Z","event":"answer","id":"Q178","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":181,"at":"2026-08-15T02:18:56Z","event":"answer","id":"Q193","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":182,"at":"2026-08-15T02:19:06Z","event":"answer","id":"Q194","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":183,"at":"2026-08-15T02:19:11Z","event":"answer","id":"Q195","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":184,"at":"2026-08-15T02:19:21Z","event":"answer","id":"Q196","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":185,"at":"2026-08-15T02:19:37Z","event":"answer","id":"Q197","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":186,"at":"2026-08-15T02:19:46Z","event":"answer","id":"Q198","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":187,"at":"2026-08-15T02:20:35Z","event":"answer","id":"Q199","state":"chosen","option":null,"note":"there shouldnt be nameplates\nbut overall anything with text should survive 2x longer string","override":true,"round":1}
+{"seq":188,"at":"2026-08-15T02:20:55Z","event":"answer","id":"Q200","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":189,"at":"2026-08-15T02:21:09Z","event":"answer","id":"Q201","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":190,"at":"2026-08-15T02:21:25Z","event":"answer","id":"Q202","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":191,"at":"2026-08-15T02:21:40Z","event":"answer","id":"Q203","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":192,"at":"2026-08-15T02:22:10Z","event":"answer","id":"Q205","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":193,"at":"2026-08-15T02:22:32Z","event":"answer","id":"Q206","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":194,"at":"2026-08-15T02:22:44Z","event":"answer","id":"Q207","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":195,"at":"2026-08-15T02:22:58Z","event":"answer","id":"Q208","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":196,"at":"2026-08-15T02:23:11Z","event":"answer","id":"Q209","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":197,"at":"2026-08-15T02:23:19Z","event":"answer","id":"Q210","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":198,"at":"2026-08-15T02:23:31Z","event":"answer","id":"Q211","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":199,"at":"2026-08-15T02:23:45Z","event":"answer","id":"Q212","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":200,"at":"2026-08-15T02:24:02Z","event":"answer","id":"Q213","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":201,"at":"2026-08-15T02:24:08Z","event":"answer","id":"Q214","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":202,"at":"2026-08-15T02:36:28Z","event":"answer","id":"QR6","state":"chosen","option":"a","note":"according to https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html this should be easy with simple get_tree().paused = true and process_mode = Node.PROCESS_MODE_PAUSABLE\npossible answers you gave me dont seem to reflect this knowledge","override":false,"round":2}
+{"seq":203,"at":"2026-08-15T02:37:12Z","event":"answer","id":"Q75","state":"chosen","option":"b","note":"use godot pause system as I mentioned in separate question answer","override":false,"round":2}
+{"seq":204,"at":"2026-08-15T02:37:34Z","event":"answer","id":"Q186","state":"chosen","option":"d","note":"yes, it should pause in the middle of whatever its doing. unpause starts up again at exactly same moment of pausing","override":false,"round":2}
+{"seq":205,"at":"2026-08-15T02:37:45Z","event":"answer","id":"Q221","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":206,"at":"2026-08-15T02:38:33Z","event":"answer","id":"Q222","state":"chosen","option":"c","note":"","override":false,"round":2}
+{"seq":207,"at":"2026-08-15T02:38:38Z","event":"answer","id":"Q223","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":208,"at":"2026-08-15T02:38:54Z","event":"answer","id":"Q224","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":209,"at":"2026-08-15T02:39:08Z","event":"answer","id":"Q225","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":210,"at":"2026-08-15T02:39:21Z","event":"answer","id":"Q226","state":"chosen","option":"a","note":"","override":false,"round":2}

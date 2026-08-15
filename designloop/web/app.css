@@ -439,6 +439,8 @@ body.canvas-body { height: 100vh; display: flex; flex-direction: column; overflo
 
 .canvas-stage { flex: 1; position: relative; min-width: 0; overflow: hidden; cursor: grab; }
 .canvas-stage.grabbing { cursor: grabbing; }
+/* Held only while panning, so node text stays selectable when the pointer is still. */
+.canvas-stage.grabbing, .canvas-stage.grabbing * { user-select: none; -webkit-user-select: none; }
 
 /* The graph can have the whole window: each piece of chrome folds away on its own (f / 1 / 2 / 3).
    The handles stay on the stage, so nothing can be hidden with no way to bring it back. */

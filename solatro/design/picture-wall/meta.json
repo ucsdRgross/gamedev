@@ -1,0 +1,9 @@
+{
+  "slug": "picture-wall",
+  "title": "The diegetic picture-wall UI shell",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "created": "2026-08-14T00:00:00Z",
+  "rounds": 1,
+  "confirmed_version": null
+}

@@ -17,6 +17,7 @@
 - [No mocks in tools](no-mocks-in-tools.md) — harnesses host the real scene and real data
 - [General, not shape-specific](general-not-shape-specific.md) — no one-silhouette hacks; offer the general form first
 - [Seam checks, not re-reading](seam-checks-not-rereading.md) — two representations of one fact need a comparison
+- [Read the engine docs](read-the-engine-docs.md) — search before designing around a feature; the repo is not the engine
 
 **Godot practice** (applies to solatro and worldgen alike)
 - [Running Godot scenes](running-godot-scenes.md) — run the suite yourself, WINDOWED; a green banner is not proof

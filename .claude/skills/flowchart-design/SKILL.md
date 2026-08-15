@@ -245,8 +245,45 @@ Before writing a single node:
   version of it. Name it — it makes the design concrete and it is the honest baseline.
 - **Read the project's contracts** (rulings, layering, palette, persistence, testing) and note every
   one the feature touches. Rulings the design must obey are facts, not questions.
+- ⚠ **READ THE ENGINE'S OWN DOCS FOR EVERY ENGINE FEATURE THE DESIGN LEANS ON, AND SEARCH FOR THE
+  KNOWN PROBLEM.** This repo's absence of a feature is not evidence the engine lacks it. See below.
 
 Put all of this in a §1 "Audit facts" section with line references. Everything downstream cites it.
+
+#### ⚠ Search the web before you turn ignorance into a question
+
+**The failure this prevents, measured on `solatro/picture-wall`:** the design needed to pause one
+screen while another ran. Grepping found no `get_tree().paused` and no `process_mode` in the whole
+project, so the root fork was authored as *"engine pause (`PROCESS_MODE_DISABLED` on the subtree)
+**or** a `pause()` contract each screen implements"* — a false dichotomy built entirely out of not
+having read [the pause tutorial](https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html).
+Godot's actual model is a **global** `SceneTree.paused` plus a per-node `process_mode`
+(INHERIT / PAUSABLE / WHEN_PAUSED / ALWAYS / DISABLED); the docs say outright that pausing "only
+affects the entire game". The owner answered the question by pasting the doc URL and writing *"the
+possible answers you gave me dont seem to reflect this knowledge"*. One search, before authoring,
+and that root fork would have been a real question about which subtrees are ALWAYS.
+
+So, before any question that depends on how the engine, library or platform behaves:
+
+- **Read the official doc page for that feature.** Not a memory of it, not an inference from the
+  repo. If the design rests on it, fetch it and quote it into §1.
+- **Search for the known bug or the known gap.** The interesting facts are the ones the tutorial
+  does not mention: `SceneTree.create_timer()` defaults `process_always = true` and so runs straight
+  through a pause ([godot-proposals#9924](https://github.com/godotengine/godot-proposals/issues/9924)),
+  and shader `TIME` keeps advancing while paused
+  ([godot#27127](https://github.com/godotengine/godot/issues/27127)). Those two are the entire
+  reason "pause the screen" is not one line — and neither is on the tutorial page.
+- **Look for the existing solution before designing one.** Someone has usually solved this shape
+  before; an addon, an engine feature, or a documented pattern beats an invention, and finding none
+  is itself worth writing down.
+- **Cite the URL in §1 next to the fact**, so the next reader can check it and so a stale fact has
+  an address. Mark anything the sources disagree on as needing verification in-project rather than
+  asserting it.
+
+**The test for whether a question needed a search:** if the owner could answer it by pasting a doc
+link, it was never a design question. A design question asks what the owner WANTS. A question that
+asks what the ENGINE DOES is a research failure wearing a question's clothes — and it is worse than
+useless, because a plausible wrong option set steers the answer.
 
 ### 2. Build the state model before the flowcharts
 
@@ -525,6 +562,9 @@ grammar above is obeyed.
    <project>/design/<slug>/DESIGN.md      the document — this skill's whole output
    <project>/design/<slug>/meta.json      slug, title, projects touched
    <project>/design/<slug>/gaps/          filed by executing agents, later
+   <project>/design/<slug>/PLAN.md        after confirmation — the steps and contracts (§8a)
+   <project>/design/<slug>/TEST_PLAN.md   after confirmation — every test, planned (§8a′)
+   <project>/design/<slug>/NAMES.md       after confirmation — the identifier registry (§8a′)
    ```
 
    `<project>` is a top-level repo directory (`solatro`, `palette`, `worldgen`). `<slug>` is short
@@ -538,7 +578,37 @@ grammar above is obeyed.
 
    `projects` is a list because a design may touch several; it appears under each in the index.
 
-2. **Check that it parses before handing anything over.** A question the parser cannot read is a
+2. ⚠ **THE ENGINE-CAPABILITY GATE — run this BEFORE the first round, not after.** The design must
+   carry a **§1m Engine capability audit** table before any URL is handed over. One row per
+   engine/library/platform capability the design leans on, each marked ✅ *confirmed*,
+   ⚠ *already exists — do not build it*, or ⚠ *contradicted*, **each citing the doc URL**. Nothing
+   in it may come from memory or from grepping the repo.
+
+   Build it by walking your own draft and asking, for every `NEW` thing and every question:
+
+   | Ask | Because |
+   |---|---|
+   | Does the engine already ship this? | a question about a feature that exists is a question that should never be asked |
+   | Is there a standard node, resource or pattern for this shape? | inventing past `NinePatchRect` is how a "frame system" gets designed |
+   | Does this capability exist on the platform we actually build on? | it may exist on one OS and silently never fire on ours |
+   | What does the doc page NOT say? | the load-bearing facts are usually in an issue, not the tutorial |
+   | Is the thing I called impossible actually available now? | version drift cuts both ways |
+
+   **Measured on `solatro/picture-wall`, running this gate LATE — after 203 answers and 13 charts:**
+   three features had been designed that the engine already ships (`NinePatchRect`/`StyleBoxTexture`
+   for the expandable frame, `stretch_shrink` for render resolution, per-node
+   `CanvasItem.texture_filter` for the filter swap), one recommended node type was documented as not
+   supporting the only thing the design does with it, one input event never fires on the development
+   platform, one API was called unavailable that had shipped two versions earlier, and one reliability
+   caveat invalidated a `⚑contract` number. **Five gaps and a re-derivation, all of which the gate
+   would have caught before a single question was asked.**
+
+   ⚠ **A capability audit is not the same as a code audit.** §1 is what the *repo* does; §1m is what
+   the *engine* offers. The picture-wall design had a thorough §1 and every one of those defects
+   still shipped into the questionnaire, because grepping the repo can only ever tell you what this
+   project already uses.
+
+3. **Check that it parses before handing anything over.** A question the parser cannot read is a
    question the owner never sees:
 
    ```
@@ -561,7 +631,7 @@ grammar above is obeyed.
    something that does not exist. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
    change, not a parser change.
 
-3. **Start the server and hand over the URL.** Not a file path, not "open the doc":
+4. **Start the server and hand over the URL.** Not a file path, not "open the doc":
 
    ```
    npm --prefix designloop start
@@ -573,7 +643,7 @@ grammar above is obeyed.
 
    (`designloop/start.cmd` is the double-click equivalent, and a second launch reclaims the port.)
 
-4. **Park on the watch** in the same session, so the owner is never waiting on you:
+5. **Park on the watch** in the same session, so the owner is never waiting on you:
 
    ```
    npm --prefix designloop run watch -- <project>/<slug>
@@ -583,7 +653,7 @@ grammar above is obeyed.
    through as *not relevant* or Enter-defaulted, and whether the owner wrote their own answer.
    **Telling you in chat always works too** — never make the watch the only route.
 
-5. **When it wakes**, read `<project>/design/<slug>/answers.json`, revise the document, and hand the
+6. **When it wakes**, read `<project>/design/<slug>/answers.json`, revise the document, and hand the
    turn back by writing `status.agent.json` (yours; the owner's half is never yours to write):
 
    ```json
@@ -621,9 +691,12 @@ last reachable question answered
   → agent WRITES the flowcharts from the answers   ← §3b; on a later round, RE-DERIVES them
   → owner REVIEWS the flowcharts            ← a real stage, not a formality
   → owner CONFIRMS  (or "review again" → another cycle)
-  → THEN: implementation plan + scope + copy-paste prompt, in one message
-  → owner REVIEWS THE PLAN'S §1 CONTRACTS    ← the second review gate; §8b item 9
+  → THEN: implementation plan + test plan + names + scope + prompt, in ONE message
+  → the TOOL audits §1 (`contracts … unauthorised`)  ← §8b item 13. Clean = nothing to review.
 ```
+
+⚠ **The owner's review gate is the flowcharts, and only the flowcharts.** §1 is audited
+mechanically; escalate a block only when the audit says nothing authorises it.
 
 ⚠ **This is the FIRST time the charts exist**, and that is deliberate (§3): a chart drawn before the
 answers is a guess with an ID on it. The owner's verdict that put it here — *"no way will chart ever
@@ -669,6 +742,85 @@ does not exist in `answers.json`, and filed a gap on it. Paste the note. `run ch
 answers` lists every answer this applies to, and `answer <ID>` prints the note beside every place
 the documents speak for it.
 
+### 8a′. THE HANDOFF IS THREE DOCUMENTS, NOT ONE
+
+⚠ **The goal that decides everything in this section, in the owner's words:**
+
+> *"the implementer therefore can spend zero time thinking or inventing any design details, and will
+> spend all of its time purely implementing and testing."*
+
+Every minute an implementer spends deciding is a minute spent making a decision the designer was
+better placed to make, with more context, under review. So the handoff ships **three** files:
+
+| File | What it fixes | Why the implementer must not author it |
+|---|---|---|
+| `PLAN.md` | the steps, the normative contracts, the done-whens | it is the specification |
+| `TEST_PLAN.md` | **every test that must exist, planned in advance** | see below |
+| `NAMES.md` | the exact identifiers everything will be called | two agents invent two names for one thing |
+
+#### `TEST_PLAN.md` — plan the tests, do not delegate inventing them
+
+**The designer writes the test plan, because the designer knows what the feature is for.** An
+implementer deriving its own test list re-derives the design badly and *silently misses cases* —
+the ones it misses are exactly the ones it did not understand, and a missing test looks identical to
+a passing one.
+
+- **One row per test**, each citing the **design node** it proves and the **plan step** it gates.
+- **The important tests are named in advance and are not optional.** The implementer **may add**
+  low-level tests for details the plan could not foresee — that is expected and welcome — but it may
+  **not** decide that a planned test is unnecessary. Removing one is a gap, not a judgement call.
+- **Specify the FIXTURES too.** "Test that the packer clusters" is not a test; "given 7 pictures of
+  size class M and one L, ring capacity 6, assert ring 0 holds exactly 6 and ring 1 holds 2 at the
+  authored angles" is. If the plan does not fix the data, the implementer invents the data, and
+  invented data tests whatever it happened to make true.
+- **Say which are self-checking gates** — the ones that cannot be talked past — and which are
+  by-eye verifications a human must sign off (this repo's rule 4: no green test is evidence about
+  pixels).
+- **Say what is deliberately NOT tested**, and why. An untested area that nobody chose is a hole; one
+  the designer chose is a decision.
+- **Map every design node to at least one test.** A node no test proves is a behaviour that can
+  regress silently. This is the same claimant logic `run check`'s `unclaimed` line already applies to
+  steps, pointed at tests instead — see [[design-answers-need-a-claimant]].
+
+#### `NAMES.md` — the identifier registry
+
+Every name the feature introduces, fixed before anyone types it: class names, file paths, scene
+paths, signal names, method signatures on any shared seam, `InputMap` action names, settings keys,
+localisation keys, test suite names, node names that a `%unique` lookup depends on. It is a table,
+it is boring, and it removes an entire category of "I called it something else" divergence — which
+is the most common way two sessions on one plan produce work that does not compose.
+
+#### ⚠ AN ARGUABLE NUMBER IS A KNOB, NOT A CONTRACT
+
+**If you catch yourself presenting a literal to the owner as "worth arguing with", it should not be
+in the plan at all — it should be a tunable the tuning tool exposes.** A number the owner might
+disagree with is a number they should be able to *turn*, by eye, against the running thing. Asking
+them to adjudicate it on paper is the worst of both: they cannot see its effect, and they have to do
+it before anything exists.
+
+The test: **could the owner tell whether this value is right by looking at a screenshot?** If yes it
+is a knob — a `PlayerSettings` field or a resource field the tool edits live — and the plan's job is
+only to say where it lives and what it starts at. If no (a schema, a file path, an ordering rule, a
+signature) it is a genuine contract and belongs in §1.
+
+Measured on `picture-wall`: I ended a handoff by listing six literals as "worth arguing with" —
+gap widths, texture floors, target sizes. Every one was a knob, five already were, and the sixth
+became one. **The list should have been empty**, and the tool step should have said *every* knob is
+exposed live, which it did not.
+
+#### And three more things that buy back implementer thinking-time
+
+1. **Resolve every `UNVERIFIED` fact before handoff, or make it a Phase 0 spike with a decision rule
+   written down.** An implementer that meets "sources disagree, check by eye" is doing design. If a
+   fact cannot be settled on paper, the plan opens with a spike whose *outcome is pre-bound*: "if X,
+   do A; if not X, do B" — so the experiment resolves it and no judgement is needed.
+2. **Ship an anti-scope list.** Name what the implementer must NOT do — the adjacent improvements,
+   the refactors it will be tempted by, the polish. Without it, "obviously this should also…" is a
+   decision it makes alone.
+3. **Order the steps into a dependency graph and say which are parallel.** Sequencing is a design
+   judgement with real cost; leaving it implicit means every session re-derives it and two sessions
+   derive it differently.
+
 ### 8b. Readiness checklist — run it before presenting anything
 
 1. Every file the plan names is either specified in it or created by a step in it.
@@ -685,11 +837,37 @@ the documents speak for it.
    answer instead of quoting it), `contracts … unauthorised` (a normative block no `⚑contract`
    question covers), `uncontracted`, and **`unclaimed`** (an answered question no step cites — the
    nodes → steps direction, see [[design-answers-need-a-claimant]]).
-9. ⚠ **THE OWNER HAS REVIEWED §1, not only the flowcharts.** Both of Spotlight's phase-1 gaps were
-   in the plan's normative section, which is written *after* confirmation and goes straight to an
-   executor — the design was reviewed and was right both times. Present §1's contracts with the
-   answers each one implements, and get the same explicit confirmation the charts get. **The review
-   gate belongs on whatever the executor actually obeys.**
+9. **`TEST_PLAN.md` and `NAMES.md` exist** (§8a′), every design node is claimed by at least one
+   planned test, and every planned test cites a node and a step.
+10. **No `UNVERIFIED` fact reaches the implementer undecided** — each is either settled before
+    handoff or is a Phase 0 spike whose outcome is pre-bound to an action.
+11. **The anti-scope list is present**, and the step order names what is parallel.
+12. ⚠ **Read the plan back asking one question only: "where would I have to THINK?"** Every place an
+    implementer would have to choose a name, a number, a file, a test, an order, or a shape is a
+    place the plan is unfinished. That is the whole bar of §8a′ and it is easy to satisfy on paper
+    and fail in practice.
+13. ⚠ **§1 IS AUDITED, AND ONLY ESCALATED WHEN THE AUDIT IS DIRTY.** Both of Spotlight's phase-1
+    gaps were in the plan's normative section, which is written *after* confirmation and goes
+    straight to an executor — the design was reviewed and was right both times. So §1 does need a
+    gate. **But the gate is `run check`'s `contracts … unauthorised` line, not the owner's
+    eyes.** Every normative block must cite a `⚑contract` question the owner already answered:
+    - **`unauthorised` is 0** → §1 contains no decision they have not already made. **Say that, and
+      do not ask them to read it.**
+    - **`unauthorised` is non-zero** → each one is a decision that entered the plan without ever
+      being asked. Do not present it as "please review §1"; present the specific block, say what it
+      decides and what authorises nothing, and treat it as a gap.
+
+    ⚠ **Run the audit BEFORE composing the handoff message.** Measured on `picture-wall`: I asked the
+    owner to review §1 with `unauthorised` already at 0, and their reply was *"not sure why I would
+    need to check plan.md, I thought I only need to review the charts"* — a fair objection to a
+    question the tool had already answered. **The owner reviews the charts. The tool reviews §1.**
+
+    ⚠⚠ **AND CHECK THE BLOCK COUNT, NOT ONLY THE UNAUTHORISED COUNT.** `normativeBlocks` scans a
+    section headed exactly `## 1. ` — write `## §1.` and it scans **nothing**, finds zero blocks, and
+    reports `0 unauthorised`, which is byte-identical to a clean result. Measured on `picture-wall`:
+    that is precisely what happened, I quoted the 0 as proof, and the real audit found **3
+    unauthorised blocks** the moment the heading was fixed. **`blocks` must be greater than 0 or the
+    audit proved nothing** — a vacuous pass and a real pass look the same from the outside.
 
 ### 8c. Scope the run
 
@@ -711,12 +889,24 @@ where they disagree the design wins and the plan is wrong.
 Sections <n>-<m> of the plan are normative: <the contracts> are specified, not suggestions.
 Do not invent them.
 
+<test plan path> lists every test that must exist, with its fixtures. Write those tests -
+you may ADD lower-level ones, you may not decide a planned one is unnecessary. Dropping one
+is a gap, not a judgement call.
+
+<names path> fixes every identifier. Use those names exactly. Do not rename, do not
+"improve", do not shorten.
+
 Hard gates, self-checking:
 - <gate 1: an objective acceptance test>
 - <gate 2>
 
-Follow the gap protocol at the head of the plan: if you hit a decision the plan does not
-cover, do not invent it - file a gap and keep working the unaffected steps.
+You should not have to design anything. If you find yourself choosing a name, a number, a
+file, a test, an order or a shape that no document fixes, that is a plan defect: file a gap
+and keep working the unaffected steps. Do not invent it, and do not "just pick something
+sensible" - the whole point of these documents is that the decision was already made with
+more context than you have.
+
+Do not do the things in the plan's anti-scope list, however tempting.
 
 Use /handoff to keep resumable state.
 ```

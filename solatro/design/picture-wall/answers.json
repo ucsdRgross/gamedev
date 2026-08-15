@@ -1,0 +1,1834 @@
+{
+  "slug": "picture-wall",
+  "doc_hash": "sha256:056d5af7189101ff7b1cdad94f1c46bac9d65aeb74eb0c3c397aad52408c593c",
+  "updated": "2026-08-15T02:39:21Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:07:24Z"
+    },
+    "Q186": {
+      "state": "chosen",
+      "option": "d",
+      "note": "yes, it should pause in the middle of whatever its doing. unpause starts up again at exactly same moment of pausing",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:37:34Z"
+    },
+    "Q189": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:14:17Z"
+    },
+    "Q190": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:14:43Z"
+    },
+    "Q191": {
+      "state": "chosen",
+      "option": null,
+      "note": "Yes. When no gameview, it will show a default background image given by me. Gameview should be able to update this background if necessary",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:16:10Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:16:29Z"
+    },
+    "Q152": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:16:44Z"
+    },
+    "Q153": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:16:54Z"
+    },
+    "Q154": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:17:57Z"
+    },
+    "Q155": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:18:14Z"
+    },
+    "Q156": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:18:39Z"
+    },
+    "Q157": {
+      "state": "chosen",
+      "option": null,
+      "note": "stays on wall and shows last state. \ngame over stays on game view, reusing map to attempt re-entering game just goes to game over screen. Map stays and is generally interactable with no changes for player to review before starting new game.\nmap only replaced on starting new run.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:21:21Z"
+    },
+    "Q158": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:21:36Z"
+    },
+    "Q159": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:21:42Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:21:49Z"
+    },
+    "Q127": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:22:00Z"
+    },
+    "Q128": {
+      "state": "chosen",
+      "option": null,
+      "note": "Enough to show bottom frame, regardless of top right left sides. This means top should remain covered so we dont zoom out too much",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:23:33Z"
+    },
+    "Q129": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:24:13Z"
+    },
+    "Q130": {
+      "state": "chosen",
+      "option": null,
+      "note": "I'm thinking a notecard whose size scales with its contents, giving impression that each notecard is unique. Should show copy of hovered item as a visual to go with the description.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:26:27Z"
+    },
+    "Q131": {
+      "state": "chosen",
+      "option": null,
+      "note": "Nothing by default until something is hovered, then always shows last notecard. This way if mouse goes over empty space while going to next card, notecard doesn't blink in and out of existence. Resetting info view resets back to nothing by default.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:28:55Z"
+    },
+    "Q132": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:29:14Z"
+    },
+    "Q133": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:29:39Z"
+    },
+    "Q134": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:29:58Z"
+    },
+    "Q135": {
+      "state": "chosen",
+      "option": null,
+      "note": "non persisting always on screen top right toggle button. Magnifying glass icon. Always accessible regardless of screen.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:32:16Z"
+    },
+    "Q136": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:32:45Z"
+    },
+    "Q137": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:32:58Z"
+    },
+    "Q138": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:33:50Z"
+    },
+    "Q139": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:35:04Z"
+    },
+    "Q140": {
+      "state": "chosen",
+      "option": null,
+      "note": "text size should remain same. In unavoidable cases like small screens such as phones or different language text, allow scrolling notecard upwards to reveal bottom of notecard, covering entire picture screen, requiring scrolling back to original position to view entire picture.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:37:35Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:38:46Z"
+    },
+    "Q45": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:39:11Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:39:27Z"
+    },
+    "Q179": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:39:40Z"
+    },
+    "Q180": {
+      "state": "chosen",
+      "option": null,
+      "note": "placeholders. Allow tool option to have placeholders be replaced by snapshots of the actual real scenes for color comparing.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:43:51Z"
+    },
+    "Q181": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:43:57Z"
+    },
+    "Q182": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:44:10Z"
+    },
+    "Q183": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:44:16Z"
+    },
+    "Q185": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:44:27Z"
+    },
+    "QR6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "according to https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html this should be easy with simple get_tree().paused = true and process_mode = Node.PROCESS_MODE_PAUSABLE\npossible answers you gave me dont seem to reflect this knowledge",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:36:28Z"
+    },
+    "QR7": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:52:27Z"
+    },
+    "QR8": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:52:48Z"
+    },
+    "Q1": {
+      "state": "chosen",
+      "option": null,
+      "note": "edges are decided by existing pictures\nthis way on small screens it can pan around but not pan into void.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:53:57Z"
+    },
+    "Q2": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:54:19Z"
+    },
+    "Q3": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes free pan is allowed but only if pictures start going past edges. On larger screens panning shouldnt be available since every picture should be visible",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:55:28Z"
+    },
+    "Q4": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:55:47Z"
+    },
+    "Q5": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:56:33Z"
+    },
+    "Q6": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:57:07Z"
+    },
+    "Q7": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:57:59Z"
+    },
+    "Q8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:58:32Z"
+    },
+    "Q9": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:58:49Z"
+    },
+    "Q10": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:59:10Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:59:28Z"
+    },
+    "Q12": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T00:59:39Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:00:19Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:00:29Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:00:43Z"
+    },
+    "Q16": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:01:27Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": null,
+      "note": "picture has different resolution such as map view which is visually dense, so naturally picture view should be larger than other views. So b more likely? But possibly a for performance to reduce frozen picture resolution kind of like mipmap which linear should do",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:04:39Z"
+    },
+    "Q18": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:04:45Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:05:06Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:05:12Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:05:21Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:05:34Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": null,
+      "note": "lets go with 1280x720 as floor which is standard even for phones",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:07:41Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:08:07Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:08:36Z"
+    },
+    "Q26": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:08:58Z"
+    },
+    "Q27": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes by default. but map picture which is perfectly square will require overfill, so (b) for edge cases.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:10:51Z"
+    },
+    "Q28": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:11:04Z"
+    },
+    "Q29": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:11:11Z"
+    },
+    "Q31": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:11:22Z"
+    },
+    "Q32": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:11:29Z"
+    },
+    "Q34": {
+      "state": "chosen",
+      "option": null,
+      "note": "everything should be linear except for nearest for focused picture. If nearest picture is out of view or in wall view, then linear. Dont want any visible swaps, so (c) for zoom changes. position shouldnt change it",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:15:39Z"
+    },
+    "Q35": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:17:12Z"
+    },
+    "Q36": {
+      "state": "chosen",
+      "option": null,
+      "note": "should be authored per picture. different pictures have different frame widths which causes distance to other pictures to be different since overall size of frame + picture is not same across each picture. Gap between frame outer edges of different pictures should remain a single number though",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:20:45Z"
+    },
+    "Q37": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:20:54Z"
+    },
+    "Q38": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:21:10Z"
+    },
+    "Q39": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:22:06Z"
+    },
+    "Q40": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:22:13Z"
+    },
+    "Q41": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:22:18Z"
+    },
+    "Q46": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:23:28Z"
+    },
+    "Q47": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:24:41Z"
+    },
+    "Q48": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:28:48Z"
+    },
+    "Q50": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:28:55Z"
+    },
+    "Q51": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:30:38Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:31:48Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:31:55Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:32:04Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:33:51Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:34:09Z"
+    },
+    "Q58": {
+      "state": "chosen",
+      "option": null,
+      "note": "allow input once picture is unpaused, which should not be at end of transition, but right before end of transition when picture and frame is fully in view, unpause then finish zooming in to finish transition.\nfocus per picture should persist during a session, so going back and forth between pictures persists what was last selected. if app is quit dont bother saving it.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:38:22Z"
+    },
+    "Q59": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:38:36Z"
+    },
+    "Q60": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:38:55Z"
+    },
+    "Q61": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:42:37Z"
+    },
+    "Q62": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:43:19Z"
+    },
+    "Q63": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:45:11Z"
+    },
+    "Q64": {
+      "state": "chosen",
+      "option": null,
+      "note": "can only be as deep as amount of pictures\nif newly visited picture is already in history, that history stack is removed/moved to latest location, so stack is always rearranging\nalso add forwards button to revisit picture you were just on before pressing back.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:47:28Z"
+    },
+    "Q65": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:47:50Z"
+    },
+    "Q66": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:48:00Z"
+    },
+    "Q67": {
+      "state": "chosen",
+      "option": null,
+      "note": "on a persistent overlay just like info toggle",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:48:39Z"
+    },
+    "Q68": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:48:50Z"
+    },
+    "Q69": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:49:22Z"
+    },
+    "Q70": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:49:43Z"
+    },
+    "Q71": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:50:14Z"
+    },
+    "Q72": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:51:31Z"
+    },
+    "Q73": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:51:59Z"
+    },
+    "Q74": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:52:05Z"
+    },
+    "Q75": {
+      "state": "chosen",
+      "option": "b",
+      "note": "use godot pause system as I mentioned in separate question answer",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:37:12Z"
+    },
+    "Q78": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:54:18Z"
+    },
+    "Q79": {
+      "state": "chosen",
+      "option": null,
+      "note": "no, but track how much memory is being used anyways in case we want to switch to system where a paused scene gets unloaded with a placeholder screenshot in case memory becomes a concern",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:57:03Z"
+    },
+    "Q82": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:57:09Z"
+    },
+    "Q85": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:57:20Z"
+    },
+    "Q86": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:57:48Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:57:54Z"
+    },
+    "Q88": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:58:00Z"
+    },
+    "Q89": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:58:18Z"
+    },
+    "Q91": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:58:28Z"
+    },
+    "Q92": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:58:44Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:58:56Z"
+    },
+    "Q94": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T01:59:26Z"
+    },
+    "Q95": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:00:15Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:00:22Z"
+    },
+    "Q97": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:00:36Z"
+    },
+    "Q98": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:00:44Z"
+    },
+    "Q99": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:00:56Z"
+    },
+    "Q100": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:02:05Z"
+    },
+    "Q101": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:02:12Z"
+    },
+    "Q102": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:02:18Z"
+    },
+    "Q103": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:02:27Z"
+    },
+    "Q104": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:02:44Z"
+    },
+    "Q105": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:03:11Z"
+    },
+    "Q106": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:03:28Z"
+    },
+    "Q107": {
+      "state": "chosen",
+      "option": null,
+      "note": "each view, wall and pictures, has its own focus",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:04:53Z"
+    },
+    "Q108": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:05:27Z"
+    },
+    "Q109": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:05:45Z"
+    },
+    "Q110": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:05:58Z"
+    },
+    "Q111": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:06:08Z"
+    },
+    "Q112": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:06:16Z"
+    },
+    "Q113": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:06:21Z"
+    },
+    "Q114": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:06:51Z"
+    },
+    "Q115": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:07:00Z"
+    },
+    "Q116": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:07:32Z"
+    },
+    "Q117": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:07:36Z"
+    },
+    "Q118": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:08:09Z"
+    },
+    "Q119": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:08:13Z"
+    },
+    "Q120": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:08:20Z"
+    },
+    "Q121": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:08:47Z"
+    },
+    "Q122": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:08:58Z"
+    },
+    "Q123": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:10:02Z"
+    },
+    "Q124": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:10:27Z"
+    },
+    "Q125": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:10:50Z"
+    },
+    "Q126": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:11:03Z"
+    },
+    "Q141": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:11:33Z"
+    },
+    "Q143": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:11:50Z"
+    },
+    "Q145": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:12:59Z"
+    },
+    "Q149": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:13:08Z"
+    },
+    "Q150": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:13:16Z"
+    },
+    "Q151": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:13:32Z"
+    },
+    "Q160": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:13:53Z"
+    },
+    "Q161": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:14:12Z"
+    },
+    "Q162": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:14:29Z"
+    },
+    "Q164": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:14:53Z"
+    },
+    "Q165": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:15:02Z"
+    },
+    "Q166": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:15:12Z"
+    },
+    "Q167": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:15:38Z"
+    },
+    "Q168": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:15:47Z"
+    },
+    "Q169": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:02Z"
+    },
+    "Q170": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:14Z"
+    },
+    "Q171": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:26Z"
+    },
+    "Q172": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:37Z"
+    },
+    "Q173": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:49Z"
+    },
+    "Q174": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:16:54Z"
+    },
+    "Q175": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:17:23Z"
+    },
+    "Q176": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:18:17Z"
+    },
+    "Q177": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:18:24Z"
+    },
+    "Q178": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:18:33Z"
+    },
+    "Q193": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:18:56Z"
+    },
+    "Q194": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:19:06Z"
+    },
+    "Q195": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:19:11Z"
+    },
+    "Q196": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:19:21Z"
+    },
+    "Q197": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:19:37Z"
+    },
+    "Q198": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:19:46Z"
+    },
+    "Q199": {
+      "state": "chosen",
+      "option": null,
+      "note": "there shouldnt be nameplates\nbut overall anything with text should survive 2x longer string",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:20:35Z"
+    },
+    "Q200": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:20:55Z"
+    },
+    "Q201": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:21:09Z"
+    },
+    "Q202": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:21:25Z"
+    },
+    "Q203": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:21:40Z"
+    },
+    "Q205": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:22:10Z"
+    },
+    "Q206": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:22:32Z"
+    },
+    "Q207": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:22:44Z"
+    },
+    "Q208": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:22:58Z"
+    },
+    "Q209": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:23:11Z"
+    },
+    "Q210": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:23:19Z"
+    },
+    "Q211": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:23:31Z"
+    },
+    "Q212": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:23:45Z"
+    },
+    "Q213": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:24:02Z"
+    },
+    "Q214": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-15T02:24:08Z"
+    },
+    "Q221": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:37:45Z"
+    },
+    "Q222": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:38:33Z"
+    },
+    "Q223": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:38:38Z"
+    },
+    "Q224": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:38:54Z"
+    },
+    "Q225": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:39:08Z"
+    },
+    "Q226": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-15T02:39:21Z"
+    }
+  }
+}

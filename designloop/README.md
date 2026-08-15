@@ -114,6 +114,67 @@ an authoring warning, never guessed. `l` toggles them on the canvas.
    `answers.json` rewrite → `fsync` → *then* HTTP 200. The UI never advances on a failed write, and
    a crash between the two is recovered by replaying the log.
 
+## The handoff is three documents
+
+The implementer should **spend zero time inventing design details** and all of its time
+implementing and testing. That is only true if three files ship together, not one:
+
+- **`PLAN.md`** — the steps, the normative contracts, the per-step done-whens.
+- **`TEST_PLAN.md`** — **every important test, planned in advance by the designer**, each citing the
+  design node it proves and the plan step it gates, **with its fixtures specified**. The implementer
+  may ADD low-level tests; it may not decide a planned one is unnecessary — dropping one is a gap.
+  An implementer deriving its own test list re-derives the design badly, and the cases it misses are
+  exactly the ones it did not understand.
+- **`NAMES.md`** — every identifier fixed up front: classes, files, scenes, signals, actions,
+  settings keys, localisation keys, suite names. Two sessions on one plan otherwise invent two names
+  for one thing.
+
+`PLAN.md`'s step citations are what the stale report reads; `TEST_PLAN.md` applies the same claimant
+logic to tests — **a design node no test proves is a behaviour that can regress silently.** Full
+rule, and the three supporting practices (pre-bound spikes for `UNVERIFIED` facts, an anti-scope
+list, an explicit step dependency order): the `/flowchart-design` skill, §8a′.
+
+## The engine-capability gate — run it BEFORE the first round
+
+⚠ **A design is not ready for its first question round until it carries a `§1m Engine capability
+audit`.** One row per engine, library or platform capability the design leans on, each marked
+✅ *confirmed*, ⚠ *already exists — do not build it*, or ⚠ *contradicted*, **each citing the doc
+URL**. Nothing in it may come from memory or from grepping the repo.
+
+Walk your own draft and ask, of every `NEW` thing and every question: does the engine already ship
+this · is there a standard node, resource or pattern for this shape · does it exist on the platform
+we actually build on · what does the doc page NOT say · is the thing I called impossible available
+now.
+
+**Measured on `solatro/picture-wall`, where the gate was run LATE — after 203 answers and 13
+charts:** three features had been designed that the engine already ships, one recommended node type
+was documented as not supporting the only thing the design does with it, one input event never fires
+on the development platform, one API was called unavailable that had shipped two versions earlier,
+and one reliability caveat invalidated a contract number. Five gaps and a re-derivation, every one
+of which the gate would have caught before a single question was asked.
+
+⚠ **This is not the same as auditing the code.** §1 is what the *repo* does; §1m is what the
+*engine* offers. That design had a thorough §1 and every one of those defects still reached the
+owner, because grepping the repo only ever tells you what this project already uses.
+
+## Research the engine before you write the question
+
+A question that asks **what the engine does** is not a design question — it is a research failure
+wearing a question's clothes, and it is worse than no question, because a plausible wrong option set
+steers the answer. The test: **if the owner can answer it by pasting a doc link, it should never have
+been asked.**
+
+Before authoring any question that depends on engine, library or platform behaviour: read the
+official doc page, search for the known bug or gap that page does not mention, look for the existing
+solution before designing one, and **cite the URL in §1 beside the fact**. The absence of a feature
+in the repo is not evidence the engine lacks it.
+
+Measured on `solatro/picture-wall`: a root fork offered *"engine pause (`PROCESS_MODE_DISABLED` on
+the subtree) or a per-screen `pause()` contract"* — a dichotomy invented out of never having read
+[Godot's pause tutorial](https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html),
+which describes a global `SceneTree.paused` plus per-node `process_mode`. The owner answered it with
+the doc URL. Full rule and the worked example: the `/flowchart-design` skill, §1.
+
 ## The seven silent defects `run check` reports
 
 Every one of these leaves a document that **parses, validates and answers perfectly**. Three withhold
