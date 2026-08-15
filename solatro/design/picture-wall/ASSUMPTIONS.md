@@ -19,23 +19,29 @@
   `pause_time_spike.tscn` live under `solatro/Tests/Visual/`, matching the existing one-off windowed
   diagnostic scenes there (`fx_snapshot`, `prop_art_snapshot`, `reveal_shot`) — PLAN.md's SETUP note
   for this run permits `Tests/` or `Tools/` for the S1 spike and does not fix a name for it.
-- **S2 (K8, GAP-005) — ⚠ INCOMPLETE, READ-ONLY HALF ONLY, by owner instruction:** the toggle half of
-  S2's done-when ("toggle the Windows animation setting, print again") is deliberately NOT done here
-  — the owner is running it by hand. Do not read this entry as a conclusion about whether the query
-  tracks the OS setting; one reading cannot answer that.
-  Observed just now, this machine, Godot 4.7.1.stable, via `Tests/Visual/reduce_animation_spike.gd`
-  (a real windowed run, killed by an external hard timeout rather than relying on the scene to close
-  its own window — it does call `get_tree().quit()`, but the caller still bounds it):
-    - `DisplayServer.has_method(&"accessibility_should_reduce_animation")` = **true**, and the direct
-      typed call compiles and runs (this is more than GAP-005's "arrived in 4.5" claim — it is
-      confirmed present and callable on this exact 4.7.1 build, not inferred from the version number).
-    - `DisplayServer.accessibility_should_reduce_animation()` = **false**, right now, on this machine.
-    - The corresponding OS-level setting, read via `user32.dll SystemParametersInfo` with
-      `SPI_GETCLIENTAREAANIMATION` (0x1042) — a GET, never a SET — = **true** (animations enabled).
-      Read-only; nothing was written. This is the "before" half of the clean before/after pair the
-      owner asked for; the "after" half is theirs once they toggle the Windows setting and this
-      script is re-run unchanged.
-  Toggle half outstanding. Neither eventual answer (tracks / does not track) is a gap per GAP-005.
+- **S2 (K8, GAP-005) — CLOSED. The Windows toggle did not take effect; no tracking verdict is
+  possible from this pair, and none is asserted.** `DisplayServer.has_method(&"accessibility_should_reduce_animation")`
+  = **true** throughout, and the direct typed call compiles and runs on this exact Godot 4.7.1.stable
+  build (confirmed callable, not inferred from GAP-005's "arrived in 4.5" claim).
+
+  **Before** (owner had not yet toggled anything), via `Tests/Visual/reduce_animation_spike.gd` (real
+  windowed run, killed by an external hard timeout though the scene also calls `get_tree().quit()`
+  itself) and, same source, a read-only `user32.dll SystemParametersInfo(SPI_GETCLIENTAREAANIMATION
+  = 0x1042)` GET:
+    - `DisplayServer.accessibility_should_reduce_animation()` = **false**
+    - `SPI_GETCLIENTAREAANIMATION` = **true** (animations enabled)
+
+  **After** (owner reports having flipped "Show animations in Windows"), same two reads, same
+  machine, re-run just now:
+    - `DisplayServer.accessibility_should_reduce_animation()` = **false** — unchanged
+    - `SPI_GETCLIENTAREAANIMATION` = **true** — unchanged (confirmed stable across two consecutive
+      read-only calls plus a `HKCU:\Control Panel\Desktop\UserPreferencesMask` cross-check, all
+      read-only; nothing was written by this session)
+
+  **Verdict: the Windows-side reading never flipped, so the toggle did not take effect on this
+  machine/session** — not "does not track". Per GAP-005 this is the fallback path regardless of the
+  reason: `wall_reduced_motion` defaults `false` and the first-launch seed from this query is
+  skipped. Neither this outcome nor an eventual tracks/does-not-track answer is a gap.
 - **S6 (D6) — `addons/yard`'s 3 bare `create_timer` calls are exempt from the sweep.** PLAN.md §2's
   done-when says the grep should return "only Scripts/pacing.gd and test files"; `addons/yard/...
   dynamic_table.gd` is neither, but PLAN.md §0's own rule 7 (`addons/` is vendored, never edited
@@ -69,3 +75,16 @@
   (18 of §5's rows plus `wall_unlock_all`, S7/GAP-007), not the 23 §5's table taken literally would
   produce. S8's done-when ("every row of §5") is knowingly not met to the letter here -- the owner
   struck these four rows; this is GAP-008's resolution overriding the plan text, not a deviation.
+- **S9 (PLAN.md §0 gap protocol rule 1 — diagnostic scene location):** `wall_skeleton_snapshot.gd`
+  / `.tscn` live under `solatro/Tests/Visual/`, the same precedent S1 already used (`pause_time_spike`,
+  `reduce_animation_spike`) -- PLAN.md's SETUP note permits `Tests/` or `Tools/` for a spike/snapshot
+  scene and fixes no name for it, and NAMES.md does not name this diagnostic either.
+- **S9 (B10, Q2=b) — `%WallSurface`'s `color` is a plain literal on the ColorRect, not routed
+  through `PaletteDB`.** `DESIGN.md` chart B10 calls for "a flat colour from the palette", but which
+  palette role is B10/Q2's own wiring and no later step name for it exists in NAMES.md yet -- inventing
+  one here would be exactly the kind of unfixed choice S9 is not allowed to make, and the coordinator's
+  instruction was explicit: the colour is a scene property, not a settings knob. `test_palette.gd`'s
+  drift scan correctly flags it as one new `[WARN][PLACEHOLDER] hardcoded colour` (18 -> 19 this run) --
+  by its own doc comment this is exactly what the channel is for, "a colour still hardcoded in a
+  surface whose art has not been made yet", and it does not touch `_fail` or the exit code. Not a gap:
+  the literal is reversible the moment B10's actual wiring step picks a palette role.

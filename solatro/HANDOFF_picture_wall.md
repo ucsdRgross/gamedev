@@ -86,7 +86,7 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | Step | Status | Evidence proving the done-when | Files touched | Deviations | Gaps |
 |---|---|---|---|---|---|
 | S1 shader `TIME` under pause | done | flame does **NOT** advance. Overseer-verified: the t=0 and t=+20 s captures are **byte-identical**, `md5 4552e02bfa198039feb4e371219d5d1f` for both (implementer measured 0/746496 px). | `Tests/Visual/pause_time_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | none outstanding | NONE |
-| S2 `accessibility_should_reduce_animation()` | **partial — BLOCKED ON THE OWNER** | read-only half only: query = `false`; Windows `SPI_GETCLIENTAREAANIMATION` = `true` (animations enabled); query confirmed present on 4.7.1 via `has_method`. Consistent with tracking, **does not prove it** — one datapoint cannot answer a tracking question. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | see below | NONE |
+| S2 `accessibility_should_reduce_animation()` | **closed INCONCLUSIVE — the toggle never took** | before: query `false`, `SPI_GETCLIENTAREAANIMATION` `true`. After the owner's toggle: **both unchanged**. The OS setting did not move, so the experiment never ran — tracking is neither proven nor disproven. GAP-005's fallback applies: seed skipped, `wall_reduced_motion` defaults `false`. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | none | NONE |
 | S3 `PictureEntry` + `WallLayout` | done | overseer-verified by name: `@export` counts **10** (PE) and **6** (WL), every §1.1/§1.2 field present exactly once, every specified default literal present, **0 methods** in either file, and `PictureRect` correctly not created early (it is S4's). Suite `ALL 31 SUITES: 2501 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/{picture_entry,wall_layout}.gd(+.uid)`, `Tests/Visual/wall_resource_load_spike.{gd,gd.uid,tscn}` | `class_name`/`extends` on separate lines, matching the repo's universal convention — syntax only, no field changed | NONE |
 | S4 `WallPacker` (owes P1–P12) | **PARKED — GAP-006, owner decision** | not started; nothing written | — | — | **GAP-006** |
 | S5 `FocusStack` (owes F1–F7) | done | overseer-verified: **exactly 5 methods**, the five §1.4 names and no sixth; 17 `##` comments; **7** test funcs, F1–F7 all referenced; `TestWallFocus` registered in `all_tests.tscn`; `_walk_stack` helper stayed test-side. Suite `ALL 32 SUITES: 2492 CHECKS PASSED`, `WALL FOCUS: ALL 31 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/focus_stack.gd(+.uid)`, `Tests/Wall/test_wall_focus.{gd,tscn}`, `Tests/all_tests.tscn` | none outstanding | NONE |
@@ -205,6 +205,19 @@ is simply not load-bearing here.
 Built-in `TIME` itself *does* keep advancing while paused (measured separately, 7350/120000 px
 on a synthetic shader). True of the engine, irrelevant to this repo unless a future shader
 starts reading it.
+
+### Phase 2 — S9 done, and it stalls at S10
+
+| Step | Status | Evidence | Deviations |
+|---|---|---|---|
+| S9 `wall.tscn` skeleton | done | **Overseer looked at the render** (`wall_s9_skeleton.png`): one uniform flat field edge to edge, nothing drawn on it. Structure verified: 4 `%unique` nodes, `%Overlay` correctly absent, 2 nodes `PROCESS_MODE_ALWAYS`, `get_tree().paused = true` the only line in `wall.gd`. Suite 33 green, twice. | none |
+| S10 `WallPicture` construction | **PARKED — GAP-009** | needs packed rects | — |
+
+⚠ **`wall.tscn`'s `ColorRect.color` is a literal**, and `test_palette.gd`'s drift scan catches it —
+placeholder warnings went 18 → 19. Deliberate: no document names a palette role for the wall
+surface, and picking one would be an unfixed choice. **Phase 5 (S24/S25) owns the wall's
+appearance**; the scan guarantees this resurfaces there rather than being forgotten. It is a
+warning, never a failure, and does not touch the exit code.
 
 **Out of scope this run, though the test plan lists them:** F8–F13 (§6b) belong to S35/S38;
 U5–U6 belong to S12. Do not create `TestWallPause` yet — a half-registered suite that a

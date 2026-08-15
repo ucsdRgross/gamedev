@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Wall/wall.gd" id="1_wall"]
+
+[node name="Wall" type="Node2D"]
+process_mode = 3
+script = ExtResource("1_wall")
+
+[node name="WallSurface" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.145098, 0.145098, 0.168627, 1)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+unique_name_in_owner = true
+process_mode = 3
+
+[node name="Pictures" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Viewports" type="Node" parent="."]
+unique_name_in_owner = true
