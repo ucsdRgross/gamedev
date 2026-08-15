@@ -1,7 +1,8 @@
 class_name PictureEntry
 extends Resource
 ## One picture's authored data — id, scene, slot, size multiplier, frame thickness. Read by
-## WallPacker (Scripts/Wall/wall_packer.gd, S4) to place it and by WallPicture (S10) to build it.
+## WallPacker (PLAN.md §1.3 — the packer's contract; not yet built, parked on GAP-009) to place
+## it and by WallPicture (S10) to build it.
 ## PLAN.md §1.1 — every field, its type and its default are specified there; this transcribes it.
 
 @export var id : StringName = &""              ## NAMES.md picture ids; unique within a WallLayout

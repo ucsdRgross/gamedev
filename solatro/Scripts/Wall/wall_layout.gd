@@ -1,7 +1,8 @@
 class_name WallLayout
 extends Resource
 ## The authored PATTERN — rings, gap, ellipse clamps, the picture list. Consumed whole by
-## WallPacker.pack() (Scripts/Wall/wall_packer.gd, S4); nothing else reads it.
+## WallPacker.pack() (PLAN.md §1.3 — the packer's contract; not yet built, parked on GAP-009);
+## nothing else reads it.
 ## PLAN.md §1.2 — every field, its type and its default are specified there; this transcribes it.
 
 @export var pictures : Array[PictureEntry] = []

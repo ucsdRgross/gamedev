@@ -63,7 +63,7 @@ func _park_real_file() -> void:
 
 ## Puts the real file back exactly where _park_real_file found it (or leaves it absent, if it
 ## was absent). Drops whatever the suite itself left behind first (S7 caution 1: never leave a
-## corrupt or stale profile.tres on this machine).
+## corrupt or stale profile save at REAL_PATH on this machine).
 func _restore_real_file() -> void:
 	if FileAccess.file_exists(REAL_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_PATH))

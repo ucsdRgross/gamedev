@@ -49,6 +49,11 @@ them, 9/9 in `Tests/Visual`), and a commit missing one is dirtied by Godot the m
 the *boolean result*, not the literal, and fails to parse. Type a local variable instead. Hit
 while writing typed-array equality checks; S7's tests are the same shape.
 
+`py .claude/tools/doc_check.py` is at **0 errors** on this branch and must stay there. Its 5
+warning categories are the pre-existing repo-wide style backlog, not this run's debt. Note that
+parking a step makes comments that name its unbuilt file into dead references — point at the
+contract in `PLAN.md` instead of at the file.
+
 ## Baseline, before any step
 
 `ALL 31 SUITES: 2492 CHECKS PASSED [18 placeholder warnings]`, `test_output_errors.log`
