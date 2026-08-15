@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S1 done, **S2 parked partial (needs the owner)**, S3 next |
+| Current phase | Phase 1 — S3 done, S4 next. **S2 parked partial (needs the owner)** |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -38,6 +38,11 @@ killing timeout.** A scene left sitting in its main loop hangs the run with no e
 like host flakiness; it is not. If a run stops producing output, check for live Godot pids and
 kill them **by explicit `-Id <pid>`** — never by image name or wildcard, which
 `.claude/hooks/block-process-kill.ps1` blocks outright.
+
+⚠ **A brand-new `class_name` is not resolvable until Godot's global-class cache is rebuilt.**
+Run one `--import` pass after adding one, or the next script referencing it by name fails to
+parse. Also regenerate `.uid` files this way before committing: the repo tracks them (386 of
+them, 9/9 in `Tests/Visual`), and a commit missing one is dirtied by Godot the moment it opens.
 
 ## Baseline, before any step
 
@@ -77,7 +82,7 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 |---|---|---|---|---|---|
 | S1 shader `TIME` under pause | done | flame does **NOT** advance. Overseer-verified: the t=0 and t=+20 s captures are **byte-identical**, `md5 4552e02bfa198039feb4e371219d5d1f` for both (implementer measured 0/746496 px). | `Tests/Visual/pause_time_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | none outstanding | NONE |
 | S2 `accessibility_should_reduce_animation()` | **partial — BLOCKED ON THE OWNER** | read-only half only: query = `false`; Windows `SPI_GETCLIENTAREAANIMATION` = `true` (animations enabled); query confirmed present on 4.7.1 via `has_method`. Consistent with tracking, **does not prove it** — one datapoint cannot answer a tracking question. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | see below | NONE |
-| S3 `PictureEntry` + `WallLayout` | pending | — | — | — | — |
+| S3 `PictureEntry` + `WallLayout` | done | overseer-verified by name: `@export` counts **10** (PE) and **6** (WL), every §1.1/§1.2 field present exactly once, every specified default literal present, **0 methods** in either file, `picture_rect.gd` correctly absent. Suite `ALL 31 SUITES: 2501 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/{picture_entry,wall_layout}.gd(+.uid)`, `Tests/Visual/wall_resource_load_spike.{gd,gd.uid,tscn}` | `class_name`/`extends` on separate lines, matching the repo's universal convention — syntax only, no field changed | NONE |
 | S4 `WallPacker` (owes P1–P12) | pending | — | — | — | — |
 | S5 `FocusStack` (owes F1–F7) | pending | — | — | — | — |
 | S6 `Pacing` + `create_timer` sweep | pending | — | — | — | — |
