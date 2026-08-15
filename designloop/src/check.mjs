@@ -6,11 +6,14 @@
 //   npm --prefix designloop run check -- solatro/spotlight charts     one line per mermaid chart
 //   npm --prefix designloop run check -- solatro/spotlight answers    every answer given in PROSE
 //   npm --prefix designloop run check -- solatro/spotlight answer Q16 one answer + every restatement
+//
+// Every line prints as it is computed. DESIGNLOOP_LONGEST_BUDGET_MS caps the one stage that can be
+// slow — see LONGEST_BUDGET_MS below.
 
 import { readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDocument, reachability, nextQuestion, longestPath, auditGates } from './grammar.mjs';
+import { parseDocument, reachability, nextQuestion, longestPathDetail, auditGates } from './grammar.mjs';
 import { parseCharts, validate as validateGraph, describeGraph } from './graph.mjs';
 import { find } from './registry.mjs';
 import { readJson } from './store.mjs';
@@ -19,12 +22,36 @@ import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './proven
 
 const TOOL_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO_ROOT = resolve(process.env.DESIGNLOOP_ROOT || resolve(TOOL_ROOT, '..'));
+// How long the exact longest-path search may run before it settles for a lower bound. Raise it for
+// a document the report marks `≥`; `0` reports the fast bound and skips the exact search entirely.
+const LONGEST_BUDGET_MS = Number(process.env.DESIGNLOOP_LONGEST_BUDGET_MS ?? 2000);
 
-/** Parse a document and describe it the way the authoring agent needs to hear it. */
-export function describe(markdown, file = 'DESIGN.md') {
+/**
+ * Parse a document and describe it the way the authoring agent needs to hear it.
+ * `onLine` is called with each line AS IT IS COMPUTED, so a slow stage shows as a report that stops
+ * rather than as a tool that printed nothing at all.
+ */
+export function describe(markdown, file = 'DESIGN.md', { onLine } = {}) {
+  const lines = [];
+  const say = (line) => {
+    lines.push(line);
+    if (onLine) onLine(line);
+  };
+
   const parsed = parseDocument(markdown);
   const live = parsed.questions.filter((q) => !q.retired);
   const { reachable, pending } = reachability(live, {});
+  say(`questions   ${live.length} live, ${parsed.questions.length - live.length} retired`);
+  say(`gates       ${live.filter((q) => q.isGate).length} ⚑gate, ${live.filter((q) => q.isContract).length} ⚑contract, ${live.filter((q) => q.notes).length} marked notes`);
+  say(`at the top  ${reachable.length} askable now, ${pending.length} waiting on a gate`);
+  say(`opens at    ${nextQuestion(live, {}, parsed.sections)?.id ?? '(nothing)'}`);
+
+  // ⚠ The only stage with a BUDGET: the exact search is exponential in the gate variables, so on a
+  // big DAG it is allowed to give up and report the ascent's lower bound instead of running for
+  // minutes. `longestPathDetail` explains both halves.
+  const longest = longestPathDetail(live, { budgetMs: LONGEST_BUDGET_MS });
+  say(`longest     ${longest.exact ? '' : '≥'}${longest.longest} questions on one path`
+    + `${longest.exact ? '' : ` (LOWER BOUND — the exact search hit its ${longest.budgetMs} ms budget)`}`);
 
   // The charts are half the document (S11). A chart the canvas cannot ingest is a chart the owner
   // never reviews, so it is reported here, before a URL is handed over, not after.
@@ -35,31 +62,19 @@ export function describe(markdown, file = 'DESIGN.md') {
   } catch (err) {
     graphError = err;
   }
+  say(`charts      ${graph ? `${graph.charts.length} ingested, ${Object.keys(graph.nodes).length} nodes, ${graph.edges.length} edges` : 'FAILED — see below'}`);
+  say(`links       ${graph ? `${graph.links.length} derived, ${graph.warnings.length} unresolved` : '—'}`);
+  say(`errors      ${parsed.errors.length}`);
+  say(`warnings    ${parsed.warnings.length}`);
 
   // The DAG audits (grammar.auditGates): three defects that leave a document parsing, validating and
   // answering perfectly while silently withholding questions from the owner. They are the ones that
   // have actually cost rounds, and none of them shows up in any other check.
   const audit = auditGates(parsed.questions, parsed.sections);
+  say(`dag audit   ${audit.length} — defects that prune questions SILENTLY (listed below)`);
+  say(`skipped     ${parsed.ignored.length} bullet(s) that name a question ID but are not questions`);
 
-  return {
-    parsed,
-    graph,
-    graphError,
-    audit,
-    lines: [
-      `questions   ${live.length} live, ${parsed.questions.length - live.length} retired`,
-      `gates       ${live.filter((q) => q.isGate).length} ⚑gate, ${live.filter((q) => q.isContract).length} ⚑contract, ${live.filter((q) => q.notes).length} marked notes`,
-      `at the top  ${reachable.length} askable now, ${pending.length} waiting on a gate`,
-      `opens at    ${nextQuestion(live, {}, parsed.sections)?.id ?? '(nothing)'}`,
-      `longest     ${longestPath(live)} questions on one path`,
-      `charts      ${graph ? `${graph.charts.length} ingested, ${Object.keys(graph.nodes).length} nodes, ${graph.edges.length} edges` : 'FAILED — see below'}`,
-      `links       ${graph ? `${graph.links.length} derived, ${graph.warnings.length} unresolved` : '—'}`,
-      `errors      ${parsed.errors.length}`,
-      `warnings    ${parsed.warnings.length}`,
-      `dag audit   ${audit.length} — defects that prune questions SILENTLY (listed below)`,
-      `skipped     ${parsed.ignored.length} bullet(s) that name a question ID but are not questions`,
-    ],
-  };
+  return { parsed, graph, graphError, audit, lines };
 }
 
 /** One line of a long note, for a report that must stay scannable. */
@@ -84,8 +99,12 @@ async function main() {
     path = design.docPath;
   }
   const markdown = await readFile(path, 'utf8');
-  const { parsed, graph, graphError, audit, lines } = describe(markdown, target);
-  process.stdout.write(`\n${path}\n${lines.map((l) => `  ${l}`).join('\n')}\n`);
+  // The path first, then each line as the analysis produces it: a report that stops halfway names
+  // the stage that is slow, where a buffered one looks like a tool that is simply broken.
+  process.stdout.write(`\n${path}\n`);
+  const { parsed, graph, graphError, audit } = describe(markdown, target, {
+    onLine: (l) => process.stdout.write(`  ${l}\n`),
+  });
   for (const e of parsed.errors) process.stdout.write(`  ERROR   line ${e.line ?? '?'}: ${e.message}\n`);
   for (const w of parsed.warnings) process.stdout.write(`  warning line ${w.line ?? '?'}: ${w.message}\n`);
   // ⚠ These do not block. Each has a legitimate shape too, so the judgement is the author's — but

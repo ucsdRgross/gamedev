@@ -740,47 +740,117 @@ export function auditGates(questions, sections = []) {
 
 /**
  * The longest possible path: the most questions a single set of answers can leave reachable.
- * Branch and bound over the questions any gate actually names — everything else is decided by
- * those. Reported by the acceptance test against the document's own "~150" estimate.
+ * Searched over the questions any gate actually names — everything else is decided by those.
+ *
+ * ⚠ THE EXACT SEARCH ALONE DOES NOT SCALE, and its failure mode is a hang, not a wrong number.
+ * 26 gate variables is ~10^11 assignments, and `bound <= best` cannot prune near the root: with
+ * nothing assigned every gate reads `pending`, so `bound` sits at the whole document. picture-wall
+ * ran past four minutes. So it runs in two stages:
+ *
+ *   1. COORDINATE ASCENT from three starts (the defaults, all-first, all-last) — one variable
+ *      maximised at a time until a sweep changes nothing. ~10 ms, and a LOWER bound by construction.
+ *   2. BRANCH AND BOUND seeded with that bound, variables ordered by how many questions they gate.
+ *      Seeding + ordering is what makes the exact search finish: picture-wall 2.1M nodes/timeout ->
+ *      1.3k nodes, spotlight 11k -> 110.
+ *
+ * The ascent is not exact in general (a conjunction can need two letters moved at once), which is
+ * what stage 2 is for. If the budget runs out first, `exact` is false and the number stands as a
+ * lower bound — too small, never too large.
  */
-export function longestPath(questions) {
+export function longestPathDetail(questions, { budgetMs = 2000 } = {}) {
   const live = questions.filter((q) => !q.retired);
   const map = byId(live);
-  const vars = [...new Set(live.flatMap((q) => (q.effectiveGate || q.gate).atoms.map((a) => a.id)))]
-    .filter((id) => map.has(id));
+  const gateOf = (q) => q.effectiveGate || q.gate;
+  // Only questions that exist and offer a letter: one with nothing to choose can never be assigned,
+  // so gates naming it stay `pending` — counted in the bound, never in the answer.
+  const vars = [...new Set(live.flatMap((q) => gateOf(q).atoms.map((a) => a.id)))]
+    .filter((id) => map.get(id)?.options.length);
   const options = new Map(vars.map((id) => [id, map.get(id).options.map((o) => o.letter)]));
 
-  const ungated = live.filter((q) => !(q.effectiveGate || q.gate).atoms.length).length;
-  const gated = live.filter((q) => (q.effectiveGate || q.gate).atoms.length);
+  const ungated = live.filter((q) => !gateOf(q).atoms.length).length;
+  const gated = live.filter((q) => gateOf(q).atoms.length);
 
-  let best = 0;
   const assignment = new Map();
-
+  const put = (id, letter) => assignment.set(id, { option: letter, active: true });
   const countAndBound = () => {
-    const answers = new Map([...assignment].map(([k, v]) => [k, { option: v, active: true }]));
     let sure = ungated;
     let maybe = 0;
     for (const q of gated) {
-      const state = evaluateGate(q.effectiveGate || q.gate, answers);
+      const state = evaluateGate(gateOf(q), assignment);
       if (state === 'true') sure += 1;
       else if (state === 'pending') maybe += 1;
     }
     return { sure, bound: sure + maybe };
   };
 
+  // Stage 1. Every variable is assigned throughout, so nothing is `pending` and `sure` is the exact
+  // count for this one set of answers.
+  const ascend = (pick) => {
+    for (const id of vars) put(id, pick(id));
+    let score = countAndBound().sure;
+    for (;;) {
+      let improved = false;
+      for (const id of vars) {
+        const start = assignment.get(id).option;
+        let take = start;
+        for (const letter of options.get(id)) {
+          if (letter === start) continue;
+          put(id, letter);
+          const { sure } = countAndBound();
+          if (sure > score) {
+            score = sure;
+            take = letter;
+            improved = true;
+          }
+        }
+        put(id, take);
+      }
+      if (!improved) return score;
+    }
+  };
+  let best = 0;
+  for (const pick of [
+    (id) => map.get(id).default || options.get(id)[0],
+    (id) => options.get(id)[0],
+    (id) => options.get(id)[options.get(id).length - 1],
+  ]) {
+    best = Math.max(best, ascend(pick));
+  }
+
+  // Stage 2. Most-constraining variable first: one a lot of gates name decides more questions per
+  // level, which is what lets the bound bite near the root instead of at the leaves.
+  const weight = new Map(vars.map(
+    (id) => [id, gated.filter((q) => gateOf(q).atoms.some((a) => a.id === id)).length],
+  ));
+  const order = [...vars].sort((a, b) => weight.get(b) - weight.get(a));
+  assignment.clear();
+
+  const deadline = Date.now() + budgetMs;
+  let exact = true;
+  let visited = 0;
   const step = (i) => {
+    if (!exact) return;
+    if ((visited++ & 0xff) === 0 && Date.now() >= deadline) {
+      exact = false;
+      return;
+    }
     const { sure, bound } = countAndBound();
     if (bound <= best) return;
-    if (i >= vars.length) {
+    if (i >= order.length) {
       if (sure > best) best = sure;
       return;
     }
-    for (const letter of options.get(vars[i])) {
-      assignment.set(vars[i], letter);
+    for (const letter of options.get(order[i])) {
+      put(order[i], letter);
       step(i + 1);
     }
-    assignment.delete(vars[i]);
+    assignment.delete(order[i]);
   };
   step(0);
-  return best;
+  return { longest: best, exact, budgetMs };
+}
+
+/** The number alone, for callers that do not care how it was reached. */
+export function longestPath(questions, opts) {
+  return longestPathDetail(questions, opts).longest;
 }

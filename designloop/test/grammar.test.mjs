@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
   parseDocument, parseQuestionLine, parseGate, evaluateGate, reachability,
-  nextQuestion, blastRadius, validate, longestPath, describeGate, GrammarError, auditGates } from '../src/grammar.mjs';
+  nextQuestion, blastRadius, validate, longestPath, longestPathDetail, describeGate, GrammarError,
+  auditGates } from '../src/grammar.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -423,4 +424,52 @@ test('the longest path through Spotlight is nearly every live question', () => {
   // is a RATIO, not a number that has to be re-typed whenever a question is added.
   assert.ok(longest > live * 0.9, `longest path ${longest} of ${live} live: the DAG saves little`);
   assert.ok(longest <= live);
+});
+
+// ⚠ AND IT MUST BE THE EXACT ANSWER, NOT THE FALLBACK. The search is exponential in the gate
+// variables; when it cannot finish inside its budget it reports the ascent's LOWER bound instead,
+// and the report says so. On a document this size it must still finish — a regression that pushed
+// the acceptance document onto the fallback would otherwise be invisible, since both paths return a
+// plausible number.
+test('the longest-path search finishes exactly on the acceptance document', () => {
+  const md = readFileSync(resolve(REPO, 'solatro/design/spotlight/DESIGN.md'), 'utf8');
+  const { questions } = parseDocument(md);
+  const t = Date.now();
+  const { longest, exact } = longestPathDetail(questions);
+  assert.equal(exact, true, 'the exact search must still fit in the budget');
+  assert.ok(Date.now() - t < 2000, 'and finish well inside it');
+  assert.equal(longest, longestPath(questions));
+});
+
+// ⚠ THE ASCENT IS A LOWER BOUND, NOT THE ANSWER, and this is the shape that proves it: a peak
+// behind a CONJUNCTION, where no single letter moved on its own improves anything. Coordinate
+// ascent walks to the decoys and stops at 9 from every start; only the branch-and-bound stage sees
+// the 13. Without this, dropping the exact search for the fast bound would pass every other test.
+test('a peak behind a conjunction is found by the exact stage, not by the ascent', () => {
+  const lines = [
+    '- **Q1** `[root]` — Root one · **(a)** a · **(b)** b · *default* (a)',
+    '- **Q2** `[root]` — Root two · **(a)** a · **(b)** b · **(c)** c · *default* (a)',
+    '- **Q3** `[root]` — Root three · **(a)** a · **(b)** b · *default* (a)',
+  ];
+  const add = (gate, n) => {
+    for (let i = 0; i < n; i += 1) {
+      lines.push(`- **Q${lines.length + 1}** \`[${gate}]\` — Leaf · **(a)** yes · **(b)** no · *default* (a)`);
+    }
+  };
+  add('Q1=a & Q2=c & Q3=a', 8);   // the peak: reachable only by moving Q1 and Q2 together
+  add('Q1=b', 2);                 // three decoys, each one letter away from the start
+  add('Q2=a', 2);
+  add('Q3=a', 2);
+
+  const { questions, errors } = parseDocument(doc(...lines));
+  assert.deepEqual(errors.map((e) => e.message), []);
+  assert.equal(questions.length, 17);
+
+  // budgetMs: 0 skips the exact stage entirely, which is the ascent's own answer.
+  const ascent = longestPathDetail(questions, { budgetMs: 0 });
+  assert.equal(ascent.exact, false, 'no budget means no exact search');
+  assert.equal(ascent.longest, 9, '3 roots + all three decoys: the local optimum');
+
+  // 3 roots + the 8 behind the conjunction + the Q3=a decoy, which the peak keeps.
+  assert.deepEqual(longestPathDetail(questions), { longest: 13, exact: true, budgetMs: 2000 });
 });
