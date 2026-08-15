@@ -6,16 +6,23 @@ model: sonnet
 effort: low
 maxTurns: 50
 color: green
+permissionMode: auto
 ---
 
-<!-- Fields deliberately NOT set, so nobody "fixes" them later:
+<!-- permissionMode: auto — the owner's call, made deliberately. A background classifier reviews
+     commands and protected-directory writes, so the run is unattended WITHOUT being
+     `bypassPermissions`. This is only safe because the agent works in a dedicated git worktree on
+     its own branch: the main working tree is untouched and every verified step is committed, so
+     the blast radius of a bad command is one `git reset --hard`.
+     ⚠ Hooks still fire regardless of permission mode — `.claude/hooks/block-process-kill.ps1`
+     continues to block killing a process by image name or wildcard.
+
+     Fields deliberately NOT set, so nobody "fixes" them later:
      memory:        the docs recommend `project` as a default, and it is wrong HERE. Persistent
                     memory lets this agent accumulate opinions that outlive the plan, and its one
                     job is to have no opinions. The plan is the memory.
-     permissionMode: left at `default` (prompts). Raising it to `acceptEdits` is the OWNER's call,
-                    not a decision to bake into a checked-in file.
-     isolation:     not `worktree`. The owner commits from the working tree by hand; an isolated
-                    copy would add a merge step to every run.
+     isolation:     not `worktree` — it would nest a second worktree inside the one this run
+                    already lives in. The isolation is supplied by the run, not by the agent.
      Agent:         omitted from `tools` on purpose — the docs' stated way to stop a subagent
                     spawning its own, which would fan out cost invisibly. -->
 
