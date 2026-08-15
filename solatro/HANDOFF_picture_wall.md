@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S6 done, S7 next. **S4 PARKED on GAP-006**, S2 parked partial |
+| Current phase | Phase 1 — S7 done, S8 next (last in scope). **S4 PARKED on GAP-006**, S2 parked partial |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -90,7 +90,7 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | S4 `WallPacker` (owes P1–P12) | **PARKED — GAP-006, owner decision** | not started; nothing written | — | — | **GAP-006** |
 | S5 `FocusStack` (owes F1–F7) | done | overseer-verified: **exactly 5 methods**, the five §1.4 names and no sixth; 17 `##` comments; **7** test funcs, F1–F7 all referenced; `TestWallFocus` registered in `all_tests.tscn`; `_walk_stack` helper stayed test-side. Suite `ALL 32 SUITES: 2492 CHECKS PASSED`, `WALL FOCUS: ALL 31 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/focus_stack.gd(+.uid)`, `Tests/Wall/test_wall_focus.{gd,tscn}`, `Tests/all_tests.tscn` | none outstanding | NONE |
 | S6 `Pacing` + `create_timer` sweep | done | **overseer-run suite** `ALL 32 SUITES: 2523 CHECKS PASSED`, errors log 0 bytes. Done-when grep: `grep -rn create_timer solatro/UI solatro/Levels solatro/Scripts --include=*.gd \| grep -v pacing.gd` → **0 lines**. `Pacing.wait` adopted 2/1/1 in `play_area.gd`/`game.gd`/`fx_attachment.gd`; `process_mode` still **0** in `fx_attachment.gd`. | `Scripts/pacing.gd(+.uid)`, `UI/play_area.gd`, `UI/Fx/fx_attachment.gd`, `Levels/game.gd`, `design/picture-wall/ASSUMPTIONS.md` | `as SceneTree` cast — §1.6's literal body does not compile; recorded in ASSUMPTIONS | NONE |
-| S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | pending | — | — | — | — |
+| S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | done | autoload order verified: `SettingsManager` `project.godot:29`, `ProfileManager` **:30**. `wall_unlock_all` in the "Picture wall" group; `unlocked: Dictionary[int, Array]`, `ResourceLoader.exists` path, `picture_unlocked` signal, `is_unlocked(id: StringName) -> bool` all present; 6 test funcs registered. Suite `ALL 33 SUITES: 2551 CHECKS PASSED`, `WALL PROFILE: ALL 19 CHECKS PASSED`. | `Scripts/{player_profile,profile_manager,player_settings}.gd`, `Tests/Wall/test_wall_profile.{gd,tscn}`, `Tests/all_tests.{gd,tscn}`, `project.godot`, `ASSUMPTIONS.md` | `is_unlocked` signature inferred (§1.5 names it in prose only); R2 uses `CACHE_MODE_IGNORE` so the round-trip is a real disk read, not the path cache | **GAP-007** |
 | S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |
 
 ### Two defects found in PLAN.md's normative §1 — for the owner to amend at source
@@ -131,6 +131,24 @@ the next (each radius set by the inner ring's extent + `gap_px`, so capacity is 
 
 **Downstream and equally parked:** S10, S36, and the S34 tool all consume ring geometry.
 Everything else in this run — S5, S6, S7, S8 — is untouched by it.
+
+### GAP-007 — R6 does not assert what it says, and it widened a global blind spot
+
+Verified against the live harness, not assumed: GDScript cannot hook `push_error`, and
+`ENGINE_ERROR_ALLOW` is a single const substring-matched once over the whole-run log — it
+distinguishes allowed from not-allowed and **never counts**, so it cannot tell one `push_error`
+from three. R6's "exactly one" therefore rests on `profile_manager.gd` having a single call
+site: a code-shape argument, not an assertion, and it lapses the moment someone adds a second.
+
+⚠ **The collateral is sharper.** A genuinely corrupt file makes Godot's own `ResourceLoader`
+emit three native errors with no distinctive prefix, so keeping the suite green required a
+**global** allow entry for `user://profile.tres`. Every suite now silently tolerates any engine
+error naming that path — **the test written to prove there is no silent failure path created
+one**, and S30/S38 inherit it.
+
+Does not block S7, whose done-when is met and whose other five rows are unaffected. Options in
+`gaps/GAP-007.md`; the recommendation is to make the scan count occurrences rather than ignore
+them, but that is shared harness work and therefore an owner call on scope.
 
 ### S2 — what remains, and who can do it
 

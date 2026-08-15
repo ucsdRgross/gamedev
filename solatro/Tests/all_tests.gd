@@ -92,6 +92,10 @@ const ENGINE_ERROR_ALLOW : Array[String] = [
 	"LeakSentinel:",              # test_leak_canary deliberately abandons cards and reports it
 	"Condition \"p_index",        # bounds asserts inside deliberate degenerate-input suites
 	"comparator_buckets:",        # test_comparator asserts a grouping rule's invented card is REFUSED
+	"ProfileManagerClass:",       # test_wall_profile (R6) asserts a corrupt profile file REPORTS
+	"user://profile.tres",       # test_wall_profile (R6) also triggers ResourceLoader's OWN native
+	                              # parse-failure errors (3 lines) on the deliberately corrupted
+	                              # file, on top of ProfileManagerClass's single deliberate one
 ]
 
 ## Returns the number of unexpected engine errors, and prints them so the agent reading the run has

@@ -454,3 +454,14 @@ signal patience_max_increased(delta: int)
 	set(value):
 		fame_half = value
 		settings_changed.emit()
+
+@export_group("Picture wall")
+## Debug flag (`Q159`=a, node K11): makes `ProfileManager.is_unlocked()` return true for every
+## picture WITHOUT touching `user://profile.tres` at all -- the file is neither read for this nor
+## written because of it. `DESIGN.md` §5's tunables table omits this row; `wall_debug_readout`
+## (`Q210`) shows debug flags belong in this group regardless, so the omission is a documentation
+## bug against `Q159`'s own source rather than a reason to leave the flag out (gap-protocol rule 4).
+@export var wall_unlock_all : bool = false:
+	set(value):
+		wall_unlock_all = value
+		settings_changed.emit()

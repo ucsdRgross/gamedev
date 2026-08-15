@@ -48,3 +48,10 @@
   project's warnings-as-errors. Resolved with an explicit `as SceneTree` cast, identical runtime
   behaviour. Not a gap: the fix is reversible, has no observable behaviour difference, and `SceneTree`
   is the only type carrying `create_timer`, so exactly one correction is defensible.
+- **S7 (Q159, K11) — `wall_unlock_all` added to `PlayerSettings` in THIS step, not S8.** `DESIGN.md`
+  §5's tunables table omits the row, but `Q159`=(a) ("yes -- a PlayerSettings flag", DESIGN.md:1098)
+  is the source, and `wall_debug_readout` (`Q210`) shows debug flags belong in that group regardless
+  -- so §5's table is a documentation bug against its own source (gap-protocol rule 4), not a reason
+  to leave §1.5's required flag unbuilt. `@export var wall_unlock_all : bool = false` in
+  `player_settings.gd`'s new `@export_group("Picture wall")`, with the same `settings_changed`
+  setter every other knob uses. S8 adds exactly `DESIGN.md` §5's rows to this group and no more.
