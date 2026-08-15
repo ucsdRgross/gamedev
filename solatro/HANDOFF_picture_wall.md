@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S3 done, **S4 PARKED on GAP-006**, S5 running. S2 parked partial |
+| Current phase | Phase 1 — S5 done, S6 next. **S4 PARKED on GAP-006**, S2 parked partial |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -43,6 +43,10 @@ kill them **by explicit `-Id <pid>`** — never by image name or wildcard, which
 Run one `--import` pass after adding one, or the next script referencing it by name fails to
 parse. Also regenerate `.uid` files this way before committing: the repo tracks them (386 of
 them, 9/9 in `Tests/Visual`), and a commit missing one is dirtied by Godot the moment it opens.
+
+⚠ **`as` binds looser than `==` in GDScript.** `check(x == [&"a"] as Array[StringName], …)` casts
+the *boolean result*, not the literal, and fails to parse. Type a local variable instead. Hit
+while writing typed-array equality checks; S7's tests are the same shape.
 
 ## Baseline, before any step
 
@@ -84,7 +88,7 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | S2 `accessibility_should_reduce_animation()` | **partial — BLOCKED ON THE OWNER** | read-only half only: query = `false`; Windows `SPI_GETCLIENTAREAANIMATION` = `true` (animations enabled); query confirmed present on 4.7.1 via `has_method`. Consistent with tracking, **does not prove it** — one datapoint cannot answer a tracking question. | `Tests/Visual/reduce_animation_spike.{gd,gd.uid,tscn}`, `design/picture-wall/ASSUMPTIONS.md` | see below | NONE |
 | S3 `PictureEntry` + `WallLayout` | done | overseer-verified by name: `@export` counts **10** (PE) and **6** (WL), every §1.1/§1.2 field present exactly once, every specified default literal present, **0 methods** in either file, `picture_rect.gd` correctly absent. Suite `ALL 31 SUITES: 2501 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/{picture_entry,wall_layout}.gd(+.uid)`, `Tests/Visual/wall_resource_load_spike.{gd,gd.uid,tscn}` | `class_name`/`extends` on separate lines, matching the repo's universal convention — syntax only, no field changed | NONE |
 | S4 `WallPacker` (owes P1–P12) | **PARKED — GAP-006, owner decision** | not started; nothing written | — | — | **GAP-006** |
-| S5 `FocusStack` (owes F1–F7) | pending | — | — | — | — |
+| S5 `FocusStack` (owes F1–F7) | done | overseer-verified: **exactly 5 methods**, the five §1.4 names and no sixth; 17 `##` comments; **7** test funcs, F1–F7 all referenced; `TestWallFocus` registered in `all_tests.tscn`; `_walk_stack` helper stayed test-side. Suite `ALL 32 SUITES: 2492 CHECKS PASSED`, `WALL FOCUS: ALL 31 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/focus_stack.gd(+.uid)`, `Tests/Wall/test_wall_focus.{gd,tscn}`, `Tests/all_tests.tscn` | none outstanding | NONE |
 | S6 `Pacing` + `create_timer` sweep | pending | — | — | — | — |
 | S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | pending | — | — | — | — |
 | S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |

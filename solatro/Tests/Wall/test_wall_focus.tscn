@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/Wall/test_wall_focus.gd" id="1"]
+
+[node name="TestWallFocus" type="Node"]
+script = ExtResource("1")
