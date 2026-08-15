@@ -157,8 +157,9 @@ class_name PlayerProfile extends Resource
 class_name Pacing
 ## Pause-respecting timer. SceneTree.create_timer defaults process_always = true, so a bare
 ## create_timer keeps counting through a pause and a "frozen" screen advances anyway.
+## The cast is required: get_main_loop() is typed MainLoop, which has no create_timer.
 static func wait(secs: float) -> SceneTreeTimer:
-    return Engine.get_main_loop().create_timer(secs, false)
+    return (Engine.get_main_loop() as SceneTree).create_timer(secs, false)
 ```
 
 **S6 sweeps every existing call site.** A bare `create_timer` left in game code is a bug.
@@ -310,18 +311,23 @@ Done when: `TestWallPacker` is green, including the overlap assertion.
 Done when: `TestWallFocus` is green.
 
 **S6 — `Pacing` + sweep every `create_timer` call site** (implements D6, §1.6)
-Done when: `grep -rn "create_timer" solatro --include=*.gd` returns only `Scripts/pacing.gd` and
-test files. **The full suite is green** — this touches the show's pacing and is the step most likely
-to break existing behaviour.
+Done when: `grep -rn "create_timer" solatro --include=*.gd` returns no hit in GAME code — only
+`Scripts/pacing.gd`, test files, and vendored `addons/`, which is never edited here. **The full
+suite is green** — this touches the show's pacing and is the step most likely to break existing
+behaviour.
 
 **S7 — `PlayerProfile` + `ProfileManager` autoload** (implements B9, K1, K5, K7, §1.5)
 Done when: `TestWallProfile` is green; `project.godot` registers the autoload after `SettingsManager`.
 
 **S8 — the `PlayerSettings` block** (implements C15, G5, G1, E5, H5, I8c, K8, K10, J2)
-Every row of `DESIGN.md` §5 — the transition clock and phase fractions, the gap and ellipse clamps,
-the wall-view texture scale, the touch-target trio, the reduced-motion flag and the pinch threshold.
+Every row of `DESIGN.md` §5 — the transition clock and phase fractions, the frame-thickness
+fraction, the live-screen cap, the wall-view texture floor, the touch-target trio, the
+reduced-motion flag, the debug flags and the pinch threshold.
 Done when: every row exists as an `@export` with a `settings_changed` setter, in a
 `@export_group("Picture wall")`. No extra knobs, no renames, no re-defaults.
+
+⚠ The gap, view margin and ellipse clamps are **not** knobs — **GAP-008**=(a) puts them on
+`WallLayout` only. `wall_view_texture_scale` is not one either; **GAP-002** removed the need.
 
 ### Phase 2 — the wall scene
 

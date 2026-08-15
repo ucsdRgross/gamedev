@@ -1210,9 +1210,14 @@ Confirming an exclusion is cheap. Discovering one late is not.
 ## 5. Tunables
 
 Every number this feature introduces. Home: `Scripts/player_settings.gd`, `@export` with a setter
-emitting `settings_changed`, per project rule 4 (§1i). Values marked *derived* are computed, not
-authored. Starting values are proposals and become normative only once the questions that fix them
-are answered.
+emitting `settings_changed`, per project rule 4 (§1i). Starting values are proposals and become
+normative only once the questions that fix them are answered.
+
+⚠ **The gap, the view margin and the ellipse clamps are NOT here.** They live on `WallLayout`
+(`PLAN.md` §1.2) as `gap_px`, `view_margin`, `ellipse_aspect_min` / `_max`, because `WallPacker` is
+a pure function that cannot read `SettingsManager` — **GAP-008**=(a). `wall_view_texture_scale` is
+gone too: **GAP-002** writes `SubViewport.size` straight from the on-screen footprint, so there is
+nothing for a scale factor to do.
 
 | Knob | Start | Meaning | Fixed by |
 |---|---|---|---|
@@ -1224,12 +1229,9 @@ are answered.
 | `wall_transition_speed` | 1.0 | player-facing multiplier; 0 = instant | Q175 |
 | `wall_reduced_motion` | false | replaces transitions with cross-fades | Q172 |
 | `wall_info_mode` | false | Info mode toggle | Q135 |
-| `wall_gap` | 24 wall px | separation between adjacent pictures | Q14 |
-| `wall_view_margin` | 0.06 | share of the view left as wall around the outermost frames | Q5 |
-| `wall_ellipse_aspect_min` / `_max` | 1.2 / 2.6 | clamps on the ellipse aspect | Q10 |
 | `wall_frame_thickness_fraction` | 0.06 | frame thickness as a fraction of the picture's shorter side | Q36 |
 | `wall_live_screen_cap` | 5 | LRU cap on instantiated screens | Q203, Q204 |
-| `wall_view_texture_scale` | *derived* | wall-view render resolution as a fraction of design resolution | Q86, Q87 |
+| `wall_unlock_all` | false | debug — unlocks every picture without touching the profile file | Q159 |
 | `wall_view_min_texture_px` | 64 | floor on a wall-view texture's short axis | Q87, GAP-002 |
 | `wall_design_height` | 648 | screen design resolution height; width derived from aspect | Q29, Q30 |
 | `wall_selection_repeat_delay` | 0.4 s | held-stick repeat delay | Q116 |
