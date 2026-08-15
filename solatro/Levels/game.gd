@@ -910,15 +910,15 @@ func _spotlight_section(section: ScoringSection) -> void:
 		if not section.refresh():
 			# D13, THE HOLD BEAT (`Q68`=a): let the reveal READ before scoring takes it away.
 			# ⚠ `if view:` — headless waits on nothing (`Q19`=a) and stays byte-identical, which is
-			# gate G1.7. A bare `create_timer` here would make the headless cascade take real seconds
-			# and would break that parity.
+			# gate G1.7. A wait here with no `if view:` guard would make the headless cascade take
+			# real seconds and would break that parity.
 			# ⚠ **THE RISE IS PART OF THIS BEAT.** It used to wait `spotlight_hold_fraction` alone,
 			# which runs CONCURRENTLY with the show climbing to full — at the shipped defaults both are
 			# 0.5, so the reveal ended at the instant the spotlight finished appearing and was never
 			# held. `spotlight_reveal_beat_fraction()` is rise + hold, and the tuning tool's `_beat()`
 			# reads the same accessor so the two cannot disagree about how long a reveal lasts.
 			if view:
-				await get_tree().create_timer(get_delay()
+				await Pacing.wait(get_delay()
 						* SettingsManager.settings.spotlight_reveal_beat_fraction()).timeout
 			# THE REVEAL IS OVER — scoring happens next, so the light and the dim fade (GAP-006).
 			# ⚠ The forced set is deliberately NOT cleared here: `Q16`=(c) keeps it up for the whole

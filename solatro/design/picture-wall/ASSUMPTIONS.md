@@ -36,3 +36,15 @@
       owner asked for; the "after" half is theirs once they toggle the Windows setting and this
       script is re-run unchanged.
   Toggle half outstanding. Neither eventual answer (tracks / does not track) is a gap per GAP-005.
+- **S6 (D6) — `addons/yard`'s 3 bare `create_timer` calls are exempt from the sweep.** PLAN.md §2's
+  done-when says the grep should return "only Scripts/pacing.gd and test files"; `addons/yard/...
+  dynamic_table.gd` is neither, but PLAN.md §0's own rule 7 (`addons/` is vendored, never edited
+  here) wins over the done-when's imprecise wording — and the file is `editor_only`, so it never
+  runs in the shipped game and sweeping it would be both forbidden and pointless. Not a gap: only
+  one defensible choice exists once the vendored-addon rule applies.
+- **S6 (D6) — `Scripts/pacing.gd`'s body is not PLAN.md §1.6's literal text.** `Engine.get_main_loop()`
+  returns `MainLoop`, which has no `create_timer` — only its `SceneTree` subtype does — so the
+  literal `return Engine.get_main_loop().create_timer(secs, false)` fails to compile under this
+  project's warnings-as-errors. Resolved with an explicit `as SceneTree` cast, identical runtime
+  behaviour. Not a gap: the fix is reversible, has no observable behaviour difference, and `SceneTree`
+  is the only type carrying `create_timer`, so exactly one correction is defensible.

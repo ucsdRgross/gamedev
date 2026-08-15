@@ -5,7 +5,7 @@
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
 | Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S5 done, S6 next. **S4 PARKED on GAP-006**, S2 parked partial |
+| Current phase | Phase 1 — S6 done, S7 next. **S4 PARKED on GAP-006**, S2 parked partial |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -89,9 +89,22 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | S3 `PictureEntry` + `WallLayout` | done | overseer-verified by name: `@export` counts **10** (PE) and **6** (WL), every §1.1/§1.2 field present exactly once, every specified default literal present, **0 methods** in either file, `picture_rect.gd` correctly absent. Suite `ALL 31 SUITES: 2501 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/{picture_entry,wall_layout}.gd(+.uid)`, `Tests/Visual/wall_resource_load_spike.{gd,gd.uid,tscn}` | `class_name`/`extends` on separate lines, matching the repo's universal convention — syntax only, no field changed | NONE |
 | S4 `WallPacker` (owes P1–P12) | **PARKED — GAP-006, owner decision** | not started; nothing written | — | — | **GAP-006** |
 | S5 `FocusStack` (owes F1–F7) | done | overseer-verified: **exactly 5 methods**, the five §1.4 names and no sixth; 17 `##` comments; **7** test funcs, F1–F7 all referenced; `TestWallFocus` registered in `all_tests.tscn`; `_walk_stack` helper stayed test-side. Suite `ALL 32 SUITES: 2492 CHECKS PASSED`, `WALL FOCUS: ALL 31 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/focus_stack.gd(+.uid)`, `Tests/Wall/test_wall_focus.{gd,tscn}`, `Tests/all_tests.tscn` | none outstanding | NONE |
-| S6 `Pacing` + `create_timer` sweep | pending | — | — | — | — |
+| S6 `Pacing` + `create_timer` sweep | done | **overseer-run suite** `ALL 32 SUITES: 2523 CHECKS PASSED`, errors log 0 bytes. Done-when grep: `grep -rn create_timer solatro/UI solatro/Levels solatro/Scripts --include=*.gd \| grep -v pacing.gd` → **0 lines**. `Pacing.wait` adopted 2/1/1 in `play_area.gd`/`game.gd`/`fx_attachment.gd`; `process_mode` still **0** in `fx_attachment.gd`. | `Scripts/pacing.gd(+.uid)`, `UI/play_area.gd`, `UI/Fx/fx_attachment.gd`, `Levels/game.gd`, `design/picture-wall/ASSUMPTIONS.md` | `as SceneTree` cast — §1.6's literal body does not compile; recorded in ASSUMPTIONS | NONE |
 | S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | pending | — | — | — | — |
 | S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |
+
+### Two defects found in PLAN.md's normative §1 — for the owner to amend at source
+
+Neither is a gap; both are recorded in `ASSUMPTIONS.md`. Listing them here because §1 is the
+section the owner reviews, and a plan whose literals do not compile will mislead the next reader.
+
+1. **§1.6's `Pacing` body does not compile.** `Engine.get_main_loop()` is typed `MainLoop`, which
+   has no `create_timer` — only its `SceneTree` subtype does. Shipped with an explicit
+   `as SceneTree` cast, identical runtime behaviour.
+2. **S6's done-when is imprecise.** It says the `create_timer` grep should return "only
+   `Scripts/pacing.gd` and test files", but three hits live in vendored
+   `addons/yard/editor_only/`. The vendored rule wins; the intent is "no bare `create_timer` in
+   GAME code". `addons/` exempted.
 
 ### GAP-006 — S4 is parked, and this is the run's one real blocker
 
