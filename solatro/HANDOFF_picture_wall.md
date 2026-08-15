@@ -119,9 +119,15 @@ contents and capacity becomes vacuous — no ring ever overflows, so `Q11`=(b), 
 as written, but nothing fixes it. **P2's fixture ("ring 0 circumference fitting exactly 6")
 cannot be constructed at all** until this is answered.
 
-Options and a recommendation are in `gaps/GAP-006.md`. **Do not resolve it by picking one** —
-it is closed by a new design version. §1.8's no-literals rule means the answer must land as
-authored fields, not as constants in a `.gd`.
+**Owner has answered the main axis:** radii are **derived from actual picture sizes, never
+authored** — "ring radii isnt hardcoded… Find best fit instead." Option (a) is rejected. Best
+fit for a single picture is radius 0, which centres it, so P11 falls out for free.
+
+**Still open, and it decides whether P2/P3/P4/P12 exist:** does a full ring **overflow** into
+the next (each radius set by the inner ring's extent + `gap_px`, so capacity is real — keeps
+`Q11`=(b), `G2` and all four tests), or does a ring **grow** to fit whatever is assigned to it
+(capacity vacuous, those tests withdrawn)? Both are "best fit"; neither is hardcoded.
+**Overflow is the reading that preserves the plan and is assumed** — see `gaps/GAP-006.md`.
 
 **Downstream and equally parked:** S10, S36, and the S34 tool all consume ring geometry.
 Everything else in this run — S5, S6, S7, S8 — is untouched by it.
