@@ -4,8 +4,8 @@
 |---|---|
 | Branch | `picture-wall`, worktree `C:\Users\khanr\Documents\GitHub\gamedev-picture-wall` |
 | Branched from | `6945c6f` on main |
-| Implementer agent | `wall-impl` — agentId **`a492ec69f51bbc374`**, address it by that id |
-| Current phase | Phase 1 — S7 done, S8 next (last in scope). **S4 PARKED on GAP-006**, S2 parked partial |
+| Implementer agent | first one died to an API session limit and its transcript is gone; respawn cold |
+| Current phase | Phase 1 — **S8 in progress**, then GAP-007 harness work. **S4 PARKED on GAP-006**, S2 parked partial |
 | Scope | S1–S8 only. Stop at S8. |
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
@@ -91,7 +91,8 @@ Status: `pending` · `in progress` · `done` · `SUSPECT`. Each `done` step is o
 | S5 `FocusStack` (owes F1–F7) | done | overseer-verified: **exactly 5 methods**, the five §1.4 names and no sixth; 17 `##` comments; **7** test funcs, F1–F7 all referenced; `TestWallFocus` registered in `all_tests.tscn`; `_walk_stack` helper stayed test-side. Suite `ALL 32 SUITES: 2492 CHECKS PASSED`, `WALL FOCUS: ALL 31 CHECKS PASSED`, errors log 0 bytes. | `Scripts/Wall/focus_stack.gd(+.uid)`, `Tests/Wall/test_wall_focus.{gd,tscn}`, `Tests/all_tests.tscn` | none outstanding | NONE |
 | S6 `Pacing` + `create_timer` sweep | done | **overseer-run suite** `ALL 32 SUITES: 2523 CHECKS PASSED`, errors log 0 bytes. Done-when grep: `grep -rn create_timer solatro/UI solatro/Levels solatro/Scripts --include=*.gd \| grep -v pacing.gd` → **0 lines**. `Pacing.wait` adopted 2/1/1 in `play_area.gd`/`game.gd`/`fx_attachment.gd`; `process_mode` still **0** in `fx_attachment.gd`. | `Scripts/pacing.gd(+.uid)`, `UI/play_area.gd`, `UI/Fx/fx_attachment.gd`, `Levels/game.gd`, `design/picture-wall/ASSUMPTIONS.md` | `as SceneTree` cast — §1.6's literal body does not compile; recorded in ASSUMPTIONS | NONE |
 | S7 `PlayerProfile` + `ProfileManager` (owes R1–R6) | done | autoload order verified: `SettingsManager` `project.godot:29`, `ProfileManager` **:30**. `wall_unlock_all` in the "Picture wall" group; `unlocked: Dictionary[int, Array]`, `ResourceLoader.exists` path, `picture_unlocked` signal, `is_unlocked(id: StringName) -> bool` all present; 6 test funcs registered. Suite `ALL 33 SUITES: 2551 CHECKS PASSED`, `WALL PROFILE: ALL 19 CHECKS PASSED`. | `Scripts/{player_profile,profile_manager,player_settings}.gd`, `Tests/Wall/test_wall_profile.{gd,tscn}`, `Tests/all_tests.{gd,tscn}`, `project.godot`, `ASSUMPTIONS.md` | `is_unlocked` signature inferred (§1.5 names it in prose only); R2 uses `CACHE_MODE_IGNORE` so the round-trip is a real disk read, not the path cache | **GAP-007** |
-| S8 `PlayerSettings` "Picture wall" block | pending | — | — | — | — |
+| S8 `PlayerSettings` "Picture wall" block | done | overseer-verified: **19** `@export var wall_*` in the group — all 18 §5 rows plus `wall_unlock_all`, each present exactly once; the 4 GAP-008 knobs and `wall_view_texture_scale` all **0**. | `Scripts/player_settings.gd`, `ASSUMPTIONS.md` | done-when knowingly not met to the letter — 4 §5 rows deliberately absent per GAP-008's resolution | GAP-008 |
+| GAP-007 harness work (owner-added) | done | `ENGINE_ERROR_EXPECT` counts occurrences; `ENGINE_ERROR_ALLOW` kept unrenamed. Counts established from two green runs, not guessed. | `Tests/all_tests.gd` | `comparator_buckets:` left uncounted — genuinely unstable, see below | GAP-007 |
 
 ### Two defects found in PLAN.md's normative §1 — for the owner to amend at source
 
@@ -132,7 +133,24 @@ the next (each radius set by the inner ring's extent + `gap_px`, so capacity is 
 **Downstream and equally parked:** S10, S36, and the S34 tool all consume ring geometry.
 Everything else in this run — S5, S6, S7, S8 — is untouched by it.
 
-### GAP-007 — R6 does not assert what it says, and it widened a global blind spot
+### The suite's check total drifts run to run, and that is expected
+
+`Tests/Engine/test_mod_fuzz.gd` runs an unseeded fuzz with a variable iteration count — measured
+703 vs 310 matching log lines across two identical-input runs. **Judge by suite count and
+failure set, never the check total**, which is the repo's own rule and the reason it exists.
+Its `comparator_buckets:` allow entry is deliberately left **uncounted** (`-1` = unlimited) by
+GAP-007's counting gate: forcing a number there would make the gate flaky, and a flaky gate is
+worse than the blind spot it closes.
+
+### GAP-008 — ANSWERED (a): `WallLayout` wins
+
+`wall_gap`, `wall_view_margin`, `wall_ellipse_aspect_min`, `wall_ellipse_aspect_max` are **struck
+from `PlayerSettings`**. The values live only on `WallLayout` as `gap_px`, `view_margin`,
+`ellipse_aspect_min`, `ellipse_aspect_max`. `WallPacker` stays pure per §1.3; no signature
+changes, no test withdrawn. ⚠ **`DESIGN.md` §5 still lists all four and must be amended at
+source**, or the next reader re-adds them.
+
+### GAP-007 — ANSWERED (b): the error scan counts occurrences
 
 Verified against the live harness, not assumed: GDScript cannot hook `push_error`, and
 `ENGINE_ERROR_ALLOW` is a single const substring-matched once over the whole-run log — it

@@ -98,6 +98,25 @@ const ENGINE_ERROR_ALLOW : Array[String] = [
 	                              # file, on top of ProfileManagerClass's single deliberate one
 ]
 
+## GAP-007 (owner option b): each `ENGINE_ERROR_ALLOW` entry is permitted up to this many lines
+## over the WHOLE run — a further occurrence still fails it. Every number below was read off an
+## ACTUAL green run, twice, and was identical both times; matching is first-fragment-wins in
+## `ENGINE_ERROR_ALLOW`'s own order, which is why the single line both "ProfileManagerClass:" and
+## "user://profile.tres" match (the deliberate push_error interpolates the path into its own text)
+## is attributed to "ProfileManagerClass:" and not double-counted here.
+## ⚠ `-1` = uncounted, kept ONLY for "comparator_buckets:" — its true count is driven by
+## `Tests/Engine/test_mod_fuzz.gd`'s randomized seed and measured genuinely unstable run to run
+## (703 vs 310 on two back-to-back green runs). Forcing a flaky entry to a number would trade a
+## known blind spot for a flaky gate, which is a worse failure mode than the one GAP-007 closes.
+const ENGINE_ERROR_EXPECT : Dictionary[String, int] = {
+	"Palette index": 2,
+	"LeakSentinel:": 1,
+	"Condition \"p_index": 0,
+	"comparator_buckets:": -1,
+	"ProfileManagerClass:": 1,
+	"user://profile.tres": 3,
+}
+
 ## Returns the number of unexpected engine errors, and prints them so the agent reading the run has
 ## the actual text rather than a count.
 func _scan_engine_errors() -> int:
@@ -109,13 +128,21 @@ func _scan_engine_errors() -> int:
 				+ "(file logging off?). This run's engine stream was NOT checked.", true)
 		return 0
 	var bad : Array[String] = []
+	var match_counts : Dictionary[String, int] = {}
 	for raw : String in text.split("\n"):
 		var line := raw.strip_edges()
 		if not (line.begins_with("ERROR:") or line.begins_with("SCRIPT ERROR:")): continue
-		var allowed := false
+		var matched := ""
 		for frag : String in ENGINE_ERROR_ALLOW:
-			if frag in line: allowed = true
-		if not allowed: bad.append(line)
+			if frag in line:
+				matched = frag
+				break
+		if matched.is_empty():
+			bad.append(line)
+			continue
+		match_counts[matched] = match_counts.get(matched, 0) + 1
+		var expect : int = ENGINE_ERROR_EXPECT.get(matched, 0)
+		if expect >= 0 and match_counts[matched] > expect: bad.append(line)
 	if bad.is_empty():
 		TestLog.line("[engine-errors] clean — 0 unexpected lines in the engine stream")
 		return 0

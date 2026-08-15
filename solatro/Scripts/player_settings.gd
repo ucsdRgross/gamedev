@@ -465,3 +465,114 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_unlock_all = value
 		settings_changed.emit()
+
+## Every row below is `DESIGN.md` §5's tunables table, transcribed exactly -- names, defaults, no
+## extras, no re-defaults (PLAN.md §2, S8's done-when). `wall_view_texture_scale` is deliberately
+## ABSENT: §5 marks it *derived*, and §1.8 (GAP-002) writes `SubViewport.size` straight from the
+## on-screen footprint clamped by `wall_view_min_texture_px` -- there is no resolution manager and
+## nothing left for a scale factor to do, so exporting it would be a knob that silently does
+## nothing (see ASSUMPTIONS.md).
+##
+## ⚠ GAP-008 (owner-answered, option a): `wall_gap`, `wall_view_margin`,
+## `wall_ellipse_aspect_min` and `wall_ellipse_aspect_max` are NOT transcribed here even though
+## §5 lists them. `WallLayout` (Scripts/Wall/wall_layout.gd, PLAN.md §1.2) wins as their one home
+## -- `gap_px`, `view_margin`, `ellipse_aspect_min`, `ellipse_aspect_max` -- because `WallPacker`
+## is a pure function that reads only the layout's copies (§1.3) and never touches this singleton,
+## so a settings-side duplicate would have no reader. See ASSUMPTIONS.md.
+
+## The wall's own transition clock, independent of `Game.get_delay()` (`Q46`).
+@export var wall_transition_delay : float = 0.6:
+	set(value):
+		wall_transition_delay = value
+		settings_changed.emit()
+## Share of the transition spent zooming out (`Q47`).
+@export var wall_zoom_out_fraction : float = 0.35:
+	set(value):
+		wall_zoom_out_fraction = value
+		settings_changed.emit()
+## Share spent travelling (`Q47`).
+@export var wall_travel_fraction : float = 0.40:
+	set(value):
+		wall_travel_fraction = value
+		settings_changed.emit()
+## Share spent zooming in -- phases overlap, so the three shares sum past 1 (`Q47`).
+@export var wall_zoom_in_fraction : float = 0.35:
+	set(value):
+		wall_zoom_in_fraction = value
+		settings_changed.emit()
+## Extra share of the picture's size revealed beyond the frame at the zoom-out stop (`Q35`, `Q48`).
+@export var wall_frame_reveal_margin : float = 0.08:
+	set(value):
+		wall_frame_reveal_margin = value
+		settings_changed.emit()
+## Player-facing transition speed multiplier; 0 = instant (`Q175`).
+@export var wall_transition_speed : float = 1.0:
+	set(value):
+		wall_transition_speed = value
+		settings_changed.emit()
+## Replaces transitions with cross-fades (`Q172`).
+@export var wall_reduced_motion : bool = false:
+	set(value):
+		wall_reduced_motion = value
+		settings_changed.emit()
+## Info mode toggle (`Q135`).
+@export var wall_info_mode : bool = false:
+	set(value):
+		wall_info_mode = value
+		settings_changed.emit()
+## Frame thickness as a fraction of the picture's shorter side (`Q36`).
+@export var wall_frame_thickness_fraction : float = 0.06:
+	set(value):
+		wall_frame_thickness_fraction = value
+		settings_changed.emit()
+## LRU cap on instantiated screens (`Q203`, `Q204`).
+@export var wall_live_screen_cap : int = 5:
+	set(value):
+		wall_live_screen_cap = value
+		settings_changed.emit()
+## Floor on a wall-view texture's short axis, in px -- feeds `SubViewport.size` (`Vector2i`)
+## directly, so this stays an integer pixel count (`Q87`, GAP-002).
+@export var wall_view_min_texture_px : int = 64:
+	set(value):
+		wall_view_min_texture_px = value
+		settings_changed.emit()
+## Screen design resolution height; width is derived from aspect (`Q29`, `Q30`). Matches
+## `PictureEntry.design_size`'s `Vector2i` height component, hence an integer here too.
+@export var wall_design_height : int = 648:
+	set(value):
+		wall_design_height = value
+		settings_changed.emit()
+## Held-stick repeat delay, in seconds (`Q116`).
+@export var wall_selection_repeat_delay : float = 0.4:
+	set(value):
+		wall_selection_repeat_delay = value
+		settings_changed.emit()
+## Debug instrumentation, debug builds only (`Q210`).
+@export var wall_debug_readout : bool = false:
+	set(value):
+		wall_debug_readout = value
+		settings_changed.emit()
+## Touch target size in millimetres (`Q123`, GAP-004) -- converted through live DPI, so this stays
+## a float alongside the mm-to-px math that reads it.
+@export var wall_touch_target_mm : float = 9.0:
+	set(value):
+		wall_touch_target_mm = value
+		settings_changed.emit()
+## Clamp floor on the touch target, in px -- a bad DPI reading cannot make controls smaller than
+## this (GAP-004). Float: clamped alongside the continuous mm-to-px conversion, not a whole-pixel
+## SubViewport size like `wall_view_min_texture_px`.
+@export var wall_touch_target_min_px : float = 32.0:
+	set(value):
+		wall_touch_target_min_px = value
+		settings_changed.emit()
+## Clamp ceiling on the touch target, in px -- nor larger (GAP-004).
+@export var wall_touch_target_max_px : float = 96.0:
+	set(value):
+		wall_touch_target_max_px = value
+		settings_changed.emit()
+## Distance delta before a two-finger drag counts as a pinch, in px (GAP-003) -- compared against
+## a continuously computed touch distance, hence a float.
+@export var wall_pinch_threshold_px : float = 24.0:
+	set(value):
+		wall_pinch_threshold_px = value
+		settings_changed.emit()

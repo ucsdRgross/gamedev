@@ -55,3 +55,17 @@
   to leave §1.5's required flag unbuilt. `@export var wall_unlock_all : bool = false` in
   `player_settings.gd`'s new `@export_group("Picture wall")`, with the same `settings_changed`
   setter every other knob uses. S8 adds exactly `DESIGN.md` §5's rows to this group and no more.
+- **S8 (Q86, Q87, GAP-002) — `wall_view_texture_scale` is NOT exported.** `DESIGN.md` §5 marks it
+  *derived*, and its own header says derived values are computed, not authored; GAP-002 supersedes
+  it in any case -- §1.8 writes `SubViewport.size` straight from the on-screen footprint, clamped by
+  `wall_view_min_texture_px`, with no resolution manager and nothing left for a scale factor to do.
+  Exporting it would ship a knob that silently does nothing. Not a gap: no observable behaviour
+  difference, trivially reversible, and exactly one defensible reading once GAP-002 is read.
+- **S8 (GAP-008, owner option a) — `wall_gap`, `wall_view_margin`, `wall_ellipse_aspect_min`,
+  `wall_ellipse_aspect_max` are NOT exported on `PlayerSettings`**, though `DESIGN.md` §5 lists
+  them. `WallLayout` is their one home (`gap_px`, `view_margin`, `ellipse_aspect_min`,
+  `ellipse_aspect_max`, already built in S3) because `WallPacker` stays a pure function reading
+  only the layout's copies (§1.3). The "Picture wall" `@export_group` therefore holds 19 exports
+  (18 of §5's rows plus `wall_unlock_all`, S7/GAP-007), not the 23 §5's table taken literally would
+  produce. S8's done-when ("every row of §5") is knowingly not met to the letter here -- the owner
+  struck these four rows; this is GAP-008's resolution overriding the plan text, not a deviation.
