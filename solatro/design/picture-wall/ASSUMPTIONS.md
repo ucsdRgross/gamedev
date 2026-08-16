@@ -446,18 +446,14 @@
   reduced-motion branch supplies a motionless camera Sample; whatever later step wires real screens
   into the wall (Phase 7) owns fading their opacity against it. Not a gap: no T-row asks for opacity,
   and NAMES.md names no field for it.
-- **S18 — `wall_transition_speed` (built in S8, unused so far) is left exactly as committed, not
-  wired into anything here.** `DESIGN.md`'s own chart node K10 says "there is no separate
-  transition-speed knob -- the always-instant setting IS the reduced-motion flag," which reads as
-  Q175=(b), but `DESIGN.md` §5's tunables table still lists `wall_transition_speed` citing Q175
-  with no override noted, and S8 (already committed, overseer-verified) built it to match §5's table.
-  PLAN.md §1.10's own literal spec (this run's authority for S14-S18) never mentions
-  `wall_transition_speed` at all -- only `wall_reduced_motion`. A THIRD documentation inconsistency
-  in this design's own text (same family as the two already logged under "Two defects found in
-  PLAN.md's normative §1" and S14's stale `wall_transition_delay_scale` name), not something S18 asks
-  this class to resolve: S8's build is already committed and out of this run's scope to unbuild, and
-  nothing in §1.10 or the T-rows needs the knob touched. Flagged for the owner to reconcile K10
-  against §5 at the source; not filed as a gap since nothing here is blocked by it.
+- **Phase-3-close (Q175=b, K10) — `wall_transition_speed` REMOVED from `PlayerSettings` and from
+  `DESIGN.md` §5's tunables table.** S8 built it (unused) only because §5's table listed it; S18
+  then flagged the table against chart K10, which states outright "there is no separate
+  transition-speed knob -- the always-instant setting IS the reduced-motion flag" (`DESIGN.md:755`)
+  -- i.e. `Q175`=(b), not the table's implied (a). Overseer ruling: gap-protocol rule 4 (both
+  documents restate one answer, so go to the answer) -- a documentation bug against the source,
+  not a decision to escalate. Nothing read the export (confirmed by grep before removal), so
+  deleting it is behaviour-neutral. The "Picture wall" `@export_group` now holds 18 exports.
 - **S36 — selection/framing/pan land on `Wall` itself, not a new class.** NAMES.md fixes
   `Scripts/Wall/wall_input.gd`/`WallInput` as "event ROUTING: wall-space hit test,
   make_input_local, push_input" (Phase 4, S19-S23) -- a narrower job than F10-F12/G9-G11's

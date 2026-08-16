@@ -224,6 +224,26 @@ starts reading it.
 | S37 overfill at rest | done | **Overseer verified all three aspects by eye** (1.33, 1.78, 2.33): uniform fill edge to edge, no frame at any border. | `_OVERFILL_MARGIN = 1.02` — see **GAP-011** |
 | S13 filter swap | done | **Overseer verified by eye**: the focused checkerboard is hard-edged with no blending between squares — NEAREST. N7 keeps pan-vs-zoom honest. | none |
 
+### ⚠ GAP-012 — a LIVE DEFECT ships in `ed61be0`: the source screen can fail to pause
+
+Measured, not theorised. `source_frame_in_view` is **transient**: true only across
+**[0.0048 s .. 0.0502 s]** of a 0.1 s transition — a ~45 ms window that opens *and closes again*.
+One real transition produced **`total_real_frames = 1`** for the whole 100 ms, landing after the
+window shut: the source never paused. Fails 3/3 at `wall_transition_delay` ≤ 0.02 s, 2/3 at
+0.033 s, and **intermittently at 0.1 s** — the soak's own duration. A ~50 ms frame spike is all it
+takes, and frame spikes are normal.
+
+**Consequence:** two screens live at once. The "frozen" screen keeps running `_process`,
+animations and game logic behind the picture on screen — the exact escape the pause model exists
+to close — with no error, only a count nothing in the shipping game checks.
+
+⚠ **T13 cannot catch this.** The soak forces a sample at the plateau to stay deterministic (right
+call — a flaky gate is worse than none), so it is blind to this by construction. **Any fix must
+ship with a test that does NOT force the sample.**
+
+Options in `gaps/GAP-012.md`; recommendation is compute the crossing analytically **plus** a phase
+backstop. The destination unpause is unaffected — its window runs to completion.
+
 ### `wall_transition_speed` must be REMOVED — Q175=(b) says the knob does not exist
 
 `DESIGN.md` §5 lists `wall_transition_speed` (1.0, "player-facing multiplier; 0 = instant") citing

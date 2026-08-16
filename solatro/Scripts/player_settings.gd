@@ -505,11 +505,6 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_frame_reveal_margin = value
 		settings_changed.emit()
-## Player-facing transition speed multiplier; 0 = instant (`Q175`).
-@export var wall_transition_speed : float = 1.0:
-	set(value):
-		wall_transition_speed = value
-		settings_changed.emit()
 ## Replaces transitions with cross-fades (`Q172`).
 @export var wall_reduced_motion : bool = false:
 	set(value):

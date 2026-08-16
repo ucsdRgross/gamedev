@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/Visual/wall_transition_latch_timing_spike.gd" id="1"]
+
+[node name="WallTransitionLatchTimingSpike" type="Node"]
+script = ExtResource("1")

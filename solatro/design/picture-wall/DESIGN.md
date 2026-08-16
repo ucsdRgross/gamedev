@@ -1226,7 +1226,6 @@ nothing for a scale factor to do.
 | `wall_travel_fraction` | 0.40 | share spent travelling | Q47 |
 | `wall_zoom_in_fraction` | 0.35 | share spent zooming in (sums > 1 when phases overlap) | Q47 |
 | `wall_frame_reveal_margin` | 0.08 | extra share of the picture's size revealed beyond the frame at the zoom-out stop | Q35, Q48 |
-| `wall_transition_speed` | 1.0 | player-facing multiplier; 0 = instant | Q175 |
 | `wall_reduced_motion` | false | replaces transitions with cross-fades | Q172 |
 | `wall_info_mode` | false | Info mode toggle | Q135 |
 | `wall_frame_thickness_fraction` | 0.06 | frame thickness as a fraction of the picture's shorter side | Q36 |

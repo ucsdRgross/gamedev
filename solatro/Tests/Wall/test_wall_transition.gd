@@ -1,9 +1,8 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_transition.gd
 # ==============================================================================
-# WALL TRANSITION (S14-S18): WallTransition -- the camera tween and its phase clock.
-# PLAN.md §1.10; TEST_PLAN.md §5, T1-T12. NOT T13 (the 20-transition soak, the phase-3 gate) --
-# the overseer asks for that one separately.
+# WALL TRANSITION (S14-S18, phase3-close): WallTransition -- the camera tween and its phase clock.
+# PLAN.md §1.10, §3 (Phase 3 acceptance gate); TEST_PLAN.md §5, T1-T13.
 #
 # T1/T2/T5/T9/T10 test PURE, INSTANT facts (durations, request()'s no-op/ignore bookkeeping) --
 # no real waiting needed. T3/T4/T6/T7/T8/T12 sample WallTransition.sample_at() SYNCHRONOUSLY across
@@ -12,6 +11,9 @@ extends TestSuite
 # every scan asserts its own sample COUNT is nonzero before asserting anything about its contents.
 # T11 mixes both: a pure sample_at() comparison for the discontinuity bound, plus a short real
 # Tween (same shape as T9/T10) to prove the transition actually continues rather than restarting.
+# T13 (the Phase 3 acceptance gate, PLAN.md §3) is 20 REAL, seeded-random transitions in sequence --
+# real Tweens are unavoidable there (the property under test is what a whole chain of them leaves
+# behind), so the seed is fixed and printed in every failure message so a red run is replayable.
 # ==============================================================================
 
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
@@ -42,6 +44,8 @@ func _ready() -> void:
 	await test_mid_flight_resize_retargets_without_a_visible_snap()
 	behavior_section("REDUCED MOTION (T12)")
 	test_reduced_motion_removes_all_zoom()
+	behavior_section("20-TRANSITION SOAK (T13, PHASE 3 GATE)")
+	await test_twenty_transition_soak_leaves_exactly_one_always_screen()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
@@ -465,3 +469,124 @@ func test_reduced_motion_removes_all_zoom() -> void:
 	check(all_constant,
 			"camera zoom never changes across the whole scan under reduced motion -- no zoom-out/"
 			+ "zoom-in dance occurs", "first=%.4f" % first_zoom)
+
+# ------------------------------------------------------------------ T13 (Phase 3 soak)
+
+## Fixed and printed in every failure message below -- Q18=a binds the packer/this class to
+## determinism, and an unreplayable soak that fails once and never again tells you nothing.
+const _SOAK_SEED := 20260815
+const _SOAK_ITERATIONS := 20
+
+## T13 (PLAN.md §3's own Phase-3 acceptance gate, verbatim: "a scripted 20-transition soak leaves
+## exactly one ALWAYS screen every time"; TEST_PLAN.md T13): 20 real transitions in a chain across
+## 5 real `WallPicture`s, each with a real, throwaway `screen_root` (`PackedScene.new()`+`.pack()`
+## on a bare `Node` -- the same fixture shape S12's `TestWallPause` already uses, ASSUMPTIONS.md --
+## so `process_mode` is something to actually count, not a null no-op). The destination each round
+## is chosen by a SEEDED `RandomNumberGenerator`.
+##
+## ⚠ Each round forces ONE extra `_apply()` call at the wide-zoom PLATEAU's own elapsed instant
+## (computed from `phase_bounds()`, the same formula T4's own plateau sample uses) immediately
+## after `request()`, before awaiting `landed`. Relying on the real Tween's own per-frame cadence
+## to land a sample inside the (wide but not universal) plateau window turned out to be exactly the
+## kind of timing-dependent flakiness this file's header already warns about -- measured directly:
+## without this forced sample, `always_count` drifted to 2 and 3 across a run's 20 rounds as
+## individual `source_frame_in_view` latches occasionally missed every real frame the short Tween
+## happened to render. The forced sample makes the latch fire deterministically; the real Tween
+## still runs to completion and still drives the actual `landed` signal/is_active bookkeeping this
+## test is exercising.
+##
+## After EACH landing: count `screen_root`s at `PROCESS_MODE_ALWAYS` across ALL FIVE pictures and
+## assert the count is EXACTLY 1 (never "at least"), and that the focus stack's own `can_back()`
+## invariant (monotonic true once 2+ distinct pictures have been visited -- non-destructive, unlike
+## `back()`/`forward()`, so it can be read every round without corrupting the ongoing history)
+## still holds. A final check that the loop actually ran all 20 iterations guards against the "loop
+## body never executes" shape of vacuous test this run has already hit four times in other forms.
+func test_twenty_transition_soak_leaves_exactly_one_always_screen() -> void:
+	var camera := Camera2D.new()
+	add_child(camera)
+	var settings := _settings(0.1, 1.0)   # total_duration = 0.1s per transition -- real, but bounded
+	var ids : Array[StringName] = [&"a", &"b", &"c", &"d", &"e"]
+	var rects : Dictionary[StringName, PictureRect] = {}
+	var pictures : Dictionary[StringName, WallPicture] = {}
+	var picture_list : Array[WallPicture] = []
+	var angle_step := TAU / float(ids.size())
+	for i : int in ids.size():
+		var id : StringName = ids[i]
+		rects[id] = _rect(id, Vector2(600, 0).rotated(angle_step * float(i)))
+		var wp := _wall_picture()
+		var packed := PackedScene.new()
+		# pack() COPIES this template's structure; the template Node itself is NOT RefCounted and is
+		# never added to a tree, so it needs an explicit .free() -- the exact trap ASSUMPTIONS.md's
+		# T2 entry already documents for Game.new() in this same file.
+		var template := Node.new()
+		packed.pack(template)
+		template.free()
+		wp.screen_root = packed.instantiate()
+		wp.screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+		pictures[id] = wp
+		picture_list.append(wp)
+	check(picture_list.size() == ids.size(),
+			"all %d real pictures were constructed for the soak before it starts" % ids.size(),
+			str(picture_list.size()))
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _SOAK_SEED
+	var fs := FocusStack.new()
+	var current_id : StringName = ids[0]
+	fs.visit(current_id)
+	pictures[current_id].screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+
+	var iterations_run := 0
+	for i : int in _SOAK_ITERATIONS:
+		var candidates : Array[StringName] = []
+		for id : StringName in ids:
+			if id != current_id: candidates.append(id)
+		var dest_id : StringName = candidates[rng.randi() % candidates.size()]
+
+		var transition := WallTransition.new()
+		var landed_id : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+		transition.landed.connect(func(id: StringName) -> void: landed_id[0] = id)
+		var source_wp : WallPicture = pictures[current_id]
+		var source_rect : PictureRect = rects[current_id]
+		var dest_wp : WallPicture = pictures[dest_id]
+		var dest_rect : PictureRect = rects[dest_id]
+		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, WINDOW, settings)
+
+		# Force the plateau sample deterministically (see the doc comment above) -- guarantees both
+		# latches fire regardless of how many real frames the short Tween happens to render.
+		var total := WallTransition.total_duration(settings)
+		var bounds := WallTransition.phase_bounds(settings)
+		var plateau_elapsed : float = (bounds["zoom_out_end"] + bounds["zoom_in_start"]) * 0.5 * total
+		transition._apply(camera, source_wp, dest_wp,
+				WallTransition.sample_at(plateau_elapsed, total, source_rect, dest_rect, WINDOW,
+						settings))
+
+		await transition.landed
+		check(landed_id[0] == dest_id,
+				"soak iteration %d (seed %d): the transition landed on the requested destination %s"
+				% [i, _SOAK_SEED, dest_id], str(landed_id[0]))
+
+		fs.visit(dest_id)
+		current_id = dest_id
+		iterations_run += 1
+
+		var always_count := 0
+		for id : StringName in ids:
+			if pictures[id].screen_root.process_mode == Node.PROCESS_MODE_ALWAYS:
+				always_count += 1
+		check(always_count == 1,
+				"soak iteration %d (seed %d): EXACTLY one ALWAYS screen after landing on %s"
+				% [i, _SOAK_SEED, dest_id], "always_count=%d" % always_count)
+		if i > 0:
+			check(fs.can_back(),
+					("soak iteration %d (seed %d): the focus stack still reports a valid, "
+					+ "growing history") % [i, _SOAK_SEED])
+
+	check(iterations_run == _SOAK_ITERATIONS,
+			"the soak loop actually ran all %d iterations before any of the above was asserted "
+			% _SOAK_ITERATIONS + "(seed %d)" % _SOAK_SEED, "ran=%d" % iterations_run)
+
+	camera.queue_free()
+	for wp : WallPicture in picture_list:
+		if wp.screen_root and is_instance_valid(wp.screen_root): wp.screen_root.queue_free()
+	await _cleanup(picture_list)
