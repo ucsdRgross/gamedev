@@ -34,6 +34,8 @@
 [ext_resource type="PackedScene" path="res://Tests/Visual/test_outline.tscn" id="30_outln"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_focus.tscn" id="32_wfocus"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_profile.tscn" id="33_wprof"]
+[ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_packer.tscn" id="34_wpack"]
+[ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_render.tscn" id="35_wrend"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -104,3 +106,7 @@ speed_base_delay = 0.1
 [node name="TestWallFocus" parent="." instance=ExtResource("32_wfocus")]
 
 [node name="TestWallProfile" parent="." instance=ExtResource("33_wprof")]
+
+[node name="TestWallPacker" parent="." instance=ExtResource("34_wpack")]
+
+[node name="TestWallRender" parent="." instance=ExtResource("35_wrend")]

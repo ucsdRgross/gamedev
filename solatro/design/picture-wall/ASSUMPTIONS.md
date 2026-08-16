@@ -88,3 +88,90 @@
   by its own doc comment this is exactly what the channel is for, "a colour still hardcoded in a
   surface whose art has not been made yet", and it does not touch `_fail` or the exit code. Not a gap:
   the literal is reversible the moment B10's actual wiring step picks a palette role.
+- **S4 (GAP-009) — `PictureEntry.slot : int` is read as an authored ANGLE IN DEGREES**, the owner's
+  own assumption stated in `gaps/GAP-009.md`'s resolution, recorded here per that note: kept the
+  shipped field shape rather than renaming it and forcing a `NAMES.md` change. `ring` is deleted
+  from `PictureEntry` (nothing read it; GAP-009's resolution).
+- **S4 (GAP-009, PLAN.md §1.3 rule 1) — the ellipse's anisotropic scale is baked into each
+  picture's RADIUS-SEARCH RAY, not applied as a post-hoc stretch of finished positions.**
+  `WallPacker._direction(slot_degrees, aspect)` uses `Vector2(cos(rad) * aspect, sin(rad))`,
+  normalized, as the unit ray a picture's radius travels along. GAP-009 fixes the aspect SCALAR
+  (`clamp(window_aspect, ellipse_aspect_min, ellipse_aspect_max)`) and calls the result "an
+  anisotropic scale on the whole arrangement" but not its exact per-axis split -- this is the one
+  formula choice left open. Baking it into the search ray (rather than scaling positions after the
+  fact) is not just simpler: it is what keeps rule 6 ("no two rects overlap") true BY
+  CONSTRUCTION, since gap_px is then always checked in the real final coordinates. Reversible:
+  nothing downstream reads the exact per-axis split, only the resolved scalar aspect (P7) and the
+  no-overlap invariant (P10/P12), both of which hold under any anisotropic split.
+- **S4 (PLAN.md §1.3 rule 2) — the window-aspect stretch holds a picture's HEIGHT fixed and
+  derives its width** (`WallPacker._picture_size`), matching the "height is the anchor, width
+  derived" convention `PlayerSettings.wall_design_height` already documents. Rule 2's original text
+  ("stretched to the window aspect") never named which axis is the anchor; this predates GAP-009
+  and was never resolved by it either. Not a gap: the two conventions in this project already point
+  the same way, and P8/P9 pin the resulting behaviour (aspect ratio matches window; keep_aspect
+  leaves size untouched) rather than which axis moved to get there.
+- **S4 (P2'/P3', S4 brief) — the first-placed picture is EXCLUDED from the "same radius" /
+  "unaffected" comparisons; it is compared to 0 (P2') or to its own baseline (P3') instead of to
+  its siblings.** The S4 brief's P2' says "3 pictures at angles 0, 120, 240 ... assert all three
+  sit at the SAME radius." Under rule 3+4 as amended (smallest radius that clears
+  ALREADY-PLACED frames, slot ascending), the picture placed FIRST has no already-placed frames to
+  clear, so its minimal radius is 0 by the rule itself -- the identical fact P11 pins for a lone
+  picture, just reached here on the first of several rather than the only one. It can never equal
+  the other two's nonzero radius, for ANY picture sizes or gap_px > 0; this is not a bug in the
+  packer, it is rule 3 doing exactly what GAP-009 specifies. Implemented instead: `a`'s radius is
+  asserted to be exactly 0, and `b`/`c` (both placed after it, both 120 degrees from it) are
+  asserted equal to EACH OTHER and nonzero -- the same claim the brief is making ("radius is
+  computed per picture and minimised, converges by symmetry"), stated in the form the algorithm can
+  actually satisfy. P3' inherited the same issue (asserting `a` and `b`'s radii equal each other,
+  which was never true even at ordinary size) and is fixed the same way: `a`/`b` are compared
+  against their own P2'-baseline values (same fixture, ordinary-sized `c`), proving "unaffected by
+  the oversized picture placed after them" without the false "equal to each other" premise. Not
+  filed as a gap: the fix does not touch the algorithm, only which comparison the test makes, and
+  the property actually proved is the one the brief names.
+- **S4-fix (Q9=a, GAP-009) — `layout.home_id` is placed FIRST, ahead of slot order, so it always
+  takes the centre (radius 0).** `Q9`=(a) fixes the home picture as the ellipse's centre, and the
+  deleted `ring` field (GAP-009) used to carry this as ring 0 = "the home ring" -- with rings gone,
+  nothing else marks home as innermost, so `pack()` special-cases it: after the slot-ascending
+  sort, `home_id` (if present in `unlocked`) is moved to the front. Falls back to plain slot
+  ascending, unchanged, when `home_id` is locked or absent from this pack -- never centres a
+  picture that produced no rect. Not a gap: gap-protocol rule 1 (`home_id` has no other purpose,
+  the deleted field already said home is innermost, one line to reverse). `TestWallPacker` P13
+  pins it.
+- **S10 (Q7=b, B10) — the shadow offset is a single PROVISIONAL constant,
+  `WallPicture.SHADOW_OFFSET`, not an authored WallLayout field.** §1.7 requires `%Shadow` "offset
+  from one authored light position shared by the whole wall," but no field for it exists anywhere
+  in `WallLayout`/`PlayerSettings`/`DESIGN.md` §5, and S25 ("shadows from one light position") is
+  the step that actually authors/tunes it. Same constant used for every picture regardless of its
+  own position, which is what "shared" means, so §1.7's requirement is met literally; only the
+  exact value is provisional. Not a gap: S25 owns relocating or retuning it, and nothing downstream
+  in this run reads the constant's value.
+- **S10 (§1.7, done-when) — `%Frame`'s texture is whatever `PictureEntry.frame_texture` says,
+  INCLUDING null.** `WallPicture.build()` is faithful to its input and invents nothing: a null
+  `frame_texture` draws an empty `NinePatchRect`, mirroring the same "null is expected and
+  correct" rule the coordinator stated for `PictureEntry.scene`/Q214=a. The S10 snapshot's own
+  fixture (`Tests/Visual/wall_picture_construction_snapshot.gd`) assigns each frame a flat
+  runtime-generated swatch colour purely so frame GEOMETRY reads in the shot -- diagnostic
+  scaffolding in the same spirit as `SnapshotScene.BACKDROP`, not authored frame art (S24's job,
+  patch margins and all). `TestWallRender`'s fixture leaves `frame_texture` unset (null)
+  throughout, since N1/N5 only assert structure, never appearance.
+- **S10 (PLAN.md §0 gap protocol rule 1 — diagnostic scene location):**
+  `wall_picture_construction_snapshot.gd` / `.tscn` live under `solatro/Tests/Visual/`, the same
+  precedent S1 and S9 already used -- PLAN.md's SETUP note permits `Tests/` or `Tools/` for a
+  spike/snapshot scene and fixes no name for it, and NAMES.md does not name this diagnostic either.
+- **S10 (§1.6 collides with the suite harness) — `TestWallRender` undoes `Wall`'s own pause
+  immediately after constructing one.** `Wall._ready()` sets `get_tree().paused = true` GLOBALLY
+  by design (§1.6, verified correct in S9) -- fine standalone, but `all_tests.tscn` runs ~34 suites
+  CONCURRENTLY, and a global pause with nothing to clear it hangs the ENTIRE run with no banner
+  (measured: 600s timeout, no suite signals finished, on the first attempt at this suite). Fixed
+  with one line, `get_tree().paused = false`, immediately after `add_child(_wall)` -- safe because
+  `add_child()` on an already-in-tree parent runs `Wall._ready()` SYNCHRONOUSLY, and GDScript only
+  yields at an explicit `await`, so nothing else can run in the gap. ⚠ **Any later step that
+  instantiates a real `Wall` inside `Tests/Wall/*.gd` (S11 render gating owns the render-mode
+  states; anything after it inherits this) must do the same** or hit the identical hang -- not a
+  gap, a one-line harness-interaction trap worth a flag for the next reader.
+- **S10 -- `WallPicture._shadow.self_modulate`'s `Color(0.0, 0.0, 0.0, 0.35)` is a second new
+  hardcoded-colour placeholder warning (20th; S9 added the first), same mechanism as `wall.tscn`'s
+  `%WallSurface` colour.** A dark, partly-transparent tint for the drop shadow, not routed through
+  `PaletteDB` -- same reasoning as the S9 entry above: no palette role for it exists yet, inventing
+  one would be a gap, and `test_palette.gd`'s drift scan is correctly flagging real, deliberate,
+  temporary art (`_fail`/exit code untouched). Reversible the moment a real shadow-tint role exists.

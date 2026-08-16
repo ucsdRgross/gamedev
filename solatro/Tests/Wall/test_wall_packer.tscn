@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/Wall/test_wall_packer.gd" id="1"]
+
+[node name="TestWallPacker" type="Node"]
+script = ExtResource("1")

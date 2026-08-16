@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Wall/wall_picture.gd" id="1_wp"]
+
+[node name="WallPicture" type="Node2D"]
+script = ExtResource("1_wp")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+mouse_filter = 2
+
+[node name="Screen" type="Sprite2D" parent="."]
+unique_name_in_owner = true
