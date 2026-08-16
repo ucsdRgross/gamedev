@@ -224,6 +224,49 @@ starts reading it.
 | S37 overfill at rest | done | **Overseer verified all three aspects by eye** (1.33, 1.78, 2.33): uniform fill edge to edge, no frame at any border. | `_OVERFILL_MARGIN = 1.02` — see **GAP-011** |
 | S13 filter swap | done | **Overseer verified by eye**: the focused checkerboard is hard-edged with no blending between squares — NEAREST. N7 keeps pan-vs-zoom honest. | none |
 
+### `wall_transition_speed` must be REMOVED — Q175=(b) says the knob does not exist
+
+`DESIGN.md` §5 lists `wall_transition_speed` (1.0, "player-facing multiplier; 0 = instant") citing
+`Q175`. But **`Q175`=(b) is "no — reduced motion covers it"**, and chart **K10** states it outright:
+*"There is no separate transition-speed knob — the always-instant setting IS the reduced-motion
+flag"* (`DESIGN.md:755`). §5's row is a leftover from the rejected option (a).
+
+Gap-protocol rule 4: both documents restate one answer, so go to the answer — a documentation bug
+against the source, not a decision to escalate. **S8 built the knob because §5 listed it; it is
+unused. Remove it from `player_settings.gd` and from §5.** The "Picture wall" group drops to 18
+exports.
+
+### Suite rows are NOT discovered by name
+
+`test_base.gd` does no reflection. Each suite's `_ready()` hard-codes explicit calls to its row
+functions, so `test_*` versus `_test_*` naming is cosmetic and not load-bearing. Verified when
+`test_wall_input.gd`'s zero `func test_*` looked like a fifth vacuous suite; its six checks are
+straight-line, reachable, and can genuinely fail.
+
+### Phase 3 — S14/S15/S16 built but UNCOMMITTED, pending two corrections
+
+`WallTransition` + `TestWallTransition` (T1–T10, 37 suites green) exist in the working tree,
+**deliberately uncommitted**. Two corrections were issued and neither was applied before the
+implementer died:
+
+1. **`wall_frame_reveal_margin` is measured against the UNION bounding box.** `DESIGN.md` §5 says
+   *"extra share of the picture's size"* — a picture's, not the union's. The union grows with
+   separation, so distant pairs get a proportionally larger margin and the zoom-out pulls back
+   further the further it travels. **Ruling: use the LARGER of source and destination.**
+2. **T4's fixture is deliberately symmetric** (same size, opposite sides) so the union's centre
+   coincides with the midpoint of centres. The implementer flagged an asymmetric pair as a real
+   limitation of the single-scalar wide zoom. **A fixture chosen so the code passes is the same
+   defect as an assertion that proves nothing**, and asymmetry is the NORMAL case here —
+   `size_multiplier` is free and per-picture frame thickness is why rings were rejected. Needs an
+   asymmetric T4 variant; if it fails, fix the implementation, not the fixture.
+
+Accepted as-is: the phase-overlap split (§1.10 fixes only *that* phases overlap; the three
+fractions are exposed knobs, and `TEST_PLAN.md` §10 item 4 schedules the by-eye judgement).
+
+⚠ **Nothing yet wires transition-landed to `focus()`**, so a landed picture never flips to
+`UPDATE_ALWAYS`. Correctly outside `WallTransition`'s scope — it is the `Wall`'s orchestration —
+but **no step currently owns it** and Phase 7 depends on it.
+
 ### GAP-010's rebalance as built — and its one soft spot
 
 `WallPacker._rebalanced_angles()`: **full unlock is the IDENTITY** (authored angles used verbatim);

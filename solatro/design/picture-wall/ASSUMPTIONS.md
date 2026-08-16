@@ -349,3 +349,182 @@
   makes a NEAREST/LINEAR difference visually unmistakable once magnified; no other content in this
   run has that property on demand. Diagnostic scaffolding only (same category as S10's flat-swatch
   frame textures), not authored content.
+- **S14 (Q46=b, §1.10) — the coordinator's ruling: total duration is `settings.base_delay *
+  settings.wall_transition_delay`, using the EXISTING S8-built knob.** §1.10's own text names
+  `settings.wall_transition_delay_scale`, which does not exist and which NAMES.md does not fix --
+  S8 built `wall_transition_delay` (default 0.6), the name `DESIGN.md` §5 and NAMES.md both fix, and
+  NAMES.md is normative for settings keys. §1.10's stale name is a documentation bug against its own
+  source (gap-protocol rule 4), not a reason to add a second knob. At defaults, `1.0 * 0.6 = 0.6`,
+  consistent with §5's own "0.6 s" annotation. `WallTransition.total_duration()` implements exactly
+  this formula. No new knob added; the existing one not renamed.
+- **S14 (Q47=b, §1.10's phase table) — the three phase fractions overlap by splitting their excess
+  evenly at each of the two phase boundaries.** `wall_zoom_out_fraction + wall_travel_fraction +
+  wall_zoom_in_fraction` sums to 1.10 at defaults (`player_settings.gd`'s own comment: "phases
+  overlap, so the three shares sum past 1"), but no formula in PLAN.md or DESIGN.md fixes HOW the
+  0.10 excess maps to actual overlap. `WallTransition.sample_at()` splits it evenly
+  (`overlap = (sum - 1.0) / 2`) between the zoom-out/travel boundary and the travel/zoom-in boundary
+  -- the one construction that needs no new authored knob, degrades to a hard cut at overlap=0 (no
+  excess), and always lands zoom-in exactly at t=1.0 for ANY three fraction values, not just the
+  defaults. Reversible: nothing outside `sample_at()` depends on the exact split, only on the two
+  invariants T3 and T1/T5 actually check (position starts moving before zoom-out's OWN window ends;
+  total duration and travel's own duration are pure functions of settings).
+- **S14-fix (Q48=b, `wall_frame_reveal_margin`, DESIGN.md §5, overseer ruling) — the margin is a
+  fraction of the LARGER of the source and destination PICTURES' OWN sizes** (`PictureRect.size`,
+  never the frame outer rect and never the union), replacing an earlier build that scaled it off
+  the union bounding box. `DESIGN.md` §5 names it "extra share of the picture's size" -- singular,
+  though a transition has two -- and the union reading made the margin grow with separation (two
+  distant pictures pulled the zoom-out back further the further they were apart, instead of
+  revealing a consistent sliver past each frame). The overseer's ruling: use the larger of the two
+  pictures' sizes, componentwise per axis -- it guarantees at least the configured share of EACH
+  picture is revealed and satisfies Q48=b's "show both frames plus the margin" without adding a
+  second knob. `WallTransition._wide_zoom()` implements it.
+- **S14-fix (T4 asymmetric variant) — `_wide_zoom()` also had to stop assuming the union bounding
+  box is centred on the camera's own fixed position.** The wide-zoom plateau's camera position is
+  the straight-line MIDPOINT of the two picture centres (Q51=a; proven equal to `sample_at()`'s own
+  travel-eased position there, since TRANS_SINE/EASE_IN_OUT sits at exactly progress 0.5 at the
+  plateau instant with this run's default fractions). The original build fit `union.size` as if it
+  were centred on that midpoint, true only for a symmetric fixture (same size, opposite offset).
+  Adding a genuinely asymmetric T4 variant (different `size_multiplier` and different `frame_px` on
+  the two pictures -- `Tests/Wall/test_wall_transition.gd:test_zoom_out_shows_both_frames_plus_margin_asymmetric`)
+  reproduced the flagged limitation for real: the dest frame's far edge fell outside the fitted
+  window (measured, before the fix: visible x-max 917 vs dest frame x-max 1060, for centres at
+  ±600, source size 200x200/frame 10, dest size 800x400/frame 60, window 1280x720, default 0.08
+  margin). Fixed in `_wide_zoom()` by computing each axis's needed half-extent as the largest
+  ONE-SIDED reach from the fixed midpoint to either frame's near or far edge, not half of the raw
+  union width/height -- the two coincide exactly in the symmetric case, so T4's original assertions
+  are unaffected. Not a gap: reversible, and the fix stays entirely inside `_wide_zoom()` (camera
+  position / straight-line travel, Q51=a, is untouched).
+- **S14/S15/S16 — `WallTransition` never touches `SubViewport.render_target_update_mode` or
+  `%Screen.texture_filter`.** Landing leaves the destination mid-focus: its `screen_root` is
+  `PROCESS_MODE_ALWAYS` (via the `dest_visible` latch) but its viewport keeps whatever render mode
+  S11's wall-view sizing last left it at, and its filter keeps whatever S13 last set. A full
+  `focus()`/`unfocus()` handoff at landing (§1.8's UPDATE_ALWAYS + full design_size, §1.7's filter)
+  needs the WALL's own wall-view camera state (this class only ever sees two pictures at a time, not
+  the whole wall), which is a later integration step's job, not named by any T1-T10 row. Not a gap:
+  NAMES.md scopes this class to "the camera tween and its phase clock" alone.
+- **S14 (T2) — a THIRD trap in the "test passes while asserting nothing / test silently corrupts
+  the run" family this branch keeps finding, this time on the exit-time leak gate rather than a
+  check().** `Game extends CardEnvironment extends Node` -- NOT `RefCounted` -- so `Game.new()`
+  inside a test, used only to read `get_delay()` and discarded, is a genuine Node leak unless freed
+  explicitly (`queue_free()`'s deferred path is not even needed, since it is never added to a tree --
+  a plain `.free()` suffices). Missing this made `run_tests.py`'s exit-time gate fail
+  ("N resources still in use at exit") despite every suite banner reading green -- caught by
+  bisecting `test_wall_transition.gd`'s own tests down to T2 alone, since `all_tests.gd`'s own
+  in-run engine-error scan cannot see exit-time leaks by construction (`run_tests.py`'s own header
+  comment explains why). Fixed with one `game.free()` line. Worth flagging alongside the `.timeout`
+  and lambda-capture-by-value traps: any test that does `SomeNodeSubclass.new()` for a quick read
+  and never adds it to a tree needs an explicit `.free()`, not just reference-drop.
+- **S17 (C16, Q26=a) — `WallTransition.retarget()` swaps geometry fields the running tween's own
+  per-frame callback re-reads, never restarts the tween.** `request()`'s `tween_method` closure used
+  to capture `source_rect`/`dest_rect`/`window_size`/`settings` as ordinary locals; moved to instance
+  fields (`_source_rect` etc.) so `retarget(new_source_rect, new_dest_rect, new_window_size)` can
+  overwrite them mid-flight and have the very next `_apply()` call sample the new geometry, with
+  `_dest_id`, `_total` and every latched pause/unpause/input-unlock boundary untouched. T11 proves
+  two things: the resulting position discontinuity is bounded by the resize's own geometry shift (a
+  lerp of two points that each moved by at most `max_shift` cannot itself move by more than
+  `max_shift`, for any travel progress -- a provable bound, not a tolerance guess), and the SAME
+  tween instance keeps running to completion afterward (a real short Tween, landing on the original
+  `_dest_id`). Not a gap: reversible, and this is the only way to satisfy "continues" (Q26=a) without
+  a second Tween or a restart.
+- **S17 — the actual RE-PACK that produces new geometry on resize/fullscreen (G7, G8) is NOT this
+  class's job and is not built here.** `WallPacker`/`Wall` own repacking the layout instantly on
+  resize (G8: "re-pack snaps instantly... fullscreen toggle also snaps"); `WallTransition.retarget()`
+  only accepts whatever new `PictureRect`s/window size that already-instant repack produces and keeps
+  the camera tween running against them. Not a gap: NAMES.md scopes this class to the camera tween
+  and clock alone, same boundary the class doc comment already draws elsewhere.
+- **S18 (K8, Q172=a) — reduced motion is "a cross-fade at a fixed zoom," and the fixed zoom chosen is
+  `_wide_zoom()`'s own "show both frames" framing, held for the entire duration (camera position
+  included, at the straight-line midpoint of the two centres).** Neither PLAN.md nor DESIGN.md fixes
+  WHICH zoom level "fixed" means; reusing `_wide_zoom()` needs no new tunable, guarantees both frames
+  stay in view for the whole cross-fade (consistent with K9, "wall view still exists under reduced
+  motion, reached by cross-fade" -- the same wide framing serves both), and makes `sample_at()`'s
+  branch a handful of lines instead of a new code path. Not a gap: reversible, only `sample_at()`
+  reads this choice, and T12 (the only gated done-when clause, "camera zoom is constant") holds under
+  any fixed value.
+- **S18 — the actual cross-fade (blending the two SCREENS' opacity) is NOT built here**, same
+  "camera and clock only" boundary S14-S16 already drew for the landing handoff. `sample_at()`'s
+  reduced-motion branch supplies a motionless camera Sample; whatever later step wires real screens
+  into the wall (Phase 7) owns fading their opacity against it. Not a gap: no T-row asks for opacity,
+  and NAMES.md names no field for it.
+- **S18 — `wall_transition_speed` (built in S8, unused so far) is left exactly as committed, not
+  wired into anything here.** `DESIGN.md`'s own chart node K10 says "there is no separate
+  transition-speed knob -- the always-instant setting IS the reduced-motion flag," which reads as
+  Q175=(b), but `DESIGN.md` §5's tunables table still lists `wall_transition_speed` citing Q175
+  with no override noted, and S8 (already committed, overseer-verified) built it to match §5's table.
+  PLAN.md §1.10's own literal spec (this run's authority for S14-S18) never mentions
+  `wall_transition_speed` at all -- only `wall_reduced_motion`. A THIRD documentation inconsistency
+  in this design's own text (same family as the two already logged under "Two defects found in
+  PLAN.md's normative §1" and S14's stale `wall_transition_delay_scale` name), not something S18 asks
+  this class to resolve: S8's build is already committed and out of this run's scope to unbuild, and
+  nothing in §1.10 or the T-rows needs the knob touched. Flagged for the owner to reconcile K10
+  against §5 at the source; not filed as a gap since nothing here is blocked by it.
+- **S36 — selection/framing/pan land on `Wall` itself, not a new class.** NAMES.md fixes
+  `Scripts/Wall/wall_input.gd`/`WallInput` as "event ROUTING: wall-space hit test,
+  make_input_local, push_input" (Phase 4, S19-S23) -- a narrower job than F10-F12/G9-G11's
+  selection state and wall-view framing/pan, which is inherently about the pictures `Wall` already
+  owns (NAMES.md: "owns the camera, the pictures, the overlay"). Inventing a second, unnamed class
+  for it would be exactly the kind of choice NAMES.md's own header forbids; `Wall` is the one
+  already-named class whose role covers it. Not a gap: one defensible reading once NAMES.md's own
+  role description is read literally.
+- **S36 (Q98=a, TEST_PLAN I5/I6) — `Wall.move_selection()`'s exact algorithm: nearest candidate
+  whose offset has a positive dot product with the pressed direction; wrap picks whichever
+  candidate's offset has the MOST NEGATIVE dot product instead.** Neither PLAN.md nor DESIGN.md
+  writes the formula -- Q98's own text only says "spatially -- the nearest picture in that
+  direction" plus Q106 "wraps." This is the one construction that (a) needs no ring/angle
+  bookkeeping PictureRect does not carry post-pack, (b) reduces to "wraps to the far extreme" for
+  any picture arrangement, not just a fixture-specific one, and (c) is provably well-defined
+  (some candidate always has the most negative dot unless there is exactly one picture, handled
+  separately). `Tests/Wall/test_wall_input.gd`'s I5/I6 fixture places six pictures at distinct,
+  non-tied distances specifically so "nearest" and "most opposite" each have exactly one
+  unambiguous winner -- a real property of the geometry, not a fixture tuned to dodge a limitation
+  (the T4 lesson from Task A2, applied here by construction instead of retrofit).
+- **S36 (F10) — "every picture remembers its internal focus for the session" needs no code.**
+  `screen_root` nodes are built once by `WallPicture.build()` and never destroyed/recreated across
+  a wall-view visit (§1.6/§1.8's whole model), so any `Control` focus a screen sets on itself
+  already persists on that same node instance with zero help from `Wall`. Not a gap: the
+  architecture already guarantees the property: nothing to build.
+- **S36 (F11, Q69=a) — "starting at the one you came from" is implemented as a full re-seed on
+  every `enter_wall_view(from_id)` call, not a separate "remembered last selection" that
+  `from_id` might override.** F10's "the wall remembers its selected picture" and F11's "starting
+  at the one you came from" read as being in tension (remember vs. always reset) if taken as two
+  independent behaviours; the one reading that makes both true simultaneously, with no second
+  piece of state, is that "remembering" IS "re-seeding to the picture you're standing in front of"
+  -- which is always well-defined the moment you press the wall-overview action from inside a
+  screen. Not a gap: PLAN's own words ("starting at the one you came from") fix this outcome for
+  every entry, and nothing else names a DIFFERENT value the memory should hold instead.
+- **S36 (F12, Q71=c) — "every picture is always enterable" needs no code.** No disabled/locked-
+  but-visible state exists anywhere in `PictureRect`/`PictureEntry`/`WallPacker` (`WallPacker`
+  simply omits a locked picture from its output, §1.3 rule -- Q158=a, "locked pictures are not
+  drawn at all"), so every packed `PictureRect` already denotes an enterable picture by
+  construction. Not a gap: nothing to build, the same shape as GAP-protocol rule 1.
+- **S36 (G11, Q4=b) — "no free zoom in wall view" needs no code either, for now.** No zoom input is
+  wired to anything wall-related yet (that wiring is S22/S23, Phase 4); the requirement is
+  satisfied vacuously by `Wall` simply not exposing a zoom-input handler. Flagged, not a gap: S22/
+  S23 must NOT add one for wall view (any zoom input there is instead "a request to enter a
+  picture," Q4=b), a constraint on a step this run does not build.
+- **S36 (G9, Q5=b) — `Wall.wall_view_zoom()`/`clamp_pan()` are NOT gated by any T/I-row and are
+  therefore UNVERIFIED by this run's own suite** (S36's done-when only names I5, I6, I9, and the
+  Wall-button clause). Built anyway because PLAN.md's own S36 line names G9/G10/G11 as "implements,"
+  and leaving fill-crop/pan entirely unbuilt would leave S36 half-done rather than merely
+  untested. `wall_view_zoom()` reuses `WallPicture.focused_scale()`'s existing fill formula (H3)
+  against the union of every packed frame's outer rect (`_wall_extent()`), the direct generalisation
+  of "one picture, fill and crop" to "the whole wall, fill and crop." `clamp_pan()` bounds the
+  camera to the extent, collapsing to the extent's own centre on whichever axis is already fully
+  visible (G10's "on a large screen... panning is off"). Nothing currently CALLS either method
+  (no camera-driving step exists yet for wall view -- that is S19-S23's job), so this is
+  provisional, unverified plumbing in the same spirit as S10's shadow-offset constant, not a
+  finished, exercised feature. Flagged for whoever wires wall-view camera input to add coverage
+  then.
+- **S36 — `WallPicture.rect` (the packed rect `build()` was given) and `WallPicture.set_selected()`
+  (the lift-only selection highlight) are new public members NAMES.md does not fix**, same
+  category as `screen_root` (S11/S12) and `focused_scale()` (S37) before them -- internal surface
+  on an already-named class, not a new class/scene/signal identifier. `set_selected()`'s frame-glow
+  half is deliberately NOT built (no frame art/shader input exists yet, S24); only the Y-offset
+  lift (`_SELECTED_LIFT`, a provisional constant, same shape as `SHADOW_OFFSET`) is. Not a gap:
+  S24 owns the glow once there is a frame to glow.
+- **S36 — `WallOverlay.refresh()`'s signature grew a second, DEFAULTED parameter
+  (`picture_count: int = 2`)** rather than a new method, so the existing F8/F9 tests
+  (`test_wall_focus.gd`, calling `refresh(fs)` with one argument) keep compiling and keep meaning
+  "visible" (any value > 1) unless a caller says otherwise. NAMES.md already notes `refresh()`'s
+  signature is not fixed by it (S35 entry above). Not a gap: additive, reversible, and the only
+  change that does not also touch S35's already-committed test file.

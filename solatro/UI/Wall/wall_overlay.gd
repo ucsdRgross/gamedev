@@ -33,9 +33,14 @@ func _ready() -> void:
 ## that silently does nothing -- whenever the given stack has nothing behind/ahead of the current
 ## picture. Call whenever focus changes; the scene's own defaults (both `disabled = true`) already
 ## match a fresh stack, so this only needs calling on CHANGE, not at construction.
-func refresh(stack: FocusStack) -> void:
+## S36's own done-when: the Wall button additionally HIDES itself outright (not merely disables)
+## while `picture_count` is 1 or fewer -- nothing to overview with just one picture on the wall.
+## Defaults to 2 (i.e. visible) so callers that only care about Back/Forward -- F8/F9's own tests --
+## are unaffected by the new parameter.
+func refresh(stack: FocusStack, picture_count: int = 2) -> void:
 	_back_button.disabled = not stack.can_back()
 	_forward_button.disabled = not stack.can_forward()
+	_wall_button.visible = picture_count > 1
 
 func _on_back_pressed() -> void:
 	back_pressed.emit()

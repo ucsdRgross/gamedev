@@ -32,6 +32,11 @@ var _design_size : Vector2i
 ## inherited from Wall/%Pictures/%Viewports is cut off at these two points, never reaching further.
 var screen_root : Node = null
 
+## The packed rect build() was given -- kept so a caller (S36's `Wall`: spatial selection, wall-view
+## framing/pan) can read id/centre/size/frame_px back without re-deriving them from this node's own
+## children. Not fixed by NAMES.md; same category as `screen_root` above (ASSUMPTIONS.md).
+var rect : PictureRect = null
+
 ## Provisional shared shadow offset -- "one authored light position shared by the whole wall"
 ## (Q7=b, B10), authored here as a single constant because S25 ("shadows from one light position")
 ## is the step that actually tunes/relocates it; every picture uses the SAME offset regardless of
@@ -47,7 +52,8 @@ const SHADOW_OFFSET := Vector2(18.0, 26.0)
 ##
 ## §1.8's "never yet rendered" row: every picture starts at UPDATE_ONCE regardless of eventual
 ## focus (Q78=b) -- N3 pins that every texture is non-null before any focus() call happens.
-func build(rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> void:
+func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> void:
+	rect = p_rect
 	position = rect.centre
 	_design_size = entry.design_size
 
@@ -136,6 +142,15 @@ func mark_for_rerender() -> void:
 func update_filter(zoom_changed_this_frame: bool) -> void:
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if zoom_changed_this_frame \
 			else CanvasItem.TEXTURE_FILTER_NEAREST
+
+## S36 (F11, Q70=c): the wall-view selection highlight -- "shape and motion, not colour," a lift off
+## the wall. Only the lift half is built here: the frame GLOW half needs actual frame art/shader
+## inputs S24 ("frame art parameters") has not built yet, so this is provisional in the same spirit
+## as `SHADOW_OFFSET` above (ASSUMPTIONS.md), until S24 gives the frame something to glow WITH.
+const _SELECTED_LIFT := Vector2(0.0, -14.0)
+
+func set_selected(selected: bool) -> void:
+	position = rect.centre + (_SELECTED_LIFT if selected else Vector2.ZERO)
 
 ## Numerical safety margin, not a design knob (same role `wall_packer.gd`'s `_EPS` plays) -- nudges
 ## focused_scale() strictly past 1:1 coverage even when a picture's aspect exactly matches the
