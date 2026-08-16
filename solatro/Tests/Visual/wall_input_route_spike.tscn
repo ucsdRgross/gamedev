@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/Visual/wall_input_route_spike.gd" id="1"]
+
+[node name="WallInputRouteSpike" type="Node"]
+script = ExtResource("1")

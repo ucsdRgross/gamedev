@@ -224,7 +224,38 @@ starts reading it.
 | S37 overfill at rest | done | **Overseer verified all three aspects by eye** (1.33, 1.78, 2.33): uniform fill edge to edge, no frame at any border. | `_OVERFILL_MARGIN = 1.02` — see **GAP-011** |
 | S13 filter swap | done | **Overseer verified by eye**: the focused checkerboard is hard-edged with no blending between squares — NEAREST. N7 keeps pan-vs-zoom honest. | none |
 
-### ⚠ GAP-012 — a LIVE DEFECT ships in `ed61be0`: the source screen can fail to pause
+### GAP-012 — FIXED and proven, withdrawn as a gap
+
+The latch now computes the crossing analytically at transition start, recomputed on S17's
+retarget, with an end-of-zoom-out backstop for geometry where no crossing exists.
+
+**Proven in both directions, which is the part that matters:** with the fix neutralised back to a
+frame-sampled latch, the new test goes **RED** — `source process_mode=3` (never paused),
+`always_count=2`. Restored, it goes **GREEN** at 101 checks. A fix whose test was never seen red
+is not a verified fix, and this run has produced five tests that passed while proving nothing.
+
+⚠ **T13 stays blind to this by construction** — it forces a sample at the plateau to stay
+deterministic. The non-forced test at `wall_transition_delay = 0.02 s` is the one that guards it.
+Do not "simplify" the two into one.
+
+**Why it was withdrawn as a gap:** `Q72`=(a) already fixed the instant; frame-sampling was an
+implementation choice that failed to detect it. Nothing was being decided. The measurements are
+kept in the file because they shaped the fix.
+
+### Phase 4 — S19/S20/S21 done; S22 and S23 outstanding
+
+`WallInput.route` per §1.9, and rows I1, I2, I3, I4, I7, I8, I14 (I5/I6/I9 came with S36).
+Verified: the wall uses `_unhandled_input` **only** — zero plain `_input` handlers — so a focused
+screen structurally gets first refusal (`Q100`=a). All six `NAMES.md` InputMap actions registered.
+G11 "no free zoom" is no longer vacuous: I8 wires the wheel and asserts the wall does not zoom.
+
+⚠ **S22 (controller) cannot be closed unattended.** Its done-when requires driving a real
+controller by hand through a full navigate-enter-back-wall cycle. Automated coverage of I10 is not
+that, and marking it done on tests alone would be a false claim. **Needs the owner, or an explicit
+decision to accept automated coverage.** S23 (touch) is automatable — synthetic
+`InputEventScreenTouch` — and remains to do.
+
+### ~~GAP-012~~ (superseded by the entry above)
 
 Measured, not theorised. `source_frame_in_view` is **transient**: true only across
 **[0.0048 s .. 0.0502 s]** of a 0.1 s transition — a ~45 ms window that opens *and closes again*.

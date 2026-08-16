@@ -46,6 +46,8 @@ func _ready() -> void:
 	test_reduced_motion_removes_all_zoom()
 	behavior_section("20-TRANSITION SOAK (T13, PHASE 3 GATE)")
 	await test_twenty_transition_soak_leaves_exactly_one_always_screen()
+	behavior_section("SOURCE-PAUSE LATCH UNDER REAL SPARSE SAMPLING (regression, latch-fix)")
+	await test_source_pauses_under_real_sparse_frame_sampling()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
@@ -484,16 +486,18 @@ const _SOAK_ITERATIONS := 20
 ## so `process_mode` is something to actually count, not a null no-op). The destination each round
 ## is chosen by a SEEDED `RandomNumberGenerator`.
 ##
-## ⚠ Each round forces ONE extra `_apply()` call at the wide-zoom PLATEAU's own elapsed instant
-## (computed from `phase_bounds()`, the same formula T4's own plateau sample uses) immediately
-## after `request()`, before awaiting `landed`. Relying on the real Tween's own per-frame cadence
-## to land a sample inside the (wide but not universal) plateau window turned out to be exactly the
-## kind of timing-dependent flakiness this file's header already warns about -- measured directly:
-## without this forced sample, `always_count` drifted to 2 and 3 across a run's 20 rounds as
-## individual `source_frame_in_view` latches occasionally missed every real frame the short Tween
-## happened to render. The forced sample makes the latch fire deterministically; the real Tween
-## still runs to completion and still drives the actual `landed` signal/is_active bookkeeping this
-## test is exercising.
+## ⚠ Each round ALSO forces one extra `_apply()` call at the wide-zoom PLATEAU's own elapsed
+## instant (computed from `phase_bounds()`, the same formula T4's own plateau sample uses)
+## immediately after `request()`, before awaiting `landed`. Originally added because relying on the
+## real Tween's own per-frame cadence to land a sample inside the source's TRANSIENT true-window
+## turned out to be exactly the kind of timing-dependent flakiness this file's header already warns
+## about -- measured directly: without it, `always_count` drifted to 2 and 3 across a run's 20
+## rounds as individual `source_frame_in_view` checks occasionally missed every real frame the
+## short Tween happened to render. The latch-fix below made the SOURCE half of that no longer
+## depend on this forced sample (it is now scheduled by precomputed elapsed time, immune to
+## sampling sparsity by construction) -- but the call stays anyway: it is still a genuine extra,
+## deterministic sample for `dest_visible`/`dest_frame_in_view`, and a deterministic gate is right
+## regardless of which specific boundary needed it.
 ##
 ## After EACH landing: count `screen_root`s at `PROCESS_MODE_ALWAYS` across ALL FIVE pictures and
 ## assert the count is EXACTLY 1 (never "at least"), and that the focus stack's own `can_back()`
@@ -552,14 +556,18 @@ func test_twenty_transition_soak_leaves_exactly_one_always_screen() -> void:
 		var dest_rect : PictureRect = rects[dest_id]
 		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, WINDOW, settings)
 
-		# Force the plateau sample deterministically (see the doc comment above) -- guarantees both
-		# latches fire regardless of how many real frames the short Tween happens to render.
+		# Force the plateau sample deterministically (see the doc comment above) -- guarantees the
+		# dest-unpause/input-unlock latches fire regardless of how many real frames the short Tween
+		# happens to render. The source-pause latch itself no longer depends on this (latch-fix:
+		# it is scheduled by precomputed elapsed time, not re-checked geometry), but this call stays
+		# -- a deterministic gate is still right, and it still keeps dest_visible/dest_frame_in_view
+		# honest under the same sparse sampling this soak's short duration invites.
 		var total := WallTransition.total_duration(settings)
 		var bounds := WallTransition.phase_bounds(settings)
 		var plateau_elapsed : float = (bounds["zoom_out_end"] + bounds["zoom_in_start"]) * 0.5 * total
 		transition._apply(camera, source_wp, dest_wp,
 				WallTransition.sample_at(plateau_elapsed, total, source_rect, dest_rect, WINDOW,
-						settings))
+						settings), plateau_elapsed)
 
 		await transition.landed
 		check(landed_id[0] == dest_id,
@@ -590,3 +598,48 @@ func test_twenty_transition_soak_leaves_exactly_one_always_screen() -> void:
 	for wp : WallPicture in picture_list:
 		if wp.screen_root and is_instance_valid(wp.screen_root): wp.screen_root.queue_free()
 	await _cleanup(picture_list)
+
+# ------------------------------------------------------------------ latch-fix regression
+
+## THE POINT OF THIS TEST (coordinator, latch-fix): T13 forces a sample at the wide-zoom plateau,
+## so it is blind BY CONSTRUCTION to whether the source-pause latch can be missed by real frame
+## sampling. This test forces NOTHING -- a real, unforced transition, at wall_transition_delay
+## 0.02s, the exact duration `Tests/Visual/wall_transition_latch_timing_spike.gd`'s own sweep
+## measured failing 3/3 real trials before the fix (the raw `source_frame_in_view` condition is
+## TRANSIENT -- true only across roughly [5%, 50%] of a transition's own duration, then false again
+## all the way to landing -- so a real per-frame sampler can validly never observe it). Must be RED
+## against the pre-fix code and GREEN after; both directions verified by hand, not assumed.
+func test_source_pauses_under_real_sparse_frame_sampling() -> void:
+	var camera := Camera2D.new()
+	add_child(camera)
+	var settings := _settings(1.0, 0.02)   # total_duration = 0.02s -- the measured failure point
+	var source_rect := _rect(&"a", Vector2(-800, 0))
+	var dest_rect := _rect(&"b", Vector2(800, 0))
+	var source_wp := _wall_picture()
+	var dest_wp := _wall_picture()
+	source_wp.screen_root = Node.new()
+	dest_wp.screen_root = Node.new()
+	add_child(source_wp.screen_root)
+	add_child(dest_wp.screen_root)
+	source_wp.screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	dest_wp.screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+
+	var transition := WallTransition.new()
+	transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, WINDOW, settings)
+	await transition.landed   # NO forced sample -- purely the real Tween's own per-frame cadence
+
+	check(source_wp.screen_root.process_mode == Node.PROCESS_MODE_PAUSABLE,
+			"the SOURCE screen actually paused (Q72=a) -- not merely that SOME picture stayed put",
+			"source process_mode=%d" % source_wp.screen_root.process_mode)
+	var always_count := 0
+	if source_wp.screen_root.process_mode == Node.PROCESS_MODE_ALWAYS: always_count += 1
+	if dest_wp.screen_root.process_mode == Node.PROCESS_MODE_ALWAYS: always_count += 1
+	check(always_count == 1,
+			"exactly one ALWAYS screen after a real (unforced) transition at the duration where "
+			+ "sparse real-frame sampling previously missed the source's pause window entirely",
+			"always_count=%d" % always_count)
+
+	camera.queue_free()
+	source_wp.screen_root.queue_free()
+	dest_wp.screen_root.queue_free()
+	await _cleanup([source_wp, dest_wp])

@@ -524,3 +524,28 @@
   "visible" (any value > 1) unless a caller says otherwise. NAMES.md already notes `refresh()`'s
   signature is not fixed by it (S35 entry above). Not a gap: additive, reversible, and the only
   change that does not also touch S35's already-committed test file.
+- **latch-fix (Q72=a) — a real bug, not a gap (owner's own correction, overriding an earlier
+  GAP-012 that was withdrawn): the source-pause latch is now scheduled by a precomputed TIME,
+  never by re-checking the live `source_frame_in_view` condition per sampled frame.** Measured
+  directly (`Tests/Visual/wall_transition_latch_timing_spike.gd`, kept as a diagnostic): that raw
+  condition is TRANSIENT, not monotonic-to-completion -- true only across roughly the first half of
+  a transition, then false again all the way to landing -- so a real per-frame Tween callback can
+  validly sample zero frames inside the window and never observe it, leaving the source stuck
+  `ALWAYS` forever (measured failing 3/3 real trials at `wall_transition_delay=0.02s`, and
+  intermittently even at the 0.1s duration T13 itself uses). `_find_source_pause_time()` scans
+  `sample_at()` ONCE at `request()`/`retarget()` time (cheap; never per rendered frame) for the
+  first instant the condition holds, and `_apply()` compares the tween's own `elapsed` against that
+  stored time rather than re-testing the geometry -- frame-rate independent, since the tween is
+  guaranteed to eventually reach `elapsed == total` at landing. Falls back to the end of the
+  zoom-out phase if no crossing exists for a given geometry at all (§1.6's "exactly one ALWAYS
+  screen root" is absolute and outranks hitting the precise instant). `retarget()` (S17)
+  recomputes it against the new geometry, since a precomputed crossing time from the OLD rects is
+  meaningless once they change.
+- **latch-fix — regression test added and VERIFIED RED-then-GREEN, not merely written.**
+  `test_wall_transition.gd:test_source_pauses_under_real_sparse_frame_sampling` drives a REAL,
+  unforced transition at `wall_transition_delay=0.02s` (the measured 3/3 failure point) -- unlike
+  T13, which forces a sample at the plateau and is blind to this class of bug by construction. Run
+  against the pre-fix code: FAILED both assertions (`source process_mode=3` i.e. still `ALWAYS`,
+  `always_count=2`). Run against the fix: PASSED, three consecutive full-suite runs, 38 suites
+  green each time. T13's own forced plateau sample is kept (a deterministic gate is still right for
+  the dest-side latches it also exercises), but no longer carries the source-pause guarantee alone.

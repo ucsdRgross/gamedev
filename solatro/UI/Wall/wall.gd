@@ -13,6 +13,72 @@ extends Node2D
 func _ready() -> void:
 	get_tree().paused = true
 
+## NAMES.md's signal table -- only the ONE this run's steps actually emit is declared here
+## (`focus_changed`/`transition_started`/`transition_landed` are a later integration step's job,
+## same "don't build what nothing tests yet" boundary S14-S18/S36 already drew elsewhere).
+## S21 (Q65=a): "Back at the bottom of the stack goes to wall view" -- fired the instant Back is
+## accepted with nothing behind it (or with a focused screen releasing Back to the wall at all).
+signal wall_view_entered
+
+## S19/S21 (Q100=a): the wall reads input in `_unhandled_input` ONLY, so a focused screen's own
+## Controls/`_unhandled_input` always get FIRST REFUSAL -- the same pattern
+## `world_map_controller.gd:217` already uses. Routes to the focused picture via `WallInput.route()`
+## first; if that picture's OWN viewport marks the event handled, the wall does nothing more (I3).
+## Q103=a/Q115=a: arrow-key SELECTION only ever runs with NO picture focused (wall view) -- "the
+## wall never listens while a screen is focused" (I14). `ui_cancel` (Back) and `wall_jump_N` are
+## the only wall-level actions still meaningful either way.
+func _unhandled_input(event: InputEvent) -> void:
+	var focused := _focused_picture()
+	if focused:
+		WallInput.route(event, focused)
+		if focused.viewport and focused.viewport.is_input_handled():
+			return
+	else:
+		if event.is_action_pressed(&"ui_up"):
+			move_selection(Vector2.UP)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed(&"ui_down"):
+			move_selection(Vector2.DOWN)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed(&"ui_left"):
+			move_selection(Vector2.LEFT)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed(&"ui_right"):
+			move_selection(Vector2.RIGHT)
+			get_viewport().set_input_as_handled()
+			return
+	if event.is_action_pressed(&"ui_cancel"):
+		get_viewport().set_input_as_handled()
+		wall_view_entered.emit()
+		return
+	for n : int in range(1, 10):
+		if event.is_action_pressed(StringName("wall_jump_%d" % n)):
+			_jump_to_index(n - 1)
+			get_viewport().set_input_as_handled()
+			return
+
+## The one picture currently `is_focused`, or null in wall view (at most one, by construction --
+## `focus()`/`unfocus()` are the caller's own responsibility to keep exclusive, same contract
+## `WallPicture.focus()`'s own doc comment already states).
+func _focused_picture() -> WallPicture:
+	for child : Node in %Pictures.get_children():
+		var wp := child as WallPicture
+		if wp and wp.is_focused: return wp
+	return null
+
+## I7 (Q104=a): `wall_jump_N` enters the Nth picture in PLACEMENT order -- GAP-009 deleted "ring";
+## the packer's own output order (slot-ascending, home first) is what's left to count by, so this
+## reads `%Pictures`' own child order directly rather than re-deriving it. Silently does nothing
+## past the last picture -- no "ring order" defines a jump target that does not exist.
+func _jump_to_index(index: int) -> void:
+	var children := %Pictures.get_children()
+	if index < 0 or index >= children.size(): return
+	var wp := children[index] as WallPicture
+	if wp: wp.focus()
+
 ## F11 (Q69=a): exactly one picture is selected in wall view, always -- empty only before the wall
 ## has any pictures to select. Set by enter_wall_view()/move_selection(), never directly.
 var selected_id : StringName = &""

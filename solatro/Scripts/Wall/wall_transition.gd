@@ -55,6 +55,17 @@ var _window_size : Vector2
 var _settings : PlayerSettings
 var _total : float
 
+## latch-fix: the elapsed instant (seconds) at which the source pauses, computed ANALYTICALLY once
+## at request()/retarget() time rather than re-checked against the live `source_frame_in_view`
+## condition every sampled frame. Necessary because that raw condition is TRANSIENT, not
+## monotonic-to-completion (measured directly: `Tests/Visual/wall_transition_latch_timing_spike.gd`
+## -- it opens then CLOSES again well before landing), so a real per-frame sampler can validly land
+## entirely outside the window and never observe it true. Scheduling by a precomputed TIME
+## threshold instead is frame-rate independent: ANY frame whose `elapsed` has caught up to this
+## value latches the pause, and the tween is guaranteed to eventually reach `elapsed == _total` at
+## landing regardless of how sparsely it got sampled along the way.
+var _source_pause_time : float = 0.0
+
 ## Fired once, when the tween completes and lands on the requested picture.
 signal landed(picture_id: StringName)
 ## Fired once, the instant C13's boundary is first crossed (S16) -- the caller listens for this
@@ -115,6 +126,27 @@ static func phase_bounds(settings: PlayerSettings) -> Dictionary:
 	var zoom_in_start := travel_end - overlap
 	return {"zoom_out_end": zoom_out_end, "travel_start": travel_start, "travel_end": travel_end,
 			"zoom_in_start": zoom_in_start}
+
+## latch-fix (Q72=a): finds the FIRST elapsed instant at which `source_frame_in_view` goes true, by
+## a linear scan of the pure `sample_at()` (cheap, run once per request()/retarget(), never per
+## frame -- unrelated to how many real frames the Tween ends up rendering). A scan rather than a
+## bisection because the raw condition is TRANSIENT (opens then closes again, ASSUMPTIONS.md), not
+## a simple false->true step function a bisection could assume.
+## (b) BACKSTOP: if no crossing exists for this geometry at all, pauses by the END OF THE ZOOM-OUT
+## PHASE regardless -- §1.6's "exactly one screen root is ALWAYS" is absolute and outranks hitting
+## the precise Q72=a instant.
+const _CROSSING_SCAN_STEPS := 500
+
+static func _find_source_pause_time(total: float, source_rect: PictureRect, dest_rect: PictureRect,
+		window_size: Vector2, settings: PlayerSettings) -> float:
+	for i : int in (_CROSSING_SCAN_STEPS + 1):
+		var elapsed := total * float(i) / float(_CROSSING_SCAN_STEPS)
+		var s := sample_at(elapsed, total, source_rect, dest_rect, window_size, settings)
+		if s.source_frame_in_view:
+			return elapsed
+	var bounds := phase_bounds(settings)
+	var zoom_out_end : float = bounds["zoom_out_end"]
+	return zoom_out_end * total
 
 ## The pure core (see the class doc comment). `total` is `total_duration()`'s own return value,
 ## passed in rather than re-derived so a caller/test can hold it fixed across many samples.
@@ -208,11 +240,13 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	_window_size = window_size
 	_settings = settings
 	_total = total_duration(settings)
+	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
+			_settings)
 	var tween := camera.create_tween()
 	tween.tween_method(
 			func(elapsed: float) -> void:
 				_apply(camera, source, dest, sample_at(elapsed, _total, _source_rect, _dest_rect,
-						_window_size, _settings)),
+						_window_size, _settings), elapsed),
 			0.0, _total, _total).set_trans(Tween.TRANS_LINEAR)
 	tween.finished.connect(
 			func() -> void:
@@ -227,20 +261,31 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 ## next `_apply()` call already samples the new geometry -- no separate "settle" step, and (T11) the
 ## resulting position/zoom discontinuity is bounded by the resize's own geometry shift, never a
 ## restart-driven snap back to the source.
+##
+## latch-fix: also RECOMPUTES `_source_pause_time` against the new geometry -- a precomputed
+## crossing time from the OLD rects is meaningless once they change. Harmless to recompute even
+## after the source has already latched (the new value is simply never read again in that case,
+## since `_apply()`'s check is skipped once `_source_paused` is true).
 func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 		new_window_size: Vector2) -> void:
 	if not is_active: return
 	_source_rect = new_source_rect
 	_dest_rect = new_dest_rect
 	_window_size = new_window_size
+	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
+			_settings)
 
 ## Applies one Sample to the camera and latches each pause/unpause/input-unlock boundary the
 ## instant its raw condition first holds (never un-latches, C9/C11/C13 all describe a one-way
-## crossing).
-func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample) -> void:
+## crossing). The source's own latch is scheduled by `elapsed >= _source_pause_time` (latch-fix) --
+## a precomputed TIME, not a re-check of `s.source_frame_in_view` -- so it cannot be skipped by
+## sparse real-frame sampling: the tween is guaranteed to reach `elapsed == _total` at landing, and
+## `_source_pause_time <= _total` always (the backstop in `_find_source_pause_time` guarantees it).
+func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample,
+		elapsed: float) -> void:
 	camera.position = s.camera_position
 	camera.zoom = Vector2.ONE * s.camera_zoom
-	if s.source_frame_in_view and not _source_paused:
+	if elapsed >= _source_pause_time and not _source_paused:
 		_source_paused = true
 		if source.screen_root: source.screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if s.dest_visible and not _dest_unpaused:

@@ -1,11 +1,9 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_input.gd
 # ==============================================================================
-# WALL INPUT (S36 only): TEST_PLAN.md §6 rows I5, I6, I9 -- Wall's own selection state (spatial
-# arrow selection, wrap, cursor-visible-only-after-first-input), owed by S36 ("wall view: framing,
-# pan and selection") ahead of the rest of TestWallInput, which belongs to Phase 4 (S19-S23, event
-# ROUTING over an already-selected picture) and is NOT built here. NAMES.md already fixes this
-# suite's name/script/suite_name().
+# WALL INPUT (S36, S19, S20, S21): TEST_PLAN.md §6 rows I1, I2, I3, I4, I5, I6, I7, I8, I9, I14.
+# NAMES.md already fixes this suite's name/script/suite_name(). NOT built here: I10-I13 (S22
+# controller, S23 touch) -- out of this batch per the overseer's own instruction.
 #
 # Also covers two clauses of S36's done-when that have no TEST_PLAN row of their own (the plan's
 # own hole, closed per the overseer's phase3-close instruction -- extra coverage is welcome):
@@ -34,13 +32,34 @@ func _ready() -> void:
 	behavior_section("CLAMPED PAN (G10)")
 	_test_clamp_pan_never_shows_past_the_outermost_frames()
 	_test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits()
+	behavior_section("ROUTING (I1, I2, S19)")
+	await _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels()
+	await _test_non_focused_picture_never_receives_input()
+	behavior_section("MOUSE (I8, S20)")
+	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
+	behavior_section("KEYBOARD (I3, I4, I7, I14, S21)")
+	_test_screen_that_consumes_escape_wall_does_not_go_back()
+	_test_screen_that_ignores_escape_wall_goes_back()
+	_test_wall_jump_3_enters_the_third_picture_in_placement_order()
+	_test_wall_is_deaf_to_arrows_while_a_screen_is_focused()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
 
+## ⚠ `wall` is parented under an ISOLATED SubViewport, not this suite's own root directly.
+## `Wall._unhandled_input()` (S19-S21) calls `get_viewport().set_input_as_handled()`; if `wall`
+## lived straight in the shared root viewport (as every earlier S36 fixture did, when nothing here
+## called `_unhandled_input()` yet), that call would mark the SAME viewport ~38 OTHER concurrently-
+## running suites dispatch REAL input through -- measured directly: it broke INTERACTION's own
+## real Escape/click tests, which silently found their events already "handled" by a stale flag
+## this suite's I3/I4/I7/I14 tests left set outside the engine's own per-event dispatch/reset
+## cycle. `_teardown()` frees the wrapper viewport (which takes `wall` with it), not `wall` alone.
 func _build_wall() -> Wall:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
 	var wall : Wall = WALL_SCENE.instantiate()
-	add_child(wall)
+	viewport.add_child(wall)
 	# ⚠ Wall._ready() sets get_tree().paused = true GLOBALLY -- undo immediately, same reasoning
 	# TestWallRender/TestWallPause already document (ASSUMPTIONS.md): add_child() above already ran
 	# Wall._ready() SYNCHRONOUSLY, and GDScript only yields at an explicit await, so nothing else
@@ -66,11 +85,12 @@ func _add_picture(wall: Wall, id: StringName, centre: Vector2,
 
 ## Frees every constructed picture (teardown()'s own reason to exist -- the SubViewport lives under
 ## %Viewports, not under the picture, so a plain queue_free() on the picture alone would leak it),
-## then the wall itself.
+## then `wall`'s own ISOLATING SubViewport wrapper (see `_build_wall()`) -- freeing the wrapper
+## takes `wall` itself with it, in one deferred call.
 func _teardown(wall: Wall, pictures: Array) -> void:
 	for wp : WallPicture in pictures:
 		if is_instance_valid(wp): wp.teardown()
-	if wall and is_instance_valid(wall): wall.queue_free()
+	if wall and is_instance_valid(wall): wall.get_parent().queue_free()
 
 ## Six pictures at known positions around a centre point, sized so pressing Down from "top" has
 ## exactly ONE unambiguous nearest candidate ("below1", distance ~316) rather than a symmetric tie,
@@ -247,3 +267,302 @@ func _test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits() -> vo
 			"matching=%.2f oversized=%.2f" % [range_matching.length(), range_oversized.length()])
 	_teardown(matching_wall, [matching_wp])
 	_teardown(oversized_wall, [oversized_wp])
+
+# ------------------------------------------------------------------ S19 fixtures (I1, I2)
+
+## A throwaway PackedScene: a Control sized exactly `design_size`, with ONE Button (60x40) CENTRED
+## in it (a "known spot") named "TheButton". `action_mode` fires `pressed` immediately on press
+## (ACTION_MODE_BUTTON_PRESS) so a single synthetic press event is enough -- real press+release
+## button semantics are not what I1/I2 are testing.
+func _button_screen(design_size: Vector2i) -> PackedScene:
+	var root := Control.new()
+	root.size = Vector2(design_size)
+	var button := Button.new()
+	button.name = "TheButton"
+	button.size = Vector2(60, 40)
+	button.position = Vector2(design_size) * 0.5 - button.size * 0.5
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	root.add_child(button)
+	# ⚠ PackedScene.pack() silently DROPS any child whose `.owner` is not the root being packed --
+	# without this, "TheButton" compiles fine but is simply ABSENT from the packed scene, and every
+	# later get_node() for it fails at runtime. Caught only via the engine-error scan, not a check()
+	# failure -- the exact "silently proves nothing" shape this whole run keeps finding new forms of.
+	button.owner = root
+	var packed := PackedScene.new()
+	packed.pack(root)
+	root.free()   # the template Node is NOT RefCounted and never added to a tree -- needs .free()
+	return packed
+
+## An isolated SubViewport + Camera2D so `%Screen.get_global_transform_with_canvas()` resolves
+## against ONLY this test's own camera -- immune to "current" camera contention from whatever OTHER
+## concurrently-running suite's own ad-hoc Camera2D nodes exist on the shared root viewport (none
+## of them read a live transform back, so it has never mattered before; I1 is the first test in
+## this run that does).
+class CameraRig:
+	var viewport : SubViewport
+	var camera : Camera2D
+	var pictures_viewports : Node
+
+func _camera_rig() -> CameraRig:
+	var rig := CameraRig.new()
+	rig.viewport = SubViewport.new()
+	rig.viewport.size = Vector2i(1280, 720)
+	add_child(rig.viewport)
+	rig.camera = Camera2D.new()
+	rig.viewport.add_child(rig.camera)
+	rig.camera.make_current()
+	rig.pictures_viewports = Node.new()
+	rig.viewport.add_child(rig.pictures_viewports)
+	return rig
+
+func _teardown_camera_rig(rig: CameraRig) -> void:
+	rig.viewport.queue_free()
+	await get_tree().process_frame
+
+# ------------------------------------------------------------------ I1, I2 (S19 routing)
+
+## I1 (GAP-001 -- the risk that caused it): a click at the WALL-SPACE centre of a focused picture's
+## Button correctly reaches and presses it at THREE different camera zoom levels (0.5, 1.0, 2.0) --
+## proving WallInput.route()'s transform is correct as zoom changes, not just coincidentally right
+## at 1.0.
+func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() -> void:
+	var rig := _camera_rig()
+	var design_size := Vector2i(200, 150)
+	var rect := PictureRect.new(&"a", Vector2(300, -150), Vector2(design_size),
+			Vector4(10, 10, 10, 10))
+	var entry := PictureEntry.new()
+	entry.id = &"a"
+	entry.design_size = design_size
+	entry.scene = _button_screen(design_size)
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	rig.viewport.add_child(wp)
+	wp.build(rect, entry, rig.pictures_viewports)
+	wp.focus()
+	var button : Button = wp.screen_root.get_node(^"TheButton")
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+
+	for zoom : float in [0.5, 1.0, 2.0]:
+		rig.camera.zoom = Vector2(zoom, zoom)
+		# Measured (Tests/Visual/wall_input_route_spike.gd): ONE process_frame is not reliably
+		# enough for the camera's new canvas transform to actually land -- two, plus a render frame,
+		# is what made get_global_transform_with_canvas() stop returning a stale/repeated value.
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		var pressed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+		# Signal.connect() returns an Error code (int), not a handle -- keep the Callable itself so
+		# disconnect() below has something it actually accepts.
+		var handler := func() -> void: pressed[0] = true
+		button.pressed.connect(handler)
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = true
+		event.position = screen.get_global_transform_with_canvas() * Vector2.ZERO
+		var handled := WallInput.route(event, wp)
+		check(handled, "zoom %.1f: route() reports the event as routed" % zoom)
+		check(pressed[0], "zoom %.1f: the button at the picture's known spot reports pressed" % zoom,
+				"event.position=%s" % event.position)
+		button.pressed.disconnect(handler)
+
+	wp.teardown()
+	await _teardown_camera_rig(rig)
+
+## I2 (Q95=a): a click over a NON-focused (background) picture never reaches its viewport at all --
+## its Button never reports pressed, and route() itself refuses before touching the viewport.
+func _test_non_focused_picture_never_receives_input() -> void:
+	var rig := _camera_rig()
+	var design_size := Vector2i(200, 150)
+	var rect := PictureRect.new(&"b", Vector2(300, -150), Vector2(design_size),
+			Vector4(10, 10, 10, 10))
+	var entry := PictureEntry.new()
+	entry.id = &"b"
+	entry.design_size = design_size
+	entry.scene = _button_screen(design_size)
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	rig.viewport.add_child(wp)
+	wp.build(rect, entry, rig.pictures_viewports)
+	# Deliberately never focus()'d -- is_focused stays false, matching a background picture.
+	var button : Button = wp.screen_root.get_node(^"TheButton")
+	var pressed : Array[bool] = [false]
+	button.pressed.connect(func() -> void: pressed[0] = true)
+
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = screen.get_global_transform_with_canvas() * Vector2.ZERO
+	var handled := WallInput.route(event, wp)
+
+	check(not handled, "route() refuses a non-focused picture outright")
+	check(not pressed[0], "the background picture's button never reports pressed")
+
+	wp.teardown()
+	await _teardown_camera_rig(rig)
+
+# ------------------------------------------------------------------ S20/S21 scripted fixtures
+
+## A minimal throwaway screen script, compiled at runtime (GDScript.new()+source_code+reload()) --
+## no `.gd` file for logic that belongs nowhere else, same reasoning as the earlier throwaway
+## PackedScene()+pack(Node.new()) screen_root fixtures (S12/T13, ASSUMPTIONS.md), just with actual
+## behaviour attached since these fixtures need to OBSERVE a state change, not merely exist.
+func _scripted_node(source: String) -> Node:
+	var script := GDScript.new()
+	script.source_code = source
+	script.reload()
+	var node := Node.new()
+	node.set_script(script)
+	return node
+
+## A "map" stand-in: tracks its own zoom_level and responds to the mouse wheel -- I8's own fixture
+## ("wheel over a focused MAP picture, assert the map zoomed"). ⚠ An `is` check does NOT narrow a
+## GDScript variable's STATIC type for later property access -- `event` stays typed `InputEvent`
+## even after `event is InputEventMouseButton`, so an explicit `as` cast is required or `.pressed`/
+## `.button_index` fail to compile.
+const _MAP_SOURCE := "extends Node\nvar zoom_level := 1.0\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event is InputEventMouseButton:\n\t\tvar mb := event as InputEventMouseButton\n\t\tif mb.pressed:\n\t\t\tif mb.button_index == MOUSE_BUTTON_WHEEL_UP:\n\t\t\t\tzoom_level *= 1.1\n\t\t\t\tget_viewport().set_input_as_handled()\n\t\t\telif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:\n\t\t\t\tzoom_level *= 0.9\n\t\t\t\tget_viewport().set_input_as_handled()\n"
+
+## A screen that consumes ui_cancel outright -- I3's own fixture ("a screen that consumes Escape").
+const _CONSUMES_CANCEL_SOURCE := "extends Node\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event.is_action_pressed(&\"ui_cancel\"):\n\t\tget_viewport().set_input_as_handled()\n"
+
+## Builds a picture whose `entry.scene` is a scripted throwaway Node (see `_scripted_node()`
+## above), parented under `wall`'s own %Pictures/%Viewports like `_add_picture()`.
+func _add_scripted_picture(wall: Wall, id: StringName, centre: Vector2, source: String) -> WallPicture:
+	var rect := PictureRect.new(id, centre, Vector2(200, 150), Vector4(10, 10, 10, 10))
+	var entry := PictureEntry.new()
+	entry.id = id
+	var template := _scripted_node(source)
+	var packed := PackedScene.new()
+	packed.pack(template)
+	template.free()   # the template Node is NOT RefCounted and never added to a tree -- .free() it
+	entry.scene = packed
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var viewports : Node = wall.get_node(^"%Viewports")
+	pictures_root.add_child(wp)
+	wp.build(rect, entry, viewports)
+	return wp
+
+# ------------------------------------------------------------------ I8 (S20 mouse wheel)
+
+## I8 (Q89=a): the wheel always belongs to the focused screen. Routed via WallInput.route() (S19,
+## generic over any InputEvent), it reaches the focused "map" picture's own zoom state -- and the
+## WALL's own camera zoom is untouched (G11: "no free zoom in wall view" becomes a REAL assertion
+## here, not the vacuous one S36 could only report before S20 wired anything to the wheel at all).
+func _test_wheel_reaches_the_focused_screen_but_never_the_wall() -> void:
+	var wall := _build_wall()
+	var wp := _add_scripted_picture(wall, &"map", Vector2.ZERO, _MAP_SOURCE)
+	wp.focus()
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	var zoom_before := camera.zoom
+
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_WHEEL_UP
+	event.pressed = true
+	var handled := WallInput.route(event, wp)
+
+	check(handled, "the wheel event was routed to the focused picture")
+	var zoom_level : float = wp.screen_root.get("zoom_level")
+	check(is_equal_approx(zoom_level, 1.1),
+			"the focused MAP screen's own zoom changed -- the wheel reached it (Q89=a)",
+			"zoom_level=%.4f" % zoom_level)
+	check(camera.zoom.is_equal_approx(zoom_before),
+			"the WALL's own camera zoom is UNCHANGED -- the wheel is never consumed by the wall "
+			+ "itself (G11: no free zoom in wall view)",
+			"before=%s after=%s" % [zoom_before, camera.zoom])
+	_teardown(wall, [wp])
+
+# ------------------------------------------------------------------ I3, I4, I7, I14 (S21 keyboard)
+
+## I3 (Q100=a): a screen that consumes Escape gets FIRST REFUSAL -- the wall does NOT go back.
+func _test_screen_that_consumes_escape_wall_does_not_go_back() -> void:
+	var wall := _build_wall()
+	var wp := _add_scripted_picture(wall, &"consumer", Vector2.ZERO, _CONSUMES_CANCEL_SOURCE)
+	wp.focus()
+	var went_back : Array[bool] = [false]
+	wall.wall_view_entered.connect(func() -> void: went_back[0] = true)
+
+	var event := InputEventAction.new()
+	event.action = &"ui_cancel"
+	event.pressed = true
+	wall._unhandled_input(event)
+
+	check(not went_back[0],
+			"a screen that consumes Escape gets FIRST REFUSAL -- the wall does NOT go back (Q100=a)")
+	_teardown(wall, [wp])
+
+## I4 (Q100=a): a screen that ignores Escape (no scene at all -- nothing inside consumes anything)
+## lets it through -- the wall DOES go back.
+func _test_screen_that_ignores_escape_wall_goes_back() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"ignorer", Vector2.ZERO)
+	wp.focus()
+	var went_back : Array[bool] = [false]
+	wall.wall_view_entered.connect(func() -> void: went_back[0] = true)
+
+	var event := InputEventAction.new()
+	event.action = &"ui_cancel"
+	event.pressed = true
+	wall._unhandled_input(event)
+
+	check(went_back[0], "a screen that ignores Escape lets it through -- the wall DOES go back")
+	_teardown(wall, [wp])
+
+## I7 (Q104=a): wall_jump_3 enters the THIRD picture in PLACEMENT order -- GAP-009 deleted "ring",
+## so "placement order" is WallPacker.pack()'s own output order, read here directly from %Pictures'
+## child order (pictures are added in that same order below).
+func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
+	var wall := _build_wall()
+	var layout := WallLayout.new()
+	layout.gap_px = 24.0
+	layout.home_id = &"a"
+	var ids : Array[StringName] = [&"a", &"b", &"c", &"d", &"e"]
+	var entries : Array[PictureEntry] = []
+	for i : int in ids.size():
+		var e := PictureEntry.new()
+		e.id = ids[i]
+		e.slot = i * 60
+		entries.append(e)
+	layout.pictures = entries
+	var rects := WallPacker.pack(layout, ids, 1.6)
+
+	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var viewports : Node = wall.get_node(^"%Viewports")
+	var entries_by_id : Dictionary[StringName, PictureEntry] = {}
+	for e : PictureEntry in entries: entries_by_id[e.id] = e
+	var pictures : Array[WallPicture] = []
+	for rect : PictureRect in rects:
+		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+		pictures_root.add_child(wp)
+		wp.build(rect, entries_by_id[rect.id], viewports)
+		pictures.append(wp)
+	check(pictures.size() >= 3, "at least 3 pictures were packed for this fixture",
+			str(pictures.size()))
+
+	var event := InputEventAction.new()
+	event.action = &"wall_jump_3"
+	event.pressed = true
+	wall._unhandled_input(event)
+
+	var third := pictures[2]
+	check(third.is_focused,
+			"wall_jump_3 focuses the THIRD picture in the packer's own placement order",
+			"id=%s" % third.rect.id)
+	_teardown(wall, pictures)
+
+## I14 (Q103=a, Q115=a): the wall is DEAF to its own arrow-key selection while a screen is focused
+## -- "the wall never listens while a screen is focused."
+func _test_wall_is_deaf_to_arrows_while_a_screen_is_focused() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var selected_before := wall.selected_id
+	var visible_before := wall.selection_visible
+
+	var event := InputEventAction.new()
+	event.action = &"ui_down"
+	event.pressed = true
+	wall._unhandled_input(event)
+
+	check(wall.selected_id == selected_before and wall.selection_visible == visible_before,
+			"an arrow press with a picture focused changes NOTHING about the wall's own selection",
+			"selected before=%s after=%s" % [selected_before, wall.selected_id])
+	_teardown(wall, [wp])
