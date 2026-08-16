@@ -2,7 +2,9 @@ extends TestSuite
 # res://Tests/Wall/test_wall_focus.gd
 # ==============================================================================
 # WALL FOCUS (S5): FocusStack -- the Back/Forward history for the picture wall, ids only.
-# PLAN.md §1.4; TEST_PLAN.md §2, F1-F7.
+# PLAN.md §1.4; TEST_PLAN.md §2, F1-F7. Plus §6b's overlay group (S35): F8, F9 -- they live here,
+# not in a new suite, because they are stack semantics (FocusStack.can_back/can_forward) wearing UI
+# (WallOverlay.refresh). NOT F10-F13: those need popups and unlock, Phase 7, out of scope.
 #
 # CATEGORY MAP: every row here is BEHAVIOR -- a player-visible navigation contract (Q63-Q66), not
 # an internal storage detail.
@@ -13,6 +15,8 @@ extends TestSuite
 # visited (it just called visit() with it), and repeated back() calls read everything below that,
 # in order, until &"" -- see _walk_stack.
 # ==============================================================================
+
+const WALL_OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
 
 func suite_name() -> String:
 	return "WALL FOCUS"
@@ -27,6 +31,9 @@ func _ready() -> void:
 	test_new_visit_clears_forward()
 	test_back_on_empty_stack()
 	test_wall_view_is_never_an_entry()
+	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
+	test_back_visibly_disabled_at_bottom_of_stack()
+	test_forward_visibly_disabled_with_nothing_ahead()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -113,6 +120,38 @@ func test_wall_view_is_never_an_entry() -> void:
 	var result := fs.back()
 	check(result == &"a", "back() after wall view lands on a, not on a wall-view entry",
 			str(result))
+
+## F8 (Q65=c): Back VISIBLY disables itself -- `Button.disabled`, not merely a press that silently
+## does nothing -- with an empty stack (nothing behind the current picture), and re-enables once
+## there is something to go back to, proving refresh() actually recomputes rather than being stuck.
+func test_back_visibly_disabled_at_bottom_of_stack() -> void:
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var back_button : Button = overlay.get_node(^"%BackButton")
+	var fs := FocusStack.new()
+	overlay.refresh(fs)
+	check(back_button.disabled, "Back reports disabled (not merely inert) with an empty stack")
+	fs.visit(&"a")
+	fs.visit(&"b")
+	overlay.refresh(fs)
+	check(not back_button.disabled, "Back re-enables once there is something behind the current one")
+	overlay.queue_free()
+
+## F9: Forward is visibly disabled with nothing ahead (fresh visit, no back() taken yet), and
+## re-enables once a back() leaves something to redo.
+func test_forward_visibly_disabled_with_nothing_ahead() -> void:
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var forward_button : Button = overlay.get_node(^"%ForwardButton")
+	var fs := FocusStack.new()
+	fs.visit(&"a")
+	overlay.refresh(fs)
+	check(forward_button.disabled, "Forward reports disabled (not merely inert) with nothing ahead")
+	fs.visit(&"b")
+	fs.back()
+	overlay.refresh(fs)
+	check(not forward_button.disabled, "Forward re-enables once a back() leaves something to redo")
+	overlay.queue_free()
 
 ## Reads a FocusStack's contents, bottom (oldest) to top (current), through the fixed API alone.
 ## `known_top` is whatever the caller last passed to visit() -- back() only ever reports the entry

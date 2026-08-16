@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Wall/wall.gd" id="1_wall"]
+[ext_resource type="PackedScene" path="res://UI/Wall/wall_overlay.tscn" id="2_overlay"]
 
 [node name="Wall" type="Node2D"]
 process_mode = 3
@@ -26,3 +27,7 @@ unique_name_in_owner = true
 
 [node name="Viewports" type="Node" parent="."]
 unique_name_in_owner = true
+
+[node name="Overlay" parent="." instance=ExtResource("2_overlay")]
+unique_name_in_owner = true
+process_mode = 3

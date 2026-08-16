@@ -87,10 +87,14 @@ func _ready() -> void:
 	print("WALL_PICTURE_SNAPSHOT wrote=%s" % ProjectSettings.globalize_path(out_path))
 	get_tree().quit()
 
-## Six pictures, deliberately varied size, frame thickness (including asymmetric L/T/R/B) and
-## authored angle, so the placement model actually reads: something centred (the home picture,
-## authored at a slot that does NOT sort first -- S4-fix), something pushed further out (the
-## oversized one), frames of visibly different thickness never overlapping.
+## Six pictures spread EVENLY around the full circle (0/60/120/180/240/300 -- the coordinator's ask
+## for GAP-010's re-render, and also a full unlock so WallPacker._rebalanced_angles' identity case
+## applies: what's on screen is the literal authored placement, unaffected by rebalancing since
+## nothing here is locked), two of them SQUARE (`keep_aspect = true`, modeled on the design's `map`
+## picture, H2/Q32=b -- never stretched to the window aspect, unlike the other four 16:9 ones), and
+## varied frame thickness (including asymmetric L/T/R/B) so per-side geometry stays visible: the
+## home picture centred (S4-fix, Q9=a), one pushed further out by its own size, frames of visibly
+## different thickness never overlapping.
 func _make_layout() -> WallLayout:
 	var l := WallLayout.new()
 	l.gap_px = 24.0
@@ -98,23 +102,25 @@ func _make_layout() -> WallLayout:
 	l.ellipse_aspect_max = 2.6
 	l.home_id = &"home_pic"
 	var pics : Array[PictureEntry] = [
-		_entry(&"home_pic", 140, 1.2, Vector4(20, 20, 20, 20)),
-		_entry(&"p_small", 0, 0.55, Vector4(10, 10, 10, 10)),
-		_entry(&"p_wide_frame", 60, 0.9, Vector4(8, 8, 50, 8)),
-		_entry(&"p_big", 200, 2.0, Vector4(24, 24, 24, 24)),
-		_entry(&"p_mid", 280, 1.0, Vector4(16, 16, 16, 16)),
-		_entry(&"p_thin", 330, 0.7, Vector4(6, 6, 6, 6)),
+		_entry(&"home_pic", 0, 1.2, Vector4(20, 20, 20, 20)),
+		_entry(&"map_square", 60, 1.0, Vector4(10, 10, 10, 10), true, Vector2i(700, 700)),
+		_entry(&"p_wide_frame", 120, 0.9, Vector4(8, 8, 50, 8)),
+		_entry(&"p_big_square", 180, 1.3, Vector4(24, 24, 24, 24), true, Vector2i(700, 700)),
+		_entry(&"p_mid", 240, 1.0, Vector4(16, 16, 16, 16)),
+		_entry(&"p_thin", 300, 0.7, Vector4(6, 6, 6, 6)),
 	]
 	l.pictures = pics
 	return l
 
-func _entry(id: StringName, slot_deg: int, size_multiplier: float,
-		frame_px: Vector4) -> PictureEntry:
+func _entry(id: StringName, slot_deg: int, size_multiplier: float, frame_px: Vector4,
+		keep_aspect: bool = false, design_size: Vector2i = Vector2i(1152, 648)) -> PictureEntry:
 	var e := PictureEntry.new()
 	e.id = id
 	e.slot = slot_deg
 	e.size_multiplier = size_multiplier
 	e.frame_px = frame_px
+	e.keep_aspect = keep_aspect
+	e.design_size = design_size
 	return e
 
 ## A flat single-colour swatch -- diagnostic scaffolding so each frame reads distinctly in the

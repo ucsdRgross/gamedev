@@ -1,0 +1,50 @@
+class_name WallOverlay
+extends CanvasLayer
+## The persistent overlay -- Back, Forward, Wall and the top-right Info toggle (NAMES.md; PLAN.md
+## S35, implements B8, F7, F8, F9). Its own CanvasLayer (Q202=a) so it never rides the wall camera,
+## mounted at `%Overlay` inside wall.tscn. Owns no navigation state itself -- it only reports presses
+## via signals and reflects a FocusStack's shape back out through refresh().
+
+## Emitted when the corresponding control is pressed. The wall (a later step) is the consumer --
+## S35's own done-when is only that the controls exist, are localised, and disable correctly.
+signal back_pressed
+signal forward_pressed
+signal wall_pressed
+## `active` is the Info toggle's new pressed state.
+signal info_toggled(active: bool)
+
+@onready var _back_button : Button = %BackButton
+@onready var _forward_button : Button = %ForwardButton
+@onready var _wall_button : Button = %WallButton
+@onready var _info_button : Button = %InfoButton
+
+## Localises every label (never a literal string) and wires each control to its signal.
+func _ready() -> void:
+	_back_button.text = TRANSLATION.find('WALL_BACK')
+	_forward_button.text = TRANSLATION.find('WALL_FORWARD')
+	_wall_button.text = TRANSLATION.find('WALL_OVERVIEW')
+	_info_button.text = TRANSLATION.find('WALL_INFO')
+	_back_button.pressed.connect(_on_back_pressed)
+	_forward_button.pressed.connect(_on_forward_pressed)
+	_wall_button.pressed.connect(_on_wall_pressed)
+	_info_button.toggled.connect(_on_info_toggled)
+
+## F8 (Q65=c): Back and Forward VISIBLY disable themselves -- `Button.disabled`, not merely a press
+## that silently does nothing -- whenever the given stack has nothing behind/ahead of the current
+## picture. Call whenever focus changes; the scene's own defaults (both `disabled = true`) already
+## match a fresh stack, so this only needs calling on CHANGE, not at construction.
+func refresh(stack: FocusStack) -> void:
+	_back_button.disabled = not stack.can_back()
+	_forward_button.disabled = not stack.can_forward()
+
+func _on_back_pressed() -> void:
+	back_pressed.emit()
+
+func _on_forward_pressed() -> void:
+	forward_pressed.emit()
+
+func _on_wall_pressed() -> void:
+	wall_pressed.emit()
+
+func _on_info_toggled(active: bool) -> void:
+	info_toggled.emit(active)

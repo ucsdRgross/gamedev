@@ -220,6 +220,29 @@ starts reading it.
 | S11 render gating | done | N1–N7 green (7 rows). | `NOTIFICATION_APPLICATION_FOCUS_IN` used as the restore-from-minimise hook — see below |
 | S12 pause wiring | done | U1–U7 green (7 rows), **overseer-run** `ALL 36 SUITES: 2604 CHECKS PASSED`, errors log 0 bytes, doc_check 0 errors. `paused = false` appears **0** times in `test_wall_pause.gd`, so U1 never undoes the pause it asserts. | U2 omits `WallOverlay`; suite-ordering chain re-spliced — see below |
 
+| S35 `WallOverlay` | done | F8, F9 green; U2 extended to cover `%Overlay` as `ALWAYS`. **Overseer saw Back and Forward rendered greyed-out beside an enabled Wall** — `Q65`=c's "must *look* unavailable", verified as pixels, not just as a property. | signal names, `refresh()` signature and button layout chosen — `NAMES.md` fixes the class/scene/nodes, not these |
+| S37 overfill at rest | done | **Overseer verified all three aspects by eye** (1.33, 1.78, 2.33): uniform fill edge to edge, no frame at any border. | `_OVERFILL_MARGIN = 1.02` — see **GAP-011** |
+| S13 filter swap | done | **Overseer verified by eye**: the focused checkerboard is hard-edged with no blending between squares — NEAREST. N7 keeps pan-vs-zoom honest. | none |
+
+### GAP-010's rebalance as built — and its one soft spot
+
+`WallPacker._rebalanced_angles()`: **full unlock is the IDENTITY** (authored angles used verbatim);
+**partial unlock** re-sequences the survivors in authored order and spreads them evenly around the
+circle. That reconciles GAP-009 (angles are authored) with GAP-010 (arrangements rebalance) — under
+any always-redistribute rule, `slot` would decide only order and its authored angle would be dead.
+
+⚠ **So a lopsided AUTHORED layout stays lopsided at full unlock.** The v2 snapshot looks balanced
+because its fixture angles were re-authored around the full circle, not because rebalancing acted.
+If the intent was that *any* wall self-balances including a fully-unlocked one, this is not that yet.
+
+⚠ **`Q13`=(b)'s unlock signal is gone and unreplaced** — see `gaps/GAP-010.md`.
+
+### Facts measured for S14, before anyone builds the transition
+
+- `Camera2D.zoom` in this project is **direct magnification** (higher = closer), not a divisor.
+- Stretch mode `canvas_items` + `expand` **decouples the logical 2D canvas size from the raw window
+  size**, so window pixels and canvas units are not interchangeable when computing framing.
+
 ⚠ **`TestWallPause` must remain the LAST suite in the ordering chain.** It holds the tree paused
 to make U1 a real assertion instead of a vacuous one, so anything scheduled after it would run
 against a paused tree. Five existing suites' wait-chain excludes were adjusted to put it there

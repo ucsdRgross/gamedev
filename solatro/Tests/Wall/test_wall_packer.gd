@@ -2,9 +2,12 @@ extends TestSuite
 # res://Tests/Wall/test_wall_packer.gd
 # ==============================================================================
 # WALL PACKER (S4): WallPacker + PictureRect -- layout + unlocked ids + window aspect -> rects.
-# PLAN.md §1.3 AS AMENDED BY GAP-009 (rings rejected -- continuous angular placement); TEST_PLAN.md
-# §1, P1, P5-P12 as written, P2'/P3'/P4' replacing the old ring-based P2/P3/P4 per the S4 brief, P13
-# added for the S4-fix (home_id takes the centre, Q9=a).
+# PLAN.md §1.3 AS AMENDED BY GAP-009 (rings rejected -- continuous angular placement) AND GAP-010
+# (authored angles are STARTING positions; a partial unlock rebalances to reduce lopsidedness).
+# TEST_PLAN.md §1, P1, P5-P12 as written, P2'/P3' replacing the old ring-based P2/P3 per the S4
+# brief, P13 added for the S4-fix (home_id takes the centre, Q9=a). P4' REWRITTEN under GAP-010 --
+# it used to pin authored-angle preservation under partial unlock (Q13=b/G4, now withdrawn); it now
+# pins the opposite: that a partial unlock rebalances into a measurably more even arrangement.
 #
 # Pure logic, no scene, no engine singletons (Q197=a) -- every fixture below builds its own
 # PictureEntry/WallLayout in memory rather than loading a .tres, same idiom as test_wall_focus.gd's
@@ -23,7 +26,7 @@ func _ready() -> void:
 	test_packing_is_deterministic()
 	test_minimal_radius_is_shared_and_shrinks_with_size()
 	test_oversized_picture_stops_further_out()
-	test_authored_angles_preserved_under_partial_unlock()
+	test_partial_unlock_rebalances_to_reduce_lopsidedness()
 	test_locked_pictures_produce_no_rect()
 	test_gap_measured_between_frame_outer_edges()
 	test_ellipse_aspect_follows_window_clamped()
@@ -187,30 +190,63 @@ func test_oversized_picture_stops_further_out() -> void:
 			"a %.3f (baseline %.3f)  b %.3f (baseline %.3f)"
 					% [r[&"a"], baseline[&"a"], r[&"b"], baseline[&"b"]])
 
-## P4' (replaces the ring-based P4): authored angles are exact and NEVER redistributed by which
-## pictures happen to be unlocked -- G4/Q13=b's "visibly unfinished" requirement, now structural
-## rather than a ring-fill rule. The unlocked subset (0, 60, 180 degrees) is deliberately NOT an
-## even 3-way spread (which would be 0/120/240) -- if partial unlock ever redistributed to close
-## the gaps, that is the pattern it would produce, and this fixture would not match it.
-func test_authored_angles_preserved_under_partial_unlock() -> void:
+## P4' (REWRITTEN under GAP-010, "snapping in place" -- Q13=b and G4 are WITHDRAWN): authored
+## angles are STARTING positions, not final ones. Partial unlock (only p0/p1/p3 of 6 authored, at
+## 0/60/180 -- deliberately NOT an even 3-way spread, which would be 0/120/240) now rebalances to
+## reduce lopsidedness.
+##
+## `home` is a 4th, always-unlocked picture (not one of p0-p5, any angle -- Q9=a means its own angle
+## is moot, it is always centred) so that p0/p1/p3 all negotiate a genuinely nonzero radius against
+## it, the same way P2' isolates rule 3 -- without it, whichever of them sorts first would itself
+## land at radius 0 (rule 3, "nothing yet to clear") and its OWN angle would be unrecoverable from
+## its rect (a picture exactly at the centre has no well-defined `.angle()`), which would make an
+## angle-based imbalance measurement meaningless for that one picture.
+##
+## Imbalance measure (concrete and defensible, per the coordinator's ask): the spread between the
+## largest and smallest of the three consecutive angular gaps around the ring. The withdrawn
+## authored-angle arrangement (0, 60, 180) has gaps 60/120/180 -- a 120-degree spread. Asserted here
+## to collapse to near-zero (evenly spread), and p1 -- the middle one, furthest from its neighbours
+## in the original clustering -- is asserted to have moved off its literal authored angle (60) as
+## the concrete proof rebalancing actually happened, not merely that the numbers happen to average
+## out.
+func test_partial_unlock_rebalances_to_reduce_lopsidedness() -> void:
 	var angles : Array[int] = [0, 60, 120, 180, 240, 300]
 	var all_pics : Array[PictureEntry] = []
 	for i : int in angles.size():
 		all_pics.append(_radial_entry(StringName("p%d" % i), angles[i]))
+	all_pics.append(_radial_entry(&"home", 0))
 	var layout := _layout(all_pics, 24.0, 1.0, 1.0)
-	var unlocked : Array[StringName] = [&"p0", &"p1", &"p3"]
+	layout.home_id = &"home"
+	var unlocked : Array[StringName] = [&"home", &"p0", &"p1", &"p3"]
 	var rects := WallPacker.pack(layout, unlocked, 1.0)
-	check(rects.size() == 3, "only the 3 unlocked pictures produced a rect", str(rects.size()))
+	check(rects.size() == 4, "home plus the 3 unlocked ring pictures all produced a rect",
+			str(rects.size()))
 	var by_id := _by_id(rects)
-	for i : int in [0, 1, 3]:
-		var id := StringName("p%d" % i)
-		var rect : PictureRect = by_id[id]
-		var expected_rad := wrapf(deg_to_rad(float(angles[i])), 0.0, TAU)
-		var actual_rad := wrapf(rect.centre.angle(), 0.0, TAU)
-		check(is_equal_approx(actual_rad, expected_rad),
-				"%s's angle from centre equals its authored slot (%d deg) exactly, unredistributed"
-						% [id, angles[i]],
-				"expected %.4f got %.4f rad" % [expected_rad, actual_rad])
+	check(by_id[&"home"].centre.is_equal_approx(Vector2.ZERO), "home is centred as always (Q9=a)",
+			str(by_id[&"home"].centre))
+
+	var ring_angles : Array[float] = []
+	for id : StringName in [&"p0", &"p1", &"p3"]:
+		ring_angles.append(wrapf(rad_to_deg(by_id[id].centre.angle()), 0.0, 360.0))
+	ring_angles.sort()
+	var gaps : Array[float] = []
+	for i : int in ring_angles.size():
+		var next : float = ring_angles[(i + 1) % ring_angles.size()]
+		var gap : float = next - ring_angles[i]
+		if gap <= 0.0: gap += 360.0
+		gaps.append(gap)
+	var max_gap : float = gaps.max()
+	var min_gap : float = gaps.min()
+	check(max_gap - min_gap < 1.0,
+			"the 3 unlocked ring pictures are evenly spaced (gaps within 1 degree of each other) -- "
+			+ "the withdrawn authored arrangement's own gaps (60/120/180) had a 120-degree spread",
+			"gaps=%s" % [gaps])
+
+	var p1_angle : float = wrapf(rad_to_deg(by_id[&"p1"].centre.angle()), 0.0, 360.0)
+	check(not is_equal_approx(p1_angle, 60.0),
+			"p1 moved off its literal authored angle (60 deg) -- concrete proof rebalancing "
+			+ "happened, not just a coincidental average",
+			"%.3f deg" % p1_angle)
 
 # ------------------------------------------------------------------ P5-P12 (stand as written)
 

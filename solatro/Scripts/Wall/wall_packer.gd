@@ -5,17 +5,23 @@ extends RefCounted
 ## choices GAP-009 left to this step). Deterministic (Q18=a). No randomness, no node access, no
 ## engine singletons -- so it is testable headless (Q197=a).
 
-## Rules, in GAP-009's order:
+## Rules, in GAP-009's order (angle itself as amended by GAP-010, rule 3a below):
 ##  1. Ellipse aspect = clamp(window_aspect, layout.ellipse_aspect_min, layout.ellipse_aspect_max).
 ##  2. Each picture's base size = design_size * size_multiplier, stretched to the RAW window aspect
 ##     unless keep_aspect (Q22=b, Q32=b) -- never the clamped ellipse aspect from rule 1.
-##  3. Each picture sits at the SMALLEST radius along its authored angle (slot, in degrees) at
-##     which its FRAME OUTER RECT clears every already-placed frame outer rect by gap_px. Overflow
-##     is emergent: there is no ring, no capacity, no band.
+##  3. Each picture sits at the SMALLEST radius along its RESOLVED angle (rule 3a) at which its
+##     FRAME OUTER RECT clears every already-placed frame outer rect by gap_px. Overflow is
+##     emergent: there is no ring, no capacity, no band.
+##  3a. GAP-010 ("snapping in place"): `slot` is a STARTING angle, not a final one -- see
+##     _rebalanced_angles(). When every authored non-home picture in the layout is unlocked there
+##     is no gap to close and the resolved angle is the literal authored `slot`, unchanged. When
+##     some are locked, the remaining ring is re-sequenced in authored order and evenly
+##     redistributed around the full circle to reduce lopsidedness. Pure function of the unlocked
+##     SET, never of arrival/placement order (Q18=a).
 ##  4. Placement order is `layout.home_id` FIRST (Q9=a -- home is always the centre; falls back to
 ##     plain slot ascending if home_id is locked/absent from this pack, never centring a picture
 ##     that produced no rect), then every other picture slot ascending -- fixed and deterministic,
-##     since greedy packing is order-dependent (Q18=a).
+##     since greedy packing is order-dependent (Q18=a). Independent of rule 3a's angle resolution.
 ##  5. Locked ids (absent from `unlocked`) produce no rect at all (Q158=a).
 ##  6. Assert no two rects overlap -- push_error and return the un-overlapped prefix.
 static func pack(layout: WallLayout, unlocked: Array[StringName],
@@ -24,6 +30,9 @@ static func pack(layout: WallLayout, unlocked: Array[StringName],
 	var entries : Array[PictureEntry] = []
 	for entry : PictureEntry in layout.pictures:
 		if entry.id in unlocked: entries.append(entry)
+	# GAP-010, rule 3a -- resolved BEFORE the home-first reorder below, from the pre-reorder
+	# (slot-filtered) entries; home-first placement order is orthogonal to angle resolution.
+	var resolved_angles := _rebalanced_angles(entries, layout.pictures, layout.home_id)
 	entries.sort_custom(func(a: PictureEntry, b: PictureEntry) -> bool: return a.slot < b.slot)
 	# Q9=a: the home picture takes the centre. Ring 0 (deleted, GAP-009) used to document this as
 	# "the home ring" -- home was always the innermost thing, so it is placed FIRST, ahead of slot
@@ -40,7 +49,10 @@ static func pack(layout: WallLayout, unlocked: Array[StringName],
 	var placed_frames : Array[Rect2] = []
 	for entry : PictureEntry in entries:
 		var size := _picture_size(entry, window_aspect)
-		var unit_dir := _direction(entry.slot, aspect)
+		# home_id has no entry in resolved_angles (rule 3a excludes it) -- irrelevant anyway, since
+		# home is always placed first and always lands at radius 0 regardless of direction.
+		var angle_deg : float = resolved_angles.get(entry.id, float(entry.slot))
+		var unit_dir := _direction(angle_deg, aspect)
 		var radius := _find_radius(unit_dir, size, entry.frame_px, placed_frames, layout.gap_px)
 		var centre := unit_dir * radius
 		var frame_rect := _outer_rect(centre, size, entry.frame_px)
@@ -70,12 +82,51 @@ static func _picture_size(entry: PictureEntry, window_aspect: float) -> Vector2:
 	if entry.keep_aspect: return base
 	return Vector2(base.y * window_aspect, base.y)
 
+## GAP-010 ("snapping in place"): resolves each non-home unlocked picture's ANGLE for this pack.
+## `entries` is the unlocked, home-INCLUDED subset already filtered from `all_pictures` (rule 5);
+## `all_pictures` is the full authored layout, locked pictures and all, needed only to test whether
+## anything is actually missing.
+##
+## Two cases:
+##   - Every authored non-home picture in `all_pictures` is present in `entries` (nothing locked):
+##     there is no gap to close, so each picture's resolved angle is its literal authored `slot`,
+##     byte-for-byte what rule 3 used before GAP-010. P7/P9/P10/P12/P13 and friends all pack a fully
+##     unlocked layout and must see exactly this.
+##   - Some are locked: the remaining ring is re-sequenced in AUTHORED angular order (sorted by
+##     `slot`, never by `unlocked`'s own order or Dictionary iteration -- Q18=a) and evenly
+##     redistributed around the full 360 degrees, anchored at the first (smallest-slot) surviving
+##     picture's own authored angle -- the arrangement "snaps" from something close to authored
+##     intent rather than an arbitrary spin, and every gap between consecutive pictures becomes
+##     equal, which is what "reduce lopsidedness" cashes out to (TEST_PLAN.md P4').
+##
+## Returns a Dictionary keyed by picture id; `home_id` never appears in it (its own angle is moot --
+## it is always placed first and always lands at radius 0, rule 3).
+static func _rebalanced_angles(entries: Array[PictureEntry], all_pictures: Array[PictureEntry],
+		home_id: StringName) -> Dictionary[StringName, float]:
+	var full_ring_count := 0
+	for entry : PictureEntry in all_pictures:
+		if entry.id != home_id: full_ring_count += 1
+	var ring : Array[PictureEntry] = []
+	for entry : PictureEntry in entries:
+		if entry.id != home_id: ring.append(entry)
+	var out : Dictionary[StringName, float] = {}
+	if ring.is_empty(): return out
+	if ring.size() == full_ring_count:
+		for entry : PictureEntry in ring: out[entry.id] = float(entry.slot)
+		return out
+	ring.sort_custom(func(a: PictureEntry, b: PictureEntry) -> bool: return a.slot < b.slot)
+	var anchor := float(ring[0].slot)
+	var step := 360.0 / float(ring.size())
+	for i : int in ring.size():
+		out[ring[i].id] = anchor + step * float(i)
+	return out
+
 ## Rule 1's anisotropic scale, applied to the RAY a picture's radius search travels along, not as
 ## a post-hoc stretch of finished positions -- baking it into the direction is what lets rule 3's
 ## gap_px clearance be checked in real final coordinates, which is what keeps rule 6 (no overlap)
 ## true by construction rather than by a second pass (see ASSUMPTIONS.md, GAP-009).
-static func _direction(slot_degrees: int, aspect: float) -> Vector2:
-	var rad := deg_to_rad(float(slot_degrees))
+static func _direction(angle_degrees: float, aspect: float) -> Vector2:
+	var rad := deg_to_rad(angle_degrees)
 	var raw := Vector2(cos(rad) * aspect, sin(rad))
 	if raw.length_squared() < 0.0000001: return Vector2.RIGHT
 	return raw.normalized()

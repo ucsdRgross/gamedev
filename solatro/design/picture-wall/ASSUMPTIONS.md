@@ -233,10 +233,10 @@
   identifiers for things it enumerates, and an internal field on an already-named class holding an
   already-named concept ("screen root") is not among them — inventing a *class* or *scene* name
   would be.
-- **S12 (D2, NAMES.md) — U2 asserts `Wall` and `%Camera2D` only; `WallOverlay` (S35) does not exist
-  in this run and is NOT built to satisfy it.** The coordinator's brief for this run is explicit that
-  S35 is out of scope and must not be built to backfill a test; TEST_PLAN.md's U2 names all three
-  because the test plan predates the per-run scope cut. Reported, not silently dropped.
+- **S12 (D2, NAMES.md) — U2 originally asserted `Wall` and `%Camera2D` only, because `WallOverlay`
+  (S35) did not exist yet and building it to backfill a test would have been out of scope for S12.
+  SUPERSEDED by S35: U2 now asserts all three** (`Wall`, `%Camera2D`, `%Overlay`), since `WallOverlay`
+  is mounted at `%Overlay` in `wall.tscn` as `PROCESS_MODE_ALWAYS`, matching D2 in full.
 - **S12 — `TestWallPause` is spliced into the suite-wait chain as the new permanent tail, ahead of
   `LEAK CANARY`.** U1 requires a REAL `Wall`'s pause to be asserted, unmodified, by a test that never
   clears it (see the pause-model-spike entry above and the trap it documents) — but `get_tree().paused
@@ -273,3 +273,79 @@
   is now the second documented case (after `await` vs `await x.timeout`) of a syntactically-valid
   GDScript idiom that silently produces a vacuous pass-by-construction test -- worth flagging for
   whoever next writes a `fired`/`done`-flag-in-a-closure test in this codebase.
+- **GAP-010 (owner: "snapping in place") — the rebalancing formula.** The resolution fixes that
+  authored angles become starting positions and that lopsidedness must be reduced, but not the exact
+  formula. Implemented in `WallPacker._rebalanced_angles()`: when every authored non-home picture in
+  the layout is unlocked, there is nothing to close a gap for, and the resolved angle is the literal
+  authored `slot`, byte-for-byte unchanged from before GAP-010 -- this is why P2'/P6/P7/P9/P10/P12/P13
+  (all full-unlock fixtures) needed no changes at all. When some are locked, the surviving ring is
+  re-sequenced in AUTHORED order (sorted by `slot`, never by `unlocked`'s own order) and evenly
+  redistributed around the full 360 degrees, anchored at the smallest-slot survivor's own authored
+  angle. Reversible, and the one property every reading of "reduce lopsidedness" agrees on (perfectly
+  even gaps) rather than a partial-credit compromise; picked over a locked-neighbour-only "gap
+  absorption" scheme because the latter does NOT reduce to the identity at full unlock in general
+  (Voronoi-style wedge midpoints shift even a fully-unlocked, unevenly-authored ring off its literal
+  angles, which every full-unlock test above would have caught as a regression).
+- **GAP-010 — TEST_PLAN.md P4' fixture adds a 4th, always-unlocked `home` picture not part of the
+  6-picture authored ring.** Needed so the 3 tested ring pictures (p0/p1/p3) all negotiate a
+  genuinely nonzero radius against `home` (which always takes the centre, Q9=a) -- without it,
+  whichever ring picture sorts first would itself land at radius 0 (rule 3, "nothing yet to clear")
+  and `Vector2.ZERO.angle()` reads 0 regardless of that picture's true resolved angle, making an
+  angle-based imbalance measurement meaningless for that one picture. Not a gap: a test-fixture
+  choice, and the imbalance measure itself (max-gap-minus-min-gap across the 3 ring pictures,
+  asserted near zero; TEST_PLAN.md's own ask for "a concrete, defensible imbalance measure") is
+  unaffected by which picture happens to occupy the centre.
+- **S35 (`WallOverlay`) — signal names (`back_pressed`, `forward_pressed`, `wall_pressed`,
+  `info_toggled`) and the `refresh(stack: FocusStack)` method are new identifiers NAMES.md does not
+  fix.** NAMES.md fixes the scene/script path, `class_name`, `extends` and node names (`%BackButton`
+  etc. are this implementer's own choice too, same reasoning) but names no signals or methods for
+  this class, unlike `Wall`'s own signals which ARE listed. Not a gap: internal wiring on an
+  already-named class, same category as `WallPicture.screen_root` above. `refresh()` takes a
+  `FocusStack` directly rather than two bare bools (`can_back`, `can_forward`) because that is
+  exactly the information `Wall` already holds and passing the object is simpler than the caller
+  unpacking it first; nothing downstream is coupled to the choice.
+- **S35 — Back/Forward/Wall are laid out bottom-left, Info top-right, via individual per-Button
+  anchors on the `CanvasLayer` (no `HBoxContainer`).** DESIGN.md fixes ONLY that Info is top-right
+  (B8/F7); Back/Forward/Wall's exact position is unspecified. Not a gap and not by-eye-verified:
+  S35's own PLAN.md done-when is purely testable (controls exist, localised, Back disables
+  correctly) — unlike S13/S24/S25/S37, nothing in S35's step requires a by-eye sign-off, so the
+  layout is functional scaffolding for Phase 3+ (which wires real navigation) rather than a
+  finished look; Phase 5/6 art steps or a dedicated layout pass may reposition it freely.
+- **S35 — `WALL_BACK`/`WALL_FORWARD`/`WALL_OVERVIEW`/`WALL_INFO` localised as "Back"/"Forward"/
+  "Wall"/"Info" in `Locale/localization.csv`, inserted under the existing `UI` section** (after
+  `CHOICE_REROLLS_LEFT`, before the blank rows preceding `CARDS`) since no `WALL` section header
+  exists and NAMES.md fixes the keys but not their English text or file placement. Not a gap: plain,
+  literal English labels for exactly what each control does: reversible whenever real copy lands.
+- **S37 (H3, Q27=c) — `WallPicture.focused_scale()` is a new pure static method, and its
+  `_OVERFILL_MARGIN` (1.02) is a numerical safety constant, not a `PlayerSettings` knob.** DESIGN.md
+  names no field for the tiny always-overfill margin Q27=c requires even at an exact aspect match
+  (a corkboard-square picture in a square window); §1.8's "no literal outside PlayerSettings/
+  WallLayout/PictureEntry" rule is written for render-gating specifically, and this is the same
+  category of thing as `wall_packer.gd`'s own `_EPS`/`_BISECT_ITERATIONS` -- an algorithmic
+  tolerance nobody would want to retune per-player, not a design lever. `focused_scale()` itself
+  (a pure `Vector2, Vector2 -> float` function, no picture/camera state) is new because nothing
+  computed a fill-and-crop scale before S37; S14's real camera-tracking is its intended future
+  caller.
+- **S37/S13 — measured, not assumed: `Camera2D.zoom` in this project acts as DIRECT magnification**
+  (`zoom = 2.0` doubles apparent size), not the inverse convention some Godot docs phrasing suggests.
+  Confirmed by rendering `focused_scale()`'s output both ways and reading which one actually
+  overfills the window (`Tests/Visual/wall_overfill_snapshot.gd`). Also measured: `window/stretch/
+  mode="canvas_items"` + `aspect="expand"` (`project.godot`) means 2D nodes -- Camera2D included --
+  operate in a LOGICAL canvas size that is NOT the raw window pixel size: one axis stays anchored to
+  the project's base width (1152) and the other expands to match the window's aspect (e.g. a
+  1064x800 OS window reads back as `get_viewport().get_visible_rect().size` == `(1152, 866)`).
+  `wall_overfill_snapshot.gd` reads `get_visible_rect()` AFTER awaiting two `process_frame`s past
+  `DisplayServer.window_set_size()` rather than trusting the requested size directly, and any future
+  code computing `focused_scale()` from a live window must do the same.
+- **S13 — `WallPicture.build()`/`focus()`/`unfocus()` now own `%Screen.texture_filter` outright**
+  (H5): `build()` sets it explicitly to LINEAR (the "non-focused" baseline -- CanvasItem.texture_
+  filter otherwise inherits the PROJECT default, which `project.godot` sets to NEAREST for pixel
+  art, the wrong default here), `focus()` calls `update_filter(false)` (NEAREST, entering focus is
+  always "at rest"), and `unfocus()` resets to LINEAR explicitly rather than through `update_filter`
+  (whose zoom-branching is only meaningful for the picture that IS focused). `update_filter()`
+  itself (S11) and its zoom-vs-pan contract (N7) are unchanged.
+- **S13 — `Tests/Visual/wall_filter_swap_snapshot.gd` renders a coarse (4px-cell, 32x32) synthetic
+  checkerboard, not a real screen, as both pictures' `entry.scene`.** Fine per-pixel detail is what
+  makes a NEAREST/LINEAR difference visually unmistakable once magnified; no other content in this
+  run has that property on demand. Diagnostic scaffolding only (same category as S10's flat-swatch
+  frame textures), not authored content.

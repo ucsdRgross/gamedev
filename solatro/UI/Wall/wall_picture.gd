@@ -74,6 +74,10 @@ func build(rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> vo
 	_screen.position = Vector2.ZERO
 	_screen.scale = view_scale
 	_screen.texture = viewport.get_texture()
+	# H5 baseline: every picture starts non-focused, and H5 says non-focused always samples LINEAR
+	# -- explicit because CanvasItem.texture_filter otherwise inherits the PROJECT default, which
+	# this project sets to NEAREST (pixel art) and would be wrong here without this line.
+	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 	_shadow.centered = true
 	_shadow.position = SHADOW_OFFSET
@@ -92,6 +96,8 @@ func focus() -> void:
 	# this picture has no scene, in which case there is nothing to flip.
 	if screen_root:
 		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	# H5: becoming focused starts "at rest" -- no zoom has changed yet this frame.
+	update_filter(false)
 
 ## §1.8 "any other" (non-focused): UPDATE_DISABLED -- render_target_update_mode stops, but the
 ## already-rendered texture persists on the GPU (Q82=a); sized down to the wall-view footprint via
@@ -104,6 +110,9 @@ func unfocus(footprint_px: Vector2) -> void:
 	# (D8) is simply every picture in this state at once, nothing extra required to enforce it.
 	if screen_root:
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+	# H5: everything non-focused samples LINEAR, unconditionally -- never NEAREST, regardless of
+	# zoom state (update_filter()'s zoom branching only applies to the FOCUSED picture).
+	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 ## GAP-002 / Q86=a, Q87=b: "no resolution manager -- it is one property, written when the
 ## footprint changes." `SubViewport.size` is set directly from the picture's on-screen pixel
@@ -127,6 +136,19 @@ func mark_for_rerender() -> void:
 func update_filter(zoom_changed_this_frame: bool) -> void:
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if zoom_changed_this_frame \
 			else CanvasItem.TEXTURE_FILTER_NEAREST
+
+## Numerical safety margin, not a design knob (same role `wall_packer.gd`'s `_EPS` plays) -- nudges
+## focused_scale() strictly past 1:1 coverage even when a picture's aspect exactly matches the
+## window's, so the frame is GUARANTEED off-screen at rest (Q27=c: "always slightly overfills"),
+## never merely flush with it.
+const _OVERFILL_MARGIN := 1.02
+
+## H3 (Q27=c): the scale that makes a picture of `native_size` OVERFILL `window_size` on every
+## axis at rest -- "fill and crop" (the LARGER of the two axis ratios), never "fit" (the smaller
+## one, which is exactly what would leave a frame sliver visible whenever the aspects don't match,
+## the defect H3 exists to rule out). Pure function of the two sizes; no picture/camera state.
+static func focused_scale(native_size: Vector2, window_size: Vector2) -> float:
+	return maxf(window_size.x / native_size.x, window_size.y / native_size.y) * _OVERFILL_MARGIN
 
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).

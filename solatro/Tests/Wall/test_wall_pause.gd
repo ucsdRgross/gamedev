@@ -15,8 +15,9 @@ extends TestSuite
 # it STAYS true), so this suite instead waits for literally everyone else to finish first
 # (await_siblings_except([])) and is the one suite every other waiter now excludes by name.
 #
-# ⚠ WallOverlay (NAMES.md, S35) does not exist in this run -- U2 asserts Wall and %Camera2D only.
-# Reported, not silently dropped; see ASSUMPTIONS.md.
+# U2 now covers all three ALWAYS nodes -- WallOverlay (S35) landed after this suite was first
+# written (which asserted only Wall and %Camera2D, reporting the omission per the coordinator's
+# instruction at the time); extended here now that %Overlay exists in wall.tscn.
 # ==============================================================================
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
@@ -122,12 +123,13 @@ func test_tree_paused_and_stays_paused() -> void:
 	await get_tree().process_frame
 	check(get_tree().paused, "the tree is STILL paused one frame later -- nothing cleared it")
 
-## U2 (D2): Wall and %Camera2D are PROCESS_MODE_ALWAYS. WallOverlay is S35 and does not exist in
-## this run (see header) -- deliberately not asserted, not silently dropped.
+## U2 (D2): Wall, %Camera2D and WallOverlay (mounted at %Overlay, S35) are all PROCESS_MODE_ALWAYS.
 func test_shell_stays_always() -> void:
 	check(_wall.process_mode == Node.PROCESS_MODE_ALWAYS, "Wall is PROCESS_MODE_ALWAYS")
 	var camera : Node = _wall.get_node(^"%Camera2D")
 	check(camera.process_mode == Node.PROCESS_MODE_ALWAYS, "%Camera2D is PROCESS_MODE_ALWAYS")
+	var overlay : Node = _wall.get_node(^"%Overlay")
+	check(overlay.process_mode == Node.PROCESS_MODE_ALWAYS, "%Overlay (WallOverlay) is PROCESS_MODE_ALWAYS")
 
 ## U3 (D4, Q74=a): focus each of 3 pictures in turn -> exactly one screen root is ALWAYS each time.
 func test_exactly_one_screen_live() -> void:
