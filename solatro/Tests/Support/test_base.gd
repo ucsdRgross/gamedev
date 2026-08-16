@@ -48,7 +48,13 @@ func suite_name() -> String:
 # new suite (VISUAL LAYERS) waited for INTERACTION while INTERACTION still waited for it.
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
-#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN  →  LEAK CANARY
+#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN  →
+#     LEAK CANARY  →  WALL PAUSE
+#
+# WALL PAUSE (S12) is the permanent tail: it constructs a real Wall whose _ready() sets
+# get_tree().paused = true and never clears it (that persistence is what U1 tests), so nothing may
+# run after it. It excludes nothing (waits for literally everyone) and every suite before it in the
+# chain excludes "WALL PAUSE" by name.
 #
 # When you add a waiting suite: place it in this chain, pass the names of all suites that come
 # AFTER it to await_siblings_except(), and add its name to the excludes of every suite BEFORE it.

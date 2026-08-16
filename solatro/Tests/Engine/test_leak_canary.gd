@@ -10,9 +10,14 @@ extends TestSuite
 # If someone reintroduces a strong backref (or a new strong cycle), the growth
 # check fails here.
 #
-# ⚠️ Runs LAST and ALONE: OBJECT_COUNT is engine-global, so any concurrent suite
-# would make the numbers meaningless. See the SUITE ORDERING chain in
+# ⚠️ Runs LAST (of the engine-object-count suites) and ALONE: OBJECT_COUNT is engine-global, so
+# any concurrent suite would make the numbers meaningless. See the SUITE ORDERING chain in
 # test_base.gd — every earlier waiter excludes "LEAK CANARY".
+#
+# ⚠️ One suite now runs AFTER this one: WALL PAUSE (S12) constructs a real Wall whose _ready()
+# pauses the tree GLOBALLY AND PERMANENTLY (never cleared — that is the behaviour it tests), so it
+# must be the true tail of the whole chain or every suite after it would freeze mid-flight. This
+# suite excludes "WALL PAUSE" below so the two do not deadlock waiting on each other.
 # ==============================================================================
 
 # CATEGORY MAP: all IMPLEMENTATION — object counts pin HOW memory behaves, not a
@@ -125,7 +130,7 @@ func _histogram_growth(before: Dictionary, after: Dictionary) -> Array[String]:
 	return out
 
 func _ready() -> void:
-	await await_siblings_except([])
+	await await_siblings_except(["WALL PAUSE"])
 	TestLog.line("============ LEAK CANARY TEST PASS ============")
 	implementation_section("REFCOUNT-CYCLE CANARY")
 

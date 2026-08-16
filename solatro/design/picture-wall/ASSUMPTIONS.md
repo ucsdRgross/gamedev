@@ -216,3 +216,60 @@
   targets a real `.timeout` signal or a coroutine call. **TEST_PLAN.md's U5 and U6 are exactly
   this shape** (asserting on a `Pacing.wait(...)` await) and will walk straight into the same
   false result at S12 unless they also await `.timeout`.
+- **S11 (E7, Q208=b) — `NOTIFICATION_APPLICATION_FOCUS_IN` is the "restore from minimise" hook.**
+  §1.8's row requires re-rendering every picture "on window restore from minimise", but neither
+  DESIGN.md nor PLAN.md names an engine event for it, and Godot has no dedicated un-minimise signal
+  on desktop. `NOTIFICATION_APPLICATION_FOCUS_IN` is the closest built-in match; it also fires on a
+  plain alt-tab back (Q207=a, "nothing special"), which is harmless here since `mark_for_rerender()`
+  costs one `UPDATE_ONCE` frame and E6 already calls a frozen-texture re-render cheap by
+  construction. `Wall._notification` hooks it in `wall.gd`. Not a gap: reversible (a future step can
+  swap the constant with no observable change to anything downstream), and no more specific desktop
+  signal exists to prefer.
+- **S11/S12 — `WallPicture.screen_root` is a new public field, named for §1.6/§1.8's own prose
+  ("screen root"), not fixed by NAMES.md.** Mirrors `viewport` (already public on this class for the
+  same reason: callers and tests need to read/flip its state). Holds `entry.scene.instantiate()`, or
+  null when the entry has none (Q214=a). `focus()`/`unfocus()` flip its `process_mode` between
+  `ALWAYS` and `PAUSABLE` (D3/D4); `build()` sets it `PAUSABLE` by default. Not a gap: NAMES.md fixes
+  identifiers for things it enumerates, and an internal field on an already-named class holding an
+  already-named concept ("screen root") is not among them — inventing a *class* or *scene* name
+  would be.
+- **S12 (D2, NAMES.md) — U2 asserts `Wall` and `%Camera2D` only; `WallOverlay` (S35) does not exist
+  in this run and is NOT built to satisfy it.** The coordinator's brief for this run is explicit that
+  S35 is out of scope and must not be built to backfill a test; TEST_PLAN.md's U2 names all three
+  because the test plan predates the per-run scope cut. Reported, not silently dropped.
+- **S12 — `TestWallPause` is spliced into the suite-wait chain as the new permanent tail, ahead of
+  `LEAK CANARY`.** U1 requires a REAL `Wall`'s pause to be asserted, unmodified, by a test that never
+  clears it (see the pause-model-spike entry above and the trap it documents) — but `get_tree().paused
+  = true` is global, and every earlier Wall-render suite (S10, S11) had to *undo* that pause
+  immediately after construction specifically so the ~34 OTHER concurrently-running suites would not
+  freeze waiting on their own `_process`/timer-driven work. Those two requirements are incompatible
+  for a suite that runs concurrently with anything else, so `TestWallPause` instead waits
+  (`await_siblings_except([])`, i.e. for literally everyone) and never undoes the pause it triggers —
+  safe only because, by the time it starts, every other suite has already called `finish()`. This
+  required moving `LEAK CANARY` (previously the true tail, `await_siblings_except([])`) one link
+  earlier: it now excludes `"WALL PAUSE"` so the two do not deadlock waiting on each other, and
+  `INTERACTION`/`UI PROPS`/`VISUAL LAYERS`/`E2E RUN` (which all transitively waited on "everyone",
+  i.e. on `LEAK CANARY` and therefore now also on anything `LEAK CANARY` itself waits for) each
+  gained `"WALL PAUSE"` in their own exclude lists too, per `test_base.gd`'s own DEADLOCK RULE
+  ("add its name to the excludes of every suite BEFORE it"). `test_base.gd`'s SUITE ORDERING comment
+  is updated to name the new order. Not a gap: mechanical, reversible, and the only way to give U1 a
+  real (non-vacuous) assertion without corrupting a sibling suite.
+- **S12 — `TestWallPause`'s three fixture pictures use a throwaway `PackedScene` built at runtime
+  (`PackedScene.new()` + `.pack()` on a bare `Node`) as their `entry.scene`, standing in for a real
+  screen.** U3/U4/U7 need an actual instantiated "screen root" node to read `process_mode` off of;
+  no existing screen scene is a lighter fixture, and NAMES.md fixes no test-fixture scene for this.
+  Not a gap: purely a test-side fixture choice, same shape as `test_wall_render.gd`'s own
+  programmatic `WallLayout`/`PictureEntry` fixtures (never `res://Assets/Wall/layout_default.tres`).
+- **S12 (U5, U6) — a SECOND trap in the same family as the pause-model-spike's `.timeout` slip,
+  found running this suite for real: a GDScript lambda captures an outer local variable BY VALUE,
+  not by reference.** `Pacing.wait(0.1).timeout.connect(func(): fired = true)` compiles clean and
+  looks correct, but the closure writes a throwaway copy of `fired` -- the outer variable the
+  `check()` call reads never moves, so `check(not fired, ...)` passes REGARDLESS of whether the
+  timer fired. Caught because U6 (`check(fired, ...)`, the trap-detector row TEST_PLAN.md says must
+  stay green) went red first: the real bare timer WAS firing, but its handler's write never reached
+  the outer scope either. Fixed by boxing the flag in a one-element `Array[bool]` and mutating
+  `fired[0]` inside the closure -- Arrays are reference types, so the same backing value is read
+  outside. Both `test_wall_pause.gd` U5 and U6 use this shape now. Not a gap: mechanical, and this
+  is now the second documented case (after `await` vs `await x.timeout`) of a syntactically-valid
+  GDScript idiom that silently produces a vacuous pass-by-construction test -- worth flagging for
+  whoever next writes a `fired`/`done`-flag-in-a-closure test in this codebase.

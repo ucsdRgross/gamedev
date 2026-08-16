@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://UI/Wall/wall_picture.gd" id="1_wp"]
 
 [node name="WallPicture" type="Node2D"]
+process_mode = 1
 script = ExtResource("1_wp")
 
 [node name="Shadow" type="Sprite2D" parent="."]

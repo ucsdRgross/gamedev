@@ -1,9 +1,8 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_render.gd
 # ==============================================================================
-# WALL RENDER (S10): WallPicture construction -- CONSTRUCTION GROUP ONLY. N2-N7 belong to S11
-# render gating and are deliberately NOT here (coordinator brief for S10).
-# PLAN.md §1.7; TEST_PLAN.md §7, N1, N5.
+# WALL RENDER (S10 CONSTRUCTION group: N1, N5. S11 RENDER GATING group: N2, N3, N4, N6, N7).
+# PLAN.md §1.7, §1.8; TEST_PLAN.md §7.
 #
 # Builds a real res://UI/Wall/wall.tscn plus a few real WallPicture instances from a small
 # PROGRAMMATIC WallLayout (never res://Assets/Wall/layout_default.tres -- that is the layout
@@ -25,6 +24,12 @@ func _ready() -> void:
 	_build_wall()
 	test_every_subviewport_is_explicitly_nearest()
 	test_no_subviewport_container_anywhere()
+	behavior_section("RENDER GATING")
+	test_unvisited_picture_has_rendered_once()
+	test_non_focused_picture_keeps_texture()
+	test_wall_view_size_written_and_clamped()
+	test_restore_from_minimise_rerenders()
+	test_filter_swaps_on_zoom_not_pan()
 	_teardown_wall()
 	finish()
 
@@ -108,3 +113,61 @@ func _has_subviewport_container(node: Node) -> bool:
 	for child : Node in node.get_children():
 		if _has_subviewport_container(child): return true
 	return false
+
+# ------------------------------------------------------------------ N2, N3, N4, N6, N7 (S11)
+
+## N3 (E4, Q78=b): every picture has a non-null texture straight out of build(), before any focus()
+## call is made anywhere in this suite -- run first in the RENDER GATING group on purpose so later
+## tests' focus()/unfocus() calls cannot retroactively make this claim vacuous.
+func test_unvisited_picture_has_rendered_once() -> void:
+	for wp : WallPicture in _pictures:
+		check(wp.viewport.get_texture() != null,
+				"%s's texture is non-null before any focus() call" % wp.name)
+
+## N2 (E3, Q82=a): a non-focused picture reports UPDATE_DISABLED, but its already-rendered texture
+## persists -- never null, never zero-size.
+func test_non_focused_picture_keeps_texture() -> void:
+	var wp := _pictures[0]
+	wp.focus()
+	wp.unfocus(Vector2(200, 120))
+	check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED,
+			"a non-focused picture's SubViewport reports UPDATE_DISABLED")
+	var tex := wp.viewport.get_texture()
+	check(tex != null, "its texture is non-null")
+	check(tex != null and tex.get_size() != Vector2.ZERO, "its texture is non-zero-size",
+			str(tex.get_size()) if tex else "null")
+
+## N4 (§1.8, GAP-002): SubViewport.size is written straight from the on-screen footprint, each axis
+## independently clamped below by settings.wall_view_min_texture_px -- shrinking one axis to 10px
+## clamps that (short) axis to the floor without disturbing the other.
+func test_wall_view_size_written_and_clamped() -> void:
+	var wp := _pictures[0]
+	wp.unfocus(Vector2(10, 500))
+	var min_px := SettingsManager.settings.wall_view_min_texture_px
+	check(mini(wp.viewport.size.x, wp.viewport.size.y) == min_px,
+			"a 10px footprint clamps the short axis to wall_view_min_texture_px",
+			str(wp.viewport.size))
+
+## N6 (E7, Q208=b): restoring from minimise re-renders every picture once. Wall._notification hooks
+## NOTIFICATION_APPLICATION_FOCUS_IN (ASSUMPTIONS.md -- the closest built-in "un-minimise" event on
+## desktop) and calls mark_for_rerender() on every WallPicture under %Pictures.
+func test_restore_from_minimise_rerenders() -> void:
+	for wp : WallPicture in _pictures:
+		wp.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED  # simulate "settled"
+	_wall.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	for wp : WallPicture in _pictures:
+		check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_ONCE,
+				"%s went UPDATE_ONCE after the restore notification" % wp.name)
+
+## N7 (H6, Q34): the filter swaps on zoom, not on pan -- pure translation must never flip it. Owed
+## to S11 per TEST_PLAN.md §7's own suite header ("S10, S11"), even though the full camera-driven
+## wiring is S13's job (§1.7); this pins the method's own contract directly.
+func test_filter_swaps_on_zoom_not_pan() -> void:
+	var wp := _pictures[0]
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	wp.update_filter(false)
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+			"pan only (zoom unchanged) leaves the filter NEAREST")
+	wp.update_filter(true)
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+			"a zoom change flips the filter to LINEAR")

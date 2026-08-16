@@ -21,9 +21,10 @@ func suite_name() -> String:
 	return "E2E RUN"
 
 func _ready() -> void:
-	# Waits for every other suite except LEAK CANARY (which waits for THIS suite and
-	# runs truly last — it needs an idle process for global object counts).
-	await await_siblings_except(["LEAK CANARY"])
+	# Waits for every other suite except LEAK CANARY and WALL PAUSE — both wait for THIS suite and
+	# run after it (LEAK CANARY needs an idle process for global object counts; WALL PAUSE runs
+	# dead last of all because it pauses the tree PERMANENTLY, see its own header).
+	await await_siblings_except(["LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ END-TO-END RUN TEST PASS ============")
 	behavior_section("FULL SHOW LOOP, HEADLESS")
 	# Always run full: move any real run.tres aside so the scenarios can write/clear freely.

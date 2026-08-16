@@ -217,7 +217,25 @@ starts reading it.
 |---|---|---|---|
 | S9 `wall.tscn` skeleton | done | **Overseer looked at the render** (`wall_s9_skeleton.png`): one uniform flat field edge to edge, nothing drawn on it. Structure verified: 4 `%unique` nodes, `%Overlay` correctly absent, 2 nodes `PROCESS_MODE_ALWAYS`, `get_tree().paused = true` the only line in `wall.gd`. Suite 33 green, twice. | none |
 | S10 `WallPicture` construction | done | N1, N5 green. `%Shadow`/`%Frame`/`%Screen` in that scene order, so the frame draws under the screen. NEAREST forced explicitly. `SubViewportContainer` appears only in a comment saying why it is banned — no node, never instantiated. **Overseer looked at `wall_s10_construction.png`**: six frames at differing sizes, one with a visibly thicker right border matching its `Vector4(8,8,50,8)`, shadows present, no overlaps, arranged radially about a central picture. | none beyond the pause trap below |
-| S11 render gating (owes N2, N3, N4, N6, N7) | next | — | — |
+| S11 render gating | done | N1–N7 green (7 rows). | `NOTIFICATION_APPLICATION_FOCUS_IN` used as the restore-from-minimise hook — see below |
+| S12 pause wiring | done | U1–U7 green (7 rows), **overseer-run** `ALL 36 SUITES: 2604 CHECKS PASSED`, errors log 0 bytes, doc_check 0 errors. `paused = false` appears **0** times in `test_wall_pause.gd`, so U1 never undoes the pause it asserts. | U2 omits `WallOverlay`; suite-ordering chain re-spliced — see below |
+
+⚠ **`TestWallPause` must remain the LAST suite in the ordering chain.** It holds the tree paused
+to make U1 a real assertion instead of a vacuous one, so anything scheduled after it would run
+against a paused tree. Five existing suites' wait-chain excludes were adjusted to put it there
+(`test_interaction`, `test_ui_props`, `test_visual_layers`, `test_e2e_run`, `test_leak_canary`,
+plus `test_base`). Adding a suite after it will hang the run.
+
+⚠ **U2 does not assert `WallOverlay`** — S35 has not built it. **S35 owes that half of U2.**
+
+⚠ **`NOTIFICATION_APPLICATION_FOCUS_IN` is a PROXY for restore-from-minimise** (N6, E7, `Q208`=b).
+No engine notification means "restored from minimise", and none more specific exists on desktop.
+It fires on every alt-tab, so every alt-tab costs one `UPDATE_ONCE` per picture. Harmless but not
+free, and not what the design asked for literally.
+
+⚠ **A second vacuous-test trap, same family as the `await` slip: GDScript lambdas capture outer
+locals BY VALUE.** `var fired = false` then `func(): fired = true` writes to a copy and the
+assertion silently proves nothing. Box it in a one-element `Array`. U5 and U6 were both affected.
 
 ### The pause model is MEASURED, and §1.6 stands
 
