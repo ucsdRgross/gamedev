@@ -175,3 +175,44 @@
   `PaletteDB` -- same reasoning as the S9 entry above: no palette role for it exists yet, inventing
   one would be a gap, and `test_palette.gd`'s drift scan is correctly flagging real, deliberate,
   temporary art (`_fail`/exit code untouched). Reversible the moment a real shadow-tint role exists.
+- **Pause-model spike (D6, Q75, QR6) -- MEASUREMENT ONLY, no §1.6 or production code changed.**
+  `Tests/Visual/pause_model_spike.gd`, run windowed by hand, printed:
+    - **Q-A** `paused=true`, `PROCESS_MODE_ALWAYS` node: ticked 12 times over 0.30s real time --
+      **KEPT PROCESSING**. Confirms §1.6's load-bearing claim: the wall/camera are not frozen by
+      the global pause flag.
+    - **Q-B** `paused=false`, `PROCESS_MODE_DISABLED` node: ticked 0 times over 0.30s -- **STOPPED**.
+      `PROCESS_MODE_DISABLED` halts `_process` unconditionally, independent of the tree's own
+      paused state.
+    - **Q-C** (the decisive one) `paused=false`, `PROCESS_MODE_DISABLED` node, `.timeout` on a
+      `get_tree().create_timer()` the node's OWN script started BEFORE being disabled: **THE AWAIT
+      RESUMED ANYWAY** (`resumed=true`). Confirms the coordinator's expectation exactly: a
+      `SceneTreeTimer` is owned by the `SceneTree`, not by any node, so a node's `process_mode` has
+      NO power to stop a timer/await already in flight on that node's own script -- only
+      `process_mode` gates `_process`/`_physics_process` notifications, nothing else. **This means
+      the owner's proposed model ("wall never paused, pictures `PROCESS_MODE_DISABLED` by default")
+      would NOT actually freeze a "disabled" screen's in-flight timers or awaits** -- exactly the
+      trap the coordinator named going in.
+    - **Q-D** `paused=true`, `PROCESS_MODE_PAUSABLE` node (today's ordinary default), run twice
+      (D1: timer created while already paused, watched to +0.60s; D2: timer already counting, THEN
+      paused mid-flight, watched to +0.666s), matching TEST_PLAN.md U5's own fixture shape: a bare
+      `get_tree().create_timer()` (`process_always=true`, the default) correctly fired at its
+      nominal delay in both trials (+297ms, +316ms for a 0.3s request, paused throughout).
+      **`Pacing.wait()` correctly did NOT fire in either trial** (`fired=false` at the point the
+      spike stopped watching) -- `Scripts/pacing.gd` IS pause-respecting, as designed. An earlier
+      version of this entry recorded the opposite (`Pacing.wait` firing at ~0ms) from a run before
+      the trap below was found and fixed; that record was itself wrong and is superseded by this one.
+  ⚠ **TRAP (found auditing this spike; not one of the four questions, but why the previous
+  Q-D run above lied) -- `await some_timer` on a bare `SceneTreeTimer` value resolves IMMEDIATELY
+  without suspending; GDScript's `await` only actually suspends on a `Signal` (or a running
+  coroutine's function state).** Only `await some_timer.timeout` suspends correctly. The spike's
+  Q-D fixture (`TimerNodeD._run_pacing()`) originally wrote `await Pacing.wait(0.3)` -- missing
+  `.timeout` -- so the await returned immediately with the `SceneTreeTimer` object itself as its
+  value instead of waiting for the signal, which is why it previously reported `fired=true` at
+  ~0-1ms and looked exactly like `Pacing.wait` resolves instantly. That was a bug in the spike's
+  measurement, not a defect in `pacing.gd`; confirmed by an independent throwaway probe (not
+  reusing the spike's code) that explicitly awaited `.timeout` and observed `Pacing.wait(0.3)`
+  correctly NOT firing within a 1.0s bound while paused. Fixed at `pause_model_spike.gd:112`
+  (`await Pacing.wait(0.3).timeout`); every other `await` in the file was audited and already
+  targets a real `.timeout` signal or a coroutine call. **TEST_PLAN.md's U5 and U6 are exactly
+  this shape** (asserting on a `Pacing.wait(...)` await) and will walk straight into the same
+  false result at S12 unless they also await `.timeout`.

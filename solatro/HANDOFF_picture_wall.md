@@ -219,6 +219,27 @@ starts reading it.
 | S10 `WallPicture` construction | done | N1, N5 green. `%Shadow`/`%Frame`/`%Screen` in that scene order, so the frame draws under the screen. NEAREST forced explicitly. `SubViewportContainer` appears only in a comment saying why it is banned — no node, never instantiated. **Overseer looked at `wall_s10_construction.png`**: six frames at differing sizes, one with a visibly thicker right border matching its `Vector4(8,8,50,8)`, shadows present, no overlaps, arranged radially about a central picture. | none beyond the pause trap below |
 | S11 render gating (owes N2, N3, N4, N6, N7) | next | — | — |
 
+### The pause model is MEASURED, and §1.6 stands
+
+Four questions, run against the live engine (`Tests/Visual/pause_model_spike.tscn`):
+
+| | Result |
+|---|---|
+| `paused=true` + `PROCESS_MODE_ALWAYS` | keeps processing — **12 ticks / 0.30 s** |
+| `paused=false` + `PROCESS_MODE_DISABLED` | `_process` stops — **0 ticks / 0.30 s** |
+| `paused=false` + `DISABLED`, node's own timer | ⚠ **still fires, `await` still resumes** |
+| `paused=true` | `Pacing.wait` **does not fire**; bare `create_timer` fires at ~300 ms |
+
+**Keep `get_tree().paused = true`.** The goal "the wall runs, only screens freeze" is already met —
+row 1 is why `Wall`/`%Camera2D`/`WallOverlay` being `ALWAYS` keeps them live. The alternative
+(leave the tree running, set pictures `DISABLED`) fails on row 3: **`SceneTreeTimer` belongs to the
+SceneTree, not the node**, so a "frozen" screen keeps firing timers and resuming `await`s and
+advances anyway. That is the exact escape `Pacing` exists to close, and row 4 shows it closed.
+
+⚠ **`await some_timer` resolves IMMEDIATELY; `await some_timer.timeout` suspends.** That one-token
+slip made this spike report `Pacing` as broken at +0 ms when it is sound. **U5 and U6 are exactly
+this shape** ("assert it did NOT fire") — written naively they pass while asserting nothing.
+
 ⚠ **Constructing a real `Wall` inside the shared test tree freezes every other suite.**
 `Wall._ready()` sets `get_tree().paused = true` globally — correct in the game, fatal in
 `all_tests.tscn`, where it produced a 600 s timeout with no banner. Any test building a real
