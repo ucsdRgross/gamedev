@@ -549,3 +549,25 @@
   `always_count=2`). Run against the fix: PASSED, three consecutive full-suite runs, 38 suites
   green each time. T13's own forced plateau sample is kept (a deterministic gate is still right for
   the dest-side latches it also exercises), but no longer carries the source-pause guarantee alone.
+- **S22 (owner's own ruling: "automated coverage for now") — controller's done-when is RELAXED,
+  NOT MET.** PLAN.md requires "the controller driven by hand through one full
+  navigate-enter-back-wall cycle"; that has not happened. `TestWallInput`'s I10
+  (`_test_most_recent_device_wins_controller_after_mouse`) covers only what a synthetic
+  `InputEventJoypadButton` can prove headless — that a controller-shaped action press latches the
+  selection indicator after a mouse move alone did not. **Still owed, untested by anything in this
+  run: deadzones, analogue-stick ramps/repeat timing (`wall_selection_repeat_delay`'s own
+  controller-held-stick case), and device hotplug/disconnect mid-session.**
+- **S23 (GAP-003=a, GAP-004=b) — `WallInput.PinchTracker` and `touch_target_px()`/`mm_to_px()`
+  are NEW members of `WallInput`, not fixed by §1.9's code block (which pins only `route()`'s own
+  signature).** The prose bullets ("track two ids, compare distance delta"; the clamp formula) are
+  normative; the exact shape holding that state across events is not, so a nested `RefCounted`
+  class (`WallInput.PinchTracker`, one instance per in-progress two-finger gesture, `feed(event,
+  threshold_px) -> Gesture`) was chosen — same "class docs pin the contract, not literally
+  everything" latitude S6's `Pacing` cast and S8's knob placement already used. `Gesture` LATCHES
+  once per two-finger session (fires at most one `PINCH_OUT`/`PINCH_IN` even as the fingers keep
+  moving further past threshold), matching Q119=a's "pinch is a one-shot request, not a continuous
+  stream" — the same reasoning `WallTransition`'s own pause/unpause/input-unlock booleans already
+  rest on. `touch_target_px(dpi, settings)` takes DPI as a parameter rather than reading
+  `DisplayServer.screen_get_dpi()` internally, purely so `TestWallInput` I13 can feed synthetic
+  absurd values; the real call site (not built this batch — nothing yet asks for a live target
+  size) is `WallInput.touch_target_px(DisplayServer.screen_get_dpi(), settings)`.

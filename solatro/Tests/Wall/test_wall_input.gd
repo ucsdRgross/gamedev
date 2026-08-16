@@ -1,9 +1,13 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_input.gd
 # ==============================================================================
-# WALL INPUT (S36, S19, S20, S21): TEST_PLAN.md §6 rows I1, I2, I3, I4, I5, I6, I7, I8, I9, I14.
-# NAMES.md already fixes this suite's name/script/suite_name(). NOT built here: I10-I13 (S22
-# controller, S23 touch) -- out of this batch per the overseer's own instruction.
+# WALL INPUT (S36, S19, S20, S21, S22, S23): TEST_PLAN.md §6 rows I1-I14, all of them.
+# NAMES.md already fixes this suite's name/script/suite_name().
+#
+# ⚠ S22's own done-when (PLAN.md) ALSO requires "the controller driven by hand through one full
+# navigate-enter-back-wall cycle" -- that is NOT done here and cannot be, headless. I10 below is
+# AUTOMATED COVERAGE ONLY, per the owner's explicit ruling ("automated coverage for now"); the
+# hand-driven pass is still owed (design/picture-wall/ASSUMPTIONS.md).
 #
 # Also covers two clauses of S36's done-when that have no TEST_PLAN row of their own (the plan's
 # own hole, closed per the overseer's phase3-close instruction -- extra coverage is welcome):
@@ -42,6 +46,12 @@ func _ready() -> void:
 	_test_screen_that_ignores_escape_wall_goes_back()
 	_test_wall_jump_3_enters_the_third_picture_in_placement_order()
 	_test_wall_is_deaf_to_arrows_while_a_screen_is_focused()
+	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
+	_test_most_recent_device_wins_controller_after_mouse()
+	behavior_section("TOUCH (I11, I12, I13, S23)")
+	_test_pinch_is_derived_from_two_touches()
+	_test_magnify_gesture_is_never_listened_for()
+	_test_touch_target_size_is_clamped()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
@@ -566,3 +576,133 @@ func _test_wall_is_deaf_to_arrows_while_a_screen_is_focused() -> void:
 			"an arrow press with a picture focused changes NOTHING about the wall's own selection",
 			"selected before=%s after=%s" % [selected_before, wall.selected_id])
 	_teardown(wall, [wp])
+
+# ------------------------------------------------------------------ I10 (S22 controller, AUTOMATED
+# COVERAGE ONLY)
+
+## I10 (Q124=a): MOST-RECENT-DEVICE-WINS -- a mouse move alone shows no keyboard/controller
+## indicator (same shape as I9's fresh-wall case), then a REAL synthetic `InputEventJoypadButton`
+## for `ui_down` (Godot's built-in default UI actions already bind the d-pad/left-stick -- nothing
+## in this project's `project.godot` overrides `ui_down`, so this exercises the actual default
+## binding, not a stand-in) shows it. This is the one piece of I10 that CAN run headless; it does
+## NOT drive a real controller by hand, so it does not meet S22's own done-when -- see the header
+## comment and ASSUMPTIONS.md.
+func _test_most_recent_device_wins_controller_after_mouse() -> void:
+	var wall := _build_wall()
+	var pictures := _six_pictures(wall)
+	wall.enter_wall_view(&"top")
+
+	var mouse_event := InputEventMouseMotion.new()
+	mouse_event.relative = Vector2(5, 5)
+	wall._unhandled_input(mouse_event)
+	check(not wall.selection_visible,
+			"a mouse move alone shows no keyboard/controller indicator")
+
+	var controller_event := InputEventJoypadButton.new()
+	controller_event.button_index = JOY_BUTTON_DPAD_DOWN
+	controller_event.pressed = true
+	wall._unhandled_input(controller_event)
+	check(wall.selection_visible,
+			"a controller directional press shows the indicator -- the most recent device wins "
+			+ "(Q124=a)")
+	_teardown(wall, pictures)
+
+# ------------------------------------------------------------------ I11, I12, I13 (S23 touch)
+
+## I11 (GAP-003=a): pinch is DERIVED from two tracked touch ids, not any gesture event -- a touch
+## DOWN for id 0 and id 1 six px apart on X, then three `InputEventScreenDrag` events for id 1
+## moving it a further +40px on X in total (distance grows past `wall_pinch_threshold_px`=24
+## partway through), asserts EXACTLY ONE `PINCH_OUT` across the whole sequence -- the later drag
+## events, still past threshold, must NOT re-fire (Q119=a: pinch is one-shot, like a button press).
+func _test_pinch_is_derived_from_two_touches() -> void:
+	var tracker := WallInput.PinchTracker.new()
+	const THRESHOLD := 24.0
+
+	var down0 := InputEventScreenTouch.new()
+	down0.index = 0
+	down0.pressed = true
+	down0.position = Vector2(100, 100)
+	check(tracker.feed(down0, THRESHOLD) == WallInput.PinchTracker.Gesture.NONE,
+			"first touch-down alone never fires a gesture")
+
+	var down1 := InputEventScreenTouch.new()
+	down1.index = 1
+	down1.pressed = true
+	down1.position = Vector2(106, 100)   # base distance 6px
+	check(tracker.feed(down1, THRESHOLD) == WallInput.PinchTracker.Gesture.NONE,
+			"second touch-down (base distance established) never fires a gesture by itself")
+
+	# Base distance 6px (id0 at x=100, id1 at x=106). Three drags move id1 by +40px total on X, in
+	# steps of 14/13/13 -- absolute id1.x after each: 120 (distance 20, still under the 24px
+	# threshold), 133 (distance 33, CROSSES threshold here), 146 (distance 46, stays crossed).
+	var fired_count := 0
+	var last_gesture := WallInput.PinchTracker.Gesture.NONE
+	for id1_x : float in [120.0, 133.0, 146.0]:
+		var drag := InputEventScreenDrag.new()
+		drag.index = 1
+		drag.position = Vector2(id1_x, 100)
+		var g := tracker.feed(drag, THRESHOLD)
+		if g != WallInput.PinchTracker.Gesture.NONE:
+			fired_count += 1
+			last_gesture = g
+
+	check(fired_count == 1, "pinch fires EXACTLY ONCE across the whole gesture, not once per event "
+			+ "past threshold", "fired_count=%d" % fired_count)
+	check(last_gesture == WallInput.PinchTracker.Gesture.PINCH_OUT,
+			"the fired gesture is PINCH_OUT (fingers moved apart)", str(last_gesture))
+
+## I12 (GAP-003=a): `InputEventMagnifyGesture` is NEVER listened for -- it does not fire on
+## Windows and must not be relied on. Push one straight into a tracker that already has two
+## fingers down (the state most likely to accidentally match something) and assert NOTHING
+## happens: no gesture returned, no internal state disturbed (a follow-up real drag still behaves
+## exactly as it would have without the magnify event ever having been fed).
+func _test_magnify_gesture_is_never_listened_for() -> void:
+	var tracker := WallInput.PinchTracker.new()
+	const THRESHOLD := 24.0
+	var down0 := InputEventScreenTouch.new()
+	down0.index = 0
+	down0.pressed = true
+	down0.position = Vector2(100, 100)
+	tracker.feed(down0, THRESHOLD)
+	var down1 := InputEventScreenTouch.new()
+	down1.index = 1
+	down1.pressed = true
+	down1.position = Vector2(106, 100)
+	tracker.feed(down1, THRESHOLD)
+
+	var magnify := InputEventMagnifyGesture.new()
+	magnify.factor = 2.0
+	var g := tracker.feed(magnify, THRESHOLD)
+	check(g == WallInput.PinchTracker.Gesture.NONE,
+			"an InputEventMagnifyGesture produces NO gesture -- it is never listened for",
+			str(g))
+
+	# Prove the tracker's real state is untouched: the SAME drag that fired PINCH_OUT in the test
+	# above still fires it here, unaffected by the magnify event in between.
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = Vector2(140, 100)   # distance now 40px, well past the 24px threshold
+	var after := tracker.feed(drag, THRESHOLD)
+	check(after == WallInput.PinchTracker.Gesture.PINCH_OUT,
+			"a real drag past threshold still fires normally after the magnify event was ignored",
+			str(after))
+
+## I13 (GAP-004=b, §1.9's literal formula): the touch target size clamps to the configured
+## floor/ceiling at absurd DPI readings -- DPI 1 (absurdly low) and DPI 10000 (absurdly high).
+func _test_touch_target_size_is_clamped() -> void:
+	var settings := PlayerSettings.new()
+	check(settings.wall_touch_target_mm > 0.0 and settings.wall_touch_target_min_px > 0.0
+			and settings.wall_touch_target_max_px > settings.wall_touch_target_min_px,
+			"the settings this test clamps against are sane before asserting the clamp itself",
+			"mm=%.2f min=%.1f max=%.1f" % [settings.wall_touch_target_mm,
+					settings.wall_touch_target_min_px, settings.wall_touch_target_max_px])
+
+	var low := WallInput.touch_target_px(1.0, settings)
+	check(is_equal_approx(low, settings.wall_touch_target_min_px),
+			"DPI 1 (absurdly low) clamps to the configured FLOOR",
+			"got=%.4f floor=%.1f" % [low, settings.wall_touch_target_min_px])
+
+	var high := WallInput.touch_target_px(10000.0, settings)
+	check(is_equal_approx(high, settings.wall_touch_target_max_px),
+			"DPI 10000 (absurdly high) clamps to the configured CEILING",
+			"got=%.4f ceiling=%.1f" % [high, settings.wall_touch_target_max_px])

@@ -1,4 +1,9 @@
-# HANDOFF — picture-wall shell, Phases 0–1 (S1–S8)
+# HANDOFF — picture-wall shell, Phases 0–4
+
+⚠ **Scope grew during the run.** The original brief was S1–S8; the owner extended it phase by
+phase. **Phases 0–4 are complete.** Remaining: Phase 5 (frames/wall surface, by-eye only),
+Phase 6 (info mode), Phase 7 (screens onto the wall), Phase 8 (the layout tool). Rows F10–F13
+and J1–J7 are NOT-YET-APPLICABLE until Phases 6/7 build what they test.
 
 | | |
 |---|---|
@@ -6,7 +11,27 @@
 | Branched from | `6945c6f` on main |
 | Implementer agent | first one died to an API session limit and its transcript is gone; respawn cold |
 | Current phase | Phase 1 — **S8 in progress**, then GAP-007 harness work. **S4 PARKED on GAP-006**, S2 parked partial |
-| Scope | S1–S8 only. Stop at S8. |
+| Scope | Phases 0–4 done. Phase 5 next. |
+
+## ⚠ What the snapshots show that the tests cannot
+
+Overseer looked at all five wall renders. Two findings no assertion covers:
+
+**Full unlock still looks lopsided.** `01_wall_view_everything_unlocked` has an empty
+bottom-left quadrant with the mass upper-right — the same complaint that produced GAP-010.
+Rebalancing is the **identity at full unlock**, so authored angles alone govern there and the
+fixture's angles produce this. `02_wall_view_partial_unlock_rebalanced` *is* well spread, which
+proves the rebalancer fires and works. **If a fully-unlocked wall is meant to self-balance, that
+is not built** — it is a one-line change whose cost is that authored angles become advisory.
+
+**Wall view clips pictures at the view edges.** In `01`, 4 of 12 are cut by the frame; at 32:9
+several more. This is per spec — `Q5`=(b) fill crops the long axis, and `G10` supplies pan to
+reach what falls outside — but the visible consequence is that **wall view never shows the whole
+wall**. Worth an owner look before Phase 6 builds on it.
+
+At 32:9 the ellipse clamp does its job — nothing is stretched into a pancake — but the
+composition is upper-heavy with empty bottom corners. That is `TEST_PLAN.md` §10 item 7's
+question, and the honest answer is "it saves it, but does not compose it".
 
 Read first: `design/picture-wall/PLAN.md`, `TEST_PLAN.md`, `NAMES.md`. `DESIGN.md` is the
 authority on behaviour — read only the section a dispute needs.
@@ -242,18 +267,36 @@ Do not "simplify" the two into one.
 implementation choice that failed to detect it. Nothing was being decided. The measurements are
 kept in the file because they shaped the fix.
 
-### Phase 4 — S19/S20/S21 done; S22 and S23 outstanding
+### Phase 4 — S19-S23 all closed; S22 by a relaxed done-when
 
 `WallInput.route` per §1.9, and rows I1, I2, I3, I4, I7, I8, I14 (I5/I6/I9 came with S36).
 Verified: the wall uses `_unhandled_input` **only** — zero plain `_input` handlers — so a focused
 screen structurally gets first refusal (`Q100`=a). All six `NAMES.md` InputMap actions registered.
 G11 "no free zoom" is no longer vacuous: I8 wires the wheel and asserts the wall does not zoom.
 
-⚠ **S22 (controller) cannot be closed unattended.** Its done-when requires driving a real
-controller by hand through a full navigate-enter-back-wall cycle. Automated coverage of I10 is not
-that, and marking it done on tests alone would be a false claim. **Needs the owner, or an explicit
-decision to accept automated coverage.** S23 (touch) is automatable — synthetic
-`InputEventScreenTouch` — and remains to do.
+⚠ **S22's done-when is CONSCIOUSLY RELAXED, by owner decision: "automated coverage for now".**
+PLAN.md §2 requires *"the controller is driven by hand through one full navigate-enter-back-wall
+cycle"*. **That has not happened.** S22 is closed on synthetic `InputEventJoypad*` coverage of
+I10 alone. This is a known, accepted shortfall — not a met requirement — and the hand-driven
+cycle is still owed before release. Anything a synthetic event cannot reproduce (real deadzones,
+analogue ramps, device hotplug, driver quirks) remains untested.
+
+**S23 (touch) is closed, fully automated, done-when met as written.** `WallInput.PinchTracker`
+(GAP-003=a) and `WallInput.touch_target_px()`/`mm_to_px()` (GAP-004=b) land I11-I13: pinch latches
+exactly once per two-finger gesture past `wall_pinch_threshold_px`, `InputEventMagnifyGesture` is
+structurally never matched (no branch for it, not a skipped check), and the touch-target clamp
+holds at DPI 1 and DPI 10000. `TestWallInput` now covers I1-I14, all fourteen rows, in one suite —
+`WALL INPUT: ALL 48 CHECKS PASSED` standalone, part of the standing `ALL 38 SUITES` green run.
+
+**Coordinator-requested fuzz soak and by-eye snapshots (not TEST_PLAN rows, extra verification):**
+`Tests/Visual/wall_transition_fuzz_soak.gd` — 240 real, unforced transitions, seed 20260816
+(replayable, reproduced identically on a second run), `wall_transition_delay` down to 0.0044s (the
+zone GAP-012 reproduced in), window aspect re-rolled every 40 iterations across 4:3-32:9 with a
+REAL `WallPacker.pack()` re-pack each time — `ALL 1213 CHECKS PASSED`, zero invariant violations
+(one ALWAYS screen, valid focus stack, no overlap, every round). `Tests/Visual/
+wall_verify_snapshot.gd` wrote five by-eye PNGs (everything unlocked, a partial-unlock rebalance,
+mid-transition travel phase, a landed focused picture at rest, wall view at 32:9) — overseer's own
+sign-off, not asserted here.
 
 ### ~~GAP-012~~ (superseded by the entry above)
 
