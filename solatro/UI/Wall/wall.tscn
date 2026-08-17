@@ -31,3 +31,15 @@ unique_name_in_owner = true
 [node name="Overlay" parent="." instance=ExtResource("2_overlay")]
 unique_name_in_owner = true
 process_mode = 3
+
+[node name="MusicA" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+process_mode = 3
+bus = &"Music"
+volume_db = -80.0
+
+[node name="MusicB" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+process_mode = 3
+bus = &"Music"
+volume_db = -80.0

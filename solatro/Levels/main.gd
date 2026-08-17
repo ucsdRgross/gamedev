@@ -28,6 +28,10 @@ static var save_info : RunState = RunState.new()
 var wall : Wall = null
 var _pictures : Dictionary[StringName, WallPicture] = {}
 var _rects : Dictionary[StringName, PictureRect] = {}
+## S33 (Q167=c): every picture's own authored data, kept so `_focus_picture()`/`_go_to_wall_view()`
+## can read `.music` for whichever id they are moving to/from -- `WallPicture.build()` takes an
+## entry as a parameter but does not keep one, so nothing else on this class already holds it.
+var _entries : Dictionary[StringName, PictureEntry] = {}
 var _focus_stack : FocusStack = null
 ## `&""` while in wall view; otherwise the id of whichever picture is currently focused. Tracked
 ## here (not read back off `wall`) because `Main` is the one that knows what "focused" means for
@@ -68,6 +72,9 @@ func _ready() -> void:
 	camera.zoom = Vector2.ONE * WallPicture.focused_scale(start_rect.size, _window_size,
 			SettingsManager.settings.wall_overfill_margin)
 	_current_focus = &"start_menu"
+	# S33 (Q167=c, M1): no ceremony, matching the camera's own "starts already focused" cold-launch
+	# rule -- start_menu's music (if any) begins immediately, at full volume, nothing to fade FROM.
+	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size())
 
 ## S30 (B7, Q211=a, Q141=a): packs `Wall.initial_layout()` and builds every picture, reparenting
@@ -86,6 +93,7 @@ func _build_pictures() -> void:
 	var pictures_root : Node = wall.get_node(^"%Pictures")
 	for rect : PictureRect in rects:
 		_rects[rect.id] = rect
+		_entries[rect.id] = by_id[rect.id]
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 		pictures_root.add_child(wp)
 		var live_screen : Node = null
@@ -118,6 +126,7 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	for rect : PictureRect in rects:
 		rects_by_id[rect.id] = rect
 		_rects[rect.id] = rect
+		_entries[rect.id] = by_id[rect.id]
 		if not _pictures.has(rect.id):
 			var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 			pictures_root.add_child(wp)
@@ -152,17 +161,27 @@ func _footprint(rect: PictureRect) -> Vector2:
 ## every picture-to-picture move (`_focus_picture()` below), since it ALREADY latches the
 ## pause/unpause boundaries correctly (S14-S18/S28) -- this helper does not, and must never be
 ## used between two pictures.
-func _animate_camera(target_pos: Vector2, target_zoom: float) -> void:
+## S33 (Q167=c, Q168=c, Q170=b): also drives the wall's own music cross-fade for this move, using
+## the SAME `Wall.update_travel_music()` distance-driven blend `_focus_picture()`'s WallTransition
+## branch uses below -- `audio_dest_entry == null` (wall view has no picture of its own, Q167=c)
+## fades the current track out with nothing to fade IN, exactly what entering wall view needs.
+func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centre: Vector2,
+		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry) -> void:
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var settings := SettingsManager.settings
 	var duration := WallTransition.total_duration(settings)
+	wall.begin_music_crossfade(audio_dest_entry)
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(camera, "position", target_pos, duration) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(camera, "zoom", Vector2.ONE * target_zoom, duration) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(func(_progress: float) -> void:
+			wall.update_travel_music(audio_source_centre, audio_dest_centre, camera.position),
+			0.0, 1.0, duration)
 	await tween.finished
+	wall.finish_music_crossfade()
 
 ## Focuses `id`, `record_visit` controlling whether this is a NEW navigation (visit()) or a
 ## replay of history already mutated by back()/forward() themselves (which must not visit() again
@@ -180,12 +199,20 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		transition.landed.connect(func(_lid: StringName) -> void: landed[0] = true)
 		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, _window_size,
 				settings)
+		# S33 (Q167=c, Q168=c, Q170=b): cross-fades from the source's music toward the dest's over
+		# the SAME real camera motion WallTransition is already driving -- see
+		# Wall.update_travel_music()'s own doc comment for the distance-driven blend and
+		# ASSUMPTIONS.md for the reading taken on Q168's "fades out over the zoom-out."
+		wall.begin_music_crossfade(_entries[id])
 		while not landed[0]:
+			wall.update_travel_music(source_rect.centre, dest_rect.centre, camera.position)
 			await get_tree().process_frame
+		wall.finish_music_crossfade()
 		source_wp.unfocus(_footprint(source_rect))
 	else:
 		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
-				_window_size, settings.wall_overfill_margin))
+				_window_size, settings.wall_overfill_margin),
+				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
 	if record_visit:
@@ -199,7 +226,10 @@ func _go_to_wall_view() -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
-		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size))
+		# S33 (Q167=c): wall view has no picture of its own, so there is nothing to fade music IN
+		# to -- a null dest entry fades the current track out over the same move.
+		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),
+				source_rect.centre, wall.wall_view_centre(), null)
 		source_wp.unfocus(_footprint(source_rect))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""

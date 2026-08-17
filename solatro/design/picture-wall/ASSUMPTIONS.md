@@ -580,6 +580,58 @@
   `test_wall_render.gd` (`test_overfill_margin_knob_actually_changes_the_scale`) proves the knob
   is actually read: two different margins on the same sizes produce two different, exactly-
   predicted scales — the "a knob nothing reads is the defect" trap this run's own HANDOFF names.
+- **S33 (M10, Q167=c) — `PictureEntry` gains a `music : AudioStream = null` field, beyond
+  `PLAN.md` §1.1's original list.** Read narrowly, this is the same category GAP-013 filed (a new
+  field on a list PLAN.md calls exhaustive) — but the shape here is not novel the way frame COLOUR
+  was: `frame_texture : Texture2D = null` already establishes "one nullable per-picture asset
+  reference, null = none" as the field's own convention, and `music` is structurally identical
+  (an asset reference, not a new tunable parameter with no home). One defensible shape, reversible,
+  logged rather than filed. `Wall.initial_layout()`'s four starting entries all leave it at the
+  default `null` — no track is assigned to any picture, deliberately: picking WHICH stream plays
+  where is authored content, the same "not this implementer's call" boundary QR4=b's frame art and
+  L3's default-background image already sit behind (GAP-013). The mechanism is real and functional
+  with zero authored content, same shape as S24's shared placeholder frame texture.
+- **S33 (Q171=b) — no new audio bus; the wall's two music players use the SAME "Music" bus
+  `main.tscn`'s own existing (but currently dormant — no `autoplay`, and `grep` finds no code
+  anywhere that calls `.play()` on it) `AudioStreamPlayer` already targets** (confirmed present in
+  `Audio/default_bus_layout.tres`, bus index 1, sending to Master). That legacy node is left
+  completely untouched — it is not this step's to fix or repurpose, and doing either would be
+  editing something outside S33's own scope for no requirement in M10/Q167-Q171.
+- **S33 (Q167=c, Q168=c, Q170=b) — ONE mechanism realises all three, not three separate ones: the
+  music cross-fade is driven by the camera's own REAL, already-animated position, not a second,
+  separately-authored timing curve.** `Wall.update_travel_music(source_centre, dest_centre,
+  camera_pos)` computes `t = 1 - distance(camera_pos, dest_centre) / distance(source_centre,
+  dest_centre)` every frame a camera move is in flight (both the `WallTransition`-driven
+  picture-to-picture case, sampled inside `Main._focus_picture()`'s own existing per-frame
+  `landed`-wait loop, and the plain-`Tween`-driven wall-view case, sampled via
+  `tween_method()` in `Main._animate_camera()`) and sets the outgoing/incoming players' volumes
+  from it directly. This reads Q170=b's "a live screen you are travelling toward gets louder"
+  LITERALLY (volume follows real camera distance) and needs no new `PlayerSettings` knob — no
+  attenuation range/curve was added. **The reading taken for Q168=c ("fades out over the
+  transition's zoom-out") is looser than its literal words**: the outgoing picture's volume falls
+  as the camera's real distance from it grows over the WHOLE move, not specifically gated to the
+  zoom-out phase's own fraction/duration (`WallTransition` exposes no public hook for its internal
+  source-pause latch to bind to more precisely). Defensible as one coherent mechanism rather than
+  two overlapping ones, but flagged plainly as a loosened reading, not a literal one — an owner who
+  wants the fade-out confined to the zoom-out phase specifically should treat this as open.
+- **S33 (Q167=c) — entering wall view has no picture of its own, so `_go_to_wall_view()` passes a
+  null `dest_entry`** to `_animate_camera()`/`begin_music_crossfade()`, which fades the current
+  track to silence over the same move rather than leaving an arbitrary picture's track playing
+  unattended. Continuous camera-distance-driven attenuation while STATIONARY in wall view (as
+  opposed to during an actual camera move) is NOT built — wall view's own pan/zoom camera input is
+  itself unwired (S36's own flagged shortfall, "provisional, unverified plumbing"), so there is no
+  live camera motion in wall view for a continuous attenuation effect to respond to yet.
+- **S33 — per TEST_PLAN.md §11's own deliberate exemption, no test was added or attempted for any
+  of this** (cross-fade correctness is a listening judgement, no audio harness exists, building one
+  is explicitly out of scope). Verified only by: the full suite staying green (39 suites, S33's own
+  stated done-when), a re-import with no parse errors, and a real windowed cold-launch boot
+  (`Tests/Visual/main_boot_snapshot.gd`, unmodified) producing no runtime error and an unchanged
+  screenshot. The navigation paths themselves (`_focus_picture()`'s transition branch,
+  `_go_to_wall_view()`) are NOT exercised by any test or diagnostic in this repo — confirmed by the
+  same grep the S30/S31 wire-up entry above already ran (`grep -rn "Main\." Tests` finds nothing
+  but `Main.save_info`) — so this code is verified by code review and the green suite only, the
+  same depth the S30/S31 wire-up entry already accepted for interactive navigation beyond cold
+  launch, not by having actually been run end-to-end and watched.
 - **GAP-010 (amended, owner) — rebalancing is UNCONDITIONAL.** `WallPacker._rebalanced_angles()`
   dropped the "full unlock is the identity" branch entirely; every unlock set, complete or
   partial, re-sequences its non-home ring by ascending `slot` and spreads it evenly around the
@@ -850,3 +902,103 @@
     exact `attach_screen()`/`focus()`/`unfocus()` API) are the two highest-risk pieces and both
     are independently verified; the orchestration code connecting them uses only already-tested
     building blocks (`WallTransition`, `FocusStack`, `WallPicture`).
+- **S34 (M6, Q180) — the tool hosts REAL scenes, not placeholders, OVERRIDING M6's own literal
+  text ("uses PLACEHOLDERS, with an option to swap in snapshots of the real scenes").** Two
+  sources point the other way and neither is this run's to override quietly, so this is flagged
+  plainly rather than silently resolved either direction: `Q180`'s own DEFAULT is (a) "live -- it
+  hosts the real scenes, per this repo's 'no mocks in tools' rule", and `/CLAUDE.md` rule 5 (one
+  of five HARD, repo-wide, unconditional rules) says outright "No mocks in tools. A harness hosts
+  the real scene and the real data; a stand-in cannot disagree with what it models." M6's own text
+  frames placeholders as "a deliberate exception to the no-mocks rule" for THIS tool specifically
+  -- but that exception is only one chart's reasoning against two aligned, more authoritative
+  sources (the questionnaire's own default AND a hard project rule), not the other way round.
+  Built with `WallPicture.build()` hosting whatever `PictureEntry.scene` actually is (real
+  instantiation, exactly the production path) -- for `Wall.initial_layout()`'s actual four
+  starting pictures this is MOOT in practice: all four currently have `scene == null` in
+  production (`start_menu`/`map` are wired via `Main`'s own persistent reparenting, `deck`/`game`
+  likewise never set `.scene`), so whichever reading had been chosen would render identically
+  today. The distinction only matters for a FUTURE entry that sets a real `.scene`, and this
+  tool will host it live when that happens. The "snapshot swap" half of M6 was not built --
+  there is nothing to swap TO while every entry's `.scene` is null, and building a capture system
+  for content that does not exist yet would be speculative scope. Owner should treat the M6-vs-
+  Q180/CLAUDE.md conflict as still open if a stronger reading is wanted.
+- **S34 — the `WallFrame` script NAMES.md names does not exist and was NOT created.** NAMES.md
+  names the path/class ("the frame. A NinePatchRect, not a system"), and PLAN's S34 line lists it
+  among the scripts that must be `@tool` -- but no earlier step ever built it; `%Frame` in
+  `wall_picture.tscn` is a bare, script-less `NinePatchRect` that `WallPicture` manipulates
+  directly (confirmed by repo-wide grep: the only hit for "WallFrame" anywhere is a node NAME
+  inside an unrelated snapshot scene, never a script). Making a non-existent script `@tool` is not
+  a thing to do; `@tool` was added to the three scripts that DO exist and that this step's own
+  tool touches -- `WallLayout`, `PictureEntry`, `WallPicture`. Not a gap this step opens (the
+  missing script predates S34 and nothing about the tool depends on it existing), but flagged so
+  the next reader does not go looking for a file that was never built.
+- **S34 — no custom UI was built; every field is a plain `@export` on `WallEditor` itself, all
+  edited through the Inspector.** `Tools/fx_editor.gd`/`Tools/spotlight_tool.gd` both establish
+  this as the repo's own precedent for these tools ("open the tool scene, drag the knobs in the
+  inspector") -- neither has a single `Button`/`CanvasLayer`/custom Control (confirmed by grep),
+  and the Inspector already gives free add/remove-array editing (`layout.pictures`), nested
+  sub-resource panels (every `PictureEntry`/every `PlayerSettings` "Picture wall" row) and undo.
+  `save_now`/`revert_now`/`play_transition` are plain `bool` exports that act as BUTTONS and reset
+  themselves the instant they fire -- this Godot version has no `@export`-button annotation, no
+  other tool in this repo needed one before, and this is the standard declarative substitute.
+  `preview_source_id`/`preview_dest_id` (Q183=a's transition picker) are typed `StringName` fields
+  the owner types an exact picture id into, rather than a dropdown -- a real UX rougher edge
+  (mistyping an id silently does nothing, rather than being unselectable), accepted for the
+  effort/robustness trade-off given the other option was building the FIRST custom Control UI any
+  tool in this repo has needed.
+- **S34 — `WallEditor` never instantiates a real `Wall`, only reuses `WallPacker`/`WallPicture`/
+  `WallTransition` directly.** `Wall._ready()` sets `get_tree().paused = true` GLOBALLY (§1.6) --
+  correct in the real game, but calling it from a `@tool` script running INSIDE THE EDITOR would
+  pause the editor's own scene tree and every other open `@tool` scene with it (`TestWallRender`'s
+  own suite hit the identical hang from a DIFFERENT angle -- constructing a real `Wall` inside the
+  shared test tree, ASSUMPTIONS.md's S10 entry -- and had to undo the pause immediately for the
+  same reason). The tool's own `_pictures_root`/`_viewports_root`/`_camera` are a minimal,
+  purpose-built stand-in for exactly the three things `Wall` owns that matter here (S9's own scope
+  line), never a re-derivation of the packing/rendering/transition logic itself.
+- **S34 — a `SettingsManagerClass` stand-in is registered at `/root/SettingsManager` ONLY when
+  genuinely absent** (confirmed fact, `fx_editor.gd`/`spotlight_tool.gd`'s own headers: "the
+  editor instantiates no autoloads"), because `WallPicture.build()` reads `SettingsManager.
+  settings.wall_light_offset` directly rather than taking it as a parameter (its own established,
+  intentional idiom -- ASSUMPTIONS.md's S25 entry -- since `build()`/`focus()`/`unfocus()` are not
+  pure functions the way `WallPacker`/`WallTransition.sample_at()` are). Seeded with the tool's
+  OWN `preview_settings`, never the real `user://settings.tres` -- editing `wall_light_offset` in
+  the Inspector then also moves the live preview's shadow, same as every other knob. Never
+  touches an ALREADY-PRESENT `SettingsManager` (an F6/console-exe run already has the real
+  autoload; a second tool instance would already have one from the first) and frees only the one
+  it created itself, in `_exit_tree()`.
+- **S34 — `Camera2D` does not drive the Godot EDITOR's own 2D viewport; only a RUNNING scene's
+  window follows a current camera.** Every field (`layout`, `preview_settings`, `preview_aspect`,
+  `unlocked_ids`) is equally live either way -- the packed result simply appears wherever the
+  editor is scrolled/zoomed to, independent of any node -- but Q183's transition preview ("play
+  the camera move with the real curves") is only something to WATCH when the tool is actually RUN
+  (F6, or the console exe), same as every `Tests/Visual/*_snapshot.gd` diagnostic already is.
+  Documented rather than worked around: there is no way to make a `@tool` scene's own camera drive
+  the editor's viewport, and `WallTransition`/`Camera2D` are still the REAL objects regardless of
+  whether anything is watching.
+- **S34 verification — by-eye only, per TEST_PLAN.md §11 ("editor tools in this repo are not
+  covered by the suite... consistent with Tools/fx_editor.gd and Tools/spotlight_tool.gd, have
+  none").** `Tests/Visual/wall_editor_snapshot.gd` (a new by-eye diagnostic, same family as
+  `main_boot_snapshot.gd`) instantiates the REAL `Tools/wall_editor.tscn`, screenshots, changes
+  `preview_aspect` live (16:9 -> 3.0) and screenshots again -- the two images show a genuinely
+  different pack (the two non-home pictures move further apart and toward the frame edges,
+  confirming the ellipse widened), not just two identical renders. It then separately proves the
+  §3 Phase 8 gate ("writes the resource, and re-opens with the same layout"): edits `gap_px` to a
+  probe value, saves, reloads the file with `CACHE_MODE_IGNORE` (a genuinely separate disk read,
+  never the same in-memory object), and confirms the reloaded value and picture count match --
+  `ok=true` — then reverts to the class default and re-saves, so the diagnostic does not leave the
+  real `res://Assets/Wall/layout_default.tres` sitting at a throwaway value. This run is also what
+  wrote the file's first real content (`Wall.initial_layout()`'s own four starting pictures,
+  `gap_px` at its class default so the property is correctly omitted from the saved file entirely
+  -- Godot's own resource saver skips anything equal to its script default).
+- **S34 — the saved `layout_default.tres` embeds a ~30 KB inline `Image`/`ImageTexture`, not a
+  file reference.** `PictureEntry.frame_texture` on all four starting pictures points at
+  `WallPicture.shared_frame_texture()` -- a `static var`, CODE-GENERATED at runtime (S24, GAP-013:
+  placeholder art, not a design tunable), never loaded from a `res://` path -- so `ResourceSaver`
+  has no file to reference and embeds the pixels inline instead. Confirmed bounded, not a scaling
+  concern: Godot's saver deduplicates by object identity, so all four pictures share ONE embedded
+  40x40 image (measured: exactly one `sub_resource type="Image"` block in the saved file), not
+  four copies. Not a defect this step introduces or should fix -- it is a direct, previously-
+  unrealized consequence of S24's own placeholder-texture design, only now visible because S34 is
+  the first step to actually write this resource to disk. Flagged for whoever gives the frame art
+  a real, file-backed texture (QR4=b's eventual "shader and art pass"), since that will also make
+  this embedding disappear on its own.

@@ -347,6 +347,75 @@ func debug_memory_readout() -> String:
 	return "WALL DEBUG: %d screens instantiated, %d viewports, ~%.2f MB texture memory" \
 			% [screens, viewports, texture_bytes / 1048576.0]
 
+## S33 (Q167=c, Q171=b): the wall's own two "ping-pong" music players (`%MusicA`/`%MusicB` in
+## `wall.tscn`), both on the SAME pre-existing "Music" bus `main.tscn`'s own legacy player already
+## uses -- no new bus. Exactly one is ever the FOREGROUND player between crossfades; `_music_active`
+## says which index (0 or 1). Cached `@onready`, same typed-unique-node convention
+## `WallPicture._frame`/`_screen`/`_shadow` already use.
+@onready var _music_a : AudioStreamPlayer = %MusicA
+@onready var _music_b : AudioStreamPlayer = %MusicB
+var _music_active : int = 0
+
+func _music_player(index: int) -> AudioStreamPlayer:
+	return _music_a if index == 0 else _music_b
+
+## S33 (Q167=c): starts `entry.music` on the foreground player immediately, at full volume, with no
+## fade -- the cold-launch case (M1: "the camera starts already focused, no wall-view flash"), where
+## there is nothing yet to cross-fade FROM. A null `entry.music` leaves the wall silent.
+func start_music(entry: PictureEntry) -> void:
+	_music_player(1 - _music_active).stop()
+	var fg := _music_player(_music_active)
+	if entry == null or entry.music == null:
+		fg.stop()
+		return
+	fg.stream = entry.music
+	fg.volume_db = 0.0
+	fg.play()
+
+## S33 (Q167=c, Q168=c, Q170=b): arms the BACKGROUND player with `dest_entry`'s own track (or
+## silence, `dest_entry == null`/`dest_entry.music == null`), ready for `update_travel_music()` to
+## blend per frame. A no-op when `dest_entry.music` is literally the SAME stream already playing in
+## the foreground (e.g. stepping back and forth between two pictures that share a track) -- no
+## restart, no audible glitch.
+func begin_music_crossfade(dest_entry: PictureEntry) -> void:
+	var fg := _music_player(_music_active)
+	if dest_entry != null and dest_entry.music != null and fg.stream == dest_entry.music \
+			and fg.playing:
+		return
+	var bg := _music_player(1 - _music_active)
+	bg.stream = dest_entry.music if dest_entry != null else null
+	bg.volume_db = -80.0
+	if bg.stream != null:
+		bg.play()
+	else:
+		bg.stop()
+
+## S33 (Q170=b -- "a live screen you are travelling toward gets louder"): the per-frame blend during
+## a camera move -- `t` is the camera's own fractional progress from `source_centre` toward
+## `dest_centre` (0 at the source, 1 at the destination), so the crossfade is driven by the SAME real
+## camera position the transition is already animating, not a separate authored timing curve (no new
+## `PlayerSettings` knob needed). This also realises Q168=c's "fades out over the [move]" for the
+## OUTGOING picture, since its volume falls as the camera's real distance to it grows, exactly in
+## step with however much of the move has actually happened -- see ASSUMPTIONS.md for the reading
+## taken (camera-distance-driven, not zoom-out-phase-specific). Guards `source_centre == dest_centre`
+## (division by zero) even though no real caller reaches this with equal points.
+func update_travel_music(source_centre: Vector2, dest_centre: Vector2, camera_pos: Vector2) -> void:
+	var total := source_centre.distance_to(dest_centre)
+	var t := 1.0 if total <= 0.0 else \
+			clampf(1.0 - camera_pos.distance_to(dest_centre) / total, 0.0, 1.0)
+	_music_player(_music_active).volume_db = linear_to_db(clampf(1.0 - t, 0.001, 1.0))
+	_music_player(1 - _music_active).volume_db = linear_to_db(clampf(t, 0.001, 1.0))
+
+## S33: resolves a crossfade begun by `begin_music_crossfade()` -- stops and silences the OLD
+## foreground player outright (never left merely quiet) and flips which player is foreground, so the
+## next crossfade's "background" player is the one that just finished fading out.
+func finish_music_crossfade() -> void:
+	var old_fg := _music_player(_music_active)
+	old_fg.stop()
+	old_fg.volume_db = -80.0
+	_music_active = 1 - _music_active
+	_music_player(_music_active).volume_db = 0.0
+
 ## S36's own done-when ("the wall button is hidden while only one picture exists"): forwards to the
 ## overlay, adding the one piece of state only the wall itself knows.
 func refresh_overlay(stack: FocusStack) -> void:

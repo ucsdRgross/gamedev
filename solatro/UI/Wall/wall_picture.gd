@@ -1,3 +1,9 @@
+@tool
+## S34 (Q185=a, §1j): the layout tool builds REAL `WallPicture` instances for its live preview
+## (Q180's own default, "no mocks in tools" -- CLAUDE.md rule 5) -- a non-`@tool` script would load
+## as a PLACEHOLDER the moment the tool's own scene is open in the editor, and calling `build()` on
+## a placeholder throws "Attempt to call a method on a placeholder instance" (the exact
+## `spotlight_tool.gd` lesson this repo already learned once for `spotlight_reveal_beat_fraction`).
 class_name WallPicture
 extends Node2D
 ## One picture: frame + screen sprite + its own SubViewport (PLAN.md §1.7; NAMES.md). A Sprite2D

@@ -1,3 +1,7 @@
+@tool
+## S34 (Q185=a, §1j): the layout tool loads/saves this resource directly -- a non-`@tool` script
+## loads in the editor as a PLACEHOLDER and the editor silently drops any property it could not
+## see on save. See `picture_entry.gd`'s own header for the full citation.
 class_name WallLayout
 extends Resource
 ## The authored PATTERN — rings, gap, ellipse clamps, the picture list. Consumed whole by
