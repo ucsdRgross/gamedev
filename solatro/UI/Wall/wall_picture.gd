@@ -208,6 +208,30 @@ static func focused_scale(native_size: Vector2, window_size: Vector2,
 		overfill_margin: float) -> float:
 	return maxf(window_size.x / native_size.x, window_size.y / native_size.y) * overfill_margin
 
+## S28 (J2/Q128 override -- "zooms out just enough to reveal the BOTTOM frame only. Top, left and
+## right stay covered"): camera position/zoom for a picture in Info mode, as a `{"position":
+## Vector2, "zoom": float}` dictionary (`WallTransition.phase_bounds()`'s own return-shape
+## precedent, not a new nested class for two values).
+##
+## Zoom is UNCHANGED from `focused_scale()`'s own at-rest fill value -- only the camera POSITION
+## shifts downward. This is provably correct for EVERY frame_px, not just a symmetric one: at
+## rest, H3 already guarantees the whole frame (all four edges) sits outside the visible rect, so
+## `frame.top < visible_top_rest` always holds; shifting the camera straight down by `delta > 0`
+## only INCREASES `visible_top` (`visible_top_rest + delta`), which can never cross back below
+## `frame.top` (a fixed value the shift never touches) -- so the top edge cannot be revealed by
+## ANY positive downward shift, regardless of how large. `delta` is chosen as the SMALLEST shift
+## that brings the bottom frame edge into view plus `wall_frame_reveal_margin`'s own clearance
+## (reused rather than a second near-identical knob -- ASSUMPTIONS.md): the same "extra share of
+## the picture's size revealed" role it already plays for the transition's own zoom-out stop.
+static func info_zoom_state(rect: PictureRect, window_size: Vector2,
+		settings: PlayerSettings) -> Dictionary:
+	var zoom := focused_scale(rect.size, window_size, settings.wall_overfill_margin)
+	var frame_rect := WallPacker.frame_outer_rect(rect)
+	var visible_bottom_rest := rect.centre.y + window_size.y / (2.0 * zoom)
+	var target_bottom := frame_rect.end.y + settings.wall_frame_reveal_margin * rect.size.y
+	var delta := maxf(target_bottom - visible_bottom_rest, 0.0)
+	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
+
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).
 func teardown() -> void:

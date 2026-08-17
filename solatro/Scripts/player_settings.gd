@@ -588,3 +588,17 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_light_offset = value
 		settings_changed.emit()
+## S27 (Q129=a): the info card's own fixed width, in screen px -- anchored to the bottom of the
+## WINDOW (screen space, not diegetic), so its width is a screen-pixel count like the touch-target
+## trio, never a wall-space size.
+@export var wall_info_card_width : float = 480.0:
+	set(value):
+		wall_info_card_width = value
+		settings_changed.emit()
+## S27 (J12/Q140 override -- "text size never shrinks... the card SCROLLS UPWARD over the whole
+## picture" once content exceeds this): the height, in screen px, past which the card stops
+## growing and scrolls instead of continuing to expand.
+@export var wall_info_card_max_height : float = 320.0:
+	set(value):
+		wall_info_card_max_height = value
+		settings_changed.emit()

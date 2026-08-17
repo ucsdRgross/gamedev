@@ -176,6 +176,27 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		s.dest_frame_in_view = visible.encloses(WallPacker.frame_outer_rect(dest_rect))
 		return s
 
+	# S28 (J10=Q137 override, "with Info mode on a transition is a pure TRAVEL -- the camera never
+	# leaves the info zoom"): zoom is CONSTANT throughout, held at the SOURCE's own info-zoom scale
+	# (never re-derived per frame, never blended toward the destination's own scale, which could
+	# differ if the two pictures are different sizes -- "never leaves" reads as "one fixed value
+	# for the whole transition", not "smoothly interpolated between two"). Position still travels
+	# (straight line, same as the ordinary case) between each picture's own info-zoom POSITION, so
+	# the destination's own bottom-frame reveal is what the camera arrives at.
+	if settings.wall_info_mode:
+		var source_info := WallPicture.info_zoom_state(source_rect, window_size, settings)
+		var dest_info := WallPicture.info_zoom_state(dest_rect, window_size, settings)
+		var info_t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
+		s.camera_position = (source_info["position"] as Vector2).lerp(
+				dest_info["position"] as Vector2, info_t)
+		s.camera_zoom = source_info["zoom"] as float
+		var info_visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
+		s.source_frame_in_view = info_visible.encloses(WallPacker.frame_outer_rect(source_rect))
+		s.dest_visible = info_visible.intersects(
+				Rect2(dest_rect.centre - dest_rect.size * 0.5, dest_rect.size))
+		s.dest_frame_in_view = info_visible.encloses(WallPacker.frame_outer_rect(dest_rect))
+		return s
+
 	var bounds := phase_bounds(settings)
 	var zoom_out_end : float = bounds["zoom_out_end"]
 	var travel_start : float = bounds["travel_start"]

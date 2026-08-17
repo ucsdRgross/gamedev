@@ -39,6 +39,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_pause.tscn" id="36_wpause"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_transition.tscn" id="37_wtrans"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_input.tscn" id="38_winput"]
+[ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_info.tscn" id="39_winfo"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -117,5 +118,7 @@ speed_base_delay = 0.1
 [node name="TestWallTransition" parent="." instance=ExtResource("37_wtrans")]
 
 [node name="TestWallInput" parent="." instance=ExtResource("38_winput")]
+
+[node name="TestWallInfo" parent="." instance=ExtResource("39_winfo")]
 
 [node name="TestWallPause" parent="." instance=ExtResource("36_wpause")]

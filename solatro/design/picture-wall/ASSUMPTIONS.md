@@ -635,3 +635,55 @@
   outside what the coordinator asked this pass to fix (light POSITION, not shadow darkness); it is
   the same kind of number GAP-011 targeted and is flagged here rather than silently left, but not
   filed as its own gap without an explicit ask.
+- **S28 (Q128/J2-design override) — `WallPicture.info_zoom_state()` reuses `wall_frame_reveal_
+  margin` rather than adding a new knob for "how far past the bottom frame edge to clear."** Same
+  conceptual role that knob already plays for the transition's own zoom-out stop ("extra share of
+  the picture's size revealed beyond the frame") — a second, near-duplicate number for an
+  equivalent concept would itself be the kind of thing §1.8 exists to prevent, not satisfy.
+  PROVEN correct for every `frame_px`, not assumed: shifting the camera straight down by any
+  `delta > 0` (zoom held at the unchanged at-rest fill value) can never reveal the top edge,
+  because H3 already guarantees `frame.top < visible_top` at rest and a downward shift only grows
+  that gap — see the function's own doc comment for the one-paragraph proof. `test_wall_info.gd`'s
+  J5 asserts both halves (bottom revealed AND top not revealed), not just the one a shallower test
+  might have stopped at.
+- **S28 (Q137/J10-design override) — in Info mode, `WallTransition.sample_at()` holds zoom
+  CONSTANT at the SOURCE picture's own info-zoom scale for the whole transition, never blended
+  toward the destination's.** "The camera never leaves the info zoom" was read as ONE fixed value,
+  not a smooth interpolation between two (which could not even be literally "constant" if the two
+  pictures are different sizes, since each picture's own info-zoom scale depends on its own
+  `rect.size`). `test_wall_info.gd`'s J6 fixture deliberately uses DIFFERENTLY SIZED source/dest
+  rects specifically so a wrongly-reintroduced per-picture zoom would show up as non-constant
+  samples, not be hidden by a symmetric fixture (the exact trap this run's HANDOFF names).
+  J9 (toggling mid-transition retargets immediately) and J11 (focused screen stays live at the
+  info zoom) are DESIGN chart J9/J11 -- NOT owed by any of TEST_PLAN §8's seven rows -- and were
+  not built; flagged here rather than silently left undone.
+- **S27 — `InfoCard._resize_to_content()` sets `.size` explicitly at every level down to the
+  labels themselves, never relying on Godot's own deferred container-layout pass.** Measured
+  directly: the first version set only `custom_minimum_size` on the `ScrollContainer`, which does
+  NOT force an immediate resize on a `layout_mode=0` (manual position/size) Control — the labels'
+  actual render width stayed at whatever tiny default they started with, and text wrapped to ONE
+  CHARACTER PER LINE in the snapshot. A caller/test reading `card.size` (or looking at the
+  rendered card) immediately after `show_entry()` — with no `await` in between, which is the
+  whole point of J4's synchronous assertion — needs the real, final layout already in place.
+- **S29 (Q133=b) — `get_info()` for a map node lives on `MapHoverPanel` (`get_info(node, run,
+  lap_target) -> InfoEntry`), not on `WorldGraphNode` itself.** `WorldGraphNode` is vendored
+  (`addons/worldgen/overlay/graph_map_node.gd`), and this repo does not edit vendored code, so the
+  literal "the hovered node implements get_info()" reading is unavailable; `MapHoverPanel` — the
+  thing that already knows how to read a `WorldGraphNode`'s role/biome/fame meta into text — is
+  the closest defensible stand-in. `_describe_node()` factors the SAME title/body logic
+  `show_for_node()` already used into a shared helper (a pure refactor, not a behaviour change),
+  and `get_info()` is additive alongside it.
+- ⚠ **S29's migration is INCOMPLETE, and this is a scope decision, not an oversight.** PLAN.md
+  states S29 "DELETES `UI/map_hover_panel.gd`'s role as a separate system" and the coordinator
+  restated it as a hard requirement. What shipped: `get_info()` exists and is real, tested
+  infrastructure (`TestWallInfo` J7 exercises it against a real `WorldGraphOverlay` node). What
+  did NOT ship: `Levels/map.gd`'s own hover wiring (`_on_node_hovered` → `hover_panel.
+  show_for_node()`) was left UNCHANGED — `MapHoverPanel` still renders its own bespoke tooltip,
+  `InfoCard` is not mounted on the map at all, and `entry.visual` is left null rather than
+  reproducing the booster preview-card strip (`CardsViewer`, individually-inspectable cards,
+  populated ASYNCHRONOUSLY) inside an `InfoEntry`. Rewiring `map.gd` to actually retire
+  `MapHoverPanel` risked `TestMapTraversal` (TEST_PLAN §9 names it explicitly threatened by this
+  step) without enough remaining time to verify the swap was safe — the coordinator's own
+  instruction preferred an honest partial report over a rushed change. **Still owed:** wire
+  `map.gd` to an `InfoCard` instance and either accept `entry.visual == null` for booster nodes (a
+  real behaviour narrowing) or build a synchronous-enough preview visual.

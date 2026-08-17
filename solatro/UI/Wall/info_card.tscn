@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Wall/info_card.gd" id="1_infocard"]
+
+[node name="InfoCard" type="Control"]
+mouse_filter = 2
+script = ExtResource("1_infocard")
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+horizontal_scroll_mode = 0
+
+[node name="Panel" type="PanelContainer" parent="Scroll"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="Scroll/Panel"]
+layout_mode = 2
+
+[node name="VisualSlot" type="HBoxContainer" parent="Scroll/Panel/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Panel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Scroll/Panel/HBox/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 20
+
+[node name="Body" type="Label" parent="Scroll/Panel/HBox/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3

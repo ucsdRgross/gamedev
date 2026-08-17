@@ -31,6 +31,48 @@ var _engaged : bool = false
 # msec timestamp to hide at; < 0 = not scheduled.
 var _hide_at : float = -1.0
 
+## S29 (picture-wall, Q133=b): the SAME title/body text `show_for_node()` below builds, factored
+## out so `get_info()` can hand it to an `InfoEntry` without duplicating the role/biome/fame text
+## logic. `WorldGraphNode` is vendored (`addons/worldgen/`) and cannot itself implement
+## `get_info()` (§1.8-adjacent repo rule: vendored code is not edited), so this class -- the thing
+## that already knows how to read one -- stands in as the "hoverable" for Q133=b's purposes.
+## Returns `{"title": String, "body": String, "booster": BoosterTemplate}` (`booster` null unless
+## this is a booster node -- callers that care about the preview cards check it).
+func _describe_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> Dictionary:
+	var role : String = node.meta.get(MapNodeRoles.ROLE_KEY, "")
+	var lines : Array[String] = []
+	var biome_name : String = node.meta.get("biome_name", "")
+	if biome_name:
+		lines.append(biome_name)
+	var title : String
+	var booster : BoosterTemplate = null
+	if role == MapNodeRoles.ROLE_BOOSTER:
+		title = "Talent pack"
+		lines.append("Take all %d cards into your deck.\nPossible contents:" % 5)
+		booster = node.meta.get(MapNodeRoles.BOOSTER_KEY)
+	elif role == MapNodeRoles.ROLE_ANCHOR and node != lap_target:
+		title = "Rest stop"
+		lines.append("The tour %s here. Nothing to perform." % ("turns around" if run.lap > 0 else "starts"))
+	else:
+		title = "Final show" if node == lap_target else "Show"
+		lines.append("Fame required: %d" % (node.meta.get(MapNodeRoles.GOAL_KEY, 0) as int))
+		lines.append("3 acts to reach it — or the tour ends.")
+	return {"title": title, "body": "\n".join(lines), "booster": booster}
+
+## S29 (Q132=a, Q133=b, picture-wall): the map's own `get_info()` stand-in (see `_describe_node()`
+## above for why it lives here rather than on `WorldGraphNode`). `visual` is left null: the
+## booster preview-card strip (`_populate_cards()` below) is built ASYNCHRONOUSLY and is its own
+## rich, already-tested widget (`CardsViewer`, individually-inspectable cards) -- reproducing it
+## synchronously inside one `InfoEntry.visual` was parked rather than rushed; see ASSUMPTIONS.md
+## and GAP-013's own family of "flagged, not silently done partway" entries.
+func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
+	var described := _describe_node(node, run, lap_target)
+	var entry := InfoEntry.new()
+	entry.title = described["title"]
+	entry.body = described["body"]
+	entry.visual = null
+	return entry
+
 ## Populate and place the panel for `node` beside `anchor_screen_pos` (the node's screen
 ## position — correct for both mouse hover and keyboard selection). `lap_target` marks
 ## the boss anchor.
@@ -39,24 +81,10 @@ func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNo
 	_engaged = true
 	_hide_at = -1.0
 	_clear_cards()
-	var role :String= node.meta.get(MapNodeRoles.ROLE_KEY, "")
-	var lines: Array[String] = []
-	var biome_name :String= node.meta.get("biome_name", "")
-	if biome_name:
-		lines.append(biome_name)
-	var booster: BoosterTemplate = null
-	if role == MapNodeRoles.ROLE_BOOSTER:
-		title_label.text = "Talent pack"
-		lines.append("Take all %d cards into your deck.\nPossible contents:" % 5)
-		booster = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	elif role == MapNodeRoles.ROLE_ANCHOR and node != lap_target:
-		title_label.text = "Rest stop"
-		lines.append("The tour %s here. Nothing to perform." % ("turns around" if run.lap > 0 else "starts"))
-	else:
-		title_label.text = "Final show" if node == lap_target else "Show"
-		lines.append("Fame required: %d" % (node.meta.get(MapNodeRoles.GOAL_KEY, 0) as int))
-		lines.append("3 acts to reach it — or the tour ends.")
-	info_label.text = "\n".join(lines)
+	var described := _describe_node(node, run, lap_target)
+	title_label.text = described["title"]
+	info_label.text = described["body"]
+	var booster : BoosterTemplate = described["booster"]
 	cards_scroll.visible = booster != null
 	visible = true
 	# Clamp inside the screen margin (never touches an edge).

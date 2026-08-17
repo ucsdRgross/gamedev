@@ -1241,6 +1241,8 @@ nothing for a scale factor to do.
 | `wall_pinch_threshold_px` | 24 | distance delta before a two-finger drag counts as a pinch | GAP-003 |
 | `wall_overfill_margin` | 1.02 | how far a focused picture overfills the window at rest, as a multiplier on `focused_scale()`'s fill zoom | H3, GAP-011 |
 | `wall_light_offset` | (18, 26) | one authored light position (wall-space offset), shared so every picture's shadow reads as lit from the same direction | B10, Q7=b |
+| `wall_info_card_width` | 480 px | the info card's fixed width, screen space | Q129=a |
+| `wall_info_card_max_height` | 320 px | height past which the card scrolls instead of growing further | J12, Q140 override |
 
 ---
 
