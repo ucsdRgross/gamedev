@@ -571,3 +571,20 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_pinch_threshold_px = value
 		settings_changed.emit()
+## How far a focused picture overfills the window at rest, as a multiplier on `focused_scale()`'s
+## fill zoom (`H3`, GAP-011) -- was a typed literal in `wall_picture.gd` (`_OVERFILL_MARGIN`),
+## which §1.8 forbids for anything an author could reasonably argue with. 1.0 would leave the
+## frame exactly flush with the window edge on a matching aspect; > 1.0 guarantees it stays hidden.
+@export var wall_overfill_margin : float = 1.02:
+	set(value):
+		wall_overfill_margin = value
+		settings_changed.emit()
+## S25 (B10, Q7=b): ONE authored light position, shared by the whole wall, so every picture's
+## shadow is offset the same way -- "pictures across the wall are lit consistently." Was a typed
+## literal in `wall_picture.gd` (`WallPicture.SHADOW_OFFSET`), which §1.8 forbids; this default
+## (18, 26) is that exact prior value, so promoting it changes no observable behaviour. In wall
+## SPACE (the same units `PictureEntry.frame_px` and `WallLayout.gap_px` use), not screen pixels.
+@export var wall_light_offset : Vector2 = Vector2(18.0, 26.0):
+	set(value):
+		wall_light_offset = value
+		settings_changed.emit()

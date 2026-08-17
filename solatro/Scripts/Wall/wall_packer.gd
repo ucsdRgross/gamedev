@@ -12,12 +12,14 @@ extends RefCounted
 ##  3. Each picture sits at the SMALLEST radius along its RESOLVED angle (rule 3a) at which its
 ##     FRAME OUTER RECT clears every already-placed frame outer rect by gap_px. Overflow is
 ##     emergent: there is no ring, no capacity, no band.
-##  3a. GAP-010 ("snapping in place"): `slot` is a STARTING angle, not a final one -- see
-##     _rebalanced_angles(). When every authored non-home picture in the layout is unlocked there
-##     is no gap to close and the resolved angle is the literal authored `slot`, unchanged. When
-##     some are locked, the remaining ring is re-sequenced in authored order and evenly
-##     redistributed around the full circle to reduce lopsidedness. Pure function of the unlocked
-##     SET, never of arrival/placement order (Q18=a).
+##  3a. GAP-010 (AMENDED — rebalancing is UNCONDITIONAL, "walls should always rebalance to deal
+##     with switching between landscape and portrait modes"): `slot` is a STARTING order, never a
+##     final angle, for EVERY unlock set, complete or not -- see _rebalanced_angles(). The unlocked
+##     non-home pictures are always re-sequenced by ascending `slot` and evenly redistributed
+##     around the full circle, anchored at the smallest-slot survivor's own authored value. `slot`
+##     therefore decays to a placement-ORDER key; its numeric magnitude no longer survives into the
+##     resolved angle even at full unlock. Pure function of the unlocked SET, never of
+##     arrival/placement order or Dictionary iteration (Q18=a).
 ##  4. Placement order is `layout.home_id` FIRST (Q9=a -- home is always the centre; falls back to
 ##     plain slot ascending if home_id is locked/absent from this pack, never centring a picture
 ##     that produced no rect), then every other picture slot ascending -- fixed and deterministic,
@@ -32,7 +34,7 @@ static func pack(layout: WallLayout, unlocked: Array[StringName],
 		if entry.id in unlocked: entries.append(entry)
 	# GAP-010, rule 3a -- resolved BEFORE the home-first reorder below, from the pre-reorder
 	# (slot-filtered) entries; home-first placement order is orthogonal to angle resolution.
-	var resolved_angles := _rebalanced_angles(entries, layout.pictures, layout.home_id)
+	var resolved_angles := _rebalanced_angles(entries, layout.home_id)
 	entries.sort_custom(func(a: PictureEntry, b: PictureEntry) -> bool: return a.slot < b.slot)
 	# Q9=a: the home picture takes the centre. Ring 0 (deleted, GAP-009) used to document this as
 	# "the home ring" -- home was always the innermost thing, so it is placed FIRST, ahead of slot
@@ -82,38 +84,29 @@ static func _picture_size(entry: PictureEntry, window_aspect: float) -> Vector2:
 	if entry.keep_aspect: return base
 	return Vector2(base.y * window_aspect, base.y)
 
-## GAP-010 ("snapping in place"): resolves each non-home unlocked picture's ANGLE for this pack.
-## `entries` is the unlocked, home-INCLUDED subset already filtered from `all_pictures` (rule 5);
-## `all_pictures` is the full authored layout, locked pictures and all, needed only to test whether
-## anything is actually missing.
+## GAP-010 (AMENDED — rebalancing is UNCONDITIONAL, owner: "walls should always rebalance to deal
+## with switching between landscape and portrait modes"): resolves each non-home unlocked
+## picture's ANGLE for this pack. `entries` is the unlocked, home-INCLUDED subset already filtered
+## from the layout (rule 5).
 ##
-## Two cases:
-##   - Every authored non-home picture in `all_pictures` is present in `entries` (nothing locked):
-##     there is no gap to close, so each picture's resolved angle is its literal authored `slot`,
-##     byte-for-byte what rule 3 used before GAP-010. P7/P9/P10/P12/P13 and friends all pack a fully
-##     unlocked layout and must see exactly this.
-##   - Some are locked: the remaining ring is re-sequenced in AUTHORED angular order (sorted by
-##     `slot`, never by `unlocked`'s own order or Dictionary iteration -- Q18=a) and evenly
-##     redistributed around the full 360 degrees, anchored at the first (smallest-slot) surviving
-##     picture's own authored angle -- the arrangement "snaps" from something close to authored
-##     intent rather than an arbitrary spin, and every gap between consecutive pictures becomes
-##     equal, which is what "reduce lopsidedness" cashes out to (TEST_PLAN.md P4').
+## ALWAYS re-sequences the non-home survivors in AUTHORED order (sorted by `slot`, never by
+## `unlocked`'s own order or Dictionary iteration -- Q18=a) and evenly redistributes them around
+## the full 360 degrees, anchored at the first (smallest-slot) surviving picture's own authored
+## value -- for every unlock set, complete or not. The former "full unlock is the identity" case is
+## GONE: the snapshot proved a fully-unlocked wall can still read as visibly lopsided under
+## authored angles alone (`01_wall_view_everything_unlocked`, empty bottom-left quadrant). Every
+## gap between consecutive pictures becomes equal, which is what "reduce lopsidedness" cashes out
+## to (TEST_PLAN.md P4', now asserted for the full set too).
 ##
 ## Returns a Dictionary keyed by picture id; `home_id` never appears in it (its own angle is moot --
 ## it is always placed first and always lands at radius 0, rule 3).
-static func _rebalanced_angles(entries: Array[PictureEntry], all_pictures: Array[PictureEntry],
+static func _rebalanced_angles(entries: Array[PictureEntry],
 		home_id: StringName) -> Dictionary[StringName, float]:
-	var full_ring_count := 0
-	for entry : PictureEntry in all_pictures:
-		if entry.id != home_id: full_ring_count += 1
 	var ring : Array[PictureEntry] = []
 	for entry : PictureEntry in entries:
 		if entry.id != home_id: ring.append(entry)
 	var out : Dictionary[StringName, float] = {}
 	if ring.is_empty(): return out
-	if ring.size() == full_ring_count:
-		for entry : PictureEntry in ring: out[entry.id] = float(entry.slot)
-		return out
 	ring.sort_custom(func(a: PictureEntry, b: PictureEntry) -> bool: return a.slot < b.slot)
 	var anchor := float(ring[0].slot)
 	var step := 360.0 / float(ring.size())

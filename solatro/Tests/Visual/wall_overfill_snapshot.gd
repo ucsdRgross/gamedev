@@ -66,9 +66,12 @@ func _ready() -> void:
 	# H3 (Q27=c): frame the camera so this ONE picture's native content overfills the window on
 	# every axis -- "fill and crop", never "fit". WallPicture.focused_scale() is the same pure
 	# function S14's real camera-tracking will eventually call; this snapshot drives it by hand
-	# since the transition system (Phase 3) is out of scope for this step.
+	# since the transition system (Phase 3) is out of scope for this step. GAP-011: the overfill
+	# amount is the LIVE `wall_overfill_margin` knob, read here rather than assumed, so this
+	# snapshot shows whatever the player's own settings would actually produce.
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
-	var scale := WallPicture.focused_scale(Vector2(NATIVE_SIZE), Vector2(window_size))
+	var scale := WallPicture.focused_scale(Vector2(NATIVE_SIZE), Vector2(window_size),
+			SettingsManager.settings.wall_overfill_margin)
 	camera.zoom = Vector2.ONE * scale
 	camera.position = wp.position
 

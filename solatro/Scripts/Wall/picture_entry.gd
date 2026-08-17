@@ -5,12 +5,14 @@ extends Resource
 ## it.
 ## PLAN.md §1.1 — every field, its type and its default are specified there; this transcribes it,
 ## EXCEPT `ring` (GAP-009: rings are rejected, the field is deleted, nothing ever read it) and
-## `slot`'s meaning (GAP-009: an authored angle in degrees around the wall's centre, not a
-## within-ring order -- see ASSUMPTIONS.md).
+## `slot`'s meaning (GAP-009 authored it as an angle in degrees; GAP-010's amendment -- rebalancing
+## is now UNCONDITIONAL -- demoted it further: `slot` is a placement-ORDER key only, its numeric
+## value never surviving into the resolved angle for any unlock set, complete or partial -- see
+## ASSUMPTIONS.md).
 
 @export var id : StringName = &""              ## NAMES.md picture ids; unique within a WallLayout
 @export var scene : PackedScene = null         ## null = registered but unbuilt (&"book", Q214=a)
-@export var slot : int = 0                     ## GAP-009: authored angle in DEGREES, and placement order
+@export var slot : int = 0                     ## GAP-010 (amended): placement-ORDER key, not an angle
 @export var size_multiplier : float = 1.0      ## Q16=c, any positive value
 @export var design_size : Vector2i = Vector2i(1152, 648)   ## per-screen, Q29=b
 @export var frame_px : Vector4 = Vector4(24, 24, 24, 24)   ## L,T,R,B in wall units; Q36, Q37=a

@@ -137,14 +137,10 @@
   picture that produced no rect. Not a gap: gap-protocol rule 1 (`home_id` has no other purpose,
   the deleted field already said home is innermost, one line to reverse). `TestWallPacker` P13
   pins it.
-- **S10 (Q7=b, B10) — the shadow offset is a single PROVISIONAL constant,
-  `WallPicture.SHADOW_OFFSET`, not an authored WallLayout field.** §1.7 requires `%Shadow` "offset
-  from one authored light position shared by the whole wall," but no field for it exists anywhere
-  in `WallLayout`/`PlayerSettings`/`DESIGN.md` §5, and S25 ("shadows from one light position") is
-  the step that actually authors/tunes it. Same constant used for every picture regardless of its
-  own position, which is what "shared" means, so §1.7's requirement is met literally; only the
-  exact value is provisional. Not a gap: S25 owns relocating or retuning it, and nothing downstream
-  in this run reads the constant's value.
+- **S10 (Q7=b, B10) — SUPERSEDED by S25.** The shadow offset started as a single PROVISIONAL
+  constant, `WallPicture.SHADOW_OFFSET`; S25 promoted it to `PlayerSettings.wall_light_offset`
+  (default unchanged, (18, 26)) once §1.8's rule made the literal a defect rather than a
+  placeholder. See the S25 entry below for the live knob.
 - **S10 (§1.7, done-when) — `%Frame`'s texture is whatever `PictureEntry.frame_texture` says,
   INCLUDING null.** `WallPicture.build()` is faithful to its input and invents nothing: a null
   `frame_texture` draws an empty `NinePatchRect`, mirroring the same "null is expected and
@@ -571,3 +567,71 @@
   `DisplayServer.screen_get_dpi()` internally, purely so `TestWallInput` I13 can feed synthetic
   absurd values; the real call site (not built this batch — nothing yet asks for a live target
   size) is `WallInput.touch_target_px(DisplayServer.screen_get_dpi(), settings)`.
+- **GAP-011 (owner-answered a): `wall_overfill_margin` replaces `wall_picture.gd`'s
+  `_OVERFILL_MARGIN` literal.** `WallPicture.focused_scale()` gained a REQUIRED third parameter
+  (`overfill_margin: float`, no default) rather than reading `SettingsManager` internally — it
+  stays a pure function (same discipline `WallPacker`/`WallTransition.sample_at()` already use),
+  so every caller supplies the live value itself: `SettingsManager.settings.wall_overfill_margin`
+  from `Wall.wall_view_zoom()` and the two `Tests/Visual` snapshot scripts (no engine-singleton
+  restriction there), `settings.wall_overfill_margin` from `WallTransition.sample_at()` (already
+  took `settings: PlayerSettings` as a parameter, same pure-function contract as `WallPacker`).
+  Behaviour is UNCHANGED at the default (1.02 in, 1.02 out, same as the old constant) — every
+  existing call site was updated to pass the knob, none dropped or gained the multiplier.
+  `test_wall_render.gd` (`test_overfill_margin_knob_actually_changes_the_scale`) proves the knob
+  is actually read: two different margins on the same sizes produce two different, exactly-
+  predicted scales — the "a knob nothing reads is the defect" trap this run's own HANDOFF names.
+- **GAP-010 (amended, owner) — rebalancing is UNCONDITIONAL.** `WallPacker._rebalanced_angles()`
+  dropped the "full unlock is the identity" branch entirely; every unlock set, complete or
+  partial, re-sequences its non-home ring by ascending `slot` and spreads it evenly around the
+  full circle, anchored at the smallest-slot survivor. Lost the `all_pictures` parameter (nothing
+  reads it now — keeping an unused one would be a warnings-as-errors failure). `TestWallPacker`'s
+  P4′ was rewritten a second time (`test_rebalancing_reduces_lopsidedness_full_and_partial`) to
+  assert balance for BOTH a clustered full set and a clustered partial one — a genuinely clustered
+  fixture in each case, not one already evenly spaced by arithmetic coincidence (the first draft
+  of the full-set fixture picked every-3rd-of-12, which stays evenly spaced regardless of whether
+  rebalancing fires at all — caught and replaced with 4 consecutive/clustered picks, same "fixture
+  chosen so the code passes" trap this run's HANDOFF names). One other row needed a fixture fix:
+  **P7** (`test_ellipse_aspect_follows_window_clamped`) read its resolved ellipse aspect off
+  picture `&"b"`'s centre ratio, relying on `&"b"` staying at its literal authored 45° angle —
+  true under the old identity rule, false now. Fixed by making `&"a"` `home_id`, leaving `&"b"`
+  the ONLY ring entry: a ring of size 1 always resolves to its own authored `slot` regardless of
+  rebalancing (anchor = that one entry's own slot, step = 360°/1 = a full turn, so `i=0` lands
+  back on the anchor) — isolates rule 1 (ellipse aspect) from rule 3a (angle resolution) again,
+  same fixture-isolation discipline P2′/P3′ already use. P2′, P3′, P5, P6, P10, P12, P13 needed no
+  change: none of their assertions read a resolved angle's exact value, only radius/overlap/
+  centredness, or (P2′/P3′) used fixtures already evenly spaced by construction.
+- **`PictureEntry.slot`'s doc comment and `wall_packer.gd`'s own rule-3a comment were updated** to
+  say "placement-order key," not "authored angle" — the field's actual meaning changed with the
+  amendment; leaving the old wording would mislead the next reader into thinking a literal slot
+  value survives into the wall.
+- **GAP-013 (filed, open) — QR4=b's frame "colour" parameter has no fixed home.** `PLAN.md` §1.1's
+  `PictureEntry` field list is exhaustive and has no colour field; adding one is a real decision,
+  not an implementation detail, so it was filed rather than invented. S24 shipped everything else
+  QR4=b/B6 asks for without it — see `gaps/GAP-013.md`.
+- **S24 (QR4=b, GAP-013) — the one shared frame texture is CODE-GENERATED placeholder art, not a
+  design tunable.** `WallPicture.shared_frame_texture()` (cached `static var`, generated once) is
+  a simple depth-from-nearest-edge bevel, `_FRAME_TEXTURE_SIZE`/`_FRAME_CORNER_PX`/the two bevel
+  colours all left as constants — same "diagnostic/placeholder art generation is not an
+  author-tunable number" category `Tests/Visual`'s `_swatch_texture()` helpers already sit in
+  (QR4=b's own text defers "the shader and art pass," so nothing here claims to be final art).
+  `WallPicture.build()` sets `%Frame`'s 9-slice patch margins ONLY when `entry.frame_texture` is
+  literally the SAME object as `shared_frame_texture()` (identity check, not "any texture is
+  set") — applying that fixed corner size to some OTHER, smaller texture (every existing
+  `Tests/Visual` diagnostic swatch is 8×8) would push the patch margins past that texture's own
+  bounds, the exact degenerate-corner failure mode measured and fixed during this run's snapshot
+  work. This keeps every existing diagnostic fixture rendering exactly as before — none of them
+  reference the shared texture, so none of them gain patch margins they were never written for.
+- **S25 (B10, Q7=b) — `wall_light_offset` replaces `WallPicture.SHADOW_OFFSET`.** Same GAP-011
+  pattern: a typed literal §1.8 forbids, promoted to a `PlayerSettings` knob, default unchanged
+  ((18, 26)) so behaviour does not move. `WallPicture.build()` reads
+  `SettingsManager.settings.wall_light_offset` directly (the same pattern
+  `update_wall_view_size()` already uses for `wall_view_min_texture_px` — `build()`/`focus()`/
+  `unfocus()` are not pure functions the way `WallPacker`/`WallTransition.sample_at()` are, so
+  reading the singleton directly is the established idiom here, not a parameter thread-through).
+  Q41 (frameless picture still gets a shadow) needed no code: `%Shadow`'s texture is always the
+  viewport's own `ViewportTexture`, set unconditionally regardless of whether `entry.frame_texture`
+  is null, so a frameless picture was already shadowed by construction. Shadow OPACITY
+  (`Color(0.0, 0.0, 0.0, 0.35)`, `wall_picture.gd`) is a pre-existing S10 literal, untouched here —
+  outside what the coordinator asked this pass to fix (light POSITION, not shadow darkness); it is
+  the same kind of number GAP-011 targeted and is flagged here rather than silently left, but not
+  filed as its own gap without an explicit ask.

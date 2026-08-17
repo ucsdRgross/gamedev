@@ -166,7 +166,8 @@ func _shot_4_landed_focused() -> void:
 	target.focus()
 
 	var camera : Camera2D = _wall.get_node(^"%Camera2D")
-	var scale := WallPicture.focused_scale(target.rect.size, window)
+	var scale := WallPicture.focused_scale(target.rect.size, window,
+			SettingsManager.settings.wall_overfill_margin)
 	camera.zoom = Vector2.ONE * scale
 	camera.position = target.rect.centre
 	await _capture("04_landed_focused_picture_at_rest")
@@ -239,7 +240,8 @@ func _frame_wall_view(rects: Array[PictureRect], window: Vector2) -> void:
 		camera.zoom = Vector2.ONE
 		camera.position = Vector2.ZERO
 		return
-	camera.zoom = Vector2.ONE * WallPicture.focused_scale(bbox.size, window)
+	camera.zoom = Vector2.ONE * WallPicture.focused_scale(bbox.size, window,
+			SettingsManager.settings.wall_overfill_margin)
 	camera.position = bbox.get_center()
 
 ## A reasonably rich 12-picture synthetic "full picture set" -- no real catalog exists yet (the

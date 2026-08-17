@@ -30,6 +30,8 @@ func _ready() -> void:
 	test_wall_view_size_written_and_clamped()
 	test_restore_from_minimise_rerenders()
 	test_filter_swaps_on_zoom_not_pan()
+	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
+	test_overfill_margin_knob_actually_changes_the_scale()
 	_teardown_wall()
 	finish()
 
@@ -171,3 +173,34 @@ func test_filter_swaps_on_zoom_not_pan() -> void:
 	wp.update_filter(true)
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 			"a zoom change flips the filter to LINEAR")
+
+# ------------------------------------------------------------------ GAP-011 (H3)
+
+## GAP-011: `wall_overfill_margin` is a real, READ knob, not a promoted-but-ignored export -- the
+## exact defect §1.8 exists to prevent ("a knob nothing reads is the defect"). `focused_scale()`
+## takes the margin as a REQUIRED parameter (no default), so this also proves the parameter is
+## actually wired through, not merely present on `PlayerSettings`. Two visibly different margins on
+## the SAME native/window sizes must produce two DIFFERENT scales, and each must equal the plain
+## fill-ratio times its own margin exactly -- not just "different", which a sign flip or an
+## unrelated bug could also produce.
+func test_overfill_margin_knob_actually_changes_the_scale() -> void:
+	var native := Vector2(400, 300)
+	var window := Vector2(1280, 720)
+	var fill_ratio := maxf(window.x / native.x, window.y / native.y)
+
+	var scale_a := WallPicture.focused_scale(native, window, 1.02)
+	var scale_b := WallPicture.focused_scale(native, window, 1.10)
+	check(not is_equal_approx(scale_a, scale_b),
+			"two different wall_overfill_margin values produce two different focused_scale() results",
+			"scale_a=%.6f scale_b=%.6f" % [scale_a, scale_b])
+	check(is_equal_approx(scale_a, fill_ratio * 1.02),
+			"the 1.02 result equals the plain fill ratio times exactly that margin, not a fixed 1.02",
+			"scale_a=%.6f expected=%.6f" % [scale_a, fill_ratio * 1.02])
+	check(is_equal_approx(scale_b, fill_ratio * 1.10),
+			"the 1.10 result equals the plain fill ratio times exactly that margin",
+			"scale_b=%.6f expected=%.6f" % [scale_b, fill_ratio * 1.10])
+
+	var settings := PlayerSettings.new()
+	check(is_equal_approx(settings.wall_overfill_margin, 1.02),
+			"PlayerSettings.wall_overfill_margin defaults to 1.02 (GAP-011's answered value)",
+			"%.4f" % settings.wall_overfill_margin)

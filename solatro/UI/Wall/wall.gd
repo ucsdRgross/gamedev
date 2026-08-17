@@ -164,7 +164,8 @@ func picture_count() -> int:
 func wall_view_zoom(window_size: Vector2) -> float:
 	var extent := _wall_extent()
 	if extent.size.x <= 0.0 or extent.size.y <= 0.0: return 1.0
-	return WallPicture.focused_scale(extent.size, window_size)
+	return WallPicture.focused_scale(extent.size, window_size,
+			SettingsManager.settings.wall_overfill_margin)
 
 ## G10: free pan is clamped so the visible window never shows past the wall's own extent ("never
 ## pans into void"), and collapses to the extent's own centre on whichever axis the extent is

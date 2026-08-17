@@ -37,11 +37,33 @@ var screen_root : Node = null
 ## children. Not fixed by NAMES.md; same category as `screen_root` above (ASSUMPTIONS.md).
 var rect : PictureRect = null
 
-## Provisional shared shadow offset -- "one authored light position shared by the whole wall"
-## (Q7=b, B10), authored here as a single constant because S25 ("shadows from one light position")
-## is the step that actually tunes/relocates it; every picture uses the SAME offset regardless of
-## its own position, which is what "shared" means. See ASSUMPTIONS.md.
-const SHADOW_OFFSET := Vector2(18.0, 26.0)
+## S24 (QR4=b, GAP-013): the ONE shared frame texture every framed picture references -- a simple
+## beveled profile (light near the outer edge, dark near the inner edge closest to the picture),
+## generated once and cached, never per-picture. Placeholder art: QR4=b's own text defers "the
+## shader and art pass", so the actual pixels here are scaffolding, same category as
+## `Tests/Visual`'s `_swatch_texture()` helpers -- not an author-tunable number under §1.8, since
+## nothing downstream can vary it per picture (GAP-013 parks "colour" as unresolved; this is the
+## fallback all framed pictures share until that lands). `_FRAME_CORNER_PX` is the fixed corner
+## size (in TEXTURE pixels, not wall units) `%Frame`'s 9-slice patch margins are set to below --
+## it travels WITH the texture as one bundle, not a second knob that could drift out of sync with
+## the pixels it describes.
+const _FRAME_TEXTURE_SIZE := 40
+const _FRAME_CORNER_PX := 14
+static var _shared_frame_texture : ImageTexture = null
+
+static func shared_frame_texture() -> ImageTexture:
+	if _shared_frame_texture: return _shared_frame_texture
+	var img := Image.create(_FRAME_TEXTURE_SIZE, _FRAME_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var light := Color(0.62, 0.52, 0.38)
+	var dark := Color(0.24, 0.18, 0.12)
+	for y : int in _FRAME_TEXTURE_SIZE:
+		for x : int in _FRAME_TEXTURE_SIZE:
+			var depth : int = mini(mini(x, y), mini(_FRAME_TEXTURE_SIZE - 1 - x,
+					_FRAME_TEXTURE_SIZE - 1 - y))
+			var t := clampf(float(depth) / float(_FRAME_CORNER_PX), 0.0, 1.0)
+			img.set_pixel(x, y, light.lerp(dark, t))
+	_shared_frame_texture = ImageTexture.create_from_image(img)
+	return _shared_frame_texture
 
 ## Builds this picture from its packed rect and authored entry: sizes/positions %Frame to the rect
 ## grown by frame_px (drawn first -- entirely outside the picture rect, Q38=a), creates this
@@ -74,6 +96,18 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> 
 	_frame.position = frame_rect.position - rect.centre
 	_frame.size = frame_rect.size
 	_frame.texture = entry.frame_texture
+	# S24 (QR4=b): genuine nine-slice -- corners hold at a FIXED pixel size regardless of how far
+	# this picture's own frame stretches the rect, only the edge bands between them stretch.
+	# Identity check against the ONE shared texture specifically, not "any texture is assigned":
+	# `_FRAME_CORNER_PX` is that texture's OWN corner size, and applying it to some OTHER,
+	# differently-proportioned texture (e.g. a small diagnostic swatch elsewhere in this repo)
+	# would push the patch margins past that texture's own bounds -- the exact degenerate-corner
+	# failure mode `Tests/Visual`'s swatch-texture fixtures must stay immune to.
+	if entry.frame_texture == shared_frame_texture():
+		_frame.patch_margin_left = _FRAME_CORNER_PX
+		_frame.patch_margin_top = _FRAME_CORNER_PX
+		_frame.patch_margin_right = _FRAME_CORNER_PX
+		_frame.patch_margin_bottom = _FRAME_CORNER_PX
 
 	var view_scale := rect.size / Vector2(entry.design_size)
 	_screen.centered = true
@@ -85,8 +119,12 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> 
 	# this project sets to NEAREST (pixel art) and would be wrong here without this line.
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
+	# S25 (B10, Q7=b): the shadow's own offset is ONE authored light position, shared by every
+	# picture on the wall regardless of its own location -- `wall_light_offset` (GAP-011's own
+	# precedent: was a typed literal here, `SHADOW_OFFSET`, promoted to a knob; default (18, 26) is
+	# that exact prior value, so this changes no observable behaviour at the default).
 	_shadow.centered = true
-	_shadow.position = SHADOW_OFFSET
+	_shadow.position = SettingsManager.settings.wall_light_offset
 	_shadow.scale = view_scale
 	_shadow.texture = viewport.get_texture()
 	_shadow.self_modulate = Color(0.0, 0.0, 0.0, 0.35)
@@ -145,25 +183,30 @@ func update_filter(zoom_changed_this_frame: bool) -> void:
 
 ## S36 (F11, Q70=c): the wall-view selection highlight -- "shape and motion, not colour," a lift off
 ## the wall. Only the lift half is built here: the frame GLOW half needs actual frame art/shader
-## inputs S24 ("frame art parameters") has not built yet, so this is provisional in the same spirit
-## as `SHADOW_OFFSET` above (ASSUMPTIONS.md), until S24 gives the frame something to glow WITH.
+## inputs S24 ("frame art parameters") deferred (QR4=b, GAP-013) rather than built, so this stays
+## provisional -- same category `wall_overfill_margin`/`wall_light_offset` were in before GAP-011/
+## S25 promoted them, not yet promoted itself because no coordinator ruling has named it. Left as
+## a constant on purpose rather than silently promoted on my own authority (ASSUMPTIONS.md).
 const _SELECTED_LIFT := Vector2(0.0, -14.0)
 
 func set_selected(selected: bool) -> void:
 	position = rect.centre + (_SELECTED_LIFT if selected else Vector2.ZERO)
 
-## Numerical safety margin, not a design knob (same role `wall_packer.gd`'s `_EPS` plays) -- nudges
-## focused_scale() strictly past 1:1 coverage even when a picture's aspect exactly matches the
-## window's, so the frame is GUARANTEED off-screen at rest (Q27=c: "always slightly overfills"),
-## never merely flush with it.
-const _OVERFILL_MARGIN := 1.02
-
 ## H3 (Q27=c): the scale that makes a picture of `native_size` OVERFILL `window_size` on every
 ## axis at rest -- "fill and crop" (the LARGER of the two axis ratios), never "fit" (the smaller
 ## one, which is exactly what would leave a frame sliver visible whenever the aspects don't match,
-## the defect H3 exists to rule out). Pure function of the two sizes; no picture/camera state.
-static func focused_scale(native_size: Vector2, window_size: Vector2) -> float:
-	return maxf(window_size.x / native_size.x, window_size.y / native_size.y) * _OVERFILL_MARGIN
+## the defect H3 exists to rule out). Pure function of its three inputs; no picture/camera state.
+##
+## GAP-011 (owner-answered a): `overfill_margin` is `PlayerSettings.wall_overfill_margin`
+## (default 1.02) -- a REQUIRED parameter, never a literal or default value here, because §1.8
+## forbids a typed-in-a-.gd number for anything an author could reasonably argue with (the margin
+## is a visible design choice, not a float epsilon like `wall_packer.gd`'s `_EPS`; that was the
+## exact miscategorisation GAP-011 corrects). Callers read the live knob (`SettingsManager.
+## settings.wall_overfill_margin`, or a `settings: PlayerSettings` already in scope) and pass it
+## in -- this function stays pure and untestable-only-by-eye either way.
+static func focused_scale(native_size: Vector2, window_size: Vector2,
+		overfill_margin: float) -> float:
+	return maxf(window_size.x / native_size.x, window_size.y / native_size.y) * overfill_margin
 
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).

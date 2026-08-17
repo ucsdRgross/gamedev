@@ -1239,6 +1239,8 @@ nothing for a scale factor to do.
 | `wall_touch_target_min_px` | 32 | clamp floor — a bad DPI reading cannot make controls smaller than this | GAP-004 |
 | `wall_touch_target_max_px` | 96 | clamp ceiling — nor larger | GAP-004 |
 | `wall_pinch_threshold_px` | 24 | distance delta before a two-finger drag counts as a pinch | GAP-003 |
+| `wall_overfill_margin` | 1.02 | how far a focused picture overfills the window at rest, as a multiplier on `focused_scale()`'s fill zoom | H3, GAP-011 |
+| `wall_light_offset` | (18, 26) | one authored light position (wall-space offset), shared so every picture's shadow reads as lit from the same direction | B10, Q7=b |
 
 ---
 

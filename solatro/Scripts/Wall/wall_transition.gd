@@ -202,8 +202,10 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 	# THAT result -> dest_zoom (TRANS_EXPO/EASE_IN). Flat at wide_zoom for the whole pure-travel
 	# window between the two, since both progresses clamp to their resting value outside their own
 	# window.
-	var start_zoom := WallPicture.focused_scale(source_rect.size, window_size)
-	var dest_zoom := WallPicture.focused_scale(dest_rect.size, window_size)
+	var start_zoom := WallPicture.focused_scale(source_rect.size, window_size,
+			settings.wall_overfill_margin)
+	var dest_zoom := WallPicture.focused_scale(dest_rect.size, window_size,
+			settings.wall_overfill_margin)
 	var wide_zoom := _wide_zoom(source_rect, dest_rect, window_size,
 			settings.wall_frame_reveal_margin)
 	var out_progress := 0.0 if zoom_out_end <= 0.0 else clampf(t / zoom_out_end, 0.0, 1.0)

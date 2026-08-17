@@ -26,7 +26,7 @@ func _ready() -> void:
 	test_packing_is_deterministic()
 	test_minimal_radius_is_shared_and_shrinks_with_size()
 	test_oversized_picture_stops_further_out()
-	test_partial_unlock_rebalances_to_reduce_lopsidedness()
+	test_rebalancing_reduces_lopsidedness_full_and_partial()
 	test_locked_pictures_produce_no_rect()
 	test_gap_measured_between_frame_outer_edges()
 	test_ellipse_aspect_follows_window_clamped()
@@ -190,43 +190,58 @@ func test_oversized_picture_stops_further_out() -> void:
 			"a %.3f (baseline %.3f)  b %.3f (baseline %.3f)"
 					% [r[&"a"], baseline[&"a"], r[&"b"], baseline[&"b"]])
 
-## P4' (REWRITTEN under GAP-010, "snapping in place" -- Q13=b and G4 are WITHDRAWN): authored
-## angles are STARTING positions, not final ones. Partial unlock (only p0/p1/p3 of 6 authored, at
-## 0/60/180 -- deliberately NOT an even 3-way spread, which would be 0/120/240) now rebalances to
-## reduce lopsidedness.
+## P4' (REWRITTEN AGAIN under GAP-010's amendment -- rebalancing is now UNCONDITIONAL, "walls
+## should always rebalance to deal with switching between landscape and portrait modes"). The
+## previous version of this row asserted rebalancing ONLY under partial unlock and asserted the
+## OPPOSITE for full unlock (angles preserved verbatim); that full-unlock half is now wrong by
+## construction -- the snapshot showed a fully-unlocked wall can still read as visibly lopsided
+## under authored angles alone. This row now asserts balance for BOTH: a clustered FULL set and a
+## clustered PARTIAL set.
 ##
-## `home` is a 4th, always-unlocked picture (not one of p0-p5, any angle -- Q9=a means its own angle
-## is moot, it is always centred) so that p0/p1/p3 all negotiate a genuinely nonzero radius against
-## it, the same way P2' isolates rule 3 -- without it, whichever of them sorts first would itself
-## land at radius 0 (rule 3, "nothing yet to clear") and its OWN angle would be unrecoverable from
-## its rect (a picture exactly at the centre has no well-defined `.angle()`), which would make an
-## angle-based imbalance measurement meaningless for that one picture.
+## `home` is an always-unlocked picture (not one of the ring pictures, any angle -- Q9=a means its
+## own angle is moot, it is always centred) so every ring picture negotiates a genuinely nonzero
+## radius against it, the same way P2' isolates rule 3 -- without it, whichever ring picture sorts
+## first would itself land at radius 0 (rule 3, "nothing yet to clear") and have no well-defined
+## `.angle()`, which would make an angle-based imbalance measurement meaningless for that picture.
 ##
-## Imbalance measure (concrete and defensible, per the coordinator's ask): the spread between the
-## largest and smallest of the three consecutive angular gaps around the ring. The withdrawn
-## authored-angle arrangement (0, 60, 180) has gaps 60/120/180 -- a 120-degree spread. Asserted here
-## to collapse to near-zero (evenly spread), and p1 -- the middle one, furthest from its neighbours
-## in the original clustering -- is asserted to have moved off its literal authored angle (60) as
-## the concrete proof rebalancing actually happened, not merely that the numbers happen to average
-## out.
-func test_partial_unlock_rebalances_to_reduce_lopsidedness() -> void:
-	var angles : Array[int] = [0, 60, 120, 180, 240, 300]
+## Imbalance measure (concrete and defensible): the spread between the largest and smallest of the
+## consecutive angular gaps around the ring, asserted to collapse to near-zero (evenly spread) in
+## both cases; at least one ring picture is also asserted to have moved off its literal authored
+## angle, as concrete proof rebalancing actually happened rather than a coincidental average.
+func test_rebalancing_reduces_lopsidedness_full_and_partial() -> void:
+	_assert_rebalanced(
+			"FULL unlock, all 6 ring pictures CLUSTERED into two groups (0/10/20 and 200/210/220, "
+			+ "not evenly spread -- the exact shape GAP-010's amendment exists to fix)",
+			[0, 10, 20, 200, 210, 220], [&"p0", &"p1", &"p2", &"p3", &"p4", &"p5"], &"p1", 10.0)
+	_assert_rebalanced(
+			"PARTIAL unlock, 3 of 6 ring pictures (p0/p1/p3 of an authored 0/60/120/180/240/300 "
+			+ "ring, at 0/60/180 -- NOT an even 3-way spread, which would be 0/120/240)",
+			[0, 60, 120, 180, 240, 300], [&"p0", &"p1", &"p3"], &"p1", 60.0)
+
+## Shared body for both P4' cases: an authored 6-picture ring (angles `all_angles`) plus `home`,
+## unlock only `unlocked_ring_ids`, pack, and assert the resolved angles of the UNLOCKED ring
+## pictures are evenly spaced (max-min gap within 1 degree) and that `moved_id` (authored at
+## `moved_from_deg`) is no longer at that literal angle.
+func _assert_rebalanced(label: String, all_angles: Array[int], unlocked_ring_ids: Array[StringName],
+		moved_id: StringName, moved_from_deg: float) -> void:
 	var all_pics : Array[PictureEntry] = []
-	for i : int in angles.size():
-		all_pics.append(_radial_entry(StringName("p%d" % i), angles[i]))
+	for i : int in all_angles.size():
+		all_pics.append(_radial_entry(StringName("p%d" % i), all_angles[i]))
 	all_pics.append(_radial_entry(&"home", 0))
 	var layout := _layout(all_pics, 24.0, 1.0, 1.0)
 	layout.home_id = &"home"
-	var unlocked : Array[StringName] = [&"home", &"p0", &"p1", &"p3"]
+	var unlocked : Array[StringName] = [&"home"]
+	unlocked.append_array(unlocked_ring_ids)
 	var rects := WallPacker.pack(layout, unlocked, 1.0)
-	check(rects.size() == 4, "home plus the 3 unlocked ring pictures all produced a rect",
-			str(rects.size()))
+	check(rects.size() == unlocked.size(),
+			"%s: home plus every unlocked ring picture produced a rect" % label,
+			"%d of %d" % [rects.size(), unlocked.size()])
 	var by_id := _by_id(rects)
-	check(by_id[&"home"].centre.is_equal_approx(Vector2.ZERO), "home is centred as always (Q9=a)",
-			str(by_id[&"home"].centre))
+	check(by_id[&"home"].centre.is_equal_approx(Vector2.ZERO),
+			"%s: home is centred as always (Q9=a)" % label, str(by_id[&"home"].centre))
 
 	var ring_angles : Array[float] = []
-	for id : StringName in [&"p0", &"p1", &"p3"]:
+	for id : StringName in unlocked_ring_ids:
 		ring_angles.append(wrapf(rad_to_deg(by_id[id].centre.angle()), 0.0, 360.0))
 	ring_angles.sort()
 	var gaps : Array[float] = []
@@ -238,15 +253,14 @@ func test_partial_unlock_rebalances_to_reduce_lopsidedness() -> void:
 	var max_gap : float = gaps.max()
 	var min_gap : float = gaps.min()
 	check(max_gap - min_gap < 1.0,
-			"the 3 unlocked ring pictures are evenly spaced (gaps within 1 degree of each other) -- "
-			+ "the withdrawn authored arrangement's own gaps (60/120/180) had a 120-degree spread",
-			"gaps=%s" % [gaps])
+			"%s: the unlocked ring pictures are evenly spaced (gaps within 1 degree of each other)"
+			% label, "gaps=%s" % [gaps])
 
-	var p1_angle : float = wrapf(rad_to_deg(by_id[&"p1"].centre.angle()), 0.0, 360.0)
-	check(not is_equal_approx(p1_angle, 60.0),
-			"p1 moved off its literal authored angle (60 deg) -- concrete proof rebalancing "
-			+ "happened, not just a coincidental average",
-			"%.3f deg" % p1_angle)
+	var moved_angle : float = wrapf(rad_to_deg(by_id[moved_id].centre.angle()), 0.0, 360.0)
+	check(not is_equal_approx(moved_angle, moved_from_deg),
+			"%s: %s moved off its literal authored angle (%.0f deg) -- concrete proof rebalancing "
+			% [label, moved_id, moved_from_deg] + "happened, not just a coincidental average",
+			"%.3f deg" % moved_angle)
 
 # ------------------------------------------------------------------ P5-P12 (stand as written)
 
@@ -296,10 +310,15 @@ func _second_picture_radius(frame_px: Vector4) -> float:
 ## P7 (G1, Q10=c): the ellipse aspect is clamp(window_aspect, ellipse_aspect_min, ellipse_aspect_max).
 ## Picture &"b" sits at slot 45 -- at 45 degrees WallPacker's anisotropic ray direction reduces to
 ## direction.x / direction.y == the resolved aspect EXACTLY (ASSUMPTIONS.md), so &"b"'s centre
-## ratio reads the resolved aspect straight off the packed geometry.
+## ratio reads the resolved aspect straight off the packed geometry. `&"a"` is HOME (GAP-010
+## amended: rebalancing is now unconditional, and a ring of more than one entry redistributes --
+## making &"a" home leaves &"b" the ONLY ring entry, whose resolved angle is always its own
+## literal `slot` regardless (a ring of size 1 is its own anchor, step 360/1), so this row keeps
+## testing rule 1 in isolation from rule 3a rather than becoming a rebalancing test by accident).
 func test_ellipse_aspect_follows_window_clamped() -> void:
 	var pics : Array[PictureEntry] = [_entry(&"a", 0), _entry(&"b", 45)]
 	var layout := _layout(pics, 24.0, 1.2, 2.6)
+	layout.home_id = &"a"
 	var cases : Array[Vector2] = [Vector2(1.0, 1.2), Vector2(1.78, 1.78), Vector2(5.0, 2.6)]
 	for c : Vector2 in cases:
 		var window_aspect := c.x
