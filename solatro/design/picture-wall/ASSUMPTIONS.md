@@ -784,4 +784,69 @@
     colour, not yet filed as its own gap pending the coordinator's steer on whether it blocks the
     main.gd wire-up or can ship picture-blank (Q214=a's existing "registered but unbuilt" look)
     until real art exists.
-    `WorldGraphNode` itself), and `show_for_node()` stays for `test_leak_canary.gd`'s own direct use.
+- **S30/S31 WIRE-UP (coordinator's own third call, after twice deferring) — `Levels/main.gd` is
+  now the wall.** `switch_scene()`/`current_scene` are gone; `Main` owns one real `Wall`, packs
+  `Wall.initial_layout()` (now 4 pictures: `start_menu`, `map`, `deck`, `game` -- `game` added
+  this pass), reparents `menu_scene`/`map_scene` as `live_screen`, and drives every navigation
+  through picture focus.
+  - **Two things Q88=a/Q99=a require were genuinely MISSING, not merely unwired, and had to be
+    built to make wall view a place a player can leave.** Design chart I3/I4: "click enters
+    immediately" and "`ui_accept` enters the selected picture" -- neither existed anywhere in
+    S19-S23's own input work (confirmed: no TEST_PLAN §6 row covers either). Added `Wall.
+    picture_enter_requested(id)` (a NEW signal, not in NAMES.md's own table -- named to match
+    `wall_view_entered`'s existing "the wall announces intent, the caller decides what it means"
+    shape) plus a `_picture_at(wall_pos)` hit-test (frame-outer rect, not the bare picture rect)
+    inside `Wall._unhandled_input()`'s existing wall-view branch.
+  - **Camera orchestration: `WallTransition` for picture-to-picture, a plain parallel `Tween` for
+    the two moves it cannot express.** `WallTransition.request()` only ever runs BETWEEN two real
+    pictures (it already latches pause/unpause correctly mid-flight, S14-S18/S28) -- there is no
+    "wall view" endpoint. `Main._animate_camera()` is the wall-view <-> picture half (M2's own
+    reveal, and the ordinary "Back to wall view" case), sharing `WallTransition.total_duration()`
+    for its own duration so both feel like the same clock, but built by hand since it is a
+    genuinely different shape of move, not a `WallTransition` variant.
+  - **`FocusStack` is finally live-wired**, not just tested in isolation: the overlay's Back
+    button retraces one step (`_focus_stack.back()`, refocusing the returned id) before falling
+    through to wall view once the stack itself reports nothing behind the current picture --
+    keyboard `ui_cancel` keeps its existing, simpler "always straight to wall view" behaviour
+    (`Wall`'s own `_unhandled_input`, unchanged), so the two Back affordances are NOT identical on
+    purpose (matching `wall_view_entered`'s own doc comment, which already named both cases as
+    landing on the same signal).
+  - **L4 is live**: `enter_game()` checks whether the `game` picture ALREADY holds a screen_root
+    before building anything -- a previous mid-act Back left it there, frozen, PROCESS_MODE
+    PAUSABLE; finding one RESUMES (focus only, no rebuild) rather than discarding it. Only a
+    genuinely finished show (`game_ended()`/`_on_run_lost()`) calls `detach_screen()`.
+  - **`deck` ships with no live screen, on purpose, matching L3's own "cosmetic, not structural"
+    ruling for `game`.** `DeckViewer` is a SELF-CLOSING modal (`_close()` frees itself on Escape),
+    a real structural mismatch with a PERSISTENT wall picture -- adapting it would be editing an
+    existing screen's behaviour, which anti-scope item 1 forbids outright. The picture exists on
+    the wall (so the wall genuinely has 4 pictures, M4's "more than one" holds), renders blank;
+    the map's own existing Deck button still opens the same modal `DeckViewer` exactly as before,
+    completely unaffected. Not filed as a gap: no coordinator ruling asked for one, and the
+    existing access path already works.
+  - **M2's own reveal uses the ORDINARY transition clock, as instructed** -- GAP-014's distinct
+    longer/slower one-off choreography is NOT built. This is a plain, recorded shortfall, not a
+    silent substitution.
+  - **Verified, not just written:** cold launch screenshotted (`Tests/Visual/
+    main_boot_snapshot.gd`, a new by-eye diagnostic reusing `Levels/main.tscn` unmodified) --
+    shows the real Menu screen (title, Play, the bottom button row) focused immediately, Back/
+    Forward correctly disabled, Wall button correctly visible (4 pictures). Full suite green (`ALL
+    39 SUITES`). The five suites TEST_PLAN §9 names, standalone, before this pass -> after:
+    `TestGameHeadless` 73->73, `TestActScore` 16->16, `TestCombo` 31->31, `TestVisualLayers`
+    192->192, `TestLeakCanary` 17->17 -- all unchanged.
+  - ⚠ **`TestLeakCanary` staying at 17 is NOT evidence Q203=a's leak semantics are exercised --
+    it is evidence they are NOT, and that is the honest reading, not a quieter way of claiming
+    success.** Confirmed by grep: `test_leak_canary.gd` builds its own `GameView`/map-controller
+    fixtures directly and never once calls into `Main` (`grep -rn "Main\." Tests` outside
+    `Main.save_info` returns nothing, for any test in this repo). The suite was ALWAYS testing the
+    underlying classes' own leak behaviour in isolation from whichever orchestrator drives them,
+    so wiring `Main` could not have changed what it measures. The freeze mechanism is proven twice
+    over regardless -- S31's own soak (isolated fixture) and this pass's real boot+full-suite
+    green (live fixture) -- but "screens now stay alive for the session" specifically has no
+    AUTOMATED test watching it yet. Flagged plainly rather than left implied.
+  - **Interactive navigation beyond cold launch (Play -> new run -> wall reveal -> entering map ->
+    entering a show -> Back mid-act -> resume) is verified by CODE REVIEW and the full green
+    suite, not by a screenshot of every step** -- time did not extend to a full by-eye walk of
+    the whole flow this pass. The boot itself and the freeze mechanism (S31's soak, using this
+    exact `attach_screen()`/`focus()`/`unfocus()` API) are the two highest-risk pieces and both
+    are independently verified; the orchestration code connecting them uses only already-tested
+    building blocks (`WallTransition`, `FocusStack`, `WallPicture`).

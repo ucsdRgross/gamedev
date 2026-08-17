@@ -13,19 +13,17 @@ extends Node2D
 func _ready() -> void:
 	get_tree().paused = true
 
-## S30 (M1-M4, B7, K6, Q211=a): the wall's own starting content -- `start_menu` (home, Q9=a),
-## `map` and `deck`, every one `unlocked_by_default` (basic navigation, not unlockable content).
-## `entry.scene` stays null on all three: the real screens are ALREADY-INSTANTIATED, PERSISTENT
-## nodes (Q141=a) the caller reparents via `WallPicture.build()`'s `live_screen` parameter, never
-## instantiated fresh from a PackedScene here. `frame_texture` uses the one shared style (S24)
-## like any other real picture. `slot` values are starting angles only -- GAP-010's unconditional
-## rebalancing (ASSUMPTIONS.md) decides the resolved angles regardless of what is authored here.
-##
-## ⚠ NOT YET WIRED to the live game: nothing calls this from `Levels/main.gd` yet. `Main` still
-## drives navigation through its own `switch_scene()`/menu-map-game swap, unchanged. Building the
-## live orchestrator (replacing that with wall-picture focus, plus M2/M3's own one-off slower
-## reveal transition) is real, remaining S30 work -- flagged rather than rushed; see
-## ASSUMPTIONS.md and the handoff for the specific open questions blocking it.
+## S30/S31 (M1-M4, B7, K6, Q211=a, L1): the wall's own starting content -- `start_menu` (home,
+## Q9=a), `map`, `deck` and `game`, every one `unlocked_by_default` (basic navigation, not
+## unlockable content). `entry.scene` stays null on all four: `start_menu`/`map` are
+## ALREADY-INSTANTIATED, PERSISTENT nodes (Q141=a) the caller reparents via `WallPicture.build()`'s
+## `live_screen` parameter; `game` is attached later, per show, via `attach_screen()` (S31, L2);
+## `deck` has no dedicated persistent screen built yet (see ASSUMPTIONS.md -- `DeckViewer` is a
+## self-closing modal, not a persistent screen, and adapting it is out of this pass's scope; the
+## picture exists on the wall, blank, same "registered but unbuilt" look Q214=a already covers).
+## `frame_texture` uses the one shared style (S24) on all four. `slot` values are starting angles
+## only -- GAP-010's unconditional rebalancing (ASSUMPTIONS.md) decides the resolved angles
+## regardless of what is authored here.
 static func initial_layout() -> WallLayout:
 	var layout := WallLayout.new()
 	layout.home_id = &"start_menu"
@@ -36,16 +34,28 @@ static func initial_layout() -> WallLayout:
 	start_menu.frame_texture = WallPicture.shared_frame_texture()
 	var map := PictureEntry.new()
 	map.id = &"map"
-	map.slot = 120
+	map.slot = 90
 	map.unlocked_by_default = true
 	map.frame_texture = WallPicture.shared_frame_texture()
 	var deck := PictureEntry.new()
 	deck.id = &"deck"
-	deck.slot = 240
+	deck.slot = 180
 	deck.unlocked_by_default = true
 	deck.frame_texture = WallPicture.shared_frame_texture()
-	layout.pictures = [start_menu, map, deck]
+	var game := PictureEntry.new()
+	game.id = &"game"
+	game.slot = 270
+	game.unlocked_by_default = true
+	game.frame_texture = WallPicture.shared_frame_texture()
+	layout.pictures = [start_menu, map, deck, game]
 	return layout
+
+## S31 (G9's own formula, exposed): the wall-view camera's TARGET POSITION -- the centre of every
+## packed picture's own frame-outer-rect union. `wall_view_zoom()` already exposes the matching
+## target ZOOM; this is its position counterpart, needed by whatever animates the camera TO wall
+## view (M2's reveal, or an ordinary Back-to-wall-view) since `_wall_extent()` itself is private.
+func wall_view_centre() -> Vector2:
+	return _wall_extent().get_center()
 
 ## S30 (K6, Q145=b, Q149=a): "wall state does not survive a quit -- every launch opens on the
 ## start-menu picture." A FRESH `FocusStack`, pre-visited with `&"start_menu"` -- the one and only
@@ -65,6 +75,16 @@ static func cold_launch_focus_stack() -> FocusStack:
 ## S21 (Q65=a): "Back at the bottom of the stack goes to wall view" -- fired the instant Back is
 ## accepted with nothing behind it (or with a focused screen releasing Back to the wall at all).
 signal wall_view_entered
+
+## S31 (I3/I4 design nodes, Q88=a "click enters immediately", Q99=a "ui_accept enters the
+## selected picture"): fired from WALL VIEW when the player commits to a destination -- a click
+## landing inside an UNFOCUSED picture's own frame-outer rect, or `ui_accept` on whichever picture
+## is currently `selected_id`. NOT in NAMES.md's own signal table (written before any step reached
+## real navigation); named to match `wall_view_entered`'s own "the wall announces player INTENT,
+## the caller decides what that means" shape -- `Wall` has no notion of GameView/menu/map at all,
+## so acting on this (building a fresh screen, attaching one, or just focusing what is already
+## there) is deliberately the caller's job, not this class's (ASSUMPTIONS.md).
+signal picture_enter_requested(id: StringName)
 
 ## S19/S21 (Q100=a): the wall reads input in `_unhandled_input` ONLY, so a focused screen's own
 ## Controls/`_unhandled_input` always get FIRST REFUSAL -- the same pattern
@@ -96,6 +116,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			move_selection(Vector2.RIGHT)
 			get_viewport().set_input_as_handled()
 			return
+		# Q99=a: ui_accept enters the currently selected picture.
+		if event.is_action_pressed(&"ui_accept") and selected_id != &"":
+			get_viewport().set_input_as_handled()
+			picture_enter_requested.emit(selected_id)
+			return
+		# Q88=a: a click landing inside an unfocused picture's own frame enters it immediately --
+		# hit-tested in WALL SPACE (get_global_mouse_position(), a Node2D method that already
+		# accounts for the active camera's own position/zoom, same as every other wall-space read
+		# in this class).
+		if event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+				var clicked_id := _picture_at(get_global_mouse_position())
+				if clicked_id != &"":
+					get_viewport().set_input_as_handled()
+					picture_enter_requested.emit(clicked_id)
+					return
 	if event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
 		wall_view_entered.emit()
@@ -114,6 +151,16 @@ func _focused_picture() -> WallPicture:
 		var wp := child as WallPicture
 		if wp and wp.is_focused: return wp
 	return null
+
+## Q88=a's own hit-test: the id of whichever picture's FRAME OUTER rect contains `wall_pos`, or
+## `&""` if none does. Frame outer (not the bare picture rect) so clicking the frame itself --
+## which is what most of a picture reads as at wall-view zoom -- counts too.
+func _picture_at(wall_pos: Vector2) -> StringName:
+	for child : Node in %Pictures.get_children():
+		var wp := child as WallPicture
+		if wp and wp.rect and WallPacker.frame_outer_rect(wp.rect).has_point(wall_pos):
+			return wp.rect.id
+	return &""
 
 ## I7 (Q104=a): `wall_jump_N` enters the Nth picture in PLACEMENT order -- GAP-009 deleted "ring";
 ## the packer's own output order (slot-ascending, home first) is what's left to count by, so this
