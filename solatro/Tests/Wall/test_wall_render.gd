@@ -11,6 +11,7 @@ extends TestSuite
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
+const MAIN_SCENE := preload("res://Levels/main.tscn")
 
 func suite_name() -> String:
 	return "WALL RENDER"
@@ -39,6 +40,7 @@ func _ready() -> void:
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
 	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
 	test_debug_memory_readout_counts_screens_and_viewports()
+	test_debug_readout_gated_by_wall_debug_readout_flag()
 	_teardown_wall()
 	finish()
 
@@ -360,3 +362,46 @@ func test_debug_memory_readout_counts_screens_and_viewports() -> void:
 
 	for wp : WallPicture in built: wp.teardown()
 	wall.queue_free()
+
+## S39 done-when's OTHER half ("the readout prints under the debug flag"), on a REAL `Main` --
+## `Main._wall_debug_readout_text()` is the gate `_print_wall_debug_readout()` prints whatever it
+## returns; tested directly rather than by capturing stdout (a `print()` call has no return value
+## to assert on). BOTH directions checked on the SAME `Main`, one right after the other -- the
+## coordinator's own instruction: "the false case is the 'assert it did not happen' shape, so make
+## sure it can fail." It can: the ON check just above proves this exact fixture, this exact flag,
+## produces non-empty text when true, so the OFF check going empty immediately after is a real
+## state change being observed, not a fixture that was always going to read empty regardless.
+## `backup_real_settings()`/`restore_real_settings()` park the real `user://settings.tres` for the
+## toggle's duration -- `SettingsManager` saves on every change (`test_wall_profile.gd`'s R4 uses
+## the identical pattern for the same reason, `wall_unlock_all`).
+func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
+	check(OS.is_debug_build(),
+			"sanity: this suite runs via the debug console exe -- OS.is_debug_build() is true, "
+			+ "the OTHER half of the gate this test does not flip")
+
+	backup_real_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Main._ready() -> Wall._ready() sets get_tree().paused = true GLOBALLY -- undone immediately,
+	# same established reason every Wall/Main-building test in this suite family documents.
+	get_tree().paused = false
+
+	var settings := SettingsManager.settings
+	var prev := settings.wall_debug_readout
+
+	settings.wall_debug_readout = true
+	var on_text := main._wall_debug_readout_text()
+	check(on_text != "" and "screens instantiated" in on_text,
+			"the readout text appears -- and is the REAL readout, not a placeholder -- when the "
+			+ "flag is true", on_text)
+
+	settings.wall_debug_readout = false
+	var off_text := main._wall_debug_readout_text()
+	check(off_text == "",
+			"the readout is genuinely ABSENT when the flag is false -- proven able to fail, since "
+			+ "the ON check just above used this exact Main and got real text",
+			"got=%s" % [off_text])
+
+	settings.wall_debug_readout = prev
+	restore_real_settings()
+	main.queue_free()

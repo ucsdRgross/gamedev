@@ -137,14 +137,21 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	overlay.refresh(_focus_stack, _pictures.size())
 	_print_wall_debug_readout()
 
-## S39 (E9, Q210=a): prints `wall.debug_memory_readout()` under the SAME debug gate the leak
-## sentinel uses (`OS.is_debug_build()`) plus its own settings flag (`wall_debug_readout`) -- called
-## from the same QUIESCENT moments `LeakSentinel.request_check()` already marks (a show ending, a
-## run being lost, a re-pack), never on a per-frame timer -- no new interval knob for a cadence
-## nothing has asked for.
+## S39 (E9, Q210=a): the debug-flag GATE itself, as a pure function returning
+## `wall.debug_memory_readout()` when the readout should be visible (a debug build AND the
+## `wall_debug_readout` flag -- the SAME gate the leak sentinel uses, `OS.is_debug_build()`) or
+## `""` otherwise. Split out from `_print_wall_debug_readout()` so the gate is directly testable
+## without capturing stdout -- a `print()` call has no return value a test can assert on.
+func _wall_debug_readout_text() -> String:
+	if not OS.is_debug_build() or not SettingsManager.settings.wall_debug_readout: return ""
+	return wall.debug_memory_readout()
+
+## Called from the same QUIESCENT moments `LeakSentinel.request_check()` already marks (a show
+## ending, a run being lost, a re-pack), never on a per-frame timer -- no new interval knob for a
+## cadence nothing has asked for.
 func _print_wall_debug_readout() -> void:
-	if not OS.is_debug_build() or not SettingsManager.settings.wall_debug_readout: return
-	print(wall.debug_memory_readout())
+	var text := _wall_debug_readout_text()
+	if text != "": print(text)
 
 # ==============================================================================
 # CAMERA / FOCUS ORCHESTRATION

@@ -13,17 +13,36 @@ extends Node2D
 func _ready() -> void:
 	get_tree().paused = true
 
-## S30/S31 (M1-M4, B7, K6, Q211=a, L1): the wall's own starting content -- `start_menu` (home,
-## Q9=a), `map`, `deck` and `game`, every one `unlocked_by_default` (basic navigation, not
-## unlockable content). `entry.scene` stays null on all four: `start_menu`/`map` are
-## ALREADY-INSTANTIATED, PERSISTENT nodes (Q141=a) the caller reparents via `WallPicture.build()`'s
-## `live_screen` parameter; `game` is attached later, per show, via `attach_screen()` (S31, L2);
-## `deck` has no dedicated persistent screen built yet (see ASSUMPTIONS.md -- `DeckViewer` is a
-## self-closing modal, not a persistent screen, and adapting it is out of this pass's scope; the
-## picture exists on the wall, blank, same "registered but unbuilt" look Q214=a already covers).
-## `frame_texture` uses the one shared style (S24) on all four. `slot` values are starting angles
+## S30/S31 (M1-M4, B7, K6, Q211=a, L1) + register-settings-book correction (coordinator): the
+## wall's own starting content -- SIX registered ids, matching NAMES.md's full picture-id table in
+## full, not the four this run originally shipped. `start_menu` (home, Q9=a), `map`, `deck` and
+## `game` are basic navigation, every one `unlocked_by_default`. `entry.scene` stays null on all
+## six: `start_menu`/`map` are ALREADY-INSTANTIATED, PERSISTENT nodes (Q141=a) the caller
+## reparents via `WallPicture.build()`'s `live_screen` parameter; `game` is attached later, per
+## show, via `attach_screen()` (S31, L2); `deck` has no dedicated persistent screen built yet (see
+## ASSUMPTIONS.md); `settings`/`book` are "registered ids with no scene" PER PLAN.md §4 anti-scope
+## item 2 -- registered, not absent -- and stay that way: building either's CONTENTS is explicitly
+## forbidden by that same anti-scope item, `null` is the correct, permanent-for-this-run value of
+## `entry.scene`, not a placeholder waiting to be filled in this pass.
+##
+## `settings.unlocked_by_default = true`: a settings/options screen is conventionally reachable
+## from first launch in every genre this design otherwise follows, and nothing in DESIGN.md gates
+## it -- Q212's own text treats it as "a registered picture on the wall" now, contents later, never
+## as content the K-chart's unlock system is FOR. `book.unlocked_by_default = false`: the
+## information book is the one registered picture with no navigational necessity (unlike the other
+## five, none of which the app can do without), making it the natural first real instance of
+## QR2=a's own stated point ("pictures unlock over time... the wall grows the way that player
+## played") -- Q6=c's "unlockable... set dressing" is the closest tonal parallel DESIGN.md draws
+## for gated wall content. Neither line is a literal design citation (none exists for either
+## picture's lock state specifically) -- both are reasoned readings, recorded here rather than
+## picked silently, exactly per gap-protocol rule 1. `book` being locked also gives F12 (S38) a
+## REAL locked-then-unlocked id to exercise K2's "no reveal ceremony" half against the real wiring,
+## which the four-picture layout could not provide (every one of THOSE four is `unlocked_by_default`).
+##
+## `frame_texture` uses the one shared style (S24) on all six. `slot` values are starting angles
 ## only -- GAP-010's unconditional rebalancing (ASSUMPTIONS.md) decides the resolved angles
-## regardless of what is authored here.
+## regardless of what is authored here; their relative ORDER is what is authored, not the literal
+## degrees.
 static func initial_layout() -> WallLayout:
 	var layout := WallLayout.new()
 	layout.home_id = &"start_menu"
@@ -32,6 +51,11 @@ static func initial_layout() -> WallLayout:
 	start_menu.slot = 0
 	start_menu.unlocked_by_default = true
 	start_menu.frame_texture = WallPicture.shared_frame_texture()
+	var book := PictureEntry.new()
+	book.id = &"book"
+	book.slot = 45
+	book.unlocked_by_default = false
+	book.frame_texture = WallPicture.shared_frame_texture()
 	var map := PictureEntry.new()
 	map.id = &"map"
 	map.slot = 90
@@ -47,7 +71,12 @@ static func initial_layout() -> WallLayout:
 	game.slot = 270
 	game.unlocked_by_default = true
 	game.frame_texture = WallPicture.shared_frame_texture()
-	layout.pictures = [start_menu, map, deck, game]
+	var settings := PictureEntry.new()
+	settings.id = &"settings"
+	settings.slot = 315
+	settings.unlocked_by_default = true
+	settings.frame_texture = WallPicture.shared_frame_texture()
+	layout.pictures = [start_menu, book, map, deck, game, settings]
 	return layout
 
 ## S31 (G9's own formula, exposed): the wall-view camera's TARGET POSITION -- the centre of every

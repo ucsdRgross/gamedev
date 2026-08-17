@@ -32,7 +32,7 @@ inventing one. Two sessions inventing two names for one thing is the most common
 |---|---|---|---|
 | `UI/Wall/wall.tscn` / `wall.gd` | `Wall` | `Node2D` | the shell root — owns the camera, the pictures, the overlay |
 | `UI/Wall/wall_picture.tscn` / `wall_picture.gd` | `WallPicture` | `Node2D` | one picture: frame + screen sprite + its `SubViewport` |
-| `UI/Wall/wall_frame.gd` | `WallFrame` | `NinePatchRect` | the frame. **A `NinePatchRect`, not a system** (§1m) |
+| ~~`UI/Wall/wall_frame.gd`~~ | ~~`WallFrame`~~ | — | **RETIRED, never built.** This row's own description — *"a `NinePatchRect`, not a system"* — says it needs no behavioural script, and S24 ships every frame requirement without one. Kept struck rather than deleted so the name is not reused for something else. |
 | `UI/Wall/wall_overlay.tscn` / `wall_overlay.gd` | `WallOverlay` | `CanvasLayer` | Back / Forward / Wall / Info controls |
 | `UI/Wall/info_card.tscn` / `info_card.gd` | `InfoCard` | `Control` | the self-sizing notecard |
 | `Scripts/Wall/wall_input.gd` | `WallInput` | `RefCounted` | event routing: wall-space hit test, `make_input_local`, `push_input` |

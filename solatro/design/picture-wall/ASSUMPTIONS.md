@@ -1002,3 +1002,72 @@
   the first step to actually write this resource to disk. Flagged for whoever gives the frame art
   a real, file-backed texture (QR4=b's eventual "shader and art pass"), since that will also make
   this embedding disappear on its own.
+- **CORRECTION 1 (coordinator) — F12 rewritten to exercise the REAL `Main._repack_wall()` against
+  a REAL, live `FocusStack`, red-then-green proven.** The prior version built a `FocusStack.new()`
+  never passed to `Wall.apply_layout()`/anything else -- structurally incapable of going red for a
+  wiring bug that corrupts the production stack, only for a bug in `FocusStack` itself (already
+  covered by F1-F7). `test_wall_focus.gd:test_unlock_reaction_leaves_the_real_focus_stack_valid()`
+  now builds a real `Main` (isolated `SubViewport`, unpaused immediately -- the same established
+  trick every real-`Wall`-building test in this suite family already uses), navigates two real
+  pictures through the real `_focus_picture()` path, then calls `Main._repack_wall()` DIRECTLY --
+  the exact method `ProfileManager.picture_unlocked` is wired to, called directly rather than via
+  `.emit()` only to avoid touching the real, autoload-shared profile signal bus while ~38 other
+  suites run concurrently, never as a substitute for running the real code. Proven RED: temporarily
+  inserted `_focus_stack = FocusStack.new()` at the top of `_repack_wall()` (a realistic wiring
+  bug) -- the "Back still lands on map"/"...then start_menu" checks failed exactly as expected.
+  Reverted, confirmed GREEN. ⚠ Every one of `Wall.initial_layout()`'s four real pictures is
+  `unlocked_by_default`, so production has no "starts locked" id to exercise K2's OTHER half ("no
+  reveal ceremony") against the real wiring -- that half remains evidenced by code review only,
+  flagged rather than silently narrowed.
+- **CORRECTION 2 (coordinator) — S39's "prints under the debug flag" half now has a test, both
+  directions, red-then-green proven.** `Main._print_wall_debug_readout()` was split into a pure,
+  testable gate (`_wall_debug_readout_text() -> String`, returns the readout or `""`) and a thin
+  `print()` wrapper -- a `print()` call has no return value a test can assert on, so the gate
+  itself needed to be independently callable. `test_wall_render.gd:
+  test_debug_readout_gated_by_wall_debug_readout_flag()` builds a real `Main`, flips the REAL,
+  shared `SettingsManager.settings.wall_debug_readout` true then false on the SAME instance (one
+  synchronous function, no `await` between the two flips, so no sibling suite can observe the
+  flag mid-toggle), asserting non-empty real readout text when true and exactly `""` when false.
+  `backup_real_settings()`/`restore_real_settings()` (`test_wall_profile.gd`'s R4 already
+  established this exact pattern for `wall_unlock_all`) park the real `user://settings.tres` for
+  the toggle's duration. Proven RED: temporarily removed the gate's `if` entirely (`return wall.
+  debug_memory_readout()` unconditionally) -- the false-branch check failed, reporting real
+  readout text where `""` was expected. Reverted, confirmed GREEN.
+- **CORRECTION 3 (coordinator) — S32 (L12, Q157=a) now has a test and this entry.** Previously
+  rested on code review alone: implementation compared favourably against L12's chart text and
+  Q157's own answer on inspection, but PLAN.md gives S32 no done-when of its own (a plan defect
+  predating this pass, not manufactured to excuse a shortfall) and nothing exercised it.
+  `test_wall_focus.gd:test_lost_run_leaves_map_and_game_pictures_unchanged()` calls
+  `Main._on_run_lost()` DIRECTLY (the exact method a real `GameView.run_lost` signal fires) against
+  a real `Main`, with a bare `Node` standing in for the game-over screen `attach_screen()` would
+  hold (`_on_run_lost()`'s own logic never reads anything ABOUT the screen, only whether one is
+  attached -- same fixture shape `test_wall_render.gd`'s own S39 tests already use for "a live
+  screen"). Asserts `main.map_scene` is the SAME object after the call (not rebuilt) and the game
+  picture's `screen_root` is the SAME object too (not detached/freed) -- L12's own two claims.
+  `backup_real_save()`/`restore_real_save()` (`test_base.gd`, the same pattern
+  `test_run_manager.gd`/`test_leak_canary.gd` use) park the real `user://run_save/run.tres` for the
+  call's duration, since `_on_run_lost()` calls `RunManager.clear_save()`; paired tightly around
+  ONE fully synchronous call (`_on_run_lost()` itself contains no `await`) so this test's exposure
+  window on that GLOBAL, non-per-suite-scoped park cannot overlap a sibling suite's own disk-save
+  work. Proven RED: temporarily inserted `_pictures[&"game"].detach_screen()` into `_on_run_lost()`
+  -- the game-screen-identity check failed exactly as expected. Reverted, confirmed GREEN. Q157's
+  OTHER half ("the map is replaced only when a new run starts") is NOT exercised by this test --
+  `_on_new_run()` ends in `await _go_to_wall_view()`, which would hold the same GLOBAL save-file
+  park open across a real camera animation, a real risk against whichever other suite might also
+  be mid-save at that moment; that half stays evidenced by code review alone (`_on_new_run()`'s own
+  single `game_wp.detach_screen()` line is the one place either picture is ever actually replaced).
+- **CORRECTION (coordinator) — the `WallFrame` registry entry recommendation: RETIRE it, do not
+  build it.** NAMES.md names an as-yet-unwritten script in `UI/Wall/`, class `WallFrame`
+  (`NinePatchRect`), but its own
+  one-line role description already signals low ambition for a real behavioural class: "the frame.
+  A NinePatchRect, not a system (§1m)" -- read plainly, that is NAMES.md itself saying this does
+  NOT need to be a system with its own script, only an ordinary engine node other code (`WallPicture.
+  build()`) drives directly, which is exactly what shipped in S24 and has carried every
+  frame-related requirement (Q36-Q39, Q41, the nine-slice patch margins, GAP-013's placeholder
+  texture) with no gap since. Nothing currently needs per-instance frame BEHAVIOUR (a script would
+  add) rather than frame DATA (texture + margins, already handled). Recommendation, not a unilateral
+  deletion: retiring a NAMES.md row is the coordinator's call, and creating an empty class file with
+  no behaviour just to satisfy the registry would be exactly the kind of invented, purposeless
+  artifact PLAN.md's own "you should not have to design anything" principle warns against. If a
+  real per-picture frame BEHAVIOUR need turns up (the eventual QR4=b shader/art pass is the likely
+  trigger), that is the moment to actually build it, not before.

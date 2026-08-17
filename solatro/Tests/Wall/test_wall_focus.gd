@@ -4,8 +4,9 @@ extends TestSuite
 # WALL FOCUS (S5): FocusStack -- the Back/Forward history for the picture wall, ids only.
 # PLAN.md §1.4; TEST_PLAN.md §2, F1-F7. Plus §6b's overlay group (S35): F8, F9 -- they live here,
 # not in a new suite, because they are stack semantics (FocusStack.can_back/can_forward) wearing UI
-# (WallOverlay.refresh). Plus F13 (S30): wall state does not survive a quit. NOT F10-F12: those
-# need popups and unlock (S38/S39), still out of scope.
+# (WallOverlay.refresh). Plus F13 (S30): wall state does not survive a quit, and F12 (S38): an
+# unlock reaction leaves a REAL Main's REAL, live stack valid. NOT F10/F11: those need popups
+# (S35's own scope note elsewhere already covers F10/F11's other halves), still out of scope here.
 #
 # CATEGORY MAP: every row here is BEHAVIOR -- a player-visible navigation contract (Q63-Q66), not
 # an internal storage detail.
@@ -18,8 +19,7 @@ extends TestSuite
 # ==============================================================================
 
 const WALL_OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
-const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
-const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
+const MAIN_SCENE := preload("res://Levels/main.tscn")
 
 func suite_name() -> String:
 	return "WALL FOCUS"
@@ -40,23 +40,10 @@ func _ready() -> void:
 	behavior_section("WALL STATE DOES NOT SURVIVE A QUIT (S30, F13)")
 	test_wall_state_does_not_survive_a_quit()
 	behavior_section("UNLOCK MID-SESSION (S38, F12)")
-	test_unlock_mid_session_leaves_the_stack_valid()
+	await test_unlock_reaction_leaves_the_real_focus_stack_valid()
+	behavior_section("LOST-RUN BEHAVIOUR (S32, L12, Q157)")
+	test_lost_run_leaves_map_and_game_pictures_unchanged()
 	finish()
-
-## ⚠ Same isolated-SubViewport reasoning `TestWallInput._build_wall()` documents: `Wall._ready()`
-## calls `get_viewport().set_input_as_handled()` from `_unhandled_input()`, which would mark the
-## SHARED root viewport (every other concurrently-running suite's own real input) if `wall` lived
-## there directly. This suite's own F12 test never dispatches input, but the fixture is copied
-## verbatim rather than re-derived, so the same guarantee holds if this file ever grows a test that
-## does.
-func _build_focus_test_wall() -> Wall:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var wall : Wall = WALL_SCENE.instantiate()
-	viewport.add_child(wall)
-	get_tree().paused = false
-	return wall
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
 func test_back_retraces_visit_order() -> void:
@@ -240,71 +227,149 @@ func test_wall_state_does_not_survive_a_quit() -> void:
 
 # ------------------------------------------------------------------ F12 (S38)
 
-## F12 (K4, Q156=a): an unlock mid-session leaves the FocusStack valid. Visits three pictures
-## (a, b, c), then re-packs exactly as `Main._repack_wall()` does in production once a fourth ("d")
-## unlocks: `WallPacker.pack()` over the WIDER unlocked set, a fresh `WallPicture.build()` for the
-## picture that never existed before (K2: "no reveal ceremony"), and `Wall.apply_layout()` to
-## reposition the three that already did -- `animate=false` (K4's own scenario: "if they are
-## inside a picture, the wall re-packs silently"). Every picture's position AND size changes
-## (GAP-010's unconditional rebalancing spreads four pictures differently than three) and a brand
-## new node gets built, and NONE of it should be visible to the stack: Back must still retrace the
-## exact same three ids in the exact same order, because it was never handed a rect or a node
-## reference to begin with (§1.4) -- only ids, which the re-pack never touches.
-func test_unlock_mid_session_leaves_the_stack_valid() -> void:
-	var fs := FocusStack.new()
-	fs.visit(&"a")
-	fs.visit(&"b")
-	fs.visit(&"c")
+## F12 (K4, Q156=a): an unlock mid-session leaves the FocusStack VALID -- TEST_PLAN's own row is a
+## claim about PRODUCTION WIRING, not about `FocusStack`'s arithmetic (F1-F7 already cover that in
+## isolation). An earlier version of this test built a disconnected `FocusStack.new()` that
+## `Wall.apply_layout()` never touched at all -- so its "Back still lands on b" checks could not
+## have gone red for a wiring bug that corrupted the REAL stack, only for a bug in `FocusStack`
+## itself, which F1-F7 already prove separately. Same shape as the `await`-vs-`.timeout` and
+## lambda-capture traps this run's own HANDOFF names: a test that cannot fail for the thing its own
+## row claims to prove.
+##
+## Rebuilt to exercise the FULL REAL CHAIN end to end, on a REAL `Main`: a real
+## `ProfileManager.unlock(&"book")` call (saves immediately, emits `picture_unlocked`) ->
+## `Main._ready()`'s own `ProfileManager.picture_unlocked.connect(_repack_wall)` -> the real
+## `_repack_wall()` -> the real, live `_focus_stack`. Nothing here is called directly as a
+## substitute for the signal anymore (register-settings-book correction, coordinator): `book` is
+## `unlocked_by_default = false` in `Wall.initial_layout()` (ASSUMPTIONS.md), so it is a picture
+## genuinely never built before this test unlocks it -- the real "starts locked, becomes unlocked"
+## id the four-picture layout could not provide, letting this test finally exercise K2's OTHER
+## half too ("no reveal ceremony -- the picture is simply there next time").
+##
+## `ProfileManager` is a real, shared autoload -- parked/swapped exactly as `test_wall_profile.gd`'s
+## own R-tests do (same file, same idiom), so unlocking `book` here for real cannot leak into, or
+## be polluted by, whichever profile state a concurrently-running suite or the real player has.
+## `ProfileManager.unlock()` and `Main._repack_wall()` are both fully synchronous (no `await`
+## anywhere in either body), so the whole park -> unlock -> repack -> restore sequence runs as one
+## uninterrupted block with no window for another suite's own profile work to interleave.
+func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
+	var real_path := ProfileManagerClass.SAVE_PATH
+	var parked_path := real_path + ".test_wall_focus_f12.testbak"
+	var had_real_file := FileAccess.file_exists(real_path)
+	if had_real_file:
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(real_path),
+				ProjectSettings.globalize_path(parked_path))
+	var real_profile := ProfileManager.profile
+	ProfileManager.profile = PlayerProfile.new()
 
-	var layout := WallLayout.new()
-	layout.home_id = &"a"
-	var entries : Array[PictureEntry] = []
-	for id : StringName in [&"a", &"b", &"c", &"d"]:
-		var e := PictureEntry.new()
-		e.id = id
-		entries.append(e)
-	layout.pictures = entries
-	var by_id : Dictionary[StringName, PictureEntry] = {}
-	for e : PictureEntry in entries: by_id[e.id] = e
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	# Wall._ready() (inside Main._ready(), just run by add_child above) sets get_tree().paused =
+	# true GLOBALLY -- undone immediately, same established reason every other Wall-building test
+	# in this suite/TestWallRender/TestWallPause already documents: ~38 OTHER suites run
+	# concurrently and a global pause with nothing to clear it hangs the whole run.
+	get_tree().paused = false
 
-	var wall := _build_focus_test_wall()
-	var pictures_root : Node = wall.get_node(^"%Pictures")
-	var viewports : Node = wall.get_node(^"%Viewports")
-	var built : Array[WallPicture] = []
-	# "d" starts locked -- only a, b, c are packed at first, matching the three pictures already
-	# visited above.
-	var rects_before := WallPacker.pack(layout, [&"a", &"b", &"c"], 1.6)
-	for rect : PictureRect in rects_before:
-		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
-		pictures_root.add_child(wp)
-		wp.build(rect, by_id[rect.id], viewports)
-		built.append(wp)
-	check(built.size() == 3,
-			"sanity: all three already-visited pictures were packed before the unlock",
-			str(built.size()))
+	# Cold launch already visited start_menu (Wall.cold_launch_focus_stack(), Main._ready()). Two
+	# more REAL navigations, through the REAL Main._focus_picture() path (a real WallTransition,
+	# same as a player pressing into a picture), give Back three real ids to retrace.
+	await main._focus_picture(&"map")
+	await main._focus_picture(&"deck")
+	check(main._focus_stack.can_back(),
+			"sanity: the real navigation above actually built real history to lose")
+	check(not main._pictures.has(&"book"),
+			"sanity: book starts LOCKED (unlocked_by_default = false) and was never built -- "
+			+ "K2's own 'no reveal ceremony' half needs a picture genuinely absent before the unlock")
 
-	# "d" unlocks mid-session -- re-pack with all four ids now unlocked.
-	var rects_after := WallPacker.pack(layout, [&"a", &"b", &"c", &"d"], 1.6)
-	var rects_by_id : Dictionary[StringName, PictureRect] = {}
-	for rect : PictureRect in rects_after: rects_by_id[rect.id] = rect
-	var d_wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
-	pictures_root.add_child(d_wp)
-	d_wp.build(rects_by_id[&"d"], by_id[&"d"], viewports)
-	built.append(d_wp)
-	wall.apply_layout(rects_by_id, false)
+	# Captured BEFORE the unlock so the geometry assertion below can tell a REAL re-pack (a fresh
+	# PictureRect object from a fresh WallPacker.pack() call) apart from a no-op.
+	var rect_before : PictureRect = main._pictures[&"start_menu"].rect
 
-	check(built.size() == 4, "the newly-unlocked fourth picture was built", str(built.size()))
-	for wp : WallPicture in built:
-		check(wp.rect.centre.is_equal_approx(rects_by_id[wp.rect.id].centre),
-				"%s ended the re-pack at its freshly packed position" % wp.rect.id,
-				"got=%s want=%s" % [wp.rect.centre, rects_by_id[wp.rect.id].centre])
+	# THE REAL UNLOCK -- fires the REAL signal, which Main._ready() already wired straight to the
+	# REAL _repack_wall(). Nothing here re-derives or shortcuts any link in that chain.
+	ProfileManager.unlock(&"book")
 
-	# Back retraces c -> b -> a -> "" -- the SAME order as before the unlock, completely unaffected
-	# by every picture's own position/size changing and a brand new node appearing.
-	check(fs.back() == &"b", "Back still lands on b, exactly as it would have before the unlock")
-	check(fs.back() == &"a", "...then a...")
-	check(fs.back() == &"", "...then nothing left, same as any other exhausted stack")
+	check(main._pictures.has(&"book"),
+			"K2: the newly-unlocked picture is simply there, built with no reveal ceremony")
+	check(main._pictures[&"start_menu"].rect != rect_before,
+			"sanity: the re-pack actually ran -- start_menu's rect is a fresh object, not the "
+			+ "pre-unlock one (a vacuous re-pack would make this check meaningless)")
 
-	for wp : WallPicture in built:
-		if is_instance_valid(wp): wp.teardown()
-	if wall and is_instance_valid(wall): wall.get_parent().queue_free()
+	# Back must retrace the SAME three real ids in the SAME order as before the unlock --
+	# COMPLETELY UNAFFECTED by every picture's rect being freshly rebuilt underneath it and a
+	# brand-new picture appearing, because _repack_wall() never touches _focus_stack (it only
+	# READS it, via overlay.refresh()).
+	check(main._focus_stack.back() == &"map",
+			"Back still lands on map after a REAL unlock through the REAL wiring")
+	check(main._focus_stack.back() == &"start_menu", "...then start_menu...")
+	check(main._focus_stack.back() == &"",
+			"...then nothing left, same as any other exhausted stack")
+
+	main.queue_free()
+	viewport.queue_free()
+	ProfileManager.profile = real_profile
+	if FileAccess.file_exists(real_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(real_path))
+	if had_real_file:
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(parked_path),
+				ProjectSettings.globalize_path(real_path))
+
+# ------------------------------------------------------------------ S32 (L12, Q157)
+
+## S32 (L12, Q157=a -- "stays on the wall, shows its own empty state... the map is replaced only
+## when a new run starts"): a lost run leaves BOTH the map picture's screen and the game picture's
+## screen UNCHANGED -- neither rebuilt, freed, nor detached. Previously this rested on code review
+## alone (no test, no ASSUMPTIONS entry -- flagged in this run's own verification pass).
+##
+## `Main._on_run_lost()` is the exact method a real GameView's `run_lost` signal fires
+## (`enter_game()`'s own `new_view.run_lost.connect(_on_run_lost)`); called DIRECTLY here, same
+## reasoning F12 uses for `_repack_wall()` -- it runs the real method against a real Main without
+## needing a full, playable `GameView`/`RunManager` show to reach it. A bare `Node` stands in for
+## the game-over screen `attach_screen()` would hold (same fixture shape
+## `test_build_reparents_a_live_screen_unchanged`/`test_screen_root_survives_repeated_focus_
+## unfocus_cycles` in `test_wall_render.gd` already use for "a live screen", never a mock of
+## GameView's own behaviour -- `_on_run_lost()`'s own logic never reads anything ABOUT the screen,
+## only whether it exists).
+##
+## `backup_real_save()`/`restore_real_save()` (`test_base.gd`, the same pattern
+## `test_run_manager.gd`/`test_leak_canary.gd` already use) park the real
+## `user://run_save/run.tres` for the call's duration -- `_on_run_lost()` calls
+## `RunManager.clear_save()`, which deletes that file. Paired tightly around ONE synchronous call
+## with no `await` anywhere in `_on_run_lost()`'s own body, so no concurrently-running sibling
+## suite's own disk-save work can interleave inside the exposure window.
+##
+## ⚠ Q157's OTHER half ("the map is replaced only when a new run starts") is not exercised here --
+## `_on_new_run()` ends in `await _go_to_wall_view()`, which would hold this test's own exposure
+## window open across a real camera animation while `backup_real_save()`'s park is still shared,
+## global (not per-suite like the settings backup), and genuinely un-scoped against whichever OTHER
+## suite might also be mid-save at that moment. That half remains evidenced by code review alone
+## (ASSUMPTIONS.md): `_on_new_run()`'s own `game_wp.detach_screen()` line is the one place either
+## picture is ever actually replaced.
+func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
+	backup_real_save()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false
+
+	var game_wp : WallPicture = main._pictures[&"game"]
+	var lose_screen_stand_in := Node.new()
+	lose_screen_stand_in.name = "LoseScreenStandIn"
+	game_wp.attach_screen(lose_screen_stand_in)   # simulates a real GameView's game-over state
+	var map_before : Map = main.map_scene
+
+	main._on_run_lost()
+
+	check(main.map_scene == map_before,
+			"L12: the map picture's own screen is the SAME object after a lost run -- not rebuilt "
+			+ "or replaced")
+	check(game_wp.screen_root == lose_screen_stand_in,
+			"L12: re-entering the game picture would show the SAME game-over screen -- "
+			+ "_on_run_lost() never detaches it")
+	check(is_instance_valid(lose_screen_stand_in),
+			"...and it was never freed either")
+
+	restore_real_save()
+	main.queue_free()
