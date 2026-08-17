@@ -673,17 +673,37 @@
   the closest defensible stand-in. `_describe_node()` factors the SAME title/body logic
   `show_for_node()` already used into a shared helper (a pure refactor, not a behaviour change),
   and `get_info()` is additive alongside it.
-- ⚠ **S29's migration is INCOMPLETE, and this is a scope decision, not an oversight.** PLAN.md
-  states S29 "DELETES `UI/map_hover_panel.gd`'s role as a separate system" and the coordinator
-  restated it as a hard requirement. What shipped: `get_info()` exists and is real, tested
-  infrastructure (`TestWallInfo` J7 exercises it against a real `WorldGraphOverlay` node). What
-  did NOT ship: `Levels/map.gd`'s own hover wiring (`_on_node_hovered` → `hover_panel.
-  show_for_node()`) was left UNCHANGED — `MapHoverPanel` still renders its own bespoke tooltip,
-  `InfoCard` is not mounted on the map at all, and `entry.visual` is left null rather than
-  reproducing the booster preview-card strip (`CardsViewer`, individually-inspectable cards,
-  populated ASYNCHRONOUSLY) inside an `InfoEntry`. Rewiring `map.gd` to actually retire
-  `MapHoverPanel` risked `TestMapTraversal` (TEST_PLAN §9 names it explicitly threatened by this
-  step) without enough remaining time to verify the swap was safe — the coordinator's own
-  instruction preferred an honest partial report over a rushed change. **Still owed:** wire
-  `map.gd` to an `InfoCard` instance and either accept `entry.visual == null` for booster nodes (a
-  real behaviour narrowing) or build a synchronous-enough preview visual.
+- **S29's migration is now COMPLETE** (superseding the earlier "incomplete" entry this replaces).
+  `Levels/map.tscn`'s `%HoverPanel` (a live `MapHoverPanel` instance) is gone, replaced by
+  `%InfoCard` (`res://UI/Wall/info_card.tscn`). `map.gd._on_node_hovered()` now calls
+  `MapHoverPanel.get_info(node, run, controller.lap_target())` and hands the result to
+  `info_card.show_entry()` — `hover_panel`/`%HoverPanel` no longer appear anywhere in `map.gd`.
+  `get_info()`, `_describe_node()` and `_populate_preview_visual()` were made STATIC (none read
+  any `self` state), so the map's live hover routing never needs to instantiate a whole
+  `MapHoverPanel` scene just to reach `get_info()`.
+  - **Booster preview reproduced, not narrowed.** `get_info()` on a booster node builds `entry.
+    visual` as a FRESH `FlowContainer` (a real "copy of the hovered thing", §1.11/Q130, never a
+    live reference into any panel's own `%Cards`) and populates it via the SAME `CardsViewer`
+    listing `_populate_cards()` already used, aimed at the new container. Not `await`ed by
+    `get_info()` itself (which must stay synchronous per §1.11's fixed signature) — safe in
+    practice, not merely assumed: `_populate_cards()`'s own comment already establishes
+    `get_possible_preview_cards()` never actually suspends today, so the un-awaited coroutine
+    still runs to completion before `get_info()`'s own caller regains control. `TestWallInfo` J7
+    asserts the visual is non-null AND populated (`get_child_count() > 0`), verified RED (visual
+    dropped) then GREEN (visual restored) by hand.
+  - **A real, accepted behaviour change, not a bug:** the info card no longer follows the cursor
+    (`MapHoverPanel`'s `MOUSE_OFFSET`/`SCREEN_MARGIN` clamping) and no longer auto-hides on a
+    grace period after leaving hover (`node_unhovered` is no longer connected to anything card-
+    hiding at all). Both are `InfoCard`'s OWN contract (Q129=a: anchored to the window's bottom;
+    J2/Q131: keeps the last entry until something else replaces it) — adopting them wholesale is
+    what "becoming the info card" (Q134=c, "so there is only one system") means, not a narrowing.
+  - **`TestMapTraversal` run standalone both before and after the rewire, not just as part of the
+    full suite:** `ALL 35 CHECKS PASSED` in both — byte-for-byte the same suite total, no
+    regression. `Tests/Engine/test_leak_canary.gd`'s own `MapHoverPanel` exercise (`show_for_node`/
+    `hide_panel` on a standalone instance, unrelated to the map's live scene tree) is unaffected:
+    the class and scene file were not deleted, only retired from `map.tscn`'s own tree.
+  - **`MapHoverPanel`'s file/class deliberately still exists** — PLAN.md's "deletes its role as a
+    separate system" was read as "the map no longer INSTANTIATES it as its live hover display",
+    not "the file must be deleted"; `get_info()`'s natural home is still the class that already
+    knows how to read a `WorldGraphNode`'s meta (see the earlier entry on why it is not on
+    `WorldGraphNode` itself), and `show_for_node()` stays for `test_leak_canary.gd`'s own direct use.

@@ -10,7 +10,13 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
-@onready var hover_panel: MapHoverPanel = %HoverPanel
+## S29 (picture-wall, Q133=b, Q134=c): the map's hover now shows through the SAME `InfoCard`
+## widget the wall's own Info mode uses, fed by `MapHoverPanel.get_info()` (static -- see its own
+## doc comment) rather than the bespoke `MapHoverPanel.show_for_node()` tooltip. `MapHoverPanel`'s
+## SCENE is no longer instantiated live on the map; the class file stays (get_info()'s home, and
+## `Tests/Engine/test_leak_canary.gd` still exercises `show_for_node()`/preview-card cleanup
+## directly against a standalone instance).
+@onready var info_card: InfoCard = %InfoCard
 @onready var fame_label: Label = %FameLabel
 @onready var lap_label: Label = %LapLabel
 @onready var luck_label: Label = %LuckLabel
@@ -32,9 +38,9 @@ func get_rules_collections() -> Array[CardData]:
 func _ready() -> void:
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
-	# request_hide (not hide_panel): grace period lets the cursor cross onto the panel
-	# to inspect the preview cards.
-	controller.node_unhovered.connect(hover_panel.request_hide)
+	# S29: deliberately NO node_unhovered connection. InfoCard keeps showing the last entry
+	# across empty hover (J2/Q131, "does not blink") -- the map now follows the SAME persistence
+	# contract Info mode's own card uses, replacing MapHoverPanel's grace-period auto-hide.
 	controller.map_ready.connect(_update_hud)
 	if _pending_run:
 		var pending := _pending_run
@@ -118,10 +124,12 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
+## S29 (Q133=b): routes through `get_info()`, not `MapHoverPanel.show_for_node()` -- `InfoCard`
+## anchors itself to the WINDOW'S bottom (Q129=a), not the node's own screen position, so there is
+## no cursor-following placement to compute here any more (a deliberate consequence of actually
+## becoming the info card, not a dropped feature).
 func _on_node_hovered(node: WorldGraphNode) -> void:
-	# Anchor the panel to the node's screen position (valid for mouse AND keyboard).
-	var screen_pos := node.get_global_transform_with_canvas().origin
-	hover_panel.show_for_node(node, run, controller.lap_target(), screen_pos)
+	info_card.show_entry(MapHoverPanel.get_info(node, run, controller.lap_target()))
 
 func _update_hud() -> void:
 	if run == null: return

@@ -38,7 +38,12 @@ var _hide_at : float = -1.0
 ## that already knows how to read one -- stands in as the "hoverable" for Q133=b's purposes.
 ## Returns `{"title": String, "body": String, "booster": BoosterTemplate}` (`booster` null unless
 ## this is a booster node -- callers that care about the preview cards check it).
-func _describe_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> Dictionary:
+##
+## STATIC (like `get_info()`/`_populate_preview_visual()` below): none of the three read any
+## `self` state (no `title_label`/`%Cards`/etc), so a caller wanting only `get_info()` (`map.gd`'s
+## live hover routing) never needs to instantiate a whole `MapHoverPanel` scene just to reach it.
+static func _describe_node(node: WorldGraphNode, run: RunState,
+		lap_target: WorldGraphNode) -> Dictionary:
 	var role : String = node.meta.get(MapNodeRoles.ROLE_KEY, "")
 	var lines : Array[String] = []
 	var biome_name : String = node.meta.get("biome_name", "")
@@ -59,19 +64,39 @@ func _describe_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphN
 		lines.append("3 acts to reach it — or the tour ends.")
 	return {"title": title, "body": "\n".join(lines), "booster": booster}
 
-## S29 (Q132=a, Q133=b, picture-wall): the map's own `get_info()` stand-in (see `_describe_node()`
-## above for why it lives here rather than on `WorldGraphNode`). `visual` is left null: the
-## booster preview-card strip (`_populate_cards()` below) is built ASYNCHRONOUSLY and is its own
-## rich, already-tested widget (`CardsViewer`, individually-inspectable cards) -- reproducing it
-## synchronously inside one `InfoEntry.visual` was parked rather than rushed; see ASSUMPTIONS.md
-## and GAP-013's own family of "flagged, not silently done partway" entries.
-func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
+## S29 (Q132=a, Q133=b, Q130, picture-wall): the map's own `get_info()` stand-in (see
+## `_describe_node()` above for why it lives here rather than on `WorldGraphNode`). For a booster
+## node, `entry.visual` is a FRESH `FlowContainer` -- "an optional COPY of the hovered thing"
+## (§1.11), never a live reference into this panel's own %Cards -- populated by the SAME
+## `CardsViewer` listing logic `_populate_cards()` below already uses, just aimed at this new
+## container instead. Every other node gets `visual = null` (nothing to preview).
+static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
 	var described := _describe_node(node, run, lap_target)
 	var entry := InfoEntry.new()
 	entry.title = described["title"]
 	entry.body = described["body"]
-	entry.visual = null
+	var booster : BoosterTemplate = described["booster"]
+	if booster:
+		var flow := FlowContainer.new()
+		entry.visual = flow
+		_populate_preview_visual(flow, booster)
+	else:
+		entry.visual = null
 	return entry
+
+## Kicks off the SAME preview-card listing `_populate_cards()` uses (`CardsViewer`), aimed at
+## `container` instead of this panel's own `%Cards`. Deliberately NOT awaited by `get_info()`
+## itself, which must stay synchronous (PLAN.md §1.11's fixed `func get_info() -> InfoEntry`
+## signature has no `await`) -- safe in practice, not merely assumed: `_populate_cards()`'s own
+## comment already establishes that `get_possible_preview_cards()` never actually suspends today
+## (no mod implements an `on_get_possible_*` hook that would make it), so calling this coroutine
+## without awaiting it still runs it to completion SYNCHRONOUSLY before `get_info()`'s own caller
+## regains control, in this codebase as it stands. If a future mod ever makes it genuinely async,
+## `entry.visual` starts EMPTY and fills in a frame or two late, rather than being wrong.
+static func _populate_preview_visual(container: Node, booster: BoosterTemplate) -> void:
+	var viewer := CardsViewer.new(container)
+	var cards := await booster.get_possible_preview_cards()
+	viewer.populate(cards)
 
 ## Populate and place the panel for `node` beside `anchor_screen_pos` (the node's screen
 ## position — correct for both mouse hover and keyboard selection). `lap_target` marks

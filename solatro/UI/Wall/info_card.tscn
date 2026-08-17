@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Wall/info_card.gd" id="1_infocard"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nopad"]
 
 [node name="InfoCard" type="Control"]
 mouse_filter = 2
@@ -13,9 +15,11 @@ horizontal_scroll_mode = 0
 
 [node name="Panel" type="PanelContainer" parent="Scroll"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_nopad")
 
 [node name="HBox" type="HBoxContainer" parent="Scroll/Panel"]
 layout_mode = 2
+theme_override_constants/separation = 0
 
 [node name="VisualSlot" type="HBoxContainer" parent="Scroll/Panel/HBox"]
 unique_name_in_owner = true
@@ -24,6 +28,7 @@ layout_mode = 2
 [node name="VBox" type="VBoxContainer" parent="Scroll/Panel/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Scroll/Panel/HBox/VBox"]
 unique_name_in_owner = true
