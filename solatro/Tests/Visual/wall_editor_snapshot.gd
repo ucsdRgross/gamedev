@@ -26,6 +26,16 @@ func _ready() -> void:
 	await _settle()
 	_save("wall_editor_before.png")
 
+	# register-settings-book correction (coordinator): six registered pictures now, not four --
+	# force ALL SIX unlocked (the tool's own default seed only includes unlocked_by_default ones,
+	# 5 of 6, since `book` starts locked) so this render actually shows the coordinator's own ask,
+	# "six pictures instead of four... packs cleanly with no overlap."
+	var all_ids : Array[StringName] = []
+	for e : PictureEntry in editor.layout.pictures: all_ids.append(e.id)
+	editor.unlocked_ids = all_ids
+	await _settle()
+	_save("wall_editor_six_pictures_all_unlocked.png")
+
 	# A live edit exactly as the Inspector would make it -- far enough from the starting 16:9 that
 	# the ellipse shape and per-ring picture count visibly change, so the SECOND image proves the
 	# live re-pack fired rather than merely that a second screenshot was taken.

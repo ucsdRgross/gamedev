@@ -1071,3 +1071,63 @@
   artifact PLAN.md's own "you should not have to design anything" principle warns against. If a
   real per-picture frame BEHAVIOUR need turns up (the eventual QR4=b shader/art pass is the likely
   trigger), that is the moment to actually build it, not before.
+- **CORRECTION (coordinator) — F12's narrowing was NOT accepted, and the premise was fixable:
+  `Wall.initial_layout()` now registers all SIX NAMES.md picture ids, not four.** `settings` and
+  `book` were previously absent from the layout entirely, which PLAN.md §4 anti-scope item 2
+  contradicts outright: they are "registered ids with no scene," registered, not absent, and
+  `Q214`=a's "registered but has no scene in v1" describes a picture that EXISTS with `scene ==
+  null`, not one missing from the layout. Both added with `scene = null` (building their CONTENTS
+  stays forbidden by that same anti-scope item) and the shared frame style (S24), same as the
+  original four.
+  - **`settings.unlocked_by_default = true`.** Reasoned, not literally cited: a settings/options
+    screen is conventionally reachable from first launch in every genre this design otherwise
+    follows, and `Q212`'s own text treats it as "a registered picture on the wall" now with
+    contents deferred, never as content the K-chart's unlock system exists FOR.
+  - **`book.unlocked_by_default = false`.** Also reasoned: `book` is the one registered picture
+    with no navigational necessity (the other five are all load-bearing to use the app at all),
+    making it the natural first real instance of `QR2`=a's own stated point ("pictures unlock over
+    time... the wall grows the way that player played") — `Q6`=c's "unlockable... set dressing" is
+    the closest tonal parallel `DESIGN.md` draws for gated wall content. Neither citation is a
+    literal design line naming either picture's lock state specifically; both are recorded here per
+    gap-protocol rule 1 rather than picked silently, and are open to an owner override.
+  - **A real bug surfaced and was fixed as a direct consequence: `Main._build_pictures()` added
+    EVERY id in `layout.pictures` unconditionally, never checking `unlocked_by_default`/
+    `ProfileManager.is_unlocked()` at all.** Invisible for the whole run so far because every
+    registered picture was `unlocked_by_default = true` — with `book` now `false`, the bug meant a
+    LOCKED picture was already built and visible on the very FIRST cold launch, before any unlock
+    ever happened, the exact inverse of K2's "no reveal ceremony" guarantee. Fixed to use the SAME
+    filter `_repack_wall()` already applied (`ProfileManager.is_unlocked(e.id) or e.
+    unlocked_by_default`). Caught by a sanity check in the rewritten F12 test itself
+    ("book starts LOCKED... and was never built") going red on the FIRST run after registering the
+    two new ids — proof the new fixture was doing real work, not just adding rows.
+  - **F12 (`test_wall_focus.gd:test_unlock_reaction_leaves_the_real_focus_stack_valid()`) now
+    exercises the FULL real chain end to end**, not `Main._repack_wall()` called directly: a real
+    `ProfileManager.unlock(&"book")` (saves immediately, emits `picture_unlocked`) ->
+    `Main._ready()`'s own `.connect(_repack_wall)` -> the real `_repack_wall()` -> the real, live
+    `_focus_stack`. `book` being genuinely absent before the unlock and genuinely present after it
+    finally proves K2's OTHER half ("no reveal ceremony -- simply there next time") against real
+    wiring, which the four-picture layout could not provide. `ProfileManager` (a real, shared
+    autoload) is parked/swapped exactly as `test_wall_profile.gd`'s own R-tests already do — real
+    file renamed aside, `ProfileManager.profile` swapped to a fresh `PlayerProfile.new()`, both
+    restored at the end — safe because `ProfileManager.unlock()` and `Main._repack_wall()` are both
+    fully synchronous (no `await` in either body), so the whole sequence runs as one uninterrupted
+    block with no window for a concurrent suite's own profile work to interleave. Proven RED twice,
+    for two different links in the chain: (1) commenting out `Main._ready()`'s
+    `ProfileManager.picture_unlocked.connect(_repack_wall)` line failed the "book is simply there"
+    and "the re-pack actually ran" checks; (2) temporarily reverting the `_build_pictures()` fix
+    above (restoring the unconditional-add bug) failed the "book starts LOCKED... and was never
+    built" sanity check. Both reverted, confirmed GREEN.
+  - **Verified six pictures pack with no overlap, both numerically and by eye.**
+    `TestWallPacker`'s own P10 and every other packer row are unaffected and stay green (they use
+    their own programmatic fixtures, never `Wall.initial_layout()`, confirmed by grep) --
+    re-verified standalone after this change (`WALL PACKER: ALL 51 CHECKS PASSED`, including
+    the no-overlap rows at all four tested aspects). `Tests/Visual/wall_editor_snapshot.gd` was
+    extended to force ALL SIX ids unlocked (the tool's own default seed only includes
+    `unlocked_by_default` ones, 5 of 6, since `book` starts locked) and screenshot the result --
+    six distinct frames, no two overlapping (some clipped by the tool's own preview-camera FILL
+    framing at this window size, a cosmetic camera choice, not a packing defect). `res://Assets/
+    Wall/layout_default.tres` was regenerated from scratch against the six-picture
+    `Wall.initial_layout()` (the old four-picture file deleted first) so the two cannot disagree,
+    the same save+reload round-trip proof S34's own entry already established (`ok=true,
+    pictures=6/6`). A fresh `main_boot_snapshot.gd` cold-launch render confirms no regression to
+    the app's own boot (`start_menu` focused, identical to before).

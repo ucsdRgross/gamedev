@@ -1,9 +1,20 @@
 # HANDOFF — picture-wall shell, Phases 0–4
 
 ⚠ **Scope grew during the run.** The original brief was S1–S8; the owner extended it phase by
-phase. **Phases 0–4 are complete.** Remaining: Phase 5 (frames/wall surface, by-eye only),
-Phase 6 (info mode), Phase 7 (screens onto the wall), Phase 8 (the layout tool). Rows F10–F13
-and J1–J7 are NOT-YET-APPLICABLE until Phases 6/7 build what they test.
+phase. **ALL EIGHT PHASES HAVE LANDED**, S1–S39, and every TEST_PLAN row belonging to a built
+phase is implemented.
+
+**What is NOT finished is the decision backlog.** Six gaps are open and one of them —
+**GAP-016** — is a functional defect in shipped behaviour, not a design question: the overlay
+covers `start_menu`'s Profile and Options and the map's Deck button, so those controls are
+**unreachable by mouse**. Read the gaps before calling this done.
+
+Known, deliberate shortfalls, each recorded where it happened: S22's controller sign-off is
+relaxed to automated coverage (the hand-driven cycle never ran); `Q203`=(a)'s "screens stay
+alive for the session" has no test, because no suite exercises `Main`; S32's "replaced only when
+a new run starts" is code-review only; F12 cannot reach K2's "a picture never built before
+appears" for the pictures that ship unlocked; audio ships untested by `TEST_PLAN` §11's own
+decision.
 
 | | |
 |---|---|

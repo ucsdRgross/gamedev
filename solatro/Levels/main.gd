@@ -77,15 +77,24 @@ func _ready() -> void:
 	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size())
 
-## S30 (B7, Q211=a, Q141=a): packs `Wall.initial_layout()` and builds every picture, reparenting
-## the ALREADY-INSTANTIATED, persistent `menu_scene`/`map_scene` as their `screen_root` (never
-## instantiated fresh). `deck` and `game` start with no live screen at all -- `deck` has no
-## dedicated persistent screen built yet (ASSUMPTIONS.md), `game` gets one per show (S31,
-## `enter_game()` below).
+## S30 (B7, Q211=a, Q141=a): packs `Wall.initial_layout()` and builds every UNLOCKED picture,
+## reparenting the ALREADY-INSTANTIATED, persistent `menu_scene`/`map_scene` as their
+## `screen_root` (never instantiated fresh). `deck` and `game` start with no live screen at all --
+## `deck` has no dedicated persistent screen built yet (ASSUMPTIONS.md), `game` gets one per show
+## (S31, `enter_game()` below).
+##
+## ⚠ Bug found and fixed (register-settings-book correction): this used to add EVERY id in
+## `layout.pictures` unconditionally, never checking `unlocked_by_default`/`ProfileManager.
+## is_unlocked()` at all. Invisible while every registered picture was `unlocked_by_default = true`
+## (the four-picture layout), but with `book` now `unlocked_by_default = false`, the bug meant a
+## LOCKED picture was already built and visible on the very first cold launch -- exactly the "no
+## reveal ceremony" guarantee (K2) inverted, since it applied before ANY unlock, not after one. The
+## SAME filter `_repack_wall()` already uses.
 func _build_pictures() -> void:
 	var layout := Wall.initial_layout()
 	var ids : Array[StringName] = []
-	for e : PictureEntry in layout.pictures: ids.append(e.id)
+	for e : PictureEntry in layout.pictures:
+		if ProfileManager.is_unlocked(e.id) or e.unlocked_by_default: ids.append(e.id)
 	var rects := WallPacker.pack(layout, ids, _window_size.x / _window_size.y)
 	var by_id : Dictionary[StringName, PictureEntry] = {}
 	for e : PictureEntry in layout.pictures: by_id[e.id] = e
