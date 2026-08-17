@@ -79,6 +79,42 @@ warning categories are the pre-existing repo-wide style backlog, not this run's 
 parking a step makes comments that name its unbuilt file into dead references — point at the
 contract in `PLAN.md` instead of at the file.
 
+## ⚠ Traps this run actually hit — read before writing a test
+
+**Six tests passed while proving nothing.** Every one looked fine in review:
+
+1. `await some_timer` resolves IMMEDIATELY; only `await some_timer.timeout` suspends. Made
+   `Pacing` look broken at +0 ms when it was sound.
+2. **GDScript lambdas capture outer locals BY VALUE.** `var fired = false` then
+   `func(): fired = true` writes to a copy. Box it in a one-element `Array`. U5/U6 both hit this.
+3. **A fixture chosen so the code passes.** T4 was symmetric "so the union's centre coincides with
+   the midpoint of centres" — which hid a real defect, since equal-sized pairs are the one
+   configuration this design never has.
+4. `Game extends Node`, not `RefCounted` — `Game.new()` leaks without an explicit `.free()`.
+   Same for any `Node.new()` handed to `PackedScene.pack()`.
+5. A loop or sampler whose body never runs. **Assert the sample/iteration count is non-zero before
+   asserting anything about its contents.**
+6. An assertion that cannot fail. For any "assert X did NOT happen" row, confirm it goes RED when
+   the behaviour breaks.
+
+**Rules that follow, and are not negotiable:**
+
+- **Prove a fix red-then-green.** Neutralise the fix, watch the test fail, restore it, watch it
+  pass. A fix whose test was never seen red is unverified. This caught GAP-012's latch.
+- **Never detect a timed geometric event by per-frame sampling.** The transition is a pure
+  function of elapsed time, so compute the crossing analytically. A ~45 ms window vanishes inside
+  one frame spike, and frame spikes are normal.
+- **A tunable literal in a `.gd` is a defect** (§1.8), even when it looks like an epsilon. `_EPS`
+  at 1e-6 is a float guard; `1.02` is a design choice.
+- **By-eye sign-off proves less than it seems.** Three overfill renders all passed while the
+  overfill margin was an unauthored literal — the images show *no frame*, and are silent on
+  whether the crop is right.
+- **When `DESIGN.md` §5 and `PLAN.md` §1 disagree, go to the `Q`-number.** Five stale or
+  contradictory entries turned up this run: a knob that never existed
+  (`wall_transition_delay_scale`), one that should not have existed (`wall_transition_speed`), a
+  missing row (`wall_unlock_all`), four duplicated on `WallLayout`, and a `Pacing` snippet that
+  does not compile.
+
 ## Baseline, before any step
 
 `ALL 31 SUITES: 2492 CHECKS PASSED [18 placeholder warnings]`, `test_output_errors.log`
