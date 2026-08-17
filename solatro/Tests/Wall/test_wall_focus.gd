@@ -4,7 +4,8 @@ extends TestSuite
 # WALL FOCUS (S5): FocusStack -- the Back/Forward history for the picture wall, ids only.
 # PLAN.md §1.4; TEST_PLAN.md §2, F1-F7. Plus §6b's overlay group (S35): F8, F9 -- they live here,
 # not in a new suite, because they are stack semantics (FocusStack.can_back/can_forward) wearing UI
-# (WallOverlay.refresh). NOT F10-F13: those need popups and unlock, Phase 7, out of scope.
+# (WallOverlay.refresh). Plus F13 (S30): wall state does not survive a quit. NOT F10-F12: those
+# need popups and unlock (S38/S39), still out of scope.
 #
 # CATEGORY MAP: every row here is BEHAVIOR -- a player-visible navigation contract (Q63-Q66), not
 # an internal storage detail.
@@ -34,6 +35,8 @@ func _ready() -> void:
 	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
 	test_back_visibly_disabled_at_bottom_of_stack()
 	test_forward_visibly_disabled_with_nothing_ahead()
+	behavior_section("WALL STATE DOES NOT SURVIVE A QUIT (S30, F13)")
+	test_wall_state_does_not_survive_a_quit()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -166,3 +169,52 @@ func _walk_stack(fs: FocusStack, known_top: StringName) -> Array[StringName]:
 		step = fs.back()
 	order.reverse()
 	return order
+
+# ------------------------------------------------------------------ F13 (S30)
+
+## F13 (K6, Q145=b, Q149=a): wall state does NOT survive a quit -- every launch opens on the
+## start-menu picture, and nothing about "which picture you were on" is ever written to disk.
+##
+## ⚠ "Assert it did NOT happen" trap (HANDOFF traps section): a relaunch that never wrote
+## anything would ALSO pass a check that only looks for absence. Both halves asserted, each
+## checked so it would actually go red if broken:
+##   1. THE WRITE PATH RAN -- session one visits real pictures and `can_back()` genuinely flips
+##      true, proving this test exercises a stack with real history, not an empty one that
+##      trivially "resets" by having nothing to lose in the first place.
+##   2. A second, INDEPENDENT `Wall.cold_launch_focus_stack()` call starts at start_menu with
+##      nothing to go back to, and further mutating session one afterward still never reaches
+##      it -- genuinely independent objects, not two references to the same stack.
+##   3. NO field on `PlayerProfile` or `PlayerSettings` even NAMES a current-picture/focus
+##      concept -- a structural scan of both resources' own exported property lists, not a guess
+##      about what "wasn't added."
+func test_wall_state_does_not_survive_a_quit() -> void:
+	var session_one := Wall.cold_launch_focus_stack()
+	check(not session_one.can_back(),
+			"a fresh cold-launch stack starts with nothing to go back to (just start_menu)")
+	session_one.visit(&"map")
+	session_one.visit(&"deck")
+	check(session_one.can_back(),
+			"the write path actually ran -- session one now has real history to lose")
+
+	var session_two := Wall.cold_launch_focus_stack()
+	check(not session_two.can_back(),
+			"a second, independent cold launch starts fresh at start_menu -- "
+			+ "session one's history did not survive")
+	check(session_two.back() == &"",
+			"and there is nothing to go back to -- start_menu is the only entry")
+
+	session_one.visit(&"start_menu")   # further mutation of session one...
+	check(not session_two.can_back(),
+			"...still never reaches session two -- genuinely independent objects, not aliased")
+
+	var offending_fields : Array[String] = []
+	for resource : Resource in [PlayerProfile.new(), PlayerSettings.new()]:
+		for prop : Dictionary in resource.get_property_list():
+			var usage : int = prop["usage"]
+			if not (usage & PROPERTY_USAGE_STORAGE): continue
+			var prop_name : String = (prop["name"] as String).to_lower()
+			if "focus" in prop_name or "current_picture" in prop_name or "wall_current" in prop_name:
+				offending_fields.append("%s.%s" % [resource.get_class(), prop["name"]])
+	check(offending_fields.is_empty(),
+			"no PERSISTED field on PlayerProfile/PlayerSettings names a current-picture/focus "
+			+ "concept", "offending=%s" % [offending_fields])

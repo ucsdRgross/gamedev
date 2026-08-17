@@ -13,6 +13,52 @@ extends Node2D
 func _ready() -> void:
 	get_tree().paused = true
 
+## S30 (M1-M4, B7, K6, Q211=a): the wall's own starting content -- `start_menu` (home, Q9=a),
+## `map` and `deck`, every one `unlocked_by_default` (basic navigation, not unlockable content).
+## `entry.scene` stays null on all three: the real screens are ALREADY-INSTANTIATED, PERSISTENT
+## nodes (Q141=a) the caller reparents via `WallPicture.build()`'s `live_screen` parameter, never
+## instantiated fresh from a PackedScene here. `frame_texture` uses the one shared style (S24)
+## like any other real picture. `slot` values are starting angles only -- GAP-010's unconditional
+## rebalancing (ASSUMPTIONS.md) decides the resolved angles regardless of what is authored here.
+##
+## ⚠ NOT YET WIRED to the live game: nothing calls this from `Levels/main.gd` yet. `Main` still
+## drives navigation through its own `switch_scene()`/menu-map-game swap, unchanged. Building the
+## live orchestrator (replacing that with wall-picture focus, plus M2/M3's own one-off slower
+## reveal transition) is real, remaining S30 work -- flagged rather than rushed; see
+## ASSUMPTIONS.md and the handoff for the specific open questions blocking it.
+static func initial_layout() -> WallLayout:
+	var layout := WallLayout.new()
+	layout.home_id = &"start_menu"
+	var start_menu := PictureEntry.new()
+	start_menu.id = &"start_menu"
+	start_menu.slot = 0
+	start_menu.unlocked_by_default = true
+	start_menu.frame_texture = WallPicture.shared_frame_texture()
+	var map := PictureEntry.new()
+	map.id = &"map"
+	map.slot = 120
+	map.unlocked_by_default = true
+	map.frame_texture = WallPicture.shared_frame_texture()
+	var deck := PictureEntry.new()
+	deck.id = &"deck"
+	deck.slot = 240
+	deck.unlocked_by_default = true
+	deck.frame_texture = WallPicture.shared_frame_texture()
+	layout.pictures = [start_menu, map, deck]
+	return layout
+
+## S30 (K6, Q145=b, Q149=a): "wall state does not survive a quit -- every launch opens on the
+## start-menu picture." A FRESH `FocusStack`, pre-visited with `&"start_menu"` -- the one and only
+## authored starting point, never read back from any save file (`FocusStack` itself persists
+## nothing, ASSUMPTIONS.md; nothing on `PlayerProfile`/`PlayerSettings` holds a "current picture"
+## field either, `TestWallFocus` F13 asserts both halves). Calling this twice must produce two
+## INDEPENDENT stacks -- mutating one must never affect the other, which is what "does not
+## survive" actually cashes out to for a value that is never written anywhere in between.
+static func cold_launch_focus_stack() -> FocusStack:
+	var stack := FocusStack.new()
+	stack.visit(&"start_menu")
+	return stack
+
 ## NAMES.md's signal table -- only the ONE this run's steps actually emit is declared here
 ## (`focus_changed`/`transition_started`/`transition_landed` are a later integration step's job,
 ## same "don't build what nothing tests yet" boundary S14-S18/S36 already drew elsewhere).

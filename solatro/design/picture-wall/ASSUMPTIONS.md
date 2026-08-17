@@ -706,4 +706,40 @@
     separate system" was read as "the map no longer INSTANTIATES it as its live hover display",
     not "the file must be deleted"; `get_info()`'s natural home is still the class that already
     knows how to read a `WorldGraphNode`'s meta (see the earlier entry on why it is not on
+    `WorldGraphNode` itself).
+- ⚠ **S30 is SCOPED, not complete, and this is a deliberate stopping point, not an oversight.**
+  What shipped, real and tested:
+  - `WallPicture.build()` gained an optional `live_screen: Node = null` parameter (default
+    preserves every existing call site unchanged) that REPARENTS an already-instantiated,
+    persistent node as `screen_root` instead of instantiating fresh from `entry.scene` (B7,
+    Q211=a "reparented unchanged"; Q141=a "the screen stays in the tree, paused"). Proven by
+    identity, not just presence: `test_wall_render.gd`'s new row confirms the exact object comes
+    back out, its own pre-existing child survives untouched, and it ends up a real child of the
+    picture's own `SubViewport`.
+  - `Wall.initial_layout()` — a static factory for the wall's starting content: `start_menu`
+    (home), `map`, `deck`, all `unlocked_by_default`, all using the shared frame style (S24).
+  - `Wall.cold_launch_focus_stack()` — K6's own contract as a real, callable function: a FRESH
+    `FocusStack` pre-visited with `start_menu`, proven independent across calls (mutating one
+    instance never reaches another) and proven that no `PlayerProfile`/`PlayerSettings` field
+    even names a current-picture/focus concept (`TestWallFocus` F13, both halves, red/green
+    verified by hand on the independence assertion).
+  - **What did NOT ship: `Levels/main.gd` is UNCHANGED.** `Main` still drives navigation through
+    its own `switch_scene()`/menu-map-game swap; nothing calls `Wall.initial_layout()` or
+    `Wall.cold_launch_focus_stack()` from production code yet. The cold-launch camera choreography
+    (M1: camera starts already zoomed into start-menu, no wall-view flash; M2: choosing a save
+    triggers a ONE-OFF, LONGER/SLOWER zoom-out reveal to wall view, distinct from an ordinary Wall
+    button press; M3: that reveal happens on every launch) is not built.
+  - **Why stopped here, specifically:** `main.gd` is referenced by at least seven test suites
+    (`test_e2e_run`, `test_game_headless`, `test_leak_canary`, `test_interaction`, `test_ui_props`,
+    `test_visual_layers`, `reveal_shot`) — by far the highest-blast-radius file in the codebase,
+    and the coordinator's own framing named Phase 7 "the highest-regression work in the plan."
+    Genuinely underspecified decisions remain, not just missing time: the exact reveal duration/
+    knob for M2's "longer, slower" zoom-out (no `PlayerSettings` field names one — a candidate
+    GAP under §1.8, not yet filed), and whether the reveal lands settled on WALL VIEW itself or
+    auto-focuses the destination picture afterward (both readings are consistent with M2/M3's own
+    text). Rather than guess at either and rewire the app's entry point on that guess, this was
+    left for an explicit ruling. **Still owed:** file the reveal-duration gap, get a ruling on the
+    landing behaviour, then replace `Main`'s `switch_scene()` calls for menu/map/deck with
+    `WallPicture.focus()`/the wall's own camera, seeded by `initial_layout()` and
+    `cold_launch_focus_stack()` — both of which are now ready for that call site to use.
     `WorldGraphNode` itself), and `show_for_node()` stays for `test_leak_canary.gd`'s own direct use.

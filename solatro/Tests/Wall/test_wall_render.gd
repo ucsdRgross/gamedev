@@ -32,6 +32,8 @@ func _ready() -> void:
 	test_filter_swaps_on_zoom_not_pan()
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
+	behavior_section("LIVE SCREEN REPARENTING (S30, B7, Q211=a)")
+	test_build_reparents_a_live_screen_unchanged()
 	_teardown_wall()
 	finish()
 
@@ -204,3 +206,38 @@ func test_overfill_margin_knob_actually_changes_the_scale() -> void:
 	check(is_equal_approx(settings.wall_overfill_margin, 1.02),
 			"PlayerSettings.wall_overfill_margin defaults to 1.02 (GAP-011's answered value)",
 			"%.4f" % settings.wall_overfill_margin)
+
+# ------------------------------------------------------------------ S30 (B7, Q211=a)
+
+## S30 (B7, Q211=a, Q141=a): `build()`'s new `live_screen` parameter REPARENTS an
+## already-instantiated node as `screen_root` -- never instantiates a copy, never touches its
+## children/state. Proven by IDENTITY (`==`, not just "a screen_root exists"): the exact same
+## object handed in comes back out, still holding the marker child it had BEFORE `build()` ever
+## ran, and is a real child of the picture's own SubViewport afterward.
+func test_build_reparents_a_live_screen_unchanged() -> void:
+	var live := Node.new()
+	live.name = "PersistentMenuStandIn"
+	var marker := Node.new()
+	marker.name = "MarkerChildFromBeforeBuild"
+	live.add_child(marker)
+
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	add_child(wp)
+	var viewports := Node.new()
+	add_child(viewports)
+	var rect := PictureRect.new(&"live_test", Vector2.ZERO, Vector2(400, 300),
+			Vector4(20, 20, 20, 20))
+	var entry := PictureEntry.new()
+	entry.id = &"live_test"
+	entry.design_size = Vector2i(400, 300)
+	wp.build(rect, entry, viewports, live)
+
+	check(wp.screen_root == live,
+			"screen_root IS the exact live node handed in, by identity -- not a copy")
+	check(is_instance_valid(marker) and marker.get_parent() == live,
+			"the live node's own pre-existing child survived build() untouched")
+	check(live.get_parent() == wp.viewport,
+			"the live node is now a real child of the picture's own SubViewport")
+
+	wp.teardown()
+	viewports.queue_free()

@@ -72,9 +72,18 @@ static func shared_frame_texture() -> ImageTexture:
 ## ViewportTexture. `entry.scene` may be null ("registered but unbuilt", Q214=a) -- the viewport
 ## then simply renders nothing, which is correct and expected, not an error.
 ##
+## S30 (B7, Q211=a, Q141=a): `live_screen`, when given, is an ALREADY-INSTANTIATED, PERSISTENT
+## node (`start_menu`/`map`/`deck` -- built once, kept alive for the whole session, never freed
+## and rebuilt) REPARENTED here rather than instantiated fresh from `entry.scene`. "Screens are
+## reparented unchanged" (PLAN §4 anti-scope item 1) -- this is the literal reparenting, not a
+## copy. Takes priority over `entry.scene` if both are somehow given (should never happen in
+## practice: an entry either owns a fresh-per-use scene, `game`/S31's own case, or a live screen
+## the caller already built -- never both).
+##
 ## §1.8's "never yet rendered" row: every picture starts at UPDATE_ONCE regardless of eventual
 ## focus (Q78=b) -- N3 pins that every texture is non-null before any focus() call happens.
-func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> void:
+func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
+		live_screen: Node = null) -> void:
 	rect = p_rect
 	position = rect.centre
 	_design_size = entry.design_size
@@ -86,7 +95,12 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node) -> 
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewports_parent.add_child(viewport)
-	if entry.scene:
+	if live_screen:
+		screen_root = live_screen
+		# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
+		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+		viewport.add_child(screen_root)
+	elif entry.scene:
 		screen_root = entry.scene.instantiate()
 		# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE

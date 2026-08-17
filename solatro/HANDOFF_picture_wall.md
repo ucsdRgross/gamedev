@@ -97,6 +97,13 @@ contract in `PLAN.md` instead of at the file.
 6. An assertion that cannot fail. For any "assert X did NOT happen" row, confirm it goes RED when
    the behaviour breaks.
 
+7. ⚠ **A stale log read as a fresh one.** `%APPDATA%\Godot\app_userdata\Solatro\*.log` is
+   overwritten by whichever Godot process wrote last — including the overseer's own verification
+   run — so a standalone suite's "result" can belong to a different run entirely.
+   **Check `LastWriteTime` against wall-clock before trusting any log's contents.** This masked a
+   real parse error once. `test_output_all.log` in particular went stale for days and still
+   contained a 29-suite banner from before this branch existed.
+
 **Rules that follow, and are not negotiable:**
 
 - **Prove a fix red-then-green.** Neutralise the fix, watch the test fail, restore it, watch it
