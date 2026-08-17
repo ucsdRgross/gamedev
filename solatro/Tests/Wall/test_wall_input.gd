@@ -46,6 +46,9 @@ func _ready() -> void:
 	_test_screen_that_ignores_escape_wall_goes_back()
 	_test_wall_jump_3_enters_the_third_picture_in_placement_order()
 	_test_wall_is_deaf_to_arrows_while_a_screen_is_focused()
+	behavior_section("ENTER (Q88, Q99 -- S31 wire-up)")
+	_test_ui_accept_enters_the_selected_picture()
+	await _test_click_enters_an_unfocused_picture_immediately()
 	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
 	_test_most_recent_device_wins_controller_after_mouse()
 	behavior_section("TOUCH (I11, I12, I13, S23)")
@@ -247,11 +250,17 @@ func _test_clamp_pan_never_shows_past_the_outermost_frames() -> void:
 
 ## G10's other half ("free pan is allowed ONLY when pictures fall outside the view... on a large
 ## screen everything is visible and panning is off"): when the packed extent's aspect matches the
-## window's exactly, fill-and-crop crops (almost) nothing on either axis, so pan has (almost) no
-## room to move -- contrasted directly against the SAME extreme request against a genuinely
-## oversized wall (the previous test's fixture shape), whose real pan range is two-plus orders of
-## magnitude larger. clamp_pan(extreme) IS the clamped boundary itself, so the difference between
-## the two extreme requests IS the pan range -- no private state needs reading.
+## window's exactly, pan has EXACTLY zero room to move -- not merely "almost none". Measured update
+## (DEFECT 1, wall_picture.gd `focused_scale()`): before that fix, `wall_overfill_margin` applied
+## UNCONDITIONALLY, so a matching-aspect extent still got a stray 2% of overfill room to pan into --
+## the same "crop/slack on real UI even though nothing needed hiding" defect DEFECT 1 fixed at the
+## picture level, just visible here as a nonzero pan range instead of a clipped button. Now that the
+## margin is CONDITIONAL (H3: applied only when the aspect ratios differ), fill and fit coincide
+## exactly at matching aspect and `clamp_pan()`'s own min/max collapse to the same point -- contrasted
+## against the SAME extreme request against a genuinely oversized wall (the previous test's fixture
+## shape), whose real pan range stays unambiguously large. clamp_pan(extreme) IS the clamped boundary
+## itself, so the difference between the two extreme requests IS the pan range -- no private state
+## needs reading.
 func _test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits() -> void:
 	var window := Vector2(1280, 720)
 
@@ -268,13 +277,13 @@ func _test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits() -> vo
 	var range_oversized := oversized_wall.clamp_pan(Vector2(999999, 999999), window) \
 			- oversized_wall.clamp_pan(Vector2(-999999, -999999), window)
 
-	check(range_matching.length() > 0.0 and range_oversized.length() > 0.0,
-			"both fixtures report a measurable pan range before comparing them",
-			"matching=%s oversized=%s" % [range_matching, range_oversized])
-	check(range_matching.length() < range_oversized.length() * 0.05,
-			"pan range collapses to (near) nothing when the wall's aspect already matches the "
-			+ "window's, versus a genuinely oversized wall's real free-pan room",
-			"matching=%.2f oversized=%.2f" % [range_matching.length(), range_oversized.length()])
+	check(range_matching.is_zero_approx(),
+			"pan range is EXACTLY zero when the wall's aspect already matches the window's -- fill "
+			+ "and fit coincide, no margin to leave slack (H3/DEFECT 1)",
+			"matching=%s" % range_matching)
+	check(range_oversized.length() > 0.0,
+			"a genuinely oversized wall still reports a measurable pan range",
+			"oversized=%s" % range_oversized)
 	_teardown(matching_wall, [matching_wp])
 	_teardown(oversized_wall, [oversized_wp])
 
@@ -576,6 +585,65 @@ func _test_wall_is_deaf_to_arrows_while_a_screen_is_focused() -> void:
 			"an arrow press with a picture focused changes NOTHING about the wall's own selection",
 			"selected before=%s after=%s" % [selected_before, wall.selected_id])
 	_teardown(wall, [wp])
+
+# ------------------------------------------------------------------ Q88, Q99 (S31 wire-up: enter)
+
+## Q99=a: `ui_accept` enters the CURRENTLY SELECTED picture -- fires `picture_enter_requested` with
+## `selected_id`, and nothing else (the wall never focuses a picture itself; the caller decides what
+## "enter" means, same "wall announces intent, caller decides" shape `wall_view_entered` already
+## uses). Reuses I5's own `_six_pictures()`/Down-from-top fixture so the expected selected id
+## ("below1") is already independently proven correct by that test, not re-derived here.
+func _test_ui_accept_enters_the_selected_picture() -> void:
+	var wall := _build_wall()
+	var pictures := _six_pictures(wall)
+	wall.enter_wall_view(&"top")
+	wall.move_selection(Vector2.DOWN)
+	check(wall.selected_id == &"below1", "sanity: selection landed where I5 already proved it does",
+			str(wall.selected_id))
+
+	var requested : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
+
+	var event := InputEventAction.new()
+	event.action = &"ui_accept"
+	event.pressed = true
+	wall._unhandled_input(event)
+
+	check(requested[0] == &"below1",
+			"ui_accept enters the currently SELECTED picture (Q99=a)", "requested=%s" % requested[0])
+	_teardown(wall, pictures)
+
+## Q88=a: a click landing inside an UNFOCUSED picture's own frame-outer rect enters it immediately --
+## fires `picture_enter_requested` with that picture's id. Hit-tested in WALL SPACE via the event's
+## own `position`, transformed through the wall's own viewport `canvas_transform` -- the exact
+## inverse of what `_unhandled_input()` itself applies to the event, so this test is immune to
+## whatever the camera's own authored position/zoom actually are; it never assumes a 1:1 mapping.
+## The click lands at the target picture's own CENTRE, well inside its frame-outer rect.
+func _test_click_enters_an_unfocused_picture_immediately() -> void:
+	var wall := _build_wall()
+	var pictures := _six_pictures(wall)
+	# The camera's canvas_transform is driven by %Camera2D's own _process; give it a couple of
+	# frames to settle before reading it back, same reasoning I1's zoom-level loop already documents.
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var requested : Array[StringName] = [&""]
+	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
+
+	var target : WallPicture = pictures[1]   # "below1" -- deliberately NOT focus()'d
+	check(not target.is_focused, "sanity: the target picture is unfocused, matching wall view")
+	var canvas_transform := wall.get_viewport().canvas_transform
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = canvas_transform * target.rect.centre
+
+	wall._unhandled_input(event)
+
+	check(requested[0] == &"below1",
+			"a click inside an unfocused picture's own frame enters it immediately (Q88=a)",
+			"requested=%s" % requested[0])
+	_teardown(wall, pictures)
 
 # ------------------------------------------------------------------ I10 (S22 controller, AUTOMATED
 # COVERAGE ONLY)

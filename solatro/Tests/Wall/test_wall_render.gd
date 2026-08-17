@@ -32,6 +32,7 @@ func _ready() -> void:
 	test_filter_swaps_on_zoom_not_pan()
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
+	test_overfill_margin_only_applies_when_aspect_mismatches()
 	behavior_section("LIVE SCREEN REPARENTING (S30, B7, Q211=a)")
 	test_build_reparents_a_live_screen_unchanged()
 	_teardown_wall()
@@ -206,6 +207,36 @@ func test_overfill_margin_knob_actually_changes_the_scale() -> void:
 	check(is_equal_approx(settings.wall_overfill_margin, 1.02),
 			"PlayerSettings.wall_overfill_margin defaults to 1.02 (GAP-011's answered value)",
 			"%.4f" % settings.wall_overfill_margin)
+
+## H3's own words: the picture overfills "whenever its aspect does not match" the window's -- the
+## margin is CONDITIONAL. Measured defect, not theorised: the unconditional version cropped the
+## real start-menu picture's own bottom button row at an ordinary 1280x720-in-1152x648 case (both
+## 16:9) -- a case with NOTHING to hide, since fill and fit already coincide at matching aspect.
+func test_overfill_margin_only_applies_when_aspect_mismatches() -> void:
+	# Matching aspect, same magnitude too (both 16:9, native == window / (4/3)) -- the fill ratio
+	# itself is exactly 1.0, so a correct result here is REQUIRED to be exactly 1.0, not merely
+	# "some value the margin didn't touch" -- the coordinator's own literal ask.
+	var matching_native := Vector2(1152, 648)
+	var matching_window := Vector2(1280, 720)   # 1280/1152 == 720/648 == 1.1111... -- same ratio
+	var matching_scale := WallPicture.focused_scale(matching_native, matching_window, 1.02)
+	check(is_equal_approx(matching_scale, 1.1111111),
+			"matching aspect gives the EXACT fill ratio, margin not applied at all",
+			"scale=%.6f expected=1.111111" % matching_scale)
+
+	# Mismatched aspect (4:3 native in a 16:9 window, same fixture the sibling test above already
+	# uses) -- the margin MUST still apply here, so this row cannot pass by disabling the margin
+	# outright; it has to be genuinely conditional.
+	var mismatched_native := Vector2(400, 300)
+	var mismatched_window := Vector2(1280, 720)
+	var fill_ratio := maxf(mismatched_window.x / mismatched_native.x,
+			mismatched_window.y / mismatched_native.y)
+	var mismatched_scale := WallPicture.focused_scale(mismatched_native, mismatched_window, 1.02)
+	check(is_equal_approx(mismatched_scale, fill_ratio * 1.02),
+			"mismatched aspect still applies the margin exactly",
+			"scale=%.6f expected=%.6f" % [mismatched_scale, fill_ratio * 1.02])
+	check(not is_equal_approx(mismatched_scale, fill_ratio),
+			"...and that margin is not silently zero -- the mismatched case is genuinely "
+			+ "different from a bare fill ratio", "scale=%.6f fill=%.6f" % [mismatched_scale, fill_ratio])
 
 # ------------------------------------------------------------------ S30 (B7, Q211=a)
 

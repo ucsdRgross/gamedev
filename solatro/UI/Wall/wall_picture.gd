@@ -235,6 +235,15 @@ func set_selected(selected: bool) -> void:
 ## one, which is exactly what would leave a frame sliver visible whenever the aspects don't match,
 ## the defect H3 exists to rule out). Pure function of its three inputs; no picture/camera state.
 ##
+## ⚠ H3's own words: the picture overfills "WHENEVER ITS ASPECT DOES NOT MATCH" the window's. The
+## margin is CONDITIONAL, not unconditional -- when the two axis ratios are already equal (the
+## picture's own aspect matches the window's exactly), fill and fit already coincide and there is
+## nothing to hide, so the returned scale is the EXACT fill ratio, margin untouched. Measured
+## defect, not theorised: the first version applied the margin unconditionally, and it cropped
+## REAL UI at an ordinary 16:9-in-16:9 case (the start-menu picture's own bottom button row,
+## sliced at both edges) -- exactly the "2% crop on real UI" risk GAP-011's own filing named,
+## just not confined to the extreme aspect it was written about.
+##
 ## GAP-011 (owner-answered a): `overfill_margin` is `PlayerSettings.wall_overfill_margin`
 ## (default 1.02) -- a REQUIRED parameter, never a literal or default value here, because §1.8
 ## forbids a typed-in-a-.gd number for anything an author could reasonably argue with (the margin
@@ -244,7 +253,12 @@ func set_selected(selected: bool) -> void:
 ## in -- this function stays pure and untestable-only-by-eye either way.
 static func focused_scale(native_size: Vector2, window_size: Vector2,
 		overfill_margin: float) -> float:
-	return maxf(window_size.x / native_size.x, window_size.y / native_size.y) * overfill_margin
+	var x_ratio := window_size.x / native_size.x
+	var y_ratio := window_size.y / native_size.y
+	var fill := maxf(x_ratio, y_ratio)
+	if is_equal_approx(x_ratio, y_ratio):
+		return fill
+	return fill * overfill_margin
 
 ## S28 (J2/Q128 override -- "zooms out just enough to reveal the BOTTOM frame only. Top, left and
 ## right stay covered"): camera position/zoom for a picture in Info mode, as a `{"position":

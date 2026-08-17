@@ -122,13 +122,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			picture_enter_requested.emit(selected_id)
 			return
 		# Q88=a: a click landing inside an unfocused picture's own frame enters it immediately --
-		# hit-tested in WALL SPACE (get_global_mouse_position(), a Node2D method that already
-		# accounts for the active camera's own position/zoom, same as every other wall-space read
-		# in this class).
+		# hit-tested in WALL SPACE. Reads the EVENT's own `position` through the viewport's own
+		# `canvas_transform` (which already reflects the active camera's position/zoom), rather
+		# than `get_global_mouse_position()` (the OS cursor's CURRENT position) -- the two agree
+		# for a real click, but only the event-driven read is something a synthetic test event can
+		# actually control without moving the real mouse cursor.
 		if event is InputEventMouseButton:
 			var mb := event as InputEventMouseButton
 			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-				var clicked_id := _picture_at(get_global_mouse_position())
+				var wall_pos : Vector2 = get_viewport().canvas_transform.affine_inverse() * mb.position
+				var clicked_id := _picture_at(wall_pos)
 				if clicked_id != &"":
 					get_viewport().set_input_as_handled()
 					picture_enter_requested.emit(clicked_id)
