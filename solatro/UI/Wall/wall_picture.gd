@@ -143,6 +143,30 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_shadow.texture = viewport.get_texture()
 	_shadow.self_modulate = Color(0.0, 0.0, 0.0, 0.35)
 
+## S31 (L2: "GameView is still built fresh per show and freed after, exactly as main.gd does
+## now"): swaps this ALREADY-BUILT picture's `screen_root` for a NEW live node, freeing whatever
+## was there before (if anything). Unlike `build()`'s own `live_screen` parameter (set ONCE, for a
+## session-long PERSISTENT screen -- menu/map/deck, S30), this is for a picture whose CONTENT is
+## rebuilt per-use while the picture itself (frame, position, viewport) stays put on the wall --
+## `game`, a fresh `GameView` per show. The frame/viewport/shadow are untouched; only the screen
+## content changes.
+func attach_screen(live_screen: Node) -> void:
+	if screen_root and is_instance_valid(screen_root):
+		screen_root.queue_free()
+	screen_root = live_screen
+	# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
+	screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
+	viewport.add_child(screen_root)
+
+## S31 (L2): frees the current `screen_root` (if any), leaving this picture showing nothing until
+## the next `attach_screen()` -- the "no GameView" row, same "registered but unbuilt" rendering
+## (Q214=a) an un-scened `entry.scene` already produces. (L3's authored default-background image
+## for this state is a separate, deliberately unfixed piece -- ASSUMPTIONS.md.)
+func detach_screen() -> void:
+	if screen_root and is_instance_valid(screen_root):
+		screen_root.queue_free()
+	screen_root = null
+
 ## §1.8 "focused / live": UPDATE_ALWAYS, full design_size. The caller (S12+) is responsible for
 ## ensuring exactly one picture is focused at a time -- this method only enacts the state, it does
 ## not arbitrate focus.

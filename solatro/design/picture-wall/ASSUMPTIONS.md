@@ -742,4 +742,46 @@
     landing behaviour, then replace `Main`'s `switch_scene()` calls for menu/map/deck with
     `WallPicture.focus()`/the wall's own camera, seeded by `initial_layout()` and
     `cold_launch_focus_stack()` — both of which are now ready for that call site to use.
+- **S31 — the freeze mechanism is built and PROVEN, on the same scoped pattern as S30.**
+  - `WallPicture.attach_screen(live_screen)` / `detach_screen()` — swaps a picture's `screen_root`
+    for a NEW live node (freeing whatever was there), unlike `build()`'s own `live_screen`
+    parameter (set ONCE, for a session-long persistent screen). This is for `game`: L2 requires
+    `GameView` "still built fresh per show and freed after" while the WallPicture itself (frame,
+    position) stays put on the wall — the picture persists, only its screen content is rebuilt.
+  - **The freeze itself needed NO new mechanism at all** — `focus()`/`unfocus()` already flip
+    `screen_root.process_mode` between `ALWAYS`/`PAUSABLE` (S12), and a `PAUSABLE` node under a
+    globally paused tree simply stops (`_process` never runs, `Pacing.wait` never fires) —
+    exactly L4/L5's "freezes where it stands... bit-identical" requirement, already proven true
+    by construction back in S1/S6/S9-S12. S31's job was proving that guarantee holds for a REAL,
+    running `Game`, not a fixture standing in for one.
+  - **Proof: `Tests/Visual/wall_game_freeze_soak.gd`** (standalone — needs a REAL
+    `get_tree().paused = true`, fatal to share with 38 other suites, same reasoning as the earlier
+    fuzz soak). Builds ONE real `GameView` (the SAME fixture recipe `test_leak_canary.gd`'s own "a
+    real show WITH a GameView" section already uses: `TestDecks.seeded_deck()`/`standard_rules()`,
+    `RunManager.new_run()`, `pending_goal`/`pending_node_id`, then `g.next()` into mid-act),
+    attaches it to a real `WallPicture`, then cycles `unfocus()`→wait 1-6 random frames→assert
+    `GameData.revision` unchanged→`focus()`, 50 times, seed 20260817 (`FREEZE_SEED` env override),
+    `ALL 153 CHECKS PASSED`. Each cycle asserts the `process_mode` transition DIRECTLY (not just
+    the revision, which alone could be weakly vacuous if nothing was ever going to mutate revision
+    in a few idle frames regardless) — verified RED (temporarily forced `process_mode` back to
+    `ALWAYS` right after `unfocus()`) then GREEN by hand.
+  - **The five suites TEST_PLAN §9 names as threatened were run STANDALONE, before AND after,**
+    not just folded into the full-suite number: `TestGameHeadless` 73→73, `TestActScore` 16→16,
+    `TestCombo` 31→31, `TestVisualLayers` 192→192, `TestLeakCanary` 17→17 — every one identical,
+    zero regression. Expected: this batch touched no file under `UI/Fx/`, `Levels/game.gd`,
+    `Levels/game_view.gd`, `Levels/game_view.tscn`, or `Levels/main.gd` — only additive methods on
+    `WallPicture` and one new standalone diagnostic. `TestLeakCanary`'s own "leak" assumptions
+    (screens freed normally) are UNDISTURBED because nothing yet makes the wall's freeze-instead-
+    of-free behaviour live in the real game (see below) — Q203=a's actual leak-semantics change
+    is still owed, not yet exercised.
+  - **What did NOT ship, same reasoning as S30: `Levels/main.gd` is unchanged.** `Main.enter_game()`
+    still builds a fresh `GameView` and frees it on `game_ended()`/`_on_run_lost()` — leaving
+    mid-act still ends the show today, it does not freeze it. Wiring "Back/Wall while inside the
+    game picture calls `unfocus()` instead of freeing" is real, remaining work, gated on the SAME
+    main.gd blast-radius concern as S30 plus one more genuinely unfixed piece: **L3** ("when there
+    is no GameView, the picture shows an authored default background image") names an ASSET no
+    `PictureEntry`/`WallLayout`/`PlayerSettings` field holds — the same shape as GAP-013's frame
+    colour, not yet filed as its own gap pending the coordinator's steer on whether it blocks the
+    main.gd wire-up or can ship picture-blank (Q214=a's existing "registered but unbuilt" look)
+    until real art exists.
     `WorldGraphNode` itself), and `show_for_node()` stays for `test_leak_canary.gd`'s own direct use.
