@@ -230,6 +230,57 @@ const _SELECTED_LIFT := Vector2(0.0, -14.0)
 func set_selected(selected: bool) -> void:
 	position = rect.centre + (_SELECTED_LIFT if selected else Vector2.ZERO)
 
+## S38 (K2-K4): re-applies a NEW packed rect to an ALREADY-BUILT picture -- the geometry-only
+## subset of build() (position, frame outer rect, screen/shadow scale). The viewport, screen_root
+## and every render-gating flag (focus, filter, process_mode) are untouched -- only WHERE this
+## picture sits on the wall changes, which is exactly what a re-pack after an unlock needs (K4:
+## "the wall re-packs silently" while a screen is focused, off-screen either way).
+func reposition(new_rect: PictureRect) -> void:
+	rect = new_rect
+	position = rect.centre
+	_apply_rect_geometry(rect)
+
+func _apply_rect_geometry(r: PictureRect) -> void:
+	var frame_rect := WallPacker.frame_outer_rect(r)
+	_frame.position = frame_rect.position - r.centre
+	_frame.size = frame_rect.size
+	var view_scale := r.size / Vector2(_design_size)
+	_screen.scale = view_scale
+	_shadow.scale = view_scale
+
+## S38 (K3): tweens this picture from its CURRENT rect to `new_rect` over `duration`, added to the
+## given (already-created) `tween` -- position, frame geometry and screen/shadow scale all move
+## together, so a live re-pack reads as one smooth resize+slide rather than a size pop. `rect`
+## itself is updated to `new_rect` IMMEDIATELY (not at tween completion) so any code reading
+## `wp.rect` mid-tween (hit-testing, selection) already sees the picture's real destination -- the
+## same "state updates now, the tween is only a visual catch-up" contract `focus()`/`unfocus()`
+## already use elsewhere in this class. Caller is responsible for `tween.set_parallel(true)` so
+## multiple pictures (and this picture's own several tweened properties) animate together, not in
+## sequence.
+func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) -> void:
+	var frame_rect := WallPacker.frame_outer_rect(new_rect)
+	var view_scale := new_rect.size / Vector2(_design_size)
+	rect = new_rect
+	tween.tween_property(self, "position", new_rect.centre, duration)
+	tween.tween_property(_frame, "position", frame_rect.position - new_rect.centre, duration)
+	tween.tween_property(_frame, "size", frame_rect.size, duration)
+	tween.tween_property(_screen, "scale", view_scale, duration)
+	tween.tween_property(_shadow, "scale", view_scale, duration)
+
+## S39 (E10, Q143=a): the "unload to a placeholder" state-blob CONTRACT a torn-down screen would
+## honour first -- UNREACHABLE today (E8/Q203=a, the owner-answered default: "all screens stay
+## instantiated for the whole session," so nothing ever tears one down and nothing calls this),
+## kept genuinely implemented so the fallback is a measurement away rather than a rewrite if
+## `wall_live_screen_cap` (already an exported knob, currently unconsulted by anything) ever gets
+## wired to a real LRU eviction. Delegates to `screen_root.get_wall_state()` if the live screen
+## OPTS IN to that optional per-screen method -- nothing in this repo implements it yet, because
+## nothing needs to while E8 holds; returns `{}` for a screen that does not, which is itself a
+## valid, honest blob (nothing beyond what freezing already preserves would need restoring for it).
+func write_state_blob() -> Dictionary:
+	if screen_root and screen_root.has_method(&"get_wall_state"):
+		return screen_root.call(&"get_wall_state")
+	return {}
+
 ## H3 (Q27=c): the scale that makes a picture of `native_size` OVERFILL `window_size` on every
 ## axis at rest -- "fill and crop" (the LARGER of the two axis ratios), never "fit" (the smaller
 ## one, which is exactly what would leave a frame sliver visible whenever the aspects don't match,

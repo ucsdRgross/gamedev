@@ -295,6 +295,58 @@ func _wall_extent() -> Rect2:
 			first = false
 	return extent
 
+## S38 (K2-K4): re-applies a fresh packed layout to every ALREADY-BUILT picture under %Pictures --
+## geometry only (`WallPicture.reposition()`/`animate_reposition()`), never touching a viewport,
+## screen_root or focus state. `animate` true (K3: "if the player is IN wall view... the re-pack
+## animates live in front of them") tweens every moved/resized picture together on ONE shared
+## parallel tween over the ordinary transition clock; false (K4: "if they are inside a picture, the
+## wall re-packs silently") snaps instantly -- correct either way, since nothing here is visible
+## off-focus regardless of which branch runs. `rects` ids with NO existing WallPicture are skipped
+## -- building a brand-new picture node needs its own `PictureEntry`/screen, which only the caller
+## (`Main`) has; this method only repositions what already exists. The `FocusStack` is never read
+## or written here (K4's own "Back still works because the stack holds ids, not positions") --
+## nothing in this method can invalidate it, by construction, since it never touches an id, only a
+## rect.
+func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> void:
+	var pictures := _pictures_by_id()
+	var tween : Tween = null
+	for id : StringName in rects:
+		if not pictures.has(id): continue
+		var wp := pictures[id]
+		var new_rect : PictureRect = rects[id]
+		if not animate:
+			wp.reposition(new_rect)
+			continue
+		if wp.rect and wp.rect.centre.is_equal_approx(new_rect.centre) \
+				and wp.rect.size.is_equal_approx(new_rect.size):
+			continue
+		if tween == null:
+			tween = create_tween()
+			tween.set_parallel(true)
+		wp.animate_reposition(tween, new_rect, SettingsManager.settings.wall_transition_delay)
+
+## S39 (E9, Q210=a -- "yes, behind the same debug gate as the leak sentinel"): a live count of
+## instantiated screens (`WallPicture.screen_root != null`, E8's own "all screens stay instantiated"
+## quantity) and an ESTIMATE of their combined texture memory. Godot has no cheap per-texture VRAM
+## query, so this assumes RGBA8 (4 bytes/pixel, the format every wall SubViewport actually renders
+## in) times each viewport's own `.size` -- a measured approximation, same admitted-inexact category
+## as this repo's other debug numbers, not a claim of byte-exact GPU accounting. Pure -- reads only
+## %Pictures' own children, no engine singletons -- so it is headless-testable and callable from
+## anywhere without wiring a new dependency.
+func debug_memory_readout() -> String:
+	var screens := 0
+	var viewports := 0
+	var texture_bytes := 0
+	for child : Node in %Pictures.get_children():
+		var wp := child as WallPicture
+		if not wp: continue
+		if wp.screen_root: screens += 1
+		if wp.viewport:
+			viewports += 1
+			texture_bytes += wp.viewport.size.x * wp.viewport.size.y * 4
+	return "WALL DEBUG: %d screens instantiated, %d viewports, ~%.2f MB texture memory" \
+			% [screens, viewports, texture_bytes / 1048576.0]
+
 ## S36's own done-when ("the wall button is hidden while only one picture exists"): forwards to the
 ## overlay, adding the one piece of state only the wall itself knows.
 func refresh_overlay(stack: FocusStack) -> void:

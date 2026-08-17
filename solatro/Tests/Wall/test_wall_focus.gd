@@ -18,6 +18,8 @@ extends TestSuite
 # ==============================================================================
 
 const WALL_OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
+const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
+const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
 
 func suite_name() -> String:
 	return "WALL FOCUS"
@@ -37,7 +39,24 @@ func _ready() -> void:
 	test_forward_visibly_disabled_with_nothing_ahead()
 	behavior_section("WALL STATE DOES NOT SURVIVE A QUIT (S30, F13)")
 	test_wall_state_does_not_survive_a_quit()
+	behavior_section("UNLOCK MID-SESSION (S38, F12)")
+	test_unlock_mid_session_leaves_the_stack_valid()
 	finish()
+
+## ⚠ Same isolated-SubViewport reasoning `TestWallInput._build_wall()` documents: `Wall._ready()`
+## calls `get_viewport().set_input_as_handled()` from `_unhandled_input()`, which would mark the
+## SHARED root viewport (every other concurrently-running suite's own real input) if `wall` lived
+## there directly. This suite's own F12 test never dispatches input, but the fixture is copied
+## verbatim rather than re-derived, so the same guarantee holds if this file ever grows a test that
+## does.
+func _build_focus_test_wall() -> Wall:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var wall : Wall = WALL_SCENE.instantiate()
+	viewport.add_child(wall)
+	get_tree().paused = false
+	return wall
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
 func test_back_retraces_visit_order() -> void:
@@ -218,3 +237,74 @@ func test_wall_state_does_not_survive_a_quit() -> void:
 	check(offending_fields.is_empty(),
 			"no PERSISTED field on PlayerProfile/PlayerSettings names a current-picture/focus "
 			+ "concept", "offending=%s" % [offending_fields])
+
+# ------------------------------------------------------------------ F12 (S38)
+
+## F12 (K4, Q156=a): an unlock mid-session leaves the FocusStack valid. Visits three pictures
+## (a, b, c), then re-packs exactly as `Main._repack_wall()` does in production once a fourth ("d")
+## unlocks: `WallPacker.pack()` over the WIDER unlocked set, a fresh `WallPicture.build()` for the
+## picture that never existed before (K2: "no reveal ceremony"), and `Wall.apply_layout()` to
+## reposition the three that already did -- `animate=false` (K4's own scenario: "if they are
+## inside a picture, the wall re-packs silently"). Every picture's position AND size changes
+## (GAP-010's unconditional rebalancing spreads four pictures differently than three) and a brand
+## new node gets built, and NONE of it should be visible to the stack: Back must still retrace the
+## exact same three ids in the exact same order, because it was never handed a rect or a node
+## reference to begin with (§1.4) -- only ids, which the re-pack never touches.
+func test_unlock_mid_session_leaves_the_stack_valid() -> void:
+	var fs := FocusStack.new()
+	fs.visit(&"a")
+	fs.visit(&"b")
+	fs.visit(&"c")
+
+	var layout := WallLayout.new()
+	layout.home_id = &"a"
+	var entries : Array[PictureEntry] = []
+	for id : StringName in [&"a", &"b", &"c", &"d"]:
+		var e := PictureEntry.new()
+		e.id = id
+		entries.append(e)
+	layout.pictures = entries
+	var by_id : Dictionary[StringName, PictureEntry] = {}
+	for e : PictureEntry in entries: by_id[e.id] = e
+
+	var wall := _build_focus_test_wall()
+	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var viewports : Node = wall.get_node(^"%Viewports")
+	var built : Array[WallPicture] = []
+	# "d" starts locked -- only a, b, c are packed at first, matching the three pictures already
+	# visited above.
+	var rects_before := WallPacker.pack(layout, [&"a", &"b", &"c"], 1.6)
+	for rect : PictureRect in rects_before:
+		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+		pictures_root.add_child(wp)
+		wp.build(rect, by_id[rect.id], viewports)
+		built.append(wp)
+	check(built.size() == 3,
+			"sanity: all three already-visited pictures were packed before the unlock",
+			str(built.size()))
+
+	# "d" unlocks mid-session -- re-pack with all four ids now unlocked.
+	var rects_after := WallPacker.pack(layout, [&"a", &"b", &"c", &"d"], 1.6)
+	var rects_by_id : Dictionary[StringName, PictureRect] = {}
+	for rect : PictureRect in rects_after: rects_by_id[rect.id] = rect
+	var d_wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	pictures_root.add_child(d_wp)
+	d_wp.build(rects_by_id[&"d"], by_id[&"d"], viewports)
+	built.append(d_wp)
+	wall.apply_layout(rects_by_id, false)
+
+	check(built.size() == 4, "the newly-unlocked fourth picture was built", str(built.size()))
+	for wp : WallPicture in built:
+		check(wp.rect.centre.is_equal_approx(rects_by_id[wp.rect.id].centre),
+				"%s ended the re-pack at its freshly packed position" % wp.rect.id,
+				"got=%s want=%s" % [wp.rect.centre, rects_by_id[wp.rect.id].centre])
+
+	# Back retraces c -> b -> a -> "" -- the SAME order as before the unlock, completely unaffected
+	# by every picture's own position/size changing and a brand new node appearing.
+	check(fs.back() == &"b", "Back still lands on b, exactly as it would have before the unlock")
+	check(fs.back() == &"a", "...then a...")
+	check(fs.back() == &"", "...then nothing left, same as any other exhausted stack")
+
+	for wp : WallPicture in built:
+		if is_instance_valid(wp): wp.teardown()
+	if wall and is_instance_valid(wall): wall.get_parent().queue_free()

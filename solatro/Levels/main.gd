@@ -51,6 +51,9 @@ func _ready() -> void:
 	overlay.wall_pressed.connect(_on_wall_pressed)
 	wall.wall_view_entered.connect(_on_wall_view_entered)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
+	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
+	# unlock -- wiring the wall to it here, not building a second unlock path.
+	ProfileManager.picture_unlocked.connect(_repack_wall)
 
 	# K6/M1: a FRESH stack every launch, pre-visited with start_menu -- never read back from any
 	# save file (Wall.cold_launch_focus_stack()'s own doc comment).
@@ -90,6 +93,49 @@ func _build_pictures() -> void:
 		elif rect.id == &"map": live_screen = map_scene
 		wp.build(rect, by_id[rect.id], viewports, live_screen)
 		_pictures[rect.id] = wp
+
+## S38 (K2, K3, K4, K11): reacts to `ProfileManager.picture_unlocked` -- recomputes the layout's
+## unlocked id set (`ProfileManager.is_unlocked()` already honours `wall_unlock_all`, K11's debug
+## flag, with no separate check needed here), packs fresh rects for all of them, builds any picture
+## never built before at its final rect directly (K2: "no reveal ceremony -- the picture is simply
+## there next time the wall is seen" -- build() itself, not a tween, is the correct way to make
+## that true), and repositions every already-built picture via `Wall.apply_layout()`: LIVE-ANIMATED
+## if the player is currently in wall view (K3), silent otherwise (K4). The `FocusStack` is never
+## touched here -- it holds ids, not positions (K4's own guarantee), so Back/Forward keep resolving
+## correctly regardless of how a picture's geometry just changed.
+func _repack_wall(_unlocked_id: StringName) -> void:
+	var layout := Wall.initial_layout()
+	var by_id : Dictionary[StringName, PictureEntry] = {}
+	var ids : Array[StringName] = []
+	for e : PictureEntry in layout.pictures:
+		by_id[e.id] = e
+		if ProfileManager.is_unlocked(e.id) or e.unlocked_by_default:
+			ids.append(e.id)
+	var rects := WallPacker.pack(layout, ids, _window_size.x / _window_size.y)
+	var viewports : Node = wall.get_node(^"%Viewports")
+	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var rects_by_id : Dictionary[StringName, PictureRect] = {}
+	for rect : PictureRect in rects:
+		rects_by_id[rect.id] = rect
+		_rects[rect.id] = rect
+		if not _pictures.has(rect.id):
+			var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+			pictures_root.add_child(wp)
+			wp.build(rect, by_id[rect.id], viewports)
+			_pictures[rect.id] = wp
+	wall.apply_layout(rects_by_id, _current_focus == &"")
+	var overlay : WallOverlay = wall.get_node(^"%Overlay")
+	overlay.refresh(_focus_stack, _pictures.size())
+	_print_wall_debug_readout()
+
+## S39 (E9, Q210=a): prints `wall.debug_memory_readout()` under the SAME debug gate the leak
+## sentinel uses (`OS.is_debug_build()`) plus its own settings flag (`wall_debug_readout`) -- called
+## from the same QUIESCENT moments `LeakSentinel.request_check()` already marks (a show ending, a
+## run being lost, a re-pack), never on a per-frame timer -- no new interval knob for a cadence
+## nothing has asked for.
+func _print_wall_debug_readout() -> void:
+	if not OS.is_debug_build() or not SettingsManager.settings.wall_debug_readout: return
+	print(wall.debug_memory_readout())
 
 # ==============================================================================
 # CAMERA / FOCUS ORCHESTRATION
@@ -190,6 +236,15 @@ func _on_picture_enter_requested(id: StringName) -> void:
 
 func _on_new_run(cards: Array[CardData], rules: Array[CardData]) -> void:
 	save_info = RunManager.new_run(cards, rules)
+	# L12/Q157=a: a GameView left over from a LOST run is kept alive (see _on_run_lost() below) so
+	# re-entering `game` showed the game-over screen -- "the map is replaced only when a new run
+	# starts" applies equally to the game picture, so THIS is where it finally gets replaced, not
+	# at loss time. Without this, enter_game()'s own "resume if already attached" check would
+	# wrongly resume last run's lose screen instead of building a fresh board for this run. A no-op
+	# (detach_screen() is itself a no-op on a null/already-freed screen_root) after a WON run, which
+	# already detaches its own GameView immediately (game_ended()).
+	var game_wp : WallPicture = _pictures[&"game"]
+	game_wp.detach_screen()
 	map_scene.start_run(save_info)
 	# M2/M3: choosing a save reveals WALL VIEW, on every launch. Using the ORDINARY transition
 	# clock (`_go_to_wall_view()`'s own `_animate_camera()` call) -- the distinct, longer/slower
@@ -227,18 +282,22 @@ func game_ended() -> void:
 	await _focus_picture(&"map")
 	map_scene.returned_from_game()
 	LeakSentinel.request_check()  # quiescent moment: the finished show just dropped
+	_print_wall_debug_readout()
 
-## Lost game = run over: discard the save, rebuild the map scene so the next run starts clean,
-## detach the (over) game picture, and fall back to start_menu.
+## S32 (L12, Q157=a -- "stays on the wall, shows its own empty state"): the run save is cleared,
+## but NEITHER picture is torn down here. The map picture STAYS on the wall exactly as it last
+## rendered (L12's own words) -- `map_scene` is not rebuilt, its `run` field is not reset, nothing
+## about it changes; Q157's rejected option (b), "removed from the wall until a run exists again,"
+## would additionally re-pack the wall for a reason unrelated to unlocks, which is exactly the
+## "preset pattern" the owner's own note says that fights. The game picture's GameView is likewise
+## left attached, frozen showing its own game-over screen (LoseScreen) -- re-entering `game` shows
+## exactly that. The camera is not moved: the player is already looking at the game-over screen
+## they just triggered, and nothing in L12 asks to navigate them away from it. Both pictures are
+## only actually REPLACED once the next run starts (`_on_new_run()`'s own `game_wp.detach_screen()`
+## + `map_scene.start_run()` calls) -- "the map is replaced only when a new run starts."
 func _on_run_lost() -> void:
 	RunManager.clear_save()
 	save_info = RunState.new()
-	var game_wp : WallPicture = _pictures[&"game"]
-	game_wp.detach_screen()
-	map_scene.queue_free()
-	map_scene = MAP.instantiate()
-	map_scene.enter_game.connect(enter_game)
-	_pictures[&"map"].attach_screen(map_scene)
-	await _focus_picture(&"start_menu")
 	menu_scene.refresh_continue()
-	LeakSentinel.request_check()  # quiescent moment: the lost run's whole graph just dropped
+	LeakSentinel.request_check()  # quiescent moment: the lost run's board state just settled
+	_print_wall_debug_readout()

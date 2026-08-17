@@ -35,6 +35,10 @@ func _ready() -> void:
 	test_overfill_margin_only_applies_when_aspect_mismatches()
 	behavior_section("LIVE SCREEN REPARENTING (S30, B7, Q211=a)")
 	test_build_reparents_a_live_screen_unchanged()
+	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
+	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
+	test_debug_memory_readout_counts_screens_and_viewports()
 	_teardown_wall()
 	finish()
 
@@ -272,3 +276,87 @@ func test_build_reparents_a_live_screen_unchanged() -> void:
 
 	wp.teardown()
 	viewports.queue_free()
+
+# ------------------------------------------------------------------ S39 (E8, E9, Q203=a, Q210=a)
+
+## E8/Q203=a (S39's own coverage-hole close -- TestLeakCanary structurally cannot watch this: it
+## never builds a Wall/WallPicture at all, and its own header explicitly locks it to run LAST and
+## ALONE because OBJECT_COUNT is engine-global, so retrofitting a Wall into it would both be the
+## wrong suite for a screen-lifecycle question and would pollute the very CardData deltas it exists
+## to measure). "All screens stay instantiated for the whole session... nothing is ever torn down"
+## proven by IDENTITY across several focus()/unfocus() cycles: the SAME screen_root node survives
+## every cycle, never freed and rebuilt -- which is what "nothing is ever torn down" cashes out to
+## for a picture that keeps getting focused and unfocused over and over, the exact thing a session
+## actually does.
+func test_screen_root_survives_repeated_focus_unfocus_cycles() -> void:
+	var live := Node.new()
+	live.name = "PersistentScreenStandIn"
+
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	add_child(wp)
+	var viewports := Node.new()
+	add_child(viewports)
+	var rect := PictureRect.new(&"persist_test", Vector2.ZERO, Vector2(400, 300),
+			Vector4(20, 20, 20, 20))
+	var entry := PictureEntry.new()
+	entry.id = &"persist_test"
+	entry.design_size = Vector2i(400, 300)
+	wp.build(rect, entry, viewports, live)
+
+	for cycle : int in 5:
+		wp.focus()
+		check(wp.screen_root == live and is_instance_valid(live),
+				"cycle %d: screen_root is still the SAME live node while focused" % cycle)
+		wp.unfocus(Vector2(100, 75))
+		check(wp.screen_root == live and is_instance_valid(live),
+				"cycle %d: screen_root is still the SAME live node, still alive, once unfocused -- "
+				% cycle + "never freed and rebuilt")
+
+	wp.teardown()
+	viewports.queue_free()
+
+## S39 (E9, Q210=a): `Wall.debug_memory_readout()` counts instantiated screens and viewports
+## correctly against a KNOWN fixture -- two pictures with a live screen (screens_instantiated == 2)
+## plus one "registered but unbuilt" picture with no scene at all (Q214=a's own case, screen_root
+## stays null) -- proving the count is screens ACTUALLY instantiated, not just pictures that exist.
+## Also asserts the reported string actually names both numbers, not just a placeholder message --
+## a check() that could pass on an empty/malformed string would be the exact "prints something,
+## proves nothing" trap this run keeps finding new forms of.
+func test_debug_memory_readout_counts_screens_and_viewports() -> void:
+	var wall : Wall = WALL_SCENE.instantiate()
+	add_child(wall)
+	get_tree().paused = false
+	var viewports : Node = wall.get_node(^"%Viewports")
+	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var built : Array[WallPicture] = []
+
+	for id : StringName in [&"one", &"two"]:
+		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+		pictures_root.add_child(wp)
+		var rect := PictureRect.new(id, Vector2.ZERO, Vector2(200, 150), Vector4(10, 10, 10, 10))
+		var entry := PictureEntry.new()
+		entry.id = id
+		entry.design_size = Vector2i(200, 150)
+		wp.build(rect, entry, viewports, Node.new())
+		built.append(wp)
+	# "unbuilt" (Q214=a): no scene, no live_screen -- screen_root stays null on purpose.
+	var unbuilt_wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	pictures_root.add_child(unbuilt_wp)
+	var unbuilt_rect := PictureRect.new(&"unbuilt", Vector2.ZERO, Vector2(200, 150),
+			Vector4(10, 10, 10, 10))
+	var unbuilt_entry := PictureEntry.new()
+	unbuilt_entry.id = &"unbuilt"
+	unbuilt_entry.design_size = Vector2i(200, 150)
+	unbuilt_wp.build(unbuilt_rect, unbuilt_entry, viewports)
+	built.append(unbuilt_wp)
+
+	var readout := wall.debug_memory_readout()
+	check("2 screens instantiated" in readout,
+			"the readout names exactly the 2 pictures with a real screen_root, not the 3 that exist",
+			readout)
+	check("3 viewports" in readout,
+			"the readout counts every picture's own SubViewport, including the unbuilt one",
+			readout)
+
+	for wp : WallPicture in built: wp.teardown()
+	wall.queue_free()
