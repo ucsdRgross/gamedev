@@ -45,6 +45,13 @@ func refresh(stack: FocusStack, picture_count: int = 2) -> void:
 	_forward_button.disabled = not stack.can_forward()
 	_wall_button.visible = picture_count > 1
 
+## M3 (ADVERSARIAL_REVIEW): the `wall_info` key's way in. Flips the REAL toggle button rather than
+## writing `wall_info_mode` from a second place, so the mode and what the button shows can never
+## disagree -- setting `button_pressed` fires `toggled`, and from there a key press and a mouse
+## press are the same path.
+func toggle_info() -> void:
+	_info_button.button_pressed = not _info_button.button_pressed
+
 func _on_back_pressed() -> void:
 	back_pressed.emit()
 

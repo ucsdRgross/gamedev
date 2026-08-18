@@ -55,6 +55,8 @@ func _ready() -> void:
 	await test_a_real_resize_reaches_the_wall()
 	behavior_section("KEYBOARD BACK RETRACES (M2, ADVERSARIAL_REVIEW.md, Q65=a, I5)")
 	await test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view()
+	behavior_section("THE wall_* ACTIONS REACH MAIN (M3, ADVERSARIAL_REVIEW.md, I6, I7)")
+	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -675,3 +677,75 @@ func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> voi
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
 	restore_real_settings()
+
+# ------------------------------------------------------------------ M3 (ADVERSARIAL_REVIEW.md)
+
+## M3 (ADVERSARIAL_REVIEW.md): the four `wall_*` actions had no reader anywhere. `TestWallInput`
+## proves each one now reaches a signal; this proves the signals reach `Main` and actually MOVE the
+## player -- S22's own done-when in prose ("the controller is driven by hand through one full
+## navigate-enter-back-wall cycle"), run as one journey on one real `Main` rather than four
+## disconnected assertions.
+##
+## Goes red if any of `Main._ready()`'s `back_requested` / `forward_requested` /
+## `info_toggle_requested` / `wall_view_entered` connections is removed.
+##
+## ⚠ One `Main`, tiny `wall_transition_delay`, bounded frame waits -- see
+## `test_a_real_resize_reaches_the_wall()` above for why all three matter here.
+func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+
+	await main._focus_picture(&"map")
+	check(main._current_focus == &"map",
+			"sanity: one real navigation landed, so Back has somewhere to go", str(main._current_focus))
+
+	await _feed_wall_action(main, &"wall_back", func() -> bool: return main._current_focus == &"start_menu")
+	check(main._current_focus == &"start_menu",
+			"wall_back (L1/LB) retraced to start_menu -- the controller had no Back at all",
+			str(main._current_focus))
+
+	await _feed_wall_action(main, &"wall_forward", func() -> bool: return main._current_focus == &"map")
+	check(main._current_focus == &"map",
+			"wall_forward (R1/RB) went forward again, to the picture just left -- the controller "
+			+ "had no Forward at all", str(main._current_focus))
+
+	var settings := SettingsManager.settings
+	var overlay : WallOverlay = main.wall.get_node(^"%Overlay")
+	var info_button : Button = overlay.get_node(^"%InfoButton")
+	await _feed_wall_action(main, &"wall_info", func() -> bool: return settings.wall_info_mode)
+	check(settings.wall_info_mode, "wall_info (I) turned Info mode ON -- the key had no reader")
+	check(info_button.button_pressed,
+			"and the overlay's own toggle READS pressed -- the key drives the button, so the two "
+			+ "can never disagree (C3's own failure mode)")
+
+	await _feed_wall_action(main, &"wall_info", func() -> bool: return not settings.wall_info_mode)
+	check(not settings.wall_info_mode, "pressing it again turned Info mode back OFF")
+	check(not info_button.button_pressed, "...and released the button with it")
+
+	await _feed_wall_action(main, &"wall_overview", func() -> bool: return main._current_focus == &"")
+	check(main._current_focus == &"",
+			"wall_overview (Tab / Select-View) left the picture for wall view -- Tab had no reader",
+			str(main._current_focus))
+
+	main.queue_free()
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
+
+## Feeds one action through the REAL `Wall._unhandled_input()` and waits, BOUNDED, for `settled` to
+## report the move finished. Never `await` on a signal: the emit runs Main's handler synchronously
+## up to its own first await, so a signal await here would deadlock outright if a handler ever
+## stopped suspending. 60 frames is far more than the 0.001 s clock above needs.
+func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	main.wall._unhandled_input(event)
+	for _i : int in range(60):
+		if settled.call(): return
+		await get_tree().process_frame

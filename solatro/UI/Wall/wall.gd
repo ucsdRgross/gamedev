@@ -132,6 +132,18 @@ signal wall_view_entered
 ## means, including falling through to wall view once the stack reports nothing behind.
 signal back_requested
 
+## M3 (ADVERSARIAL_REVIEW): Forward was pressed -- `wall_forward` (R1/RB). Same shape and the same
+## reason as `back_requested`: only `Main` holds the `FocusStack`, so only it can say whether there
+## is anything ahead. Nothing read `wall_forward` at all before this, so a controller had no Forward.
+signal forward_requested
+
+## M3 (ADVERSARIAL_REVIEW): Info was toggled from the KEYBOARD (`wall_info`, `I`). Carries no state:
+## `WallOverlay`'s own toggle button is the single source of truth for whether Info is on (J1's
+## "persistent toggle... always accessible"), so `Main` flips THAT and lets its existing
+## `info_toggled` chain run, rather than writing `wall_info_mode` from a second place and leaving the
+## button reading un-pressed -- which is exactly the state C3 already had to clean up once.
+signal info_toggle_requested
+
 ## A4 (CODE_REVIEW.md): NAMES.md's signal table fixes these three; nothing declared or emitted
 ## them until now. `Wall` does not orchestrate focus/transitions itself -- `Main` does (the same
 ## "camera and clock only" boundary ASSUMPTIONS.md already draws for `WallTransition`) -- so these
@@ -228,6 +240,27 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
 		back_requested.emit()
+		return
+	# M3 (ADVERSARIAL_REVIEW): the four `wall_*` InputMap actions had NO READER anywhere, so Tab,
+	# L1/LB, R1/RB and `I` all did nothing and a controller had no Back, Forward or Wall at all.
+	# Read here, alongside `ui_cancel` and `wall_jump_N`, because I6/Q102=a makes them ordinary
+	# rebindable actions and I9/Q103=a/Q115=a scopes only the SELECTION keys to wall view -- these
+	# four are meaningful focused or not, and each gets the same first refusal as everything above.
+	if event.is_action_pressed(&"wall_overview"):
+		get_viewport().set_input_as_handled()
+		wall_view_entered.emit()
+		return
+	if event.is_action_pressed(&"wall_back"):
+		get_viewport().set_input_as_handled()
+		back_requested.emit()
+		return
+	if event.is_action_pressed(&"wall_forward"):
+		get_viewport().set_input_as_handled()
+		forward_requested.emit()
+		return
+	if event.is_action_pressed(&"wall_info"):
+		get_viewport().set_input_as_handled()
+		info_toggle_requested.emit()
 		return
 	for n : int in range(1, 10):
 		if event.is_action_pressed(StringName("wall_jump_%d" % n)):

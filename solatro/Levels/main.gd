@@ -71,6 +71,12 @@ func _ready() -> void:
 	# the key and the button cannot diverge -- and `_on_back_pressed()` is where the stack's own
 	# fall-through to wall view lives.
 	wall.back_requested.connect(_on_back_pressed)
+	# M3 (ADVERSARIAL_REVIEW): the call sites for `wall_forward` and `wall_info`. Both reuse the
+	# handler the overlay's own control already drives, for the same "one meaning per action" reason
+	# `back_requested` does. `wall_overview` and `wall_back` need no line of their own -- they emit
+	# `wall_view_entered`/`back_requested`, already connected here.
+	wall.forward_requested.connect(_on_forward_pressed)
+	wall.info_toggle_requested.connect(_on_info_toggle_requested)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
 	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
 	# unlock -- wiring the wall to it here, not building a second unlock path.
@@ -413,6 +419,13 @@ func _on_wall_view_entered() -> void:
 
 func _on_wall_pressed() -> void:
 	await _go_to_wall_view()
+
+## M3 (ADVERSARIAL_REVIEW): the `wall_info` key. Presses the overlay's own toggle rather than
+## writing `wall_info_mode` here, so the key, the button and the mode stay one thing -- the button's
+## `toggled` signal then runs `_on_info_toggled()` below exactly as a mouse press does.
+func _on_info_toggle_requested() -> void:
+	var overlay : WallOverlay = wall.get_node(^"%Overlay")
+	overlay.toggle_info()
 
 ## CODE_REVIEW.md A2 (J1-J2/Q127=a, J2/Q128): the Info toggle previously did nothing. `active`
 ## sets the shared `wall_info_mode` flag (so any code reading it, present or future, agrees with

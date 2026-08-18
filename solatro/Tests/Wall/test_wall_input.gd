@@ -41,6 +41,13 @@ func _ready() -> void:
 	await _test_non_focused_picture_never_receives_input()
 	behavior_section("MOUSE (I8, S20)")
 	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
+	behavior_section("THE FOUR wall_* ACTIONS HAVE READERS (M3, ADVERSARIAL_REVIEW.md, I6/Q102=a)")
+	_test_wall_overview_asks_for_wall_view()
+	_test_wall_back_asks_for_back()
+	_test_wall_forward_asks_for_forward()
+	_test_wall_info_asks_for_an_info_toggle()
+	implementation_section("THE FOUR wall_* ACTIONS ARE ACTUALLY BOUND (M3)")
+	_test_every_wall_action_has_at_least_one_binding()
 	behavior_section("KEYBOARD (I3, I4, I7, I14, S21)")
 	_test_screen_that_consumes_escape_wall_does_not_go_back()
 	_test_screen_that_ignores_escape_wall_goes_back()
@@ -880,3 +887,92 @@ func _test_touch_target_size_is_clamped() -> void:
 	check(is_equal_approx(high, settings.wall_touch_target_max_px),
 			"DPI 10000 (absurdly high) clamps to the configured CEILING",
 			"got=%.4f ceiling=%.1f" % [high, settings.wall_touch_target_max_px])
+
+# ------------------------------------------------------------------ M3 (ADVERSARIAL_REVIEW.md)
+
+## M3 (ADVERSARIAL_REVIEW.md): `wall_overview`, `wall_back`, `wall_forward` and `wall_info` were
+## registered in the InputMap and read by NOTHING -- Tab, L1/LB, R1/RB and `I` all did nothing, so a
+## controller had no Back, no Forward and no Wall at all. One test per action, each asserting the
+## signal that action's own reader emits; every one goes red if its `is_action_pressed` branch in
+## `Wall._unhandled_input()` is deleted.
+##
+## Fed as `InputEventAction`, the same shape `ui_cancel` and `wall_jump_3` above already use -- it
+## matches by action NAME, so these stay true through any rebinding (I6/Q102=a: they are ordinary
+## rebindable actions).
+func _feed_action(wall: Wall, action: StringName) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	wall._unhandled_input(event)
+
+## Q101=a/Q110=b: Tab, and the controller's Select/View button, ask for the overview.
+func _test_wall_overview_asks_for_wall_view() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var asked : Array[bool] = [false]
+	wall.wall_view_entered.connect(func() -> void: asked[0] = true)
+
+	_feed_action(wall, &"wall_overview")
+
+	check(asked[0], "wall_overview asks for wall view -- Tab and Select/View had no reader at all")
+	_teardown(wall, [wp])
+
+## Q109=b: the shoulder button is Back, and Back means Back (M2), never wall view.
+func _test_wall_back_asks_for_back() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var asked_back : Array[bool] = [false]
+	var asked_wall_view : Array[bool] = [false]
+	wall.back_requested.connect(func() -> void: asked_back[0] = true)
+	wall.wall_view_entered.connect(func() -> void: asked_wall_view[0] = true)
+
+	_feed_action(wall, &"wall_back")
+
+	check(asked_back[0], "wall_back asks for Back -- the controller had no Back at all")
+	check(not asked_wall_view[0],
+			"and asks for Back, not the overview -- same Q65=a retrace the keyboard gets (M2)")
+	_teardown(wall, [wp])
+
+## The mirror of Back on the other shoulder. Nothing read `wall_forward`, and it had no binding
+## either, so Forward existed only as an overlay button.
+func _test_wall_forward_asks_for_forward() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var asked : Array[bool] = [false]
+	wall.forward_requested.connect(func() -> void: asked[0] = true)
+
+	_feed_action(wall, &"wall_forward")
+
+	check(asked[0], "wall_forward asks for Forward -- the controller had no Forward at all")
+	_teardown(wall, [wp])
+
+## J1/Q135 note: the Info toggle is "always accessible regardless of screen", so `I` is read while a
+## picture is focused too -- which is the only state in which Info has anything to reveal.
+func _test_wall_info_asks_for_an_info_toggle() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var asked : Array[bool] = [false]
+	wall.info_toggle_requested.connect(func() -> void: asked[0] = true)
+
+	_feed_action(wall, &"wall_info")
+
+	check(asked[0], "wall_info asks for an Info toggle -- the `I` key had no reader at all")
+	_teardown(wall, [wp])
+
+## A reader is only half of it: `wall_back` and `wall_forward` were registered with an EMPTY event
+## list, so even a wired reader could never fire from a real controller. Asserts the binding exists,
+## not which button it is -- Q102=a makes them rebindable, and pinning the button index here would
+## turn a rebind into a test failure.
+func _test_every_wall_action_has_at_least_one_binding() -> void:
+	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward", &"wall_info"]
+	for action : StringName in actions:
+		check(InputMap.has_action(action), "the InputMap registers %s" % action)
+		if not InputMap.has_action(action): continue
+		var events := InputMap.action_get_events(action)
+		var message := "%s has at least one real binding -- an action nobody can press is as " % action
+		check(not events.is_empty(), message + "dead as one nobody reads",
+				"events=%d" % events.size())
