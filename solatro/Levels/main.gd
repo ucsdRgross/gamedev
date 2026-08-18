@@ -218,7 +218,18 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 ## Focuses `id`, `record_visit` controlling whether this is a NEW navigation (visit()) or a
 ## replay of history already mutated by back()/forward() themselves (which must not visit() again
 ## -- that would clear the very forward list back() just populated).
+## ⚠ Re-entrancy guard (ADVERSARIAL_REVIEW C5). §1.10/Q56=b: "a new destination is ignored until"
+## the in-flight move finishes. WallTransition.request() has its own `is_active` check, but this
+## method used to construct a FRESH WallTransition per call, so that guard never saw the other one:
+## two clicks in wall view ran two tweens on one Camera2D, both landed, and both called focus() —
+## leaving two PROCESS_MODE_ALWAYS screen roots. The flag lives here because Main, not the
+## transition, is what owns "a move is happening".
+var _move_in_flight : bool = false
+
 func _focus_picture(id: StringName, record_visit: bool = true) -> void:
+	if _move_in_flight: return
+	if id == _current_focus: return   # Q55=a: requesting the current picture does nothing
+	_move_in_flight = true
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
@@ -259,11 +270,17 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		_focus_stack.visit(id)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
+	_move_in_flight = false
 
 ## Unfocuses whatever is currently focused (FREEZING it in place, L4 -- never freed here) and
 ## animates the camera out to wall view. A no-op if already in wall view. `duration_scale` (GAP-014)
 ## defaults to an ORDINARY move; only the M2 opening reveal passes anything else.
 func _go_to_wall_view(duration_scale: float = 1.0) -> void:
+	# Same re-entrancy guard as _focus_picture (ADVERSARIAL_REVIEW C5) -- this is the OTHER path
+	# that animates the shared Camera2D, so a Wall press racing an in-flight enter would fight it
+	# for position and zoom just as two enters did.
+	if _move_in_flight: return
+	_move_in_flight = true
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
@@ -276,6 +293,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	_current_focus = &""
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
+	_move_in_flight = false
 
 func _on_wall_view_entered() -> void:
 	await _go_to_wall_view()
