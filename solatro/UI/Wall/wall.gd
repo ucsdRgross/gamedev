@@ -117,9 +117,20 @@ static func cold_launch_focus_stack() -> FocusStack:
 	stack.visit(&"start_menu")
 	return stack
 
-## S21 (Q65=a): "Back at the bottom of the stack goes to wall view" -- fired the instant Back is
-## accepted with nothing behind it (or with a focused screen releasing Back to the wall at all).
+## An explicit request for WALL VIEW itself, not for Back: the Wall button, and pinch-in
+## (Q119=a, "pinch in goes to wall view"). Q65=a's "Back at the bottom of the stack goes to wall
+## view" is NOT this signal -- that fall-through is the `FocusStack`'s own verdict, reached through
+## `back_requested` below, and only `Main` holds the stack to ask.
 signal wall_view_entered
+
+## M2 (ADVERSARIAL_REVIEW): Back was pressed (`ui_cancel`, with the focused screen taking first
+## refusal per I5/Q100=a). `ui_cancel` used to emit `wall_view_entered` outright, so keyboard Back
+## did WALL -- it skipped the history entirely and dropped the player to the overview from any
+## depth, which Q65=a forbids ("Back retraces the FocusStack one step at a time"). `Wall` does not
+## own the stack, so it announces the INTENT and `Main._on_back_pressed()` -- the SAME handler the
+## overlay's own Back button already uses, so the two paths cannot diverge -- decides what Back
+## means, including falling through to wall view once the stack reports nothing behind.
+signal back_requested
 
 ## A4 (CODE_REVIEW.md): NAMES.md's signal table fixes these three; nothing declared or emitted
 ## them until now. `Wall` does not orchestrate focus/transitions itself -- `Main` does (the same
@@ -200,12 +211,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# itself first -- the same "first refusal" contract every other wall-level action already gets
 	# (Q100=a), since this runs after the `WallInput.route()`/`is_input_handled()` early-return
 	# above. Pinch-OUT mirrors ui_accept's own scope (Q99=a, wall-view only, commits the current
-	# selection); pinch-IN mirrors ui_cancel's own unconditional "go to wall view" below.
-	# A3 (Q119=a): pinch reaches here only if the focused screen (if any) did not consume the touch
-	# itself first -- the same "first refusal" contract every other wall-level action already gets
-	# (Q100=a), since this runs after the `WallInput.route()`/`is_input_handled()` early-return
-	# above. Pinch-OUT mirrors ui_accept's own scope (Q99=a, wall-view only, commits the current
-	# selection); pinch-IN mirrors ui_cancel's own unconditional "go to wall view" below.
+	# selection); pinch-IN is Q119=a's own literal "pinch in goes to wall view", which is why it
+	# stays on `wall_view_entered` while `ui_cancel` below is Back (M2).
 	var gesture := _pinch.feed(event, SettingsManager.settings.wall_pinch_threshold_px)
 	if gesture == WallInput.PinchTracker.Gesture.PINCH_OUT:
 		if not focused and selected_id != &"":
@@ -216,9 +223,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		wall_view_entered.emit()
 		return
+	# M2/I5/Q100=a: keyboard Back, after the focused screen's first refusal above. Announces Back,
+	# never wall view -- see `back_requested`'s own doc comment.
 	if event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
-		wall_view_entered.emit()
+		back_requested.emit()
 		return
 	for n : int in range(1, 10):
 		if event.is_action_pressed(StringName("wall_jump_%d" % n)):

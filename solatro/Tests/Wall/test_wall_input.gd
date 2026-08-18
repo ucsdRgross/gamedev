@@ -495,12 +495,14 @@ func _test_wheel_reaches_the_focused_screen_but_never_the_wall() -> void:
 # ------------------------------------------------------------------ I3, I4, I7, I14 (S21 keyboard)
 
 ## I3 (Q100=a): a screen that consumes Escape gets FIRST REFUSAL -- the wall does NOT go back.
+## M2: watches `back_requested`, the signal `ui_cancel` actually emits now. Watching
+## `wall_view_entered` here is what let keyboard Back mean WALL for the whole run.
 func _test_screen_that_consumes_escape_wall_does_not_go_back() -> void:
 	var wall := _build_wall()
 	var wp := _add_scripted_picture(wall, &"consumer", Vector2.ZERO, _CONSUMES_CANCEL_SOURCE)
 	wp.focus()
 	var went_back : Array[bool] = [false]
-	wall.wall_view_entered.connect(func() -> void: went_back[0] = true)
+	wall.back_requested.connect(func() -> void: went_back[0] = true)
 
 	var event := InputEventAction.new()
 	event.action = &"ui_cancel"
@@ -518,7 +520,9 @@ func _test_screen_that_ignores_escape_wall_goes_back() -> void:
 	var wp := _add_picture(wall, &"ignorer", Vector2.ZERO)
 	wp.focus()
 	var went_back : Array[bool] = [false]
-	wall.wall_view_entered.connect(func() -> void: went_back[0] = true)
+	var went_to_wall_view : Array[bool] = [false]
+	wall.back_requested.connect(func() -> void: went_back[0] = true)
+	wall.wall_view_entered.connect(func() -> void: went_to_wall_view[0] = true)
 
 	var event := InputEventAction.new()
 	event.action = &"ui_cancel"
@@ -526,6 +530,9 @@ func _test_screen_that_ignores_escape_wall_goes_back() -> void:
 	wall._unhandled_input(event)
 
 	check(went_back[0], "a screen that ignores Escape lets it through -- the wall DOES go back")
+	check(not went_to_wall_view[0],
+			"M2/Q65=a: and asks for BACK, not for wall view -- only the FocusStack decides whether "
+			+ "Back bottoms out into the overview, and `Wall` does not hold it")
 	_teardown(wall, [wp])
 
 ## I7 (Q104=a): wall_jump_3 enters the THIRD picture in PLACEMENT order -- GAP-009 deleted "ring",

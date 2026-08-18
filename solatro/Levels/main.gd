@@ -65,6 +65,12 @@ func _ready() -> void:
 	# CODE_REVIEW.md A2: info_toggled had no consumer anywhere -- the Info button did nothing.
 	overlay.info_toggled.connect(_on_info_toggled)
 	wall.wall_view_entered.connect(_on_wall_view_entered)
+	# M2 (ADVERSARIAL_REVIEW): keyboard Back's call site. `ui_cancel` used to emit
+	# `wall_view_entered`, so Escape dropped the player to the overview from any depth instead of
+	# retracing (Q65=a). Deliberately the SAME handler the overlay's Back button already uses, so
+	# the key and the button cannot diverge -- and `_on_back_pressed()` is where the stack's own
+	# fall-through to wall view lives.
+	wall.back_requested.connect(_on_back_pressed)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
 	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
 	# unlock -- wiring the wall to it here, not building a second unlock path.

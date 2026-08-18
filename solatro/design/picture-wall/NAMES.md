@@ -55,6 +55,8 @@ Inside `wall_picture.tscn`: `%Frame` (NinePatchRect) · `%Screen` (Sprite2D) · 
 | `Wall` | `transition_started` | `(from_id: StringName, to_id: StringName)` |
 | `Wall` | `transition_landed` | `(picture_id: StringName)` |
 | `Wall` | `wall_view_entered` | — |
+| `Wall` | `back_requested` | — |
+| `Wall` | `picture_enter_requested` | `(id: StringName)` |
 | `ProfileManager` | `picture_unlocked` | `(picture_id: StringName)` |
 | `InfoCard` | `info_shown` | `(entry: InfoEntry)` |
 

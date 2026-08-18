@@ -53,6 +53,8 @@ func _ready() -> void:
 	test_info_mode_does_not_survive_a_relaunch()
 	behavior_section("RESIZE REACHES THE WALL (M1, ADVERSARIAL_REVIEW.md, S17, T11 wiring)")
 	await test_a_real_resize_reaches_the_wall()
+	behavior_section("KEYBOARD BACK RETRACES (M2, ADVERSARIAL_REVIEW.md, Q65=a, I5)")
+	await test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -619,3 +621,57 @@ func test_a_real_resize_reaches_the_wall() -> void:
 
 	main.queue_free()
 	viewport.queue_free()
+
+# ------------------------------------------------------------------ M2 (ADVERSARIAL_REVIEW.md)
+
+## M2 (ADVERSARIAL_REVIEW.md, Q65=a, I5/Q100=a): keyboard Back RETRACES the FocusStack one step at
+## a time. `Wall._unhandled_input()` used to emit `wall_view_entered` on `ui_cancel`, so Escape
+## dropped the player straight to the overview from any depth -- the stack was never consulted, and
+## the overlay's Back button and the Escape key meant two different things.
+##
+## The end-to-end wiring proof: it fails if `Main._ready()`'s `wall.back_requested.connect(
+## _on_back_pressed)` is removed, and it failed against the old `wall_view_entered` emit too. Two
+## REAL navigations first, so there is genuine history for Escape to retrace INTO -- a stack with
+## nothing behind it bottoms out at wall view legitimately (Q65=a's own fall-through), which is
+## exactly the state the bug made indistinguishable from the fix.
+##
+## ⚠ One `Main`, held for as few frames as possible, at a tiny `wall_transition_delay` -- see
+## `test_a_real_resize_reaches_the_wall()` above for why that matters.
+func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> void:
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+
+	# Cold launch already visited start_menu. Two real navigations on top of it.
+	await main._focus_picture(&"map")
+	await main._focus_picture(&"deck")
+	check(main._current_focus == &"deck",
+			"sanity: two real navigations landed, so Escape has somewhere to retrace TO",
+			str(main._current_focus))
+	check(main._focus_stack.can_back(), "sanity: the real stack reports history behind deck")
+
+	var escape := InputEventAction.new()
+	escape.action = &"ui_cancel"
+	escape.pressed = true
+	main.wall._unhandled_input(escape)
+	# A BOUNDED wait, never `await focus_changed`: the emit runs `_on_back_pressed()` synchronously
+	# up to its own first await, so a signal await here would deadlock outright if that handler ever
+	# stopped suspending. 30 frames is far more than the 0.001 s clock above needs.
+	for _i : int in range(30):
+		if main._current_focus == &"map": break
+		await get_tree().process_frame
+
+	check(main._current_focus == &"map",
+			"Q65=a: Escape retraced ONE step, to the picture visited before deck",
+			str(main._current_focus))
+	check(main._current_focus != &"",
+			"and did NOT drop to wall view, which is what `ui_cancel` used to do from any depth")
+
+	main.queue_free()
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
