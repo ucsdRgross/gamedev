@@ -249,11 +249,29 @@ func _picture_at(wall_pos: Vector2) -> StringName:
 ## the packer's own output order (slot-ascending, home first) is what's left to count by, so this
 ## reads `%Pictures`' own child order directly rather than re-deriving it. Silently does nothing
 ## past the last picture -- no "ring order" defines a jump target that does not exist.
+## I7/Q104=a: `wall_jump_N` enters the Nth picture. ADVERSARIAL_REVIEW C4 found two defects here.
+##
+## It called `focus()` directly — no unfocus of the current picture, no camera move, no FocusStack
+## update, no overlay refresh — so pressing a digit while a picture was focused left TWO screen
+## roots at PROCESS_MODE_ALWAYS, breaking §1.6's "exactly one" invariant (Q74=a) that the Phase-3
+## gate exists to protect. It now emits `picture_enter_requested`, the SAME signal a click and
+## `ui_accept` use, so a jump cannot diverge from the entry path again.
+##
+## It also indexed `%Pictures` child order, which stops matching placement order as soon as
+## `_repack_wall()` appends a newly-unlocked picture — after unlocking `book`, `wall_jump_2` landed
+## on the wrong picture. Ordered by the packer's own result instead, which is what "the Nth picture"
+## means to a player looking at the wall.
 func _jump_to_index(index: int) -> void:
-	var children := %Pictures.get_children()
-	if index < 0 or index >= children.size(): return
-	var wp := children[index] as WallPicture
-	if wp: wp.focus()
+	var ordered := _packed_ids_in_placement_order()
+	if index < 0 or index >= ordered.size(): return
+	picture_enter_requested.emit(ordered[index])
+
+## Placement order as the packer resolved it, recorded by apply_layout(). Empty until the first
+## layout is applied, which is why _jump_to_index() range-checks rather than assuming.
+var _placement_order : Array[StringName] = []
+
+func _packed_ids_in_placement_order() -> Array[StringName]:
+	return _placement_order
 
 ## F11 (Q69=a): exactly one picture is selected in wall view, always -- empty only before the wall
 ## has any pictures to select. Set by enter_wall_view()/move_selection(), never directly.
@@ -388,6 +406,11 @@ func _wall_extent() -> Rect2:
 ## nothing in this method can invalidate it, by construction, since it never touches an id, only a
 ## rect.
 func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> void:
+	# `rects` is built by iterating WallPacker's own returned Array, so its key order IS
+	# placement order. Kept because %Pictures child order diverges from it the moment a repack
+	# appends a newly-unlocked picture, and `wall_jump_N` means the Nth picture as PLACED
+	# (I7/Q104=a), not the Nth node added (ADVERSARIAL_REVIEW C4).
+	_placement_order.assign(rects.keys())
 	var pictures := _pictures_by_id()
 	var tween : Tween = null
 	for id : StringName in rects:

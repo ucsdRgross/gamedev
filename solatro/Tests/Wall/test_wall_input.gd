@@ -559,15 +559,36 @@ func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
 	check(pictures.size() >= 3, "at least 3 pictures were packed for this fixture",
 			str(pictures.size()))
 
+	# apply_layout() is what records placement order (ADVERSARIAL_REVIEW C4) -- without it the wall
+	# has no idea what "the third picture" means, so drive the real path rather than assuming.
+	var rects_by_id : Dictionary[StringName, PictureRect] = {}
+	for rect : PictureRect in rects: rects_by_id[rect.id] = rect
+	wall.apply_layout(rects_by_id, false)
+
+	# ⚠ ONE PICTURE IS ALREADY FOCUSED. The original fixture focused nothing, so it could not see
+	# that _jump_to_index() called focus() directly without unfocusing anything -- leaving TWO
+	# screen roots at PROCESS_MODE_ALWAYS and breaking §1.6's "exactly one" (Q74=a).
+	var already : WallPicture = pictures[0]
+	already.focus()
+
+	var emitted : Array[StringName] = []
+	wall.picture_enter_requested.connect(func(id: StringName) -> void: emitted.append(id))
+
 	var event := InputEventAction.new()
 	event.action = &"wall_jump_3"
 	event.pressed = true
 	wall._unhandled_input(event)
 
-	var third := pictures[2]
-	check(third.is_focused,
-			"wall_jump_3 focuses the THIRD picture in the packer's own placement order",
-			"id=%s" % third.rect.id)
+	var expected : StringName = rects[2].id
+	check(emitted.size() == 1 and emitted[0] == expected,
+			"wall_jump_3 REQUESTS the third picture in the packer's own placement order, through "
+			+ "the same signal a click uses", "emitted=%s expected=%s" % [emitted, expected])
+	var focused_count := 0
+	for wp : WallPicture in pictures:
+		if wp.is_focused: focused_count += 1
+	check(focused_count == 1,
+			"a jump leaves EXACTLY ONE focused picture -- it must not focus a second one behind "
+			+ "the first", "focused=%d" % focused_count)
 	_teardown(wall, pictures)
 
 ## I14 (Q103=a, Q115=a): the wall is DEAF to its own arrow-key selection while a screen is focused
