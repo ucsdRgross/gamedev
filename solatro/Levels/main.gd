@@ -40,6 +40,15 @@ var _current_focus : StringName = &""
 var _window_size : Vector2
 
 func _ready() -> void:
+	# C3 (ADVERSARIAL_REVIEW): `wall_info_mode` lives on PlayerSettings, and every setter there
+	# saves to user://settings.tres -- so toggling Info wrote it to disk and it came back on the
+	# next launch, silently putting every transition into the info branch while the card was hidden
+	# and the button read un-pressed. J1 says info mode is "NOT persisted across sessions" (Q135
+	# note) and PLAN.md §4 anti-scope item 9 forbids persisting wall state across a quit. Cleared at
+	# startup so the stored value can never survive a relaunch, whatever is on disk.
+	if SettingsManager.settings.wall_info_mode:
+		SettingsManager.settings.wall_info_mode = false
+
 	map_scene.enter_game.connect(enter_game)
 	menu_scene.new_run_requested.connect(_on_new_run)
 	menu_scene.continue_requested.connect(_on_continue)

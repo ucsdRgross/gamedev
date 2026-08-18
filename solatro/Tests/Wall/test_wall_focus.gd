@@ -49,6 +49,8 @@ func _ready() -> void:
 	await test_info_toggle_sets_flag_and_moves_camera_and_resets_card()
 	behavior_section("FOCUS/TRANSITION SIGNALS (A4, CODE_REVIEW.md, NAMES.md)")
 	await test_focus_and_transition_signals_fire_during_real_navigation()
+	behavior_section("INFO MODE DOES NOT SURVIVE A QUIT (C3, ADVERSARIAL_REVIEW.md, J1)")
+	test_info_mode_does_not_survive_a_relaunch()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -492,3 +494,31 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 			"transition_landed fired once, for the real destination id", str(landed_events))
 
 	main.queue_free()
+
+# ------------------------------------------------------------------ C3 (ADVERSARIAL_REVIEW.md)
+
+## C3 (ADVERSARIAL_REVIEW.md, J1, PLAN.md §4 anti-scope item 9): info mode must NOT survive a
+## quit. `wall_info_mode` stays a REAL `PlayerSettings` field (`WallTransition.sample_at()`'s
+## existing S18/J10 read keeps working unchanged, no signature/shape change there), which means
+## LEAVING it true would persist to `user://settings.tres` on the very write that set it -- a real
+## relaunch's `SettingsManager._init()` loads that file straight back, exactly like a real "info
+## mode survived a quit" bug. Simulates that: sets the flag true (standing in for "a previous
+## session's own save already has this"), then builds a REAL `Main` -- the exact object whose
+## `_ready()` must now reset it -- and asserts it reads false immediately after `_ready()` runs.
+## `backup_real_settings()`/`restore_real_settings()` park the real file, since this genuinely
+## writes it (twice: the simulated "previous session" write, and Main's own reset write).
+func test_info_mode_does_not_survive_a_relaunch() -> void:
+	backup_real_settings()
+	var settings := SettingsManager.settings
+	settings.wall_info_mode = true   # stands in for a previous session's own persisted value
+
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false
+
+	check(not settings.wall_info_mode,
+			"a fresh Main resets wall_info_mode to false on startup, even if a previous session "
+			+ "left it true -- info mode never survives a relaunch (C3)")
+
+	main.queue_free()
+	restore_real_settings()
