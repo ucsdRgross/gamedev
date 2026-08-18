@@ -7,9 +7,9 @@ extends Node
 ## RunManager.run), and owns the ONE real `Wall` the whole app now lives inside.
 ##
 ## M1-M4/B7/K6/Q211=a (S30) + L1-L11/Q186=d (S31), all landing here: cold launch focuses
-## start_menu directly (no wall-view flash); choosing a save reveals wall view (M2/M3, using the
-## ORDINARY transition clock -- the distinct longer/slower reveal is GAP-014, still unbuilt, see
-## ASSUMPTIONS.md); entering map/deck/game is focusing that picture via a real WallTransition;
+## start_menu directly (no wall-view flash); choosing a save reveals wall view (M2/M3), scaled by
+## `wall_reveal_delay_scale` (GAP-014, owner-answered a) so it reads as distinct from an ordinary
+## Wall press; entering map/deck/game is focusing that picture via a real WallTransition;
 ## leaving mid-act calls unfocus() and FREEZES the show instead of freeing it (L4 -- S31's own
 ## soak already proved the mechanism, this makes it live); wall state never survives a quit (K6)
 ## because nothing here persists `_focus_stack` or `_current_focus` anywhere.
@@ -53,6 +53,8 @@ func _ready() -> void:
 	overlay.back_pressed.connect(_on_back_pressed)
 	overlay.forward_pressed.connect(_on_forward_pressed)
 	overlay.wall_pressed.connect(_on_wall_pressed)
+	# CODE_REVIEW.md A2: info_toggled had no consumer anywhere -- the Info button did nothing.
+	overlay.info_toggled.connect(_on_info_toggled)
 	wall.wall_view_entered.connect(_on_wall_view_entered)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
 	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
@@ -181,11 +183,16 @@ func _footprint(rect: PictureRect) -> Vector2:
 ## the SAME `Wall.update_travel_music()` distance-driven blend `_focus_picture()`'s WallTransition
 ## branch uses below -- `audio_dest_entry == null` (wall view has no picture of its own, Q167=c)
 ## fades the current track out with nothing to fade IN, exactly what entering wall view needs.
+## GAP-014 (owner-answered a): `duration_scale` multiplies the ordinary transition clock -- 1.0 for
+## every ordinary move (an explicit Wall press, entering/leaving a picture), and
+## `wall_reveal_delay_scale` ONLY for M2's one-off opening reveal (`_on_new_run()`/`_on_continue()`
+## below), which is the one call site that needs the reveal to read as "distinct... longer, slower".
 func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centre: Vector2,
-		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry) -> void:
+		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry,
+		duration_scale: float = 1.0) -> void:
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var settings := SettingsManager.settings
-	var duration := WallTransition.total_duration(settings)
+	var duration := WallTransition.total_duration(settings) * duration_scale
 	wall.begin_music_crossfade(audio_dest_entry)
 	var tween := create_tween()
 	tween.set_parallel(true)
@@ -210,6 +217,10 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
+		# A4 (CODE_REVIEW.md, NAMES.md): a REAL picture-to-picture move -- the only case
+		# transition_started/transition_landed name (both take real picture ids, and wall view is
+		# never one, Q66=b), unlike the wall-view<->picture moves _animate_camera() drives below.
+		wall.transition_started.emit(_current_focus, id)
 		var transition := WallTransition.new()
 		var landed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
 		transition.landed.connect(func(_lid: StringName) -> void: landed[0] = true)
@@ -225,27 +236,32 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 			await get_tree().process_frame
 		wall.finish_music_crossfade()
 		source_wp.unfocus(_footprint(source_rect))
+		wall.transition_landed.emit(id)
 	else:
 		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
 				_window_size, settings.wall_overfill_margin),
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
+	# A4 (CODE_REVIEW.md, NAMES.md): fires for EVERY focus change, both branches above -- the one
+	# signal NAMES.md's table names with no "real transition only" qualifier.
+	wall.focus_changed.emit(id)
 	if record_visit:
 		_focus_stack.visit(id)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 
 ## Unfocuses whatever is currently focused (FREEZING it in place, L4 -- never freed here) and
-## animates the camera out to wall view. A no-op if already in wall view.
-func _go_to_wall_view() -> void:
+## animates the camera out to wall view. A no-op if already in wall view. `duration_scale` (GAP-014)
+## defaults to an ORDINARY move; only the M2 opening reveal passes anything else.
+func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
 		# S33 (Q167=c): wall view has no picture of its own, so there is nothing to fade music IN
 		# to -- a null dest entry fades the current track out over the same move.
 		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),
-				source_rect.centre, wall.wall_view_centre(), null)
+				source_rect.centre, wall.wall_view_centre(), null, duration_scale)
 		source_wp.unfocus(_footprint(source_rect))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
@@ -257,6 +273,32 @@ func _on_wall_view_entered() -> void:
 
 func _on_wall_pressed() -> void:
 	await _go_to_wall_view()
+
+## CODE_REVIEW.md A2 (J1-J2/Q127=a, J2/Q128): the Info toggle previously did nothing. `active`
+## sets the shared `wall_info_mode` flag (so any code reading it, present or future, agrees with
+## what the button shows), resets `%InfoCard` to hidden on the way OUT (J6: "leaving info mode
+## resets it to nothing" -- nothing here re-shows it on the way in, since J1/J5 say the card stays
+## empty until something is actually hovered, which this batch does not add a hover source for),
+## and animates the camera to/from the info zoom (J2/Q128: "reveals the BOTTOM frame only") when a
+## picture is currently focused -- a no-op in wall view, where no single frame exists to reveal.
+func _on_info_toggled(active: bool) -> void:
+	SettingsManager.settings.wall_info_mode = active
+	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
+	if not active:
+		info_card.reset()
+	if _current_focus == &"": return
+	var dest_rect : PictureRect = _rects[_current_focus]
+	var settings := SettingsManager.settings
+	if active:
+		var state := WallPicture.info_zoom_state(dest_rect, _window_size, settings)
+		var info_pos : Vector2 = state["position"]
+		var info_zoom : float = state["zoom"]
+		await _animate_camera(info_pos, info_zoom, dest_rect.centre, dest_rect.centre,
+				_entries[_current_focus])
+	else:
+		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
+				_window_size, settings.wall_overfill_margin), dest_rect.centre, dest_rect.centre,
+				_entries[_current_focus])
 
 ## Q65=a: Back retraces the FocusStack one step at a time; only falls through to wall view once
 ## the stack itself reports nothing behind the current picture.
@@ -292,20 +334,22 @@ func _on_new_run(cards: Array[CardData], rules: Array[CardData]) -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	game_wp.detach_screen()
 	map_scene.start_run(save_info)
-	# M2/M3: choosing a save reveals WALL VIEW, on every launch. Using the ORDINARY transition
-	# clock (`_go_to_wall_view()`'s own `_animate_camera()` call) -- the distinct, longer/slower
-	# one-off reveal is GAP-014, still unbuilt; see ASSUMPTIONS.md.
-	await _go_to_wall_view()
+	# M2/M3 (GAP-014, owner-answered a): choosing a save reveals WALL VIEW, on every launch, with
+	# the one-off "distinct... longer, slower" reveal -- `wall_reveal_delay_scale` multiplies the
+	# ordinary transition clock for THIS call only; every other _go_to_wall_view() caller (an
+	# ordinary Wall press, Back falling through to wall view) stays at the plain clock.
+	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 
 func _on_continue() -> void:
 	save_info = RunManager.load_run()
 	map_scene.start_run(save_info)
 	# A pending_node_id means the player quit mid-show (§1.6's pause model does not survive a real
 	# process exit -- L8, "a frozen act does NOT survive a quit"): the show restarts fresh, same
-	# as before this run existed. M2/M3 still apply uniformly -- every launch reveals wall view.
+	# as before this run existed. M2/M3 still apply uniformly -- every launch reveals wall view,
+	# with the same GAP-014 reveal scale as _on_new_run().
 	if save_info.pending_node_id >= 0:
 		enter_game()
-	await _go_to_wall_view()
+	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 
 ## S31 (L2): entering a show. If the `game` picture already holds a LIVE screen (a previous
 ## mid-act freeze -- the player left via Back/Wall instead of winning/losing), this RESUMES it --

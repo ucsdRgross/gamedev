@@ -11,8 +11,8 @@ inventing one. Two sessions inventing two names for one thing is the most common
 
 | Path | `class_name` | Extends | Role |
 |---|---|---|---|
-| `Scripts/Wall/wall_layout.gd` | `WallLayout` | `Resource` | the authored PATTERN — rings, gap, ellipse clamps, the picture list |
-| `Scripts/Wall/picture_entry.gd` | `PictureEntry` | `Resource` | one picture's authored data — id, scene, slot, size multiplier, frame thickness |
+| `Scripts/Wall/wall_layout.gd` | `WallLayout` | `Resource` | the authored PATTERN — gap, ellipse clamps, the picture list (rings rejected, GAP-009) |
+| `Scripts/Wall/picture_entry.gd` | `PictureEntry` | `Resource` | one picture's authored data — id, scene, slot, size multiplier, frame thickness/colour, music, background |
 | `Scripts/Wall/wall_packer.gd` | `WallPacker` | `RefCounted` | the pure packer: layout + unlocked ids + window aspect → rects |
 | `Scripts/Wall/picture_rect.gd` | `PictureRect` | `RefCounted` | one packed result — id, centre, size, frame insets |
 | `Scripts/Wall/focus_stack.gd` | `FocusStack` | `RefCounted` | the Back/Forward history, ids only |
@@ -41,7 +41,9 @@ inventing one. Two sessions inventing two names for one thing is the most common
 ## Node names inside `wall.tscn` (a `%unique` lookup depends on these)
 
 `%Camera2D` · `%Pictures` (Node2D, parent of every `WallPicture`) · `%Viewports` (Node, parent of
-every `SubViewport`) · `%Overlay` · `%WallSurface` (ColorRect)
+every `SubViewport`) · `%Overlay` · `%WallSurface` (ColorRect) · `%Overlay/InfoCard` (`InfoCard`,
+CODE_REVIEW.md A1 — mounted inside `%Overlay` so it draws on top of the wall like the rest of the
+overlay's own controls) · `%MusicA` / `%MusicB` (AudioStreamPlayer, S33)
 
 Inside `wall_picture.tscn`: `%Frame` (NinePatchRect) · `%Screen` (Sprite2D) · `%Shadow` (Sprite2D)
 

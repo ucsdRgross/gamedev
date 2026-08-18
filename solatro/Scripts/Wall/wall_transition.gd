@@ -20,9 +20,11 @@ extends RefCounted
 ## phase" (which begins at t=0, the instant request() runs).
 ##
 ## Deliberately OUT OF SCOPE here (see ASSUMPTIONS.md): SubViewport render_target_update_mode and
-## %Screen.texture_filter are §1.8/§1.7 concerns (S11/S13) this class does not touch. The instant a
-## transition lands, the destination is left mid-focus (screen_root ALWAYS, viewport untouched) --
-## a full focus()/unfocus() handoff at landing is the future caller's job, not tested by any T-row.
+## %Screen.texture_filter are §1.8/§1.7 concerns (S11/S13) this class does not touch, ever -- the
+## instant a transition lands, THIS class leaves the destination mid-focus (screen_root ALWAYS,
+## viewport untouched). `Main._focus_picture()` is the caller that does the full focus()/unfocus()
+## handoff, immediately after `landed[0]` goes true -- not tested by any T-row here, since it is
+## Main's own responsibility, not this class's.
 
 ## One frame's worth of camera state plus the raw geometric facts at that instant.
 class Sample:
@@ -155,10 +157,11 @@ static func _find_source_pause_time(total: float, source_rect: PictureRect, dest
 ## replaced by a cross-fade AT A FIXED ZOOM -- held at the SAME "show both frames" framing
 ## `_wide_zoom()` already computes for the ordinary transition's own peak, for the ENTIRE duration,
 ## camera position included, so nothing about the camera moves at all (T12: zoom is constant
-## throughout). Whatever actually draws the cross-fade (blending the two SCREENS' opacity) is a
-## later integration step's job -- NAMES.md scopes this class to the camera tween and clock alone,
-## the same "out of scope" boundary the class doc comment already draws for the landing handoff
-## (ASSUMPTIONS.md). Both frames are guaranteed in view by `_wide_zoom()`'s own construction, so the
+## throughout). Whatever actually draws the cross-fade (blending the two SCREENS' opacity) remains
+## UNBUILT -- NAMES.md scopes this class to the camera tween and clock alone, the same "out of
+## scope" boundary the class doc comment already draws for the landing handoff (ASSUMPTIONS.md),
+## and nothing in Phase 7's wire-up built it either; still owed. Both frames are guaranteed in view
+## by `_wide_zoom()`'s own construction, so the
 ## pause/unpause/input-unlock booleans below all latch on the very first sample -- correct for a
 ## cross-fade, which has no real "travel" to wait through.
 static func sample_at(elapsed: float, total: float, source_rect: PictureRect,

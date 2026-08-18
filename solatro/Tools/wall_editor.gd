@@ -16,8 +16,9 @@ extends Node2D
 ##  * `layout` — every `WallLayout` field (`pictures`, `home_id`, `gap_px`, the ellipse clamps,
 ##    `view_margin`) AND every `PictureEntry` field per picture (the Inspector's own
 ##    `Array[PictureEntry]` editor expands each entry — `slot`, `size_multiplier`, `design_size`,
-##    `frame_px`, `frame_texture`, `keep_aspect`, `music`; `ring` is correctly ABSENT — GAP-009
-##    deleted it, and NAMES.md fixes no field of that name to reintroduce).
+##    `frame_px`, `frame_texture`, `frame_colour` (GAP-013=a), `keep_aspect`, `music` (S33),
+##    `background_texture` (GAP-015=a); `ring` is correctly ABSENT — GAP-009 deleted it, and
+##    NAMES.md fixes no field of that name to reintroduce).
 ##  * `preview_settings` — a REAL, standalone `PlayerSettings` (never the shipped
 ##    `user://settings.tres`, M9/Q200: "never reads or writes profile data" applies to any player
 ##    state, and a knob tuned here must never silently move a real player's save). Every
@@ -123,6 +124,20 @@ const WATCH_SECS := 0.25
 	set(v):
 		play_transition = false
 		if v: _play_transition()
+
+@export_group("Content mode (GAP-017=c)")
+## GAP-017 (owner-answered c): an author-facing toggle, DEFAULT REAL CONTENT -- `/CLAUDE.md` rule 5
+## ("no mocks in tools") governs the DEFAULT path, honouring `Q180`'s own default without silently
+## withdrawing M6, which asked for placeholders. Flipping this true trades truth for speed while
+## tuning geometry (M6's own motive: the tool must re-pack instantly while an author drags numbers,
+## and hosting live screens is heavier than drawing empty frames) -- an EXPLICIT, visible opt-in,
+## never silent, so a defect that only shows with real content on the wall (this run found three:
+## the overfill margin clipping start_menu's own buttons, the overlay covering Profile/Options,
+## frame-corner behaviour at extreme sizes) cannot hide behind a placeholder by default.
+@export var use_placeholder_content : bool = false:
+	set(v):
+		use_placeholder_content = v
+		_repack()
 
 @export_group("Save (M8, Q185=a)")
 ## Acts as a BUTTON. Writes `layout` to `LAYOUT_PATH` directly — the same resource the game loads,
@@ -279,7 +294,7 @@ func _repack() -> void:
 	for rect : PictureRect in rects:
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 		_pictures_root.add_child(wp)   # NO owner
-		wp.build(rect, by_id[rect.id], _viewports_root)
+		wp.build(rect, _build_entry(by_id[rect.id]), _viewports_root)
 		_preview_pictures[rect.id] = wp
 	_last_rects = rects
 	_frame_camera(rects)
@@ -290,6 +305,27 @@ func _repack() -> void:
 	_watched = _fingerprint()
 	print("WallEditor: packed %d/%d pictures at aspect %.3f" \
 			% [rects.size(), layout.pictures.size(), preview_aspect])
+
+## GAP-017=c: the entry `_repack()` actually builds FROM -- the real entry unchanged (default,
+## Q180/CLAUDE.md rule 5), or a placeholder STAND-IN with `scene = null` when
+## `use_placeholder_content` is on (M6's own speed motive). Never mutates the real `PictureEntry`
+## `save_now` would otherwise persist -- a fresh copy, every field but `scene` carried over exactly.
+func _build_entry(entry: PictureEntry) -> PictureEntry:
+	if not use_placeholder_content or entry.scene == null: return entry
+	var stand_in := PictureEntry.new()
+	stand_in.id = entry.id
+	stand_in.slot = entry.slot
+	stand_in.size_multiplier = entry.size_multiplier
+	stand_in.design_size = entry.design_size
+	stand_in.frame_px = entry.frame_px
+	stand_in.frame_texture = entry.frame_texture
+	stand_in.unlocked_by_default = entry.unlocked_by_default
+	stand_in.keep_aspect = entry.keep_aspect
+	stand_in.music = entry.music
+	stand_in.frame_colour = entry.frame_colour
+	stand_in.background_texture = entry.background_texture
+	stand_in.scene = null   # the one field placeholder mode actually changes
+	return stand_in
 
 ## Fits the preview camera to the union of every packed frame-outer rect -- `WallPicture.
 ## focused_scale()`'s own fill formula (H3), the SAME one `Wall.wall_view_zoom()` uses for the

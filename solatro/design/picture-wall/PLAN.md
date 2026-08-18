@@ -66,18 +66,28 @@ you run.** Everything here is a literal.
 
 ### 1.1 `PictureEntry` (Resource)
 
+⚠ **Amended twice since first written, both times reversibly and both now landed in the resource
+itself** (`Scripts/Wall/picture_entry.gd`), which this block is kept in sync with rather than left
+to drift: **GAP-009** deleted `ring` (rings were rejected) and repurposed `slot` as a placement-order
+key, not an authored ring position; **GAP-013**/**GAP-015** made the list EXTENSIBLE and added
+`frame_colour`, `background_texture` and (already shipped, S33, retroactively authorised by
+GAP-015) `music`. The list below is exhaustive AS OF THOSE RULINGS — the exhaustive-list rule
+itself is unchanged; only what it enumerates has grown by owner ruling, never by implementer choice.
+
 ```gdscript
 class_name PictureEntry extends Resource
 @export var id : StringName = &""              ## NAMES.md picture ids; unique within a WallLayout
 @export var scene : PackedScene = null         ## null = registered but unbuilt (&"book", Q214=a)
-@export var ring : int = 0                     ## 0 = the home ring
-@export var slot : int = 0                     ## authored position within the ring (Q12=a)
+@export var slot : int = 0                     ## GAP-010: placement-ORDER key, not an authored angle
 @export var size_multiplier : float = 1.0      ## Q16=c, any positive value
 @export var design_size : Vector2i = Vector2i(1152, 648)   ## per-screen, Q29=b
 @export var frame_px : Vector4 = Vector4(24,24,24,24)      ## L,T,R,B in wall units; Q36, Q37=a
 @export var frame_texture : Texture2D = null   ## null = no drawn frame (Q35=c) but geometry stands
 @export var unlocked_by_default : bool = false
 @export var keep_aspect : bool = false         ## true = never stretched to window aspect (Q32=b)
+@export var music : AudioStream = null         ## S33/Q167=c; null = silent; GAP-015 retroactively authorised
+@export var frame_colour : Color = Color(1,1,1,1)   ## GAP-013=a; per-picture tint, white = untinted
+@export var background_texture : Texture2D = null   ## GAP-015=a, L3; shown when there is no live screen
 ```
 
 ### 1.2 `WallLayout` (Resource)
@@ -106,10 +116,17 @@ Rules, in order:
 1. Ellipse aspect = `clamp(window_aspect, layout.ellipse_aspect_min, layout.ellipse_aspect_max)`.
 2. Each picture's base size = `design_size * size_multiplier`, then stretched to the window aspect
    **unless** `keep_aspect` (`Q22`=b, `Q32`=b).
-3. Ring capacity is **computed**, not authored: fill a ring until the next picture's outer width
-   plus `gap_px` would exceed the ring's circumference (`Q11`=b).
-4. Within a ring, order by `slot` ascending (`Q12`=a). A partial ring **keeps its authored angles**
-   and reads as unfinished — it is NOT spread or compacted (`Q13`=b).
+3. ⚠ **AMENDED by GAP-009 — rings are rejected.** Each picture sits at the **smallest radius along
+   its resolved angle at which its FRAME OUTER RECT clears every already-placed frame outer rect by
+   `gap_px`**. Overflow is emergent: a picture that cannot fit near the centre lands further out
+   because that is where it stops. There is no ring, no capacity and no band, so `Q11`=(b)'s
+   circumference test no longer applies.
+4. ⚠ **AMENDED by GAP-010 — rebalancing is UNCONDITIONAL.** `slot` is a placement-**order** key, not
+   an authored angle. The non-home unlocked pictures are re-sequenced by ascending `slot` and evenly
+   redistributed around the full circle, for **every** unlock set, complete or partial. This
+   **reverses `Q13`=(b)**: the wall no longer reads as visibly unfinished, and the unlock signal that
+   answer carried has no replacement (recorded in `gaps/GAP-010.md`). `layout.home_id` is placed
+   first and takes the centre (`Q9`=a).
 5. Locked ids are absent entirely, not placeholders (`Q158`=a).
 6. **Assert no two rects overlap** (`Q20`=a) — `push_error` and return the un-overlapped prefix.
 
@@ -456,8 +473,9 @@ a *starting* value, not a decision. The tool must expose, with a live re-pack or
 change:
 
 - **every `WallLayout` field** — `gap_px`, `home_id`, the ellipse clamps, `view_margin`;
-- **every `PictureEntry` field per picture** — `ring`, `slot`, `size_multiplier`, `design_size`,
-  the four `frame_px` sides, `frame_texture`, `keep_aspect`;
+- **every `PictureEntry` field per picture** — `slot`, `size_multiplier`, `design_size`,
+  the four `frame_px` sides, `frame_texture`, `frame_colour` (GAP-013=a), `keep_aspect`, `music`
+  (S33), `background_texture` (GAP-015=a) — `ring` is correctly ABSENT, GAP-009 deleted it;
 - **every `PlayerSettings` "Picture wall" knob** — the transition clock and its three phase shares,
   the easing selections, `wall_frame_reveal_margin`, `wall_view_min_texture_px`, the touch-target
   trio, `wall_pinch_threshold_px`;

@@ -141,8 +141,15 @@ static func _clearance(a: Rect2, b: Rect2) -> float:
 	var dy := maxf(maxf(a.position.y - b.end.y, b.position.y - a.end.y), 0.0)
 	return Vector2(dx, dy).length()
 
+## CODE_REVIEW.md B1: `_clearance(...) < gap_px - _EPS` alone cannot reject an overlap when
+## `gap_px == 0` -- `_clearance` is never negative, so the test becomes `0 < -_EPS`, which is
+## FALSE for every candidate regardless of actual overlap, and every picture "clears" at radius 0.
+## `Rect2.intersects()` (genuine area overlap, edges merely touching do NOT count -- the default
+## `include_borders = false`) is checked INDEPENDENTLY of `gap_px`, so a real intersection is
+## rejected at any gap including 0, while `gap_px = 0` still correctly allows frames to touch.
 static func _clears_all(rect: Rect2, placed: Array[Rect2], gap_px: float) -> bool:
 	for other : Rect2 in placed:
+		if rect.intersects(other): return false
 		if _clearance(rect, other) < gap_px - _EPS: return false
 	return true
 

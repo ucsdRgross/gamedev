@@ -1131,3 +1131,181 @@
     the same save+reload round-trip proof S34's own entry already established (`ok=true,
     pictures=6/6`). A fresh `main_boot_snapshot.gd` cold-launch render confirms no regression to
     the app's own boot (`start_menu` focused, identical to before).
+
+## `gap-answers+review-fixes` — the coordinator's own read of the diff against `main`
+
+Written after `CODE_REVIEW.md` (the coordinator's own direct read of the production code, not
+grep/suite/snapshot) found four built-but-never-wired integration holes, two logic defects, six
+stale comments, and the owner answered all five outstanding gaps. Full suite green throughout
+(`ALL 39 SUITES: 2870 CHECKS PASSED`); every claim below that names a red-then-green proof was
+actually run both ways, not merely asserted.
+
+### PART 1 — the five gaps, as shipped
+
+- **GAP-013 = (a).** `PictureEntry.frame_colour : Color = Color(1,1,1,1)`, applied as `%Frame.
+  modulate` in `WallPicture.build()` -- white leaves the shared bevel texture's own baked tone
+  untouched, which is "the current neutral placeholder tone" the answer names as the default. The
+  bevel's own two `Color()` literals (the generated placeholder texture itself) are UNTOUCHED, per
+  the ruling ("they stay as they are only until QR4=b's art pass"). `wall_shadow_opacity : float
+  = 0.35` replaces `wall_picture.gd`'s `Color(0.0, 0.0, 0.0, 0.35)` literal (one value for the
+  whole wall, same "one authored value for everyone" shape `wall_light_offset` already set); the
+  default is the exact prior literal, so no observable behaviour moved. Both exposed automatically
+  in S34's tool -- `frame_colour` via the Inspector's own `Array[PictureEntry]` editor (already
+  showing every field, no tool code needed), `wall_shadow_opacity` via `preview_settings` (same).
+- **GAP-014 = (a).** `wall_reveal_delay_scale : float = 1.8` (a PROPOSED starting value, same
+  "starting values are proposals" framing DESIGN.md §5 already states for every other row -- no
+  design text pins the exact number, only that it must read as "distinct... longer, slower").
+  `Main._animate_camera()` gained a `duration_scale` parameter (default 1.0, ordinary moves
+  unaffected) multiplying `WallTransition.total_duration()`; `_go_to_wall_view()` threads it
+  through. `_on_new_run()`/`_on_continue()` are the ONLY two call sites that pass
+  `SettingsManager.settings.wall_reveal_delay_scale` instead of the default -- M2's own "choosing
+  a save" trigger, M3's "every launch" (read as: every time a save is chosen, new or continued,
+  not literally the app's cold boot, which M1 already fixes as a direct focus with no reveal at
+  all). The reveal itself was previously entirely unbuilt (ASSUMPTIONS.md's own S30 entry said so
+  outright) -- it now runs on the real `_go_to_wall_view()` path, scaled.
+- **GAP-015 = (a).** `PictureEntry.background_texture : Texture2D = null`, mirroring
+  `frame_texture` exactly. `music` is retroactively authorised -- unchanged, no revert.
+  `WallPicture` gained `_background_texture`/`_background` fields and `_show_background()`/
+  `_hide_background()`: a background `Sprite2D` is shown INSIDE the picture's own SubViewport
+  (reusing the existing render pipeline, no new top-level node on `wall_picture.tscn`, which
+  NAMES.md's own `%Frame`/`%Screen`/`%Shadow` list stays exhaustive for) whenever `screen_root ==
+  null` -- `build()`'s own `else` branch, and `detach_screen()` (L2's "GameView is freed after,"
+  the moment `game` next has no screen). `attach_screen()` hides it the instant a real screen
+  takes over. Generic on `PictureEntry`, not special-cased to `game` -- L3 is simply the first
+  picture that will ever actually author one.
+- **GAP-016 = (a).** `wall_overlay.tscn`'s `BackButton`/`ForwardButton`/`WallButton` lost their
+  bottom-band anchors (`anchor_top/bottom = 1.0`, negative `offset_top`, `grow_vertical = 0`) and
+  now sit at plain top-left offsets (`offset_top = 12`, `offset_bottom = 44`), the same Y band
+  `InfoButton` already used on the right. Verified by eye, not merely by anchor math: a fresh
+  `main_boot_snapshot.gd` render shows Back/Forward/Wall top-left, Info top-right, and the
+  start-menu's own Profile/Options/Quit/Collection/Language row fully clear along the bottom --
+  the exact collision the gap measured at 1280x720 is gone.
+- **GAP-017 = (c).** `WallEditor.use_placeholder_content : bool = false` (default REAL content,
+  honouring `Q180`'s own default and `/CLAUDE.md` rule 5 in the path that matters). `_repack()`
+  now builds every picture through `_build_entry()`, which returns the real `PictureEntry`
+  unchanged when the toggle is off, or a FRESH stand-in copy with only `.scene` forced null when
+  it is on -- the real layout data `save_now` would persist is never mutated by flipping this
+  toggle. The `/CLAUDE.md` rule-5 exemption is documented in the tool's own class doc comment and
+  on the toggle's own export comment, not left implied -- `/CLAUDE.md` itself (a cross-project,
+  machine-shared file outside `design/picture-wall/`) was deliberately NOT edited; that is judged
+  to be outside an implementer's authority to amend even under an owner-answered gap, and is
+  flagged here for the coordinator to do directly if a repo-wide amendment (rather than a
+  tool-local, code-documented exemption) is what was actually wanted.
+
+Doc updates landing WITH the code, not deferred: `DESIGN.md` §5 gained the three new
+`PlayerSettings` rows (`wall_shadow_opacity`, `wall_reveal_delay_scale`, `wall_selected_lift` --
+see B2 below); `PLAN.md` §1.1's `PictureEntry` code block now matches the resource exactly (`ring`
+finally removed from the literal text, not just from the field list's own prose; `music`/
+`frame_colour`/`background_texture` added) and §2's S34 line's field enumeration updated to match;
+`NAMES.md` gained `%Overlay/InfoCard` and `%MusicA`/`%MusicB` in the wall.tscn node list and an
+updated `picture_entry.gd` role description. `res://Assets/Wall/layout_default.tres` was
+regenerated (deleted, rebuilt via the wall_editor tool) against the new six-field `PictureEntry`
+shape -- `frame_colour`/`background_texture` are both at their class defaults for every picture,
+so neither actually appears in the saved file (Godot's own resource saver omits anything equal to
+its script default), confirmed by grep (`0` occurrences of either name in the file).
+
+### PART 2 — the four integration holes (CODE_REVIEW.md §A), each proven red-then-green
+
+- **A1 (InfoCard mounted).** `wall.tscn` gained `%Overlay/InfoCard` (a real `InfoCard` instance,
+  parented under the ALREADY-a-`CanvasLayer` `%Overlay` rather than a new top-level CanvasLayer --
+  cheapest correct mount, matches "on top of the wall" for free). `test_wall_focus.gd:
+  test_info_card_is_mounted_on_the_wall()` reads it back by the exact path `Main._on_info_toggled()`
+  uses. Proven RED: temporarily renamed the node in `wall.tscn` -- `check()` correctly caught the
+  resulting `null` as a clean failure (Godot's `get_node()` on a missing unique path returns null,
+  not a crash). Reverted, GREEN.
+  ⚠ Scope: nothing on the wall implements `get_info()`/calls `show_entry()` yet (J7's own "screens
+  publish hoverables" is a PER-SCREEN concern this batch does not touch) -- the card exists and is
+  driven by info-mode toggling (A2), but stays empty (J1/J5's own correct behaviour) until some
+  future step gives it a wall-level hover source.
+- **A2 (Info toggle wired).** `overlay.info_toggled.connect(_on_info_toggled)` in `Main._ready()`.
+  `_on_info_toggled(active)` sets the shared `wall_info_mode` flag, resets `%InfoCard` on the way
+  out (J6), and animates the camera to/from `WallPicture.info_zoom_state()` (J2/Q128, reusing
+  `_animate_camera()` -- source and dest centres both equal the focused picture's own centre, so
+  the existing music-crossfade plumbing correctly no-ops rather than needing a separate code path)
+  when a picture is focused; a no-op in wall view, where no single frame exists to reveal.
+  `test_wall_focus.gd:test_info_toggle_sets_flag_and_moves_camera_and_resets_card()` asserts all
+  three consequences on a REAL `Main`. Proven RED (cleanly, after an earlier attempt was confounded
+  by disk state a DIFFERENT, aborted red-proof run had leaked -- see the note below): commented out
+  the flag-set line alone -- the flag check failed while the camera/card checks still passed,
+  isolating exactly that one consequence. Reverted, GREEN.
+  ⚠ **Trap hit while proving this one, worth recording alongside this run's others**: chaining two
+  manual red-proof edits back-to-back (A1's `wall.tscn` rename, immediately followed by A2's
+  `main.gd` edit) without an intervening clean GREEN run let A1's proof-run CRASH mid-test (a null
+  `%InfoCard` reached `.show_entry()` with no null-check) before its own `restore_real_settings()`
+  ever ran -- leaking a `wall_info_mode = true` throwaway `user://settings.tres` in place of the
+  real one. The NEXT run (A2's own red-proof attempt) booted with that leaked value already true,
+  so removing the real flag-set line still read `true` and the check falsely PASSED. Diagnosed by
+  checking `user://settings.tres`'s own content and `LastWriteTime` (this run's own HANDOFF trap
+  #7, applied to a settings file instead of a test log) and by re-running clean before re-attempting
+  the proof. Rule going forward: run a full GREEN pass between two SEPARATE red-proof edits, never
+  chain them.
+- **A3 (PinchTracker wired).** `Wall` gained a `_pinch := WallInput.PinchTracker.new()` field, fed
+  from `_unhandled_input()` AFTER the focused-screen first-refusal check (same `Q100`=a contract
+  every other wall-level action gets). Pinch-OUT mirrors `ui_accept`'s own scope (wall view only,
+  commits the current selection); pinch-IN mirrors `ui_cancel`'s own unconditional "go to wall
+  view". `test_wall_input.gd:test_pinch_out_enters_the_selected_picture()`/
+  `test_pinch_in_returns_to_wall_view()` drive REAL `InputEventScreenTouch`/`Drag` sequences
+  through `wall._unhandled_input()` (never `WallInput.PinchTracker` directly, which would only
+  re-prove I11's own isolated arithmetic a second time). Proven RED: removed the pinch-handling
+  block from `_unhandled_input()` entirely -- both new checks failed. Reverted, GREEN.
+- **A4 (the three missing signals).** `Wall` gained `focus_changed(picture_id)`,
+  `transition_started(from_id, to_id)`, `transition_landed(picture_id)` -- declared on `Wall` per
+  NAMES.md's own table, but EMITTED by `Main` at the exact moments they occur in its own
+  orchestration (`Wall` does not run focus/transition logic itself, the same boundary
+  `WallTransition`'s own class doc comment already draws). `focus_changed` fires for EVERY focus
+  change (both the real-`WallTransition` branch and the wall-view<->picture `_animate_camera()`
+  branch of `_focus_picture()`); `transition_started`/`transition_landed` fire ONLY for the real
+  picture-to-picture branch, since NAMES.md's own `(from_id, to_id)`/`(picture_id)` shapes both
+  name real picture ids and wall view is never one (`Q66`=b). `test_wall_focus.gd:
+  test_focus_and_transition_signals_fire_during_real_navigation()` connects to all three on a REAL
+  `Main`/`Wall` and drives one real `start_menu -> map` transition. Proven RED: commented out all
+  three `.emit()` call sites -- all three checks failed. Reverted, GREEN.
+
+### PART 3 — the two logic defects (CODE_REVIEW.md §B)
+
+- **B1.** `WallPacker._clears_all()` could not reject an overlap at `gap_px == 0`
+  (`_clearance(...) < gap_px - _EPS` becomes `0 < -1e-6`, always false, since `_clearance` is never
+  negative -- every candidate radius "cleared", including genuine overlaps, so `_find_radius()`'s
+  own first check placed every picture at radius 0 and rule 6's own overlap assertion then
+  truncated the pack to one rect). Fixed by checking `Rect2.intersects()` (real area overlap,
+  edges merely touching do NOT count -- the default `include_borders = false`) INDEPENDENTLY of
+  `gap_px`, so a genuine intersection is rejected at any gap including 0, while `gap_px = 0` still
+  correctly allows frames to touch. `test_wall_packer.gd:test_no_overlap_at_zero_gap()` packs the
+  SAME 6-picture fixture P10 already uses, at `gap_px = 0`. Proven RED: removed the
+  `intersects()` check -- the fixture that should produce 6 rects produced 1 (rule 6's own
+  truncation), exactly the mechanism CODE_REVIEW.md described. Reverted, GREEN. `TestWallPacker`'s
+  own P10 and every other row re-verified unaffected (`WALL PACKER: ALL 53 CHECKS PASSED`
+  standalone, before this fix; 54 after the new row).
+- **B2.** `WallPicture._SELECTED_LIFT := Vector2(0.0, -14.0)` promoted to
+  `PlayerSettings.wall_selected_lift` (default unchanged), same category `wall_overfill_margin`/
+  `wall_light_offset` already sit in. `set_selected()` now reads
+  `SettingsManager.settings.wall_selected_lift` directly (the established idiom for `WallPicture`
+  methods that are not pure functions, same as `wall_light_offset`'s own read in `build()`).
+  `test_wall_render.gd:test_selected_lift_knob_actually_changes_the_position()` proves two
+  different knob values produce two different, exactly-predicted positions -- the same rigor
+  `test_overfill_margin_knob_actually_changes_the_scale` already established, not merely "a knob
+  exists."
+
+### PART 4 — the six stale comments (CODE_REVIEW.md §C)
+
+All fixed in place, no behaviour changed by any of them:
+- `wall_layout.gd`'s class doc no longer calls the packer "not yet built, parked on GAP-009."
+- `wall_input.gd`'s two comments (the `_unhandled_input` wiring, and `PinchTracker`'s ownership)
+  now name `Wall`/`UI/Wall/wall.gd` directly instead of "a later integration step."
+- `wall_transition.gd`'s class doc no longer calls the landing focus()/unfocus() handoff "the
+  future caller's job" -- it names `Main._focus_picture()` as the caller that already does it.
+  Its OTHER "later integration step" phrase (the screen-opacity cross-fade for reduced motion) was
+  checked against the actual code first -- confirmed genuinely still unbuilt (no `modulate`/
+  opacity blending anywhere in `wall_transition.gd`/`main.gd`) -- and reworded to say so plainly
+  ("remains UNBUILT... still owed") rather than deflecting to a "later" step that has already
+  landed.
+- `wall_overlay.gd`'s signal doc no longer calls `Wall` "a later step" as the consumer -- it names
+  `Main` directly, all four signals.
+- `picture_entry.gd`'s class doc no longer calls `slot` an "angle" in its own summary line (the
+  detailed field-list comment already had the correction; the one-line summary above it did not).
+
+Every red-then-green proof above was verified by running the SPECIFIC standalone suite
+(`test_wall_focus.tscn`/`test_wall_input.tscn`/`test_wall_render.tscn`/`test_wall_packer.tscn` via
+the console exe directly), not the full suite, for turnaround -- the full suite was run green
+(`ALL 39 SUITES: 2870 CHECKS PASSED`) only after every individual fix had already been confirmed
+both ways.

@@ -602,3 +602,30 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_info_card_max_height = value
 		settings_changed.emit()
+## GAP-013 (owner-answered a): the drop shadow's own alpha -- was a typed literal in
+## `wall_picture.gd` (`Color(0.0, 0.0, 0.0, 0.35)`, since S10), which §1.8 forbids for a visible
+## design choice. ONE value for the whole wall (unlike `frame_colour`, which is per-picture),
+## same "one authored value for everyone" shape `wall_light_offset` already set for shadows.
+## Default 0.35 is that exact prior value -- promoting it changes no observable behaviour.
+@export var wall_shadow_opacity : float = 0.35:
+	set(value):
+		wall_shadow_opacity = value
+		settings_changed.emit()
+## GAP-014 (owner-answered a): a multiplier on the ordinary transition clock
+## (`base_delay * wall_transition_delay`), applied ONLY to M2's one-off opening reveal (choosing a
+## save, every launch) -- never to an ordinary Wall-button press, which stays at the plain clock.
+## > 1.0 makes the reveal slower/longer than an ordinary transition, matching M2's "distinct...
+## longer, slower" requirement with one number rather than a second, independent duration/easing.
+@export var wall_reveal_delay_scale : float = 1.8:
+	set(value):
+		wall_reveal_delay_scale = value
+		settings_changed.emit()
+## CODE_REVIEW.md B2: how far a selected picture lifts off the wall in wall-view (S36, F11,
+## Q70=c's "shape and motion, not colour"). Was a typed literal in `wall_picture.gd`
+## (`_SELECTED_LIFT := Vector2(0.0, -14.0)`); §1.8 makes a visible design choice like this a
+## defect, same category as `wall_overfill_margin`/`wall_light_offset`. Default (0, -14) is that
+## exact prior value -- promoting it changes no observable behaviour.
+@export var wall_selected_lift : Vector2 = Vector2(0.0, -14.0):
+	set(value):
+		wall_selected_lift = value
+		settings_changed.emit()

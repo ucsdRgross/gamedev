@@ -1,12 +1,15 @@
 class_name WallOverlay
 extends CanvasLayer
-## The persistent overlay -- Back, Forward, Wall and the top-right Info toggle (NAMES.md; PLAN.md
-## S35, implements B8, F7, F8, F9). Its own CanvasLayer (Q202=a) so it never rides the wall camera,
+## The persistent overlay -- Back, Forward, Wall (GAP-016, owner-answered a: TOP-LEFT, moved off
+## the bottom band that used to sit directly over start_menu's Profile/Options and the map's Deck
+## button, making them unreachable by mouse) and the top-right Info toggle (NAMES.md; PLAN.md S35,
+## implements B8, F7, F8, F9). Its own CanvasLayer (Q202=a) so it never rides the wall camera,
 ## mounted at `%Overlay` inside wall.tscn. Owns no navigation state itself -- it only reports presses
 ## via signals and reflects a FocusStack's shape back out through refresh().
 
-## Emitted when the corresponding control is pressed. The wall (a later step) is the consumer --
-## S35's own done-when is only that the controls exist, are localised, and disable correctly.
+## Emitted when the corresponding control is pressed. `Main` (`Levels/main.gd`) is the consumer of
+## all four -- `back_pressed`/`forward_pressed`/`wall_pressed` drive navigation, `info_toggled`
+## drives Info mode (CODE_REVIEW.md A2).
 signal back_pressed
 signal forward_pressed
 signal wall_pressed

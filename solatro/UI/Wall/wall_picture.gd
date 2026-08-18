@@ -43,6 +43,15 @@ var screen_root : Node = null
 ## children. Not fixed by NAMES.md; same category as `screen_root` above (ASSUMPTIONS.md).
 var rect : PictureRect = null
 
+## GAP-015 (owner-answered a, L3): the entry's own `background_texture`, remembered from build() so
+## `attach_screen()`/`detach_screen()` can show/hide it as `screen_root` comes and goes -- a live
+## screen always wins (it is freed/rebuilt by S31's own `attach_screen()`/`detach_screen()`
+## lifecycle, this field is just what "no GameView" falls back to). Null when the entry has none.
+var _background_texture : Texture2D = null
+## The Sprite2D actually showing `_background_texture` inside `viewport`, or null when there is
+## none to show (no texture authored, or a live screen currently covers it).
+var _background : Sprite2D = null
+
 ## S24 (QR4=b, GAP-013): the ONE shared frame texture every framed picture references -- a simple
 ## beveled profile (light near the outer edge, dark near the inner edge closest to the picture),
 ## generated once and cached, never per-picture. Placeholder art: QR4=b's own text defers "the
@@ -101,6 +110,7 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewports_parent.add_child(viewport)
+	_background_texture = entry.background_texture
 	if live_screen:
 		screen_root = live_screen
 		# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
@@ -111,11 +121,17 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 		# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 		viewport.add_child(screen_root)
+	else:
+		# GAP-015 (L3): no live screen at construction -- show the authored background, if any.
+		_show_background()
 
 	var frame_rect := WallPacker.frame_outer_rect(rect)
 	_frame.position = frame_rect.position - rect.centre
 	_frame.size = frame_rect.size
 	_frame.texture = entry.frame_texture
+	# GAP-013 (owner-answered a): per-picture tint over the shared bevel texture -- white (the
+	# default) leaves the shared texture's own baked tone untouched.
+	_frame.modulate = entry.frame_colour
 	# S24 (QR4=b): genuine nine-slice -- corners hold at a FIXED pixel size regardless of how far
 	# this picture's own frame stretches the rect, only the edge bands between them stretch.
 	# Identity check against the ONE shared texture specifically, not "any texture is assigned":
@@ -147,7 +163,10 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_shadow.position = SettingsManager.settings.wall_light_offset
 	_shadow.scale = view_scale
 	_shadow.texture = viewport.get_texture()
-	_shadow.self_modulate = Color(0.0, 0.0, 0.0, 0.35)
+	# GAP-013 (owner-answered a): ONE authored opacity for the whole wall, same "one value for
+	# everyone" shape `wall_light_offset` already set for shadows -- was a typed literal here
+	# (`Color(0.0, 0.0, 0.0, 0.35)`, since S10), which §1.8 forbids for a visible design choice.
+	_shadow.self_modulate = Color(0.0, 0.0, 0.0, SettingsManager.settings.wall_shadow_opacity)
 
 ## S31 (L2: "GameView is still built fresh per show and freed after, exactly as main.gd does
 ## now"): swaps this ALREADY-BUILT picture's `screen_root` for a NEW live node, freeing whatever
@@ -159,19 +178,45 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 func attach_screen(live_screen: Node) -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
+	# GAP-015 (L3): a live screen always wins over the authored background.
+	_hide_background()
 	screen_root = live_screen
 	# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
 	screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 	viewport.add_child(screen_root)
 
-## S31 (L2): frees the current `screen_root` (if any), leaving this picture showing nothing until
-## the next `attach_screen()` -- the "no GameView" row, same "registered but unbuilt" rendering
-## (Q214=a) an un-scened `entry.scene` already produces. (L3's authored default-background image
-## for this state is a separate, deliberately unfixed piece -- ASSUMPTIONS.md.)
+## S31 (L2): frees the current `screen_root` (if any), leaving this picture showing its authored
+## background (GAP-015=a) or, absent one, the same "registered but unbuilt" rendering (Q214=a) an
+## un-scened `entry.scene` already produces.
 func detach_screen() -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
 	screen_root = null
+	# GAP-015 (L3): "GameView is still built fresh per show and freed after" -- the moment it is
+	# gone, this picture is back to "no GameView", so the authored background (if any) reappears.
+	_show_background()
+
+## GAP-015 (L3): shows `_background_texture` inside `viewport`, stretched to exactly fill its
+## resolution (`_design_size`) the same way `%Screen` reads the WHOLE viewport regardless of the
+## texture's own native size. A no-op when there is no texture to show, or one is already showing.
+func _show_background() -> void:
+	if _background or not _background_texture: return
+	_background = Sprite2D.new()
+	_background.centered = true
+	_background.position = Vector2.ZERO
+	_background.texture = _background_texture
+	var tex_size := _background_texture.get_size()
+	if tex_size.x > 0.0 and tex_size.y > 0.0:
+		_background.scale = Vector2(_design_size) / tex_size
+	viewport.add_child(_background)
+
+## GAP-015 (L3): removes the authored background the instant a real screen takes over -- never
+## drawn BEHIND a live screen_root, since `_show_background()`/`attach_screen()`/`build()` already
+## keep the two mutually exclusive.
+func _hide_background() -> void:
+	if not _background: return
+	if is_instance_valid(_background): _background.queue_free()
+	_background = null
 
 ## §1.8 "focused / live": UPDATE_ALWAYS, full design_size. The caller (S12+) is responsible for
 ## ensuring exactly one picture is focused at a time -- this method only enacts the state, it does
@@ -228,13 +273,11 @@ func update_filter(zoom_changed_this_frame: bool) -> void:
 ## S36 (F11, Q70=c): the wall-view selection highlight -- "shape and motion, not colour," a lift off
 ## the wall. Only the lift half is built here: the frame GLOW half needs actual frame art/shader
 ## inputs S24 ("frame art parameters") deferred (QR4=b, GAP-013) rather than built, so this stays
-## provisional -- same category `wall_overfill_margin`/`wall_light_offset` were in before GAP-011/
-## S25 promoted them, not yet promoted itself because no coordinator ruling has named it. Left as
-## a constant on purpose rather than silently promoted on my own authority (ASSUMPTIONS.md).
-const _SELECTED_LIFT := Vector2(0.0, -14.0)
-
+## provisional. CODE_REVIEW.md B2: the lift AMOUNT is `PlayerSettings.wall_selected_lift` (default
+## (0, -14), the exact prior literal) -- promoted for the same §1.8 reason `wall_overfill_margin`/
+## `wall_light_offset` already were.
 func set_selected(selected: bool) -> void:
-	position = rect.centre + (_SELECTED_LIFT if selected else Vector2.ZERO)
+	position = rect.centre + (SettingsManager.settings.wall_selected_lift if selected else Vector2.ZERO)
 
 ## S38 (K2-K4): re-applies a NEW packed rect to an ALREADY-BUILT picture -- the geometry-only
 ## subset of build() (position, frame outer rect, screen/shadow scale). The viewport, screen_root

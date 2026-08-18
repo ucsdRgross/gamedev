@@ -4,8 +4,8 @@
 ## see on save. See `picture_entry.gd`'s own header for the full citation.
 class_name WallLayout
 extends Resource
-## The authored PATTERN — rings, gap, ellipse clamps, the picture list. Consumed whole by
-## WallPacker.pack() (PLAN.md §1.3 — the packer's contract; not yet built, parked on GAP-009);
+## The authored PATTERN — gap, ellipse clamps, the picture list (rings themselves were rejected,
+## GAP-009). Consumed whole by WallPacker.pack() (PLAN.md §1.3, as amended by GAP-009/GAP-010);
 ## nothing else reads it.
 ## PLAN.md §1.2 — every field, its type and its default are specified there; this transcribes it.
 

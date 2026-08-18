@@ -6,17 +6,17 @@
 ## marker for the identical reason.
 class_name PictureEntry
 extends Resource
-## One picture's authored data — id, scene, angle, size multiplier, frame thickness. Read by
-## WallPacker (PLAN.md §1.3 as amended by GAP-009) to place it and by WallPicture (S10) to build
-## it.
+## One picture's authored data — id, scene, placement order, size multiplier, frame thickness.
+## Read by WallPacker (PLAN.md §1.3 as amended by GAP-009) to place it and by WallPicture (S10) to
+## build it.
 ## PLAN.md §1.1 — every field, its type and its default are specified there; this transcribes it,
 ## EXCEPT `ring` (GAP-009: rings are rejected, the field is deleted, nothing ever read it),
 ## `slot`'s meaning (GAP-009 authored it as an angle in degrees; GAP-010's amendment -- rebalancing
 ## is now UNCONDITIONAL -- demoted it further: `slot` is a placement-ORDER key only, its numeric
 ## value never surviving into the resolved angle for any unlock set, complete or partial -- see
-## ASSUMPTIONS.md), and `music` (S33/Q167=c -- added beyond §1.1's original list, same "new field,
-## reversible, one defensible shape" reasoning `frame_texture` already establishes; see
-## ASSUMPTIONS.md).
+## ASSUMPTIONS.md), and three fields GAP-015 settled `PictureEntry` is EXTENSIBLE for: `music`
+## (S33/Q167=c), `background_texture` (GAP-015=a, L3) and `frame_colour` (GAP-013=a, QR4=b) --
+## PLAN.md §1.1 and NAMES.md are both updated to match this resource, not the other way round.
 
 @export var id : StringName = &""              ## NAMES.md picture ids; unique within a WallLayout
 @export var scene : PackedScene = null         ## null = registered but unbuilt (&"book", Q214=a)
@@ -28,3 +28,12 @@ extends Resource
 @export var unlocked_by_default : bool = false
 @export var keep_aspect : bool = false         ## true = never stretched to window aspect (Q32=b)
 @export var music : AudioStream = null         ## S33, Q167=c; null = silent, same convention as frame_texture
+## GAP-013 (owner-answered a): per-picture frame tint, applied as `%Frame.modulate` over the one
+## shared bevel texture (S24) -- mirrors how `frame_px` (size) already varies per picture while the
+## texture stays shared. White = no tint, i.e. the shared texture's own baked tone unchanged, which
+## is "the current neutral placeholder tone" the answer names as the default.
+@export var frame_colour : Color = Color(1.0, 1.0, 1.0, 1.0)
+## GAP-015 (owner-answered a): the board's authored resting image, shown inside this picture's own
+## SubViewport whenever it has no live screen (`screen_root == null`, L3) -- null = nothing drawn,
+## the same "registered but unbuilt" look an absent `scene`/`live_screen` already produces.
+@export var background_texture : Texture2D = null

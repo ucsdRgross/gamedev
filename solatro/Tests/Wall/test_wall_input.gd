@@ -55,6 +55,9 @@ func _ready() -> void:
 	_test_pinch_is_derived_from_two_touches()
 	_test_magnify_gesture_is_never_listened_for()
 	_test_touch_target_size_is_clamped()
+	behavior_section("PINCH WIRING (A3, CODE_REVIEW.md, Q119=a)")
+	_test_pinch_out_enters_the_selected_picture()
+	_test_pinch_in_returns_to_wall_view()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
@@ -754,6 +757,81 @@ func _test_magnify_gesture_is_never_listened_for() -> void:
 	check(after == WallInput.PinchTracker.Gesture.PINCH_OUT,
 			"a real drag past threshold still fires normally after the magnify event was ignored",
 			str(after))
+
+# ------------------------------------------------------------------ A3 (CODE_REVIEW.md wiring)
+
+## A3 (CODE_REVIEW.md, Q119=a): `WallInput.PinchTracker` was built and tested in isolation
+## (I11-I13 above) but never wired into `Wall`'s own input path -- touch pinch did NOTHING in the
+## app. Drives REAL `InputEventScreenTouch`/`InputEventScreenDrag` events through
+## `wall._unhandled_input()` (never `WallInput.PinchTracker` directly, which would only re-prove
+## I11's own isolated arithmetic a second time) and asserts the WALL-LEVEL consequence Q119=a
+## names: pinch-out commits to the current selection, same as `ui_accept` (wall view only).
+func _test_pinch_out_enters_the_selected_picture() -> void:
+	var wall := _build_wall()
+	var pictures := _six_pictures(wall)
+	wall.enter_wall_view(&"top")
+	wall.move_selection(Vector2.DOWN)
+	check(wall.selected_id == &"below1", "sanity: selection landed where I5 already proved it does",
+			str(wall.selected_id))
+
+	var requested : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
+	_feed_pinch_out(wall)
+
+	check(requested[0] == &"below1",
+			"pinch-out enters the currently selected picture, same as ui_accept (Q119=a)",
+			"requested=%s" % requested[0])
+	_teardown(wall, pictures)
+
+## A3 (Q119=a): pinch-in, from a FOCUSED picture, returns to wall view -- the same consequence
+## Escape already produces (I4 above), reached through the touch path instead of the keyboard one.
+func _test_pinch_in_returns_to_wall_view() -> void:
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
+	wp.focus()
+	var went_back : Array[bool] = [false]
+	wall.wall_view_entered.connect(func() -> void: went_back[0] = true)
+
+	_feed_pinch_in(wall)
+
+	check(went_back[0], "pinch-in on a focused picture returns to wall view (Q119=a)")
+	_teardown(wall, [wp])
+
+## Feeds a real two-touch pinch-OUT gesture (fingers spreading, distance growing past
+## `wall_pinch_threshold_px`) through `wall._unhandled_input()` -- the same event shapes I11 already
+## proves `WallInput.PinchTracker` itself detects correctly, routed through the wall this time.
+func _feed_pinch_out(wall: Wall) -> void:
+	var down0 := InputEventScreenTouch.new()
+	down0.index = 0
+	down0.pressed = true
+	down0.position = Vector2(100, 100)
+	wall._unhandled_input(down0)
+	var down1 := InputEventScreenTouch.new()
+	down1.index = 1
+	down1.pressed = true
+	down1.position = Vector2(106, 100)   # base distance 6px
+	wall._unhandled_input(down1)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = Vector2(146, 100)   # distance 46px, past the 24px default threshold
+	wall._unhandled_input(drag)
+
+## The pinch-IN mirror of `_feed_pinch_out()` -- fingers start FAR apart and close in past threshold.
+func _feed_pinch_in(wall: Wall) -> void:
+	var down0 := InputEventScreenTouch.new()
+	down0.index = 0
+	down0.pressed = true
+	down0.position = Vector2(100, 100)
+	wall._unhandled_input(down0)
+	var down1 := InputEventScreenTouch.new()
+	down1.index = 1
+	down1.pressed = true
+	down1.position = Vector2(160, 100)   # base distance 60px
+	wall._unhandled_input(down1)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = Vector2(120, 100)   # distance now 20px, delta -40, past the -24px threshold
+	wall._unhandled_input(drag)
 
 ## I13 (GAP-004=b, §1.9's literal formula): the touch target size clamps to the configured
 ## floor/ceiling at absurd DPI readings -- DPI 1 (absurdly low) and DPI 10000 (absurdly high).

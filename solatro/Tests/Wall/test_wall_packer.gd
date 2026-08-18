@@ -33,6 +33,7 @@ func _ready() -> void:
 	test_picture_aspect_follows_window()
 	test_keep_aspect_survives_wide_window()
 	test_no_two_rects_overlap()
+	test_no_overlap_at_zero_gap()
 	test_one_picture_wall()
 	test_floor_and_range()
 	test_home_id_takes_the_centre()
@@ -373,6 +374,22 @@ func test_no_two_rects_overlap() -> void:
 				"every picture produced a rect at aspect %.2f" % window_aspect, str(rects.size()))
 		check(not _has_any_overlap(rects), "no two frame rects overlap at window aspect %.2f"
 				% window_aspect)
+
+## CODE_REVIEW.md B1: `gap_px = 0` is author-settable (S34 exposes it) and used to make `_clears_all`
+## report "clears" for EVERY candidate, real overlap included, because `_clearance(...) < 0 - _EPS`
+## can never be true. Same 6-picture fixture P10 already uses (so a regression here shows up as the
+## same shape of failure), packed at `gap_px = 0` specifically -- proven RED against the pre-fix
+## code (see ASSUMPTIONS.md), GREEN now that `_clears_all` checks `Rect2.intersects()` independently.
+func test_no_overlap_at_zero_gap() -> void:
+	var pics : Array[PictureEntry] = [
+		_entry(&"a", 0), _entry(&"b", 60, 1.3), _entry(&"c", 130, 0.8, Vector4(8, 8, 40, 8)),
+		_entry(&"d", 190), _entry(&"e", 250, 1.6), _entry(&"f", 310, 0.6),
+	]
+	var layout := _layout(pics, 0.0)
+	var rects := WallPacker.pack(layout, _ids(pics), 1.6)
+	check(rects.size() == pics.size(),
+			"every picture produced a rect at gap_px = 0", str(rects.size()))
+	check(not _has_any_overlap(rects), "no two frame rects overlap at gap_px = 0")
 
 ## P11 (Q19=b): a single unlocked picture collides with nothing, so its minimal radius is 0 --
 ## centred, falling out of rule 3 for free (GAP-009).

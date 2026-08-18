@@ -34,6 +34,8 @@ func _ready() -> void:
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
 	test_overfill_margin_only_applies_when_aspect_mismatches()
+	behavior_section("SELECTED LIFT (CODE_REVIEW.md B2)")
+	test_selected_lift_knob_actually_changes_the_position()
 	behavior_section("LIVE SCREEN REPARENTING (S30, B7, Q211=a)")
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
@@ -243,6 +245,39 @@ func test_overfill_margin_only_applies_when_aspect_mismatches() -> void:
 	check(not is_equal_approx(mismatched_scale, fill_ratio),
 			"...and that margin is not silently zero -- the mismatched case is genuinely "
 			+ "different from a bare fill ratio", "scale=%.6f fill=%.6f" % [mismatched_scale, fill_ratio])
+
+# ------------------------------------------------------------------ CODE_REVIEW.md B2
+
+## CODE_REVIEW.md B2: `wall_selected_lift` is a REAL, READ knob -- was a typed literal
+## (`_SELECTED_LIFT`) in `wall_picture.gd`, same category `wall_overfill_margin`/`wall_light_offset`
+## already promoted. Two different lift values on the SAME picture must produce two different
+## `position` results after `set_selected(true)`, each exactly `rect.centre + the configured lift`
+## -- not just "different", the same rigor `test_overfill_margin_knob_actually_changes_the_scale`
+## above already established.
+func test_selected_lift_knob_actually_changes_the_position() -> void:
+	backup_real_settings()
+	var wp := _pictures[0]
+	var settings := SettingsManager.settings
+	var prev := settings.wall_selected_lift
+
+	settings.wall_selected_lift = Vector2(0.0, -14.0)
+	wp.set_selected(true)
+	var pos_a := wp.position
+
+	settings.wall_selected_lift = Vector2(0.0, -40.0)
+	wp.set_selected(true)
+	var pos_b := wp.position
+
+	check(not pos_a.is_equal_approx(pos_b),
+			"two different wall_selected_lift values produce two different lifted positions",
+			"a=%s b=%s" % [pos_a, pos_b])
+	check(pos_b.is_equal_approx(wp.rect.centre + Vector2(0.0, -40.0)),
+			"the lifted position equals rect.centre + the exact configured lift",
+			"got=%s want=%s" % [pos_b, wp.rect.centre + Vector2(0.0, -40.0)])
+
+	wp.set_selected(false)
+	settings.wall_selected_lift = prev
+	restore_real_settings()
 
 # ------------------------------------------------------------------ S30 (B7, Q211=a)
 

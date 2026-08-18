@@ -43,6 +43,12 @@ func _ready() -> void:
 	await test_unlock_reaction_leaves_the_real_focus_stack_valid()
 	behavior_section("LOST-RUN BEHAVIOUR (S32, L12, Q157)")
 	test_lost_run_leaves_map_and_game_pictures_unchanged()
+	behavior_section("INFO CARD MOUNTED ON THE WALL (A1, CODE_REVIEW.md)")
+	test_info_card_is_mounted_on_the_wall()
+	behavior_section("INFO TOGGLE WIRING (A2, CODE_REVIEW.md)")
+	await test_info_toggle_sets_flag_and_moves_camera_and_resets_card()
+	behavior_section("FOCUS/TRANSITION SIGNALS (A4, CODE_REVIEW.md, NAMES.md)")
+	await test_focus_and_transition_signals_fire_during_real_navigation()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -372,4 +378,117 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 			"...and it was never freed either")
 
 	restore_real_save()
+	main.queue_free()
+
+# ------------------------------------------------------------------ A1 (CODE_REVIEW.md)
+
+## A1 (CODE_REVIEW.md): `InfoCard` was mounted only on the map -- `wall.tscn`/`wall.gd` referenced
+## it ZERO times, so info mode on the wall displayed nothing even though J1-J6 passed against a
+## standalone card built directly by that suite. Structural proof it is genuinely part of the wall
+## scene now: read through the REAL `Wall` scene's own `%Overlay` node, by the exact path
+## `Main._on_info_toggled()` uses below.
+func test_info_card_is_mounted_on_the_wall() -> void:
+	var wall : Wall = preload("res://UI/Wall/wall.tscn").instantiate()
+	add_child(wall)
+	get_tree().paused = false
+	var info_card : Node = wall.get_node(^"%Overlay/InfoCard")
+	check(info_card != null and info_card is InfoCard,
+			"a real InfoCard instance is mounted inside the wall's own %Overlay",
+			str(info_card))
+	wall.queue_free()
+
+# ------------------------------------------------------------------ A2 (CODE_REVIEW.md)
+
+func _probe_info_entry() -> InfoEntry:
+	var e := InfoEntry.new()
+	e.title = "probe"
+	e.body = "probe"
+	return e
+
+## A2 (CODE_REVIEW.md, J2/Q128, J6/Q131): the Info button previously had no consumer anywhere --
+## pressing it changed nothing. Drives `Main._on_info_toggled()` DIRECTLY (the exact method
+## `overlay.info_toggled` is wired to in `Main._ready()`) against a REAL `Main`, REAL focused
+## picture, and asserts THREE separate consequences, none of which the old (nonexistent) wiring
+## produced: (1) the shared `wall_info_mode` flag actually flips; (2) the camera actually MOVES to
+## the info zoom -- a measurably different framing than the ordinary at-rest one, not merely "a
+## tween ran"; (3) toggling back off resets `%InfoCard` (J6) and returns the camera to rest.
+## `backup_real_settings()`/`restore_real_settings()` (`test_wall_render.gd`'s S39 gate test
+## already established this exact pattern) park the real `user://settings.tres`, since
+## `wall_info_mode` saves on every change.
+func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
+	backup_real_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false
+
+	var settings := SettingsManager.settings
+	var prev_mode := settings.wall_info_mode
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
+	var rest_position := camera.position
+	var rest_zoom := camera.zoom
+
+	await main._on_info_toggled(true)
+	check(settings.wall_info_mode, "wall_info_mode is true after toggling Info on")
+	check(not camera.position.is_equal_approx(rest_position)
+			or not camera.zoom.is_equal_approx(rest_zoom),
+			"the camera actually moved to the info zoom -- a different framing than at rest",
+			"rest pos=%s zoom=%s -- info pos=%s zoom=%s"
+					% [rest_position, rest_zoom, camera.position, camera.zoom])
+
+	info_card.show_entry(_probe_info_entry())
+	check(info_card.visible, "sanity: the card can be shown while info mode is on")
+
+	await main._on_info_toggled(false)
+	check(not settings.wall_info_mode, "wall_info_mode is false after toggling Info off")
+	check(not info_card.visible,
+			"leaving info mode resets %InfoCard to hidden (J6) -- proven able to fail: it was "
+			+ "genuinely visible just above")
+	check(camera.position.is_equal_approx(rest_position) and camera.zoom.is_equal_approx(rest_zoom),
+			"the camera returns to the ordinary at-rest framing",
+			"got pos=%s zoom=%s want pos=%s zoom=%s"
+					% [camera.position, camera.zoom, rest_position, rest_zoom])
+
+	settings.wall_info_mode = prev_mode
+	restore_real_settings()
+	main.queue_free()
+
+# ------------------------------------------------------------------ A4 (CODE_REVIEW.md, NAMES.md)
+
+## A4 (CODE_REVIEW.md, NAMES.md): three of NAMES.md's five `Wall` signals -- `focus_changed`,
+## `transition_started`, `transition_landed` -- were named in the registry but never declared or
+## emitted anywhere. Real navigation through a REAL `Main` (start_menu -> map, a genuine
+## picture-to-picture `WallTransition`, the only case `transition_started`/`transition_landed`
+## apply to per NAMES.md's own `(from_id, to_id)`/`(picture_id)` shapes -- wall view is never a
+## picture id, Q66=b) must fire all three, in the right order, with the right ids.
+func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false
+
+	var focus_events : Array[StringName] = []
+	var started_events : Array = []
+	var landed_events : Array[StringName] = []
+	main.wall.focus_changed.connect(func(id: StringName) -> void: focus_events.append(id))
+	main.wall.transition_started.connect(
+			func(from_id: StringName, to_id: StringName) -> void:
+				started_events.append([from_id, to_id]))
+	main.wall.transition_landed.connect(func(id: StringName) -> void: landed_events.append(id))
+
+	await main._focus_picture(&"map")
+
+	check(focus_events == ([&"map"] as Array[StringName]),
+			"focus_changed fired once, for the real destination id", str(focus_events))
+	var started_ok := false
+	if started_events.size() == 1:
+		var pair : Array = started_events[0]
+		var from_id : StringName = pair[0]
+		var to_id : StringName = pair[1]
+		started_ok = from_id == &"start_menu" and to_id == &"map"
+	check(started_ok,
+			"transition_started fired once, with the real (from_id, to_id) pair",
+			str(started_events))
+	check(landed_events == ([&"map"] as Array[StringName]),
+			"transition_landed fired once, for the real destination id", str(landed_events))
+
 	main.queue_free()

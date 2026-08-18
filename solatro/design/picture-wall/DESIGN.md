@@ -1243,6 +1243,9 @@ nothing for a scale factor to do.
 | `wall_light_offset` | (18, 26) | one authored light position (wall-space offset), shared so every picture's shadow reads as lit from the same direction | B10, Q7=b |
 | `wall_info_card_width` | 480 px | the info card's fixed width, screen space | Q129=a |
 | `wall_info_card_max_height` | 320 px | height past which the card scrolls instead of growing further | J12, Q140 override |
+| `wall_shadow_opacity` | 0.35 | one authored drop-shadow alpha, shared by every picture (was a typed literal since S10) | GAP-013=a |
+| `wall_reveal_delay_scale` | 1.8 | multiplier on the ordinary transition clock, applied ONLY to M2's one-off opening reveal | GAP-014=a, M2, Q61 |
+| `wall_selected_lift` | (0, -14) | how far a selected picture lifts off the wall in wall view (was a typed literal, `_SELECTED_LIFT`) | CODE_REVIEW.md B2, F11, Q70=c |
 
 ---
 

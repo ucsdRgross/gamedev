@@ -61,7 +61,9 @@ repo:** it says nothing about the standing style backlog (hundreds of dated and 
 4. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
    the image, describe what it actually shows — or say UNVERIFIED.
 5. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
-   disagree with what it models.
+   disagree with what it models. ⚠ One sanctioned exception: `Tools/wall_editor.tscn` carries a
+   `use_placeholder_content` toggle, **default off**, so the default path still hosts real
+   scenes — `solatro/design/picture-wall/gaps/GAP-017.md` records why.
 
 ## Where to start
 

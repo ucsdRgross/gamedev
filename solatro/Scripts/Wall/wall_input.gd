@@ -7,8 +7,8 @@ extends RefCounted
 ##
 ## The wall calls this from its own `_unhandled_input` ONLY (never `_input`), so a focused screen's
 ## own Controls always get FIRST REFUSAL (Q100=a) -- the same `_unhandled_input` pattern
-## `world_map_controller.gd:217` already uses. That wiring lives on `Wall` itself (a later
-## integration step, not S19's own scope -- NAMES.md scopes this class to routing alone); S19 pins
+## `world_map_controller.gd:217` already uses. That wiring lives on `Wall` itself
+## (`UI/Wall/wall.gd:_unhandled_input`) -- NAMES.md scopes THIS class to routing alone; S19 pins
 ## `route()`'s own contract directly.
 
 ## Q95=a (I2): only the FOCUSED picture is ever routed to. A non-focused `picture`'s SubViewport
@@ -60,8 +60,9 @@ static func mm_to_px(mm: float, dpi: float) -> float:
 ## GAP-003=a (I8b): pinch is derived BY HAND from two tracked `InputEventScreenTouch` ids' distance
 ## delta -- `InputEventMagnifyGesture` is NEVER listened for (`feed()` below simply does not match
 ## on that event type, so it is structurally a no-op, not a skipped check). One instance tracks one
-## in-progress two-finger gesture; a fresh instance per session (Wall owns it, a later integration
-## step, out of S23's own scope -- NAMES.md only fixes `WallInput.route()`'s own contract).
+## in-progress two-finger gesture; `Wall` owns the live one (`UI/Wall/wall.gd`'s `_pinch` field,
+## fed from `_unhandled_input`) -- NAMES.md only fixes `WallInput.route()`'s own contract, not this
+## nested class's identifiers.
 class PinchTracker:
 	enum Gesture { NONE, PINCH_OUT, PINCH_IN }
 
