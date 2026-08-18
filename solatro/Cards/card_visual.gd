@@ -569,7 +569,12 @@ func _ready() -> void:
 	recalculate_size()
 	match data.previous_stage:
 		data.Stage.PLAY, data.Stage.ZONE:
-			if CardEnvironment.CURRENT:
+			# The anchor may not exist yet (a visual built the same frame as its control), and a
+			# viewer/preview visual never gets one at all -- the SAME guard `on_stage_changed()`
+			# already puts on this exact call. Without it, a preview card whose previous_stage is
+			# PLAY/ZONE threw "Invalid access to property 'global_position' on Nil" whenever ANY
+			# CardEnvironment was on screen, which a live `Map` (one itself) makes most of the time.
+			if CardEnvironment.CURRENT and is_instance_valid(control_anchor):
 				global_position = get_card_control_center(control_anchor)
 		data.Stage.DRAW:
 			if _game_view():
