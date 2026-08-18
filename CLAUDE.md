@@ -82,6 +82,9 @@ Everything else is a smaller game-jam or study project.
   and handoff prompt. It also carries the two rules that reach beyond it: design docs carry no code
   while implementation plans carry everything, and the **gap protocol** for decisions a design does
   not cover.
+- **`/plan-run`** — execute a finished design with an overseer session plus implementer subagents:
+  the worktree setup, the reversed commit policy, the verification hierarchy, and the eight ways a
+  test passes while proving nothing. Run it AFTER `/flowchart-design` has produced the documents.
 - **`/handoff`** — session continuity. `<project>/HANDOFF_*.md` is the live state of any
   multi-session work stream; start there when resuming.
 - **`/fx-verify`** — the verification gate for any visual, shader or prop-art change.

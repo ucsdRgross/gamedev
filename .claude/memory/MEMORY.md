@@ -26,5 +26,10 @@
 - [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
 - [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
 
+**Running a plan** (everything else lives in the `/plan-run` skill)
+- [Tests that prove nothing](tests-that-prove-nothing.md) — eight ways a green test asserts nothing; prove every one red first
+- [Built but not wired](built-but-not-wired.md) — a done-when must name the call site, or the component ships with no caller
+- [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
+
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
 - [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes
