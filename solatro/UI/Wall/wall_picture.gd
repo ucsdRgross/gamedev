@@ -256,10 +256,17 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 	var min_px := SettingsManager.settings.wall_view_min_texture_px
 	viewport.size = Vector2i(maxi(int(footprint_px.x), min_px), maxi(int(footprint_px.y), min_px))
 
-## §1.8 "window restored from minimise": UPDATE_ONCE for every picture, size UNCHANGED (Q208=b).
-## Focus state is untouched -- if the caller's focus tracking needs the live picture back at
-## UPDATE_ALWAYS afterward, that is a focus() call, not this one's job.
+## "window restored from minimise": re-render every FROZEN texture, size UNCHANGED. E7 and Q208=b
+## both say every *frozen* picture -- "the GPU may have discarded them" -- and PLAN.md §1.8's table
+## paraphrases that as "every picture", which is where ADVERSARIAL_REVIEW C1 came from.
+##
+## ⚠ A FOCUSED picture is not frozen: it is UPDATE_ALWAYS and has nothing to restore. Forcing
+## UPDATE_ONCE on it renders one more frame and then stops forever, because nothing calls focus()
+## again until the player leaves and re-enters -- so alt-tabbing during a show turned the live game
+## into a still image for the rest of the session. Guarded here rather than at the call site so the
+## invariant cannot be lost by a future second caller.
 func mark_for_rerender() -> void:
+	if is_focused: return
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 ## §1.7's filter swap (QR7=c, Q34, chart H5): crisp NEAREST at rest, LINEAR only while the camera's

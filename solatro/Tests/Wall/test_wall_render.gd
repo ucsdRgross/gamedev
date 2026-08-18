@@ -165,12 +165,26 @@ func test_wall_view_size_written_and_clamped() -> void:
 ## NOTIFICATION_APPLICATION_FOCUS_IN (ASSUMPTIONS.md -- the closest built-in "un-minimise" event on
 ## desktop) and calls mark_for_rerender() on every WallPicture under %Pictures.
 func test_restore_from_minimise_rerenders() -> void:
+	# ⚠ ONE PICTURE IS FOCUSED. The original fixture settled EVERY picture to UPDATE_DISABLED, so
+	# none was live and the notification could not possibly harm one -- it asserted a property that
+	# could not fail (ADVERSARIAL_REVIEW C1). E7 and Q208=b both say every FROZEN texture is
+	# re-rendered, not every picture: the focused one is not frozen, it is UPDATE_ALWAYS, and
+	# forcing UPDATE_ONCE on it freezes the live screen for the rest of the session.
 	for wp : WallPicture in _pictures:
 		wp.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED  # simulate "settled"
+	var live : WallPicture = _pictures[0]
+	live.focus()
+	check(live.viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS,
+			"the focused picture is live before the restore notification")
 	_wall.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(live.viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS,
+			"the FOCUSED picture stays UPDATE_ALWAYS across a restore -- alt-tabbing during a show "
+			+ "must not freeze the live screen")
 	for wp : WallPicture in _pictures:
+		if wp == live: continue
 		check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_ONCE,
-				"%s went UPDATE_ONCE after the restore notification" % wp.name)
+				"%s (frozen) went UPDATE_ONCE after the restore notification" % wp.name)
+	live.unfocus(Vector2(200.0, 120.0))
 
 ## N7 (H6, Q34): the filter swaps on zoom, not on pan -- pure translation must never flip it. Owed
 ## to S11 per TEST_PLAN.md §7's own suite header ("S10, S11"), even though the full camera-driven
