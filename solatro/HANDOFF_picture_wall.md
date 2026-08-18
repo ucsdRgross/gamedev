@@ -1,39 +1,63 @@
-# HANDOFF — picture-wall shell, Phases 0–4
-
-⚠ **Scope grew during the run.** The original brief was S1–S8; the owner extended it phase by
-phase. **ALL EIGHT PHASES HAVE LANDED**, S1–S39, and every TEST_PLAN row belonging to a built
-phase is implemented.
-
-**What is NOT finished is the decision backlog.** Six gaps are open and one of them —
-**GAP-016** — is a functional defect in shipped behaviour, not a design question: the overlay
-covers `start_menu`'s Profile and Options and the map's Deck button, so those controls are
-**unreachable by mouse**. Read the gaps before calling this done.
-
-Known, deliberate shortfalls, each recorded where it happened: S22's controller sign-off is
-relaxed to automated coverage (the hand-driven cycle never ran); `Q203`=(a)'s "screens stay
-alive for the session" has no test, because no suite exercises `Main`; S32's "replaced only when
-a new run starts" is code-review only; F12 cannot reach K2's "a picture never built before
-appears" for the pictures that ship unlocked; audio ships untested by `TEST_PLAN` §11's own
-decision.
+# HANDOFF — picture-wall shell
 
 | | |
 |---|---|
 | Branch | `picture-wall`, in a git worktree beside the repo root named in `.claude/memory/machine-profiles.md` — never the main tree |
 | Branched from | `6945c6f` on main |
-| Implementer agent | first one died to an API session limit and its transcript is gone; respawn cold |
-| Current phase | Phase 1 — **S8 in progress**, then GAP-007 harness work. **S4 PARKED on GAP-006**, S2 parked partial |
-| Scope | Phases 0–4 done. Phase 5 next. |
+| State | **All 8 phases + all 6 criticals landed.** 39 suites green. `doc_check` 0 errors. |
+| Method | `/plan-run` — read that skill first; it carries the whole pattern and its traps |
+
+## ⚠ REMAINING WORK — this is the list
+
+Everything below is from `design/picture-wall/ADVERSARIAL_REVIEW.md`, which has the file:line and
+the failing scenario for each. **Read it, not this summary.**
+
+**9 MAJORS** — every one is a built-but-not-wired defect ([[built-but-not-wired]]):
+
+| # | What |
+|---|---|
+| M1 | **S17 entirely unwired** — no `size_changed` handler anywhere; `WallTransition.retarget()` has zero callers. Resize or fullscreen and the focused picture stops overfilling, exposing its frame at rest. Owes T11. |
+| M2 | **Keyboard Back does Wall** — `ui_cancel` emits `wall_view_entered` instead of consulting the `FocusStack` (Q65=a, I5/Q100=a). |
+| M3 | **Four InputMap actions have no readers** — `wall_overview`, `wall_back`, `wall_forward`, `wall_info`. Tab, L1/LB, R1/RB and `I` do nothing, so **controller has no Back, Forward or Wall**. |
+| M4 | **`clamp_pan()` has no caller** — free pan does not exist (G10, S36). Two tests guard unreachable maths. |
+| M5 | **`update_filter(true)` is never called** — the filter never swaps, so the focused picture samples NEAREST through every zoom. S13 is dead (QR7=c, H4/H5). |
+| M6 | **`touch_target_px()` has no caller**, and its own comment claims a live call site that does not exist. Overlay buttons are hardcoded 80×32; GAP-004's mandatory clamp never runs. |
+| M7 | **The map's info card can never be dismissed** and ignores info mode — `Main` resets a *different* `InfoCard` instance (J1, J6). |
+| M8 | **No `WallPicture` implements `get_info()`** — info mode on the wall still shows nothing (J7). J9 (retarget on mid-transition toggle) also unimplemented. |
+| M9 | **Five knobs nothing reads** — `WallLayout.view_margin` (GAP-008=a deliberately put the crop bias there; `wall_view_zoom` uses `wall_overfill_margin` instead), `wall_frame_thickness_fraction`, `wall_live_screen_cap`, `wall_design_height`, `wall_selection_repeat_delay` (so held-stick repeat does not exist). Wire each, or cite the design text saying it is not needed — do not leave a knob nothing reads. |
+
+**~7 MINORS** — listed in `ADVERSARIAL_REVIEW.md`'s own MINOR section.
+
+**1 TEST OWED** — C5's permanent regression test. The fix is in and manually red-proofed
+(`focused=[&"deck", &"game"]`, `current=game` with the guard removed). Every version written so far
+instantiates a second real `Main` and frees it mid-transition, which makes **TestPixels** fail with a
+Nil `global_position` — a cross-suite side effect no wall check can see. Folding the assertions into
+an existing Main-based test is the likely answer.
+
+**THEN `/docs`** — fold `CODE_REVIEW.md`, `ADVERSARIAL_REVIEW.md`, `RUN_POSTMORTEM.md` and this
+handoff into the living docs and delete them; plan and handoff docs are temporary by the repo's own
+rule.
+
+## How to verify — read this before running anything
+
+- **The errors log lives under `app_userdata/Solatro/logs/test/test_output_errors.log`.**
+  The path used for most of this run — `test_output_errors.log` directly in the Solatro
+  user dir — is a stale 0-byte file nothing writes. Check any log's mtime before trusting it.
+- The **suite banner** is the real gate. `"N passed, 1 FAILED (0 behavior, 0 implementation)"` is an
+  **unexpected engine error**, not a check failure — read the newest `logs/godot*.log` backtrace.
+- **A single-suite run is a debugging aid, never a verification** ([[one-fix-at-a-time]]).
+- **Prove every new test red-then-green** ([[tests-that-prove-nothing]]) — it caught a real defect
+  every time, including one the overseer wrote itself.
 
 ## ⚠ What the snapshots show that the tests cannot
 
 Overseer looked at all five wall renders. Two findings no assertion covers:
 
-**Full unlock still looks lopsided.** `01_wall_view_everything_unlocked` has an empty
-bottom-left quadrant with the mass upper-right — the same complaint that produced GAP-010.
-Rebalancing is the **identity at full unlock**, so authored angles alone govern there and the
-fixture's angles produce this. `02_wall_view_partial_unlock_rebalanced` *is* well spread, which
-proves the rebalancer fires and works. **If a fully-unlocked wall is meant to self-balance, that
-is not built** — it is a one-line change whose cost is that authored angles become advisory.
+**Wall composition.** The last renders predate GAP-010's amendment to UNCONDITIONAL
+rebalancing, so re-render before judging composition. What still stands: at 32:9 the
+ellipse clamp prevents a pancake but the result is upper-heavy with empty bottom corners —
+`TEST_PLAN.md` §10 item 7's question, answered honestly as "it saves it, but does not
+compose it".
 
 **Wall view clips pictures at the view edges.** In `01`, 4 of 12 are cut by the frame; at 32:9
 several more. This is per spec — `Q5`=(b) fill crops the long axis, and `G10` supplies pan to
