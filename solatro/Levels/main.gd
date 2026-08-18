@@ -88,7 +88,7 @@ func _ready() -> void:
 	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size())
 
-## S30 (B7, Q211=a, Q141=a): packs `Wall.initial_layout()` and builds every UNLOCKED picture,
+## S30 (B7, Q211=a, Q141=a): packs `Wall.load_layout()` and builds every UNLOCKED picture,
 ## reparenting the ALREADY-INSTANTIATED, persistent `menu_scene`/`map_scene` as their
 ## `screen_root` (never instantiated fresh). `deck` and `game` start with no live screen at all --
 ## `deck` has no dedicated persistent screen built yet (ASSUMPTIONS.md), `game` gets one per show
@@ -102,7 +102,7 @@ func _ready() -> void:
 ## reveal ceremony" guarantee (K2) inverted, since it applied before ANY unlock, not after one. The
 ## SAME filter `_repack_wall()` already uses.
 func _build_pictures() -> void:
-	var layout := Wall.initial_layout()
+	var layout := Wall.load_layout()
 	var ids : Array[StringName] = []
 	for e : PictureEntry in layout.pictures:
 		if ProfileManager.is_unlocked(e.id) or e.unlocked_by_default: ids.append(e.id)
@@ -132,7 +132,7 @@ func _build_pictures() -> void:
 ## touched here -- it holds ids, not positions (K4's own guarantee), so Back/Forward keep resolving
 ## correctly regardless of how a picture's geometry just changed.
 func _repack_wall(_unlocked_id: StringName) -> void:
-	var layout := Wall.initial_layout()
+	var layout := Wall.load_layout()
 	var by_id : Dictionary[StringName, PictureEntry] = {}
 	var ids : Array[StringName] = []
 	for e : PictureEntry in layout.pictures:

@@ -30,6 +30,7 @@ func _ready() -> void:
 	test_non_focused_picture_keeps_texture()
 	test_wall_view_size_written_and_clamped()
 	test_restore_from_minimise_rerenders()
+	test_layout_is_loaded_from_disk_not_hardcoded()
 	test_filter_swaps_on_zoom_not_pan()
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
@@ -185,6 +186,29 @@ func test_restore_from_minimise_rerenders() -> void:
 		check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_ONCE,
 				"%s (frozen) went UPDATE_ONCE after the restore notification" % wp.name)
 	live.unfocus(Vector2(200.0, 120.0))
+
+## ADVERSARIAL_REVIEW C6: `res://Assets/Wall/layout_default.tres` had ZERO production readers --
+## `Main` called the hardcoded `Wall.initial_layout()`, so everything an author tuned in S34's tool
+## was discarded. Proves the loader really reads the FILE (not the fallback) by pointing it at a temp
+## resource carrying a value the built-in layout could never produce, and proves the fallback still
+## works when the file is absent. No mock: a real WallLayout, really saved, really loaded.
+func test_layout_is_loaded_from_disk_not_hardcoded() -> void:
+	var temp_path := "user://_test_layout_probe.tres"
+	var probe := WallLayout.new()
+	probe.gap_px = 1234.5   # a value initial_layout() never sets
+	probe.home_id = &"probe_home"
+	var saved := ResourceSaver.save(probe, temp_path)
+	check(saved == OK, "the probe layout saved to disk")
+	var from_disk := Wall.load_layout(temp_path)
+	check(is_equal_approx(from_disk.gap_px, 1234.5),
+			"load_layout() returns the layout ON DISK -- gap_px %.1f, not the built-in default"
+			% from_disk.gap_px)
+	check(from_disk.home_id == &"probe_home",
+			"load_layout() returns the disk layout's home_id, not initial_layout()'s")
+	var missing := Wall.load_layout("user://_test_layout_absent.tres")
+	check(missing != null and missing.home_id == &"start_menu",
+			"a missing file falls back to the built-in layout so a fresh checkout still boots")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
 
 ## N7 (H6, Q34): the filter swaps on zoom, not on pan -- pure translation must never flip it. Owed
 ## to S11 per TEST_PLAN.md §7's own suite header ("S10, S11"), even though the full camera-driven

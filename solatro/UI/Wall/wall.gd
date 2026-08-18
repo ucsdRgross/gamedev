@@ -43,6 +43,25 @@ func _ready() -> void:
 ## only -- GAP-010's unconditional rebalancing (ASSUMPTIONS.md) decides the resolved angles
 ## regardless of what is authored here; their relative ORDER is what is authored, not the literal
 ## degrees.
+const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
+
+## NAMES.md's files-on-disk table: `res://Assets/Wall/layout_default.tres` is the layout the game
+## runs on, and S34's tool edits that same resource (Q179=c, Q185=a). Nothing loaded it before —
+## `Main` called `initial_layout()` directly, so every value an author tuned in the tool was
+## discarded (ADVERSARIAL_REVIEW C6), and the authored pattern lived as literals in a `.gd`, which
+## §1.8 forbids.
+##
+## Falls back to `initial_layout()` when the file is absent, so a fresh checkout still boots. `path`
+## is a parameter purely so a test can point at a temp file and prove the returned layout really
+## came from disk rather than from the fallback — no mock, just the real loader on a real file.
+static func load_layout(path: String = LAYOUT_PATH) -> WallLayout:
+	if ResourceLoader.exists(path):
+		var loaded : Resource = ResourceLoader.load(path)
+		if loaded is WallLayout: return loaded as WallLayout
+		push_error("Wall.load_layout: %s exists but did not load as a WallLayout -- " % path
+				+ "falling back to the built-in layout")
+	return initial_layout()
+
 static func initial_layout() -> WallLayout:
 	var layout := WallLayout.new()
 	layout.home_id = &"start_menu"
