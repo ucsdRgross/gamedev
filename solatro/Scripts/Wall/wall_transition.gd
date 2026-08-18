@@ -155,21 +155,26 @@ static func _find_source_pause_time(total: float, source_rect: PictureRect, dest
 ##
 ## S18 (K8, Q172=a): with `wall_reduced_motion` on, the whole zoom-out/travel/zoom-in dance is
 ## replaced by a cross-fade AT A FIXED ZOOM -- held at the SAME "show both frames" framing
-## `_wide_zoom()` already computes for the ordinary transition's own peak, for the ENTIRE duration,
-## camera position included, so nothing about the camera moves at all (T12: zoom is constant
-## throughout). Whatever actually draws the cross-fade (blending the two SCREENS' opacity) remains
-## UNBUILT -- NAMES.md scopes this class to the camera tween and clock alone, the same "out of
-## scope" boundary the class doc comment already draws for the landing handoff (ASSUMPTIONS.md),
-## and nothing in Phase 7's wire-up built it either; still owed. Both frames are guaranteed in view
-## by `_wide_zoom()`'s own construction, so the
-## pause/unpause/input-unlock booleans below all latch on the very first sample -- correct for a
-## cross-fade, which has no real "travel" to wait through.
+## `_wide_zoom()` already computes for the ordinary transition's own peak, for the ENTIRE duration
+## (T12: zoom is constant throughout). ⚠ ADVERSARIAL_REVIEW.md C2: "at a fixed zoom" fixes the
+## ZOOM, not the POSITION -- Q172=a still requires the camera to ARRIVE at the destination, same as
+## every ordinary transition. Position TRAVELS in a straight line from the source's own centre to
+## the destination's, exactly like the ordinary branch's own travel phase, just with zoom held
+## constant instead of also zooming out/in. The actual cross-fade (blending the two SCREENS'
+## opacity) is driven by `_apply()` below, from this SAME `elapsed`/`total` pair -- not built here,
+## since `sample_at()` is the pure, engine-free core (NAMES.md scopes THIS class to the camera tween
+## and clock alone, but `_apply()` already holds real `WallPicture` references for the landing
+## handoff, so the opacity push belongs there, not as a second untested code path in `Main`). Both
+## frames are guaranteed in view by `_wide_zoom()`'s own construction, so the pause/unpause/
+## input-unlock booleans below all latch on the very first sample -- correct for a cross-fade, which
+## has no real "travel" to wait through.
 static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> Sample:
 	var s := Sample.new()
 
 	if settings.wall_reduced_motion:
-		s.camera_position = (source_rect.centre + dest_rect.centre) * 0.5
+		var t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
+		s.camera_position = source_rect.centre.lerp(dest_rect.centre, t)
 		s.camera_zoom = _wide_zoom(source_rect, dest_rect, window_size,
 				settings.wall_frame_reveal_margin)
 		var visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
@@ -307,10 +312,23 @@ func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 ## a precomputed TIME, not a re-check of `s.source_frame_in_view` -- so it cannot be skipped by
 ## sparse real-frame sampling: the tween is guaranteed to reach `elapsed == _total` at landing, and
 ## `_source_pause_time <= _total` always (the backstop in `_find_source_pause_time` guarantees it).
+##
+## ADVERSARIAL_REVIEW.md C2: under `wall_reduced_motion`, this is also where the actual cross-fade
+## lives -- `source`/`dest` are REAL `WallPicture`s already in scope for the pause/unpause handoff
+## below, so pushing screen opacity here needs no second, untested code path in `Main`. Linear in
+## `elapsed/_total` (source fades 1->0, dest fades 0->1), reaching exactly (0, 1) the instant the
+## tween lands -- `focus()`/`unfocus()`'s own unconditional `set_screen_alpha(1.0)` resets both
+## pictures to fully opaque regardless once the transition hands off, so a transition that never ran
+## under reduced motion (or one that did) both leave every screen's own alpha in the same, correct
+## resting state.
 func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample,
 		elapsed: float) -> void:
 	camera.position = s.camera_position
 	camera.zoom = Vector2.ONE * s.camera_zoom
+	if _settings.wall_reduced_motion:
+		var t := 0.0 if _total <= 0.0 else clampf(elapsed / _total, 0.0, 1.0)
+		source.set_screen_alpha(1.0 - t)
+		dest.set_screen_alpha(t)
 	if elapsed >= _source_pause_time and not _source_paused:
 		_source_paused = true
 		if source.screen_root: source.screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE

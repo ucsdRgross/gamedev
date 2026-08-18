@@ -231,6 +231,10 @@ func focus() -> void:
 		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
 	# H5: becoming focused starts "at rest" -- no zoom has changed yet this frame.
 	update_filter(false)
+	# ADVERSARIAL_REVIEW.md C2: a picture becoming focused is always fully opaque -- a reduced-
+	# motion cross-fade (WallTransition._apply()) may have left this picture's own alpha mid-fade
+	# if the transition landed exactly here; the resting/focused state is never partially faded.
+	set_screen_alpha(1.0)
 
 ## §1.8 "any other" (non-focused): UPDATE_DISABLED -- render_target_update_mode stops, but the
 ## already-rendered texture persists on the GPU (Q82=a); sized down to the wall-view footprint via
@@ -246,6 +250,15 @@ func unfocus(footprint_px: Vector2) -> void:
 	# H5: everything non-focused samples LINEAR, unconditionally -- never NEAREST, regardless of
 	# zoom state (update_filter()'s zoom branching only applies to the FOCUSED picture).
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# ADVERSARIAL_REVIEW.md C2: same reasoning as focus() above -- a picture leaving focus (wall
+	# view shows it next) is never left mid-fade from a reduced-motion cross-fade.
+	set_screen_alpha(1.0)
+
+## ADVERSARIAL_REVIEW.md C2: the ONE thing `WallTransition._apply()` needs to drive a reduced-
+## motion cross-fade -- `%Screen`'s own opacity, exposed narrowly rather than the whole private
+## node, same "expose exactly what a caller needs" shape `screen_root`/`rect` already use.
+func set_screen_alpha(alpha: float) -> void:
+	_screen.modulate.a = alpha
 
 ## GAP-002 / Q86=a, Q87=b: "no resolution manager -- it is one property, written when the
 ## footprint changes." `SubViewport.size` is set directly from the picture's on-screen pixel

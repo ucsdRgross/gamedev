@@ -450,7 +450,13 @@ func test_mid_flight_resize_retargets_without_a_visible_snap() -> void:
 
 ## T12 (K8, Q172=a): with wall_reduced_motion on, camera zoom is CONSTANT across the whole scan --
 ## no zoom-out/zoom-in dance at all, matching S18's own done-when ("every transition is a cross-fade
-## and no zoom occurs").
+## and no zoom occurs"). ADVERSARIAL_REVIEW.md C2: the zoom being fixed is only HALF of Q172=a's own
+## text -- "replaces all of it with a cross-fade at a fixed zoom" still means the camera must ARRIVE
+## at the destination; a constant zoom that also holds POSITION at the permanent midpoint (the
+## original bug) satisfies this test's old assertion while leaving the camera parked between the two
+## pictures forever, for every transition afterward too. Added: the FINAL sample's position must
+## equal the destination's own centre, exactly like an ordinary (non-reduced) transition's own
+## landing guarantee.
 func test_reduced_motion_removes_all_zoom() -> void:
 	var settings := _settings()
 	settings.wall_reduced_motion = true
@@ -471,6 +477,13 @@ func test_reduced_motion_removes_all_zoom() -> void:
 	check(all_constant,
 			"camera zoom never changes across the whole scan under reduced motion -- no zoom-out/"
 			+ "zoom-in dance occurs", "first=%.4f" % first_zoom)
+
+	var last_entry : Dictionary = scan[scan.size() - 1]
+	var last_sample : WallTransition.Sample = last_entry["sample"]
+	check(last_sample.camera_position.is_equal_approx(dest.centre),
+			"the FINAL sample's camera position equals the destination's own centre -- the camera "
+			+ "must ARRIVE, not park at the permanent midpoint forever (C2)",
+			"got=%s want=%s" % [last_sample.camera_position, dest.centre])
 
 # ------------------------------------------------------------------ T13 (Phase 3 soak)
 
