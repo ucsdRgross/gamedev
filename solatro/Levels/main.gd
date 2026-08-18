@@ -88,6 +88,11 @@ func _ready() -> void:
 	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size())
 
+	# M1 (ADVERSARIAL_REVIEW): S17's whole resize path was built and never reached -- nothing
+	# anywhere connected `size_changed`, so `_on_window_resized()` below is its ONE call site, and
+	# the only caller `WallTransition.retarget()` has.
+	get_viewport().size_changed.connect(_on_window_resized)
+
 ## S30 (B7, Q211=a, Q141=a): packs `Wall.load_layout()` and builds every UNLOCKED picture,
 ## reparenting the ALREADY-INSTANTIATED, persistent `menu_scene`/`map_scene` as their
 ## `screen_root` (never instantiated fresh). `deck` and `game` start with no live screen at all --
@@ -156,6 +161,89 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 	_print_wall_debug_readout()
+
+## S17 (C16, G7, G8, Q22=b, Q25=a, Q26=a, Q28=b) + M1 (ADVERSARIAL_REVIEW): the window changed
+## shape. Everything S17 built was unreachable before this handler existed -- a resize or a
+## fullscreen toggle left every picture packed for the OLD aspect and the camera at the OLD fit, so
+## the focused picture stopped overfilling and showed its own frame at rest, which Q27 forbids.
+##
+## G7/Q22=b: the wall is RE-PACKED at the new aspect, so both the ellipse and every picture's aspect
+## follow the window. G8/Q25=a: it SNAPS (`apply_layout(animate = false)`); Q28=b: a fullscreen
+## toggle is an ordinary resize, with no separate branch.
+##
+## Q26=a: a transition in flight is RETARGETED and CONTINUES -- and the camera is deliberately left
+## alone in that case, because the transition's own tween owns it until it lands; re-fitting it here
+## would be exactly the snap Q26 rejects. At rest nothing else is driving the camera, so this re-fits
+## it directly: the info-mode pose while Info is on (J2/Q128), otherwise the ordinary focused
+## (Q27/H3) or wall-view (G9) pose.
+func _on_window_resized() -> void:
+	var new_size := get_viewport().get_visible_rect().size
+	if new_size.x <= 0.0 or new_size.y <= 0.0: return
+	if new_size.is_equal_approx(_window_size): return
+	_window_size = new_size
+	# Exactly the pictures that currently EXIST: a resize never unlocks anything, so re-deriving the
+	# unlocked set here could only ever disagree with what is actually on the wall.
+	var layout := Wall.load_layout()
+	var ids : Array[StringName] = []
+	for e : PictureEntry in layout.pictures:
+		if _pictures.has(e.id): ids.append(e.id)
+	var rects_by_id : Dictionary[StringName, PictureRect] = {}
+	for rect : PictureRect in WallPacker.pack(layout, ids, _window_size.x / _window_size.y):
+		rects_by_id[rect.id] = rect
+		_rects[rect.id] = rect
+	wall.apply_layout(rects_by_id, false)
+	# GAP-002 ("one property, written when the footprint changes"): the re-pack just changed every
+	# unfocused picture's wall-view footprint, so each one's render target follows. The focused
+	# picture is skipped -- it renders at full `_design_size` and `focus()` owns that.
+	for id : StringName in _pictures:
+		var wp : WallPicture = _pictures[id]
+		if not wp.is_focused: wp.update_wall_view_size(_footprint(_rects[id]))
+	if _active_transition and _active_transition.is_active:
+		_active_transition.retarget(_rects[_current_focus], _rects[_transition_dest_id],
+				_window_size)
+		return
+	# A wall-view <-> picture move is a plain `_animate_camera()` tween toward a target computed
+	# before the resize, so there is nothing on it to retarget and settling now would simply be
+	# overwritten by its next frame. Deferred to the moment that move finishes instead.
+	if _move_in_flight:
+		_resize_pending = true
+		return
+	_settle_camera()
+
+## M1/S17: the camera's RESTING pose for whatever the wall currently shows -- the info-mode pose
+## while Info is on (J2/Q128), otherwise the ordinary focused (Q27/H3) or wall-view (G9) pose.
+## Snaps; only a resize (G8/Q25=a) and the deferred settle after a move that a resize interrupted
+## call it, and both are snaps by design.
+func _settle_camera() -> void:
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	var settings := SettingsManager.settings
+	if _current_focus == &"":
+		camera.position = wall.wall_view_centre()
+		camera.zoom = Vector2.ONE * wall.wall_view_zoom(_window_size)
+		return
+	var focused_rect : PictureRect = _rects[_current_focus]
+	if settings.wall_info_mode:
+		var state := WallPicture.info_zoom_state(focused_rect, _window_size, settings)
+		var info_pos : Vector2 = state["position"]
+		var info_zoom : float = state["zoom"]
+		camera.position = info_pos
+		camera.zoom = Vector2.ONE * info_zoom
+	else:
+		camera.position = focused_rect.centre
+		camera.zoom = Vector2.ONE * WallPicture.focused_scale(focused_rect.size, _window_size,
+				settings.wall_overfill_margin)
+
+## Set by `_on_window_resized()` when a move was already in flight with no retargetable transition;
+## cleared by whichever move was in flight, which settles the camera itself once it lands.
+var _resize_pending : bool = false
+
+## Called by every move as it releases `_move_in_flight`: if a resize arrived while that move owned
+## the camera, its tween has just landed on a target computed for the OLD window, so the resting
+## pose is re-applied now that `_current_focus` is finally correct.
+func _settle_after_deferred_resize() -> void:
+	if not _resize_pending: return
+	_resize_pending = false
+	_settle_camera()
 
 ## S39 (E9, Q210=a): the debug-flag GATE itself, as a pure function returning
 ## `wall.debug_memory_readout()` when the readout should be visible (a debug build AND the
@@ -226,6 +314,13 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 ## transition, is what owns "a move is happening".
 var _move_in_flight : bool = false
 
+## M1/S17: the in-flight `WallTransition`, or null at rest -- `_on_window_resized()` is the only
+## reader, and `retarget()` (Q26=a) is the only thing it needs one for. Its destination id is kept
+## alongside because `_current_focus` still names the SOURCE until the transition lands, so the two
+## rects `retarget()` takes cannot both be derived from `_current_focus` alone.
+var _active_transition : WallTransition = null
+var _transition_dest_id : StringName = &""
+
 func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _move_in_flight: return
 	if id == _current_focus: return   # Q55=a: requesting the current picture does nothing
@@ -246,6 +341,8 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		transition.landed.connect(func(_lid: StringName) -> void: landed[0] = true)
 		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, _window_size,
 				settings)
+		_active_transition = transition
+		_transition_dest_id = id
 		# S33 (Q167=c, Q168=c, Q170=b): cross-fades from the source's music toward the dest's over
 		# the SAME real camera motion WallTransition is already driving -- see
 		# Wall.update_travel_music()'s own doc comment for the distance-driven blend and
@@ -255,6 +352,12 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 			wall.update_travel_music(source_rect.centre, dest_rect.centre, camera.position)
 			await get_tree().process_frame
 		wall.finish_music_crossfade()
+		_active_transition = null
+		_transition_dest_id = &""
+		# The LANDED source rect, not the one captured before the loop: a mid-flight resize re-packs
+		# the wall (and skips the focused picture's own footprint, which `focus()` owns), so `_rects`
+		# is the only current truth about the footprint this picture is about to shrink to.
+		source_rect = _rects[_current_focus]
 		source_wp.unfocus(_footprint(source_rect))
 		wall.transition_landed.emit(id)
 	else:
@@ -271,6 +374,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 	_move_in_flight = false
+	_settle_after_deferred_resize()
 
 ## Unfocuses whatever is currently focused (FREEZING it in place, L4 -- never freed here) and
 ## animates the camera out to wall view. A no-op if already in wall view. `duration_scale` (GAP-014)
@@ -288,12 +392,15 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		# to -- a null dest entry fades the current track out over the same move.
 		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),
 				source_rect.centre, wall.wall_view_centre(), null, duration_scale)
-		source_wp.unfocus(_footprint(source_rect))
+		# The LANDED rect (M1/S17): a resize mid-move re-packed the wall, so the rect captured
+		# before the await no longer says where this picture is or how big its footprint should be.
+		source_wp.unfocus(_footprint(_rects[_current_focus]))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 	_move_in_flight = false
+	_settle_after_deferred_resize()
 
 func _on_wall_view_entered() -> void:
 	await _go_to_wall_view()

@@ -51,6 +51,8 @@ func _ready() -> void:
 	await test_focus_and_transition_signals_fire_during_real_navigation()
 	behavior_section("INFO MODE DOES NOT SURVIVE A QUIT (C3, ADVERSARIAL_REVIEW.md, J1)")
 	test_info_mode_does_not_survive_a_relaunch()
+	behavior_section("RESIZE REACHES THE WALL (M1, ADVERSARIAL_REVIEW.md, S17, T11 wiring)")
+	await test_a_real_resize_reaches_the_wall()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -522,3 +524,98 @@ func test_info_mode_does_not_survive_a_relaunch() -> void:
 
 	main.queue_free()
 	restore_real_settings()
+
+# ------------------------------------------------------------------ M1 (ADVERSARIAL_REVIEW.md, S17)
+
+## M1 (ADVERSARIAL_REVIEW.md): S17's resize path was built and had NO caller -- nothing anywhere
+## connected `size_changed`, so `WallTransition.retarget()` had zero callers and a resize left the
+## whole wall packed for the old aspect. This is the WIRING half of T11 (the pure geometry half
+## lives in `TestWallTransition`); it goes red the moment `Main._ready()`'s
+## `get_viewport().size_changed.connect(_on_window_resized)` is removed.
+##
+## A REAL `Main` inside its OWN `SubViewport` (the F12 idiom above), because `main._window_size` is
+## read straight off `get_viewport()` -- a SubViewport is the only window a test can actually resize
+## without disturbing the ~38 suites sharing the real one.
+##
+## ⚠ ONE `Main`, held for as few frames as possible, and the mid-flight half runs at a
+## deliberately tiny `wall_transition_delay`. A live `Main` puts a real `Map` in the tree, and `Map`
+## is a `CardEnvironment`, so `CardEnvironment.CURRENT` is non-null for as long as it lives -- which
+## a concurrently-running suite can see. Written first as two tests holding a `Main` across a
+## full-length transition, that window was wide enough for `TestOutline` to build a PREVIEW
+## `CardVisual` inside it and take `card_visual.gd:573`'s no-anchor branch, failing a DIFFERENT
+## suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
+func test_a_real_resize_reaches_the_wall() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+
+	# ---- at rest: 1280x720 -> 2560x720 is a genuine ASPECT change (16:9 -> 32:9, both inside G13's
+	# supported range), so a wall that failed to re-pack cannot accidentally still fit.
+	check(main._current_focus == &"start_menu",
+			"sanity: a cold launch opens focused on start_menu, so there IS a focused picture whose "
+			+ "overfill a resize can break", str(main._current_focus))
+	var rect_before : PictureRect = main._rects[&"start_menu"]
+
+	var wide := Vector2i(2560, 720)
+	viewport.size = wide
+	var wide_window := Vector2(wide)
+
+	check(main._window_size.is_equal_approx(wide_window),
+			"the resize reached Main at all -- before M1 nothing was listening for it",
+			str(main._window_size))
+	check(main._rects[&"start_menu"] != rect_before,
+			"G7/Q22=b: the wall RE-PACKED at the new aspect (a fresh PictureRect from a fresh "
+			+ "WallPacker.pack(), not the pre-resize object)")
+
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var focused_rect : PictureRect = main._rects[&"start_menu"]
+	check(camera.position.is_equal_approx(focused_rect.centre),
+			"the camera re-centred on the focused picture's NEW centre",
+			"%s vs %s" % [str(camera.position), str(focused_rect.centre)])
+	# Q27/H3: the player-visible claim, asserted directly rather than by re-deriving focused_scale()
+	# -- at rest the focused picture COVERS the window on both axes, so its frame stays off-screen.
+	var covered := focused_rect.size * camera.zoom.x
+	check(covered.x >= wide_window.x and covered.y >= wide_window.y,
+			"Q27: the focused picture still OVERFILLS the resized window on both axes, so its own "
+			+ "frame is still off-screen at rest",
+			"covers %s of window %s" % [str(covered), str(wide_window)])
+
+	# ---- mid-flight (Q26=a): a resize arriving during a transition RETARGETS it and lets it
+	# continue -- never restarts it, never snaps the camera out from under it. `_focus_picture()` is
+	# deliberately NOT awaited at the call: it runs synchronously up to its own first `await`, by
+	# which point the transition is live, which is the only window in which this subject exists.
+	# `wall_transition_delay` is the wall's OWN multiplier and no other suite reads the global copy
+	# (every one builds its own PlayerSettings fixture), so shrinking it here bounds the whole
+	# mid-flight half to a couple of frames.
+	# Every PlayerSettings setter writes user://settings.tres, so the real file is parked first --
+	# the same reason the C3 test above does it.
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+	main._focus_picture(&"map")
+	check(main._active_transition != null and main._active_transition.is_active,
+			"sanity: a real WallTransition is genuinely in flight, so there is something to retarget")
+
+	var tall := Vector2i(1600, 900)
+	viewport.size = tall
+	check(main._active_transition != null and main._active_transition.is_active,
+			"the resize RETARGETED the live transition -- it was neither cancelled nor restarted")
+	var retargeted_window := main._active_transition._window_size if main._active_transition 			else Vector2.ZERO
+	check(retargeted_window.is_equal_approx(Vector2(tall)),
+			"the live transition now samples the NEW window: retarget()'s one and only call site",
+			str(retargeted_window))
+
+	await main.wall.transition_landed
+	await get_tree().process_frame   # _focus_picture finishes its own body after that emit
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
+	check(main._current_focus == &"map",
+			"it still landed on the ORIGINAL destination -- the geometry changed, the target did not",
+			str(main._current_focus))
+
+	main.queue_free()
+	viewport.queue_free()
