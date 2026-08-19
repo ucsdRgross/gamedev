@@ -593,11 +593,15 @@ reproducible"* warning the whole time; nobody had run it twice.
   with a POST-CAPTURE re-read, so a future flake is diagnosable rather than mysterious.
 - A first-run **shader-recompile** theory was tested (touch `fire.gdshader`, run once) and is **wrong**:
   that run came out clean.
-- **So the mechanism is still unknown, and that is now acceptable, because the claim moved.**
-  `test_balls_ignore_their_hosts_rotation` in the PIXELS suite asserts it: 5 balls on a host at 30 / 45
-  / 90 degrees must sit within 2 art units of the WORLD-UPRIGHT oracle. Deterministic (`_seed` pinned),
-  runs in the suite, passes with the lever on. **A decision this size needed an assertion, not a
-  picture** — and `_host_balls` takes a `deg` now, which is what made it three lines.
+- **So the mechanism is still unknown, and the assertion that was supposed to settle it is GONE.**
+  A `test_balls_ignore_their_hosts_rotation` row was added to the PIXELS suite (5 balls on a host at
+  30 / 45 / 90 degrees, within 2 art units of the WORLD-UPRIGHT oracle) on the theory that pinning
+  `_seed` made it deterministic. It is not: measured over 8 consecutive serialised full runs of one
+  unchanged build it failed 7 times, with the angle and the miss count both varying run to run, and
+  sometimes failing on MISSING balls while the worst offset was under tolerance. **It was asserting
+  the very non-determinism it was written to rule out**, so it gated every suite run on a coin flip
+  and has been deleted. `_host_balls` still takes a `deg`, so the measurement is one call away when
+  someone has an instrument that can survive it. **The rotated-ball claim has no automated gate.**
 
 ⚠ **THE STANDING LESSON, and it is the twin of §0g's:** a green metric is not a green look — and a red
 picture from a flaky harness is not a red build. **Run a rendering harness twice before believing
@@ -626,7 +630,7 @@ it** — three runs, minimum, `fx_cost.tscn`.
 
 | | lever | worth | risk |
 |---|---|---|---|
-| **1** | ⬜ **AN OFF-CENTRE QUAD.** The pattern hangs ABOVE y = 0 (`fx_balls_near`: y from `-(arc+ball)` to `+ball`), but a quad is centred on the host's origin — so **~40 % of both juggling quads is empty space below the loop**, and `min_half` cannot express it because it is a half-extent. Give a request an OFFSET, fold it into `fx_local`'s `s` BEFORE the quantize, and move the mesh by the same amount. ⚠ **Safe with the current lattice and only because of it** — the grid is anchored on the host's ORIGIN, so a constant offset added before `floor` leaves it exactly where it was (this is the same reason `min_half` was safe: §0g's `height`-jitter row). | **~1.4x on the layer**, the largest thing left | medium — it is quad geometry, so §0d.1's flake will look like a bug again. `test_balls_ignore_their_hosts_rotation` plus `snapshot_diff` 18/18 are the gates, and both exist now. |
+| **1** | ⬜ **AN OFF-CENTRE QUAD.** The pattern hangs ABOVE y = 0 (`fx_balls_near`: y from `-(arc+ball)` to `+ball`), but a quad is centred on the host's origin — so **~40 % of both juggling quads is empty space below the loop**, and `min_half` cannot express it because it is a half-extent. Give a request an OFFSET, fold it into `fx_local`'s `s` BEFORE the quantize, and move the mesh by the same amount. ⚠ **Safe with the current lattice and only because of it** — the grid is anchored on the host's ORIGIN, so a constant offset added before `floor` leaves it exactly where it was (this is the same reason `min_half` was safe: §0g's `height`-jitter row). | **~1.4x on the layer**, the largest thing left | medium — it is quad geometry, so §0d.1's flake will look like a bug again. `snapshot_diff` 18/18 is the gate. ⚠ The rotated-ball assertion that was the other half of this pair was deleted as non-deterministic (§0d.1). |
 | **2** | ⬜ **SHRINK THE BALL-FIRE QUAD TO THE LIT BALLS.** `req.lit` is known on the CPU, so the plume quad only needs to cover the balls actually alight — usually 1–2 of many. It changes every frame as they travel, which used to be unthinkable (a live resize moved the lattice) and is now free for the same reason as above. | large in PLAY, zero in the saturated bench (where every ball is lit) | medium, plus per-frame CPU to recompute — and the bench cannot show the win, so it needs a play measurement |
 | **3** | ⬜ **§6a's lever B / §10 B** — the diagonal bound only while a card is really turned. | ⚠ **1.09x, measured** (`BOX-BOUND quads` row: 1.825 → 1.672). Lever 1 already removed most of what it was measuring. | low, and now nearly pointless |
 
@@ -758,8 +762,9 @@ that reaches the budget. Bring him numbers, not options:
 
 1. **Take the two FREE levers first and measure each on the Intel box** — the off-centre quad (§0d.2
    lever 1, ~40 % of both juggling quads is empty space below the loop) and the lit-ball shrink (lever
-   2). Neither changes a pixel, so `snapshot_diff` (now honest — §0d.4) plus
-   `test_balls_ignore_their_hosts_rotation` are the gates.
+   2). Neither changes a pixel, so `snapshot_diff` (now honest — §0d.4) is the gate. ⚠ The rotated-ball
+   assertion that used to stand beside it was deleted as non-deterministic (§0d.1) — there is one gate
+   here now, not two.
 2. **Then ask the FIRST question, because it can end the task**: *is a window where every one of 78 cards
    is juggling five lit balls reachable in play at all?* §6b proved host count is the wrong axis — the
    bound is the WINDOW — and if the real worst case is 3–5 juggling cards, the budget is already met and
@@ -1269,7 +1274,7 @@ instrument could fail.
 | `UI/Fx/fx_attachment.gd` | `_size_quad` honours it |
 | `UI/Fx/fx_juggle.gd` | both juggling quads declare it, from `fx_balls_near`'s own box |
 | **`Tests/Visual/fx_behind.gd` / `.tscn`** | **NEW — the seam instrument: hosts drawn FILLED, at up to 6 px per art unit. `fx_snapshot` cannot answer a seam question and never could (§0c)** |
-| `Tests/Visual/test_pixels.gd` | `test_balls_ignore_their_hosts_rotation` — the rotated-ball claim as an ASSERTION (§0d.1); `_host_balls` takes a `deg` |
+| `Tests/Visual/test_pixels.gd` | `_host_balls` takes a `deg`. ⚠ The rotated-ball ASSERTION built on it was deleted as non-deterministic — see §0d.1 |
 | `Tests/Visual/fx_snapshot.gd` | prints the counter-rotation per case and re-reads it POST-CAPTURE, so the flake in §0d.1 is diagnosable next time |
 
 **And then this pass (the exact mask, the real card, the slow box):**
@@ -1871,7 +1876,7 @@ owner's, safe housekeeping, and what is closed.**
 |---|---|
 | 🟢 **NOTHING IS OPEN** | FX performance is **PAUSED at the owner's call**, not finished. The worst window went **12.07 → 5.82 ms of GPU** across §0d.6, §0d.7 and §0d.9. |
 | ⬜ **IF MORE BUDGET IS WANTED** | **§0d.10 is the one page**: today's numbers, five remaining levers priced with their risks, the ⛔ list of things that look like levers and are measured NOT to be, and the four traps in `fx_cost` itself. Read the ⛔ list first — it is the part that saves a day. |
-| ⚪ **A debt that DIED with its lever** | `min_half`'s missing A/B no longer matters: per-instance sizing replaced `min_half` outright in §0d.6, and the claim it lacked evidence for is now carried by `test_balls_ignore_their_hosts_rotation` plus a real `snapshot_diff`. |
+| ⚪ **A debt that DIED with its lever** | `min_half`'s missing A/B no longer matters: per-instance sizing replaced `min_half` outright in §0d.6. ⚠ The claim it lacked evidence for is now carried by `snapshot_diff` ALONE — the rotated-ball assertion that was the other half was deleted as non-deterministic (§0d.1). |
 
 ### 8b. OWNER CALLS — nothing an agent should decide
 

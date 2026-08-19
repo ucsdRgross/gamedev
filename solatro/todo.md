@@ -299,19 +299,23 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Picture wall
 
-- **🔴 The suite is not reliably green, and it is NOT the picture wall.** `PIXELS`'
-  `test_balls_ignore_their_hosts_rotation` ("host at N deg: every ball still sits within 2.0 art
-  units of the UPRIGHT spec") fails intermittently on Box B. Measured over 8 consecutive serialised
-  full runs of one unchanged build: green, then red 7 times, with the detail varying run to run
-  (`90 deg, 3 missing, worst 2.15` / `2.77` / `3.39`; `45 deg, 4 missing, worst 0.00`). **Reproduced
-  at HEAD with the working tree reverted**, so it is independent of any picture-wall change.
-  ⚠ The test's own doc comment already records the underlying phenomenon as non-reproducible
-  ("that displacement appears on an UNCHANGED build, once in five consecutive runs"), and the
-  response was to promote it from a snapshot to a hard `check()` on every run — so a known
-  nondeterministic GPU behaviour is now a pass/fail gate for the whole suite. Deliberately NOT
-  "fixed" by widening `BALL_TOLERANCE`: that is a tolerance fitted to the symptom, and this check
-  exists specifically to decide the FX_HANDOFF §1b quad-extent performance lever. Owner call whether
-  it stays a gate, becomes a `warn()`, or gets a retry/settle.
+- **🔴 PIXELS has a SECOND intermittent check, and this one is NOT ruled on.** With the rotated-ball
+  row gone, run 2 of 3 failed `t=0.00: at rest the mask and the drawn face agree exactly` with
+  **0 mask-without-art, 3773 art-without-mask** — the mask polygon was valid (the "hands its rig to
+  the mask, vertex for vertex" check passed in the same run) but disagreed with the drawn art
+  everywhere, which reads as the card's art having been captured at a different pose than
+  `card.fx._poly` describes. Runs 1 and 3 were clean. Different mechanism from the ball rows, same
+  consequence: the suite gate is a coin flip. ⚠ NOT touched — its own comment says "DO NOT RAISE IT
+  TO GO GREEN", and the owner's ruling covered the ball tests only. Needs its own pass: most likely
+  a settle/capture race in `_real_card()`/`_shoot()`, not a bad bound.
+- **The rotated-ball PIXELS assertion was deleted, and the claim it carried now has no gate.**
+  `test_balls_ignore_their_hosts_rotation` asserted a phenomenon its own comment already recorded as
+  non-reproducible. Measured over 8 consecutive serialised full runs of one unchanged build: failed 7
+  times, angle and miss count varying every run, and sometimes failing on MISSING balls while the
+  worst offset was inside tolerance. Owner's call: "bad tests in the first place testing non
+  deterministic behaviour." `_host_balls` still takes a `deg`, so the measurement is one call away
+  for anyone with an instrument that survives it — but FX_HANDOFF §0d.1's rotated-ball claim and the
+  §1b quad-extent lever now rest on `snapshot_diff` alone.
 
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
