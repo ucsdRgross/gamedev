@@ -304,8 +304,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		back_requested.emit()
 		return
-	# M3 (PICTURE_WALL.md): the four `wall_*` InputMap actions had NO READER anywhere, so Tab,
-	# L1/LB, R1/RB and `I` all did nothing and a controller had no Back, Forward or Wall at all.
+	# M3 (PICTURE_WALL.md): the four `wall_*` InputMap actions had NO READER anywhere, so none of
+	# them did anything and a controller had no Back, Forward or Wall at all. Defaults now cover BOTH
+	# input families for all four (Tab/Select-View, `[`/L1, `]`/R1, `I`/Y) -- `wall_back` and
+	# `wall_forward` shipped joypad-only and `wall_info` key-only, so each family was missing one.
 	# Read here, alongside `ui_cancel` and `wall_jump_N`, because I6/Q102=a makes them ordinary
 	# rebindable actions and I9/Q103=a/Q115=a scopes only the SELECTION keys to wall view -- these
 	# four are meaningful focused or not, and each gets the same first refusal as everything above.

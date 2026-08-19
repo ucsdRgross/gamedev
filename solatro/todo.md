@@ -340,10 +340,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   now cuts to the destination's own info pose on landing — so the resting state is right and what
   remains is a single cut at the end, exactly the shape GAP-019=(c) chose deliberately for reduced
   motion. Left as-is unless the cut reads badly in playtest.
-- **`wall_back`/`wall_forward` are joypad-only** — `project.godot` binds buttons 9 and 10 and no key,
-  while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
-  button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`
-  actions, so PICTURE_WALL.md's "BOTH a reader and a binding" is not actually enforced.
 - **`Wall.wall_view_zoom()` calls `Wall.load_layout()` on every invocation**, and it sits on the
   mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
   resolve per input event, and it means wall framing reads the file rather than the layout `Main`
@@ -370,7 +366,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 - **`WallInput.route()` applies the half-viewport shift only to `InputEventMouse`**, so raw
   `InputEventScreenTouch`/`ScreenDrag` land offset by half a viewport. Masked on desktop by
   `emulate_mouse_from_touch`.
-- **`wall_info` has no joypad binding** — the mirror of the `wall_back`/`wall_forward` item above.
 - **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the
   stored value (C3).
 - **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls

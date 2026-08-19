@@ -1031,9 +1031,9 @@ func _test_wall_info_asks_for_an_info_toggle() -> void:
 	_teardown(wall, [wp])
 
 ## A reader is only half of it: `wall_back` and `wall_forward` were registered with an EMPTY event
-## list, so even a wired reader could never fire from a real controller. Asserts the binding exists,
-## not which button it is -- Q102=a makes them rebindable, and pinning the button index here would
-## turn a rebind into a test failure.
+## list, so even a wired reader could never fire from a real controller. Asserts that the bindings
+## exist and that BOTH input families reach all four navigation actions -- never which button or
+## keycode, since Q102=a makes them rebindable and pinning one would turn a rebind into a failure.
 func _test_every_wall_action_has_at_least_one_binding() -> void:
 	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward", &"wall_info"]
 	for action : StringName in actions:
@@ -1043,6 +1043,19 @@ func _test_every_wall_action_has_at_least_one_binding() -> void:
 		var message := "%s has at least one real binding -- an action nobody can press is as " % action
 		check(not events.is_empty(), message + "dead as one nobody reads",
 				"events=%d" % events.size())
+		# ⚠ "AT LEAST ONE" IS NOT ENOUGH FOR THESE FOUR, and that is how `wall_back`/`wall_forward`
+		# shipped joypad-ONLY (buttons 9 and 10, no key at all) while `wall_info` shipped key-only.
+		# A keyboard player had no Forward and a controller player had no Info -- each invisible to
+		# the other's half of the check. These four are the wall's whole navigation vocabulary, so
+		# both input families must reach all of them. Asserts the KIND of event, never the button or
+		# keycode: Q102=a makes them rebindable, and pinning one would turn a rebind into a failure.
+		var has_key := false
+		var has_pad := false
+		for e : InputEvent in events:
+			if e is InputEventKey: has_key = true
+			elif e is InputEventJoypadButton or e is InputEventJoypadMotion: has_pad = true
+		check(has_key, "%s is reachable from the KEYBOARD" % action, "events=%d" % events.size())
+		check(has_pad, "%s is reachable from a CONTROLLER" % action, "events=%d" % events.size())
 
 # ------------------------------------------------------------------ M4 (PICTURE_WALL.md)
 
