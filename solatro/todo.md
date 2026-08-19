@@ -296,3 +296,30 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
   regardless of host count. A realistic section (5–12 lights) is ~1–2.5 ms; 64 would blow a
   16.67 ms frame alone. `Q254`=(a): reported, nothing trimmed — the cut is the owner's call.
   ⚠ The GLOW is still unpriced: there is no `FxGlow` effect class, only the shader.
+
+## Picture wall
+
+See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
+
+- **GAP-018 — owner call.** Is `WallLayout.view_margin` (0.06) EXTRA CROP on wall view, as its own
+  field comment says, or vestigial from `Q5`'s option (c), the fit-with-margin the owner did NOT
+  pick? It is wired as extra crop now. Flipping costs one authored number: `view_margin = 0.0` in
+  `layout_default.tres` restores the previous framing exactly, no code edit.
+- **Wall view never shows the whole wall, by design, and it may be too much.** `Q5`=b fills and
+  crops, and `G10` supplies pan to reach what falls outside — but at 16:9 four of twelve pictures
+  are cut by the frame, more at 32:9, and GAP-018 above makes it more pronounced. Wants an owner
+  look at real renders before anything builds on the composition.
+- **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
+  a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).
+- **⚠ The suite's run-save park is not per-suite, and it makes the banner flaky.**
+  `backup_real_save()`/`restore_real_save()` in `Tests/Support/test_base.gd` are STATIC and share one
+  `REAL_RUN_BAK`, and `restore_real_save()` DELETES `user://run_save/run.tres` before restoring.
+  `PERSISTENCE FUZZ`, `RUN MANAGER`, `LEAK CANARY` and `TestWallFocus`'s lost-run test all use it and
+  none of them `await_siblings_except`, so one suite's park/restore swallows another's file —
+  observed as `fuzz iter N wrote run.tres -- no file on disk` and a torn `Parse Error: Unterminated
+  string`. `_settings_bak_path()` three lines away is per-suite for exactly this reason and says so.
+  Pre-existing; it makes the gate intermittently untrustworthy, which matters more than the failure
+  itself.
+- **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
+  hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
+  action test, but no real stick has driven it.

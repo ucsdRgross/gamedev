@@ -40,7 +40,7 @@ var _current_focus : StringName = &""
 var _window_size : Vector2
 
 func _ready() -> void:
-	# C3 (ADVERSARIAL_REVIEW): `wall_info_mode` lives on PlayerSettings, and every setter there
+	# C3 (PICTURE_WALL.md): `wall_info_mode` lives on PlayerSettings, and every setter there
 	# saves to user://settings.tres -- so toggling Info wrote it to disk and it came back on the
 	# next launch, silently putting every transition into the info branch while the card was hidden
 	# and the button read un-pressed. J1 says info mode is "NOT persisted across sessions" (Q135
@@ -50,7 +50,7 @@ func _ready() -> void:
 		SettingsManager.settings.wall_info_mode = false
 
 	map_scene.enter_game.connect(enter_game)
-	# M7 (ADVERSARIAL_REVIEW, J1/J6, Q134=c): the map used to mount an InfoCard of its OWN inside its
+	# M7 (PICTURE_WALL.md, J1/J6, Q134=c): the map used to mount an InfoCard of its OWN inside its
 	# SubViewport. `_on_info_toggled()` reset the wall overlay's card, a DIFFERENT instance, so the
 	# map's could never be dismissed and appeared whether or not Info mode was on. There is one card
 	# now, and this is where a screen's hover reaches it.
@@ -67,23 +67,23 @@ func _ready() -> void:
 	overlay.back_pressed.connect(_on_back_pressed)
 	overlay.forward_pressed.connect(_on_forward_pressed)
 	overlay.wall_pressed.connect(_on_wall_pressed)
-	# CODE_REVIEW.md A2: info_toggled had no consumer anywhere -- the Info button did nothing.
+	# PICTURE_WALL.md A2: info_toggled had no consumer anywhere -- the Info button did nothing.
 	overlay.info_toggled.connect(_on_info_toggled)
 	wall.wall_view_entered.connect(_on_wall_view_entered)
-	# M2 (ADVERSARIAL_REVIEW): keyboard Back's call site. `ui_cancel` used to emit
+	# M2 (PICTURE_WALL.md): keyboard Back's call site. `ui_cancel` used to emit
 	# `wall_view_entered`, so Escape dropped the player to the overview from any depth instead of
 	# retracing (Q65=a). Deliberately the SAME handler the overlay's Back button already uses, so
 	# the key and the button cannot diverge -- and `_on_back_pressed()` is where the stack's own
 	# fall-through to wall view lives.
 	wall.back_requested.connect(_on_back_pressed)
-	# M3 (ADVERSARIAL_REVIEW): the call sites for `wall_forward` and `wall_info`. Both reuse the
+	# M3 (PICTURE_WALL.md): the call sites for `wall_forward` and `wall_info`. Both reuse the
 	# handler the overlay's own control already drives, for the same "one meaning per action" reason
 	# `back_requested` does. `wall_overview` and `wall_back` need no line of their own -- they emit
 	# `wall_view_entered`/`back_requested`, already connected here.
 	wall.forward_requested.connect(_on_forward_pressed)
 	wall.info_toggle_requested.connect(_on_info_toggle_requested)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
-	# M8 (ADVERSARIAL_REVIEW, J7/Q132=a): `WallPicture.get_info()`'s call site. Hovering a picture in
+	# M8 (PICTURE_WALL.md, J7/Q132=a): `WallPicture.get_info()`'s call site. Hovering a picture in
 	# wall view with Info mode on describes it on the same one card a screen's own hover uses.
 	wall.picture_hovered.connect(_on_picture_hovered)
 	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
@@ -108,7 +108,7 @@ func _ready() -> void:
 	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size())
 
-	# M1 (ADVERSARIAL_REVIEW): S17's whole resize path was built and never reached -- nothing
+	# M1 (PICTURE_WALL.md): S17's whole resize path was built and never reached -- nothing
 	# anywhere connected `size_changed`, so `_on_window_resized()` below is its ONE call site, and
 	# the only caller `WallTransition.retarget()` has.
 	get_viewport().size_changed.connect(_on_window_resized)
@@ -182,7 +182,7 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	overlay.refresh(_focus_stack, _pictures.size())
 	_print_wall_debug_readout()
 
-## S17 (C16, G7, G8, Q22=b, Q25=a, Q26=a, Q28=b) + M1 (ADVERSARIAL_REVIEW): the window changed
+## S17 (C16, G7, G8, Q22=b, Q25=a, Q26=a, Q28=b) + M1 (PICTURE_WALL.md): the window changed
 ## shape. Everything S17 built was unreachable before this handler existed -- a resize or a
 ## fullscreen toggle left every picture packed for the OLD aspect and the camera at the OLD fit, so
 ## the focused picture stopped overfilling and showed its own frame at rest, which Q27 forbids.
@@ -311,7 +311,7 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	var settings := SettingsManager.settings
 	var duration := WallTransition.total_duration(settings) * duration_scale
 	wall.begin_music_crossfade(audio_dest_entry)
-	# MINOR (ADVERSARIAL_REVIEW): the AUTHORED travel curve (Q53=b), not a typed-in literal -- this
+	# MINOR (PICTURE_WALL.md): the AUTHORED travel curve (Q53=b), not a typed-in literal -- this
 	# helper is the wall-view <-> picture move, which is travel with no zoom leg of its own.
 	var tween := create_tween()
 	tween.set_parallel(true)
@@ -328,7 +328,7 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 ## Focuses `id`, `record_visit` controlling whether this is a NEW navigation (visit()) or a
 ## replay of history already mutated by back()/forward() themselves (which must not visit() again
 ## -- that would clear the very forward list back() just populated).
-## ⚠ Re-entrancy guard (ADVERSARIAL_REVIEW C5). §1.10/Q56=b: "a new destination is ignored until"
+## ⚠ Re-entrancy guard (PICTURE_WALL.md C5). §1.10/Q56=b: "a new destination is ignored until"
 ## the in-flight move finishes. WallTransition.request() has its own `is_active` check, but this
 ## method used to construct a FRESH WallTransition per call, so that guard never saw the other one:
 ## two clicks in wall view ran two tweens on one Camera2D, both landed, and both called focus() —
@@ -357,7 +357,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
-		# A4 (CODE_REVIEW.md, NAMES.md): a REAL picture-to-picture move -- the only case
+		# A4 (PICTURE_WALL.md, NAMES.md): a REAL picture-to-picture move -- the only case
 		# transition_started/transition_landed name (both take real picture ids, and wall view is
 		# never one, Q66=b), unlike the wall-view<->picture moves _animate_camera() drives below.
 		wall.transition_started.emit(_current_focus, id)
@@ -368,7 +368,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 				settings)
 		_active_transition = transition
 		_transition_dest_id = id
-		# C13/Q58, ADVERSARIAL_REVIEW C5: `input_unlocked`'s CONSUMER. S16 built and emitted this
+		# C13/Q58, PICTURE_WALL.md C5: `input_unlocked`'s CONSUMER. S16 built and emitted this
 		# signal and nothing listened, so "input is accepted before the tween reports finished" was
 		# a contract with no effect. The wall answers input again the instant the destination and
 		# its frame are fully in view -- which is strictly before landing.
@@ -396,7 +396,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
-	# A4 (CODE_REVIEW.md, NAMES.md): fires for EVERY focus change, both branches above -- the one
+	# A4 (PICTURE_WALL.md, NAMES.md): fires for EVERY focus change, both branches above -- the one
 	# signal NAMES.md's table names with no "real transition only" qualifier.
 	wall.focus_changed.emit(id)
 	if record_visit:
@@ -411,7 +411,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 ## animates the camera out to wall view. A no-op if already in wall view. `duration_scale` (GAP-014)
 ## defaults to an ORDINARY move; only the M2 opening reveal passes anything else.
 func _go_to_wall_view(duration_scale: float = 1.0) -> void:
-	# Same re-entrancy guard as _focus_picture (ADVERSARIAL_REVIEW C5) -- this is the OTHER path
+	# Same re-entrancy guard as _focus_picture (PICTURE_WALL.md C5) -- this is the OTHER path
 	# that animates the shared Camera2D, so a Wall press racing an in-flight enter would fight it
 	# for position and zoom just as two enters did.
 	if _move_in_flight: return
@@ -443,14 +443,14 @@ func _on_wall_view_entered() -> void:
 func _on_wall_pressed() -> void:
 	await _go_to_wall_view()
 
-## M3 (ADVERSARIAL_REVIEW): the `wall_info` key. Presses the overlay's own toggle rather than
+## M3 (PICTURE_WALL.md): the `wall_info` key. Presses the overlay's own toggle rather than
 ## writing `wall_info_mode` here, so the key, the button and the mode stay one thing -- the button's
 ## `toggled` signal then runs `_on_info_toggled()` below exactly as a mouse press does.
 func _on_info_toggle_requested() -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.toggle_info()
 
-## CODE_REVIEW.md A2 (J1-J2/Q127=a, J2/Q128): the Info toggle previously did nothing. `active`
+## PICTURE_WALL.md A2 (J1-J2/Q127=a, J2/Q128): the Info toggle previously did nothing. `active`
 ## sets the shared `wall_info_mode` flag (so any code reading it, present or future, agrees with
 ## what the button shows), resets `%InfoCard` to hidden on the way OUT (J6: "leaving info mode
 ## resets it to nothing" -- nothing here re-shows it on the way in, since J1/J5 say the card stays

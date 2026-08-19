@@ -48,7 +48,7 @@ const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
 ## NAMES.md's files-on-disk table: `res://Assets/Wall/layout_default.tres` is the layout the game
 ## runs on, and S34's tool edits that same resource (Q179=c, Q185=a). Nothing loaded it before —
 ## `Main` called `initial_layout()` directly, so every value an author tuned in the tool was
-## discarded (ADVERSARIAL_REVIEW C6), and the authored pattern lived as literals in a `.gd`, which
+## discarded (PICTURE_WALL.md C6), and the authored pattern lived as literals in a `.gd`, which
 ## §1.8 forbids.
 ##
 ## Falls back to `initial_layout()` when the file is absent, so a fresh checkout still boots. `path`
@@ -123,7 +123,7 @@ static func cold_launch_focus_stack() -> FocusStack:
 ## `back_requested` below, and only `Main` holds the stack to ask.
 signal wall_view_entered
 
-## M2 (ADVERSARIAL_REVIEW): Back was pressed (`ui_cancel`, with the focused screen taking first
+## M2 (PICTURE_WALL.md): Back was pressed (`ui_cancel`, with the focused screen taking first
 ## refusal per I5/Q100=a). `ui_cancel` used to emit `wall_view_entered` outright, so keyboard Back
 ## did WALL -- it skipped the history entirely and dropped the player to the overview from any
 ## depth, which Q65=a forbids ("Back retraces the FocusStack one step at a time"). `Wall` does not
@@ -132,19 +132,19 @@ signal wall_view_entered
 ## means, including falling through to wall view once the stack reports nothing behind.
 signal back_requested
 
-## M3 (ADVERSARIAL_REVIEW): Forward was pressed -- `wall_forward` (R1/RB). Same shape and the same
+## M3 (PICTURE_WALL.md): Forward was pressed -- `wall_forward` (R1/RB). Same shape and the same
 ## reason as `back_requested`: only `Main` holds the `FocusStack`, so only it can say whether there
 ## is anything ahead. Nothing read `wall_forward` at all before this, so a controller had no Forward.
 signal forward_requested
 
-## M3 (ADVERSARIAL_REVIEW): Info was toggled from the KEYBOARD (`wall_info`, `I`). Carries no state:
+## M3 (PICTURE_WALL.md): Info was toggled from the KEYBOARD (`wall_info`, `I`). Carries no state:
 ## `WallOverlay`'s own toggle button is the single source of truth for whether Info is on (J1's
 ## "persistent toggle... always accessible"), so `Main` flips THAT and lets its existing
 ## `info_toggled` chain run, rather than writing `wall_info_mode` from a second place and leaving the
 ## button reading un-pressed -- which is exactly the state C3 already had to clean up once.
 signal info_toggle_requested
 
-## M8 (ADVERSARIAL_REVIEW, J7/Q132=a): the pointer moved onto a DIFFERENT picture in wall view (or
+## M8 (PICTURE_WALL.md, J7/Q132=a): the pointer moved onto a DIFFERENT picture in wall view (or
 ## off every picture, `&""`). Fired on CHANGE only, never per motion event, so a caller can treat it
 ## as "the hovered thing is now this". `Wall` deliberately does not call `get_info()` itself: only
 ## `Main` knows whether Info mode wants an entry at all, and building one per motion event when it
@@ -154,7 +154,7 @@ signal picture_hovered(picture_id: StringName)
 ## The picture the pointer was last over in wall view, so `picture_hovered` fires on change only.
 var _hovered_id : StringName = &""
 
-## A4 (CODE_REVIEW.md): NAMES.md's signal table fixes these three; nothing declared or emitted
+## A4 (PICTURE_WALL.md): NAMES.md's signal table fixes these three; nothing declared or emitted
 ## them until now. `Wall` does not orchestrate focus/transitions itself -- `Main` does (the same
 ## "camera and clock only" boundary ASSUMPTIONS.md already draws for `WallTransition`) -- so these
 ## are emitted BY `Main`, at the exact moments they occur in its own orchestration, not re-derived
@@ -184,7 +184,7 @@ func lock_input() -> void:
 func unlock_input() -> void:
 	input_locked = false
 
-## A3 (CODE_REVIEW.md, GAP-003=a): one tracker for the whole wall's touch session -- `Wall` is the
+## A3 (PICTURE_WALL.md, GAP-003=a): one tracker for the whole wall's touch session -- `Wall` is the
 ## thing that actually owns input routing/focus state, so this is where `WallInput.PinchTracker`
 ## (built and tested in isolation by S23, never wired) belongs, per `wall_input.gd`'s own doc
 ## comment naming "Wall" as the eventual owner.
@@ -200,7 +200,7 @@ var _pinch := WallInput.PinchTracker.new()
 func _unhandled_input(event: InputEvent) -> void:
 	# I12/Q96=a: "during a transition input is inert... until C13 unlocks it early". Neither half
 	# existed -- nothing made input inert, and `WallTransition.input_unlocked`, the signal S16 was
-	# built for, had NO CONSUMER (ADVERSARIAL_REVIEW C5's own row). `Main` locks this when a move
+	# built for, had NO CONSUMER (PICTURE_WALL.md C5's own row). `Main` locks this when a move
 	# starts and the transition's own `input_unlocked` clears it, which is C13's whole point: input
 	# comes back the moment the destination and its frame are fully in view, BEFORE the tween ends.
 	if input_locked: return
@@ -304,7 +304,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		back_requested.emit()
 		return
-	# M3 (ADVERSARIAL_REVIEW): the four `wall_*` InputMap actions had NO READER anywhere, so Tab,
+	# M3 (PICTURE_WALL.md): the four `wall_*` InputMap actions had NO READER anywhere, so Tab,
 	# L1/LB, R1/RB and `I` all did nothing and a controller had no Back, Forward or Wall at all.
 	# Read here, alongside `ui_cancel` and `wall_jump_N`, because I6/Q102=a makes them ordinary
 	# rebindable actions and I9/Q103=a/Q115=a scopes only the SELECTION keys to wall view -- these
@@ -367,7 +367,7 @@ func _picture_at(wall_pos: Vector2) -> StringName:
 ## the packer's own output order (slot-ascending, home first) is what's left to count by, so this
 ## reads `%Pictures`' own child order directly rather than re-deriving it. Silently does nothing
 ## past the last picture -- no "ring order" defines a jump target that does not exist.
-## I7/Q104=a: `wall_jump_N` enters the Nth picture. ADVERSARIAL_REVIEW C4 found two defects here.
+## I7/Q104=a: `wall_jump_N` enters the Nth picture. PICTURE_WALL.md C4 found two defects here.
 ##
 ## It called `focus()` directly — no unfocus of the current picture, no camera move, no FocusStack
 ## update, no overlay refresh — so pressing a digit while a picture was focused left TWO screen
@@ -422,7 +422,7 @@ func _pictures_by_id() -> Dictionary[StringName, WallPicture]:
 ## own Control focus state already persists on the same node instance (ASSUMPTIONS.md).
 func enter_wall_view(from_id: StringName) -> void:
 	selected_id = from_id
-	# MINOR (ADVERSARIAL_REVIEW, "entering wall view leaves nothing visibly selected"): this set the
+	# MINOR (PICTURE_WALL.md, "entering wall view leaves nothing visibly selected"): this set the
 	# id and stopped, so arriving in wall view showed no cursor on anything until the first arrow
 	# press moved it somewhere else. F11/Q69=a is "exactly one picture is selected in wall view,
 	# ALWAYS" -- the selection exists on arrival, so it has to be applied to the picture on arrival.
@@ -430,7 +430,7 @@ func enter_wall_view(from_id: StringName) -> void:
 	# directional input latches `selection_visible`.
 	_render_selection()
 
-## MINOR (ADVERSARIAL_REVIEW, "`selection_visible` has no renderer"): Q105=b says the cursor renders
+## MINOR (PICTURE_WALL.md, "`selection_visible` has no renderer"): Q105=b says the cursor renders
 ## only AFTER the first directional input, so a mouse-only player never sees a keyboard cursor --
 ## but nothing read the flag, so `set_selected()`'s lift was applied whenever a selection moved,
 ## visible or not. This is the one place that turns (`selected_id`, `selection_visible`) into what
@@ -493,7 +493,7 @@ func picture_count() -> int:
 func wall_view_zoom(window_size: Vector2) -> float:
 	var extent := _wall_extent()
 	if extent.size.x <= 0.0 or extent.size.y <= 0.0: return 1.0
-	# M9 (ADVERSARIAL_REVIEW): the CROP BIAS is `WallLayout.view_margin`, which GAP-008 put on the
+	# M9 (PICTURE_WALL.md): the CROP BIAS is `WallLayout.view_margin`, which GAP-008 put on the
 	# layout deliberately and which nothing read -- this used `wall_overfill_margin`, a PICTURE knob
 	# (H3/GAP-011) that means the focused picture's own overfill, not the wall's framing. Expressed
 	# as a FRACTION on the layout (0.06) and passed as the MULTIPLIER `focused_scale()` takes, the
@@ -511,7 +511,7 @@ func wall_view_zoom(window_size: Vector2) -> float:
 ## the design's own trigger is a FRAME ("any frame where zoom changed"), not an event.
 var _last_camera_zoom : float = -1.0
 
-## M5 (ADVERSARIAL_REVIEW): `update_filter(true)` had NO CALLER, so the focused picture sampled
+## M5 (PICTURE_WALL.md): `update_filter(true)` had NO CALLER, so the focused picture sampled
 ## NEAREST through every zoom and S13 was dead -- exactly the shimmer QR7=c/H4/H5 exist to suppress.
 ## This is that call site: the wall owns both the camera and the pictures, which is why
 ## `WallPicture.update_filter()`'s own doc already names "the wall's camera tracking, S12/S13" as
@@ -562,7 +562,7 @@ var _hold_elapsed : float = 0.0
 ## sequence drives exactly the same path a real pointer does.
 var _panning : bool = false
 
-## M4 (ADVERSARIAL_REVIEW): `clamp_pan()`'s ONE call site -- free pan was fully implemented and
+## M4 (PICTURE_WALL.md): `clamp_pan()`'s ONE call site -- free pan was fully implemented and
 ## unreachable, so G10 did not exist and two tests guarded maths nothing ran. Drags the wall-view
 ## camera by a SCREEN-space pointer delta: the camera moves OPPOSITE the pointer (dragging right
 ## pulls the wall right, i.e. looks further left) and divides by the live zoom, which is direct
@@ -630,7 +630,7 @@ func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> 
 	# `rects` is built by iterating WallPacker's own returned Array, so its key order IS
 	# placement order. Kept because %Pictures child order diverges from it the moment a repack
 	# appends a newly-unlocked picture, and `wall_jump_N` means the Nth picture as PLACED
-	# (I7/Q104=a), not the Nth node added (ADVERSARIAL_REVIEW C4).
+	# (I7/Q104=a), not the Nth node added (PICTURE_WALL.md C4).
 	_placement_order.assign(rects.keys())
 	var pictures := _pictures_by_id()
 	var tween : Tween = null

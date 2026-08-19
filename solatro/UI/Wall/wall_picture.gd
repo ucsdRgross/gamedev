@@ -231,7 +231,7 @@ func focus() -> void:
 		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
 	# H5: becoming focused starts "at rest" -- no zoom has changed yet this frame.
 	update_filter(false)
-	# ADVERSARIAL_REVIEW.md C2: a picture becoming focused is always fully opaque -- a reduced-
+	# PICTURE_WALL.md C2: a picture becoming focused is always fully opaque -- a reduced-
 	# motion cross-fade (WallTransition._apply()) may have left this picture's own alpha mid-fade
 	# if the transition landed exactly here; the resting/focused state is never partially faded.
 	set_screen_alpha(1.0)
@@ -250,11 +250,11 @@ func unfocus(footprint_px: Vector2) -> void:
 	# H5: everything non-focused samples LINEAR, unconditionally -- never NEAREST, regardless of
 	# zoom state (update_filter()'s zoom branching only applies to the FOCUSED picture).
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	# ADVERSARIAL_REVIEW.md C2: same reasoning as focus() above -- a picture leaving focus (wall
+	# PICTURE_WALL.md C2: same reasoning as focus() above -- a picture leaving focus (wall
 	# view shows it next) is never left mid-fade from a reduced-motion cross-fade.
 	set_screen_alpha(1.0)
 
-## ADVERSARIAL_REVIEW.md C2: the ONE thing `WallTransition._apply()` needs to drive a reduced-
+## PICTURE_WALL.md C2: the ONE thing `WallTransition._apply()` needs to drive a reduced-
 ## motion cross-fade -- `%Screen`'s own opacity, exposed narrowly rather than the whole private
 ## node, same "expose exactly what a caller needs" shape `screen_root`/`rect` already use.
 func set_screen_alpha(alpha: float) -> void:
@@ -271,7 +271,7 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 
 ## "window restored from minimise": re-render every FROZEN texture, size UNCHANGED. E7 and Q208=b
 ## both say every *frozen* picture -- "the GPU may have discarded them" -- and PLAN.md §1.8's table
-## paraphrases that as "every picture", which is where ADVERSARIAL_REVIEW C1 came from.
+## paraphrases that as "every picture", which is where PICTURE_WALL.md C1 came from.
 ##
 ## ⚠ A FOCUSED picture is not frozen: it is UPDATE_ALWAYS and has nothing to restore. Forcing
 ## UPDATE_ONCE on it renders one more frame and then stops forever, because nothing calls focus()
@@ -293,7 +293,7 @@ func update_filter(zoom_changed_this_frame: bool) -> void:
 ## S36 (F11, Q70=c): the wall-view selection highlight -- "shape and motion, not colour," a lift off
 ## the wall. Only the lift half is built here: the frame GLOW half needs actual frame art/shader
 ## inputs S24 ("frame art parameters") deferred (QR4=b, GAP-013) rather than built, so this stays
-## provisional. CODE_REVIEW.md B2: the lift AMOUNT is `PlayerSettings.wall_selected_lift` (default
+## provisional. PICTURE_WALL.md B2: the lift AMOUNT is `PlayerSettings.wall_selected_lift` (default
 ## (0, -14), the exact prior literal) -- promoted for the same §1.8 reason `wall_overfill_margin`/
 ## `wall_light_offset` already were.
 func set_selected(selected: bool) -> void:
@@ -404,7 +404,7 @@ static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 	var delta := maxf(target_bottom - visible_bottom_rest, 0.0)
 	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
 
-## M8 (ADVERSARIAL_REVIEW) / J7 / Q133=b: the `get_info()` interface, which NO `WallPicture`
+## M8 (PICTURE_WALL.md) / J7 / Q133=b: the `get_info()` interface, which NO `WallPicture`
 ## implemented -- so Info mode on the wall itself described nothing, however many pictures were
 ## hovered. The strings are resolved HERE, not stored on the entry: `InfoEntry`'s own contract is
 ## "already localised by the caller", and the keys follow the same `<THING>` / `<THING>_DESCRIPTION`

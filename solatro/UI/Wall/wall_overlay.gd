@@ -9,7 +9,7 @@ extends CanvasLayer
 
 ## Emitted when the corresponding control is pressed. `Main` (`Levels/main.gd`) is the consumer of
 ## all four -- `back_pressed`/`forward_pressed`/`wall_pressed` drive navigation, `info_toggled`
-## drives Info mode (CODE_REVIEW.md A2).
+## drives Info mode (PICTURE_WALL.md A2).
 signal back_pressed
 signal forward_pressed
 signal wall_pressed
@@ -36,7 +36,7 @@ func _ready() -> void:
 	_info_button.toggled.connect(_on_info_toggled)
 	_apply_touch_targets()
 
-## M6 (ADVERSARIAL_REVIEW) / GAP-004=b / I8c: `WallInput.touch_target_px()` had NO CALLER, and its
+## M6 (PICTURE_WALL.md) / GAP-004=b / I8c: `WallInput.touch_target_px()` had NO CALLER, and its
 ## own doc comment named a live call site that did not exist -- every overlay control was whatever
 ## size the scene happened to author, so GAP-004's MANDATORY clamp never ran on anything. This is
 ## that call site: no control may be smaller than the clamped 9 mm target on either axis.
@@ -81,14 +81,14 @@ func refresh(stack: FocusStack, picture_count: int = 2) -> void:
 	_forward_button.disabled = not stack.can_forward()
 	_wall_button.visible = picture_count > 1
 
-## M3 (ADVERSARIAL_REVIEW): the `wall_info` key's way in. Flips the REAL toggle button rather than
+## M3 (PICTURE_WALL.md): the `wall_info` key's way in. Flips the REAL toggle button rather than
 ## writing `wall_info_mode` from a second place, so the mode and what the button shows can never
 ## disagree -- setting `button_pressed` fires `toggled`, and from there a key press and a mouse
 ## press are the same path.
 func toggle_info() -> void:
 	_info_button.button_pressed = not _info_button.button_pressed
 
-## MINOR (ADVERSARIAL_REVIEW): J1 and Q135's note both call the Info control "a magnifying glass",
+## MINOR (PICTURE_WALL.md): J1 and Q135's note both call the Info control "a magnifying glass",
 ## and it shipped as the word "Info". Built procedurally rather than as an asset, the same idiom
 ## (and for the same reason) as `WallPicture.shared_frame_texture()`: the project's font is a
 ## bitmap face with no glyph for a magnifier, and a one-icon PNG is a dependency this does not need.

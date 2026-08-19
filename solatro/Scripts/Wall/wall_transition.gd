@@ -181,7 +181,7 @@ static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest
 ## S18 (K8, Q172=a): with `wall_reduced_motion` on, the whole zoom-out/travel/zoom-in dance is
 ## replaced by a cross-fade AT A FIXED ZOOM -- held at the SAME "show both frames" framing
 ## `_wide_zoom()` already computes for the ordinary transition's own peak, for the ENTIRE duration
-## (T12: zoom is constant throughout). ⚠ ADVERSARIAL_REVIEW.md C2: "at a fixed zoom" fixes the
+## (T12: zoom is constant throughout). ⚠ PICTURE_WALL.md C2: "at a fixed zoom" fixes the
 ## ZOOM, not the POSITION -- Q172=a still requires the camera to ARRIVE at the destination, same as
 ## every ordinary transition. Position TRAVELS in a straight line from the source's own centre to
 ## the destination's, exactly like the ordinary branch's own travel phase, just with zoom held
@@ -342,7 +342,7 @@ func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 ## sparse real-frame sampling: the tween is guaranteed to reach `elapsed == _total` at landing, and
 ## `_source_pause_time <= _total` always (the backstop in `_find_source_pause_time` guarantees it).
 ##
-## ADVERSARIAL_REVIEW.md C2: under `wall_reduced_motion`, this is also where the actual cross-fade
+## PICTURE_WALL.md C2: under `wall_reduced_motion`, this is also where the actual cross-fade
 ## lives -- `source`/`dest` are REAL `WallPicture`s already in scope for the pause/unpause handoff
 ## below, so pushing screen opacity here needs no second, untested code path in `Main`. Linear in
 ## `elapsed/_total` (source fades 1->0, dest fades 0->1), reaching exactly (0, 1) the instant the

@@ -10,7 +10,7 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
-## M7 (ADVERSARIAL_REVIEW) / J1 / Q134=c: hovering a map node PUBLISHES its `InfoEntry` and stops
+## M7 (PICTURE_WALL.md) / J1 / Q134=c: hovering a map node PUBLISHES its `InfoEntry` and stops
 ## there. The map used to mount an `InfoCard` of its own inside its SubViewport -- a SECOND card,
 ## which `Main` could not reset (it resets the wall overlay's) and which ignored Info mode entirely,
 ## so it appeared unbidden and could never be dismissed. There is ONE card, on the wall's overlay,

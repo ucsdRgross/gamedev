@@ -36,7 +36,7 @@ func _ready() -> void:
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
 	test_overfill_margin_only_applies_when_aspect_mismatches()
-	behavior_section("SELECTED LIFT (CODE_REVIEW.md B2)")
+	behavior_section("SELECTED LIFT (PICTURE_WALL.md B2)")
 	test_selected_lift_knob_actually_changes_the_position()
 	behavior_section("LIVE SCREEN REPARENTING (S30, B7, Q211=a)")
 	test_build_reparents_a_live_screen_unchanged()
@@ -169,7 +169,7 @@ func test_wall_view_size_written_and_clamped() -> void:
 func test_restore_from_minimise_rerenders() -> void:
 	# ⚠ ONE PICTURE IS FOCUSED. The original fixture settled EVERY picture to UPDATE_DISABLED, so
 	# none was live and the notification could not possibly harm one -- it asserted a property that
-	# could not fail (ADVERSARIAL_REVIEW C1). E7 and Q208=b both say every FROZEN texture is
+	# could not fail (PICTURE_WALL.md C1). E7 and Q208=b both say every FROZEN texture is
 	# re-rendered, not every picture: the focused one is not frozen, it is UPDATE_ALWAYS, and
 	# forcing UPDATE_ONCE on it freezes the live screen for the rest of the session.
 	for wp : WallPicture in _pictures:
@@ -188,7 +188,7 @@ func test_restore_from_minimise_rerenders() -> void:
 				"%s (frozen) went UPDATE_ONCE after the restore notification" % wp.name)
 	live.unfocus(Vector2(200.0, 120.0))
 
-## ADVERSARIAL_REVIEW C6: `res://Assets/Wall/layout_default.tres` had ZERO production readers --
+## PICTURE_WALL.md C6: `res://Assets/Wall/layout_default.tres` had ZERO production readers --
 ## `Main` called the hardcoded `Wall.initial_layout()`, so everything an author tuned in S34's tool
 ## was discarded. Proves the loader really reads the FILE (not the fallback) by pointing it at a temp
 ## resource carrying a value the built-in layout could never produce, and proves the fallback still
@@ -224,7 +224,7 @@ func test_filter_swaps_on_zoom_not_pan() -> void:
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 			"a zoom change flips the filter to LINEAR")
 
-## M5 (ADVERSARIAL_REVIEW.md, S13, QR7=c, H4/H5, Q34=c): `update_filter(true)` had NO CALLER, so the
+## M5 (PICTURE_WALL.md, S13, QR7=c, H4/H5, Q34=c): `update_filter(true)` had NO CALLER, so the
 ## focused picture sampled NEAREST through every zoom and S13 was dead. The test above pins the
 ## METHOD; this pins the WIRING -- a REAL camera zoom, on a REAL `Wall`, across REAL frames. It goes
 ## red if `Wall._process()`'s tracking is removed.
@@ -330,9 +330,9 @@ func test_overfill_margin_only_applies_when_aspect_mismatches() -> void:
 			"...and that margin is not silently zero -- the mismatched case is genuinely "
 			+ "different from a bare fill ratio", "scale=%.6f fill=%.6f" % [mismatched_scale, fill_ratio])
 
-# ------------------------------------------------------------------ CODE_REVIEW.md B2
+# ------------------------------------------------------------------ PICTURE_WALL.md B2
 
-## CODE_REVIEW.md B2: `wall_selected_lift` is a REAL, READ knob -- was a typed literal
+## PICTURE_WALL.md B2: `wall_selected_lift` is a REAL, READ knob -- was a typed literal
 ## (`_SELECTED_LIFT`) in `wall_picture.gd`, same category `wall_overfill_margin`/`wall_light_offset`
 ## already promoted. Two different lift values on the SAME picture must produce two different
 ## `position` results after `set_selected(true)`, each exactly `rect.centre + the configured lift`

@@ -375,7 +375,7 @@ func test_no_two_rects_overlap() -> void:
 		check(not _has_any_overlap(rects), "no two frame rects overlap at window aspect %.2f"
 				% window_aspect)
 
-## CODE_REVIEW.md B1: `gap_px = 0` is author-settable (S34 exposes it) and used to make `_clears_all`
+## PICTURE_WALL.md B1: `gap_px = 0` is author-settable (S34 exposes it) and used to make `_clears_all`
 ## report "clears" for EVERY candidate, real overlap included, because `_clearance(...) < 0 - _EPS`
 ## can never be true. Same 6-picture fixture P10 already uses (so a regression here shows up as the
 ## same shape of failure), packed at `gap_px = 0` specifically -- proven RED against the pre-fix

@@ -42,7 +42,7 @@ inventing one. Two sessions inventing two names for one thing is the most common
 
 `%Camera2D` · `%Pictures` (Node2D, parent of every `WallPicture`) · `%Viewports` (Node, parent of
 every `SubViewport`) · `%Overlay` · `%WallSurface` (ColorRect) · `%Overlay/InfoCard` (`InfoCard`,
-CODE_REVIEW.md A1 — mounted inside `%Overlay` so it draws on top of the wall like the rest of the
+PICTURE_WALL.md A1 — mounted inside `%Overlay` so it draws on top of the wall like the rest of the
 overlay's own controls) · `%MusicA` / `%MusicB` (AudioStreamPlayer, S33)
 
 Inside `wall_picture.tscn`: `%Frame` (NinePatchRect) · `%Screen` (Sprite2D) · `%Shadow` (Sprite2D)

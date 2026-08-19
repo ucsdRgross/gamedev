@@ -42,7 +42,7 @@ func _ready() -> void:
 	await test_requesting_current_picture_does_nothing()
 	behavior_section("RESIZE RETARGET (T11)")
 	await test_mid_flight_resize_retargets_without_a_visible_snap()
-	behavior_section("EASING IS AUTHORED, NOT TYPED IN (MINOR, ADVERSARIAL_REVIEW.md, S34, Q53=b)")
+	behavior_section("EASING IS AUTHORED, NOT TYPED IN (MINOR, PICTURE_WALL.md, S34, Q53=b)")
 	test_the_easing_knobs_are_actually_read()
 	behavior_section("REDUCED MOTION (T12)")
 	test_reduced_motion_removes_all_zoom()
@@ -452,7 +452,7 @@ func test_mid_flight_resize_retargets_without_a_visible_snap() -> void:
 
 ## T12 (K8, Q172=a): with wall_reduced_motion on, camera zoom is CONSTANT across the whole scan --
 ## no zoom-out/zoom-in dance at all, matching S18's own done-when ("every transition is a cross-fade
-## and no zoom occurs"). ADVERSARIAL_REVIEW.md C2: the zoom being fixed is only HALF of Q172=a's own
+## and no zoom occurs"). PICTURE_WALL.md C2: the zoom being fixed is only HALF of Q172=a's own
 ## text -- "replaces all of it with a cross-fade at a fixed zoom" still means the camera must ARRIVE
 ## at the destination; a constant zoom that also holds POSITION at the permanent midpoint (the
 ## original bug) satisfies this test's old assertion while leaving the camera parked between the two
@@ -659,9 +659,9 @@ func test_source_pauses_under_real_sparse_frame_sampling() -> void:
 	dest_wp.screen_root.queue_free()
 	await _cleanup([source_wp, dest_wp])
 
-# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ MINOR (PICTURE_WALL.md)
 
-## MINOR (ADVERSARIAL_REVIEW.md): the easing curves were `Tween.TRANS_*`/`EASE_*` LITERALS typed
+## MINOR (PICTURE_WALL.md): the easing curves were `Tween.TRANS_*`/`EASE_*` LITERALS typed
 ## into `wall_transition.gd` and `main.gd`. §1.8 forbids that for a design choice, and S34's own
 ## done-when forbids it twice over -- its tool must expose "the easing selections", and "no knob
 ## above requires editing a `.tres` or a `.gd` by hand to change". `DESIGN.md` §5 simply had no rows

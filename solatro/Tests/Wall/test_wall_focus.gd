@@ -43,25 +43,25 @@ func _ready() -> void:
 	await test_unlock_reaction_leaves_the_real_focus_stack_valid()
 	behavior_section("LOST-RUN BEHAVIOUR (S32, L12, Q157)")
 	test_lost_run_leaves_map_and_game_pictures_unchanged()
-	behavior_section("INFO CARD MOUNTED ON THE WALL (A1, CODE_REVIEW.md)")
+	behavior_section("INFO CARD MOUNTED ON THE WALL (A1, PICTURE_WALL.md)")
 	test_info_card_is_mounted_on_the_wall()
-	behavior_section("INFO TOGGLE WIRING (A2, CODE_REVIEW.md)")
+	behavior_section("INFO TOGGLE WIRING (A2, PICTURE_WALL.md)")
 	await test_info_toggle_sets_flag_and_moves_camera_and_resets_card()
-	behavior_section("FOCUS/TRANSITION SIGNALS (A4, CODE_REVIEW.md, NAMES.md)")
+	behavior_section("FOCUS/TRANSITION SIGNALS (A4, PICTURE_WALL.md, NAMES.md)")
 	await test_focus_and_transition_signals_fire_during_real_navigation()
-	behavior_section("INFO MODE DOES NOT SURVIVE A QUIT (C3, ADVERSARIAL_REVIEW.md, J1)")
+	behavior_section("INFO MODE DOES NOT SURVIVE A QUIT (C3, PICTURE_WALL.md, J1)")
 	test_info_mode_does_not_survive_a_relaunch()
-	behavior_section("RESIZE REACHES THE WALL (M1, ADVERSARIAL_REVIEW.md, S17, T11 wiring)")
+	behavior_section("RESIZE REACHES THE WALL (M1, PICTURE_WALL.md, S17, T11 wiring)")
 	await test_a_real_resize_reaches_the_wall()
-	behavior_section("KEYBOARD BACK RETRACES (M2, ADVERSARIAL_REVIEW.md, Q65=a, I5)")
+	behavior_section("KEYBOARD BACK RETRACES (M2, PICTURE_WALL.md, Q65=a, I5)")
 	await test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view()
-	behavior_section("THE wall_* ACTIONS REACH MAIN (M3, ADVERSARIAL_REVIEW.md, I6, I7)")
+	behavior_section("THE wall_* ACTIONS REACH MAIN (M3, PICTURE_WALL.md, I6, I7)")
 	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
-	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, ADVERSARIAL_REVIEW.md, J1, J6)")
+	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, PICTURE_WALL.md, J1, J6)")
 	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
-	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, ADVERSARIAL_REVIEW.md, J7, Q133=b)")
+	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, PICTURE_WALL.md, J7, Q133=b)")
 	await test_hovering_a_picture_in_info_mode_describes_it()
-	behavior_section("ONE MOVE AT A TIME (C5, ADVERSARIAL_REVIEW.md, Q56=b, §1.6)")
+	behavior_section("ONE MOVE AT A TIME (C5, PICTURE_WALL.md, Q56=b, §1.6)")
 	await test_a_second_destination_mid_move_is_ignored()
 	behavior_section("INPUT IS INERT MID-MOVE, AND UNLOCKS EARLY (C5/S16, I12/Q96=a, C13/Q58)")
 	await test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends()
@@ -396,9 +396,9 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 	restore_real_save()
 	main.queue_free()
 
-# ------------------------------------------------------------------ A1 (CODE_REVIEW.md)
+# ------------------------------------------------------------------ A1 (PICTURE_WALL.md)
 
-## A1 (CODE_REVIEW.md): `InfoCard` was mounted only on the map -- `wall.tscn`/`wall.gd` referenced
+## A1 (PICTURE_WALL.md): `InfoCard` was mounted only on the map -- `wall.tscn`/`wall.gd` referenced
 ## it ZERO times, so info mode on the wall displayed nothing even though J1-J6 passed against a
 ## standalone card built directly by that suite. Structural proof it is genuinely part of the wall
 ## scene now: read through the REAL `Wall` scene's own `%Overlay` node, by the exact path
@@ -413,7 +413,7 @@ func test_info_card_is_mounted_on_the_wall() -> void:
 			str(info_card))
 	wall.queue_free()
 
-# ------------------------------------------------------------------ A2 (CODE_REVIEW.md)
+# ------------------------------------------------------------------ A2 (PICTURE_WALL.md)
 
 func _probe_info_entry() -> InfoEntry:
 	var e := InfoEntry.new()
@@ -421,7 +421,7 @@ func _probe_info_entry() -> InfoEntry:
 	e.body = "probe"
 	return e
 
-## A2 (CODE_REVIEW.md, J2/Q128, J6/Q131): the Info button previously had no consumer anywhere --
+## A2 (PICTURE_WALL.md, J2/Q128, J6/Q131): the Info button previously had no consumer anywhere --
 ## pressing it changed nothing. Drives `Main._on_info_toggled()` DIRECTLY (the exact method
 ## `overlay.info_toggled` is wired to in `Main._ready()`) against a REAL `Main`, REAL focused
 ## picture, and asserts THREE separate consequences, none of which the old (nonexistent) wiring
@@ -469,9 +469,9 @@ func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
 	restore_real_settings()
 	main.queue_free()
 
-# ------------------------------------------------------------------ A4 (CODE_REVIEW.md, NAMES.md)
+# ------------------------------------------------------------------ A4 (PICTURE_WALL.md, NAMES.md)
 
-## A4 (CODE_REVIEW.md, NAMES.md): three of NAMES.md's five `Wall` signals -- `focus_changed`,
+## A4 (PICTURE_WALL.md, NAMES.md): three of NAMES.md's five `Wall` signals -- `focus_changed`,
 ## `transition_started`, `transition_landed` -- were named in the registry but never declared or
 ## emitted anywhere. Real navigation through a REAL `Main` (start_menu -> map, a genuine
 ## picture-to-picture `WallTransition`, the only case `transition_started`/`transition_landed`
@@ -509,9 +509,9 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 
 	main.queue_free()
 
-# ------------------------------------------------------------------ C3 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ C3 (PICTURE_WALL.md)
 
-## C3 (ADVERSARIAL_REVIEW.md, J1, PLAN.md §4 anti-scope item 9): info mode must NOT survive a
+## C3 (PICTURE_WALL.md, J1, PLAN.md §4 anti-scope item 9): info mode must NOT survive a
 ## quit. `wall_info_mode` stays a REAL `PlayerSettings` field (`WallTransition.sample_at()`'s
 ## existing S18/J10 read keeps working unchanged, no signature/shape change there), which means
 ## LEAVING it true would persist to `user://settings.tres` on the very write that set it -- a real
@@ -537,9 +537,9 @@ func test_info_mode_does_not_survive_a_relaunch() -> void:
 	main.queue_free()
 	restore_real_settings()
 
-# ------------------------------------------------------------------ M1 (ADVERSARIAL_REVIEW.md, S17)
+# ------------------------------------------------------------------ M1 (PICTURE_WALL.md, S17)
 
-## M1 (ADVERSARIAL_REVIEW.md): S17's resize path was built and had NO caller -- nothing anywhere
+## M1 (PICTURE_WALL.md): S17's resize path was built and had NO caller -- nothing anywhere
 ## connected `size_changed`, so `WallTransition.retarget()` had zero callers and a resize left the
 ## whole wall packed for the old aspect. This is the WIRING half of T11 (the pure geometry half
 ## lives in `TestWallTransition`); it goes red the moment `Main._ready()`'s
@@ -632,9 +632,9 @@ func test_a_real_resize_reaches_the_wall() -> void:
 	main.queue_free()
 	viewport.queue_free()
 
-# ------------------------------------------------------------------ M2 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M2 (PICTURE_WALL.md)
 
-## M2 (ADVERSARIAL_REVIEW.md, Q65=a, I5/Q100=a): keyboard Back RETRACES the FocusStack one step at
+## M2 (PICTURE_WALL.md, Q65=a, I5/Q100=a): keyboard Back RETRACES the FocusStack one step at
 ## a time. `Wall._unhandled_input()` used to emit `wall_view_entered` on `ui_cancel`, so Escape
 ## dropped the player straight to the overview from any depth -- the stack was never consulted, and
 ## the overlay's Back button and the Escape key meant two different things.
@@ -686,9 +686,9 @@ func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> voi
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
 	restore_real_settings()
 
-# ------------------------------------------------------------------ M3 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
-## M3 (ADVERSARIAL_REVIEW.md): the four `wall_*` actions had no reader anywhere. `TestWallInput`
+## M3 (PICTURE_WALL.md): the four `wall_*` actions had no reader anywhere. `TestWallInput`
 ## proves each one now reaches a signal; this proves the signals reach `Main` and actually MOVE the
 ## player -- S22's own done-when in prose ("the controller is driven by hand through one full
 ## navigate-enter-back-wall cycle"), run as one journey on one real `Main` rather than four
@@ -758,9 +758,9 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 		if settled.call(): return
 		await get_tree().process_frame
 
-# ------------------------------------------------------------------ M7 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M7 (PICTURE_WALL.md)
 
-## M7 (ADVERSARIAL_REVIEW.md, J1/J6, Q134=c): the map mounted an `InfoCard` of its OWN inside its
+## M7 (PICTURE_WALL.md, J1/J6, Q134=c): the map mounted an `InfoCard` of its OWN inside its
 ## SubViewport, so `_on_info_toggled()` -- which resets the WALL overlay's card -- was resetting a
 ## different instance. The map's card could never be dismissed and showed on hover whether or not
 ## Info mode was on. There is one card now, on the wall, and Info mode gates it.
@@ -801,9 +801,9 @@ func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
 	main.queue_free()
 	restore_real_settings()
 
-# ------------------------------------------------------------------ M8 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M8 (PICTURE_WALL.md)
 
-## M8 (ADVERSARIAL_REVIEW.md, J7/Q132=a, Q133=b): NO `WallPicture` implemented `get_info()`, so
+## M8 (PICTURE_WALL.md, J7/Q132=a, Q133=b): NO `WallPicture` implemented `get_info()`, so
 ## Info mode on the wall itself described nothing however many pictures were hovered -- the wall
 ## half of J7 was never built, only the map half (S29).
 ##
@@ -878,9 +878,9 @@ func _hover_wall_at(main: Main, wall_pos: Vector2) -> void:
 	motion.position = main.wall.get_viewport().canvas_transform * wall_pos
 	main.wall._unhandled_input(motion)
 
-# ------------------------------------------------------------------ C5 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ C5 (PICTURE_WALL.md)
 
-## C5 (ADVERSARIAL_REVIEW.md, Q56=b, §1.6) -- the regression test this fix has owed since it landed.
+## C5 (PICTURE_WALL.md, Q56=b, §1.6) -- the regression test this fix has owed since it landed.
 ## `Main._focus_picture()` news a `WallTransition` PER CALL, so `request()`'s own `is_active` guard
 ## could never see the other one: two clicks in wall view ran two tweens on one `Camera2D`, both
 ## landed, and both called `focus()`, leaving TWO `PROCESS_MODE_ALWAYS` screen roots. §1.6's "exactly
@@ -949,7 +949,7 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 
 # ------------------------------------------------------------------ C5's other half (S16, C13)
 
-## ADVERSARIAL_REVIEW C5's own row ends "`input_unlocked` -- the signal S16 exists for -- has no
+## PICTURE_WALL.md C5's own row ends "`input_unlocked` -- the signal S16 exists for -- has no
 ## consumer", and I12/Q96=a ("during a transition input is inert") had no implementation either. The
 ## two are one defect: with nothing making input inert, there was nothing for an early unlock to
 ## unlock, so C13/Q58's whole contract -- "allow input once picture is unpaused, which should not be

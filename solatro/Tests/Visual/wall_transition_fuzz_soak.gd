@@ -17,8 +17,8 @@ extends TestSuite
 # After EVERY landing: exactly one ALWAYS screen root, a valid/growing FocusStack, and no two
 # packed frame-outer rects overlap (independent re-check, not just trusting WallPacker's own
 # internal rule-6 guard). A combined per-round check is this suite's own proxy for "the errors log
-# stayed empty this round" -- GDScript cannot hook push_error (HANDOFF_picture_wall.md,
-# ASSUMPTIONS.md GAP-007), so the only per-ROUND signal obtainable from inside the engine is this
+# stayed empty this round" -- GDScript cannot hook push_error (ASSUMPTIONS.md GAP-007), so the
+# only per-ROUND signal obtainable from inside the engine is this
 # suite's own check() failing, which is exactly what would make test_output_errors.log non-empty.
 # A genuine engine-level push_error scan (WallPacker.pack()'s own rule-6 guard included) is caught
 # separately, in aggregate over the whole run, by Tools/run_tests.py's exit-time wrapper around

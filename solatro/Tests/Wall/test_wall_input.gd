@@ -30,9 +30,9 @@ func _ready() -> void:
 	_test_selection_wraps()
 	behavior_section("THE INFO CONTROL IS THE GLASS, NOT THE WORD (MINOR, J1/Q135)")
 	_test_the_info_button_wears_the_magnifying_glass()
-	behavior_section("THE SELECTION IS ACTUALLY DRAWN (MINOR, ADVERSARIAL_REVIEW.md, F11/Q105=b)")
+	behavior_section("THE SELECTION IS ACTUALLY DRAWN (MINOR, PICTURE_WALL.md, F11/Q105=b)")
 	_test_the_selected_picture_is_the_one_visibly_lifted()
-	behavior_section("HELD-STICK REPEAT (M9, ADVERSARIAL_REVIEW.md, I7/Q116=a)")
+	behavior_section("HELD-STICK REPEAT (M9, PICTURE_WALL.md, I7/Q116=a)")
 	await _test_a_held_direction_repeats_after_the_configured_delay()
 	behavior_section("CURSOR VISIBILITY (I9)")
 	_test_cursor_appears_only_after_a_key_press()
@@ -51,7 +51,7 @@ func _ready() -> void:
 	await _test_non_focused_picture_never_receives_input()
 	behavior_section("MOUSE (I8, S20)")
 	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
-	behavior_section("THE FOUR wall_* ACTIONS HAVE READERS (M3, ADVERSARIAL_REVIEW.md, I6/Q102=a)")
+	behavior_section("THE FOUR wall_* ACTIONS HAVE READERS (M3, PICTURE_WALL.md, I6/Q102=a)")
 	_test_wall_overview_asks_for_wall_view()
 	_test_wall_back_asks_for_back()
 	_test_wall_forward_asks_for_forward()
@@ -68,13 +68,13 @@ func _ready() -> void:
 	await _test_click_enters_an_unfocused_picture_immediately()
 	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
 	_test_most_recent_device_wins_controller_after_mouse()
-	behavior_section("TOUCH TARGETS REACH THE REAL CONTROLS (M6, ADVERSARIAL_REVIEW.md, GAP-004=b)")
+	behavior_section("TOUCH TARGETS REACH THE REAL CONTROLS (M6, PICTURE_WALL.md, GAP-004=b)")
 	_test_every_overlay_control_meets_the_clamped_touch_target()
 	behavior_section("TOUCH (I11, I12, I13, S23)")
 	_test_pinch_is_derived_from_two_touches()
 	_test_magnify_gesture_is_never_listened_for()
 	_test_touch_target_size_is_clamped()
-	behavior_section("PINCH WIRING (A3, CODE_REVIEW.md, Q119=a)")
+	behavior_section("PINCH WIRING (A3, PICTURE_WALL.md, Q119=a)")
 	_test_pinch_out_enters_the_selected_picture()
 	_test_pinch_in_returns_to_wall_view()
 	finish()
@@ -594,7 +594,7 @@ func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
 	check(pictures.size() >= 3, "at least 3 pictures were packed for this fixture",
 			str(pictures.size()))
 
-	# apply_layout() is what records placement order (ADVERSARIAL_REVIEW C4) -- without it the wall
+	# apply_layout() is what records placement order (PICTURE_WALL.md C4) -- without it the wall
 	# has no idea what "the third picture" means, so drive the real path rather than assuming.
 	var rects_by_id : Dictionary[StringName, PictureRect] = {}
 	for rect : PictureRect in rects: rects_by_id[rect.id] = rect
@@ -814,9 +814,9 @@ func _test_magnify_gesture_is_never_listened_for() -> void:
 			"a real drag past threshold still fires normally after the magnify event was ignored",
 			str(after))
 
-# ------------------------------------------------------------------ A3 (CODE_REVIEW.md wiring)
+# ------------------------------------------------------------------ A3 (PICTURE_WALL.md wiring)
 
-## A3 (CODE_REVIEW.md, Q119=a): `WallInput.PinchTracker` was built and tested in isolation
+## A3 (PICTURE_WALL.md, Q119=a): `WallInput.PinchTracker` was built and tested in isolation
 ## (I11-I13 above) but never wired into `Wall`'s own input path -- touch pinch did NOTHING in the
 ## app. Drives REAL `InputEventScreenTouch`/`InputEventScreenDrag` events through
 ## `wall._unhandled_input()` (never `WallInput.PinchTracker` directly, which would only re-prove
@@ -909,9 +909,9 @@ func _test_touch_target_size_is_clamped() -> void:
 			"DPI 10000 (absurdly high) clamps to the configured CEILING",
 			"got=%.4f ceiling=%.1f" % [high, settings.wall_touch_target_max_px])
 
-# ------------------------------------------------------------------ M3 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
-## M3 (ADVERSARIAL_REVIEW.md): `wall_overview`, `wall_back`, `wall_forward` and `wall_info` were
+## M3 (PICTURE_WALL.md): `wall_overview`, `wall_back`, `wall_forward` and `wall_info` were
 ## registered in the InputMap and read by NOTHING -- Tab, L1/LB, R1/RB and `I` all did nothing, so a
 ## controller had no Back, no Forward and no Wall at all. One test per action, each asserting the
 ## signal that action's own reader emits; every one goes red if its `is_action_pressed` branch in
@@ -998,9 +998,9 @@ func _test_every_wall_action_has_at_least_one_binding() -> void:
 		check(not events.is_empty(), message + "dead as one nobody reads",
 				"events=%d" % events.size())
 
-# ------------------------------------------------------------------ M4 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M4 (PICTURE_WALL.md)
 
-## M4 (ADVERSARIAL_REVIEW.md): `clamp_pan()` had NO CALLER, so free pan did not exist and the two
+## M4 (PICTURE_WALL.md): `clamp_pan()` had NO CALLER, so free pan did not exist and the two
 ## tests above guarded maths nothing ever ran. These drive the REAL pointer path -- press, move,
 ## release through `Wall._unhandled_input()` -- and go red if `pan_by()`'s branch there is removed.
 ##
@@ -1104,9 +1104,9 @@ func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 	_press_left(wall, bare_wall, false)
 	_teardown(wall, [left, right])
 
-# ------------------------------------------------------------------ M6 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M6 (PICTURE_WALL.md)
 
-## M6 (ADVERSARIAL_REVIEW.md, GAP-004=b, I8c): `WallInput.touch_target_px()` had NO CALLER -- the
+## M6 (PICTURE_WALL.md, GAP-004=b, I8c): `WallInput.touch_target_px()` had NO CALLER -- the
 ## overlay's buttons were whatever size the scene authored (80x32), and GAP-004's clamp, which its
 ## own answer calls "a contract, not a guard clause", never ran on anything. `_test_touch_target_
 ## size_is_clamped()` below pins the FORMULA; this pins the fact that a real control obeys it.
@@ -1153,9 +1153,9 @@ func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
 	settings.wall_touch_target_max_px = real_max
 	restore_real_settings()
 
-# ------------------------------------------------------------------ M9 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M9 (PICTURE_WALL.md)
 
-## M9 (ADVERSARIAL_REVIEW.md, GAP-008=a, G9/Q5=b): `WallLayout.view_margin` -- the crop bias
+## M9 (PICTURE_WALL.md, GAP-008=a, G9/Q5=b): `WallLayout.view_margin` -- the crop bias
 ## GAP-008 deliberately homed on the LAYOUT -- had no reader; `wall_view_zoom()` used
 ## `wall_overfill_margin`, which is a PICTURE knob (H3/GAP-011) about the focused picture's own
 ## overfill, not the wall's framing.
@@ -1191,9 +1191,9 @@ func _test_wall_view_zoom_reads_the_layouts_own_crop_bias() -> void:
 					% [layout_margin, SettingsManager.settings.wall_overfill_margin])
 	_teardown(wall, [wp])
 
-# ------------------------------------------------------------------ M9 (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ M9 (PICTURE_WALL.md)
 
-## M9 (ADVERSARIAL_REVIEW.md, I7/Q116=a: "one step per press with a repeat after a hold delay"):
+## M9 (PICTURE_WALL.md, I7/Q116=a: "one step per press with a repeat after a hold delay"):
 ## `wall_selection_repeat_delay` had NO READER, which is what "held-stick repeat does not exist"
 ## means in practice -- a held arrow or stick moved the selection once and then sat there.
 ##
@@ -1249,9 +1249,9 @@ func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 	restore_real_settings()
 	_teardown(wall, [top, middle, bottom])
 
-# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ MINOR (PICTURE_WALL.md)
 
-## MINOR (ADVERSARIAL_REVIEW.md): two findings, one cause -- nothing turned (`selected_id`,
+## MINOR (PICTURE_WALL.md): two findings, one cause -- nothing turned (`selected_id`,
 ## `selection_visible`) into what is actually DRAWN. Entering wall view set the id and lifted
 ## nothing, so arriving showed no cursor at all (F11/Q69=a: "exactly one picture is selected in wall
 ## view, always"); and `selection_visible` had no renderer, so the lift was applied whether or not
@@ -1295,9 +1295,9 @@ func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
 			"...and only that one")
 	_teardown(wall, [top, bottom])
 
-# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+# ------------------------------------------------------------------ MINOR (PICTURE_WALL.md)
 
-## MINOR (ADVERSARIAL_REVIEW.md, J1, Q135's note): the Info control is "a top-right magnifying
+## MINOR (PICTURE_WALL.md, J1, Q135's note): the Info control is "a top-right magnifying
 ## glass"; it shipped wearing the word "Info". The icon is built procedurally
 ## (`WallOverlay.magnifier_icon()`, the `WallPicture.shared_frame_texture()` idiom) because the
 ## project's font has no magnifier glyph.

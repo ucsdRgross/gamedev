@@ -526,7 +526,7 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_selection_repeat_delay = value
 		settings_changed.emit()
-## M9 (ADVERSARIAL_REVIEW): three §5 rows were STRUCK here rather than wired, because the source
+## M9 (PICTURE_WALL.md): three §5 rows were STRUCK here rather than wired, because the source
 ## answers put their value somewhere else or rejected the feature outright -- the same call GAP-008
 ## made for `wall_gap`/`wall_view_margin`/`wall_ellipse_aspect_min`/`_max`. See
 ## `ASSUMPTIONS.md` for the citations:
@@ -535,7 +535,7 @@ signal patience_max_increased(delta: int)
 ##   `wall_live_screen_cap`          -- `Q204` is gated on `Q203`=b; `Q203`=a keeps every screen.
 ##   `wall_design_height`            -- `Q30` is gated on `Q29`=a; `Q29`=b is per-screen
 ##                                      (`PictureEntry.design_size`).
-## MINOR (ADVERSARIAL_REVIEW): the transition's easing curves were typed into `wall_transition.gd`
+## MINOR (PICTURE_WALL.md): the transition's easing curves were typed into `wall_transition.gd`
 ## and `main.gd` as `Tween.TRANS_*`/`EASE_*` literals, which §1.8 forbids for a design choice and
 ## which S34's own done-when forbids twice over -- its tool must expose "the easing selections", and
 ## "no knob above requires editing a `.tres` or a `.gd` by hand to change". `DESIGN.md` §5 simply had
@@ -644,7 +644,7 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_reveal_delay_scale = value
 		settings_changed.emit()
-## CODE_REVIEW.md B2: how far a selected picture lifts off the wall in wall-view (S36, F11,
+## PICTURE_WALL.md B2: how far a selected picture lifts off the wall in wall-view (S36, F11,
 ## Q70=c's "shape and motion, not colour"). Was a typed literal in `wall_picture.gd`
 ## (`_SELECTED_LIFT := Vector2(0.0, -14.0)`); §1.8 makes a visible design choice like this a
 ## defect, same category as `wall_overfill_margin`/`wall_light_offset`. Default (0, -14) is that
