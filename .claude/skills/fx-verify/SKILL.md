@@ -53,6 +53,17 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
 1. **Render.** Run the relevant snapshot scene WINDOWED (each self-`quit()`s in a few seconds):
    - `<binary> --path solatro res://Tests/Visual/fx_snapshot.tscn` — shader FX
    - `<binary> --path solatro res://Tests/Visual/prop_art_snapshot.tscn` — prop / pip sprite art
+   - **The picture wall has its own eight**, and they are the gate for anything under `UI/Wall/`:
+     `wall_verify_snapshot` (wall view, mid-transition, focused-at-rest, 32:9),
+     `wall_frame_shadow_snapshot` (frame nine-slice + shadow direction),
+     `wall_picture_construction_snapshot`, `wall_overfill_snapshot`, `wall_filter_swap_snapshot`,
+     `wall_info_snapshot`, `wall_skeleton_snapshot`, `wall_editor_snapshot`.
+     ⚠ **They do NOT write to the `{fx,prop_art}_snapshots` folders.** Each takes an env var and
+     falls back to `user://<scene_name>/` — `OUT_DIR` for the multi-shot scenes, `OUT_PATH` for the
+     single-shot ones (`main_boot`, `wall_filter_swap`, `wall_overfill`,
+     `wall_picture_construction`, `wall_skeleton`). Set it to a directory you can read back:
+     `$env:OUT_DIR=<dir>` before `Start-Process`, since a scene's own header is otherwise the only
+     place that convention is written down.
    Launch so you WAIT for exit (`Start-Process ... -PassThru` then `WaitForExit`), and run one
    Godot at a time — concurrent runs starve each other on the Intel UHD.
 

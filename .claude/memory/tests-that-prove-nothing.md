@@ -1,6 +1,6 @@
 ---
 name: tests-that-prove-nothing
-description: "Nine ways a test passes while asserting nothing, and the red-then-green rule that catches all of them"
+description: "Ten ways a test passes while asserting nothing, and the red-then-green rule that catches all of them"
 metadata:
   type: feedback
 ---
@@ -31,9 +31,19 @@ proving nothing, each of which looked fine in review; a later run added the nint
    fires, and a camera resting at the wrong zoom — all three green, for a whole run. Ask what
    ambient state the real product runs under, and whether the fixture just turned it off.
 
-**The rule that catches all nine: prove every new test red-then-green.** Neutralise the behaviour,
+10. **Two competing mechanisms with the SAME observable.** A test can pass because the WRONG
+   mechanism happens to produce the right answer. Measured: a re-pack test passed with its fix
+   removed, because the stale tween and the correct one wrote the same property every frame and the
+   later one landed last — the defect was real and invisible. Separate the two before asserting
+   (there, by making the stale animation outlive the correct one) or the test is measuring which
+   writer ran second.
+
+**The rule that catches all ten: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting
-nothing. When a fix makes an existing test fail, investigate before adjusting it — see item 7 above.
+nothing. ⚠ **Check the red run failed the checks you EXPECTED.** A neutralisation that breaks the
+test instead of the behaviour — one that returns the wrong type, say — aborts the test function on
+the spot, and the banner then reads `ALL N CHECKS PASSED` with the assertions silently missing.
+Measured: a bad cast did exactly that while two tests never ran. When a fix makes an existing test fail, investigate before adjusting it — see item 7 above.
 
 Applies to any suite in any project here. See [[running-godot-scenes]] for what a banner does and
 does not prove.

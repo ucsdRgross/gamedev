@@ -1,6 +1,6 @@
 ---
 name: plan-run
-description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the nine ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
+description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the ten ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
 ---
 
 # Running a plan with an overseer and implementer subagents
@@ -67,10 +67,14 @@ after the work is already "complete".
 For **every new test**, not only for bug fixes: neutralise the behaviour, watch the test fail,
 restore it, watch it pass, report both observations.
 
+⚠ **Check the red run failed the checks you EXPECTED.** A neutralisation that breaks the TEST rather
+than the behaviour aborts the test function, and the banner then reads all-passed with those
+assertions silently missing — the same shape as the defect you are hunting.
+
 ⚠ When a fix makes an existing test fail, **investigate before adjusting it** — one run found a
 tolerance that had been calibrated to the bug, so it passed *because* the defect existed.
 
-## The nine ways a test passes while proving nothing
+## The ten ways a test passes while proving nothing
 
 1. `await some_timer` instead of `await some_timer.timeout` — awaiting a non-signal resolves instantly.
 2. **Lambdas capture outer locals by value.** `var fired = false` then `func(): fired = true` writes
@@ -91,6 +95,13 @@ tolerance that had been calibrated to the bug, so it passed *because* the defect
    the tree paused for the whole session. That one habit hid a total soft-lock, a timer that never
    fires, and a camera resting at the wrong zoom — all three green, for a whole run. Ask what
    ambient state the real product runs under, and whether the fixture just turned it off.
+
+10. **Two competing mechanisms with the SAME observable.** A test can pass because the WRONG
+   mechanism happens to produce the right answer. Measured: a re-pack test passed with its fix
+   removed, because the stale tween and the correct one wrote the same property every frame and the
+   later one landed last — the defect was real and invisible. Separate the two before asserting
+   (there, by making the stale animation outlive the correct one) or the test is measuring which
+   writer ran second.
 
 ## Traps that are not about tests
 

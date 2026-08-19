@@ -58,7 +58,10 @@ So:
 
 **Never read the full output — it is too much.** The runner ends with one of two lines:
 `ALL %d SUITES: %d CHECKS PASSED` on success, or `ALL %d SUITES: %d passed, %d FAILED
-(%d behavior, %d implementation)` on failure. Grep for which one was taken. Read the full log
+(%d behavior, %d implementation)` on failure. Grep for which one was taken —
+⚠ **and grep BOTH streams: the FAILING banner and every `[FAIL]` line go to STDERR, not stdout.**
+A stdout-only grep on a red run returns nothing at all, which reads exactly like a hang. The
+passing banner goes to stdout, so "no match" on a stdout grep means red or crashed, never green. Read the full log
 only when it failed, to locate the failing suite. `test_output_errors.log` empty = green;
 LEAK CANARY's stderr `push_error`/ObjectDB-leak lines are deliberate.
 
@@ -106,8 +109,13 @@ batch phases ahead of reality.
 
 - **Scene filename ≠ script name** — `test_scoring.gd`'s scene is `test_score.tscn`. Glob
   `Tests/**/<name>.tscn` before invoking a single suite.
-- After adding a `class_name`, the `.godot/` class cache goes stale → "Could not find type X".
-  Delete `.godot/` and run `--headless --path . --import` once.
+- **A stale `.godot/` class cache turns a whole run into noise** — hundreds of `Could not find type
+  X` parse errors, every suite failing for a reason that is not real. Two ways in: adding a
+  `class_name`, and **checking out a branch on the OTHER machine for the first time** (this repo
+  travels between two boxes, so that is routine, not exotic). Fix: delete `.godot/`, then run
+  `--headless --path . --import` **twice** — the first pass still reports parse errors while it is
+  building the cache it needs, the second comes back clean. Do this BEFORE trusting any baseline;
+  a run against a stale cache tells you nothing about your change.
 - **Disk/save tests must always run full.** `SolatroTest.backup_real_save()` /
   `restore_real_save()` move any real `run.tres` to a `.testbak` sibling before the disk section
   and restore it after; `test_run_manager`, `test_persistence_fuzz` and `test_e2e_run` all call

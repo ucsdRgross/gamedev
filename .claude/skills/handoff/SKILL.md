@@ -93,6 +93,9 @@ the entire point.
 - **Do not `git add` or commit on your own.** The owner drives this repo through GitHub Desktop.
   Evidence lives in this file rather than in commit messages. If they have authorized commits for
   the session, commit after a green verification with a message naming the task id.
+  ⚠ `/plan-run` REVERSES this for the overseer on a worktree branch — one commit per verified step,
+  because commits are that run's only rollback points. If both skills are in play, plan-run's rule
+  wins on its branch; this one governs everywhere else.
 - **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue
   into `ARCHITECTURE_REVIEW.md` / `todo.md` and delete the handoff — but run `git ls-files <path>`
   first, since deleting an untracked file destroys it.

@@ -42,6 +42,14 @@ func suite_name() -> String:
 # (CardEnvironment.CURRENT, Main.save_info, SettingsManager — which write to disk) and so wait
 # for other suites to finish first, at the top of their _ready(), via await_siblings_except().
 #
+# ⚠️ THE OTHER SIDE OF THAT RULE, AND THE ONE THAT ACTUALLY BIT: waiting protects the suite that
+# NEEDS the state. Nothing protects it from a suite that needs nothing and MUTATES it in passing.
+# Constructing production objects has production side effects — building a `Main` clears the shared
+# `wall_info_mode` (C3, its own startup rule), and that failed WALL FOCUS, mid-await on that flag,
+# from inside WALL RENDER, which was only building a Main to test an unrelated debug gate. It
+# failed 2 runs in 3 and named a suite the change never touched. So: if your fixture constructs
+# something real, ask what it writes on the way up, and preserve/restore anything shared.
+#
 # ⚠️ THE DEADLOCK RULE: waiting is a directed dependency. If suite A waits for suite B, then B
 # must NOT wait for A — directly OR transitively — or BOTH hang forever and the whole run never
 # finishes (all_tests never quits; log tails just stop). A real deadlock shipped once because a
@@ -219,6 +227,10 @@ func _move_settings_backup_home() -> void:
 ## ⚠️ SCOPE THE PREFIX to the knobs your suite actually owns. The live PlayerSettings is SHARED
 ## and concurrent suites interleave — restoring a full snapshot would stomp another suite's
 ## in-flight knobs. "" (everything) is only safe for a suite that waits for its siblings.
+## ⚠ ONLY CAPTURES `@export`ed KNOBS. The filter below needs `PROPERTY_USAGE_STORAGE`, which a plain
+## `var` does not carry — so de-exporting a knob silently drops it out of every snapshot/restore in
+## the suite, and it then leaks across tests with nothing to say so. `wall_info_mode` is deliberately
+## a plain `var` (session state, not persisted) and is restored by hand where it matters.
 func snapshot_settings(prefix: String = "") -> Dictionary:
 	var out : Dictionary = {}
 	var s := SettingsManager.settings

@@ -19,8 +19,9 @@ gone by the time you know you wanted it.
   any suite's logic — suspect shared render/GPU state or an `await_siblings_except` race.
   **Clusters in time: 3 consecutive hangs, then a clean HEAD twice, then the same working tree
   twice — 3 hangs and 4 passes with no code difference between them.**
-  ⚠ **So a hung run is NOT reliably attributable to the change that produced it**, which is what the
-  one-fix-at-a-time rule normally assumes. Re-run before bisecting; each attempt costs ~7 minutes.
+  ⚠ **So a hung run is NOT reliably attributable to the change that produced it.** Re-run before
+  bisecting; each attempt costs ~7 minutes. (The one-fix-at-a-time working agreement used to say a
+  hang IS the change's fault outright; it now carries this exception.)
 - ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
   normally. Still unattributed — likely the exit-time leak's family, objects surviving into
   `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
