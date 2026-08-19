@@ -46,6 +46,7 @@ func _ready() -> void:
 	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
 	await test_real_wall_moves_complete_under_the_paused_tree()
 	await test_a_second_back_during_a_move_does_not_eat_a_history_entry()
+	await test_info_toggled_mid_transition_does_not_hijack_the_camera()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	finish()
 
@@ -391,6 +392,55 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 	await _drive_move(func() -> void: await main._on_back_pressed())
 	check(main._current_focus == &"start_menu",
 			"...and it really does still lead to start_menu", str(main._current_focus))
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## C5/Q56=b: the Info toggle is a camera move like any other, so it does not fight a live one.
+##
+## ⚠ It used to await `_animate_camera()` without checking or setting `_move_in_flight`, so a toggle
+## mid-transition ran a second tween on the shared camera and won: the destination ended focused
+## with the camera on the SOURCE picture's info pose, ~99% off-screen, input unlocked.
+func test_info_toggled_mid_transition_does_not_hijack_the_camera() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+	SettingsManager.settings.wall_reduced_motion = false
+
+	# Start a real move, then toggle Info while it is genuinely in flight.
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	_drive(func() -> void: await main._focus_picture(&"map"), done)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(main._move_in_flight, "sanity: the move really is in flight when Info is toggled")
+	await main._on_info_toggled(true)
+	var started := Time.get_ticks_msec()
+	while not done[0] and Time.get_ticks_msec() - started < 8000:
+		await get_tree().process_frame
+
+	check(done[0], "the interrupted move still completes")
+	check(main._current_focus == &"map", "...and lands on its own destination",
+			str(main._current_focus))
+	check(SettingsManager.settings.wall_info_mode,
+			"...and the mode the player chose is honoured, not silently dropped")
+	# THE POINT: the camera must be posed for the DESTINATION, in the mode now active -- never for
+	# the picture the move started from.
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var want := WallPicture.info_zoom_state(main._rects[&"map"], main._window_size,
+			SettingsManager.settings)
+	var want_pos : Vector2 = want["position"]
+	var source := WallPicture.info_zoom_state(main._rects[&"start_menu"], main._window_size,
+			SettingsManager.settings)
+	var source_pos : Vector2 = source["position"]
+	check(want_pos.distance_to(source_pos) > 1.0,
+			"sanity: the two pictures' info poses actually differ, so this can fail",
+			"dest=%s source=%s" % [want_pos, source_pos])
+	check(camera.position.distance_to(want_pos) < 1.0,
+			"the camera rests on the DESTINATION's info pose, not the source's",
+			"camera=%s dest=%s source=%s" % [camera.position, want_pos, source_pos])
 
 	main.queue_free()
 	restore_settings_snapshot(snap)

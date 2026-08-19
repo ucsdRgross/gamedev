@@ -726,13 +726,20 @@ func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() 
 	var settings := SettingsManager.settings
 	var overlay : WallOverlay = main.wall.get_node(^"%Overlay")
 	var info_button : Button = overlay.get_node(^"%InfoButton")
-	await _feed_wall_action(main, &"wall_info", func() -> bool: return settings.wall_info_mode)
+	# ⚠ `and not _move_in_flight`: the toggle sets the MODE immediately and then animates the camera
+	# (C5/Q56=b -- the Info toggle is a move and holds the one-move flag while it runs). Settling on
+	# the flag alone returned mid-move, and the very next action here was then correctly REFUSED,
+	# which surfaced in this test as `wall_overview` doing nothing. The wall being at rest is part
+	# of what "the toggle finished" means.
+	await _feed_wall_action(main, &"wall_info",
+			func() -> bool: return settings.wall_info_mode and not main._move_in_flight)
 	check(settings.wall_info_mode, "wall_info (I) turned Info mode ON -- the key had no reader")
 	check(info_button.button_pressed,
 			"and the overlay's own toggle READS pressed -- the key drives the button, so the two "
 			+ "can never disagree (C3's own failure mode)")
 
-	await _feed_wall_action(main, &"wall_info", func() -> bool: return not settings.wall_info_mode)
+	await _feed_wall_action(main, &"wall_info",
+			func() -> bool: return not settings.wall_info_mode and not main._move_in_flight)
 	check(not settings.wall_info_mode, "pressing it again turned Info mode back OFF")
 	check(not info_button.button_pressed, "...and released the button with it")
 

@@ -305,8 +305,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   "fixed zoom" and H3/`Q27`'s "no frame visible at rest" cannot both hold across a move between two
   differently-sized pictures. Three defensible framings, all visible on every navigation; the
   resting-pose half is already fixed and is not in dispute.
-- **The Info toggle drives the shared camera with no re-entrancy guard**, so it can fight a live
-  transition and settle on the wrong picture's pose.
 - **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so a move
   between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
   on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself

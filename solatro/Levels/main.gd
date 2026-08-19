@@ -491,6 +491,18 @@ func _on_info_toggled(active: bool) -> void:
 	if not active:
 		info_card.reset()
 	if _current_focus == &"": return
+	# C5/Q56=b: ONE move at a time. This drives the same shared `%Camera2D` every other move drives,
+	# with no guard at all -- so toggling Info during a transition ran a second tween against the
+	# live one and settled on the SOURCE picture's info pose. Measured: toggling two frames into a
+	# start_menu -> map move left `map` focused with the camera at start_menu's info pose, the
+	# picture ~99% off-screen, input unlocked, and no way out but toggling again.
+	#
+	# The MODE still changes -- the button has already moved and M3 keeps the key, the button and
+	# the flag one thing -- but the CAMERA is left to whichever move owns it. `_focus_picture()`
+	# settles to the resting pose when it lands and `_settle_camera()` already honours
+	# `wall_info_mode`, so the DESTINATION arrives correctly posed for the mode just chosen.
+	if _move_in_flight: return
+	_move_in_flight = true
 	var dest_rect : PictureRect = _rects[_current_focus]
 	var settings := SettingsManager.settings
 	if active:
@@ -503,6 +515,10 @@ func _on_info_toggled(active: bool) -> void:
 		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
 				_window_size, settings.wall_overfill_margin), dest_rect.centre, dest_rect.centre,
 				_entries[_current_focus])
+	_move_in_flight = false
+	# A resize that arrived while this move owned the camera deferred its settle to whoever was
+	# moving -- which is this, exactly as for the other two movers.
+	_settle_after_deferred_resize()
 
 ## M7 (J1/J5, Q134=c): a focused screen published something hoverable. Shown on the wall's ONE
 ## card, and ONLY while Info mode is on -- J1 makes the card Info mode's, and a screen that pushed
