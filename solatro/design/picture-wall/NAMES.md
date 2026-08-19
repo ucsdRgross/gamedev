@@ -61,6 +61,7 @@ Inside `wall_picture.tscn`: `%Frame` (NinePatchRect) · `%Screen` (Sprite2D) · 
 | `Wall` | `picture_enter_requested` | `(id: StringName)` |
 | `ProfileManager` | `picture_unlocked` | `(picture_id: StringName)` |
 | `InfoCard` | `info_shown` | `(entry: InfoEntry)` |
+| `Map` | `info_hovered` | `(entry: InfoEntry)` |
 
 ## Picture ids (`StringName`, and the key for every derived name)
 

@@ -50,6 +50,11 @@ func _ready() -> void:
 		SettingsManager.settings.wall_info_mode = false
 
 	map_scene.enter_game.connect(enter_game)
+	# M7 (ADVERSARIAL_REVIEW, J1/J6, Q134=c): the map used to mount an InfoCard of its OWN inside its
+	# SubViewport. `_on_info_toggled()` reset the wall overlay's card, a DIFFERENT instance, so the
+	# map's could never be dismissed and appeared whether or not Info mode was on. There is one card
+	# now, and this is where a screen's hover reaches it.
+	map_scene.info_hovered.connect(_on_screen_info_hovered)
 	menu_scene.new_run_requested.connect(_on_new_run)
 	menu_scene.continue_requested.connect(_on_continue)
 
@@ -452,6 +457,16 @@ func _on_info_toggled(active: bool) -> void:
 		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
 				_window_size, settings.wall_overfill_margin), dest_rect.centre, dest_rect.centre,
 				_entries[_current_focus])
+
+## M7 (J1/J5, Q134=c): a focused screen published something hoverable. Shown on the wall's ONE
+## card, and ONLY while Info mode is on -- J1 makes the card Info mode's, and a screen that pushed
+## it unbidden is exactly the defect the map's second card was. Ignored silently otherwise: J5's
+## "shows nothing until something is hovered" is about the card's own state, not a reason to make
+## every screen check a flag before it speaks.
+func _on_screen_info_hovered(entry: InfoEntry) -> void:
+	if not SettingsManager.settings.wall_info_mode: return
+	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
+	info_card.show_entry(entry)
 
 ## Q65=a: Back retraces the FocusStack one step at a time; only falls through to wall view once
 ## the stack itself reports nothing behind the current picture.

@@ -1,9 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=4 format=3 uid="uid://oc6yiar3wsih"]
 
 [ext_resource type="Script" path="res://Levels/map.gd" id="1_mapgd"]
 [ext_resource type="Script" path="res://Scripts/Map/world_map_controller.gd" id="2_wmctrl"]
 [ext_resource type="Script" path="res://Scripts/Map/map_player_token.gd" id="3_token"]
-[ext_resource type="PackedScene" path="res://UI/Wall/info_card.tscn" id="4_infocard"]
 
 [node name="Map" type="Node"]
 script = ExtResource("1_mapgd")
@@ -58,8 +57,5 @@ offset_top = 596.0
 offset_right = 112.0
 offset_bottom = 636.0
 text = "Deck"
-
-[node name="InfoCard" parent="UI" instance=ExtResource("4_infocard")]
-unique_name_in_owner = true
 
 [connection signal="pressed" from="UI/DeckButton" to="." method="_on_deck_clicked"]

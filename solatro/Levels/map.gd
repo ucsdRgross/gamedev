@@ -10,13 +10,15 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
-## S29 (picture-wall, Q133=b, Q134=c): the map's hover now shows through the SAME `InfoCard`
-## widget the wall's own Info mode uses, fed by `MapHoverPanel.get_info()` (static -- see its own
-## doc comment) rather than the bespoke `MapHoverPanel.show_for_node()` tooltip. `MapHoverPanel`'s
-## SCENE is no longer instantiated live on the map; the class file stays (get_info()'s home, and
-## `Tests/Engine/test_leak_canary.gd` still exercises `show_for_node()`/preview-card cleanup
-## directly against a standalone instance).
-@onready var info_card: InfoCard = %InfoCard
+## M7 (ADVERSARIAL_REVIEW) / J1 / Q134=c: hovering a map node PUBLISHES its `InfoEntry` and stops
+## there. The map used to mount an `InfoCard` of its own inside its SubViewport -- a SECOND card,
+## which `Main` could not reset (it resets the wall overlay's) and which ignored Info mode entirely,
+## so it appeared unbidden and could never be dismissed. There is ONE card, on the wall's overlay,
+## anchored to the WINDOW (J3/Q129=a); `Main` decides whether Info mode wants this shown.
+## `MapHoverPanel`'s SCENE is no longer instantiated live on the map; the class file stays
+## (`get_info()`'s home, and `Tests/Engine/test_leak_canary.gd` still exercises
+## `show_for_node()`/preview-card cleanup directly against a standalone instance).
+signal info_hovered(entry: InfoEntry)
 @onready var fame_label: Label = %FameLabel
 @onready var lap_label: Label = %LapLabel
 @onready var luck_label: Label = %LuckLabel
@@ -38,9 +40,9 @@ func get_rules_collections() -> Array[CardData]:
 func _ready() -> void:
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
-	# S29: deliberately NO node_unhovered connection. InfoCard keeps showing the last entry
-	# across empty hover (J2/Q131, "does not blink") -- the map now follows the SAME persistence
-	# contract Info mode's own card uses, replacing MapHoverPanel's grace-period auto-hide.
+	# S29: deliberately NO node_unhovered connection. The card keeps showing the last entry across
+	# empty hover (J2/Q131, "does not blink") -- the map follows the SAME persistence contract Info
+	# mode's own card uses, replacing MapHoverPanel's grace-period auto-hide.
 	controller.map_ready.connect(_update_hud)
 	if _pending_run:
 		var pending := _pending_run
@@ -124,12 +126,13 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
-## S29 (Q133=b): routes through `get_info()`, not `MapHoverPanel.show_for_node()` -- `InfoCard`
-## anchors itself to the WINDOW'S bottom (Q129=a), not the node's own screen position, so there is
-## no cursor-following placement to compute here any more (a deliberate consequence of actually
-## becoming the info card, not a dropped feature).
+## S29 (Q133=b) + M7: routes through `get_info()`, not `MapHoverPanel.show_for_node()`, and only
+## PUBLISHES the entry -- the card anchors itself to the WINDOW'S bottom (Q129=a), not the node's
+## own screen position, so there is no cursor-following placement to compute here (a deliberate
+## consequence of actually becoming the info card, not a dropped feature), and the map has no
+## business deciding whether Info mode wants it shown.
 func _on_node_hovered(node: WorldGraphNode) -> void:
-	info_card.show_entry(MapHoverPanel.get_info(node, run, controller.lap_target()))
+	info_hovered.emit(MapHoverPanel.get_info(node, run, controller.lap_target()))
 
 func _update_hud() -> void:
 	if run == null: return

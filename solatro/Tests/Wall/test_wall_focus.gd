@@ -57,6 +57,8 @@ func _ready() -> void:
 	await test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view()
 	behavior_section("THE wall_* ACTIONS REACH MAIN (M3, ADVERSARIAL_REVIEW.md, I6, I7)")
 	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
+	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, ADVERSARIAL_REVIEW.md, J1, J6)")
+	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -749,3 +751,46 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 	for _i : int in range(60):
 		if settled.call(): return
 		await get_tree().process_frame
+
+# ------------------------------------------------------------------ M7 (ADVERSARIAL_REVIEW.md)
+
+## M7 (ADVERSARIAL_REVIEW.md, J1/J6, Q134=c): the map mounted an `InfoCard` of its OWN inside its
+## SubViewport, so `_on_info_toggled()` -- which resets the WALL overlay's card -- was resetting a
+## different instance. The map's card could never be dismissed and showed on hover whether or not
+## Info mode was on. There is one card now, on the wall, and Info mode gates it.
+##
+## Three claims, all on a REAL `Main` with its real `map_scene` wired by `_ready()`:
+##   1. with Info OFF, a real hover shows NOTHING (the half that was the defect);
+##   2. with Info ON, that same hover reaches the WALL's card, by entry identity;
+##   3. `map_scene` no longer owns a second card at all.
+## Claim 3 is what stops 1 and 2 from being satisfied by a second card nobody looked at.
+func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
+	backup_real_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+
+	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
+	check(main.map_scene.find_child("InfoCard", true, false) == null,
+			"the map no longer mounts an InfoCard of its own -- one card, on the wall (J1)")
+	check(not info_card.visible, "sanity: the wall's card starts hidden (J5)")
+
+	SettingsManager.settings.wall_info_mode = false
+	main.map_scene.info_hovered.emit(_probe_info_entry())
+	check(not info_card.visible,
+			"with Info mode OFF a screen hover shows NOTHING -- the map's own card used to appear "
+			+ "unbidden and could never be dismissed")
+
+	SettingsManager.settings.wall_info_mode = true
+	var entry := _probe_info_entry()
+	main.map_scene.info_hovered.emit(entry)
+	check(info_card.visible, "with Info mode ON the same hover reaches the WALL's card")
+	check(info_card.current_entry == entry,
+			"...and it is THAT entry showing, checked by identity, not merely some card being "
+			+ "visible (J2's own trap)")
+
+	info_card.reset()
+	SettingsManager.settings.wall_info_mode = false
+	main.queue_free()
+	restore_real_settings()
