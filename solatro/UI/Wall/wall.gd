@@ -173,6 +173,17 @@ signal transition_landed(picture_id: StringName)
 ## there) is deliberately the caller's job, not this class's (ASSUMPTIONS.md).
 signal picture_enter_requested(id: StringName)
 
+## I12/Q96=a: while true, the wall answers no input at all. Set by `Main` for the length of a move
+## and cleared by `WallTransition.input_unlocked` (C13/Q58) or, as a backstop, when the move lands --
+## a lock that only a signal could clear would strand the wall if that signal ever stopped firing.
+var input_locked : bool = false
+
+func lock_input() -> void:
+	input_locked = true
+
+func unlock_input() -> void:
+	input_locked = false
+
 ## A3 (CODE_REVIEW.md, GAP-003=a): one tracker for the whole wall's touch session -- `Wall` is the
 ## thing that actually owns input routing/focus state, so this is where `WallInput.PinchTracker`
 ## (built and tested in isolation by S23, never wired) belongs, per `wall_input.gd`'s own doc
@@ -187,6 +198,12 @@ var _pinch := WallInput.PinchTracker.new()
 ## wall never listens while a screen is focused" (I14). `ui_cancel`/pinch-in (Back) and
 ## `wall_jump_N` are the only wall-level actions still meaningful either way.
 func _unhandled_input(event: InputEvent) -> void:
+	# I12/Q96=a: "during a transition input is inert... until C13 unlocks it early". Neither half
+	# existed -- nothing made input inert, and `WallTransition.input_unlocked`, the signal S16 was
+	# built for, had NO CONSUMER (ADVERSARIAL_REVIEW C5's own row). `Main` locks this when a move
+	# starts and the transition's own `input_unlocked` clears it, which is C13's whole point: input
+	# comes back the moment the destination and its frame are fully in view, BEFORE the tween ends.
+	if input_locked: return
 	var focused := _focused_picture()
 	if focused:
 		WallInput.route(event, focused)

@@ -67,6 +67,10 @@ var _total : float
 ## value latches the pause, and the tween is guaranteed to eventually reach `elapsed == _total` at
 ## landing regardless of how sparsely it got sampled along the way.
 var _source_pause_time : float = 0.0
+## C13/Q58: the precomputed elapsed instant at which input comes back -- see
+## `_find_input_unlock_time()`. A TIME, never a per-frame geometric re-check, for the same reason
+## `_source_pause_time` is one: the crossing it looks for is transient.
+var _input_unlock_time : float = 0.0
 
 ## Fired once, when the tween completes and lands on the requested picture.
 signal landed(picture_id: StringName)
@@ -149,6 +153,27 @@ static func _find_source_pause_time(total: float, source_rect: PictureRect, dest
 	var bounds := phase_bounds(settings)
 	var zoom_out_end : float = bounds["zoom_out_end"]
 	return zoom_out_end * total
+
+## C13/Q58, same shape and same reason as `_find_source_pause_time()` above: the FIRST elapsed
+## instant at which the DESTINATION's frame is fully in view, precomputed once per
+## `request()`/`retarget()`.
+##
+## ⚠ This was a per-frame `s.dest_frame_in_view` check, and it is the exact defect the source latch
+## already had fixed: the window in which the destination's whole frame fits inside the view opens
+## during the wide middle of the transition and CLOSES again before landing, because at rest the
+## focused picture OVERFILLS the window (H3/Q27) and its frame is off-screen by construction. Sparse
+## real frames -- or a short transition -- step straight over it, and the unlock never fires at all.
+## Nothing noticed while `input_unlocked` had no consumer.
+##
+## BACKSTOP: `total`, i.e. landing. Input must never be left locked longer than the move itself.
+static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest_rect: PictureRect,
+		window_size: Vector2, settings: PlayerSettings) -> float:
+	for i : int in (_CROSSING_SCAN_STEPS + 1):
+		var elapsed := total * float(i) / float(_CROSSING_SCAN_STEPS)
+		var s := sample_at(elapsed, total, source_rect, dest_rect, window_size, settings)
+		if s.dest_frame_in_view:
+			return elapsed
+	return total
 
 ## The pure core (see the class doc comment). `total` is `total_duration()`'s own return value,
 ## passed in rather than re-derived so a caller/test can hold it fixed across many samples.
@@ -273,6 +298,8 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	_total = total_duration(settings)
 	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)
+	_input_unlock_time = _find_input_unlock_time(_total, _source_rect, _dest_rect, _window_size,
+			_settings)
 	var tween := camera.create_tween()
 	tween.tween_method(
 			func(elapsed: float) -> void:
@@ -305,6 +332,8 @@ func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 	_window_size = new_window_size
 	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)
+	_input_unlock_time = _find_input_unlock_time(_total, _source_rect, _dest_rect, _window_size,
+			_settings)
 
 ## Applies one Sample to the camera and latches each pause/unpause/input-unlock boundary the
 ## instant its raw condition first holds (never un-latches, C9/C11/C13 all describe a one-way
@@ -335,6 +364,6 @@ func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample,
 	if s.dest_visible and not _dest_unpaused:
 		_dest_unpaused = true
 		if dest.screen_root: dest.screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
-	if s.dest_frame_in_view and not _input_unlocked:
+	if elapsed >= _input_unlock_time and not _input_unlocked:
 		_input_unlocked = true
 		input_unlocked.emit()

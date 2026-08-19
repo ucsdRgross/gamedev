@@ -63,6 +63,8 @@ func _ready() -> void:
 	await test_hovering_a_picture_in_info_mode_describes_it()
 	behavior_section("ONE MOVE AT A TIME (C5, ADVERSARIAL_REVIEW.md, Q56=b, §1.6)")
 	await test_a_second_destination_mid_move_is_ignored()
+	behavior_section("INPUT IS INERT MID-MOVE, AND UNLOCKS EARLY (C5/S16, I12/Q96=a, C13/Q58)")
+	await test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -940,6 +942,73 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 	check(always.size() <= 1,
 			"...and at most one live screen root is PROCESS_MODE_ALWAYS, which is the invariant "
 			+ "the Phase-3 gate exists to protect", str(always))
+
+	main.queue_free()
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
+
+# ------------------------------------------------------------------ C5's other half (S16, C13)
+
+## ADVERSARIAL_REVIEW C5's own row ends "`input_unlocked` -- the signal S16 exists for -- has no
+## consumer", and I12/Q96=a ("during a transition input is inert") had no implementation either. The
+## two are one defect: with nothing making input inert, there was nothing for an early unlock to
+## unlock, so C13/Q58's whole contract -- "allow input once picture is unpaused, which should not be
+## at end of transition, but right before end" -- had no effect at all.
+##
+## The load-bearing assertion is the THIRD one. That input is locked, and unlocked afterwards, would
+## both be satisfied by a lock that simply cleared on landing; only "it was still active when the
+## unlock fired" distinguishes C13 from an ordinary unlock-at-the-end, and that is the entire point
+## of S16.
+func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> void:
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+	check(not main.wall.input_locked, "sanity: the wall answers input at rest")
+
+	main._focus_picture(&"map")
+	var transition : WallTransition = main._active_transition
+	check(transition != null and transition.is_active, "sanity: a real transition is in flight")
+	check(main.wall.input_locked,
+			"I12/Q96=a: input goes INERT the moment a move starts -- nothing made it inert before")
+
+	# Boxed -- GDScript lambdas capture locals BY VALUE.
+	var unlocked_mid_flight : Array[bool] = [false]
+	var unlock_fired : Array[bool] = [false]
+	# ⚠ The lambda must NOT capture `transition`. The connection is stored ON the transition, so a
+	# captured reference back to it is a RefCounted CYCLE that never frees -- the first version of
+	# this test took the suite from its standing 4 leaked ObjectDB instances at exit to 17, which no
+	# check can see and only the run wrapper reports ([[tests-that-prove-nothing]] trap 4). Read back
+	# off `main` instead: `Main` is a Node, so the reference runs transition -> Callable -> Main and
+	# never returns.
+	transition.input_unlocked.connect(func() -> void:
+			unlock_fired[0] = true
+			unlocked_mid_flight[0] = main._active_transition != null 					and main._active_transition.is_active)
+
+	# A wall-level action fed while locked must reach nothing at all.
+	var reached : Array[bool] = [false]
+	main.wall.back_requested.connect(func() -> void: reached[0] = true)
+	var escape := InputEventAction.new()
+	escape.action = &"ui_cancel"
+	escape.pressed = true
+	main.wall._unhandled_input(escape)
+	check(not reached[0], "...and a wall action pressed while locked reaches nothing")
+
+	for _i : int in range(60):
+		if main._current_focus == &"map": break
+		await get_tree().process_frame
+
+	check(unlock_fired[0],
+			"the transition's own input_unlocked actually fired -- an unlock nobody emits would "
+			+ "make the next check vacuous")
+	check(unlocked_mid_flight[0],
+			"C13/Q58: it fired while the transition was STILL ACTIVE, i.e. before the tween ended "
+			+ "-- which is the whole reason S16 exists")
+	check(not main.wall.input_locked, "and the wall answers input again once the move has landed")
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay

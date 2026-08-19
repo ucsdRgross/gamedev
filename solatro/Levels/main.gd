@@ -347,6 +347,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _move_in_flight: return
 	if id == _current_focus: return   # Q55=a: requesting the current picture does nothing
 	_move_in_flight = true
+	# I12/Q96=a: input goes inert for the length of the move. The transition's own `input_unlocked`
+	# lifts it EARLY below (C13/Q58); this is the only thing that ever sets it.
+	wall.lock_input()
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
@@ -365,6 +368,11 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 				settings)
 		_active_transition = transition
 		_transition_dest_id = id
+		# C13/Q58, ADVERSARIAL_REVIEW C5: `input_unlocked`'s CONSUMER. S16 built and emitted this
+		# signal and nothing listened, so "input is accepted before the tween reports finished" was
+		# a contract with no effect. The wall answers input again the instant the destination and
+		# its frame are fully in view -- which is strictly before landing.
+		transition.input_unlocked.connect(wall.unlock_input)
 		# S33 (Q167=c, Q168=c, Q170=b): cross-fades from the source's music toward the dest's over
 		# the SAME real camera motion WallTransition is already driving -- see
 		# Wall.update_travel_music()'s own doc comment for the distance-driven blend and
@@ -396,6 +404,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 	_move_in_flight = false
+	wall.unlock_input()   # backstop: the early unlock above may never have had a frame to fire in
 	_settle_after_deferred_resize()
 
 ## Unfocuses whatever is currently focused (FREEZING it in place, L4 -- never freed here) and
@@ -407,6 +416,9 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	# for position and zoom just as two enters did.
 	if _move_in_flight: return
 	_move_in_flight = true
+	# I12/Q96=a again: this path animates the same camera, so it is just as much "a transition" to
+	# the player. It has no `WallTransition` and so no early unlock -- it clears on landing.
+	wall.lock_input()
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
@@ -422,6 +434,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
 	_move_in_flight = false
+	wall.unlock_input()
 	_settle_after_deferred_resize()
 
 func _on_wall_view_entered() -> void:
