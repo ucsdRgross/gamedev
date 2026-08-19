@@ -535,6 +535,37 @@ signal patience_max_increased(delta: int)
 ##   `wall_live_screen_cap`          -- `Q204` is gated on `Q203`=b; `Q203`=a keeps every screen.
 ##   `wall_design_height`            -- `Q30` is gated on `Q29`=a; `Q29`=b is per-screen
 ##                                      (`PictureEntry.design_size`).
+## MINOR (ADVERSARIAL_REVIEW): the transition's easing curves were typed into `wall_transition.gd`
+## and `main.gd` as `Tween.TRANS_*`/`EASE_*` literals, which §1.8 forbids for a design choice and
+## which S34's own done-when forbids twice over -- its tool must expose "the easing selections", and
+## "no knob above requires editing a `.tres` or a `.gd` by hand to change". `DESIGN.md` §5 simply had
+## no rows for them; these are those rows. Defaults are exactly the shipped literals, so this
+## promotes without changing a frame.
+##
+## Typed as `Tween.TransitionType`/`Tween.EaseType` so the Inspector (and S34's tool) shows named
+## curves rather than raw ints.
+## Travel curve (`Q53`=b): "a gentler, more even glide than the zoom".
+@export var wall_travel_trans : Tween.TransitionType = Tween.TRANS_SINE:
+	set(value):
+		wall_travel_trans = value
+		settings_changed.emit()
+@export var wall_travel_ease : Tween.EaseType = Tween.EASE_IN_OUT:
+	set(value):
+		wall_travel_ease = value
+		settings_changed.emit()
+## Zoom curve, shared by both legs; the two legs differ only in their EASE (`C4`-`C6`, §1.10).
+@export var wall_zoom_trans : Tween.TransitionType = Tween.TRANS_EXPO:
+	set(value):
+		wall_zoom_trans = value
+		settings_changed.emit()
+@export var wall_zoom_out_ease : Tween.EaseType = Tween.EASE_OUT:
+	set(value):
+		wall_zoom_out_ease = value
+		settings_changed.emit()
+@export var wall_zoom_in_ease : Tween.EaseType = Tween.EASE_IN:
+	set(value):
+		wall_zoom_in_ease = value
+		settings_changed.emit()
 ## Debug instrumentation, debug builds only (`Q210`).
 @export var wall_debug_readout : bool = false:
 	set(value):

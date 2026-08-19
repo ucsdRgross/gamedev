@@ -42,6 +42,8 @@ func _ready() -> void:
 	await test_requesting_current_picture_does_nothing()
 	behavior_section("RESIZE RETARGET (T11)")
 	await test_mid_flight_resize_retargets_without_a_visible_snap()
+	behavior_section("EASING IS AUTHORED, NOT TYPED IN (MINOR, ADVERSARIAL_REVIEW.md, S34, Q53=b)")
+	test_the_easing_knobs_are_actually_read()
 	behavior_section("REDUCED MOTION (T12)")
 	test_reduced_motion_removes_all_zoom()
 	behavior_section("20-TRANSITION SOAK (T13, PHASE 3 GATE)")
@@ -656,3 +658,63 @@ func test_source_pauses_under_real_sparse_frame_sampling() -> void:
 	source_wp.screen_root.queue_free()
 	dest_wp.screen_root.queue_free()
 	await _cleanup([source_wp, dest_wp])
+
+# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+
+## MINOR (ADVERSARIAL_REVIEW.md): the easing curves were `Tween.TRANS_*`/`EASE_*` LITERALS typed
+## into `wall_transition.gd` and `main.gd`. §1.8 forbids that for a design choice, and S34's own
+## done-when forbids it twice over -- its tool must expose "the easing selections", and "no knob
+## above requires editing a `.tres` or a `.gd` by hand to change". `DESIGN.md` §5 simply had no rows
+## for them.
+##
+## Two claims. First that the defaults ARE the shipped literals, so promoting them changed no
+## frame of the transition. Second -- the one a mere `@export` cannot satisfy -- that `sample_at()`
+## genuinely READS them: two settings differing in ONE curve must sample differently.
+##
+## Scanned rather than sampled at a single instant, because any one t can coincide between two
+## curves; the scan asserts its own sample count is non-zero before asserting anything about the
+## contents ([[tests-that-prove-nothing]] trap 5).
+func test_the_easing_knobs_are_actually_read() -> void:
+	var shipped := PlayerSettings.new()
+	check(shipped.wall_travel_trans == Tween.TRANS_SINE
+			and shipped.wall_travel_ease == Tween.EASE_IN_OUT,
+			"the travel defaults are the literals that shipped (Q53=b) -- promoting them to knobs "
+			+ "changed no frame", "%d/%d" % [shipped.wall_travel_trans, shipped.wall_travel_ease])
+	check(shipped.wall_zoom_trans == Tween.TRANS_EXPO
+			and shipped.wall_zoom_out_ease == Tween.EASE_OUT
+			and shipped.wall_zoom_in_ease == Tween.EASE_IN,
+			"...and so are the zoom defaults, both legs",
+			"%d/%d/%d" % [shipped.wall_zoom_trans, shipped.wall_zoom_out_ease,
+					shipped.wall_zoom_in_ease])
+
+	var source := _rect(&"a", Vector2(-800, 0))
+	var dest := _rect(&"b", Vector2(800, 0))
+	var base := _settings(4.0, 1.0)
+	var total := WallTransition.total_duration(base)
+
+	var travel_changed := _settings(4.0, 1.0)
+	travel_changed.wall_travel_ease = Tween.EASE_IN
+	var zoom_changed := _settings(4.0, 1.0)
+	zoom_changed.wall_zoom_out_ease = Tween.EASE_IN
+
+	var samples := 0
+	var travel_differs := false
+	var zoom_differs := false
+	for step : int in range(1, SCAN_STEPS):
+		var elapsed := total * float(step) / float(SCAN_STEPS)
+		samples += 1
+		var plain := WallTransition.sample_at(elapsed, total, source, dest, WINDOW, base)
+		var other_travel := WallTransition.sample_at(elapsed, total, source, dest, WINDOW,
+				travel_changed)
+		var other_zoom := WallTransition.sample_at(elapsed, total, source, dest, WINDOW,
+				zoom_changed)
+		if not plain.camera_position.is_equal_approx(other_travel.camera_position):
+			travel_differs = true
+		if not is_equal_approx(plain.camera_zoom, other_zoom.camera_zoom):
+			zoom_differs = true
+	check(samples > 0, "the scan actually ran", "samples=%d" % samples)
+	check(travel_differs,
+			"changing wall_travel_ease alone MOVES the camera differently -- sample_at() reads the "
+			+ "knob, it is not merely declared")
+	check(zoom_differs,
+			"changing wall_zoom_out_ease alone ZOOMS differently -- same, for the zoom legs")

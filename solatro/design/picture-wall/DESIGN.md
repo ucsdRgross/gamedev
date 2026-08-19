@@ -1226,6 +1226,11 @@ nothing for a scale factor to do.
 | `wall_travel_fraction` | 0.40 | share spent travelling | Q47 |
 | `wall_zoom_in_fraction` | 0.35 | share spent zooming in (sums > 1 when phases overlap) | Q47 |
 | `wall_frame_reveal_margin` | 0.08 | extra share of the picture's size revealed beyond the frame at the zoom-out stop | Q35, Q48 |
+| `wall_travel_trans` | `TRANS_SINE` | travel curve family | Q53 |
+| `wall_travel_ease` | `EASE_IN_OUT` | travel easing | Q53 |
+| `wall_zoom_trans` | `TRANS_EXPO` | zoom curve family, both legs | C4-C6 |
+| `wall_zoom_out_ease` | `EASE_OUT` | easing of the zoom-out leg | C4 |
+| `wall_zoom_in_ease` | `EASE_IN` | easing of the zoom-in leg | C6 |
 | `wall_reduced_motion` | false | replaces transitions with cross-fades | Q172 |
 | `wall_info_mode` | false | Info mode toggle | Q135 |
 | `wall_unlock_all` | false | debug — unlocks every picture without touching the profile file | Q159 |

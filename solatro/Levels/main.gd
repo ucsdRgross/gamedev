@@ -311,12 +311,14 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	var settings := SettingsManager.settings
 	var duration := WallTransition.total_duration(settings) * duration_scale
 	wall.begin_music_crossfade(audio_dest_entry)
+	# MINOR (ADVERSARIAL_REVIEW): the AUTHORED travel curve (Q53=b), not a typed-in literal -- this
+	# helper is the wall-view <-> picture move, which is travel with no zoom leg of its own.
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(camera, "position", target_pos, duration) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			.set_trans(settings.wall_travel_trans).set_ease(settings.wall_travel_ease)
 	tween.tween_property(camera, "zoom", Vector2.ONE * target_zoom, duration) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			.set_trans(settings.wall_travel_trans).set_ease(settings.wall_travel_ease)
 	tween.tween_method(func(_progress: float) -> void:
 			wall.update_travel_music(audio_source_centre, audio_dest_centre, camera.position),
 			0.0, 1.0, duration)

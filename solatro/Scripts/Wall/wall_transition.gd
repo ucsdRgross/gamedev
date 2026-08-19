@@ -83,7 +83,7 @@ static func total_duration(settings: PlayerSettings) -> float:
 
 ## Q48=b: the "fit" zoom -- MIN of the two axis ratios, the mirror of `WallPicture.focused_scale()`'s
 ## "fill" MAX -- that lets a window CENTRED ON THE STRAIGHT-LINE MIDPOINT of source and dest (Q51=a;
-## sample_at()'s own travel position at this plateau instant, TRANS_SINE/EASE_IN_OUT at progress 0.5,
+## sample_at()'s own travel position at this plateau instant, on the travel curve at progress 0.5,
 ## equals that midpoint exactly) contain both frame outer rects plus a margin sized as a fraction of
 ## the LARGER of the two PICTURES' own sizes (`DESIGN.md` §5: "extra share of the picture's size" --
 ## the overseer's ruling: larger-of guarantees at least the configured share of each; ASSUMPTIONS.md).
@@ -214,8 +214,8 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 	var t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
 
 	# Position: travel is the ONLY phase that moves it (§1.10's phase table assigns position to
-	# travel alone). Straight line (Q51=a, overriding DESIGN.md's own stated chart default),
-	# TRANS_SINE / EASE_IN_OUT (Q53=b).
+	# travel alone). Straight line (Q51=a, overriding DESIGN.md's own stated chart default), on the
+	# authored travel curve (Q53=b, `wall_travel_trans`/`_ease`).
 	if t <= travel_start:
 		s.camera_position = source_rect.centre
 	elif t >= travel_end:
@@ -223,12 +223,12 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 	else:
 		var travel_t := (t - travel_start) / (travel_end - travel_start)
 		var eased : float = Tween.interpolate_value(0.0, 1.0, travel_t, 1.0,
-				Tween.TRANS_SINE, Tween.EASE_IN_OUT)
+				settings.wall_travel_trans, settings.wall_travel_ease)
 		s.camera_position = source_rect.centre.lerp(dest_rect.centre, eased)
 
 	# Zoom: zoom-out and zoom-in are the only phases that move it, composed in sequence -- the
-	# zoom-out leg lerps start_zoom -> wide_zoom (TRANS_EXPO/EASE_OUT), then the zoom-in leg lerps
-	# THAT result -> dest_zoom (TRANS_EXPO/EASE_IN). Flat at wide_zoom for the whole pure-travel
+	# zoom-out leg lerps start_zoom -> wide_zoom on `wall_zoom_trans`/`wall_zoom_out_ease`, then the
+	# zoom-in leg lerps THAT result -> dest_zoom on `wall_zoom_in_ease`. Flat at wide_zoom for the pure-travel
 	# window between the two, since both progresses clamp to their resting value outside their own
 	# window.
 	var start_zoom := WallPicture.focused_scale(source_rect.size, window_size,
@@ -239,12 +239,12 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 			settings.wall_frame_reveal_margin)
 	var out_progress := 0.0 if zoom_out_end <= 0.0 else clampf(t / zoom_out_end, 0.0, 1.0)
 	out_progress = Tween.interpolate_value(0.0, 1.0, out_progress, 1.0,
-			Tween.TRANS_EXPO, Tween.EASE_OUT)
+			settings.wall_zoom_trans, settings.wall_zoom_out_ease)
 	var after_out := lerpf(start_zoom, wide_zoom, out_progress)
 	var in_span := 1.0 - zoom_in_start
 	var in_progress := 0.0 if in_span <= 0.0 else clampf((t - zoom_in_start) / in_span, 0.0, 1.0)
 	in_progress = Tween.interpolate_value(0.0, 1.0, in_progress, 1.0,
-			Tween.TRANS_EXPO, Tween.EASE_IN)
+			settings.wall_zoom_trans, settings.wall_zoom_in_ease)
 	s.camera_zoom = lerpf(after_out, dest_zoom, in_progress)
 
 	var visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
