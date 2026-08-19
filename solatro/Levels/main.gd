@@ -527,6 +527,13 @@ func _on_picture_hovered(picture_id: StringName) -> void:
 ## Q65=a: Back retraces the FocusStack one step at a time; only falls through to wall view once
 ## the stack itself reports nothing behind the current picture.
 func _on_back_pressed() -> void:
+	# Q56=b: "a new destination is IGNORED until" the in-flight move finishes -- IGNORED, not
+	# half-applied. `_focus_picture()`/`_go_to_wall_view()` each carry this guard, but they only see
+	# it AFTER `back()` has already mutated the history, so a second press mid-move popped an entry
+	# and then refused to navigate to it. Two fast Backs lost a picture from the stack for good:
+	# Back greyed out while a picture was still behind you. The guard has to be on the HANDLER,
+	# because the handler is what mutates.
+	if _move_in_flight: return
 	var target := _focus_stack.back()
 	if target == &"":
 		await _go_to_wall_view()
@@ -534,6 +541,7 @@ func _on_back_pressed() -> void:
 		await _focus_picture(target, false)
 
 func _on_forward_pressed() -> void:
+	if _move_in_flight: return   # Q56=b, same reason as Back above -- forward() mutates too
 	var target := _focus_stack.forward()
 	if target != &"":
 		await _focus_picture(target, false)

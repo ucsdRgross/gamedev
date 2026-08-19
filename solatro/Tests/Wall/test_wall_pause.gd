@@ -45,6 +45,7 @@ func _ready() -> void:
 	await test_bare_create_timer_ticks_while_paused()
 	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
 	await test_real_wall_moves_complete_under_the_paused_tree()
+	await test_a_second_back_during_a_move_does_not_eat_a_history_entry()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	finish()
 
@@ -334,6 +335,48 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(expected - wide > 0.1,
 			"sanity: the focused zoom and the wall zoom are far apart in this fixture, so the "
 			+ "check above can actually fail", "focused=%.4f wall=%.4f" % [expected, wide])
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## Q56=b: a second Back pressed DURING a move is IGNORED, not half-applied.
+##
+## ⚠ `_focus_stack.back()` mutates the history BEFORE `_focus_picture()`'s own `if _move_in_flight:
+## return` guard is ever reached, so the second press used to POP an entry and then refuse to
+## navigate to it -- the picture was gone from the stack for good and Back greyed out while it was
+## still behind you. The guard belongs on the HANDLER, because the handler is what mutates.
+func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+
+	# Three real ids on the stack: start_menu (cold launch) -> map -> deck.
+	await _drive_move(func() -> void: await main._focus_picture(&"map"))
+	await _drive_move(func() -> void: await main._focus_picture(&"deck"))
+	check(main._current_focus == &"deck" and main._focus_stack.can_back(),
+			"sanity: three real ids of history to lose", str(main._current_focus))
+
+	# TWO Backs, the second while the first is still in flight -- a double-tap.
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	_drive(func() -> void: await main._on_back_pressed(), done)
+	check(main._move_in_flight, "sanity: the first Back really is mid-move when the second lands")
+	await main._on_back_pressed()   # the ignored one
+	var started := Time.get_ticks_msec()
+	while not done[0] and Time.get_ticks_msec() - started < 8000:
+		await get_tree().process_frame
+
+	check(main._current_focus == &"map",
+			"the double-tap lands on map -- one step, not two, and not nowhere",
+			str(main._current_focus))
+	# The entry the second press used to eat: start_menu must still be behind us.
+	check(main._focus_stack.can_back(),
+			"...and Back is still available, because no history entry was swallowed")
+	await _drive_move(func() -> void: await main._on_back_pressed())
+	check(main._current_focus == &"start_menu",
+			"...and it really does still lead to start_menu", str(main._current_focus))
 
 	main.queue_free()
 	restore_settings_snapshot(snap)
