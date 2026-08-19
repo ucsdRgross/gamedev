@@ -76,8 +76,15 @@ func _grow_to(button: Button, target: float) -> void:
 ## while `picture_count` is 1 or fewer -- nothing to overview with just one picture on the wall.
 ## Defaults to 2 (i.e. visible) so callers that only care about Back/Forward -- F8/F9's own tests --
 ## are unaffected by the new parameter.
-func refresh(stack: FocusStack, picture_count: int = 2) -> void:
-	_back_button.disabled = not stack.can_back()
+## GAP-020 = (a), owner-answered: in WALL VIEW, Back returns to the picture just left -- the stack's
+## own top -- so it is available whenever the stack has ANY entry, not only when it has two.
+## `can_back()` asks "is there something below the current picture", which is the right question
+## only while a picture is focused. Without `in_wall_view` the button was greyed out on the
+## commonest first-minute journey (cold launch -> Escape -> wall view) while the Escape key and the
+## joypad Back still worked -- and `Main._ready()`'s own comment promises the key and the button
+## cannot diverge, because they are deliberately the same handler.
+func refresh(stack: FocusStack, picture_count: int = 2, in_wall_view: bool = false) -> void:
+	_back_button.disabled = not (stack.current() != &"" if in_wall_view else stack.can_back())
 	_forward_button.disabled = not stack.can_forward()
 	_wall_button.visible = picture_count > 1
 

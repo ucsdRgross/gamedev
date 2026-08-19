@@ -37,6 +37,8 @@ func _ready() -> void:
 	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
 	test_back_visibly_disabled_at_bottom_of_stack()
 	test_forward_visibly_disabled_with_nothing_ahead()
+	behavior_section("BACK'S BUTTON AGREES WITH BACK'S KEY IN WALL VIEW (GAP-020=a)")
+	test_back_button_is_enabled_in_wall_view_whenever_the_key_works()
 	behavior_section("THE OVERLAY NEVER TAKES KEYBOARD FOCUS")
 	test_overlay_buttons_cannot_take_focus()
 	behavior_section("WALL STATE DOES NOT SURVIVE A QUIT (S30, F13)")
@@ -1049,4 +1051,43 @@ func test_overlay_buttons_cannot_take_focus() -> void:
 		button.grab_focus()
 		check(not button.has_focus(),
 				"%s cannot take keyboard focus, so it cannot swallow the wall's arrows" % path)
+	overlay.queue_free()
+
+# ------------------------------------------------------------------ GAP-020 = (a)
+
+## GAP-020 = (a): in wall view Back returns to the picture just left, so the BUTTON must be enabled
+## exactly when the KEY does something.
+##
+## ⚠ `can_back()` asks "is there something BELOW the current picture" and needs two entries. That is
+## the right question only while a picture is focused. In wall view the stack's top IS the
+## destination, so one entry is enough -- and the commonest first-minute journey produces exactly
+## one: cold launch visits start_menu, Escape goes to wall view. The button was greyed out there
+## while Escape and joypad Back both worked, against `Main._ready()`'s own promise that the key and
+## the button cannot diverge because they are deliberately the same handler.
+func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var back_button : Button = overlay.get_node(^"%BackButton")
+	var fs := FocusStack.new()
+	fs.visit(&"start_menu")   # exactly the cold-launch stack
+
+	check(not fs.can_back(),
+			"sanity: one entry, so the FOCUSED-picture predicate says Back is unavailable")
+	check(fs.current() == &"start_menu",
+			"sanity: ...while the stack still sits on the picture wall view was entered from",
+			str(fs.current()))
+
+	overlay.refresh(fs, 4, false)
+	check(back_button.disabled,
+			"focused on that picture, Back is disabled -- there is nothing behind it")
+	overlay.refresh(fs, 4, true)
+	check(not back_button.disabled,
+			"in WALL VIEW the same stack enables Back, because the key would return to start_menu")
+
+	# And an empty stack disables it in wall view too -- "enabled in wall view" must not be
+	# unconditional, or this test would pass for a button that is simply always on.
+	var empty := FocusStack.new()
+	overlay.refresh(empty, 4, true)
+	check(back_button.disabled,
+			"...but an EMPTY stack still disables it in wall view -- there is nothing to go back to")
 	overlay.queue_free()

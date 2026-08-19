@@ -338,10 +338,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
   on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself
   is still framed on the picture being left. Same shape as the reduced-motion defect above.
-- **GAP-020 — owner call.** What does Back do while wall view is showing? It now returns to the
-  picture just left (the stack's own top); the alternative is that Back is inert there, which also
-  needs the overlay's Back button to learn about wall view. The shipped behaviour was neither — it
-  stepped PAST that picture and filed it under Forward — and that half is fixed.
 - **`wall_back`/`wall_forward` are joypad-only** — `project.godot` binds buttons 9 and 10 and no key,
   while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
   button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`
@@ -361,10 +357,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   `Main._on_screen_info_hovered()` then drops it — orphaning a `FlowContainer` of `ControlCard`s in
   ObjectDB per hover-enter. Info mode is force-cleared every launch, so OFF is the normal state.
   `_on_picture_hovered()` already checks the flag BEFORE building; the map path did not get it.
-- **In wall view the Back BUTTON is greyed out while Escape still works.** The wall-view Back branch
-  uses `FocusStack.current()`; the button's enabled state still uses `can_back()` (needs two
-  entries). Cold launch → Escape → wall view is the common case where they diverge, against
-  `Main._ready()`'s own stated invariant that the key and the button cannot. See GAP-020.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
@@ -392,13 +384,9 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 - **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls
   `overlay.refresh(...)` directly in all three places. Wire them or strike them.
 
-- **GAP-018 — owner call.** Is `WallLayout.view_margin` (0.06) EXTRA CROP on wall view, as its own
-  field comment says, or vestigial from `Q5`'s option (c), the fit-with-margin the owner did NOT
-  pick? It is wired as extra crop now. Flipping costs one authored number: `view_margin = 0.0` in
-  `layout_default.tres` restores the previous framing exactly, no code edit.
 - **Wall view never shows the whole wall, by design, and it may be too much.** `Q5`=b fills and
   crops, and `G10` supplies pan to reach what falls outside — but at 16:9 four of twelve pictures
-  are cut by the frame, more at 32:9, and GAP-018 above makes it more pronounced. Wants an owner
+  are cut by the frame, more at 32:9, and GAP-018=(a) keeps `view_margin` as extra crop, which makes it more pronounced. Wants an owner
   look at real renders before anything builds on the composition.
 - **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
   a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).

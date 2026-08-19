@@ -106,7 +106,7 @@ func _ready() -> void:
 	# S33 (Q167=c, M1): no ceremony, matching the camera's own "starts already focused" cold-launch
 	# rule -- start_menu's music (if any) begins immediately, at full volume, nothing to fade FROM.
 	wall.start_music(_entries[&"start_menu"])
-	overlay.refresh(_focus_stack, _pictures.size())
+	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 
 	# M1 (PICTURE_WALL.md): S17's whole resize path was built and never reached -- nothing
 	# anywhere connected `size_changed`, so `_on_window_resized()` below is its ONE call site, and
@@ -188,7 +188,7 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 			_pictures[rect.id] = wp
 	wall.apply_layout(rects_by_id, _current_focus == &"")
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size())
+	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_print_wall_debug_readout()
 
 ## S17 (C16, G7, G8, Q22=b, Q25=a, Q26=a, Q28=b) + M1 (PICTURE_WALL.md): the window changed
@@ -418,7 +418,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if record_visit:
 		_focus_stack.visit(id)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size())
+	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	# H3/Q27/S37 ("no frame is ever visible at rest"): a move ENDS at its destination's resting
 	# pose, whatever route it took to get there. The ordinary branch already lands exactly here, so
 	# this is a no-op for it -- but `sample_at()`'s reduced-motion branch holds `_wide_zoom` for
@@ -460,7 +460,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size())
+	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_move_in_flight = false
 	wall.unlock_input()
 	_settle_after_deferred_resize()
