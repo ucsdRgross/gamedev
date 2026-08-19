@@ -48,6 +48,7 @@ func _ready() -> void:
 	await test_a_second_back_during_a_move_does_not_eat_a_history_entry()
 	await test_info_toggled_mid_transition_does_not_hijack_the_camera()
 	await test_double_info_press_inside_one_animation_still_rests_correctly()
+	await test_a_picture_entered_from_the_keyboard_does_not_stay_lifted()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	finish()
 
@@ -442,6 +443,48 @@ func test_info_toggled_mid_transition_does_not_hijack_the_camera() -> void:
 	check(camera.position.distance_to(want_pos) < 1.0,
 			"the camera rests on the DESTINATION's info pose, not the source's",
 			"camera=%s dest=%s source=%s" % [camera.position, want_pos, source_pos])
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## H3/Q27/S37 on the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered
+## does not stay lifted.
+##
+## ⚠ `set_selected(true)` offsets `position` by `wall_selected_lift` (default (0, -14)) and only
+## `_render_selection()` clears it -- which runs from `enter_wall_view()`/`move_selection()`, never
+## on the way in. `focus()` reset every other piece of state and not this one, so every picture
+## entered with the keyboard sat 14 units high with a strip of frame and bare wall along the bottom
+## for as long as the player was inside it. A mouse-only player never saw it, because clicking never
+## selects -- which is why every existing test entered unlifted.
+func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+	await _drive_move(func() -> void: await main._go_to_wall_view())
+	check(main._current_focus == &"", "sanity: in wall view, where selection exists at all",
+			str(main._current_focus))
+
+	# The controller journey: a directional input selects, and selecting LIFTS.
+	main.wall.move_selection(Vector2.RIGHT)
+	var picked := main.wall.selected_id
+	check(picked != &"", "sanity: a directional input actually selected something", str(picked))
+	var wp : WallPicture = main._pictures[picked]
+	var lift : Vector2 = SettingsManager.settings.wall_selected_lift
+	check(lift != Vector2.ZERO, "sanity: the lift is non-zero, so this test can fail", str(lift))
+	check(wp.position.is_equal_approx(wp.rect.centre + lift),
+			"sanity: the selected picture really is lifted off the wall",
+			"pos=%s centre=%s" % [wp.position, wp.rect.centre])
+
+	# ui_accept on that selection is exactly this call (Wall emits picture_enter_requested).
+	await _drive_move(func() -> void: await main._focus_picture(picked))
+	check(main._current_focus == picked, "sanity: the selected picture is the one entered",
+			str(main._current_focus))
+	check(wp.position.is_equal_approx(wp.rect.centre),
+			"the entered picture sits ON its rect, not lifted off it -- no frame at the bottom edge",
+			"pos=%s centre=%s lift=%s" % [wp.position, wp.rect.centre, lift])
 
 	main.queue_free()
 	restore_settings_snapshot(snap)

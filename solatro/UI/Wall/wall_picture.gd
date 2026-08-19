@@ -239,6 +239,15 @@ func _hide_background() -> void:
 ## not arbitrate focus.
 func focus() -> void:
 	is_focused = true
+	# F11/Q70=c: the selection LIFT is a wall-view affordance, and a focused picture is not in wall
+	# view. `set_selected(true)` offsets `position` by `wall_selected_lift` and only
+	# `_render_selection()` ever clears it -- which runs from `enter_wall_view()`/`move_selection()`,
+	# neither of which happens on the way IN. So a picture entered from the keyboard or a controller
+	# (arrow to select, then ui_accept) stayed lifted for as long as the player was inside it: the
+	# camera sits at `rect.centre` while the picture is drawn 14 units above, showing a strip of
+	# frame and bare wall along the bottom edge. H3/Q27/S37 forbids exactly that. A mouse-only
+	# player never saw it, because a click never selects.
+	position = rect.centre
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.size = _design_size
 	_rescale_screen()
