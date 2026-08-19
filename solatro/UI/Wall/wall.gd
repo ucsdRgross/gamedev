@@ -144,6 +144,16 @@ signal forward_requested
 ## button reading un-pressed -- which is exactly the state C3 already had to clean up once.
 signal info_toggle_requested
 
+## M8 (ADVERSARIAL_REVIEW, J7/Q132=a): the pointer moved onto a DIFFERENT picture in wall view (or
+## off every picture, `&""`). Fired on CHANGE only, never per motion event, so a caller can treat it
+## as "the hovered thing is now this". `Wall` deliberately does not call `get_info()` itself: only
+## `Main` knows whether Info mode wants an entry at all, and building one per motion event when it
+## does not would allocate a preview node per frame and leak it.
+signal picture_hovered(picture_id: StringName)
+
+## The picture the pointer was last over in wall view, so `picture_hovered` fires on change only.
+var _hovered_id : StringName = &""
+
 ## A4 (CODE_REVIEW.md): NAMES.md's signal table fixes these three; nothing declared or emitted
 ## them until now. `Wall` does not orchestrate focus/transitions itself -- `Main` does (the same
 ## "camera and clock only" boundary ASSUMPTIONS.md already draws for `WallTransition`) -- so these
@@ -226,10 +236,19 @@ func _unhandled_input(event: InputEvent) -> void:
 					# ARMS a pan drag, which moves nothing until the pointer actually moves, and
 					# nothing at all on a window already showing the whole wall (`pan_by()`).
 					_panning = true
-		elif _panning and event is InputEventMouseMotion:
-			get_viewport().set_input_as_handled()
-			pan_by((event as InputEventMouseMotion).relative)
-			return
+		elif event is InputEventMouseMotion:
+			if _panning:
+				get_viewport().set_input_as_handled()
+				pan_by((event as InputEventMouseMotion).relative)
+				return
+			# M8/J7: hover tracking. NOT marked handled -- hovering is an observation, and consuming
+			# every motion event would starve anything else that reads them.
+			var motion := event as InputEventMouseMotion
+			var over : StringName = _picture_at(
+					get_viewport().canvas_transform.affine_inverse() * motion.position)
+			if over != _hovered_id:
+				_hovered_id = over
+				picture_hovered.emit(over)
 	# A3 (Q119=a): pinch reaches here only if the focused screen (if any) did not consume the touch
 	# itself first -- the same "first refusal" contract every other wall-level action already gets
 	# (Q100=a), since this runs after the `WallInput.route()`/`is_input_handled()` early-return

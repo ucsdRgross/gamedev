@@ -404,6 +404,35 @@ static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 	var delta := maxf(target_bottom - visible_bottom_rest, 0.0)
 	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
 
+## M8 (ADVERSARIAL_REVIEW) / J7 / Q133=b: the `get_info()` interface, which NO `WallPicture`
+## implemented -- so Info mode on the wall itself described nothing, however many pictures were
+## hovered. The strings are resolved HERE, not stored on the entry: `InfoEntry`'s own contract is
+## "already localised by the caller", and the keys follow the same `<THING>` / `<THING>_DESCRIPTION`
+## pair `localization.csv` already uses for every card.
+##
+## Q130 ("shows a copy of the hovered item as a visual beside the description"): the visual is a
+## `TextureRect` on this picture's OWN live `ViewportTexture` -- a real copy of the thing being
+## hovered, not a stand-in. `InfoCard.show_entry()` takes ownership of it and frees it on the next
+## entry or on `reset()`, which is why a fresh one is built per call rather than cached.
+func get_info() -> InfoEntry:
+	var entry := InfoEntry.new()
+	var key := String(rect.id).to_upper()
+	entry.title = TRANSLATION.find(StringName("WALL_PICTURE_" + key))
+	entry.body = TRANSLATION.find(StringName("WALL_PICTURE_" + key + "_DESCRIPTION"))
+	if viewport:
+		var preview := TextureRect.new()
+		preview.texture = viewport.get_texture()
+		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		preview.custom_minimum_size = _INFO_PREVIEW_SIZE
+		entry.visual = preview
+	return entry
+
+## The on-card size of `get_info()`'s preview. A `PlayerSettings` knob would be §5's business and
+## §5 has no row for it; this is the card's own internal layout, the same category as
+## `_FRAME_TEXTURE_SIZE` above.
+const _INFO_PREVIEW_SIZE := Vector2(160.0, 90.0)
+
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).
 func teardown() -> void:

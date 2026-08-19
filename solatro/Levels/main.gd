@@ -83,6 +83,9 @@ func _ready() -> void:
 	wall.forward_requested.connect(_on_forward_pressed)
 	wall.info_toggle_requested.connect(_on_info_toggle_requested)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
+	# M8 (ADVERSARIAL_REVIEW, J7/Q132=a): `WallPicture.get_info()`'s call site. Hovering a picture in
+	# wall view with Info mode on describes it on the same one card a screen's own hover uses.
+	wall.picture_hovered.connect(_on_picture_hovered)
 	# S38 (K2-K4): ProfileManager already exists (S7) and already emits this on a genuine new
 	# unlock -- wiring the wall to it here, not building a second unlock path.
 	ProfileManager.picture_unlocked.connect(_repack_wall)
@@ -467,6 +470,16 @@ func _on_screen_info_hovered(entry: InfoEntry) -> void:
 	if not SettingsManager.settings.wall_info_mode: return
 	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
 	info_card.show_entry(entry)
+
+## M8 (J7/Q132=a, Q133=b): a different picture is under the pointer in wall view. `get_info()` is
+## called HERE rather than in `Wall` so it runs only when Info mode will actually show the result --
+## it builds a live preview node per call (Q130), and building one per motion event would leak one
+## per frame. `&""` (the pointer left every picture) deliberately does nothing: J5/Q131 says the
+## card KEEPS its last entry across empty space rather than blinking out.
+func _on_picture_hovered(picture_id: StringName) -> void:
+	if not SettingsManager.settings.wall_info_mode: return
+	if picture_id == &"" or not _pictures.has(picture_id): return
+	_on_screen_info_hovered(_pictures[picture_id].get_info())
 
 ## Q65=a: Back retraces the FocusStack one step at a time; only falls through to wall view once
 ## the stack itself reports nothing behind the current picture.

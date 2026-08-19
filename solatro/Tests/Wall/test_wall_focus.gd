@@ -59,6 +59,8 @@ func _ready() -> void:
 	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
 	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, ADVERSARIAL_REVIEW.md, J1, J6)")
 	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
+	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, ADVERSARIAL_REVIEW.md, J7, Q133=b)")
+	await test_hovering_a_picture_in_info_mode_describes_it()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -794,3 +796,80 @@ func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
 	SettingsManager.settings.wall_info_mode = false
 	main.queue_free()
 	restore_real_settings()
+
+# ------------------------------------------------------------------ M8 (ADVERSARIAL_REVIEW.md)
+
+## M8 (ADVERSARIAL_REVIEW.md, J7/Q132=a, Q133=b): NO `WallPicture` implemented `get_info()`, so
+## Info mode on the wall itself described nothing however many pictures were hovered -- the wall
+## half of J7 was never built, only the map half (S29).
+##
+## Drives a REAL mouse move over a REAL picture through `Wall._unhandled_input()`, on a real `Main`,
+## and checks the wall's ONE card by ENTRY IDENTITY. Goes red if `Main._ready()`'s
+## `wall.picture_hovered` connection or `WallPicture.get_info()` is removed.
+##
+## The hovered point is addressed through the viewport's own `canvas_transform` -- the exact inverse
+## of what `_unhandled_input()` applies -- and `_picture_at()` is asserted non-empty there first, so
+## a fixture that drifted onto bare wall would fail loudly instead of quietly proving nothing.
+##
+## ⚠ It must be in WALL VIEW first. I9/Q103=a: "the wall never listens while a screen is
+## focused", and a cold launch opens FOCUSED on start_menu -- written without the trip to wall view,
+## this test failed exactly there, which is the contract working rather than a fixture problem.
+func test_hovering_a_picture_in_info_mode_describes_it() -> void:
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+	await main._go_to_wall_view()
+	check(main._current_focus == &"",
+			"fixture: really in wall view -- the wall is deaf to hover while a screen is focused "
+			+ "(I9/Q103=a)", str(main._current_focus))
+
+	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
+	var target : PictureRect = main._rects[&"map"]
+	check(main.wall._picture_at(target.centre) == &"map",
+			"fixture: the point being hovered really is inside the map picture",
+			str(main.wall._picture_at(target.centre)))
+
+	var entry := main._pictures[&"map"].get_info()
+	check(entry.title != "" and entry.title != "WALL_PICTURE_MAP",
+			"WallPicture.get_info() resolves a REAL localised title, not a raw key",
+			entry.title)
+	check(entry.body != "" and entry.body != "WALL_PICTURE_MAP_DESCRIPTION",
+			"...and a real localised body", entry.body)
+	check(entry.visual != null,
+			"Q130: it carries a visual copy of the hovered picture, not description text alone")
+	entry.visual.free()   # this probe entry never reaches a card, so nothing else will free it
+
+	SettingsManager.settings.wall_info_mode = false
+	_hover_wall_at(main, target.centre)
+	check(not info_card.visible,
+			"with Info mode OFF, hovering a picture describes nothing")
+
+	SettingsManager.settings.wall_info_mode = true
+	_hover_wall_at(main, target.centre)
+	check(info_card.visible, "with Info mode ON, hovering a picture shows the card")
+	check(info_card.current_entry != null
+			and info_card.current_entry.title == TRANSLATION.find(&"WALL_PICTURE_MAP"),
+			"...showing THAT picture's own entry, matched by its resolved title",
+			str(info_card.current_entry.title) if info_card.current_entry else "<null>")
+
+	info_card.reset()
+	SettingsManager.settings.wall_info_mode = false
+	main.queue_free()
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
+
+## Moves the pointer to a WALL-space point through the real `Wall._unhandled_input()` path. The
+## wall-space point is converted with the viewport's own `canvas_transform`, the exact inverse of
+## the transform the handler applies, so the event lands where the caller says it does. Hover fires
+## on CHANGE, so it is nudged off every picture first.
+func _hover_wall_at(main: Main, wall_pos: Vector2) -> void:
+	var away := InputEventMouseMotion.new()
+	away.position = Vector2(-100000.0, -100000.0)
+	main.wall._unhandled_input(away)
+	var motion := InputEventMouseMotion.new()
+	motion.position = main.wall.get_viewport().canvas_transform * wall_pos
+	main.wall._unhandled_input(motion)
