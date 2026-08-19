@@ -28,6 +28,8 @@ func _ready() -> void:
 	behavior_section("SPATIAL SELECTION (I5, I6)")
 	_test_arrow_selection_is_spatial()
 	_test_selection_wraps()
+	behavior_section("HELD-STICK REPEAT (M9, ADVERSARIAL_REVIEW.md, I7/Q116=a)")
+	await _test_a_held_direction_repeats_after_the_configured_delay()
 	behavior_section("CURSOR VISIBILITY (I9)")
 	_test_cursor_appears_only_after_a_key_press()
 	behavior_section("WALL BUTTON VISIBILITY (S36's own done-when)")
@@ -1184,3 +1186,61 @@ func _test_wall_view_zoom_reads_the_layouts_own_crop_bias() -> void:
 			"view_margin=%.3f wall_overfill_margin=%.3f"
 					% [layout_margin, SettingsManager.settings.wall_overfill_margin])
 	_teardown(wall, [wp])
+
+# ------------------------------------------------------------------ M9 (ADVERSARIAL_REVIEW.md)
+
+## M9 (ADVERSARIAL_REVIEW.md, I7/Q116=a: "one step per press with a repeat after a hold delay"):
+## `wall_selection_repeat_delay` had NO READER, which is what "held-stick repeat does not exist"
+## means in practice -- a held arrow or stick moved the selection once and then sat there.
+##
+## Three pictures in a COLUMN so a repeated Down has somewhere new to land each time, and the
+## repeat delay is set SHORT for the run: that keeps the test to a few frames AND proves the knob
+## is genuinely read, which a test using the 0.4 s default could not distinguish from a hardcoded
+## constant.
+##
+## The release half matters as much as the repeat: an implementation that never disarmed would sail
+## through the repeat assertion and then move the selection forever.
+func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
+	backup_real_settings()
+	var settings := SettingsManager.settings
+	var real_delay : float = settings.wall_selection_repeat_delay
+	settings.wall_selection_repeat_delay = 0.05
+
+	var wall := _build_wall()
+	var top := _add_picture(wall, &"top", Vector2(0, -300))
+	var middle := _add_picture(wall, &"middle", Vector2(0, 0))
+	var bottom := _add_picture(wall, &"bottom", Vector2(0, 300))
+	wall.enter_wall_view(&"top")
+
+	var down := InputEventAction.new()
+	down.action = &"ui_down"
+	down.pressed = true
+	wall._unhandled_input(down)
+	check(wall.selected_id == &"middle",
+			"the PRESS itself still moves exactly one step (Q116=a's first half)",
+			str(wall.selected_id))
+
+	# Long enough for the 0.05 s delay to elapse over real frames, bounded so a broken repeat fails
+	# rather than hangs.
+	for _i : int in range(60):
+		if wall.selected_id == &"bottom": break
+		await get_tree().process_frame
+	check(wall.selected_id == &"bottom",
+			"holding it REPEATS after wall_selection_repeat_delay -- nothing read that knob at all "
+			+ "before M9", str(wall.selected_id))
+
+	var release := InputEventAction.new()
+	release.action = &"ui_down"
+	release.pressed = false
+	wall._unhandled_input(release)
+	# Deliberately back at the TOP, so a still-armed repeat would visibly move it again.
+	wall.enter_wall_view(&"top")
+	for _i : int in range(30):
+		await get_tree().process_frame
+	check(wall.selected_id == &"top",
+			"releasing DISARMS the repeat -- it does not keep walking the wall on its own",
+			str(wall.selected_id))
+
+	settings.wall_selection_repeat_delay = real_delay
+	restore_real_settings()
+	_teardown(wall, [top, middle, bottom])

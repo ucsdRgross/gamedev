@@ -195,19 +195,35 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		if event.is_action_pressed(&"ui_up"):
 			move_selection(Vector2.UP)
+			_hold(Vector2.UP)
 			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_released(&"ui_up"):
+			_release(Vector2.UP)
 			return
 		if event.is_action_pressed(&"ui_down"):
 			move_selection(Vector2.DOWN)
+			_hold(Vector2.DOWN)
 			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_released(&"ui_down"):
+			_release(Vector2.DOWN)
 			return
 		if event.is_action_pressed(&"ui_left"):
 			move_selection(Vector2.LEFT)
+			_hold(Vector2.LEFT)
 			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_released(&"ui_left"):
+			_release(Vector2.LEFT)
 			return
 		if event.is_action_pressed(&"ui_right"):
 			move_selection(Vector2.RIGHT)
+			_hold(Vector2.RIGHT)
 			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_released(&"ui_right"):
+			_release(Vector2.RIGHT)
 			return
 		# Q99=a: ui_accept enters the currently selected picture.
 		if event.is_action_pressed(&"ui_accept") and selected_id != &"":
@@ -297,6 +313,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			_jump_to_index(n - 1)
 			get_viewport().set_input_as_handled()
 			return
+
+## M9/Q116=a: arms the repeat for `direction`, restarting the hold clock. A fresh press always
+## restarts it, so tapping never inherits the previous key's part-elapsed delay.
+func _hold(direction: Vector2) -> void:
+	_held_direction = direction
+	_hold_elapsed = 0.0
+
+## Disarms, but ONLY if the released key is the one currently held -- releasing a different arrow
+## (rolling from one to another) must not cancel the arrow still down.
+func _release(direction: Vector2) -> void:
+	if _held_direction == direction:
+		_held_direction = Vector2.ZERO
+		_hold_elapsed = 0.0
 
 ## The one picture currently `is_focused`, or null in wall view (at most one, by construction --
 ## `focus()`/`unfocus()` are the caller's own responsibility to keep exclusive, same contract
@@ -458,13 +487,41 @@ var _last_camera_zoom : float = -1.0
 ## Only the FOCUSED picture is told; everything else is unconditionally LINEAR, which `unfocus()`
 ## already sets once (H5). Runs while the tree is paused because the wall root is
 ## `PROCESS_MODE_ALWAYS` (§1.6) -- the transition's whole zoom happens under that pause.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var camera : Camera2D = %Camera2D
 	var zoom := camera.zoom.x
 	var zoom_changed := _last_camera_zoom >= 0.0 and not is_equal_approx(zoom, _last_camera_zoom)
 	_last_camera_zoom = zoom
 	var focused := _focused_picture()
 	if focused: focused.update_filter(zoom_changed)
+	_tick_selection_repeat(delta, focused != null)
+
+## M9/S22 (I7, Q116=a: "one step per press with a repeat after a hold delay"): the repeat half.
+## `wall_selection_repeat_delay` was an exported knob NOTHING read, which is exactly what "held-stick
+## repeat does not exist" cashed out to -- a held stick or arrow moved the selection once and then
+## sat there. The FIRST step is still the press itself (`_unhandled_input()` below); this only adds
+## the repeats after the delay, and reuses the same knob for the interval between them rather than
+## inventing a second tunable §5 has no row for.
+##
+## The held direction is latched from the wall's OWN press/release events, never read back off the
+## `Input` singleton: `Input` is global, ~38 suites run concurrently, and one of them holding an
+## arrow would otherwise drive this wall's selection.
+##
+## I9/Q103=a: dropped the moment a picture is focused -- "the wall never listens while a screen is
+## focused" -- so releasing the key inside a screen cannot leave a stale repeat armed behind it.
+func _tick_selection_repeat(delta: float, has_focused_picture: bool) -> void:
+	if has_focused_picture or _held_direction == Vector2.ZERO:
+		_held_direction = Vector2.ZERO
+		_hold_elapsed = 0.0
+		return
+	_hold_elapsed += delta
+	if _hold_elapsed < SettingsManager.settings.wall_selection_repeat_delay: return
+	_hold_elapsed = 0.0
+	move_selection(_held_direction)
+
+## The direction currently held down in wall view, or ZERO. Latched by `_unhandled_input()`.
+var _held_direction : Vector2 = Vector2.ZERO
+var _hold_elapsed : float = 0.0
 
 ## M4/G10 (Q1 note, Q3 note): a pan drag is in progress -- the left button went down on BARE WALL
 ## in wall view and has not come up. Latched here rather than read off `Input` so a synthetic event
