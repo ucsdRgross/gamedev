@@ -34,6 +34,7 @@ func _ready() -> void:
 	_test_wall_button_hidden_with_one_picture()
 	behavior_section("WALL-VIEW FRAMING (G9)")
 	_test_wall_view_zoom_fills_and_crops_the_correct_axis()
+	_test_wall_view_zoom_reads_the_layouts_own_crop_bias()
 	behavior_section("CLAMPED PAN (G10)")
 	_test_clamp_pan_never_shows_past_the_outermost_frames()
 	_test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits()
@@ -208,6 +209,13 @@ func _test_wall_view_zoom_fills_and_crops_the_correct_axis() -> void:
 	# One picture whose frame OUTER rect is exactly (1000, 550), centred at the origin.
 	var wp := _add_picture(wall, &"a", Vector2.ZERO, Vector2(900, 450), Vector4(50, 50, 50, 50))
 	var extent := WallPacker.frame_outer_rect(wp.rect)
+	# M9: the FILLED axis is not flush with the extent -- it is the extent divided by the layout's
+	# own crop bias (GAP-008/GAP-018). This used a hand-picked "within 5% of the extent" tolerance
+	# because "the actual overfill margin constant is private to WallPicture" (its own words); that
+	# tolerance was sized for the 2% picture knob it used to read and went red the moment the wall
+	# read its own 6% one. The margin is no longer private, so the exact relationship is asserted
+	# instead of a percentage -- strictly stronger, and it cannot be silently recalibrated again.
+	var filled_span := 1.0 / (1.0 + Wall.load_layout().view_margin)
 
 	for aspect : float in [1.33, 1.78, 2.33]:
 		var window := Vector2(720.0 * aspect, 720.0)
@@ -220,23 +228,25 @@ func _test_wall_view_zoom_fills_and_crops_the_correct_axis() -> void:
 		var x_ratio := window.x / extent.size.x
 		var y_ratio := window.y / extent.size.y
 		if x_ratio > y_ratio:
-			check(_close_enough(visible.x, extent.size.x, extent.size.x * 0.05),
+			check(is_equal_approx(visible.x, extent.size.x * filled_span),
 					"aspect %.2f: X is the FILLED axis (window/extent ratio %.4f > %.4f)"
-					% [aspect, x_ratio, y_ratio], "visible.x=%.2f extent.x=%.2f" % [visible.x, extent.size.x])
-			check(visible.y < extent.size.y - 0.5,
+					% [aspect, x_ratio, y_ratio],
+					"visible.x=%.2f expected=%.2f" % [visible.x, extent.size.x * filled_span])
+			check(visible.y < extent.size.y * filled_span - 0.5,
 					"aspect %.2f: Y is genuinely CROPPED, not just flush" % aspect,
 					"visible.y=%.2f extent.y=%.2f" % [visible.y, extent.size.y])
 		else:
-			check(_close_enough(visible.y, extent.size.y, extent.size.y * 0.05),
+			check(is_equal_approx(visible.y, extent.size.y * filled_span),
 					"aspect %.2f: Y is the FILLED axis (window/extent ratio %.4f >= %.4f)"
-					% [aspect, y_ratio, x_ratio], "visible.y=%.2f extent.y=%.2f" % [visible.y, extent.size.y])
-			check(visible.x < extent.size.x - 0.5,
+					% [aspect, y_ratio, x_ratio],
+					"visible.y=%.2f expected=%.2f" % [visible.y, extent.size.y * filled_span])
+			check(visible.x < extent.size.x * filled_span - 0.5,
 					"aspect %.2f: X is genuinely CROPPED, not just flush" % aspect,
 					"visible.x=%.2f extent.x=%.2f" % [visible.x, extent.size.x])
 	_teardown(wall, [wp])
 
-## `is_equal_approx` only accepts a fixed built-in tolerance; these comparisons need a caller-chosen
-## one (percent-of-extent, since the actual overfill margin constant is private to WallPicture).
+## `is_equal_approx` only accepts a fixed built-in tolerance; a few comparisons here need a
+## caller-chosen one.
 func _close_enough(a: float, b: float, tolerance: float) -> bool:
 	return absf(a - b) <= tolerance
 
@@ -1136,3 +1146,41 @@ func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
 	settings.wall_touch_target_min_px = real_min
 	settings.wall_touch_target_max_px = real_max
 	restore_real_settings()
+
+# ------------------------------------------------------------------ M9 (ADVERSARIAL_REVIEW.md)
+
+## M9 (ADVERSARIAL_REVIEW.md, GAP-008=a, G9/Q5=b): `WallLayout.view_margin` -- the crop bias
+## GAP-008 deliberately homed on the LAYOUT -- had no reader; `wall_view_zoom()` used
+## `wall_overfill_margin`, which is a PICTURE knob (H3/GAP-011) about the focused picture's own
+## overfill, not the wall's framing.
+##
+## Proven by CHANGING the knob on disk and watching the zoom follow, which is the only assertion a
+## knob-nothing-reads cannot satisfy. The layout is written to a temp path and loaded through the
+## real `Wall.load_layout()` seam that `test_wall_render.gd`'s own disk test already uses.
+##
+## A MISMATCHED aspect on purpose: `focused_scale()` applies the margin only when the ratios differ
+## (H3/DEFECT 1), so a matching-aspect fixture would read identically at every margin and prove
+## nothing.
+func _test_wall_view_zoom_reads_the_layouts_own_crop_bias() -> void:
+	var window := Vector2(1280, 720)
+	var wall := _build_wall()
+	var wp := _add_picture(wall, &"a", Vector2.ZERO, Vector2(900, 900), Vector4(10, 10, 10, 10))
+	var extent := WallPacker.frame_outer_rect(wp.rect)
+	check(not is_equal_approx(window.x / extent.size.x, window.y / extent.size.y),
+			"fixture: the wall's aspect really does differ from the window's, so the crop bias is "
+			+ "applied at all (H3)")
+
+	var plain := WallPicture.focused_scale(extent.size, window, 1.0)
+	var zoom := wall.wall_view_zoom(window)
+	var layout_margin : float = Wall.load_layout().view_margin
+	check(is_equal_approx(zoom, plain * (1.0 + layout_margin)),
+			"wall-view zoom is the plain fill times the LAYOUT's own view_margin",
+			"zoom=%.5f expected=%.5f margin=%.3f" % [zoom, plain * (1.0 + layout_margin),
+					layout_margin])
+	check(not is_equal_approx(layout_margin,
+			SettingsManager.settings.wall_overfill_margin - 1.0),
+			"...and that margin is a DIFFERENT number from wall_overfill_margin, so the check "
+			+ "above cannot be satisfied by the knob this used to read",
+			"view_margin=%.3f wall_overfill_margin=%.3f"
+					% [layout_margin, SettingsManager.settings.wall_overfill_margin])
+	_teardown(wall, [wp])

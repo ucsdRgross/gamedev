@@ -430,8 +430,18 @@ func picture_count() -> int:
 func wall_view_zoom(window_size: Vector2) -> float:
 	var extent := _wall_extent()
 	if extent.size.x <= 0.0 or extent.size.y <= 0.0: return 1.0
+	# M9 (ADVERSARIAL_REVIEW): the CROP BIAS is `WallLayout.view_margin`, which GAP-008 put on the
+	# layout deliberately and which nothing read -- this used `wall_overfill_margin`, a PICTURE knob
+	# (H3/GAP-011) that means the focused picture's own overfill, not the wall's framing. Expressed
+	# as a FRACTION on the layout (0.06) and passed as the MULTIPLIER `focused_scale()` takes, the
+	# same `1.0 + fraction` bridge `wall_frame_reveal_margin` already uses.
+	#
+	# Passed THROUGH focused_scale() rather than multiplied afterwards so the margin stays
+	# CONDITIONAL on the aspects differing (H3/DEFECT 1): at a matching aspect fill and fit
+	# coincide exactly, which is what makes G10's "panning is off" an exact zero rather than a
+	# stray few per cent of slack.
 	return WallPicture.focused_scale(extent.size, window_size,
-			SettingsManager.settings.wall_overfill_margin)
+			1.0 + Wall.load_layout().view_margin)
 
 ## M5/S13 (H4, H5, QR7=c, Q34=c): the camera zoom this tracker last saw, or -1 before the first
 ## frame. Compared per frame rather than hooked to a signal because `Camera2D.zoom` has none, and
