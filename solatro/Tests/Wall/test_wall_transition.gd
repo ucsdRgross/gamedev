@@ -46,6 +46,7 @@ func _ready() -> void:
 	test_the_easing_knobs_are_actually_read()
 	behavior_section("REDUCED MOTION (T12)")
 	test_reduced_motion_removes_all_zoom()
+	await test_a_requested_move_keeps_the_settings_it_started_with()
 	behavior_section("20-TRANSITION SOAK (T13, PHASE 3 GATE)")
 	await test_twenty_transition_soak_leaves_exactly_one_always_screen()
 	behavior_section("SOURCE-PAUSE LATCH UNDER REAL SPARSE SAMPLING (regression, latch-fix)")
@@ -731,3 +732,66 @@ func test_the_easing_knobs_are_actually_read() -> void:
 			+ "knob, it is not merely declared")
 	check(zoom_differs,
 			"changing wall_zoom_out_ease alone ZOOMS differently -- same, for the zoom legs")
+
+# ------------------------------------------------------------------ frozen settings
+
+## Q56=b: a move's CHARACTER is fixed when it is REQUESTED, the same way its destination and its
+## clock are.
+##
+## ⚠ `request()` used to keep the LIVE `PlayerSettings`, and `sample_at()` branches on
+## `wall_info_mode` and `wall_reduced_motion` -- which the tween callback re-reads EVERY FRAME. So
+## toggling either knob mid-move switched the camera's whole model underneath the running tween and
+## it stayed switched: at t=0.5 the ordinary branch is at wide zoom with both frames in view, the
+## info branch is at the source's focused zoom on the midpoint between them. `_settle_camera()`
+## repairs where a move ENDS, so no resting-pose test can see this -- only what the move SAMPLES can.
+##
+## Asserted as "what this transition will sample does not change when the live settings change",
+## which is the contract itself, rather than by watching a real camera path: the authored zoom curve
+## legitimately moves ~0.24 in a single frame under `EASE_OUT`, so a frame-to-frame delta cannot
+## separate a branch switch from the curve (measured -- an earlier version of this test tried and
+## failed on the honest curve).
+func test_a_requested_move_keeps_the_settings_it_started_with() -> void:
+	var live := _settings()
+	live.wall_info_mode = false
+	live.wall_reduced_motion = false
+	var total := WallTransition.total_duration(live)
+	var source := _rect(&"a", Vector2(-800, 0))
+	var dest := _rect(&"b", Vector2(800, 0))
+
+	var camera := Camera2D.new()
+	add_child(camera)
+	var source_wp := _wall_picture()
+	var dest_wp := _wall_picture()
+	var transition := WallTransition.new()
+	transition.request(camera, source_wp, source, dest_wp, dest, WINDOW, live)
+
+	var mid := total * 0.5
+	var before := WallTransition.sample_at(mid, total, source, dest, WINDOW,
+			transition._settings).camera_zoom
+	# What the OTHER branch would give, so the check below cannot pass by the two being equal.
+	var info_settings := _settings()
+	info_settings.wall_info_mode = true
+	var info_zoom := WallTransition.sample_at(mid, total, source, dest, WINDOW,
+			info_settings).camera_zoom
+	check(not is_equal_approx(before, info_zoom),
+			"sanity: the two branches really do disagree at this instant, so a switch would show",
+			"ordinary=%.4f info=%.4f" % [before, info_zoom])
+
+	# THE FLIP, on the live resource, mid-move.
+	live.wall_info_mode = true
+	var after := WallTransition.sample_at(mid, total, source, dest, WINDOW,
+			transition._settings).camera_zoom
+	check(is_equal_approx(before, after),
+			"flipping wall_info_mode mid-move does not change what the running transition samples",
+			"before=%.4f after=%.4f" % [before, after])
+	check(transition._settings != live,
+			"...because the transition holds its OWN copy, not the live resource")
+
+	# ⚠ ORDER MATTERS. `request()` started a REAL tween bound to `camera`, and its per-frame callback
+	# captures both WallPictures. Freeing the pictures first leaves that callback holding freed
+	# captures ("Lambda capture at index 1 was freed") and it then dereferences Nil -- an engine
+	# error the banner reports as a failure with 0 behavior and 0 implementation. Taking the camera
+	# out of the tree kills the tween bound to it, synchronously, before anything it captured goes.
+	remove_child(camera)
+	camera.free()
+	await _cleanup([source_wp, dest_wp])

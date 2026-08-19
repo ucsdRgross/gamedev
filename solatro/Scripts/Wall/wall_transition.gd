@@ -296,7 +296,16 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	_source_rect = source_rect
 	_dest_rect = dest_rect
 	_window_size = window_size
-	_settings = settings
+	# ⚠ A FROZEN COPY, not the live resource. `sample_at()` branches on `wall_reduced_motion` and
+	# `wall_info_mode`, and the tween callback re-enters it every frame -- so with the live object
+	# here, toggling either knob MID-MOVE switched the camera's whole model inside the running
+	# tween and it jumped for the rest of the move (measured: at t~0.5 the ordinary branch is at
+	# wide zoom showing both frames, the info branch is at the source's focused zoom on the
+	# midpoint between them). A move's CHARACTER is fixed when it is requested, the same way its
+	# destination and its clock are (Q56=b).
+	# Safe to `duplicate()`: `PlayerSettings`' setters only emit `settings_changed`, and signal
+	# connections are not copied, so the copy cannot reach `SettingsManager`'s save-to-disk.
+	_settings = settings.duplicate()
 	_total = total_duration(settings)
 	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)

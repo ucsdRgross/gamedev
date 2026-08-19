@@ -334,10 +334,12 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   "fixed zoom" and H3/`Q27`'s "no frame visible at rest" cannot both hold across a move between two
   differently-sized pictures. Three defensible framings, all visible on every navigation; the
   resting-pose half is already fixed and is not in dispute.
-- **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so a move
-  between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
-  on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself
-  is still framed on the picture being left. Same shape as the reduced-motion defect above.
+- **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so the
+  approach to a differently-sized destination is framed on the picture being LEFT. `J10`/`Q137`
+  ("the camera never leaves the info zoom") is what asks for one fixed value, and `_settle_camera()`
+  now cuts to the destination's own info pose on landing — so the resting state is right and what
+  remains is a single cut at the end, exactly the shape GAP-019=(c) chose deliberately for reduced
+  motion. Left as-is unless the cut reads badly in playtest.
 - **`wall_back`/`wall_forward` are joypad-only** — `project.godot` binds buttons 9 and 10 and no key,
   while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
   button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`
@@ -361,11 +363,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
   PICTURE_WALL.md's wiring table nor this list until now.
-- **`WallTransition` re-reads the LIVE `PlayerSettings` every frame**, so toggling `wall_info_mode`
-  (or `wall_reduced_motion`) mid-transition switches `sample_at()`'s branch inside the running
-  tween and the camera jumps for the rest of the move. `_settle_camera()` repairs the resting pose,
-  so it is a visible artefact rather than a dead end — but `_on_info_toggled()`'s comment claims the
-  camera is left to whichever move owns it, and that is only true of the RESTING pose.
 - **`Wall.apply_layout()` never kills a previous animated tween**, so a resize during an animated
   re-pack leaves the old tween writing toward pre-resize targets and `WallPicture.rect` permanently
   disagrees with what is drawn. Latent while nothing triggers an unlock.
