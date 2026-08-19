@@ -212,13 +212,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		# actually control without moving the real mouse cursor.
 		if event is InputEventMouseButton:
 			var mb := event as InputEventMouseButton
-			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-				var wall_pos : Vector2 = get_viewport().canvas_transform.affine_inverse() * mb.position
-				var clicked_id := _picture_at(wall_pos)
-				if clicked_id != &"":
-					get_viewport().set_input_as_handled()
-					picture_enter_requested.emit(clicked_id)
-					return
+			if mb.button_index == MOUSE_BUTTON_LEFT:
+				if not mb.pressed:
+					_panning = false
+				else:
+					var wall_pos : Vector2 = get_viewport().canvas_transform.affine_inverse() * mb.position
+					var clicked_id := _picture_at(wall_pos)
+					if clicked_id != &"":
+						get_viewport().set_input_as_handled()
+						picture_enter_requested.emit(clicked_id)
+						return
+					# M4/G10: a press on BARE WALL still does nothing by itself (Q93=a) -- it only
+					# ARMS a pan drag, which moves nothing until the pointer actually moves, and
+					# nothing at all on a window already showing the whole wall (`pan_by()`).
+					_panning = true
+		elif _panning and event is InputEventMouseMotion:
+			get_viewport().set_input_as_handled()
+			pan_by((event as InputEventMouseMotion).relative)
+			return
 	# A3 (Q119=a): pinch reaches here only if the focused screen (if any) did not consume the touch
 	# itself first -- the same "first refusal" contract every other wall-level action already gets
 	# (Q100=a), since this runs after the `WallInput.route()`/`is_input_handled()` early-return
@@ -402,6 +413,31 @@ func wall_view_zoom(window_size: Vector2) -> float:
 	if extent.size.x <= 0.0 or extent.size.y <= 0.0: return 1.0
 	return WallPicture.focused_scale(extent.size, window_size,
 			SettingsManager.settings.wall_overfill_margin)
+
+## M4/G10 (Q1 note, Q3 note): a pan drag is in progress -- the left button went down on BARE WALL
+## in wall view and has not come up. Latched here rather than read off `Input` so a synthetic event
+## sequence drives exactly the same path a real pointer does.
+var _panning : bool = false
+
+## M4 (ADVERSARIAL_REVIEW): `clamp_pan()`'s ONE call site -- free pan was fully implemented and
+## unreachable, so G10 did not exist and two tests guarded maths nothing ran. Drags the wall-view
+## camera by a SCREEN-space pointer delta: the camera moves OPPOSITE the pointer (dragging right
+## pulls the wall right, i.e. looks further left) and divides by the live zoom, which is direct
+## magnification here (ASSUMPTIONS.md), so the wall tracks the pointer 1:1 on screen at any zoom.
+##
+## G10's "on a large screen everything is visible and panning is off" needs no check of its own:
+## `clamp_pan()` already collapses each axis whose extent fits inside the visible rect to the
+## extent's own centre, so this is a no-op exactly when it should be.
+##
+## Touch needs no separate path -- Godot's `emulate_mouse_from_touch` (left at its default) already
+## delivers a one-finger drag as these same mouse events, and a TWO-finger drag is consumed by the
+## pinch tracker before it can reach here.
+func pan_by(delta: Vector2) -> void:
+	var camera : Camera2D = %Camera2D
+	var zoom := camera.zoom.x
+	if zoom <= 0.0: return
+	camera.position = clamp_pan(camera.position - delta / zoom,
+			get_viewport().get_visible_rect().size)
 
 ## G10: free pan is clamped so the visible window never shows past the wall's own extent ("never
 ## pans into void"), and collapses to the extent's own centre on whichever axis the extent is

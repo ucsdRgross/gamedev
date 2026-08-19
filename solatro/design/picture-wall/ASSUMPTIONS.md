@@ -1309,3 +1309,17 @@ Every red-then-green proof above was verified by running the SPECIFIC standalone
 the console exe directly), not the full suite, for turnaround -- the full suite was run green
 (`ALL 39 SUITES: 2870 CHECKS PASSED`) only after every individual fix had already been confirmed
 both ways.
+
+## M4 -- what input drives free pan (G10)
+
+`G10` says free pan exists and is clamped; no design node says **what gesture performs it**, and
+`clamp_pan()` shipped with no caller at all. Reading taken: **a left-button drag beginning on BARE
+WALL in wall view**, the only pointer gesture the answered questions leave unclaimed -- `Q88`=a
+gives a press inside a picture to "enter", `Q89`=a gives the wheel to the focused screen, `Q91`=b
+makes right-click do nothing, `Q4`=b forbids free zoom, and `Q98`/`Q106`/`Q108` give the arrows,
+d-pad and left stick to SELECTION. `Q93`=a ("clicking bare wall does nothing") still holds: the
+press alone does nothing, it only arms a drag.
+
+Touch needs no second path. `input_devices/pointing/emulate_mouse_from_touch` is left at its
+default (true, and absent from `project.godot`), so a one-finger drag arrives as these same mouse
+events, and a two-finger drag is consumed by the pinch tracker first.

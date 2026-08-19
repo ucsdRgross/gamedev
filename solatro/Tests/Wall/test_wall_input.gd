@@ -36,6 +36,8 @@ func _ready() -> void:
 	behavior_section("CLAMPED PAN (G10)")
 	_test_clamp_pan_never_shows_past_the_outermost_frames()
 	_test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits()
+	_test_dragging_bare_wall_pans_the_clamped_camera()
+	_test_dragging_pans_nothing_when_the_whole_wall_already_fits()
 	behavior_section("ROUTING (I1, I2, S19)")
 	await _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels()
 	await _test_non_focused_picture_never_receives_input()
@@ -976,3 +978,109 @@ func _test_every_wall_action_has_at_least_one_binding() -> void:
 		var message := "%s has at least one real binding -- an action nobody can press is as " % action
 		check(not events.is_empty(), message + "dead as one nobody reads",
 				"events=%d" % events.size())
+
+# ------------------------------------------------------------------ M4 (ADVERSARIAL_REVIEW.md)
+
+## M4 (ADVERSARIAL_REVIEW.md): `clamp_pan()` had NO CALLER, so free pan did not exist and the two
+## tests above guarded maths nothing ever ran. These drive the REAL pointer path -- press, move,
+## release through `Wall._unhandled_input()` -- and go red if `pan_by()`'s branch there is removed.
+##
+## Both fixtures put the pressed point on BARE WALL, addressed through the viewport's own
+## `canvas_transform` rather than a guessed screen coordinate: that is the exact inverse of the
+## transform `_unhandled_input()` applies, so the press lands where the test says it does whether or
+## not the fixture camera is driving the canvas. `_picture_at()` is asserted empty there first --
+## a press INSIDE a picture enters it (Q88=a) and never arms a pan, so a fixture that quietly
+## drifted onto a picture would prove nothing.
+func _screen_pos_of(wall: Wall, wall_pos: Vector2) -> Vector2:
+	return wall.get_viewport().canvas_transform * wall_pos
+
+func _press_left(wall: Wall, screen_pos: Vector2, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = screen_pos
+	wall._unhandled_input(event)
+
+func _drag_mouse(wall: Wall, relative: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.relative = relative
+	wall._unhandled_input(event)
+
+## G10 (Q1 note, Q3 note): on a wall too big for the window, dragging bare wall moves the camera by
+## the pointer's own movement -- and never past the wall's own extent, however hard it is dragged.
+func _test_dragging_bare_wall_pans_the_clamped_camera() -> void:
+	var wall := _build_wall()
+	var window := Vector2(1280, 720)
+	# Two small pictures FAR apart: the extent is much wider than the window (so G10 allows pan at
+	# all) and the origin between them is genuinely bare wall (so a press there can arm one).
+	var left := _add_picture(wall, &"left", Vector2(-1400, 0))
+	var right := _add_picture(wall, &"right", Vector2(1400, 0))
+	check(wall._picture_at(Vector2.ZERO) == &"",
+			"fixture: the wall origin really is BARE WALL, not inside a picture's frame (Q88=a)")
+
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	camera.position = wall.wall_view_centre()
+	camera.zoom = Vector2.ONE * wall.wall_view_zoom(window)
+	var zoom := camera.zoom.x
+	var start := camera.position
+	var bare_wall := _screen_pos_of(wall, Vector2.ZERO)
+
+	_press_left(wall, bare_wall, true)
+	_drag_mouse(wall, Vector2(-100.0, 0.0))
+	check(not camera.position.is_equal_approx(start),
+			"dragging bare wall PANS the wall-view camera -- clamp_pan() had no caller at all",
+			"start=%s now=%s" % [start, camera.position])
+	check(_close_enough(camera.position.x, start.x + 100.0 / zoom, 0.01),
+			"...by exactly the pointer's own movement, in the opposite direction and divided by the "
+			+ "live zoom, so the wall tracks the pointer 1:1 on screen",
+			"expected=%.4f got=%.4f" % [start.x + 100.0 / zoom, camera.position.x])
+
+	# Drag far past the edge: the clamp, not the drag, is what stops the camera.
+	for _i : int in range(20):
+		_drag_mouse(wall, Vector2(-500.0, 0.0))
+	var limit := wall.clamp_pan(Vector2(999999.0, 0.0), window)
+	check(camera.position.x <= limit.x + 0.01,
+			"G10: dragging hard never pans into void -- the camera stops at the clamped boundary",
+			"camera=%.4f limit=%.4f" % [camera.position.x, limit.x])
+	check(_close_enough(camera.position.x, limit.x, 0.01),
+			"...and actually REACHES it, so the clamp is what stopped it and not a short drag",
+			"camera=%.4f limit=%.4f" % [camera.position.x, limit.x])
+
+	_press_left(wall, bare_wall, false)
+	var after_release := camera.position
+	_drag_mouse(wall, Vector2(-100.0, 0.0))
+	check(camera.position.is_equal_approx(after_release),
+			"releasing the button ends the drag -- moving the pointer afterwards pans nothing",
+			"after_release=%s now=%s" % [after_release, camera.position])
+	_teardown(wall, [left, right])
+
+## G10's other half, now that something actually pans: "on a large screen everything is visible and
+## panning is off." Two pictures whose combined frame-outer extent is EXACTLY the window's own
+## 1280x720, with bare wall between them -- fill and fit coincide, `clamp_pan()` collapses both
+## axes, and a real drag therefore moves the camera by nothing at all.
+func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
+	var wall := _build_wall()
+	# Each picture is 600x700 with a 10 px frame -> 620x720 outer; centred at +-330 the pair spans
+	# exactly x -640..640 and y -360..360.
+	var left := _add_picture(wall, &"left", Vector2(-330, 0), Vector2(600, 700),
+			Vector4(10, 10, 10, 10))
+	var right := _add_picture(wall, &"right", Vector2(330, 0), Vector2(600, 700),
+			Vector4(10, 10, 10, 10))
+	check(wall._picture_at(Vector2.ZERO) == &"",
+			"fixture: there is bare wall between the pair to press on")
+
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	camera.position = wall.wall_view_centre()
+	camera.zoom = Vector2.ONE * wall.wall_view_zoom(Vector2(1280, 720))
+	var start := camera.position
+	var bare_wall := _screen_pos_of(wall, Vector2.ZERO)
+
+	_press_left(wall, bare_wall, true)
+	for _i : int in range(10):
+		_drag_mouse(wall, Vector2(-400.0, -400.0))
+
+	check(camera.position.is_equal_approx(start),
+			"G10: with the whole wall already visible, panning is OFF -- a real drag moves the "
+			+ "camera by nothing", "start=%s now=%s" % [start, camera.position])
+	_press_left(wall, bare_wall, false)
+	_teardown(wall, [left, right])
