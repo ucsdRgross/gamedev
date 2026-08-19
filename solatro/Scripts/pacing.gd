@@ -3,21 +3,12 @@ extends RefCounted
 ## Pause-respecting timer for game code (PLAN.md §1.6, D6, `Q75`=b) — not wall-specific, which is
 ## why it lives here rather than under Scripts/Wall/.
 ##
-## ⚠ **A `SceneTreeTimer` CANNOT EXPRESS THIS CONTRACT, and that is why this returns a node.** It
-## has no node binding at all: its `process_always` flag keys on the TREE's pause flag and nothing
-## else. §1.6 holds `get_tree().paused = true` for the WHOLE SESSION, so `create_timer(secs, false)`
-## — what this helper used to return — never fires AT ALL, in any screen, live or frozen.
-## Measured with a real focused screen under the real paused tree: a `Pacing.wait()` did not fire
-## inside a 1.5 s window; a `Timer` child of that same screen fired at its nominal delay, and a
-## `Timer` child of an unfocused screen did not. `game.gd`'s scoring cascade awaits one of these,
-## so the shipped game stalled mid-reveal forever.
-##
-## D6 wants "a frozen screen's pacing freezes with it"; the thing that knows whether a screen is
-## frozen is that screen's own `process_mode` (`Main` flips the focused screen's root to ALWAYS and
-## every other to PAUSABLE, S12). A `Timer` NODE obeys its host's effective process mode, so
-## parenting the timer to the waiting node is what makes the contract true — and it also gives the
-## right behaviour for free when a screen freezes MID-WAIT: the timer holds, and resumes with the
-## remaining time when the screen comes back, matching L4's freeze-don't-free semantics.
+## ⚠ **Returns a NODE because a `SceneTreeTimer` cannot express the contract.** It has no node
+## binding: `process_always` keys on the TREE's pause flag, which §1.6 holds on for the whole
+## session — so `create_timer(secs, false)` never fires at all, in any screen. A `Timer` child obeys
+## its host's effective process mode, which is what makes a frozen screen's pacing freeze and a live
+## screen's run, and makes a screen frozen MID-WAIT resume with the time it had left (L4).
+## See PICTURE_WALL.md's landmine for the same rule from the wall's side.
 
 ## Godot rejects a `Timer.wait_time` of zero. This is the engine's floor, NOT a tunable: a caller
 ## asking for 0 means "next frame", and at any frame rate this delivers that.

@@ -72,6 +72,28 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
 - **`Camera2D.zoom` here is DIRECT MAGNIFICATION**: the visible span is `window_size / zoom`.
+- **Gate on a PROPERTY, never on object identity.** The game loads `layout_default.tres` (C6), and a
+  resource deserialises to a DIFFERENT instance than the one code generates — so
+  `entry.frame_texture == shared_frame_texture()` was never true in the product while every fixture
+  that assigns the shared texture directly kept passing. `WallPicture._frame_corner_px()` asks the
+  texture how big it is instead.
+- **The one-move flag goes on the HANDLER that mutates, not only on the mover.** `FocusStack.back()`
+  and `forward()` change history BEFORE `_focus_picture()`/`_go_to_wall_view()` reach their own
+  `if _move_in_flight: return`, so a second press popped an entry and then refused to navigate to
+  it. `Q56`=b means IGNORED, not half-applied. The Info toggle is a move too and holds the same flag.
+- **In wall view the stack's top is still the picture you LEFT** (`Q66`=b: wall view is never an
+  entry), so `_current_focus` and `FocusStack` disagree there by construction. Back reads
+  `current()`, not `back()`, or it steps past that picture and files it under Forward
+  (GAP-020=a) — and `WallOverlay.refresh()` needs `in_wall_view` for the same reason, or the button
+  and the key diverge.
+- **`Pacing.wait()` takes the WAITING NODE.** A `SceneTreeTimer` has no node binding, so under
+  §1.6's permanent pause `process_always = false` means "never fires", in any screen. The `Timer`
+  child obeys its host's process mode, which is what makes a frozen screen's pacing freeze and a
+  live screen's run (D6/`Q75`=b).
+- **A move keeps the settings it was REQUESTED with.** `sample_at()` branches on
+  `wall_reduced_motion`/`wall_info_mode` and the tween callback re-reads them every frame, so
+  `request()` holds a `duplicate()`. Flipping a knob mid-move otherwise switches the camera's whole
+  model underneath the running tween.
 - **`%Screen` and `%Shadow` draw `viewport.size * scale`, not `design_size * scale`.** Their texture
   IS the picture's `SubViewport` render target, and `ViewportTexture.get_size()` is always
   `viewport.size` — which GAP-002 rewrites to the wall-view footprint on every `unfocus()` and every

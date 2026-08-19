@@ -6,22 +6,34 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
 ## Known intermittent test failures (not owned by any current work stream)
 
-⚠ **All three need the failing run's own `godot.log`, and a batch must COPY it per run.**
+⚠ **All four need the failing run's own `godot.log`, and a batch must COPY it per run.**
 `run_tests.py` discards the suite's stdout by design and prints only the banner, so the evidence is
 gone by the time you know you wanted it.
 
-- ⬜ **The suite intermittently HANGS — a third mode, distinct from the segfault and the leak.** Seen
-  once: killed at the 600 s timeout with **no banner**, so it never reached its own verdict. ⚠ A hang
-  is not a crash and not a failure count — the wrapper prints `NO SUITE BANNER` + `TIMEOUT` with both
-  gates "clean" underneath, which skims as healthy. Where it stopped: 23 suites had banners, `PIXELS`
-  and `OUTLINE` had opened and never finished, and the four that finish last on a healthy run never
-  printed. That points at one renderer suite blocking on an `await`, not a general stall.
-  **Not reproduced in 7 runs since.**
+- ⬜ **The suite intermittently HANGS — a third mode, distinct from the segfault and the leak.**
+  Killed at the timeout with **no banner**, so it never reached its own verdict. ⚠ A hang is not a
+  crash and not a failure count — the wrapper prints `NO SUITE BANNER` + `TIMEOUT` with both gates
+  "clean" underneath, which skims as healthy. Where it stops: **30 of 39 suites banner and pass**;
+  `PIXELS`, `OUTLINE`, `INTERACTION`, `WALL INPUT`, `WALL PAUSE` and the chain behind them never
+  print. Every one of those completes cleanly when run ALONE, so it is in the concurrency, not in
+  any suite's logic — suspect shared render/GPU state or an `await_siblings_except` race.
+  **Clusters in time: 3 consecutive hangs, then a clean HEAD twice, then the same working tree
+  twice — 3 hangs and 4 passes with no code difference between them.**
+  ⚠ **So a hung run is NOT reliably attributable to the change that produced it**, which is what the
+  one-fix-at-a-time rule normally assumes. Re-run before bisecting; each attempt costs ~7 minutes.
 - ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
   normally. Still unattributed — likely the exit-time leak's family, objects surviving into
   `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
   failure count, so a crash is named as a crash rather than read as 125 failures under a banner
   saying PASSED. **One observation total; did not recur in 7 runs.**
+- ⬜ **PIXELS' mask-vs-art check is intermittent, and it is NOT ruled on.**
+  `t=0.00: at rest the mask and the drawn face agree exactly` fails with **0 mask-without-art,
+  3773 art-without-mask** — the mask polygon is valid (the "hands its rig to the mask, vertex for
+  vertex" check passes in the same run) but disagrees with the drawn art everywhere, which reads as
+  the card's art captured at a different pose than `card.fx._poly` describes. Seen in 1 run of 3,
+  then again later. Most likely a settle/capture race in `_real_card()`/`_shoot()`, not a bad bound.
+  ⚠ **Do not widen the bound** — the test's own comment says DO NOT RAISE IT TO GO GREEN, and the
+  owner's ruling on the rotated-ball rows deliberately did not cover this one.
 - ⬜ **LEAK CANARY +1, intermittent.** Rate has moved: ~1 run in 6, then 0 in 8 after S23, now **0 in
   7 more**. ⚠ Not fixed — it once passed 6 consecutively before failing. The suite prints
   `_report_growth` on the failing run (node/resource/other split, plus a running-tween count — a
@@ -41,6 +53,12 @@ gone by the time you know you wanted it.
 
 ## Waiting on the owner
 
+- ⬜ **Playtest the picture wall** — `HANDOFF_picture_wall.md` S40. Nothing else on that stream can
+  be judged until someone drives it; two adversarial reviews traced journeys, neither played it.
+- ⬜ **Picture wall: decide what unlocks `book`** — until it exists a whole subsystem is dead code
+  ("Picture wall" below).
+- ⬜ **Picture wall: look at real renders and rule on wall-view composition** at 16:9 and 32:9
+  ("Picture wall" below).
 - ⬜ **Playtest the universal palette** (below) — the fire and ball colours changed.
 - ⬜ **Playtest the shader FX** (FX_SHADER_PLAN §10, 17 steps).
 - ⬜ **Delete FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes. Their residue is
@@ -299,36 +317,8 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Picture wall
 
-- **🔴 The full suite intermittently HANGS, in clusters, and it is not any one change.** Three
-  consecutive runs stalled at 30 of 39 suites with no banner (every suite that finished passed; the
-  stall is in the concurrency, since `PIXELS`, `OUTLINE`, `INTERACTION`, `WALL INPUT` and
-  `WALL PAUSE` each complete cleanly when run ALONE). Bisected: it still hung with the change under
-  test reverted, then a clean HEAD ran green twice, then the same change ran green twice — 3 hangs
-  and 4 passes with no code difference between them, clustered in time. So "no banner" here is NOT
-  reliably attributable to the change that produced it, which is exactly what
-  [[one-fix-at-a-time]] says a hang normally IS. Suspect the shared render/GPU state or a
-  `await_siblings_except` race rather than any suite's logic. ⚠ Until this is understood, a single
-  hung run is not evidence against a change — re-run before bisecting, which costs ~7 minutes each.
-- **🔴 PIXELS has a SECOND intermittent check, and this one is NOT ruled on.** With the rotated-ball
-  row gone, run 2 of 3 failed `t=0.00: at rest the mask and the drawn face agree exactly` with
-  **0 mask-without-art, 3773 art-without-mask** — the mask polygon was valid (the "hands its rig to
-  the mask, vertex for vertex" check passed in the same run) but disagreed with the drawn art
-  everywhere, which reads as the card's art having been captured at a different pose than
-  `card.fx._poly` describes. Runs 1 and 3 were clean. Different mechanism from the ball rows, same
-  consequence: the suite gate is a coin flip. ⚠ NOT touched — its own comment says "DO NOT RAISE IT
-  TO GO GREEN", and the owner's ruling covered the ball tests only. Needs its own pass: most likely
-  a settle/capture race in `_real_card()`/`_shoot()`, not a bad bound.
-- **The rotated-ball PIXELS assertion was deleted, and the claim it carried now has no gate.**
-  `test_balls_ignore_their_hosts_rotation` asserted a phenomenon its own comment already recorded as
-  non-reproducible. Measured over 8 consecutive serialised full runs of one unchanged build: failed 7
-  times, angle and miss count varying every run, and sometimes failing on MISSING balls while the
-  worst offset was inside tolerance. Owner's call: "bad tests in the first place testing non
-  deterministic behaviour." `_host_balls` still takes a `deg`, so the measurement is one call away
-  for anyone with an instrument that survives it — but FX_HANDOFF §0d.1's rotated-ball claim and the
-  §1b quad-extent lever now rest on `snapshot_diff` alone.
-
-
-See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
+See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will bite you, and
+[HANDOFF_picture_wall.md](HANDOFF_picture_wall.md) for where the stream stands.
 
 - **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so the
   approach to a differently-sized destination is framed on the picture being LEFT. `J10`/`Q137`
@@ -348,8 +338,8 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   PICTURE_WALL.md's wiring table nor this list until now.
 - **Wall view never shows the whole wall, by design, and it may be too much.** `Q5`=b fills and
   crops, and `G10` supplies pan to reach what falls outside — but at 16:9 four of twelve pictures
-  are cut by the frame, more at 32:9, and GAP-018=(a) keeps `view_margin` as extra crop, which makes it more pronounced. Wants an owner
-  look at real renders before anything builds on the composition.
+  are cut by the frame, more at 32:9, and GAP-018=(a) keeps `view_margin` as extra crop, which
+  makes it more pronounced. Wants an owner look at real renders before anything builds on it.
 - **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
   a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
