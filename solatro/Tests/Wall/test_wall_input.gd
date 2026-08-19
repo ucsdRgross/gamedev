@@ -451,9 +451,14 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 			probe_event.pressed = true
 			probe_event.position = screen.get_global_transform_with_canvas() * (probe - half_vp)
 			WallInput.route(probe_event, wp)
-			check(landed[0].is_equal_approx(probe),
+			# HALF A PIXEL, not is_equal_approx(): a round trip through the canvas transform at
+			# zoom 0.5/2.0 lands ~1e-4 off, which is inside is_equal_approx's RELATIVE epsilon at
+			# small coordinates and outside it at large ones -- measured, it flaked at (12, 12).
+			# ⚠ This is a float-precision bound, NOT a tolerance fitted to a defect: the routing
+			# error this test exists to catch displaced clicks by 38-57 PIXELS.
+			check(landed[0].distance_to(probe) < 0.5,
 					"zoom %.1f: a click aimed at viewport pixel %s lands there" % [zoom, probe],
-					"landed=%s" % landed[0])
+					"landed=%s off by %.4f" % [landed[0], landed[0].distance_to(probe)])
 
 	wp.teardown()
 	await _teardown_camera_rig(rig)

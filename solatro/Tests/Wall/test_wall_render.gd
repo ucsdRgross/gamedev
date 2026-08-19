@@ -42,6 +42,8 @@ func _ready() -> void:
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("FRAME NINE-SLICE (S24, QR4=b, C6)")
+	test_nine_slice_applies_to_the_layout_the_game_actually_loads()
 	behavior_section("DRAWN EXTENT TRACKS THE RECT, NOT THE RENDER TARGET")
 	test_screen_draws_at_rect_size_through_every_render_target_change()
 	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
@@ -577,3 +579,58 @@ func _check_drawn(wp: WallPicture, screen: Sprite2D, shadow: Sprite2D, when: Str
 	check(shadow_drawn.is_equal_approx(wp.rect.size),
 			"...and the shadow sprite does too %s" % when,
 			"drawn=%s rect=%s" % [shadow_drawn, wp.rect.size])
+
+# ------------------------------------------------------------------ nine-slice
+
+## S24/QR4=b: the frame is a genuine nine-slice in the REAL game -- built from the REAL
+## `layout_default.tres` entry, which is what C6 made the game load.
+##
+## ⚠ The gate used to be `entry.frame_texture == shared_frame_texture()`, reference identity, and a
+## texture deserialised from that .tres is a different instance -- so patch margins were never set
+## and a 40x40 bevel smeared across the whole frame. Every fixture in this repo assigns the shared
+## texture DIRECTLY, so nothing here could see it; this test deliberately goes through the file.
+func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
+	var layout := Wall.load_layout()
+	var entry : PictureEntry = layout.pictures[0]
+	check(entry.frame_texture != null, "sanity: the authored layout really carries a frame texture")
+	if entry.frame_texture == null: return
+	# The whole point: same pixels, different object. If these were the same instance the old
+	# identity gate would pass and this test would prove nothing.
+	check(entry.frame_texture != WallPicture.shared_frame_texture(),
+			"sanity: the .tres texture is a DIFFERENT instance from the generated shared one -- "
+			+ "if this ever becomes false, this test has stopped covering the defect it exists for")
+
+	var rect := PictureRect.new(entry.id, Vector2.ZERO, Vector2(1330, 745), Vector4(24, 24, 24, 24))
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	add_child(wp)
+	wp.build(rect, entry, _wall.get_node(^"%Viewports"))
+	var frame : NinePatchRect = wp.get_node(^"%Frame")
+	check(frame.patch_margin_left > 0 and frame.patch_margin_top > 0
+			and frame.patch_margin_right > 0 and frame.patch_margin_bottom > 0,
+			"the authored frame texture gets real nine-slice margins",
+			"l=%d t=%d r=%d b=%d" % [frame.patch_margin_left, frame.patch_margin_top,
+					frame.patch_margin_right, frame.patch_margin_bottom])
+	# The margins must fit the texture, or the corners are degenerate -- the failure the old
+	# identity gate was protecting against, now expressed as a property of the texture itself.
+	var tex_size := entry.frame_texture.get_size()
+	check(frame.patch_margin_left + frame.patch_margin_right <= int(tex_size.x)
+			and frame.patch_margin_top + frame.patch_margin_bottom <= int(tex_size.y),
+			"...and opposing margins never meet or cross inside the texture",
+			"margins=%d+%d of %s" % [frame.patch_margin_left, frame.patch_margin_right, tex_size])
+	wp.teardown()
+
+	# A deliberately TINY texture: still a valid nine-slice, never a degenerate one.
+	var tiny := PictureEntry.new()
+	tiny.id = &"tiny"
+	tiny.design_size = Vector2i(64, 64)
+	tiny.frame_texture = ImageTexture.create_from_image(
+			Image.create(8, 8, false, Image.FORMAT_RGBA8))
+	var tiny_wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	add_child(tiny_wp)
+	tiny_wp.build(PictureRect.new(&"tiny", Vector2.ZERO, Vector2(400, 400), Vector4(8, 8, 8, 8)),
+			tiny, _wall.get_node(^"%Viewports"))
+	var tiny_frame : NinePatchRect = tiny_wp.get_node(^"%Frame")
+	check(tiny_frame.patch_margin_left > 0 and tiny_frame.patch_margin_left * 2 <= 8,
+			"an 8px frame texture gets a REAL corner it can actually carry, not the shared 14 "
+			+ "and not zero", str(tiny_frame.patch_margin_left))
+	tiny_wp.teardown()

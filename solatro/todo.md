@@ -305,11 +305,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   "fixed zoom" and H3/`Q27`'s "no frame visible at rest" cannot both hold across a move between two
   differently-sized pictures. Three defensible framings, all visible on every navigation; the
   resting-pose half is already fixed and is not in dispute.
-- **The frame nine-slice never applies in the real game.** `wall_picture.gd`'s
-  `entry.frame_texture == shared_frame_texture()` is reference identity, and the texture loaded from
-  `layout_default.tres` is a different instance, so patch margins are never set and the bevel smears.
-  Introduced by C6 (the game now loads the .tres); every by-eye fixture assigns the shared texture
-  directly, so snapshots look right and the product does not.
 - **Back/Forward mutate the focus stack before the one-move guard**, so a double press desynchronises
   it permanently — Back greys out while a picture is still behind you.
 - **The Info toggle drives the shared camera with no re-entrancy guard**, so it can fight a live

@@ -80,6 +80,14 @@ static func shared_frame_texture() -> ImageTexture:
 	_shared_frame_texture = ImageTexture.create_from_image(img)
 	return _shared_frame_texture
 
+## The nine-slice corner for `tex`, in texture pixels: the shared frame style's own
+## `_FRAME_CORNER_PX`, clamped so opposing margins can never meet or cross. Any texture at least
+## `2 * _FRAME_CORNER_PX` on both axes gets the authored corner; anything smaller gets the largest
+## corner it can actually carry, which is a valid nine-slice rather than a degenerate one.
+static func _frame_corner_px(tex: Texture2D) -> int:
+	var smallest := mini(int(tex.get_width()), int(tex.get_height()))
+	return mini(_FRAME_CORNER_PX, smallest / 2)
+
 ## Builds this picture from its packed rect and authored entry: sizes/positions %Frame to the rect
 ## grown by frame_px (drawn first -- entirely outside the picture rect, Q38=a), creates this
 ## picture's SubViewport (size = design_size, filter forced to NEAREST -- the trap this repo has
@@ -134,16 +142,24 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_frame.modulate = entry.frame_colour
 	# S24 (QR4=b): genuine nine-slice -- corners hold at a FIXED pixel size regardless of how far
 	# this picture's own frame stretches the rect, only the edge bands between them stretch.
-	# Identity check against the ONE shared texture specifically, not "any texture is assigned":
-	# `_FRAME_CORNER_PX` is that texture's OWN corner size, and applying it to some OTHER,
-	# differently-proportioned texture (e.g. a small diagnostic swatch elsewhere in this repo)
-	# would push the patch margins past that texture's own bounds -- the exact degenerate-corner
-	# failure mode `Tests/Visual`'s swatch-texture fixtures must stay immune to.
-	if entry.frame_texture == shared_frame_texture():
-		_frame.patch_margin_left = _FRAME_CORNER_PX
-		_frame.patch_margin_top = _FRAME_CORNER_PX
-		_frame.patch_margin_right = _FRAME_CORNER_PX
-		_frame.patch_margin_bottom = _FRAME_CORNER_PX
+	#
+	# ⚠ This used to be `entry.frame_texture == shared_frame_texture()`, REFERENCE identity, and it
+	# was never true in the real game. C6 made the game load `layout_default.tres`, whose
+	# `frame_texture` deserialises as a DIFFERENT ImageTexture instance from the one this class
+	# generates -- so the branch never ran and a 40x40 bevel smeared across a ~1330x745 NinePatchRect
+	# on every picture. Every by-eye fixture assigns the shared texture directly, which is why the
+	# snapshots looked right and the product did not.
+	#
+	# The thing the identity check was actually protecting is in `_frame_corner_px()`: a margin can
+	# never exceed half its own texture, so a small swatch gets a smaller (still valid) corner
+	# instead of a degenerate one. That is a property of the texture, which is checkable; being the
+	# same OBJECT is not.
+	if entry.frame_texture:
+		var corner := _frame_corner_px(entry.frame_texture)
+		_frame.patch_margin_left = corner
+		_frame.patch_margin_top = corner
+		_frame.patch_margin_right = corner
+		_frame.patch_margin_bottom = corner
 
 	_screen.centered = true
 	_screen.position = Vector2.ZERO
